@@ -124,6 +124,17 @@ To confirm it took, the About panel's header line should read *compressed storag
 `major.minor.patch`, optionally `-alpha.N` or `-beta.N`, and CurseForge sorts on them, so they
 have to parse.
 
+What the three of them mean, so that a player reading a version number learns something from
+it rather than only that it changed:
+
+| Part | Goes up when |
+|---|---|
+| **major** | a revamp, or a function Family did not have before |
+| **minor** | a fix, including the ones a Blizzard patch makes necessary |
+| **patch** | nothing but a `## Interface` bump, to stay current with a patch that broke nothing |
+
+The suffix is separate from all three: it is the channel, not the size of the change.
+
 **The suffix decides who gets it.** The packager reads the tag: one containing the word
 *alpha* is uploaded as an alpha file, *beta* as a beta, and anything else as a full release —
 verified against the packager's own source, not assumed. CurseForge offers only the newest
