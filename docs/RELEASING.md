@@ -144,7 +144,12 @@ and that is the whole mechanism.
 
 `tools/release.sh` prints which of the three a version will be before you push it.
 
-While Family is `0.x` the promise is only that a release is better than the one before it.
-`1.0.0` is worth holding back for the point at which the saved-variables format is one we are
-prepared to migrate rather than to change — the schema version and its migration exist for
-exactly that, and a `1.0` that has to break somebody's records is a `1.0` issued too early.
+`1.0` is a promise about the saved variables, and it is made: from here the format is
+**migrated, never reset**. `Database.lua` carries the schema number and the migrations that
+run against it, and a change to the shape of what Family stores arrives as another migration
+rather than as a version that quietly starts somebody's records again from empty.
+
+That is why the first `1.0` goes out as a beta. CurseForge offers only the newest full
+release as the default download, so `1.0.0-beta.1` reaches the people who go looking for it
+and nobody else — which is the right size of audience for a promise whose first test is other
+people's data.
