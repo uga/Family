@@ -45,3 +45,14 @@ a closed job. What survives is the decision — the tables in `Window.lua`, `Cha
 `Summary.lua` — and not the reason for it, so the next person to doubt a path has to run the
 sheet again rather than look at a picture. Worth capturing the next time all three clients are
 open, and worth capturing *before* the next path is added rather than after.
+
+## Not for the manual: the project logo
+
+`family-logo.png` is the 400×400 logo CurseForge shows on the project page. It is **generated,
+not captured** — `python3 tools/GenerateIcon.py` writes it and the game's 64px texture from
+one drawing, so the picture on the page somebody installs from is the picture on the minimap
+button they end up with. Do not edit it by hand; change `tools/GenerateIcon.py` and run it
+again, which rewrites both.
+
+CurseForge requires a logo and asks that it be recognisable rather than a flat colour or a
+plain gradient, which is the one thing to keep in mind before simplifying the mark.
