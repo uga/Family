@@ -1,0 +1,55 @@
+# Family - an alt manager for World of Warcraft Classic
+# Copyright (C) 2026 Alberto Pittaluga
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later version.
+# See the LICENSE file at the root of this repository.
+
+# Publishing a release.
+#
+# Runs when a tag beginning with "v" is pushed, and nothing else - not on every commit, and
+# not on a merge. Cutting a release is a decision somebody takes, and pushing a tag is how
+# they take it (tools/release.sh does the taking).
+#
+# Three clients, one zip. The packager reads ## Interface from the .toc, which already names
+# all three, so CurseForge is told this build is for Era, Burning Crusade and Mists rather
+# than being asked to guess.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out, with the whole history
+        uses: actions/checkout@v4
+        with:
+          # The packager builds a changelog from the commits since the previous tag, and a
+          # shallow clone has no previous tag to look back to.
+          fetch-depth: 0
+
+      - name: Run the checks before publishing anything
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.1
+          lua5.1 tests/Harness.lua
+
+      - name: Package and upload
+        uses: BigWigsMods/packager@master
+        env:
+          # Set these once, in the repository's Settings -> Secrets and variables ->
+          # Actions. docs/RELEASING.md says where each one comes from.
+          #
+          # Any that is absent simply means that destination is skipped, so a release can
+          # go to CurseForge alone until somebody wants the others.
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          WOWI_API_TOKEN: ${{ secrets.WOWI_API_TOKEN }}
+          WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
+          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}

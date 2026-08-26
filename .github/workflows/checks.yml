@@ -1,0 +1,41 @@
+# Family - an alt manager for World of Warcraft Classic
+# Copyright (C) 2026 Alberto Pittaluga
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later version.
+# See the LICENSE file at the root of this repository.
+
+# The checks, on every commit.
+#
+# Separate from release.yml on purpose, and it must stay separate. That workflow packages
+# and uploads, and it runs on a tag because pushing a tag is the act of publishing. Adding
+# branches to its trigger would publish on every commit instead - which is the one thing
+# the release script is written to prevent.
+#
+# So this file runs the harness and nothing else. A red run here costs nothing but tells
+# you on the day, rather than at release, which is the whole point: release.yml checks the
+# same thing again before it uploads, and by then a break is weeks old.
+
+name: Checks
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+
+jobs:
+  harness:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lua
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.1
+
+      - name: Run the harness
+        run: lua5.1 tests/Harness.lua .

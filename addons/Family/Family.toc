@@ -1,0 +1,49 @@
+## Interface: 11509, 20506, 50504
+## Title: Family
+## Notes: Records what each of your characters owns and knows, and shows it to you from any of them.
+## Author: Alberto Pittaluga
+## Version: 0.1.0
+## X-License: GPL-3.0-or-later
+## X-Website: https://github.com/uga/Family
+## SavedVariables: FamilyDB
+## OptionalDeps: LibStub, LibSerialize, LibDeflate
+## X-Curse-Project-ID: 1646217
+
+# The data layer. Everything the player sees lives in Family_UI.
+#
+# The interface numbers are major*10000 + minor*100 + patch, for Era 1.15.9, Anniversary
+# 2.5.6 and Mists 5.5.4. Anniversary reported 20506 for itself in game, which is what the
+# other two are computed the same way as. Bump them when the clients are patched.
+#
+# The multi-value form is accepted on these clients. If a future one refuses it, the fix is
+# to split this file into Family_Vanilla.toc / Family_TBC.toc / Family_Mists.toc, each
+# listing the same files.
+
+# Fetched at package time rather than committed (.pkgmeta), so these files are absent from a
+# git clone and present in a release. A file the client cannot find is skipped, which is
+# exactly the behaviour wanted: Family works without them and says which it found.
+Libs\LibStub\LibStub.lua
+Libs\LibSerialize\LibSerialize.lua
+Libs\LibDeflate\LibDeflate.lua
+
+Core.lua
+Capabilities.lua
+Codec.lua
+Comm.lua
+Database.lua
+Names.lua
+Index.lua
+Recipes.lua
+Cooldowns.lua
+Scanners\Bags.lua
+Scanners\Talents.lua
+Scanners\Professions.lua
+Scanners\Bank.lua
+Scanners\Identity.lua
+Scanners\Auctions.lua
+Scanners\Mail.lua
+Scanners\Character.lua
+Scanners\Quests.lua
+Scanners\Currencies.lua
+Wide.lua
+Guild.lua

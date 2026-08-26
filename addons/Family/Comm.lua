@@ -1,0 +1,433 @@
+-- Family - an alt manager for World of Warcraft Classic
+-- Copyright (C) 2026 Alberto Pittaluga
+--
+-- This program is free software: you can redistribute it and/or modify it under the
+-- terms of the GNU General Public License as published by the Free Software
+-- Foundation, either version 3 of the License, or (at your option) any later version.
+-- See the LICENSE file at the root of this repository.
+
+-- Getting a message from one copy of Family to another.
+--
+-- Everything Wide Family does (§6) travels through here, and the game's addon channel has
+-- three properties that shape all of it:
+--
+--   **A message is 255 bytes.** A member's possessions are not. So anything larger is cut
+--   into pieces here and put back together at the other end, and nothing above this file
+--   knows that happened.
+--
+--   **The channel is shared and rate limited.** Every addon the player runs sends down it,
+--   and flooding it does not drop Family's messages - it delays everybody's, including the
+--   ones the game itself needs. So there is a queue and a fixed rate, and a large transfer
+--   takes the time it takes.
+--
+--   **Delivery is not acknowledged.** A whisper to somebody who has logged out goes nowhere
+--   and says nothing. Anything that matters is therefore asked for again rather than assumed
+--   to have arrived, and a transfer that stops halfway is abandoned on a timer with whatever
+--   arrived kept (§2.2 again: a partial answer is not a wrong one, as long as it says so).
+--
+-- Sending is not forbidden in combat. It is deferred all the same, for bulk only: a hundred
+-- chunks during a boss fight competes with the raid's own addons for the same channel, and
+-- nothing Family carries is worth that. Small control messages go straight out, because a
+-- reply that waits for the fight to end is a reply nobody connects to what they asked.
+
+local _, Family = ...
+
+local Comm = {}
+Family.Comm = Comm
+
+-- One prefix for everything. The game registers prefixes per addon and they are a limited
+-- resource shared with every other addon loaded.
+local PREFIX = "Family"
+
+-- What fits in a message, less the header this file puts on the front. 255 is the game's
+-- limit; the rest is the message id, the sequence numbers and their separators, and it is
+-- generous rather than exact because being wrong here truncates silently.
+local CHUNK = 200
+
+-- How fast the queue drains. Ten a second is the rate the community's throttling library
+-- settled on for bulk traffic, and it is not worth being cleverer than that.
+local PER_TICK = 2
+local TICK = 0.2
+
+-- A transfer nobody finished. Long enough for a slow exchange over a busy channel, short
+-- enough that a logout does not leave half a member's bags in memory for the session.
+local ABANDON_AFTER = 60
+
+--------------------------------------------------------------------------------------------
+-- Sending
+--------------------------------------------------------------------------------------------
+
+local outgoing = {}
+local nextMessageID = 0
+local ticker
+
+-- The client's own call, wherever it lives. It moved into C_ChatInfo partway through these
+-- clients' lives and the older global is still there on the older ones.
+local function sendRaw(text, channel, target)
+    local api = _G.C_ChatInfo
+    if api and api.SendAddonMessage then
+        return Family:TryCall(api.SendAddonMessage, PREFIX, text, channel, target)
+    end
+    return Family:TryCall(_G.SendAddonMessage, PREFIX, text, channel, target)
+end
+
+-- Whether anything may go out right now.
+--
+-- Bulk waits for the fight to be over; control does not. The distinction is the caller's to
+-- make, because only the caller knows whether what it is sending is an answer somebody is
+-- waiting for or a hundred chunks nobody is watching.
+local function readyFor(entry)
+    if not entry.bulk then return true end
+    return not Family:TryCall(InCombatLockdown)
+end
+
+local function drain()
+    local sent = 0
+
+    for index = 1, #outgoing do
+        if sent >= PER_TICK then break end
+
+        local entry = outgoing[index]
+        if entry and not entry.done and readyFor(entry) then
+            sendRaw(entry.text, entry.channel, entry.target)
+            entry.done = true
+            sent = sent + 1
+        end
+    end
+
+    -- Compacted rather than removed one at a time: taking from the front of a list inside
+    -- the loop that is walking it is how a queue comes to skip every other item.
+    local kept = {}
+    for _, entry in ipairs(outgoing) do
+        if not entry.done then kept[#kept + 1] = entry end
+    end
+    outgoing = kept
+
+    if #outgoing == 0 and ticker then
+        ticker:Cancel()
+        ticker = nil
+    end
+end
+
+local function pump()
+    if ticker or #outgoing == 0 then return end
+
+    local ticked = _G.C_Timer and _G.C_Timer.NewTicker
+    if ticked then
+        ticker = C_Timer.NewTicker(TICK, drain)
+        return
+    end
+
+    -- No ticker on this client: everything goes at once. Worse for the channel and better
+    -- than not working, and Family says which it did rather than pretending.
+    while #outgoing > 0 do
+        local before = #outgoing
+        drain()
+        if #outgoing == before then break end
+    end
+end
+
+-- Split a body across as many messages as it takes.
+--
+-- Every piece carries the message id and its place in the whole, so a receiver can put them
+-- back in order and can tell two transfers apart when they interleave - which they will, as
+-- soon as two people answer at once.
+function Comm:Send(kind, body, channel, target, bulk)
+    if type(kind) ~= "string" then return false end
+    body = tostring(body or "")
+
+    nextMessageID = nextMessageID + 1
+    local id = nextMessageID
+
+    local total = math.max(math.ceil(#body / CHUNK), 1)
+
+    for index = 1, total do
+        local piece = body:sub((index - 1) * CHUNK + 1, index * CHUNK)
+        outgoing[#outgoing + 1] = {
+            text = string.format("%d\1%d\1%d\1%s\1%s", id, index, total, kind, piece),
+            channel = channel or "WHISPER",
+            target = target,
+            bulk = bulk and true or false,
+        }
+    end
+
+    pump()
+    return true
+end
+
+-- How much is still waiting, so a panel can say "sending, 40 of 120" rather than appearing
+-- to have hung. §6 asks for exactly this.
+function Comm:Pending()
+    return #outgoing
+end
+
+function Comm:Abandon()
+    outgoing = {}
+end
+
+--------------------------------------------------------------------------------------------
+-- Whispering somebody who is not there
+--
+-- A whisper to a character who is offline is answered by the client, in the chat frame, once
+-- per whisper. An exchange is not one whisper - a family's records take hundreds of them - so
+-- pressing Update on a family whose linked character had logged out filled the screen with
+-- "No player named 'Grella' is currently playing" and kept filling it, because nothing in
+-- here was listening to the only thing that ever finds out.
+--
+-- There is no way to ask first. The client will not say whether a name is online, and the
+-- addon channel acknowledges nothing (§11.1), so the failure *is* the answer - and it arrives
+-- as a line of chat rather than as anything a function returns.
+--------------------------------------------------------------------------------------------
+
+-- The client's own wording, turned into something to match against. Never the English: these
+-- clients ship in a dozen languages and the sentence is different in every one, while the
+-- global holding it is the same everywhere.
+local function patternFor(format)
+    if type(format) ~= "string" or format == "" then return nil end
+
+    -- Everything magic escaped, which turns the %s placeholder into %%s, and that is then
+    -- the one piece put back as a capture.
+    local escaped = format:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+    escaped = escaped:gsub("%%%%s", "(.+)")
+    return "^" .. escaped .. "$"
+end
+
+-- Names as they can actually be compared.
+--
+-- We whisper "Grella-Thunderstrike", because that is how the sender's name arrived and it is
+-- the form that always works. The client complains about "Grella", because that is the form a
+-- player typed and the realm is its own. Both are the same character and neither string is
+-- wrong; they simply are not equal, which is why the first version of this dropped nothing at
+-- all and the storm carried on exactly as before.
+--
+-- Two characters of the same name on two realms would be conflated by this. That is a real
+-- cost and it is the smaller one: the alternative is what was happening, and a link is to one
+-- family whose characters are usually all in one place.
+local function nameKey(name)
+    if type(name) ~= "string" then return nil end
+    local base = name:match("^([^%-]+)") or name
+    return base:lower()
+end
+
+local absent = {}
+
+-- Who wants to know that a name turned out not to be there. One entry per interested part of
+-- Family, by name, so registering twice replaces rather than accumulates.
+--
+-- A listener rather than Comm calling Wide directly: this file knows about whispers and
+-- queues and has no business knowing that some of them are a family exchange with another
+-- character to fall back on.
+local absentListeners = {}
+
+function Comm:OnAbsent(name, fn)
+    absentListeners[name] = fn
+end
+
+-- Whether two names are the same character. Exported because everywhere that holds a name has
+-- this problem and not only this file: "Grella" from the client's own complaint, and
+-- "Grella-Thunderstrike" as the sender's name arrived, are one character and two strings.
+-- Comparing them with == is the fault that made the first two attempts at this do nothing,
+-- once in the queue and once in the list of who to try next.
+function Comm:SameName(a, b)
+    local first, second = nameKey(a), nameKey(b)
+    return first ~= nil and first == second
+end
+
+-- How long a name stays known-absent. Long enough that the panel can answer without asking
+-- the server again, short enough that somebody who logs in is not locked out of a link they
+-- are sitting in front of.
+local ABSENT_FOR = 60
+
+function Comm:AbandonTo(target)
+    local wanted = nameKey(target)
+    if not wanted then return 0 end
+
+    local dropped, kept = 0, {}
+    for _, entry in ipairs(outgoing) do
+        if entry.channel == "WHISPER" and nameKey(entry.target) == wanted then
+            dropped = dropped + 1
+        else
+            kept[#kept + 1] = entry
+        end
+    end
+    outgoing = kept
+
+    return dropped
+end
+
+-- Whether this name was found to be offline recently enough to still believe it.
+function Comm:Absent(target)
+    local key = nameKey(target)
+    local at = key and absent[key]
+    if not at then return false end
+    if time() - at > ABSENT_FOR then
+        absent[key] = nil
+        return false
+    end
+    return true
+end
+
+function Comm:Present(target)
+    local key = nameKey(target)
+    if key then absent[key] = nil end
+end
+
+Family:RegisterEvent("CHAT_MSG_SYSTEM", "comm.absent", function(_, text)
+    local pattern = patternFor(_G.ERR_CHAT_PLAYER_NOT_FOUND_S)
+    if not pattern or type(text) ~= "string" then return end
+
+    local name = text:match(pattern)
+    if not name then return end
+
+    absent[nameKey(name)] = time()
+
+    -- Everything still queued for them, dropped at once. What has already gone is already
+    -- being complained about; the point is that the rest does not follow it.
+    local dropped = Comm:AbandonTo(name)
+
+    -- Told before anything is said to the player, so that whoever picks this up has the
+    -- chance to try somebody else and report that instead. A family is a person with several
+    -- characters and only one of them is logged in; "they are not online" is only true once
+    -- every one of them has been tried.
+    local handled
+    for _, listener in pairs(absentListeners) do
+        local ok, answer = pcall(listener, name, dropped)
+        if ok and answer then handled = true end
+    end
+
+    if dropped > 0 and not handled then
+        Family:Print("|cffffaa00%s is not online.|r %d message(s) not sent.", name, dropped)
+    end
+end)
+
+--------------------------------------------------------------------------------------------
+-- Receiving
+--------------------------------------------------------------------------------------------
+
+local partial = {}
+local handlers = {}
+
+-- Called with (kind, body, sender, channel). One handler per kind, which is all Wide Family
+-- needs and keeps the dispatch honest: an unknown kind is dropped rather than guessed at.
+function Comm:On(kind, handler)
+    handlers[kind] = handler
+end
+
+local function complete(key, entry, sender, channel)
+    local body = table.concat(entry.pieces)
+    partial[key] = nil
+
+    local handler = handlers[entry.kind]
+    if not handler then
+        Family:Debug("comm: nothing handles %s", tostring(entry.kind))
+        return
+    end
+
+    local ok, err = pcall(handler, entry.kind, body, sender, channel)
+    if not ok then
+        Family:Debug("comm: %s handler failed: %s", tostring(entry.kind), tostring(err))
+    end
+end
+
+function Comm:Receive(text, sender, channel)
+    if type(text) ~= "string" then return end
+
+    -- Hearing from somebody settles the question of whether they are there, whatever the
+    -- server said a minute ago. Kept here rather than in the handler above, because this is
+    -- the one place every arriving message passes through.
+    Comm:Present(sender)
+
+    local id, index, total, kind, piece =
+        text:match("^(%d+)\1(%d+)\1(%d+)\1([^\1]*)\1(.*)$")
+    if not id then return end
+
+    index, total = tonumber(index), tonumber(total)
+    if not index or not total or index > total then return end
+
+    -- Keyed by who sent it as well as by the id, or two people transferring at once would
+    -- write into each other's message.
+    local key = tostring(sender) .. "\1" .. id
+
+    local entry = partial[key]
+    if not entry then
+        entry = { kind = kind, pieces = {}, have = 0, total = total, at = time() }
+        partial[key] = entry
+    end
+
+    if not entry.pieces[index] then
+        entry.pieces[index] = piece
+        entry.have = entry.have + 1
+    end
+    entry.at = time()
+
+    if entry.have == entry.total then
+        complete(key, entry, sender, channel)
+    end
+end
+
+-- Anything that stopped halfway. Called on a timer rather than when the next piece arrives,
+-- because the case that matters is the one where no next piece is coming.
+function Comm:Sweep()
+    local now = time()
+    for key, entry in pairs(partial) do
+        if now - (entry.at or now) > ABANDON_AFTER then
+            Family:Debug("comm: abandoned %s after %d of %d pieces",
+                tostring(entry.kind), entry.have, entry.total)
+            partial[key] = nil
+        end
+    end
+end
+
+function Comm:Waiting()
+    local count = 0
+    for _ in pairs(partial) do count = count + 1 end
+    return count
+end
+
+--------------------------------------------------------------------------------------------
+
+function Comm:Prefix() return PREFIX end
+
+Family:OnDatabaseReady("comm", function()
+    local api = _G.C_ChatInfo
+    local registered = false
+
+    if api and api.RegisterAddonMessagePrefix then
+        registered = Family:TryCall(api.RegisterAddonMessagePrefix, PREFIX) and true or false
+    elseif _G.RegisterAddonMessagePrefix then
+        registered = Family:TryCall(_G.RegisterAddonMessagePrefix, PREFIX) and true or false
+    end
+
+    -- A prefix that was never registered receives nothing, silently, for ever. Worth
+    -- knowing about rather than discovering as "the other person never replies".
+    Comm.registered = registered
+    if not registered then
+        Family:Debug("comm: the addon prefix would not register - nothing will arrive")
+    end
+
+    -- The leading argument is the event's own name, not the first of its values.
+    --
+    -- Core.lua's dispatcher calls every handler as handler(event, ...), which is why every
+    -- other one in Family opens with an underscore. This one did not, so `prefix` held
+    -- "CHAT_MSG_ADDON", the test below it compared that against "Family", and every addon
+    -- message Family has ever been sent was dropped on the first line of the handler.
+    --
+    -- Nothing that crosses the wire has ever worked: not a Wide Family link request, not a
+    -- guild announcement, in either direction, on any client. Both features looked like they
+    -- had faults of their own - a guild that read "0 running Family", link requests that were
+    -- never answered - and both were this.
+    --
+    -- It survived five hundred checks because every one of them called Comm:Receive directly.
+    -- The transport was covered in detail and the single line joining it to the game was not,
+    -- which is the shape of gap worth looking for elsewhere: the seam between our code and the
+    -- client is exactly where a harness stops being able to help.
+    Family:RegisterEvent("CHAT_MSG_ADDON", "comm", function(_, prefix, text, channel, sender)
+        if prefix ~= PREFIX then return end
+        Comm:Receive(text, sender, channel)
+    end)
+
+    Family:RegisterEvent("PLAYER_REGEN_ENABLED", "comm", function()
+        -- The fight is over and the bulk that was waiting for it can go.
+        pump()
+    end)
+end)

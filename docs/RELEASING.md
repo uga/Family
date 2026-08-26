@@ -1,0 +1,139 @@
+# Family — releasing
+
+How a version of Family reaches players, and the four things a machine cannot do for you.
+
+The rule this is built around: **not every commit is a release.** Work lands on `main` as it
+is finished; a release is a separate decision, taken by a person, and the act that takes it is
+pushing a tag. Nothing before that publishes anything.
+
+---
+
+## Once, by hand
+
+These four need an account and a browser, so they are yours. Everything after them is one
+command.
+
+**1. Create the CurseForge project.**
+Sign in at [legacy.curseforge.com](https://legacy.curseforge.com/wow/addons) and create a new
+project. Name it `Family`, choose the *Addons* category, and set the licence to
+**GPL-3.0-or-later** to match [`LICENSE`](../LICENSE). Set the supported game versions to
+Classic Era, Burning Crusade Classic and Mists of Pandaria Classic — the packager also reads
+`## Interface` from the `.toc`, but the project page has its own list.
+
+**2. Get an API token.**
+On CurseForge, under your account: *My API Tokens* → generate one. It is shown once.
+
+**3. Put the token where the workflow can reach it.**
+In this repository on GitHub: *Settings* → *Secrets and variables* → *Actions* → *New
+repository secret*, named exactly:
+
+| Secret | What it is | Needed? |
+|---|---|---|
+| `CF_API_KEY` | the CurseForge token from step 2 | yes |
+| `WOWI_API_TOKEN` | WoWInterface, if you ever want it there too | no |
+| `WAGO_API_TOKEN` | Wago Addons, likewise | no |
+
+A secret that is absent means that destination is skipped rather than failing the run, so
+CurseForge alone is a complete setup.
+
+**4. Tell the packager which project to upload to.**
+Add the project id to both `.toc` files — CurseForge shows it on the project page, top right,
+as *Project ID*:
+
+```
+## X-Curse-Project-ID: 1646217
+```
+
+Until this is set the workflow will build the zip and have nowhere to send it, which is a
+clear failure rather than a silent one.
+
+---
+
+## Every time
+
+```bash
+tools/release.sh 0.2.0
+```
+
+It bumps the version in both `.toc` files, turns the **Unreleased** section of
+[`CHANGELOG.md`](../CHANGELOG.md) into a dated section for this version, commits that, and
+makes an annotated tag carrying the notes. Then it prints the push command and stops, because
+pushing is the publishing and it should be a thing you do rather than a thing that happens.
+
+```bash
+git push && git push origin v0.2.0
+```
+
+The tag push starts [`.github/workflows/release.yml`](../.github/workflows/release.yml),
+which runs the checks, builds the zip and uploads it.
+
+It refuses to start on a dirty tree, on a version that already exists, on a changelog with
+nothing under **Unreleased**, or on a failing check. A release that went out because a script
+pressed on regardless is worse than one that did not go out.
+
+### Undoing one, before it is pushed
+
+```bash
+git tag -d v0.2.0 && git reset --hard HEAD~1
+```
+
+After it is pushed, it is published. Cut the next version rather than trying to withdraw one:
+a version number that existed and then meant something else is worse for everybody than a
+version number that was superseded quickly.
+
+---
+
+## What is in the zip
+
+Two folders, `Family` and `Family_UI`, and nothing else. `.pkgmeta` says so and says why:
+neither addon is useful without the other, so they travel together and a player installs one
+thing. `tools/`, `tests/` and `docs/` are for people reading the source and are left out.
+
+**Libraries are fetched at package time, not committed.** `.pkgmeta` lists `LibStub`,
+`LibSerialize` and `LibDeflate` as externals, so they arrive at their own upstream version and
+their licences stay theirs — see [`HANDOFF.md`](HANDOFF.md) §2. This repository holds only what
+we wrote.
+
+They are optional everywhere in Family except Wide Family, which cannot exist without them:
+the addon channel carries a string and nothing else. A copy built straight from a `git clone`
+therefore runs with no compression and no Wide Family, and says so in the About panel. A copy
+installed from CurseForge has both.
+
+### Testing a build that has them
+
+`Deploy.bat` copies the working tree, and the working tree has no `Libs` folder — so the
+client you develop against is not the addon anybody receives, and the difference is exactly
+Wide Family. Close that gap before testing it:
+
+```bash
+tools/FetchLibs.sh
+```
+
+It fetches the same three libraries from the same three upstreams `.pkgmeta` names, into the
+layout `Family.toc` already lists, and refuses anything that came back too small or came back
+as a web page. They land in `addons/Family/Libs/`, which `.gitignore` covers, so nothing about
+what this repository holds changes and no release is affected.
+
+To confirm it took, the About panel's header line should read *compressed storage* rather than
+*uncompressed storage*.
+
+---
+
+## Version numbers
+
+`major.minor.patch`, optionally `-alpha.N` or `-beta.N`, and CurseForge sorts on them, so they
+have to parse.
+
+**The suffix decides who gets it.** The packager reads the tag: one containing the word
+*alpha* is uploaded as an alpha file, *beta* as a beta, and anything else as a full release —
+verified against the packager's own source, not assumed. CurseForge offers only the newest
+*release* as the default download; alphas and betas are there for people who go looking. So
+`v1.0.0-alpha.1` puts a build in front of testers without putting it in front of everybody,
+and that is the whole mechanism.
+
+`tools/release.sh` prints which of the three a version will be before you push it.
+
+While Family is `0.x` the promise is only that a release is better than the one before it.
+`1.0.0` is worth holding back for the point at which the saved-variables format is one we are
+prepared to migrate rather than to change — the schema version and its migration exist for
+exactly that, and a `1.0` that has to break somebody's records is a `1.0` issued too early.

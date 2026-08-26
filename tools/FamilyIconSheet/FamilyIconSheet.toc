@@ -1,0 +1,14 @@
+## Interface: 11509, 20506, 50504
+## Title: Family |cff888888(icon sheet)|r
+## Notes: Development tool. Draws every candidate stock icon at final size, so a screenshot settles which of them this client actually has.
+## Author: Alberto Pittaluga
+## Version: 0.1.0
+## X-License: GPL-3.0-or-later
+## X-Website: https://github.com/uga/Family
+## SavedVariables: FamilyIconSheetDB
+
+# Not part of Family and not in any release. It lives under tools/, which .pkgmeta ignores,
+# and it depends on nothing - so it can be installed on its own, on a client that has no
+# Family at all, and removed the moment the screenshots are taken.
+
+IconSheet.lua

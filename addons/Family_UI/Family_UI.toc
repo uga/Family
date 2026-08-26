@@ -1,0 +1,30 @@
+## Interface: 11509, 20506, 50504
+## Title: Family |cff888888(interface)|r
+## Notes: Everything Family shows you. Requires Family.
+## Author: Alberto Pittaluga
+## Version: 0.1.0
+## X-License: GPL-3.0-or-later
+## X-Website: https://github.com/uga/Family
+## Dependencies: Family
+## X-Curse-Project-ID: 1646217
+
+# The presentation layer. It reads through Family's own API and never touches FamilyDB
+# directly - that separation is what lets the storage format change without the screens
+# knowing (HANDOFF §1).
+
+Window.lua
+MemberPicker.lua
+ChoicePicker.lua
+Tooltip.lua
+Summary.lua
+Talents.lua
+Contents.lua
+Professions.lua
+Character.lua
+Quests.lua
+Wide.lua
+Guild.lua
+Broker.lua
+Options.lua
+About.lua
+Slash.lua

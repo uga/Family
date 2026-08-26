@@ -1,0 +1,769 @@
+-- Family - an alt manager for World of Warcraft Classic
+-- Copyright (C) 2026 Alberto Pittaluga
+--
+-- This program is free software: you can redistribute it and/or modify it under the
+-- terms of the GNU General Public License as published by the Free Software
+-- Foundation, either version 3 of the License, or (at your option) any later version.
+-- See the LICENSE file at the root of this repository.
+
+-- The window everything else lives in.
+--
+-- Plain Lua and Blizzard's own templates, no XML and no framework (HANDOFF §1). Tabs
+-- register themselves here; the window knows how to show one at a time and nothing about
+-- what any of them contain.
+
+local _, UI = ...
+
+local Family = _G.Family
+UI.Family = Family
+Family.UI = UI
+
+-- Wider than it was by exactly what the tab strip grew (below).
+--
+-- The strip taking room for its pictures took it from every panel's content, and the summary
+-- said so at once: the side filters at the right-hand end of its top row began touching the
+-- last set button. Shaving the buttons would have been treating the symptom on one panel and
+-- leaving the other five quietly tighter than they were designed to be.
+local WIDTH, HEIGHT = 924, 560
+
+--------------------------------------------------------------------------------------------
+-- The pictures on the tab strip
+--
+-- Every one of these was looked at, at this size, on Classic Era, Anniversary and Mists,
+-- before it was written down - because a texture is the one thing in Family that cannot be
+-- probed (HANDOFF §3). A path that does not exist draws nothing, silently, and GetTexture()
+-- reads back whatever string it was handed, so confidence is worth exactly nothing here.
+-- Chosen from `tools/FamilyIconSheet` on 2026-08-25.
+--
+-- They live in one table rather than beside each RegisterTab call, and that is the whole
+-- point: the list of paths Family asserts exist is then one thing to audit against one set of
+-- screenshots, instead of nine lines scattered across nine files with nothing tying them to
+-- the day somebody checked.
+--
+-- A tab with no entry here draws no picture and keeps the space, so the labels stay in line
+-- down the strip. That is deliberately better than a question mark, which reads as a fault
+-- rather than as a gap.
+--
+-- No two of these may be the same. Summary and Wide Family were first chosen the same
+-- picture, and a strip where two rows are alike has stopped being readable by icon, which is
+-- most of what the icons are for. The harness checks it, because it is the one thing about
+-- this table that can be checked without eyes.
+local TAB_ICONS = {
+	summary     = "Interface\\Icons\\INV_Misc_GroupLooking",
+	talents     = "Interface\\Icons\\INV_Misc_Book_11",
+	contents    = "Interface\\Icons\\INV_Misc_Bag_07",
+	professions = "Interface\\Minimap\\Tracking\\Profession",
+	character   = "Interface\\Icons\\INV_Shirt_White_01",
+	wide        = "Interface\\Icons\\INV_Misc_GroupNeedMore",
+	guild       = "Interface\\Icons\\INV_Shirt_GuildTabard_01",
+	options     = "Interface\\Icons\\Ability_Repair",
+	about       = "Interface\\Common\\help-i",
+}
+
+UI.TAB_ICONS = TAB_ICONS
+
+-- The strip is wider than it was by exactly what the icon costs, so no label lost any room
+-- to it. Sized down instead, "Abilities & Talents" would have been the one to go, and a tab
+-- whose name is cut in half says less than a tab with no picture on it.
+local TAB_W, TAB_H = 160, 24
+local TAB_STEP = 27
+local STRIP_W = TAB_W + 4
+local TAB_ICON = 16
+local TAB_TEXT_INSET = 22         -- the picture, and a gap after it
+
+local tabs, tabButtons = {}, {}
+local current
+
+--------------------------------------------------------------------------------------------
+
+local window = CreateFrame("Frame", "FamilyWindow", UIParent, "BasicFrameTemplateWithInset")
+window:SetSize(WIDTH, HEIGHT)
+window:SetPoint("CENTER")
+window:SetMovable(true)
+window:EnableMouse(true)
+window:RegisterForDrag("LeftButton")
+window:SetScript("OnDragStart", window.StartMoving)
+window:SetScript("OnDragStop", window.StopMovingOrSizing)
+window:SetClampedToScreen(true)
+window:Hide()
+
+--------------------------------------------------------------------------------------------
+-- Layering
+--
+-- Which strata a window needs is not something that can be decided from the code, because it
+-- depends on what else the player runs. A HUD drawing its health numbers over the top of
+-- this window is not a bug in either addon - it is two addons with an opinion about depth
+-- and no way to know about each other.
+--
+-- So it is a setting, defaulting high enough to clear the ordinary run of unit frames and
+-- HUDs, and adjustable without a code change when it does not.
+--
+-- Not FULLSCREEN or TOOLTIP: a panel that covers tooltips, or the map, has stopped being a
+-- panel and become a nuisance.
+--------------------------------------------------------------------------------------------
+
+local STRATA = { "MEDIUM", "HIGH", "DIALOG" }
+local DEFAULT_STRATA = "HIGH"
+
+function UI:StrataChoices()
+	return STRATA
+end
+
+-- Nothing here reads FamilyDB at file scope. The game loads a dependency completely, saved
+-- variables and all, before a dependent addon's files run - but relying on that is relying
+-- on load order, and load order is exactly the sort of thing that is true until it is not.
+function UI:SetStrata(name)
+	local wanted
+	for _, candidate in ipairs(STRATA) do
+		if candidate == (name or ""):upper() then wanted = candidate end
+	end
+	if not wanted then return nil end
+
+	window:SetFrameStrata(wanted)
+	window:SetToplevel(true)
+	window:Raise()
+
+	if FamilyDB then
+		FamilyDB.ui = FamilyDB.ui or {}
+		FamilyDB.ui.strata = wanted
+	end
+	return wanted
+end
+
+function UI:CurrentStrata()
+	return (FamilyDB and FamilyDB.ui and FamilyDB.ui.strata) or DEFAULT_STRATA
+end
+
+window:SetFrameStrata(DEFAULT_STRATA)
+window:SetToplevel(true)
+
+Family:OnDatabaseReady("ui.strata", function()
+	UI:SetStrata(UI:CurrentStrata())
+end)
+
+-- Escape closes it, like every other panel in the game.
+tinsert(UISpecialFrames, "FamilyWindow")
+
+window.TitleText:SetText("Family")
+
+UI.window = window
+
+-- How much room a panel actually has, which is a thing panels have had to guess at. The Wide
+-- Family consent grid guessed 816 pixels of it and had 712, so its last column was drawn off
+-- the end of the list and the one before it was cut by the edge. A panel that lays out fixed
+-- columns can ask instead.
+UI.CONTENT_W = WIDTH - (12 + STRIP_W) - 8
+
+-- What a scroll bar and its inset take out of that, for a panel whose columns live in one.
+UI.SCROLLBAR_W = 32
+
+local content = CreateFrame("Frame", nil, window)
+content:SetPoint("TOPLEFT", 12 + STRIP_W, -32)
+content:SetPoint("BOTTOMRIGHT", -8, 8)
+UI.content = content
+
+-- The tab strip runs down the left, because the number of tabs is fixed and the number of
+-- members is not - horizontal tabs would compete for the width the table needs.
+local strip = CreateFrame("Frame", nil, window)
+strip:SetPoint("TOPLEFT", 8, -32)
+strip:SetPoint("BOTTOMLEFT", 8, 8)
+-- Wide enough for the longest tab name there is. A strip sized to "Summary" clipped
+-- "Abilities & Talents" to something that read as a different tab - and adding a picture to
+-- the front of every label is the same mistake in a different order, so the strip grew by
+-- what the picture takes rather than the labels shrinking by it.
+strip:SetWidth(STRIP_W)
+
+--------------------------------------------------------------------------------------------
+
+function UI:RegisterTab(id, label, builder)
+	local index = #tabs + 1
+
+	local button = CreateFrame("Button", nil, strip, "UIPanelButtonTemplate")
+	button:SetSize(TAB_W, TAB_H)
+	button:SetPoint("TOPLEFT", 0, -((index - 1) * TAB_STEP))
+	button:SetText(label)
+	button:SetScript("OnClick", function() UI:ShowTab(id) end)
+
+	-- The picture, and the label moved out of the way of it.
+	--
+	-- The template centres its text, which puts a short name in the middle of the button
+	-- with the icon marooned at the far left and a long one running under the icon. Pinned
+	-- to the left of the space the icon leaves instead, so every label starts in the same
+	-- place whether or not its tab has a picture yet.
+	local icon = button:CreateTexture(nil, "ARTWORK")
+	icon:SetSize(TAB_ICON, TAB_ICON)
+	icon:SetPoint("LEFT", 5, 0)
+	button.icon = icon
+
+	local path = TAB_ICONS[id]
+	if path then
+		icon:SetTexture(path)
+	else
+		icon:Hide()
+	end
+
+	local text = button.GetFontString and button:GetFontString()
+	if text then
+		text:ClearAllPoints()
+		text:SetPoint("LEFT", TAB_TEXT_INSET, 0)
+		text:SetWidth(TAB_W - TAB_TEXT_INSET - 4)
+		text:SetJustifyH("LEFT")
+		if text.SetWordWrap then text:SetWordWrap(false) end
+	end
+
+	tabs[index] = { id = id, label = label, builder = builder, frame = nil, icon = path }
+	tabButtons[id] = button
+
+	return index
+end
+
+-- Which tabs there are, and what each is drawn with. For the harness, which is the only thing
+-- that can check the strip is internally consistent - whether a path exists is the one
+-- question it cannot answer, and the reason `tools/FamilyIconSheet` exists.
+function UI:Tabs()
+	return tabs
+end
+
+function UI:ShowTab(id)
+	for _, tab in ipairs(tabs) do
+		local selected = tab.id == id
+
+		if selected and not tab.frame then
+			-- Built the first time it is looked at, not at login.
+			--
+			-- Isolated, the same way event handlers are (Core.lua). A builder that
+			-- throws half way leaves a frame that exists, is empty, and has no Refresh
+			-- - which looks exactly like a panel with no data in it and sends you
+			-- hunting in the wrong place. Say what actually happened.
+			tab.frame = CreateFrame("Frame", nil, content)
+			tab.frame:SetAllPoints(content)
+
+			local ok, err = pcall(tab.builder, tab.frame)
+			if not ok then
+				Family:Print("|cffff5555the %s panel failed to build|r: %s", tab.id,
+					tostring(err))
+				tab.broken = true
+			end
+		end
+
+		if tab.frame then
+			tab.frame:SetShown(selected)
+		end
+
+		local button = tabButtons[tab.id]
+		if button then
+			UI:MarkSelected(button, selected)
+		end
+
+		if selected then
+			current = tab
+			window.TitleText:SetText("Family - " .. tab.label)
+
+			if tab.frame.Refresh then
+				local ok, err = pcall(tab.frame.Refresh, tab.frame)
+				if not ok then
+					Family:Print("|cffff5555the %s panel failed to draw|r: %s", tab.id,
+						tostring(err))
+				end
+			elseif not tab.broken then
+				Family:Print("|cffffaa00the %s panel built but defined no Refresh|r",
+					tab.id)
+			end
+		end
+	end
+end
+
+-- A scan that lands while a panel is open redraws it, coalesced because a single login
+-- writes to the database a dozen times in a few seconds and each of those would otherwise be
+-- a redraw of forty rows.
+Family:OnDatabaseReady("ui.changes", function()
+	Family.Database:OnChanged("ui", function()
+		if not window:IsShown() then return end
+		Family:After(0.5, "ui.refresh", function()
+			if window:IsShown() then UI:Refresh() end
+		end)
+	end)
+end)
+
+function UI:Refresh()
+	if current and current.frame and current.frame.Refresh then
+		local ok, err = pcall(current.frame.Refresh, current.frame)
+		if not ok then
+			Family:Print("|cffff5555the %s panel failed to draw|r: %s", current.id,
+				tostring(err))
+		end
+	end
+end
+
+function UI:Toggle()
+	if window:IsShown() then
+		window:Hide()
+	else
+		window:Show()
+		if not current then
+			UI:ShowTab(tabs[1] and tabs[1].id)
+		else
+			UI:Refresh()
+		end
+	end
+end
+
+function UI:Show()
+	if not window:IsShown() then UI:Toggle() end
+end
+
+function UI:IsShown()
+	return window:IsShown() and true or false
+end
+
+-- Which tab is being looked at, for anything that wants to send you somewhere and needs to
+-- know whether you are already there.
+function UI:CurrentTab()
+	return current and current.id or nil
+end
+
+function UI:Hide()
+	window:Hide()
+end
+
+-- Sending you to one of the game's own windows, and then getting out of its way.
+--
+-- Family sits at HIGH and the game's panels - the quest log, the character sheet, a
+-- profession window - sit below it. **Strata beats click order**, so a panel in a lower one
+-- can never be brought in front by clicking it, however many times: the quest log Family had
+-- just opened stayed behind Family and there was nothing the player could do about it. That is
+-- not a fault in either frame, and it is not fixable by raising or lowering anything without
+-- breaking the setting that exists because other addons draw over this one.
+--
+-- So when Family opens one of the game's windows for you, Family closes. You clicked in order
+-- to look at that window; leaving the thing you came from lying on top of it is the one
+-- outcome nobody wanted. `/family` brings it back, on the tab it was on.
+function UI:StepAside()
+	if window:IsShown() then window:Hide() end
+end
+
+-- Both list popups are parented to the screen rather than to the window - they have to be, or
+-- they would be clipped by the panel they open over - so hiding the window does not take them
+-- with it, and a list left hanging over the game with nothing behind it is the result.
+--
+-- MemberPicker has had the call to close it since it was written and nothing ever made it;
+-- adding a second popup with the same hazard is a good moment to notice.
+window:HookScript("OnHide", function()
+	if UI.CloseMemberPickers then UI:CloseMemberPickers() end
+	if UI.CloseChoicePickers then UI:CloseChoicePickers() end
+end)
+
+--------------------------------------------------------------------------------------------
+-- Marking which of a row of buttons is the one you are looking at
+--
+-- Disabling it was the obvious way and the wrong one. A greyed button is how the game says
+-- "you cannot do this", so using it to mean "this is the one you are on" says the opposite
+-- of what is meant - the current tab looked broken and the ones you could reach looked
+-- available, which is true but reads as the current one being unavailable.
+--
+-- Held highlighted and in gold instead, which is how the game marks a thing as current, and
+-- left clickable: clicking the tab you are already on should do nothing, not be impossible.
+--------------------------------------------------------------------------------------------
+
+function UI:MarkSelected(button, selected)
+	if not button then return end
+
+	button:Enable()
+
+	if selected then
+		button:LockHighlight()
+	else
+		button:UnlockHighlight()
+	end
+
+	local label = button.GetFontString and button:GetFontString()
+	if label then
+		if selected then
+			label:SetTextColor(1, 0.82, 0)
+		else
+			label:SetTextColor(1, 1, 1)
+		end
+	end
+end
+
+--------------------------------------------------------------------------------------------
+-- Scrolling
+--
+-- UIPanelScrollFrameTemplate brings a scrollbar and its two arrows, and nothing that
+-- responds to a wheel. A list longer than the window is then reachable only by dragging a
+-- narrow bar, which most people will not think to try - so the content is not really there.
+--------------------------------------------------------------------------------------------
+
+local WHEEL_STEP = 3 * 18   -- three rows a notch, at the row height the panels use
+
+function UI:MakeScrollable(scroll)
+	scroll:EnableMouseWheel(true)
+	scroll:SetScript("OnMouseWheel", function(self, delta)
+		local range = self:GetVerticalScrollRange() or 0
+		local wanted = (self:GetVerticalScroll() or 0) - (delta * WHEEL_STEP)
+
+		if wanted < 0 then wanted = 0 end
+		if wanted > range then wanted = range end
+
+		self:SetVerticalScroll(wanted)
+	end)
+end
+
+--------------------------------------------------------------------------------------------
+-- Removing a member
+--
+-- The one destructive thing this window can do, so it asks first - and it says who, because
+-- a confirmation that does not name what it is about to delete is not a confirmation.
+--
+-- Which member is remembered here rather than handed to the popup, because how a popup
+-- carries its data differs across these clients and a closure does not.
+--------------------------------------------------------------------------------------------
+
+local FORGET_POPUP = "FAMILY_FORGET_MEMBER"
+local pendingForget
+
+-- Asking about anything else that cannot be undone.
+--
+-- The member popup below does one thing and does it by name; this is for the rest - ending a
+-- link, say - and it is separate rather than a parameter, because a confirmation whose
+-- wording is assembled from arguments ends up asking questions nobody wrote.
+local ASK_POPUP = "FAMILY_CONFIRM"
+local pendingAsk
+
+function UI:Confirm(question, onAccept)
+    if type(onAccept) ~= "function" then return end
+    pendingAsk = onAccept
+
+    if not (StaticPopupDialogs and StaticPopup_Show) then
+        -- Nowhere to ask, so nothing happens. Doing it anyway because the popup is missing
+        -- would be the one reading of "confirm" that cannot be right.
+        Family:Print("|cffffaa00%s|r - but this client has no way to ask, so nothing was "
+            .. "done.", tostring(question))
+        pendingAsk = nil
+        return
+    end
+
+    StaticPopupDialogs[ASK_POPUP] = StaticPopupDialogs[ASK_POPUP] or {
+        text = "%s",
+        button1 = _G.YES or "Yes",
+        button2 = _G.NO or "No",
+        OnAccept = function()
+            local act = pendingAsk
+            pendingAsk = nil
+            if act then act() end
+        end,
+        OnCancel = function() pendingAsk = nil end,
+        timeout = 0,
+        whileDead = true,
+        hideOnEscape = true,
+        preferredIndex = 3,
+    }
+
+    StaticPopup_Show(ASK_POPUP, question)
+end
+
+function UI:ConfirmForget(key, name, realm)
+	if not key then return end
+	pendingForget = key
+
+	-- Two characters can have the same name on two realms, and Family keeps them apart. A
+	-- confirmation that does not say which of them it means is not much of one.
+	name = name or key
+	if realm then name = name .. " - " .. realm end
+
+	if not (StaticPopupDialogs and StaticPopup_Show) then
+		-- Nowhere to ask, so nothing is deleted. Saying what to type is the honest
+		-- answer; deleting without asking is not.
+		Family:Print("to remove %s, type |cffffd700/family forget %s|r", name, key)
+		return
+	end
+
+	StaticPopupDialogs[FORGET_POPUP] = StaticPopupDialogs[FORGET_POPUP] or {
+		text = "Remove %s from Family?\n\nEverything recorded about this character goes "
+			.. "with it. Logging in on them again starts recording afresh.",
+		button1 = _G.YES or "Yes",
+		button2 = _G.NO or "No",
+		OnAccept = function()
+			if not pendingForget then return end
+			Family.Database:Forget(pendingForget)
+			pendingForget = nil
+			UI:Refresh()
+			if UI.UpdateBroker then UI:UpdateBroker() end
+		end,
+		OnCancel = function() pendingForget = nil end,
+		timeout = 0,
+		whileDead = true,
+		hideOnEscape = true,
+		preferredIndex = 3,
+	}
+
+	StaticPopup_Show(FORGET_POPUP, name)
+end
+
+--------------------------------------------------------------------------------------------
+-- Shared formatting
+--------------------------------------------------------------------------------------------
+
+-- Rows in these panels are a fixed height, so a cell that wraps does not make its row taller
+-- - it draws over the row underneath. An achievement description ran to three lines and took
+-- two other achievements with it. Text that does not fit is cut off instead, which is the
+-- honest failure: the row below stays legible and the whole of it is a hover away.
+function UI:NoWrap(...)
+	for index = 1, select("#", ...) do
+		local text = select(index, ...)
+		if text and text.SetWordWrap then text:SetWordWrap(false) end
+	end
+end
+
+-- Money, in the game's own colours. GetMoneyString exists on some of these clients and not
+-- others, and its output differs, so Family formats its own and gets the same answer
+-- everywhere.
+--
+-- Silver and copper are always two digits and the gold part is always there, even at nought.
+-- A column of amounts is read by comparing them, and dropping the empty parts - which is what
+-- the game itself does - meant "47g 87s 80c" sat under "354g 0s 39c" with nothing lining up:
+-- every row put its gold, silver and copper in a different place. Right-aligned and evenly
+-- shaped, the three parts land in the same three places on every row.
+-- What every panel says for a thing it has never been told. One string rather than one per
+-- file, because "we were never told" has to look the same everywhere or it reads as a value.
+UI.UNKNOWN = "|cff9d9d9d-|r"
+
+function UI:Money(copper)
+	-- Nought copper is a fact about somebody who is broke. Nothing is a fact about us, and
+	-- the two must not print the same (§2.2). This used to answer "0g 00s 00c" for both,
+	-- which is how a linked family's members - whose money nobody had agreed to share -
+	-- came to be listed on the summary as having none.
+	if copper == nil then return UI.UNKNOWN end
+
+	local gold = math.floor(copper / 10000)
+	local silver = math.floor((copper % 10000) / 100)
+	local bronze = copper % 100
+
+	return string.format("|cffffd700%d|rg |cffc7c7cf%02d|rs |cffeda55f%02d|rc",
+		gold, silver, bronze)
+end
+
+-- A member named somewhere that is not about them alone: a search result, a tooltip, a
+-- broker line. Two things can need saying, and only when they need saying.
+--
+-- The realm, when two of the listed names are the same - Family keeps two characters called
+-- Eccebombo apart everywhere else and a single line has no column to do it in.
+--
+-- The side, when it is not the player's own. Their bank is a different bank and their auction
+-- house is a different auction house, so what can be done about a thing depends on it
+-- entirely - and a search result that does not say so invites a trip to the wrong mailbox.
+function UI:NameOf(entry, clashes)
+	local label = entry.name or entry.key or "?"
+
+	if clashes and entry.realm then
+		label = string.format("%s |cff888888(@%s)|r", label, entry.realm)
+	end
+
+	local mine = Family:TryCall(UnitFactionGroup, "player")
+	if mine and entry.faction and entry.faction ~= mine then
+		label = string.format("%s |cff888888(%s)|r", label, entry.faction:sub(1, 1))
+	end
+
+	return label
+end
+
+-- The same for a list: which names are said more than once, so only those carry their realm.
+function UI:NamesOf(entries)
+	local counts = {}
+	for _, entry in ipairs(entries) do
+		counts[entry.name or entry.key] = (counts[entry.name or entry.key] or 0) + 1
+	end
+
+	for _, entry in ipairs(entries) do
+		entry.label = UI:NameOf(entry, counts[entry.name or entry.key] > 1)
+	end
+
+	return entries
+end
+
+--------------------------------------------------------------------------------------------
+-- Reading a member, ours or somebody else's
+--
+-- A sibling (§6) sits in the same lists as our own members, so every panel that draws a list
+-- would otherwise need to know that borrowed records live somewhere different and are reached
+-- a different way. These two put that in one place: hand them a key and they answer, and the
+-- panel above never learns whose the member was.
+--
+-- Borrowed keys begin with "@", which no character name can, so the two can never be mistaken
+-- for one another and nothing has to be told apart by looking it up in both.
+--------------------------------------------------------------------------------------------
+
+local function borrowed(key)
+	if type(key) ~= "string" or key:sub(1, 1) ~= "@" then return nil end
+	return Family.Wide and Family.Wide:Borrowed(key) or nil
+end
+
+function UI:IsBorrowed(key)
+	return borrowed(key) ~= nil
+end
+
+function UI:Meta(key)
+	local entry = borrowed(key)
+	if entry then return entry.meta end
+	return Family.Database:Meta(key)
+end
+
+function UI:Payload(key)
+	local entry = borrowed(key)
+	-- Never decoded, because it never was encoded: what arrives over the wire is already a
+	-- table, and only what we store is compressed.
+	if entry then return entry.payload end
+	return Family.Database:Payload(key)
+end
+
+-- Everyone a panel about one member may be asked about: our own, then everyone a linked
+-- family shares with us.
+--
+-- Not only the siblings. A sibling is a decision about the *summary* - who belongs in my
+-- lists, beside my own - and it was doing a second job nobody asked it to do: until now it
+-- was also the only way to see a shared member's gear, bags, professions or talents at all,
+-- because the four panels that show one member at a time offered our own members and nothing
+-- else. So a family could grant you eight categories about eleven characters and you would
+-- see none of it until you ticked them into your summary as well, which is a different
+-- question and often the wrong answer to it.
+--
+-- Siblings stay what §6 says they are. This is the other half: everything shared is reachable,
+-- and what appears in your own lists is still only what you asked for.
+-- Our own, and nobody else's. A separate name from the one below rather than an argument to
+-- it, because the difference between "everyone" and "ours" is the difference between a list to
+-- look through and a list to be counted in, and a caller that wants one and gets the other
+-- has no way of noticing. That is not hypothetical: the gear grid asked for ours, was quietly
+-- handed everyone, and put a linked family's members in with our own under no heading at all.
+function UI:OurMembers(keep)
+	local ours = {}
+	for key, entry in pairs(Family.Database:Members()) do
+		local meta = entry.meta or {}
+		if not keep or keep(meta, key) then
+			ours[#ours + 1] = { key = key, meta = meta }
+		end
+	end
+	table.sort(ours, function(a, b) return a.key < b.key end)
+	return ours
+end
+
+function UI:EveryMember(keep)
+	local ours = UI:OurMembers(keep)
+
+	local theirs = {}
+	for _, member in ipairs(Family.Wide:BorrowedMembers()) do
+		local meta = member.meta or {}
+		if not keep or keep(meta, member.borrowedKey) then
+			theirs[#theirs + 1] = {
+				key = member.borrowedKey,
+				meta = meta,
+				-- Under the family that shared them rather than under their realm.
+				-- Their realm is a fact about them; whose they are is the fact that
+				-- decides what this panel can and cannot say (§6).
+				group = "|cffc79fefshared by " .. tostring(member.familyName) .. "|r",
+			}
+		end
+	end
+	table.sort(theirs, function(a, b)
+		if a.group ~= b.group then return a.group < b.group end
+		return tostring(a.meta.name or a.key) < tostring(b.meta.name or b.key)
+	end)
+
+	for _, member in ipairs(theirs) do ours[#ours + 1] = member end
+	return ours
+end
+
+--------------------------------------------------------------------------------------------
+-- Closing a list by clicking away from it
+--
+-- A list that opens and can only be closed by choosing something from it is a list that makes
+-- you answer a question you have decided not to answer. Both of Family's - the member button
+-- and the realm and class buttons - were like that: nothing dismissed them but a selection,
+-- and Escape worked on one of them and only while the search box had the cursor.
+--
+-- A sheet across the screen, behind the list and in front of everything else, is how a menu
+-- in this game is normally dismissed: the click that closes it lands on the sheet and goes no
+-- further, which is why choosing something elsewhere takes two clicks - the first puts the
+-- menu away. That is the behaviour people expect, not a cost of doing it this way.
+--------------------------------------------------------------------------------------------
+
+local catcher
+
+function UI:DismissOnClickOutside(popup)
+	if not catcher then
+		catcher = CreateFrame("Button", nil, UIParent)
+		catcher:SetAllPoints(UIParent)
+		catcher:SetFrameStrata("FULLSCREEN_DIALOG")
+		catcher:SetFrameLevel(1)
+		catcher:RegisterForClicks("AnyUp")
+		catcher:Hide()
+		catcher:SetScript("OnClick", function(self)
+			local open = self.popup
+			self.popup = nil
+			self:Hide()
+			if open then open:Hide() end
+		end)
+	end
+
+	-- In front of the sheet, so the list itself is still clickable.
+	popup:SetFrameLevel(10)
+
+	popup:HookScript("OnShow", function(self)
+		catcher.popup = self
+		catcher:Show()
+	end)
+
+	popup:HookScript("OnHide", function(self)
+		if catcher.popup == self then
+			catcher.popup = nil
+			catcher:Hide()
+		end
+	end)
+
+	-- And Escape, which is how everything else in this game closes.
+	local name = popup.GetName and popup:GetName()
+	if type(name) == "string" and type(UISpecialFrames) == "table" then
+		local listed
+		for _, entry in ipairs(UISpecialFrames) do
+			if entry == name then listed = true end
+		end
+		if not listed then table.insert(UISpecialFrames, name) end
+	end
+end
+
+function UI:ClassColour(classFile)
+	local colours = _G.RAID_CLASS_COLORS
+	local colour = classFile and colours and colours[classFile]
+	if colour then
+		return colour.r, colour.g, colour.b
+	end
+	return 1, 1, 1
+end
+
+-- "3 days ago", and never "0 seconds ago". Anything under a minute is now, as far as a
+-- player is concerned.
+-- The other direction: "in 6h", for something that has not happened yet. Ago and In are the
+-- same arithmetic and are kept apart because "3 days ago" and "in 3 days" are not the same
+-- fact and must never be able to be confused for one another.
+function UI:In(stamp)
+	if not stamp then return "|cff9d9d9dnever|r" end
+
+	local seconds = stamp - time()
+	if seconds <= 0 then return "now" end
+
+	if seconds < 3600 then return string.format("in %dm", math.floor(seconds / 60)) end
+	if seconds < 86400 then return string.format("in %dh", math.floor(seconds / 3600)) end
+	return string.format("in %dd", math.floor(seconds / 86400))
+end
+
+function UI:Ago(stamp)
+	if not stamp then return "|cff9d9d9dnever|r" end
+
+	local seconds = time() - stamp
+	if seconds < 60 then return "just now" end
+	if seconds < 3600 then return string.format("%d min ago", math.floor(seconds / 60)) end
+	if seconds < 86400 then return string.format("%d h ago", math.floor(seconds / 3600)) end
+
+	local days = math.floor(seconds / 86400)
+	if days == 1 then return "yesterday" end
+	return string.format("%d days ago", days)
+end

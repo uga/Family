@@ -1,0 +1,513 @@
+-- Family - an alt manager for World of Warcraft Classic
+-- Copyright (C) 2026 Alberto Pittaluga
+--
+-- This program is free software: you can redistribute it and/or modify it under the
+-- terms of the GNU General Public License as published by the Free Software
+-- Foundation, either version 3 of the License, or (at your option) any later version.
+-- See the LICENSE file at the root of this repository.
+
+-- Family, on every item tooltip in the game.
+--
+-- This is the half of the specification (§5) that matters most in practice: the answer is
+-- wanted where the question arises, and the question arises over an item on the floor, at a
+-- vendor, in the auction house - not in a window the player has to go and open. Somebody
+-- deciding whether to buy a stack of linen wants to know they already have four hundred, at
+-- the moment their cursor is over it.
+--
+-- Everything here reads the index rather than the members (Index.lua). A tooltip fires on
+-- every mouse movement across a bag, so nothing in this file may be expensive.
+
+local _, UI = ...
+
+local Family = _G.Family
+
+--------------------------------------------------------------------------------------------
+
+local function itemIDFrom(link)
+	if type(link) ~= "string" then return nil end
+	return tonumber(link:match("item:(%d+)"))
+end
+
+-- How many, and where they are: "37 (17 bags, 20 bank)".
+--
+-- The total leads and is the only part in gold, because it is the answer to the question
+-- being asked - the breakdown says where to go and get them, which is the next question and
+-- not the first one. A member with them in one place only still reads "20 (20 bank)", since
+-- a column where some rows have a total and some do not is harder to read than a repetitive
+-- one.
+local function placesOf(owner)
+	local parts = {}
+	if owner.bags > 0 then parts[#parts + 1] = owner.bags .. " bags" end
+	if owner.bank > 0 then parts[#parts + 1] = owner.bank .. " bank" end
+	if owner.mail > 0 then parts[#parts + 1] = owner.mail .. " mail" end
+	if owner.auctions > 0 then parts[#parts + 1] = owner.auctions .. " auction" end
+
+	local where = table.concat(parts, ", ")
+	if where == "" then return "" end
+
+	return string.format("|cffffd700%d|r |cffb0b0b0(%s)|r", owner.total, where)
+end
+
+-- Names to show for a list of members, with the realm added to the ones that need it.
+--
+-- Two characters on two realms can share a name, and Family keeps them apart everywhere else
+-- by realm - but a tooltip has no column to say which is which, and a line reading
+-- "Eccebombo" twice with different numbers is a line that cannot be acted on.
+--
+-- Only the ones that clash. Putting the realm on every name would spend a third of the width
+-- saying something that is nearly always obvious, on a tooltip that is already sharing the
+-- item with whatever else the player runs.
+-- Names for a list of members, with the realm on the ones that clash and the side on the ones
+-- playing the other one. Both live in Window.lua, because a search result needs exactly the
+-- same treatment and neither should have its own idea of it.
+local function labelled(entries)
+	return UI:NamesOf(entries)
+end
+
+local function classColour(classFile)
+	local colours = _G.RAID_CLASS_COLORS
+	local colour = classFile and colours and colours[classFile]
+	if not colour then return 1, 1, 1 end
+	return colour.r, colour.g, colour.b
+end
+
+--------------------------------------------------------------------------------------------
+
+-- Neither block writes the blank lines around itself. Both used to, and with two of them on
+-- one tooltip that produced a double gap in the middle and a stray one at the end. Spacing
+-- between blocks is a property of there being two, so it is decided where they are put
+-- together (below) and nowhere else.
+local function possessionLines(tooltip, itemID)
+	local owners, guilds = Family.Index:Owners(itemID)
+
+	if #owners == 0 and #guilds == 0 then
+		-- Silence rather than "nobody has any". A tooltip that grows a line for every
+		-- item nobody owns is a tooltip nobody reads.
+		return nil
+	end
+
+	local total = 0
+	for _, owner in ipairs(owners) do total = total + owner.total end
+
+	local lines = { { "|cff66bbffFamily possessions|r",
+		total > 0 and ("|cffffd700" .. total .. "|r") or "" } }
+
+	for _, owner in ipairs(labelled(owners)) do
+		local r, g, b = classColour(owner.classFile)
+		-- A sibling's name carries their family. The count means something different for
+		-- them - it is not in a bag you can walk to - and a line that read the same as
+		-- your own would be inviting a trip to the wrong bank.
+		local label = owner.familyName
+			and string.format("%s |cff9d9d9dof %s|r", owner.label,
+				tostring(owner.familyName))
+			or owner.label
+		lines[#lines + 1] = { label, placesOf(owner), r, g, b, 0.8, 0.8, 0.8 }
+	end
+
+	for _, guild in ipairs(guilds) do
+		lines[#lines + 1] = { "|cff40c040" .. guild.key .. "|r",
+			guild.count .. " guild bank", nil, nil, nil, 0.8, 0.8, 0.8 }
+	end
+
+	return lines
+end
+
+--------------------------------------------------------------------------------------------
+-- Recipes
+--
+-- The skill a recipe needs is not in any call the client offers. It is written on the item's
+-- own tooltip - "Requires Tailoring (250)" - and this is the one moment that tooltip is in
+-- hand, so it is read from there.
+--
+-- Found by looking for the profession's name, which the client has just given us in its own
+-- language as the item's subtype, and taking the number out of that line. Nothing here knows
+-- the word "requires" in any language, and it does not need to.
+--------------------------------------------------------------------------------------------
+
+local function requiredSkill(tooltip, profession)
+	local name = tooltip.GetName and tooltip:GetName()
+	if not name then return nil end
+
+	local lines = tonumber(Family:TryCall(tooltip.NumLines, tooltip)) or 0
+
+	for index = 1, lines do
+		local widget = _G[name .. "TextLeft" .. index]
+		local text = widget and widget.GetText and widget:GetText()
+
+		if type(text) == "string" and text:find(profession, 1, true) then
+			local number = text:match("(%d+)")
+			if number then return tonumber(number) end
+		end
+	end
+
+	return nil
+end
+
+-- How each member stands with this recipe, in as few words as a tooltip can afford.
+local STATE = {
+	knows   = function() return "|cff40bf40knows it|r" end,
+	can     = function() return "|cffffd700can learn it|r" end,
+	later   = function(who, required)
+		return string.format("|cffff8040%d|r|cff888888/%d|r", who.rank or 0, required or 0)
+	end,
+	level   = function(who, _, minLevel)
+		return string.format("|cffff8040level %d|r", minLevel or 0)
+	end,
+	unknown = function() return "|cff9d9d9dmay know it|r" end,
+}
+
+local function crafterLines(tooltip, itemID)
+	local profession, minLevel, certain, itemName = Family.Recipes:ItemProfession(itemID)
+	if not profession then return nil end
+
+	local required = requiredSkill(tooltip, profession)
+
+	-- A subtype naming a profession is not proof of a recipe: trade goods have one too. The
+	-- client saying outright that this is a recipe is proof; failing that, a skill
+	-- requirement written on the tooltip is, and a stack of arcane dust has neither.
+	if not certain and not required then return nil end
+
+	local crafters = Family.Recipes:Crafters(profession, itemName, required, minLevel)
+
+	-- No heading unless somebody has the profession. A recipe for something nobody in the
+	-- family can make is a recipe this block has nothing to say about.
+	if #crafters == 0 then return nil end
+
+	local lines = { { "|cff66bbffFamily crafters|r",
+		required and string.format("|cff888888%s %d|r", profession, required)
+			or ("|cff888888" .. profession .. "|r") } }
+
+	for _, who in ipairs(labelled(crafters)) do
+		local r, g, b = classColour(who.classFile)
+
+		lines[#lines + 1] = {
+			string.format("%s |cff888888%s|r", who.label, tostring(who.rank or "?")),
+			STATE[who.state](who, required, minLevel),
+			r, g, b, 1, 1, 1,
+		}
+	end
+
+	return lines
+end
+
+--------------------------------------------------------------------------------------------
+-- Hooking
+--
+-- OnTooltipSetItem can fire more than once for the same tooltip, so each one remembers what
+-- it last described and refuses to say it twice. Without that, moving the cursor along a row
+-- of bags leaves a tooltip with the same block on it three times.
+--------------------------------------------------------------------------------------------
+
+local lastDescribed = {}
+
+local function onItem(tooltip, itemID)
+	if not tooltip then return end
+	if tooltip.IsForbidden and tooltip:IsForbidden() then return end
+	if not (FamilyDB and FamilyDB.tooltips ~= false) then return end
+
+	-- The newer route hands the item over; the older one has to be asked. Either may be
+	-- the one that fires on a given client, so both are accepted.
+	if not itemID and tooltip.GetItem then
+		local _, link = tooltip:GetItem()
+		itemID = itemIDFrom(link)
+	end
+	if not itemID then return end
+
+	if lastDescribed[tooltip] == itemID then return end
+	lastDescribed[tooltip] = itemID
+
+	-- Worked out before anything is written, because a tooltip has no way to take a line
+	-- back off. Each block that has something to say is preceded by one blank line and the
+	-- last is followed by one - so two blocks are separated by exactly one gap, and a block
+	-- with nothing to say leaves no trace at all.
+	--
+	-- Family is rarely the only addon writing on a tooltip. Without the closing line,
+	-- whatever is added next reads as part of this list.
+	local blocks = {}
+
+	for _, build in ipairs { possessionLines, crafterLines } do
+		local lines = build(tooltip, itemID)
+		if lines and #lines > 0 then blocks[#blocks + 1] = lines end
+	end
+
+	if #blocks == 0 then return end
+
+	for _, lines in ipairs(blocks) do
+		tooltip:AddLine(" ")
+		for _, line in ipairs(lines) do
+			if line[2] then
+				tooltip:AddDoubleLine(line[1], line[2], line[3], line[4], line[5],
+					line[6], line[7], line[8])
+			else
+				tooltip:AddLine(line[1])
+			end
+		end
+	end
+
+	tooltip:AddLine(" ")
+	tooltip:Show()
+end
+
+local function forget(tooltip)
+	lastDescribed[tooltip] = nil
+end
+
+local function hookClears(tooltip)
+	if not tooltip or not tooltip.HookScript then return end
+	tooltip:HookScript("OnTooltipCleared", forget)
+	tooltip:HookScript("OnHide", forget)
+end
+
+local function hookSetItem(tooltip)
+	if not tooltip or not tooltip.HookScript then return end
+	tooltip:HookScript("OnTooltipSetItem", function(self) onItem(self) end)
+end
+
+Family:OnDatabaseReady("tooltips", function()
+	local tooltips = { _G.GameTooltip, _G.ItemRefTooltip,
+		_G.ShoppingTooltip1, _G.ShoppingTooltip2 }
+
+	-- Whichever route ends up firing, the guard has to be reset when a tooltip is put
+	-- away, or the same item hovered twice in a row shows the block only once.
+	for _, tooltip in ipairs(tooltips) do hookClears(tooltip) end
+
+	-- Both routes are registered rather than one or the other.
+	--
+	-- Mists Classic runs on a newer engine than its expansion suggests and has the modern
+	-- tooltip system, so the old OnTooltipSetItem hook is not what fires there. But taking
+	-- the modern branch *instead* was worse: the post-call is handed the item in its data
+	-- rather than leaving it on the tooltip, so asking GetItem for it came back with
+	-- nothing and the block was silently never added.
+	--
+	-- Registering both is safe because the guard above refuses to describe the same item
+	-- on the same tooltip twice, which is the same thing that stops the older hook
+	-- repeating itself when it fires more than once.
+	local modern = false
+
+	-- Kept reachable so the harness can fire it: this is the route that failed silently in
+	-- the game, and a test that cannot call it cannot catch that happening again.
+	UI.__modernCallback = function(tooltip, data)
+		onItem(tooltip, data and data.id)
+	end
+
+	if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall
+		and Enum and Enum.TooltipDataType and Enum.TooltipDataType.Item then
+		local ok = pcall(TooltipDataProcessor.AddTooltipPostCall,
+			Enum.TooltipDataType.Item, UI.__modernCallback)
+		modern = ok and true or false
+	end
+
+	for _, tooltip in ipairs(tooltips) do hookSetItem(tooltip) end
+
+	Family.tooltipRoute = modern and "both" or "classic"
+	Family:Debug("tooltip hooks installed: %s", Family.tooltipRoute)
+end)
+
+--------------------------------------------------------------------------------------------
+-- Putting Family's own rows on the game's tooltip
+--
+-- Every panel that lists an item wants the real tooltip on mouseover, and none of them
+-- should each work out how. Given a frame and something to identify the item by, this makes
+-- it behave like a bag slot does.
+--------------------------------------------------------------------------------------------
+
+-- Every kind of thing Family lists that the game will describe, and how to ask it.
+--
+-- Each entry tries the direct call first and a constructed link second. Both exist because
+-- neither is on every client: SetItemByID arrived partway through these clients' lives, and
+-- a link works everywhere but says nothing at all for a kind the client does not know.
+--
+-- None of them can be trusted to report success - SetItemByID returns nothing whether it
+-- worked or not - so what actually happened is read off the tooltip afterwards.
+local function wroteAnything()
+	local lines = Family:TryCall(GameTooltip.NumLines, GameTooltip)
+	return (tonumber(lines) or 0) > 0
+end
+
+local SHOW = {
+	item = function(id)
+		Family:TryCall(GameTooltip.SetItemByID, GameTooltip, id)
+		if not wroteAnything() then
+			Family:TryCall(GameTooltip.SetHyperlink, GameTooltip, "item:" .. id)
+		end
+	end,
+
+	-- A worn item, as it really is: the item plus its enchant, its gems and its patch. An
+	-- item string carries all of that and an item id carries none of it, which is why gear
+	-- is the one place Family keeps the longer form.
+	itemlink = function(item)
+		Family:TryCall(GameTooltip.SetHyperlink, GameTooltip, item)
+	end,
+
+	spell = function(id)
+		Family:TryCall(GameTooltip.SetSpellByID, GameTooltip, id)
+		if not wroteAnything() then
+			Family:TryCall(GameTooltip.SetHyperlink, GameTooltip, "spell:" .. id)
+		end
+	end,
+
+	quest = function(id)
+		Family:TryCall(GameTooltip.SetHyperlink, GameTooltip, "quest:" .. id)
+	end,
+
+	-- Honor and arena points on the clients that keep no currency list have no id at all,
+	-- so nothing reaches here for those and the recorded lines are shown instead.
+	currency = function(id)
+		Family:TryCall(GameTooltip.SetCurrencyByID, GameTooltip, id)
+		if not wroteAnything() then
+			Family:TryCall(GameTooltip.SetHyperlink, GameTooltip, "currency:" .. id)
+		end
+	end,
+
+	achievement = function(id)
+		-- An achievement link carries far more than an id - who earned it and when - and
+		-- the client fills the rest in from the zeroes. The guid is the player's own
+		-- because that is what the game puts there; it decides nothing but the "earned
+		-- by" line, and this member may not be the player anyway.
+		local guid = Family:TryCall(UnitGUID, "player") or "0"
+		Family:TryCall(GameTooltip.SetHyperlink, GameTooltip,
+			string.format("achievement:%d:%s:0:0:0:0:0:0:0:0", id, tostring(guid)))
+	end,
+
+	talent = function(id)
+		Family:TryCall(GameTooltip.SetTalent, GameTooltip, id)
+		if not wroteAnything() then
+			Family:TryCall(GameTooltip.SetHyperlink, GameTooltip, "talent:" .. id)
+		end
+	end,
+
+	-- A talent in a tree, by where it sits. There is no id to ask about on these clients -
+	-- which is why talent names are the one thing Family stores as words - but the game
+	-- will describe the talent at a given tab and index, and for a member of the player's
+	-- own class those are the same talents in the same places.
+	--
+	-- Which call does that differs by client, and the difference cannot be asked about: a
+	-- setter that is missing and a setter that describes nothing both come back as silence
+	-- (Family:TryCall), which is exactly how this went unnoticed - the panel fell back to
+	-- Family's own three lines and looked like a tooltip that had simply not been finished.
+	--
+	-- So they are tried in turn and the first that writes something is kept, the same way the
+	-- talent scanner picks its reader. Nothing here assumes which client it is on.
+	talentslot = function(slot)
+		if type(slot) ~= "table" then return end
+		UI:DescribeTalentSlot(slot)
+	end,
+}
+
+local talentRoutes = {
+	{
+		how = "SetTalent(tab, index)",
+		call = function(slot)
+			Family:TryCall(GameTooltip.SetTalent, GameTooltip, slot.tab, slot.index)
+		end,
+	},
+	{
+		-- The tree clients that grew a second specialisation want to be told which one,
+		-- and the two before them ignore the extra arguments.
+		how = "SetTalent(tab, index, false, false, group)",
+		call = function(slot)
+			Family:TryCall(GameTooltip.SetTalent, GameTooltip, slot.tab, slot.index,
+				false, false, slot.group)
+		end,
+	},
+	{
+		-- A different call altogether, for the clients whose tooltip no longer has a
+		-- talent setter at all. A link describes itself.
+		how = "SetHyperlink(GetTalentLink(tab, index))",
+		call = function(slot)
+			local link = Family:TryCall(GetTalentLink, slot.tab, slot.index,
+				false, false, slot.group)
+			if type(link) == "string" then
+				Family:TryCall(GameTooltip.SetHyperlink, GameTooltip, link)
+			end
+		end,
+	},
+}
+
+-- The one that has worked, once one has. Kept so that hovering a tree is not four failed
+-- calls per talent, and reported once so a client that needs a fifth route can say so.
+local talentRoute
+
+function UI:DescribeTalentSlot(slot)
+	if talentRoute then
+		talentRoute.call(slot)
+		if wroteAnything() then return true end
+		-- It answered once and does not now. That is not proof it is the wrong route, but
+		-- it is no reason to stop the others being tried.
+		Family:TryCall(GameTooltip.ClearLines, GameTooltip)
+	end
+
+	for _, route in ipairs(talentRoutes) do
+		route.call(slot)
+		if wroteAnything() then
+			if talentRoute ~= route then
+				talentRoute = route
+				Family:Debug("talent tooltips: %s", route.how)
+			end
+			return true
+		end
+		Family:TryCall(GameTooltip.ClearLines, GameTooltip)
+	end
+
+	return false
+end
+
+-- The one way any row in any panel opens a tooltip.
+--
+-- `resolve` is given the row and answers what it is: a kind and an id the game can describe,
+-- and optionally a list of { left, right } lines to fall back on. The fallback matters more
+-- than it looks - a talent in a tree has no id of any sort on these clients (Talents.lua
+-- says why at length), so the only thing that can be shown for one is what Family recorded
+-- about it, and showing that is better than a row that answers nothing on hover.
+--
+-- A row whose resolve returns nothing gets no tooltip, and a kind the client turns out not
+-- to know gets the fallback rather than an empty frame.
+function UI:AttachTooltip(frame, resolve)
+	frame:EnableMouse(true)
+
+	frame:SetScript("OnEnter", function(self)
+		local kind, id, fallback = resolve(self)
+		if not kind and not fallback then return end
+
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		Family:TryCall(GameTooltip.ClearLines, GameTooltip)
+
+		local show = kind and SHOW[kind]
+		if show and id then show(id) end
+
+		if not wroteAnything() then
+			if not fallback or #fallback == 0 then
+				GameTooltip:Hide()
+				return
+			end
+
+			for _, line in ipairs(fallback) do
+				if line[2] then
+					GameTooltip:AddDoubleLine(line[1], line[2])
+				else
+					GameTooltip:AddLine(line[1])
+				end
+			end
+		end
+
+		GameTooltip:Show()
+	end)
+
+	frame:SetScript("OnLeave", function()
+		GameTooltip:Hide()
+	end)
+end
+
+-- The two that came first, kept because an item row is by far the commonest case and reads
+-- better named than as a kind passed in.
+function UI:AttachItemTooltip(frame, getItemID)
+	UI:AttachTooltip(frame, function(self)
+		return "item", getItemID(self)
+	end)
+end
+
+function UI:AttachSpellTooltip(frame, getSpellID)
+	UI:AttachTooltip(frame, function(self)
+		return "spell", getSpellID(self)
+	end)
+end

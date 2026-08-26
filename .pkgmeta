@@ -1,0 +1,44 @@
+# How Family is packaged for CurseForge.
+#
+# Read by BigWigsMods/packager, which is the community's standard packager and the one
+# CurseForge's own documentation points at. It builds the zip, sets the version from the git
+# tag, and uploads.
+#
+# Two addons, one zip. Family is the data layer and Family_UI is everything the player sees,
+# and neither is useful without the other - so they travel together and a player installs one
+# thing. The alternative, two projects with a dependency between them, doubles the release
+# work and gives somebody a way to end up with half of it.
+package-as: Family
+
+# Family's own folders sit under addons/ in this repository, and a WoW installation wants
+# them at the top of the zip. Nothing else in the repository ships: the tools are generators
+# that run on a developer's machine, and docs/ is for people reading the source.
+move-folders:
+    Family/addons/Family: Family
+    Family/addons/Family_UI: Family_UI
+
+ignore:
+    - tools
+    - tests
+    - docs
+    - .github
+    - .gitignore
+    - README.md
+    - CHANGELOG.md
+
+# Two libraries, fetched at package time rather than committed. That keeps them at their own
+# upstream version and keeps their licences theirs (HANDOFF §3), and it means this repository
+# holds only what we wrote.
+#
+# They are optional everywhere in Family except Wide Family, which cannot exist without them:
+# the addon channel carries a string and nothing else. Family works without them and says
+# which it found; a player who installs from here gets them and never has to know.
+externals:
+    Family/Libs/LibStub: https://repos.wowace.com/wow/libstub/trunk
+    Family/Libs/LibSerialize: https://github.com/rossnichols/LibSerialize
+    Family/Libs/LibDeflate: https://github.com/SafeteeWoW/LibDeflate
+
+# The changelog CurseForge shows is the release's own section, cut by tools/release.sh.
+manual-changelog:
+    filename: CHANGELOG.md
+    markup-type: markdown
