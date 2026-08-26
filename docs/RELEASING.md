@@ -81,6 +81,43 @@ After it is pushed, it is published. Cut the next version rather than trying to 
 a version number that existed and then meant something else is worse for everybody than a
 version number that was superseded quickly.
 
+### When the run goes red after the upload succeeded
+
+A red run does not mean the release did not happen. The workflow talks to two services from
+one step, they do not share a transaction, and the CurseForge half is the half that cannot be
+taken back — so the first job is not to fix anything, it is to find out which half is done.
+
+**Read the run before touching it.** Open the failed run under *Actions* → *Release* and
+expand *Package and upload*. The packager uploads to CurseForge first and creates the GitHub
+release second, so a log that reports the upload succeeding and then fails is the expensive
+shape: a version that is public on CurseForge with no GitHub release pointing at it. Confirm
+it on the project's *Files* page rather than on the log alone — that page is what players see.
+
+**Do not re-run the workflow, and do not re-push the tag.** Re-running repeats the upload, and
+CurseForge accepts it: the project ends up carrying two files for one version number, which is
+a worse problem than the one being fixed. That is the whole reason this recovery is by hand.
+
+**Create the missing release by hand.** The tag already carries the notes `release.sh` built
+from the changelog, so nothing has to be written twice:
+
+```bash
+gh release create v0.2.0 --verify-tag --notes-from-tag
+```
+
+`--verify-tag` refuses if the tag never reached the remote, and `--notes-from-tag` takes the
+title from the tag's first line and the body from the rest — which is what the workflow would
+have done. `v1.0.0-beta.1` was recovered exactly this way.
+
+**Then fix the cause, and leave a check behind.** The version is already out; what is left is
+making sure the next release does not need this page. L-009 in [`LESSONS.md`](LESSONS.md) is
+the first instance and the pattern for the rest: the harness now reads `release.yml` and fails
+unless the job grants `contents: write`, and because `release.sh` runs the harness before it
+tags, that check stands between the mistake and the tag rather than after it.
+
+If the run went red *before* the upload — at the checks, or in the packager itself — then
+nothing is public and there is nothing to withdraw. The tag is spent all the same: the rule
+above holds, and the fix goes out as the next version rather than as this one a second time.
+
 ---
 
 ## What is in the zip
