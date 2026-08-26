@@ -6010,6 +6010,34 @@ Family:RegisterEvent("BAG_UPDATE_DELAYED", "explode", function() error("boom") e
 local survived = pcall(fire, "BAG_UPDATE_DELAYED")
 check("event dispatch isolates a failing handler", survived)
 
+--------------------------------------------------------------------------------------------
+-- The release workflow can actually publish
+--
+-- v1.0.0-beta.1 uploaded to CurseForge and then returned 403 creating the GitHub release,
+-- because GITHUB_TOKEN is read-only unless a job asks for more. That is the expensive shape
+-- of failure: half the version published, and nothing to notice until the run went red.
+--
+-- Reading the workflow here is cheap and it fails on the day somebody removes the block,
+-- rather than at the next release.
+--------------------------------------------------------------------------------------------
+
+print()
+print("the release workflow may create the release it uploads")
+;(function()
+	local f = io.open(ROOT .. "/.github/workflows/release.yml")
+	if not f then
+		check("release.yml is where the harness expects it", false,
+			ROOT .. "/.github/workflows/release.yml")
+		return
+	end
+	local yml = f:read("*a")
+	f:close()
+
+	check("release.yml grants the job contents: write",
+		yml:match("permissions:%s*\n%s*contents:%s*write") ~= nil,
+		"without it the CurseForge upload succeeds and the GitHub release returns 403")
+end)()
+
 print()
 if failures == 0 then
 	print("all checks passed")

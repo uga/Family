@@ -27,6 +27,17 @@ jobs:
   package:
     runs-on: ubuntu-latest
 
+    # The packager does two things with one tag: it uploads the zip to CurseForge, and it
+    # creates the GitHub release that the tag points at. The second needs write access to
+    # the repository's contents, and GITHUB_TOKEN is read-only unless a job asks otherwise.
+    #
+    # Asking here rather than raising the repository-wide default keeps every other workflow
+    # read-only, and keeps the reason in the file that needs it. Without this the upload
+    # succeeds and the release step returns 403 - a half-published version, which is the
+    # worst of the three outcomes.
+    permissions:
+      contents: write
+
     steps:
       - name: Check out, with the whole history
         uses: actions/checkout@v4

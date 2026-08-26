@@ -149,3 +149,29 @@ working. The tree is shared with a person who is not required to announce edits.
 file that changes under a run is the human until they say otherwise. It is never discarded
 without asking, it is never swept into a commit it has nothing to do with, and where
 discarding it is what was asked for, a copy is taken first and its location is reported.
+
+---
+
+### L-009 — a publish can half-succeed, and the half that worked is the one you cannot undo
+
+**Bitten:** `v1.0.0-beta.1`, the first release. The workflow uploaded the zip to CurseForge,
+said `Success!`, and then returned 403 creating the GitHub release: `GITHUB_TOKEN` is
+read-only unless a job asks for `contents: write`, and `release.yml` had never asked. The run
+went red on a version that was already public on CurseForge.
+
+**Why it was invisible:** every rehearsal of the release path stops at the tag. `release.sh`
+refuses on a dirty tree, an existing version, an empty changelog and a red harness, and all
+four of those are checks on the *inputs*; nothing exercised the permissions the workflow
+would need once it ran. The repository default was read-only, which is the right default and
+therefore not something anybody thought to look at.
+
+The shape is the general one: a publish is several steps against several services, they do
+not share a transaction, and a failure part-way through leaves the irreversible half done.
+Reading the red run as "the release failed" would have been wrong in the direction that
+matters — retrying it would have uploaded a second file to CurseForge.
+
+**Caught by:** `tests/Harness.lua` — the last check in the file reads
+`.github/workflows/release.yml` and fails unless the job grants `contents: write`. Verified
+by deleting the block and watching the harness exit 1, not by reading it. Status:
+**promoted.** `release.sh` runs the harness before it tags, so the check stands between the
+mistake and the tag rather than after it.
