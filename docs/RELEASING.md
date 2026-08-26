@@ -20,6 +20,11 @@ project. Name it `Family`, choose the *Addons* category, and set the licence to
 Classic Era, Burning Crusade Classic and Mists of Pandaria Classic — the packager also reads
 `## Interface` from the `.toc`, but the project page has its own list.
 
+The *Description* box is the one part of the page CurseForge will reject a project over: it
+wants the features, what each does to a player's experience, and a reason to download, in
+detail. The text to paste is [`CURSEFORGE.md`](CURSEFORGE.md), kept in the repository so it is
+reviewed like everything else and so the next version can start from what the last one said.
+
 **2. Get an API token.**
 On CurseForge, under your account: *My API Tokens* → generate one. It is shown once.
 
