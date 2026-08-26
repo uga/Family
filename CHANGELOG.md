@@ -10,6 +10,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 1.0.0-beta.1 — 2026-08-26
+
 ### Added
 
 - **The whole family on one screen.** Every character you have played, grouped by realm and
