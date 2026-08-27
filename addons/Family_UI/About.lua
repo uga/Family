@@ -122,9 +122,9 @@ local MANUAL = {
 		.. "already, who can learn it today, and who is not high enough yet." },
 
 	{ heading = "Wide Family" },
-	{ text = GREY .. "Switched off in this version, so there is no panel for it. It is "
-		.. "finished and its checks pass, but none of them has run against a real server, "
-		.. "and sharing is the one thing a later version cannot take back. To help test it: "
+	{ text = GREY .. "Switched off by default, so there is no panel for it until you ask. "
+		.. "Sharing is the one thing here a later version cannot take back, so it waits to "
+		.. "be asked for rather than arriving switched on. To enable it: "
 		.. GOLD .. "/family wide on|r" .. GREY .. ", then reload. Both of you need to.|r" },
 	{ text = "A family need not be one account. Type another player's character name on "
 		.. "the Wide Family panel and ask to link; they accept, and then each of you says "

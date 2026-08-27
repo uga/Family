@@ -370,14 +370,9 @@ rather than *no cooldown*.
 
 ## 11. Wide Family
 
-> **Switched off in this version.** Wide Family is finished and its checks pass, but none of
-> those checks has run against a real server — they are Family talking to itself in a test
-> harness. Sharing is the one thing here that a later version cannot take back, so it waits
-> until it has been proven live rather than shipping with a warning label.
->
-> To help test it: `/family wide on`, then `/reload`. Both of you need to do it. Nothing is
-> shared with anybody until you link and tick what they may see. `/family wide off` puts it
-> back; anything already borrowed simply stops being shown.
+> **Switched off by default.** To enable it: `/family wide on`, then `/reload`. Both of you
+> need to do it. Nothing is shared with anybody until you link and tick what they may see.
+> `/family wide off` puts it back; anything already borrowed simply stops being shown.
 >
 > The rest of this section describes it as it works once switched on.
 

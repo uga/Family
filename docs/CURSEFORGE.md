@@ -84,10 +84,10 @@ their characters' gear and talent shape, including the offline ones once you hav
 **Nothing else is shared** — no bags, no mail, no gold. It is on by default because all of it
 is what the game already shows anyone who inspects you.
 
-**Wide Family ships switched off in this version.** Linking two players' families, with
-per-member and per-category consent on a grid that starts empty, is finished and its checks
-pass — but none of them has run against a live server, and sharing is the one thing a later
-version cannot undo. `/family wide on` if you want to help test it.
+**Wide Family ships switched off by default.** Linking two players' families, with per-member
+and per-category consent on a grid that starts empty, is there whenever you want it — but
+sharing is the one thing a later version cannot undo, so it waits to be asked for rather than
+arriving switched on. `/family wide on`, then a reload, and both of you need to.
 
 ### What to expect
 

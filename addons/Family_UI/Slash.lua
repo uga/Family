@@ -73,7 +73,7 @@ add("guild", "guild share on, off, or test: /family guild test", function(argume
 	UI:Refresh()
 end)
 
-add("wide", "Wide Family, which is off until it has been tested live: /family wide on",
+add("wide", "Wide Family, which is off by default: /family wide on",
 	function(argument)
 		local wanted = (argument or ""):lower():match("^%S*")
 
@@ -81,10 +81,9 @@ add("wide", "Wide Family, which is off until it has been tested live: /family wi
 			Family:Print("Wide Family is currently |cffffd700%s|r.",
 				Family.Wide:Enabled() and "on" or "off")
 			Family:Print("It lets two players link their families and share chosen members. "
-				.. "It is finished and its checks pass, but none of them has run against a "
-				.. "real server, and sharing is the one thing that cannot be undone by a "
-				.. "later version. So it ships switched off.")
-			Family:Print("|cffffd700/family wide on|r to help test it, "
+				.. "Sharing is the one thing here a later version cannot take back, so it "
+				.. "is off until you say otherwise rather than on until you notice.")
+			Family:Print("|cffffd700/family wide on|r to switch it on, "
 				.. "|cffffd700/family wide off|r to switch it back off.")
 			return
 		end

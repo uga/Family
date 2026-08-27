@@ -10,6 +10,15 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Changed
+
+- **Wide Family is described as what it is: off by default.** It shipped with a warning that
+  none of its checks had run against a real server, which was true when it was written and
+  stopped being true when the live pass reached it on all three clients. It is still off until
+  you ask for it — sharing is the one thing a later version cannot take back — but that is now
+  a choice about consent rather than a caveat about testing. The About panel, `/family wide`
+  and the manual all say the same thing.
+
 ## 1.0.0-beta.2 — 2026-08-27
 
 ### Fixed
