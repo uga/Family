@@ -6038,6 +6038,40 @@ print("the release workflow may create the release it uploads")
 		"without it the CurseForge upload succeeds and the GitHub release returns 403")
 end)()
 
+--------------------------------------------------------------------------------------------
+-- The deploy script says so when it is about to strip the libraries
+--
+-- addons/Family/Libs is gitignored - the three libraries are .pkgmeta externals that only
+-- tools/FetchLibs.sh puts in a checkout. Deploy.bat mirrors with /MIR, so a source without
+-- them does not merely fail to bring them: it deletes the ones the clients already have, in
+-- every client at once, and reports it as a routine copy. A fresh checkout did exactly that
+-- on 2026-08-27.
+--
+-- The warning lives in the batch file, where the mistake happens. This check reads the batch
+-- file so the warning cannot quietly go away, the same way release.yml is read above.
+--------------------------------------------------------------------------------------------
+
+print()
+print("the deploy script warns before it mirrors a source with no libraries")
+;(function()
+	local f = io.open(ROOT .. "/tools/Deploy.bat")
+	if not f then
+		check("Deploy.bat is where the harness expects it", false,
+			ROOT .. "/tools/Deploy.bat")
+		return
+	end
+	local bat = f:read("*a")
+	f:close()
+
+	check("Deploy.bat tests the source for LibStub",
+		bat:match('if exist "%%SRC%%\\%%ADDON_1%%\\Libs\\LibStub\\LibStub%.lua" set "LIBS=1"') ~= nil,
+		"nothing else distinguishes a fetched checkout from a bare one")
+
+	check("Deploy.bat warns when the source has none",
+		bat:match('if not defined LIBS %(') ~= nil and bat:match("WARNING") ~= nil,
+		"without it /MIR removes all three from every client and says nothing")
+end)()
+
 print()
 if failures == 0 then
 	print("all checks passed")

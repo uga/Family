@@ -86,11 +86,19 @@ if defined ICONS if not exist "%SRC_TOOLS%\%ADDON_TOOL%\%ADDON_TOOL%.toc" (
 	set "ICONS="
 )
 
+rem The three libraries are .pkgmeta externals: CurseForge builds them into the zip and
+rem addons\Family\Libs is gitignored, so a checkout has them only once tools\FetchLibs.sh has
+rem been run. LibStub is the one worth testing for - without it the other two cannot publish
+rem themselves and their presence would not matter anyway.
+set "LIBS="
+if exist "%SRC%\%ADDON_1%\Libs\LibStub\LibStub.lua" set "LIBS=1"
+
 echo.
 echo  Family - deploy
 echo.
 echo   source : %SRC%
 echo   addons : %ADDON_1%, %ADDON_2%
+if defined LIBS echo   libs   : LibStub, LibSerialize, LibDeflate
 if defined ICONS echo   also   : %ADDON_TOOL% ^(development tool, not part of a release^)
 if defined ONLY echo   only   : %ONLY%
 if defined DRYRUN echo.& echo   TEST RUN - nothing will be written.
@@ -105,6 +113,22 @@ if not exist "%SRC%\%ADDON_1%\%ADDON_1%.toc" (
 if not exist "%SRC%\%ADDON_2%\%ADDON_2%.toc" (
 	echo  ERROR : "%SRC%" has no %ADDON_2%\%ADDON_2%.toc.
 	goto :failed
+)
+
+rem --- a source with no Libs takes the clients' libraries with it -----------------------------
+
+rem Deploying without the libraries is a legitimate thing to do - it is how the path a player
+rem without them takes gets tested - but it is almost never what was meant, and /MIR makes it
+rem silent: the copy reports the client's own three as extra and deletes them. One run then
+rem turns Wide Family off in every client at once and says nothing about it afterwards, which
+rem is what a fresh checkout did on 2026-08-27.
+if not defined LIBS (
+	echo  WARNING : "%SRC%\%ADDON_1%" has no Libs\LibStub\LibStub.lua.
+	echo.
+	echo            A checkout has no libraries until tools\FetchLibs.sh has fetched them.
+	echo            This copy will DELETE the three the clients already have, and without
+	echo            them Wide Family cannot send a byte and storage is uncompressed.
+	echo.
 )
 
 rem --- which clients are actually installed ------------------------------------------------

@@ -175,3 +175,33 @@ matters — retrying it would have uploaded a second file to CurseForge.
 by deleting the block and watching the harness exit 1, not by reading it. Status:
 **promoted.** `release.sh` runs the harness before it tags, so the check stands between the
 mistake and the tag rather than after it.
+
+---
+
+### L-010 — a mirroring copy deletes what the source was never going to have
+
+**Bitten:** the first deploy out of the new public checkout removed `Libs\LibStub`,
+`Libs\LibSerialize` and `Libs\LibDeflate` from all three clients at once. `addons/Family/Libs`
+is gitignored — the three are `.pkgmeta` externals, and only `tools/FetchLibs.sh` puts them in
+a working tree — so the fresh clone had no `Libs` at all, and `/MIR` removed the ones the
+clients had to make the destination match.
+
+**Why it was invisible:** robocopy reported it, in the sense that a wall of `*EXTRA File`
+lines went past — which reads as *files being added* to anyone who has not just been thinking
+about mirroring, and reads as nothing at all in a locale where it says `*File supplementare`.
+The run then printed `Done. Start the game`, because from the copy's point of view nothing had
+gone wrong. Family kept loading afterwards: the three are `## OptionalDeps`, so the only
+symptom was Wide Family silently having no channel and storage silently being uncompressed.
+
+The shape is the general one, and it is L-009's shape pointed the other way: the destructive
+half of an operation is the half that produces no error. A guard that asks "is the source
+what it claims to be" cannot catch this, because the source was entirely valid — it was
+missing something the destination had, which is precisely what `/MIR` exists to resolve.
+
+**Caught by:** `tools/Deploy.bat` — it now tests the source for `Libs\LibStub\LibStub.lua`,
+names the three libraries in its banner when they are there, and prints a WARNING before the
+copy saying the three will be deleted when they are not. It warns rather than refuses, because
+deploying without them is how the path a player without them takes gets tested.
+`tests/Harness.lua` reads the batch file and fails unless both the test and the warning are
+still in it — verified by deleting them and watching the harness exit 1, then restoring and
+watching it pass. Status: **promoted.**
