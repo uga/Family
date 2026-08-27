@@ -56,6 +56,16 @@ clear failure rather than a silent one.
 
 ## Every time
 
+**First, the live check.** [`SMOKE.md`](SMOKE.md) is the only gate that runs against a real
+client, and a person runs it because there is no other way to. Its rows are what the command
+below reads: a full release needs Era, Burning Crusade and Mists recorded against the version
+being cut, and a pre-release needs one row. Write them and commit them first — the command
+refuses to tag a version that file has never heard of.
+
+That order is deliberate. The pass is run against the build about to be tagged, deployed with
+`tools/FetchLibs.sh` and `Deploy.bat`, rather than against the version already published; it
+is the only order in which a red result can still stop something.
+
 ```bash
 tools/release.sh 0.2.0
 ```
@@ -73,7 +83,8 @@ The tag push starts [`.github/workflows/release.yml`](../.github/workflows/relea
 which runs the checks, builds the zip and uploads it.
 
 It refuses to start on a dirty tree, on a version that already exists, on a changelog with
-nothing under **Unreleased**, or on a failing check. A release that went out because a script
+nothing under **Unreleased**, on a version with no run recorded in [`SMOKE.md`](SMOKE.md), or
+on a failing check. A release that went out because a script
 pressed on regardless is worse than one that did not go out.
 
 ### Undoing one, before it is pushed

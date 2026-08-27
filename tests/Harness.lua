@@ -6072,6 +6072,55 @@ print("the deploy script warns before it mirrors a source with no libraries")
 		"without it /MIR removes all three from every client and says nothing")
 end)()
 
+------------------------------------------------------------------------------------------
+-- The release gate reads the live checklist
+--
+-- docs/SMOKE.md is the only gate that runs against a real client. It said in bold that a
+-- release with no row was a release that was not checked, and that RELEASING.md treated that
+-- as a stop - and nothing in the tree had ever heard of the file. v1.0.0-beta.1 went out
+-- that way: a rule written down, enforced by nobody.
+--
+-- No check can tell whether a client was launched. This one tells whether release.sh still
+-- refuses to tag a version nobody wrote a row for, which is the part a script can hold. Read
+-- the same way release.yml and Deploy.bat are read above.
+--------------------------------------------------------------------------------------------
+
+print()
+print("the release script refuses a version with no live-check row")
+;(function()
+	local f = io.open(ROOT .. "/tools/release.sh")
+	if not f then
+		check("release.sh is where the harness expects it", false, ROOT .. "/tools/release.sh")
+		return
+	end
+	local sh = f:read("*a")
+	f:close()
+
+	check("release.sh reads docs/SMOKE.md",
+		sh:match('smoke="docs/SMOKE%.md"') ~= nil,
+		"the live checklist is the only thing standing between a tag and an unchecked client")
+
+	check("release.sh stops when no row records the version",
+		sh:match("%[%[ %-n \"%$clients\" %]%] |") ~= nil,
+		"without it the gate reads the file and then tags anyway")
+
+	check("release.sh holds a full release to all three clients",
+		sh:match("%*alpha%*|%*beta%*") ~= nil and sh:match("Burning Crusade") ~= nil,
+		"a pre-release needs one row; the version everybody is offered by default needs three")
+
+	local g = io.open(ROOT .. "/docs/SMOKE.md")
+	if not g then
+		check("SMOKE.md is where release.sh expects it", false, ROOT .. "/docs/SMOKE.md")
+		return
+	end
+	local md = g:read("*a")
+	g:close()
+
+	check("SMOKE.md carries the Runs table the gate parses",
+		md:match("| Version | Client | Date | By | Result |") ~= nil,
+		"release.sh reads the first cell of every row in it")
+end)()
+
 print()
 if failures == 0 then
 	print("all checks passed")

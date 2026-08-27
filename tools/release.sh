@@ -17,8 +17,9 @@
 # pushing it is the act of publishing and nothing before it is.
 #
 # It refuses rather than guesses: a dirty tree, a version that already exists, a changelog
-# with nothing under Unreleased, or a failing check all stop it where it stands. A release
-# that went out because a script pressed on is worse than one that did not go out.
+# with nothing under Unreleased, a version with no run recorded in docs/SMOKE.md, or a failing
+# check all stop it where it stands. A release that went out because a script pressed on is
+# worse than one that did not go out.
 
 set -euo pipefail
 
@@ -59,6 +60,42 @@ git rev-parse --verify --quiet "refs/tags/v$version" >/dev/null \
 notes="$(awk '/^## Unreleased/{found=1; next} found && /^## /{exit} found' CHANGELOG.md)"
 [[ -n "$(printf '%s' "$notes" | tr -d '[:space:]')" ]] \
     || fail "CHANGELOG.md has nothing under Unreleased - write what changed first"
+
+# The live checklist is the only gate that runs against a real client, and a person runs it.
+# Nothing here can tell whether that happened; what it can tell is whether anybody wrote the
+# result down, which is the whole difference between a release that was checked and one that
+# was assumed. docs/SMOKE.md sets the bar: a full release needs all three clients recorded
+# against this version, a pre-release needs one row, and a row that honestly says what was not
+# run counts. v1.0.0-beta.1 went out with that rule written down and nothing enforcing it.
+smoke="docs/SMOKE.md"
+[[ -f "$smoke" ]] || fail "$smoke is missing - it is the live check and this is the gate that reads it"
+
+# Rows for this version, reduced to their client cell. The version cell may carry the v or
+# leave it off, and the table's own header and rule lines match neither.
+clients="$(awk -F'|' -v want="$version" '
+    /^\|/ {
+        cell = $2
+        gsub(/^[ \t]+|[ \t]+$/, "", cell)
+        sub(/^v/, "", cell)
+        if (cell == want) print tolower($3)
+    }
+' "$smoke")"
+
+[[ -n "$clients" ]] || fail "$smoke records no run for $version - run the live check and write the rows before cutting it"
+
+# A pre-release reaches only the people who go looking for it, so one row is the bar. A full
+# release is what CurseForge offers everybody by default, and that needs all three.
+case "$version" in
+    *alpha*|*beta*) ;;
+    *)
+        for client in Era:era "Burning Crusade":burning Mists:mists; do
+            name="${client%%:*}"
+            match="${client##*:}"
+            grep -q "$match" <<<"$clients" \
+                || fail "$smoke records no $name run for $version - a full release needs all three clients"
+        done
+        ;;
+esac
 
 echo "==> checks"
 lua tests/Harness.lua >/dev/null || fail "checks failed - nothing is released on a red run"

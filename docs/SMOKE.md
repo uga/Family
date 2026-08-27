@@ -5,13 +5,40 @@ stubs the client, so it cannot know whether an API returns what it claims; the c
 settles textures and nothing else. This file is the only gate that runs against a real
 client, and it is run by a person because there is no other way to run it.
 
-**Run it on each of the three clients before pushing a `v*` tag.** Record the result at the
-bottom, against the version it was run for. A release whose row is missing is a release that
-was not checked, and `docs/RELEASING.md` treats that as a stop.
+**A full release does not go out until all three clients have a row** at the bottom of this
+file, against the version being cut. An alpha or a beta needs one row rather than three: a
+pre-release only reaches the people who go looking for it, and holding one back until every
+client has been swept is how the build that would have found the bug stays on this machine.
+
+`tools/release.sh` refuses to tag a version this file has never heard of, so the rule is
+enforced where it is broken rather than remembered. What it enforces is that somebody wrote
+down what happened — no script can tell whether a client was ever launched. A row reading
+*not run: no guildmate* is a true row and passes. An absent row is the release nobody checked.
 
 It exists because four open questions had one cause between them — spec §11.0 and §11.1,
 `HANDOFF.md` §4.6 and §4.7 all say, in different words, that nothing has crossed a real
 server. A checklist that has been run closes all four.
+
+---
+
+## How to run it
+
+The boxes below are a template to read from, not a form to fill in. Do not tick them, and do
+not paste them three times — a tick committed here is a tick nobody can date, and it will
+still be there for the next version. Copy them into a scratch file per client if you want
+something to tick, and throw it away once the row is written.
+
+The order matters, because the row has to exist before the tag does:
+
+1. `tools/FetchLibs.sh`, then `tools/Deploy.bat`. Wide Family does not exist without the
+   libraries and the working tree has none, so a pass run without this tests an addon nobody
+   receives.
+2. Work down the pass, on each client.
+3. Write the rows against the version you are about to cut, and commit them.
+4. `tools/release.sh <version>`.
+
+Steps 1 to 3 test the build being tagged rather than the one already published, which is the
+only order in which a red result can still stop something.
 
 ---
 
@@ -68,3 +95,7 @@ Per client: **Era**, **Burning Crusade**, **Mists**.
 | Version | Client | Date | By | Result |
 |---|---|---|---|---|
 | | | | | |
+
+*Client* is `Era`, `Burning Crusade` or `Mists`. *Result* is `pass`, or what was not run and
+why — the sections needing a guildmate or a second family are the ones that will honestly say
+so. The version cell may carry the `v` or leave it off; `release.sh` reads either.
