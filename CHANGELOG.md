@@ -12,6 +12,14 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **The Wide Family grid's column headings no longer overlap.** "Sibling  Member", above a
+  linked family's shared characters, was drawn through the first category column beside it.
+- **A sibling's *Last seen* says when they were last shared.** It was a dash: when somebody
+  else's character last played is not something that crosses the wire, so the column had
+  nothing of its own to say. It now answers the question it can — how old what you hold about
+  them is — written as *shared 2 h ago*, so a date with no word beside it is still your own
+  family's sighting and one that says *shared* came from theirs.
+
 - **A realm with characters on both sides reads as two groups again.** The second side's
   heading sat one line under the first side's subtotal, and the realm's own total sat one
   line under the last side's — so a screen of numbers ran together with no telling which

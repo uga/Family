@@ -6301,6 +6301,55 @@ print("the release script refuses a version with no live-check row")
 		"the claim and the mechanism have to fail together or the claim outlives it")
 end)()
 
+--------------------------------------------------------------------------------------------
+-- Two things the live check found that no check could have
+--
+-- Both were reported from a real client during the 1.0.0-beta.1 pass, which is the whole
+-- argument for docs/SMOKE.md: the harness draws into a stub that has no idea how wide a
+-- word is, so a heading drawn through the column beside it is invisible here and obvious
+-- there. What can be held is the guard each fix put in. Neither of these is proof the
+-- screen is right - that is the screenshot's job, the same way textures are - but a guard
+-- that is deleted stops being a fix, and that part is readable.
+--------------------------------------------------------------------------------------------
+
+print()
+print("the fixes the live check asked for are still in place")
+;(function()
+	local f = io.open(ROOT .. "/addons/Family_UI/Wide.lua")
+	if not f then
+		check("Wide.lua is where the harness expects it", false, ROOT .. "/addons/Family_UI/Wide.lua")
+		return
+	end
+	local wide = f:read("*a")
+	f:close()
+
+	-- nextRow hands back a row whose text has width 0, which grows to fit whatever it is
+	-- given. The column headings start at NAME_WIDTH, so the label above the names has to be
+	-- bounded or it runs under the first of them.
+	check("the borrowed grid's name heading is bounded",
+		wide:match("theirLabels%.text:SetWidth%(NAME_WIDTH") ~= nil,
+		"unbounded it grows past NAME_WIDTH and is drawn through the first column heading")
+
+	local g = io.open(ROOT .. "/addons/Family_UI/Summary.lua")
+	if not g then
+		check("Summary.lua is where the harness expects it", false,
+			ROOT .. "/addons/Family_UI/Summary.lua")
+		return
+	end
+	local sum = g:read("*a")
+	g:close()
+
+	-- The stamp only reaches the cell if the row entry's own field is handed to it; meta has
+	-- no idea when it arrived.
+	check("the summary hands a borrowed member's stamp to its cells",
+		sum:match("produce%(member%.meta, member%.key, member%.seen%)") ~= nil,
+		"without it CELL.seen cannot know when a sibling was last shared and falls to a dash")
+
+	check("and Last seen says when a sibling was shared",
+		sum:match('"|cff888888shared|r " %.%. UI:Ago%(sharedAt%)') ~= nil,
+		"a borrowed row's date is somebody else's exchange, not our own sighting")
+end)()
+
 print()
 if failures == 0 then
 	print("all checks passed")

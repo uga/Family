@@ -663,8 +663,16 @@ local function build(frame)
 
                     local theirLabels = nextRow()
                     theirLabels.text:ClearAllPoints()
-                    theirLabels.text:SetPoint("LEFT", SIBLING_INSET, 0)
-                    theirLabels.text:SetText("|cffffd700Sibling   Member|r")
+                    -- From the row's left edge, because the first word labels the tick box
+                    -- at x=2 rather than the names at SIBLING_INSET, and bounded so that it
+                    -- cannot reach the first column heading. nextRow gives a fresh row a
+                    -- width of 0, which is a font string that grows as far as its text
+                    -- needs - and "Sibling   Member" needed further than NAME_WIDTH, so it
+                    -- was drawn straight through Possessions. The member rows below have
+                    -- always been bounded; this row was the one that was not.
+                    theirLabels.text:SetPoint("LEFT", 4, 0)
+                    theirLabels.text:SetWidth(NAME_WIDTH - 4 - COLUMN_GAP)
+                    theirLabels.text:SetText("|cffffd700Sibling  Member|r")
                     columnHeadings(theirLabels, nil, function(category)
                         return "|cff9d9d9dWhether they share this. Their decision, taken "
                             .. "on their own panel.|r"

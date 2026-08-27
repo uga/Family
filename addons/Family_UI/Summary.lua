@@ -423,10 +423,19 @@ CELL.aucseen = function(meta)
 end
 
 -- "Never" is a thing we can say about our own, whose comings and goings Family watches. When
--- a linked family shares somebody, when they last played is not among the facts that travel,
--- so the answer is that we were not told.
-CELL.seen = function(meta, key)
-	if not meta.lastSeen and UI:IsBorrowed(key) then return UNKNOWN end
+-- a linked family shares somebody, when they last played is not among the facts that travel -
+-- so this column answers the question it can answer about a borrowed member, which is how old
+-- what we hold about them is. The exchange stamps that, the Wide Family panel has always shown
+-- it on hover as "as of", and a dash here was the panel declining to say a thing it knew.
+--
+-- The two readings are different facts in one column and the header cannot say both, so the
+-- borrowed answer is written as "shared" and our own is left bare. A date with no word beside
+-- it is this family's; a date that says shared came from somebody else's.
+CELL.seen = function(meta, key, sharedAt)
+	if not meta.lastSeen and UI:IsBorrowed(key) then
+		if not sharedAt then return UNKNOWN end
+		return "|cff888888shared|r " .. UI:Ago(sharedAt), 0.7, 0.7, 0.7
+	end
 	return UI:Ago(meta.lastSeen), 0.7, 0.7, 0.7
 end
 
@@ -1210,7 +1219,9 @@ local function build(frame)
 				-- its colour alongside its text and that would keep only the text.
 				local produce = CELL[column.key]
 				if produce then
-					setCell(row, index, produce(member.meta, member.key))
+					-- member.seen is the stamp the exchange put on a borrowed member and
+					-- is nil for our own, whose cells do not read it.
+					setCell(row, index, produce(member.meta, member.key, member.seen))
 				else
 					setCell(row, index, "")
 				end
