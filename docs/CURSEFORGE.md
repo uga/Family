@@ -12,6 +12,11 @@ a required field, and the screenshots in `images/` are worth adding beside the t
 panels people decide on, the summary and the whole-family gear grid, are much easier to see
 than to describe.
 
+**On the manual.** It is linked, never pasted. `MANUAL.md` is six thousand words against this
+page's eight hundred, and the length below is the whole point of the section under it — but a
+reader who wants more than this page has to have somewhere to go, and a link stays right
+without anybody re-pasting it on every revision.
+
 **On length.** This was three times longer and was cut on purpose. CurseForge's moderation
 guidance asks for detail *and* warns against walls of text, and calls the description the most
 common reason a project is sent back — so the concrete examples were kept and the scaffolding
@@ -105,3 +110,10 @@ back correctly on a French one.
 Two addons in one download: `Family` records, `Family_UI` shows. Free software under
 **GPL-3.0-or-later**, source public — nobody can take Family closed, including if this project
 is ever abandoned.
+
+### The full manual
+
+Every panel, every column and what to do when something looks wrong:
+<https://github.com/uga/Family/blob/main/docs/MANUAL.md>
+
+Faults and suggestions: <https://github.com/uga/Family/issues>
