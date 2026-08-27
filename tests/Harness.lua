@@ -3391,6 +3391,12 @@ if contentsEveryone then
 	check("and with nothing typed it asks for something to search for",
 		visibleText("at least two letters"))
 
+	-- The empty panel is the mode working, not the mode broken - but only if the caption
+	-- over the box says which of its two jobs it is doing. "dim everything but" above a
+	-- screen with nothing left on it to dim is how this came to be reported as a blank page.
+	check("and the caption says it is searching rather than dimming",
+		visibleText("find across the family") and not visibleText("dim everything but"))
+
 	_G.FamilyContentsSearch:SetText("Linen")
 	Family.UI:Refresh()
 
@@ -3401,6 +3407,9 @@ if contentsEveryone then
 
 	_G.FamilyContentsSearch:SetText("")
 	contentsEveryone.__scripts.OnClick(contentsEveryone)
+
+	check("and switching back gives the box its other job again",
+		visibleText("dim everything but"))
 end
 
 -- The same question of the professions: who can make this.
@@ -3657,6 +3666,24 @@ Family.Capabilities:Detect()
 
 load("addons/Family_UI/Character.lua", "Family_UI", UIPrivate)
 Family.UI:ShowTab("character")
+
+-- Said out loud, at the place it happens, because of what it does to every check written
+-- below it. UI:RegisterTab appends without asking whether the id is taken, so the second load
+-- leaves two tabs called "character": ShowTab builds both and leaves `current` on the second,
+-- while clickButton walks the frame list in the order it was made and drives the first. A
+-- check that changes a record, calls UI:Refresh and then reads the screen is therefore reading
+-- a panel that was never redrawn - and both panels are internally consistent, so nothing looks
+-- wrong. Drive this panel by clicking it (L-011).
+-- In a function of its own because this file is one long function within sight of Lua's two
+-- hundred locals, which the block further down says out loud.
+;(function()
+	local found = 0
+	for _, tab in ipairs(Family.UI:Tabs()) do
+		if tab.id == "character" then found = found + 1 end
+	end
+	check("the second load leaves two panels answering to \"character\"", found == 2,
+		tostring(found))
+end)()
 
 check("the achievements section is offered on a client that has them",
 	clickButton("Achievements"))
@@ -5011,6 +5038,95 @@ print("the whole family's gear on one screen")
 		tostring(drawn))
 
 	------------------------------------------------------------------------------------
+	-- Which side each row is on
+	--
+	-- A row here is nineteen item pictures and nothing else. The side was recorded and it
+	-- was shown, but only on the class picture's tooltip - so a family with one Horde
+	-- character in it read as a family that had lost them, and was reported as one.
+	------------------------------------------------------------------------------------
+
+	do
+		-- Set here rather than borrowed from whatever the checks above left behind: which
+		-- members survived them, and on which side, is not what this is about.
+		local keys = {}
+		for key in pairs(Family.Database:Members()) do keys[#keys + 1] = key end
+		table.sort(keys)
+
+		check("there are two members to put on opposite sides", #keys >= 2, tostring(#keys))
+
+		-- Redrawn by working the panel rather than by asking for a refresh. Character.lua
+		-- is deliberately loaded twice further up, to get a client with achievements in
+		-- front of the achievements branch, and that leaves two panels answering to
+		-- "character": UI:Refresh goes to the one the window calls current and clickButton
+		-- drives the other. Asked for a refresh, the records changed, the refresh went to
+		-- the other instance, and the grid on screen stayed exactly as it was - with a
+		-- status line still saying "3 of 3 members", which is what made it look like a
+		-- drawing fault (L-011). Two clicks leave the mode where they found it and draw it
+		-- twice on the way.
+		local function redraw()
+			clickButton("Whole family")
+			clickButton("Whole family")
+		end
+
+		-- Asked of this panel's own rows rather than of everything on screen. A hidden
+		-- panel's rows are not themselves hidden in this harness - the panel over them is -
+		-- so a plain visibleText finds the summary's Horde heading from three tabs away and
+		-- passes whatever this panel draws. A row here is the one with three text columns;
+		-- the summary builds its rows out of cells instead.
+		local function gearRowSaying(needle)
+			for _, f in ipairs(fontStrings) do
+				local parent = type(f.__parent) == "table" and f.__parent or nil
+				if parent and parent.__shown == true and rawget(parent, "left")
+					and rawget(parent, "middle") and rawget(parent, "right")
+					and type(f.__text) == "string"
+					and f.__text:find(needle, 1, true) then
+					return true
+				end
+			end
+			return false
+		end
+
+		if #keys >= 2 then
+			local was = {}
+			for _, key in ipairs(keys) do
+				was[key] = Family.Database:Meta(key).faction or Family.CLEAR
+			end
+
+			-- The class filter is still on Mage from the checks above, and a family
+			-- filtered down to one class is a family with one side on it - which is the
+			-- answer this check is looking for and would have got for the wrong reason.
+			if not buttonSaying("Class: all") then
+				clickButton("Class: ")
+				chooseFromList("all|r")
+			end
+
+			Family.Database:SetMeta(keys[1], { faction = "Alliance" })
+			for index = 2, #keys do
+				Family.Database:SetMeta(keys[index], { faction = "Horde" })
+			end
+			redraw()
+
+			check("a family on both sides is split into them here too",
+				gearRowSaying("Alliance") and gearRowSaying("Horde"))
+
+			-- And where there is nothing to divide, nothing is drawn: a heading over
+			-- every row of the panel says only what the panel already said.
+			for _, key in ipairs(keys) do
+				Family.Database:SetMeta(key, { faction = "Alliance" })
+			end
+			redraw()
+
+			check("and a family all on one side gets no headings at all",
+				not gearRowSaying("Horde") and not gearRowSaying("Alliance"))
+
+			for _, key in ipairs(keys) do
+				Family.Database:SetMeta(key, { faction = was[key] })
+			end
+			redraw()
+		end
+	end
+
+	------------------------------------------------------------------------------------
 	-- Somebody else's, on the one screen where whose they are cannot be seen
 	--
 	-- Every other panel says whose a member is somewhere - a name, a heading, a colour.
@@ -5346,6 +5462,55 @@ print("sides within a realm")
 	Family.UI:Refresh()
 
 	check("a realm holding both sides is split into them", sideHeadingShowing())
+
+	-- The rows in the order they are drawn. The pool is handed out from the top down and a
+	-- frame is only built the first time that line is needed, so the order they were made in
+	-- is the order they sit in on screen - and Summary.lua is the only panel that puts cells
+	-- in a row, so nothing else is caught by this.
+	local function drawnRows()
+		local drawn = {}
+		for _, f in ipairs(frames) do
+			if f.cells and f.__shown == true then drawn[#drawn + 1] = f end
+		end
+		return drawn
+	end
+
+	local function blankRow(row)
+		if not row or not row.cells then return false end
+		for _, cell in ipairs(row.cells) do
+			if type(cell.__text) == "string" and cell.__text ~= "" then return false end
+		end
+		return true
+	end
+
+	-- A side's subtotal and the next side's heading are both one line of large text in the
+	-- same colours as the rows around them. Run together they read as one list, so what is
+	-- checked is the blank line, not that the headings exist - that is the check above.
+	local drawn = drawnRows()
+	local hordeAt, totalAt
+	for index, row in ipairs(drawn) do
+		local first = row.cells[1]
+		if not hordeAt and type(first.__text) == "string"
+			and first.__text:find("Horde", 1, true) then
+			hordeAt = index
+		end
+		if hordeAt and not totalAt and index > hordeAt then
+			for _, cell in ipairs(row.cells) do
+				if type(cell.__text) == "string"
+					and cell.__text:find("Total", 1, true) then
+					totalAt = index
+					break
+				end
+			end
+		end
+	end
+
+	check("the second side starts a line clear of the first side's figures",
+		hordeAt ~= nil and blankRow(drawn[hordeAt - 1]),
+		tostring(hordeAt))
+	check("and the realm's own total is a line clear of the last side's",
+		totalAt ~= nil and blankRow(drawn[totalAt - 1]),
+		tostring(totalAt))
 
 	-- With one side switched off there is nothing left to divide, and the divider goes -
 	-- including for the member whose side was never recorded, who is not a third faction.
@@ -6072,7 +6237,7 @@ print("the deploy script warns before it mirrors a source with no libraries")
 		"without it /MIR removes all three from every client and says nothing")
 end)()
 
-------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------
 -- The release gate reads the live checklist
 --
 -- docs/SMOKE.md is the only gate that runs against a real client. It said in bold that a

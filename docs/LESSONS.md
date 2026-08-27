@@ -205,3 +205,35 @@ deploying without them is how the path a player without them takes gets tested.
 `tests/Harness.lua` reads the batch file and fails unless both the test and the warning are
 still in it — verified by deleting them and watching the harness exit 1, then restoring and
 watching it pass. Status: **promoted.**
+
+---
+
+### L-011 — a harness that loads a panel twice has two of that panel
+
+**Bitten:** a new check on the whole family's gear, asserting that a family with characters on
+both sides is split into them. The check set two members' sides, called `Family.UI:Refresh()`
+and read the screen. It failed. `Family.Database:Meta` said each member had the side it had
+just been given, the panel's own status line said *3 of 3 members*, and the grid was plainly
+drawn — so the time went into the drawing code, which was right all along.
+
+**Why it was invisible:** `tests/Harness.lua` loads `addons/Family_UI/Character.lua` a second
+time on purpose, to put a client that has achievements in front of the achievements branch —
+and says so, in a comment, at the place it does it. What it does not say is the consequence:
+`UI:RegisterTab` appends without asking whether the id is taken, so there are then two tabs
+called `character`. `ShowTab` builds both and leaves `current` on the second; `clickButton`
+walks the frame list in the order it was built and drives the first. The clicks and the
+refresh were working on two different instances of the same panel, each internally consistent,
+neither of them wrong. Nothing in the output could have said so: the status line being read
+was the one the *clicks* had drawn, and it was accurate about the draw it came from.
+
+The shape: when a check reads state that some other call is supposed to have changed, it is
+only a check if both ends address the same object. "It says the right thing" and "it says the
+right thing about what I just did" are different claims.
+
+**Caught by:** `tests/Harness.lua` now counts the tabs answering to `character` immediately
+after the second load and fails unless there are two of them, with the consequence written
+beside the count rather than left to be rediscovered. The check that needed it drives the
+panel by clicking — two clicks on *Whole family*, which leave the mode where they found it and
+draw it twice on the way — rather than by asking for a refresh. Verified the check is real by
+setting the heading's condition to `false` and watching it fail, then restoring it and watching
+it pass. Status: **promoted.**

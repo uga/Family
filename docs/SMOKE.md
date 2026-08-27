@@ -53,7 +53,8 @@ Per client: **Era**, **Burning Crusade**, **Mists**.
       answers and go in `DECISIONS.md`.
 
 ### One character, end to end
-- [ ] Log in. The summary opens on the character being played.
+- [ ] Log in and open Family. The summary opens on Overview, listing every character
+      recorded on this account — the one being played among them, not singled out.
 - [ ] Bags, money and currencies are recorded and the numbers match what the game shows.
 - [ ] Professions, talents and gear are recorded. Both specialisations where the client has
       two.
@@ -64,7 +65,9 @@ Per client: **Era**, **Burning Crusade**, **Mists**.
 - [ ] Its bags are still right, drawn from storage rather than from the live client.
 - [ ] A tooltip on an item held by the first character names them while you are on the
       second.
-- [ ] Realms and sides are held apart on every column set.
+- [ ] On each of the seven column sets in turn: rows sit under their own realm's heading,
+      and the two banner buttons at the top right remove that side's rows, any column only
+      they had, and their share of the totals.
 
 ### Mail — the one prediction Family makes
 - [ ] Post an item and some money from A to B. It appears against B immediately, marked as

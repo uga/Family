@@ -739,6 +739,32 @@ function UI:ClassColour(classFile)
 	return 1, 1, 1
 end
 
+-- The two sides, and the third that is not one
+--
+-- A member whose side was never recorded still has to go somewhere, and it must not be into
+-- either of the real ones. Named rather than left as nil so it can be a table key.
+--
+-- Here rather than in the panel that wanted them first, because two panels group by side now
+-- - the summary's rows and the whole family's gear - and a second copy of the colours is how
+-- the two come to disagree about which red Horde is.
+UI.UNKNOWN_SIDE = "?"
+
+UI.SIDE_ORDER = { Alliance = 1, Horde = 2, [UI.UNKNOWN_SIDE] = 3 }
+
+-- The game's own two colours, and a grey for the side nobody knows.
+UI.SIDE_COLOUR = {
+	Alliance            = { 0.40, 0.60, 1.00 },
+	Horde               = { 1.00, 0.30, 0.30 },
+	[UI.UNKNOWN_SIDE]   = { 0.70, 0.70, 0.70 },
+}
+
+-- What the game calls this side, in whatever language it is running in. Family stores the
+-- English word because that is what the client answers with; nothing shows it to a player
+-- without coming through here first.
+function UI:SideName(side)
+	return _G["FACTION_" .. tostring(side):upper()] or side
+end
+
 -- "3 days ago", and never "0 seconds ago". Anything under a minute is now, as far as a
 -- player is concerned.
 -- The other direction: "in 6h", for something that has not happened yet. Ago and In are the

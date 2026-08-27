@@ -10,6 +10,22 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Fixed
+
+- **A realm with characters on both sides reads as two groups again.** The second side's
+  heading sat one line under the first side's subtotal, and the realm's own total sat one
+  line under the last side's — so a screen of numbers ran together with no telling which
+  figures belonged to whom. Both now have a line's space above them, on every column set.
+- **Possessions no longer looks broken when you switch to the whole family.** That mode has
+  nothing to draw until you type something, but the caption over the box still read "dim
+  everything but" — over a panel with nothing left on it to dim. It now says what the box is
+  for, and the cursor goes into it. Professions says the same thing in the same way.
+- **Everyone's gear is split by side, the way the summary is.** A row on that screen is a
+  class picture and nineteen slots, and the only place it said which side its character was on
+  was the tooltip of the picture — so a family with one Horde character in it looked like a
+  family that had lost them. Alliance and Horde now get a heading each, with a count, whenever
+  there are both to tell apart.
+
 ## 1.0.0-beta.1 — 2026-08-26
 
 ### Added

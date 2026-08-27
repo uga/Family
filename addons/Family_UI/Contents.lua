@@ -352,6 +352,13 @@ local function build(frame)
 	everyone:SetText("Whole family")
 	everyone:SetScript("OnClick", function()
 		wholeFamily = not wholeFamily
+
+		-- Straight into the box on the way in. Across the family this panel has nothing
+		-- to draw until something is typed, so the switch empties the screen and leaves
+		-- the one thing left to do sitting in an unfocused box at the top - which reads
+		-- as the panel having broken rather than as it waiting.
+		if wholeFamily then search:SetFocus() else search:ClearFocus() end
+
 		frame:Refresh()
 	end)
 
@@ -492,6 +499,14 @@ local function build(frame)
 
 	function frame:Refresh()
 		UI:MarkSelected(everyone, wholeFamily)
+
+		-- The box does two different jobs and the caption has to say which. Against one
+		-- member it dims what does not match, and everything stays on screen; across the
+		-- family it is the search itself, and nothing is on screen until it has something
+		-- in it. A caption still reading "dim everything but" over an empty panel says the
+		-- panel lost the items rather than that it is waiting to be asked.
+		hint:SetText(wholeFamily and "find across the family" or "dim everything but")
+
 		local member = picker:Reconcile()
 
 		local width = math.max(scroll:GetWidth(), 200)
@@ -520,8 +535,8 @@ local function build(frame)
 			picker:Hide()
 
 			if #needle < 2 then
-				return finish("|cff9d9d9dType at least two letters to search the whole "
-					.. "family.|r")
+				return finish("|cff9d9d9dSearching the whole family. Type at least two "
+					.. "letters in the box above to see who has what.|r")
 			end
 
 			local matches = Family.Index:Search(needle)

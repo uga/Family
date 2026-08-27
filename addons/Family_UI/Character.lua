@@ -770,7 +770,79 @@ local function build(frame)
 						heading.left:SetWidth(300)
 					end
 
+					--------------------------------------------------------------------
+					-- And inside that, by side
+					--
+					-- On the summary's reasoning (Summary.lua): two characters on
+					-- opposite sides have less to do with each other than two on
+					-- different realms, and this panel is about what they are wearing,
+					-- which they cannot hand one another.
+					--
+					-- Drawn as one flat block it read worse than that. The side was
+					-- recorded and it was shown - but only on the tooltip of the class
+					-- picture, so a family with one Horde character in it looked like a
+					-- family that had lost them. The eye had nothing to find them by.
+					--
+					-- Where there is no split to make - one side, or one side left by
+					-- the filters - no heading is drawn. And a member whose side was
+					-- never recorded is not a third faction that would force one; they
+					-- are a member Family has not finished reading.
+					--------------------------------------------------------------------
+					local known, count = 0, {}
 					for _, entry in ipairs(here) do
+						local side = entry.meta.faction or UI.UNKNOWN_SIDE
+						if not count[side] then
+							count[side] = 0
+							if side ~= UI.UNKNOWN_SIDE then known = known + 1 end
+						end
+						count[side] = count[side] + 1
+					end
+
+					if known > 1 then
+						-- By side and by nothing else. Inside a side the order is the
+						-- order they arrived in, which is the order every other list of
+						-- members on this panel is already in - table.sort settles ties
+						-- however it likes, and "however it likes" reshuffles the whole
+						-- family every time a filter is typed into.
+						local arrived = {}
+						for index, entry in ipairs(here) do arrived[entry] = index end
+
+						table.sort(here, function(a, b)
+							local first = UI.SIDE_ORDER[a.meta.faction
+								or UI.UNKNOWN_SIDE] or 99
+							local second = UI.SIDE_ORDER[b.meta.faction
+								or UI.UNKNOWN_SIDE] or 99
+							if first ~= second then return first < second end
+							return arrived[a] < arrived[b]
+						end)
+					end
+
+					local lastSide
+
+					for _, entry in ipairs(here) do
+						-- A side's heading goes where that side starts, which is wherever
+						-- the one before it ran out.
+						local side = entry.meta.faction or UI.UNKNOWN_SIDE
+						if known > 1 and side ~= lastSide then
+							-- A line's space between one side and the next, as on the
+							-- summary. Without it two headings in a grid this dense are
+							-- two rows of text among twelve rows of pictures.
+							if lastSide then y = y + 6 end
+
+							local colour = UI.SIDE_COLOUR[side]
+								or { 0.8, 0.8, 0.8 }
+
+							local sideHeading = nextRow()
+							sideHeading.left:SetText(string.format(
+								"|cff%02x%02x%02x%s|r  |cff888888(%d)|r",
+								math.floor(colour[1] * 255 + 0.5),
+								math.floor(colour[2] * 255 + 0.5),
+								math.floor(colour[3] * 255 + 0.5),
+								UI:SideName(side), count[side]))
+							sideHeading.left:SetWidth(300)
+							lastSide = side
+						end
+
 						shown = shown + 1
 
 						local meta = entry.meta

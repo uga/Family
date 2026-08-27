@@ -559,18 +559,11 @@ local TOTAL = {
 -- Both on until somebody says otherwise, and remembered because it is a preference.
 local FACTIONS = { "Alliance", "Horde" }
 
--- A member whose side was never recorded still has to go somewhere, and it must not be into
--- either of the real ones. Named rather than left as nil so it can be a table key.
-local UNKNOWN_SIDE = "?"
-
-local SIDE_ORDER = { Alliance = 1, Horde = 2, [UNKNOWN_SIDE] = 3 }
-
--- The game's own two colours, and a grey for the side nobody knows.
-local SIDE_COLOUR = {
-	Alliance         = { 0.40, 0.60, 1.00 },
-	Horde            = { 1.00, 0.30, 0.30 },
-	[UNKNOWN_SIDE]   = { 0.70, 0.70, 0.70 },
-}
+-- The sides, from the one place that holds them (Window.lua). The whole family's gear groups
+-- by side as well, and it has to group by the same three and colour them the same way.
+local UNKNOWN_SIDE = UI.UNKNOWN_SIDE
+local SIDE_ORDER = UI.SIDE_ORDER
+local SIDE_COLOUR = UI.SIDE_COLOUR
 
 local function factionShown(faction)
 	local switches = FamilyDB and FamilyDB.ui and FamilyDB.ui.factions
@@ -1063,7 +1056,7 @@ local function build(frame)
 		-- should have to learn which banner is which by pressing one and watching rows
 		-- disappear.
 		UI:AttachTooltip(button, function()
-			return nil, nil, { { _G["FACTION_" .. faction:upper()] or faction,
+			return nil, nil, { { UI:SideName(faction),
 				factionShown(faction) and "|cff40bf40shown|r" or "|cff9d9d9dhidden|r" } }
 		end)
 
@@ -1345,7 +1338,14 @@ local function build(frame)
 			end
 
 			if known > 1 then
-				for _, side in ipairs(sides) do
+				for position, side in ipairs(sides) do
+					-- A line's space between one side and the next. Without it the
+					-- second side's heading sits directly under the first side's
+					-- subtotal, one row apart from figures it has nothing to do
+					-- with, and the two groups read as one long list with a stray
+					-- line of numbers through the middle of it.
+					if position > 1 then nextRow() end
+
 					local sideHeading = nextRow()
 					for index = 1, MAX_CELLS do setCell(sideHeading, index, "") end
 
@@ -1355,14 +1355,14 @@ local function build(frame)
 
 					local colour = SIDE_COLOUR[side] or { 0.8, 0.8, 0.8 }
 					setCell(sideHeading, 1, string.format("   %s  |cff888888(%d)|r",
-						_G["FACTION_" .. tostring(side):upper()] or side,
+						UI:SideName(side),
 						#bySide[side]), colour[1], colour[2], colour[3])
 
 					for _, member in ipairs(bySide[side]) do
 						drawMember(member)
 					end
 
-					totalsRow(_G["FACTION_" .. tostring(side):upper()] or side,
+					totalsRow(UI:SideName(side),
 						bySide[side], colour[1] * 0.8, colour[2] * 0.8, colour[3] * 0.8)
 				end
 			else
@@ -1404,6 +1404,15 @@ local function build(frame)
 			-- through a sibling would otherwise get a totals line of noughts, which reads
 			-- as "your characters here have nothing" rather than "you have none here".
 			if #byRealm[realm] > 0 then
+				-- Where the realm was split by side, its own total lands directly
+				-- under the last side's subtotal, in the same columns and one row
+				-- down - which is where a reader expects one more side, not the line
+				-- that adds the sides together. A line's space is the difference.
+				-- Only where a total is actually drawn: the sets with nothing to add
+				-- up would otherwise get a blank on top of the blank that ends every
+				-- realm.
+				if known > 1 and firstTotal then nextRow() end
+
 				totalsRow("Total", byRealm[realm])
 			end
 

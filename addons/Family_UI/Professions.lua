@@ -302,6 +302,12 @@ local function build(frame)
 	everyone:SetText("Whole family")
 	everyone:SetScript("OnClick", function()
 		wholeFamily = not wholeFamily
+
+		-- The same as the possessions panel, for the same reason: this mode draws nothing
+		-- until it is given something to look for, so the cursor goes where the answer has
+		-- to be typed.
+		if wholeFamily then search:SetFocus() else search:ClearFocus() end
+
 		frame:Refresh()
 	end)
 
@@ -526,8 +532,8 @@ local function build(frame)
 			local needle = (search:GetText() or ""):lower()
 
 			if #needle < 2 then
-				status:SetText("|cff9d9d9dType at least two letters to search every "
-					.. "profession of every member.|r")
+				status:SetText("|cff9d9d9dSearching every profession of every member. "
+					.. "Type at least two letters in the box above.|r")
 				list:SetHeight(1)
 				return
 			end
