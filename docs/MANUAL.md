@@ -245,6 +245,13 @@ your family actually has: a family with no warlock is not offered a warlock. *Al
 entry of every list, so there is always one click back to everybody. Classes are named as your
 client names them and coloured as the game colours them.
 
+Where a realm has characters on both sides, they are **grouped by side** — Alliance and Horde
+each get a heading and a count — the same way the summary groups them. A row here is a class
+picture and nineteen slots and says nothing else about whose character it is, so without the
+headings a family with one character on the other side read as a family that had lost them.
+The grouping appears only where there are two sides to tell apart; one side gets no heading it
+does not need.
+
 **Currencies**: everything this member holds, with what each is capped at and how far off it
 is. Anything uncapped says so rather than showing a ceiling of zero.
 
@@ -643,6 +650,12 @@ profession — and it will be recorded from then on.
 **"A number is out of date."** Every screen says when it was last seen. Bags and money are
 live for the character you are playing; everything else is as old as the last time that
 character was played, or that window opened.
+
+**"A sibling's *Last seen* says *shared*."** It is answering a different question, because it
+has to. When somebody else's character last played is not among the facts a linked family
+sends (§11); when their Family last told you about them is. So a borrowed row reads *shared 2
+h ago* — the age of what you hold, not a sighting — and your own rows stay bare. A date with
+no word beside it is your own family's; one that says *shared* came from theirs.
 
 **"A profession has no recipes."** Its window has not been opened since Family was installed,
 or it is a gathering profession that has none. The Professions panel says which.
