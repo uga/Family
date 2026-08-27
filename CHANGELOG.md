@@ -10,6 +10,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 1.0.0-beta.2 — 2026-08-27
+
 ### Fixed
 
 - **The Wide Family grid's column headings no longer overlap.** "Sibling  Member", above a
