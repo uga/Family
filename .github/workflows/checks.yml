@@ -30,7 +30,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      # v4 targets Node 20, which GitHub has deprecated: the runner forces those actions onto
+      # Node 24 and warns on every run. v5 is the release that moved to Node 24 on purpose and
+      # v7 is the current major, so the annotation goes away rather than being tolerated until
+      # the forcing stops being free.
+      - uses: actions/checkout@v7
 
       - name: Install Lua
         run: |

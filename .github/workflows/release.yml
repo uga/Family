@@ -40,7 +40,9 @@ jobs:
 
     steps:
       - name: Check out, with the whole history
-        uses: actions/checkout@v4
+        # v7 rather than v4: see the note in checks.yml. Neither workflow is triggered by
+        # pull_request_target or workflow_run, which is the one thing v7 restricts.
+        uses: actions/checkout@v7
         with:
           # The packager builds a changelog from the commits since the previous tag, and a
           # shallow clone has no previous tag to look back to.
