@@ -83,6 +83,9 @@ Per client: **Era**, **Anniversary**, **Mists**.
 - [ ] Nothing but class, level, gear and talent shape crosses. Bags, mail and money do not.
 
 ### Wide Family — only once the above is clean
+- [ ] About says *compressed storage*, not *uncompressed*. A checkout has no `Libs` and
+      `Deploy.bat` copies the checkout, so without `tools/FetchLibs.sh` there is no Wide
+      Family on this build to test and every line below it would pass by being absent.
 - [ ] A link request reaches the other family and can be accepted.
 - [ ] Exactly what was granted crosses, and nothing else.
 - [ ] An exchange interrupted by a logout is abandoned rather than hanging.
