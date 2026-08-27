@@ -33,7 +33,7 @@ set "ADDON_TOOL=FamilyIconSheet"
 
 rem Windows refuses to run a script from a network path, so this file lives on a local disk
 rem and the checkout is reached over the share. Change this if the share moves.
-set "SRC_SHARE=\\10.10.0.175\dev\Family\addons"
+set "SRC_SHARE=\\10.10.0.175\dev\Family-public\addons"
 
 rem --- where the addons are coming from ---------------------------------------------------
 
