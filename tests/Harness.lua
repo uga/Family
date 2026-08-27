@@ -6284,6 +6284,21 @@ print("the release script refuses a version with no live-check row")
 	check("SMOKE.md carries the Runs table the gate parses",
 		md:match("| Version | Client | Date | By | Result |") ~= nil,
 		"release.sh reads the first cell of every row in it")
+
+	-- L-012: SMOKE.md said RELEASING.md treated a missing row as a stop, and RELEASING.md had
+	-- never heard of the file. A document that names another as its enforcer is making a claim
+	-- about a second file, and it is worth what that file says. Read both ends together.
+	local r = io.open(ROOT .. "/docs/RELEASING.md")
+	if not r then
+		check("RELEASING.md is where the harness expects it", false, ROOT .. "/docs/RELEASING.md")
+		return
+	end
+	local rel = r:read("*a")
+	r:close()
+
+	check("RELEASING.md names the live check it is said to enforce",
+		rel:match("SMOKE%.md") ~= nil,
+		"the claim and the mechanism have to fail together or the claim outlives it")
 end)()
 
 print()

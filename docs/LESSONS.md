@@ -150,6 +150,19 @@ file that changes under a run is the human until they say otherwise. It is never
 without asking, it is never swept into a commit it has nothing to do with, and where
 discarding it is what was asked for, a copy is taken first and its location is reported.
 
+**Bitten again, 2026-08-27:** the second clause failed, in a session that had read this entry.
+Five paths were staged by name — the right five — and `git add` took whatever was in them at
+that instant, which included another session's in-flight edits to three of them: a decision
+row, a run of checklist items and fifty-eight lines of harness. The commit message described
+half its own contents. Nothing was lost and nothing was public, but unpicking it cost a
+rebuild of three commits.
+
+Naming the paths is not the protection it looks like. A path is not a diff: between reading a
+file and staging it, a shared tree can put anything inside that path, and staging by name
+takes the file rather than the work. What holds is comparing the staged diff against the work
+actually done — `git diff --cached --stat` against the `git diff --stat` taken before the
+edits — and treating any line that does not match as somebody else's until asked.
+
 ---
 
 ### L-009 — a publish can half-succeed, and the half that worked is the one you cannot undo
@@ -237,3 +250,32 @@ panel by clicking — two clicks on *Whole family*, which leave the mode where t
 draw it twice on the way — rather than by asking for a refresh. Verified the check is real by
 setting the heading's condition to `false` and watching it fail, then restoring it and watching
 it pass. Status: **promoted.**
+
+---
+
+### L-012 — a rule that names its own enforcer, and is enforced by nobody
+
+**Bitten:** `docs/SMOKE.md` said in bold that a release with no row in it was a release that
+was not checked, and that `docs/RELEASING.md` treated that as a stop. `RELEASING.md` had never
+heard of the file. Neither had `release.sh`, `DECISIONS.md`, the harness or the changelog: the
+string `SMOKE` appeared nowhere in the tree outside the filename. `v1.0.0-beta.1` was tagged
+and published against a rule that read as mandatory and was mandatory on nobody.
+
+**Why it was invisible:** the sentence names an enforcer, and naming one reads exactly like
+having one. Every reader of `SMOKE.md` — including the sessions that wrote and revised it —
+took "`RELEASING.md` treats that as a stop" as the record of a mechanism rather than as a
+claim about another file, because that is what such a sentence normally is. The file was
+never wrong about what *should* happen, so nothing it said could be caught by reading it. Only
+the other document, which stayed silent, could have contradicted it, and silence is not
+something a reader goes looking for.
+
+The shape is general and this file is where it will recur: a document that says another
+document, script or job enforces something is making a testable claim about a second file. It
+is worth exactly as much as that second file, and it decays the moment either is edited alone.
+
+**Caught by:** `tools/release.sh` now refuses to tag a version with no row for it, and
+`tests/Harness.lua` reads `release.sh` for that refusal and reads `RELEASING.md` for the name
+of the file it enforces — so the claim and the mechanism fail together or not at all. Verified
+by deleting the refusal and watching the harness exit 1, and by running the gate against an
+empty table, a one-client table and a three-client one. Because `release.sh` runs the harness
+before it tags, the gate stands in front of its own removal. Status: **promoted.**
