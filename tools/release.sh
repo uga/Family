@@ -88,7 +88,7 @@ clients="$(awk -F'|' -v want="$version" '
 case "$version" in
     *alpha*|*beta*) ;;
     *)
-        for client in Era:era "Burning Crusade":burning Mists:mists; do
+        for client in Era:era Anniversary:anni Mists:mists; do
             name="${client%%:*}"
             match="${client##*:}"
             grep -q "$match" <<<"$clients" \

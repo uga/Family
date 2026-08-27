@@ -44,7 +44,7 @@ only order in which a red result can still stop something.
 
 ## The pass
 
-Per client: **Era**, **Burning Crusade**, **Mists**.
+Per client: **Era**, **Anniversary**, **Mists**.
 
 ### Capabilities — the first thing to look at
 - [ ] `/family caps` runs and reports.
@@ -97,8 +97,10 @@ Per client: **Era**, **Burning Crusade**, **Mists**.
 
 | Version | Client | Date | By | Result |
 |---|---|---|---|---|
-| | | | | |
+| v1.0.0-beta.1 | Anniversary | 27/8/26 | Alberto | Pass except Wide Family last line unchecked |
+| v1.0.0-beta.1 | Era | 27/8/26 | Alberto | Pass except Wide Family last line unchecked |
+| v1.0.0-beta.1 | Mists | 27/8/26 | Alberto | Pass except Wide Family last line unchecked |
 
-*Client* is `Era`, `Burning Crusade` or `Mists`. *Result* is `pass`, or what was not run and
+*Client* is `Era`, `Anniversary` or `Mists` — the three the `.toc` names. *Result* is `pass`, or what was not run and
 why — the sections needing a guildmate or a second family are the ones that will honestly say
 so. The version cell may carry the `v` or leave it off; `release.sh` reads either.

@@ -6270,7 +6270,7 @@ print("the release script refuses a version with no live-check row")
 		"without it the gate reads the file and then tags anyway")
 
 	check("release.sh holds a full release to all three clients",
-		sh:match("%*alpha%*|%*beta%*") ~= nil and sh:match("Burning Crusade") ~= nil,
+		sh:match("%*alpha%*|%*beta%*") ~= nil and sh:match("Anniversary:anni") ~= nil,
 		"a pre-release needs one row; the version everybody is offered by default needs three")
 
 	local g = io.open(ROOT .. "/docs/SMOKE.md")
