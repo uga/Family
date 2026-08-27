@@ -518,26 +518,29 @@ This is the feature Family exists for as much as any other, and it is designed a
 principle: **nothing is ever visible that was not deliberately made visible, one member and
 one category at a time.**
 
-### 6.0 It ships switched off until it has been proven live
+### 6.0 It ships switched off, and now for a different reason
 
 Decided 2026-08-10, when the rest of Family was judged stable enough to release and this was
-not.
+not. Revised 2026-08-27, when the live check reached it.
 
-Wide Family is complete and its checks pass, but every one of those checks is Family talking
-to itself in a harness. Nothing in it has crossed a real server, and §11.1 — which pairs of
-players can exchange addon messages at all — is still explicitly unanswered.
+The original gate had two conditions: a live client showing the exchange doing what the
+harness says it does, and §11.1 answered by testing rather than assumption. The first is met —
+the 1.0.0-beta.2 pass linked two families on all three clients, sent, received, and abandoned
+an exchange interrupted by a logout. The second is not, and the checklist that was supposed to
+settle it has no line that tests realm reach; see §11.1.
+
+It ships switched off all the same, and the reason is no longer the gate. Consent is the one
+thing here that cannot be repaired afterwards: a wrong tooltip is corrected in the next
+version, but a member shared with somebody who was never granted them has already been shared
+by the time anyone notices, and no later version takes that back. A feature whose whole
+purpose is to hold a line does not arrive holding it on somebody's behalf — it waits to be
+asked for. That is a position rather than a caveat, and unlike a caveat it does not expire.
 
 It therefore ships **inert**: nothing sent, nothing that arrives acted on, no panel, no
-borrowed members shown. `/family wide on` turns it on for whoever is testing it.
+borrowed members shown. `/family wide on`, then a reload, turns it on; both players need to.
 
-The reason it waits rather than shipping behind a warning is that consent is the one thing
-here that cannot be repaired afterwards. A wrong tooltip is corrected in the next version; a
-member shared with somebody who was never granted them has already been shared by the time
-anyone notices, and no later version takes that back. A feature whose entire purpose is to
-hold a line gets to prove it holds first.
-
-The gate is lifted when a live client has shown the exchange doing what the harness says it
-does, and §11.1 has an answer from testing rather than from assumption.
+Shipping it switched on is a separate decision, reserved to the author, and a green pass does
+not take it.
 
 ### Linking
 
@@ -868,16 +871,19 @@ Recorded so the project can be measured against it.
 
 ## 11. Open questions
 
-0. **Whether Guild share ships switched on.** It is specified as on by default (§7) and it is
-   built that way. But §6.0 withheld Wide Family from its first release on the grounds that
-   nothing in it had crossed a real server, and Guild share is in exactly that position: its
-   checks are Family talking to itself. The two are not the same case — Guild share carries
-   only what Inspect already gives away, so the consent argument that made §6.0 unarguable
-   does not apply — and it is a decision to take deliberately before the release rather than
-   by not noticing it. To be settled by the same live testing as §11.1.
+0. ~~**Whether Guild share ships switched on.**~~ Settled 2026-08-27: it ships on, and the
+   1.0.0-beta.2 live pass confirmed it does what it claims on all three clients — guildmates
+   running Family appear, one not running it is named as such rather than left blank, the
+   switch silences it in both directions, and nothing but class, level, gear and talent shape
+   crosses. The consent argument that gates §6.0 never applied here, because everything it
+   carries is what Inspect already gives away.
 1. **Cross-realm addon messaging.** Which pairs of players can actually exchange addon
    messages, per client, decides how far Wide Family reaches beyond a guild. To be
-   established by testing, not assumed.
+   established by testing, not assumed — and **still open after the beta.2 pass**, which
+   linked two families successfully without establishing which realm pairs can and cannot.
+   `SMOKE.md` was written claiming a completed pass closes this; its Wide Family section has
+   no line that tests reach, so it closed the other three and not this one. The line is there
+   now and the next pass can settle it.
 2. **A generated talent table.** Era and Burning Crusade tree talents are the one thing
    Family stores by name rather than by id, because the client will not describe another
    class's talents (§2.1). Generating `Talent` and `TalentTab` from wago.tools removes the

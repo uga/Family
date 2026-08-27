@@ -102,7 +102,10 @@ function Wide:Requests() return store().requests end
 -- Off unless somebody turns it on, and off means genuinely inert: nothing is sent, nothing
 -- that arrives is acted on, and the panel is not there. Everything else in Family has been
 -- played with for months; this has been exercised by a harness, and a harness is this code
--- talking to itself. No part of it has crossed a real server.
+-- talking to itself. That stopped being true on 2026-08-27: the 1.0.0-beta.2 live pass
+-- linked two families on all three clients and the exchange did what this says it does.
+-- What is still unmeasured is reach - which realm pairs can exchange addon messages at
+-- all - so the panel keeps saying it cannot tell delivery from silence, because it cannot.
 --
 -- The reason it waits rather than shipping with a warning label: consent is the one thing
 -- here that cannot be repaired afterwards. A wrong tooltip is corrected in the next version,

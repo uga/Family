@@ -17,7 +17,13 @@ down what happened — no script can tell whether a client was ever launched. A 
 
 It exists because four open questions had one cause between them — spec §11.0 and §11.1,
 `HANDOFF.md` §4.6 and §4.7 all say, in different words, that nothing has crossed a real
-server. A checklist that has been run closes all four.
+server.
+
+The beta.2 pass closed **three of them**. It did not close §11.1, cross-realm reach, because
+this file promised to settle it and then never asked: there was no line about which realms a
+link had crossed, so three clients passed and the question stayed exactly where it was. The
+line is in the Wide Family section now. A checklist closes a question by asking it, and
+believing otherwise is how the gap survived being written down twice.
 
 ---
 
@@ -89,6 +95,9 @@ Per client: **Era**, **Anniversary**, **Mists**.
 - [ ] A link request reaches the other family and can be accepted.
 - [ ] Exactly what was granted crosses, and nothing else.
 - [ ] An exchange interrupted by a logout is abandoned rather than hanging.
+- [ ] **Reach.** Note which realm the other family is on and whether it worked: same realm,
+      a connected one, an unconnected one. This is spec §11.1 and it is the one open question
+      a pass can close — but only if the answer is written down, so put it in the row.
 
 ### Nothing is on fire
 - [ ] No Lua errors with the error display on, through the whole pass.
