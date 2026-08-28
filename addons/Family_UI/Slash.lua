@@ -45,6 +45,52 @@ add("forget", L["forget a member: /family forget Name-Realm"], function(argument
 	end
 end)
 
+-- Why a recipe is showing the wrong language, answered by the client rather than by anybody's
+-- reasoning about it.
+--
+-- A recipe is named from its spell id, and where there is no id there is nothing to name it
+-- with but the word the scanning client used. Whether that id is there is not something this
+-- repository can know about somebody's saved data, and it is the whole difference between a
+-- display fault and a scan that needs running again.
+add("recipes", L["why a recipe is in the wrong language: /family recipes"], function()
+	local key = Family:CurrentMember()
+	local payload = Family.Database:Payload(key) or {}
+	local professions = payload.professions or {}
+
+	Family:Print(L["|cffffd700Recipes|r held for %s"], tostring(key))
+
+	local any = false
+	for id, record in pairs(professions) do
+		any = true
+		local recipes = record.recipes or {}
+		local spells, items = 0, 0
+		for _, recipe in ipairs(recipes) do
+			if recipe.spellID then spells = spells + 1 end
+			if recipe.itemID then items = items + 1 end
+		end
+
+		Family:Print(L["  %s: %d recipe(s), %d with a spell id, %d with an item id"],
+			tostring(Family:ProfessionName(id, record.name)), #recipes, spells, items)
+
+		-- Three of them in full, because a count says how many are missing an id and not
+		-- what the client says about the ones that have one.
+		for index = 1, math.min(3, #recipes) do
+			local recipe = recipes[index]
+			Family:Print(L["    %s  |cff888888spell|r %s -> %s  |cff888888item|r "
+				.. "%s -> %s"],
+				tostring(recipe.name),
+				tostring(recipe.spellID),
+				tostring(recipe.spellID and Family.Names:Spell(recipe.spellID)),
+				tostring(recipe.itemID),
+				tostring(recipe.itemID and Family.Names:CachedItem(recipe.itemID)))
+		end
+	end
+
+	if not any then
+		Family:Print(L["  nothing recorded - open each profession window once"])
+	end
+end)
+
 add("guild", L["guild share on, off, or test: /family guild test"], function(argument)
 	local wanted = (argument or ""):lower():match("^%S*")
 

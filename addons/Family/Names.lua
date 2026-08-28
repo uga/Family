@@ -124,6 +124,18 @@ function Names:Recipe(recipe)
 		return name
 	end
 
+	-- Failing that, what it makes. The item id came out of a different call than the spell
+	-- id did, so a client that will not answer one may still answer the other - and an item
+	-- name is in the reader's language where the recorded word is in the scanner's.
+	--
+	-- Second rather than first because a few rows are not named after their product:
+	-- smelting says "Smelt Copper" and makes a Copper Bar. Where the spell answers, it is
+	-- the better answer; this is for where it does not.
+	if recipe.itemID then
+		local item = Names:CachedItem(recipe.itemID)
+		if type(item) == "string" and item ~= "" then return item end
+	end
+
 	return recipe.name
 end
 

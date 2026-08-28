@@ -3758,6 +3758,14 @@ SlashCmdList["FAMILY"]("talents")
 check("/family talents reports what is stored",
 	#DEFAULT_CHAT_FRAME.messages > before)
 
+-- Says whether a recipe has an id to be named by at all, which is the difference between a
+-- display fault and a scan that has to be run again - and is not something this file can
+-- answer about somebody else's saved data.
+before = #DEFAULT_CHAT_FRAME.messages
+SlashCmdList["FAMILY"]("recipes")
+check("/family recipes reports what each recipe has to be named by",
+	#DEFAULT_CHAT_FRAME.messages > before)
+
 before = #DEFAULT_CHAT_FRAME.messages
 SlashCmdList["FAMILY"]("rescan")
 check("/family rescan runs both scanners",
@@ -7345,6 +7353,18 @@ print("what each client calls a recipe")
 		tostring(Family.Names:Recipe { name = "Mystery Brew", spellID = 900001 }))
 
 	check("nothing at all is not a recipe", Family.Names:Recipe("Wizard Oil") == nil)
+
+	-- The second id, for a record whose first one is missing. The spell id and the item id
+	-- come out of different calls, so a client that will not answer one may answer the
+	-- other - and an item name is in the reader's language where the recorded word is in
+	-- whoever scanned it.
+	ITEM_NAMES[20749] = "Wizard Oil"
+	check("a recipe with no spell id is named by what it makes",
+		Family.Names:Recipe { name = "Huile de sorcier", itemID = 20749 } == "Wizard Oil",
+		tostring(Family.Names:Recipe { name = "Huile de sorcier", itemID = 20749 }))
+	check("and falls back to the recorded word when the client knows neither id",
+		Family.Names:Recipe { name = "Huile de sorcier", spellID = 900002,
+			itemID = 999998 } == "Huile de sorcier")
 
 	-- The recipe list itself, which is the screen the report came from. It is drawn for
 	-- the member being played, so this borrows them and gives them back.
