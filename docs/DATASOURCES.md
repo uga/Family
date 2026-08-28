@@ -130,7 +130,25 @@ Tables that earned their keep:
 | `Item` | `ClassID`, `SubclassID` |
 | `ItemEffect` | `ParentItemID` → `SpellID`, which links a recipe item to what it teaches |
 | `SpellName`, `SkillLine` | names, `DisplayName_lang` |
-| `ChrRaces` | `ID`, `Name_lang`, `ClientFileString` — not fetched yet; races have the same problem professions had |
+| `ChrRaces` | `ID`, `Name_lang`, `Name_female_lang`, `ClientFileString`, `PlayableRaceBit` |
+
+`ChrRaces` is what `addons/Family/Races.lua` is generated from, by `tools/races.py`. Three
+findings there, all of which a hand-written table gets wrong:
+
+- **`ClientFileString` is not unique.** Race 23 is `Human` as well — the Gilnean one — and
+  races 24, 25 and 26 are all `Pandaren`. Read `PlayableRaceBit`: it is `-1` for every race a
+  player cannot be, including 23, and the generator reads it rather than deciding.
+- **The file string is not the name, even in English.** The undead are `Scourge` in it and
+  *Undead* on their own character sheet, and night elves are `NightElf`. Falling back to it
+  shows a player a word their game never uses.
+- **Era genders race names in Russian and in nothing else.** `Name_female_lang` equals
+  `Name_lang` for German, French and Spanish on 1.15.9 and differs on 2.5.6 and 5.5.4
+  (*Zwerg*/*Zwergin*, *Humain*/*Humaine*). Era wins where the builds disagree, so both forms
+  are shipped to recognise a word a client already wrote rather than to choose between them.
+
+wago serves no German `ChrRaces` for Burning Crusade at all — the request succeeds and returns
+an empty body — which costs nothing, because Era and Mists name every race on that build in
+German. The generator reports it rather than filling the gap.
 
 `SkillLine` is what `addons/Family/SkillLines.lua` is generated from, by `tools/skill-lines.py`.
 `CategoryID` 11 is exactly the primary professions on every build; category 9 is a mixed bag of

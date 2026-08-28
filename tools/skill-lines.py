@@ -111,6 +111,39 @@ def build_table():
     return professions, complaints, report
 
 
+# Emitted rather than left in the file to be preserved by hand. They were written into the
+# generated file once and the generator knew nothing about them, so the next --fetch would
+# have deleted Family:ProfessionName and Family:SkillLineFor without a word and left an addon
+# that loads and then fails at the first profession. Everything the file needs is here.
+ACCESSORS = """
+-- What to call a profession, in the language of whoever is reading.
+--
+-- The identity is the skill line id, so the answer is right whoever recorded the member and
+-- whatever they were running at the time: a French client reads a German-recorded character
+-- and sees its own word. Where the id is not known - a skill from a client newer than this
+-- table - the name the recording client used is all there is, which is still better than a
+-- blank and is the same exception talent names make.
+function Family:ProfessionName(id, recorded)
+	local entry = id and Family.SkillLines[id]
+	if entry then
+		local names = entry.names[Family.locale] or entry.names.enUS
+		if names and names[1] then return names[1] end
+	end
+	return recorded or (entry and entry.key) or tostring(id or "?")
+end
+
+-- The id behind whatever this client just called a profession.
+--
+-- Used on the clients that hand back a name and nothing else, and on item subtypes, which
+-- arrive in the player's language and have to be matched against members recorded in
+-- somebody else's.
+function Family:SkillLineFor(name)
+	if type(name) ~= "string" then return nil end
+	return Family.SkillLineByName[name]
+end
+"""
+
+
 def lua_string(s):
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
@@ -181,6 +214,10 @@ def emit(professions, out_path):
     add('\t\tend')
     add('\tend')
     add('end')
+    add('')
+    add('-' * 92)
+    add('')
+    add(ACCESSORS.strip())
     open(out_path, "w", encoding="utf-8").write("\n".join(lines) + "\n")
 
 

@@ -448,7 +448,22 @@ UnitName = function() return "Tester" end
 GetRealmName = function() return "Fire Maw" end
 UnitLevel = function() return 60 end
 UnitClass = function() return "Mage", "MAGE" end
-UnitRace = function() return "Gnome", "Gnome" end
+-- Three returns, as the real one has them: the word, the language-neutral file string and
+-- the id. The harness had only the first two, which is exactly the shape of record that made
+-- races read in the wrong language, so the stub now answers the way the client does.
+UnitRace = function() return "Gnome", "Gnome", 7 end
+UnitSex = function() return 2 end
+
+-- The client's own name for a race, which Family falls back to for the languages Races.lua
+-- does not ship. Answering in a language that is nobody's real one keeps the two apart: if a
+-- check expects this and gets "Gnome", the table answered when it should not have.
+C_CreatureInfo = {
+	GetRaceInfo = function(id)
+		local names = { [7] = "Gnomo di prova", [5] = "Non-morto di prova" }
+		if names[id] then return { raceID = id, raceName = names[id] } end
+		return nil
+	end,
+}
 UnitFactionGroup = function() return "Alliance" end
 GetMoney = function() return 12345678 end
 
@@ -1316,8 +1331,9 @@ for _, file in ipairs {
 	-- players who speak that language and cannot be asked to run a harness.
 	"Locale.lua",
 	"Locales/deDE.lua", "Locales/frFR.lua", "Locales/esES.lua", "Locales/ruRU.lua",
-	-- What each client calls each profession, generated from the client's own tables.
-	"SkillLines.lua",
+	-- What each client calls each profession and each race, generated from the client's
+	-- own tables.
+	"SkillLines.lua", "Races.lua",
 	"Capabilities.lua", "Codec.lua",
 	"Comm.lua", "Database.lua", "Names.lua", "Index.lua",
 	"Recipes.lua", "Cooldowns.lua",
@@ -3978,6 +3994,33 @@ do
 	Family.Database:Forget("Bare-FireMaw")
 end
 
+-- The bar and the tooltip are two views of one sum and must not be able to disagree. The
+-- bar was written once at login and never again, so a player who had spent two gold since
+-- read one total on their screen and a different one in the tooltip above it - and the
+-- tooltip, which is rebuilt on every hover, was the right one.
+do
+	-- LibDataBroker is a .pkgmeta external and is not in a clone, so there is no bar object
+	-- here unless one is made. It is one field, and the whole of what the library gives us.
+	Family.UI.broker = Family.UI.broker or { text = "" }
+
+	local before = Family.UI.broker.text
+	Family.Database:SetMeta("Tester-Auberdine", { money = 999999999 })
+	local text = Family.UI.broker.text
+	check("the broker bar is brought up to date when the database changes",
+		text ~= before, tostring(before) .. " -> " .. tostring(text))
+
+	-- The same sum, said twice, which is the fault as a player meets it.
+	local shown
+	for line in (brokerTooltipText() .. "\n"):gmatch("([^\n]*)\n") do
+		if line:find("All realms", 1, true) then shown = line:match("|r  (.+)$") end
+	end
+	check("and says the same total the tooltip under it says",
+		shown ~= nil and text ~= nil and text:find(shown, 1, true) ~= nil,
+		tostring(text) .. " vs " .. tostring(shown))
+
+	Family.Database:SetMeta("Tester-Auberdine", { money = 12345 })
+end
+
 -- Each click goes to a fixed place. Toggling to whatever was last shown meant that
 -- right-clicking for the options made every later left-click open the options too.
 Family.UI:Hide()
@@ -4017,6 +4060,65 @@ local function clickLastButton(label)
 	end
 	if found then fireClick(found) end
 	return found ~= nil
+end
+
+-- Every column set, drawn and measured
+--
+-- Until now only the overview set was ever drawn here, so six of the seven were checked by
+-- looking at them in the game. That is how the activity row came to say "1 (1 in p..." in
+-- English - a cell holding two numbers and a phrase in a sixty-five pixel column - and it
+-- was reported from a screenshot rather than by this file.
+--
+-- The columns already had a check that they add up to less than the row. What nothing said
+-- was that a cell has to fit the column it is put in. The two are not the same rule and only
+-- the first was written down.
+do
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+
+	-- One member with something to say in every column there is, and the widest thing each
+	-- of them can say: twelve letters in the mailbox and three more on the way, nineteen
+	-- days since anybody looked, and more gold than anybody has.
+	Family.Database:SetMeta("Busy-FireMaw", {
+		name = "Busy", realm = "Fire Maw", classFile = "WARLOCK", faction = "Alliance",
+		level = 60, money = 99999999, itemLevel = 118.5,
+		mailSeen = time() - 19 * 86400, mailCount = 12, mailInPost = 3,
+		mailExpiresBy = time() + 29 * 86400,
+		auctionsSeen = time() - 19 * 86400,
+		bagsSeen = time() - 19 * 86400, bagSlots = 102, bagFree = 37,
+		bankSeen = time() - 19 * 86400,
+		guild = "Loch Modan Yachting Club", hearth = "Thelsamar",
+		played = 4321987, playedAtLevel = 98765,
+	})
+
+	-- The tab strip carries some of these words too, so it is the last button with the
+	-- label that is wanted - the same trap the professions check above walked into.
+	for _, label in ipairs { "Overview", "Bags", "Activity", "Professions", "Currencies",
+		"Crafting", "Miscellaneous" } do
+		local clicked = clickLastButton(label)
+		local over = {}
+		for _, f in ipairs(fontStrings) do
+			local parent = type(f.__parent) == "table" and f.__parent or nil
+			-- A grid cell is a font string given a column's worth of room and no more.
+			-- Anything wider than the widest column is a caption or a note, and those are
+			-- meant to wrap onto a second line rather than fit on one.
+			if f.__visible ~= false and (parent == nil or parent.__shown ~= false)
+				and type(f.__text) == "string" and f.__text ~= ""
+				and type(f.__width) == "number" and f.__width > 0 and f.__width <= 130
+			then
+				local wide = f:GetStringWidth() or 0
+				if wide > f.__width then
+					over[#over + 1] = string.format("%q %d > %d", f.__text, math.ceil(wide),
+						math.ceil(f.__width))
+				end
+			end
+		end
+		check("the " .. label:lower() .. " set is drawn", clicked)
+		check("and every cell in it fits the column it was put in", #over == 0,
+			table.concat(over, " | "))
+	end
+
+	Family.Database:Forget("Busy-FireMaw")
 end
 
 Family.UI:ShowTab("summary")
@@ -7050,6 +7152,179 @@ print("what each client calls a profession")
 	check("the table says which professions are primary",
 		lines[197].primary == true and lines[185].primary == false,
 		"tailoring should be primary and cooking should not")
+
+	-- The accessors live in the generated file and are written by the generator. They were
+	-- once added to it by hand, which meant the next tools/skill-lines.py --fetch would have
+	-- deleted them and left an addon that loads and then fails at the first profession.
+	check("the generated profession file still carries the functions that read it",
+		type(Family.ProfessionName) == "function"
+			and type(Family.SkillLineFor) == "function")
+end)()
+
+--------------------------------------------------------------------------------------------
+-- What each client calls a race
+--
+-- The same fault as professions and the same fix, with one difference that changes the shape
+-- of it: the identity was never missing. UnitRace has always handed back a language-neutral
+-- file string and Family has always recorded it. What was missing was anything to turn it
+-- back into a word, so a member last played on a French client stayed French for ever.
+--
+-- Nothing has to be migrated for this and no rescan is needed, which is why it is not the
+-- same fix twice.
+--------------------------------------------------------------------------------------------
+
+print()
+print("what each client calls a race")
+;(function()
+	local was = Family.locale
+
+	local count = 0
+	for _ in pairs(Family.Races) do count = count + 1 end
+	check("the race table was generated and loaded", count >= 11, tostring(count))
+
+	local missing = {}
+	for _, id in ipairs { 1, 2, 3, 4, 5, 6, 7, 8, 10, 11 } do
+		if not Family.Races[id] then missing[#missing + 1] = tostring(id) end
+	end
+	check("every race Era and Burning Crusade let a player be is in it",
+		#missing == 0, table.concat(missing, ", "))
+
+	-- What is not in it matters as much as what is. Race 23 is "Human" in the file string
+	-- as well - it is the Gilnean one - and race 12 is a fel orc, and neither is anything a
+	-- player can be. The table itself says which are playable and that is what was read,
+	-- rather than a list somebody remembered.
+	check("only the races a player can be are in the table",
+		Family.Races[23] == nil and Family.Races[12] == nil and Family.Races[15] == nil,
+		"a non-playable race got in, and one of them is called Human too")
+	check("and the file string Human is the human a player can be",
+		Family.RaceByFile["Human"] == 1 and Family.Races[1].names.enUS[1] == "Human")
+
+	local wrong = {}
+	for file, id in pairs(Family.RaceByFile) do
+		if not (Family.Races[id] and Family.Races[id].key == file) then
+			wrong[#wrong + 1] = file
+		end
+	end
+	check("every file string points at the race it names", #wrong == 0,
+		table.concat(wrong, ", "))
+
+	-- The file string is not a word the game shows anybody. Falling back to it, which is
+	-- what Family did until this table existed, tells an English player their undead rogue
+	-- is a Scourge.
+	Family.locale = "enUS"
+	check("an undead reads as Undead and not as Scourge",
+		Family:RaceName { raceFile = "Scourge" } == "Undead",
+		tostring(Family:RaceName { raceFile = "Scourge" }))
+
+	-- The whole point: a member recorded on one client, read on another.
+	Family.locale = "esES"
+	check("a French client's word for a race reads as Spanish to a Spanish client",
+		Family:RaceName { race = "Nain", raceFile = "Dwarf", raceLocale = "frFR" } == "Enano",
+		tostring(Family:RaceName { race = "Nain", raceFile = "Dwarf", raceLocale = "frFR" }))
+	Family.locale = "deDE"
+	check("and as German to a German one",
+		Family:RaceName { race = "Nain", raceFile = "Dwarf", raceLocale = "frFR" } == "Zwerg",
+		tostring(Family:RaceName { race = "Nain", raceFile = "Dwarf", raceLocale = "frFR" }))
+
+	-- A word from the reader's own client beats the table, because the game genders it and
+	-- the table cannot. Russian is where this shows: a female gnome is a Gnomka.
+	Family.locale = "ruRU"
+	check("a word this client wrote itself is kept, gender and all",
+		Family:RaceName { race = "Гномка", raceFile = "Gnome", raceLocale = "ruRU" }
+			== "Гномка",
+		tostring(Family:RaceName { race = "Гномка", raceFile = "Gnome",
+			raceLocale = "ruRU" }))
+
+	-- And the same record written before Family recorded the language beside the word.
+	-- Every record in every existing database is one of these, so if this fails, upgrading
+	-- turns every Russian woman in the family into a man until somebody logs in on her.
+	check("and so is one written before the language was recorded with it",
+		Family:RaceName { race = "Гномка", raceFile = "Gnome" } == "Гномка",
+		tostring(Family:RaceName { race = "Гномка", raceFile = "Gnome" }))
+
+	-- But only when it is a word this language uses. Recognising it by shape rather than by
+	-- a recorded language must not let a foreign word through.
+	Family.locale = "esES"
+	check("a foreign word with no language recorded is still translated",
+		Family:RaceName { race = "Гномка", raceFile = "Gnome" } == "Gnomo",
+		tostring(Family:RaceName { race = "Гномка", raceFile = "Gnome" }))
+
+	-- Five languages is not all of them, and Family runs wherever the game does.
+	Family.locale = "itIT"
+	check("a language this table does not ship asks the client instead",
+		Family:RaceName { raceFile = "Gnome" } == "Gnomo di prova",
+		tostring(Family:RaceName { raceFile = "Gnome" }))
+	check("and falls back to what the recorder called it when the client will not answer",
+		Family:RaceName { race = "Nain", raceFile = "Dwarf" } == "Nain",
+		tostring(Family:RaceName { race = "Nain", raceFile = "Dwarf" }))
+
+	-- The recorded language earns its place here. In a language the table does not ship
+	-- there is no list of words to recognise the recorded one by, so the only thing that
+	-- can say "this word is already in the reader's language" is the language written down
+	-- beside it - and without it an Italian player reads their own characters in whatever
+	-- the client's own answer happens to be rather than in the word their client used.
+	check("a word recorded in a language the table does not ship is kept, because it said so",
+		Family:RaceName { race = "Gnomo mio", raceFile = "Gnome", raceLocale = "itIT" }
+			== "Gnomo mio",
+		tostring(Family:RaceName { race = "Gnomo mio", raceFile = "Gnome",
+			raceLocale = "itIT" }))
+
+	check("the generated race file still carries the function that reads it",
+		type(Family.RaceName) == "function")
+
+	-- The panels must ask this question rather than answer it. Two of them showed a race
+	-- and one of them read the recorded word straight off the record, which is how a French
+	-- word survived on a Spanish screen in the one place nobody thought to look.
+	Family.locale = "esES"
+	local member = { race = "Nain", raceFile = "Dwarf", raceLocale = "frFR" }
+	check("and the panels ask it rather than answering it themselves",
+		Family.UI:RaceName(member) == Family:RaceName(member)
+			and Family.UI:RaceName(member) == "Enano",
+		tostring(Family.UI:RaceName(member)))
+
+	-- A race from a client newer than this table has no word at all, and a panel must not
+	-- print a blank where a name goes.
+	check("a race nothing can name still leaves the panel something to print",
+		Family.UI:RaceName { raceFile = "Vulpera" } == "Vulpera",
+		tostring(Family.UI:RaceName { raceFile = "Vulpera" }))
+
+	-- The rule above, enforced rather than asserted. Changing the two panels that showed a
+	-- race broke no check at all, because a check written against one panel's output says
+	-- nothing about the next panel somebody adds - and one of the two had been reading the
+	-- recorded word straight off the record for months with every check passing.
+	do
+		local offenders = {}
+		for _, name in ipairs { "Window", "MemberPicker", "ChoicePicker", "Tooltip",
+			"Summary", "Talents", "Contents", "Professions", "Character", "Quests", "Wide",
+			"Guild", "Broker", "Options", "About", "Slash" } do
+			local path = "addons/Family_UI/" .. name .. ".lua"
+			local file = io.open(ROOT .. "/" .. path)
+			if not file then
+				check("harness can read " .. path, false, "missing")
+			else
+				local text = file:read("*a")
+				file:close()
+				local line = 0
+				for each in (text .. "\n"):gmatch("([^\n]*)\n") do
+					line = line + 1
+					-- Window.lua is where RaceName is, and its last resort is the file
+					-- string. Everywhere else, the word for a race comes from asking.
+					if each:match("%f[%w]meta%.race%f[^%w]")
+						or each:match("%f[%w]meta%.raceFile%f[^%w]")
+						or each:match("%f[%w]meta%.raceID%f[^%w]")
+					then
+						if not (name == "Window" and each:match("Family:RaceName")) then
+							offenders[#offenders + 1] = path .. ":" .. line
+						end
+					end
+				end
+			end
+		end
+		check("and no panel reads the recorded race off the record itself",
+			#offenders == 0, table.concat(offenders, ", "))
+	end
+
+	Family.locale = was
 end)()
 
 print()

@@ -33,15 +33,18 @@ function Identity:Scan()
 		realm = GetRealmName(),
 		level = UnitLevel("player"),
 		classFile = select(2, UnitClass("player")),
-		-- Three answers about one fact, because no single one of them is enough.
-		-- raceFile is the language-neutral id and is what everything keys on. raceID lets
-		-- a later client name the race in whatever language it is running in, whoever
-		-- recorded it. race is what this client called it, kept as the fallback for the
-		-- clients that will not answer by id - the same shape as the talent-name exception
-		-- (specification §4), and for the same reason.
+		-- Four answers about one fact, because no single one of them is enough.
+		-- raceFile is the language-neutral id and is what everything keys on; Races.lua
+		-- turns it back into a word in the reader's language. raceID says the same thing
+		-- and is what the client itself answers to. race is what this client called it,
+		-- which is the game's own gendered word and beats any table - but only for a
+		-- reader running the same language, so the language it is in is recorded with it.
+		-- Without that, "Humaine" and "Humain" are two strings and nothing can say which
+		-- of them a Spanish client is looking at.
 		race = UnitRace("player"),
 		raceFile = select(2, UnitRace("player")),
 		raceID = select(3, UnitRace("player")),
+		raceLocale = Family.locale,
 		sex = UnitSex and UnitSex("player") or nil,
 		faction = UnitFactionGroup("player"),
 		hearth = Family:TryCall(GetBindLocation),

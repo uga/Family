@@ -12,6 +12,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Mail in the post has a column of its own.** It used to be a phrase inside the mail column
+  — *1 (1 in post)* — which did not fit that column in English and fitted it in no other
+  language at all. It is now its own number beside the mailbox count, and it no longer hides
+  when a mailbox has never been looked at, which is the half of it that is known without one.
 - **Family speaks German, French, Spanish and Russian.** Every screen, every slash command,
   the manual it carries and the messages it prints. Anything not yet translated falls back to
   English rather than to a blank, so nothing can go missing; and where the game already has a
@@ -25,6 +29,19 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Races are shown in your own language, whoever recorded them.** A character last played on
+  a French client stayed French on a Spanish one, and a member shared with you was named in
+  whatever their owner was running. Family now reads the game's own race table, so it says
+  what your client says — and where your own client wrote the word, that word is kept, gender
+  and all. Nothing needs rescanning for this one.
+- **The undead are undead.** Where Family had no word for a race it fell back to the internal
+  file string, which calls them *Scourge* and night elves *NightElf* — words the game shows
+  nobody.
+- **The minimap total agrees with the tooltip under it.** The figure on the bar was worked out
+  once at login and never again, so it drifted from the tooltip and the summary by however
+  much you had spent since. It is now brought up to date whenever anything changes.
+- **Dates take less room.** *19 days ago* is now *19d ago*, matching the *in 19d* the other
+  columns already used — the long form was wide enough to be cut off in the activity row.
 - **Professions are the same profession in every language.** Family used to file them under
   their name, because Classic Era offers nothing else to file them under — so the same
   character read on a French client and a Spanish one had two sets of professions, and neither

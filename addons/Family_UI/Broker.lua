@@ -383,6 +383,17 @@ Family:OnDatabaseReady("broker", function()
 	UI.broker = createBroker()
 	UI:UpdateBroker()
 
+	-- The one number on screen that nobody asked to see, and the only one that was never
+	-- brought up to date. The tooltip is built fresh on every hover and the summary redraws
+	-- itself when the database says something changed, so the bar sat there saying what was
+	-- true at login and disagreeing with both of them by however much the player had spent.
+	--
+	-- Not the panels' watcher, which returns early while the window is closed: the bar has
+	-- no closed state and cannot wait to be reopened. Nor is it deferred the way that one
+	-- is - what a panel does on a change is redraw every row it has, and what this does is
+	-- add up forty numbers and format one string.
+	Family.Database:OnChanged("broker", function() UI:UpdateBroker() end)
+
 	minimapButton = createMinimapButton()
 	UI.minimapButton = minimapButton
 

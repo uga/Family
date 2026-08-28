@@ -417,3 +417,34 @@ is true, checkable, and was available from the beginning.
 fault without touching the code that made it. Nothing in `Professions.lua` changed. What
 changed is that the language became something a player would move.
 
+--------------------------------------------------------------------------------------------
+
+## L-016 — A check written to the fault, not to the rule
+
+**2026-08-28.** Four faults in one session, all reported from a screenshot, all of a kind.
+
+The activity row said `1 (1 in p...`. The minimap bar said `7658g 65s 19c` while the tooltip
+above it said `7656g 25s 04c`. A race recorded on a French client stayed French on a Spanish
+one. And the character panel had been reading a race off the record for months.
+
+Every one of them had a check nearby that passed.
+
+- The columns had a check that they *add up to less than the row*. Nothing said a **cell** has
+  to fit the column it is put in — a different rule, and only the first was written down.
+- Only the overview column set had ever been drawn by the harness. Six of the seven were being
+  checked by looking at them in the game, which is a person, on one client, in one language.
+- The broker had checks on what its tooltip says. Nothing compared the tooltip to the bar,
+  because they were built by the same function and were assumed to agree — and the bar was
+  written once at login and never again.
+- Changing the two panels that show a race broke no check at all. A check written against one
+  panel's output says nothing about the next panel somebody adds.
+
+**The checks that now catch them:** every column set is drawn and every cell measured against
+the column it was given; the bar and the tooltip are asserted to say the same sum; and no file
+in `Family_UI` may read `meta.race` at all, by name and line number, which is a rule rather
+than an instance.
+
+**The shape of it:** a check written to reproduce a reported fault passes as soon as that
+fault is fixed, and says nothing about the next one. The rule underneath it — *cells fit*,
+*two views of one number agree*, *panels ask rather than answer* — is what has to be written
+down, and it is almost always cheaper to check than the instance was.

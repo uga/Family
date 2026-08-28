@@ -813,6 +813,18 @@ orphaned keys, translations too long for the space they sit in, and format speci
 not match their English. It also refuses any language claimed in `CURSEFORGE.md` or in this
 section that has no translations behind it (L-013).
 
+**A word a client wrote is not an identity.** Two things Family shows are named by the client
+rather than by an id it can store — professions on Classic Era, which the skill list gives no
+id for, and races, whose id `UnitRace` does return but which were being shown from the word
+instead. Both are keyed by a language-neutral identity and named at display from a table
+generated out of the client's own DB2 (`addons/Family/SkillLines.lua`, `addons/Family/Races.lua`;
+see DATASOURCES §3), so a member recorded on a German client reads correctly on a French one
+and a member shared by a third family reads correctly to both.
+
+Where the recording client's own word is in the reader's language it is preferred to the
+table, because the game gendered it and no table here can: a Russian gnome is a Gnom or a
+Gnomka and the client already knew which.
+
 The search index is per language and is rebuilt when the client language changes (§2.1).
 
 ---

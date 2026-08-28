@@ -6,6 +6,8 @@ addons/Family/Libs/
 # Caches written by the data generators
 tools/.itemsources-cache/
 tools/.craftlevels-cache/
+tools/.skill-lines-cache/
+tools/.races-cache/
 
 # Bytecode left behind when one generator imports another
 tools/__pycache__/
@@ -21,4 +23,3 @@ addons/Family/Data/
 # on the documents. The rule is kept by the copy on this machine, where it does the work.
 CLAUDE.md
 .claude/
-tools/.skill-lines-cache/

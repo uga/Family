@@ -1069,7 +1069,7 @@ local function build(frame)
 					tostring(meta.level or "?"),
 					string.format("|cff%02x%02x%02x", red * 255, green * 255, blue * 255),
 					className or "?") },
-				{ string.format("|cffdddddd%s|r", meta.race or meta.raceFile or "") },
+				{ string.format("|cffdddddd%s|r", UI:RaceName(meta)) },
 				{ meta.faction
 					and string.format("%s%s|r", FACTION_COLOUR[meta.faction] or "|cffdddddd",
 						meta.faction)

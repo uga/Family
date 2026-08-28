@@ -78,13 +78,24 @@ local SETS = {
 			-- Wide enough for "not seen", which is what these say far more often than
 			-- they say a number. At fifty it broke across two lines and drew over the
 			-- member underneath.
-			{ key = "mail",     label = L["Mail"],       width = 65,  justify = "RIGHT" },
-			{ key = "mailexp",  label = L["Expires in"], width = 80,  justify = "RIGHT" },
+			--
+			-- The money columns are the slack in this row: "4085g 87s 01c" is the widest
+			-- sum anybody in a test family has and it is not a hundred and five pixels
+			-- wide. What that slack bought is a column for the mail in post, which used
+			-- to be a phrase inside the mail column and was truncated in every language
+			-- including English.
+			-- Each of these is at the width its own contents need, not at a round
+			-- number: "not seen" is fifty-two pixels and is what half of them say most
+			-- of the time, a money column has to hold four figures of gold, and a date
+			-- column has to hold "il y a 19j" as well as "19d ago".
+			{ key = "mail",     label = L["Mail"],       width = 61,  justify = "RIGHT" },
+			{ key = "inpost",   label = L["In post"],    width = 60,  justify = "RIGHT" },
+			{ key = "mailexp",  label = L["Expires in"], width = 67,  justify = "RIGHT" },
 			{ key = "mailseen", label = L["Mail seen"],  width = 75,  justify = "RIGHT" },
-			{ key = "auctions", label = L["Auctions"],   width = 65,  justify = "RIGHT" },
-			{ key = "bids",     label = L["Bid value"],  width = 105, justify = "RIGHT" },
-			{ key = "buyouts",  label = L["Buyout"],     width = 105, justify = "RIGHT" },
-			{ key = "aucseen",  label = L["AH seen"],    width = 70,  justify = "RIGHT" },
+			{ key = "auctions", label = L["Auctions"],   width = 61,  justify = "RIGHT" },
+			{ key = "bids",     label = L["Bid value"],  width = 93,  justify = "RIGHT" },
+			{ key = "buyouts",  label = L["Buyout"],     width = 93,  justify = "RIGHT" },
+			{ key = "aucseen",  label = L["AH seen"],    width = 74,  justify = "RIGHT" },
 		},
 	},
 	{
@@ -360,24 +371,29 @@ CELL.ilvl = function(meta)
 	return string.format("%.1f", meta.itemLevel)
 end
 
--- Letters watched being posted are counted here with everything else, and said separately.
--- They are the one thing in this table known from the other end - somebody sent them, nobody
--- has yet seen them in a mailbox (§5) - and a column that folded them in silently would be
--- claiming a mailbox had been looked at when it had not.
+-- Two facts, and they were one column until they would not fit in it.
+--
+-- Letters watched being posted are the one thing in this table known from the other end -
+-- somebody sent them, nobody has yet seen them in a mailbox (§5) - so they cannot be folded
+-- in silently: that would claim a mailbox had been looked at when it had not. Said in the
+-- same cell they read "1 (1 in post)", which is fourteen characters of a sixty-five pixel
+-- column in English and "1 (1 en el correo)" in Spanish, and what a player actually saw was
+-- "1 (1 in p...".
+--
+-- Two columns of one number each fit in any language, because neither of them holds a word.
 CELL.mail = function(meta)
-	local inPost = Family.Mail:InPost(meta)
-
-	if not meta.mailSeen then
-		if inPost > 0 then
-			return string.format(L["|cffffd700%d|r |cff888888in post|r"], inPost)
-		end
-		return NOT_SEEN
-	end
-
-	if inPost > 0 then
-		return string.format(L["%d |cff888888(%d in post)|r"], meta.mailCount or 0, inPost)
-	end
+	if not meta.mailSeen then return NOT_SEEN end
 	return tostring(meta.mailCount or 0)
+end
+
+-- Gold, because it is the column that says something is coming. Nothing on the way is a
+-- dash rather than a nought, so the eye passes over the rows with nothing to say - and it
+-- does not depend on a mailbox having been seen, because this is the half that is known
+-- without one.
+CELL.inpost = function(meta)
+	local inPost = Family.Mail:InPost(meta)
+	if inPost <= 0 then return UNKNOWN end
+	return string.format("|cffffd700%d|r", inPost)
 end
 
 CELL.mailseen = function(meta)

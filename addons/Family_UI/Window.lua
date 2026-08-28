@@ -924,23 +924,14 @@ UI.SIDE_COLOUR = {
 -- without coming through here first.
 -- What the game calls this race, in the language the reader is running.
 --
--- By id first, because that answer is right whoever recorded the member and whatever they
--- were running at the time - a German client's night elf reads correctly on a French one.
--- Then what the recording client called it, which is right for that member if nobody has
--- logged in on them since. Then the file string, which is at least a word and never a blank.
+-- The whole of the answer is in Family:RaceName (Races.lua), because the data layer is where
+-- the table lives and two panels asking the same question must not be able to disagree about
+-- it. Left here is the last resort: the file string is not a word the game shows anybody -
+-- the undead are "Scourge" in it and "Undead" on their own character sheet - so it beats a
+-- blank and nothing else.
 function UI:RaceName(meta)
 	if not meta then return self.UNKNOWN end
-
-	local id = meta.raceID
-	if id and C_CreatureInfo and C_CreatureInfo.GetRaceInfo then
-		local info = Family:TryCall(C_CreatureInfo.GetRaceInfo, id)
-		if type(info) == "table" and type(info.raceName) == "string" and info.raceName ~= ""
-		then
-			return info.raceName
-		end
-	end
-
-	return meta.race or meta.raceFile or self.UNKNOWN
+	return Family:RaceName(meta) or meta.raceFile or self.UNKNOWN
 end
 
 function UI:SideName(side)
@@ -969,17 +960,22 @@ function UI:Ago(stamp)
 	local seconds = time() - stamp
 	if seconds < 60 then return L["just now"] end
 
-	-- Abbreviated units on purpose. "5 minutes ago" needs one plural in English, two in
-	-- German and three in Russian; "5 min" needs none in any of them, and a date beside a
-	-- number in a narrow column is not the place to be teaching declension.
+	-- Abbreviated units on purpose, and down to one letter each. "5 minutes ago" needs one
+	-- plural in English, two in German and three in Russian; "5m" needs none in any of
+	-- them, and a date beside a number in a narrow column is not the place to be teaching
+	-- declension. "19 days ago" was still wide enough to be cut to "19 days a..." in the
+	-- activity row, in English, which is the language every width here was measured in.
+	--
+	-- The same units the other direction uses, deliberately: "in 6h" and "6h ago" are the
+	-- one arithmetic said twice and a reader should not have to learn two scales.
 	if seconds < 3600 then
-		return string.format(L["%d min ago"], math.floor(seconds / 60))
+		return string.format(L["%dm ago"], math.floor(seconds / 60))
 	end
 	if seconds < 86400 then
-		return string.format(L["%d h ago"], math.floor(seconds / 3600))
+		return string.format(L["%dh ago"], math.floor(seconds / 3600))
 	end
 
 	local days = math.floor(seconds / 86400)
 	if days == 1 then return L["yesterday"] end
-	return string.format(L["%d days ago"], days)
+	return string.format(L["%dd ago"], days)
 end

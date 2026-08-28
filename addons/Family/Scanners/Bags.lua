@@ -205,11 +205,13 @@ function Bags:Scan()
 		realm       = GetRealmName(),
 		level       = UnitLevel("player"),
 		classFile   = select(2, UnitClass("player")),
-		-- Both: the token to key on and the word to show. A race has no id worth having
-		-- and the client will not translate the token back for another character, so
-		-- unlike an item this is one of the few things worth keeping as words.
+		-- The token to key on, the word to show, and the language that word is in.
+		-- Races.lua turns the token back into a word for whoever is reading, so the word
+		-- itself is no longer the only answer - but it is still the best one for a reader
+		-- running this same language, and it is only that if we say which language it is.
 		race        = UnitRace("player"),
 		raceFile    = select(2, UnitRace("player")),
+		raceLocale  = Family.locale,
 		faction     = UnitFactionGroup("player"),
 		money       = GetMoney(),
 		-- Bags are the one thing that is genuinely live, but "live" still means "as of the
