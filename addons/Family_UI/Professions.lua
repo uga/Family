@@ -570,7 +570,12 @@ local function build(frame)
 				-- it is disarmed: rows are pooled, and one left armed from a previous draw
 				-- would cast for a recipe it is no longer showing.
 				r.canOpen = false
-				r.fallback = { { recipe.name or "?" }, { recipe.profession } }
+
+				-- The search groups by identity, so what it holds is a skill line rather
+				-- than a word. Turned back into one here, in the reader's language.
+				local profession = Family:ProfessionName(recipe.profession)
+
+				r.fallback = { { recipe.name or "?" }, { profession } }
 
 				local icon = recipe.icon
 				if not icon and recipe.itemID then
@@ -579,7 +584,7 @@ local function build(frame)
 				r.icon:SetTexture(icon or "Interface\\Icons\\INV_Misc_QuestionMark")
 
 				r.text:SetText(string.format("%s   |cff888888%s|r", recipe.name or "?",
-					recipe.profession))
+					profession))
 				r.text:SetWidth(scroll:GetWidth() - 260 - ROW)
 
 				local names = {}
@@ -652,10 +657,11 @@ local function build(frame)
 		end
 		local staleLanguage = next(stale) ~= nil
 
-		for name, skill in pairs(skills) do
-			local record = stored[name]
+		for id, skill in pairs(skills) do
+			local record = stored[id]
+			local name = Family:ProfessionName(id, skill.name)
 			if record and record.recipes and #record.recipes > 0 then
-				ordered[#ordered + 1] = { name = name, skill = skill }
+				ordered[#ordered + 1] = { name = name, id = id, skill = skill }
 			elseif record and record.recipes then
 				makesNothing[#makesNothing + 1] = name
 			elseif staleLanguage then
@@ -704,8 +710,8 @@ local function build(frame)
 		end
 
 		local listed = {}
-		for _, entry in ipairs(ordered) do listed[entry.name] = true end
-		if not chosen or not listed[chosen] then chosen = ordered[1].name end
+		for _, entry in ipairs(ordered) do listed[entry.id] = true end
+		if not chosen or not listed[chosen] then chosen = ordered[1].id end
 
 		-- Wrapped rather than run off the edge. Eight professions is normal - two primary,
 		-- three secondary, and whatever else the class was given - and the ninth used to
@@ -746,18 +752,18 @@ local function build(frame)
 				end
 				if button.label.SetWordWrap then button.label:SetWordWrap(false) end
 			end
-			UI:MarkSelected(button, entry.name == chosen)
+			UI:MarkSelected(button, entry.id == chosen)
 
 			-- Clicking it opens that profession, where this is the member being played
 			-- and Family has seen the window once and so knows what opens it.
-			local record = stored[entry.name]
+			local record = stored[entry.id]
 			armButton(button, member.key == Family:CurrentMember()
 				and record and record.openWith or nil)
 
 			-- PostClick, never OnClick: see armButton above. This button's OnClick belongs
 			-- to the game, and taking it was why clicking a profession opened nothing.
 			button:SetScript("PostClick", function()
-				chosen = entry.name
+				chosen = entry.id
 				-- A recipe name typed for one profession means nothing in the next,
 				-- and an empty list reads as missing data rather than as a filter.
 				search:SetText("")

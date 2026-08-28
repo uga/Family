@@ -395,10 +395,23 @@ recipes in another, draws the panel, and fails if it says *never opened* or fail
 itself. Records now carry the locale they were written in, which is what makes the two cases
 distinguishable without a table of profession names in eleven languages.
 
-**What it does not do is recover the data**, because it cannot: there is no id, so there is no
-mapping from "Couture" to "Tailoring" that does not amount to shipping that table. It tells
-the player the one thing that fixes it - log in on the character - instead of implying the
-recipes were never recorded.
+**That was the first answer, and it was too small.** It told the player the one thing that
+fixed it instead of implying the recipes were never recorded, which is honest, but it accepted
+the missing identity as a given. The objection to fixing it properly - that a mapping would
+mean shipping profession names in every language - was lifted from the talent-name exception,
+where there are thousands of them. There are twelve professions. Sixty short strings is a
+paragraph, not a data pipeline, and the objection was never examined once it had been made.
+
+The identity now exists, generated from the client's own `SkillLine` table
+(`tools/skill-lines.py`). Both words file under the same number, so nothing needs recovering:
+a member recorded in French reads correctly on a Spanish client, and a Wide Family member
+shared by a German player files under the same key as everybody else. It also settled a
+question the scanner had been answering by heuristic - which professions are primary - because
+the same table says so outright.
+
+**And it was the person who could not run the harness who saw the objection was wrong.** The
+argument that killed it was "we know the ids from TBC, and no profession was removed" - which
+is true, checkable, and was available from the beginning.
 
 **The general shape:** adding a feature can turn a documented, sound trade-off into a live
 fault without touching the code that made it. Nothing in `Professions.lua` changed. What

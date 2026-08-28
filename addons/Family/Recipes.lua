@@ -51,14 +51,19 @@ local RECIPE_CLASS = 9
 
 --------------------------------------------------------------------------------------------
 
--- Every profession name Family has seen on anybody. The item's subtype arrives in the
--- client's own words and so did these, so they can be compared without translating either.
+-- Every profession name Family has seen on anybody, in this client's words.
+--
+-- The item's subtype arrives in the client's own language, so the comparison has to be made
+-- in that language. Members are filed by skill line id, which is the same number in all
+-- five - so the id is turned back into a word here, and the word the recording client used
+-- is kept alongside it for the professions that have no id at all.
 local function knownProfessions()
 	local names = {}
 
 	for _, entry in pairs(Family.Database:Members()) do
-		for name in pairs((entry.meta or {}).skills or {}) do
-			names[name] = true
+		for id, skill in pairs((entry.meta or {}).skills or {}) do
+			names[Family:ProfessionName(id, skill.name)] = true
+			if skill.name then names[skill.name] = true end
 		end
 	end
 
@@ -132,6 +137,16 @@ function Recipes:Search(needle, limit)
 					local id = recipe.spellID
 						and ("spell:" .. recipe.spellID)
 						or (profession .. "\0" .. name)
+					-- Where the same recipe is held under two professions - a real one
+					-- and something that is not in the client's table, like a rogue's
+					-- poisons or a death knight's runeforging - the identified one is the
+					-- better label. "Copper Chain Belt, Runeforging" is not wrong only in
+					-- a harness.
+					if byName[id] and type(byName[id].profession) ~= "number"
+						and type(profession) == "number" then
+						byName[id].profession = profession
+					end
+
 					if not byName[id] then
 						byName[id] = {
 							name = name,
@@ -181,14 +196,19 @@ end
 function Recipes:Crafters(profession, itemName, required, minLevel)
 	local found = {}
 
+	-- The item's subtype is a word in this client's language; members are filed by identity.
+	-- Resolving it here is what lets a French client's Couture find a member whose window
+	-- was opened in English - which it could not do while both sides were words.
+	local wanted = Family:SkillLineFor(profession) or profession
+
 	for key, entry in pairs(Family.Database:Members()) do
 		local meta = entry.meta or {}
-		local skill = (meta.skills or {})[profession]
+		local skill = (meta.skills or {})[wanted]
 
 		if skill then
 			local payload = Family.Database:Payload(key)
 			local record = payload and payload.professions
-				and payload.professions[profession]
+				and payload.professions[wanted]
 			local recipes = record and record.recipes
 
 			local knows = false

@@ -1626,27 +1626,41 @@ end
 
 print()
 print("professions")
+do
 advance(5)
+
+-- Skill line ids. Professions are filed under these rather than under a word, because a word
+-- is one language: the stub below calls enchanting "Enchantement", and that is the whole
+-- point - it is the same profession as anybody else's, and now files under the same key.
+-- One table rather than four locals: this chunk is close to Lua's limit of 200 of them.
+local SKILL = { blacksmithing = 164, cooking = 185, firstAid = 129, enchanting = 333 }
 
 local skills = Family.Database:Meta(key).skills
 check("professions recorded", skills ~= nil)
 if skills then
+
 	-- Blacksmithing sits under a collapsed header. A scan that only reads what is visible
 	-- reports no professions at all, which is the failure this stub exists to catch.
 	check("a skill hidden under a collapsed header is still found",
-		skills.Blacksmithing ~= nil)
-	check("with its rank", skills.Blacksmithing and skills.Blacksmithing.rank == 287,
-		skills.Blacksmithing and tostring(skills.Blacksmithing.rank))
+		skills[SKILL.blacksmithing] ~= nil)
+	check("with its rank", skills[SKILL.blacksmithing] and skills[SKILL.blacksmithing].rank == 287,
+		skills[SKILL.blacksmithing] and tostring(skills[SKILL.blacksmithing].rank))
+	check("and it is filed under its skill line id, not under a word",
+		skills.Blacksmithing == nil and skills[SKILL.blacksmithing] ~= nil,
+		"a name-keyed profession is a profession that vanishes when the client changes")
+	check("with what this client called it kept beside it",
+		skills[SKILL.blacksmithing] and skills[SKILL.blacksmithing].name == "Blacksmithing",
+		skills[SKILL.blacksmithing] and tostring(skills[SKILL.blacksmithing].name))
 	check("a secondary profession is a profession, though it cannot be unlearned",
-		skills.Cooking ~= nil and skills["First Aid"] ~= nil)
+		skills[SKILL.cooking] ~= nil and skills[SKILL.firstAid] ~= nil)
 	check("cooking is marked secondary",
-		skills.Cooking and skills.Cooking.secondary == true)
+		skills[SKILL.cooking] and skills[SKILL.cooking].secondary == true)
 	check("and so is first aid, with its rank",
-		skills["First Aid"] and skills["First Aid"].secondary == true
-			and skills["First Aid"].rank == 225,
-		skills["First Aid"] and tostring(skills["First Aid"].rank))
-	check("blacksmithing is not", skills.Blacksmithing
-		and skills.Blacksmithing.secondary == false)
+		skills[SKILL.firstAid] and skills[SKILL.firstAid].secondary == true
+			and skills[SKILL.firstAid].rank == 225,
+		skills[SKILL.firstAid] and tostring(skills[SKILL.firstAid].rank))
+	check("blacksmithing is not", skills[SKILL.blacksmithing]
+		and skills[SKILL.blacksmithing].secondary == false)
 	check("a weapon skill is not mistaken for a profession", skills.Swords == nil)
 	check("nor is a language", skills.Common == nil)
 end
@@ -1658,11 +1672,11 @@ end
 check("and the skill window is put back as it was found", collapsedAfter)
 
 check("no recipes until a profession window is opened",
-	Family.Database:Payload(key).professions.Blacksmithing.recipes == nil)
+	Family.Database:Payload(key).professions[SKILL.blacksmithing].recipes == nil)
 
 fire("TRADE_SKILL_SHOW")
 advance(1)
-local bs = Family.Database:Payload(key).professions.Blacksmithing
+local bs = Family.Database:Payload(key).professions[SKILL.blacksmithing]
 check("recipes read once the window is open", bs.recipes and #bs.recipes == 2,
 	bs.recipes and tostring(#bs.recipes))
 check("the header is not a recipe", bs.recipes
@@ -1684,13 +1698,13 @@ TRADE_SKILL_OPEN = false
 fire("CRAFT_SHOW")
 advance(1)
 check("a craft the member has no skill for is refused",
-	Family.Database:Payload(key).professions["Enchantement"] == nil)
+	Family.Database:Payload(key).professions[SKILL.enchanting] == nil)
 
 -- Give them the skill and it is accepted, items and item-less enchants alike.
 table.insert(SKILL_LINES, { name = "Enchantement", rank = 300, maxRank = 300,
 	abandonable = true })
 Family.Professions:Scan(true)
-local ench = Family.Database:Payload(key).professions["Enchantement"]
+local ench = Family.Database:Payload(key).professions[SKILL.enchanting]
 check("enchanting is read from the Craft frame", ench ~= nil and ench.recipes ~= nil)
 check("both its recipes are kept", ench and #ench.recipes == 2,
 	ench and tostring(#ench.recipes))
@@ -1763,6 +1777,7 @@ GetTradeSkillLine = savedTradeLine
 TRADE_SKILL_OPEN = false
 
 print()
+end
 print("what is ready, and what is not ready yet")
 
 local craftCooldowns = Family.Database:Meta(key).craftCooldowns
@@ -2189,21 +2204,21 @@ print("the crafters block on a recipe tooltip")
 -- give at once. Tester knows Copper Chain Belt already (it is in the recipes read from the
 -- open window above); the others differ in what they have been seen to know.
 Family.Database:SetMeta("Novice-FireMaw", { name = "Novice", realm = "Fire Maw", level = 60,
-	classFile = "WARRIOR", skills = { Blacksmithing = { rank = 40, maxRank = 75 } } })
-Family.Database:SetPayload("Novice-FireMaw", { professions = { Blacksmithing = {
+	classFile = "WARRIOR", skills = { [164] = { name = "Blacksmithing", rank = 40, maxRank = 75 } } })
+Family.Database:SetPayload("Novice-FireMaw", { professions = { [164] = {
 	rank = 40, maxRank = 75, recipes = {} } } })
 
 Family.Database:SetMeta("Ready-FireMaw", { name = "Ready", realm = "Fire Maw", level = 60,
-	classFile = "MAGE", skills = { Blacksmithing = { rank = 300, maxRank = 300 } } })
-Family.Database:SetPayload("Ready-FireMaw", { professions = { Blacksmithing = {
+	classFile = "MAGE", skills = { [164] = { name = "Blacksmithing", rank = 300, maxRank = 300 } } })
+Family.Database:SetPayload("Ready-FireMaw", { professions = { [164] = {
 	rank = 300, maxRank = 300, recipes = {} } } })
 
 Family.Database:SetMeta("Unseen-FireMaw", { name = "Unseen", realm = "Fire Maw", level = 60,
-	classFile = "PRIEST", skills = { Blacksmithing = { rank = 300, maxRank = 300 } } })
+	classFile = "PRIEST", skills = { [164] = { name = "Blacksmithing", rank = 300, maxRank = 300 } } })
 
 Family.Database:SetMeta("Young-FireMaw", { name = "Young", realm = "Fire Maw", level = 5,
-	classFile = "ROGUE", skills = { Blacksmithing = { rank = 300, maxRank = 300 } } })
-Family.Database:SetPayload("Young-FireMaw", { professions = { Blacksmithing = {
+	classFile = "ROGUE", skills = { [164] = { name = "Blacksmithing", rank = 300, maxRank = 300 } } })
+Family.Database:SetPayload("Young-FireMaw", { professions = { [164] = {
 	rank = 300, maxRank = 300, recipes = {} } } })
 
 -- What the crafters block said, as a name -> status list.
@@ -2274,8 +2289,8 @@ check("and one on the same side is not", unmarked
 -- which. The realm goes on the ones that clash and on nothing else.
 Family.Database:SetMeta("Tester-Auberdine", { name = "Tester", realm = "Auberdine",
 	level = 60, classFile = "PALADIN",
-	skills = { Blacksmithing = { rank = 300, maxRank = 300 } } })
-Family.Database:SetPayload("Tester-Auberdine", { professions = { Blacksmithing = {
+	skills = { [164] = { name = "Blacksmithing", rank = 300, maxRank = 300 } } })
+Family.Database:SetPayload("Tester-Auberdine", { professions = { [164] = {
 	rank = 300, maxRank = 300, recipes = {} } } })
 
 crafters = craftersFor(2881, "Requires Blacksmithing (100)")
@@ -2307,7 +2322,7 @@ check("a trade good named after a profession is not taken for a recipe",
 	dustHeading == false)
 
 -- Both blocks on one tooltip, with exactly one blank line between them.
-Family.Database:SetPayload("Novice-FireMaw", { professions = { Blacksmithing = {
+Family.Database:SetPayload("Novice-FireMaw", { professions = { [164] = {
 	rank = 40, maxRank = 75, recipes = {} } },
 	bags = { [0] = { size = 4, free = 3, slots = { [1] = { id = 2881, count = 1 } } } } })
 Family.Index:Invalidate()
@@ -2918,15 +2933,14 @@ end
 
 -- A profession recorded in one language, read in another
 --
--- A profession has no id on Era, so it is keyed by its name, and a name is one language.
--- Recipes opened on an English client sit under "Leatherworking"; the same character's skill
--- list, re-read after the client was set to French, is under "Travail du cuir". Nothing
--- matched, and the panel reported the profession as never opened - about a profession whose
--- recipes it was holding the whole time.
---
 -- Reported from a live client: a Spanish panel listing five French professions as never
 -- opened, and a hunter whose professions had apparently vanished until its windows were
--- reopened.
+-- reopened. Recipes opened on a French client sat under "Couture" while the skill list,
+-- re-read after the client was set to English, was under "Tailoring". Nothing matched, and
+-- the panel said never opened about a profession whose recipes it was holding.
+--
+-- Both words are skill line 197, so both now file under 197 and the recipes are simply
+-- found. This drives the case that used to fail and asserts that it no longer does.
 do
 	local who = Family:CurrentMember()
 	local payload = Family.Database:Payload(who) or {}
@@ -2935,16 +2949,31 @@ do
 	local wasSkills = (Family.Database:Meta(who) or {}).skills
 	local wasLocale = (Family.Database:Meta(who) or {}).skillsLocale
 
+	-- The skill list as an English client reads it, filed by identity.
 	Family.Database:SetMeta(who, {
-		skills = { ["Tailoring"] = { rank = 300, maxRank = 300, secondary = false } },
+		skills = { [Family:SkillLineFor("Tailoring")] =
+			{ rank = 300, maxRank = 300, secondary = false, name = "Tailoring" } },
 		skillsLocale = Family.locale,
 	})
-	-- The recipes were opened before the client was set to this language.
+	-- The recipes, opened while the client was French - and filed under the same number,
+	-- because that is what the French word resolves to.
 	payload.professions = {
-		["Couture"] = { recipes = { { id = 3914, name = "Bolt of Linen" } },
-			recipesSeen = time(), locale = "frFR" },
+		[Family:SkillLineFor("Couture")] = {
+			recipes = { { id = 3914, name = "Bolt of Linen" } },
+			recipesSeen = time(), locale = "frFR", name = "Couture",
+		},
 	}
 	Family.Database:SetPayload(who, payload)
+
+	check("the French word and the English one are the same profession",
+		Family:SkillLineFor("Couture") == Family:SkillLineFor("Tailoring"))
+
+	-- Earlier checks left a search typed and the whole family ticked, which puts this panel
+	-- into a different mode entirely.
+	if _G.FamilyProfessionsSearch then _G.FamilyProfessionsSearch:SetText("") end
+	if _G.FamilyProfessionsEveryone then
+		_G.FamilyProfessionsEveryone:SetChecked(false)
+	end
 
 	Family.UI:ShowTab("professions")
 	Family.UI:Refresh()
@@ -2952,9 +2981,20 @@ do
 	check("a profession recorded in another language is not called never opened",
 		not visibleText("Tailoring never opened"),
 		"the panel claims a profession it holds recipes for was never opened")
-	check("and the panel says what will put it right",
-		visibleText("recorded in another language"),
-		"nothing on the panel explains why the recipes are missing")
+	check("and its recipes are found rather than merely explained",
+		visibleText("Bolt of Linen"),
+		"the recipes are still unreachable - the identity did not join them up")
+	-- A button's label lives on the button, not in a font string, so this looks where the
+	-- label actually is rather than where the other checks look.
+	local labelled = false
+	for _, f in ipairs(frames) do
+		if type(f.__text) == "string" and f.__text:find("Tailoring", 1, true)
+			and f.__shown ~= false then
+			labelled = true
+		end
+	end
+	check("and it is named in the language of whoever is reading", labelled,
+		"the profession is shown under the word it was recorded with, not the reader's")
 
 	payload.professions = before
 	Family.Database:SetPayload(who, payload)
@@ -3264,9 +3304,9 @@ check("and the recipe that was clicked is selected once the window has arrived",
 
 -- Not for somebody else's profession: their window is not going to open on this computer.
 local other = Family.Database:Meta("Other-FireMaw")
-Family.Database:SetMeta("Other-FireMaw", { skills = { Blacksmithing =
-	{ rank = 100, maxRank = 300 } } })
-Family.Database:SetPayload("Other-FireMaw", { professions = { Blacksmithing = {
+Family.Database:SetMeta("Other-FireMaw", { skills = { [164] = { name = "Blacksmithing",
+	rank = 100, maxRank = 300 } } })
+Family.Database:SetPayload("Other-FireMaw", { professions = { [164] = {
 	recipesSeen = time(), openWith = "Blacksmithing",
 	recipes = { { name = "Copper Chain Belt", difficulty = "medium" } } } } })
 Family.UI:ShowProfessionFor("Other-FireMaw", "Blacksmithing")
@@ -3537,6 +3577,9 @@ if professionsEveryone then
 
 	check("a recipe is found by name across every profession of every member",
 		visibleText("Copper Chain Belt"))
+	-- Not "Runeforging", which the same recipe is also filed under here: where a recipe is
+	-- held under both a real profession and one the client's table has never heard of, the
+	-- identified one is the label.
 	check("with the profession it belongs to", visibleText("Blacksmithing"))
 	check("and everybody who can make it", visibleText("Tester"))
 
@@ -4142,10 +4185,10 @@ do
 	-- on one of them surviving would pass or fail according to what was tested before it.
 	Family.Database:SetMeta(key, { name = "Tester", realm = "Fire Maw", classFile = "MAGE",
 		level = 60, money = 12345678, faction = "Horde", race = "Gnome",
-		skills = { Blacksmithing = { rank = 287, maxRank = 375 } } })
+		skills = { [164] = { name = "Blacksmithing", rank = 287, maxRank = 375 } } })
 	Family.Database:SetPayload(key, {
 		bags = { [0] = { size = 16, free = 14, slots = { [1] = { id = 6948, count = 1 } } } },
-		professions = { Blacksmithing = { recipes = { { name = "Copper Chain Belt" } } } },
+		professions = { [164] = { recipes = { { name = "Copper Chain Belt" } } } },
 		talents = { groups = {} },
 		quests = { list = {} },
 	})
@@ -5764,7 +5807,7 @@ print("cooldowns from a profession that has been dropped")
 	Family.Database:SetPayload(key, payload)
 
 	-- Blacksmithing is theirs; Alchemy was, and is not.
-	Family.Database:SetMeta(key, { skills = { Blacksmithing = { rank = 287, maxRank = 375 } } })
+	Family.Database:SetMeta(key, { skills = { [164] = { name = "Blacksmithing", rank = 287, maxRank = 375 } } })
 
     -- Recorded the way the scanner records it, which is what the guard has to survive.
 	local cooldowns = {}

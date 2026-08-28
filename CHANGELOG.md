@@ -25,6 +25,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Professions are the same profession in every language.** Family used to file them under
+  their name, because Classic Era offers nothing else to file them under — so the same
+  character read on a French client and a Spanish one had two sets of professions, and neither
+  could see the other's recipes. They are now filed under the game's own skill line id, taken
+  from the client's own tables, and shown in the language of whoever is reading. A member
+  shared with you by a German player lands under the same key as everybody else.
+  **Rescan your professions once** by opening each window; there is nothing to migrate.
 - **A profession recorded in one language is no longer reported as never opened.** Family
   stores a profession by its name, because on Classic Era the game offers nothing else to
   store — so a character keeps the words it was last played in until you log in on it again,

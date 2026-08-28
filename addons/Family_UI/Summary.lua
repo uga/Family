@@ -250,9 +250,13 @@ local NOT_SEEN = L["|cff9d9d9dnot seen|r"]
 
 function skillsOf(meta, secondary)
 	local found = {}
-	for name, skill in pairs(meta.skills or {}) do
+	-- Filed by skill line id; shown in the language of whoever is reading, which is not
+	-- necessarily the language it was recorded in.
+	for id, skill in pairs(meta.skills or {}) do
 		if (skill.secondary or false) == secondary then
-			found[#found + 1] = { name = name, skill = skill }
+			found[#found + 1] = {
+				name = Family:ProfessionName(id, skill.name), id = id, skill = skill,
+			}
 		end
 	end
 	table.sort(found, function(a, b) return a.name < b.name end)

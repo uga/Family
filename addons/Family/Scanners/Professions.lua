@@ -485,17 +485,56 @@ function Professions:ScanNow(includeRecipes)
 		end
 	end
 
-	for name, skill in pairs(skills) do
-		local entry = stored[name] or {}
+	-- Everything above works in this client's words, because that is all the skill list
+	-- offers. Everything below is keyed by the skill line id instead.
+	--
+	-- That is the whole of the fix for L-015: a name is one language, and a member is only
+	-- re-read when somebody logs in on them, so a client set to Spanish met a
+	-- French-recorded character and matched nothing. An id is the same number in all five.
+	--
+	-- What this client called each one is kept beside it, for the professions the table does
+	-- not know - a client newer than this build, rogue poisons, a death knight's runeforging
+	-- - which stay keyed by name and are no worse off than they were.
+	local function byIdentity(named)
+		local out = {}
+		for name, skill in pairs(named) do
+			local id = skill.skillLine or Family:SkillLineFor(name)
+			skill.name = name
+
+			-- Primary or secondary, from the client's own table where it knows. The test
+			-- below it - can this be unlearned, and then a special case for the three that
+			-- cannot - was the best answer available before this table existed.
+			local entry = id and Family.SkillLines[id]
+			if entry then skill.secondary = not entry.primary end
+
+			out[id or name] = skill
+		end
+		return out
+	end
+
+	skills = byIdentity(skills)
+
+	-- The same profession under its old name-shaped key, left behind by a version that had
+	-- no ids. Dropped rather than left to sit beside the real one looking like a second
+	-- profession nobody can account for.
+	for key in pairs(stored) do
+		if type(key) == "string" and Family:SkillLineFor(key) then stored[key] = nil end
+	end
+
+	for id, skill in pairs(skills) do
+		local entry = stored[id] or {}
 		entry.rank = skill.rank
 		entry.maxRank = skill.maxRank
 		entry.modifier = skill.modifier
 		entry.secondary = skill.secondary
-		stored[name] = entry
+		entry.name = skill.name
+		stored[id] = entry
 	end
 
+	local recipeKey = recipeName and (Family:SkillLineFor(recipeName) or recipeName)
+
 	if recipeName and recipes then
-		local entry = stored[recipeName] or {}
+		local entry = stored[recipeKey] or {}
 
 		-- Which recipes have a cooldown at all is remembered, and it has to be, because the
 		-- client will not say.
@@ -526,7 +565,7 @@ function Professions:ScanNow(includeRecipes)
 		entry.recipesSeen = time()
 		entry.locale = Family.locale
 		entry.openWith = openWith or entry.openWith
-		stored[recipeName] = entry
+		stored[recipeKey] = entry
 		Family:Debug("scanned %d recipes for %s", #recipes, recipeName)
 	end
 
@@ -535,13 +574,15 @@ function Professions:ScanNow(includeRecipes)
 
 	-- The summary wants ranks without decoding anybody's recipe list, so they go in meta.
 	local summary = {}
-	for name, skill in pairs(skills) do
-		summary[name] = { rank = skill.rank, maxRank = skill.maxRank,
+	for id, skill in pairs(skills) do
+		summary[id] = { rank = skill.rank, maxRank = skill.maxRank,
 			secondary = skill.secondary,
+			-- What this client called it, for the professions the table has no id for.
+			name = skill.name,
 			-- When that profession's recipes were last read. Small enough for meta, and
 			-- the summary wants it: a rank is always current and a recipe list is not,
 			-- so the two need saying apart on the one screen that shows every member.
-			recipesSeen = stored[name] and stored[name].recipesSeen or nil }
+			recipesSeen = stored[id] and stored[id].recipesSeen or nil }
 	end
 	-- The cooldowns, small and plain enough for meta - there are three or four of these on
 	-- a busy character, not three hundred - so a broker tooltip can say who has a transmute
