@@ -42,6 +42,10 @@ is a decision rather than an afternoon of archaeology.
   such a recipe works again too: it looks for the row in your open profession window, and it
   had been looking for a word that window does not use. Searching finds them under either
   name.
+- **Professions read in your own language before you have rescanned them.** A character is only
+  re-read when you log in on them, so a family part-way through showed some members' professions
+  in French and others in English on the same screen. The recorded word is one Family knows, so
+  it is now translated on sight — the rescan still matters for recipe lists, but not for this.
 - **Races are shown in your own language, whoever recorded them.** A character last played on
   a French client stayed French on a Spanish one, and a member shared with you was named in
   whatever their owner was running. Family now reads the game's own race table, so it says

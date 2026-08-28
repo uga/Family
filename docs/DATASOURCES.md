@@ -123,8 +123,23 @@ assumed, which costs nothing and is not what fixed Era.
 specialisations: with a leatherworking trade skill window open, `GetCraftName()` answered
 *Travail du cuir d'écailles de dragon* — Dragonscale Leatherworking — with no recipes under it.
 A craft window can therefore name something real and have nothing in it, which is why
-`readCraftRecipes` returning nil on an empty list matters. `GetCraftRecipeLink` and
-`GetCraftItemLink` have not been measured against a live enchanter yet.
+`readCraftRecipes` returning nil on an empty list matters.
+
+**On the Craft frame the two calls are the other way round from their names.** Measured on
+1.15.9 with an enchanting window open:
+
+```
+row 1: recipe nil | item |Henchant:20051|h[Bâtonnet runique en arcanite]|h|r
+row 2: recipe nil | item |Henchant:20023|h[Ench. de bottes (Agilité supérieure)]|h|r
+```
+
+`GetCraftRecipeLink` is nil for every row, and `GetCraftItemLink` returns an **enchant** link —
+including for the Runed Arcanite Rod on row 1, which does make an item. So the enchant id, which
+is the spell, arrives through the call named after the item, and no item id arrives at all. That
+character held 101 enchanting recipes with neither id until both links were read for both.
+
+The rule that follows, and it is the same one twice: **read every link for every id it might
+carry, and do not trust a call's name to say what it returns.**
 
 ### What the client cannot do
 

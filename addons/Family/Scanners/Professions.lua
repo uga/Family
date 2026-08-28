@@ -330,9 +330,18 @@ local function readCraftRecipes()
 				available = tonumber(numAvailable) or 0,
 			}
 
+			-- Both ids are read from both links, because Era's Craft frame answers the
+			-- item call with an enchant link and the recipe call with nothing at all.
+			-- Measured on 1.15.9 with an enchanting window open: GetCraftRecipeLink was
+			-- nil for every row and GetCraftItemLink returned enchant:20051 for a Runed
+			-- Arcanite Rod - which does make an item. Reading only what each call is
+			-- named after left a hundred and one enchanting recipes with no id at all.
+			local craftLink = Family:TryCall(GetCraftItemLink, index)
+
 			recipe.spellID = idFromLink(Family:TryCall(GetCraftRecipeLink, index),
-				"enchant", "spell", "trade")
-			recipe.itemID = idFromLink(Family:TryCall(GetCraftItemLink, index), "item")
+					"enchant", "spell", "trade")
+				or idFromLink(craftLink, "enchant", "spell")
+			recipe.itemID = idFromLink(craftLink, "item")
 			recipe.icon = Family:TryCall(GetCraftIcon, index)
 
 			local cooldown = Family:TryCall(GetCraftCooldown, index)

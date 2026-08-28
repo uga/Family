@@ -848,9 +848,14 @@ end
 -- Enchanting is behind the Craft frame, not the trade skill one. Most of its recipes create
 -- no item at all - an enchant is a spell applied to something - and a few make oils and rods.
 -- Both shapes are here, because a reader that assumes an item exists loses most of the list.
+--
+-- The two rows also answer differently, which is not tidiness but measurement. On Classic Era
+-- GetCraftRecipeLink is nil for every row and GetCraftItemLink returns an *enchant* link even
+-- for a recipe that makes an item, so the first row is written the way a live client answered.
+-- The second keeps the shape this was first written from, so that both are read.
 local CRAFTS = {
 	{ "Header", "header" },
-	{ "Ench. de plastron (Vie majeure)", "optimal", 0, "|Henchant:13640|h", nil },
+	{ "Ench. de plastron (Vie majeure)", "optimal", 0, nil, "|Henchant:13640|h" },
 	{ "Huile de sorcier", "easy", 2, "|Henchant:25128|h", "|Hitem:20749|h" },
 }
 GetCraftName = function() return "Enchantement" end
@@ -7308,6 +7313,24 @@ print("what each client calls a profession")
 	-- A profession from a client newer than this table still has a name to show.
 	check("an unknown skill line falls back to what the recording client called it",
 		Family:ProfessionName(999999, "Гончарное дело") == "Гончарное дело")
+
+	-- Records made before professions were keyed by identity are filed under a word, and a
+	-- member is only re-keyed by somebody logging in on them. A family of twenty-seven
+	-- halfway through that read half in French and half in English on one screen, which is
+	-- a migration showing through the panel rather than a language Family does not speak.
+	do
+		local was = Family.locale
+		Family.locale = "frFR"
+		check("a profession still filed under a word is named in the reader's language",
+			Family:ProfessionName("Alchemy") == "Alchimie",
+			tostring(Family:ProfessionName("Alchemy")))
+		check("and so is one filed under a third language's word",
+			Family:ProfessionName("Verzauberkunst") == "Enchantement",
+			tostring(Family:ProfessionName("Verzauberkunst")))
+		check("a word no table knows is still printed as it was recorded",
+			Family:ProfessionName("Poisons") == "Poisons")
+		Family.locale = was
+	end
 
 	-- Primary or secondary, from the table rather than from asking whether it can be
 	-- unlearned and then patching up the three that cannot.

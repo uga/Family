@@ -216,6 +216,15 @@ end
 -- table - the name the recording client used is all there is, which is still better than a
 -- blank and is the same exception talent names make.
 function Family:ProfessionName(id, recorded)
+	-- A record made before professions were keyed by identity is filed under a word, and a
+	-- member is only re-keyed when somebody logs in on them. That word is one this table
+	-- knows, whatever language it was written in, so it is worth a lookup before falling back
+	-- to printing it as it was recorded: a family halfway through rescanning would otherwise
+	-- read half in the language of whoever is looking and half in whoever last played them.
+	if type(id) == "string" then
+		id = Family.SkillLineByName[id] or id
+	end
+
 	local entry = id and Family.SkillLines[id]
 	if entry then
 		local names = entry.names[Family.locale] or entry.names.enUS
