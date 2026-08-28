@@ -867,6 +867,14 @@ and everything granted deliberately. A snapshot, not a subscription.
 **Guild data depends on other people running Family.** Guildmates who do not are invisible
 to it, and nothing on your side changes that.
 
+**A replacement crafting interface changes what "select this recipe" means.** Clicking a recipe
+in Family selects it in the profession window that is open, through the client's own
+`SelectTradeSkill` / `SelectCraft`. An addon that replaces that window — Skillet and its like —
+draws its own list, and the selection may not show there even though it was made. Measured on a
+live client with Skillet installed: a plain click appeared to do nothing and a shift-click on
+the profession button selected the recipe as intended. This is not a fault on either side, and
+it is worth knowing before an evening is spent looking for one in Family.
+
 **Mail posted to a member is a claim about the post, not about their mailbox.** It is
 recorded as sent, marked as such, and replaced by the truth the moment that member opens
 their own mailbox (§5).
