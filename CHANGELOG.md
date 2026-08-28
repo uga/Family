@@ -10,6 +10,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 1.0.0-beta.3 — 2026-08-28
+
 ### Added
 
 - **Mail in the post has a column of its own.** It used to be a phrase inside the mail column
