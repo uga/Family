@@ -104,8 +104,23 @@ end
 -- Memoised for the session, like item names: changing the client language means a reload.
 local recipeNames = {}
 
-function Names:Recipe(recipe)
+-- The key and callback are the same arrangement Names:Item has, and for the same reason: the
+-- client answers about an item only once it has loaded that item, so a list of a hundred and
+-- fifty comes back part answered. Without them, half a first aid list read French and half
+-- English on one screen - whichever items this session happened to have already seen.
+-- `locale` is the language the record was written in, where the caller knows it. When that is
+-- the reader's own language the recorded word wins outright, because it is the row the game
+-- itself drew and nothing here beats that: smelting is the case that proves it, where the game
+-- says "Fonte de cuivre" and the item it makes is a "Barre de cuivre". Naming a recipe after
+-- its product is right where there is nothing better and wrong where the game already said.
+function Names:Recipe(recipe, key, callback, locale)
 	if type(recipe) ~= "table" then return nil end
+
+	if locale and locale == Family.locale and type(recipe.name) == "string"
+		and recipe.name ~= ""
+	then
+		return recipe.name
+	end
 
 	local id = recipe.spellID
 	if id then
@@ -134,6 +149,11 @@ function Names:Recipe(recipe)
 	if recipe.itemID then
 		local item = Names:CachedItem(recipe.itemID)
 		if type(item) == "string" and item ~= "" then return item end
+
+		-- Not loaded yet. Ask for it and let the caller draw again when it lands. The
+		-- recorded word is returned meanwhile rather than Names:Item's placeholder: a
+		-- recipe named in the wrong language is worth more to a reader than "Item #8545".
+		if callback then Names:Item(recipe.itemID, key, callback) end
 	end
 
 	return recipe.name

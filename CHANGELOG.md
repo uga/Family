@@ -42,6 +42,20 @@ is a decision rather than an afternoon of archaeology.
   such a recipe works again too: it looks for the row in your open profession window, and it
   had been looking for a word that window does not use. Searching finds them under either
   name.
+- **A recipe list no longer comes back half translated.** Names came from the item each recipe
+  makes, and the game only knows an item once it has loaded it — so a first aid list arrived
+  half in one language and half in the other. Family now asks for the ones it is missing and
+  redraws when they arrive.
+- **A recipe you recorded in your own language keeps the words the game used.** Smelting is
+  where this shows: the game calls the row *Smelt Copper* and the thing it makes is a Copper
+  Bar, and Family had started saying the second.
+- **Clicking a recipe with no window open names the button to press**, rather than printing a
+  number nobody can act on.
+- **Professions are no longer reported as "recorded in another language" when they simply have
+  no recipes.** Fishing, herbalism, mining and skinning have no window to open, and one member
+  with a list in another language had them all reported that way.
+- **The line saying which professions were left out now wraps** instead of running off the right
+  edge — the half that fell off was the half saying why.
 - **Professions read in your own language before you have rescanned them.** A character is only
   re-read when you log in on them, so a family part-way through showed some members' professions
   in French and others in English on the same screen. The recorded word is one Family knows, so

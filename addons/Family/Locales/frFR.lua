@@ -360,7 +360,6 @@ Family.locales.frFR = {
 	["Not listed: %s.  Summary / Professions has every profession and its level."] = "Non listés : %s.  Résumé / Métiers a chaque métier et son niveau.",
 	["Hardest first. Within a colour, the ones that took the most skill to learn."] = "Les plus difficiles d'abord. À couleur égale, celles qui ont demandé le plus de compétence à apprendre.",
 	["|cffffd700%s|r %s   |cff888888|||r   %d recipes  %s   |cff888888|||r   seen %s"] = "|cffffd700%s|r %s   |cff888888|||r   %d recettes  %s   |cff888888|||r   vu %s",
-	["%s were recorded in another language - log in on this character to refresh them"] = "%s ont été enregistrés dans une autre langue - connectez-vous avec ce personnage pour les actualiser",
 	["|cff9d9d9dSearching every profession of every member. Type at least two letters in the box above.|r"] = "|cff9d9d9dRecherche dans chaque métier de chaque membre. Tapez au moins deux lettres dans le champ ci-dessus.|r",
 	["|cffffd700%s|r is waiting. Click |cffffd700%s|r above to open the window and it will be selected there."] = "|cffffd700%s|r attend. Cliquez sur |cffffd700%s|r ci-dessus pour ouvrir la fenêtre et elle y sera sélectionnée.",
 

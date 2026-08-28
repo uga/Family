@@ -40,7 +40,11 @@ fontMeta.__index = function(_, key)
 	-- text needs", so that is what a reset looks like.
 	if key == "SetWidth" then return function(self, w) self.__width = w end end
 	if key == "GetWidth" then return function(self) return self.__width or 100 end end
-	if key == "GetHeight" then return function() return 100 end end
+	-- Recorded rather than answered with a constant: a panel that measures a caption and
+	-- reserves the room it needs is making a decision, and a stub that forgets the decision
+	-- leaves nothing to check it by.
+	if key == "SetHeight" then return function(self, h) self.__height = h end end
+	if key == "GetHeight" then return function(self) return self.__height or 100 end end
 	if key == "GetText" then return function(self) return self.__text end end
 	if key == "SetText" then return function(self, t) self.__text = t end end
 
@@ -3343,6 +3347,24 @@ if recipeButton then fireClick(recipeButton) end
 check("clicking a recipe with nothing open casts nothing at all", #cast == 0,
 	table.concat(cast, ","))
 check("and says which button will open it", visibleText("is waiting"))
+
+-- Which button, by its name. The profession arrives here as the skill line it is keyed by,
+-- and the message read "Click 333 above to open the window", which is not something anybody
+-- can act on.
+do
+	local said
+	for _, f in ipairs(fontStrings) do
+		if type(f.__text) == "string" and f.__text:find("is waiting", 1, true) then
+			said = f.__text
+		end
+	end
+	check("and names that button rather than printing its skill line number",
+		said ~= nil and said:find("Blacksmithing", 1, true) ~= nil
+			-- 164 is blacksmithing. Written out because SKILL is scoped to the section
+			-- that reads the skill list, and this is a long way below it.
+			and said:find("164", 1, true) == nil,
+		tostring(said))
+end
 
 local selectedOnArrival
 SelectTradeSkill = function(index) selectedOnArrival = index end
@@ -7386,6 +7408,45 @@ print("what each client calls a recipe")
 
 	check("nothing at all is not a recipe", Family.Names:Recipe("Wizard Oil") == nil)
 
+	-- Where the record was written in the reader's own language, the recorded word wins
+	-- outright: it is the row the game itself drew. Smelting is what proves it - the game
+	-- says "Smelt Copper" and the item it makes is a Copper Bar, so naming that row after
+	-- its product is wrong for the one reader who can already read it.
+	do
+		ITEM_NAMES[2840] = "Copper Bar"
+		local smelt = { name = "Smelt Copper", itemID = 2840 }
+
+		check("a record written in the reader's language keeps its own words",
+			Family.Names:Recipe(smelt, nil, nil, Family.locale) == "Smelt Copper",
+			tostring(Family.Names:Recipe(smelt, nil, nil, Family.locale)))
+		check("and one written in another language is named by what it makes",
+			Family.Names:Recipe(smelt, nil, nil, "frFR") == "Copper Bar",
+			tostring(Family.Names:Recipe(smelt, nil, nil, "frFR")))
+		check("and so is one whose language was never recorded",
+			Family.Names:Recipe(smelt) == "Copper Bar")
+	end
+
+	-- The client answers about an item only once it has loaded that item, so a list of a
+	-- hundred and fifty comes back part answered - which on a live client was half a first
+	-- aid list in French and half in English, and the same for cooking and leatherworking.
+	do
+		local told = false
+		local waiting = { name = "Bandage en lin", itemID = 14529 }
+
+		check("a recipe whose item has not loaded keeps the word it was recorded under",
+			Family.Names:Recipe(waiting, "test", function() told = true end)
+				== "Bandage en lin",
+			tostring(Family.Names:Recipe(waiting)))
+
+		ITEM_NAMES[14529] = "Runecloth Bandage"
+		fire("GET_ITEM_INFO_RECEIVED", 14529, true)
+
+		check("and the caller is told when the client answers", told)
+		check("and it is named in this client's language from then on",
+			Family.Names:Recipe(waiting) == "Runecloth Bandage",
+			tostring(Family.Names:Recipe(waiting)))
+	end
+
 	-- The second id, for a record whose first one is missing. The spell id and the item id
 	-- come out of different calls, so a client that will not answer one may answer the
 	-- other - and an item name is in the reader's language where the recorded word is in
@@ -7408,6 +7469,15 @@ print("what each client calls a recipe")
 
 		Family.Database:SetMeta(me, { skills = {
 			[333] = { name = "Enchantement", rank = 300, maxRank = 300 },
+			-- Gathering professions have no window to open and so never have a recipe
+			-- list. They belong in the note at the top, and four of them is what makes
+			-- that note longer than a line - which is the state it has to survive,
+			-- because naming professions and saying why each is missing is not a
+			-- sentence that fits on one line in any language but English.
+			[356] = { name = "Pêche", rank = 300, maxRank = 300, secondary = true },
+			[182] = { name = "Herboristerie", rank = 300, maxRank = 300 },
+			[186] = { name = "Minage", rank = 300, maxRank = 300 },
+			[393] = { name = "Dépeçage", rank = 300, maxRank = 300 },
 		} })
 		payload.professions = { [333] = { seen = time(), recipes = {
 			{ name = "Ench. de plastron (Vie majeure)", spellID = 13640,
@@ -7446,6 +7516,29 @@ print("what each client calls a recipe")
 			rowNames["Wizard Oil"] == true
 				and rowNames["Huile de sorcier"] == nil,
 			"the row would search the open window for a word it does not contain")
+
+		-- The message that says which professions are not in the list, and why. It names
+		-- them, so it is longer than a line in any language but English - and it did not
+		-- wrap, so the half that fell off the right edge was the why.
+		local note
+		for _, f in ipairs(fontStrings) do
+			if type(f.__text) == "string" and f.__text:find("Not listed", 1, true) then
+				note = f
+			end
+		end
+		check("the note about what is missing is on screen at all", note ~= nil,
+			"nothing to measure - the fixture leaves no profession out")
+		if note then
+			check("and is given the room it needs rather than one line",
+				(note.__height or 0) >= math.ceil(note:GetStringHeight() or 0),
+				tostring(note.__height) .. " reserved for "
+					.. tostring(note:GetStringHeight()))
+			-- A profession with no recipe list has not been "recorded in another
+			-- language" - it was never opened, and on a live client every member with
+			-- fishing was being told the first of those because of the second.
+			check("and says a profession with no list was never opened, not mistranslated",
+				note.__text:find("another language", 1, true) == nil, note.__text)
+		end
 
 		Family.Database:SetMeta(me, { skills = heldSkills or Family.CLEAR })
 		payload.professions = heldProfessions

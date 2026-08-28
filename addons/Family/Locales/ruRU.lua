@@ -360,7 +360,6 @@ Family.locales.ruRU = {
 	["Not listed: %s.  Summary / Professions has every profession and its level."] = "Не перечислено: %s.  Обзор / Профессии содержит каждую профессию и её уровень.",
 	["Hardest first. Within a colour, the ones that took the most skill to learn."] = "Сначала самые сложные. Внутри цвета - те, что требовали больше навыка при изучении.",
 	["|cffffd700%s|r %s   |cff888888|||r   %d recipes  %s   |cff888888|||r   seen %s"] = "|cffffd700%s|r %s   |cff888888|||r   рецептов: %d  %s   |cff888888|||r   замечено %s",
-	["%s were recorded in another language - log in on this character to refresh them"] = "%s записаны на другом языке - зайдите за этого персонажа, чтобы обновить их",
 	["|cff9d9d9dSearching every profession of every member. Type at least two letters in the box above.|r"] = "|cff9d9d9dПоиск по каждой профессии каждого персонажа. Введите хотя бы две буквы в поле выше.|r",
 	["|cffffd700%s|r is waiting. Click |cffffd700%s|r above to open the window and it will be selected there."] = "|cffffd700%s|r ждёт. Нажмите |cffffd700%s|r выше, чтобы открыть окно, и рецепт будет там выбран.",
 

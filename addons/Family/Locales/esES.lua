@@ -360,7 +360,6 @@ Family.locales.esES = {
 	["Not listed: %s.  Summary / Professions has every profession and its level."] = "No listados: %s.  Resumen / Profesiones tiene cada profesión y su nivel.",
 	["Hardest first. Within a colour, the ones that took the most skill to learn."] = "Las más difíciles primero. Dentro de un color, las que costaron más habilidad aprender.",
 	["|cffffd700%s|r %s   |cff888888|||r   %d recipes  %s   |cff888888|||r   seen %s"] = "|cffffd700%s|r %s   |cff888888|||r   %d recetas  %s   |cff888888|||r   visto %s",
-	["%s were recorded in another language - log in on this character to refresh them"] = "%s se registraron en otro idioma: conéctate con este personaje para actualizarlos",
 	["|cff9d9d9dSearching every profession of every member. Type at least two letters in the box above.|r"] = "|cff9d9d9dBuscando en cada profesión de cada miembro. Escribe al menos dos letras en el cuadro de arriba.|r",
 	["|cffffd700%s|r is waiting. Click |cffffd700%s|r above to open the window and it will be selected there."] = "|cffffd700%s|r está esperando. Haz clic en |cffffd700%s|r arriba para abrir la ventana y quedará seleccionada allí.",
 

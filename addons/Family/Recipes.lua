@@ -127,7 +127,7 @@ function Recipes:Search(needle, limit)
 				-- The name this client uses, falling back to the one recorded. Both are
 				-- searched: a family holds lists read on other people's clients, and
 				-- somebody typing their own language should not find fewer of them.
-				local name = Family.Names:Recipe(recipe)
+				local name = Family.Names:Recipe(recipe, nil, nil, record.locale)
 				local was = recipe.name
 				if name and (name:lower():find(needle, 1, true)
 					or (was and was:lower():find(needle, 1, true))) then
@@ -223,7 +223,8 @@ function Recipes:Crafters(profession, itemName, required, minLevel)
 					-- client and is therefore in the reader's, and the recorded recipe
 					-- name is in whoever scanned it - so this compared a French item
 					-- against an English recipe and matched nothing.
-					if teaches(itemName, Family.Names:Recipe(recipe)) then
+					if teaches(itemName, Family.Names:Recipe(recipe, nil, nil,
+						record.locale)) then
 						knows = true
 						break
 					end

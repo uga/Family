@@ -371,15 +371,24 @@ local function build(frame)
 	-- no way to tell that from Family having lost it.
 	local omitted = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 	omitted:SetPoint("TOPLEFT", status, "BOTTOMLEFT", 0, -3)
-	omitted:SetPoint("RIGHT", -8, 0)
+	-- A width rather than a second anchor, because this line is measured: how much room it
+	-- needs is asked of it below, and a string that knows its right edge only by where it is
+	-- pinned cannot answer how many lines it will take.
+	omitted:SetWidth((UI.CONTENT_W or 740) - 12)
 	omitted:SetJustifyH("LEFT")
 	omitted:SetHeight(0)
-	UI:NoWrap(omitted)
 
-	-- Height as well as text, so that a member with nothing left out loses the gap too.
+	-- Height as well as text, so that a member with nothing left out loses the gap too -
+	-- and measured rather than assumed, because this line names professions and says why
+	-- each is missing, and one line of it in English is two in French. It used to be a
+	-- single line that did not wrap, so the half that fell off the right edge was the why.
 	local function setOmitted(text)
 		omitted:SetText(text or "")
-		omitted:SetHeight((text and text ~= "") and 14 or 0)
+		if not text or text == "" then
+			omitted:SetHeight(0)
+			return
+		end
+		omitted:SetHeight(math.max(14, math.ceil(omitted:GetStringHeight() or 14)))
 	end
 
 	-- Said when a recipe is clicked and there is no window open for it to be found in.
@@ -388,10 +397,12 @@ local function build(frame)
 	-- that can is the profession's, a few inches up. So the recipe is remembered and this
 	-- says which button to press - one more click than clicking the recipe alone, and the
 	-- alternative was a click that appeared to do nothing at all.
+	-- The profession arrives as the skill line it is keyed by, which is a number. Naming it
+	-- here rather than printing it: "Click 333 above" is not a sentence anybody can act on.
 	local function announceOpener(recipeName, profession)
 		status:SetText(string.format(L["|cffffd700%s|r is waiting. Click |cffffd700%s|r "
 			.. "above to open the window and it will be selected there."],
-			tostring(recipeName), tostring(profession)))
+			tostring(recipeName), tostring(Family:ProfessionName(profession))))
 	end
 
 	local scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
@@ -625,6 +636,24 @@ local function build(frame)
 		local payload = UI:Payload(member.key) or {}
 		local stored = payload.professions or {}
 
+		-- Records made before professions were keyed by identity are filed under a word.
+		-- Resolved here so their recipes are found: the alternative is telling somebody a
+		-- profession was never opened, or was written in another language, while holding
+		-- every one of its recipes (L-015).
+		do
+			local resolved
+			for key, record in pairs(stored) do
+				local id = type(key) == "string" and Family:SkillLineFor(key)
+				if id and not stored[id] then
+					resolved = resolved or {}
+					resolved[id] = record
+				end
+			end
+			if resolved then
+				for id, record in pairs(resolved) do stored[id] = record end
+			end
+		end
+
 		-- Only the professions there is something to look at.
 		--
 		-- Herbalism, skinning and fishing make nothing, and a button leading to an empty list
@@ -635,27 +664,14 @@ local function build(frame)
 		-- "Makes nothing" and "never opened" remain two different facts (§2.2) and Family can
 		-- only tell them apart by having seen the window, so the ones left out are named below
 		-- with whichever of the two they are.
-		local ordered, makesNothing, notOpened, elsewhere = {}, {}, {}, {}
+		local ordered, makesNothing, notOpened = {}, {}, {}
 
-		-- A third thing that can be true of a profession, and the one that used to be
-		-- reported as the second.
-		--
-		-- A profession has no id on Era, so it is keyed by its name, and a name is one
-		-- language. Recipes recorded on an English client sit under "Leatherworking"; the
-		-- same character's skill list, re-read after the client was set to French, is under
-		-- "Travail du cuir". Nothing matches, and the panel said "never opened" about a
-		-- profession whose recipes it was holding all along.
-		--
-		-- Telling them apart needs no table of professions in eleven languages: the record
-		-- says which language it was written in, and if that is not the one being read, the
-		-- absence is explained rather than reported as an absence (§2.2).
-		local stale = {}
-		for _, record in pairs(stored) do
-			if record.locale and record.locale ~= Family.locale then
-				stale[record.locale] = true
-			end
-		end
-		local staleLanguage = next(stale) ~= nil
+		-- There used to be a third thing that could be true of a profession here: recorded
+		-- under another language's word, and so unmatchable. Professions are keyed by
+		-- identity now and records filed under a word are resolved above, so the case
+		-- cannot arise - and while it still could, the flag was a property of the whole
+		-- member rather than of one profession, which had it announcing that fishing had
+		-- been "recorded in another language" because something else had been.
 
 		for id, skill in pairs(skills) do
 			local record = stored[id]
@@ -664,8 +680,6 @@ local function build(frame)
 				ordered[#ordered + 1] = { name = name, id = id, skill = skill }
 			elseif record and record.recipes then
 				makesNothing[#makesNothing + 1] = name
-			elseif staleLanguage then
-				elsewhere[#elsewhere + 1] = name
 			else
 				notOpened[#notOpened + 1] = name
 			end
@@ -689,13 +703,6 @@ local function build(frame)
 		if #notOpened > 0 then
 			left[#left + 1] = string.format(L["%s never opened"],
 				table.concat(notOpened, ", "))
-		end
-		if #elsewhere > 0 then
-			table.sort(elsewhere)
-			left[#left + 1] = string.format(
-				L["%s were recorded in another language - log in on this character to "
-					.. "refresh them"],
-				table.concat(elsewhere, ", "))
 		end
 		setOmitted(#left > 0 and string.format(L["Not listed: %s.  Summary / Professions "
 			.. "has every profession and its level."], table.concat(left, "; ")) or nil)
@@ -785,7 +792,8 @@ local function build(frame)
 			-- A family holds lists read on other people's clients, and somebody searching
 			-- in their own language should not be shown fewer of them than somebody
 			-- searching in the language the list happened to be written in.
-			local name = (Family.Names:Recipe(recipe) or ""):lower()
+			local name = (Family.Names:Recipe(recipe, nil, nil, record.locale)
+				or ""):lower()
 			local was = (recipe.name or ""):lower()
 			if needle == "" or name:find(needle, 1, true) or was:find(needle, 1, true) then
 				shown[#shown + 1] = recipe
@@ -829,9 +837,14 @@ local function build(frame)
 			r:Show()
 			y = y + ROW
 
+			-- Asked for by id, and the row draws itself again when the client answers -
+			-- the same arrangement every other list of items here has.
+			local shownName = Family.Names:Recipe(recipe, "professions", function()
+				if frame:IsShown() then frame:Refresh() end
+			end, record.locale)
+
 			local style = DIFFICULTY[recipe.difficulty] or { colour = "|cffdddddd" }
-			r.text:SetText(style.colour
-				.. (Family.Names:Recipe(recipe) or "?") .. "|r")
+			r.text:SetText(style.colour .. (shownName or "?") .. "|r")
 			r.text:SetWidth(scroll:GetWidth() - 170 - ROW)
 
 			-- Whatever the client said this row's icon was, recorded at scan time. Failing
@@ -842,8 +855,7 @@ local function build(frame)
 			-- The name this client uses, not the one the list was recorded in: this is
 			-- what a click matches against the open trade skill window, and that window
 			-- answers in whatever language the client is running.
-			r.memberKey, r.profession, r.recipeName =
-				member.key, chosen, Family.Names:Recipe(recipe)
+			r.memberKey, r.profession, r.recipeName = member.key, chosen, shownName
 
 			-- Armed only when there is something to cast and somebody to cast it, so a
 			-- row about another member stays a picture of a recipe.
@@ -856,7 +868,7 @@ local function build(frame)
 			-- For a recipe the client will describe neither way, which happens when its
 			-- window has not been open since the client last loaded the spell.
 			r.fallback = {
-				{ Family.Names:Recipe(recipe) or "?" },
+				{ shownName or "?" },
 				{ chosen, style.label and ("|cff888888" .. style.label .. "|r") or "" },
 			}
 

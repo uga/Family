@@ -360,7 +360,6 @@ Family.locales.deDE = {
 	["Not listed: %s.  Summary / Professions has every profession and its level."] = "Nicht gelistet: %s.  Übersicht / Berufe hat jeden Beruf und seine Stufe.",
 	["Hardest first. Within a colour, the ones that took the most skill to learn."] = "Schwerste zuerst. Innerhalb einer Farbe die, die am meisten Fertigkeit zum Erlernen brauchten.",
 	["|cffffd700%s|r %s   |cff888888|||r   %d recipes  %s   |cff888888|||r   seen %s"] = "|cffffd700%s|r %s   |cff888888|||r   %d Rezepte  %s   |cff888888|||r   gesehen %s",
-	["%s were recorded in another language - log in on this character to refresh them"] = "%s wurden in einer anderen Sprache aufgezeichnet - melde dich mit diesem Charakter an, um sie zu erneuern",
 	["|cff9d9d9dSearching every profession of every member. Type at least two letters in the box above.|r"] = "|cff9d9d9dDurchsucht jeden Beruf jedes Mitglieds. Tippe mindestens zwei Buchstaben in das Feld oben.|r",
 	["|cffffd700%s|r is waiting. Click |cffffd700%s|r above to open the window and it will be selected there."] = "|cffffd700%s|r wartet. Klicke oben auf |cffffd700%s|r, um das Fenster zu öffnen, und es wird dort ausgewählt.",
 
