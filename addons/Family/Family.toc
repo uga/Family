@@ -32,6 +32,7 @@ Locales\deDE.lua
 Locales\frFR.lua
 Locales\esES.lua
 Locales\ruRU.lua
+SkillLines.lua
 Capabilities.lua
 Codec.lua
 Comm.lua

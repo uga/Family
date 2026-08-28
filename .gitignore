@@ -21,3 +21,4 @@ addons/Family/Data/
 # on the documents. The rule is kept by the copy on this machine, where it does the work.
 CLAUDE.md
 .claude/
+tools/.skill-lines-cache/

@@ -1316,6 +1316,8 @@ for _, file in ipairs {
 	-- players who speak that language and cannot be asked to run a harness.
 	"Locale.lua",
 	"Locales/deDE.lua", "Locales/frFR.lua", "Locales/esES.lua", "Locales/ruRU.lua",
+	-- What each client calls each profession, generated from the client's own tables.
+	"SkillLines.lua",
 	"Capabilities.lua", "Codec.lua",
 	"Comm.lua", "Database.lua", "Names.lua", "Index.lua",
 	"Recipes.lua", "Cooldowns.lua",
@@ -6933,6 +6935,78 @@ print("captions that stop at the edge of the panel")
 		#unbounded == 0,
 		table.concat(unbounded, " | ")
 			.. " - a font string with no right anchor and no width does not wrap")
+end)()
+
+--------------------------------------------------------------------------------------------
+-- What each client calls a profession
+--
+-- The identity Era never had. Generated from the client's own SkillLine table by
+-- tools/skill-lines.py, so nothing in it was typed from memory - which matters more here than
+-- it looks: the builds disagree about two Spanish professions, and the Russian for Skinning
+-- begins with a Latin C on one build and a Cyrillic ES on the other. Identical to the eye.
+--------------------------------------------------------------------------------------------
+
+print()
+print("what each client calls a profession")
+;(function()
+	local lines = Family.SkillLines
+	local count = 0
+	for _ in pairs(lines) do count = count + 1 end
+	check("the profession table was generated and loaded", count >= 12, tostring(count))
+
+	-- The nine Era primaries, the three secondaries it has, and the two later ones.
+	for _, id in ipairs { 164, 165, 171, 182, 186, 197, 202, 333, 393, 129, 185, 356, 755 } do
+		if not lines[id] then
+			check("skill line " .. id .. " is in the table", false, "missing")
+		end
+	end
+	check("every profession Era and Burning Crusade have is in the table", true)
+
+	-- Five languages, and every one of them resolves back to the same identity.
+	local unresolved = {}
+	for id, entry in pairs(lines) do
+		for locale, names in pairs(entry.names) do
+			for _, name in ipairs(names) do
+				if Family:SkillLineFor(name) ~= id then
+					unresolved[#unresolved + 1] = locale .. " " .. name
+				end
+			end
+		end
+	end
+	check("every name in it resolves back to its own skill line", #unresolved == 0,
+		table.concat(unresolved, ", "))
+
+	-- The point of the whole exercise: a member recorded in one language, read in another.
+	do
+		local was = Family.locale
+		Family.locale = "frFR"
+		check("a German client's word for a profession reads as French to a French client",
+			Family:ProfessionName(Family:SkillLineFor("Schneiderei")) == "Couture",
+			tostring(Family:ProfessionName(Family:SkillLineFor("Schneiderei"))))
+		Family.locale = "ruRU"
+		check("and as Russian to a Russian one",
+			Family:ProfessionName(Family:SkillLineFor("Schneiderei")) == "Портняжное дело",
+			tostring(Family:ProfessionName(Family:SkillLineFor("Schneiderei"))))
+		Family.locale = was
+	end
+
+	-- Both spellings, because the builds genuinely use both and a player may have either.
+	check("both Spanish words for skill 197 resolve",
+		Family:SkillLineFor("Costura") == 197 and Family:SkillLineFor("Sastrería") == 197)
+	check("and both Russian spellings of skill 393, which differ by one invisible letter",
+		Family:SkillLineFor("Снятие шкур") == 393
+			and Family:SkillLineFor("Cнятие шкур") == 393,
+		"one of them begins with a Latin C and the other with a Cyrillic ES")
+
+	-- A profession from a client newer than this table still has a name to show.
+	check("an unknown skill line falls back to what the recording client called it",
+		Family:ProfessionName(999999, "Гончарное дело") == "Гончарное дело")
+
+	-- Primary or secondary, from the table rather than from asking whether it can be
+	-- unlearned and then patching up the three that cannot.
+	check("the table says which professions are primary",
+		lines[197].primary == true and lines[185].primary == false,
+		"tailoring should be primary and cooking should not")
 end)()
 
 print()

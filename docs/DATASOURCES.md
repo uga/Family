@@ -130,6 +130,25 @@ Tables that earned their keep:
 | `Item` | `ClassID`, `SubclassID` |
 | `ItemEffect` | `ParentItemID` → `SpellID`, which links a recipe item to what it teaches |
 | `SpellName`, `SkillLine` | names, `DisplayName_lang` |
+| `ChrRaces` | `ID`, `Name_lang`, `ClientFileString` — not fetched yet; races have the same problem professions had |
+
+`SkillLine` is what `addons/Family/SkillLines.lua` is generated from, by `tools/skill-lines.py`.
+`CategoryID` 11 is exactly the primary professions on every build; category 9 is a mixed bag of
+racials and riding skills, so the four professions in it are named by id. Fetch it per locale
+with `&locale=frFR`.
+
+Three findings worth keeping:
+
+- **The builds disagree about names, and both spellings are real.** Spanish calls skill 197
+  `Costura` on Era and `Sastrería` on Burning Crusade, and skill 165 `Marroquinería` and
+  `Peletería`. Anything matching on these has to accept either.
+- **Russian skill 393 begins with a Latin `C` on Burning Crusade and a Cyrillic `С` on Era.**
+  U+0043 against U+0421 — identical on screen, different bytes, and no amount of care would
+  have caught it by hand. It is the single best argument in this file for generating tables
+  rather than writing them.
+- **Mists needs none of this.** `GetProfessions` there returns a name and its skill line id
+  together. The table exists for Era and Burning Crusade, which hand back a name and nothing
+  else. Which is fortunate, because wago serves the Mists build slowly enough to time out.
 
 Two findings worth keeping:
 
