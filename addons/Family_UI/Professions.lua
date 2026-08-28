@@ -88,7 +88,7 @@ local ORDERS = {
 			if levelA and not levelB then return true end
 			if levelB and not levelA then return false end
 
-			return (a.name or "") < (b.name or "")
+			return (Family.Names:Recipe(a) or "") < (Family.Names:Recipe(b) or "")
 		end,
 	},
 	{
@@ -104,7 +104,7 @@ local ORDERS = {
 			if levelA and levelB and levelA ~= levelB then return levelA > levelB end
 			if levelA and not levelB then return true end
 			if levelB and not levelA then return false end
-			return (a.name or "") < (b.name or "")
+			return (Family.Names:Recipe(a) or "") < (Family.Names:Recipe(b) or "")
 		end,
 	},
 	{
@@ -116,7 +116,7 @@ local ORDERS = {
 			if skillA and skillB and skillA ~= skillB then return skillA < skillB end
 			if skillA and not skillB then return true end
 			if skillB and not skillA then return false end
-			return (a.name or "") < (b.name or "")
+			return (Family.Names:Recipe(a) or "") < (Family.Names:Recipe(b) or "")
 		end,
 	},
 }
@@ -781,8 +781,13 @@ local function build(frame)
 
 		local shown, counts = {}, {}
 		for _, recipe in ipairs(recipes) do
-			local name = recipe.name or ""
-			if needle == "" or name:lower():find(needle, 1, true) then
+			-- Matched against the name on screen and against the one that was recorded.
+			-- A family holds lists read on other people's clients, and somebody searching
+			-- in their own language should not be shown fewer of them than somebody
+			-- searching in the language the list happened to be written in.
+			local name = (Family.Names:Recipe(recipe) or ""):lower()
+			local was = (recipe.name or ""):lower()
+			if needle == "" or name:find(needle, 1, true) or was:find(needle, 1, true) then
 				shown[#shown + 1] = recipe
 			end
 			local key = recipe.difficulty or "trivial"
@@ -825,7 +830,8 @@ local function build(frame)
 			y = y + ROW
 
 			local style = DIFFICULTY[recipe.difficulty] or { colour = "|cffdddddd" }
-			r.text:SetText(style.colour .. (recipe.name or "?") .. "|r")
+			r.text:SetText(style.colour
+				.. (Family.Names:Recipe(recipe) or "?") .. "|r")
 			r.text:SetWidth(scroll:GetWidth() - 170 - ROW)
 
 			-- Whatever the client said this row's icon was, recorded at scan time. Failing
@@ -833,7 +839,11 @@ local function build(frame)
 			-- makes an item and wrong for nothing, since an enchant that makes no item
 			-- falls through to its own spell.
 			r.spellID, r.itemID = recipe.spellID, recipe.itemID
-			r.memberKey, r.profession, r.recipeName = member.key, chosen, recipe.name
+			-- The name this client uses, not the one the list was recorded in: this is
+			-- what a click matches against the open trade skill window, and that window
+			-- answers in whatever language the client is running.
+			r.memberKey, r.profession, r.recipeName =
+				member.key, chosen, Family.Names:Recipe(recipe)
 
 			-- Armed only when there is something to cast and somebody to cast it, so a
 			-- row about another member stays a picture of a recipe.
@@ -846,7 +856,7 @@ local function build(frame)
 			-- For a recipe the client will describe neither way, which happens when its
 			-- window has not been open since the client last loaded the spell.
 			r.fallback = {
-				{ recipe.name or "?" },
+				{ Family.Names:Recipe(recipe) or "?" },
 				{ chosen, style.label and ("|cff888888" .. style.label .. "|r") or "" },
 			}
 

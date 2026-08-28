@@ -629,8 +629,23 @@ end
 -- Deliberately not in the order the spellbook hands the ids over. Mists lists the General
 -- tab alphabetically and then adds the riding skills after it, so the panel showed a sorted
 -- list with an unsorted one stuck to the bottom of it, under no heading of its own.
-local SPELL_NAMES = { [501] = "Zul'Gurub Ritual", [502] = "Apprentice Riding" }
+-- The client's own word for a spell, which is what a recipe's name comes from now: a recipe
+-- is a spell and every reader asks their own client what it is called.
+--
+-- The two enchanting rows are deliberately answered in English while the recipes recorded
+-- below them are in French. That is the fault as it was reported - a list read on one client
+-- and shown on another - and it is the enchanting case specifically, where one recipe makes
+-- an item and the other makes no item at all.
+local SPELL_NAMES = {
+	[501] = "Zul'Gurub Ritual", [502] = "Apprentice Riding",
+	[2661] = "Copper Chain Belt", [3339] = "Silver Rod",
+	[13640] = "Enchant Chest - Major Health", [25128] = "Wizard Oil",
+}
 GetSpellInfo = function(id)
+	-- Above nine hundred thousand the client says nothing, which is the state a recipe is
+	-- in when its spell has not been loaded. Family has to fall back to the recorded word
+	-- there, and something has to be able to put it in that state.
+	if id >= 900000 then return nil end
 	return SPELL_NAMES[id] or ("Spell " .. id), nil, "icon"
 end
 GetNumSpellTabs = function() return 2 end
@@ -1120,6 +1135,11 @@ local RECIPE_ITEMS = {
 	[3608] = { name = "Plans: Silver Rod", profession = "Blacksmithing",
 	           class = 9, minLevel = 20 },
 	[22445] = { name = "Arcane Dust", profession = "Enchantement", class = 7 },
+	-- Named in this client's language for a recipe recorded in another one. The crafters
+	-- block matches an item's name against the recipes members hold, and while both sides
+	-- were words that comparison was between two different languages.
+	[20750] = { name = "Formula: Wizard Oil", profession = "Enchantement",
+	            class = 9, minLevel = 20 },
 }
 
 -- A link answers with an item level; a bare id answers only if the client knows the item,
@@ -7284,6 +7304,160 @@ print("what each client calls a profession")
 	check("the generated profession file still carries the functions that read it",
 		type(Family.ProfessionName) == "function"
 			and type(Family.SkillLineFor) == "function")
+end)()
+
+--------------------------------------------------------------------------------------------
+-- What each client calls a recipe
+--
+-- Reported from a live client: a French player opened the professions panel and read
+-- Secourisme, Cuisine and Travail du cuir - and under them, twelve recipes in English,
+-- because the list had been read on an English client first.
+--
+-- A recipe is a spell and a spell has an id, and Family has recorded that id since it
+-- recorded recipes at all. It then showed the word instead. That word is also what a click
+-- matches against the open trade skill window, which answers in the client's own language -
+-- so selecting a row that was plainly on screen quietly did nothing.
+--
+-- Enchanting is where this has to be got right: some of its recipes make an item and some
+-- make no item at all, and the id that names them is the recipe's spell either way.
+--------------------------------------------------------------------------------------------
+
+print()
+print("what each client calls a recipe")
+;(function()
+	check("a recipe is named by the client, not by the word it was recorded under",
+		Family.Names:Recipe { name = "Ench. de plastron (Vie majeure)", spellID = 13640 }
+			== "Enchant Chest - Major Health",
+		tostring(Family.Names:Recipe { name = "Ench. de plastron (Vie majeure)",
+			spellID = 13640 }))
+
+	check("and an enchant that makes an item is named the same way",
+		Family.Names:Recipe { name = "Huile de sorcier", spellID = 25128, itemID = 20749 }
+			== "Wizard Oil",
+		tostring(Family.Names:Recipe { name = "Huile de sorcier", spellID = 25128,
+			itemID = 20749 }))
+
+	check("a recipe with no spell id keeps the word it was recorded under",
+		Family.Names:Recipe { name = "Mystery Brew" } == "Mystery Brew")
+
+	check("and so does one this client will not name",
+		Family.Names:Recipe { name = "Mystery Brew", spellID = 900001 } == "Mystery Brew",
+		tostring(Family.Names:Recipe { name = "Mystery Brew", spellID = 900001 }))
+
+	check("nothing at all is not a recipe", Family.Names:Recipe("Wizard Oil") == nil)
+
+	-- The recipe list itself, which is the screen the report came from. It is drawn for
+	-- the member being played, so this borrows them and gives them back.
+	do
+		local me = Family:CurrentMember()
+		local payload = Family.Database:Payload(me) or {}
+		local heldSkills = (Family.Database:Meta(me) or {}).skills
+		local heldProfessions = payload.professions
+
+		Family.Database:SetMeta(me, { skills = {
+			[333] = { name = "Enchantement", rank = 300, maxRank = 300 },
+		} })
+		payload.professions = { [333] = { seen = time(), recipes = {
+			{ name = "Ench. de plastron (Vie majeure)", spellID = 13640,
+				difficulty = "optimal" },
+			{ name = "Huile de sorcier", spellID = 25128, itemID = 20749,
+				difficulty = "easy" },
+		} } }
+		Family.Database:SetPayload(me, payload)
+
+		Family.UI:Show()
+		Family.UI:ShowTab("professions")
+		Family.UI:Refresh()
+
+		check("the recipe list is drawn in this client's language",
+			visibleText("Wizard Oil"),
+			"the list is still showing the words it was recorded in")
+		check("and an enchant that makes nothing is drawn the same way",
+			visibleText("Enchant Chest - Major Health"))
+		check("and the recorded words are not on screen",
+			not visibleText("Huile de sorcier")
+				and not visibleText("Ench. de plastron"))
+
+		-- Not only what is drawn. Clicking a row asks the open trade skill window to
+		-- select it, by name, and that window answers in the language the client is
+		-- running - so a row carrying the recorded word searched an English list for a
+		-- French string and silently found nothing.
+		local rowNames = {}
+		for _, f in ipairs(frames) do
+			if f.__shown == true and f.profession == 333
+				and type(f.recipeName) == "string"
+			then
+				rowNames[f.recipeName] = true
+			end
+		end
+		check("and a click looks for the word the open window would use",
+			rowNames["Wizard Oil"] == true
+				and rowNames["Huile de sorcier"] == nil,
+			"the row would search the open window for a word it does not contain")
+
+		Family.Database:SetMeta(me, { skills = heldSkills or Family.CLEAR })
+		payload.professions = heldProfessions
+		Family.Database:SetPayload(me, payload)
+	end
+
+	-- Its own member, with its own record, because by this point the family has been
+	-- rearranged by thirty other checks and a fixture that depends on their leavings is a
+	-- fixture that stops meaning anything the moment one of them changes.
+	--
+	-- Recorded in French, on a client that is not running French. Both enchanting shapes:
+	-- one that makes an item and one that makes none.
+	local who = "Enchanteur-FireMaw"
+	Family.Database:SetMeta(who, { name = "Enchanteur", realm = "Fire Maw",
+		classFile = "MAGE", level = 60, faction = "Alliance",
+		skills = { [333] = { name = "Enchantement", rank = 300, maxRank = 300 } } })
+	Family.Database:SetPayload(who, { professions = { [333] = {
+		seen = time(),
+		recipes = {
+			{ name = "Ench. de plastron (Vie majeure)", spellID = 13640,
+				difficulty = "optimal" },
+			{ name = "Huile de sorcier", spellID = 25128, itemID = 20749,
+				difficulty = "easy" },
+		},
+	} } })
+
+	-- The crafters block on an item tooltip. Its two sides used to be an item name from
+	-- this client and a recipe name from whoever scanned it, which is two languages.
+	local crafters = Family.Recipes:Crafters("Enchantement", "Formula: Wizard Oil")
+	local knows = false
+	for _, member in ipairs(crafters or {}) do
+		if member.state == "knows" then knows = true end
+	end
+	check("a member who knows it is found by the name this client uses",
+		knows, "the crafters block matched nothing across two languages")
+
+	-- The panel, which is where it was reported: searched by the word on this screen, and
+	-- shown in it.
+	Family.UI:Show()
+	Family.UI:ShowTab("professions")
+	if _G.FamilyProfessionsEveryone then
+		_G.FamilyProfessionsEveryone.__scripts.OnClick(_G.FamilyProfessionsEveryone)
+
+		_G.FamilyProfessionsSearch:SetText("Wizard")
+		Family.UI:Refresh()
+		check("the panel finds a French-recorded recipe by this client's word for it",
+			visibleText("Wizard Oil"))
+		check("and shows it in this client's word rather than the recorded one",
+			not visibleText("Huile de sorcier"))
+
+		-- And the other way, because a family holds lists read on other people's clients
+		-- and somebody who knows the French word should not be unable to find it.
+		_G.FamilyProfessionsSearch:SetText("Huile")
+		Family.UI:Refresh()
+		check("and finds it by the word it was recorded under too",
+			visibleText("Wizard Oil"))
+
+		_G.FamilyProfessionsSearch:SetText("")
+		Family.UI:Refresh()
+	else
+		check("the professions panel offers a whole-family search", false, "not found")
+	end
+
+	Family.Database:Forget(who)
 end)()
 
 --------------------------------------------------------------------------------------------

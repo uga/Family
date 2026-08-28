@@ -124,8 +124,13 @@ function Recipes:Search(needle, limit)
 
 		for profession, record in pairs((payload or {}).professions or {}) do
 			for _, recipe in ipairs(record.recipes or {}) do
-				local name = recipe.name
-				if name and name:lower():find(needle, 1, true) then
+				-- The name this client uses, falling back to the one recorded. Both are
+				-- searched: a family holds lists read on other people's clients, and
+				-- somebody typing their own language should not find fewer of them.
+				local name = Family.Names:Recipe(recipe)
+				local was = recipe.name
+				if name and (name:lower():find(needle, 1, true)
+					or (was and was:lower():find(needle, 1, true))) then
 					-- Keyed by the recipe's spell where it has one, so the same
 					-- enchant recorded on a French client and an English one is one
 					-- line rather than two - the id is the same in every language and
@@ -214,7 +219,11 @@ function Recipes:Crafters(profession, itemName, required, minLevel)
 			local knows = false
 			if recipes then
 				for _, recipe in ipairs(recipes) do
-					if teaches(itemName, recipe.name) then
+					-- Both sides of this in the same language. itemName comes from the
+					-- client and is therefore in the reader's, and the recorded recipe
+					-- name is in whoever scanned it - so this compared a French item
+					-- against an English recipe and matched nothing.
+					if teaches(itemName, Family.Names:Recipe(recipe)) then
 						knows = true
 						break
 					end

@@ -90,6 +90,43 @@ function Names:Spell(id)
 	return name, icon
 end
 
+-- What to call a recipe, in the language of whoever is reading.
+--
+-- A recipe is a spell and a spell has an id, and Family has recorded that id since the day it
+-- recorded recipes at all - and then displayed the word the scanning client happened to use.
+-- So a list read on an English client stayed English on a French one, under a profession that
+-- had just been taught to say Secourisme. The id was there the whole time.
+--
+-- This is not only about what is drawn. The name is matched against the live trade skill
+-- window when a click asks it to select a row, and that window answers in the client's own
+-- language - so the recorded word was failing to find rows that were on screen.
+--
+-- Memoised for the session, like item names: changing the client language means a reload.
+local recipeNames = {}
+
+function Names:Recipe(recipe)
+	if type(recipe) ~= "table" then return nil end
+
+	local id = recipe.spellID
+	if id then
+		local known = recipeNames[id]
+		if known ~= nil then return known or recipe.name end
+
+		local name = Names:Spell(id)
+		if type(name) ~= "string" or name == "" then
+			-- Remembered as "the client would not say", so a list of three hundred does
+			-- not ask three hundred times a draw for an answer that is not coming.
+			recipeNames[id] = false
+			return recipe.name
+		end
+
+		recipeNames[id] = name
+		return name
+	end
+
+	return recipe.name
+end
+
 -- For callers that only want to know, and will look again themselves.
 function Names:CachedItem(id)
 	if not id then return nil end

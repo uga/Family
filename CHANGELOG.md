@@ -34,6 +34,12 @@ is a decision rather than an afternoon of archaeology.
   answered your announcement with silence — correctly, to save the channel, but that silence
   was the only thing it ever sent you. It now says hello back. This shows up most for anyone
   who has cleared their saved data or reinstalled, whose guild then looked empty.
+- **Recipes are shown in your own language too.** Professions learnt to say *Secourisme* and
+  then listed twelve recipes in English underneath, because the list had been read on an
+  English client. A recipe is a spell and Family has always recorded its id, so it now asks
+  your own client what each one is called. Clicking such a recipe also works again: it looks
+  for the row in your open profession window, and it was looking for a word that window does
+  not use. Searching finds them under either name.
 - **Races are shown in your own language, whoever recorded them.** A character last played on
   a French client stayed French on a Spanish one, and a member shared with you was named in
   whatever their owner was running. Family now reads the game's own race table, so it says
