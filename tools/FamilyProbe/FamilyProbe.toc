@@ -1,0 +1,8 @@
+## Interface: 11509, 20506, 50504
+## Title: Family Probe |cff888888(throwaway)|r
+## Notes: Collects what this client calls each profession, so Family need not guess.
+## Author: Alberto Pittaluga
+## Version: 1
+## SavedVariables: FamilyProbeDB
+
+FamilyProbe.lua
