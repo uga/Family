@@ -23,6 +23,16 @@ is a decision rather than an afternoon of archaeology.
   column too narrow for its own heading is widened and the room is taken from whatever has
   most to spare, so a translated heading is never drawn through the column beside it.
 
+### Fixed
+
+- **A profession recorded in one language is no longer reported as never opened.** Family
+  stores a profession by its name, because on Classic Era the game offers nothing else to
+  store — so a character keeps the words it was last played in until you log in on it again,
+  and its recipe lists keep whatever language their window was last opened in. Where those
+  disagreed, the panel found nothing under the name it was looking up and said the profession
+  had never been opened, while holding every one of its recipes. It now says so, and says that
+  logging in on that character will put it right. Nothing was ever lost.
+
 ### Changed
 
 - **The minimap tooltip groups characters by realm and then by side.** An Alliance character

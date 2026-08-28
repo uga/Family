@@ -524,6 +524,7 @@ function Professions:ScanNow(includeRecipes)
 
 		entry.recipes = recipes
 		entry.recipesSeen = time()
+		entry.locale = Family.locale
 		entry.openWith = openWith or entry.openWith
 		stored[recipeName] = entry
 		Family:Debug("scanned %d recipes for %s", #recipes, recipeName)
@@ -609,6 +610,15 @@ function Professions:ScanNow(includeRecipes)
 
 	Family.Database:SetMeta(key, {
 		skills = summary,
+		-- Which language these names are in.
+		--
+		-- A profession has no id on Era, so it is keyed by its name (see the top of this
+		-- file) - and a name is one language. Switch the client and this member's skills
+		-- keep the words they were recorded in until somebody logs in on them again, while
+		-- the recipe lists keep whatever language *they* were opened in. When the two
+		-- disagree the panel had no way to tell that from a profession nobody had ever
+		-- opened, and said the wrong one of the two. Stamped so it can say the right one.
+		skillsLocale = Family.locale,
 		craftCooldowns = next(cooldowns) and cooldowns or Family.CLEAR,
 		cooldownItems = next(cooldownItems) and cooldownItems or Family.CLEAR,
 	})

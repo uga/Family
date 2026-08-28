@@ -630,7 +630,27 @@ local function build(frame)
 		-- "Makes nothing" and "never opened" remain two different facts (§2.2) and Family can
 		-- only tell them apart by having seen the window, so the ones left out are named below
 		-- with whichever of the two they are.
-		local ordered, makesNothing, notOpened = {}, {}, {}
+		local ordered, makesNothing, notOpened, elsewhere = {}, {}, {}, {}
+
+		-- A third thing that can be true of a profession, and the one that used to be
+		-- reported as the second.
+		--
+		-- A profession has no id on Era, so it is keyed by its name, and a name is one
+		-- language. Recipes recorded on an English client sit under "Leatherworking"; the
+		-- same character's skill list, re-read after the client was set to French, is under
+		-- "Travail du cuir". Nothing matches, and the panel said "never opened" about a
+		-- profession whose recipes it was holding all along.
+		--
+		-- Telling them apart needs no table of professions in eleven languages: the record
+		-- says which language it was written in, and if that is not the one being read, the
+		-- absence is explained rather than reported as an absence (§2.2).
+		local stale = {}
+		for _, record in pairs(stored) do
+			if record.locale and record.locale ~= Family.locale then
+				stale[record.locale] = true
+			end
+		end
+		local staleLanguage = next(stale) ~= nil
 
 		for name, skill in pairs(skills) do
 			local record = stored[name]
@@ -638,6 +658,8 @@ local function build(frame)
 				ordered[#ordered + 1] = { name = name, skill = skill }
 			elseif record and record.recipes then
 				makesNothing[#makesNothing + 1] = name
+			elseif staleLanguage then
+				elsewhere[#elsewhere + 1] = name
 			else
 				notOpened[#notOpened + 1] = name
 			end
@@ -661,6 +683,13 @@ local function build(frame)
 		if #notOpened > 0 then
 			left[#left + 1] = string.format(L["%s never opened"],
 				table.concat(notOpened, ", "))
+		end
+		if #elsewhere > 0 then
+			table.sort(elsewhere)
+			left[#left + 1] = string.format(
+				L["%s were recorded in another language - log in on this character to "
+					.. "refresh them"],
+				table.concat(elsewhere, ", "))
 		end
 		setOmitted(#left > 0 and string.format(L["Not listed: %s.  Summary / Professions "
 			.. "has every profession and its level."], table.concat(left, "; ")) or nil)

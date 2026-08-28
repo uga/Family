@@ -365,3 +365,42 @@ here is precisely the one that must not be assumed short.
 plausible number is the hardest kind to doubt. 164 sites felt like a complete answer. The
 check that would have caught it is not a better pattern list - it is not needing one, which
 is what sizing to the content actually buys.
+
+---
+
+### L-015 — a name is one language, and the data keyed by it is too
+
+Family stores a profession by its name. That is written down at the top of
+`Scanners/Professions.lua` and it is not a mistake: on Era the skill list gives a name and a
+rank and no identifier, so there is nothing else to key it by until the client's own SkillLine
+table is shipped (DATASOURCES §3).
+
+What was not thought through is that Family now has a reason for the client's language to
+change. Two reports arrived within minutes of the same live pass:
+
+- a hunter that had "lost its professions", recovered by reopening each window;
+- a **Spanish** panel listing five **French** professions as *never opened*.
+
+Both are the same fault. A member is only re-read when somebody logs in on them, so each
+character keeps the language it was last played in - and the recipe lists keep whatever
+language *their* window was last opened in, which need not be the same one. When the skill
+list and the recipe buckets disagree, nothing matches, and the panel reported the one thing it
+could be sure of: no recipes under that name. It said *never opened* about professions whose
+recipes it was holding the whole time.
+
+Nothing was lost. Every recipe was still in the database, under a key nobody was looking up.
+
+**The check that now catches it:** the harness sets a member's skills in one locale and their
+recipes in another, draws the panel, and fails if it says *never opened* or fails to explain
+itself. Records now carry the locale they were written in, which is what makes the two cases
+distinguishable without a table of profession names in eleven languages.
+
+**What it does not do is recover the data**, because it cannot: there is no id, so there is no
+mapping from "Couture" to "Tailoring" that does not amount to shipping that table. It tells
+the player the one thing that fixes it - log in on the character - instead of implying the
+recipes were never recorded.
+
+**The general shape:** adding a feature can turn a documented, sound trade-off into a live
+fault without touching the code that made it. Nothing in `Professions.lua` changed. What
+changed is that the language became something a player would move.
+

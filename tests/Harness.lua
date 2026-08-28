@@ -2874,6 +2874,7 @@ end
 tabDrawsCleanly("contents", "the possessions panel builds and draws")
 tabDrawsCleanly("professions", "the professions panel builds and draws")
 
+
 -- Each sort runs its own comparison over the same list, and a comparison that is not a
 -- strict ordering makes table.sort throw rather than merely order things oddly.
 for _, label in ipairs { "Item level", "Skill needed", "Difficulty" } do
@@ -2911,6 +2912,55 @@ local function visibleText(needle)
 		end
 	end
 	return false
+end
+
+-- A profession recorded in one language, read in another
+--
+-- A profession has no id on Era, so it is keyed by its name, and a name is one language.
+-- Recipes opened on an English client sit under "Leatherworking"; the same character's skill
+-- list, re-read after the client was set to French, is under "Travail du cuir". Nothing
+-- matched, and the panel reported the profession as never opened - about a profession whose
+-- recipes it was holding the whole time.
+--
+-- Reported from a live client: a Spanish panel listing five French professions as never
+-- opened, and a hunter whose professions had apparently vanished until its windows were
+-- reopened.
+do
+	local who = Family:CurrentMember()
+	local payload = Family.Database:Payload(who) or {}
+	local before = payload.professions
+	-- Borrowed, not spent: everything after this reads the same member.
+	local wasSkills = (Family.Database:Meta(who) or {}).skills
+	local wasLocale = (Family.Database:Meta(who) or {}).skillsLocale
+
+	Family.Database:SetMeta(who, {
+		skills = { ["Tailoring"] = { rank = 300, maxRank = 300, secondary = false } },
+		skillsLocale = Family.locale,
+	})
+	-- The recipes were opened before the client was set to this language.
+	payload.professions = {
+		["Couture"] = { recipes = { { id = 3914, name = "Bolt of Linen" } },
+			recipesSeen = time(), locale = "frFR" },
+	}
+	Family.Database:SetPayload(who, payload)
+
+	Family.UI:ShowTab("professions")
+	Family.UI:Refresh()
+
+	check("a profession recorded in another language is not called never opened",
+		not visibleText("Tailoring never opened"),
+		"the panel claims a profession it holds recipes for was never opened")
+	check("and the panel says what will put it right",
+		visibleText("recorded in another language"),
+		"nothing on the panel explains why the recipes are missing")
+
+	payload.professions = before
+	Family.Database:SetPayload(who, payload)
+	Family.Database:SetMeta(who, {
+		skills = wasSkills or Family.CLEAR,
+		skillsLocale = wasLocale or Family.CLEAR,
+	})
+	Family.UI:Refresh()
 end
 
 local function somethingShowing(needle)
