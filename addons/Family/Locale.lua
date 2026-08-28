@@ -42,11 +42,6 @@ Family.L = setmetatable({}, {
 -- Words the game already has
 --------------------------------------------------------------------------------------------
 
--- Roughly what a character costs in the fonts Family draws labels in. One number, read by
--- the harness out of this file, so the budget it enforces and the width Fit measures cannot
--- drift apart.
-local PX_PER_CHAR = 6.5
-
 -- "Level" is the game's word before it is ours, and on a German client the game has already
 -- decided what it is called. Taking Blizzard's own string means Family says what the rest of
 -- the interface says, in all eleven languages, including the seven nobody here can write.
@@ -55,46 +50,14 @@ local PX_PER_CHAR = 6.5
 -- can be missing: absent on a client, renamed between expansions, or empty. Then this falls
 -- through to Family's own translation rather than to a blank label.
 --
--- What cannot be done is measure the global. Blizzard's German for a thing is whatever it
--- is, and it is not known here - so anything drawn in a fixed space goes through Fit below.
+-- What cannot be done is predict the global. Blizzard's German for a thing is whatever it is
+-- and is not known to this repository, so nothing here may reserve room for it by counting
+-- characters. Anything drawn in a fixed space is measured with GetStringWidth and given the
+-- room it turns out to need - UI:FitColumns and UI:LayOutRow in Family_UI/Window.lua - which
+-- is the whole of the rule: the layout gives way to the word, never the word to the layout
+-- (specification §8).
 function Family:GameWord(global, english)
 	local word = global and rawget(_G, global)
 	if type(word) == "string" and word ~= "" then return word end
 	return Family.L[english]
-end
-
--- Cut to the room there is, on a character boundary rather than a byte one.
---
--- UTF-8 continuation bytes are 0x80-0xBF; cutting between a letter's bytes leaves the client
--- drawing a broken glyph, which is the one outcome worse than a word that is too long.
--- Cyrillic is two bytes a letter and every accented Latin letter is two, so a byte count
--- here would truncate German at half the words it should and Russian at every one of them.
-function Family:Fit(text, pixels)
-	if type(text) ~= "string" then return "" end
-	local limit = math.floor(pixels / PX_PER_CHAR)
-
-	local count, byte = 0, 0
-	while byte < #text do
-		byte = byte + 1
-		local c = text:byte(byte)
-		-- Colour codes are not drawn and do not count against the room.
-		if c == 124 then                       -- "|"
-			local next_ = text:byte(byte + 1)
-			if next_ == 99 then byte = byte + 9      -- |cffffffff
-			elseif next_ == 114 then byte = byte + 1 -- |r
-			end
-		elseif c < 128 or c > 191 then
-			count = count + 1
-			if count > limit then
-				-- Back off to the start of this character, then leave room for the mark.
-				local cut = byte - 1
-				while cut > 0 and text:byte(cut) >= 128 and text:byte(cut) <= 191 do
-					cut = cut - 1
-				end
-				return text:sub(1, math.max(cut - 1, 1)) .. "..."
-			end
-		end
-	end
-
-	return text
 end
