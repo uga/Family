@@ -755,6 +755,14 @@ guildmate who logged off an hour ago is still shown, with the age of the record 
 as everything else in Family is (§2.2). Nothing is fetched from somebody who is offline,
 because there is nobody there to fetch it from.
 
+An announcement from somebody whose record we already hold is not worth a second copy of it,
+so the exchange is skipped — but **it is never skipped in silence.** A hello is answered with
+a hello, whispered to the one person and marked as a reply so that nothing answers it back.
+Being heard from is the only way one client knows another runs Family at all, and what this
+end holds from somebody says nothing about what that end holds from us: a player who cleared
+their saved variables would otherwise announce to a guild of clients that each decided, on
+their own, that there was nothing to say, and read every one of them as not running Family.
+
 ### The two are independent
 
 A guild share and a Wide Family link know nothing about each other and neither implies the

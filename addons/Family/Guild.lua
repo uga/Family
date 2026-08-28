@@ -367,6 +367,21 @@ function Guild:Announce(why)
 	return say("ghello", "GUILD", nil, {})
 end
 
+-- Hello, said back to one person rather than to the guild.
+--
+-- The traffic control below skips the whole exchange when what we hold from somebody is
+-- recent, and that was the only thing this client ever sent them - so somebody whose database
+-- had been cleared, or who had reinstalled, announced to a guild full of clients that all
+-- decided in silence that they had nothing to say, and their panel listed every one of them
+-- as not running Family. What we hold from them says nothing about what they hold from us.
+--
+-- Marked as a reply, because a reply must never be answered with another one: two clients
+-- that both have recent data would otherwise whisper hello at each other until one logs out.
+function Guild:SayHelloBack(name)
+	if type(name) ~= "string" or name == "" then return false end
+	return say("ghello", "WHISPER", name, { reply = true })
+end
+
 function Guild:AskOne(name)
 	if type(name) ~= "string" or name == "" then return false end
 	return say("gwant", "WHISPER", name, {})
@@ -445,6 +460,14 @@ local function onHello(_, text, sender)
 	noteUser(guildKey, sender)
 	Family.Database:Changed("guild")
 
+	-- Somebody saying hello back, which is the whole of what that message is for: it has
+	-- been counted and noted above, and answering it would start a conversation with no end
+	-- to it.
+	if body.reply then
+		Family:Debug("guild: %s said hello back", tostring(sender))
+		return
+	end
+
 	local held = Guild:CharactersOf(guildKey, sender)
 	local newest
 	for _, entry in ipairs(held) do
@@ -455,16 +478,26 @@ local function onHello(_, text, sender)
 	-- are skipped when what we hold is recent. This is the whole of the traffic control: a
 	-- guild where everybody has met everybody costs nothing on login, which is what makes
 	-- "kept once seen" affordable rather than a promise paid for by the channel.
-	if newest and (time() - newest) < STALE_AFTER then
-		Family:Debug("guild: %s announced, and what we have is recent", tostring(sender))
-		return
-	end
+	--
+	-- Skipped, but not in silence. Being quiet here is what left a player who had cleared
+	-- their saved variables looking at a guild of people their panel said were not running
+	-- Family: every one of those clients held recent data from them, decided there was
+	-- nothing to do, and sent nothing - and being heard from is the only way anybody knows
+	-- anybody runs this at all (§7).
+	local quiet = newest and (time() - newest) < STALE_AFTER
 
 	-- A moment later, and not the same moment for everybody: a guild logging in together
-	-- would otherwise put every one of its clients on the channel at once.
+	-- would otherwise put every one of its clients on the channel at once. Both branches
+	-- share the timer, because they are two answers to one hello and never both wanted.
 	Family:After(2 + math.random() * 6, "guild.hello." .. tostring(bareName(sender)),
 		function()
 			if not Guild:Enabled() then return end
+			if quiet then
+				Family:Debug("guild: %s announced, and what we have is recent",
+					tostring(sender))
+				Guild:SayHelloBack(sender)
+				return
+			end
 			Guild:SendTo(sender)
 			Guild:AskOne(sender)
 		end)

@@ -448,3 +448,32 @@ than an instance.
 fault is fixed, and says nothing about the next one. The rule underneath it — *cells fit*,
 *two views of one number agree*, *panels ask rather than answer* — is what has to be written
 down, and it is almost always cheaper to check than the instance was.
+
+--------------------------------------------------------------------------------------------
+
+## L-017 — Deciding, for the other end, that it had nothing to learn
+
+**2026-08-28.** A guild panel listing nine guildmates as running Family and a tenth, who
+certainly was, as not.
+
+Guild share saves the channel by skipping an exchange when what this client holds from the
+announcer is under six hours old. That is sound, and it is what makes "once seen, it is kept"
+affordable. What was wrong is that the skip sent *nothing at all* — and being heard from is
+the only way one client ever learns that another runs Family.
+
+The assumption underneath it was symmetry: if I have your data, you have mine. It holds right
+up until one end's database does not match its history — a player who cleared their saved
+variables, or reinstalled, or is testing an unreleased build. Their announcement then reaches
+a guild full of clients that each decide, independently and in silence, that there is nothing
+to say, and their panel reads every one of them as absent. Nothing recovers on its own,
+because every subsequent announcement gets the same silence.
+
+**The check that now catches it:** an announcement from somebody whose record we already hold
+must produce exactly one whisper back — one, not the eleven the skip exists to avoid — and the
+other client, with no memory of us at all, must learn from that whisper alone that we are here
+and must not answer it.
+
+**The shape of it:** an optimisation that decides what to send may not also decide what the
+other end already knows. Our own store is evidence about us. It is not evidence about them,
+and a protocol that treats it as both fails in exactly one direction, silently, for whichever
+end was rebuilt most recently.

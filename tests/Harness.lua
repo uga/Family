@@ -5674,6 +5674,87 @@ print("guild share")
 
 	Family.Database:Forget("Faraway-FireMaw")
 
+	-- Hearing from somebody we already have
+	--
+	-- Reported from a live guild: nine guildmates listed as running Family and a tenth, who
+	-- certainly was, listed as not. Being heard from is the only way anybody knows anybody
+	-- runs this (§7), and the traffic control skipped the whole exchange when what we held
+	-- from somebody was recent - so a player whose saved variables had been cleared announced
+	-- to a guild full of clients that each decided, in silence, that they had nothing to say.
+	--
+	-- What we hold from them says nothing about what they hold from us, and that was the
+	-- assumption underneath the silence.
+	do
+		-- Anything already on a timer, out of the way first: an announcement scheduled by
+		-- an earlier check is not what this one is measuring.
+		advance(9)
+		sent = {}
+
+		local function helloFrom(who, reply)
+			sent = {}
+			Family.Comm:Send("ghello", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = who .. "-FireMaw", reply = reply or nil,
+			}, "GUILD", nil)
+			deliver(who)
+		end
+
+		-- Their announcement, arriving while what we hold from them is a moment old.
+		helloFrom("Faraway")
+		sent = {}
+		advance(9)
+
+		local whispers = 0
+		for _, message in ipairs(sent) do
+			if message.channel == "WHISPER" and message.target == "Faraway" then
+				whispers = whispers + 1
+			end
+		end
+		check("a hello from somebody we already hold is answered rather than ignored",
+			whispers > 0, "nothing went back to them")
+		-- One message. Everything we have is eleven, which is what the skip exists to
+		-- avoid and what this must not quietly become.
+		check("and answered by one whisper rather than by sending everything again",
+			whispers == 1, tostring(whispers) .. " whispers")
+
+		local ourReply = {}
+		for _, message in ipairs(sent) do ourReply[#ourReply + 1] = message end
+
+		-- Their side of it: the reply is what tells them we are here, and it must not be
+		-- answered - two clients that both hold recent data would say hello for ever.
+		sent = {}
+		advance(9)
+
+		theirs = wearing(theirs, function()
+			local realUnitName = UnitName
+			UnitName = function() return "Faraway" end
+
+			-- A client that has never heard of us in this guild, which is exactly the
+			-- state a cleared or reinstalled database is in on the other end.
+			FamilyDB.guild.users = {}
+			check("before it arrives, that client does not know we run Family",
+				Family.Guild:RunsFamily(guildKey, "Tester") == false)
+
+			sent = ourReply
+			deliver("Tester")
+			check("and hearing the reply is what tells it",
+				Family.Guild:RunsFamily(guildKey, "Tester"))
+
+			-- A hello and nothing else. If the skip ever turns back into a full send this
+			-- is where it shows, because their store would have our characters in it.
+			check("and it carries a hello and not the characters the skip was avoiding",
+				#Family.Guild:CharactersOf(guildKey, "Tester") == 0,
+				tostring(#Family.Guild:CharactersOf(guildKey, "Tester")) .. " arrived")
+
+			sent = {}
+			advance(9)
+			check("but a reply is never answered with another one", #sent == 0,
+				tostring(#sent) .. " message(s) went back")
+
+			UnitName = realUnitName
+		end)
+	end
+
 	-- The panel.
 	tabDrawsCleanly("guild", "the guild panel builds and draws")
 	check("it names the guild", visibleText("Late Night Raiders"))

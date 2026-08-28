@@ -29,6 +29,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A guildmate who is running Family is no longer listed as not running it.** Family only
+  knows somebody runs it by hearing from them, and a client that already had your characters
+  answered your announcement with silence — correctly, to save the channel, but that silence
+  was the only thing it ever sent you. It now says hello back. This shows up most for anyone
+  who has cleared their saved data or reinstalled, whose guild then looked empty.
 - **Races are shown in your own language, whoever recorded them.** A character last played on
   a French client stayed French on a Spanish one, and a member shared with you was named in
   whatever their owner was running. Family now reads the game's own race table, so it says
