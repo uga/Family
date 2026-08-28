@@ -4072,7 +4072,10 @@ end
 -- The columns already had a check that they add up to less than the row. What nothing said
 -- was that a cell has to fit the column it is put in. The two are not the same rule and only
 -- the first was written down.
-do
+--
+-- Its own scope, not a bare do block: the main chunk is at Lua 5.1's ceiling of two hundred
+-- locals and one more here is what tips it over.
+;(function()
 	Family.UI:Show()
 	Family.UI:ShowTab("summary")
 
@@ -4091,11 +4094,48 @@ do
 		played = 4321987, playedAtLevel = 98765,
 	})
 
+	-- In every language, not only the one the widths were chosen in.
+	--
+	-- A cell's text is looked up when the row is drawn, so switching the locale and drawing
+	-- again measures what a German or a Russian client would actually put in these columns.
+	-- The headings are not re-read - they are captured when the file loads, which is true of
+	-- the game as well, where changing the language means a reload - so this measures the
+	-- content against the declared width. That is if anything stricter than the real thing,
+	-- because a longer heading widens its own column before any of this is drawn.
+	local wasLocale = Family.locale
+
+	-- Two more, because one member only ever exercises one branch of each formatter. Mail
+	-- expiring in days says "29d 23h" and mail expiring today says "5h 20m", which is two
+	-- more characters in English and was four more in German until this found it.
+	Family.Database:SetMeta("Soon-FireMaw", {
+		name = "Soon", realm = "Fire Maw", classFile = "PRIEST", faction = "Alliance",
+		level = 60, money = 1234, mailSeen = time() - 5000, mailCount = 3, mailInPost = 1,
+		mailExpiresBy = time() + 5 * 3600 + 20 * 60,
+		auctionsSeen = time() - 90, bagsSeen = time() - 90, bankSeen = time() - 3700,
+	})
+	Family.Database:SetMeta("Later-FireMaw", {
+		name = "Later", realm = "Fire Maw", classFile = "DRUID", faction = "Horde",
+		level = 60, money = 1234, mailSeen = time() - 86400, mailCount = 1,
+		mailExpiresBy = time() + 45 * 60,
+		auctionsSeen = time() - 86400 * 2, bagsSeen = time() - 3600 * 5,
+	})
+
+	-- A fixture nobody draws measures nothing, which is a way for all of this to pass by
+	-- doing nothing at all.
+	Family.UI:Refresh()
+	check("the members these sets are measured against are on screen",
+		visibleText("Busy") and visibleText("Soon") and visibleText("Later"))
+
 	-- The tab strip carries some of these words too, so it is the last button with the
 	-- label that is wanted - the same trap the professions check above walked into.
 	for _, label in ipairs { "Overview", "Bags", "Activity", "Professions", "Currencies",
 		"Crafting", "Miscellaneous" } do
 		local clicked = clickLastButton(label)
+		check("the " .. label:lower() .. " set is drawn", clicked)
+
+		for _, locale in ipairs { "enUS", "deDE", "frFR", "esES", "ruRU" } do
+		Family.locale = locale
+		Family.UI:Refresh()
 		local over = {}
 		for _, f in ipairs(fontStrings) do
 			local parent = type(f.__parent) == "table" and f.__parent or nil
@@ -4113,13 +4153,17 @@ do
 				end
 			end
 		end
-		check("the " .. label:lower() .. " set is drawn", clicked)
-		check("and every cell in it fits the column it was put in", #over == 0,
-			table.concat(over, " | "))
+		check("every cell of the " .. label:lower() .. " set fits its column in " .. locale,
+			#over == 0, table.concat(over, " | "))
+		end
 	end
 
+	Family.locale = wasLocale
+	Family.UI:Refresh()
 	Family.Database:Forget("Busy-FireMaw")
-end
+	Family.Database:Forget("Soon-FireMaw")
+	Family.Database:Forget("Later-FireMaw")
+end)()
 
 Family.UI:ShowTab("summary")
 clickLastButton("Professions")

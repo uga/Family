@@ -477,3 +477,14 @@ and must not answer it.
 other end already knows. Our own store is evidence about us. It is not evidence about them,
 and a protocol that treats it as both fails in exactly one direction, silently, for whichever
 end was rebuilt most recently.
+
+**Postscript, the same day.** The check this lesson introduced - every cell measured against
+its column - was written to run in English, which is the shortest of the five languages and
+the one in which no translated string can possibly fail. Running the same check in all five
+took one loop and found six more overflows immediately: a totals label with no translation
+short enough to fit the cell it was pinned to, "just now" in three languages, and a Russian
+"max level".
+
+Which is this lesson again, one turn later and from the inside: a check written to the shape
+of the reported fault. The fault was reported in English, so the check was written in English.
+

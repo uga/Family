@@ -1240,8 +1240,22 @@ local function build(frame)
 			if not firstTotal then return end
 
 			local total = nextRow()
-			setCell(total, math.max(firstTotal - 1, 1), label, r or 0.55, g or 0.55,
-				b or 0.55)
+
+			-- Beside the first number it labels, which is where it reads best - unless the
+			-- word is too long for that column, and then at the far left, where a totals
+			-- row has the whole member column to itself and nothing to collide with.
+			--
+			-- "Grand totals" fits the column left of the money in English with six pixels
+			-- to spare. "Totaux generaux" needs sixteen more than there are and "Totales
+			-- generales" twenty-nine, and a label drawn through the number it is labelling
+			-- is worse than one sitting further from it.
+			local at = math.max(firstTotal - 1, 1)
+			local beside = columns[at]
+			local room = (beside and (beside.drawWidth or beside.width) or 0) - 8
+			measure:SetText(label or "")
+			if (measure:GetStringWidth() or 0) > room then at = 1 end
+
+			setCell(total, at, label, r or 0.55, g or 0.55, b or 0.55)
 
 			for index, column in ipairs(columns) do
 				local add = TOTAL[column.key]
