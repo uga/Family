@@ -88,6 +88,11 @@ fontMeta.__index = function(_, key)
 	-- the labels on the talent grid are - so that has to be remembered too.
 	if key == "Show" then return function(self) self.__visible = true end end
 	if key == "Hide" then return function(self) self.__visible = false end end
+	-- And the one call that does both. Frames have had this since the beginning; regions
+	-- did not, so a texture shown or hidden by a condition was invisible to this file.
+	if key == "SetShown" then
+		return function(self, v) self.__visible = v and true or false end
+	end
 	-- Which picture a texture was given. It went to the same noop everything unrecognised
 	-- did, so nothing here could see what anything was drawn as - and the possessions panel
 	-- drew the keyring as a helm for weeks with this file perfectly content.
@@ -3339,6 +3344,22 @@ check("so clicking a profession casts the spell that opens it",
 	cast[1] == "Blacksmithing", table.concat(cast, ","))
 check("and still chooses that profession in the panel", visibleText("Copper Chain Belt"))
 
+-- The line above the list, which said "129 241/300" on a live client: the profession arrives
+-- as the skill line it is keyed by and was printed as the number it is.
+do
+	local heading
+	for _, f in ipairs(fontStrings) do
+		if type(f.__text) == "string" and f.__text:find("recipes", 1, true)
+			and f.__text:find("seen", 1, true) then
+			heading = f.__text
+		end
+	end
+	check("the list's own heading names the profession rather than its skill line",
+		heading ~= nil and heading:find("Blacksmithing", 1, true) ~= nil
+			and heading:find("164", 1, true) == nil,
+		tostring(heading))
+end
+
 -- A recipe clicked with nothing open cannot open anything itself. It is remembered for the
 -- button that can, and the panel says which button that is rather than looking broken.
 TRADE_SKILL_OPEN = false
@@ -3358,6 +3379,17 @@ do
 			said = f.__text
 		end
 	end
+	-- The row stays marked, because the message tells you to move the mouse somewhere
+	-- else and a highlight that follows the mouse is gone by the time you get there.
+	local marked, others = 0, 0
+	for _, f in ipairs(frames) do
+		if f.waiting and f.__shown ~= false and type(f.recipeName) == "string" then
+			if f.waiting.__visible == true then marked = marked + 1 else others = others + 1 end
+		end
+	end
+	check("the recipe that is waiting stays marked once the mouse has gone",
+		marked == 1, tostring(marked) .. " marked, " .. tostring(others) .. " not")
+
 	check("and names that button rather than printing its skill line number",
 		said ~= nil and said:find("Blacksmithing", 1, true) ~= nil
 			-- 164 is blacksmithing. Written out because SKILL is scoped to the section

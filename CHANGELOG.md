@@ -42,6 +42,11 @@ is a decision rather than an afternoon of archaeology.
   such a recipe works again too: it looks for the row in your open profession window, and it
   had been looking for a word that window does not use. Searching finds them under either
   name.
+- **The recipe list's heading names the profession** instead of the number Family files it
+  under.
+- **A recipe you click with no profession window open stays marked** until you open one. It
+  told you which button to press and then let go of the recipe you had picked, which is a poor
+  arrangement when the button is at the other end of the panel.
 - **A recipe list no longer comes back half translated.** Names came from the item each recipe
   makes, and the game only knows an item once it has loaded it — so a first aid list arrived
   half in one language and half in the other. Family now asks for the ones it is missing and

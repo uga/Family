@@ -222,6 +222,14 @@ function UI:RememberRecipe(memberKey, profession, recipeName)
 		at = time() }
 end
 
+-- Whether this row is the one waiting. Asked by the drawing rather than kept on the row,
+-- because rows are pooled and a mark left on one would reappear under a different recipe.
+function UI:WaitingFor(memberKey, profession, recipeName)
+	if not pending then return false end
+	return pending.key == memberKey and pending.profession == profession
+		and pending.name == recipeName
+end
+
 Family:OnDatabaseReady("professions.open", function()
 	for _, event in ipairs { "TRADE_SKILL_SHOW", "CRAFT_SHOW" } do
 		Family:RegisterEvent(event, "professions.open", function()
@@ -231,11 +239,13 @@ Family:OnDatabaseReady("professions.open", function()
 			-- opened this window is worth acting on.
 			if time() - pending.at > 20 then
 				pending = nil
+				UI:Refresh()
 				return
 			end
 
 			local wanted = pending
 			pending = nil
+			UI:Refresh()
 
 			-- After the window has filled itself in, which is not the moment it says
 			-- it is showing.
@@ -439,6 +449,14 @@ local function build(frame)
 		r.icon:SetSize(ROW - 4, ROW - 4)
 		r.icon:SetPoint("LEFT", 4, 0)
 
+		-- The recipe that is waiting for a window to open in, marked so it can be found
+		-- again. The highlight above follows the mouse, and the whole point of the message
+		-- this goes with is that you are about to move the mouse somewhere else.
+		r.waiting = r:CreateTexture(nil, "BACKGROUND")
+		r.waiting:SetAllPoints()
+		if r.waiting.SetColorTexture then r.waiting:SetColorTexture(1, 0.82, 0, 0.16) end
+		r.waiting:Hide()
+
 		r:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
 		r:RegisterForClicks("LeftButtonUp")
 
@@ -457,6 +475,11 @@ local function build(frame)
 			-- and the panel says which button that is rather than looking broken.
 			if self.canOpen then
 				UI:RememberRecipe(self.memberKey, self.profession, self.recipeName)
+				-- Drawn again so the row shows it is the one waiting: without this the
+				-- only sign of it is a sentence, and the mouse is already leaving. Before
+				-- the message rather than after, because drawing writes the status line
+				-- and the message is what has to be left standing on it.
+				if frame:IsShown() then frame:Refresh() end
 				if self.announce then self.announce(self.recipeName, self.profession) end
 			end
 		end)
@@ -823,7 +846,7 @@ local function build(frame)
 
 		status:SetText(string.format(L["|cffffd700%s|r %s   |cff888888|||r   %d recipes  %s"
 			.. "   |cff888888|||r   seen %s"],
-			chosen, rankText(skill) or "", #recipes,
+			Family:ProfessionName(chosen, skill.name), rankText(skill) or "", #recipes,
 			table.concat(pieces, "  "), UI:Ago(record.recipesSeen)))
 
 		local used, y = 0, 0
@@ -856,6 +879,11 @@ local function build(frame)
 			-- what a click matches against the open trade skill window, and that window
 			-- answers in whatever language the client is running.
 			r.memberKey, r.profession, r.recipeName = member.key, chosen, shownName
+
+			-- Marked if this is the one waiting for a window, so that it is still findable
+			-- after the mouse has gone to the profession button the message names.
+			local waiting = UI:WaitingFor(member.key, chosen, shownName)
+			r.waiting:SetShown(waiting)
 
 			-- Armed only when there is something to cast and somebody to cast it, so a
 			-- row about another member stays a picture of a recipe.
