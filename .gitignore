@@ -14,7 +14,10 @@ tools/__pycache__/
 # regenerated - docs/HANDOFF.md §3 - so the file is produced into the addon and ignored here.
 addons/Family/Data/
 
-# Per-machine Claude Code settings: the allow-list a session accumulates, and nothing that
-# anybody else needs. .claude/settings.json beside it is tracked on purpose - the deny rules
-# and the clean-room hook are part of how the rule is kept, so they travel with a clone.
-.claude/settings.local.json
+# How this repository is worked on, which is nobody else's business and was never meant to be
+# published. `.claude/` was tracked on purpose so the clean-room guardrails travelled with a
+# clone - and those guardrails name the tree they exist to keep sessions out of, so tracking
+# them put that name in a public repository by the same door the sanitisation had just closed
+# on the documents. The rule is kept by the copy on this machine, where it does the work.
+CLAUDE.md
+.claude/
