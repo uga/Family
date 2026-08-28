@@ -6695,6 +6695,135 @@ end)()
 -- meant to be its own length and has nothing to run into.
 --------------------------------------------------------------------------------------------
 
+--------------------------------------------------------------------------------------------
+-- Text a player can see that nobody translated
+--
+-- Three strings reached a French client in English because a bulk edit matched the call
+-- shapes somebody thought of rather than the ones that existed: every relative date, a
+-- talent grid's tier labels, and the word "empty" on an unfilled gear slot. Each was found
+-- by a person looking at the screen (L-014).
+--
+-- This reads the sources properly - tracking comments and strings rather than pattern
+-- matching over them, which is what produced the false positives that made the earlier
+-- sweeps easy to wave through - and insists that anything that reads like a sentence is
+-- either wrapped for translation or named below as deliberately not.
+--------------------------------------------------------------------------------------------
+
+print()
+print("text a player can see that nobody translated")
+;(function()
+	-- Values that are compared against, keyed on, or sent over the wire. Translating any of
+	-- these would break the thing that reads them back.
+	local INTERNAL = {
+		["asked for"] = true, ["on request"] = true, ["a grant changed"] = true,
+		["guild changed"] = true, ["data source"] = true, ["seen in game"] = true,
+		["expected"] = true, ["both"] = true, ["classic"] = true,
+		["client has the symbol"] = true, ["client lacks the symbol"] = true,
+		["Equipped gear"] = true, ["not in a guild"] = true,
+		["the last one was offline"] = true,
+	}
+
+	-- Every literal in a file, with comments and nested quotes handled, because "a" .. "b"
+	-- read by a pattern looks like the string ' .. '.
+	local function literalsOf(text)
+		local out = {}
+		local i, n = 1, #text
+		while i <= n do
+			local two = text:sub(i, i + 1)
+			if two == "--" then
+				local stop = text:find("\n", i, true) or (n + 1)
+				i = stop
+			elseif text:sub(i, i) == '"' then
+				local start = i
+                local scan = i + 1
+				while scan <= n do
+					local c = text:sub(scan, scan)
+					if c == "\\" then scan = scan + 2
+					elseif c == '"' then break
+					else scan = scan + 1 end
+				end
+				out[#out + 1] = { value = text:sub(start + 1, scan - 1), at = start }
+				i = scan + 1
+			else
+				i = i + 1
+			end
+		end
+		return out
+	end
+
+	-- The spans a literal may sit inside and be fine: a lookup, or narration that is English
+	-- on purpose.
+	local function spansOf(text, opener)
+		local out, at = {}, 1
+		while true do
+			local from = text:find(opener, at)
+			if not from then break end
+			local open = text:find("[%[%(]", from)
+			if not open then break end
+			local close = text:sub(open, open) == "[" and "]" or ")"
+			local depth, j = 1, open + 1
+			while depth > 0 and j <= #text do
+				local c = text:sub(j, j)
+				if c == text:sub(open, open) then depth = depth + 1
+				elseif c == close then depth = depth - 1 end
+				if depth > 0 then j = j + 1 end
+			end
+			out[#out + 1] = { open, j }
+			at = j + 1
+		end
+		return out
+	end
+
+	local bare = {}
+	for _, name in ipairs { "Window", "MemberPicker", "ChoicePicker", "Tooltip", "Summary",
+		"Talents", "Contents", "Professions", "Character", "Quests", "Wide", "Guild",
+		"Broker", "Options", "About", "Slash" } do
+		local path = "addons/Family_UI/" .. name .. ".lua"
+		local f = io.open(ROOT .. "/" .. path)
+		if f then
+			local text = f:read("*a")
+			f:close()
+
+			local safe = {}
+			for _, opener in ipairs { "%f[%w_]L%[", "Family:Debug%(" } do
+				for _, span in ipairs(spansOf(text, opener)) do safe[#safe + 1] = span end
+			end
+
+			for _, literal in ipairs(literalsOf(text)) do
+				local covered = false
+				for _, span in ipairs(safe) do
+					if literal.at >= span[1] and literal.at <= span[2] then covered = true end
+				end
+
+				if not covered and not INTERNAL[literal.value] then
+					-- Order matters. Format specifiers go first, so that a colour built
+					-- out of them - "|cff%02x%02x%02x" for a class colour - is reduced to
+					-- a bare "|cff" and can be recognised as one; strip the whole codes
+					-- first and that leftover reads as the word "cff".
+					local plain = literal.value
+						:gsub("%%[%-%+ #%d%.]*[a-zA-Z]", "")
+						:gsub("|c%x%x%x%x%x%x%x%x", "")
+						:gsub("|c%x?%x?%x?%x?%x?%x?%x?%x?", "")
+						:gsub("|r", ""):gsub("\\n", " ")
+					-- Two signals, because the faults that got through were single
+					-- words. A colour code is the strong one: nothing internal is
+					-- coloured, so |cff9d9d9dempty|r is text somebody will read even
+					-- though "empty" on its own could be anything. Failing that, two
+					-- words of letters is a sentence.
+					local coloured = literal.value:match("|c%x%x%x%x%x%x%x%x") ~= nil
+					if plain:match("%a%a") and not plain:match("^%s*[A-Z_]+%s*$")
+						and (coloured or plain:match("%a%s+%a")) then
+						bare[#bare + 1] = name .. ": " .. literal.value:sub(1, 40)
+					end
+				end
+			end
+		end
+	end
+
+	check("every sentence a player can see is wrapped for translation", #bare == 0,
+		table.concat(bare, " | "))
+end)()
+
 print()
 print("captions that stop at the edge of the panel")
 ;(function()

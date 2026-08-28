@@ -928,7 +928,7 @@ local function build(frame)
 								-- An empty slot has no item to describe, and which slot
 								-- it is is the whole of what somebody hovering wants.
 								cell.lines = { { _G[slot[2]] or slot[2],
-									"|cff9d9d9dempty|r" } }
+									L["|cff9d9d9dempty|r"] } }
 							end
 						end
 

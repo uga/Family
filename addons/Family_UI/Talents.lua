@@ -621,7 +621,7 @@ local function build(frame)
 
 		for tier = 1, #data.tiers do
 			local rowY = (tier - 1) * CELL
-			nextLabel(0, rowY + 8, string.format("|cff888888tier %d|r", tier), 60)
+			nextLabel(0, rowY + 8, string.format(L["|cff888888tier %d|r"], tier), 60)
 
 			local choices = data.tiers[tier].choices or {}
 			local picked = data.tiers[tier].chosen

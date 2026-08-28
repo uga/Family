@@ -336,8 +336,19 @@ unmeasured, and "Compétence requise" was drawn out of its button and into the n
 
 **Both were found by a person looking at the screen, not by any check here.**
 
-**What now catches each:** the sweep that finds bare user-visible strings is written down in
-`tools/` rather than being a shell one-liner retyped from memory, and the layout no longer
+**What now catches each:** a harness check reads the sources properly - tracking comments and
+strings rather than pattern-matching over them, which is what produced the false positives
+that made the earlier sweeps easy to wave through - and fails on any literal a player could
+read that is not wrapped for translation or named as deliberately internal.
+
+Its first version wanted two words before it would call something a sentence, and passed on
+both of the strings a person had just found on screen: "empty" on an unfilled gear slot and
+"tier %d" on the talent grid are one word each. The signal that works is the colour code.
+Nothing internal is coloured, so `|cff9d9d9dempty|r` is text somebody will read even though
+`empty` on its own could be a table key. Three times now a check has been written to the
+shape of the reported fault rather than to the fault.
+
+The layout no longer
 depends on knowing every label in advance — buttons and columns size themselves to whatever
 they are given (`UI:LayOutRow`, `UI:FitColumns`), bounded by the room their row has, and say
 so in chat when even that is not enough.
