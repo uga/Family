@@ -36,10 +36,12 @@ is a decision rather than an afternoon of archaeology.
   who has cleared their saved data or reinstalled, whose guild then looked empty.
 - **Recipes are shown in your own language too.** Professions learnt to say *Secourisme* and
   then listed twelve recipes in English underneath, because the list had been read on an
-  English client. A recipe is a spell and Family has always recorded its id, so it now asks
-  your own client what each one is called. Clicking such a recipe also works again: it looks
-  for the row in your open profession window, and it was looking for a word that window does
-  not use. Searching finds them under either name.
+  English client. Family records what each recipe makes, so it now asks your own client what
+  that is called rather than repeating the word it was written down in. Nothing needs
+  rescanning — lists already saved read correctly as soon as you reopen the panel. Clicking
+  such a recipe works again too: it looks for the row in your open profession window, and it
+  had been looking for a word that window does not use. Searching finds them under either
+  name.
 - **Races are shown in your own language, whoever recorded them.** A character last played on
   a French client stayed French on a Spanish one, and a member shared with you was named in
   whatever their owner was running. Family now reads the game's own race table, so it says

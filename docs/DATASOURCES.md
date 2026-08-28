@@ -99,19 +99,32 @@ very different clients.
 
 ### Recipe links, measured rather than assumed
 
-`GetTradeSkillItemLink(index)` answers on Classic Era and `GetTradeSkillRecipeLink(index)` does
-not — or does not answer with anything an `enchant:` pattern reads. Measured on 1.15.9 with
-`/family recipes`: a character with 150 leatherworking, 67 cooking and 12 first aid recipes had
-an item id for every single one and a spell id for none of them.
+**`GetTradeSkillRecipeLink(index)` returns `nil` on Classic Era.** Not an unexpected link kind
+— nothing at all. `GetTradeSkillItemLink(index)` answers normally beside it. Measured on
+1.15.9 with a leatherworking window open:
 
-So **the item a recipe makes is the identity most recipes actually have**, and the name of that
-item is what `Family.Names:Recipe` falls back to. The spell id is still preferred where it
-exists — a few rows are not named after their product, smelting being the obvious one — and the
-link is now read for `enchant:`, `spell:` and `trade:` rather than for one kind that was
-assumed.
+```
+row 1: recipe nil | item nil                     -- row 1 is the header
+row 2: recipe nil | item |Hitem:15564:...|h[Renfort d'armure robuste]|h|r
+row 3: recipe nil | item |Hitem:8173:...|h[Renfort d'armure épais]|h|r
+```
 
-Enchanting comes through the Craft frame instead (`GetCraftRecipeLink`, `GetCraftItemLink`) and
-has not been measured on a live client yet.
+The same character's saved records: 150 leatherworking, 67 cooking and 12 first aid recipes,
+**an item id on every one and a spell id on none**.
+
+So **the item a recipe makes is the identity most recipes actually have on Era**, and its name
+is what `Family.Names:Recipe` falls back to — which is what names a recipe in the reader's
+language there. The spell id is still preferred where a client does supply one, because a few
+rows are not named after their product; smelting says *Smelt Copper* and makes a Copper Bar.
+The link is read for `enchant:`, `spell:` and `trade:` rather than for the one kind that was
+assumed, which costs nothing and is not what fixed Era.
+
+**The Craft frame on Era is not only enchanting.** The same window carries the leatherworking
+specialisations: with a leatherworking trade skill window open, `GetCraftName()` answered
+*Travail du cuir d'écailles de dragon* — Dragonscale Leatherworking — with no recipes under it.
+A craft window can therefore name something real and have nothing in it, which is why
+`readCraftRecipes` returning nil on an empty list matters. `GetCraftRecipeLink` and
+`GetCraftItemLink` have not been measured against a live enchanter yet.
 
 ### What the client cannot do
 
