@@ -208,10 +208,25 @@ end
 
 -- A recipe link is a spell; the thing it makes is an item. Both carry an id in the link, and
 -- an id is what gets stored (§2.1).
-local function idFromLink(link, kind)
+-- The id in a link, whichever kind of link this client hands back.
+--
+-- A trade skill recipe was read as an enchant link, which is what these clients were said to
+-- return and what the fixtures were written from. A live Era client returned nothing this
+-- could read at all: a hundred and fifty leatherworking recipes with an item id each and not
+-- one spell id between them, which is why a French client went on showing English recipe
+-- names long after it had been taught to ask.
+--
+-- So the kinds are tried in turn rather than assumed. Where none of them answers, the recipe
+-- still has the item it makes, and that is what names it.
+local function idFromLink(link, ...)
 	if type(link) ~= "string" then return nil end
-	local id = link:match(kind .. ":(%d+)")
-	return tonumber(id)
+
+	local kinds = { ... }
+	for index = 1, #kinds do
+		local id = link:match(kinds[index] .. ":(%d+)")
+		if id then return tonumber(id) end
+	end
+	return nil
 end
 
 -- Era and Burning Crusade: a flat list of headers and skills, with the difficulty as one of
@@ -236,7 +251,7 @@ local function readClassicRecipes()
 			}
 
 			recipe.spellID = idFromLink(Family:TryCall(GetTradeSkillRecipeLink, index),
-				"enchant")
+				"enchant", "spell", "trade")
 			recipe.itemID = idFromLink(Family:TryCall(GetTradeSkillItemLink, index), "item")
 
 			-- The client's own icon for this row. Working one out afterwards from the
@@ -316,7 +331,7 @@ local function readCraftRecipes()
 			}
 
 			recipe.spellID = idFromLink(Family:TryCall(GetCraftRecipeLink, index),
-				"enchant")
+				"enchant", "spell", "trade")
 			recipe.itemID = idFromLink(Family:TryCall(GetCraftItemLink, index), "item")
 			recipe.icon = Family:TryCall(GetCraftIcon, index)
 

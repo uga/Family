@@ -89,6 +89,37 @@ add("recipes", L["why a recipe is in the wrong language: /family recipes"], func
 	if not any then
 		Family:Print(L["  nothing recorded - open each profession window once"])
 	end
+
+	-- What the client actually hands back, for a window open right now. Records keep ids
+	-- and not links, so this is the only place the raw answer can be seen - and "the call
+	-- returns nothing" and "the call returns a link of a kind nobody expected" are two
+	-- different faults with one symptom.
+	--
+	-- The bars are doubled so the chat frame prints the link instead of rendering it.
+	local function shown(link)
+		if type(link) ~= "string" then return tostring(link) end
+		return (link:gsub("|", "||"))
+	end
+
+	local line = Family:TryCall(GetTradeSkillLine)
+	if line and line ~= "UNKNOWN" then
+		Family:Print(L["  open trade skill window: %s"], tostring(line))
+		for index = 1, math.min(3, Family:TryCall(GetNumTradeSkills) or 0) do
+			Family:Print(L["    row %d: recipe %s | item %s"], index,
+				shown(Family:TryCall(GetTradeSkillRecipeLink, index)),
+				shown(Family:TryCall(GetTradeSkillItemLink, index)))
+		end
+	end
+
+	local craft = Family:TryCall(GetCraftName)
+	if craft and craft ~= "UNKNOWN" then
+		Family:Print(L["  open craft window: %s"], tostring(craft))
+		for index = 1, math.min(3, Family:TryCall(GetNumCrafts) or 0) do
+			Family:Print(L["    row %d: recipe %s | item %s"], index,
+				shown(Family:TryCall(GetCraftRecipeLink, index)),
+				shown(Family:TryCall(GetCraftItemLink, index)))
+		end
+	end
 end)
 
 add("guild", L["guild share on, off, or test: /family guild test"], function(argument)

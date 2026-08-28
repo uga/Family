@@ -1053,7 +1053,10 @@ local TRADE_RECIPES = {
 	{ "Header", "header" },
 	{ "Copper Chain Belt", "trivial", 0, "|cffffd000|Henchant:2661|h[Copper Chain Belt]|h|r",
 	  "|cffffffff|Hitem:2864|h[Copper Chain Belt]|h|r" },
-	{ "Silver Rod", "optimal", 2, "|cffffd000|Henchant:3339|h[Silver Rod]|h|r",
+	-- Not an enchant link. A live Era client does not hand these back the way the other
+	-- rows here say it does, and reading only one kind is what left a hundred and fifty
+	-- recipes with no id to be named by.
+	{ "Silver Rod", "optimal", 2, "|cffffd000|Hspell:3339|h[Silver Rod]|h|r",
 	  "|cffffffff|Hitem:6338|h[Silver Rod]|h|r" },
 }
 
@@ -1725,6 +1728,12 @@ check("and the item id of what it makes", bs.recipes
 	and bs.recipes[1].itemID == 2864, bs.recipes and tostring(bs.recipes[1].itemID))
 check("difficulty is the client's own unlocalised word", bs.recipes
 	and bs.recipes[2].difficulty == "optimal", bs.recipes and bs.recipes[2].difficulty)
+
+-- The two rows carry two different kinds of link on purpose. Which kind a client hands back
+-- is not something this file can settle - a live Era client returned nothing readable at all,
+-- and a hundred and fifty recipes went unnamed because one kind was assumed.
+check("a recipe link of another kind is read just the same", bs.recipes
+	and bs.recipes[2].spellID == 3339, bs.recipes and tostring(bs.recipes[2].spellID))
 check("and when they were seen is recorded", bs.recipesSeen ~= nil)
 
 -- Enchanting arrives through the Craft frame. The character has no skill by that name, so

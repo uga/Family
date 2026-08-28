@@ -97,6 +97,22 @@ not have must simply not register, so the name falls through to whatever is next
 way, a missing global degrades to English instead of erroring, and the same code runs on three
 very different clients.
 
+### Recipe links, measured rather than assumed
+
+`GetTradeSkillItemLink(index)` answers on Classic Era and `GetTradeSkillRecipeLink(index)` does
+not — or does not answer with anything an `enchant:` pattern reads. Measured on 1.15.9 with
+`/family recipes`: a character with 150 leatherworking, 67 cooking and 12 first aid recipes had
+an item id for every single one and a spell id for none of them.
+
+So **the item a recipe makes is the identity most recipes actually have**, and the name of that
+item is what `Family.Names:Recipe` falls back to. The spell id is still preferred where it
+exists — a few rows are not named after their product, smelting being the obvious one — and the
+link is now read for `enchant:`, `spell:` and `trade:` rather than for one kind that was
+assumed.
+
+Enchanting comes through the Craft frame instead (`GetCraftRecipeLink`, `GetCraftItemLink`) and
+has not been measured on a live client yet.
+
 ### What the client cannot do
 
 It has no network access. Any addon that talks to a server does it through a companion
