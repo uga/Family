@@ -6235,6 +6235,16 @@ print("the deploy script warns before it mirrors a source with no libraries")
 	check("Deploy.bat warns when the source has none",
 		bat:match('if not defined LIBS %(') ~= nil and bat:match("WARNING") ~= nil,
 		"without it /MIR removes all three from every client and says nothing")
+
+	-- This file is the one in the repository that names a particular machine, and it is in a
+	-- public one. The share line carried a real LAN address from the seed commit until
+	-- 2026-08-28 because nothing was looking. An address is the part that is worth catching:
+	-- a drive letter says little, four numbers and dots say where somebody's network lives.
+	local address = bat:match("%f[%d](%d%d?%d?%.%d%d?%d?%.%d%d?%d?%.%d%d?%d?)%f[%D]")
+	check("Deploy.bat names no real host",
+		address == nil,
+		address and ("it has " .. address .. " in it - the committed copy is the template, and "
+			.. "the machine's own paths belong on the machine") or nil)
 end)()
 
 --------------------------------------------------------------------------------------------

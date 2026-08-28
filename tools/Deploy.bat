@@ -32,8 +32,13 @@ rem than addons\ so that it can never be mistaken for something that ships.
 set "ADDON_TOOL=FamilyIconSheet"
 
 rem Windows refuses to run a script from a network path, so this file lives on a local disk
-rem and the checkout is reached over the share. Change this if the share moves.
-set "SRC_SHARE=\\10.10.0.175\dev\Family-public\addons"
+rem and the checkout is reached over the share.
+rem
+rem These three are the only lines in this file that describe one particular machine, and they
+rem are left as placeholders on purpose: this copy is in a public repository, and a working
+rem copy is one somebody edited for their own machine. Set them once on the machine that runs
+rem the deploy - the copy here is the template, not the thing being run.
+set "SRC_SHARE=\\YOUR-HOST\dev\Family-public\addons"
 
 rem --- where the addons are coming from ---------------------------------------------------
 
@@ -62,11 +67,12 @@ for %%P in ("%SRC%\..\tools") do set "SRC_TOOLS=%%~fP"
 
 rem --- where they are going ---------------------------------------------------------------
 
-rem Era and Anniversary share a root. Mists lives on the second disk.
+rem Era and Anniversary share a root; Mists is often on another disk. Placeholders, for the
+rem reason given above - set them to the real ones on the machine that runs this.
 set "WOW=C:\World of Warcraft Classic\World of Warcraft"
 set "DEST_ERA=%WOW%\_classic_era_\Interface\AddOns"
 set "DEST_ANNI=%WOW%\_anniversary_\Interface\AddOns"
-set "DEST_MISTS=E:\Giochi\World of Warcraft\_classic_\Interface\AddOns"
+set "DEST_MISTS=D:\World of Warcraft\_classic_\Interface\AddOns"
 
 set "DRYRUN="
 set "NOASK="
