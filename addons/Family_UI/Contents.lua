@@ -25,6 +25,7 @@
 local _, UI = ...
 
 local Family = _G.Family
+local L = Family.L
 
 local SLOT = 32           -- twice the size of a list row's icon, which is what a bag looks like
 local GAP = 4
@@ -80,13 +81,13 @@ end
 
 local function containerName(entry, bag, where)
 	if where == "bags" and bag == BACKPACK then
-		return _G.BACKPACK_TOOLTIP or "Backpack"
+		return _G.BACKPACK_TOOLTIP or L["Backpack"]
 	end
 	if where == "bags" and bag == KEYRING then
-		return _G.KEYRING or "Keyring"
+		return _G.KEYRING or L["Keyring"]
 	end
 	if where == "bank" and bag == BANK then
-		return _G.BANK or "Bank"
+		return _G.BANK or L["Bank"]
 	end
 
 	if entry.itemID then
@@ -94,7 +95,7 @@ local function containerName(entry, bag, where)
 		if name then return name end
 	end
 
-	return string.format("%s %d", where == "bank" and "Bank bag" or "Bag", bag)
+	return string.format(where == "bank" and L["Bank bag %d"] or L["Bag %d"], bag)
 end
 
 --------------------------------------------------------------------------------------------
@@ -320,9 +321,16 @@ local function build(frame)
 	-- explain, which is the wrong order for the one control here whose purpose is not obvious
 	-- from looking at it. It also left the caption floating between this box and whatever came
 	-- next, belonging to neither.
+	-- The search box is anchored to this caption's right edge, so the caption's width is
+	-- what places the box. Natural width, capped: long enough for the sentence in any of
+	-- the five languages, and never long enough to push the box off the panel.
+	local HINT_MAX = 200
+
 	local hint = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 	hint:SetPoint("LEFT", picker, "RIGHT", 16, 0)
-	hint:SetText("dim everything but")
+	hint:SetJustifyH("LEFT")
+	hint:SetText(L["dim everything but"])
+	hint:SetWidth(math.min(math.ceil(hint:GetStringWidth() or 0) + 2, HINT_MAX))
 
 	search = CreateFrame("EditBox", "FamilyContentsSearch", frame, "InputBoxTemplate")
 	search:SetPoint("LEFT", hint, "RIGHT", 10, 0)
@@ -349,7 +357,8 @@ local function build(frame)
 	local everyone = CreateFrame("Button", "FamilyContentsEveryone", frame, "UIPanelButtonTemplate")
 	everyone:SetSize(120, 22)
 	everyone:SetPoint("TOPRIGHT", -4, -2)
-	everyone:SetText("Whole family")
+	everyone:SetText(L["Whole family"])
+	UI:FitButton(everyone, 120)
 	everyone:SetScript("OnClick", function()
 		wholeFamily = not wholeFamily
 
@@ -505,7 +514,8 @@ local function build(frame)
 		-- family it is the search itself, and nothing is on screen until it has something
 		-- in it. A caption still reading "dim everything but" over an empty panel says the
 		-- panel lost the items rather than that it is waiting to be asked.
-		hint:SetText(wholeFamily and "find across the family" or "dim everything but")
+		hint:SetText(wholeFamily and L["find across the family"] or L["dim everything but"])
+		hint:SetWidth(math.min(math.ceil(hint:GetStringWidth() or 0) + 2, HINT_MAX))
 
 		local member = picker:Reconcile()
 
@@ -535,8 +545,8 @@ local function build(frame)
 			picker:Hide()
 
 			if #needle < 2 then
-				return finish("|cff9d9d9dSearching the whole family. Type at least two "
-					.. "letters in the box above to see who has what.|r")
+				return finish(L["|cff9d9d9dSearching the whole family. Type at least two "
+					.. "letters in the box above to see who has what.|r"])
 			end
 
 			local matches = Family.Index:Search(needle)
@@ -571,11 +581,17 @@ local function build(frame)
 					r.who:SetTextColor(red, green, blue)
 
 					local places = {}
-					if owner.bags > 0 then places[#places + 1] = owner.bags .. " bags" end
-					if owner.bank > 0 then places[#places + 1] = owner.bank .. " bank" end
-					if owner.mail > 0 then places[#places + 1] = owner.mail .. " mail" end
+					if owner.bags > 0 then
+						places[#places + 1] = string.format(L["%d bags"], owner.bags)
+					end
+					if owner.bank > 0 then
+						places[#places + 1] = string.format(L["%d bank"], owner.bank)
+					end
+					if owner.mail > 0 then
+						places[#places + 1] = string.format(L["%d mail"], owner.mail)
+					end
 					if owner.auctions > 0 then
-						places[#places + 1] = owner.auctions .. " auction"
+						places[#places + 1] = string.format(L["%d auction"], owner.auctions)
 					end
 					r.where:SetText("|cff888888" .. table.concat(places, ", ") .. "|r")
 				end
@@ -600,7 +616,7 @@ local function build(frame)
 						guild.count))
 					r.who:SetText("|cff40c040" .. guild.key .. "|r")
 					r.who:SetTextColor(1, 1, 1)
-					r.where:SetText("|cff888888guild bank|r")
+					r.where:SetText(L["|cff888888guild bank|r"])
 				end
 			end
 
@@ -608,13 +624,16 @@ local function build(frame)
 			-- last patch has no name to match against yet, and saying so is better than
 			-- letting a search quietly answer for less than it searched.
 			status:SetText(string.format(
-				"|cffffd700%d|r line%s for \"%s\" across the family   |cff888888|||r   " ..
-				"|cff888888only items the client has named can be matched|r",
-				shown, shown == 1 and "" or "s", needle))
+				shown == 1
+					and L["|cffffd700%d|r line for \"%s\" across the family   |cff888888|||r   "
+						.. "|cff888888only items the client has named can be matched|r"]
+					or L["|cffffd700%d|r lines for \"%s\" across the family   |cff888888|||r   "
+						.. "|cff888888only items the client has named can be matched|r"],
+				shown, needle))
 
 			if shown == 0 then
 				status:SetText(string.format(
-					"|cff9d9d9dNothing named like \"%s\" is held by anybody.|r", needle))
+					L["|cff9d9d9dNothing named like \"%s\" is held by anybody.|r"], needle))
 			end
 
 			return finish()
@@ -623,7 +642,7 @@ local function build(frame)
 		picker:Show()
 
 		if not member then
-			return finish("|cff9d9d9dNothing recorded yet.|r")
+			return finish(L["|cff9d9d9dNothing recorded yet.|r"])
 		end
 
 		local payload = UI:Payload(member.key)
@@ -635,23 +654,27 @@ local function build(frame)
 		-- to say so somewhere (§2.2).
 		local parts = {}
 		parts[#parts + 1] = payload and payload.bags
-			and ("bags " .. UI:Ago(meta.bagsSeen)) or "|cff9d9d9dbags not seen|r"
-		parts[#parts + 1] = meta.bankSeen and ("bank " .. UI:Ago(meta.bankSeen))
-			or "|cff9d9d9dbank not seen|r"
-		parts[#parts + 1] = meta.mailSeen and ("mail " .. UI:Ago(meta.mailSeen))
-			or "|cff9d9d9dmail not seen|r"
-		parts[#parts + 1] = meta.auctionsSeen and ("auctions " .. UI:Ago(meta.auctionsSeen))
-			or "|cff9d9d9dauctions not seen|r"
+			and string.format(L["bags %s"], UI:Ago(meta.bagsSeen))
+			or L["|cff9d9d9dbags not seen|r"]
+		parts[#parts + 1] = meta.bankSeen
+			and string.format(L["bank %s"], UI:Ago(meta.bankSeen))
+			or L["|cff9d9d9dbank not seen|r"]
+		parts[#parts + 1] = meta.mailSeen
+			and string.format(L["mail %s"], UI:Ago(meta.mailSeen))
+			or L["|cff9d9d9dmail not seen|r"]
+		parts[#parts + 1] = meta.auctionsSeen
+			and string.format(L["auctions %s"], UI:Ago(meta.auctionsSeen))
+			or L["|cff9d9d9dauctions not seen|r"]
 		status:SetText(table.concat(parts, "   |cff888888|||r   "))
 
 		if #drawn == 0 then
 			return finish(status:GetText() ..
-				"   |cff9d9d9d- nothing to show yet|r")
+				L["   |cff9d9d9d- nothing to show yet|r"])
 		end
 
 		local LABEL = {
-			bags = "", bank = "|cff88bbff(bank)|r", mail = "|cffff8040Mail|r",
-			auctions = "|cffffd700Auctions|r", guild = "|cff40c040Guild bank|r",
+			bags = "", bank = L["|cff88bbff(bank)|r"], mail = L["|cffff8040Mail|r"],
+			auctions = L["|cffffd700Auctions|r"], guild = L["|cff40c040Guild bank|r"],
 		}
 
 		for index, container in ipairs(drawn) do
@@ -674,20 +697,22 @@ local function build(frame)
 
 			local title
 			if container.where == "mail" then
-				title = string.format("%s |cff888888%d letter%s|r", LABEL.mail,
-					container.count or 0, (container.count or 0) == 1 and "" or "s")
+				title = string.format(
+					(container.count or 0) == 1 and L["%s |cff888888%d letter|r"]
+						or L["%s |cff888888%d letters|r"],
+					LABEL.mail, container.count or 0)
 
 				-- Said on the heading rather than only on the slots, because the
 				-- difference between "this member has it" and "this member has been
 				-- sent it" is the whole of what the block is worth (§5).
 				if (container.inPost or 0) > 0 then
-					title = title .. string.format("  |cffffd700%d in the post|r",
+					title = title .. string.format(L["  |cffffd700%d in the post|r"],
 						container.inPost)
 				end
 			elseif container.where == "auctions" then
 				title = LABEL.auctions
 			elseif container.where == "guild" then
-				title = string.format("%s |cff888888tab %d|r", LABEL.guild,
+				title = string.format(L["%s |cff888888tab %d|r"], LABEL.guild,
 					container.bag or 0)
 			else
 				title = containerName(container, container.bag, container.where)
@@ -706,13 +731,13 @@ local function build(frame)
 			local lines = { { title } }
 
 			if container.where == "bags" or container.where == "bank" then
-				lines[#lines + 1] = { string.format("|cff888888%d of %d free|r",
+				lines[#lines + 1] = { string.format(L["|cff888888%d of %d free|r"],
 					container.free or 0, container.size or 0) }
 				if container.special then
 					-- §3: a quiver's free slots are not room for anything else, and this
 					-- is the one place that fact has anywhere left to be said.
-					lines[#lines + 1] = { "|cffffaa00only its own kind of thing fits "
-						.. "here|r" }
+					lines[#lines + 1] = { L["|cffffaa00only its own kind of thing fits "
+						.. "here|r"] }
 				end
 			else
 				lines[#lines + 1] = { string.format("|cff888888%d|r", container.size or 0) }
@@ -773,4 +798,4 @@ local function build(frame)
 	end
 end
 
-UI:RegisterTab("contents", "Possessions", build)
+UI:RegisterTab("contents", L["Possessions"], build)

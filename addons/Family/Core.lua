@@ -77,7 +77,8 @@ frame:SetScript("OnEvent", function(_, event, ...)
 	for key, handler in pairs(bucket) do
 		local ok, err = pcall(handler, event, ...)
 		if not ok then
-			Family:Print("|cffff5555error in %s handler for %s|r: %s", key, event, tostring(err))
+			Family:Print(Family.L["|cffff5555error in %s handler for %s|r: %s"],
+				key, event, tostring(err))
 			Family:UnregisterEvent(event, key)
 		end
 	end
@@ -190,7 +191,7 @@ ticker:SetScript("OnUpdate", function(_, elapsed)
 		pending[key] = nil
 		local ok, err = pcall(fn)
 		if not ok then
-			Family:Print("|cffff5555error in deferred %s|r: %s", key, tostring(err))
+			Family:Print(Family.L["|cffff5555error in deferred %s|r: %s"], key, tostring(err))
 		end
 	end
 	if not next(pending) then ticker:Hide() end
@@ -262,7 +263,7 @@ Family:RegisterEvent("ADDON_LOADED", "core", function(_, name)
 	for key, fn in pairs(onReady) do
 		local ok, err = pcall(fn)
 		if not ok then
-			Family:Print("|cffff5555error starting %s|r: %s", key, tostring(err))
+			Family:Print(Family.L["|cffff5555error starting %s|r: %s"], key, tostring(err))
 		end
 	end
 	wipe(onReady)

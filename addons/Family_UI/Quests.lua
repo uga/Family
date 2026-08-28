@@ -15,6 +15,7 @@
 local _, UI = ...
 
 local Family = _G.Family
+local L = Family.L
 
 local ROW = 15
 
@@ -34,11 +35,11 @@ local ROW = 15
 -- was called "even", which is a word for a fight and not for a quest, and read as though it
 -- meant something particular. Normal is what yellow means: the level it was written for.
 local DIFFICULTY = {
-	{ id = "impossible", label = "very hard", colour = "|cffff2020" },
-	{ id = "hard",       label = "hard",      colour = "|cffff8040" },
-	{ id = "normal",     label = "normal",    colour = "|cffffff00" },
-	{ id = "easy",       label = "easy",      colour = "|cff40bf40" },
-	{ id = "trivial",    label = "trivial",   colour = "|cff9d9d9d" },
+	{ id = "impossible", label = L["very hard"], colour = "|cffff2020" },
+	{ id = "hard",       label = L["hard"],      colour = "|cffff8040" },
+	{ id = "normal",     label = L["normal"],    colour = "|cffffff00" },
+	{ id = "easy",       label = L["easy"],      colour = "|cff40bf40" },
+	{ id = "trivial",    label = L["trivial"],   colour = "|cff9d9d9d" },
 }
 
 local function greenRange(level)
@@ -139,7 +140,7 @@ local function byCategory(entries)
 	local order, groups = {}, {}
 
 	for _, quest in ipairs(entries) do
-		local category = quest.category or "Elsewhere"
+		local category = quest.category or L["Elsewhere"]
 		if not groups[category] then
 			groups[category] = {}
 			order[#order + 1] = category
@@ -168,7 +169,7 @@ function UI:QuestLines(key, meta, matches)
 
 	-- §2.2: a member whose log has never been read says so, and is not drawn as a member
 	-- with nothing to do.
-	if not log then return nil, "|cffffaa00Nothing recorded for this member.|r" end
+	if not log then return nil, L["|cffffaa00Nothing recorded for this member.|r"] end
 
 	meta = meta or {}
 
@@ -179,12 +180,21 @@ function UI:QuestLines(key, meta, matches)
 		end
 	end
 
+	-- Built in pieces rather than as one sentence with a "s" hung on the end of it. A
+	-- suffix is a plural only in a language that forms plurals with a suffix, and the cap
+	-- has to be able to move: "20 of 25" reads the other way round in some of them.
+	local counted = string.format(
+		#log.entries == 1 and L["|cffffd700%d|r quest"] or L["|cffffd700%d|r quests"],
+		#log.entries)
+	if meta.questMax then
+		counted = counted .. string.format(L[" of %s"], meta.questMax)
+	end
+
 	local status = string.format(
-		"|cffffd700%d|r quest%s%s   |cff888888|||r   %s   |cff888888|||r   seen %s",
-		#log.entries, #log.entries == 1 and "" or "s",
-		meta.questMax and (" of " .. meta.questMax) or "",
-		ready > 0 and string.format("|cff40bf40%d ready to hand in|r", ready)
-			or "|cff9d9d9dnothing ready to hand in|r",
+		L["%s   |cff888888|||r   %s   |cff888888|||r   seen %s"],
+		counted,
+		ready > 0 and string.format(L["|cff40bf40%d ready to hand in|r"], ready)
+			or L["|cff9d9d9dnothing ready to hand in|r"],
 		UI:Ago(log.seen))
 
 	local rows = {}
@@ -226,9 +236,9 @@ function UI:QuestLines(key, meta, matches)
 				if quest.objectives and quest.objectives > 0 then
 					local done = quest.done or 0
 					if done >= quest.objectives then
-						right = "|cff40bf40ready to hand in|r"
+						right = L["|cff40bf40ready to hand in|r"]
 					else
-						right = string.format("|cffffd700%d|r of %d", done,
+						right = string.format(L["|cffffd700%d|r of %d"], done,
 							quest.objectives)
 					end
 				end

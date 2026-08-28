@@ -1,0 +1,600 @@
+-- Family - an alt manager for World of Warcraft Classic
+-- Copyright (C) 2026 Alberto Pittaluga
+--
+-- This program is free software: you can redistribute it and/or modify it under the
+-- terms of the GNU General Public License as published by the Free Software
+-- Foundation, either version 3 of the License, or (at your option) any later version.
+-- See the LICENSE file at the root of this repository.
+
+-- French. The key is the English sentence; see Locale.lua for why.
+--
+-- Read on every client, not only a French one, so that the harness can check it. Nothing
+-- here takes effect unless GetLocale() says frFR.
+--
+-- Where a string sits in a fixed space, the room it has is written after it in characters.
+-- The harness enforces those: French does not run to the same length as English, and a
+-- label that overruns is drawn straight through whatever sits beside it.
+--
+-- Grouped by the panel each string belongs to, so a whole screen can be read at once.
+
+local _, Family = ...
+
+Family.locales.frFR = {
+
+	-- The window itself, and what it says when a panel goes wrong
+	["No"] = "Non",
+	["Yes"] = "Oui",
+	["now"] = "maintenant",
+	["HIGH"] = "Haut",
+	["DIALOG"] = "Dialogue",
+	["MEDIUM"] = "Moyen",
+	["in %dd"] = "dans %dj",
+	["in %dh"] = "dans %dh",
+	["in %dm"] = "dans %dm",
+	["%d h ago"] = "il y a %d h",
+	["just now"] = "à l'instant",
+	["yesterday"] = "hier",
+	["%d min ago"] = "il y a %d min",
+	["%d days ago"] = "il y a %d jours",
+	["Family - %s"] = "",
+	["|cff9d9d9dnever|r"] = "|cff9d9d9djamais|r",
+	["|cffc79fefshared by %s|r"] = "|cffc79fefpartagé par %s|r",
+	["|cffff5555the %s panel failed to draw|r: %s"] = "|cffff5555le panneau %s n'a pas pu être dessiné|r : %s",
+	["|cffff5555the %s panel failed to build|r: %s"] = "|cffff5555le panneau %s n'a pas pu être construit|r : %s",
+	["to remove %s, type |cffffd700/family forget %s|r"] = "pour retirer %s, tapez |cffffd700/family forget %s|r",
+	["|cffffaa00the %s panel built but defined no Refresh|r"] = "|cffffaa00le panneau %s a été construit mais ne définit aucun Refresh|r",
+	["|cffffaa00%s|r - but this client has no way to ask, so nothing was done."] = "|cffffaa00%s|r - mais ce client n'a aucun moyen de demander, donc rien n'a été fait.",
+	["|cffffaa00a row of %d buttons needs %d pixels and has %d - the labels are longer than the room in this language|r"] = "|cffffaa00une rangée de %d boutons a besoin de %d pixels et en a %d - les libellés sont plus longs que la place dans cette langue|r",
+	["Remove %s from Family?\n\nEverything recorded about this character goes with it. Logging in on them again starts recording afresh."] = "Retirer %s de Family ?\n\nTout ce qui a été enregistré sur ce personnage disparaît avec lui. Se reconnecter avec lui recommence l'enregistrement à zéro.",
+
+	-- The summary: its column sets, its columns and its totals
+	["%dm"] = "%dm",
+	["Bags"] = "Sacs",  -- 14
+	["Race"] = "Race",  -- 15
+	["soon"] = "bientôt",
+	["Total"] = "Total",
+	["Buyout"] = "Achat imm.",  -- 16
+	["Member"] = "Membre",  -- 20
+	["Played"] = "Joué",  -- 13
+	["%dd %dh"] = "%dj %dh",
+	["%dh %dm"] = "%dh %dm",
+	["AH seen"] = "HV vu",  -- 10
+	["Rest XP"] = "XP repos",  -- 13
+	["Activity"] = "Activité",  -- 14
+	["Crafting"] = "Artisanat",  -- 14
+	["Item lvl"] = "Niv. obj.",  -- 10
+	["Overview"] = "Aperçu",  -- 14
+	["Bag slots"] = "Empl. sacs",  -- 13
+	["Bags seen"] = "Sacs vus",  -- 15
+	["Bank seen"] = "Banque vue",  -- 15
+	["Bid value"] = "Valeur ench.",  -- 16
+	["Free bags"] = "Sacs libres",  -- 13
+	["Free bank"] = "Banque libre",  -- 13
+	["Last seen"] = "Vu le",  -- 14
+	["Mail seen"] = "Courrier vu",  -- 11
+	["Bank slots"] = "Empl. banque",  -- 13
+	["Currencies"] = "Monnaies",  -- 14
+	["Expires in"] = "Expire dans",  -- 12
+	["Hearthstone"] = "Pierre de foyer",  -- 26
+	["Grand totals"] = "Totaux généraux",
+	["Miscellaneous"] = "Divers",  -- 14
+	["Unknown realm"] = "Royaume inconnu",
+	["|cffff4444gone|r"] = "|cffff4444perdu|r",
+	["|cff40bf40ready|r"] = "|cff40bf40prêt|r",
+	["|cff40bf40shown|r"] = "|cff40bf40affiché|r",
+	["|cff9d9d9dhidden|r"] = "|cff9d9d9dmasqué|r",
+	["|cff9d9d9dnot seen|r"] = "|cff9d9d9dnon vu|r",
+	["|cff888888shared|r %s"] = "|cff888888partagé|r %s",
+	["|cff9d9d9dmax level|r"] = "|cff9d9d9dniveau max|r",
+	["%d |cff888888(%d in post)|r"] = "%d |cff888888(%d en transit)|r",
+	["|cffffd700%d|r |cff888888in post|r"] = "|cffffd700%d|r |cff888888en transit|r",
+	["|cffffaa00the %s columns add up to %d, wider than the %d a row has|r"] = "|cffffaa00les colonnes %s totalisent %d, plus large que les %d d'une ligne|r",
+	[" |cffffaa00%d more not shown - there is only so much room in a row.|r|cff888888"] = " |cffffaa00%d de plus non affichées - une ligne n'a pas plus de place.|r|cff888888",
+	["|cffffaa00%d column sets leave %d pixels each across the top, and a label needs %d|r"] = "|cffffaa00%d jeux de colonnes laissent %d pixels chacun en haut, et un libellé en demande %d|r",
+	["|cffffaa00Both sides are switched off.|r |cff888888Turn one back on with the buttons at the end of the row above.|r"] = "|cffffaa00Les deux factions sont désactivées.|r |cff888888Réactivez-en une avec les boutons au bout de la ligne ci-dessus.|r",
+	["|cff888888%s belongs to a linked family. Untick them as a sibling on the Wide Family panel to take them off this table.|r"] = "|cff888888%s appartient à une famille liée. Décochez-le comme parent dans le panneau Famille élargie pour le retirer de ce tableau.|r",
+	["|cff9d9d9dNothing recorded yet. Family fills as you play each member - log in on one and its bags and money are written down.|r"] = "|cff9d9d9dRien d'enregistré pour l'instant. Family se remplit à mesure que vous jouez chaque membre - connectez-vous avec l'un d'eux et ses sacs et son argent sont notés.|r",
+	["|cff888888The currencies this family holds most of, most first.%s Character shows one member's in full, with what each is capped at.|r"] = "|cff888888Les monnaies que cette famille détient le plus, les plus nombreuses d'abord.%s Personnage montre celles d'un membre en entier, avec le plafond de chacune.|r",
+	["|cff888888Free and total slots leave out quivers, soul bags and the like: their slots are not room for anything else. Possessions shows them all the same.|r"] = "|cff888888Les emplacements libres et totaux excluent les carquois, sacs d'âmes et similaires : leurs emplacements ne sont pas de la place pour autre chose. Possessions les montre quand même.|r",
+	["|cffffd700Grand totals:|r  %d member   |cff888888|||r   %s   |cff888888|||r   %d of %d bag slots free   |cff888888|||r   |cff888888right-click a member to remove them|r"] = "|cffffd700Totaux généraux :|r  %d membre   |cff888888|||r   %s   |cff888888|||r   %d emplacements de sac libres sur %d   |cff888888|||r   |cff888888clic droit sur un membre pour le retirer|r",
+	["|cffffd700Grand totals:|r  %d members   |cff888888|||r   %s   |cff888888|||r   %d of %d bag slots free   |cff888888|||r   |cff888888right-click a member to remove them|r"] = "|cffffd700Totaux généraux :|r  %d membres   |cff888888|||r   %s   |cff888888|||r   %d emplacements de sac libres sur %d   |cff888888|||r   |cff888888clic droit sur un membre pour le retirer|r",
+	["|cff888888Primary professions on the first line of each member, everything else on the second. A profession in grey has recipes Family has not seen for a week, or has never seen: ranks are always current, recipe lists are only as new as the last time that window was open.|r"] = "|cff888888Métiers principaux sur la première ligne de chaque membre, tout le reste sur la seconde. Un métier en gris a des recettes que Family n'a pas vues depuis une semaine, ou jamais : les rangs sont toujours à jour, les listes de recettes ne sont aussi récentes que la dernière ouverture de cette fenêtre.|r",
+	["|cff888888Crafting cooldowns only - transmutes, mooncloth, salt shakers. A column appears once Family has seen that cooldown running at least once, because the client will not say a recipe has one while it is ready. Blank means never seen it, which is not the same as nought.%s|r"] = "|cff888888Temps de recharge d'artisanat uniquement - transmutations, étoffe de lune, salières. Une colonne apparaît une fois que Family a vu ce temps de recharge tourner au moins une fois, car le client ne dit pas qu'une recette en a un tant qu'il est prêt. Vide signifie jamais vu, ce qui n'est pas la même chose que zéro.%s|r",
+
+	-- The Options panel
+	["Options"] = "Options",  -- 20
+	["compressed"] = "compressé",
+	["not hooked"] = "non accrochées",
+	["uncompressed"] = "non compressé",
+	["Show the minimap button"] = "Afficher le bouton de la minicarte",
+	["Add Family to item tooltips"] = "Ajouter Family aux infobulles d'objets",
+	["How far in front the window sits"] = "À quelle profondeur se place la fenêtre",
+	["Narrate what the scanners are doing"] = "Raconter ce que font les scanners",
+	["Share gear and talents with your guild"] = "Partager équipement et talents avec votre guilde",
+	["Raise this if another addon draws over Family."] = "Augmentez ceci si un autre addon se dessine par-dessus Family.",
+	["Drag it around the edge of the minimap to move it."] = "Faites-le glisser le long du bord de la minicarte pour le déplacer.",
+	["Say which crafting cooldowns are ready when you log in"] = "Indiquer à la connexion quels temps de recharge d'artisanat sont prêts",
+	["In front of unit frames and most HUDs. The usual choice."] = "Devant les cadres d'unité et la plupart des HUD. Le choix habituel.",
+	["Who owns one, and where it is - bags, bank, mail, auctions."] = "Qui en possède un, et où il se trouve - sacs, banque, courrier, enchères.",
+	["Chat messages while Family records things. For working out faults."] = "Messages dans le chat pendant que Family enregistre. Pour diagnostiquer.",
+	["Behind most things. Choose this if Family covers something it should not."] = "Derrière la plupart des choses. Choisissez ceci si Family masque quelque chose qu'il ne devrait pas.",
+	["|cff888888Family %s on %s   |||   tooltips hooked: %s   |||   storage: %s|r"] = "|cff888888Family %s sur %s   |||   infobulles accrochées : %s   |||   stockage : %s|r",
+	["In front of nearly everything, alongside the game's own popups. Choose this if a HUD still draws over Family."] = "Devant presque tout, au même niveau que les fenêtres du jeu. Choisissez ceci si un HUD se dessine encore par-dessus Family.",
+	["Transmutes, mooncloth, salt shakers. Crafting only - raid and heroic lockouts are a different thing and Family does not record them yet."] = "Transmutations, étoffe de lune, salières. Artisanat uniquement - les verrous de raid et héroïques sont autre chose et Family ne les enregistre pas encore.",
+	["Both ways: what your guild sees of you, and what you see of them. Nothing else is shared - bags, mail and the rest need a Wide Family link."] = "Dans les deux sens : ce que votre guilde voit de vous, et ce que vous voyez d'elle. Rien d'autre n'est partagé - les sacs, le courrier et le reste nécessitent un lien de Famille élargie.",
+
+	-- The slash commands, and what /family says
+	["go"] = "disparaisse",
+	["on"] = "activé",
+	["off"] = "désactivé",
+	["appear"] = "apparaisse",
+	["item %s"] = "objet %s",
+	["%d ready"] = "%d prêt",
+	["close it"] = "la fermer",
+	["debug %s"] = "débogage %s",
+	["commands:"] = "commandes :",
+	["storage: %s"] = "stockage : %s",
+	["tooltips: %s"] = "infobulles : %s",
+	["open the window"] = "ouvrir la fenêtre",
+	["scanning %s ..."] = "analyse de %s ...",
+	["|cff44dd44yes|r"] = "|cff44dd44oui|r",
+	["|cff888888no |r"] = "|cff888888non |r",
+	["version %s on %s"] = "version %s sur %s",
+	["something unnamed"] = "quelque chose sans nom",
+	["%d member recorded"] = "%d membre enregistré",
+	["%d members recorded"] = "%d membres enregistrés",
+	["%s, interface build %s"] = "%s, build d'interface %s",
+	["|cffffaa00not hooked|r"] = "|cffffaa00non accrochées|r",
+	[" |cff888888(unvisited)|r"] = "  |cff888888(non visitée)|r",
+	["  %s: %d in the guild bank"] = "    %s : %d dans la banque de guilde",
+	["Wide Family is already %s."] = "La Famille élargie est déjà %s.",
+	["  |cffffd700/family %s|r - %s"] = "    |cffffd700/family %s|r - %s",
+	["  %s: |cffffaa00no payload|r%s"] = "    %s : |cffffaa00aucune donnée|r%s",
+	["|cffff5555bag scan failed|r: %s"] = "|cffff5555échec de l'analyse des sacs|r : %s",
+	["no crafting cooldowns are ready."] = "aucun temps de recharge d'artisanat n'est prêt.",
+	["     spec %d: |cffffaa00missing|r"] = "     spé %d : |cffffaa00manquante|r",
+	["no command called |cffffd700%s|r."] = "aucune commande nommée |cffffd700%s|r.",
+	["no strata called %s. Choices: %s."] = "aucun plan nommé %s. Choix : %s.",
+	["Guild share is now |cffffd700%s|r."] = "Le partage de guilde est maintenant |cffffd700%s|r.",
+	["|cffff5555talent scan failed|r: %s"] = "|cffff5555échec de l'analyse des talents|r : %s",
+	["narrate what the scanners are doing"] = "raconter ce que font les scanners",
+	["open it if closed, close it if open"] = "l'ouvrir si elle est fermée, la fermer si elle est ouverte",
+	["window strata is now |cffffd700%s|r."] = "le plan de la fenêtre est maintenant |cffffd700%s|r.",
+	["item %d: %d member(s), %d guild bank(s)"] = "objet %d : %d membre(s), %d banque(s) de guilde",
+	["which member? /family forget Name-Realm"] = "quel membre ? /family forget Nom-Royaume",
+	["Guild share is currently |cffffd700%s|r."] = "Le partage de guilde est actuellement |cffffd700%s|r.",
+	["Wide Family is currently |cffffd700%s|r."] = "La Famille élargie est actuellement |cffffd700%s|r.",
+	["crafting cooldowns ready: |cff40bf40%s|r"] = "temps de recharge d'artisanat prêts : |cff40bf40%s|r",
+	["done. /family talents to see what landed."] = "terminé. /family talents pour voir ce qui est arrivé.",
+	["forget a member: /family forget Name-Realm"] = "oublier un membre : /family forget Nom-Royaume",
+	["what Family knows, and how it is storing it"] = "ce que Family sait, et comment il le stocke",
+	["  |cff44dd44%s|r: %s, %d group(s), active %d"] = "    |cff44dd44%s|r : %s, %d groupe(s), actif %d",
+	["window strata is |cffffd700%s|r. Choices: %s."] = "le plan de la fenêtre est |cffffd700%s|r. Choix : %s.",
+	["     spec %d: %d tier(s), %d chosen, spec id %s"] = "     spé %d : %d palier(s), %d choisi(s), id de spé %s",
+	["  %s: %d (bags %d, bank %d, mail %d, auction %d)"] = "    %s : %d (sacs %d, banque %d, courrier %d, enchères %d)",
+	["Raise it if another addon draws over the window."] = "Augmentez-le si un autre addon se dessine par-dessus la fenêtre.",
+	["guild share on, off, or test: /family guild test"] = "partage de guilde on, off ou test : /family guild test",
+	["what talent data is actually stored, and for whom"] = "quelles données de talents sont réellement stockées, et pour qui",
+	["what this client answers when asked about a talent"] = "ce que ce client répond quand on l'interroge sur un talent",
+	["  %s: payload present, |cffffaa00no talents in it|r"] = "    %s : données présentes, |cffffaa00aucun talent dedans|r",
+	["Wide Family, which is off by default: /family wide on"] = "Famille élargie, désactivée par défaut : /family wide on",
+	["nobody holds one, so no tooltip block would be added."] = "personne n'en possède, donc aucun bloc d'infobulle ne serait ajouté.",
+	["what this client can do, and how Family worked it out"] = "ce que ce client sait faire, et comment Family l'a déterminé",
+	["which crafting cooldowns have come back, and for whom"] = "quels temps de recharge d'artisanat sont revenus, et pour qui",
+	["how far in front the window sits: MEDIUM, HIGH or DIALOG"] = "à quelle profondeur se place la fenêtre : MEDIUM, HIGH ou DIALOG",
+	["scan the current member again, now, and say what it found"] = "analyser à nouveau le membre actuel, maintenant, et dire ce qui a été trouvé",
+	["     spec %d: %d point(s), %d tab(s), %d talent(s) ranked%s"] = "     spé %d : %d point(s), %d onglet(s), %d talent(s) classé(s)%s",
+	["no member called %s. Names are as they appear in the summary."] = "aucun membre nommé %s. Les noms sont ceux du résumé.",
+	["check the possessions block for an item: /family tooltiptest 2589"] = "vérifier le bloc possessions pour un objet : /family tooltiptest 2589",
+	["forgotten %s. This changes Family's records, nothing in the game."] = "%s oublié. Cela change les enregistrements de Family, rien dans le jeu.",
+	["this client uses talent trees; the probe is for the choices clients."] = "ce client utilise des arbres de talents ; la sonde est pour les clients à choix.",
+	["|cffffaa00uncompressed|r - LibSerialize and LibDeflate are not installed"] = "|cffffaa00non compressé|r - LibSerialize et LibDeflate ne sont pas installés",
+	["Wide Family is now |cffffd700%s|r. Type |cffffd700/reload|r for the panel to %s."] = "La Famille élargie est maintenant |cffffd700%s|r. Tapez |cffffd700/reload|r pour que le panneau %s.",
+	["give an item id, or shift-click an item link into chat and use the number from it."] = "donnez un identifiant d'objet, ou maj-cliquez un lien d'objet dans le chat et utilisez le nombre qu'il contient.",
+	["Nothing is shared with anybody until you link with them and tick what they may see."] = "Rien n'est partagé avec quiconque tant que vous ne vous liez pas à lui et ne cochez pas ce qu'il peut voir.",
+	["|cffffaa00No member has talent data.|r Try /family rescan, then look at what it says."] = "|cffffaa00Aucun membre n'a de données de talents.|r Essayez /family rescan, puis regardez ce qu'il dit.",
+	["|cffffd700/family wide on|r to switch it on, |cffffd700/family wide off|r to switch it back off."] = "|cffffd700/family wide on|r pour l'activer, |cffffd700/family wide off|r pour le désactiver.",
+	["|cffffd700/family guild off|r to stop, which stops both halves: Family then neither asks nor answers."] = "|cffffd700/family guild off|r pour arrêter, ce qui arrête les deux moitiés : Family ne demande alors plus rien et ne répond plus.",
+	["|cff888888Crafting cooldowns only - transmutes, mooncloth, salt shakers. Raid and heroic lockouts are a different thing and are not recorded yet.|r"] = "|cff888888Temps de recharge d'artisanat uniquement - transmutations, étoffe de lune, salières. Les verrous de raid et héroïques sont autre chose et ne sont pas encore enregistrés.|r",
+	["|cffffd700/family guild test|r says what has actually crossed the wire. Run it on both clients and compare - the fault is wherever the two stop agreeing."] = "|cffffd700/family guild test|r dit ce qui a réellement circulé. Lancez-le sur les deux clients et comparez - la faute est là où les deux cessent de concorder.",
+	["It lets two players link their families and share chosen members. Sharing is the one thing here a later version cannot take back, so it is off until you say otherwise rather than on until you notice."] = "Cela permet à deux joueurs de lier leurs familles et de partager les membres de leur choix. Le partage est la seule chose ici qu'une version ultérieure ne peut pas reprendre, il est donc désactivé jusqu'à ce que vous en décidiez autrement, plutôt qu'activé jusqu'à ce que vous le remarquiez.",
+	["It shows your guild the gear and talents of your characters in it, and shows you theirs. Nothing else - bags, mail and the rest need a Wide Family link. All of it is what the game already shows anybody who inspects you."] = "Cela montre à votre guilde l'équipement et les talents de vos personnages qui en font partie, et vous montre les leurs. Rien d'autre - les sacs, le courrier et le reste nécessitent un lien de Famille élargie. Tout cela, le jeu le montre déjà à quiconque vous inspecte.",
+
+	-- The manual Family carries with it
+	["About"] = "À propos",  -- 20
+	["Family"] = "Family",
+	["Character"] = "Personnage",  -- 20
+	["Cooldowns"] = "Temps de recharge",
+	["What it is"] = "Ce que c'est",
+	["Guild share"] = "Partage de guilde",
+	["Wide Family"] = "Famille élargie",  -- 20
+	["About Family"] = "À propos de Family",
+	["Mail you send"] = "Le courrier que vous envoyez",
+	["Opening Family"] = "Ouvrir Family",
+	["unknown client"] = "client inconnu",
+	["It starts empty"] = "Il commence vide",
+	["The other money"] = "L'autre monnaie",
+	["compressed storage"] = "stockage compressé",
+	["Abilities & Talents"] = "Sorts & talents",  -- 20
+	["uncompressed storage"] = "stockage non compressé",
+	["your |cffffd700mailbox|r"] = "votre |cffffd700boîte aux lettres|r",
+	["On the game's own tooltips"] = "Sur les infobulles du jeu",
+	["What Family will not tell you"] = "Ce que Family ne vous dira pas",
+	["Three windows to open once each"] = "Trois fenêtres à ouvrir une fois chacune",
+	["your |cffffd700bank|r, at any bank"] = "votre |cffffd700banque|r, à n'importe quelle banque",
+	["%sversion %s   |||   %s   |||   %s|r"] = "%sversion %s   |||   %s   |||   %s|r",
+	["nothing at all is exchanged until they accept"] = "absolument rien n'est échangé tant qu'ils n'ont pas accepté",
+	["unticking a box tells them to forget it, at once"] = "décocher une case leur dit de l'oublier, aussitôt",
+	["right-click a member to remove them from the family"] = "clic droit sur un membre pour le retirer de la famille",
+	["left-click a profession to open that member's recipes"] = "clic gauche sur un métier pour ouvrir les recettes de ce membre",
+	["each |cffffd700profession|r window, for the recipes in it"] = "chaque fenêtre de |cffffd700métier|r, pour les recettes qu'elle contient",
+	["|cffffd700/family|r or |cffffd700/fam|r opens this window"] = "|cffffd700/family|r ou |cffffd700/fam|r ouvre cette fenêtre",
+	["|cffffd700/family help|r lists everything that can be typed"] = "|cffffd700/family help|r liste tout ce qui peut être tapé",
+	["both of you must be online: it is a snapshot, not a subscription"] = "vous devez tous les deux être connectés : c'est un instantané, pas un abonnement",
+	["linked members are kept separately and never mixed with your own"] = "les membres liés sont conservés séparément et jamais mélangés aux vôtres",
+	["any data broker bar shows the same, with the family's money on it"] = "n'importe quelle barre data broker montre la même chose, avec l'argent de la famille dessus",
+	["Source, faults and suggestions: |cff66bbffhttps://github.com/uga/Family|r"] = "Source, anomalies et suggestions : |cff66bbffhttps://github.com/uga/Family|r",
+	["Written from scratch by |cffffd700Alberto Pittaluga|r. Not a fork of anything."] = "Écrit de zéro par |cffffd700Alberto Pittaluga|r. Ce n'est le fork de rien.",
+	["nothing else is shared: bags, mail, money and the rest need a Wide Family link"] = "rien d'autre n'est partagé : les sacs, le courrier, l'argent et le reste nécessitent un lien de Famille élargie",
+	["only their characters who are in this guild, and there is no way to add the others"] = "seulement leurs personnages qui sont dans cette guilde, et il n'y a aucun moyen d'ajouter les autres",
+	["guildmates not running Family are invisible to it, which is the ordinary state of a guild"] = "les membres de guilde qui n'utilisent pas Family lui sont invisibles, ce qui est l'état ordinaire d'une guilde",
+	["the minimap button: left-click opens Family, right-click the options. Drag it around the edge to move it"] = "le bouton de la minicarte : clic gauche ouvre Family, clic droit les options. Faites-le glisser le long du bord pour le déplacer",
+	["Tick |cffffd700the whole family|r and the search looks through everybody at once, and says who has what it found."] = "Cochez |cffffd700toute la famille|r et la recherche parcourt tout le monde d'un coup, et dit qui possède ce qu'elle a trouvé.",
+	["|cff9d9d9dAnything Family has not seen is reported as not seen, never as empty. Every screen says how old what it is showing is.|r"] = "|cff9d9d9dTout ce que Family n'a pas vu est signalé comme non vu, jamais comme vide. Chaque écran indique l'ancienneté de ce qu'il montre.|r",
+	["a request nobody answers is shown as unanswered, with the reasons it could be - the addon channel confirms nothing, so Family will not guess which"] = "une demande à laquelle personne ne répond est affichée comme sans réponse, avec les raisons possibles - le canal des addons ne confirme rien, donc Family ne devine pas laquelle",
+	["Equipped gear laid out as the character sheet lays it out, with currencies, reputations, the quest log and achievements beside it. Clicking a quest opens it in the log."] = "L'équipement porté disposé comme le fait la fiche de personnage, avec les monnaies, les réputations, le journal de quêtes et les hauts faits à côté. Cliquer une quête l'ouvre dans le journal.",
+	["One member's bags, bank, mailbox, auctions and guild bank, drawn as the bags themselves. Clicking an item opens the bag it is in, when it is the character you are playing."] = "Les sacs, la banque, la boîte aux lettres, les enchères et la banque de guilde d'un membre, dessinés comme les sacs eux-mêmes. Cliquer un objet ouvre le sac où il se trouve, quand c'est le personnage que vous jouez.",
+	["The talent trees as the game draws them, both specialisations where the character has two, the glyphs, and the spellbook. Hovering anything shows the game's own description of it."] = "Les arbres de talents tels que le jeu les dessine, les deux spécialisations quand le personnage en a deux, les glyphes et le grimoire. Survoler quoi que ce soit affiche la description du jeu lui-même.",
+	["Professions that make nothing are not listed here; the summary has them and their level. |cffffd700The whole family|r searches every recipe of everybody: who can make this, who could learn it."] = "Les métiers qui ne fabriquent rien ne figurent pas ici ; le résumé les a avec leur niveau. |cffffd700Toute la famille|r cherche dans chaque recette de chacun : qui peut fabriquer ceci, qui pourrait l'apprendre.",
+	["Every member on one table, one line each. The buttons along the top change which columns are shown - money and bags, professions, quests, everything else - and each realm is totalled separately."] = "Chaque membre sur un seul tableau, une ligne chacun. Les boutons du haut changent les colonnes affichées - argent et sacs, métiers, quêtes, tout le reste - et chaque royaume est totalisé séparément.",
+	["|cff9d9d9dIt needs no consent grid because all of it is what the game already shows anybody who inspects you. A dialogue in front of that would only teach people to click through the dialogues that matter.|r"] = "|cff9d9d9dCela n'a pas besoin de grille de consentement car tout cela est ce que le jeu montre déjà à quiconque vous inspecte. Une boîte de dialogue devant cela n'apprendrait aux gens qu'à cliquer sans lire les dialogues qui comptent.|r",
+	["Family remembers what each of your characters owns and knows, and shows it to you while you are logged in on a different one. Who has the mageweave, who can make the belt, which of them has a transmute ready."] = "Family retient ce que chacun de vos personnages possède et connaît, et vous le montre pendant que vous êtes connecté sur un autre. Qui a la magetoile, qui peut fabriquer la ceinture, lequel a une transmutation prête.",
+	["Family reports what your characters have and know. It does not advise. It will not tell you which recipes a member is still missing, which piece of gear to improve next, or where in the game an item can be found."] = "Family rapporte ce que vos personnages possèdent et connaissent. Il ne conseille pas. Il ne vous dira pas quelles recettes il manque encore à un membre, quelle pièce d'équipement améliorer ensuite, ni où trouver un objet dans le jeu.",
+	["Hovering any item anywhere - a vendor, the auction house, the floor - adds who in the family has one and where it is. On a recipe it adds who can make it already, who can learn it today, and who is not high enough yet."] = "Survoler un objet n'importe où - un marchand, l'hôtel des ventes, le sol - ajoute qui dans la famille en possède un et où il se trouve. Sur une recette, cela ajoute qui peut déjà la fabriquer, qui peut l'apprendre aujourd'hui, et qui n'est pas encore assez haut.",
+	["Bags, money, gear, skills, talents and quests are read without being asked. Three things are only visible to the game while their window is open, so open each of them once per character and Family has them from then on:"] = "Les sacs, l'argent, l'équipement, les compétences, les talents et les quêtes sont lus sans qu'on le demande. Trois choses ne sont visibles pour le jeu que lorsque leur fenêtre est ouverte, alors ouvrez chacune une fois par personnage et Family les aura dès lors :",
+	["Transmutes, mooncloth, salt shakers and the rest are recorded as the moment they come ready rather than as time remaining, so they stay right however long the client has been shut. Family says what is ready when you log in."] = "Les transmutations, l'étoffe de lune, les salières et le reste sont enregistrés comme le moment où ils seront prêts plutôt que comme un temps restant, ils restent donc justes quel que soit le temps où le client a été fermé. Family dit ce qui est prêt à la connexion.",
+	["Family imports nothing from anywhere. It records the character you are playing, as you play, and a character appears in it the first time you log in on them. A family of ten takes ten logins to be complete, and then stays complete on its own."] = "Family n'importe rien de nulle part. Il enregistre le personnage que vous jouez, pendant que vous jouez, et un personnage y apparaît la première fois que vous vous connectez avec lui. Une famille de dix demande dix connexions pour être complète, puis le reste d'elle-même.",
+	["On, and one tick box turns it off. Everyone in your guild running Family shows their characters' gear and both talent specialisations to everyone else running it, and you see theirs - including while they are offline, once you have seen them once."] = "Activé, et une case à cocher le désactive. Tous ceux de votre guilde qui utilisent Family montrent l'équipement de leurs personnages et leurs deux spécialisations de talents à tous les autres qui l'utilisent, et vous voyez les leurs - y compris pendant qu'ils sont hors ligne, une fois que vous les avez vus une fois.",
+	["Honor and arena points, and on Mists everything else the client calls a currency, are recorded alongside gold. The summary totals the ones the family holds most of; Character shows one member's in full, with what each is capped at and how far off it is."] = "Les points d'honneur et d'arène, et sur Mists tout ce que le client appelle une monnaie, sont enregistrés à côté de l'or. Le résumé totalise ceux que la famille détient le plus ; Personnage montre ceux d'un membre en entier, avec le plafond de chacun et la distance qui l'en sépare.",
+	["What one member can make, sorted by what will skill them up, by what it is worth, or by what they will be able to make next. Clicking a recipe opens it in the profession window, opening the profession first if it is shut - for the character you are playing."] = "Ce qu'un membre peut fabriquer, trié par ce qui le fera progresser, par sa valeur, ou par ce qu'il pourra fabriquer ensuite. Cliquer une recette l'ouvre dans la fenêtre du métier, en ouvrant d'abord le métier s'il est fermé - pour le personnage que vous jouez.",
+	["A family need not be one account. Type another player's character name on the Wide Family panel and ask to link; they accept, and then each of you says what the other may see — one member and one category at a time, on a grid that starts with nothing ticked."] = "Une famille n'a pas à être un seul compte. Tapez le nom de personnage d'un autre joueur dans le panneau Famille élargie et demandez un lien ; il accepte, puis chacun de vous dit ce que l'autre peut voir — un membre et une catégorie à la fois, sur une grille qui commence sans rien de coché.",
+	["|cff9d9d9dNone of that is in the game client - where a thing comes from lives on the server - so an addon that answers it is reading a list somebody typed up outside the game, and cannot tell you how old that list is. Everything Family says, it says because the client said it.|r"] = "|cff9d9d9dRien de tout cela n'est dans le client du jeu - d'où vient une chose vit sur le serveur - donc un addon qui y répond lit une liste que quelqu'un a saisie hors du jeu, et ne peut pas vous dire quel âge a cette liste. Tout ce que Family dit, il le dit parce que le client l'a dit.|r",
+	["|cffffd700Whole family|r turns that gear the other way round: one row per member, their class and then every slot in the same order, with the item level over each icon. A character sheet says what one character is wearing; this says which of them is behind. Filters on realm and class."] = "|cffffd700Toute la famille|r retourne cet équipement : une ligne par membre, sa classe puis chaque emplacement dans le même ordre, avec le niveau d'objet au-dessus de chaque icône. Une fiche de personnage dit ce qu'un personnage porte ; ceci dit lequel est en retard. Filtres sur royaume et classe.",
+	["|cff9d9d9dSwitched off by default, so there is no panel for it until you ask. Sharing is the one thing here a later version cannot take back, so it waits to be asked for rather than arriving switched on. To enable it: |cffffd700/family wide on|r|cff9d9d9d, then reload. Both of you need to.|r"] = "|cff9d9d9dDésactivé par défaut, il n'y a donc pas de panneau pour cela tant que vous ne le demandez pas. Le partage est la seule chose ici qu'une version ultérieure ne peut pas reprendre, il attend donc qu'on le demande plutôt que d'arriver activé. Pour l'activer : |cffffd700/family wide on|r|cff9d9d9d, puis rechargez. Vous devez le faire tous les deux.|r",
+	["Among the members another family shares with you, tick the ones worth seeing every day and they become |cffffd700siblings|r: they appear in your summary, under their own family's name, on the realm they are on. Ticking sends nothing and asks nobody - they had already decided you may see them."] = "Parmi les membres qu'une autre famille partage avec vous, cochez ceux qui valent la peine d'être vus chaque jour et ils deviennent des |cffffd700parents|r : ils apparaissent dans votre résumé, sous le nom de leur propre famille, sur le royaume où ils se trouvent. Cocher n'envoie rien et ne demande rien à personne - ils avaient déjà décidé que vous pouviez les voir.",
+	["Free software under the |cffffd700GNU General Public License, version 3 or later|r. You may use, study, change and pass it on; a changed version has to carry the same licence and say what was changed. Nobody can take Family closed, including if this project is ever abandoned - which is why that licence."] = "Logiciel libre sous la |cffffd700licence publique générale GNU, version 3 ou ultérieure|r. Vous pouvez l'utiliser, l'étudier, le modifier et le transmettre ; une version modifiée doit porter la même licence et indiquer ce qui a été changé. Personne ne peut rendre Family fermé, y compris si ce projet est un jour abandonné - c'est pourquoi cette licence.",
+	["Post anything to one of your own characters and it is written down against them at once - the money, the attachments and all - so their row is right before they have logged in. It is marked as being |cffffd700in the post|r until that character opens their own mailbox, and then what is really in it replaces the guess."] = "Envoyez quoi que ce soit à l'un de vos propres personnages et c'est inscrit chez lui aussitôt - l'argent, les pièces jointes et tout - de sorte que sa ligne est juste avant même qu'il se soit connecté. C'est marqué comme |cffffd700en transit|r jusqu'à ce que ce personnage ouvre sa propre boîte aux lettres, et alors ce qu'elle contient vraiment remplace l'estimation.",
+	["|cff9d9d9dExchanges happen when a linked family comes online, when you change what is shared, and whenever you press Update. Nothing is sent as you log out - the client is already leaving by then and it would not arrive. The first two are one tick box and can be switched off; Update always works, and unticking a box is always sent at once.|r"] = "|cff9d9d9dLes échanges ont lieu quand une famille liée se connecte, quand vous changez ce qui est partagé, et chaque fois que vous appuyez sur Actualiser. Rien n'est envoyé à la déconnexion - le client est déjà en train de partir et cela n'arriverait pas. Les deux premiers sont une case à cocher et peuvent être désactivés ; Actualiser fonctionne toujours, et décocher une case est toujours envoyé aussitôt.|r",
+
+	-- Abilities & Talents
+	["Spec"] = "Spé",
+	["Glyphs"] = "Glyphes",
+	["Spec %d"] = "Spé %d",
+	["Tree %d"] = "Arbre %d",
+	["Spell #%s"] = "Sort n°%s",
+	["Spellbook"] = "Grimoire",
+	[" |cff888888- %s|r"] = " |cff888888- %s|r",
+	["|cff40bf40taken|r"] = "|cff40bf40pris|r",
+	["Specialisation #%s"] = "Spécialisation n°%s",
+	["  spec %d: %s -> %s"] = "  spé %d : %s -> %s",
+	["|cff888888tier %d|r"] = "|cff888888palier %d|r",
+	[" |cff40bf40(active)|r"] = " |cff40bf40(active)|r",
+	["|cff9d9d9dpassed over|r"] = "|cff9d9d9dnon pris|r",
+	["|cff9d9d9dnone recorded|r"] = "|cff9d9d9daucune enregistrée|r",
+	[" |cff40bf40(%d to spend)|r"] = " |cff40bf40(%d à dépenser)|r",
+	["%d abilities in %d schools"] = "%d capacités dans %d écoles",
+	["|cff9d9d9dnothing chosen|r"] = "|cff9d9d9drien de choisi|r",
+	["|cffffd700%d|r point spent"] = "|cffffd700%d|r point dépensé",
+	["|cffffd700%d|r points spent"] = "|cffffd700%d|r points dépensés",
+	["talent readers available: %d"] = "lecteurs de talents disponibles : %d",
+	["%s%s   |cff888888|||r   seen %s"] = "%s%s   |cff888888|||r   vu %s",
+	["|cffffd700%d|r of %d point spent"] = "|cffffd700%d|r sur %d point dépensé",
+	["|cffffd700%d|r of %d points spent"] = "|cffffd700%d|r sur %d points dépensés",
+	["  %s [1,%d] -> %s |cff888888=> %s|r"] = "  %s [1,%d] -> %s |cff888888=> %s|r",
+	["   |cff888888|||r   specialisation %d of %d%s"] = "   |cff888888|||r   spécialisation %d sur %d%s",
+	["|cff9d9d9dNever activated - nothing recorded.|r"] = "|cff9d9d9dJamais activée - rien d'enregistré.|r",
+	["|cffffaa00Nothing recorded for this specialisation.|r"] = "|cffffaa00Rien d'enregistré pour cette spécialisation.|r",
+	["|cff88bbff%s|r%s   |cff888888|||r   one talent a tier%s   |cff888888|||r   seen %s"] = "|cff88bbff%s|r%s   |cff888888|||r   un talent par palier%s   |cff888888|||r   vu %s",
+	["|cffffaa00no talent grid could be read on this client.|r Please report what |cffffd700/family talentprobe|r prints."] = "|cffffaa00Aucune grille de talents n'a pu être lue sur ce client.|r Merci de rapporter ce qu'affiche |cffffd700/family talentprobe|r.",
+	["|cffffaa00no talent data could be read on this client|r (%s, %d group(s)). Please report this with /family caps, and with /family talentprobe if it says choices."] = "|cffffaa00Aucune donnée de talents n'a pu être lue sur ce client|r (%s, %d groupe(s)). Merci de le signaler avec /family caps, et avec /family talentprobe s'il indique choices.",
+
+	-- Possessions
+	["Bank"] = "Banque",
+	["Bag %d"] = "Sac %d",
+	["%d bags"] = "%d sacs",
+	["%d bank"] = "%d banque",
+	["%d mail"] = "%d courrier",
+	["Keyring"] = "Trousseau",
+	["bags %s"] = "sacs %s",
+	["bank %s"] = "banque %s",
+	["mail %s"] = "courrier %s",
+	["Backpack"] = "Sac à dos",
+	["%d auction"] = "%d enchère",
+	["Bank bag %d"] = "Sac de banque %d",
+	["auctions %s"] = "enchères %s",
+	["|cffff8040Mail|r"] = "|cffff8040Courrier|r",
+	["dim everything but"] = "estomper tout sauf",
+	["|cff88bbff(bank)|r"] = "|cff88bbff(banque)|r",
+	["|cffffd700Auctions|r"] = "|cffffd700Enchères|r",
+	["%s |cff888888tab %d|r"] = "%s |cff888888onglet %d|r",
+	["find across the family"] = "chercher dans toute la famille",
+	["|cff40c040Guild bank|r"] = "|cff40c040Banque de guilde|r",
+	["|cff888888guild bank|r"] = "|cff888888banque de guilde|r",  -- 33
+	["%s |cff888888%d letter|r"] = "%s |cff888888%d lettre|r",
+	["%s |cff888888%d letters|r"] = "%s |cff888888%d lettres|r",
+	["|cff888888%d of %d free|r"] = "|cff888888%d sur %d libres|r",
+	["|cff9d9d9dbags not seen|r"] = "|cff9d9d9dsacs non vus|r",
+	["|cff9d9d9dbank not seen|r"] = "|cff9d9d9dbanque non vue|r",
+	["|cff9d9d9dmail not seen|r"] = "|cff9d9d9dcourrier non vu|r",
+	["  |cffffd700%d in the post|r"] = "  |cffffd700%d en transit|r",
+	["|cff9d9d9dauctions not seen|r"] = "|cff9d9d9denchères non vues|r",
+	["   |cff9d9d9d- nothing to show yet|r"] = "   |cff9d9d9d- rien à montrer pour l'instant|r",
+	["|cffffaa00only its own kind of thing fits here|r"] = "|cffffaa00seul son propre type de choses tient ici|r",
+	["|cff9d9d9dNothing named like \"%s\" is held by anybody.|r"] = "|cff9d9d9dPersonne ne possède quoi que ce soit nommé comme \"%s\".|r",
+	["|cff9d9d9dSearching the whole family. Type at least two letters in the box above to see who has what.|r"] = "|cff9d9d9dRecherche dans toute la famille. Tapez au moins deux lettres dans le champ ci-dessus pour voir qui a quoi.|r",
+	["|cffffd700%d|r line for \"%s\" across the family   |cff888888|||r   |cff888888only items the client has named can be matched|r"] = "|cffffd700%d|r ligne pour \"%s\" dans toute la famille   |cff888888|||r   |cff888888seuls les objets que le client a nommés peuvent correspondre|r",
+	["|cffffd700%d|r lines for \"%s\" across the family   |cff888888|||r   |cff888888only items the client has named can be matched|r"] = "|cffffd700%d|r lignes pour \"%s\" dans toute la famille   |cff888888|||r   |cff888888seuls les objets que le client a nommés peuvent correspondre|r",
+
+	-- Professions
+	["grey"] = "gris",
+	["green"] = "vert",
+	["orange"] = "orange",
+	["yellow"] = "jaune",
+	["Difficulty"] = "Difficulté",
+	["Item level"] = "Niveau d'objet",
+	["Skill needed"] = "Compétence requise",
+	["search recipes"] = "chercher des recettes",
+	["%s make nothing"] = "%s ne fabriquent rien",
+	["%s never opened"] = "%s jamais ouverts",
+	["|cffffd700Sort by|r"] = "|cffffd700Trier par|r",
+	["|cffff8040ready %s|r"] = "|cffff8040prêt %s|r",
+	["|cff40bf40ready now|r"] = "|cff40bf40prêt maintenant|r",  -- 38
+	["|cff40bf40can make %s|r"] = "|cff40bf40peut fabriquer %s|r",
+	["|cff9d9d9dNothing recorded for this member.|r"] = "|cff9d9d9dRien d'enregistré pour ce membre.|r",
+	["|cff9d9d9dNo member has any profession recorded yet.|r"] = "|cff9d9d9dAucun membre n'a encore de métier enregistré.|r",
+	["Hardest first, then by the item level of what it makes."] = "Les plus difficiles d'abord, puis par le niveau d'objet de ce qu'elles produisent.",
+	["|cffffd700%d|r recipe named like \"%s\", and who can make it"] = "|cffffd700%d|r recette nommée comme \"%s\", et qui peut la fabriquer",
+	["|cff9d9d9dNothing this member has recorded makes anything.|r"] = "|cff9d9d9dRien de ce qui est enregistré pour ce membre ne fabrique quoi que ce soit.|r",
+	["|cffffd700%d|r recipes named like \"%s\", and who can make each"] = "|cffffd700%d|r recettes nommées comme \"%s\", et qui peut fabriquer chacune",
+	["|cff9d9d9dNobody in the family knows a recipe named like \"%s\".|r"] = "|cff9d9d9dPersonne dans la famille ne connaît de recette nommée comme \"%s\".|r",
+	["By the skill each one needs. Not yet known for every recipe - see below."] = "Par la compétence que chacune demande. Pas encore connue pour toutes les recettes - voir ci-dessous.",
+	["Not listed: %s.  Summary / Professions has every profession and its level."] = "Non listés : %s.  Résumé / Métiers a chaque métier et son niveau.",
+	["Hardest first. Within a colour, the ones that took the most skill to learn."] = "Les plus difficiles d'abord. À couleur égale, celles qui ont demandé le plus de compétence à apprendre.",
+	["|cffffd700%s|r %s   |cff888888|||r   %d recipes  %s   |cff888888|||r   seen %s"] = "|cffffd700%s|r %s   |cff888888|||r   %d recettes  %s   |cff888888|||r   vu %s",
+	["|cff9d9d9dSearching every profession of every member. Type at least two letters in the box above.|r"] = "|cff9d9d9dRecherche dans chaque métier de chaque membre. Tapez au moins deux lettres dans le champ ci-dessus.|r",
+	["|cffffd700%s|r is waiting. Click |cffffd700%s|r above to open the window and it will be selected there."] = "|cffffd700%s|r attend. Cliquez sur |cffffd700%s|r ci-dessus pour ouvrir la fenêtre et elle y sera sélectionnée.",
+
+	-- Character
+	["Held"] = "Détenu",
+	["Class"] = "Classe",  -- 16
+	["Level"] = "Niveau",  -- 7
+	["Quest"] = "Quête",
+	["Realm"] = "Royaume",  -- 21
+	["filter"] = "filtrer",
+	["Faction"] = "Faction",  -- 26
+	["Category"] = "Catégorie",  -- 26
+	["Currency"] = "Monnaie",  -- 26
+	["Progress"] = "Progression",  -- 21
+	["Standing"] = "Attitude",
+	["%s points"] = "%s points",
+	["Achievement"] = "Haut fait",
+	["Category %s"] = "Catégorie %s",
+	["Of a cap of"] = "Sur un max. de",  -- 21
+	["standing %s"] = "attitude %s",
+	["Achievements"] = "Hauts faits",  -- 15
+	["Currency #%s"] = "Monnaie n°%s",
+	["Whole family"] = "Toute la famille",  -- 16
+	["Equipped gear"] = "Équipement",  -- 15
+	["another family"] = "une autre famille",
+	["Achievement #%s"] = "Haut fait n°%s",
+	["%d of %d factions"] = "%d factions sur %d",
+	["|cff888888Other|r"] = "|cff888888Autre|r",
+	["|cff888888of %s|r"] = "|cff888888de %s|r",
+	["Average item level"] = "Niveau d'objet moyen",
+	["Points or progress"] = "Points ou progr.",  -- 21
+	["|cff40bf40earned|r"] = "|cff40bf40obtenu|r",
+	["|cff9d9d9dno cap|r"] = "|cff9d9d9dpas de plafond|r",  -- 21
+	["|cffffd700%d|r of %d"] = "|cffffd700%d|r sur %d",
+	["|cff40bf40%d|r points"] = "|cff40bf40%d|r points",
+	["|cff9d9d9dnot recorded|r"] = "|cff9d9d9dnon enregistré|r",
+	["|cff888888level %s|r  %s  %s"] = "|cff888888niveau %s|r  %s  %s",
+	["|cff888888level %s|r  %s%s|r"] = "|cff888888niveau %s|r  %s%s|r",
+	["%s%s|r  |cff888888(%s to go)|r"] = "%s%s|r  |cff888888(encore %s)|r",
+	["|cffffaa00Nothing matches those filters.|r"] = "|cffffaa00Rien ne correspond à ces filtres.|r",
+	["|cff9d9d9dThis client has no achievements.|r"] = "|cff9d9d9dCe client n'a pas de hauts faits.|r",
+	["|cffffaa00Nothing recorded for this member.|r"] = "|cffffaa00Rien d'enregistré pour ce membre.|r",
+	["average item level |cffffd700%s|r over %d pieces"] = "niveau d'objet moyen |cffffd700%s|r sur %d pièces",
+	["|cffffd700%d|r currency   |cff888888|||r   seen %s"] = "|cffffd700%d|r monnaie   |cff888888|||r   vu %s",
+	["|cffffd700%d|r currencies   |cff888888|||r   seen %s"] = "|cffffd700%d|r monnaies   |cff888888|||r   vu %s",
+	["|cffffaa00Nothing recorded - log in on this member once.|r"] = "|cffffaa00Rien d'enregistré - connectez-vous une fois avec ce membre.|r",
+	["|cffffaa00Nothing recorded for this member - log in on them once.|r"] = "|cffffaa00Rien d'enregistré pour ce membre - connectez-vous une fois avec lui.|r",
+	["|cff9d9d9dThis client offers no currencies, or this member has never held one.|r"] = "|cff9d9d9dCe client ne propose pas de monnaies, ou ce membre n'en a jamais eu.|r",
+	["|cffffd700%d|r points from %d achievements   |cff888888|||r   %d shown   |cff888888|||r   seen %s"] = "|cffffd700%d|r points de %d hauts faits   |cff888888|||r   %d affichés   |cff888888|||r   vu %s",
+	["|cffffd700%d|r of %d member   |cff888888|||r   %d with gear recorded   |cff888888|||r   |cff888888hover the class picture for who they are, and any slot for what is in it|r"] = "|cffffd700%d|r sur %d membre   |cff888888|||r   %d avec équipement enregistré   |cff888888|||r   |cff888888survolez l'image de classe pour savoir qui c'est, et un emplacement pour ce qu'il contient|r",
+	["|cffffd700%d|r of %d members   |cff888888|||r   %d with gear recorded   |cff888888|||r   |cff888888hover the class picture for who they are, and any slot for what is in it|r"] = "|cffffd700%d|r sur %d membres   |cff888888|||r   %d avec équipement enregistré   |cff888888|||r   |cff888888survolez l'image de classe pour savoir qui c'est, et un emplacement pour ce qu'il contient|r",
+
+	-- Quests
+	["easy"] = "facile",
+	["hard"] = "difficile",
+	[" of %s"] = " sur %s",
+	["normal"] = "normal",
+	["trivial"] = "trivial",
+	["Elsewhere"] = "Ailleurs",
+	["very hard"] = "très difficile",
+	["|cffffd700%d|r quest"] = "|cffffd700%d|r quête",
+	["|cffffd700%d|r quests"] = "|cffffd700%d|r quêtes",
+	["|cff40bf40ready to hand in|r"] = "|cff40bf40prête à rendre|r",
+	["|cff40bf40%d ready to hand in|r"] = "|cff40bf40%d prêtes à rendre|r",
+	["|cff9d9d9dnothing ready to hand in|r"] = "|cff9d9d9drien à rendre|r",
+	["%s   |cff888888|||r   %s   |cff888888|||r   seen %s"] = "%s   |cff888888|||r   %s   |cff888888|||r   vu %s",
+
+	-- Wide Family
+	["Mail"] = "Courrier",  -- 10
+	["Money"] = "Argent",  -- 22
+	["never"] = "jamais",
+	["Accept"] = "Accepter",  -- 10
+	["Forget"] = "Oublier",  -- 10
+	["Quests"] = "Quêtes",  -- 15
+	["Unlink"] = "Délier",  -- 10
+	["Decline"] = "Refuser",  -- 10
+	["Talents"] = "Talents",
+	["Auctions"] = "Enchères",  -- 10
+	["Ask again"] = "Redemander",  -- 10
+	["Equipment"] = "Équipement",
+	["Family %s"] = "Family %s",
+	["%d category"] = "%d catégorie",
+	["Ask to link"] = "Demander",  -- 15
+	["Possessions"] = "Possessions",  -- 20
+	["Professions"] = "Métiers",  -- 14
+	["Reputations"] = "Réputations",  -- 15
+	["no such link"] = "aucun lien de ce genre",
+	["%d categories"] = "%d catégories",
+	["Could not: %s"] = "Impossible : %s",
+	["no such request"] = "aucune demande de ce genre",
+	["version unknown"] = "version inconnue",
+	["|cffffd700Member|r"] = "|cffffd700Membre|r",
+	["|cff888888level %s|r"] = "|cff888888niveau %s|r",
+	["|cff9d9d9das of %s|r"] = "|cff9d9d9dau %s|r",
+	["|cffffd700%d|r member"] = "|cffffd700%d|r membre",
+	["|cffffd700%d|r members"] = "|cffffd700%d|r membres",
+	["%s |cff888888asked %s|r"] = "%s |cff888888demandé %s|r",
+	["|cffffd700%d|r category"] = "|cffffd700%d|r catégorie",
+	["   |cffffaa00no answer|r"] = "   |cffffaa00aucune réponse|r",
+	["not waiting on that name"] = "aucune attente pour ce nom",
+	["%s |cff888888asked %s|r%s"] = "%s |cff888888demandé %s|r%s",
+	["|cffffd700%d|r categories"] = "|cffffd700%d|r catégories",
+	["a character name is needed"] = "un nom de personnage est nécessaire",
+	["|cffffd700Sibling  Member|r"] = "|cffffd700Parent  Membre|r",
+	["|cffffd700%d|r linked family"] = "|cffffd700%d|r famille liée",
+	["|cffffaa00Could not ask: %s|r"] = "|cffffaa00Impossible de demander : %s|r",
+	["Wide Family is not switched on"] = "La Famille élargie n'est pas activée",
+	["|cffffd700%d|r linked families"] = "|cffffd700%d|r familles liées",
+	["   |||   click the name to open"] = "   |||   cliquez le nom pour ouvrir",
+	["none of %s's %d character is online"] = "chez %s, le seul personnage (%d) n'est pas connecté",
+	["|cffffd700What %s shares with you|r"] = "|cffffd700Ce que %s partage avec vous|r",
+	["none of %s's %d characters are online"] = "chez %s, aucun des %d personnages n'est connecté",
+	["|cffffd700Waiting for you to answer|r"] = "|cffffd700En attente de votre réponse|r",
+	["|cffffd700Waiting for them to answer|r"] = "|cffffd700En attente de leur réponse|r",
+	["Sent %d member(s) and asked for theirs."] = "%d membre(s) envoyé(s) et demande des leurs.",
+	["nobody of theirs has ever been heard from"] = "aucun des leurs ne s'est jamais manifesté",
+	["|cff888888%s is not online - trying %s.|r"] = "|cff888888%s n'est pas connecté - essai avec %s.|r",
+	["|cffffd700What %s may see of your characters|r"] = "|cffffd700Ce que %s peut voir de vos personnages|r",
+	["|cff9d9d9dThey say which categories they share.|r"] = "|cff9d9d9dIls indiquent quelles catégories ils partagent.|r",
+	["%s   |cff888888|||r   you are sharing %s across %s"] = "%s   |cff888888|||r   vous partagez %s dans %s",
+	["Asked |cffffd700%s|r to link. Nothing has been sent."] = "Demande de lien envoyée à |cffffd700%s|r. Rien n'a été transmis.",
+	["|cffffaa00%s's Family speaks a different version - %s|r"] = "|cffffaa00Le Family de %s parle une version différente - %s|r",
+	["Exchange automatically when a linked family comes online"] = "Échanger automatiquement quand une famille liée se connecte",
+	["|cff9d9d9d   - they are offline, or not running Family|r"] = "|cff9d9d9d   - ils sont hors ligne, ou n'utilisent pas Family|r",
+	["|cff9d9d9d   - their Family is too old to know how to answer|r"] = "|cff9d9d9d   - leur Family est trop ancien pour savoir répondre|r",
+	["|cff9d9d9dClick to tick or clear this column for all %d member.|r"] = "|cff9d9d9dCliquez pour cocher ou décocher cette colonne pour le %d membre.|r",
+	["|cffffd700%s|r has ended the link. Their data has been forgotten."] = "|cffffd700%s|r a mis fin au lien. Ses données ont été oubliées.",
+	["|cff9d9d9dClick to tick or clear this column for all %d members.|r"] = "|cff9d9d9dCliquez pour cocher ou décocher cette colonne pour les %d membres.|r",
+	["Linked with |cffffd700%s|r. Nothing is shared until you say what may be."] = "Lié avec |cffffd700%s|r. Rien n'est partagé tant que vous n'avez pas dit ce qui peut l'être.",
+	["|cff9d9d9dWhether they share this. Their decision, taken on their own panel.|r"] = "|cff9d9d9dS'ils partagent ceci. Leur décision, prise sur leur propre panneau.|r",
+	["|cff888888you share %s in %s   |||   they share %d with you   |||   last exchange %s%s|r"] = "|cff888888vous partagez %s dans %s   |||   ils en partagent %d avec vous   |||   dernier échange %s%s|r",
+	["|cffffd700%s|r would like to link families. Open Family, Wide Family, to accept or decline."] = "|cffffd700%s|r souhaite lier vos familles. Ouvrez Family, Famille élargie, pour accepter ou refuser.",
+	["|cffffaa00Their Family is too old to say what it grants, so the marks are what has arrived.|r"] = "|cffffaa00Leur Family est trop ancien pour dire ce qu'il accorde, donc les marques montrent ce qui est arrivé.|r",
+	["|cffffaa00None of %s's %d character is online.|r Nothing was sent. Try again when one of them is."] = "|cffffaa00Chez %s, le seul personnage (%d) n'est pas connecté.|r Rien n'a été envoyé. Réessayez quand il le sera.",
+	["|cffffaa00None of %s's %d characters are online.|r Nothing was sent. Try again when one of them is."] = "|cffffaa00Chez %s, aucun des %d personnages n'est connecté.|r Rien n'a été envoyé. Réessayez quand l'un d'eux le sera.",
+	["|cff9d9d9dA request that does not arrive says nothing at all. No answer means one of three things:|r"] = "|cff9d9d9dUne demande qui n'arrive pas ne dit rien du tout. L'absence de réponse signifie l'une de trois choses :|r",
+	["|cff9d9d9d   - the two of you cannot exchange addon messages at all, which no addon can work around|r"] = "|cff9d9d9d   - vous ne pouvez pas du tout échanger de messages d'addon, ce qu'aucun addon ne peut contourner|r",
+	["|cff9d9d9dNo families are linked yet. %d request sent and not answered - a link exists only once they accept.|r"] = "|cff9d9d9dAucune famille n'est encore liée. %d demande envoyée et sans réponse - un lien n'existe qu'une fois acceptée.|r",
+	["|cff9d9d9dNo families are linked yet. %d requests sent and not answered - a link exists only once they accept.|r"] = "|cff9d9d9dAucune famille n'est encore liée. %d demandes envoyées et sans réponse - un lien n'existe qu'une fois acceptées.|r",
+	["|cff9d9d9dNothing yet. They choose this from their own Wide Family panel, and it arrives at the next exchange.|r"] = "|cff9d9d9dRien pour l'instant. Ils choisissent cela depuis leur propre panneau Famille élargie, et cela arrive au prochain échange.|r",
+	["|cffffaa00the wide family grid needs %d pixels for %d categories and a row is %d, so its last column is drawn off the end|r"] = "|cffffaa00la grille de la Famille élargie a besoin de %d pixels pour %d catégories et une ligne en fait %d, donc sa dernière colonne est dessinée hors du bord|r",
+	["They must be online, and running Family. Nothing is sent until they accept, and nothing is shared until you say what may be."] = "Ils doivent être connectés et utiliser Family. Rien n'est envoyé tant qu'ils n'ont pas accepté, et rien n'est partagé tant que vous n'avez pas dit ce qui peut l'être.",
+	["End the link with %s?\n\nWhat they have shared with you is forgotten here, and they are asked to forget what you shared with them."] = "Mettre fin au lien avec %s ?\n\nCe qu'ils ont partagé avec vous est oublié ici, et il leur est demandé d'oublier ce que vous avez partagé avec eux.",
+	["|cff9d9d9dNo families are linked. Type a character name above and ask - they will be asked to accept, and nothing is sent before they do.|r"] = "|cff9d9d9dAucune famille liée. Saisissez un nom de personnage ci-dessus et demandez - il leur sera demandé d'accepter, et rien n'est envoyé avant.|r",
+	["|cff888888Nothing is ticked to begin with, and unticking tells them to forget it. Click a category's name to tick or clear that column for everybody at once.|r"] = "|cff888888Rien n'est coché au départ, et décocher leur dit de l'oublier. Cliquez sur le nom d'une catégorie pour cocher ou décocher cette colonne pour tout le monde d'un coup.|r",
+	["|cffffaa00Wide Family needs the serialisation libraries (LibSerialize and LibDeflate) and this client has neither loaded, so nothing can be sent or received.|r"] = "|cffffaa00La Famille élargie a besoin des bibliothèques de sérialisation (LibSerialize et LibDeflate) et ce client n'en a chargé aucune, donc rien ne peut être envoyé ni reçu.|r",
+	["That is the only time it happens on its own. What you each see of the other is as it was at the last exchange - click |cffffd700Update now|r on a family's line to bring it up to date."] = "C'est le seul moment où cela se produit tout seul. Ce que vous voyez l'un de l'autre est tel qu'au dernier échange - cliquez |cffffd700Actualiser|r sur la ligne d'une famille pour le mettre à jour.",
+	["|cff888888Family sends only what is ticked, and asks the other side to forget anything you untick. That last part is a request to another copy of Family on somebody else's computer - it is a promise kept honestly here, not a lock.|r"] = "|cff888888Family n'envoie que ce qui est coché, et demande à l'autre côté d'oublier ce que vous décochez. Cette dernière partie est une demande adressée à une autre copie de Family sur l'ordinateur de quelqu'un d'autre - c'est une promesse tenue honnêtement ici, pas un verrou.|r",
+	["|cff888888The marks are what they share about each one - theirs to change, not yours. Tick |cffffd700Sibling|r to put one in your own summary, under their family, on the realm they are on. That sends nothing: they have already shared them.|r"] = "|cff888888Les marques indiquent ce qu'ils partagent de chacun - à eux de les changer, pas à vous. Cochez |cffffd700Parent|r pour en placer un dans votre propre résumé, sous leur famille, sur le royaume où il se trouve. Cela n'envoie rien : ils les ont déjà partagés.|r",
+
+	-- Guild
+	["Guild"] = "Guilde",  -- 20
+	["unknown"] = "inconnu",
+	["Everyone"] = "Tout le monde",
+	["Update now"] = "Actualiser",  -- 10
+	["  guild: %s"] = "  guilde : %s",
+	["Online only"] = "En ligne",
+	["not in a guild"] = "pas dans une guilde",
+	["  switched on: %s"] = "  activé : %s",
+	["|cff9d9d9dempty|r"] = "|cff9d9d9dvide|r",
+	["specialisation #%s"] = "spécialisation n°%s",
+	["  can serialise: %s"] = "  peut sérialiser : %s",
+	["  |cff888888(you)|r"] = "  |cff888888(vous)|r",
+	["  |cff777777offline|r"] = "  |cff777777hors ligne|r",
+	["|cffffaa00Could not: %s|r"] = "|cffffaa00Impossible : %s|r",
+	["Guild share is switched off"] = "Le partage de guilde est désactivé",
+	["|cff9d9d9dno gear recorded|r"] = "|cff9d9d9daucun équipement enregistré|r",
+	["  addon prefix registered: %s"] = "  préfixe d'addon enregistré : %s",
+	["  messages sent from here: %d"] = "  messages envoyés d'ici : %d",
+	["|cffffd700Guild share|r on %s"] = "|cffffd700Partage de guilde|r sur %s",
+	["  characters of ours in it: %d"] = "  nos personnages qui en font partie : %d",
+	["|cff555555not running Family|r"] = "|cff555555n'utilise pas Family|r",  -- 30
+	["|cff9d9d9dno talents recorded|r"] = "|cff9d9d9daucun talent enregistré|r",
+	["nothing of ours is in this guild"] = "rien de chez nous n'est dans cette guilde",
+	["this character is not in a guild"] = "ce personnage n'est dans aucune guilde",
+	["|cffffd700%.1f|r |cff888888ilvl|r"] = "|cffffd700%.1f|r |cff888888niv. obj.|r",
+	["  characters held for this guild: %d"] = "  personnages conservés pour cette guilde : %d",
+	["  announcements from somebody else: %s"] = "  annonces de quelqu'un d'autre : %s",
+	["|cff888888heard from, nothing sent yet|r"] = "|cff888888entendu, rien envoyé|r",  -- 30
+	["click one of them to see their characters"] = "cliquez sur l'un d'eux pour voir ses personnages",
+	["Share gear and talents with the guild, and read theirs"] = "Partager équipement et talents avec la guilde, et lire les leurs",
+	["Asked the guild. Whoever is online and running Family answers."] = "La guilde a été interrogée. Quiconque est connecté et utilise Family répond.",
+	["|cffffd700%s|r |cff888888ilvl   |||   %d character   |||   %s|r"] = "|cffffd700%s|r |cff888888niv. obj.   |||   %d personnage   |||   %s|r",
+	["|cffffd700%s|r |cff888888ilvl   |||   %d characters   |||   %s|r"] = "|cffffd700%s|r |cff888888niv. obj.   |||   %d personnages   |||   %s|r",
+	["this client has no serialisation libraries, so nothing can be sent"] = "ce client n'a pas de bibliothèques de sérialisation, donc rien ne peut être envoyé",
+	["  |cffffaa00last one was for %s, and this client calls the guild %s|r"] = "  |cffffaa00la dernière était pour %s, et ce client appelle la guilde %s|r",
+	["  announcements arrived: %d  (%d ours coming back, %d for another guild, %d unreadable)"] = "  annonces reçues : %d  (%d des nôtres qui reviennent, %d pour une autre guilde, %d illisibles)",
+	["nobody else has answered yet - they must be online and running it, and Update now asks again"] = "personne d'autre n'a encore répondu - ils doivent être connectés et l'utiliser, et Actualiser redemande",
+	["|cff9d9d9dNobody to show. The guild roster arrives a moment after the panel does - try Update now.|r"] = "|cff9d9d9dPersonne à afficher. La liste de guilde arrive un instant après le panneau - essayez Actualiser.|r",
+	["|cffffd700%s|r   |cff888888|||r   %d shown of %d   |cff888888|||r   |cffffd700%d|r running Family   |cff888888|||r   |cff888888%s|r"] = "|cffffd700%s|r   |cff888888|||r   %d affichés sur %d   |cff888888|||r   |cffffd700%d|r utilisent Family   |cff888888|||r   |cff888888%s|r",
+	["|cff9d9d9dThis character is not in a guild. Guild share is about one guild on one realm, so there is nothing for it to be about from here.|r"] = "|cff9d9d9dCe personnage n'est dans aucune guilde. Le partage de guilde concerne une guilde sur un royaume, il n'y a donc rien à partager d'ici.|r",
+	["|cffffaa00Guild share is switched off.|r |cff888888Nothing is sent to %s and nothing that arrives is read. What was collected before is kept.|r"] = "|cffffaa00Le partage de guilde est désactivé.|r |cff888888Rien n'est envoyé à %s et rien de ce qui arrive n'est lu. Ce qui a été collecté avant est conservé.|r",
+	["|cffffaa00Guild share needs the serialisation libraries (LibSerialize and LibDeflate) and this client has neither loaded, so nothing can be sent or received.|r"] = "|cffffaa00Le partage de guilde a besoin des bibliothèques de sérialisation (LibSerialize et LibDeflate) et ce client n'en a chargé aucune, donc rien ne peut être envoyé ni reçu.|r",
+	["|cffffaa00This client has sent and heard nothing at all, not even its own announcement coming back off the guild channel. That points at the channel rather than at either end.|r"] = "|cffffaa00Ce client n'a rien envoyé ni entendu du tout, pas même sa propre annonce revenant du canal de guilde. Cela désigne le canal plutôt que l'une des deux extrémités.|r",
+
+	-- The minimap button and its tooltip
+	["%d member"] = "%d membre",
+	["%d members"] = "%d membres",
+	["|cff888888money|r"] = "|cff888888argent|r",
+	["  %s |cff888888(%d)|r"] = "",
+	["|cffffd700All realms|r"] = "|cffffd700Tous les royaumes|r",
+	["|cffff4444Mail expiring soon|r"] = "|cffff4444Courrier bientôt expiré|r",
+	["|cff9d9d9dNothing recorded yet.|r"] = "|cff9d9d9dRien d'enregistré pour l'instant.|r",
+	["|cff888888name, level, item level|r"] = "|cff888888nom, niveau, niveau d'objet|r",
+	["|cff40bf40Crafting cooldowns ready|r"] = "|cff40bf40Temps de recharge d'artisanat prêts|r",
+	["|cff888888Left-click for the family. Right-click for the options.|r"] = "|cff888888Clic gauche pour la famille. Clic droit pour les options.|r",
+
+	-- What Family adds to an item tooltip
+	["%d guild bank"] = "%d banque de guilde",
+	["%s |cff9d9d9dof %s|r"] = "%s |cff9d9d9dde %s|r",
+	["|cff40bf40knows it|r"] = "|cff40bf40le connaît|r",
+	["|cffff8040level %d|r"] = "|cffff8040niveau %d|r",
+	["|cff9d9d9dmay know it|r"] = "|cff9d9d9dle connaît peut-être|r",
+	["|cffffd700can learn it|r"] = "|cffffd700peut l'apprendre|r",
+	["|cff66bbffFamily crafters|r"] = "|cff66bbffArtisans de la famille|r",
+	["|cff66bbffFamily possessions|r"] = "|cff66bbffPossessions de la famille|r",
+
+	-- The member picker
+	["|cff9d9d9d(nobody)|r"] = "|cff9d9d9d(personne)|r",
+	["|cff9d9d9dnobody matches|r"] = "|cff9d9d9daucune correspondance|r",
+
+	-- The data addon, when something goes wrong
+	["|cffff5555error starting %s|r: %s"] = "|cffff5555erreur au démarrage de %s|r : %s",
+	["|cffff5555error in deferred %s|r: %s"] = "|cffff5555erreur dans le différé %s|r : %s",
+	["|cffff5555error in %s handler for %s|r: %s"] = "|cffff5555erreur dans le gestionnaire %s pour %s|r : %s",
+
+	-- The addon channel
+	["|cffffaa00%s is not online.|r %d message(s) not sent."] = "|cffffaa00%s n'est pas connecté.|r %d message(s) non envoyé(s).",
+
+	-- Storage and migrations
+	["|cffff5555Migration from schema %d failed|r: %s"] = "|cffff5555échec de la migration depuis le schéma %d|r : %s",
+	["|cffff5555error telling %s the database changed|r: %s"] = "|cffff5555erreur en informant %s du changement de base de données|r : %s",
+	["|cffff5555Your saved data was written by Family schema %d, and this is schema %d.|r Nothing has been changed. Update Family, or move FamilyDB aside if you meant to start over."] = "|cffff5555Vos données enregistrées ont été écrites par le schéma Family %d, et ceci est le schéma %d.|r Rien n'a été modifié. Mettez Family à jour, ou mettez FamilyDB de côté si vous vouliez repartir de zéro.",
+
+	-- Locale.lua
+	["Summary"] = "Résumé",  -- 20
+}

@@ -22,6 +22,7 @@
 local _, UI = ...
 
 local Family = _G.Family
+local L = Family.L
 
 local ROW = 16
 
@@ -41,7 +42,7 @@ end
 --------------------------------------------------------------------------------------------
 
 local function specOf(specID)
-	if not specID then return { label = "|cff9d9d9dnone recorded|r" } end
+	if not specID then return { label = L["|cff9d9d9dnone recorded|r"] } end
 
 	local name, icon, role
 	if GetSpecializationInfoByID then
@@ -50,7 +51,7 @@ local function specOf(specID)
 	end
 
 	return {
-		label = name or ("Specialisation #" .. specID),
+		label = name or string.format(L["Specialisation #%s"], specID),
 		icon = icon,
 		-- The game's own word for the role, so "Tank" is whatever the player calls it.
 		role = role and (_G[role] or role) or nil,
@@ -112,7 +113,7 @@ local function build(frame)
 
 	local hint = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 	hint:SetPoint("LEFT", search, "RIGHT", 8, 0)
-	hint:SetText("filter")
+	hint:SetText(L["filter"])
 
 	local function matches(text)
 		local needle = (search:GetText() or ""):lower()
@@ -125,12 +126,11 @@ local function build(frame)
 	bar:SetPoint("RIGHT", -8, 0)
 	bar:SetHeight(24)
 
-	local x = 0
+	local sectionRow = {}
 	for _, name in ipairs(SECTIONS) do
 		local button = CreateFrame("Button", nil, bar, "UIPanelButtonTemplate")
-		button:SetSize(110, 20)
-		button:SetPoint("LEFT", x, 0)
-		button:SetText(name)
+		button:SetHeight(20)
+		button:SetText(L[name])
 		button:SetScript("OnClick", function()
 			section = name
 			-- A filter typed for one section rarely means anything in the next.
@@ -138,8 +138,9 @@ local function build(frame)
 			frame:Refresh()
 		end)
 		sectionButtons[name] = button
-		x = x + 112
+		sectionRow[#sectionRow + 1] = button
 	end
+	UI:LayOutRow(sectionRow, 110, 2, 0, nil, (UI.CONTENT_W or 740) - 16)
 
 	local status = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	status:SetPoint("TOPLEFT", bar, "BOTTOMLEFT", 2, -4)
@@ -361,7 +362,7 @@ local function build(frame)
 
 		if not member then
 			spec:Hide()
-			return finish("|cff9d9d9dNothing recorded yet.|r")
+			return finish(L["|cff9d9d9dNothing recorded yet.|r"])
 		end
 
 		local payload = UI:Payload(member.key) or {}
@@ -373,7 +374,7 @@ local function build(frame)
 
 			local book = payload.spells
 			if not book or #book == 0 then
-				return finish("|cffffaa00Nothing recorded for this member.|r")
+				return finish(L["|cffffaa00Nothing recorded for this member.|r"])
 			end
 
 			-- Anything the game teaches through a window of its own that is not a
@@ -401,7 +402,7 @@ local function build(frame)
 			for _, school in ipairs(book) do total = total + #school.spells end
 			for _, school in ipairs(extra) do total = total + #school.taught end
 
-			status:SetText(string.format("%d abilities in %d schools", total,
+			status:SetText(string.format(L["%d abilities in %d schools"], total,
 				#book + #extra))
 
 			-- "Rank 10" belongs after "Rank 9", which comparing the words gets backwards.
@@ -418,7 +419,7 @@ local function build(frame)
 					if matches(spellName) or matches(school.name) then
 						keep[#keep + 1] = {
 							id = spellID,
-							name = spellName or ("Spell #" .. spellID),
+							name = spellName or string.format(L["Spell #%s"], spellID),
 							known = spellName ~= nil,
 							icon = spellIcon,
 							-- Six spells all called Aspect of the Hawk are six ranks
@@ -501,22 +502,22 @@ local function build(frame)
 		local talents = payload.talents
 		if not talents then
 			spec:Hide()
-			return finish("|cffffaa00Nothing recorded for this member.|r")
+			return finish(L["|cffffaa00Nothing recorded for this member.|r"])
 		end
 
 		local count = talents.groupCount or 1
 		spec:Show()
-		spec:SetText(count > 1 and ("Spec " .. group) or "Spec")
+		spec:SetText(count > 1 and string.format(L["Spec %d"], group) or L["Spec"])
 		spec:SetEnabled(count > 1)
 		if group > count then group = 1 end
 
 		local data = talents.groups and talents.groups[group]
 
 		if not data then
-			return finish("|cffffaa00Nothing recorded for this specialisation.|r")
+			return finish(L["|cffffaa00Nothing recorded for this specialisation.|r"])
 		end
 		if data.visited == false then
-			return finish("|cff9d9d9dNever activated - nothing recorded.|r")
+			return finish(L["|cff9d9d9dNever activated - nothing recorded.|r"])
 		end
 
 		local sameClass = member.meta.classFile ~= nil
@@ -531,22 +532,24 @@ local function build(frame)
 			-- level eighteen.
 			local available = talents.available
 			local spentText = available
-				and string.format("|cffffd700%d|r of %d point%s spent", spent, available,
-					available == 1 and "" or "s")
-				or string.format("|cffffd700%d|r point%s spent", spent,
-					spent == 1 and "" or "s")
+				and string.format(available == 1
+					and L["|cffffd700%d|r of %d point spent"]
+					or L["|cffffd700%d|r of %d points spent"], spent, available)
+				or string.format(spent == 1 and L["|cffffd700%d|r point spent"]
+					or L["|cffffd700%d|r points spent"], spent)
 
 			if available and available > spent then
-				spentText = spentText .. string.format(" |cff40bf40(%d to spend)|r",
+				spentText = spentText .. string.format(L[" |cff40bf40(%d to spend)|r"],
 					available - spent)
 			end
 
 			status:SetText(string.format(
-				"%s%s   |cff888888|||r   seen %s",
+				L["%s%s   |cff888888|||r   seen %s"],
 				spentText,
-				count > 1 and string.format("   |cff888888|||r   specialisation %d of %d%s",
+				count > 1 and string.format(
+					L["   |cff888888|||r   specialisation %d of %d%s"],
 					group, count,
-					group == (talents.activeGroup or 1) and " |cff40bf40(active)|r" or "")
+					group == (talents.activeGroup or 1) and L[" |cff40bf40(active)|r"] or "")
 					or "",
 				UI:Ago(talents.seen)))
 
@@ -557,7 +560,8 @@ local function build(frame)
 				local left = (tab - 1) * (4 * CELL + TREE_GAP)
 
 				nextLabel(left, 0, string.format("|cff88bbff%s|r |cffffd700%d|r",
-					tree.name or ("Tree " .. tab), tree.points or 0), 4 * CELL)
+					tree.name or string.format(L["Tree %d"], tab), tree.points or 0),
+					4 * CELL)
 
 				for _, talent in pairs(tree.talents or {}) do
 					local tier = talent.tier or 1
@@ -583,9 +587,9 @@ local function build(frame)
 							or (rank > 0 and "" or nil),
 						fallback = {
 							{ talent.name or "?" },
-							{ tree.name or ("Tree " .. tab) },
-							{ string.format("|cffffd700%d|r of %d", rank, maxRank),
-								string.format("|cff888888tier %d|r", tier) },
+							{ tree.name or string.format(L["Tree %d"], tab) },
+							{ string.format(L["|cffffd700%d|r of %d"], rank, maxRank),
+								string.format(L["|cff888888tier %d|r"], tier) },
 						},
 					})
 				end
@@ -601,12 +605,16 @@ local function build(frame)
 
 		local chosen = specOf(data.specID)
 
-		status:SetText(string.format("|cff88bbff%s|r%s   |cff888888|||r   one talent a tier%s"
-			.. "   |cff888888|||r   seen %s",
-			chosen.label, chosen.role and (" |cff888888- " .. chosen.role .. "|r") or "",
-			count > 1 and string.format("   |cff888888|||r   specialisation %d of %d%s",
+		status:SetText(string.format(
+			L["|cff88bbff%s|r%s   |cff888888|||r   one talent a tier%s"
+			.. "   |cff888888|||r   seen %s"],
+			chosen.label, chosen.role and string.format(L[" |cff888888- %s|r"], chosen.role)
+				or "",
+			count > 1 and string.format(
+				L["   |cff888888|||r   specialisation %d of %d%s"],
 				group, count,
-				group == (talents.activeGroup or 1) and " |cff40bf40(active)|r" or "") or "",
+				group == (talents.activeGroup or 1) and L[" |cff40bf40(active)|r"] or "")
+				or "",
 			UI:Ago(talents.seen)))
 
 		local left = 70
@@ -629,9 +637,9 @@ local function build(frame)
 						talentID = choice.id,
 						fallback = {
 							{ choice.name or "?" },
-							{ string.format("|cff888888tier %d|r", tier),
-								column == picked and "|cff40bf40taken|r"
-									or "|cff9d9d9dpassed over|r" },
+							{ string.format(L["|cff888888tier %d|r"], tier),
+								column == picked and L["|cff40bf40taken|r"]
+									or L["|cff9d9d9dpassed over|r"] },
 						},
 					})
 				end
@@ -641,7 +649,7 @@ local function build(frame)
 			-- name says what it is without a hover for each.
 			local taken = picked and choices[picked]
 			nextLabel(left + 3 * CELL + 8, rowY + 8,
-				taken and taken.name or "|cff9d9d9dnothing chosen|r", 220)
+				taken and taken.name or L["|cff9d9d9dnothing chosen|r"], 220)
 		end
 
 		y = #data.tiers * CELL + 8
@@ -650,7 +658,7 @@ local function build(frame)
 		-- what they are: part of how this spec is put together.
 		if data.glyphs then
 			y = y + 8
-			nextLabel(0, y, _G.GLYPHS or "Glyphs", 200)
+			nextLabel(0, y, _G.GLYPHS or L["Glyphs"], 200)
 			y = y + TITLE
 
 			for socket = 1, #data.glyphs do
@@ -674,4 +682,4 @@ local function build(frame)
 	end
 end
 
-UI:RegisterTab("talents", "Abilities & Talents", build)
+UI:RegisterTab("talents", L["Abilities & Talents"], build)

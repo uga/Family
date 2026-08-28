@@ -27,6 +27,11 @@ Libs\LibSerialize\LibSerialize.lua
 Libs\LibDeflate\LibDeflate.lua
 
 Core.lua
+Locale.lua
+Locales\deDE.lua
+Locales\frFR.lua
+Locales\esES.lua
+Locales\ruRU.lua
 Capabilities.lua
 Codec.lua
 Comm.lua

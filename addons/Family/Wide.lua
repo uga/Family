@@ -32,6 +32,8 @@
 
 local _, Family = ...
 
+local L = Family.L
+
 local Wide = {}
 Family.Wide = Wide
 
@@ -39,26 +41,26 @@ Family.Wide = Wide
 -- specification's (§6) and the mapping is here so that adding a scanner cannot quietly widen
 -- what a link already agreed to: a new payload key shares nothing until it is named below.
 local CATEGORIES = {
-    { id = "possessions", label = "Possessions", payload = { "bags", "bank" },
+    { id = "possessions", label = L["Possessions"], payload = { "bags", "bank" },
       meta = { "bagSlots", "bagFree", "bankSlots", "bankFree", "bagsSeen", "bankSeen" } },
     -- Its own category rather than part of possessions, and the specification says why (§6):
     -- what somebody is wearing is the thing most often worth showing a friend and the thing
     -- least like a list of what they own. Plenty of people will share one and not the other,
     -- and a category they cannot separate is a decision they cannot make.
-    { id = "equipment",   label = "Equipment",   payload = { "equipment" },
+    { id = "equipment",   label = L["Equipment"],   payload = { "equipment" },
       meta = { "itemLevel" } },
-    { id = "professions", label = "Professions", payload = { "professions" },
+    { id = "professions", label = L["Professions"], payload = { "professions" },
       meta = { "skills" } },
-    { id = "talents",     label = "Talents",     payload = { "talents", "spells" } },
-    { id = "quests",      label = "Quests",      payload = { "quests" },
+    { id = "talents",     label = L["Talents"],     payload = { "talents", "spells" } },
+    { id = "quests",      label = L["Quests"],      payload = { "quests" },
       meta = { "questCount" } },
-    { id = "mail",        label = "Mail",        payload = { "mail" },
+    { id = "mail",        label = L["Mail"],        payload = { "mail" },
       meta = { "mailCount", "mailSeen", "mailExpires" } },
-    { id = "auctions",    label = "Auctions",    payload = { "auctions" },
+    { id = "auctions",    label = L["Auctions"],    payload = { "auctions" },
       meta = { "auctionSeen" } },
-    { id = "reputations", label = "Reputations", payload = { "reputations" },
+    { id = "reputations", label = L["Reputations"], payload = { "reputations" },
       meta = { "reputationCount" } },
-    { id = "money",       label = "Money",       meta = { "money" } },
+    { id = "money",       label = L["Money"],       meta = { "money" } },
 }
 
 Wide.CATEGORIES = CATEGORIES
@@ -150,7 +152,7 @@ end
 -- whole reason for giving up.
 function Wide:Forget(characterName)
     local wide = store()
-    if not wide.pendingOut[characterName] then return false, "not waiting on that name" end
+    if not wide.pendingOut[characterName] then return false, L["not waiting on that name"] end
     wide.pendingOut[characterName] = nil
     Family.Database:Changed("wide")
     return true
@@ -330,10 +332,12 @@ local function send(link, kind, table_, bulk)
     if not target then
         if anyKnown then
             local count = characterCount(link)
-            return false, string.format("none of %s's %d character%s is online",
-                tostring(link.name), count, count == 1 and "" or "s")
+            return false, string.format(count == 1
+                and L["none of %s's %d character is online"]
+                or L["none of %s's %d characters are online"],
+                tostring(link.name), count)
         end
-        return false, "nobody of theirs has ever been heard from"
+        return false, L["nobody of theirs has ever been heard from"]
     end
 
     local body, why = Family.Codec:ToWire(table_)
@@ -440,10 +444,10 @@ end
 -- grants, what we receive is decided by theirs. Asking is therefore also offering, and one
 -- round trip carries both directions - §6 asks for exactly that.
 function Wide:ExchangeWith(familyID, why)
-    if not self:Enabled() then return false, "Wide Family is not switched on" end
+    if not self:Enabled() then return false, L["Wide Family is not switched on"] end
 
     local link = self:Links()[familyID]
-    if not link then return false, "no such link" end
+    if not link then return false, L["no such link"] end
 
     local members, count = self:Offering(link)
 
@@ -494,13 +498,16 @@ Family.Comm:OnAbsent("wide", function(name)
             local nextName, anyKnown = reachableName(link)
 
             if nextName then
-                Family:Print("|cff888888%s is not online - trying %s.|r", name, nextName)
+                Family:Print(L["|cff888888%s is not online - trying %s.|r"], name, nextName)
                 Wide:ExchangeWith(familyID, "the last one was offline")
             elseif anyKnown then
                 local count = characterCount(link)
-                Family:Print("|cffffaa00None of %s's %d character%s is online.|r Nothing "
-                    .. "was sent. Try again when one of them is.",
-                    tostring(link.name), count, count == 1 and "" or "s")
+                Family:Print(count == 1
+                    and L["|cffffaa00None of %s's %d character is online.|r Nothing was "
+                        .. "sent. Try again when one of them is."]
+                    or L["|cffffaa00None of %s's %d characters are online.|r Nothing was "
+                        .. "sent. Try again when one of them is."],
+                    tostring(link.name), count)
             end
         end
     end
@@ -570,8 +577,8 @@ local function onLink(_, text, sender)
         at = time(),
     }
 
-    Family:Print("|cffffd700%s|r would like to link families. "
-        .. "Open Family, Wide Family, to accept or decline.", tostring(sender))
+    Family:Print(L["|cffffd700%s|r would like to link families. "
+        .. "Open Family, Wide Family, to accept or decline."], tostring(sender))
     Family.Database:Changed("wide")
 end
 
@@ -622,7 +629,7 @@ local function onLinked(_, text, sender)
 
     if asked and wide.pendingOut then wide.pendingOut[asked] = nil end
 
-    Family:Print("Linked with |cffffd700%s|r. Nothing is shared until you say what may be.",
+    Family:Print(L["Linked with |cffffd700%s|r. Nothing is shared until you say what may be."],
         tostring(sender))
     Family.Database:Changed("wide")
 end
@@ -633,7 +640,7 @@ local function onUnlink(_, text, sender)
     if not link then return end
 
     store().links[familyID] = nil
-    Family:Print("|cffffd700%s|r has ended the link. Their data has been forgotten.",
+    Family:Print(L["|cffffd700%s|r has ended the link. Their data has been forgotten."],
         tostring(sender))
     Family.Database:Changed("wide")
 end
@@ -661,7 +668,7 @@ local function onData(_, text, sender)
         -- because getting it wrong corrupts records instead of failing visibly.
         link.problem = string.format("their Family writes schema %s and this one reads %s",
             tostring(body.schema), tostring(SCHEMA))
-        Family:Print("|cffffaa00%s's Family speaks a different version - %s|r",
+        Family:Print(L["|cffffaa00%s's Family speaks a different version - %s|r"],
             tostring(sender), link.problem)
         Family.Database:Changed("wide")
         return
@@ -725,12 +732,12 @@ end
 --------------------------------------------------------------------------------------------
 
 function Wide:RequestLink(characterName)
-    if not self:Enabled() then return false, "Wide Family is not switched on" end
+    if not self:Enabled() then return false, L["Wide Family is not switched on"] end
     if type(characterName) ~= "string" or characterName == "" then
-        return false, "a character name is needed"
+        return false, L["a character name is needed"]
     end
     if not Family.Codec:CanTalk() then
-        return false, "this client has no serialisation libraries, so nothing can be sent"
+        return false, L["this client has no serialisation libraries, so nothing can be sent"]
     end
 
     local wide = store()
@@ -752,7 +759,7 @@ end
 function Wide:Accept(familyID)
     local wide = store()
     local request = wide.requests[familyID]
-    if not request then return false, "no such request" end
+    if not request then return false, L["no such request"] end
 
     wide.links[familyID] = {
         name = request.name or request.from,

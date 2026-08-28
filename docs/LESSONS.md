@@ -279,3 +279,78 @@ of the file it enforces — so the claim and the mechanism fail together or not 
 by deleting the refusal and watching the harness exit 1, and by running the gate against an
 empty table, a one-client table and a three-client one. Because `release.sh` runs the harness
 before it tags, the gate stands in front of its own removal. Status: **promoted.**
+
+---
+
+### L-013 — a capability claimed in a document and built by nobody
+
+The store page said *"English, German, French, Spanish and Russian, for both the interface
+and the recorded data."* The data half was true and is true by construction — identifiers are
+language-neutral (§2.1). The interface half had never existed. There was no string table, no
+`GetLocale()` call anywhere in the tree, and 490 English sentences hard-coded into the
+panels.
+
+Nobody lied. The specification's §8 says the interface half is *"ordinary translation work:
+one string table per language"* — a sentence describing a job, sitting under a heading that
+opens *"Family fully supports every language Blizzard ships a Classic client in."* The two
+halves were welded into one sentence on the store page, and the true half carried the false
+one past every reading, mine included.
+
+It was found by a user, not by us: a French player reported that Family showed up in English,
+and the answer was that it always had.
+
+**This is L-012 again with the subject changed.** That one was a rule written in one document
+and enforced by nobody. This is a capability written in one document and built by nobody. The
+shape is identical — a document asserting something about the tree, and nothing anywhere
+comparing the two.
+
+**The check that now catches it:** the harness reads the language list out of
+`docs/CURSEFORGE.md` and `Project high level specs.md` §8, and refuses any language claimed
+there that has no file in `addons/Family/Locales/` carrying translations. A document may not
+claim a language the tree cannot produce.
+
+Three further checks guard the translations themselves, and each was mutation-tested when it
+was written: keys nothing asks for any more, translations too long for the space they sit in,
+and format specifiers that do not match their English. The third is not cosmetic — a `"%d of
+%d"` translated with one `%d` does not look wrong, it raises inside `string.format` and takes
+the panel down mid-draw, for exactly the players who cannot be asked to run a harness.
+
+---
+
+### L-014 — a bulk edit covers the call sites you thought of, not the ones that exist
+
+Wrapping 490 strings for translation was done with a handful of patterns: `SetText`,
+`SetFormattedText`, `Print`, `AddLine`, `AddDoubleLine`. They caught 164 sites and the work
+looked finished.
+
+They did not catch `return "..."`. Every relative date in Family lives in one — `UI:Ago`,
+`UI:In`, and the summary's `duration` are all a chain of `if ... then return "just now" end`
+— so a French client showed *"19 days ago"* on every row of every panel while the column
+heading above it read *"Vu le"*. It was the most visible untranslated text in the addon and
+the pattern list walked straight past it.
+
+The same blind spot hid the button labels. The width budget paired a widget's declared
+`SetSize` with the `SetText` it was given, which cannot see a label handed to a helper as an
+argument — so `nextButton(label)`, the section rows and the profession sort row were all
+unmeasured, and "Compétence requise" was drawn out of its button and into the next one.
+
+**Both were found by a person looking at the screen, not by any check here.**
+
+**What now catches each:** the sweep that finds bare user-visible strings is written down in
+`tools/` rather than being a shell one-liner retyped from memory, and the layout no longer
+depends on knowing every label in advance — buttons and columns size themselves to whatever
+they are given (`UI:LayOutRow`, `UI:FitColumns`), bounded by the room their row has, and say
+so in chat when even that is not enough.
+
+**And a third time, on the same day.** The first version of the caption check looked for
+`widget:SetText(L["a sentence"])` and passed cleanly on the Options panel — whose notes are
+written `note:SetText(switch.note)`, with the sentences in a table three screens up. It was
+checking for the shape of the fault it had been told about rather than for the fault. The
+rule that works is the wider one: a caption must be bounded if it is handed a sentence *or*
+anything this repository cannot read, because a widget whose contents are not knowable from
+here is precisely the one that must not be assumed short.
+
+**The general shape:** a pattern list is a guess about the code, and a guess that returns a
+plausible number is the hardest kind to doubt. 164 sites felt like a complete answer. The
+check that would have caught it is not a better pattern list - it is not needing one, which
+is what sizing to the content actually buys.

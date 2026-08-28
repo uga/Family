@@ -27,6 +27,7 @@
 local _, UI = ...
 
 local Family = _G.Family
+local L = Family.L
 
 local ROW = 16
 local LIST_WIDTH = 190

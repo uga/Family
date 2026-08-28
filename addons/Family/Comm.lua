@@ -32,6 +32,8 @@
 
 local _, Family = ...
 
+local L = Family.L
+
 local Comm = {}
 Family.Comm = Comm
 
@@ -296,7 +298,7 @@ Family:RegisterEvent("CHAT_MSG_SYSTEM", "comm.absent", function(_, text)
     end
 
     if dropped > 0 and not handled then
-        Family:Print("|cffffaa00%s is not online.|r %d message(s) not sent.", name, dropped)
+        Family:Print(L["|cffffaa00%s is not online.|r %d message(s) not sent."], name, dropped)
     end
 end)
 

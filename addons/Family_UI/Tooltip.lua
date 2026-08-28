@@ -20,6 +20,7 @@
 local _, UI = ...
 
 local Family = _G.Family
+local L = Family.L
 
 --------------------------------------------------------------------------------------------
 
@@ -37,10 +38,14 @@ end
 -- one.
 local function placesOf(owner)
 	local parts = {}
-	if owner.bags > 0 then parts[#parts + 1] = owner.bags .. " bags" end
-	if owner.bank > 0 then parts[#parts + 1] = owner.bank .. " bank" end
-	if owner.mail > 0 then parts[#parts + 1] = owner.mail .. " mail" end
-	if owner.auctions > 0 then parts[#parts + 1] = owner.auctions .. " auction" end
+	-- Each place is a whole phrase rather than a number with a word stuck after it: where
+	-- the number goes inside the phrase is a fact about the language, not about the bag.
+	if owner.bags > 0 then parts[#parts + 1] = string.format(L["%d bags"], owner.bags) end
+	if owner.bank > 0 then parts[#parts + 1] = string.format(L["%d bank"], owner.bank) end
+	if owner.mail > 0 then parts[#parts + 1] = string.format(L["%d mail"], owner.mail) end
+	if owner.auctions > 0 then
+		parts[#parts + 1] = string.format(L["%d auction"], owner.auctions)
+	end
 
 	local where = table.concat(parts, ", ")
 	if where == "" then return "" end
@@ -89,7 +94,7 @@ local function possessionLines(tooltip, itemID)
 	local total = 0
 	for _, owner in ipairs(owners) do total = total + owner.total end
 
-	local lines = { { "|cff66bbffFamily possessions|r",
+	local lines = { { L["|cff66bbffFamily possessions|r"],
 		total > 0 and ("|cffffd700" .. total .. "|r") or "" } }
 
 	for _, owner in ipairs(labelled(owners)) do
@@ -98,7 +103,7 @@ local function possessionLines(tooltip, itemID)
 		-- them - it is not in a bag you can walk to - and a line that read the same as
 		-- your own would be inviting a trip to the wrong bank.
 		local label = owner.familyName
-			and string.format("%s |cff9d9d9dof %s|r", owner.label,
+			and string.format(L["%s |cff9d9d9dof %s|r"], owner.label,
 				tostring(owner.familyName))
 			or owner.label
 		lines[#lines + 1] = { label, placesOf(owner), r, g, b, 0.8, 0.8, 0.8 }
@@ -106,7 +111,8 @@ local function possessionLines(tooltip, itemID)
 
 	for _, guild in ipairs(guilds) do
 		lines[#lines + 1] = { "|cff40c040" .. guild.key .. "|r",
-			guild.count .. " guild bank", nil, nil, nil, 0.8, 0.8, 0.8 }
+			string.format(L["%d guild bank"], guild.count),
+			nil, nil, nil, 0.8, 0.8, 0.8 }
 	end
 
 	return lines
@@ -145,15 +151,15 @@ end
 
 -- How each member stands with this recipe, in as few words as a tooltip can afford.
 local STATE = {
-	knows   = function() return "|cff40bf40knows it|r" end,
-	can     = function() return "|cffffd700can learn it|r" end,
+	knows   = function() return L["|cff40bf40knows it|r"] end,
+	can     = function() return L["|cffffd700can learn it|r"] end,
 	later   = function(who, required)
 		return string.format("|cffff8040%d|r|cff888888/%d|r", who.rank or 0, required or 0)
 	end,
 	level   = function(who, _, minLevel)
-		return string.format("|cffff8040level %d|r", minLevel or 0)
+		return string.format(L["|cffff8040level %d|r"], minLevel or 0)
 	end,
-	unknown = function() return "|cff9d9d9dmay know it|r" end,
+	unknown = function() return L["|cff9d9d9dmay know it|r"] end,
 }
 
 local function crafterLines(tooltip, itemID)
@@ -173,7 +179,7 @@ local function crafterLines(tooltip, itemID)
 	-- family can make is a recipe this block has nothing to say about.
 	if #crafters == 0 then return nil end
 
-	local lines = { { "|cff66bbffFamily crafters|r",
+	local lines = { { L["|cff66bbffFamily crafters|r"],
 		required and string.format("|cff888888%s %d|r", profession, required)
 			or ("|cff888888" .. profession .. "|r") } }
 

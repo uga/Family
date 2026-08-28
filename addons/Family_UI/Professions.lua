@@ -16,9 +16,14 @@
 local _, UI = ...
 
 local Family = _G.Family
+local L = Family.L
 
 -- Twice the height a list row needs, because the icon is the useful part: a recipe is
 -- recognised by its picture long before its name is read.
+-- The least the caption beside the sort buttons may be squeezed to before the buttons
+-- have to give way instead.
+local NOTE_ROOM = 210
+
 local ROW = 32
 
 -- The profession buttons along the top. Wider than they were by what a picture takes, so that
@@ -31,10 +36,10 @@ local SKILL_INSET = 20
 -- The client's own words for how hard a recipe is, and what they are worth showing as. These
 -- keys are not translated - they are the same on a German client - so they are safe to key on.
 local DIFFICULTY = {
-	optimal  = { colour = "|cffff8040", label = "orange", order = 1 },
-	medium   = { colour = "|cffffff00", label = "yellow", order = 2 },
-	easy     = { colour = "|cff40bf40", label = "green",  order = 3 },
-	trivial  = { colour = "|cff808080", label = "grey",   order = 4 },
+	optimal  = { colour = "|cffff8040", label = L["orange"], order = 1 },
+	medium   = { colour = "|cffffff00", label = L["yellow"], order = 2 },
+	easy     = { colour = "|cff40bf40", label = L["green"],  order = 3 },
+	trivial  = { colour = "|cff808080", label = L["grey"],   order = 4 },
 }
 
 --------------------------------------------------------------------------------------------
@@ -57,8 +62,8 @@ end
 local ORDERS = {
 	{
 		id = "difficulty",
-		label = "Difficulty",
-		note = "Hardest first. Within a colour, the ones that took the most skill to learn.",
+		label = L["Difficulty"],
+		note = L["Hardest first. Within a colour, the ones that took the most skill to learn."],
 		-- The colour is a band of four, and a band is a coarse answer: nine grey recipes are
 		-- all "trivial" and are emphatically not all equally trivial. Ordered by name inside
 		-- the band, Heavy Linen Bandage sat above Runecloth Bandage, which is alphabetical
@@ -88,8 +93,8 @@ local ORDERS = {
 	},
 	{
 		id = "itemlevel",
-		label = "Item level",
-		note = "Hardest first, then by the item level of what it makes.",
+		label = L["Item level"],
+		note = L["Hardest first, then by the item level of what it makes."],
 		sort = function(a, b)
 			local orderA = (DIFFICULTY[a.difficulty] or {}).order or 9
 			local orderB = (DIFFICULTY[b.difficulty] or {}).order or 9
@@ -104,8 +109,8 @@ local ORDERS = {
 	},
 	{
 		id = "skill",
-		label = "Skill needed",
-		note = "By the skill each one needs. Not yet known for every recipe - see below.",
+		label = L["Skill needed"],
+		note = L["By the skill each one needs. Not yet known for every recipe - see below."],
 		sort = function(a, b)
 			local skillA, skillB = a.minSkill, b.minSkill
 			if skillA and skillB and skillA ~= skillB then return skillA < skillB end
@@ -273,7 +278,7 @@ local function build(frame)
 	-- next, belonging to neither.
 	local hint = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 	hint:SetPoint("LEFT", picker, "RIGHT", 16, 0)
-	hint:SetText("search recipes")
+	hint:SetText(L["search recipes"])
 
 	search = CreateFrame("EditBox", "FamilyProfessionsSearch", frame, "InputBoxTemplate")
 	search:SetPoint("LEFT", hint, "RIGHT", 10, 0)
@@ -299,7 +304,8 @@ local function build(frame)
 	local everyone = CreateFrame("Button", "FamilyProfessionsEveryone", frame, "UIPanelButtonTemplate")
 	everyone:SetSize(120, 22)
 	everyone:SetPoint("TOPRIGHT", -4, -2)
-	everyone:SetText("Whole family")
+	everyone:SetText(L["Whole family"])
+	UI:FitButton(everyone, 120)
 	everyone:SetScript("OnClick", function()
 		wholeFamily = not wholeFamily
 
@@ -325,22 +331,30 @@ local function build(frame)
 
 	local sortLabel = sortBar:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	sortLabel:SetPoint("LEFT", 2, 0)
-	sortLabel:SetText("|cffffd700Sort by|r")
+	sortLabel:SetText(L["|cffffd700Sort by|r"])
 
-	local sortButtons = {}
-	local sortX = 60
+	local sortButtons, sortRow = {}, {}
 	for _, entry in ipairs(ORDERS) do
 		local button = CreateFrame("Button", nil, sortBar, "UIPanelButtonTemplate")
-		button:SetSize(110, 20)
-		button:SetPoint("LEFT", sortX, 0)
+		button:SetHeight(20)
 		button:SetText(entry.label)
 		button:SetScript("OnClick", function()
 			order = entry
 			frame:Refresh()
 		end)
 		sortButtons[entry.id] = button
-		sortX = sortX + 114
+		sortRow[#sortRow + 1] = button
 	end
+
+	-- Placed after the caption rather than at a fixed 60 pixels, and each button as wide as
+	-- its own label: "Skill needed" fits 110 pixels and "Compétence requise" does not, and a
+	-- button that cannot hold its label draws it into the button beside it.
+	-- Bounded by the room the bar has, less what the note beside it needs to be readable.
+	-- A row free to grow as far as its labels like is a row that pushes the note off the
+	-- right-hand edge of the panel, which is the same fault moved along one.
+	local sortFrom = math.ceil(sortLabel:GetStringWidth() or 56) + 10
+	local sortX = UI:LayOutRow(sortRow, 110, 4, sortFrom, nil,
+		(UI.CONTENT_W or 740) - sortFrom - NOTE_ROOM)
 
 	local sortNote = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 	sortNote:SetPoint("LEFT", sortBar, "LEFT", sortX + 8, 0)
@@ -375,8 +389,8 @@ local function build(frame)
 	-- says which button to press - one more click than clicking the recipe alone, and the
 	-- alternative was a click that appeared to do nothing at all.
 	local function announceOpener(recipeName, profession)
-		status:SetText(string.format("|cffffd700%s|r is waiting. Click |cffffd700%s|r "
-			.. "above to open the window and it will be selected there.",
+		status:SetText(string.format(L["|cffffd700%s|r is waiting. Click |cffffd700%s|r "
+			.. "above to open the window and it will be selected there."],
 			tostring(recipeName), tostring(profession)))
 	end
 
@@ -532,8 +546,8 @@ local function build(frame)
 			local needle = (search:GetText() or ""):lower()
 
 			if #needle < 2 then
-				status:SetText("|cff9d9d9dSearching every profession of every member. "
-					.. "Type at least two letters in the box above.|r")
+				status:SetText(L["|cff9d9d9dSearching every profession of every member. "
+					.. "Type at least two letters in the box above.|r"])
 				list:SetHeight(1)
 				return
 			end
@@ -582,10 +596,12 @@ local function build(frame)
 			list:SetHeight(math.max(y, 1))
 
 			status:SetText(#found > 0
-				and string.format("|cffffd700%d|r recipe%s named like \"%s\", and who "
-					.. "can make each", #found, #found == 1 and "" or "s", needle)
-				or string.format("|cff9d9d9dNobody in the family knows a recipe named "
-					.. "like \"%s\".|r", needle))
+				and string.format(#found == 1
+					and L["|cffffd700%d|r recipe named like \"%s\", and who can make it"]
+					or L["|cffffd700%d|r recipes named like \"%s\", and who can make each"],
+					#found, needle)
+				or string.format(L["|cff9d9d9dNobody in the family knows a recipe named "
+					.. "like \"%s\".|r"], needle))
 			return
 		end
 
@@ -594,7 +610,7 @@ local function build(frame)
 		for _, entry in ipairs(rows) do entry.note:SetWidth(150) end
 
 		if not member then
-			status:SetText("|cff9d9d9dNo member has any profession recorded yet.|r")
+			status:SetText(L["|cff9d9d9dNo member has any profession recorded yet.|r"])
 			setOmitted(nil)
 			list:SetHeight(1)
 			return
@@ -639,18 +655,20 @@ local function build(frame)
 
 		local left = {}
 		if #makesNothing > 0 then
-			left[#left + 1] = table.concat(makesNothing, ", ") .. " make nothing"
+			left[#left + 1] = string.format(L["%s make nothing"],
+				table.concat(makesNothing, ", "))
 		end
 		if #notOpened > 0 then
-			left[#left + 1] = table.concat(notOpened, ", ") .. " never opened"
+			left[#left + 1] = string.format(L["%s never opened"],
+				table.concat(notOpened, ", "))
 		end
-		setOmitted(#left > 0 and ("Not listed: " .. table.concat(left, "; ")
-			.. ".  Summary / Professions has every profession and its level.") or nil)
+		setOmitted(#left > 0 and string.format(L["Not listed: %s.  Summary / Professions "
+			.. "has every profession and its level."], table.concat(left, "; ")) or nil)
 
 		if #ordered == 0 then
 			status:SetText(next(skills)
-				and "|cff9d9d9dNothing this member has recorded makes anything.|r"
-				or "|cff9d9d9dNothing recorded for this member.|r")
+				and L["|cff9d9d9dNothing this member has recorded makes anything.|r"]
+				or L["|cff9d9d9dNothing recorded for this member.|r"])
 			skillBar:SetHeight(1)
 			list:SetHeight(1)
 			return
@@ -755,8 +773,8 @@ local function build(frame)
 		local pieces = {}
 		for _, entry in ipairs(breakdown) do pieces[#pieces + 1] = entry.text end
 
-		status:SetText(string.format("|cffffd700%s|r %s   |cff888888|||r   %d recipes  %s"
-			.. "   |cff888888|||r   seen %s",
+		status:SetText(string.format(L["|cffffd700%s|r %s   |cff888888|||r   %d recipes  %s"
+			.. "   |cff888888|||r   seen %s"],
 			chosen, rankText(skill) or "", #recipes,
 			table.concat(pieces, "  "), UI:Ago(record.recipesSeen)))
 
@@ -809,11 +827,11 @@ local function build(frame)
 			-- A cooldown outranks how many can be made: a transmute you cannot do for
 			-- another six hours is not one you can make, whatever the reagents say.
 			if recipe.readyAt and recipe.readyAt > time() then
-				r.note:SetText("|cffff8040ready " .. UI:In(recipe.readyAt) .. "|r")
+				r.note:SetText(string.format(L["|cffff8040ready %s|r"], UI:In(recipe.readyAt)))
 			elseif recipe.readyAt then
-				r.note:SetText("|cff40bf40ready now|r")
+				r.note:SetText(L["|cff40bf40ready now|r"])
 			elseif recipe.available and recipe.available > 0 then
-				r.note:SetText("|cff40bf40can make " .. recipe.available .. "|r")
+				r.note:SetText(string.format(L["|cff40bf40can make %s|r"], recipe.available))
 			else
 				r.note:SetText("")
 			end
@@ -824,4 +842,4 @@ local function build(frame)
 	end
 end
 
-UI:RegisterTab("professions", "Professions", build)
+UI:RegisterTab("professions", L["Professions"], build)

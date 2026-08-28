@@ -19,6 +19,7 @@
 local _, UI = ...
 
 local Family = _G.Family
+local L = Family.L
 
 local ROW = 16
 local LIST_HEIGHT = 260
@@ -189,7 +190,7 @@ local function buildPopup()
 		if used == 0 then
 			local row = nextRow()
 			row:Disable()
-			row.text:SetText("|cff9d9d9dnobody matches|r")
+			row.text:SetText(L["|cff9d9d9dnobody matches|r"])
 		end
 	end
 
@@ -294,7 +295,7 @@ function UI:CreateMemberPicker(parent, width, provider, onSelect)
 	function picker:Redraw()
 		local member = self.selected
 		if not member then
-			self:SetText("|cff9d9d9d(nobody)|r")
+			self:SetText(L["|cff9d9d9d(nobody)|r"])
 			return
 		end
 		local r, g, b = UI:ClassColour(member.meta.classFile)

@@ -17,6 +17,7 @@
 local _, UI = ...
 
 local Family = _G.Family
+local L = Family.L
 
 local ROW_HEIGHT = 18
 local HEADER_HEIGHT = 22
@@ -31,7 +32,7 @@ local HEADER_HEIGHT = 22
 -- bar take their share, and what is left for a row is a little over seven hundred - so a set
 -- adding up to more than that has a column nobody can read, and there is no sideways scroll
 -- to rescue it. Every set below is inside that, and should stay inside it.
-local MEMBER_COLUMN = { key = "name", label = "Member", width = 130, justify = "LEFT" }
+local MEMBER_COLUMN = { key = "name", label = L["Member"], width = 130, justify = "LEFT" }
 
 -- Declared before the sets, which use them, and defined below with everything else that
 -- turns a record into a piece of text. Written the other way round, the professions set
@@ -45,31 +46,31 @@ local currencyColumns, craftingColumns
 
 local SETS = {
 	{
-		id = "overview", label = "Overview",
+		id = "overview", label = L["Overview"],
 		columns = {
-			{ key = "level",  label = "Level",     width = 50,  justify = "RIGHT" },
-			{ key = "ilvl",   label = "Item lvl",  width = 70,  justify = "RIGHT" },
-			{ key = "xp",     label = "Rest XP",   width = 90,  justify = "RIGHT" },
-			{ key = "money",  label = "Money",     width = 145, justify = "RIGHT" },
-			{ key = "played", label = "Played",    width = 85,  justify = "RIGHT" },
-			{ key = "seen",   label = "Last seen", width = 95,  justify = "RIGHT" },
+			{ key = "level",  label = L["Level"],     width = 50,  justify = "RIGHT" },
+			{ key = "ilvl",   label = L["Item lvl"],  width = 70,  justify = "RIGHT" },
+			{ key = "xp",     label = L["Rest XP"],   width = 90,  justify = "RIGHT" },
+			{ key = "money",  label = L["Money"],     width = 145, justify = "RIGHT" },
+			{ key = "played", label = L["Played"],    width = 85,  justify = "RIGHT" },
+			{ key = "seen",   label = L["Last seen"], width = 95,  justify = "RIGHT" },
 		},
 	},
 	{
-		id = "bags", label = "Bags",
+		id = "bags", label = L["Bags"],
 		columns = {
-			{ key = "bagfree",  label = "Free bags",  width = 90, justify = "RIGHT" },
-			{ key = "bagtotal", label = "Bag slots",  width = 90, justify = "RIGHT" },
-			{ key = "bankfree", label = "Free bank",  width = 90, justify = "RIGHT" },
-			{ key = "banktotal",label = "Bank slots", width = 90, justify = "RIGHT" },
-			{ key = "bankseen", label = "Bank seen",  width = 100, justify = "RIGHT" },
+			{ key = "bagfree",  label = L["Free bags"],  width = 90, justify = "RIGHT" },
+			{ key = "bagtotal", label = L["Bag slots"],  width = 90, justify = "RIGHT" },
+			{ key = "bankfree", label = L["Free bank"],  width = 90, justify = "RIGHT" },
+			{ key = "banktotal",label = L["Bank slots"], width = 90, justify = "RIGHT" },
+			{ key = "bankseen", label = L["Bank seen"],  width = 100, justify = "RIGHT" },
 			-- Bags are live, but only for a member who has been played: this says how
 			-- old "live" is for each of them.
-			{ key = "bagseen",  label = "Bags seen",  width = 100, justify = "RIGHT" },
+			{ key = "bagseen",  label = L["Bags seen"], width = 100, justify = "RIGHT" },
 		},
 	},
 	{
-		id = "activity", label = "Activity",
+		id = "activity", label = L["Activity"],
 		-- The widest set there is, and it has to fit: there is no sideways scrolling, so a
 		-- column past the edge is a column nobody can read. These add up to the width of
 		-- the panel with the member column, and should stay that way.
@@ -77,17 +78,17 @@ local SETS = {
 			-- Wide enough for "not seen", which is what these say far more often than
 			-- they say a number. At fifty it broke across two lines and drew over the
 			-- member underneath.
-			{ key = "mail",     label = "Mail",       width = 65,  justify = "RIGHT" },
-			{ key = "mailexp",  label = "Expires in", width = 80,  justify = "RIGHT" },
-			{ key = "mailseen", label = "Mail seen",  width = 75,  justify = "RIGHT" },
-			{ key = "auctions", label = "Auctions",   width = 65,  justify = "RIGHT" },
-			{ key = "bids",     label = "Bid value",  width = 105, justify = "RIGHT" },
-			{ key = "buyouts",  label = "Buyout",     width = 105, justify = "RIGHT" },
-			{ key = "aucseen",  label = "AH seen",    width = 70,  justify = "RIGHT" },
+			{ key = "mail",     label = L["Mail"],       width = 65,  justify = "RIGHT" },
+			{ key = "mailexp",  label = L["Expires in"], width = 80,  justify = "RIGHT" },
+			{ key = "mailseen", label = L["Mail seen"],  width = 75,  justify = "RIGHT" },
+			{ key = "auctions", label = L["Auctions"],   width = 65,  justify = "RIGHT" },
+			{ key = "bids",     label = L["Bid value"],  width = 105, justify = "RIGHT" },
+			{ key = "buyouts",  label = L["Buyout"],     width = 105, justify = "RIGHT" },
+			{ key = "aucseen",  label = L["AH seen"],    width = 70,  justify = "RIGHT" },
 		},
 	},
 	{
-		id = "professions", label = "Professions",
+		id = "professions", label = L["Professions"],
 		columns = {
 			-- Four columns, and as many lines per member as it takes. Professions do
 			-- not fit on one line - five side by side cut "Leatherworking 289/300"
@@ -103,9 +104,13 @@ local SETS = {
 			-- line while "Leatherworking 360/375" was being cut in half in the
 			-- first - width spent where there was nothing to put it and withheld
 			-- where there was.
-			{ key = "prof1",  label = "Primary",   width = 194, justify = "LEFT" },
-			{ key = "prof2",  label = "Primary",   width = 194, justify = "LEFT" },
-			{ key = "",       label = "",          width = 194, justify = "LEFT" },
+			-- Headed once, and not "Primary". The two primaries are on a member's first
+			-- line and everything else is on the second, so a column headed Primary is
+			-- telling the truth about half of what is under it - which is worse than
+			-- saying nothing, because the note below already explains the arrangement.
+			{ key = "prof1",  label = L["Professions"], width = 194, justify = "LEFT" },
+			{ key = "prof2",  label = "",               width = 194, justify = "LEFT" },
+			{ key = "",       label = "",               width = 194, justify = "LEFT" },
 		},
 		-- Everything that is not a primary, three to a line, in whatever order the
 		-- member has them. A member with none gets no extra line at all.
@@ -131,7 +136,7 @@ local SETS = {
 		-- arena would be two empty columns on Mists and the wrong two on Era. So this set
 		-- is built from what has been recorded, most held first, and stops at what a row
 		-- can carry. currencyColumns below does that and says what it left out.
-		id = "currencies", label = "Currencies",
+		id = "currencies", label = L["Currencies"],
 		columns = {},
 		build = function() return currencyColumns() end,
 	},
@@ -140,23 +145,31 @@ local SETS = {
 		-- and for the same reason: which cooldowns exist depends on which professions this
 		-- family took, and a fixed set of columns would be Alchemy and Tailoring for
 		-- everybody, empty for most of them.
-		id = "crafting", label = "Crafting",
+		id = "crafting", label = L["Crafting"],
 		columns = {},
 		build = function() return craftingColumns() end,
 	},
 	{
-		id = "misc", label = "Miscellaneous",
+		id = "misc", label = L["Miscellaneous"],
 		columns = {
-			{ key = "guild",  label = "Guild",       width = 160, justify = "LEFT" },
-			{ key = "hearth", label = "Hearthstone", width = 170, justify = "LEFT" },
-			{ key = "race",   label = "Race",        width = 100, justify = "LEFT" },
-			{ key = "class",  label = "Class",       width = 110, justify = "LEFT" },
+			{ key = "guild",  label = L["Guild"],       width = 160, justify = "LEFT" },
+			{ key = "hearth", label = L["Hearthstone"], width = 170, justify = "LEFT" },
+			{ key = "race",   label = L["Race"],        width = 100, justify = "LEFT" },
+			{ key = "class",  label = L["Class"],       width = 110, justify = "LEFT" },
 		},
 	},
 }
 
 -- What a row actually has: the window, less the tab strip down the side, less the scroll bar
 -- and the margins. Kept as a number here so the check below can be made rather than assumed.
+-- The space under the table: a margin below the footer, a gap between the footer and the
+-- note above it, and a clear line between the whole block and the last row of the table.
+-- How tall the block itself is, is not a constant - it is measured, because two lines of
+-- French where English fits one is the ordinary case rather than the exceptional one.
+local FOOTER_MARGIN = 8
+local CAPTION_GAP = 4
+local TABLE_GAP = 8
+
 local ROW_BUDGET = 714
 
 -- The most columns a set built at draw time may ask for. Rows are built once with enough
@@ -176,8 +189,8 @@ for _, set in ipairs(SETS) do
 		for _, column in ipairs(set.columns) do width = width + column.width end
 
 		if width > ROW_BUDGET then
-			Family:Print("|cffffaa00the %s columns add up to %d, wider than the %d a row "
-				.. "has|r", set.label, width, ROW_BUDGET)
+			Family:Print(L["|cffffaa00the %s columns add up to %d, wider than the %d a row "
+				.. "has|r"], set.label, width, ROW_BUDGET)
 		end
 	end
 end
@@ -204,8 +217,8 @@ local SET_BUTTON_WIDTH = math.floor((CHOOSER_WIDTH - FACTION_ROOM) / #SETS) - 2
 local SET_BUTTON_STEP = SET_BUTTON_WIDTH + 2
 
 if SET_BUTTON_WIDTH < SET_BUTTON_MINIMUM then
-	Family:Print("|cffffaa00%d column sets leave %d pixels each across the top, and a label "
-		.. "needs %d|r", #SETS, SET_BUTTON_WIDTH, SET_BUTTON_MINIMUM)
+	Family:Print(L["|cffffaa00%d column sets leave %d pixels each across the top, and a label "
+		.. "needs %d|r"], #SETS, SET_BUTTON_WIDTH, SET_BUTTON_MINIMUM)
 end
 
 local currentSet = SETS[1]
@@ -233,7 +246,7 @@ end
 
 -- The window's, so that a dash here and a dash anywhere else are the same dash.
 local UNKNOWN = UI.UNKNOWN
-local NOT_SEEN = "|cff9d9d9dnot seen|r"
+local NOT_SEEN = L["|cff9d9d9dnot seen|r"]
 
 function skillsOf(meta, secondary)
 	local found = {}
@@ -323,9 +336,9 @@ local function duration(seconds)
 	local hours = math.floor((seconds % 86400) / 3600)
 	local minutes = math.floor((seconds % 3600) / 60)
 
-	if days > 0 then return string.format("%dd %dh", days, hours) end
-	if hours > 0 then return string.format("%dh %dm", hours, minutes) end
-	return string.format("%dm", minutes)
+	if days > 0 then return string.format(L["%dd %dh"], days, hours) end
+	if hours > 0 then return string.format(L["%dh %dm"], hours, minutes) end
+	return string.format(L["%dm"], minutes)
 end
 
 local CELL = {}
@@ -352,13 +365,13 @@ CELL.mail = function(meta)
 
 	if not meta.mailSeen then
 		if inPost > 0 then
-			return string.format("|cffffd700%d|r |cff888888in post|r", inPost)
+			return string.format(L["|cffffd700%d|r |cff888888in post|r"], inPost)
 		end
 		return NOT_SEEN
 	end
 
 	if inPost > 0 then
-		return string.format("%d |cff888888(%d in post)|r", meta.mailCount or 0, inPost)
+		return string.format(L["%d |cff888888(%d in post)|r"], meta.mailCount or 0, inPost)
 	end
 	return tostring(meta.mailCount or 0)
 end
@@ -373,9 +386,9 @@ end
 CELL.mailexp = function(meta)
 	local remaining = Family.Mail:TimeToExpiry(meta)
 	if not remaining then return UNKNOWN end
-	if remaining <= 0 then return "|cffff4444gone|r" end
+	if remaining <= 0 then return L["|cffff4444gone|r"] end
 
-	local text = duration(remaining) or "soon"
+	local text = duration(remaining) or L["soon"]
 	if remaining < 3 * 86400 then return "|cffff4444" .. text .. "|r" end
 	if remaining < 7 * 86400 then return "|cffffaa00" .. text .. "|r" end
 	return text
@@ -434,7 +447,7 @@ end
 CELL.seen = function(meta, key, sharedAt)
 	if not meta.lastSeen and UI:IsBorrowed(key) then
 		if not sharedAt then return UNKNOWN end
-		return "|cff888888shared|r " .. UI:Ago(sharedAt), 0.7, 0.7, 0.7
+		return string.format(L["|cff888888shared|r %s"], UI:Ago(sharedAt)), 0.7, 0.7, 0.7
 	end
 	return UI:Ago(meta.lastSeen), 0.7, 0.7, 0.7
 end
@@ -451,7 +464,7 @@ CELL.xp = function(meta, key)
 	-- this category in it. Grella, at 61 on a client whose maximum is 70, was being called
 	-- max level on exactly that reasoning.
 	if not meta.xpMax and UI:IsBorrowed(key) then return UNKNOWN end
-	if not meta.xpMax then return "|cff9d9d9dmax level|r" end
+	if not meta.xpMax then return L["|cff9d9d9dmax level|r"] end
 	local rested = meta.rested or 0
 	if rested == 0 then return "0%" end
 	return string.format("|cff8080ff%d%%|r", math.floor(rested / meta.xpMax * 100))
@@ -493,7 +506,7 @@ CELL.prof2 = function(meta) return skillText(skillsOf(meta, false)[2]) or UNKNOW
 
 CELL.guild = function(meta) return meta.guild or UNKNOWN end
 CELL.hearth = function(meta) return meta.hearth or UNKNOWN end
-CELL.race = function(meta) return meta.raceFile or UNKNOWN end
+CELL.race = function(meta) return UI:RaceName(meta) end
 
 CELL.class = function(meta)
 	if not meta.classFile then return UNKNOWN end
@@ -602,7 +615,7 @@ local function gatherSiblings()
 	for _, member in ipairs(Family.Wide:Siblings()) do
 		local meta = member.meta or {}
 		if factionShown(meta.faction) then
-			local realm = meta.realm or "Unknown realm"
+			local realm = meta.realm or L["Unknown realm"]
 			local here = byRealm[realm]
 			if not here then
 				here = { families = {}, order = {}, count = 0 }
@@ -611,7 +624,7 @@ local function gatherSiblings()
 
 			local group = here.families[member.family]
 			if not group then
-				group = { name = member.familyName or "another family", members = {} }
+				group = { name = member.familyName or L["another family"], members = {} }
 				here.families[member.family] = group
 				tinsert(here.order, group)
 			end
@@ -641,7 +654,7 @@ local function gather()
 	for key, entry in pairs(Family.Database:Members()) do
 		local meta = entry.meta
 		if meta and factionShown(meta.faction) then
-			local realm = meta.realm or "Unknown realm"
+			local realm = meta.realm or L["Unknown realm"]
 			if not byRealm[realm] then
 				byRealm[realm] = {}
 				tinsert(realms, realm)
@@ -823,10 +836,10 @@ function craftingColumns()
 			for _, kind in ipairs(Family.Cooldowns:Crafting(meta)) do
 				if kind.label == label then
 					if kind.ready then
-						return "|cff40bf40ready|r"
+						return L["|cff40bf40ready|r"]
 					end
 					return string.format("|cff9d9d9d%s|r",
-						duration(kind.readyAt - time()) or "soon")
+						duration(kind.readyAt - time()) or L["soon"])
 				end
 			end
 			return ""
@@ -920,8 +933,8 @@ local function makeRow(parent)
 			-- sharing them, or when the link ends - both of which are decisions somebody
 			-- makes on the Wide Family panel, so that is where the answer is.
 			if self.borrowed then
-				Family:Print("|cff888888%s belongs to a linked family. Untick them as a "
-					.. "sibling on the Wide Family panel to take them off this table.|r",
+				Family:Print(L["|cff888888%s belongs to a linked family. Untick them as a "
+					.. "sibling on the Wide Family panel to take them off this table.|r"],
 					tostring(self.memberName))
 				return
 			end
@@ -938,6 +951,12 @@ local function makeRow(parent)
 	return row
 end
 
+-- English decided the column widths in the table above, and English is the shortest of the
+-- five languages Family speaks. The widths are a starting point rather than a rule; the
+-- work of widening them to hold their own headings is UI:FitColumns, in Window.lua, because
+-- every panel with a row of headings has the same problem.
+local measure
+
 -- Places a row's cells for the set being shown, and hides the spare ones so a wide set
 -- leaves nothing behind when a narrow one replaces it.
 local function layOut(cells, columns)
@@ -947,11 +966,12 @@ local function layOut(cells, columns)
 		cell:ClearAllPoints()
 
 		if column then
+			local width = column.drawWidth or column.width
 			cell:SetPoint("LEFT", x + 4, 0)
-			cell:SetWidth(column.width - 8)
+			cell:SetWidth(width - 8)
 			cell:SetJustifyH(column.justify)
 			cell:Show()
-			x = x + column.width
+			x = x + width
 		else
 			cell:SetText("")
 			cell:Hide()
@@ -986,6 +1006,10 @@ local function build(frame)
 		headerCells[index] = text
 	end
 
+	-- Never shown, never placed. It exists to be asked how wide a heading would be.
+	measure = header:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	measure:Hide()
+
 	local scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
 	scroll:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -2)
 	scroll:SetPoint("BOTTOMRIGHT", -26, 28)
@@ -996,14 +1020,14 @@ local function build(frame)
 	UI:MakeScrollable(scroll)
 
 	local footer = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	footer:SetPoint("BOTTOMLEFT", 4, 8)
-	footer:SetPoint("BOTTOMRIGHT", -4, 8)
+	footer:SetPoint("BOTTOMLEFT", 4, FOOTER_MARGIN)
+	footer:SetPoint("BOTTOMRIGHT", -4, FOOTER_MARGIN)
 	footer:SetJustifyH("LEFT")
 
 	-- Above the footer, because it is about the columns rather than about the totals.
 	local note = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-	note:SetPoint("BOTTOMLEFT", footer, "TOPLEFT", 0, 4)
-	note:SetPoint("BOTTOMRIGHT", footer, "TOPRIGHT", 0, 4)
+	note:SetPoint("BOTTOMLEFT", footer, "TOPLEFT", 0, CAPTION_GAP)
+	note:SetPoint("BOTTOMRIGHT", footer, "TOPRIGHT", 0, CAPTION_GAP)
 	note:SetJustifyH("LEFT")
 
 	local rows = {}
@@ -1013,21 +1037,24 @@ local function build(frame)
 	-- row came to run under the side filters at the right-hand end: seven buttons at the width
 	-- four had is wider than the panel, and nothing complains - it just overlaps. Worked out
 	-- once, above, where the check that it is still legible lives beside it.
-	local setWidth, setStep = SET_BUTTON_WIDTH, SET_BUTTON_STEP
-
-	local x = 0
+	local setRow = {}
 	for _, set in ipairs(SETS) do
 		local button = CreateFrame("Button", nil, chooser, "UIPanelButtonTemplate")
-		button:SetSize(setWidth, 20)
-		button:SetPoint("LEFT", x, 0)
+		button:SetHeight(20)
 		button:SetText(set.label)
 		button:SetScript("OnClick", function()
 			currentSet = set
 			frame:Refresh()
 		end)
 		setButtons[set.id] = button
-		x = x + setStep
+		setRow[#setRow + 1] = button
 	end
+
+	-- Each as wide as its own label, no narrower than the share the English design gave it,
+	-- and the whole row held to the pixels there are. Where a language needs more than the
+	-- row has, the room comes off whichever buttons have the most to spare - the same rule
+	-- the columns below use, and the same code.
+	UI:LayOutRow(setRow, SET_BUTTON_WIDTH, 2, 0, nil, CHOOSER_WIDTH - FACTION_ROOM)
 
 	-- The two sides, anchored to the right-hand end of the row rather than laid out after
 	-- the last set button.
@@ -1066,7 +1093,7 @@ local function build(frame)
 		-- disappear.
 		UI:AttachTooltip(button, function()
 			return nil, nil, { { UI:SideName(faction),
-				factionShown(faction) and "|cff40bf40shown|r" or "|cff9d9d9dhidden|r" } }
+				factionShown(faction) and L["|cff40bf40shown|r"] or L["|cff9d9d9dhidden|r"] } }
 		end)
 
 		button:SetScript("OnClick", function()
@@ -1080,6 +1107,7 @@ local function build(frame)
 
 	function frame:Refresh()
 		local columns = columnsOf(currentSet)
+		UI:FitColumns(columns, ROW_BUDGET, measure)
 		local realms, byRealm, totals, siblings = gather()
 
 		-- The set being shown is the one you cannot click, which is how the tab strip
@@ -1126,8 +1154,9 @@ local function build(frame)
 			local edge = 0
 
 			for index, column in ipairs(columns) do
-				if offset >= edge and offset < edge + column.width then return index end
-				edge = edge + column.width
+				local width = column.drawWidth or column.width
+				if offset >= edge and offset < edge + width then return index end
+				edge = edge + width
 			end
 
 			return nil
@@ -1424,7 +1453,7 @@ local function build(frame)
 				-- realm.
 				if known > 1 and firstTotal then nextRow() end
 
-				totalsRow("Total", byRealm[realm])
+				totalsRow(L["Total"], byRealm[realm])
 			end
 
 			-- A blank line after every realm, whether or not it had anything to total.
@@ -1448,7 +1477,7 @@ local function build(frame)
 				end
 			end
 
-			totalsRow("Grand totals", everyone, 1, 0.82, 0)
+			totalsRow(L["Grand totals"], everyone, 1, 0.82, 0)
 		end
 
 		for index = used + 1, #rows do
@@ -1462,55 +1491,74 @@ local function build(frame)
 		-- they are left out of every figure here - and the panel that shows what is actually
 		-- in them does not leave them out, which would be a different mistake.
 		if currentSet.id == "professions" then
-			note:SetText("|cff888888Primary professions on the first line of each member, "
+			note:SetText(L["|cff888888Primary professions on the first line of each member, "
 				.. "everything else on the second. A profession in grey has recipes "
 				.. "Family has not seen for a week, or has never seen: ranks are always "
 				.. "current, recipe lists are only as new as the last time that window "
-				.. "was open.|r")
+				.. "was open.|r"])
 		elseif currentSet.id == "bags" then
-			note:SetText("|cff888888Free and total slots leave out quivers, soul bags and "
+			note:SetText(L["|cff888888Free and total slots leave out quivers, soul bags and "
 				.. "the like: their slots are not room for anything else. Possessions "
-				.. "shows them all the same.|r")
+				.. "shows them all the same.|r"])
 		elseif currentSet.id == "crafting" then
-			note:SetText(string.format("|cff888888Crafting cooldowns only - transmutes, "
+			note:SetText(string.format(L["|cff888888Crafting cooldowns only - transmutes, "
 				.. "mooncloth, salt shakers. A column appears once Family has seen that "
 				.. "cooldown running at least once, because the client will not say a "
 				.. "recipe has one while it is ready. Blank means never seen it, which is "
-				.. "not the same as nought.%s|r",
+				.. "not the same as nought.%s|r"],
 				craftingOmitted > 0
-					and string.format(" |cffffaa00%d more not shown - there is only so "
-						.. "much room in a row.|r|cff888888", craftingOmitted)
+					and string.format(L[" |cffffaa00%d more not shown - there is only so "
+						.. "much room in a row.|r|cff888888"], craftingOmitted)
 					or ""))
 		elseif currentSet.id == "currencies" then
 			-- The columns are whatever the family holds most of, so the panel has to say
 			-- that: five columns out of twelve currencies is not the same claim as five
 			-- columns out of five, and they look identical.
-			note:SetText(string.format("|cff888888The currencies this family holds most "
+			note:SetText(string.format(L["|cff888888The currencies this family holds most "
 				.. "of, most first.%s Character shows one member's in full, with what "
-				.. "each is capped at.|r",
+				.. "each is capped at.|r"],
 				currenciesOmitted > 0
-					and string.format(" |cffffaa00%d more not shown - there is only so "
-						.. "much room in a row.|r|cff888888", currenciesOmitted)
+					and string.format(L[" |cffffaa00%d more not shown - there is only so "
+						.. "much room in a row.|r|cff888888"], currenciesOmitted)
 					or ""))
 		else
 			note:SetText("")
 		end
 
 		if totals.members == 0 and not (factionShown("Alliance") or factionShown("Horde")) then
-			footer:SetText("|cffffaa00Both sides are switched off.|r |cff888888Turn one back "
-				.. "on with the buttons at the end of the row above.|r")
+			footer:SetText(L["|cffffaa00Both sides are switched off.|r |cff888888Turn one back "
+				.. "on with the buttons at the end of the row above.|r"])
 		elseif totals.members == 0 then
-			footer:SetText("|cff9d9d9dNothing recorded yet. Family fills as you play each " ..
-				"member - log in on one and its bags and money are written down.|r")
+			footer:SetText(L["|cff9d9d9dNothing recorded yet. Family fills as you play each " ..
+				"member - log in on one and its bags and money are written down.|r"])
 		else
-			footer:SetText(string.format(
-				"|cffffd700Grand totals:|r  %d member%s   |cff888888|||r   %s   " ..
-				"|cff888888|||r   %d of %d bag slots free   |cff888888|||r   " ..
-				"|cff888888right-click a member to remove them|r",
-				totals.members, totals.members == 1 and "" or "s",
+			footer:SetText(string.format(totals.members == 1
+				and L["|cffffd700Grand totals:|r  %d member   |cff888888|||r   %s   "
+					.. "|cff888888|||r   %d of %d bag slots free   |cff888888|||r   "
+					.. "|cff888888right-click a member to remove them|r"]
+				or L["|cffffd700Grand totals:|r  %d members   |cff888888|||r   %s   "
+					.. "|cff888888|||r   %d of %d bag slots free   |cff888888|||r   "
+					.. "|cff888888right-click a member to remove them|r"],
+				totals.members,
 				UI:Money(totals.money), totals.free, totals.slots))
+		end
+
+		-- The footer and the note above it are as tall as the language makes them. English
+		-- fits both on one line each and 28 pixels was enough; French wraps both to two and
+		-- the table's last row was drawn underneath them. Measured after they are written,
+		-- because that is the only moment the answer exists.
+		do
+			-- Bottom margin, then the footer, then the note above it where there is one,
+			-- then a clear line before the table starts. Each measured after it is
+			-- written, because how tall a caption is depends on the language it is in:
+			-- English fits the grand totals on one line and French does not.
+			local caption = note:GetText()
+			scroll:SetPoint("BOTTOMRIGHT", -26, UI:CaptionRoom(
+				footer:GetStringHeight(),
+				(caption and caption ~= "") and note:GetStringHeight() or 0,
+				FOOTER_MARGIN, CAPTION_GAP, TABLE_GAP))
 		end
 	end
 end
 
-UI:RegisterTab("summary", "Summary", build)
+UI:RegisterTab("summary", L["Summary"], build)

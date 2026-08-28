@@ -11,13 +11,14 @@
 local _, UI = ...
 
 local Family = _G.Family
+local L = Family.L
 
 local commands = {}
 
 local function usage()
-	Family:Print("commands:")
+	Family:Print(L["commands:"])
 	for _, entry in ipairs(commands) do
-		Family:Print("  |cffffd700/family %s|r - %s", entry.name, entry.help)
+		Family:Print(L["  |cffffd700/family %s|r - %s"], entry.name, entry.help)
 	end
 end
 
@@ -25,40 +26,40 @@ local function add(name, help, fn)
 	tinsert(commands, { name = name, help = help, fn = fn })
 end
 
-add("show", "open the window", function() UI:Show() end)
-add("hide", "close it", function() UI:Hide() end)
-add("toggle", "open it if closed, close it if open", function() UI:Toggle() end)
+add("show", L["open the window"], function() UI:Show() end)
+add("hide", L["close it"], function() UI:Hide() end)
+add("toggle", L["open it if closed, close it if open"], function() UI:Toggle() end)
 
-add("forget", "forget a member: /family forget Name-Realm", function(argument)
+add("forget", L["forget a member: /family forget Name-Realm"], function(argument)
 	if not argument or argument == "" then
-		Family:Print("which member? /family forget Name-Realm")
+		Family:Print(L["which member? /family forget Name-Realm"])
 		return
 	end
 	if Family.Database:Forget(argument) then
-		Family:Print("forgotten %s. This changes Family's records, nothing in the game.",
+		Family:Print(L["forgotten %s. This changes Family's records, nothing in the game."],
 			argument)
 		UI:Refresh()
 	else
-		Family:Print("no member called %s. Names are as they appear in the summary.",
+		Family:Print(L["no member called %s. Names are as they appear in the summary."],
 			argument)
 	end
 end)
 
-add("guild", "guild share on, off, or test: /family guild test", function(argument)
+add("guild", L["guild share on, off, or test: /family guild test"], function(argument)
 	local wanted = (argument or ""):lower():match("^%S*")
 
 	if wanted ~= "on" and wanted ~= "off" and wanted ~= "test" then
-		Family:Print("Guild share is currently |cffffd700%s|r.",
-			Family.Guild:Enabled() and "on" or "off")
-		Family:Print("It shows your guild the gear and talents of your characters in it, "
+		Family:Print(L["Guild share is currently |cffffd700%s|r."],
+			Family.Guild:Enabled() and L["on"] or L["off"])
+		Family:Print(L["It shows your guild the gear and talents of your characters in it, "
 			.. "and shows you theirs. Nothing else - bags, mail and the rest need a Wide "
 			.. "Family link. All of it is what the game already shows anybody who "
-			.. "inspects you.")
-		Family:Print("|cffffd700/family guild off|r to stop, which stops both halves: "
-			.. "Family then neither asks nor answers.")
-		Family:Print("|cffffd700/family guild test|r says what has actually crossed the "
+			.. "inspects you."])
+		Family:Print(L["|cffffd700/family guild off|r to stop, which stops both halves: "
+			.. "Family then neither asks nor answers."])
+		Family:Print(L["|cffffd700/family guild test|r says what has actually crossed the "
 			.. "wire. Run it on both clients and compare - the fault is wherever the two "
-			.. "stop agreeing.")
+			.. "stop agreeing."])
 		return
 	end
 
@@ -69,28 +70,28 @@ add("guild", "guild share on, off, or test: /family guild test", function(argume
 
 	local on = wanted == "on"
 	Family.Guild:SetEnabled(on)
-	Family:Print("Guild share is now |cffffd700%s|r.", on and "on" or "off")
+	Family:Print(L["Guild share is now |cffffd700%s|r."], on and L["on"] or L["off"])
 	UI:Refresh()
 end)
 
-add("wide", "Wide Family, which is off by default: /family wide on",
+add("wide", L["Wide Family, which is off by default: /family wide on"],
 	function(argument)
 		local wanted = (argument or ""):lower():match("^%S*")
 
 		if wanted ~= "on" and wanted ~= "off" then
-			Family:Print("Wide Family is currently |cffffd700%s|r.",
-				Family.Wide:Enabled() and "on" or "off")
-			Family:Print("It lets two players link their families and share chosen members. "
+			Family:Print(L["Wide Family is currently |cffffd700%s|r."],
+				Family.Wide:Enabled() and L["on"] or L["off"])
+			Family:Print(L["It lets two players link their families and share chosen members. "
 				.. "Sharing is the one thing here a later version cannot take back, so it "
-				.. "is off until you say otherwise rather than on until you notice.")
-			Family:Print("|cffffd700/family wide on|r to switch it on, "
-				.. "|cffffd700/family wide off|r to switch it back off.")
+				.. "is off until you say otherwise rather than on until you notice."])
+			Family:Print(L["|cffffd700/family wide on|r to switch it on, "
+				.. "|cffffd700/family wide off|r to switch it back off."])
 			return
 		end
 
 		local on = wanted == "on"
 		if Family.Wide:Enabled() == on then
-			Family:Print("Wide Family is already %s.", on and "on" or "off")
+			Family:Print(L["Wide Family is already %s."], on and L["on"] or L["off"])
 			return
 		end
 
@@ -98,76 +99,77 @@ add("wide", "Wide Family, which is off by default: /family wide on",
 
 		-- The panel is registered at load, so it appears or disappears at the next one. Said
 		-- plainly rather than left as a tab that did not turn up.
-		Family:Print("Wide Family is now |cffffd700%s|r. Type |cffffd700/reload|r for the "
-			.. "panel to %s.", on and "on" or "off", on and "appear" or "go")
+		Family:Print(L["Wide Family is now |cffffd700%s|r. Type |cffffd700/reload|r for the "
+			.. "panel to %s."], on and L["on"] or L["off"], on and L["appear"] or L["go"])
 		if on then
-			Family:Print("Nothing is shared with anybody until you link with them and tick "
-				.. "what they may see.")
+			Family:Print(L["Nothing is shared with anybody until you link with them and tick "
+				.. "what they may see."])
 		end
 	end)
 
-add("status", "what Family knows, and how it is storing it", function()
+add("status", L["what Family knows, and how it is storing it"], function()
 	local members = 0
 	for _ in pairs(Family.Database:Members()) do members = members + 1 end
 
-	Family:Print("version %s on %s", Family.version, Family.Capabilities.name)
-	Family:Print("%d member%s recorded", members, members == 1 and "" or "s")
-	Family:Print("storage: %s", Family.Codec.compressing
+	Family:Print(L["version %s on %s"], Family.version, Family.Capabilities.name)
+	Family:Print(members == 1 and L["%d member recorded"] or L["%d members recorded"],
+		members)
+	Family:Print(L["storage: %s"], Family.Codec.compressing
 		and "compressed"
-		or "|cffffaa00uncompressed|r - LibSerialize and LibDeflate are not installed")
+		or L["|cffffaa00uncompressed|r - LibSerialize and LibDeflate are not installed"])
 
 	-- Which tooltip route took, because the answer differs per client and a missing
 	-- possessions block is otherwise indistinguishable from owning nothing.
-	Family:Print("tooltips: %s", Family.tooltipRoute or "|cffffaa00not hooked|r")
+	Family:Print(L["tooltips: %s"], Family.tooltipRoute or L["|cffffaa00not hooked|r"])
 end)
 
-add("tooltiptest", "check the possessions block for an item: /family tooltiptest 2589",
+add("tooltiptest", L["check the possessions block for an item: /family tooltiptest 2589"],
 	function(argument)
 		local itemID = tonumber((argument or ""):match("(%d+)"))
 		if not itemID then
-			Family:Print("give an item id, or shift-click an item link into chat and " ..
-				"use the number from it.")
+			Family:Print(L["give an item id, or shift-click an item link into chat and " ..
+				"use the number from it."])
 			return
 		end
 
 		local owners, guilds = Family.Index:Owners(itemID)
-		Family:Print("item %d: %d member(s), %d guild bank(s)", itemID, #owners, #guilds)
+		Family:Print(L["item %d: %d member(s), %d guild bank(s)"], itemID, #owners, #guilds)
 
 		for _, owner in ipairs(owners) do
-			Family:Print("  %s: %d (bags %d, bank %d, mail %d, auction %d)",
+			Family:Print(L["  %s: %d (bags %d, bank %d, mail %d, auction %d)"],
 				owner.name, owner.total, owner.bags, owner.bank, owner.mail,
 				owner.auctions)
 		end
 		for _, guild in ipairs(guilds) do
-			Family:Print("  %s: %d in the guild bank", guild.key, guild.count)
+			Family:Print(L["  %s: %d in the guild bank"], guild.key, guild.count)
 		end
 
 		if #owners == 0 and #guilds == 0 then
-			Family:Print("nobody holds one, so no tooltip block would be added.")
+			Family:Print(L["nobody holds one, so no tooltip block would be added."])
 		end
 	end)
 
-add("talents", "what talent data is actually stored, and for whom", function()
+add("talents", L["what talent data is actually stored, and for whom"], function()
 	local found = 0
 
 	for key, entry in pairs(Family.Database:Members()) do
 		local payload, reason = Family.Database:Payload(key)
 
 		if not payload then
-			Family:Print("  %s: |cffffaa00no payload|r%s", key,
+			Family:Print(L["  %s: |cffffaa00no payload|r%s"], key,
 				reason and (" - " .. reason) or "")
 		elseif not payload.talents then
-			Family:Print("  %s: payload present, |cffffaa00no talents in it|r", key)
+			Family:Print(L["  %s: payload present, |cffffaa00no talents in it|r"], key)
 		else
 			found = found + 1
 			local t = payload.talents
-			Family:Print("  |cff44dd44%s|r: %s, %d group(s), active %d",
+			Family:Print(L["  |cff44dd44%s|r: %s, %d group(s), active %d"],
 				key, t.system or "?", t.groupCount or 0, t.activeGroup or 0)
 
 			for group = 1, (t.groupCount or 0) do
 				local data = t.groups and t.groups[group]
 				if not data then
-					Family:Print("     spec %d: |cffffaa00missing|r", group)
+					Family:Print(L["     spec %d: |cffffaa00missing|r"], group)
 				elseif data.system == "trees" then
 					local ranked = 0
 					for _, tab in pairs(data.tabs or {}) do
@@ -175,15 +177,15 @@ add("talents", "what talent data is actually stored, and for whom", function()
 							if (talent.rank or 0) > 0 then ranked = ranked + 1 end
 						end
 					end
-					Family:Print("     spec %d: %d point(s), %d tab(s), %d talent(s) ranked%s",
+					Family:Print(L["     spec %d: %d point(s), %d tab(s), %d talent(s) ranked%s"],
 						group, data.pointsSpent or 0, #(data.tabs or {}), ranked,
-						data.visited == false and " |cff888888(unvisited)|r" or "")
+						data.visited == false and L[" |cff888888(unvisited)|r"] or "")
 				else
 					local chosen = 0
 					for _, row in pairs(data.tiers or {}) do
 						if row.chosen then chosen = chosen + 1 end
 					end
-					Family:Print("     spec %d: %d tier(s), %d chosen, spec id %s",
+					Family:Print(L["     spec %d: %d tier(s), %d chosen, spec id %s"],
 						group, #(data.tiers or {}), chosen, tostring(data.specID))
 				end
 			end
@@ -191,19 +193,19 @@ add("talents", "what talent data is actually stored, and for whom", function()
 	end
 
 	if found == 0 then
-		Family:Print("|cffffaa00No member has talent data.|r Try /family rescan, then " ..
-			"look at what it says.")
+		Family:Print(L["|cffffaa00No member has talent data.|r Try /family rescan, then " ..
+			"look at what it says."])
 	end
 end)
 
-add("ready", "which crafting cooldowns have come back, and for whom", function()
+add("ready", L["which crafting cooldowns have come back, and for whom"], function()
 	local waiting = Family.Cooldowns:Ready()
 
 	if #waiting == 0 then
-		Family:Print("no crafting cooldowns are ready.")
-		Family:Print("|cff888888Crafting cooldowns only - transmutes, mooncloth, salt "
+		Family:Print(L["no crafting cooldowns are ready."])
+		Family:Print(L["|cff888888Crafting cooldowns only - transmutes, mooncloth, salt "
 			.. "shakers. Raid and heroic lockouts are a different thing and are not "
-			.. "recorded yet.|r")
+			.. "recorded yet.|r"])
 		return
 	end
 
@@ -218,68 +220,68 @@ add("ready", "which crafting cooldowns have come back, and for whom", function()
 		for _, entry in ipairs(Family.Cooldowns:For(meta)) do
 			if entry.ready then
 				names[#names + 1] = entry.name
-					or (entry.id and ("item " .. entry.id))
-					or "something unnamed"
+					or (entry.id and string.format(L["item %s"], entry.id))
+					or L["something unnamed"]
 			end
 		end
 
 		Family:Print("  |cff40bf40%s|r: %s", member.name,
 			#names > 0 and table.concat(names, ", ")
-				or string.format("%d ready", member.count))
+				or string.format(L["%d ready"], member.count))
 	end
 end)
 
 -- Diagnostic rather than a feature. Working out which shape of the talent call a build wants
 -- has needed a round trip through a real client every single time, and this is what makes
 -- that one round trip instead of five.
-add("talentprobe", "what this client answers when asked about a talent", function()
+add("talentprobe", L["what this client answers when asked about a talent"], function()
 	if Family.Capabilities:Has("talentTrees") then
-		Family:Print("this client uses talent trees; the probe is for the choices clients.")
+		Family:Print(L["this client uses talent trees; the probe is for the choices clients."])
 		return
 	end
 	Family.Talents:Probe()
 end)
 
-add("rescan", "scan the current member again, now, and say what it found", function()
-	Family:Print("scanning %s ...", Family:CurrentMember())
+add("rescan", L["scan the current member again, now, and say what it found"], function()
+	Family:Print(L["scanning %s ..."], Family:CurrentMember())
 	local ok, err = pcall(function() Family.Talents:Scan() end)
 	if not ok then
-		Family:Print("|cffff5555talent scan failed|r: %s", tostring(err))
+		Family:Print(L["|cffff5555talent scan failed|r: %s"], tostring(err))
 		return
 	end
 	local ok2, err2 = pcall(function() Family.Bags:Scan() end)
 	if not ok2 then
-		Family:Print("|cffff5555bag scan failed|r: %s", tostring(err2))
+		Family:Print(L["|cffff5555bag scan failed|r: %s"], tostring(err2))
 	end
 	UI:Refresh()
-	Family:Print("done. /family talents to see what landed.")
+	Family:Print(L["done. /family talents to see what landed."])
 end)
 
-add("strata", "how far in front the window sits: MEDIUM, HIGH or DIALOG", function(argument)
+add("strata", L["how far in front the window sits: MEDIUM, HIGH or DIALOG"], function(argument)
 	if not argument or argument == "" then
-		Family:Print("window strata is |cffffd700%s|r. Choices: %s.", UI:CurrentStrata(),
+		Family:Print(L["window strata is |cffffd700%s|r. Choices: %s."], UI:CurrentStrata(),
 			table.concat(UI:StrataChoices(), ", "))
-		Family:Print("Raise it if another addon draws over the window.")
+		Family:Print(L["Raise it if another addon draws over the window."])
 		return
 	end
 
 	local applied = UI:SetStrata(argument)
 	if applied then
-		Family:Print("window strata is now |cffffd700%s|r.", applied)
+		Family:Print(L["window strata is now |cffffd700%s|r."], applied)
 	else
-		Family:Print("no strata called %s. Choices: %s.", argument,
+		Family:Print(L["no strata called %s. Choices: %s."], argument,
 			table.concat(UI:StrataChoices(), ", "))
 	end
 end)
 
-add("caps", "what this client can do, and how Family worked it out", function()
-	Family:Print("%s, interface build %s", Family.Capabilities.name,
+add("caps", L["what this client can do, and how Family worked it out"], function()
+	Family:Print(L["%s, interface build %s"], Family.Capabilities.name,
 		tostring(select(4, GetBuildInfo())))
 
 	-- Green means somebody has looked at this in the game. Amber means it is researched
 	-- but unverified, and is where to look first when something seems wrong.
 	for _, entry in ipairs(Family.Capabilities:Report()) do
-		local mark = entry.answer and "|cff44dd44yes|r" or "|cff888888no |r"
+		local mark = entry.answer and L["|cff44dd44yes|r"] or L["|cff888888no |r"]
 		local colour = entry.source == "seen in game" and "|cff44dd44" or "|cffffaa00"
 
 		-- A disagreement is information, never a correction. These clients carry symbols
@@ -290,13 +292,14 @@ add("caps", "what this client can do, and how Family worked it out", function()
 			note = " |cff8888ff(" .. entry.disagrees .. ")|r"
 		end
 
-		Family:Print("  %s  %-16s %s%s|r%s", mark, entry.feature, colour, entry.source, note)
+		Family:Print("  %s  %-16s %s%s|r%s", mark, entry.feature, colour,
+			L[entry.source], note)
 	end
 end)
 
-add("debug", "narrate what the scanners are doing", function()
+add("debug", L["narrate what the scanners are doing"], function()
 	FamilyDB.debug = not FamilyDB.debug
-	Family:Print("debug %s", FamilyDB.debug and "on" or "off")
+	Family:Print(L["debug %s"], FamilyDB.debug and L["on"] or L["off"])
 end)
 
 local function handler(input)
@@ -317,7 +320,7 @@ local function handler(input)
 		end
 	end
 
-	Family:Print("no command called |cffffd700%s|r.", name)
+	Family:Print(L["no command called |cffffd700%s|r."], name)
 	usage()
 end
 
@@ -351,7 +354,7 @@ Family:OnDatabaseReady("cooldowns.notice", function()
 			-- statement from "cannot be done" and should not be allowed to sound like it -
 			-- a character can read its own lockouts perfectly well while it is being
 			-- played, which is how Family learns everything else.
-			Family:Print("crafting cooldowns ready: |cff40bf40%s|r",
+			Family:Print(L["crafting cooldowns ready: |cff40bf40%s|r"],
 				table.concat(waiting, ", "))
 		end)
 	end)

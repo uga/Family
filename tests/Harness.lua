@@ -43,6 +43,38 @@ fontMeta.__index = function(_, key)
 	if key == "GetHeight" then return function() return 100 end end
 	if key == "GetText" then return function(self) return self.__text end end
 	if key == "SetText" then return function(self, t) self.__text = t end end
+
+	-- The client measures a rendered string in pixels, and the panels now ask it to, so the
+	-- stub has to answer something. Characters rather than bytes, colour codes not counted,
+	-- at the same pixels-per-character the rest of this file uses. The number is not the
+	-- client's - only the client knows that - but it is proportional to the text, which is
+	-- what the layout logic under test actually depends on.
+	-- How tall the string will be once it has wrapped inside the width it was given. The
+	-- panels ask so they can reserve the room a caption actually needs, which is not the
+	-- same in two languages.
+	if key == "GetStringHeight" then
+		return function(self)
+			local text = tostring(self.__text or "")
+			if text == "" then return 0 end
+			local width = self.__width
+			local lines = 1
+			if width and width > 0 then
+				local w = self.GetStringWidth and self:GetStringWidth() or 0
+				lines = math.max(1, math.ceil(w / width))
+			end
+			return lines * 12
+		end
+	end
+
+	if key == "GetStringWidth" then
+		return function(self)
+			local text = tostring(self.__text or "")
+			text = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+			local n = 0
+			for _ in text:gmatch("[^\128-\191]") do n = n + 1 end
+			return n * 6.5
+		end
+	end
 	-- Greying a texture is how the game says "you do not have this", and the talent grid
 	-- says it that way too, so a check has to be able to see it.
 	if key == "SetDesaturated" then
@@ -79,7 +111,7 @@ end
 -- every question is a stub that proves nothing. Add a name here only after checking it
 -- exists on all three clients.
 local KNOWN = {
-	SetSize = 1, SetWidth = 1, SetHeight = 1,
+	SetSize = 1, SetHeight = 1,
 	SetMovable = 1, EnableMouse = 1, RegisterForDrag = 1,
 	StartMoving = 1, StopMovingOrSizing = 1, SetClampedToScreen = 1,
 	SetFrameStrata = 1, SetToplevel = 1, Raise = 1,
@@ -89,6 +121,7 @@ local KNOWN = {
 	CreateFontString = 1, CreateTexture = 1,
 	GetWidth = 1, GetHeight = 1, GetName = 1,
 	SetText = 1, GetText = 1, SetJustifyH = 1, SetTextColor = 1, SetFont = 1,
+	GetStringWidth = 1, GetStringHeight = 1,
 	SetColorTexture = 1, SetTexture = 1, SetVertexColor = 1,
 	SetScrollChild = 1, GetScrollChild = 1, SetVerticalScroll = 1,
 	GetVerticalScroll = 1, GetVerticalScrollRange = 1, EnableMouseWheel = 1,
@@ -154,7 +187,11 @@ function frameMethods:CreateTexture()
 	fs.__parent = self
 	return fs
 end
-function frameMethods:GetWidth() return 800 end
+-- Records what it is given, because the panels now size their own buttons and a stub that
+-- answers a constant cannot be asked whether they did. Anything that never sets a width
+-- still gets the old answer, which is what the scroll frames and lists rely on.
+function frameMethods:SetWidth(w) self.__width = w end
+function frameMethods:GetWidth() return self.__width or 800 end
 function frameMethods:GetHeight() return 500 end
 function frameMethods:SetEnabled(v) self.__enabled = v end
 function frameMethods:Enable() self.__enabled = true end
@@ -331,10 +368,20 @@ function frameMethods:HookScript(name, fn)
 	end
 end
 
-function frameMethods:SetPoint(point)
+-- Records the offsets as well as the point. A panel that reserves room for a caption is
+-- deciding a number, and a stub that keeps only "yes, something was anchored here" cannot be
+-- asked what the number turned out to be.
+function frameMethods:SetPoint(point, a, b, c, d)
 	if type(point) ~= "string" then return end
 	self.__points = self.__points or {}
 	self.__points[point] = true
+
+	self.__offsets = self.__offsets or {}
+	if type(a) == "number" then
+		self.__offsets[point] = { x = a, y = b }
+	elseif type(c) == "number" then
+		self.__offsets[point] = { x = c, y = d }
+	end
 end
 
 function frameMethods:SetAllPoints()
@@ -1263,7 +1310,13 @@ end
 print("loading Family")
 local FamilyPrivate = {}
 for _, file in ipairs {
-	"Core.lua", "Capabilities.lua", "Codec.lua",
+	"Core.lua",
+	-- The string table, then every translation of it. All four are read on every client,
+	-- English included, so that a broken locale file fails here rather than only for the
+	-- players who speak that language and cannot be asked to run a harness.
+	"Locale.lua",
+	"Locales/deDE.lua", "Locales/frFR.lua", "Locales/esES.lua", "Locales/ruRU.lua",
+	"Capabilities.lua", "Codec.lua",
 	"Comm.lua", "Database.lua", "Names.lua", "Index.lua",
 	"Recipes.lua", "Cooldowns.lua",
 	"Scanners/Bags.lua", "Scanners/Talents.lua", "Scanners/Professions.lua",
@@ -1292,6 +1345,13 @@ check("and asking to link while it is off is refused rather than sent",
 
 Family.Wide:SetEnabled(true)
 check("and it can be switched on", Family.Wide:Enabled() == true)
+
+-- Narration is a fault-finding tool and a stranger should not be reading it. Nothing sets
+-- FamilyDB.debug, so a fresh database leaves it nil and Family:Debug returns early - but
+-- "nothing sets it" is a fact about code that somebody could change in a line, which is
+-- what makes it worth a check rather than a comment.
+check("the scanners do not narrate themselves in a database nobody has touched",
+	not (FamilyDB and FamilyDB.debug))
 
 print()
 print("loading Family_UI")
@@ -3769,6 +3829,48 @@ check("a family on two realms is given a grand total",
 check("the tooltip says what the numbers beside each name are",
 	brokerText:find("level, item level", 1, true) ~= nil, brokerText)
 
+-- Grouped by side as well as by realm, the way the summary is.
+--
+-- An Alliance member and a Horde member on one realm share nothing but the realm - no bank,
+-- no mailbox, no auction house - so one flat list of them reads as a pool of characters that
+-- can pass things between them, which is the one thing they cannot do.
+do
+	Family.Database:SetMeta("Alliedone-Fire Maw", { name = "Alliedone", realm = "Fire Maw",
+		faction = "Alliance", level = 30, money = 5000, classFile = "MAGE" })
+	Family.Database:SetMeta("Hordling-Fire Maw", { name = "Hordling", realm = "Fire Maw",
+		faction = "Horde", level = 31, money = 7000, classFile = "SHAMAN" })
+
+	local split = brokerTooltipText()
+	local alliance = _G.FACTION_ALLIANCE or "Alliance"
+	local horde = _G.FACTION_HORDE or "Horde"
+
+	check("the broker tooltip splits a realm by faction",
+		split:find(alliance, 1, true) ~= nil and split:find(horde, 1, true) ~= nil, split)
+
+	-- Under the heading of their own side, not merely somewhere in the tooltip.
+	local atAlliance = split:find(alliance, 1, true)
+	local atHorde = split:find(horde, 1, true)
+	local atAllied = split:find("Alliedone", 1, true)
+	local atHordling = split:find("Hordling", 1, true)
+	check("and lists each member under their own side",
+		atAlliance and atHorde and atAllied and atHordling
+			and atAllied > atAlliance and atAllied < atHorde and atHordling > atHorde,
+		split)
+
+	-- The side carries its own money, the way the realm line above it does.
+	check("and gives each side its own money",
+		split:match(alliance .. "[^\n]*5000") ~= nil
+			or split:match(alliance .. "[^\n]*|cffffd700") ~= nil, split)
+
+	-- A realm with one side is not given a heading it does not need. Auberdine has a single
+	-- member on it and no faction recorded at all.
+	check("but a realm with one side is left as a plain list",
+		split:match("Auberdine[^\n]*\n%s*Tester") ~= nil, split)
+
+	Family.Database:Forget("Alliedone-Fire Maw")
+	Family.Database:Forget("Hordling-Fire Maw")
+end
+
 -- And both slots are always filled, because one number on its own says nothing about which
 -- of the two it is - and a member whose gear was never read is precisely the member whose
 -- level would be taken for an item level.
@@ -6006,7 +6108,10 @@ print("a family is a person with several characters")
 
 	local told
 	for index = said + 1, #DEFAULT_CHAT_FRAME.messages do
-		if DEFAULT_CHAT_FRAME.messages[index]:find("is online", 1, true) then
+		-- "is online" for one of them, "are online" for several: the message stopped
+		-- forming its plural by hanging an "s" on the end when it was translated, because
+		-- no language outside English forms all three of these the same way.
+		if DEFAULT_CHAT_FRAME.messages[index]:find("online", 1, true) then
 			told = DEFAULT_CHAT_FRAME.messages[index]
 		end
 	end
@@ -6355,9 +6460,682 @@ print("the fixes the live check asked for are still in place")
 		sum:match("produce%(member%.meta, member%.key, member%.seen%)") ~= nil,
 		"without it CELL.seen cannot know when a sibling was last shared and falls to a dash")
 
+	-- The string became a format string when the panel was translated: the word and the
+	-- date cannot stay welded together in a language that puts them the other way round.
+	-- What is checked is unchanged - that the cell says "shared" and hands it the stamp.
 	check("and Last seen says when a sibling was shared",
-		sum:match('"|cff888888shared|r " %.%. UI:Ago%(sharedAt%)') ~= nil,
+		sum:match('L%["|cff888888shared|r %%s"%], UI:Ago%(sharedAt%)') ~= nil,
 		"a borrowed row's date is somebody else's exchange, not our own sighting")
+end)()
+
+--------------------------------------------------------------------------------------------
+-- The translations
+--
+-- Three things can be wrong with a locale file and none of them is visible to a person who
+-- does not speak the language, which is why they are checked here rather than trusted.
+--
+--   1. A key nothing asks for any more. English strings are the keys, so editing an English
+--      sentence silently orphans its four translations and the panel quietly reverts to
+--      English. The orphan set is exactly what went stale.
+--   2. A translation that does not fit. German runs about a third longer than English and
+--      Russian is not far behind; a label calibrated for "Last seen" in 95 pixels has no
+--      room for "Zuletzt gesehen". Overrun text is drawn through whatever is beside it.
+--   3. A format specifier that does not match its key. "%d of %d" translated with one %d
+--      is not a cosmetic fault - string.format raises, and the panel dies mid-draw.
+--------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------
+-- Columns that hold their own headings
+--
+-- The rule the panels rely on when a translation is longer than the English it replaced:
+-- widen the column, take the room from whatever has slack, and never put a column back
+-- below its own heading. Driven here with headings far longer than any English one, because
+-- that is the case English can never produce and therefore the case nothing else would test.
+--------------------------------------------------------------------------------------------
+
+print()
+print("columns that hold their own headings")
+;(function()
+	local measure = CreateFrame("Frame"):CreateFontString()
+
+	local function widthsFor(labels, widths, budget)
+		local columns = {}
+		for index, label in ipairs(labels) do
+			columns[index] = { label = label, width = widths[index] }
+		end
+		UIPrivate:FitColumns(columns, budget, measure)
+		local out, total = {}, 0
+		for index, column in ipairs(columns) do
+			out[index] = column.drawWidth
+			total = total + column.drawWidth
+		end
+		return out, total, columns
+	end
+
+	-- English as it ships: everything already fits, so nothing should move.
+	local out = widthsFor({ "Level", "Money", "Last seen" }, { 50, 145, 95 }, 714)
+	check("a column wide enough for its heading is left alone",
+		out[1] == 50 and out[2] == 145 and out[3] == 95,
+		table.concat({ out[1], out[2], out[3] }, ", "))
+
+	-- German for the same three, roughly. The first no longer fits the 50 it was given.
+	local out2, _, columns2 = widthsFor(
+		{ "Gegenstandsstufe", "Geld", "Zuletzt gesehen" }, { 50, 145, 95 }, 714)
+	measure:SetText("Gegenstandsstufe")
+	check("a column too narrow for its heading is widened to hold it",
+		out2[1] >= measure:GetStringWidth(),
+		out2[1] .. " for a heading needing " .. measure:GetStringWidth())
+
+	-- And the room comes from somewhere: the row does not simply grow past its budget.
+	local labels, widths = {}, {}
+	for index = 1, 7 do
+		labels[index] = "Eine sehr lange deutsche Spaltenueberschrift"
+		widths[index] = 100
+	end
+	local out3, total3, columns3 = widthsFor(labels, widths, 500)
+	check("a row that cannot fit is not allowed to grow without limit",
+		total3 <= 500 or total3 == select(2, widthsFor(labels, widths, math.huge)),
+		"total " .. total3)
+
+	-- The one thing that must never happen, which is the fault this exists to fix.
+	local worst = nil
+	for index, column in ipairs(columns3) do
+		measure:SetText(column.label)
+		if column.drawWidth < measure:GetStringWidth() then worst = index end
+	end
+	check("and no column is ever left narrower than its own heading", worst == nil,
+		worst and ("column " .. worst .. " was") or "")
+
+	-- Rows of buttons, which had the same fault and now share the same answer. This is the
+	-- one the live pass found: "Skill needed" fits the 110 pixels it was given and
+	-- "Compétence requise" does not, and the button drew its label into the button beside it.
+	do
+		local function row(labels, minimum, budget)
+			local buttons, widths = {}, {}
+			for index, label in ipairs(labels) do
+				local b = CreateFrame("Button")
+				local fs = b:CreateFontString()
+				fs:SetText(label)
+				b.GetFontString = function() return fs end
+				buttons[index] = b
+			end
+			UIPrivate:LayOutRow(buttons, minimum, 4, 0, nil, budget)
+			local total = 0
+			for index, b in ipairs(buttons) do
+				widths[index] = b:GetWidth()
+				total = total + widths[index]
+			end
+			return widths, total, buttons
+		end
+
+		local short = row({ "Difficulty", "Item level", "Skill needed" }, 110)
+		check("a button wide enough for its label keeps the width the design gave it",
+			short[1] == 110 and short[2] == 110 and short[3] == 110,
+			table.concat({ short[1], short[2], short[3] }, ", "))
+
+		local long, _, buttons = row(
+			{ "Difficulté", "Niveau d'objet", "Compétence requise" }, 110)
+		local fs = buttons[3]:GetFontString()
+		check("a button too narrow for its label is widened to hold it",
+			long[3] > fs:GetStringWidth(),
+			long[3] .. " for a label needing " .. fs:GetStringWidth())
+
+		-- Placed one after the next, so widening one moves the rest along rather than
+		-- letting them overlap. That is the fault itself: the old row stepped by a fixed
+		-- 114 pixels whatever the buttons turned out to be, so a 117-pixel button was
+		-- overlapped by the one after it.
+		do
+			local placed = {}
+			local wide = {}
+			-- The long one first, deliberately. If it is last, nothing follows it to be
+			-- drawn over and a row that steps by a fixed width passes anyway.
+			for index, label in ipairs({ "Compétence requise", "Difficulté",
+				"Niveau d'objet" }) do
+				local b = CreateFrame("Button")
+				local fs = b:CreateFontString()
+				fs:SetText(label)
+				b.GetFontString = function() return fs end
+				wide[index] = b
+			end
+			UIPrivate:LayOutRow(wide, 110, 4, 0, function(button, at, width)
+				placed[#placed + 1] = { at = at, width = width }
+			end)
+
+			local overlap = nil
+			for index = 2, #placed do
+				local previous = placed[index - 1]
+				if placed[index].at < previous.at + previous.width then
+					overlap = index
+				end
+			end
+			check("and the buttons after it move along rather than overlapping",
+				overlap == nil and #placed == 3,
+				overlap and ("button " .. overlap .. " starts inside the one before it")
+					or ("placed " .. #placed))
+		end
+
+		-- A row with a hard budget shares it out, the way the summary's set buttons must.
+		local squeezed, total = row(
+			{ "Aperçu", "Sacs", "Activité", "Métiers", "Monnaies", "Artisanat", "Divers" },
+			92, 664)
+		check("a row with a budget is held to it", total <= 664 + 7 * 4, "total " .. total)
+
+		-- The fault this has to prevent: a row that grows until it runs off the panel and
+		-- takes whatever sits beside it with it. Every row in Family is given a budget, so
+		-- no button may be placed past the room its row was told it has.
+		do
+			local placed = {}
+			local wide = {}
+			local labels = { "Sehr lange Beschriftung", "Noch eine lange Beschriftung",
+				"Und eine dritte davon", "Sowie eine vierte" }
+			for index, label in ipairs(labels) do
+				local b = CreateFrame("Button")
+				local fs = b:CreateFontString()
+				fs:SetText(label)
+				b.GetFontString = function() return fs end
+				wide[index] = b
+			end
+			UIPrivate:LayOutRow(wide, 110, 4, 0, function(button, at, width)
+				placed[#placed + 1] = at + width
+			end, 500)
+
+			local past = nil
+			for index, right in ipairs(placed) do
+				if right > 500 then past = index end
+			end
+			-- Squeezing stops at the labels, so a row can legitimately be over budget -
+			-- what it may not do is be over budget *silently*, and that is the warning.
+			local complained = false
+			for _, line in ipairs(DEFAULT_CHAT_FRAME.messages) do
+				if line:find("longer than the room in this language", 1, true) then
+					complained = true
+				end
+			end
+			check("a row that cannot fit its budget says so rather than running off the panel",
+				past == nil or complained,
+				"button " .. tostring(past) .. " is past the edge and nothing was said")
+		end
+	end
+
+	-- The room under a table for the captions beneath it, which is not a constant either.
+	do
+		local oneLine = UIPrivate:CaptionRoom(12, 0)
+		local twoLines = UIPrivate:CaptionRoom(24, 0)
+		check("a caption that wraps to two lines is given more room than one that does not",
+			twoLines > oneLine, oneLine .. " then " .. twoLines)
+		check("and the extra room is the extra line, not a guess at it",
+			twoLines - oneLine == 12, tostring(twoLines - oneLine))
+
+		local withNote = UIPrivate:CaptionRoom(12, 24)
+		check("a note above the footer is given room of its own",
+			withNote > oneLine, oneLine .. " then " .. withNote)
+
+		-- The one that is easy to leave out: a clear line between the caption and the last
+		-- row of the table, so the two do not read as one block of text.
+		check("and the table is left clear of the caption",
+			UIPrivate:CaptionRoom(12, 0, 8, 4, 8) - UIPrivate:CaptionRoom(12, 0, 8, 4, 0) == 8,
+			"no gap is being left between the table and what sits under it")
+	end
+
+	-- Taking room back comes off the column with the most to spare, not off the tightest.
+	local out4 = widthsFor({ "Level", "Money" }, { 50, 300 }, 200)
+	check("room is taken from the column with the most to spare",
+		out4[1] > out4[2] or out4[2] < 300, out4[1] .. ", " .. out4[2])
+end)()
+
+--------------------------------------------------------------------------------------------
+-- Captions that stop at the edge of the panel
+--
+-- A font string given a left edge and never a right one has no width, so it does not wrap:
+-- it grows to whatever its sentence happens to be and keeps going past the border. English
+-- was short enough to hide it on the Options panel; French ran the guild-sharing note
+-- straight through the right-hand side of the window.
+--
+-- Only prose is required to be bounded. A title, a column heading or a two-word hint is
+-- meant to be its own length and has nothing to run into.
+--------------------------------------------------------------------------------------------
+
+print()
+print("captions that stop at the edge of the panel")
+;(function()
+	local PROSE = 45          -- characters, above which a string is a sentence
+
+	local unbounded = {}
+	for _, name in ipairs { "Window", "MemberPicker", "ChoicePicker", "Tooltip", "Summary",
+		"Talents", "Contents", "Professions", "Character", "Quests", "Wide", "Guild",
+		"Broker", "Options", "About", "Slash" } do
+		local path = "addons/Family_UI/" .. name .. ".lua"
+		local f = io.open(ROOT .. "/" .. path)
+		if f then
+			local text = f:read("*a")
+			f:close()
+
+			for widget in text:gmatch("local ([%w_]+) = [%w_]+:CreateFontString%(") do
+				local bounded =
+					text:match(widget .. ':SetPoint%("RIGHT"') ~= nil
+					or text:match(widget .. ':SetPoint%("TOPRIGHT"') ~= nil
+					or text:match(widget .. ':SetPoint%("BOTTOMRIGHT"') ~= nil
+					or text:match(widget .. ":SetWidth%(") ~= nil
+					or text:match(widget .. ":SetAllPoints") ~= nil
+
+				if not bounded then
+					-- Two ways a widget earns a right edge.
+					--
+					-- One: it is handed a sentence outright. Two: it is handed something
+					-- this check cannot read - a variable, a table field, a format string -
+					-- because a widget whose contents are not knowable from here is exactly
+					-- the widget that must not be trusted to be short. The Options notes
+					-- are the second kind: `note:SetText(switch.note)`, where the sentence
+					-- lives in a table three screens up. An earlier version of this check
+					-- only looked for the first kind and passed happily on the panel that
+					-- prompted it.
+					local why = nil
+
+					for argument in text:gmatch(widget .. ":SetText%(([^\n]*)") do
+						local key = argument:match('^L%["([^"]*)"%]%)')
+						if key then
+							local plain = key:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+							if #plain > PROSE then why = #plain .. " characters" end
+						elseif not argument:match('^"[^"]*"%)') then
+							why = why or ("set from " .. argument:sub(1, 24))
+						end
+					end
+
+					if why then
+						unbounded[#unbounded + 1] =
+							string.format("%s %s (%s)", name, widget, why)
+					end
+				end
+			end
+		end
+	end
+
+	check("every caption long enough to be a sentence is given a right edge to wrap at",
+		#unbounded == 0,
+		table.concat(unbounded, " | ")
+			.. " - a font string with no right anchor and no width does not wrap")
+end)()
+
+print()
+print("the translations")
+;(function()
+	local function slurp(path)
+		local f = io.open(ROOT .. "/" .. path)
+		if not f then return nil end
+		local text = f:read("*a")
+		f:close()
+		return text
+	end
+
+	-- Characters, not bytes. Cyrillic is two bytes a letter in UTF-8 and a byte count would
+	-- declare every Russian translation twice as wide as it is.
+	local function width(text)
+		local n = 0
+		for _ in text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gmatch("[^\128-\191]") do
+			n = n + 1
+		end
+		return n
+	end
+
+	local sources = {}
+	do
+		local list = { "addons/Family/Core.lua", "addons/Family/Locale.lua" }
+		for _, name in ipairs { "Comm", "Database", "Wide", "Guild", "Names", "Index",
+			"Recipes", "Cooldowns", "Capabilities", "Codec" } do
+			list[#list + 1] = "addons/Family/" .. name .. ".lua"
+		end
+		for _, name in ipairs { "Bags", "Talents", "Professions", "Bank", "Identity",
+			"Auctions", "Mail", "Character", "Quests", "Currencies" } do
+			list[#list + 1] = "addons/Family/Scanners/" .. name .. ".lua"
+		end
+		for _, name in ipairs { "Window", "MemberPicker", "ChoicePicker", "Tooltip", "Summary",
+			"Talents", "Contents", "Professions", "Character", "Quests", "Wide", "Guild",
+			"Broker", "Options", "About", "Slash" } do
+			list[#list + 1] = "addons/Family_UI/" .. name .. ".lua"
+		end
+		for _, path in ipairs(list) do
+			local text = slurp(path)
+			if not text then
+				check("harness can read " .. path, false, "missing")
+			else
+				sources[path] = text
+			end
+		end
+	end
+
+	-- Every L[...] the source asks for, with the concatenated forms joined back into the one
+	-- string the client will actually look up. L["a " .. "b"] is one key, "a b".
+	local asked = {}
+	for path, text in pairs(sources) do
+		local at = 1
+		while true do
+			local open = text:find("%f[%w_]L%[", at)
+			if not open then break end
+			local i = text:find("%[", open)
+			local depth, j = 1, i + 1
+			while depth > 0 and j <= #text do
+				local c = text:sub(j, j)
+				if c == "[" then depth = depth + 1
+				elseif c == "]" then depth = depth - 1 end
+				if depth > 0 then j = j + 1 end
+			end
+			local inside = text:sub(i + 1, j - 1)
+			-- Only the literal forms. L[name] with a variable cannot be read statically and
+			-- is deliberately not counted; the strata buttons are the one such site.
+			if inside:match('^%s*"') then
+				-- Walked rather than matched. A Lua pattern cannot say "a quote that is not
+				-- preceded by a backslash", so '"([^"]*)"' ends a literal at the first \"
+				-- inside it and splits the key in two - which showed up as three perfectly
+				-- good translations being reported as orphans.
+				local joined = {}
+				do
+					local at = 1
+					while true do
+						local open = inside:find('"', at, true)
+						if not open then break end
+						local scan, out = open + 1, {}
+						while scan <= #inside do
+							local c = inside:sub(scan, scan)
+							if c == "\\" then
+								out[#out + 1] = inside:sub(scan, scan + 1)
+								scan = scan + 2
+							elseif c == '"' then
+								break
+							else
+								out[#out + 1] = c
+								scan = scan + 1
+							end
+						end
+						joined[#joined + 1] = table.concat(out)
+						at = scan + 1
+					end
+				end
+				-- Read out of the file as text, so an escape is still two characters here
+				-- and is one character in the table the client builds. Undone, or every
+				-- string with a newline in it would be reported as an orphan.
+				local key = table.concat(joined)
+					:gsub("\\n", "\n"):gsub("\\t", "\t"):gsub('\\"', '"'):gsub("\\\\", "\\")
+				asked[key] = path
+			end
+			at = j + 1
+		end
+	end
+
+	-- Three lists are looked up as L[name] with a name held in a variable, so the scan above
+	-- cannot see them: the section buttons on Character and on Talents, and the window's
+	-- frame strata. Read the lists themselves - they are the only dynamic lookups there are,
+	-- and a fourth one appearing without a line here shows up as an orphan rather than
+	-- silently going untranslated.
+	for _, file in ipairs { "addons/Family_UI/Character.lua", "addons/Family_UI/Talents.lua",
+		"addons/Family_UI/Window.lua" } do
+		local text = sources[file] or ""
+		for _, name in ipairs { "SECTIONS", "STRATA" } do
+			local list = text:match("local " .. name .. " = {([^}]*)}")
+			if list then
+				for item in list:gmatch('"([^"]*)"') do asked[item] = file end
+			end
+		end
+	end
+
+	local askedCount = 0
+	for _ in pairs(asked) do askedCount = askedCount + 1 end
+	check("the sources ask for translated strings at all", askedCount > 0,
+		"no L[...] lookups found - the scan is broken, not the addon")
+
+	-- The room each constrained string has, in pixels, read from the code that reserves it
+	-- rather than copied into a second list that could drift from it.
+	-- A label can be constrained in more than one place - "Professions" is both a tab and a
+	-- set button, and the set button is much the narrower. The tightest wins, or the check
+	-- would clear a translation that fits one of them and overruns the other.
+	local budget = {}
+	local function reserve(label, px)
+		if budget[label] == nil or px < budget[label] then budget[label] = px end
+	end
+
+	local summary = sources["addons/Family_UI/Summary.lua"] or ""
+	for label, px in summary:gmatch('label = L%["([^"]*)"%],%s*width = (%d+)') do
+		reserve(label, tonumber(px))
+	end
+	for label, px in summary:gmatch('label = "([^"]*)",%s*width = (%d+)') do
+		reserve(label, tonumber(px))
+	end
+
+	-- The set buttons across the top of the summary share out a fixed run of pixels, so how
+	-- much room a label has depends on how many sets there are. Computed the way the panel
+	-- computes it rather than copied, for the same reason as everything else here.
+	do
+		local chooser = tonumber(summary:match("local CHOOSER_WIDTH = (%d+)"))
+		local faction = tonumber(summary:match("local FACTION_ROOM = (%d+)"))
+		local sets = {}
+		for label in summary:gmatch('id = "[a-z]+", label = L%["([^"]*)"%]') do
+			sets[#sets + 1] = label
+		end
+		if chooser and faction and #sets > 0 then
+			local each = math.floor((chooser - faction) / #sets) - 2
+			for _, label in ipairs(sets) do reserve(label, each) end
+		end
+		check("the summary's set buttons were found and measured", #sets > 0,
+			"the pattern that reads them no longer matches")
+	end
+
+	-- Every other panel reserves its room the same way: a widget is given a width, and
+	-- somewhere else in the same file it is given text. Pairing the two by the name of the
+	-- widget covers the Professions, Talents, Character, Guild and Wide Family headings
+	-- without a hand-written list of them, which would be one more thing to keep in step.
+	for path, text in pairs(sources) do
+		local reserved = {}
+		for widget, px in text:gmatch("([%w_%.%[%]]+):SetWidth%((%d+)%)") do
+			reserved[widget] = { px = tonumber(px), button = false }
+		end
+		-- A button's template puts padding either side of its label.
+		for widget, px in text:gmatch("([%w_%.%[%]]+):SetSize%((%d+)%s*,%s*%d+%)") do
+			if not reserved[widget] then
+				reserved[widget] = { px = tonumber(px), button = true }
+			end
+		end
+		for widget, key in text:gmatch('([%w_%.%[%]]+):SetText%(L%["([^"]*)"%]%)') do
+			local room = reserved[widget]
+			if room and room.px > 24 then
+				reserve(key, room.button and (room.px - 10) or room.px)
+			end
+		end
+	end
+
+	-- Two helpers take their label as an argument rather than setting it on a widget the
+	-- pairing above can see: Wide Family's row buttons, and the choice pickers. Both
+	-- reserve a known width, so both can still be held to it.
+	do
+		local wide = sources["addons/Family_UI/Wide.lua"] or ""
+		local px = tonumber(wide:match("local BUTTON_W = (%d+)"))
+		if px then
+			for key in wide:gmatch('nextButton%(L%["([^"]*)"%]') do reserve(key, px - 10) end
+		end
+		for _, text in pairs(sources) do
+			for px2, key in text:gmatch('CreateChoicePicker%([%w_]+, (%d+), L%["([^"]*)"%]') do
+				reserve(key, tonumber(px2) - 12)
+			end
+		end
+	end
+
+	-- The section buttons on Character and on Talents are drawn from a list of English
+	-- names, looked up as L[name], so the pairing above cannot see them.
+	do
+		local character = sources["addons/Family_UI/Character.lua"] or ""
+		local sw = tonumber(character:match("local SECTION_W = (%d+)"))
+		local si = tonumber(character:match("local SECTION_INSET = (%d+)"))
+		local list = character:match("local SECTIONS = {([^}]*)}")
+		if sw and si and list then
+			for name in list:gmatch('"([^"]*)"') do reserve(name, sw - si - 4) end
+		end
+
+		local talents = sources["addons/Family_UI/Talents.lua"] or ""
+		local tlist = talents:match("local SECTIONS = {([^}]*)}")
+		local tpx = tonumber(talents:match("button:SetSize%((%d+), 20%)"))
+		if tlist and tpx then
+			for name in tlist:gmatch('"([^"]*)"') do reserve(name, tpx - 10) end
+		end
+
+		-- The three column headings each panel draws above its list.
+		for _, file in ipairs { "addons/Family_UI/Character.lua", "addons/Family_UI/Talents.lua" } do
+			local text = sources[file] or ""
+			local first = tonumber(text:match("headings%[1%]:SetWidth%((%d+)%)"))
+			local third = tonumber(text:match("headings%[3%]:SetWidth%((%d+)%)"))
+			for row in text:gmatch("= { (L%[\"[^\n]-) },") do
+				local cells = {}
+				for key in row:gmatch('L%["([^"]*)"%]') do cells[#cells + 1] = key end
+				if #cells == 3 then
+					if first then reserve(cells[1], first) end
+					if third then reserve(cells[3], third) end
+				end
+			end
+		end
+	end
+
+	-- A tab's text starts after its picture and stops short of the strip's edge.
+	local window = sources["addons/Family_UI/Window.lua"] or ""
+	local tabW = tonumber(window:match("local TAB_W, TAB_H = (%d+)")) or 160
+	local inset = tonumber(window:match("local TAB_TEXT_INSET = (%d+)")) or 22
+	local tabRoom = tabW - inset - 4
+	for _, text in pairs(sources) do
+		for label in text:gmatch('RegisterTab%("[%w_]+", L%["([^"]*)"%]') do
+			reserve(label, tabRoom)
+		end
+		for label in text:gmatch('RegisterTab%("[%w_]+", "([^"]*)"') do
+			reserve(label, tabRoom)
+		end
+	end
+
+	local budgeted = 0
+	for _ in pairs(budget) do budgeted = budgeted + 1 end
+	check("the width budget was read from the source", budgeted > 0,
+		"no labelled widths found - the patterns no longer match the code they read")
+
+	-- GameFontNormalSmall averages a little over six pixels a character at this size. The
+	-- constant is not a guess dressed up as a measurement: English is checked against it
+	-- too, just below, so a value too tight to be true fails on the strings that are known
+	-- to fit today.
+	local PX_PER_CHAR = 6.5
+
+	local tooLong = {}
+	for label, px in pairs(budget) do
+		local room = math.floor(px / PX_PER_CHAR)
+		if width(label) > room then
+			tooLong[#tooLong + 1] = string.format("%s (%d > %d)", label, width(label), room)
+		end
+	end
+	check("English itself fits the budget the check uses", #tooLong == 0,
+		table.concat(tooLong, ", ") .. " - loosen PX_PER_CHAR or the check is lying")
+
+	-- End to end, the way a French client sees it: the same lookup that every panel makes,
+	-- against the table the client would have chosen. Everything above this reads files;
+	-- this is the only check here that proves the mechanism itself resolves anything.
+	do
+		local was = Family.locale
+		Family.locale = "frFR"
+		check("a French client reads French out of the same table the panels use",
+			Family.L["Summary"] == "Résumé", tostring(Family.L["Summary"]))
+		check("and falls back to English for anything not translated yet",
+			Family.L["a sentence nobody has translated"] == "a sentence nobody has translated")
+		Family.locale = "ruRU"
+		check("and a Russian client reads Russian", Family.L["Options"] == "Настройки",
+			tostring(Family.L["Options"]))
+		Family.locale = "enUS"
+		check("and an English client is handed the key back unchanged",
+			Family.L["Summary"] == "Summary")
+		Family.locale = was
+	end
+
+	-- L-013: a document may not claim a language the tree cannot produce.
+	--
+	-- The store page said five languages for the interface while there was no string table
+	-- at all, and the claim survived every reading because the half of the sentence about
+	-- the recorded data was true. This reads the languages back out of the documents that
+	-- make the claim and insists each one has a locale file with translations in it.
+	--
+	-- English needs no file: the key is the English sentence (Locale.lua).
+	do
+		local SPOKEN = {
+			German = "deDE", French = "frFR", Spanish = "esES", Russian = "ruRU",
+			English = false,
+		}
+
+		for _, path in ipairs { "docs/CURSEFORGE.md", "docs/Project high level specs.md" } do
+			local f = io.open(ROOT .. "/" .. path)
+			if not f then
+				check(path .. " is where the harness expects it", false, path)
+			else
+				local text = f:read("*a")
+				f:close()
+
+				-- The one sentence in each that lists them, so a language named in prose
+				-- somewhere else is not mistaken for a claim of support.
+				local claim = text:match("English, German, French, Spanish and Russian[^\n]*")
+				check(path .. " still states which languages Family speaks",
+					claim ~= nil,
+					"the sentence the check reads has been reworded - update both")
+
+				if claim then
+					local missing = {}
+					for language, code in pairs(SPOKEN) do
+						if code and claim:find(language, 1, true) then
+							local table_ = Family.locales[code]
+							local n = 0
+							if table_ then for _ in pairs(table_) do n = n + 1 end end
+							if n == 0 then
+								missing[#missing + 1] = language .. " (" .. code .. ")"
+							end
+						end
+					end
+					check(path .. " claims no language the tree cannot produce",
+						#missing == 0,
+						table.concat(missing, ", ") .. " - claimed with no translations")
+				end
+			end
+		end
+	end
+
+	for _, code in ipairs { "deDE", "frFR", "esES", "ruRU" } do
+		local table_ = Family.locales[code]
+		if not table_ then
+			check(code .. " registered a table", false, "Locales/" .. code .. ".lua ran but set nothing")
+		else
+			local orphans, over, mangled = {}, {}, {}
+			local count = 0
+			for key, word in pairs(table_) do
+				count = count + 1
+				if not asked[key] then orphans[#orphans + 1] = key end
+
+				local px = budget[key]
+				if px and word ~= "" then
+					local room = math.floor(px / PX_PER_CHAR)
+					if width(word) > room then
+						over[#over + 1] = string.format("%q %d > %d", word, width(word), room)
+					end
+				end
+
+				-- Same specifiers, same order. Anything else is a crash waiting for the one
+				-- player whose client is set to this language.
+				local function specs(text)
+					local found = {}
+					for spec in text:gmatch("%%[%-%+ #0-9%.]*([diouxXeEfgGqsc%%])") do
+						if spec ~= "%" then found[#found + 1] = spec end
+					end
+					return table.concat(found, ",")
+				end
+				if word ~= "" and specs(key) ~= specs(word) then
+					mangled[#mangled + 1] = string.format("%q wants [%s] got [%s]",
+						key, specs(key), specs(word))
+				end
+			end
+
+			check(code .. " translates only strings the addon still asks for",
+				#orphans == 0, table.concat(orphans, " | "))
+			check(code .. " fits the space English was measured in",
+				#over == 0, table.concat(over, " | "))
+			check(code .. " keeps every format specifier its English keeps",
+				#mangled == 0, table.concat(mangled, " | "))
+		end
+	end
 end)()
 
 print()

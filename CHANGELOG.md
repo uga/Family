@@ -10,7 +10,28 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Added
+
+- **Family speaks German, French, Spanish and Russian.** Every screen, every slash command,
+  the manual it carries and the messages it prints. Anything not yet translated falls back to
+  English rather than to a blank, so nothing can go missing; and where the game already has a
+  word for something — a gear slot, a reputation standing, a class, the glyph list — Family
+  uses the client's own word rather than one of its own, which means it says what the rest of
+  your interface says, in all eleven languages the client ships in.
+- **Panels give way to longer words.** Every fixed column width in Family was chosen by
+  looking at English, and English is the shortest of the five languages it now speaks. A
+  column too narrow for its own heading is widened and the room is taken from whatever has
+  most to spare, so a translated heading is never drawn through the column beside it.
+
 ### Changed
+
+- **The minimap tooltip groups characters by realm and then by side.** An Alliance character
+  and a Horde one on the same realm share no bank, no mailbox and no auction house, and a
+  single list of them read as one pool of characters that could pass things between them. Each
+  side now carries its own count and its own money, the way the summary has always shown it.
+- **Anything Family counts is now phrased for the language it is in.** Fifteen messages built
+  their plural by hanging an "s" on the end of a word, which is a plural in English and in
+  nothing else.
 
 - **Wide Family is described as what it is: off by default.** It shipped with a warning that
   none of its checks had run against a real server, which was true when it was written and

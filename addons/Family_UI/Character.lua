@@ -18,6 +18,7 @@
 local _, UI = ...
 
 local Family = _G.Family
+local L = Family.L
 
 local ROW = 16
 
@@ -135,7 +136,7 @@ local function gearRoster()
 	for _, sibling in ipairs(Family.Wide:Siblings()) do
 		local group = byFamily[sibling.family]
 		if not group then
-			group = { name = sibling.familyName or "another family", members = {},
+			group = { name = sibling.familyName or L["another family"], members = {},
 				borrowed = true }
 			byFamily[sibling.family] = group
 			order[#order + 1] = group
@@ -181,7 +182,7 @@ end
 -- The client's own word for a standing, so "Revered" is whatever the player calls it.
 local function standingLabel(standing)
 	local label = _G["FACTION_STANDING_LABEL" .. tostring(standing)]
-	return label or ("standing " .. tostring(standing))
+	return label or string.format(L["standing %s"], tostring(standing))
 end
 
 local STANDING_COLOUR = {
@@ -228,7 +229,7 @@ local function build(frame)
 	-- next, belonging to neither.
 	local hint = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 	hint:SetPoint("LEFT", picker, "RIGHT", 16, 0)
-	hint:SetText("filter")
+	hint:SetText(L["filter"])
 
 	search = CreateFrame("EditBox", "FamilyCharacterSearch", frame, "InputBoxTemplate")
 	search:SetPoint("LEFT", hint, "RIGHT", 10, 0)
@@ -259,7 +260,8 @@ local function build(frame)
 		"UIPanelButtonTemplate")
 	wholeFamily:SetSize(120, 22)
 	wholeFamily:SetPoint("TOPRIGHT", -4, -2)
-	wholeFamily:SetText("Whole family")
+	wholeFamily:SetText(L["Whole family"])
+	UI:FitButton(wholeFamily, 120)
 	wholeFamily:SetScript("OnClick", function()
 		familyMode = not familyMode
 		frame:Refresh()
@@ -298,7 +300,7 @@ local function build(frame)
 	-- and a button's label has no width, so the first realm called "Pyrewood Village" wrote
 	-- itself straight through the side of it. Both are fixed in ChoicePicker.lua, and fixed
 	-- for whatever asks next rather than here.
-	local realmButton = UI:CreateChoicePicker(frame, 150, "Realm", "all", function()
+	local realmButton = UI:CreateChoicePicker(frame, 150, L["Realm"], "all", function()
 		local realms = choicesIn(gearRoster())
 		local list = {}
 		for _, realm in ipairs(realms) do
@@ -313,7 +315,7 @@ local function build(frame)
 
 	-- Named as the client names them, and coloured as the game colours them: eleven class
 	-- names in a list are read by colour long before they are read by name.
-	local classButton = UI:CreateChoicePicker(frame, 150, "Class", "all", function()
+	local classButton = UI:CreateChoicePicker(frame, 150, L["Class"], "all", function()
 		local _, classes = choicesIn(gearRoster())
 		local names = _G.LOCALIZED_CLASS_NAMES_MALE
 		local list = {}
@@ -345,13 +347,12 @@ local function build(frame)
 
 	-- Achievements are absent, not empty, on a client that has none (§2.3) - so the button
 	-- is not drawn at all rather than offered and then apologised for.
-	local x = 0
+	local sectionRow = {}
 	for _, name in ipairs(SECTIONS) do
 		if name ~= "Achievements" or Family.Capabilities:Has("achievements") then
 			local button = CreateFrame("Button", nil, bar, "UIPanelButtonTemplate")
-			button:SetSize(SECTION_W, 20)
-			button:SetPoint("LEFT", x, 0)
-			button:SetText(name)
+			button:SetHeight(20)
+			button:SetText(L[name])
 
 			-- Only where there is a picture. A section without one keeps its label where
 			-- the template put it, in the middle: this is a row rather than a column, so
@@ -369,9 +370,9 @@ local function build(frame)
 				if text then
 					text:ClearAllPoints()
 					text:SetPoint("LEFT", SECTION_INSET, 0)
-					text:SetWidth(SECTION_W - SECTION_INSET - 4)
 					text:SetJustifyH("LEFT")
 					if text.SetWordWrap then text:SetWordWrap(false) end
+					button.__labelInset = SECTION_INSET
 				end
 			end
 
@@ -384,9 +385,16 @@ local function build(frame)
 				frame:Refresh()
 			end)
 			sectionButtons[name] = button
-			x = x + SECTION_STEP
+			sectionRow[#sectionRow + 1] = button
 		end
 	end
+
+	UI:LayOutRow(sectionRow, SECTION_W, SECTION_STEP - SECTION_W, 0,
+		function(button, at, width)
+			button:SetPoint("LEFT", at, 0)
+			local text = button.icon and button.GetFontString and button:GetFontString()
+			if text then text:SetWidth(width - SECTION_INSET - 4) end
+		end, (UI.CONTENT_W or 740) - 16)
 
 	local status = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	status:SetPoint("TOPLEFT", bar, "BOTTOMLEFT", 2, -4)
@@ -400,10 +408,10 @@ local function build(frame)
 		-- three words over a picture of a helmet. Every slot says what it is by where it
 		-- is, which is the whole point of drawing it that way.
 		["Equipped gear"] = { "", "", "" },
-		Currencies        = { "Currency", "Held", "Of a cap of" },
-		Reputations       = { "Faction", "Standing", "Progress" },
-		Quests            = { "Level", "Quest", "Progress" },
-		Achievements      = { "Category", "Achievement", "Points or progress" },
+		Currencies        = { L["Currency"], L["Held"], L["Of a cap of"] },
+		Reputations       = { L["Faction"], L["Standing"], L["Progress"] },
+		Quests            = { L["Level"], L["Quest"], L["Progress"] },
+		Achievements      = { L["Category"], L["Achievement"], L["Points or progress"] },
 	}
 
 	local headerRow = CreateFrame("Frame", nil, frame)
@@ -862,24 +870,24 @@ local function build(frame)
 						head.lines = {
 							{ meta.name or entry.key,
 								meta.realm and ("|cff888888" .. meta.realm .. "|r") or nil },
-							{ string.format("|cff888888level %s|r  %s  %s",
+							{ string.format(L["|cff888888level %s|r  %s  %s"],
 								tostring(meta.level or "?"),
-								tostring(meta.race or meta.raceFile or ""),
+								tostring(UI:RaceName(meta)),
 								tostring(className or "")) },
-							{ "Average item level",
+							{ L["Average item level"],
 								gear and gear.itemLevel
 									and string.format("|cffffd700%.1f|r", gear.itemLevel)
-									or "|cff9d9d9dnot recorded|r" },
+									or L["|cff9d9d9dnot recorded|r"] },
 						}
 
 						if entry.familyName then
 							head.lines[#head.lines + 1] =
-								{ "|cff888888of " .. entry.familyName .. "|r" }
+								{ string.format(L["|cff888888of %s|r"], entry.familyName) }
 						end
 
 						if not gear then
-							head.lines[#head.lines + 1] = { "|cffffaa00Nothing recorded - "
-								.. "log in on this member once.|r" }
+							head.lines[#head.lines + 1] = { L["|cffffaa00Nothing recorded - "
+								.. "log in on this member once.|r"] }
 						end
 
 						for index, slot in ipairs(FAMILY_ORDER) do
@@ -933,19 +941,22 @@ local function build(frame)
 
 			if shown == 0 then
 				return finish(total == 0
-					and "|cff9d9d9dNothing recorded yet.|r"
-					or "|cffffaa00Nothing matches those filters.|r")
+					and L["|cff9d9d9dNothing recorded yet.|r"]
+					or L["|cffffaa00Nothing matches those filters.|r"])
 			end
 
-			return finish(string.format(
-				"|cffffd700%d|r of %d member%s   |cff888888|||r   %d with gear recorded"
-				.. "   |cff888888|||r   |cff888888hover the class picture for who they "
-				.. "are, and any slot for what is in it|r",
-				shown, total, total == 1 and "" or "s", geared))
+			return finish(string.format(total == 1
+				and L["|cffffd700%d|r of %d member   |cff888888|||r   %d with gear recorded"
+					.. "   |cff888888|||r   |cff888888hover the class picture for who they "
+					.. "are, and any slot for what is in it|r"]
+				or L["|cffffd700%d|r of %d members   |cff888888|||r   %d with gear recorded"
+					.. "   |cff888888|||r   |cff888888hover the class picture for who they "
+					.. "are, and any slot for what is in it|r"],
+				shown, total, geared))
 		end
 
 		if not member then
-			status:SetText("|cff9d9d9dNothing recorded yet.|r")
+			status:SetText(L["|cff9d9d9dNothing recorded yet.|r"])
 			return finish()
 		end
 
@@ -956,10 +967,11 @@ local function build(frame)
 		if section == "Equipped gear" then
 			local gear = payload.equipment
 			if not gear or not gear.worn then
-				return finish("|cffffaa00Nothing recorded - log in on this member once.|r")
+				return finish(L["|cffffaa00Nothing recorded - log in on this member once.|r"])
 			end
 
-			status:SetText(string.format("average item level |cffffd700%s|r over %d pieces",
+			status:SetText(string.format(
+				L["average item level |cffffd700%s|r over %d pieces"],
 				gear.itemLevel and string.format("%.1f", gear.itemLevel) or "?",
 				gear.counted or 0))
 
@@ -1053,7 +1065,7 @@ local function build(frame)
 
 			local lines = {
 				{ string.format("|cffffd700%s|r", meta.name or member.key) },
-				{ string.format("|cff888888level %s|r  %s%s|r",
+				{ string.format(L["|cff888888level %s|r  %s%s|r"],
 					tostring(meta.level or "?"),
 					string.format("|cff%02x%02x%02x", red * 255, green * 255, blue * 255),
 					className or "?") },
@@ -1087,7 +1099,7 @@ local function build(frame)
 		if section == "Reputations" then
 			local reps = payload.reputations
 			if not reps or #reps == 0 then
-				return finish("|cffffaa00Nothing recorded for this member.|r")
+				return finish(L["|cffffaa00Nothing recorded for this member.|r"])
 			end
 
 			-- Grouped under the game's own headings rather than one flat list, and inside
@@ -1098,7 +1110,7 @@ local function build(frame)
 
 			for _, faction in ipairs(reps) do
 				if matches(faction.name) or matches(faction.category) then
-					local group = faction.category or "|cff888888Other|r"
+					local group = faction.category or L["|cff888888Other|r"]
 					if not byCategory[group] then
 						byCategory[group] = {}
 						categories[#categories + 1] = group
@@ -1109,7 +1121,7 @@ local function build(frame)
 			end
 
 			table.sort(categories)
-			status:SetText(string.format("%d of %d factions", shown, #reps))
+			status:SetText(string.format(L["%d of %d factions"], shown, #reps))
 
 			for _, group in ipairs(categories) do
 				local heading = nextRow()
@@ -1158,12 +1170,12 @@ local function build(frame)
 			local held = member.meta.currencies
 
 			if not member.meta.currenciesSeen then
-				return finish("|cffffaa00Nothing recorded for this member - log in on "
-					.. "them once.|r")
+				return finish(L["|cffffaa00Nothing recorded for this member - log in on "
+					.. "them once.|r"])
 			end
 			if not held or #held == 0 then
-				return finish("|cff9d9d9dThis client offers no currencies, or this "
-					.. "member has never held one.|r")
+				return finish(L["|cff9d9d9dThis client offers no currencies, or this "
+					.. "member has never held one.|r"])
 			end
 
 			-- Most held first, which is the same order the summary picks its columns in.
@@ -1178,7 +1190,7 @@ local function build(frame)
 
 			local shown = 0
 			for _, currency in ipairs(ordered) do
-				local name = currency.name or ("Currency #" .. tostring(currency.id))
+				local name = currency.name or string.format(L["Currency #%s"], tostring(currency.id))
 				if matches(name) then
 					shown = shown + 1
 					local r = nextRow()
@@ -1192,11 +1204,11 @@ local function build(frame)
 					-- column reading "of a cap of 0" would be an invented ceiling.
 					if currency.max then
 						local room = currency.max - (currency.quantity or 0)
-						r.right:SetText(string.format("%s%s|r  |cff888888(%s to go)|r",
+						r.right:SetText(string.format(L["%s%s|r  |cff888888(%s to go)|r"],
 							room <= 0 and "|cffff8040" or "|cff888888",
 							tostring(currency.max), tostring(math.max(room, 0))))
 					else
-						r.right:SetText("|cff9d9d9dno cap|r")
+						r.right:SetText(L["|cff9d9d9dno cap|r"])
 					end
 
 					-- The game will describe a currency it has an id for, which is every
@@ -1209,9 +1221,10 @@ local function build(frame)
 				end
 			end
 
-			status:SetText(string.format("|cffffd700%d|r currenc%s   |cff888888|||r   "
-				.. "seen %s", shown, shown == 1 and "y" or "ies",
-				UI:Ago(member.meta.currenciesSeen)))
+			status:SetText(string.format(shown == 1
+				and L["|cffffd700%d|r currency   |cff888888|||r   seen %s"]
+				or L["|cffffd700%d|r currencies   |cff888888|||r   seen %s"],
+				shown, UI:Ago(member.meta.currenciesSeen)))
 			return finish()
 		end
 
@@ -1249,10 +1262,10 @@ local function build(frame)
 
 		local record = payload.achievements
 		if not Family.Capabilities:Has("achievements") then
-			return finish("|cff9d9d9dThis client has no achievements.|r")
+			return finish(L["|cff9d9d9dThis client has no achievements.|r"])
 		end
 		if not record then
-			return finish("|cffffaa00Nothing recorded for this member.|r")
+			return finish(L["|cffffaa00Nothing recorded for this member.|r"])
 		end
 
 		-- Everything but the ids comes back from the client, for any achievement, in
@@ -1265,7 +1278,7 @@ local function build(frame)
 			local id, name, points, _, _, _, _, description =
 				Family:TryCall(GetAchievementInfo, entry.id)
 
-			name = name or ("Achievement #" .. entry.id)
+			name = name or string.format(L["Achievement #%s"], entry.id)
 
 			if matches(name) or matches(description) then
 				local category = entry.category or 0
@@ -1287,15 +1300,15 @@ local function build(frame)
 		end
 
 		status:SetText(string.format(
-			"|cffffd700%d|r points from %d achievements   |cff888888|||r   %d shown   " ..
-			"|cff888888|||r   seen %s",
+			L["|cffffd700%d|r points from %d achievements   |cff888888|||r   %d shown   "
+			.. "|cff888888|||r   seen %s"],
 			record.points or 0, record.count or 0, shown, UI:Ago(record.seen)))
 
 		-- By the game's own category names, which it answers for any category id.
 		local titles = {}
 		for _, category in ipairs(order) do
 			titles[category] = Family:TryCall(GetCategoryInfo, category)
-				or ("Category " .. tostring(category))
+				or string.format(L["Category %s"], tostring(category))
 		end
 		table.sort(order, function(a, b) return titles[a] < titles[b] end)
 
@@ -1326,10 +1339,10 @@ local function build(frame)
 				-- nothing. The row shows the same three facts; a tooltip that repeats
 				-- them is still better than one that opens empty.
 				r.fallback = {
-					{ item.name, item.points .. " points" },
+					{ item.name, string.format(L["%s points"], item.points) },
 					{ item.description or "" },
-					{ item.entry.done and "|cff40bf40earned|r"
-						or string.format("|cffffd700%d|r of %d",
+					{ item.entry.done and L["|cff40bf40earned|r"]
+						or string.format(L["|cffffd700%d|r of %d"],
 							item.entry.completed or 0, item.entry.criteria or 0) },
 				}
 
@@ -1344,11 +1357,11 @@ local function build(frame)
 					or item.name)
 
 				if item.entry.done then
-					r.right:SetText(string.format("|cff40bf40%d|r points", item.points))
+					r.right:SetText(string.format(L["|cff40bf40%d|r points"], item.points))
 				else
 					-- Started and not finished, which is the only reason an unfinished
 					-- one was recorded at all.
-					r.right:SetText(string.format("|cffffd700%d|r of %d",
+					r.right:SetText(string.format(L["|cffffd700%d|r of %d"],
 						item.entry.completed or 0, item.entry.criteria or 0))
 				end
 			end
@@ -1358,4 +1371,4 @@ local function build(frame)
 	end
 end
 
-UI:RegisterTab("character", "Character", build)
+UI:RegisterTab("character", L["Character"], build)

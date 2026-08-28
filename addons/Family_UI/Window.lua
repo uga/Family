@@ -15,6 +15,7 @@
 local _, UI = ...
 
 local Family = _G.Family
+local L = Family.L
 UI.Family = Family
 Family.UI = UI
 
@@ -144,7 +145,7 @@ end)
 -- Escape closes it, like every other panel in the game.
 tinsert(UISpecialFrames, "FamilyWindow")
 
-window.TitleText:SetText("Family")
+window.TitleText:SetText(L["Family"])
 
 UI.window = window
 
@@ -174,6 +175,165 @@ strip:SetPoint("BOTTOMLEFT", 8, 8)
 strip:SetWidth(STRIP_W)
 
 --------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------
+-- Columns that hold their own headings
+--
+-- Every fixed column width in Family was chosen by looking at English, and English is the
+-- shortest of the five languages it speaks. "Last seen" is nine characters and was given 95
+-- pixels; a German client draws Blizzard's own word for the same thing in that space and
+-- writes it straight through the column beside it.
+--
+-- The fix is not a shorter word - a game term has to be the game's term, whatever its length
+-- (DATASOURCES, "By global string"), and it is not ours to abbreviate. The fix is that the
+-- column gives way instead: every one is widened to hold its heading, and the room that
+-- costs is taken back from whichever columns have the most to spare.
+--
+-- Measured, not counted. GetStringWidth asks the client what it will actually draw, which is
+-- the only thing that knows - the fonts are not monospaced and Blizzard's translation of a
+-- term is whatever it is. Counting characters here would be guessing twice over.
+--
+-- `measure` is a font string in the same font the headings are drawn in, never shown. What
+-- is measured has to be drawn the same way or the answer is about a different string.
+--------------------------------------------------------------------------------------------
+
+-- Each edge a heading needs clear of its neighbour: the 4 pixels a cell is inset by on each
+-- side, and two more so that two headings never quite touch.
+local HEADER_PAD = 10
+
+-- Shared by the columns and by the rows of buttons: given what each thing needs and the
+-- least it may have, take any excess back from whatever is carrying the most slack, and
+-- never take anything below its floor.
+local function shrinkToFit(need, floor, budget)
+	if not budget then return end
+
+	local total = 0
+	for index = 1, #need do total = total + need[index] end
+
+	local over = total - budget
+	while over > 0 do
+		local most, at = 0, nil
+		for index = 1, #need do
+			local slack = need[index] - floor[index]
+			if slack > most then most, at = slack, index end
+		end
+		if not at then break end
+		local take = math.min(over, most)
+		need[at] = need[at] - take
+		over = over - take
+	end
+end
+
+-- A row of buttons, each as wide as its own label needs.
+--
+-- The same fault as the columns and the same answer. Every button width in Family was picked
+-- by looking at an English label; "Skill needed" fits 110 pixels and "Compétence requise"
+-- does not, so it was drawn straight out of the button and into the one beside it. Sizing
+-- each button to its text and then placing them one after the next means a longer word costs
+-- room rather than legibility.
+--
+-- `minimum` keeps a row of short labels looking like a row rather than like a set of
+-- differently sized lozenges. `budget`, where the row has one, is shared out the same way the
+-- columns share theirs.
+local BUTTON_PAD = 18
+
+-- `place` is how a row anchors itself, because they do not all anchor the same way: some sit
+-- on their own bar, some hang off the caption above them. Given the button, where it starts
+-- and how wide it turned out, a caller that has a preference says so; the rest get the
+-- ordinary thing, which is left to right inside the parent.
+-- How much room to leave under a scrolling table for the captions beneath it.
+--
+-- A margin below the footer, the footer, a gap and the note where there is one, and then a
+-- clear line before the table starts. The heights are measured by the caller after the text
+-- is written, because how tall a caption is depends on the language it is in: English fits
+-- the summary's grand totals on one line and French wraps them onto two, which drew the
+-- table's last row underneath them.
+--
+-- The last term is the one that is easy to leave out and the one that shows: without it the
+-- bottom row sits directly on the caption and the two read as a single block of text.
+function UI:CaptionRoom(footerHeight, noteHeight, margin, gap, clear)
+	margin = margin or 8
+	gap = gap or 4
+	clear = clear or 8
+
+	local room = margin + math.ceil(footerHeight or 12)
+	if noteHeight and noteHeight > 0 then
+		room = room + gap + math.ceil(noteHeight)
+	end
+	return room + clear
+end
+
+-- One button, on its own, wide enough for what it says. The rows above are the interesting
+-- case; this is for the buttons that are anchored individually and have nothing to share
+-- their line with.
+function UI:FitButton(button, minimum)
+	if not button then return end
+	local text = button.GetFontString and button:GetFontString()
+	local wanted = (text and text.GetStringWidth and text:GetStringWidth()) or 0
+	button:SetWidth(math.max(minimum or 0,
+		math.ceil(wanted) + BUTTON_PAD + (button.__labelInset or 0)))
+end
+
+function UI:LayOutRow(buttons, minimum, gap, from, place, budget)
+	if not buttons or #buttons == 0 then return from or 0 end
+
+	local need, floor = {}, {}
+	for index, button in ipairs(buttons) do
+		local text = button.GetFontString and button:GetFontString()
+		local wanted = (text and text.GetStringWidth and text:GetStringWidth()) or 0
+		-- A button carrying a picture holds its label to one side of it, and that room is
+		-- not room for the label. Set by whoever put the picture there.
+		floor[index] = math.ceil(wanted) + BUTTON_PAD + (button.__labelInset or 0)
+		need[index] = math.max(minimum or 0, floor[index])
+	end
+
+	shrinkToFit(need, floor, budget)
+
+	-- Squeezing stops at the labels themselves, so a row of words long enough can still be
+	-- wider than the room there is. Said out loud rather than drawn off the edge of the
+	-- panel in silence: the same answer the summary gives when its columns will not fit.
+	if budget then
+		local total = 0
+		for index = 1, #need do total = total + need[index] + (gap or 4) end
+		if total - (gap or 4) > budget then
+			Family:Print(L["|cffffaa00a row of %d buttons needs %d pixels and has %d - the "
+				.. "labels are longer than the room in this language|r"],
+				#buttons, math.ceil(total - (gap or 4)), math.ceil(budget))
+		end
+	end
+
+	local x = from or 0
+	for index, button in ipairs(buttons) do
+		button:SetWidth(need[index])
+		button:ClearAllPoints()
+		if place then
+			place(button, x, need[index])
+		else
+			button:SetPoint("LEFT", x, 0)
+		end
+		x = x + need[index] + (gap or 4)
+	end
+	return x
+end
+
+function UI:FitColumns(columns, budget, measure)
+	if not (columns and measure and measure.GetStringWidth) then return end
+
+	local need, floor = {}, {}
+	for index, column in ipairs(columns) do
+		measure:SetText(column.label or "")
+		floor[index] = math.ceil((measure:GetStringWidth() or 0) + HEADER_PAD)
+		need[index] = math.max(column.width or 0, floor[index])
+	end
+
+	-- Wider than the row: take it back from whatever is carrying slack, most first. A
+	-- column is never taken below its own heading - that is the fault being fixed here, and
+	-- reintroducing it to balance the books would be absurd. If every column is already at
+	-- its heading and it still does not fit, this stops and the panel's own warning stands.
+	shrinkToFit(need, floor, budget)
+
+	for index, column in ipairs(columns) do column.drawWidth = need[index] end
+end
 
 function UI:RegisterTab(id, label, builder)
 	local index = #tabs + 1
@@ -240,7 +400,7 @@ function UI:ShowTab(id)
 
 			local ok, err = pcall(tab.builder, tab.frame)
 			if not ok then
-				Family:Print("|cffff5555the %s panel failed to build|r: %s", tab.id,
+				Family:Print(L["|cffff5555the %s panel failed to build|r: %s"], tab.id,
 					tostring(err))
 				tab.broken = true
 			end
@@ -257,16 +417,16 @@ function UI:ShowTab(id)
 
 		if selected then
 			current = tab
-			window.TitleText:SetText("Family - " .. tab.label)
+			window.TitleText:SetText(string.format(L["Family - %s"], tab.label))
 
 			if tab.frame.Refresh then
 				local ok, err = pcall(tab.frame.Refresh, tab.frame)
 				if not ok then
-					Family:Print("|cffff5555the %s panel failed to draw|r: %s", tab.id,
+					Family:Print(L["|cffff5555the %s panel failed to draw|r: %s"], tab.id,
 						tostring(err))
 				end
 			elseif not tab.broken then
-				Family:Print("|cffffaa00the %s panel built but defined no Refresh|r",
+				Family:Print(L["|cffffaa00the %s panel built but defined no Refresh|r"],
 					tab.id)
 			end
 		end
@@ -289,7 +449,7 @@ function UI:Refresh()
 	if current and current.frame and current.frame.Refresh then
 		local ok, err = pcall(current.frame.Refresh, current.frame)
 		if not ok then
-			Family:Print("|cffff5555the %s panel failed to draw|r: %s", current.id,
+			Family:Print(L["|cffff5555the %s panel failed to draw|r: %s"], current.id,
 				tostring(err))
 		end
 	end
@@ -437,16 +597,16 @@ function UI:Confirm(question, onAccept)
     if not (StaticPopupDialogs and StaticPopup_Show) then
         -- Nowhere to ask, so nothing happens. Doing it anyway because the popup is missing
         -- would be the one reading of "confirm" that cannot be right.
-        Family:Print("|cffffaa00%s|r - but this client has no way to ask, so nothing was "
-            .. "done.", tostring(question))
+        Family:Print(L["|cffffaa00%s|r - but this client has no way to ask, so nothing was "
+            .. "done."], tostring(question))
         pendingAsk = nil
         return
     end
 
     StaticPopupDialogs[ASK_POPUP] = StaticPopupDialogs[ASK_POPUP] or {
         text = "%s",
-        button1 = _G.YES or "Yes",
-        button2 = _G.NO or "No",
+        button1 = _G.YES or L["Yes"],
+        button2 = _G.NO or L["No"],
         OnAccept = function()
             local act = pendingAsk
             pendingAsk = nil
@@ -474,15 +634,15 @@ function UI:ConfirmForget(key, name, realm)
 	if not (StaticPopupDialogs and StaticPopup_Show) then
 		-- Nowhere to ask, so nothing is deleted. Saying what to type is the honest
 		-- answer; deleting without asking is not.
-		Family:Print("to remove %s, type |cffffd700/family forget %s|r", name, key)
+		Family:Print(L["to remove %s, type |cffffd700/family forget %s|r"], name, key)
 		return
 	end
 
 	StaticPopupDialogs[FORGET_POPUP] = StaticPopupDialogs[FORGET_POPUP] or {
-		text = "Remove %s from Family?\n\nEverything recorded about this character goes "
-			.. "with it. Logging in on them again starts recording afresh.",
-		button1 = _G.YES or "Yes",
-		button2 = _G.NO or "No",
+		text = L["Remove %s from Family?\n\nEverything recorded about this character goes "
+			.. "with it. Logging in on them again starts recording afresh."],
+		button1 = _G.YES or L["Yes"],
+		button2 = _G.NO or L["No"],
 		OnAccept = function()
 			if not pendingForget then return end
 			Family.Database:Forget(pendingForget)
@@ -659,7 +819,8 @@ function UI:EveryMember(keep)
 				-- Under the family that shared them rather than under their realm.
 				-- Their realm is a fact about them; whose they are is the fact that
 				-- decides what this panel can and cannot say (§6).
-				group = "|cffc79fefshared by " .. tostring(member.familyName) .. "|r",
+				group = string.format(L["|cffc79fefshared by %s|r"],
+					tostring(member.familyName)),
 			}
 		end
 	end
@@ -761,6 +922,27 @@ UI.SIDE_COLOUR = {
 -- What the game calls this side, in whatever language it is running in. Family stores the
 -- English word because that is what the client answers with; nothing shows it to a player
 -- without coming through here first.
+-- What the game calls this race, in the language the reader is running.
+--
+-- By id first, because that answer is right whoever recorded the member and whatever they
+-- were running at the time - a German client's night elf reads correctly on a French one.
+-- Then what the recording client called it, which is right for that member if nobody has
+-- logged in on them since. Then the file string, which is at least a word and never a blank.
+function UI:RaceName(meta)
+	if not meta then return self.UNKNOWN end
+
+	local id = meta.raceID
+	if id and C_CreatureInfo and C_CreatureInfo.GetRaceInfo then
+		local info = Family:TryCall(C_CreatureInfo.GetRaceInfo, id)
+		if type(info) == "table" and type(info.raceName) == "string" and info.raceName ~= ""
+		then
+			return info.raceName
+		end
+	end
+
+	return meta.race or meta.raceFile or self.UNKNOWN
+end
+
 function UI:SideName(side)
 	return _G["FACTION_" .. tostring(side):upper()] or side
 end
@@ -771,25 +953,33 @@ end
 -- same arithmetic and are kept apart because "3 days ago" and "in 3 days" are not the same
 -- fact and must never be able to be confused for one another.
 function UI:In(stamp)
-	if not stamp then return "|cff9d9d9dnever|r" end
+	if not stamp then return L["|cff9d9d9dnever|r"] end
 
 	local seconds = stamp - time()
-	if seconds <= 0 then return "now" end
+	if seconds <= 0 then return L["now"] end
 
-	if seconds < 3600 then return string.format("in %dm", math.floor(seconds / 60)) end
-	if seconds < 86400 then return string.format("in %dh", math.floor(seconds / 3600)) end
-	return string.format("in %dd", math.floor(seconds / 86400))
+	if seconds < 3600 then return string.format(L["in %dm"], math.floor(seconds / 60)) end
+	if seconds < 86400 then return string.format(L["in %dh"], math.floor(seconds / 3600)) end
+	return string.format(L["in %dd"], math.floor(seconds / 86400))
 end
 
 function UI:Ago(stamp)
-	if not stamp then return "|cff9d9d9dnever|r" end
+	if not stamp then return L["|cff9d9d9dnever|r"] end
 
 	local seconds = time() - stamp
-	if seconds < 60 then return "just now" end
-	if seconds < 3600 then return string.format("%d min ago", math.floor(seconds / 60)) end
-	if seconds < 86400 then return string.format("%d h ago", math.floor(seconds / 3600)) end
+	if seconds < 60 then return L["just now"] end
+
+	-- Abbreviated units on purpose. "5 minutes ago" needs one plural in English, two in
+	-- German and three in Russian; "5 min" needs none in any of them, and a date beside a
+	-- number in a narrow column is not the place to be teaching declension.
+	if seconds < 3600 then
+		return string.format(L["%d min ago"], math.floor(seconds / 60))
+	end
+	if seconds < 86400 then
+		return string.format(L["%d h ago"], math.floor(seconds / 3600))
+	end
 
 	local days = math.floor(seconds / 86400)
-	if days == 1 then return "yesterday" end
-	return string.format("%d days ago", days)
+	if days == 1 then return L["yesterday"] end
+	return string.format(L["%d days ago"], days)
 end

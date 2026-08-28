@@ -33,7 +33,15 @@ function Identity:Scan()
 		realm = GetRealmName(),
 		level = UnitLevel("player"),
 		classFile = select(2, UnitClass("player")),
+		-- Three answers about one fact, because no single one of them is enough.
+		-- raceFile is the language-neutral id and is what everything keys on. raceID lets
+		-- a later client name the race in whatever language it is running in, whoever
+		-- recorded it. race is what this client called it, kept as the fallback for the
+		-- clients that will not answer by id - the same shape as the talent-name exception
+		-- (specification §4), and for the same reason.
+		race = UnitRace("player"),
 		raceFile = select(2, UnitRace("player")),
+		raceID = select(3, UnitRace("player")),
 		sex = UnitSex and UnitSex("player") or nil,
 		faction = UnitFactionGroup("player"),
 		hearth = Family:TryCall(GetBindLocation),

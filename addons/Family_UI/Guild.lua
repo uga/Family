@@ -20,6 +20,7 @@
 local _, UI = ...
 
 local Family = _G.Family
+local L = Family.L
 
 local ROW = 18
 local GRID = 24
@@ -84,7 +85,7 @@ end
 -- is for; what belongs beside somebody's gear is the shape of their build.
 local function talentSummary(talents)
 	if type(talents) ~= "table" or type(talents.groups) ~= "table" then
-		return "|cff9d9d9dno talents recorded|r"
+		return L["|cff9d9d9dno talents recorded|r"]
 	end
 
 	local parts = {}
@@ -107,7 +108,7 @@ local function talentSummary(talents)
 						entry.specID)
 					name = specName
 				end
-				text = name or ("specialisation #" .. tostring(entry.specID))
+				text = name or string.format(L["specialisation #%s"], tostring(entry.specID))
 			end
 
 			if text then
@@ -120,7 +121,7 @@ local function talentSummary(talents)
 		end
 	end
 
-	if #parts == 0 then return "|cff9d9d9dno talents recorded|r" end
+	if #parts == 0 then return L["|cff9d9d9dno talents recorded|r"] end
 	return table.concat(parts, "  |cff555555|||r  ")
 end
 
@@ -133,7 +134,7 @@ local function build(frame)
 
 	local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
 	title:SetPoint("TOPLEFT", 4, -4)
-	title:SetText("Guild share")
+	title:SetText(L["Guild share"])
 
 	local enabled = CreateFrame("CheckButton", "FamilyGuildEnabled", frame,
 		"UICheckButtonTemplate")
@@ -144,29 +145,37 @@ local function build(frame)
 		frame:Refresh()
 	end)
 
-	local enabledLabel = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	enabledLabel:SetPoint("LEFT", enabled, "RIGHT", 2, 0)
-	enabledLabel:SetText("Share gear and talents with the guild, and read theirs")
+	-- Right to left, each anchored to the one beside it rather than to a fixed offset.
+	-- The offsets were -6 and -122, which is -6 and "-6 minus a button that is 110 wide" -
+	-- true of the English labels and of nothing else. Anchored to each other, a longer word
+	-- pushes its neighbour along instead of being drawn over it.
+	local updateButton = CreateFrame("Button", "FamilyGuildUpdate", frame,
+		"UIPanelButtonTemplate")
+	updateButton:SetHeight(22)
+	updateButton:SetPoint("TOPRIGHT", -6, -6)
+	updateButton:SetText(L["Update now"])
+	UI:FitButton(updateButton, 110)
 
 	local whoButton = CreateFrame("Button", "FamilyGuildWho", frame, "UIPanelButtonTemplate")
-	whoButton:SetSize(110, 22)
-	whoButton:SetPoint("TOPRIGHT", -122, -6)
+	whoButton:SetHeight(22)
+	whoButton:SetPoint("TOPRIGHT", updateButton, "TOPLEFT", -6, 0)
 	whoButton:SetScript("OnClick", function()
 		onlineOnly = not onlineOnly
 		frame:Refresh()
 	end)
 
-	local updateButton = CreateFrame("Button", "FamilyGuildUpdate", frame,
-		"UIPanelButtonTemplate")
-	updateButton:SetSize(110, 22)
-	updateButton:SetPoint("TOPRIGHT", -6, -6)
-	updateButton:SetText("Update now")
+	local enabledLabel = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	enabledLabel:SetPoint("LEFT", enabled, "RIGHT", 2, 0)
+	-- Stops where the buttons begin rather than running underneath them.
+	enabledLabel:SetPoint("RIGHT", whoButton, "LEFT", -8, 0)
+	enabledLabel:SetJustifyH("LEFT")
+	enabledLabel:SetText(L["Share gear and talents with the guild, and read theirs"])
 	updateButton:SetScript("OnClick", function()
 		local ok, why = Family.Guild:Refresh("asked for")
 		if ok then
-			Family:Print("Asked the guild. Whoever is online and running Family answers.")
+			Family:Print(L["Asked the guild. Whoever is online and running Family answers."])
 		else
-			Family:Print("|cffffaa00Could not: %s|r", tostring(why))
+			Family:Print(L["|cffffaa00Could not: %s|r"], tostring(why))
 		end
 		frame:Refresh()
 	end)
@@ -265,7 +274,8 @@ local function build(frame)
 
 		list:SetWidth(math.max(scroll:GetWidth(), 200))
 		enabled:SetChecked(Family.Guild:Enabled())
-		whoButton:SetText(onlineOnly and "Online only" or "Everyone")
+		whoButton:SetText(onlineOnly and L["Online only"] or L["Everyone"])
+		UI:FitButton(whoButton, 110)
 
 		local function nextRow(height)
 			used = used + 1
@@ -311,9 +321,9 @@ local function build(frame)
 			-- Family's own abilities as much as to its records.
 			whoButton:Hide()
 			updateButton:Hide()
-			return finish("|cffffaa00Guild share needs the serialisation libraries "
+			return finish(L["|cffffaa00Guild share needs the serialisation libraries "
 				.. "(LibSerialize and LibDeflate) and this client has neither loaded, so "
-				.. "nothing can be sent or received.|r")
+				.. "nothing can be sent or received.|r"])
 		end
 
 		whoButton:Show()
@@ -322,15 +332,15 @@ local function build(frame)
 		local guildKey, guildName = Family.Guild:Current()
 
 		if not guildKey then
-			return finish("|cff9d9d9dThis character is not in a guild. Guild share is "
+			return finish(L["|cff9d9d9dThis character is not in a guild. Guild share is "
 				.. "about one guild on one realm, so there is nothing for it to be about "
-				.. "from here.|r")
+				.. "from here.|r"])
 		end
 
 		if not Family.Guild:Enabled() then
-			return finish(string.format("|cffffaa00Guild share is switched off.|r "
+			return finish(string.format(L["|cffffaa00Guild share is switched off.|r "
 				.. "|cff888888Nothing is sent to %s and nothing that arrives is read. "
-				.. "What was collected before is kept.|r", guildName))
+				.. "What was collected before is kept.|r"], guildName))
 		end
 
 		-- The client only lists offline members if it has been asked to, and this panel's
@@ -368,20 +378,20 @@ local function build(frame)
 
 				r.text:SetText(string.format("|cff%02x%02x%02x%s|r%s",
 					red * 255, green * 255, blue * 255, member.name,
-					member.online and "" or "  |cff777777offline|r"))
+					member.online and "" or L["  |cff777777offline|r"]))
 
 				r.middle:SetText(string.format("|cff888888%s   %s|r",
 					tostring(member.level), tostring(member.rank or "")))
 
 				local ours = Family.Guild:IsOurs(member.name)
 				if ours then
-					r.text:SetText(r.text:GetText() .. "  |cff888888(you)|r")
+					r.text:SetText(r.text:GetText() .. L["  |cff888888(you)|r"])
 				end
 
 				if not runs then
-					r.right:SetText("|cff555555not running Family|r")
+					r.right:SetText(L["|cff555555not running Family|r"])
 				elseif #characters == 0 then
-					r.right:SetText("|cff888888heard from, nothing sent yet|r")
+					r.right:SetText(L["|cff888888heard from, nothing sent yet|r"])
 				else
 					local best
 					for _, entry in ipairs(characters) do
@@ -390,10 +400,12 @@ local function build(frame)
 					end
 
 					r.right:SetText(string.format(
-						"|cffffd700%s|r |cff888888ilvl   |||   %d character%s   |||   %s|r",
+						#characters == 1
+							and L["|cffffd700%s|r |cff888888ilvl   |||   %d character   |||   %s|r"]
+							or L["|cffffd700%s|r |cff888888ilvl   |||   %d characters   |||   %s|r"],
 						best and string.format("%.1f", best) or "?",
-						#characters, #characters == 1 and "" or "s",
-						characters[1].at and UI:Ago(characters[1].at) or "unknown"))
+						#characters,
+						characters[1].at and UI:Ago(characters[1].at) or L["unknown"]))
 
 					local bare = Family.Guild:BareName(member.name)
 					r:SetScript("OnClick", function()
@@ -420,9 +432,9 @@ local function build(frame)
 
 							local gear = entry.equipment
 							line.right:SetText(gear and gear.itemLevel
-								and string.format("|cffffd700%.1f|r |cff888888ilvl|r",
+								and string.format(L["|cffffd700%.1f|r |cff888888ilvl|r"],
 									gear.itemLevel)
-								or "|cff9d9d9dno gear recorded|r")
+								or L["|cff9d9d9dno gear recorded|r"])
 
 							if gear and gear.worn then
 								for index, slot in ipairs(SLOT_ORDER) do
@@ -461,7 +473,7 @@ local function build(frame)
 											c.icon:SetDesaturated(true)
 										end
 										c.lines = { { _G[slot[2]] or slot[2],
-											"|cff9d9d9dempty|r" } }
+											L["|cff9d9d9dempty|r"] } }
 									end
 								end
 
@@ -476,8 +488,8 @@ local function build(frame)
 		end
 
 		if shown == 0 then
-			return finish("|cff9d9d9dNobody to show. The guild roster arrives a moment "
-				.. "after the panel does - try Update now.|r")
+			return finish(L["|cff9d9d9dNobody to show. The guild roster arrives a moment "
+				.. "after the panel does - try Update now.|r"])
 		end
 
 		-- "1 running Family" in a guild of a hundred is the ordinary state of things and not
@@ -486,14 +498,14 @@ local function build(frame)
 		-- indistinguishable here from somebody who is not running it at all - that is what
 		-- the addon channel gives us, and saying so beats implying otherwise.
 		return finish(string.format(
-			"|cffffd700%s|r   |cff888888|||r   %d shown of %d   |cff888888|||r   "
+			L["|cffffd700%s|r   |cff888888|||r   %d shown of %d   |cff888888|||r   "
 			.. "|cffffd700%d|r running Family   |cff888888|||r   "
-			.. "|cff888888%s|r",
+			.. "|cff888888%s|r"],
 			guildName, shown, #everyone, users,
 			users <= 1
-				and "nobody else has answered yet - they must be online and running it, "
-					.. "and Update now asks again"
-				or "click one of them to see their characters"))
+				and L["nobody else has answered yet - they must be online and running it, "
+					.. "and Update now asks again"]
+				or L["click one of them to see their characters"]))
 	end
 end
 
@@ -506,5 +518,5 @@ end
 -- withheld from; this panel *is* where the switch lives, and hiding the switch inside the
 -- feature it turns off would be a poor joke.
 Family:OnDatabaseReady("ui.guild", function()
-	UI:RegisterTab("guild", "Guild", build)
+	UI:RegisterTab("guild", L["Guild"], build)
 end)

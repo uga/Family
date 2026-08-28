@@ -20,6 +20,7 @@
 local _, UI = ...
 
 local Family = _G.Family
+local L = Family.L
 
 -- Family's own, rather than one of the game's.
 --
@@ -58,33 +59,74 @@ local function summary()
 	return members, money, needsAttention
 end
 
--- Members grouped by realm, richest realm first, with what each realm is worth.
+-- Members grouped by realm, and by side within each realm, with what each is worth.
+--
+-- The same shape the summary uses, and for the same reason: an Alliance member and a Horde
+-- member on one realm share nothing but the realm - not a bank, not a mailbox, not an
+-- auction house - so a single list of them reads as one pool of characters that could pass
+-- things between them, which is exactly what they cannot do.
+--
+-- The tooltip's two columns carry it without extra rows: the side names itself on the left
+-- and its own money sits on the right, the same way the realm line above it is drawn.
 local function byRealm()
 	local realms, order = {}, {}
 
 	for key, entry in pairs(Family.Database:Members()) do
 		local meta = entry.meta or {}
 		local realm = meta.realm or "?"
+		local side = meta.faction or UI.UNKNOWN_SIDE
 
-		if not realms[realm] then
-			realms[realm] = { members = {}, money = 0 }
+		local here = realms[realm]
+		if not here then
+			here = { members = {}, money = 0, bySide = {}, sides = {} }
+			realms[realm] = here
 			order[#order + 1] = realm
 		end
 
-		table.insert(realms[realm].members, { key = key, meta = meta })
-		realms[realm].money = realms[realm].money + (meta.money or 0)
+		local group = here.bySide[side]
+		if not group then
+			group = { members = {}, money = 0 }
+			here.bySide[side] = group
+			here.sides[#here.sides + 1] = side
+		end
+
+		local member = { key = key, meta = meta }
+		table.insert(here.members, member)
+		table.insert(group.members, member)
+		here.money = here.money + (meta.money or 0)
+		group.money = group.money + (meta.money or 0)
 	end
 
-	for _, realm in pairs(realms) do
-		table.sort(realm.members, function(a, b)
-			local levelA, levelB = a.meta.level or 0, b.meta.level or 0
-			if levelA ~= levelB then return levelA > levelB end
-			return (a.meta.name or "") < (b.meta.name or "")
+	local function highestFirst(a, b)
+		local levelA, levelB = a.meta.level or 0, b.meta.level or 0
+		if levelA ~= levelB then return levelA > levelB end
+		return (a.meta.name or "") < (b.meta.name or "")
+	end
+
+	for _, here in pairs(realms) do
+		table.sort(here.members, highestFirst)
+		for _, group in pairs(here.bySide) do table.sort(group.members, highestFirst) end
+
+		-- Alliance, then Horde, then anybody whose side was never recorded.
+		table.sort(here.sides, function(a, b)
+			return (UI.SIDE_ORDER[a] or 99) < (UI.SIDE_ORDER[b] or 99)
 		end)
 	end
 
 	table.sort(order)
 	return order, realms
+end
+
+-- Whether a realm is worth splitting is decided by its *known* sides. A member whose side
+-- has never been read is not a third faction - they are a member Family has not finished
+-- reading - and letting them force the split would put a heading over a realm that has only
+-- one side on it because one character has not been logged into yet.
+local function knownSides(here)
+	local known = 0
+	for _, side in ipairs(here.sides) do
+		if side ~= UI.UNKNOWN_SIDE then known = known + 1 end
+	end
+	return known
 end
 
 -- A tooltip has two columns and no more, so level and item level ride with the name on the
@@ -94,10 +136,10 @@ local function describe(tooltip)
 	local order, realms = byRealm()
 	local _, total, needsAttention = summary()
 
-	tooltip:AddLine("Family")
+	tooltip:AddLine(L["Family"])
 
 	if #order == 0 then
-		tooltip:AddLine("|cff9d9d9dNothing recorded yet.|r")
+		tooltip:AddLine(L["|cff9d9d9dNothing recorded yet.|r"])
 		return
 	end
 
@@ -105,31 +147,49 @@ local function describe(tooltip)
 	-- columns and these three things share one of them. So one line says which is which,
 	-- once, at the top. The money column labels itself by being money, and is named here
 	-- only because a heading over one of two columns reads as though the other has none.
-	tooltip:AddDoubleLine("|cff888888name, level, item level|r", "|cff888888money|r")
+	tooltip:AddDoubleLine(L["|cff888888name, level, item level|r"], L["|cff888888money|r"])
+
+	local function drawMember(member, indent)
+		local meta = member.meta
+		local r, g, b = UI:ClassColour(meta.classFile)
+
+		-- Both slots or neither. With one number printed and the other left out,
+		-- there is nothing on the line to say which of the two it was - and a
+		-- member whose gear has never been read is exactly the member whose level
+		-- would then be mistaken for an item level. A dash says "not known", which
+		-- is the answer (§2.2), and keeps the two columns where the heading says.
+		local detail = ""
+		if meta.level or meta.itemLevel then
+			detail = string.format("|cff888888  %s  %s|r",
+				meta.level and tostring(meta.level) or "-",
+				meta.itemLevel and string.format("%.0f", meta.itemLevel) or "-")
+		end
+
+		tooltip:AddDoubleLine(indent .. (meta.name or member.key) .. detail,
+			UI:Money(meta.money), r, g, b, 1, 1, 1)
+	end
 
 	for _, realm in ipairs(order) do
+		local here = realms[realm]
+
 		tooltip:AddLine(" ")
-		tooltip:AddDoubleLine("|cff88bbff" .. realm .. "|r",
-			UI:Money(realms[realm].money))
+		tooltip:AddDoubleLine("|cff88bbff" .. realm .. "|r", UI:Money(here.money))
 
-		for _, member in ipairs(realms[realm].members) do
-			local meta = member.meta
-			local r, g, b = UI:ClassColour(meta.classFile)
+		if knownSides(here) > 1 then
+			for _, side in ipairs(here.sides) do
+				local group = here.bySide[side]
+				local colour = UI.SIDE_COLOUR[side] or { 0.7, 0.7, 0.7 }
 
-			-- Both slots or neither. With one number printed and the other left out,
-			-- there is nothing on the line to say which of the two it was - and a
-			-- member whose gear has never been read is exactly the member whose level
-			-- would then be mistaken for an item level. A dash says "not known", which
-			-- is the answer (§2.2), and keeps the two columns where the heading says.
-			local detail = ""
-			if meta.level or meta.itemLevel then
-				detail = string.format("|cff888888  %s  %s|r",
-					meta.level and tostring(meta.level) or "-",
-					meta.itemLevel and string.format("%.0f", meta.itemLevel) or "-")
+				tooltip:AddDoubleLine(
+					string.format(L["  %s |cff888888(%d)|r"],
+						UI:SideName(side), #group.members),
+					UI:Money(group.money),
+					colour[1], colour[2], colour[3], 0.8, 0.8, 0.8)
+
+				for _, member in ipairs(group.members) do drawMember(member, "    ") end
 			end
-
-			tooltip:AddDoubleLine((meta.name or member.key) .. detail,
-				UI:Money(meta.money), r, g, b, 1, 1, 1)
+		else
+			for _, member in ipairs(here.members) do drawMember(member, "") end
 		end
 	end
 
@@ -137,7 +197,7 @@ local function describe(tooltip)
 	-- grand total is the realm total, written twice.
 	if #order > 1 then
 		tooltip:AddLine(" ")
-		tooltip:AddDoubleLine("|cffffd700All realms|r", UI:Money(total))
+		tooltip:AddDoubleLine(L["|cffffd700All realms|r"], UI:Money(total))
 	end
 
 	-- What is ready now. The one thing on this tooltip that changes while nobody is looking,
@@ -151,18 +211,19 @@ local function describe(tooltip)
 		end
 
 		tooltip:AddLine(" ")
-		tooltip:AddDoubleLine("|cff40bf40Crafting cooldowns ready|r",
+		tooltip:AddDoubleLine(L["|cff40bf40Crafting cooldowns ready|r"],
 			"|cff888888" .. table.concat(names, ", ") .. "|r")
 	end
 
 	if needsAttention > 0 then
 		tooltip:AddLine(" ")
-		tooltip:AddDoubleLine("|cffff4444Mail expiring soon|r",
-			tostring(needsAttention) .. " member" .. (needsAttention == 1 and "" or "s"))
+		tooltip:AddDoubleLine(L["|cffff4444Mail expiring soon|r"],
+			string.format(needsAttention == 1 and L["%d member"] or L["%d members"],
+				needsAttention))
 	end
 
 	tooltip:AddLine(" ")
-	tooltip:AddLine("|cff888888Left-click for the family. Right-click for the options.|r")
+	tooltip:AddLine(L["|cff888888Left-click for the family. Right-click for the options.|r"])
 end
 
 -- Each click goes to a fixed place rather than to wherever the window was left.

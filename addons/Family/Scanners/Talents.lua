@@ -49,6 +49,8 @@
 
 local _, Family = ...
 
+local L = Family.L
+
 local Talents = {}
 Family.Talents = Talents
 
@@ -365,7 +367,7 @@ function Talents:Probe()
 	local readers = talentReaders()
 	local numColumns = _G.NUM_TALENT_COLUMNS or MOP_COLUMNS
 
-	Family:Print("talent readers available: %d", #readers)
+	Family:Print(L["talent readers available: %d"], #readers)
 
 	-- Kept with its own length, because a call that answers `nil, "Frostbolt"` is exactly the
 	-- kind of thing this is here to catch and a plain table would lose it.
@@ -382,7 +384,7 @@ function Talents:Probe()
 			end
 
 			local got = interpret(unpack(returns, 1, returns.n))
-			Family:Print("  %s [1,%d] -> %s |cff888888=> %s|r", candidate.how, column,
+			Family:Print(L["  %s [1,%d] -> %s |cff888888=> %s|r"], candidate.how, column,
 				returns.n > 0 and table.concat(parts, ", ") or "nothing",
 				got and got.name or "unreadable")
 		end
@@ -392,7 +394,7 @@ function Talents:Probe()
 	for group = 1, MAX_GROUPS do
 		for _, candidate in ipairs(specCandidates(group)) do
 			local answer = Family:TryCall(candidate.call)
-			Family:Print("  spec %d: %s -> %s", group, candidate.how, tostring(answer))
+			Family:Print(L["  spec %d: %s -> %s"], group, candidate.how, tostring(answer))
 		end
 	end
 end
@@ -543,9 +545,9 @@ function Talents:Scan()
 	if not next(groups) then
 		-- Loud, not a debug line. Reaching here means every reader declined, and a
 		-- panel that silently shows nothing is the hardest kind of fault to report.
-		Family:Print("|cffffaa00no talent data could be read on this client|r " ..
+		Family:Print(L["|cffffaa00no talent data could be read on this client|r " ..
 			"(%s, %d group(s)). Please report this with /family caps, and with " ..
-			"/family talentprobe if it says choices.",
+			"/family talentprobe if it says choices."],
 			useTrees and "trees" or "choices", count)
 		Family:Debug("GetNumTalentTabs=%s GetNumTalents=%s GetTalentInfo=%s " ..
 			"GetNumTalentTiers=%s",
@@ -564,8 +566,8 @@ function Talents:Scan()
 		end
 
 		if not anyTiers then
-			Family:Print("|cffffaa00no talent grid could be read on this client.|r " ..
-				"Please report what |cffffd700/family talentprobe|r prints.")
+			Family:Print(L["|cffffaa00no talent grid could be read on this client.|r " ..
+				"Please report what |cffffd700/family talentprobe|r prints."])
 		end
 	end
 

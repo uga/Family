@@ -33,6 +33,8 @@
 
 local _, Family = ...
 
+local L = Family.L
+
 local Guild = {}
 Family.Guild = Guild
 
@@ -359,7 +361,7 @@ end
 -- asked for it, because the guild channel is shared with every other addon in the guild.
 function Guild:Announce(why)
 	local guildKey = self:Current()
-	if not guildKey then return false, "not in a guild" end
+	if not guildKey then return false, L["not in a guild"] end
 
 	Family:Debug("guild: announcing (%s)", tostring(why or "login"))
 	return say("ghello", "GUILD", nil, {})
@@ -374,7 +376,7 @@ end
 -- we have in the guild, and nobody is watching the moment it lands.
 function Guild:SendTo(name)
 	local offering, guildKey = self:Offering()
-	if not offering then return false, "nothing of ours is in this guild" end
+	if not offering then return false, L["nothing of ours is in this guild"] end
 
 	return say("gdata", "WHISPER", name, { characters = offering }, true)
 end
@@ -527,13 +529,13 @@ end
 --------------------------------------------------------------------------------------------
 
 function Guild:Refresh(why)
-	if not self:Enabled() then return false, "Guild share is switched off" end
+	if not self:Enabled() then return false, L["Guild share is switched off"] end
 	if not Family.Codec:CanTalk() then
-		return false, "this client has no serialisation libraries, so nothing can be sent"
+		return false, L["this client has no serialisation libraries, so nothing can be sent"]
 	end
 
 	local guildKey = self:Current()
-	if not guildKey then return false, "this character is not in a guild" end
+	if not guildKey then return false, L["this character is not in a guild"] end
 
 	-- One announcement rather than a whisper each. Everybody running Family hears it and
 	-- answers, and everybody who is not is not troubled by a message they cannot read.
@@ -551,43 +553,43 @@ end
 function Guild:Diagnose()
 	local guildKey, guildName, realm = self:Current()
 
-	Family:Print("|cffffd700Guild share|r on %s", Family.Capabilities.name)
-	Family:Print("  switched on: %s", self:Enabled() and "yes" or "|cffff5555no|r")
-	Family:Print("  can serialise: %s", Family.Codec:CanTalk() and "yes"
+	Family:Print(L["|cffffd700Guild share|r on %s"], Family.Capabilities.name)
+	Family:Print(L["  switched on: %s"], self:Enabled() and "yes" or "|cffff5555no|r")
+	Family:Print(L["  can serialise: %s"], Family.Codec:CanTalk() and "yes"
 		or "|cffff5555no - LibSerialize/LibDeflate missing, nothing can be sent|r")
-	Family:Print("  addon prefix registered: %s", Family.Comm.registered and "yes"
+	Family:Print(L["  addon prefix registered: %s"], Family.Comm.registered and "yes"
 		or "|cffff5555no - nothing will ever arrive|r")
-	Family:Print("  guild: %s", guildName and string.format("%s (realm %s)", guildName,
+	Family:Print(L["  guild: %s"], guildName and string.format("%s (realm %s)", guildName,
 		tostring(realm)) or "|cffff5555not in one|r")
 
 	local offering, _ = self:Offering()
 	local mine = 0
 	for _ in pairs(offering or {}) do mine = mine + 1 end
-	Family:Print("  characters of ours in it: %d", mine)
+	Family:Print(L["  characters of ours in it: %d"], mine)
 
 	local stats = self.stats
-	Family:Print("  messages sent from here: %d", stats.sent)
-	Family:Print("  announcements arrived: %d  (%d ours coming back, %d for another guild, "
-		.. "%d unreadable)", stats.arrived, stats.echo, stats.otherGuild, stats.unreadable)
-	Family:Print("  announcements from somebody else: %s", stats.answered > 0
+	Family:Print(L["  messages sent from here: %d"], stats.sent)
+	Family:Print(L["  announcements arrived: %d  (%d ours coming back, %d for another guild, "
+		.. "%d unreadable)"], stats.arrived, stats.echo, stats.otherGuild, stats.unreadable)
+	Family:Print(L["  announcements from somebody else: %s"], stats.answered > 0
 		and string.format("%d, last from %s", stats.answered, tostring(stats.lastHeard))
 		or "|cffff5555none|r")
 
 	if stats.otherGuild > 0 then
 		-- The likeliest quiet failure: two clients that disagree about what the guild is
 		-- called drop each other's messages and each look perfectly healthy doing it.
-		Family:Print("  |cffffaa00last one was for %s, and this client calls the guild %s|r",
+		Family:Print(L["  |cffffaa00last one was for %s, and this client calls the guild %s|r"],
 			tostring(stats.lastOtherGuild), tostring(guildName))
 	end
 
 	local known = 0
 	for _ in pairs(self:Known(guildKey)) do known = known + 1 end
-	Family:Print("  characters held for this guild: %d", known)
+	Family:Print(L["  characters held for this guild: %d"], known)
 
 	if stats.sent > 0 and stats.arrived == 0 then
-		Family:Print("|cffffaa00This client has sent and heard nothing at all, not even its "
+		Family:Print(L["|cffffaa00This client has sent and heard nothing at all, not even its "
 			.. "own announcement coming back off the guild channel. That points at the "
-			.. "channel rather than at either end.|r")
+			.. "channel rather than at either end.|r"])
 	end
 end
 

@@ -34,6 +34,8 @@
 
 local _, Family = ...
 
+local L = Family.L
+
 local Database = {}
 Family.Database = Database
 
@@ -57,9 +59,9 @@ local function migrate(db)
 	if from > SCHEMA then
 		-- Downgrade. Refuse rather than mangle: an older Family writing over a newer
 		-- database is how people lose data they cannot get back.
-		Family:Print("|cffff5555Your saved data was written by Family schema %d, and this " ..
+		Family:Print(L["|cffff5555Your saved data was written by Family schema %d, and this " ..
 			"is schema %d.|r Nothing has been changed. Update Family, or move FamilyDB " ..
-			"aside if you meant to start over.", from, SCHEMA)
+			"aside if you meant to start over."], from, SCHEMA)
 		return false
 	end
 
@@ -70,7 +72,7 @@ local function migrate(db)
 		if step then
 			local ok, err = pcall(step, db)
 			if not ok then
-				Family:Print("|cffff5555Migration from schema %d failed|r: %s", version,
+				Family:Print(L["|cffff5555Migration from schema %d failed|r: %s"], version,
 					tostring(err))
 				return false
 			end
@@ -223,7 +225,7 @@ function Database:Changed(key)
 	for name, callback in pairs(watchers) do
 		local ok, err = pcall(callback, key)
 		if not ok then
-			Family:Print("|cffff5555error telling %s the database changed|r: %s", name,
+			Family:Print(L["|cffff5555error telling %s the database changed|r: %s"], name,
 				tostring(err))
 			watchers[name] = nil
 		end

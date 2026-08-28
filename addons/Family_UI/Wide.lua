@@ -28,6 +28,7 @@
 local _, UI = ...
 
 local Family = _G.Family
+local L = Family.L
 
 local ROW = 20
 -- The member column. Narrow, because it holds one character's name and the word "Member",
@@ -76,8 +77,8 @@ Family:OnDatabaseReady("ui.wide.fit", function()
     local needed = NAME_WIDTH + #Family.Wide.CATEGORIES * CELL_MIN
 
     if room > 0 and needed > room then
-        Family:Print("|cffffaa00the wide family grid needs %d pixels for %d categories "
-            .. "and a row is %d, so its last column is drawn off the end|r",
+        Family:Print(L["|cffffaa00the wide family grid needs %d pixels for %d categories "
+            .. "and a row is %d, so its last column is drawn off the end|r"],
             needed, #Family.Wide.CATEGORIES, room)
     end
 end)
@@ -116,7 +117,7 @@ local function build(frame)
 
     local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 4, -4)
-    title:SetText("Wide Family")
+    title:SetText(L["Wide Family"])
 
     -- Asking. A character name, because that is what one player knows about another - the
     -- family id is Family's business and nobody should ever have to see one.
@@ -129,14 +130,15 @@ local function build(frame)
         "UIPanelButtonTemplate")
     askButton:SetSize(110, 22)
     askButton:SetPoint("LEFT", ask, "RIGHT", 10, 0)
-    askButton:SetText("Ask to link")
+    askButton:SetText(L["Ask to link"])
+    UI:FitButton(askButton, 110)
 
     local askNote = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
     askNote:SetPoint("LEFT", askButton, "RIGHT", 10, 0)
     askNote:SetPoint("RIGHT", -8, 0)
     askNote:SetJustifyH("LEFT")
-    askNote:SetText("They must be online, and running Family. Nothing is sent until they "
-        .. "accept, and nothing is shared until you say what may be.")
+    askNote:SetText(L["They must be online, and running Family. Nothing is sent until they "
+        .. "accept, and nothing is shared until you say what may be."])
 
     askButton:SetScript("OnClick", function()
         local name = (ask:GetText() or ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -144,10 +146,10 @@ local function build(frame)
 
         local ok, why = Family.Wide:RequestLink(name)
         if ok then
-            Family:Print("Asked |cffffd700%s|r to link. Nothing has been sent.", name)
+            Family:Print(L["Asked |cffffd700%s|r to link. Nothing has been sent."], name)
             ask:SetText("")
         else
-            Family:Print("|cffffaa00Could not ask: %s|r", tostring(why))
+            Family:Print(L["|cffffaa00Could not ask: %s|r"], tostring(why))
         end
         frame:Refresh()
     end)
@@ -169,7 +171,9 @@ local function build(frame)
 
     local autoLabel = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
     autoLabel:SetPoint("LEFT", auto, "RIGHT", 2, 0)
-    autoLabel:SetText("Exchange automatically when a linked family comes online")
+    autoLabel:SetPoint("RIGHT", frame, "RIGHT", -12, 0)
+    autoLabel:SetJustifyH("LEFT")
+    autoLabel:SetText(L["Exchange automatically when a linked family comes online"])
 
     -- What the switch above does *not* do, said where somebody reading the switch will see
     -- it.
@@ -183,9 +187,9 @@ local function build(frame)
     autoNote:SetPoint("TOPLEFT", auto, "BOTTOMLEFT", 24, 0)
     autoNote:SetPoint("RIGHT", -8, 0)
     autoNote:SetJustifyH("LEFT")
-    autoNote:SetText("That is the only time it happens on its own. What you each see of the "
+    autoNote:SetText(L["That is the only time it happens on its own. What you each see of the "
         .. "other is as it was at the last exchange - click |cffffd700Update now|r on a "
-        .. "family's line to bring it up to date.")
+        .. "family's line to bring it up to date."])
 
     local scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", autoNote, "BOTTOMLEFT", -26, -8)
@@ -329,9 +333,9 @@ local function build(frame)
         if not Family.Codec:CanTalk() then
             -- Said outright rather than left as a link that never works. §2.2 applies to
             -- Family's own abilities as much as to its records.
-            status:SetText("|cffffaa00Wide Family needs the serialisation libraries "
+            status:SetText(L["|cffffaa00Wide Family needs the serialisation libraries "
                 .. "(LibSerialize and LibDeflate) and this client has neither loaded, so "
-                .. "nothing can be sent or received.|r")
+                .. "nothing can be sent or received.|r"])
             for index = 1, #rows do rows[index]:Hide() end
             for index = 1, #cells do cells[index]:Hide() end
             for index = 1, #buttons do buttons[index]:Hide() end
@@ -349,19 +353,19 @@ local function build(frame)
 
         if waiting > 0 then
             local heading = nextRow()
-            heading.text:SetText("|cffffd700Waiting for you to answer|r")
+            heading.text:SetText(L["|cffffd700Waiting for you to answer|r"])
             y = y + 2
 
             for familyID, request in pairs(requests) do
                 local r = nextRow()
-                r.text:SetText(string.format("%s |cff888888asked %s|r",
+                r.text:SetText(string.format(L["%s |cff888888asked %s|r"],
                     tostring(request.from), UI:Ago(request.at)))
 
-                nextButton("Accept", BUTTON_FAR, function()
+                nextButton(L["Accept"], BUTTON_FAR, function()
                     Family.Wide:Accept(familyID)
                     frame:Refresh()
                 end)
-                nextButton("Decline", BUTTON_NEAR, function()
+                nextButton(L["Decline"], BUTTON_NEAR, function()
                     Family.Wide:Decline(familyID)
                     frame:Refresh()
                 end)
@@ -383,24 +387,24 @@ local function build(frame)
 
         if #outgoing > 0 then
             local heading = nextRow()
-            heading.text:SetText("|cffffd700Waiting for them to answer|r")
+            heading.text:SetText(L["|cffffd700Waiting for them to answer|r"])
             y = y + 2
 
             local anyUnanswered = false
 
             for _, ask in ipairs(outgoing) do
                 local r = nextRow()
-                r.text:SetText(string.format("%s |cff888888asked %s|r%s",
+                r.text:SetText(string.format(L["%s |cff888888asked %s|r%s"],
                     ask.name, UI:Ago(ask.at),
-                    ask.unanswered and "   |cffffaa00no answer|r" or ""))
+                    ask.unanswered and L["   |cffffaa00no answer|r"] or ""))
 
                 if ask.unanswered then anyUnanswered = true end
 
-                nextButton("Ask again", BUTTON_FAR, function()
+                nextButton(L["Ask again"], BUTTON_FAR, function()
                     Family.Wide:RequestLink(ask.name)
                     frame:Refresh()
                 end)
-                nextButton("Forget", BUTTON_NEAR, function()
+                nextButton(L["Forget"], BUTTON_NEAR, function()
                     Family.Wide:Forget(ask.name)
                     frame:Refresh()
                 end)
@@ -412,12 +416,12 @@ local function build(frame)
             if anyUnanswered then
                 y = y + 6
                 for _, line in ipairs({
-                    "|cff9d9d9dA request that does not arrive says nothing at all. "
-                        .. "No answer means one of three things:|r",
-                    "|cff9d9d9d   - they are offline, or not running Family|r",
-                    "|cff9d9d9d   - their Family is too old to know how to answer|r",
-                    "|cff9d9d9d   - the two of you cannot exchange addon messages at all, "
-                        .. "which no addon can work around|r",
+                    L["|cff9d9d9dA request that does not arrive says nothing at all. "
+                        .. "No answer means one of three things:|r"],
+                    L["|cff9d9d9d   - they are offline, or not running Family|r"],
+                    L["|cff9d9d9d   - their Family is too old to know how to answer|r"],
+                    L["|cff9d9d9d   - the two of you cannot exchange addon messages at all, "
+                        .. "which no addon can work around|r"],
                 }) do
                     nextRow().text:SetText(line)
                 end
@@ -433,13 +437,15 @@ local function build(frame)
         local links = linkList()
 
         if #links == 0 and #outgoing > 0 then
-            status:SetText(string.format("|cff9d9d9dNo families are linked yet. %d "
-                .. "request%s sent and not answered - a link exists only once they "
-                .. "accept.|r", #outgoing, #outgoing == 1 and "" or "s"))
+            status:SetText(string.format(#outgoing == 1
+                and L["|cff9d9d9dNo families are linked yet. %d request sent and not "
+                    .. "answered - a link exists only once they accept.|r"]
+                or L["|cff9d9d9dNo families are linked yet. %d requests sent and not "
+                    .. "answered - a link exists only once they accept.|r"], #outgoing))
         elseif #links == 0 then
-            status:SetText("|cff9d9d9dNo families are linked. Type a character name above "
+            status:SetText(L["|cff9d9d9dNo families are linked. Type a character name above "
                 .. "and ask - they will be asked to accept, and nothing is sent before "
-                .. "they do.|r")
+                .. "they do.|r"])
         else
             local shared, boxes = 0, 0
             for _, entry in ipairs(links) do
@@ -447,11 +453,16 @@ local function build(frame)
                 shared = shared + members
                 boxes = boxes + grants
             end
+            -- Three counts, three plurals, and no language forms all three the same way -
+            -- so each is a whole clause of its own rather than a stem with a letter added.
             status:SetText(string.format(
-                "|cffffd700%d|r linked famil%s   |cff888888|||r   you are sharing "
-                .. "|cffffd700%d|r member%s across |cffffd700%d|r categor%s",
-                #links, #links == 1 and "y" or "ies",
-                shared, shared == 1 and "" or "s", boxes, boxes == 1 and "y" or "ies"))
+                L["%s   |cff888888|||r   you are sharing %s across %s"],
+                string.format(#links == 1 and L["|cffffd700%d|r linked family"]
+                    or L["|cffffd700%d|r linked families"], #links),
+                string.format(shared == 1 and L["|cffffd700%d|r member"]
+                    or L["|cffffd700%d|r members"], shared),
+                string.format(boxes == 1 and L["|cffffd700%d|r category"]
+                    or L["|cffffd700%d|r categories"], boxes)))
         end
 
         ------------------------------------------------------------------------------------
@@ -526,8 +537,8 @@ local function build(frame)
             local r = nextRow(ROW + 2)
             r.text:SetText(string.format("|cffffd700%s|r  |cff66bbff%s|r  |cff888888%s|r",
                 open and "-" or "+", tostring(link.name),
-                link.version and ("Family " .. tostring(link.version))
-                    or "version unknown"))
+                link.version and string.format(L["Family %s"], tostring(link.version))
+                    or L["version unknown"]))
 
             r:EnableMouse(true)
             r:SetScript("OnClick", function()
@@ -535,17 +546,17 @@ local function build(frame)
                 frame:Refresh()
             end)
 
-            nextButton("Update now", BUTTON_FAR, function()
+            nextButton(L["Update now"], BUTTON_FAR, function()
                 local ok, count = Family.Wide:ExchangeWith(entry.id, "asked for")
-                Family:Print(ok and "Sent %d member(s) and asked for theirs."
-                    or "Could not: %s", count)
+                Family:Print(ok and L["Sent %d member(s) and asked for theirs."]
+                    or L["Could not: %s"], count)
                 frame:Refresh()
             end)
 
-            nextButton("Unlink", BUTTON_NEAR, function()
-                UI:Confirm(string.format("End the link with %s?\n\nWhat they have shared "
+            nextButton(L["Unlink"], BUTTON_NEAR, function()
+                UI:Confirm(string.format(L["End the link with %s?\n\nWhat they have shared "
                     .. "with you is forgotten here, and they are asked to forget what you "
-                    .. "shared with them.", tostring(link.name)), function()
+                    .. "shared with them."], tostring(link.name)), function()
                     Family.Wide:Unlink(entry.id)
                     frame:Refresh()
                 end)
@@ -562,13 +573,16 @@ local function build(frame)
             state.text:SetPoint("RIGHT", -RIGHT_INSET, 0)
             state.text:SetText(link.problem
                 and ("|cffffaa00" .. link.problem .. "|r")
-                or string.format("|cff888888you share %d member%s in %d categor%s   |||   "
-                    .. "they share %d with you   |||   last exchange %s%s|r",
-                    members, members == 1 and "" or "s",
-                    grants, grants == 1 and "y" or "ies",
+                or string.format(
+                    L["|cff888888you share %s in %s   |||   they share %d with you"
+                    .. "   |||   last exchange %s%s|r"],
+                    string.format(members == 1 and L["%d member"] or L["%d members"],
+                        members),
+                    string.format(grants == 1 and L["%d category"] or L["%d categories"],
+                        grants),
                     #theirs,
-                    link.lastExchange and UI:Ago(link.lastExchange) or "never",
-                    open and "" or "   |||   click the name to open"))
+                    link.lastExchange and UI:Ago(link.lastExchange) or L["never"],
+                    open and "" or L["   |||   click the name to open"]))
 
             if open then
                 y = y + 8
@@ -579,19 +593,20 @@ local function build(frame)
 
                 local mine = nextRow()
                 mine.text:SetText(string.format(
-                    "|cffffd700What %s may see of your characters|r", tostring(link.name)))
+                    L["|cffffd700What %s may see of your characters|r"],
+                    tostring(link.name)))
 
                 local explain = nextRow(ROW * 2)
                 explain.text:SetPoint("RIGHT", -RIGHT_INSET, 0)
                 explain.text:SetWordWrap(true)
-                explain.text:SetText("|cff888888Nothing is ticked to begin with, and "
+                explain.text:SetText(L["|cff888888Nothing is ticked to begin with, and "
                     .. "unticking tells them to forget it. Click a category's name to tick "
-                    .. "or clear that column for everybody at once.|r")
+                    .. "or clear that column for everybody at once.|r"])
 
                 local everyMember = ourMembers()
 
                 local labels = nextRow()
-                labels.text:SetText("|cffffd700Member|r")
+                labels.text:SetText(L["|cffffd700Member|r"])
                 columnHeadings(labels, function(category)
                     local keys, allOn = {}, true
                     for _, member in ipairs(everyMember) do
@@ -603,9 +618,11 @@ local function build(frame)
                     Family.Wide:GrantMany(entry.id, keys, category.id, not allOn)
                     frame:Refresh()
                 end, function()
-                    return string.format("|cff9d9d9dClick to tick or clear this column "
-                        .. "for all %d member%s.|r", #everyMember,
-                        #everyMember == 1 and "" or "s")
+                    return string.format(#everyMember == 1
+                        and L["|cff9d9d9dClick to tick or clear this column for all "
+                            .. "%d member.|r"]
+                        or L["|cff9d9d9dClick to tick or clear this column for all "
+                            .. "%d members.|r"], #everyMember)
                 end)
 
                 for _, member in ipairs(everyMember) do
@@ -641,7 +658,7 @@ local function build(frame)
                 y = y + 12
 
                 local ours = nextRow()
-                ours.text:SetText(string.format("|cffffd700What %s shares with you|r",
+                ours.text:SetText(string.format(L["|cffffd700What %s shares with you|r"],
                     tostring(link.name)))
 
                 if #theirs == 0 then
@@ -649,17 +666,17 @@ local function build(frame)
                     -- being shared and nothing having arrived yet look identical from here
                     -- and both are worth telling somebody about.
                     local none = nextRow()
-                    none.text:SetText("|cff9d9d9dNothing yet. They choose this from their "
-                        .. "own Wide Family panel, and it arrives at the next exchange.|r")
+                    none.text:SetText(L["|cff9d9d9dNothing yet. They choose this from their "
+                        .. "own Wide Family panel, and it arrives at the next exchange.|r"])
                 else
                     local why = nextRow(ROW * 2)
                     why.text:SetPoint("RIGHT", -RIGHT_INSET, 0)
                     why.text:SetWordWrap(true)
-                    why.text:SetText("|cff888888The marks are what they share about each "
+                    why.text:SetText(L["|cff888888The marks are what they share about each "
                         .. "one - theirs to change, not yours. Tick |cffffd700Sibling|r to "
                         .. "put one in your own summary, under their family, on the realm "
                         .. "they are on. That sends nothing: they have already shared "
-                        .. "them.|r")
+                        .. "them.|r"])
 
                     local theirLabels = nextRow()
                     theirLabels.text:ClearAllPoints()
@@ -672,10 +689,10 @@ local function build(frame)
                     -- always been bounded; this row was the one that was not.
                     theirLabels.text:SetPoint("LEFT", 4, 0)
                     theirLabels.text:SetWidth(NAME_WIDTH - 4 - COLUMN_GAP)
-                    theirLabels.text:SetText("|cffffd700Sibling  Member|r")
+                    theirLabels.text:SetText(L["|cffffd700Sibling  Member|r"])
                     columnHeadings(theirLabels, nil, function(category)
-                        return "|cff9d9d9dWhether they share this. Their decision, taken "
-                            .. "on their own panel.|r"
+                        return L["|cff9d9d9dWhether they share this. Their decision, "
+                            .. "taken on their own panel.|r"]
                     end)
 
                     for _, member in ipairs(theirs) do
@@ -696,15 +713,15 @@ local function build(frame)
                         UI:AttachTooltip(memberRow, function()
                             return nil, nil, {
                                 { member.meta.name or member.key,
-                                    "|cff888888level " ..
-                                    tostring(member.meta.level or "?") .. "|r" },
-                                { "|cff9d9d9das of " ..
-                                    (member.seen and UI:Ago(member.seen) or "unknown")
-                                    .. "|r" },
+                                    string.format(L["|cff888888level %s|r"],
+                                        tostring(member.meta.level or "?")) },
+                                { string.format(L["|cff9d9d9das of %s|r"],
+                                    member.seen and UI:Ago(member.seen) or L["unknown"]) },
                                 { member.toldUs
-                                    and "|cff9d9d9dThey say which categories they share.|r"
-                                    or "|cffffaa00Their Family is too old to say what it "
-                                        .. "grants, so the marks are what has arrived.|r" },
+                                    and L["|cff9d9d9dThey say which categories they "
+                                        .. "share.|r"]
+                                    or L["|cffffaa00Their Family is too old to say what it "
+                                        .. "grants, so the marks are what has arrived.|r"] },
                             }
                         end)
 
@@ -755,10 +772,10 @@ local function build(frame)
             note.text:SetPoint("RIGHT", -RIGHT_INSET, 0)
             note.text:SetJustifyH("LEFT")
             note.text:SetWordWrap(true)
-            note.text:SetText("|cff888888Family sends only what is ticked, and asks the "
+            note.text:SetText(L["|cff888888Family sends only what is ticked, and asks the "
                 .. "other side to forget anything you untick. That last part is a request "
                 .. "to another copy of Family on somebody else's computer - it is a promise "
-                .. "kept honestly here, not a lock.|r")
+                .. "kept honestly here, not a lock.|r"])
             y = y + 6
         end
 
@@ -781,6 +798,6 @@ end
 -- exactly the use it is being withheld from.
 Family:OnDatabaseReady("ui.wide", function()
     if Family.Wide:Enabled() then
-        UI:RegisterTab("wide", "Wide Family", build)
+        UI:RegisterTab("wide", L["Wide Family"], build)
     end
 end)

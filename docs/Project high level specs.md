@@ -784,8 +784,34 @@ a member recorded on a German client reads back correctly on a French one, and a
 family from a third language needs no translation at all. There is no locale-specific
 storage and no per-language saved file.
 
-The interface half is ordinary translation work: one string table per language, with English
-as the fallback for anything untranslated.
+The interface half is one string table per language, in `addons/Family/Locales/`. **The key
+is the English sentence** — `L["Last seen"]` — so there is no vocabulary of invented key names
+to keep in step, and anything untranslated falls through to readable English rather than to a
+missing-key marker. An empty string in a locale file means *deliberately left English*, which
+is not the same as absent.
+
+**Words the game already has come from the game.** A gear slot, a reputation standing, a
+class name, the glyph list: `Family:GameWord` takes Blizzard's own string and falls back to
+Family's translation only where the client has none. That is right in all eleven languages
+rather than the five here, and — the part that matters — it is the same word the rest of the
+player's interface is using on the same screen. A term is not Family's to abbreviate, whatever
+its length.
+
+**Layout gives way to the language, never the other way round.** Every fixed width in the tree
+was chosen by looking at English, which is the shortest of the five. A column too narrow for
+its own heading is widened and the room is taken from whichever columns have the most slack;
+no column is ever left narrower than its own heading (`UI:FitColumns`). Widths are measured
+with `GetStringWidth` rather than counted, because the fonts are not monospaced and Blizzard's
+translation of a term is not something this repository can predict.
+
+Anything Family counts is a whole clause chosen by the count, never a stem with an `s`
+appended: that is a plural in English and in none of the other four, and Russian has three
+forms.
+
+The harness reads every locale file on every client, whatever the language, and refuses
+orphaned keys, translations too long for the space they sit in, and format specifiers that do
+not match their English. It also refuses any language claimed in `CURSEFORGE.md` or in this
+section that has no translations behind it (L-013).
 
 The search index is per language and is rebuilt when the client language changes (§2.1).
 
