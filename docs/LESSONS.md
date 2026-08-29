@@ -518,14 +518,31 @@ or empty, as on the other client where an empty bank reported twenty-eight free 
 what was found. Derived that way the record cannot contradict itself, which is what `56 of 52`
 was. The client is still asked what *kind* of bag it is, because that it answers correctly.
 
-**Two things worth keeping.**
+**Where the twenty-eight comes from, and why that is the real lesson.** Alberto named it: the
+Era client carries the later expansions' data because Blizzard builds all of these from one
+codebase, and Era simply does not enable those four slots. `NUM_BANKGENERIC_SLOTS` says 28
+because the file it came from says 28. The bank has 24.
+
+That is the thesis `Capabilities.lua` was written to hold, in the file's own words about
+achievements: *the client carrying the call is a fact about the build, not about the game*. The
+principle was already written down in this repository, with an example of exactly this shape,
+and the fix I shipped read an inherited constant and believed it — in a scanner that never
+consults the file that states the rule.
+
+**Three things worth keeping.**
 
 A number that cannot be true is not a display fault to be tidied away. It is the one visible
 symptom of something wrong upstream, and the fix is upstream.
 
-And a hypothesis that explains the symptom exactly is the most dangerous kind, because
-explaining it exactly is what a wrong one does best. Earlier the same day I refused a retry
-loop and a search-index key for being unproven, and both refusals were right; this one I
-talked myself into. What broke the deadlock was not better reasoning but a diagnostic that made
-the client answer the question per container, and a person who looked at the screen and said
-there were no empty squares.
+A hypothesis that explains the symptom exactly is the most dangerous kind, because explaining
+it exactly is what a wrong one does best. Earlier the same day I refused a retry loop and a
+search-index key for being unproven, and both refusals were right; this one I talked myself
+into. What broke the deadlock was not better reasoning but a diagnostic that made the client
+answer per container, and a person who looked at the screen and said there were no empty
+squares.
+
+And a constant is not a capability. A symbol present in the client is evidence about which
+codebase built it and nothing else — which is true of `NUM_BANKGENERIC_SLOTS` exactly as it is
+true of the achievement API on Burning Crusade. Where a number decides what Family reads or
+records, it has to come from the running game or be confirmed in it, not from a header the
+build happened to inherit.

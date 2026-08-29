@@ -165,6 +165,12 @@ Do not ask it. Every slot is read to record the contents anyway, so free is the 
 was found, and a record derived that way cannot contradict itself. The same call's *second*
 return, the bag family, is correct and is still used.
 
+**And do not reach for `NUM_BANKGENERIC_SLOTS` to correct it.** It says 28 because Blizzard
+builds these clients from one codebase and Era inherited the later files, not because Era has
+28 bank slots — the same shape as the achievement API being present on Burning Crusade, which
+`Capabilities.lua` is written around. A symbol in the client is a fact about the build, not
+about the game.
+
 The carried bags are not affected: all four of one character's bank bags added up exactly, and
 so does the backpack.
 

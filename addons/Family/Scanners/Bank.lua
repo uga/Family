@@ -86,6 +86,13 @@ function Bank:Scan()
 				-- the size the count is computed from and twenty-four is the size the
 				-- bank is.
 				--
+				-- Twenty-eight is in the client because Blizzard builds these from one
+				-- codebase and Era inherited the later expansions' files; the bank it
+				-- enables is twenty-four. That is the thesis Capabilities.lua is written
+				-- around - a symbol in the client is a fact about the build, not about
+				-- the game - and NUM_BANKGENERIC_SLOTS is an instance of it, so reading
+				-- it here would be the same mistake in the other direction (L-018).
+				--
 				-- Every slot is read here anyway, so how many are free is not something
 				-- that has to be asked for at all: it is the size less what was found.
 				-- Derived that way the record cannot contradict itself, which is what
