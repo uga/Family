@@ -61,6 +61,11 @@ yours.
 
 ### Fixed since the last beta
 
+- **A bank record can no longer be replaced by an empty one.** Family could scan a bank that
+  was not in front of it — the game answers about the bank whether or not you are standing at
+  one — and the result was a tidy record of an empty bank written over a real one. If a
+  character's bank has gone blank, open a bank on them once and it comes back; nothing was ever
+  lost from the game itself.
 - **The free space in a bank is counted rather than asked for.** The game reports four more
   free slots than a bank has, so a full bank could read *4 free* and an empty one could total
   more free slots than it has room for. Visit a bank once on each character and the figure

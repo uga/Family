@@ -546,3 +546,42 @@ codebase built it and nothing else — which is true of `NUM_BANKGENERIC_SLOTS` 
 true of the achievement API on Burning Crusade. Where a number decides what Family reads or
 records, it has to come from the running game or be confirmed in it, not from a header the
 build happened to inherit.
+
+--------------------------------------------------------------------------------------------
+
+## L-019 — A well-formed record of nothing, written over a real one
+
+**2026-08-28.** A player reported bank contents that were not being saved, and could not
+identify the scenario. Neither could I, for most of a day. It was not a write that failed and
+not a read that came up short: it was a scan of a bank that was not there, producing a record
+that looked perfectly healthy, written over one that was.
+
+Away from a bank the client still answers about the bank container — twenty-four slots, none
+of them holding anything. Measured with `/family bank` standing in a city. So a scan running
+there builds `{ [-1] = { size = 24, slots = {} } }`, which is not empty, passes the guard that
+exists precisely to stop empty records being stored, and replaces five containers and eighty-
+three items with one container and none.
+
+**An empty bank with no bank bags is indistinguishable from no bank at all.** There is nothing
+in the answer that says which it is, so the contents cannot be interrogated for it. Whether a
+window is open is the only thing that separates them, and it has to be tracked.
+
+Two things let a scan run without one. The flag was set by three events and cleared by one, so
+a single missed `BANKFRAME_CLOSED` left it set for the rest of the session and every bag update
+after that scanned a bank that was not there. And closing the window scanned deliberately, for
+one last look — at the moment the client has begun taking the bank down, which is exactly when
+it answers with a container and nothing in it.
+
+**What now catches it:** a scan records nothing unless a window is open; only opening one sets
+that flag; entering the world clears it, because logging in, zoning and teleporting cannot
+happen with a bank open; and closing no longer scans, because everything it was for already
+arrives as a bag update while the window is open. The harness scans with no window open, with a
+stale flag, and after a slot-changed event with no window, and asserts the record is untouched
+each time.
+
+**The shape.** A guard against writing nothing is not a guard against writing something
+meaningless. `next(containers)` was doing exactly what it was written to do and the record it
+let through was well-formed, plausible, and wrong — and because it was well-formed, every screen
+displayed it without complaint. When a record can be built from an absence, the check has to be
+on whether the source was there, not on whether the result looks like data.
+

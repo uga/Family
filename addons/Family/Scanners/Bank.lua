@@ -62,7 +62,34 @@ end
 -- The bank
 --------------------------------------------------------------------------------------------
 
+-- Whether the bank window is open, which is the only time any of this can be read at all -
+-- and, since the client answers about the bank container whether or not one is in front of
+-- you, the only thing that says whether an answer means anything.
+local isOpen = false
+
+function Bank:IsOpen()
+	return isOpen
+end
+
+
 function Bank:Scan()
+	-- Nothing is written unless a bank window is open, and this is the whole of why.
+	--
+	-- Away from a bank the client still answers about the bank container: twenty-four slots,
+	-- none of them holding anything. Measured on a live client with no bank in sight. So a
+	-- scan that ran there produced a perfectly well-formed record of a bank with nothing in
+	-- it - the guard below sees a container and lets it through - and wrote it over whatever
+	-- that character actually had. One member's bank went from five containers and eighty-
+	-- three items to one container and none (L-019).
+	--
+	-- An empty bank with no bank bags is genuinely indistinguishable from no bank at all, so
+	-- there is nothing to be read from the containers themselves. Whether a window is open is
+	-- the only thing that tells them apart, and it is tracked rather than deduced.
+	if not isOpen then
+		Family:Debug("bank scan asked for with no bank window open - nothing recorded")
+		return
+	end
+
 	local key = Family:CurrentMember()
 
 	local containers = {}
@@ -262,21 +289,28 @@ end
 -- When to scan
 --------------------------------------------------------------------------------------------
 
--- Whether the bank window is open, which is the only time any of this can be read at all.
-local isOpen = false
-
-function Bank:IsOpen()
-	return isOpen
-end
-
 Family:OnDatabaseReady("bank", function()
-	for _, event in ipairs { "BANKFRAME_OPENED", "PLAYERBANKSLOTS_CHANGED",
-		"PLAYERBANKBAGSLOTS_CHANGED" } do
+	-- One event opens it. The other two are told about changes to a bank that is already
+	-- open, and used to set the flag themselves - which is a second way for it to be set and
+	-- no second way for it to be cleared.
+	Family:RegisterEvent("BANKFRAME_OPENED", "bank", function()
+		isOpen = true
+		Family:After(0.5, "bank", function() Bank:Scan() end)
+	end)
+
+	for _, event in ipairs { "PLAYERBANKSLOTS_CHANGED", "PLAYERBANKBAGSLOTS_CHANGED" } do
 		Family:RegisterEvent(event, "bank", function()
-			isOpen = true
+			if not isOpen then return end
 			Family:After(0.5, "bank", function() Bank:Scan() end)
 		end)
 	end
+
+	-- A flag that is only ever cleared by one event is a flag that stays set when that event
+	-- is missed, and everything after it scans a bank that is not there. Logging in, zoning
+	-- and teleporting all arrive here, and none of them can happen with a bank window open.
+	Family:RegisterEvent("PLAYER_ENTERING_WORLD", "bank.closed", function()
+		isOpen = false
+	end)
 
 	-- Moving something between the bank and the bags changes both, and the bank half of that
 	-- is not always announced as a bank event: the bought bank bags are containers like any
@@ -292,10 +326,15 @@ Family:OnDatabaseReady("bank", function()
 		Family:After(0.5, "bank", function() Bank:Scan() end)
 	end)
 
-	-- One last look on the way out, so anything moved while the window was open is kept.
-	-- Scanned before the flag is cleared, because the scan is what the flag is about.
+	-- Closing does not scan.
+	--
+	-- It used to, for one last look on the way out - and by then the client has begun taking
+	-- the bank down. Reading it at that moment produced a record with the bank container in
+	-- it and nothing else, which is well-formed, indistinguishable from an empty bank, and
+	-- written over whatever that character had. Everything a last look was for is already
+	-- covered: while the window is open every change to the bank arrives as a bag update and
+	-- is scanned within half a second.
 	Family:RegisterEvent("BANKFRAME_CLOSED", "bank", function()
-		Bank:Scan()
 		isOpen = false
 	end)
 

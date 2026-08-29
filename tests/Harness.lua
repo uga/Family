@@ -1990,6 +1990,61 @@ check("and every container adds up: what is in it, plus what is free, is its siz
 check("carried bags are not scanned again as bank bags",
 	bank and bank.containers[1] == nil)
 
+-- A scan with no bank window open, which is how a record was replaced by an empty one
+--
+-- Away from a bank the client still answers about the bank container - twenty-four slots, none
+-- of them holding anything - so a scan there builds a well-formed record of a bank containing
+-- nothing and writes it over whatever was there. One member went from five containers and
+-- eighty-three items to one container and none that way (L-019). An empty bank with no bank
+-- bags is indistinguishable from no bank at all, so the window being open is the only thing
+-- that can tell them apart.
+do
+	local function containersNow()
+		local held = Family.Database:Payload(key).bank
+		local n = 0
+		for _ in pairs((held or {}).containers or {}) do n = n + 1 end
+		return n
+	end
+
+	local before = containersNow()
+	check("the bank was recorded with more than the bank container", before > 1,
+		tostring(before))
+
+	-- The bank is gone from in front of us, and every bag on this character says so.
+	local heldBags = BANK_BAGS[6]
+	BANK_BAGS[6] = nil
+	fire("BANKFRAME_CLOSED")
+	advance(1)
+
+	Family.Bank:Scan()
+	check("a scan with no bank window open records nothing",
+		containersNow() == before, tostring(containersNow()) .. " now")
+
+	-- And a window that was opened and never announced as closed must not leave the door
+	-- open for the rest of the session: everything that follows arrives in the world first.
+	fire("BANKFRAME_OPENED")
+	check("opening one says the window is open", Family.Bank:IsOpen() == true)
+	fire("PLAYER_ENTERING_WORLD")
+	check("and arriving in the world says it is not", Family.Bank:IsOpen() == false)
+
+	Family.Bank:Scan()
+	check("so a stale flag cannot let an empty record through either",
+		containersNow() == before, tostring(containersNow()) .. " now")
+
+	-- Being told the bank changed is not being told a bank is in front of you. These used to
+	-- set the flag themselves, which gave it two ways to be set and one to be cleared.
+	fire("PLAYERBANKSLOTS_CHANGED")
+	advance(1)
+	check("a bank slot changing with no window open does not open one",
+		Family.Bank:IsOpen() == false)
+	check("and records nothing", containersNow() == before,
+		tostring(containersNow()) .. " now")
+
+	BANK_BAGS[6] = heldBags
+	fire("BANKFRAME_OPENED")
+	advance(1)
+end
+
 -- Taking something out of the bank while the window is open changes the bank, and the game
 -- announces that half as a bag update rather than as a bank event. Without this the bank
 -- kept the photograph taken when the window opened, so the item tooltip counted the same
