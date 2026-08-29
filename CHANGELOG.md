@@ -16,6 +16,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 1.1.0 — 2026-08-29
+
 ### Fixed
 
 - **Where a hearthstone is bound now reads in your own words.** A character last played on a
