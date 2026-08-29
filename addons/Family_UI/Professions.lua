@@ -665,13 +665,32 @@ local function build(frame)
 			for index = used + 1, #rows do rows[index]:Hide() end
 			list:SetHeight(math.max(y, 1))
 
+			-- Whether the guild was searched as well, said rather than left to be noticed.
+			--
+			-- The box is labelled "whole family" and it is now also asking the guild, which
+			-- nobody would guess from a row that happens to have a guild group on it - and
+			-- somebody who has never switched guild share on has no way at all to learn that
+			-- the box could be answering with more than it is.
+			local guildOn = Family.Guild and Family.Guild:Enabled()
+
 			status:SetText(#found > 0
-				and string.format(#found == 1
-					and L["|cffffd700%d|r recipe named like \"%s\", and who can make it"]
-					or L["|cffffd700%d|r recipes named like \"%s\", and who can make each"],
+				and string.format(guildOn
+					and (#found == 1
+						and L["|cffffd700%d|r recipe named like \"%s\", and who in your "
+							.. "family or your guild can make it"]
+						or L["|cffffd700%d|r recipes named like \"%s\", and who in your "
+							.. "family or your guild can make each"])
+					or (#found == 1
+						and L["|cffffd700%d|r recipe named like \"%s\", and who can make it"]
+						or L["|cffffd700%d|r recipes named like \"%s\", and who can make "
+							.. "each"]),
 					#found, needle)
-				or string.format(L["|cff9d9d9dNobody in the family knows a recipe named "
-					.. "like \"%s\".|r"], needle))
+				or string.format(guildOn
+					and L["|cff9d9d9dNobody in the family or the guild knows a recipe named "
+						.. "like \"%s\".|r"]
+					or L["|cff9d9d9dNobody in the family knows a recipe named like \"%s\". "
+						.. "|cff888888Guild share, in Options, searches your guild too.|r|r"],
+					needle))
 			return
 		end
 

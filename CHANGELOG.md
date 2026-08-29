@@ -61,6 +61,16 @@ is a decision rather than an afternoon of archaeology.
   profession and the list goes with it, on their side as well as yours, without either of you
   pressing anything.
 
+- **A guildmate who was offline when you shared something now gets it as soon as they log in.**
+  Two clients that had spoken to each other in the last six hours exchanged nothing further,
+  which is what keeps a settled guild quiet — but it also meant that anything you shared while
+  somebody was logged off waited out those six hours. Each announcement now carries a single
+  number saying what you are offering, so a client that has less than that asks for it at once
+  and one that already has it stays quiet.
+- **The recipe search says whether it looked at your guild**, and says that it could when guild
+  share is off. It is labelled *whole family*, and nothing about it revealed that it had grown.
+- **The guild list's right-hand column no longer cuts off how old a record is** — `8 characters
+  || 1h...` was losing the one thing that says how much to trust the other two.
 - **Opening a shared profession's window now tells the guild there is something new to send.**
   Ticking a profession you had never opened shared a skill level and nothing else, and opening
   it afterwards changed nothing anybody could see: no box had moved, so nothing was announced,

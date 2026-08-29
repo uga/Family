@@ -7353,6 +7353,46 @@ print("guild share")
 			end
 			check("and the search says nothing about the guild once it is switched off",
 				not stillFound)
+
+			-- And says that it could. The box is labelled "whole family" and is now also
+			-- asking the guild; somebody who has never switched guild share on has no way
+			-- at all to learn that, and a row that happens to carry a guild group is not a
+			-- way of learning it either.
+			local box = _G.FamilyProfessionsSearch
+
+			local function typed(text)
+				box:SetText(text)
+				box.__scripts.OnTextChanged(box)
+			end
+
+			Family.UI:Show()
+			Family.UI:ShowTab("professions")
+
+			-- Put back exactly as found. A search left typed and the whole family left
+			-- ticked is a panel the checks after this one were not written about, and this
+			-- file already carries a note about the last time that happened.
+			local wasEveryone = _G.FamilyProfessionsEveryone.__checked
+			local wasTyped = box.__text or ""
+
+			if not wasEveryone then
+				_G.FamilyProfessionsEveryone.__scripts.OnClick(
+					_G.FamilyProfessionsEveryone)
+			end
+
+			typed("a recipe of no such name")
+			check("with the feature off, the search says the guild could be searched too",
+				visibleText("Guild share, in Options, searches your guild too"))
+
+			Family.Guild:SetEnabled(true)
+			typed("a recipe of no such name")
+			check("and with it on, that it was", visibleText("family or the guild"))
+
+			if not wasEveryone then
+				_G.FamilyProfessionsEveryone.__scripts.OnClick(
+					_G.FamilyProfessionsEveryone)
+			end
+			typed(wasTyped)
+			Family.UI:ShowTab("guild")
 			Family.Guild:SetEnabled(true)
 
 			-- Put back the list the fingerprint checks below are written about. The block
@@ -7496,6 +7536,97 @@ print("guild share")
 
 		check("Update now asks in a way the other end will not skip", forced)
 		advance(30)
+
+		------------------------------------------------------------------------------------
+		-- The six hours, and what used to fall down them
+		--
+		-- The traffic control asks whether what *we* hold from somebody is recent, and one of
+		-- the things it decides is whether they get what *we* have. So two clients that each
+		-- hold recent data from the other exchange nothing at all - and a change made while
+		-- one of them was logged off waits out the whole of STALE_AFTER, because the
+		-- announcement that carried it went to a guild they were not in yet.
+		--
+		-- One number in the hello closes it: what they say they are offering, against what we
+		-- can build out of what we hold from them.
+		------------------------------------------------------------------------------------
+
+		do
+			advance(30)
+			sent = {}
+
+			-- Everything settled: we hold their offering, and the number we build from it
+			-- is the number they would send.
+			Family.Comm:Send("gdata", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw",
+				characters = { ["Faraway-FireMaw"] = {
+					meta = { name = "Faraway", realm = "Fire Maw", level = 70 },
+					professions = { { skillLine = smith, rank = 300, maxRank = 300,
+						count = 2, fingerprint = 4242 } },
+				} },
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+			advance(30)
+
+			local settled = Family.Guild:HeldOfferHash(guildKey, "Faraway")
+			check("what we hold from somebody can be said in one number", settled ~= nil)
+
+			-- And our own, on the wire. The number is only worth anything if it is the one
+			-- that actually goes out and if it moves when what we offer moves.
+			advance(30)
+			sent = {}
+			Family.Guild:Announce("a check")
+
+			local announced = Family.Codec:FromWire(
+				sent[1] and sent[1].text:match("[^\1]*$") or "")
+			check("an announcement carries what we are offering, in one number",
+				type(announced) == "table"
+					and announced.offer == Family.Guild:OfferHash(),
+				type(announced) == "table" and tostring(announced.offer) or "nothing")
+
+			local was = Family.Guild:OfferHash()
+			Family.Database:Payload("Smith-FireMaw").professions[smith]
+				.recipes[1].spellID = 2662
+			check("and the number moves when one recipe does",
+				Family.Guild:OfferHash() ~= was,
+				tostring(was) .. " / " .. tostring(Family.Guild:OfferHash()))
+			Family.Database:Payload("Smith-FireMaw").professions[smith]
+				.recipes[1].spellID = 2661
+
+			advance(30)
+
+			local function helloCarrying(offer)
+				advance(30)
+				sent = {}
+				Family.Comm:Send("ghello", Family.Codec:ToWire {
+					schema = 1, version = Family.version, guild = guildName,
+					character = "Faraway-FireMaw", offer = offer,
+				}, "GUILD", nil)
+				advance(3)
+				deliver("Faraway")
+				sent = {}
+				advance(12)
+				return #sent
+			end
+
+			local agreeing = helloCarrying(settled)
+			local differing = helloCarrying(settled + 1)
+
+			check("a hello saying they offer what we already hold stays quiet",
+				agreeing > 0, tostring(agreeing))
+			check("and one saying they offer something else does not",
+				differing > agreeing,
+				tostring(differing) .. " against " .. tostring(agreeing))
+
+			-- An older client sends no such number, and must not be treated as though it
+			-- were always out of step: that would undo the six hours for every guild with
+			-- one old copy in it.
+			local silentAbout = helloCarrying(nil)
+			check("and a client too old to send one is left to the six hours",
+				silentAbout == agreeing,
+				tostring(silentAbout) .. " against " .. tostring(agreeing))
+		end
 
 		-- **And nothing has to call any of that.** A scan writing a member's payload is what
 		-- tells this side that a list has appeared, and the whole of the live bug was that

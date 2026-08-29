@@ -218,6 +218,35 @@ local function fingerprintOf(spells)
 	return hash
 end
 
+-- The same hash over a string, for the one number that says whether two ends agree about what
+-- one of them is offering. Same shape and same modulus as the fingerprint above, for the same
+-- reason: every intermediate stays exact in a double, so both ends compute it identically.
+local function hashOf(text)
+	local hash = 5381
+
+	for index = 1, #text do
+		hash = (hash * 33 + text:byte(index)) % 16777213
+	end
+
+	return hash
+end
+
+-- One line per character per profession, in a settled order, so that two clients holding the
+-- same facts build the same string. A profession with no recipe list yet is a state worth
+-- recording as much as a list is, and a character with nothing ticked is part of the shape:
+-- losing one is a change even where no profession was involved.
+local function offerHash(rows)
+	table.sort(rows)
+	return hashOf(table.concat(rows, "|"))
+end
+
+local function offerRow(memberKey, profession)
+	if not profession then return memberKey .. ":-" end
+
+	return string.format("%s:%d:%s:%s", memberKey, profession.skillLine,
+		tostring(profession.count or "-"), tostring(profession.fingerprint or "-"))
+end
+
 Guild.RECIPE_CEILING = RECIPE_CEILING
 
 -- What one of our characters can make with one profession, in the shape it is stored and
@@ -260,6 +289,72 @@ function Guild:RecipeMark(memberKey, skillLine)
 	local spells, _, _, fingerprint = self:RecipesFor(memberKey, skillLine)
 	if not spells then return nil end
 	return #spells, fingerprint
+end
+
+-- What we are offering, in one number.
+--
+-- **This is what closes the six-hour hole.** The traffic control in onHello asks whether what
+-- *we* hold from somebody is recent, and one of the things it decides is whether they get what
+-- *we* have - so two clients that each hold recent data from the other exchange nothing, even
+-- when one of them has something new. A change made while the other was logged off waits out
+-- the whole of STALE_AFTER, because MarkChanged announces at the moment of the change and
+-- there is nobody there to hear it.
+--
+-- One number in a message that was going anyway. The hearer builds the same number out of what
+-- it already holds from us, and if the two differ it stops being quiet. Nothing has changed
+-- means the numbers match and the saving §7 was built for is untouched.
+--
+-- Deliberately not over ranks or gear. Those change constantly and are what the six hours are
+-- *for*; this exists for the one thing that is asked for once and then never again while its
+-- fingerprint holds.
+function Guild:OfferHash()
+	local offering = self:Offering()
+	if not offering then return 0 end
+
+	local rows = {}
+
+	for memberKey, entry in pairs(offering) do
+		if entry.professions and #entry.professions > 0 then
+			for _, profession in ipairs(entry.professions) do
+				rows[#rows + 1] = offerRow(memberKey, profession)
+			end
+		else
+			rows[#rows + 1] = offerRow(memberKey, nil)
+		end
+	end
+
+	return offerHash(rows)
+end
+
+-- The same number, built from what we hold from one player, so it can be compared with the one
+-- their announcement carries. Nothing held is nothing to compare.
+-- Through the method rather than the local, because this sits above where that local is
+-- declared: a file-scope local is nil until its line runs, and this one is reached from a
+-- message handler long after the file has finished loading. Written the other way it threw on
+-- every hello, and the handler isolation swallowed it - the only symptom was a client that
+-- answered nothing at all.
+function Guild:HeldOfferHash(guildKey, playerName)
+	local bare = self:BareName(playerName)
+	if not (guildKey and bare) then return nil end
+
+	local rows, any = {}, false
+
+	for memberKey, entry in pairs(self:Known(guildKey)) do
+		if self:BareName(entry.from) == bare then
+			any = true
+
+			if entry.professions and #entry.professions > 0 then
+				for _, profession in ipairs(entry.professions) do
+					rows[#rows + 1] = offerRow(memberKey, profession)
+				end
+			else
+				rows[#rows + 1] = offerRow(memberKey, nil)
+			end
+		end
+	end
+
+	if not any then return nil end
+	return offerHash(rows)
 end
 
 -- Whether what we offer has changed since the guild was last told, and telling them if it has.
@@ -813,7 +908,7 @@ function Guild:Announce(why)
 	if not guildKey then return false, L["not in a guild"] end
 
 	Family:Debug("guild: announcing (%s)", tostring(why or "login"))
-	return say("ghello", "GUILD", nil, {})
+	return say("ghello", "GUILD", nil, { offer = self:OfferHash() })
 end
 
 -- The same announcement, marked as saying that what we offer has changed.
@@ -830,7 +925,7 @@ function Guild:AnnounceChange()
 	if not guildKey then return false end
 
 	Family:Debug("guild: announcing that what we share has changed")
-	return say("ghello", "GUILD", nil, { changed = true })
+	return say("ghello", "GUILD", nil, { changed = true, offer = self:OfferHash() })
 end
 
 -- Hello, said back to one person rather than to the guild.
@@ -845,7 +940,11 @@ end
 -- that both have recent data would otherwise whisper hello at each other until one logs out.
 function Guild:SayHelloBack(name)
 	if type(name) ~= "string" or name == "" then return false end
-	return say("ghello", "WHISPER", name, { reply = true })
+
+	-- Carrying what we are offering, so that a reply which exists only to say "I am here"
+	-- also says "and this is what I have". Without it the quiet path is silent in both
+	-- directions and a change made while somebody was logged off waits out the six hours.
+	return say("ghello", "WHISPER", name, { reply = true, offer = self:OfferHash() })
 end
 
 function Guild:AskOne(name)
@@ -974,11 +1073,34 @@ local function onHello(_, text, sender)
 	noteUser(guildKey, sender)
 	Family.Database:Changed("guild")
 
+	-- What they say they are offering, against what we hold from them. One number each way,
+	-- and the whole of the catch-up: a change made while we were logged off is invisible to
+	-- everything else here, because the announcement that carried it went out to a guild we
+	-- were not in yet.
+	local theirOffer = tonumber(body.offer)
+	local ourRecordOfIt = Guild:HeldOfferHash(guildKey, sender)
+	local behind = theirOffer ~= nil and ourRecordOfIt ~= nil
+		and theirOffer ~= ourRecordOfIt
+
 	-- Somebody saying hello back, which is the whole of what that message is for: it has
 	-- been counted and noted above, and answering it would start a conversation with no end
 	-- to it.
+	--
+	-- Except to ask, once, when their reply says they are offering something we have not got.
+	-- Asking is not answering: it produces one message from them and no further hello.
 	if body.reply then
 		Family:Debug("guild: %s said hello back", tostring(sender))
+
+		if behind then
+			Family:After(2 + math.random() * 4,
+				"guild.behind." .. tostring(bareName(sender)), function()
+					if not Guild:Enabled() then return end
+					Family:Debug("guild: %s has something we have not - asking",
+						tostring(sender))
+					Guild:AskOne(sender)
+				end)
+		end
+
 		return
 	end
 
@@ -1002,7 +1124,12 @@ local function onHello(_, text, sender)
 	-- Except when they say outright that what they offer has changed, which is the one case
 	-- where holding something recent is the problem: a withdrawn profession is undone by the
 	-- next offering arriving, and skipping the exchange is precisely what would stop it.
-	local quiet = (not body.changed) and newest and (time() - newest) < STALE_AFTER
+	--
+	-- And except when the one number they sent does not match the one we can build out of
+	-- what we hold from them, which says they have something we have not - however recent
+	-- what we hold happens to be. That is the case six hours of silence used to swallow.
+	local quiet = (not body.changed) and (not behind)
+		and newest and (time() - newest) < STALE_AFTER
 
 	-- A moment later, and not the same moment for everybody: a guild logging in together
 	-- would otherwise put every one of its clients on the channel at once. Both branches

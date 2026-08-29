@@ -232,7 +232,11 @@ local function build(frame)
 
 		r.right = r:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		r.right:SetPoint("RIGHT", -8, 0)
-		r.right:SetWidth(200)
+		-- Three facts and two separators. Two hundred pixels fitted the first two and cut
+		-- the age off mid-word - "8 characters || 1h..." - which is the one of the three
+		-- that says how much to trust the other two. The middle column starts at 244 and
+		-- carries a level and a rank, so the room is there to take.
+		r.right:SetWidth(300)
 		r.right:SetJustifyH("RIGHT")
 
 		UI:NoWrap(r.text, r.middle, r.right)
@@ -710,10 +714,12 @@ local function build(frame)
 						if level and (not best or level > best) then best = level end
 					end
 
+					-- One space either side of each separator rather than three. The line
+					-- has three things to say and no room to space them out.
 					r.right:SetText(string.format(
 						#characters == 1
-							and L["|cffffd700%s|r |cff888888ilvl   |||   %d character   |||   %s|r"]
-							or L["|cffffd700%s|r |cff888888ilvl   |||   %d characters   |||   %s|r"],
+							and L["|cffffd700%s|r |cff888888ilvl ||| %d character ||| %s|r"]
+							or L["|cffffd700%s|r |cff888888ilvl ||| %d characters ||| %s|r"],
 						best and string.format("%.1f", best) or "?",
 						#characters,
 						characters[1].at and UI:Ago(characters[1].at) or L["unknown"]))
