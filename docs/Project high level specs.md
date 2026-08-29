@@ -100,19 +100,25 @@ Two consequences to build for rather than be surprised by:
 A cache of resolved names, stored alongside the identifiers, is a safe optimisation to add
 later if drawing or searching proves too slow in practice. It is not part of the format now.
 
-**One exception exists, and it is not about speed.** The client will only answer about
+**Talents once were the exception, and are not any more.** The client will only answer about
 *your own class's* talents: there is no call that asks what the third talent in a warlock's
 second tree is called while you are playing a mage, and showing another member's talents is
-the whole point of §4.4. So a tree talent is stored with its name and icon beside its
-position and rank. The consequence is stated rather than discovered: a member recorded on a
-German client shows German talent names on an English one.
+the whole point of §4.4. So a tree talent was stored with its name beside its position, and a
+member recorded on a German client showed German talent names on an English one.
 
-Mists is unaffected — a specialisation has an id that resolves for any class — so this is
-Era and Burning Crusade only. The fix is a **generated talent table** from the client's
-own `Talent` and `TalentTab` tables via wago.tools, exactly as the craft-level table is
-built today ([`DATASOURCES.md`](DATASOURCES.md) §3); then the talent is an id, the name
-comes from the table in every language, and the exception goes away. Until then it is the
-difference between a working panel and no panel.
+What settles it is that **a talent is a spell**, and the client answers about any spell id for
+any class without loading anything first. `addons/Family/TalentSpells.lua`, generated from the
+client's own `Talent` and `TalentTab` tables by `tools/talents.py`, maps a talent's position —
+class, tree, tier, column — to the spell id of its first rank, and the reader's own client
+names it. That is every language the game ships in rather than the five Family writes, and no
+names are shipped at all.
+
+It is keyed by expansion, because Era and Burning Crusade hold different talents at thirty-two
+of the four hundred and nineteen positions they share. Mists needs none of it: its
+specialisations already have ids that resolve for any class.
+
+The recorded name is kept as the fallback, for a record made before that table existed and for
+a position no table knows. Nothing needs rescanning.
 
 ### 2.2 Nothing is shown that was never seen
 
@@ -946,11 +952,11 @@ Recorded so the project can be measured against it.
    `SMOKE.md` was written claiming a completed pass closes this; its Wide Family section has
    no line that tests reach, so it closed the other three and not this one. The line is there
    now and the next pass can settle it.
-2. **A generated talent table.** Era and Burning Crusade tree talents are the one thing
-   Family stores by name rather than by id, because the client will not describe another
-   class's talents (§2.1). Generating `Talent` and `TalentTab` from wago.tools removes the
-   exception and makes talent names work in every language. Small, well-understood, and not
-   urgent — the panel works without it.
+2. ~~**A generated talent table.**~~ Done: `addons/Family/TalentSpells.lua`, from `Talent`
+   and `TalentTab` via `tools/talents.py`. A talent's position maps to the spell id of its
+   first rank and the reader's own client names it, so talent names work in every language
+   the game ships in and no names are stored. Era and Burning Crusade are kept apart, because
+   they disagree about thirty-two positions.
 3. ~~**Importing existing records.**~~ Settled: there is no import. Family starts empty and
    fills as each member is played.
 4. **Where the generators write.** Their output paths must be repointed once

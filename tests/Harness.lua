@@ -649,6 +649,11 @@ local SPELL_NAMES = {
 	[501] = "Zul'Gurub Ritual", [502] = "Apprentice Riding",
 	[2661] = "Copper Chain Belt", [3339] = "Silver Rod",
 	[13640] = "Enchant Chest - Major Health", [25128] = "Wizard Oil",
+	-- The four talents the arcane tree fixture puts on the grid, at the spell ids
+	-- TalentSpells.lua maps their positions to. A talent is a spell, so this is the client
+	-- answering about them the way it answers about any other.
+	[11210] = "Arcane Subtlety", [11222] = "Arcane Focus",
+	[6057] = "Improved Arcane Missiles", [29441] = "Wand Specialization",
 }
 GetSpellInfo = function(id)
 	-- Above nine hundred thousand the client says nothing, which is the state a recipe is
@@ -1368,9 +1373,9 @@ for _, file in ipairs {
 	-- players who speak that language and cannot be asked to run a harness.
 	"Locale.lua",
 	"Locales/deDE.lua", "Locales/frFR.lua", "Locales/esES.lua", "Locales/ruRU.lua",
-	-- What each client calls each profession and each race, generated from the client's
-	-- own tables.
-	"SkillLines.lua", "Races.lua",
+	-- What each client calls each profession and each race, and which spell each talent
+	-- is, generated from the client's own tables.
+	"SkillLines.lua", "Races.lua", "TalentSpells.lua",
 	"Capabilities.lua", "Codec.lua",
 	"Comm.lua", "Database.lua", "Names.lua", "Index.lua",
 	"Recipes.lua", "Cooldowns.lua",
@@ -2889,6 +2894,56 @@ end
 
 check("and lists the talents that were actually taken",
 	talentCellShowing("Arcane Subtlety") ~= nil and talentCellShowing("Arcane Focus") ~= nil)
+
+-- A talent recorded in another language
+--
+-- This was the one thing Family stored as a word, because GetTalentInfo answers only for the
+-- class being played and showing another member's talents is the whole point of the panel. A
+-- talent is a spell, though, and the client names any spell for any class - so the position
+-- is turned into a spell id and the reader's own client answers.
+do
+	local who = Family:CurrentMember()
+	local payload = Family.Database:Payload(who) or {}
+	local group = payload.talents and payload.talents.groups
+		and payload.talents.groups[1]
+	local recorded = group and group.tabs and group.tabs[1]
+		and group.tabs[1].talents and group.tabs[1].talents[1]
+
+	check("the talent the panel is about is in the record", recorded ~= nil)
+	if recorded then
+		local was = recorded.name
+		-- As a German client would have written it, on a client that is not German.
+		recorded.name = "Arkane Feinheit"
+		Family.Database:SetPayload(who, payload)
+		Family.UI:Refresh()
+
+		check("a talent recorded in another language reads in this client's",
+			talentCellShowing("Arcane Subtlety") ~= nil,
+			"the panel is still showing the word it was recorded under")
+		check("and the recorded word is not on the grid",
+			talentCellShowing("Arkane Feinheit") == nil)
+
+		recorded.name = was
+		Family.Database:SetPayload(who, payload)
+		Family.UI:Refresh()
+	end
+
+	-- A talent this table has never heard of - a client newer than the table, or a position
+	-- that has moved - still has the word the recording client wrote.
+	check("a talent no table knows keeps the word it was recorded under",
+		Family:TalentName("MAGE", 9, 9, 9, "Arkane Feinheit") == "Arkane Feinheit")
+	check("and one whose class was never recorded does too",
+		Family:TalentName(nil, 1, 1, 1, "Arkane Feinheit") == "Arkane Feinheit")
+
+	-- Era and Burning Crusade hold different talents at thirty-two of the positions they
+	-- share, which is why they are two tables rather than one merged one. This harness runs
+	-- as Era, and the warrior's second tier is one of the thirty-two: 12295 here, 12300
+	-- there. A single table would be right about most of the grid and quietly wrong about
+	-- those, which is worse than being wrong about all of it.
+	check("a position the two builds disagree about is read from this client's build",
+		Family:TalentName("WARRIOR", 1, 2, 2, "recorded") == "Spell 12295",
+		tostring(Family:TalentName("WARRIOR", 1, 2, 2, "recorded")))
+end
 
 -- Drawn even at nought points, and greyed. Where the gaps are is half of what a tree says,
 -- and a talent left out of the grid is not a gap, it is a missing square.

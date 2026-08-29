@@ -160,10 +160,8 @@ tree says.
 
 Hovering anything shows the game's own description of it.
 
-There is one thing Family stores as words rather than as an identifier, and it is here: on Era
-and Burning Crusade the client will not describe another class's talents, so a tree talent is
-recorded with its name. A member recorded on a German client therefore shows German talent
-names on an English one. Everything else in Family is language-independent.
+Talents are named by your own client, whoever recorded the character and whatever language
+they were playing in.
 
 ---
 
@@ -660,9 +658,6 @@ no word beside it is your own family's; one that says *shared* came from theirs.
 
 **"A profession has no recipes."** Its window has not been opened since Family was installed,
 or it is a gathering profession that has none. The Professions panel says which.
-
-**"Talent names are in the wrong language."** See §4 — that is the one exception, and it is
-Era and Burning Crusade only.
 
 **"A profession or its recipes are in the wrong language."** Professions and races are shown in
 your language whoever recorded them, and a recipe is named from what it makes, which your own

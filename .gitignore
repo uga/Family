@@ -8,6 +8,7 @@ tools/.itemsources-cache/
 tools/.craftlevels-cache/
 tools/.skill-lines-cache/
 tools/.races-cache/
+tools/.talents-cache/
 
 # Bytecode left behind when one generator imports another
 tools/__pycache__/

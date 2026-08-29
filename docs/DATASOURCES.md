@@ -193,7 +193,29 @@ Tables that earned their keep:
 | `Item` | `ClassID`, `SubclassID` |
 | `ItemEffect` | `ParentItemID` → `SpellID`, which links a recipe item to what it teaches |
 | `SpellName`, `SkillLine` | names, `DisplayName_lang` |
+| `Talent` | `TierID`, `ColumnIndex`, `TabID`, `ClassID`, `SpellRank_0` — the spell a talent is |
+| `TalentTab` | `ID`, `OrderIndex`, `ClassMask` — which of a class's three trees this is |
+| `ChrClasses` | `ID`, `Filename` — the class file string `UnitClass` answers with |
 | `ChrRaces` | `ID`, `Name_lang`, `Name_female_lang`, `ClientFileString`, `PlayableRaceBit` |
+
+`Talent` and `TalentTab` are what `addons/Family/TalentSpells.lua` is generated from, by
+`tools/talents.py`. **`Talent.SpellRank_0` is the spell id of a talent's first rank**, which is
+the whole reason talents stopped needing to be stored as words: the client will not describe
+another class's talents, but it will name any spell for any class. So that file ships no names
+at all — a position maps to a spell id and the reader's own client answers, in every language
+the game has.
+
+Two measurements it rests on:
+
+- **The client counts tiers and columns from one; the table counts from zero.** Taken from
+  `Family_UI/Talents.lua`, which places a cell at `(tier - 1) * CELL` on a grid that has been
+  looked at in the game.
+- **Era and Burning Crusade disagree about 32 of the 419 positions they share.** Blizzard moved
+  talents between them, so one merged table would name those 32 wrongly on one of the two
+  clients. They are kept apart, keyed by the expansion number `Family.Capabilities` already
+  derives from the interface version.
+
+Mists is not in it: its talents have ids of their own that the client resolves for any class.
 
 `ChrRaces` is what `addons/Family/Races.lua` is generated from, by `tools/races.py`. Three
 findings there, all of which a hand-written table gets wrong:

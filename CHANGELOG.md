@@ -18,6 +18,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Talents are shown in your language, whoever recorded the character.** A member last played
+  on a German client used to show German talent names on an English one — the last thing in
+  Family that was still shown in the language it was written down in. Nothing needs rescanning,
+  and it works in every language the game speaks rather than the five Family writes.
 - **A bank bag Family cannot name yet is numbered the way you number them.** The first one was
   being called *Bank bag 5*.
 
@@ -25,86 +29,42 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
-- **Mail in the post has a column of its own.** It used to be a phrase inside the mail column
-  — *1 (1 in post)* — which did not fit that column in English and fitted it in no other
-  language at all. It is now its own number beside the mailbox count, and it no longer hides
-  when a mailbox has never been looked at, which is the half of it that is known without one.
 - **Family speaks German, French, Spanish and Russian.** Every screen, every slash command,
-  the manual it carries and the messages it prints. Anything not yet translated falls back to
-  English rather than to a blank, so nothing can go missing; and where the game already has a
-  word for something — a gear slot, a reputation standing, a class, the glyph list — Family
-  uses the client's own word rather than one of its own, which means it says what the rest of
-  your interface says, in all eleven languages the client ships in.
-- **Panels give way to longer words.** Every fixed column width in Family was chosen by
-  looking at English, and English is the shortest of the five languages it now speaks. A
-  column too narrow for its own heading is widened and the room is taken from whatever has
-  most to spare, so a translated heading is never drawn through the column beside it.
+  every message it prints, and the manual on the About tab. Where the game already has a word
+  for something — a gear slot, a class, a reputation standing, a profession, a race — Family
+  uses the game's own word, so it says what the rest of your interface says.
+- **Mail on its way has a column of its own** in the Activity set, beside the mailbox count,
+  and it no longer waits for a mailbox to have been looked at before it will tell you.
+- **Nothing is cut off in a longer language.** Columns and buttons are measured against the
+  words actually in them and widened where they need it.
 
 ### Fixed
 
-- **A guildmate who is running Family is no longer listed as not running it.** Family only
-  knows somebody runs it by hearing from them, and a client that already had your characters
-  answered your announcement with silence — correctly, to save the channel, but that silence
-  was the only thing it ever sent you. It now says hello back. This shows up most for anyone
-  who has cleared their saved data or reinstalled, whose guild then looked empty.
-- **Recipes are shown in your own language too.** Professions learnt to say *Secourisme* and
-  then listed twelve recipes in English underneath, because the list had been read on an
-  English client. Family records what each recipe makes, so it now asks your own client what
-  that is called rather than repeating the word it was written down in. Nothing needs
-  rescanning — lists already saved read correctly as soon as you reopen the panel. Clicking
-  such a recipe works again too: it looks for the row in your open profession window, and it
-  had been looking for a word that window does not use. Searching finds them under either
-  name.
-- **The recipe list's heading names the profession** instead of the number Family files it
-  under.
-- **A recipe you click with no profession window open stays marked** until you open one. It
-  told you which button to press and then let go of the recipe you had picked, which is a poor
-  arrangement when the button is at the other end of the panel.
-- **A recipe list no longer comes back half translated.** Names came from the item each recipe
-  makes, and the game only knows an item once it has loaded it — so a first aid list arrived
-  half in one language and half in the other. Family now asks for the ones it is missing and
-  redraws when they arrive.
-- **A recipe you recorded in your own language keeps the words the game used.** Smelting is
-  where this shows: the game calls the row *Smelt Copper* and the thing it makes is a Copper
-  Bar, and Family had started saying the second.
-- **Clicking a recipe with no window open names the button to press**, rather than printing a
-  number nobody can act on.
-- **Professions are no longer reported as "recorded in another language" when they simply have
-  no recipes.** Fishing, herbalism, mining and skinning have no window to open, and one member
-  with a list in another language had them all reported that way.
-- **The line saying which professions were left out now wraps** instead of running off the right
-  edge — the half that fell off was the half saying why.
-- **Professions read in your own language before you have rescanned them.** A character is only
-  re-read when you log in on them, so a family part-way through showed some members' professions
-  in French and others in English on the same screen. The recorded word is one Family knows, so
-  it is now translated on sight — the rescan still matters for recipe lists, but not for this.
-- **Races are shown in your own language, whoever recorded them.** A character last played on
-  a French client stayed French on a Spanish one, and a member shared with you was named in
-  whatever their owner was running. Family now reads the game's own race table, so it says
-  what your client says — and where your own client wrote the word, that word is kept, gender
-  and all. Nothing needs rescanning for this one.
-- **The undead are undead.** Where Family had no word for a race it fell back to the internal
-  file string, which calls them *Scourge* and night elves *NightElf* — words the game shows
-  nobody.
+- **Professions, races and recipes are shown in your language, whoever recorded them.** A
+  character last played on a French client used to stay French on a Spanish one, and a member
+  shared with you was named in whatever their owner was running. Races and recipes need
+  nothing from you. **Professions want one rescan** — open each profession window once per
+  character, which also puts their recipe lists right.
+- **A recipe list no longer arrives half translated.** The rest of it fills in as your client
+  loads the items, rather than staying in the language it was written down in.
+- **The undead are undead.** Where Family had no word for a race it showed an internal one —
+  *Scourge*, *NightElf* — that the game shows nobody.
+- **A guildmate who is running Family is no longer listed as not running it.** Family knows
+  somebody runs it by hearing from them, and a client that already had your characters used to
+  answer your announcement with silence. It says hello back now. This showed up most for
+  anyone who had cleared their saved data or reinstalled, whose guild then looked empty.
+- **The professions panel names the profession above the recipe list**, rather than a number.
+- **A recipe you click with no profession window open stays marked** until you open one, and
+  the message names the button that opens it. It used to tell you which button to press and
+  then lose the recipe you had picked.
+- **A profession with no recipes is no longer reported as recorded in another language.**
+  Fishing, herbalism, mining and skinning have no window to open.
+- **The line saying which professions are missing from the list now wraps** instead of running
+  off the right edge.
 - **The minimap total agrees with the tooltip under it.** The figure on the bar was worked out
-  once at login and never again, so it drifted from the tooltip and the summary by however
-  much you had spent since. It is now brought up to date whenever anything changes.
-- **Dates take less room.** *19 days ago* is now *19d ago*, matching the *in 19d* the other
-  columns already used — the long form was wide enough to be cut off in the activity row.
-- **Professions are the same profession in every language.** Family used to file them under
-  their name, because Classic Era offers nothing else to file them under — so the same
-  character read on a French client and a Spanish one had two sets of professions, and neither
-  could see the other's recipes. They are now filed under the game's own skill line id, taken
-  from the client's own tables, and shown in the language of whoever is reading. A member
-  shared with you by a German player lands under the same key as everybody else.
-  **Rescan your professions once** by opening each window; there is nothing to migrate.
-- **A profession recorded in one language is no longer reported as never opened.** Family
-  stores a profession by its name, because on Classic Era the game offers nothing else to
-  store — so a character keeps the words it was last played in until you log in on it again,
-  and its recipe lists keep whatever language their window was last opened in. Where those
-  disagreed, the panel found nothing under the name it was looking up and said the profession
-  had never been opened, while holding every one of its recipes. It now says so, and says that
-  logging in on that character will put it right. Nothing was ever lost.
+  once at login, so it drifted by however much you had spent since.
+- **Dates take less room.** *19 days ago* is now *19d ago*, matching the *in 19d* the columns
+  beside it already used.
 
 ### Changed
 
@@ -112,16 +72,13 @@ is a decision rather than an afternoon of archaeology.
   and a Horde one on the same realm share no bank, no mailbox and no auction house, and a
   single list of them read as one pool of characters that could pass things between them. Each
   side now carries its own count and its own money, the way the summary has always shown it.
-- **Anything Family counts is now phrased for the language it is in.** Fifteen messages built
-  their plural by hanging an "s" on the end of a word, which is a plural in English and in
-  nothing else.
-
+- **Anything Family counts is phrased for the language it is in**, rather than by adding an
+  "s" to a word.
 - **Wide Family is described as what it is: off by default.** It shipped with a warning that
-  none of its checks had run against a real server, which was true when it was written and
-  stopped being true when the live pass reached it on all three clients. It is still off until
-  you ask for it — sharing is the one thing a later version cannot take back — but that is now
-  a choice about consent rather than a caveat about testing. The About panel, `/family wide`
-  and the manual all say the same thing.
+  none of its checks had run against a real server; that pass has since run on all three
+  clients. It is still off until you ask for it — sharing is the one thing a later version
+  cannot take back — but that is a choice about consent now rather than a caveat about
+  testing.
 
 ## 1.0.0-beta.2 — 2026-08-27
 

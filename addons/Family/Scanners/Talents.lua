@@ -19,33 +19,29 @@
 -- readers below share nothing but their output shape.
 --
 --------------------------------------------------------------------------------------------
--- The one place Family stores a name, and why
+-- Why a talent carries a name as well as a position
 --------------------------------------------------------------------------------------------
 --
--- §2.1 says ids are stored and names are resolved from the client at display time. Talents
--- are the one thing that cannot obey it, and the reason is worth writing down so nobody
--- "fixes" it back:
+-- §2.1 says ids are stored and names are resolved from the client at display time, and
+-- talents used to be the one thing that could not obey it:
 --
 --   **The client will only talk about your own class's talents.** GetTalentInfo answers for
 --   the character you are playing. There is no call that asks what the third talent in a
 --   warlock's second tree is called while you are on a mage - and showing another member's
 --   talents from a different class is the entire point of the panel.
 --
--- Mists is better off: a specialisation has an id and GetSpecializationInfoByID answers for
--- any class, so that half stores an id like everything else. It is the tree talents that
--- have nothing resolvable.
+-- That is still true of the client, and no longer decides anything, because a talent is a
+-- spell: addons/Family/TalentSpells.lua maps a position - class, tree, tier, column - to the
+-- spell id of its first rank, and the client will name any spell for any class. All three of
+-- those numbers are recorded below and always were, so nothing here had to change and nothing
+-- needs rescanning.
 --
--- So a tree talent carries its name and icon alongside its position and rank, recorded from
--- the client that could see it, in that client's language. Consequences, stated rather than
--- discovered later: a member recorded on a German client shows German talent names on an
--- English one, and a linked family (§6) shows whatever language its owner plays in.
+-- The name is still recorded beside them, and is still worth recording: it is what a position
+-- no table knows falls back to, which is a client newer than the table or a talent that has
+-- moved. It is a fallback now rather than the only answer.
 --
--- **The proper fix is a generated talent table.** The client's own TalentTab and Talent
--- tables are in its DB2 files and wago.tools serves them per build, which is exactly the
--- route DATASOURCES.md §3 already endorses and already uses for craft levels. Then a talent
--- is an id, the name comes from the table in eleven languages, and this exception
--- disappears. Until that exists, the cached name is the difference between a working panel
--- and no panel.
+-- Mists is elsewhere again: a specialisation has an id and GetSpecializationInfoByID answers
+-- for any class, so that half has always stored an id.
 
 local _, Family = ...
 

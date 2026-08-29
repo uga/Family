@@ -568,6 +568,14 @@ local function build(frame)
 					local column = talent.column or 1
 					if tier > deepest then deepest = tier end
 
+					-- What this talent is called here. A talent is a spell and the
+					-- client names any spell for any class, so its position is turned
+					-- into a spell id and the answer is in the reader's language
+					-- whoever recorded the member. The recorded word is the fallback,
+					-- and is what a record made before that table existed carries.
+					local shownName = Family:TalentName(member.meta.classFile,
+						talent.tab, tier, column, talent.name)
+
 					local rank = talent.rank or 0
 					local maxRank = talent.maxRank or 0
 
@@ -582,11 +590,14 @@ local function build(frame)
 							and { tab = talent.tab, index = talent.index, group = group }
 							or nil,
 						taken = rank > 0,
-						dim = not matches(talent.name),
+						-- Searched by the word on screen and by the one recorded, so
+						-- a family holding records from other people's clients is not
+						-- searchable in only one language.
+						dim = not (matches(shownName) or matches(talent.name)),
 						rank = maxRank > 1 and string.format("%d/%d", rank, maxRank)
 							or (rank > 0 and "" or nil),
 						fallback = {
-							{ talent.name or "?" },
+							{ shownName or "?" },
 							{ tree.name or string.format(L["Tree %d"], tab) },
 							{ string.format(L["|cffffd700%d|r of %d"], rank, maxRank),
 								string.format(L["|cff888888tier %d|r"], tier) },
