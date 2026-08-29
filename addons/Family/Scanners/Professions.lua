@@ -481,8 +481,21 @@ local function readModernRecipes()
 	for _, id in ipairs(ids) do
 		local info = Family:TryCall(C_TradeSkillUI.GetRecipeInfo, id)
 		if type(info) == "table" and info.learned then
+			-- The id of what it makes, asked for separately because this window hands
+			-- back a recipe id and stops there. Without it every recipe on this client
+			-- is a spell and nothing else, and "who can make one of these" has only the
+			-- recipe's *name* to go on - which is the product's name for most trade
+			-- skills and is not for the ones that are not named after what they make.
+			-- Smelting says "Smelt Copper" and makes a Copper Bar.
+			--
+			-- Asked through TryCall and read back rather than assumed: a client without
+			-- the call answers nothing, which leaves this exactly as it was.
+			local made = idFromLink(
+				Family:TryCall(C_TradeSkillUI.GetRecipeItemLink, id), "item")
+
 			recipes[#recipes + 1] = {
 				spellID = id,
+				itemID = made,
 				name = info.name,
 				difficulty = info.relativeDifficulty or info.difficulty,
 				available = info.numAvailable or 0,

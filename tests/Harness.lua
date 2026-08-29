@@ -2018,6 +2018,56 @@ do
 	TRADE_SKILL_OPEN = realOpen
 end
 
+-- The third client's window, which hands back a recipe id and nothing else
+--
+-- Mists has C_TradeSkillUI and answers with recipe ids; the id of the thing each one makes has
+-- to be asked for separately. Without it every recipe on that client is a spell alone, and
+-- "who can make one of these" has only the recipe's name to go on - which is the product's
+-- name for most trade skills and is not for the ones that are not named after what they make.
+do
+	-- Put back as found rather than as expected. The craft tests after this one need the
+	-- trade skill window shut, and restoring it open left them reading the wrong window -
+	-- which is the third time in this file a block has broken the one after it by tidying
+	-- to a value it assumed rather than to the one it displaced.
+	local realCraft, realOpen = GetCraftName, TRADE_SKILL_OPEN
+	GetCraftName = function() return "UNKNOWN" end
+	TRADE_SKILL_OPEN = false
+
+	C_TradeSkillUI = {
+		GetTradeSkillLine = function() return "Blacksmithing" end,
+		GetAllRecipeIDs = function() return { 3304, 2661 } end,
+		GetRecipeInfo = function(id)
+			return { learned = true, name = "Recipe " .. id, relativeDifficulty = "easy",
+				numAvailable = 0 }
+		end,
+		-- Answered for one and not the other, because a client that will not say is the
+		-- case this has to survive rather than the case it is written for.
+		GetRecipeItemLink = function(id)
+			if id == 3304 then return "|cffffffff|Hitem:3576|h[Tin Bar]|h|r" end
+			return nil
+		end,
+	}
+
+	Family.Professions:Scan(true)
+
+	local modern = Family.Database:Payload(key).professions[SKILL.blacksmithing]
+	local made, spellOnly
+	for _, recipe in ipairs((modern or {}).recipes or {}) do
+		if recipe.spellID == 3304 then made = recipe end
+		if recipe.spellID == 2661 then spellOnly = recipe end
+	end
+
+	check("a recipe id window is read at all", made ~= nil and spellOnly ~= nil)
+	check("and the id of what each one makes is asked for separately",
+		made and made.itemID == 3576, made and tostring(made.itemID) or "nothing")
+	check("while one the client will not answer for keeps its spell and no more",
+		spellOnly and spellOnly.spellID == 2661 and spellOnly.itemID == nil)
+
+	C_TradeSkillUI = nil
+	GetCraftName = realCraft
+	TRADE_SKILL_OPEN = realOpen
+end
+
 -- A window that is open and lists nothing at all
 --
 -- Which is what another addon filtering or replacing that window looks like from in here. It

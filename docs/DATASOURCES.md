@@ -125,6 +125,18 @@ specialisations: with a leatherworking trade skill window open, `GetCraftName()`
 A craft window can therefore name something real and have nothing in it, which is why
 `readCraftRecipes` returning nil on an empty list matters.
 
+**The recipe-id window hands back a recipe and stops there.** Mists has `C_TradeSkillUI`, and
+`GetRecipeInfo` answers with a name, a difficulty and an icon — and nothing at all about the
+item the recipe produces. Read that way, every recipe on that client is a spell and no more,
+and *"who can make one of these"* has only the recipe's **name** to work from: the product's
+name for most trade skills, and not for the ones that are not named after what they make.
+Smelting says *Smelt Copper* and makes a Copper Bar.
+
+So `GetRecipeItemLink` is asked as well, through `TryCall` and read back — a client that does
+not have the call answers nothing and the record is exactly as it was. **Not yet confirmed on a
+live Mists client**, which is the one measurement on this page that is still an expectation;
+`docs/SMOKE.md` asks for it.
+
 **On the Craft frame the two calls are the other way round from their names.** Measured on
 1.15.9 with an enchanting window open:
 

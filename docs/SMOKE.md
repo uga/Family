@@ -120,6 +120,12 @@ Per client: **Era**, **Anniversary**, **Mists**.
 - [ ] **Hover something one of their shared professions can make.** A *Guild crafters* block
       appears under your own family's, naming the player and the character of theirs that can
       make it. It works on the crafted item, not only on the pattern.
+- [ ] **On Mists only:** open a profession and run `/family recipes`. Each row should print an
+      item id as well as a spell id. That window answers with recipe ids and has to be asked
+      separately what each one makes; the call is made but has never been seen answering on a
+      live client, so this line is a measurement rather than a tick. Write the answer in the
+      row — and if the item ids are absent, *Smelt Copper* will not be found by hovering a
+      Copper Bar.
 - [ ] **Hover something one of your own characters can make.** A *Can make it* block names
       them with their skill, whether or not anybody in the guild can make it too — and the
       guild's are on the same block, marked *(guild)*.
