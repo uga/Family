@@ -16,9 +16,9 @@ is a command running, one closing on your message is you reading and typing.
 
 | idle threshold | you | Claude generating | tools running | total |
 |---|---|---|---|---|
-| 2 min | 1h 59m | 13h 52m | 1h 54m | 17h 47m |
-| 5 min | 6h 25m | 14h 04m | 2h 41m | 23h 12m |
-| 10 min | 10h 39m | 14h 04m | 2h 53m | 27h 38m |
+| 2 min | 2h 01m | 13h 53m | 1h 55m | 17h 49m |
+| 5 min | 6h 26m | 14h 06m | 2h 42m | 23h 15m |
+| 10 min | 10h 40m | 14h 06m | 2h 53m | 27h 40m |
 
 **Claude's own time is the trustworthy row and yours is not.** Generation barely
 moves with the threshold, because a reply's parts follow each other in seconds.
@@ -28,19 +28,22 @@ it is the answer — which is why the declared ledger below exists at all.
 
 | tokens | |
 |---|---|
-| fresh input | 31,599 |
-| cache writes | 30,214,866 |
-| cache reads | 2,162,187,258 |
-| output | 7,670,902 |
+| fresh input | 33,861 |
+| cache writes | 39,712,626 |
+| cache reads | 2,735,179,990 |
+| output | 9,102,619 |
 
 Cache reads dominate and mean less than they look: every request re-sends the whole
 conversation, so the same context is read back thousands of times and is priced for
 that. The work done is the output and the cache writes.
 
-11 sessions, 08 Aug 2026 to 29 Aug 2026, 344 prompts from you.
+12 sessions, 08 Aug 2026 to 29 Aug 2026, 413 prompts from you.
 
 ## Declared, by hand
 
-Nothing declared yet. `docs/effort/declared.csv` takes a row per stretch of work
-the transcripts cannot see — testing in the game above all.
+| date | hours | who | what |
+|---|---|---|---|
+| 2026-08-29 | 20.0 | Alberto | Testing in the game across the whole project span, 8 to 29 August - three clients, five languages, banks and professions and talents. One recalled figure for the lot, not a sum of measured stretches. |
+
+**20.0 hours declared**, across 1 entry.
 

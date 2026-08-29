@@ -185,8 +185,9 @@ def report():
             add("| %s | %.1f | %s | %s |"
                 % (row["date"], row["hours"], row["who"], row["what"]))
         add("")
-        add("**%.1f hours declared**, across %d entries."
-            % (sum(r["hours"] for r in rows), len(rows)))
+        add("**%.1f hours declared**, across %d %s."
+            % (sum(r["hours"] for r in rows), len(rows),
+               "entry" if len(rows) == 1 else "entries"))
     add("")
     return "\n".join(lines) + "\n"
 
