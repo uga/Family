@@ -8222,6 +8222,30 @@ print("the translations")
 				#mangled == 0, table.concat(mangled, " | "))
 		end
 	end
+
+	-- Every sentence the slash commands print is translated in all four languages.
+	--
+	-- Not a rule about coverage in general. A missing translation degrades to readable
+	-- English on purpose, and that is right for a label standing on its own. It is wrong for
+	-- a sentence, because the values inside one come from the same helpers the panels use
+	-- and are translated whatever the sentence around them is - so an untranslated line
+	-- reads "seen il y a 19j, 2 container(s), meta says jamais", half of each, which is what
+	-- a French player was sent when a diagnosis was added without its translations.
+	--
+	-- Slash.lua is where Family writes sentences rather than labels, which is why the rule
+	-- is drawn there and not everywhere.
+	for _, code in ipairs { "deDE", "frFR", "esES", "ruRU" } do
+		local table_ = Family.locales[code] or {}
+		local half = {}
+		for key, path in pairs(asked) do
+			if path == "addons/Family_UI/Slash.lua" and rawget(table_, key) == nil then
+				half[#half + 1] = key
+			end
+		end
+		table.sort(half)
+		check(code .. " translates every sentence the slash commands print",
+			#half == 0, table.concat(half, " | "))
+	end
 end)()
 
 print()

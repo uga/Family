@@ -833,6 +833,14 @@ Where the recording client's own word is in the reader's language it is preferre
 table, because the game gendered it and no table here can: a Russian gnome is a Gnom or a
 Gnomka and the client already knew which.
 
+**A sentence is translated or it is half a sentence.** A missing translation falling back to
+English is the right failure for a label standing on its own, and the wrong one for anything
+Family prints as prose: the values inside a printed line — a date, a sum of money, a
+profession — come from the same helpers the panels use and are translated whatever the
+sentence around them is. So an untranslated diagnosis read *"seen il y a 19j, 2 container(s),
+meta says jamais"*. Everything the slash commands print is translated in all four languages,
+and the harness refuses a new one that is not.
+
 The search index is per language and is rebuilt when the client language changes (§2.1).
 
 ---
