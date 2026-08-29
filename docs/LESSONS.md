@@ -617,3 +617,43 @@ DATASOURCES, and the probe is a way of taking longer to be less certain.
 check that would not have fired. What catches it is the precedence line in `CLAUDE.md` being
 read as a routing rule rather than a tie-breaker — data questions go to DATASOURCES first, and
 `DATASOURCES.md` §3 gets read before any probe is designed, not after one is proposed.
+
+## L-021 — Fluency read as permission to skip the file
+
+**2026-08-29.** Three times in one session I answered from general knowledge a question this
+repository had already answered in writing, each against a different document.
+
+The next version number was going to be `1.0.1`, said twice, because that is what semantic
+versioning would call a release of fixes. `RELEASING.md` §Version numbers says minor goes up
+for a fix and patch is reserved for an `## Interface` bump alone, and `DECISIONS.md` records
+that being settled on 2026-08-26. The answer is `1.1.0`.
+
+A runtime probe was proposed to find out what the game calls an area, when `CLAUDE.md` says
+DATASOURCES beats everything on data and `DATASOURCES.md` §3 lists `AreaTable` by name. That is
+L-020, and it is here again because it turned out not to be one incident.
+
+The area scan was given a ceiling of 6,000, chosen because it sounded ample. The highest named
+area is 16,394; 6,000 would have silently found no id for 11% of Era's areas and 18% of Mists's.
+"Measure rather than estimate — if a number can be counted, count it" was already a standing
+instruction. A mutation run caught it, not a reading.
+
+**The common cause is not forgetting the documents.** The routing table sits at the top of
+`CLAUDE.md` and is in front of every session. What fails is the step between having a question
+and opening a file, and that step was gated on feeling uncertain — which is uncorrelated with
+whether the answer is written down, and in the worst cases inverted. Semver felt certain. "Ask
+the client rather than assume" felt certain. A wrong answer arriving fluently is
+indistinguishable from a right one arriving fluently.
+
+**And these documents are, by construction, sited in that blind spot.** Each of them exists to
+override an answer that is plausible in general — semantic versioning is the world's convention
+and this project deliberately chose another; asking the client is good instinct and this project
+has drawn a line where it stops. A document that only confirmed the obvious would never have
+been written. So the moments when one is most needed are exactly the moments when it feels least
+necessary to open.
+
+**What now catches it:** `CLAUDE.md` §Grounding carries a routing table keyed on the *shape* of
+the question rather than on confidence, so the trigger is topical and does not depend on
+noticing doubt. It says in terms that a fluent answer is the signal to open the file rather than
+permission to skip it, and that "archive, fetch only when the task is about them" refers to the
+task and not the file — a passing question about which number comes next is a question about
+releasing.
