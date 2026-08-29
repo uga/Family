@@ -136,14 +136,16 @@ local function build(frame)
 	title:SetPoint("TOPLEFT", 4, -4)
 	title:SetText(L["Guild share"])
 
-	local enabled = CreateFrame("CheckButton", "FamilyGuildEnabled", frame,
-		"UICheckButtonTemplate")
-	enabled:SetSize(24, 24)
-	enabled:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
-	enabled:SetScript("OnClick", function(self)
-		Family.Guild:SetEnabled(self:GetChecked() and true or false)
-		frame:Refresh()
-	end)
+	-- Off is a state this panel explains rather than a switch it carries. Both sharing
+	-- features are switched in Options, together, so a player looks in one place for a switch
+	-- instead of hunting the panel each one governs. Wide Family's panel says the same thing
+	-- in the same way.
+	local offNote = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+	offNote:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 2, -6)
+	offNote:SetJustifyH("LEFT")
+	offNote:SetText(L["|cff9d9d9dGuild share is switched off, so nothing here will fill in. "
+		.. "Switch it on in Options: it shows your guild the gear and talents of your "
+		.. "characters in it, and shows you theirs.|r"])
 
 	-- Right to left, each anchored to the one beside it rather than to a fixed offset.
 	-- The offsets were -6 and -122, which is -6 and "-6 minus a button that is 110 wide" -
@@ -164,12 +166,8 @@ local function build(frame)
 		frame:Refresh()
 	end)
 
-	local enabledLabel = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	enabledLabel:SetPoint("LEFT", enabled, "RIGHT", 2, 0)
 	-- Stops where the buttons begin rather than running underneath them.
-	enabledLabel:SetPoint("RIGHT", whoButton, "LEFT", -8, 0)
-	enabledLabel:SetJustifyH("LEFT")
-	enabledLabel:SetText(L["Share gear and talents with the guild, and read theirs"])
+	offNote:SetPoint("RIGHT", whoButton, "LEFT", -8, 0)
 	updateButton:SetScript("OnClick", function()
 		local ok, why = Family.Guild:Refresh("asked for")
 		if ok then
@@ -181,7 +179,7 @@ local function build(frame)
 	end)
 
 	local status = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	status:SetPoint("TOPLEFT", enabled, "BOTTOMLEFT", 2, -6)
+	status:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 2, -28)
 	status:SetPoint("RIGHT", -8, 0)
 	status:SetJustifyH("LEFT")
 
@@ -273,7 +271,7 @@ local function build(frame)
 		local used, usedCells, y = 0, 0, 0
 
 		list:SetWidth(math.max(scroll:GetWidth(), 200))
-		enabled:SetChecked(Family.Guild:Enabled())
+		offNote:SetShown(not Family.Guild:Enabled())
 		whoButton:SetText(onlineOnly and L["Online only"] or L["Everyone"])
 		UI:FitButton(whoButton, 110)
 

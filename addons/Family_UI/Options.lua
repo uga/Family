@@ -58,15 +58,15 @@ local SWITCHES = {
 		set = function(on) Family.Guild:SetEnabled(on) end,
 	},
 	{
-		-- Not the sharing switch. This decides whether the tab is in the strip at all, so
-		-- that somebody who has decided against Wide Family can put it away - and so that
-		-- everybody else can find out it exists without reading a manual.
-		label = L["Show the Wide Family tab"],
-		note = L["Where families are linked and what each may see. Linking is off until "
-			.. "you switch it on there; this only decides whether the tab is in the list. "
-			.. "Takes effect after a reload."],
-		get = function() return UI:IsWideTabShown() end,
-		set = function(on) UI:SetWideTabShown(on) end,
+		-- The same switch as the one on the Wide Family panel, reading the same answer, for
+		-- the same reason the guild one is here twice: this is where a player looks for a
+		-- switch, and that is where they are when they decide they want it.
+		label = L["Share with families you link to"],
+		note = L["Wide Family: linking with another player, so each of you sees the members "
+			.. "and categories the other allows. Nothing is shared until you link and tick "
+			.. "what they may see."],
+		get = function() return Family.Wide:Enabled() end,
+		set = function(on) Family.Wide:SetEnabled(on) end,
 	},
 	{
 		label = L["Narrate what the scanners are doing"],

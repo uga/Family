@@ -1437,16 +1437,11 @@ fire("ADDON_LOADED", "Family_UI")
 
 -- But the tab is there. It used to appear only once the feature was on, so the only way to
 -- learn Wide Family existed was to read a manual - and a choice nobody can find is not a
--- choice anybody has made. Sharing still ships off; finding the switch is not flipping it.
-check("its tab is in the strip anyway, with the switch on it",
-	Family.UI:HasTab("wide"))
-check("and it is shown unless somebody says otherwise",
-	Family.UI:IsWideTabShown() == true)
+-- choice anybody has made. Both sharing features ship off and both panels are in the list
+-- either way, each carrying its own switch; finding one is not flipping it.
+check("its tab is in the strip anyway", Family.UI:HasTab("wide"))
+check("and the guild's is too, for the same reason", Family.UI:HasTab("guild"))
 
--- And it can be put away by somebody who has decided against it.
-Family.UI:SetWideTabShown(false)
-check("hiding it is a preference of its own", Family.UI:IsWideTabShown() == false)
-Family.UI:SetWideTabShown(true)
 
 -- On from here, the way a player would, because the rest of this file exercises the protocol.
 Family.Wide:SetEnabled(true)
@@ -4656,6 +4651,27 @@ check("summary survives an empty database", okRefresh, tostring(refreshErr))
 
 print()
 print("wide family")
+
+-- Off, the panel still says what it is and where its switch is
+--
+-- Both sharing features ship off and both panels are in the list either way, each explaining
+-- itself rather than carrying a switch: they are together in Options, so a player looks in one
+-- place. Borrowed and given back, because everything below needs the feature on.
+do
+	local was = Family.Wide:Enabled()
+	Family.Wide:SetEnabled(false)
+	Family.UI:Show()
+	Family.UI:ShowTab("wide")
+	Family.UI:Refresh()
+
+	check("the wide family panel points at the switch rather than looking broken",
+		visibleText("nothing here will do anything yet"))
+
+	Family.Wide:SetEnabled(was)
+	Family.UI:Refresh()
+	check("and stops saying it once the feature is on",
+		not visibleText("nothing here will do anything yet"))
+end
 -- Run as a function of its own rather than inline.
 --
 -- Lua allows two hundred local variables per function and this file is one long function
@@ -5974,6 +5990,14 @@ print("guild share")
 		Family.UI:HasTab("guild"))
 
 	-- Everything below is about the protocol, which needs it on.
+	-- Neither sharing panel carries its own switch any more: both are in Options, together,
+	-- so a player looks in one place. What a panel carries while its feature is off is an
+	-- explanation of why nothing on it is filling in.
+	Family.UI:Show()
+	Family.UI:ShowTab("guild")
+	check("and the panel points at the switch rather than looking empty",
+		visibleText("nothing here will fill in"))
+
 	Family.Guild:SetEnabled(true)
 	check("and it can be switched on", Family.Guild:Enabled() == true)
 

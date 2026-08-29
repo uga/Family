@@ -280,10 +280,9 @@ add("wide", L["Wide Family, which is off by default: /family wide on"],
 
 		Family.Wide:SetEnabled(on)
 
-		-- The panel is registered at load, so it appears or disappears at the next one. Said
-		-- plainly rather than left as a tab that did not turn up.
-		Family:Print(L["Wide Family is now |cffffd700%s|r. Type |cffffd700/reload|r for the "
-			.. "panel to %s."], on and L["on"] or L["off"], on and L["appear"] or L["go"])
+		-- The panel is in the list whether this is on or off, so there is nothing to reload
+		-- for any more: the switch takes effect where it is thrown.
+		Family:Print(L["Wide Family is now |cffffd700%s|r."], on and L["on"] or L["off"])
 		if on then
 			Family:Print(L["Nothing is shared with anybody until you link with them and tick "
 				.. "what they may see."])

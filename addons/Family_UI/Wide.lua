@@ -159,23 +159,16 @@ local function build(frame)
     status:SetPoint("RIGHT", -8, 0)
     status:SetJustifyH("LEFT")
 
-    -- The switch for the feature itself, on the panel the feature is about. Everything
-    -- below it is drawn whether it is on or off, and refuses to do anything while it is off -
-    -- which is what a panel explaining a switched-off feature should look like.
-    local enabled = CreateFrame("CheckButton", "FamilyWideEnabled", frame,
-        "UICheckButtonTemplate")
-    enabled:SetSize(24, 24)
-    enabled:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -4)
-    enabled:SetScript("OnClick", function(self)
-        Family.Wide:SetEnabled(self:GetChecked() and true or false)
-        frame:Refresh()
-    end)
-
-    local enabledLabel = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-    enabledLabel:SetPoint("LEFT", enabled, "RIGHT", 2, 0)
-    enabledLabel:SetPoint("RIGHT", frame, "RIGHT", -12, 0)
-    enabledLabel:SetJustifyH("LEFT")
-    enabledLabel:SetText(L["Share with families you link to"])
+    -- Off is a state this panel explains rather than a switch it carries. Both sharing
+    -- features are switched in Options, together, so there is one place a player looks for a
+    -- switch rather than one per feature scattered across the panels they govern.
+    local offNote = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+    offNote:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 2, -6)
+    offNote:SetWidth((UI.CONTENT_W or 740) - 16)
+    offNote:SetJustifyH("LEFT")
+    offNote:SetText(L["|cff9d9d9dWide Family is switched off, so nothing here will do "
+        .. "anything yet. Switch it on in Options, then link with somebody - nothing is "
+        .. "shared until you have done both, and then only what you tick.|r"])
 
     -- Automatic exchange, which is a preference and lives beside the thing it governs
     -- rather than three panels away in Options.
@@ -287,7 +280,7 @@ local function build(frame)
         -- controls stay where they are and stop working, which says what the switch does
         -- better than hiding them would.
         local on = Family.Wide:Enabled()
-        enabled:SetChecked(on)
+        offNote:SetShown(not on)
         askButton:SetEnabled(on)
         ask:SetEnabled(on)
         auto:SetEnabled(on)
@@ -831,10 +824,6 @@ end
 -- one they have made. A player who never reads a manual would never have learnt the feature
 -- existed.
 --
--- Hiding it is now a preference of its own, in Options, for somebody who has decided and does
--- not want the tab.
 Family:OnDatabaseReady("ui.wide", function()
-    if UI:IsWideTabShown() then
-        UI:RegisterTab("wide", L["Wide Family"], build)
-    end
+    UI:RegisterTab("wide", L["Wide Family"], build)
 end)
