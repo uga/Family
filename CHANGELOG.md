@@ -62,7 +62,9 @@ is a decision rather than an afternoon of archaeology.
   pressing anything.
 
 - **Hovering something craftable now says who can make another one — yours as well as your
-  guild's, in one block.** It only ever said who *owned* one. The block that names crafters
+  guild's, in one block.** A pattern still gets the other answer instead: who knows that
+  recipe and who could learn it. They are two questions about two different items — the plans,
+  and the thing the plans make — and neither is now answered on the other's tooltip. It only ever said who *owned* one. The block that names crafters
   answers about a *pattern* — who knows it, who could learn it — and finds people by the
   subtype and skill written on a pattern's tooltip, which the thing it makes does not carry.
   So the robe told you who had one and nothing about who could make another; and once guild

@@ -281,6 +281,18 @@ end
 --
 -- Answered by identifier here, and by the name only where a client gave no identifier at all.
 local function makerBlock(_, itemID)
+	-- Not on a pattern. A profession window lists the crafting *spells* a character has
+	-- learnt, and a pattern in a bag or an auction house is the book that teaches one - two
+	-- different things, and two different questions. Hovering the plans asks who knows the
+	-- recipe, which the block above answers; hovering what the plans make asks who can make
+	-- another, which is this one.
+	--
+	-- Without this they overlap on exactly one shape of item: a pattern whose recipe carries
+	-- no id of what it makes, where the name fallback below recognises "Plans: X" as teaching
+	-- "X" and answers a question the block above has already answered better.
+	local certain = select(3, Family.Recipes:ItemProfession(itemID))
+	if certain then return nil end
+
 	local itemName = Family.Names:CachedItem(itemID)
 
 	local ours = Family.Recipes:KnowersOf(nil, itemID, itemName)

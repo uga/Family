@@ -2661,8 +2661,31 @@ local function craftersFor(itemID, skillLine)
 	return found, heading
 end
 
+-- Somebody whose record of the same recipe carries no id for what it makes, which is the
+-- ordinary Classic Era shape and the one case where the two blocks could both fire: the
+-- pattern's own name teaches the recipe's, so "who can make one" would answer on the book.
+Family.Database:SetMeta("Formulaic-FireMaw", { name = "Formulaic", realm = "Fire Maw",
+	level = 60, skills = { [164] = { rank = 275, maxRank = 300 } } })
+Family.Database:SetPayload("Formulaic-FireMaw", { professions = { [164] = {
+	rank = 275, maxRank = 300, recipesSeen = time(),
+	recipes = { { name = "Copper Chain Belt", spellID = 2661 } } } } })
+
 local crafters, heading = craftersFor(2881, "Requires Blacksmithing (100)")
 check("a recipe gets a crafters block", heading == true)
+
+-- And only that one. A profession window lists the crafting spells a character has learnt; a
+-- pattern is the book that teaches one. Hovering the plans asks who knows the recipe, hovering
+-- what the plans make asks who can make another, and answering both on the book is Family
+-- answering a question nobody put.
+do
+	local madeBy = false
+	for _, line in ipairs(GameTooltip.__lines) do
+		if type(line[1]) == "string" and line[1]:find("Can make it", 1, true) then
+			madeBy = true
+		end
+	end
+	check("and not the block about making the thing it teaches", not madeBy)
+end
 check("the member who knows it says so", crafters.Tester
 	and crafters.Tester:find("knows it", 1, true) ~= nil, tostring(crafters.Tester))
 check("one with the skill, the level and a list it is not on can learn it",
