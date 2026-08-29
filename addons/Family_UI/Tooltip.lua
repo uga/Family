@@ -202,9 +202,11 @@ end
 -- sources with two different kinds of certainty behind them, and a guildmate's alt is
 -- somebody to whisper rather than somebody to log into.
 --
--- **These are people, not characters.** A guild record is keyed by whoever sent it, so what
--- is named is the player, with the character of theirs that can make it beside them - which
--- is the pair somebody needs to decide whether to say anything.
+-- **The character, and only the character.** A guild record is keyed by whoever sent it, so
+-- the player who sent it is known - and naming them as well buys nothing here, because
+-- everything §7 shares is a character *in this guild*. The crafter is therefore on the same
+-- roster the reader is looking at: whisperable if online, visibly not if not. Two names where
+-- one is enough is clutter on the one surface that cannot afford any.
 --
 -- Answered by identifier, so it needs no profession and no skill requirement read off the
 -- tooltip: what crossed is the spell of each recipe and the item it makes, and hovering
@@ -225,22 +227,13 @@ local function guildCrafterLines(_, itemID)
 		local who = crafters[index]
 		local r, g, b = classColour(who.classFile)
 
-		-- The realm taken off for reading, not the lower-cased key the protocol matches
-		-- on: this is a name somebody is about to type into a whisper.
-		local player = tostring(who.player or "?")
-		player = player:match("^([^%-]+)") or player
-
-		-- Said once where they are the same word. A player whose crafting alt is the
-		-- character they are named after - or who is on that character right now - is the
-		-- ordinary case, and "Rolando Rolando" reads like a fault rather than like two
-		-- facts.
-		local character = tostring(who.name or "")
-		local both = (character ~= "" and character:lower() ~= player:lower())
-			and string.format("%s |cff888888%s|r", player, character)
-			or player
+		-- The realm taken off for reading: this is a name somebody is about to type into a
+		-- whisper, not the lower-cased key the protocol matches on.
+		local character = tostring(who.name or who.key or "?")
+		character = character:match("^([^%-]+)") or character
 
 		lines[#lines + 1] = {
-			both,
+			character,
 			string.format("|cff9d9d9d%s|r", UI:Ago(who.at)),
 			r, g, b, 1, 1, 1,
 		}

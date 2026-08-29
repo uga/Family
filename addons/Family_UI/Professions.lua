@@ -634,12 +634,13 @@ local function build(frame)
 				-- characters are somebody to log into and a guildmate is somebody to
 				-- whisper.
 				--
-				-- People, not characters. A guild record is keyed by whoever sent it, so
-				-- what is named is the player.
+				-- The character, because everything §7 shares is a character in this
+				-- guild - so each of these is on the roster next door, whisperable if
+				-- online and visibly not if not.
 				local guild = {}
 				for _, who in ipairs(recipe.guild or {}) do
-					local player = tostring(who.player or "?")
-					guild[#guild + 1] = player:match("^([^%-]+)") or player
+					local character = tostring(who.name or who.key or "?")
+					guild[#guild + 1] = character:match("^([^%-]+)") or character
 				end
 
 				local note = table.concat(names, ", ")

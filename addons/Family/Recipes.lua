@@ -168,12 +168,15 @@ local function guildCrafters(byName, order, needle, limit)
 					if row then
 						row.guild = row.guild or {}
 
-						-- A person, not a character. Two of their alts knowing the
-						-- same recipe is one guildmate to whisper, not two.
-						local player = tostring(list.from or entry and entry.from or "?")
+						-- One entry per character, because a character is what can
+						-- make the thing and every one of them is in this guild -
+						-- which means every one of them is on the roster the reader
+						-- can see, and either whisperable or visibly offline. Two of
+						-- one player's alts knowing it are two characters worth
+						-- naming, not one guildmate mentioned twice.
 						local seen = false
 						for _, who in ipairs(row.guild) do
-							if who.player == player then seen = true end
+							if who.key == memberKey then seen = true end
 						end
 
 						if not seen then
@@ -181,7 +184,8 @@ local function guildCrafters(byName, order, needle, limit)
 							if list.seen and list.seen < age then age = list.seen end
 
 							row.guild[#row.guild + 1] = {
-								player = player,
+								player = list.from
+									or (entry and entry.from) or "?",
 								key = memberKey,
 								name = meta.name or memberKey,
 								classFile = meta.classFile,
@@ -197,7 +201,7 @@ local function guildCrafters(byName, order, needle, limit)
 	for _, row in ipairs(order) do
 		if row.guild then
 			table.sort(row.guild, function(a, b)
-				return tostring(a.player) < tostring(b.player)
+				return tostring(a.name) < tostring(b.name)
 			end)
 		end
 	end

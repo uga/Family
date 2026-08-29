@@ -913,9 +913,19 @@ wearing. **The grid of what you share lives there**, next to the roster it gover
 way Wide Family's grid lives on Wide Family's panel — a switch belongs in Options and a grid
 does not, because a grid is the feature rather than a preference about it.
 
-**The answer is a person, not a character.** Guild records are keyed by the player who sent
-them, so a row reads as *this player, online now on that character, has an alt who can make
-it*. You whisper the player. Naming only the alt would name somebody who is not there.
+**The answer is a character, and naming the player as well would add nothing.** Guild records
+are keyed by whoever sent them, so the player is known — but everything §7 shares is a
+character *in this guild*, which is the scope stated above and not a detail. The crafter is
+therefore on the same roster the reader is looking at: whisperable if they are online, and
+visibly not if they are not. A second name would be somebody the reader has to go and look up
+in order to get back to the first.
+
+*Settled 2026-08-30, having first been written the other way round.* The argument for naming
+the player rested on the alt being "somebody who is not there", and that is false for a guild:
+you may be in one guild at a time, so a shared character is a roster entry like any other. It
+is not false for Wide Family, where a linked family's members are on other realms and other
+rosters with no way to whisper them or see whether they are online — which is why that feature
+names families and this one names characters.
 
 ### Built in three slices
 

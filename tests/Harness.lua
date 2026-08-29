@@ -7243,36 +7243,29 @@ print("guild share")
 			end
 			GameTooltip.__scripts.OnTooltipSetItem(GameTooltip)
 
-			local heading, named = false, false
+			local heading, named, alsoSender = false, false, false
 			for _, line in ipairs(GameTooltip.__lines) do
 				if type(line[1]) == "string" and line[1]:find("Guild crafters", 1, true) then
 					heading = true
 				elseif heading and type(line[1]) == "string"
-					and line[1]:find("Faraway", 1, true)
 					and line[1]:find("Nervina", 1, true) then
 					named = true
+					-- Nervina's list arrived from Faraway. Naming the sender as well
+					-- would be naming somebody the reader then has to go and look up,
+					-- when the character itself is on the roster next door.
+					if line[1]:find("Faraway", 1, true) then alsoSender = true end
 				end
 			end
-
-			-- And said once where the player and the character are the same word, which is
-			-- the ordinary case for somebody on the character they are named after.
-			local twice = false
-			for _, line in ipairs(GameTooltip.__lines) do
-				if type(line[1]) == "string" then
-					local first = line[1]:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
-					if first:match("^(%a+)%s+(%a+)$")
-						and first:match("^(%a+)") == first:match("(%a+)$") then
-						twice = true
-					end
-				end
-			end
-			check("and no name is printed twice over", not twice)
 
 			check("the guild's answer appears on the item's own tooltip", heading)
-			-- Both names, and the player first: guild records are keyed by whoever sent
-			-- them, whispering that player is what somebody does about the answer, and the
-			-- character beside them is which of theirs can actually make it.
-			check("naming the player, with the character of theirs that can make it", named)
+
+			-- **The character, and only the character.** Everything §7 shares is a character
+			-- in this guild, so the crafter is on the same roster the reader is looking at:
+			-- whisperable if online, visibly not if not. The player who sent the record is
+			-- known and adds nothing here, and two names where one is enough is clutter on
+			-- the one surface that cannot afford any.
+			check("naming the character that can make it", named)
+			check("and not the guildmate whose client happened to send it", not alsoSender)
 
 			-- Switched off means off in both directions, and that includes not answering
 			-- out of what was collected while it was on.
@@ -7343,8 +7336,11 @@ print("guild share")
 					and tostring(row.guild[1].player) or "nobody")
 			check("with nothing of that name recorded in the family",
 				row and #row.members == 0, row and tostring(#row.members) or "no row")
-			check("and two characters of theirs who know it are one person to whisper",
-				row and #row.guild == 1, row and tostring(#row.guild) or "no row")
+			-- Two characters, because two characters can make it and each is on the guild
+			-- roster in its own right. Collapsing them into the one player who owns both
+			-- would name somebody the reader then has to go and look up.
+			check("and two characters of theirs who know it are named as two",
+				row and #row.guild == 2, row and tostring(#row.guild) or "no row")
 
 			-- Off is off here too, and it has to be checked separately: this reads out of
 			-- what was collected rather than off the wire, so the switch is the only thing

@@ -46,9 +46,9 @@ is a decision rather than an afternoon of archaeology.
   item's own tooltip, under the crafters from your own family, and in the recipe search on the
   Professions panel, as a second group beside your own. One box, one question, two sources.
 
-  The answer names the **player**, with the character of theirs that can make it beside them —
-  that is who you whisper. Two of their characters knowing the same thing is one guildmate,
-  not two.
+  The answer names the **character** that can make it. Everything shared this way is a
+  character in your guild, so it is on the roster you already have: whisper it if it is
+  online, and see that it is not if it is not.
 
   Nothing but identifiers crosses, so a recipe list read on a French client is found by
   somebody typing German, and neither of you has ever held a word the other could read. A
