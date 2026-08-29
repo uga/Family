@@ -959,8 +959,10 @@ Recorded so the project can be measured against it.
    they disagree about thirty-two positions.
 3. ~~**Importing existing records.**~~ Settled: there is no import. Family starts empty and
    fills as each member is played.
-4. **Where the generators write.** Their output paths must be repointed once
-   `addons/Family/` exists and its data folder is named.
+4. ~~**Where the generators write.**~~ Settled: `tools/GenerateCraftLevels.py` writes into
+   `addons/Family/Data/`, which `.gitignore` covers and `.pkgmeta` builds, and the three
+   table generators write `SkillLines.lua`, `Races.lua` and `TalentSpells.lua` into
+   `addons/Family/` itself, which the `.toc` loads.
 5. ~~**Rewriting the deploy script.**~~ Done: `tools/Deploy.bat`, written for Family's two
    folders, carrying over the three real game paths.
 6. ~~**A logo.**~~ Done: `tools/GenerateIcon.py` draws it.
