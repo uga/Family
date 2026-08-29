@@ -141,6 +141,25 @@ character held 101 enchanting recipes with neither id until both links were read
 The rule that follows, and it is the same one twice: **read every link for every id it might
 carry, and do not trust a call's name to say what it returns.**
 
+### Bank containers, measured
+
+The bank's own window is container `-1` and the bags bought for it start above the carried
+ones, at `5`. `ContainerIDToInventoryID` maps them to consecutive inventory slots and is
+correct — measured on 1.15.9 with a bank window open, via `/family bank`:
+
+```
+container -1: 24 slots, inventory slot nil     -- the window itself is not a bag
+container  5: 14 slots, inventory slot 88, bag item 9587
+container  6: 14 slots, inventory slot 89, bag item 11324
+container  7: 20 slots, inventory slot 90, bag item 22248
+container  8: 20 slots, inventory slot 91, bag item 22248
+```
+
+Written down because a player reported a bag shown one slot along from where it sits, and the
+mapping was the obvious suspect. It was not: the panel lists the bank's own window first and
+the bags after it, so the first *bank bag* is the second *block*. There is nothing to fix in
+either the mapping or the order, and this is here so the same suspect is not questioned twice.
+
 ### What the client cannot do
 
 It has no network access. Any addon that talks to a server does it through a companion
