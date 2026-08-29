@@ -234,6 +234,11 @@ end
 
 local currentSet = SETS[1]
 
+-- Whose letters are open, by member key, or nothing. One at a time: a table with every
+-- member's post unfolded is a table nobody can read, and the question is always about one
+-- character.
+local openMail
+
 local function columnsOf(set)
 	local columns = { MEMBER_COLUMN }
 	for _, column in ipairs(set.build and set.build() or set.columns) do
@@ -403,6 +408,37 @@ end
 
 -- The one number on this screen worth reacting to, so it is the one that goes red. Mail
 -- that expires takes its attachments with it.
+-- One letter, in a line. Who it is from, what it is called, and what is attached to it -
+-- which is the whole of what the mailbox itself shows before you open one.
+--
+-- The subject is what a player recognises a letter by; the sender is what they decide by. So
+-- both, sender first, and the attachments counted rather than listed: a letter with nine
+-- stacks in it is one line here and nine lines is a screen nobody asked for.
+local function describeLetter(letter)
+	local parts = { tostring(letter.sender or "?") }
+
+	if letter.subject and letter.subject ~= "" then
+		parts[#parts + 1] = "|cff9d9d9d" .. letter.subject .. "|r"
+	end
+
+	local attached = #(letter.attachments or {})
+	if attached > 0 then
+		parts[#parts + 1] = string.format(L["|cffffd700%d item(s)|r"], attached)
+	end
+
+	if (letter.money or 0) > 0 then
+		parts[#parts + 1] = UI:Money(letter.money)
+	end
+
+	-- Cash on delivery is the one thing on a letter that costs rather than gives, and it is
+	-- worth saying loudly: opening one by mistake is a real loss.
+	if (letter.cod or 0) > 0 then
+		parts[#parts + 1] = string.format(L["|cffff4444C.O.D. %s|r"], UI:Money(letter.cod))
+	end
+
+	return table.concat(parts, "  ")
+end
+
 CELL.mailexp = function(meta)
 	local remaining = Family.Mail:TimeToExpiry(meta)
 	if not remaining then return UNKNOWN end
@@ -937,6 +973,14 @@ local function makeRow(parent)
 	-- member below it with them. Cut off instead, which leaves the table readable.
 	UI:NoWrap(unpack(row.cells))
 
+	-- Something to click on the mail figure with. A cell is a font string and cannot take a
+	-- click, so this sits over one - invisible, the width of that column, and shown only on
+	-- the rows that have letters to show.
+	row.mailHit = CreateFrame("Button", nil, row)
+	row.mailHit:RegisterForClicks("LeftButtonUp")
+	row.mailHit:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
+	row.mailHit:Hide()
+
 	row.highlight = row:CreateTexture(nil, "BACKGROUND")
 	row.highlight:SetAllPoints()
 	row.highlight:SetColorTexture(1, 1, 1, 0.06)
@@ -992,6 +1036,10 @@ local function layOut(cells, columns)
 
 		if column then
 			local width = column.drawWidth or column.width
+			-- Where this column ended up, so that something can be put over one of them.
+			-- Worked out here rather than a second time somewhere else, because a width
+			-- that two places compute is a width they will one day disagree about.
+			column.drawX = x
 			cell:SetPoint("LEFT", x + 4, 0)
 			cell:SetWidth(width - 8)
 			cell:SetJustifyH(column.justify)
@@ -1309,6 +1357,12 @@ local function build(frame)
 			-- it or when the link ends.
 			row.borrowed = isSibling and true or false
 
+			-- The figure that counts the letters, made clickable where there are any to
+			-- show. Placed over that column rather than beside it, so what is clicked is
+			-- the number that prompted the question.
+			row.mailHit:Hide()
+			row.mailHit:SetScript("OnClick", nil)
+
 			for index, column in ipairs(columns) do
 				-- Called rather than folded into an and/or, because a cell returns
 				-- its colour alongside its text and that would keep only the text.
@@ -1319,6 +1373,25 @@ local function build(frame)
 					setCell(row, index, produce(member.meta, member.key, member.seen))
 				else
 					setCell(row, index, "")
+				end
+			end
+
+			-- Armed only where there is something behind it: a nought that opens nothing
+			-- teaches a player that the figure is not a button, which costs the ones that
+			-- are.
+			for index, column in ipairs(columns) do
+				if column.key == "mail" and (member.meta.mailCount or 0) > 0 then
+					local width = column.drawWidth or column.width
+					local key = member.key
+
+					row.mailHit:ClearAllPoints()
+					row.mailHit:SetPoint("LEFT", column.drawX or 0, 0)
+					row.mailHit:SetSize(width, ROW_HEIGHT)
+					row.mailHit:SetScript("OnClick", function()
+						openMail = (openMail ~= key) and key or nil
+						frame:Refresh()
+					end)
+					row.mailHit:Show()
 				end
 			end
 
@@ -1340,6 +1413,45 @@ local function build(frame)
 			if currentSet.id == "professions" then
 				row.professions = professionsIn(member.meta)
 				row.opens = openProfession
+			end
+
+			-- The letters themselves, when somebody has clicked the figure that counts them.
+			--
+			-- Under the member and indented, on the member column rather than the mail one:
+			-- the mail column is sixty pixels and a sender's name is not, and the widest
+			-- column on the row is the one with room for a line of prose.
+			--
+			-- Only the live ones. A letter that has expired is gone from the mailbox and
+			-- listing it would be Family showing something that is not there any more -
+			-- which is the opposite of what §2.2 asks of every other screen.
+			if openMail == member.key then
+				local payload = Family.Database:Payload(member.key) or {}
+				local letters = Family.Mail:Live(payload.mail)
+
+				for _, letter in ipairs(letters) do
+					local line = nextRow()
+					line.memberKey = member.key
+					line.memberName = member.meta.name or member.key
+					line.memberRealm = member.meta.realm
+					line.borrowed = row.borrowed
+
+					setCell(line, 1, "      " .. describeLetter(letter))
+
+					-- Each letter's own expiry, under the column that says the soonest.
+					for index, column in ipairs(columns) do
+						if column.key == "mailexp" then
+							setCell(line, index, letter.expiresBy
+								and (duration(letter.expiresBy - time()) or L["soon"])
+								or "")
+						end
+					end
+				end
+
+				if #letters == 0 then
+					local line = nextRow()
+					setCell(line, 1, L["      |cff9d9d9dnothing in the post that Family "
+						.. "has seen|r"])
+				end
 			end
 
 			-- The lines below, on the same grid, with the member column left empty:

@@ -8771,6 +8771,75 @@ print("reopening where you left it")
 end)()
 
 --------------------------------------------------------------------------------------------
+-- The letters behind the figure that counts them
+--
+-- A number saying "3" answers how much and never what, and the mailbox is the one screen a
+-- player cannot open from somewhere else - the character it belongs to is not the one being
+-- played. So the figure unfolds into the letters, under the member and on the widest column,
+-- because a sender's name does not fit in the sixty pixels the count needs.
+--------------------------------------------------------------------------------------------
+
+print()
+print("what is in the post")
+
+;(function()
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	clickButton("Activity")
+
+	-- The rows that are armed to open something, which is the question this is about: a
+	-- count of nought must not be, or a player learns the figure is not a button.
+	local function openers()
+		local found = {}
+		for _, f in ipairs(frames) do
+			if f.mailHit and f.__shown == true and f.mailHit.__shown == true
+				and f.mailHit.__scripts and f.mailHit.__scripts.OnClick then
+				found[#found + 1] = f
+			end
+		end
+		return found
+	end
+
+	local armed = openers()
+	check("the figure counting somebody's letters can be clicked", #armed > 0,
+		tostring(#armed) .. " rows")
+
+	-- And only where there is something behind it. A nought that opens nothing teaches a
+	-- player that the figure is not a button, which costs them the ones that are.
+	local members = 0
+	for _, f in ipairs(frames) do
+		if f.__shown == true and f.memberKey and f.cells then members = members + 1 end
+	end
+	check("and only on the members who have any", #armed < members,
+		tostring(#armed) .. " armed of " .. tostring(members) .. " members")
+
+	local before = 0
+	for _, f in ipairs(frames) do
+		if f.cells and f.__shown == true then before = before + 1 end
+	end
+
+	armed[1].mailHit.__scripts.OnClick(armed[1].mailHit)
+
+	local after = 0
+	for _, f in ipairs(frames) do
+		if f.cells and f.__shown == true then after = after + 1 end
+	end
+
+	check("and clicking it unfolds the letters under that member", after > before,
+		tostring(after) .. " rows against " .. tostring(before))
+	check("naming who each one is from", visibleText("Auctioneer"))
+
+	armed[1].mailHit.__scripts.OnClick(armed[1].mailHit)
+
+	local shut = 0
+	for _, f in ipairs(frames) do
+		if f.cells and f.__shown == true then shut = shut + 1 end
+	end
+	check("and clicking it again folds them away", shut == before,
+		tostring(shut) .. " against " .. tostring(before))
+end)()
+
+--------------------------------------------------------------------------------------------
 -- A cooldown belonging to a profession nobody has any more
 --
 -- `payload.professions` keeps every profession Family has ever read for a member, which is

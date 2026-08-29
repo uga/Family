@@ -93,6 +93,9 @@ Per client: **Era**, **Anniversary**, **Mists**.
       they had, and their share of the totals.
 
 ### Mail — the one prediction Family makes
+- [ ] On **Summary / Activity**, click the mail figure of a character who has some. The letters
+      unfold under them — sender, subject, attachments, gold, expiry — and fold away on a
+      second click. A character with none is not clickable at all.
 - [ ] Post an item and some money from A to B. It appears against B immediately, marked as
       in the post.
 - [ ] Log to B and open the mailbox. What is really there replaces the prediction.

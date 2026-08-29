@@ -18,13 +18,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Click the mail figure on Activity to see what is waiting.** The number said how much and
+  never what. It now unfolds under that character: who each letter is from, what it is called,
+  what is attached, any gold, any cash on delivery, and how long each one has left. Click it
+  again to fold it away.
 - **Family can reopen where you left it.** A new switch in Options: with it on, the panel you
   were last looking at — and the set of columns on the summary — is where Family opens next
   time, including after logging out. Off unless you ask for it.
-
-### Changed
-
-- The About panel says **"By Alberto Pittaluga"**. It used to say rather more than that.
 
 ### Fixed
 
