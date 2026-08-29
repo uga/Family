@@ -76,6 +76,9 @@ Per client: **Era**, **Anniversary**, **Mists**.
       offset, and it would be offset the same way for every class on that client. Worth a
       look on each of the three, because each has its own table and Mists has its own shape.
 - [ ] `/fam` and `/family` both open the window.
+- [ ] **Reopen where you left it**, in Options. Switch it on, go to a panel and a set of
+      columns, log out and back in: Family opens there. Switch it off and it opens on the
+      summary again.
 - [ ] The **Wide Family** tab is in the strip without anything being switched on, its panel
       explains itself, and its controls do nothing until its box is ticked.
 - [ ] **Guild share** is off, and the Guild panel says so rather than looking empty.

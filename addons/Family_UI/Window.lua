@@ -422,6 +422,43 @@ function UI:Tabs()
 	return tabs
 end
 
+-- Whether Family is to reopen where it was left, and where that was.
+--
+-- Off unless somebody asks for it. A window that opens somewhere different each time is
+-- disorienting for a player who uses one screen and useful for one who uses several, and
+-- there is no way to tell which from here - so it is a switch rather than a guess.
+function UI:RemembersPlace()
+	return (FamilyDB and FamilyDB.ui and FamilyDB.ui.rememberPlace) and true or false
+end
+
+-- Where a panel was last looking, for the panels that have somewhere to be. The tab is
+-- remembered here; a panel with sets or sections of its own records its own, because only it
+-- knows what those are.
+function UI:RememberPlace(key, value)
+	if not UI:RemembersPlace() then return false end
+
+	FamilyDB.ui = FamilyDB.ui or {}
+	FamilyDB.ui[key] = value
+	return true
+end
+
+function UI:RememberedPlace(key)
+	if not UI:RemembersPlace() then return nil end
+	return (FamilyDB.ui or {})[key]
+end
+
+-- Which tab a window with nothing open yet should open on.
+--
+-- Its own function so that it can be asked without opening anything: the alternative is a
+-- check that closes and reopens the window, and closing does not forget which tab is up -
+-- within one session it already reopens where it was, and the switch is about surviving a
+-- logout.
+function UI:StartingTab()
+	local last = UI:RememberedPlace("lastTab")
+	if last and UI:HasTab(last) then return last end
+	return tabs[1] and tabs[1].id
+end
+
 function UI:ShowTab(id)
 	for _, tab in ipairs(tabs) do
 		local selected = tab.id == id
@@ -455,6 +492,7 @@ function UI:ShowTab(id)
 
 		if selected then
 			current = tab
+			UI:RememberPlace("lastTab", tab.id)
 			window.TitleText:SetText(string.format(L["Family - %s"], tab.label))
 
 			if tab.frame.Refresh then
@@ -499,7 +537,7 @@ function UI:Toggle()
 	else
 		window:Show()
 		if not current then
-			UI:ShowTab(tabs[1] and tabs[1].id)
+			UI:ShowTab(UI:StartingTab())
 		else
 			UI:Refresh()
 		end

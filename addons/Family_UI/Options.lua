@@ -35,6 +35,16 @@ local SWITCHES = {
 		set = function(on) UI:SetMinimapShown(on) end,
 	},
 	{
+		label = L["Reopen Family where you left it"],
+		note = L["The panel you were last on, and the set of columns on the summary - "
+			.. "rather than the summary's first. Kept when you log out."],
+		get = function() return UI:RemembersPlace() end,
+		set = function(on)
+			FamilyDB.ui = FamilyDB.ui or {}
+			FamilyDB.ui.rememberPlace = on and true or false
+		end,
+	},
+	{
 		label = L["Add Family to item tooltips"],
 		note = L["Who owns one, and where it is - bags, bank, mail, auctions."],
 		get = function() return FamilyDB.tooltips ~= false end,

@@ -1062,6 +1062,15 @@ local function build(frame)
 	-- row came to run under the side filters at the right-hand end: seven buttons at the width
 	-- four had is wider than the panel, and nothing complains - it just overlaps. Worked out
 	-- once, above, where the check that it is still legible lives beside it.
+	-- Where this panel was last looking, if Family was asked to remember. Read once, as the
+	-- panel is built, which is the first time it is looked at rather than at login.
+	local lastSet = UI:RememberedPlace("lastSet")
+	if lastSet then
+		for _, set in ipairs(SETS) do
+			if set.id == lastSet then currentSet = set end
+		end
+	end
+
 	local setRow = {}
 	for _, set in ipairs(SETS) do
 		local button = CreateFrame("Button", nil, chooser, "UIPanelButtonTemplate")
@@ -1069,6 +1078,7 @@ local function build(frame)
 		button:SetText(set.label)
 		button:SetScript("OnClick", function()
 			currentSet = set
+			UI:RememberPlace("lastSet", set.id)
 			frame:Refresh()
 		end)
 		setButtons[set.id] = button

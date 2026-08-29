@@ -179,7 +179,7 @@ local MANUAL = {
 
 local ABOUT = {
 	{ heading = L["Family"] },
-	{ text = L["Written from scratch by |cffffd700Alberto Pittaluga|r. Not a fork of anything."] },
+	{ text = L["By |cffffd700Alberto Pittaluga|r."] },
 	{ text = L["Free software under the |cffffd700GNU General Public License, version 3 or "
 		.. "later|r. You may use, study, change and pass it on; a changed version has to "
 		.. "carry the same licence and say what was changed. Nobody can take Family "

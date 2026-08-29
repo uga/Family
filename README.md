@@ -3,8 +3,6 @@
 An alt manager for World of Warcraft Classic. It records what each of your characters owns
 and knows, and shows it to you while you are logged in on a different one.
 
-Written from scratch.
-
 - [`docs/HANDOFF.md`](docs/HANDOFF.md) — what this project is and how it is built. Read
   this first.
 - [`docs/DATASOURCES.md`](docs/DATASOURCES.md) — where Family's facts come from.

@@ -8709,6 +8709,68 @@ print("opening one of the game's own windows")
 end)()
 
 --------------------------------------------------------------------------------------------
+-- Reopening where you left it
+--
+-- Off unless somebody asks for it. A window that opens somewhere different each time is
+-- disorienting for a player who uses one screen and useful for one who uses several, and
+-- there is no telling which from here.
+--
+-- Asked of UI:StartingTab rather than by closing and reopening: closing does not forget which
+-- tab is up, so within one session it already comes back where it was. The switch is about
+-- surviving a logout, which no check can stage.
+--------------------------------------------------------------------------------------------
+
+print()
+print("reopening where you left it")
+
+;(function()
+	FamilyDB.ui = FamilyDB.ui or {}
+	local wasOn, wasTab = FamilyDB.ui.rememberPlace, FamilyDB.ui.lastTab
+	FamilyDB.ui.rememberPlace, FamilyDB.ui.lastTab = nil, nil
+
+	Family.UI:Show()
+	Family.UI:ShowTab("guild")
+
+	check("it is off in a database nobody has touched",
+		Family.UI:RemembersPlace() == false)
+	check("and nothing is written down while it is off",
+		Family.UI:RememberedPlace("lastTab") == nil
+			and FamilyDB.ui.lastTab == nil)
+	check("so a fresh window opens on the first panel",
+		Family.UI:StartingTab() == "summary", tostring(Family.UI:StartingTab()))
+
+	FamilyDB.ui.rememberPlace = true
+	Family.UI:ShowTab("guild")
+
+	check("switched on, where you are is written down",
+		Family.UI:RememberedPlace("lastTab") == "guild",
+		tostring(Family.UI:RememberedPlace("lastTab")))
+	check("and a fresh window would open there",
+		Family.UI:StartingTab() == "guild", tostring(Family.UI:StartingTab()))
+
+	-- Two of the tabs come and go with the features they belong to, so a remembered name
+	-- may no longer answer - and opening on nothing at all is worse than opening on the
+	-- first thing.
+	FamilyDB.ui.lastTab = "a panel that was removed"
+	check("but a panel that is no longer there falls back to the first",
+		Family.UI:StartingTab() == "summary", tostring(Family.UI:StartingTab()))
+
+	-- The summary's columns are its own business, so it records them itself.
+	Family.UI:ShowTab("summary")
+	check("the summary's own set is remembered beside the panel",
+		clickButton("Activity") and Family.UI:RememberedPlace("lastSet") == "activity",
+		tostring(Family.UI:RememberedPlace("lastSet")))
+
+	FamilyDB.ui.rememberPlace = false
+	Family.UI:ShowTab("guild")
+	check("and switched off again it stops writing anything down",
+		Family.UI:RememberedPlace("lastTab") == nil)
+
+	FamilyDB.ui.rememberPlace, FamilyDB.ui.lastTab = wasOn, wasTab
+	Family.UI:ShowTab("summary")
+end)()
+
+--------------------------------------------------------------------------------------------
 -- A cooldown belonging to a profession nobody has any more
 --
 -- `payload.professions` keeps every profession Family has ever read for a member, which is
