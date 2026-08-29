@@ -131,7 +131,18 @@ function Bank:Scan()
 		bankSeen = time(),
 	})
 
-	Family:Debug("scanned bank: %d/%d free", free, slots)
+	-- What was written, not just the totals. A scan that finds the bank container and nothing
+	-- in it looks identical to a healthy one in a line that only reports free slots, and it
+	-- replaces whatever was there - so the two numbers that say whether a record just got
+	-- smaller belong in the narration.
+	local wrote, held = 0, 0
+	for _, entry in pairs(containers) do
+		wrote = wrote + 1
+		for _ in pairs(entry.slots) do held = held + 1 end
+	end
+
+	Family:Debug("scanned bank: %d/%d free, %d container(s), %d item(s)",
+		free, slots, wrote, held)
 end
 
 --------------------------------------------------------------------------------------------
