@@ -7416,6 +7416,30 @@ print("guild share")
 		check("and having told them, it does not tell them again",
 			Family.Guild:MarkChanged() == false)
 
+		-- **The first login after upgrading, with nobody opening anything.**
+		--
+		-- Nothing has been announced yet, because nothing was announcing before this existed,
+		-- so everything a character can already make counts as new to say. The recipe lists
+		-- were on disk the whole time - a profession window opened once, ever, records them
+		-- and they persist - so no re-scan and no re-opening is needed. The login scan runs,
+		-- the database says a member changed, and this side works out that it has something
+		-- to tell the guild.
+		do
+			FamilyDB.guild.announced = {}
+			advance(30)
+			sent = {}
+
+			Family.Database:Changed("Smith-FireMaw")
+			advance(30)
+
+			local said = 0
+			for _, message in ipairs(sent) do
+				if message.channel == "GUILD" then said = said + 1 end
+			end
+			check("a client that has never announced what it can make announces it once",
+				said == 1, tostring(said) .. " announcements")
+		end
+
 		Family.Guild:SetShare(guildKey, "Smith-FireMaw", mining, false)
 		advance(30)
 
