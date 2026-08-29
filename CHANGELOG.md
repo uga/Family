@@ -16,6 +16,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 1.0.0 — 2026-08-29
+
 Family records what each of your characters owns and knows, and shows it to you while you are
 logged in on a different one. It starts empty and fills as you play: a character appears the
 first time you log in on them, and a family of ten takes ten logins to be complete.
