@@ -1157,7 +1157,7 @@ local function build(frame)
 
 		-- Before any row is anchored to it, not after: a row anchored to a scroll child
 		-- that is still one pixel wide has no width of its own.
-		list:SetWidth(scroll:GetWidth())
+		list:SetWidth(UI:ListWidth(scroll))
 
 		-- Which column the cursor is over, so a click on a profession opens that
 		-- profession rather than merely that member. Everything is divided by the

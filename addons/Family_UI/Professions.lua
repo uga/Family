@@ -588,7 +588,7 @@ local function build(frame)
 
 			local found = Family.Recipes:Search(needle)
 			local used, y = 0, 0
-			list:SetWidth(scroll:GetWidth())
+			list:SetWidth(UI:ListWidth(scroll))
 
 			for _, recipe in ipairs(found) do
 				used = used + 1
@@ -619,7 +619,7 @@ local function build(frame)
 
 				r.text:SetText(string.format("%s   |cff888888%s|r", recipe.name or "?",
 					profession))
-				r.text:SetWidth(scroll:GetWidth() - 260 - ROW)
+				r.text:SetWidth(UI:ListWidth(scroll) - 260 - ROW)
 
 				local names = {}
 				for _, who in ipairs(UI:NamesOf(recipe.members)) do
@@ -850,7 +850,7 @@ local function build(frame)
 			table.concat(pieces, "  "), UI:Ago(record.recipesSeen)))
 
 		local used, y = 0, 0
-		list:SetWidth(scroll:GetWidth())
+		list:SetWidth(UI:ListWidth(scroll))
 
 		for _, recipe in ipairs(shown) do
 			used = used + 1
@@ -868,7 +868,7 @@ local function build(frame)
 
 			local style = DIFFICULTY[recipe.difficulty] or { colour = "|cffdddddd" }
 			r.text:SetText(style.colour .. (shownName or "?") .. "|r")
-			r.text:SetWidth(scroll:GetWidth() - 170 - ROW)
+			r.text:SetWidth(UI:ListWidth(scroll) - 170 - ROW)
 
 			-- Whatever the client said this row's icon was, recorded at scan time. Failing
 			-- that, the icon of the thing it makes - which is right for anything that

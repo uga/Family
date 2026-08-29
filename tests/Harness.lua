@@ -1442,10 +1442,15 @@ check("the scanners do not narrate themselves in a database nobody has touched",
 print()
 print("loading Family_UI")
 local UIPrivate = {}
-for _, file in ipairs { "Window.lua", "MemberPicker.lua", "ChoicePicker.lua", "Tooltip.lua",
+-- Named once, because a check below reads these same files and a second list would drift:
+-- a new panel would be loaded and quietly not examined, which is the shape of an omission
+-- nobody notices until it is in somebody's game.
+local UI_FILES = { "Window.lua", "MemberPicker.lua", "ChoicePicker.lua", "Tooltip.lua",
 	"Summary.lua", "Talents.lua",
 	"Contents.lua", "Professions.lua", "Character.lua", "Quests.lua", "Wide.lua", "Guild.lua",
-	"Broker.lua", "Options.lua", "About.lua", "Slash.lua" } do
+	"Broker.lua", "Options.lua", "About.lua", "Slash.lua" }
+
+for _, file in ipairs(UI_FILES) do
 	load("addons/Family_UI/" .. file, "Family_UI", UIPrivate)
 end
 fire("ADDON_LOADED", "Family_UI")
@@ -6205,6 +6210,34 @@ print("guild share")
 		Family.UI:ListWidth({ GetWidth = function() return 903 end }) == 903)
 	check("and survives being handed nothing at all",
 		Family.UI:ListWidth(nil) > 400)
+
+	-- And the rule, rather than one more panel that happens to obey it. A width taken
+	-- straight from a scroll frame is a width taken before the client has measured it, which
+	-- on a first draw is nought - so every panel asks UI:ListWidth, and only Window.lua,
+	-- where that function lives, may touch the scroll frame itself.
+	--
+	-- Read out of the sources rather than reasoned about, and over the same list the addon
+	-- loads, so a panel added later is examined without anybody remembering to add it.
+	do
+		local offenders = {}
+		for _, file in ipairs(UI_FILES) do
+			if file ~= "Window.lua" then
+				local handle = io.open(ROOT .. "/addons/Family_UI/" .. file)
+				if handle then
+					local number = 0
+					for line in handle:lines() do
+						number = number + 1
+						if line:find("SetWidth%(") and line:find("scroll:GetWidth%(%)") then
+							offenders[#offenders + 1] = file .. ":" .. number
+						end
+					end
+					handle:close()
+				end
+			end
+		end
+		check("no panel sizes anything from a scroll frame the client has not measured",
+			#offenders == 0, table.concat(offenders, ", "))
+	end
 
 	-- And its buttons are greyed, because neither can do anything: there is no roster to
 	-- filter and nothing to ask a guild nobody is speaking to. A live-looking button that

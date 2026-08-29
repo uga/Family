@@ -634,7 +634,7 @@ local function build(frame)
 		headings[3]:SetJustifyH(justify)
 
 		local used, y = 0, 0
-		list:SetWidth(scroll:GetWidth())
+		list:SetWidth(UI:ListWidth(scroll))
 
 		-- Equipment is read by its pictures, so its rows are twice the height and carry an
 		-- icon to match. The other sections are lists of words and a taller row would only
@@ -657,7 +657,7 @@ local function build(frame)
 			r.middle:SetPoint("LEFT", 180 + height + 2, 0)
 			r:SetPoint("TOPLEFT", 0, -y)
 			r:SetPoint("TOPRIGHT", 0, -y)
-			r.middle:SetWidth(math.max(scroll:GetWidth() - 360, 40))
+			r.middle:SetWidth(math.max(UI:ListWidth(scroll) - 360, 40))
 			r.right:SetJustifyH(justify)
 			-- Put back to the width it was built with. The reputations section widens it
 			-- for its category names, and without this every later section inherited that.
@@ -734,7 +734,7 @@ local function build(frame)
 			-- Wide enough for a full row of slots even when the panel is not, so the last
 			-- weapon is reachable by scrolling rather than simply absent.
 			local rowWidth = 4 + GRID + 8 + (#FAMILY_ORDER * (GRID + GRID_GAP))
-			list:SetWidth(math.max(scroll:GetWidth(), rowWidth))
+			list:SetWidth(math.max(UI:ListWidth(scroll), rowWidth))
 
 			local function passes(entry)
 				if realmFilter and entry.meta.realm ~= realmFilter then return false end

@@ -146,7 +146,7 @@ local function buildPopup()
 
 		local used, y = 0, 0
 		self.firstMatch = nil
-		self.list:SetWidth(self.scroll:GetWidth())
+		self.list:SetWidth(UI:ListWidth(self.scroll))
 
 		local function nextRow()
 			used = used + 1

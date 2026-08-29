@@ -34,8 +34,8 @@ is a decision rather than an afternoon of archaeology.
 - **Panels no longer draw themselves squashed the first time they are opened.** On the Guild
   panel a guildmate's name, rank and item level were written over one another in the same
   place, and closing the window and opening it again appeared to fix it. The same fault was
-  waiting on Abilities & Talents, Wide Family, Possessions and About. All of them are drawn at
-  their proper width the first time now.
+  waiting on every other panel that draws a list. All of them are drawn at their proper width
+  the first time now.
 
 ## 1.0.0 — 2026-08-29
 
