@@ -831,6 +831,45 @@ function Guild:Diagnose()
 	for _ in pairs(offering or {}) do mine = mine + 1 end
 	Family:Print(L["  characters of ours in it: %d"], mine)
 
+	-- Ours with no guild recorded at all, which is the state that hides a character from
+	-- everything §7 does.
+	--
+	-- **Asked without the roster, deliberately.** The client only lists offline guild members
+	-- when it has been told to, which is a setting on the game's own guild frame that this
+	-- panel's Online only / Everyone button drives - so the first version of this, which
+	-- cross-referenced the roster, could not see the one character it was written for: an alt
+	-- played this morning and offline now. A check that cannot see the case it exists for is
+	-- worse than no check, because it answers.
+	--
+	-- Noisy by nature and said plainly rather than filtered: most players have alts in no
+	-- guild at all and those belong on this list too. What the reader is looking for is a name
+	-- they know is in a guild.
+	do
+		local blank, extra = {}, 0
+
+		for key, entry in pairs(Family.Database:Members()) do
+			local meta = entry.meta or {}
+			if meta.guild == nil then
+				if #blank < 10 then
+					blank[#blank + 1] = tostring(meta.name or key)
+				else
+					extra = extra + 1
+				end
+			end
+		end
+
+		table.sort(blank)
+
+		if #blank > 0 then
+			Family:Print(L["  characters of ours with no guild recorded: %s%s"],
+				table.concat(blank, ", "),
+				extra > 0 and string.format(L[" and %d more"], extra) or "")
+			Family:Print(L["  |cff888888ordinary for one who is in no guild - but one that "
+				.. "*is* in this guild stays missing from everything above until it has been "
+				.. "logged into once|r"])
+		end
+	end
+
 	-- Which of ours the roster knows about but our own records do not place in this guild.
 	--
 	-- Everything in §7 is keyed by the guild a character is *recorded* as being in, never by

@@ -744,3 +744,14 @@ silent-failure pair.** Wherever `SetMeta` is handed a field straight from the cl
 happens on the scan where the client says nothing — and whether anything will ever run again to
 put it right.
 
+**A postscript, from the same evening.** The diagnostic added above went through the guild
+roster to decide which characters to name — and the client only lists *offline* guild members
+when it has been told to, which is a setting the panel's Online only / Everyone button drives.
+The character it was written for was offline. So it could not see the case it existed for, and
+it said nothing, which reads exactly like "nothing is wrong".
+
+**A check that cannot see the case it was written for is worse than no check, because it
+answers.** The no-guild half is now asked of our own records and never of the roster; the two
+lines that genuinely need the roster — recorded under a different guild, recorded on another
+realm — still use it, and are honest about needing it.
+

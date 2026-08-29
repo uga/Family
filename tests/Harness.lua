@@ -6618,6 +6618,31 @@ print("guild share")
 			named)
 
 		Family.Database:SetMeta(Family:CurrentMember(), { guild = held })
+
+		-- And it names one the roster cannot be asked about.
+		--
+		-- The client lists offline guild members only when it has been told to, which is a
+		-- setting the panel's Online only / Everyone button drives - so a version of this
+		-- that went through the roster could not see an alt played this morning and offline
+		-- now, which is exactly the character it was written for.
+		Family.Database:SetMeta("Hermit-FireMaw", { name = "Hermit", realm = "Fire Maw",
+			level = 30 })
+
+		local mark2 = #DEFAULT_CHAT_FRAME.messages
+		Family.Guild:Diagnose()
+
+		local listed = false
+		for index = mark2 + 1, #DEFAULT_CHAT_FRAME.messages do
+			local message = tostring(DEFAULT_CHAT_FRAME.messages[index])
+			if message:find("with no guild recorded", 1, true)
+				and message:find("Hermit", 1, true) then
+				listed = true
+			end
+		end
+		check("and one with no guild at all, without going through the roster to find them",
+			listed)
+
+		Family.Database:Forget("Hermit-FireMaw")
 	end
 	check("and counts what crossed the wire", Family.Guild.stats.sent > 0,
 		tostring(Family.Guild.stats.sent))

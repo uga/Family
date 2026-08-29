@@ -48,7 +48,7 @@ is a decision rather than an afternoon of archaeology.
   session, and Family took no answer for an answer. It now waits for the client and asks
   again. **Log in once on any character this happened to and it fills itself in.**
 - **A character who leaves a guild is no longer recorded as still being in it.**
-- **`/family guild test` now names any of your characters this has happened to**, so the
+- **`/family guild test` now lists any of your characters with no guild recorded**, so the
   cause is something you can read rather than something you have to guess at.
 - **Leaving a guild now clears what that guild had shared with you**, and what you had offered
   it. It used to stay out of sight on disk and come back out of date if you ever rejoined.
