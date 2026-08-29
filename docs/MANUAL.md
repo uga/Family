@@ -555,8 +555,12 @@ the panel says so outright rather than offering a link that never works.
 A much lighter Wide Family, and the lightness is the point: it carries very little, so it can
 carry it without asking anybody anything.
 
-**It is on.** One tick box turns it off, on this panel or in Options, and off works in both
-directions at once — a Family with this switched off neither asks nor answers.
+> **Switched off until you ask for it.** The panel is there either way, so you can read what
+> it does before deciding; the switch is in **Options**, beside the one for Wide Family, or
+> `/family guild on`. Neither needs a reload.
+>
+> Off works in both directions at once — a Family with this switched off neither asks nor
+> answers.
 
 **What it carries, and nothing else:** for every guildmate running Family, and for every one
 of *their* characters who is also in this guild — class, level, **both talent
@@ -605,8 +609,8 @@ it.
 Guild share needs `LibSerialize` and `LibDeflate` for the same reason Wide Family does, and
 says so plainly when they are missing.
 
-`/family guild off` does the same as the tick box, and `/family guild` on its own says which
-it currently is.
+`/family guild on` and `/family guild off` do the same as the switch in Options, and
+`/family guild` on its own says which it currently is.
 
 ---
 
