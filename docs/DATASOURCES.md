@@ -242,6 +242,14 @@ is taken by joining through the talents themselves — every `Talent` row carrie
 and `ClassID` — rather than by decoding `TalentTab`'s class bitmask, so it is the table saying
 it rather than a person.
 
+**Confirmed in use on all three live clients**, 2026-08-28, with `/family talents`: it reports
+per specialisation how many of its talents the table can name without falling back, and every
+member on every client answered N of N — 44 to 52 per class on Era, 61 to 67 on Anniversary,
+18 per specialisation on Mists. That matters because where a client's language matches the
+language a record was written in, a table that names nothing looks exactly like one that works:
+the fallback is the recorded word, and the recorded word is the same word. Names matching the
+game's own tooltips was necessary and not sufficient; this is the sufficient part.
+
 Mists is in it too, in a shape of its own: six tiers of three, each talent carrying an id the
 client reports and Family records, so there is no position to key on. It uses `SpellID` where
 the other two use `SpellRank_0` — measured, not assumed: the ranked column is zero for a third
