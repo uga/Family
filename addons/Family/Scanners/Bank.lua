@@ -33,25 +33,6 @@ local GetLink = container.GetContainerItemLink or _G.GetContainerItemLink
 -- The bank's own window, then the bags bought to go in it.
 local BANK = _G.BANK_CONTAINER or -1
 
--- How many slots the bank's own window has, asked two ways and the larger kept.
---
--- The two disagree. A live Classic Era client answered GetContainerNumSlots(BANK_CONTAINER)
--- with 24 while reporting 28 of its slots free, which is how "scanned bank: 56/52 free" came
--- to be printed - and the impossible total was the harmless half of it. A container's contents
--- are read by asking every slot from one to this number, so a size four short is four slots
--- never looked at, and anything sitting in them never recorded at all. That is a bank that
--- does not save what is in it, which is what a player reported.
---
--- The larger, because the two ways of being wrong do not cost the same. Asking a slot that
--- does not exist answers nothing and is skipped; not asking one that does loses what is in it.
--- NUM_BANKGENERIC_SLOTS is the game's own statement of the size, in the same way every other
--- constant Family reads is (specification §2.1) - guarded, so a client that does not have it
--- changes nothing.
-local function bankSlots()
-	local asked = (GetNumSlots and tonumber(GetNumSlots(BANK))) or 0
-	local stated = tonumber(_G.NUM_BANKGENERIC_SLOTS) or 0
-	return math.max(asked, stated)
-end
 local FIRST_BANK_BAG = (_G.NUM_BAG_SLOTS or 4) + 1
 local LAST_BANK_BAG = FIRST_BANK_BAG + (_G.NUM_BANKBAGSLOTS or 7) - 1
 
@@ -93,8 +74,7 @@ function Bank:Scan()
 		local isBankBag = (bag == BANK) or (bag >= FIRST_BANK_BAG)
 
 		if isBankBag then
-			local size = (bag == BANK) and bankSlots()
-				or (GetNumSlots and GetNumSlots(bag) or 0)
+			local size = GetNumSlots and GetNumSlots(bag) or 0
 
 			if size and size > 0 then
 				local bagFree, bagType = 0, 0

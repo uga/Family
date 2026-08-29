@@ -1104,20 +1104,12 @@ GetTradeSkillItemLink = function(index) return TRADE_RECIPES[index] and TRADE_RE
 GetTradeSkillCooldown = function() return nil end
 
 -- The bank: container -1, plus one bought bank bag at 6. Bag 5 is deliberately absent.
---
--- The bank's own window answers 24 to GetContainerNumSlots and has 28 slots, which is what a
--- live Classic Era client does. It is why that client printed "scanned bank: 56/52 free": more
--- free than exist, and the total was the harmless half - the other half is that four slots were
--- never read at all, so anything in them was never recorded. There is something in slot 27
--- here, past the size the call gives, and it has to arrive.
 local BANK_BAGS = {
-	[-1] = { size = 24, free = 20, bagType = 0,
-	         items = { [1] = { 7909, 3 }, [27] = { 2589, 5 } } },
+	[-1] = { size = 24, free = 20, bagType = 0, items = { [1] = { 7909, 3 } } },
 	[6]  = { size = 16, free = 16, bagType = 0, items = {} },
 }
 BANK_CONTAINER = -1
 NUM_BANKBAGSLOTS = 7
-NUM_BANKGENERIC_SLOTS = 28
 IsInGuild = function() return false end
 
 local baseNumSlots = C_Container.GetContainerNumSlots
@@ -1959,14 +1951,13 @@ fire("BANKFRAME_OPENED")
 advance(1)
 local bankMeta = Family.Database:Meta(key)
 check("bank scanned when the window opens", bankMeta.bankSeen ~= nil)
--- 28 of the bank's own window and 16 of the bag, not the 24 the call gives for the window.
-check("bank slots counted across container and bank bags", bankMeta.bankSlots == 44,
+check("bank slots counted across container and bank bags", bankMeta.bankSlots == 40,
 	tostring(bankMeta.bankSlots))
 check("free bank slots counted", bankMeta.bankFree == 36, tostring(bankMeta.bankFree))
 
--- The invariant the live client broke: a bank cannot have more free slots than slots. It read
--- 56 of 52, which is impossible on its face and was the visible half of four slots never being
--- looked at.
+-- The invariant a live client broke: it reported 56 free of 52, which cannot be true of any
+-- bank. The cause is not settled - see L-018 - so this asserts only the thing that is certainly
+-- wrong when it happens, which is the arithmetic being impossible.
 check("a bank never has more free slots than it has slots",
 	bankMeta.bankFree <= bankMeta.bankSlots,
 	tostring(bankMeta.bankFree) .. " free of " .. tostring(bankMeta.bankSlots))
@@ -1974,13 +1965,6 @@ check("a bank never has more free slots than it has slots",
 local bank = Family.Database:Payload(key).bank
 check("bank contents kept by id", bank and bank.containers[-1].slots[1].id == 7909)
 
--- Past where GetContainerNumSlots said the window ended. Nothing else in this file would
--- notice its absence, and neither did anybody for as long as their bank's last four slots
--- happened to be empty.
-check("and what is in a slot past the size the call reports is kept too",
-	bank and bank.containers[-1].slots[27] and bank.containers[-1].slots[27].id == 2589,
-	bank and bank.containers[-1].slots[27]
-		and tostring(bank.containers[-1].slots[27].id) or "nothing there")
 check("carried bags are not scanned again as bank bags",
 	bank and bank.containers[1] == nil)
 
@@ -2236,17 +2220,14 @@ check("and it is back when the clock is", #(Family.Auctions:Live(auctions)) == 2
 print()
 print("who owns what")
 
--- Linen Cloth is in the backpack (20), attached to a letter (20), and five of it are in the
--- bank slot that the size call says is not there. The letter has half a day left, so all three
--- count for now - and the five are only here at all because the bank is read to its real size.
+-- Linen Cloth is in the backpack (20) and attached to a letter (20). The letter has half a
+-- day left, so both count for now.
 local owners, guilds = Family.Index:Owners(2589)
 check("the index finds an owner", #owners == 1, tostring(#owners))
 check("counting bags and mail separately",
 	owners[1] and owners[1].bags == 20 and owners[1].mail == 20,
 	owners[1] and (owners[1].bags .. "/" .. owners[1].mail))
-check("and the bank among them", owners[1] and owners[1].bank == 5,
-	owners[1] and tostring(owners[1].bank))
-check("and totalling them", owners[1] and owners[1].total == 45,
+check("and totalling them", owners[1] and owners[1].total == 40,
 	owners[1] and tostring(owners[1].total))
 check("an item nobody has answers empty", #(Family.Index:Owners(999111)) == 0)
 

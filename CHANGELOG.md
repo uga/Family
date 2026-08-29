@@ -61,9 +61,8 @@ yours.
 
 ### Upgrading from a beta
 
-Open each profession window once per character, and stand at a bank once on each character who
-uses one — the bank is now read to its full size, and the last four slots of it were being
-missed. Nothing else needs doing, and nothing is lost if you do not.
+Open each profession window once per character. Nothing else needs doing, and nothing is lost
+if you do not.
 
 ## 1.0.0-beta.3 — 2026-08-28
 

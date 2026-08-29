@@ -155,11 +155,13 @@ container  7: 20 slots, inventory slot 90, bag item 22248
 container  8: 20 slots, inventory slot 91, bag item 22248
 ```
 
-**`GetContainerNumSlots(BANK_CONTAINER)` under-reports.** It answers 24 on 1.15.9 where the
-bank has 28 — `NUM_BANKGENERIC_SLOTS` says 28 and `GetContainerNumFreeSlots` counts all 28,
-which is how a live client came to print `scanned bank: 56/52 free`. Read the larger of the two.
-The total was the harmless half: contents are read slot by slot up to that size, so the four
-past it were never looked at (L-018).
+**A bank's free count can exceed its size, and why is not established.** Two live Classic Era
+clients report `GetContainerNumSlots(BANK_CONTAINER)` as 24, and one of them summed to
+`56/52 free` across its open containers — impossible, and arithmetic over what the client
+answered rather than a display fault. Era's built-in bank space is 24, so the size call looks
+right and the free count is the suspect; that is not settled either. `/family bank` prints size,
+free and how many read slots hold something, per container, which is what will tell them apart
+(L-018).
 
 Written down because a player reported a bag shown one slot along from where it sits, and the
 mapping was the obvious suspect. It was not: the panel lists the bank's own window first and

@@ -490,31 +490,35 @@ of the reported fault. The fault was reported in English, so the check was writt
 
 --------------------------------------------------------------------------------------------
 
-## L-018 — An impossible number was the visible half of a silent one
+## L-018 — A fix shipped on an inference the person with the client then contradicted
 
-**2026-08-28.** A player reported that his bank contents were not being saved and could not
-say when. Two rounds of diagnosis went into the write path — whether the record reached disk,
-whether the events fired — because "not saved" describes a write.
+**2026-08-28.** A player reported that his bank contents were not being saved and could not say
+when. With narration on, his client printed `scanned bank: 56/52 free` — more free slots than
+the bank has. That number is certainly wrong, and it is arithmetic over what the client
+answered, so one of the three containers open at the time was reporting more free than it had.
 
-It was a read. With narration on, his client printed `scanned bank: 56/52 free`: more free
-slots than the bank has. `GetContainerNumSlots(BANK_CONTAINER)` answers **24** on Classic Era
-while the bank has **28**, and `GetContainerNumFreeSlots` answers for all 28. The impossible
-total was the harmless half. The other half is that a container's contents are read by asking
-every slot from one to that size, so **four bank slots were never looked at** and anything in
-them was never recorded — for every player, on every scan, since Family was written.
+From there I reasoned: the free count knows about slots the size call does not, therefore
+`GetContainerNumSlots(BANK_CONTAINER)` under-reports, therefore Family reads four slots fewer
+than the bank has and anything in them is never recorded. It explained the report exactly. I
+changed the scanner to take the larger of the call and `NUM_BANKGENERIC_SLOTS`, wrote a fixture
+around it, wrote a lesson about asymmetric costs, and pushed it.
 
-Nobody had seen it because it only shows when the last four slots are occupied, and it hides
-completely when they are not: free is capped by how empty the bank actually is, so a bank with
-anything in it reports a total that looks fine.
+**Alberto then looked at his own client: the Era bank's built-in space is 24 slots.** If that is
+so, the size call is right and the fix reports 28 where there are 24 — a wrong total on every
+character, to fix a fault I had not established. It is backed out.
 
-**The check that now catches it:** the harness's bank window answers 24 and has 28, with an
-item in slot 27, and asserts both that the item arrives and that a bank never reports more free
-slots than it has. Trusting the call alone fails both.
+The evidence I had was two clients whose *free* counts exceed what their *sizes* allow. That
+still needs explaining, and the explanation is not yet known: it may be the size, it may be the
+free count covering something other than the container it was asked about. Those want opposite
+fixes, which is precisely why one of them should not have been chosen from an armchair.
 
-**The general shape, and it is two things.** An impossible number on screen is not a display
-fault to be tidied away — it is the one visible symptom of something that is silent everywhere
-else, and it is worth chasing to its cause rather than to a plausible-looking sum. And where
-two ways of asking the same question disagree, the costs of being wrong are rarely symmetric:
-asking a slot that does not exist answers nothing, and not asking one that does loses what is
-in it. That asymmetry decides which answer to take, not which call looks more official.
+**What now catches it:** the harness asserts only the thing that is certainly wrong when it
+happens — a bank never reports more free slots than it has — and `/family bank` prints, per
+container, its size, its free count, and how many of the slots that were read hold something.
+That third number is what tells the two hypotheses apart, and it comes from the client.
 
+**The shape.** Earlier the same day I refused to add a retry loop for a recipe fault because the
+cause was unproven, and refused an item-id key because no mutation of it could fail. Both were
+right. Then a hypothesis arrived that explained the symptom *exactly*, and explaining the
+symptom exactly is the most persuasive thing a wrong hypothesis can do. Fit is not evidence. The
+person holding the client is.
