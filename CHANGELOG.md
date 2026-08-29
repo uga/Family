@@ -18,6 +18,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Where a hearthstone is bound now reads in your own words.** A character last played on a
+  Classic Era client showed "Ironforge" to a French player whose own client calls it
+  "Forgefer" — the two expansions disagree even in the same language. Family now records which
+  place it is rather than what that client called it, and each member is named by the client
+  you are reading on. A member keeps its old spelling until you next log into them.
+
 - **The lists you pick from are no longer see-through.** The panel underneath showed through
   them, so a character's name and a recipe's name were drawn on top of each other and neither
   could be read. This was the member list, and the realm and class lists on the character

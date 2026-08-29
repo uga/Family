@@ -8023,6 +8023,64 @@ print("what each client calls a recipe")
 
 	check("nothing at all is not a recipe", Family.Names:Recipe("Wizard Oil") == nil)
 
+	-- Where a hearthstone is bound, told in the reader's own words.
+	--
+	-- The recorded word is one language and one expansion: a French Era client writes
+	-- "Ironforge" and a French Burning Crusade client reading it says "Forgefer". Shipping
+	-- the tables to fix that measured 876 KB, so the id is stored and each reader's client
+	-- names it - which /family hearth confirmed all three clients can do, in their own
+	-- language and their own spelling.
+	--
+	-- Stood up here rather than relied upon, because the harness is a client with no map API
+	-- at all and would otherwise pass every one of these by doing nothing.
+	do
+		local restore = _G.C_Map
+		_G.C_Map = { GetAreaInfo = function(id)
+			-- Two ids for one place and the second a copy, which is the real shape of it:
+			-- Coldridge Valley is 132 and 6176, and the two are spelled differently in
+			-- German even where they agree in French.
+			-- 16394 is the highest named area on Era, which is the highest of the three
+			-- clients. It is here so that the scan's ceiling has to clear it: a ceiling
+			-- that fell short would find no id for a player bound up there, and would do
+			-- it silently.
+			local areas = { [132] = "Vallee des Frigeres", [1537] = "Forgefer",
+				[5176] = "Vallee des Frigeres", [16394] = "The Far End" }
+			return areas[id]
+		end }
+
+		check("a place is named by the reader's client, not by whoever recorded it",
+			Family.Names:Area(1537, "Ironforge") == "Forgefer",
+			tostring(Family.Names:Area(1537, "Ironforge")))
+
+		check("and an id this client has never heard of falls back to the recorded word",
+			Family.Names:Area(4242, "Dalaran") == "Dalaran")
+
+		check("a word can be turned back into its id",
+			Family.Names:AreaFor("Forgefer") == 1537)
+
+		-- Counting upward is not an accident: the lower id is the original area and the
+		-- higher one the copy, and picking the copy would read differently in some other
+		-- language even though it reads the same in this one.
+		check("and where a place is in the table twice, the original wins",
+			Family.Names:AreaFor("Vallee des Frigeres") == 132,
+			tostring(Family.Names:AreaFor("Vallee des Frigeres")))
+
+		check("a word this client does not know has no id",
+			Family.Names:AreaFor("Nowhere At All") == nil)
+
+		check("and the scan reaches the highest area these clients have",
+			Family.Names:AreaFor("The Far End") == 16394,
+			tostring(Family.Names:AreaFor("The Far End")))
+
+		_G.C_Map = nil
+		check("with no map API at all, the recorded word is what is shown",
+			Family.Names:Area(1537, "Ironforge") == "Ironforge")
+		check("and no id can be found for anything",
+			Family.Names:AreaFor("Forgefer") == nil)
+
+		_G.C_Map = restore
+	end
+
 	-- Where the record was written in the reader's own language, the recorded word wins
 	-- outright: it is the row the game itself drew. Smelting is what proves it - the game
 	-- says "Smelt Copper" and the item it makes is a Copper Bar, so naming that row after

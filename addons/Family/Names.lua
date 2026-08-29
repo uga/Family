@@ -160,6 +160,61 @@ function Names:Recipe(recipe, key, callback, locale)
 end
 
 -- For callers that only want to know, and will look again themselves.
+-- Where a hearthstone is bound, in the words of whoever is reading.
+--
+-- The word GetBindLocation hands back is one language and one expansion, and both matter: a
+-- French Era client says "Ironforge" where a French Burning Crusade client says "Forgefer", so
+-- a member recorded on one read on the other was wrong even though nothing had changed
+-- language. The tables that would fix that out of a file measure 876 KB across five languages
+-- and three builds, which is not a trade worth making for one column (L-020).
+--
+-- So the id is stored and the reader's own client is asked to name it. Measured on all three
+-- clients before this was written, because a symbol being present is not evidence it works
+-- (L-018): Era, Burning Crusade and Mists all answer, each in its own language and its own
+-- spelling, and each agrees character-for-character with the table wago serves for that build.
+--
+-- An id this client knows nothing about - a Northrend area on an Era client - comes back empty
+-- rather than wrong, and the recorded word is used instead. That is the honest answer for a
+-- place this game does not have.
+function Names:Area(id, recorded)
+	if type(id) == "number" and C_Map and C_Map.GetAreaInfo then
+		local name = Family:TryCall(C_Map.GetAreaInfo, id)
+		if type(name) == "string" and name ~= "" then return name end
+	end
+	if type(recorded) == "string" and recorded ~= "" then return recorded end
+	return nil
+end
+
+-- The id behind a place this client has just named, found the only way there is: by asking for
+-- every id until one answers with the same word. GetBindLocation returns a word and nothing
+-- returns its id.
+--
+-- Counted upward on purpose. Some places are in the table twice - Coldridge Valley is 132 and
+-- 6176, and the second is a copy - and where the two are spelled the same here they can still
+-- be spelled differently in another language ("Das Eisklammtal" against "Eisklammtal"). The
+-- lower id is the original, so the first match found counting up is the one to keep.
+--
+-- How far up to count, measured rather than picked. The highest named area is 16,394 on Era;
+-- Mists reaches 15,325 and Burning Crusade only 4,140. A ceiling of six thousand was tried
+-- first and would have skipped 11% of Era's areas and 18% of Mists's - a player bound in any
+-- of them getting no id at all, silently, which is the same shape of fault as the word this
+-- work exists to replace.
+--
+-- Twenty thousand leaves room for a build that adds more. It is paid only when a member's
+-- hearthstone has moved, so it costs a player nothing on an ordinary scan and a fraction of a
+-- second on the rare one.
+local AREA_CEILING = 20000
+
+function Names:AreaFor(word)
+	if type(word) ~= "string" or word == "" then return nil end
+	if not (C_Map and C_Map.GetAreaInfo) then return nil end
+
+	for id = 1, AREA_CEILING do
+		if Family:TryCall(C_Map.GetAreaInfo, id) == word then return id end
+	end
+	return nil
+end
+
 function Names:CachedItem(id)
 	if not id then return nil end
 	local name = cache[id] or getItemName(id)

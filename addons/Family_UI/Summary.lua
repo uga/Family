@@ -525,7 +525,12 @@ CELL.prof1 = function(meta) return skillText(skillsOf(meta, false)[1]) or UNKNOW
 CELL.prof2 = function(meta) return skillText(skillsOf(meta, false)[2]) or UNKNOWN end
 
 CELL.guild = function(meta) return meta.guild or UNKNOWN end
-CELL.hearth = function(meta) return meta.hearth or UNKNOWN end
+-- Named from the id where there is one, so a member recorded on a French Era client reads
+-- "Forgefer" on a French Burning Crusade one instead of "Ironforge". Falls back to the word
+-- that was recorded, which is what a member carries until somebody next logs into them.
+CELL.hearth = function(meta)
+	return Family.Names:Area(meta.hearthID, meta.hearth) or UNKNOWN
+end
 CELL.race = function(meta) return UI:RaceName(meta) end
 
 CELL.class = function(meta)

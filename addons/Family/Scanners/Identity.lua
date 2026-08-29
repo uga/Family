@@ -48,6 +48,8 @@ function Identity:Scan()
 		sex = UnitSex and UnitSex("player") or nil,
 		faction = UnitFactionGroup("player"),
 		hearth = Family:TryCall(GetBindLocation),
+		-- hearthID is filled in below, not here: finding it costs a scan and the word is
+		-- what says whether that scan is needed.
 	}
 
 	-- Experience stops existing at the level cap, and a zero would read as "no progress"
@@ -66,6 +68,20 @@ function Identity:Scan()
 		fields.xp = Family.CLEAR
 		fields.xpMax = Family.CLEAR
 		fields.rested = Family.CLEAR
+	end
+
+	-- The id of the place, so that every reader is told it in their own words rather than in
+	-- whichever language and expansion happened to record it (L-020). Found only when the
+	-- word has changed or was never resolved, because finding it means asking the client
+	-- about every area id in turn - cheap once, wasteful on every scan, and a hearthstone
+	-- moves about as often as a player decides to live somewhere else.
+	local known = Family.Database:Meta(key)
+	if fields.hearth and fields.hearth ~= "" then
+		if not (known and known.hearthID and known.hearth == fields.hearth) then
+			fields.hearthID = Family.Names:AreaFor(fields.hearth) or Family.CLEAR
+		end
+	elseif known and known.hearthID then
+		fields.hearthID = Family.CLEAR
 	end
 
 	local guild, rank, rankIndex = Family:TryCall(GetGuildInfo, "player")
