@@ -5176,6 +5176,88 @@ do
 				open .. " against " .. closed .. " + two lots of "
 					.. #Family.Wide.CATEGORIES)
 
+			-- §6 asks for members drawn under the realm they are on, and both lists here
+			-- ran flat: a family across three realms arrived as one undivided column of
+			-- names, with nothing saying which realm a row was on and no way at all to
+			-- tell apart two characters sharing a name.
+			local function drawnOnPanel(needle)
+				for _, f in ipairs(fontStrings) do
+					local parent = type(f.__parent) == "table" and f.__parent or nil
+					local row = parent and type(parent.__parent) == "table"
+						and parent.__parent or nil
+					if type(f.__text) == "string" and f.__visible ~= false
+						and parent and parent.__shown ~= false
+						and (parent.__parent == wideList
+							or (row and row.__parent == wideList
+								and row.__shown ~= false))
+						and f.__text:find(needle, 1, true) then
+						return true
+					end
+				end
+				return false
+			end
+
+			-- Every realm our own members are on, asked of the database rather than
+			-- written down here: a list of realms typed into the check would go on
+			-- passing after the fixture had moved on without them.
+			local ourRealms, missing = {}, nil
+			for _, entry in pairs(Family.Database:Members()) do
+				local realm = (entry.meta or {}).realm
+				if realm then ourRealms[realm] = true end
+			end
+			-- The heading's own colour and not merely the realm's name: realm names are
+			-- written all over this panel already - in tooltips, in a member key, in the
+			-- summary behind it - so a check that looked for the bare word passed just as
+			-- happily with both lists left flat. Asked for and mutation-tested, twice.
+			local function headed(realm)
+				return drawnOnPanel("|cff8888ff" .. realm)
+			end
+
+			for realm in pairs(ourRealms) do
+				if not headed(realm) then missing = realm end
+			end
+
+			-- Counted, not merely looked for. Both lists head the same realm names, so a
+			-- check that only asked whether a realm appeared went on passing with either
+			-- list left flat - the other one was still naming it. The number of headings
+			-- is what tells the two apart, and it is worked out from the data rather than
+			-- written down.
+			local function groupsIn(list)
+				local seen, n = {}, 0
+				for _, member in ipairs(list) do
+					local meta = member.meta or {}
+					local key = (meta.realm or "?") .. "\1" .. tostring(meta.faction)
+					if not seen[key] then
+						seen[key] = true
+						n = n + 1
+					end
+				end
+				return n
+			end
+
+			local mine, borrowed = {}, {}
+			for _, entry in pairs(Family.Database:Members()) do
+				mine[#mine + 1] = { meta = entry.meta or {} }
+			end
+			for _, member in ipairs(Family.Wide:BorrowedMembers()) do
+				borrowed[#borrowed + 1] = member
+			end
+			local wanted = groupsIn(mine) + groupsIn(borrowed)
+
+			local headings = 0
+			for _, f in ipairs(fontStrings) do
+				local parent = type(f.__parent) == "table" and f.__parent or nil
+				if type(f.__text) == "string"
+					and f.__text:find("|cff8888ff", 1, true)
+					and parent and parent.__parent == wideList then
+					headings = headings + 1
+				end
+			end
+
+			check("both grids head every realm their members are on, and no more",
+				headings == wanted,
+				headings .. " headings against " .. wanted .. " realm-and-faction groups")
+
 			-- The switch above the list says when an exchange happens by itself, and the
 			-- line under it says that this is the only time it does. Without that second
 			-- line "automatically" reads as though Family kept two families in step while

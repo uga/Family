@@ -109,6 +109,65 @@ local function ourMembers()
     return list
 end
 
+-- Members arranged the way §6 asks for them to be drawn: by the realm they are on, and inside
+-- a realm by faction.
+--
+-- By faction as well as realm because the two halves of a realm are two different games -
+-- different auction house, different mail, different everything an alt manager is asked about.
+-- Two characters on one realm on opposite sides have less to do with each other than two on
+-- different realms on the same side.
+--
+-- Both lists on this panel ran flat, which for a family of thirty was one undivided column of
+-- names: nothing said which realm a row was on, and two characters sharing a name could not be
+-- told apart at all. The borrowed list had a second fault - it was never sorted, so it arrived
+-- in whatever order pairs() had produced and could reorder itself between refreshes. Sorting
+-- inside a group fixes that as a side effect of grouping.
+local function byRealm(list)
+    local groups, order = {}, {}
+
+    for _, member in ipairs(list) do
+        local meta = member.meta or {}
+        local realm = meta.realm or L["Unknown realm"]
+        -- A separator no realm name contains, so that a realm called "A" on faction "B"
+        -- cannot collide with a realm called "A B" that has no faction.
+        local key = meta.faction and (realm .. "\1" .. meta.faction) or realm
+
+        local group = groups[key]
+        if not group then
+            group = { realm = realm, faction = meta.faction, members = {} }
+            groups[key] = group
+            order[#order + 1] = group
+        end
+        group.members[#group.members + 1] = member
+    end
+
+    table.sort(order, function(a, b)
+        if a.realm ~= b.realm then return a.realm < b.realm end
+        return tostring(a.faction) < tostring(b.faction)
+    end)
+
+    for _, group in ipairs(order) do
+        table.sort(group.members, function(a, b)
+            local levelA = (a.meta or {}).level or 0
+            local levelB = (b.meta or {}).level or 0
+            if levelA ~= levelB then return levelA > levelB end
+            return tostring((a.meta or {}).name or a.key)
+                < tostring((b.meta or {}).name or b.key)
+        end)
+    end
+
+    return order
+end
+
+-- The realm in the colour the member picker uses for the same heading, and the faction after
+-- it in grey. Neither is a translatable sentence: both are names the client gave us.
+local function realmHeading(group)
+    if group.faction then
+        return string.format("|cff8888ff%s|r  |cff888888%s|r", group.realm, group.faction)
+    end
+    return "|cff8888ff" .. group.realm .. "|r"
+end
+
 --------------------------------------------------------------------------------------------
 
 local function build(frame)
@@ -658,29 +717,35 @@ local function build(frame)
                             .. "%d members.|r"], #everyMember)
                 end)
 
-                for _, member in ipairs(everyMember) do
-                    local memberRow = nextRow()
-                    local red, green, blue = UI:ClassColour(member.meta.classFile)
-                    memberRow.text:SetText(string.format("|cff%02x%02x%02x%s|r",
-                        red * 255, green * 255, blue * 255,
-                        member.meta.name or member.key))
-                    memberRow.text:SetWidth(NAME_WIDTH - 8)
+                for _, group in ipairs(byRealm(everyMember)) do
+                    local realmRow = nextRow()
+                    realmRow.text:SetText(realmHeading(group))
+                    realmRow.text:SetWidth(NAME_WIDTH - 8)
 
-                    for index, category in ipairs(Family.Wide.CATEGORIES) do
-                        usedCells = usedCells + 1
-                        local box = cell(usedCells)
-                        box:ClearAllPoints()
-                        box:SetPoint("TOPLEFT", list, "TOPLEFT",
-                            NAME_WIDTH + (index - 1) * cellWidth, -(y - ROW))
-                        box:Enable()
-                        box:SetChecked(
-                            Family.Wide:Granted(entry.id, member.key, category.id))
-                        box:SetScript("OnClick", function(self)
-                            Family.Wide:Grant(entry.id, member.key, category.id,
-                                self:GetChecked() and true or false)
-                            frame:Refresh()
-                        end)
-                        box:Show()
+                    for _, member in ipairs(group.members) do
+                        local memberRow = nextRow()
+                        local red, green, blue = UI:ClassColour(member.meta.classFile)
+                        memberRow.text:SetText(string.format("|cff%02x%02x%02x%s|r",
+                            red * 255, green * 255, blue * 255,
+                            member.meta.name or member.key))
+                        memberRow.text:SetWidth(NAME_WIDTH - 8)
+
+                        for index, category in ipairs(Family.Wide.CATEGORIES) do
+                            usedCells = usedCells + 1
+                            local box = cell(usedCells)
+                            box:ClearAllPoints()
+                            box:SetPoint("TOPLEFT", list, "TOPLEFT",
+                                NAME_WIDTH + (index - 1) * cellWidth, -(y - ROW))
+                            box:Enable()
+                            box:SetChecked(
+                                Family.Wide:Granted(entry.id, member.key, category.id))
+                            box:SetScript("OnClick", function(self)
+                                Family.Wide:Grant(entry.id, member.key, category.id,
+                                    self:GetChecked() and true or false)
+                                frame:Refresh()
+                            end)
+                            box:Show()
+                        end
                     end
                 end
 
@@ -728,68 +793,80 @@ local function build(frame)
                             .. "taken on their own panel.|r"]
                     end)
 
-                    for _, member in ipairs(theirs) do
-                        local memberRow = nextRow()
-                        local red, green, blue = UI:ClassColour(member.meta.classFile)
+                    for _, group in ipairs(byRealm(theirs)) do
+                        local realmRow = nextRow()
+                        -- From the row's left edge like the Sibling/Member labels above, not
+                        -- from SIBLING_INSET: the heading names the whole section rather than
+                        -- labelling the tick box column, and indenting it to match the names
+                        -- made it look like one of them.
+                        realmRow.text:ClearAllPoints()
+                        realmRow.text:SetPoint("LEFT", 4, 0)
+                        realmRow.text:SetWidth(NAME_WIDTH - 4 - COLUMN_GAP)
+                        realmRow.text:SetText(realmHeading(group))
 
-                        memberRow.text:ClearAllPoints()
-                        memberRow.text:SetPoint("LEFT", SIBLING_INSET, 0)
-                        memberRow.text:SetWidth(NAME_WIDTH - SIBLING_INSET - 4)
-                        memberRow.text:SetText(string.format("|cff%02x%02x%02x%s|r",
-                            red * 255, green * 255, blue * 255,
-                            member.meta.name or member.key))
+                        for _, member in ipairs(group.members) do
+                            local memberRow = nextRow()
+                            local red, green, blue = UI:ClassColour(member.meta.classFile)
 
-                        -- Their level and how old this is, on hover rather than across the
-                        -- row. Written along the row it was drawn straight over the marks,
-                        -- because the marks reach the right-hand edge and a right-aligned
-                        -- caption starts wherever it likes.
-                        UI:AttachTooltip(memberRow, function()
-                            return nil, nil, {
-                                { member.meta.name or member.key,
-                                    string.format(L["|cff888888level %s|r"],
-                                        tostring(member.meta.level or "?")) },
-                                { string.format(L["|cff9d9d9das of %s|r"],
-                                    member.seen and UI:Ago(member.seen) or L["unknown"]) },
-                                { member.toldUs
-                                    and L["|cff9d9d9dThey say which categories they "
-                                        .. "share.|r"]
-                                    or L["|cffffaa00Their Family is too old to say what it "
-                                        .. "grants, so the marks are what has arrived.|r"] },
-                            }
-                        end)
+                            memberRow.text:ClearAllPoints()
+                            memberRow.text:SetPoint("LEFT", SIBLING_INSET, 0)
+                            memberRow.text:SetWidth(NAME_WIDTH - SIBLING_INSET - 4)
+                            memberRow.text:SetText(string.format("|cff%02x%02x%02x%s|r",
+                                red * 255, green * 255, blue * 255,
+                                member.meta.name or member.key))
 
-                        for index, category in ipairs(Family.Wide.CATEGORIES) do
+                            -- Their level and how old this is, on hover rather than across the
+                            -- row. Written along the row it was drawn straight over the marks,
+                            -- because the marks reach the right-hand edge and a right-aligned
+                            -- caption starts wherever it likes.
+                            UI:AttachTooltip(memberRow, function()
+                                return nil, nil, {
+                                    { member.meta.name or member.key,
+                                        string.format(L["|cff888888level %s|r"],
+                                            tostring(member.meta.level or "?")) },
+                                    { string.format(L["|cff9d9d9das of %s|r"],
+                                        member.seen and UI:Ago(member.seen) or L["unknown"]) },
+                                    { member.toldUs
+                                        and L["|cff9d9d9dThey say which categories they "
+                                            .. "share.|r"]
+                                        or L["|cffffaa00Their Family is too old to say what it "
+                                            .. "grants, so the marks are what has arrived.|r"] },
+                                }
+                            end)
+
+                            for index, category in ipairs(Family.Wide.CATEGORIES) do
+                                usedCells = usedCells + 1
+                                local mark = cell(usedCells)
+                                mark:ClearAllPoints()
+                                mark:SetPoint("TOPLEFT", list, "TOPLEFT",
+                                    NAME_WIDTH + (index - 1) * cellWidth, -(y - ROW))
+                                mark:SetChecked(
+                                    (member.received or {})[category.id] and true or false)
+                                -- Reported, not offered. The game greys a disabled box, which
+                                -- says "a state, not a switch" without a word being written.
+                                mark:SetScript("OnClick", nil)
+                                mark:Disable()
+                                mark:Show()
+                            end
+
                             usedCells = usedCells + 1
-                            local mark = cell(usedCells)
-                            mark:ClearAllPoints()
-                            mark:SetPoint("TOPLEFT", list, "TOPLEFT",
-                                NAME_WIDTH + (index - 1) * cellWidth, -(y - ROW))
-                            mark:SetChecked(
-                                (member.received or {})[category.id] and true or false)
-                            -- Reported, not offered. The game greys a disabled box, which
-                            -- says "a state, not a switch" without a word being written.
-                            mark:SetScript("OnClick", nil)
-                            mark:Disable()
-                            mark:Show()
+                            local box = cell(usedCells)
+                            box:ClearAllPoints()
+                            box:SetPoint("TOPLEFT", list, "TOPLEFT", 2, -(y - ROW))
+                            -- Enabled again: these come from the same pool as the greyed marks
+                            -- beside them, and a box that was one of those is still disabled.
+                            box:Enable()
+                            box:SetChecked(member.sibling and true or false)
+                            box:SetScript("OnClick", function(self)
+                                Family.Wide:SetSibling(member.family, member.key,
+                                    self:GetChecked() and true or false)
+                                frame:Refresh()
+                                -- The summary is the screen this changes, and usually the one
+                                -- that was open a moment ago.
+                                if UI.UpdateBroker then UI:UpdateBroker() end
+                            end)
+                            box:Show()
                         end
-
-                        usedCells = usedCells + 1
-                        local box = cell(usedCells)
-                        box:ClearAllPoints()
-                        box:SetPoint("TOPLEFT", list, "TOPLEFT", 2, -(y - ROW))
-                        -- Enabled again: these come from the same pool as the greyed marks
-                        -- beside them, and a box that was one of those is still disabled.
-                        box:Enable()
-                        box:SetChecked(member.sibling and true or false)
-                        box:SetScript("OnClick", function(self)
-                            Family.Wide:SetSibling(member.family, member.key,
-                                self:GetChecked() and true or false)
-                            frame:Refresh()
-                            -- The summary is the screen this changes, and usually the one
-                            -- that was open a moment ago.
-                            if UI.UpdateBroker then UI:UpdateBroker() end
-                        end)
-                        box:Show()
                     end
                 end
 

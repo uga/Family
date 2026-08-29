@@ -25,6 +25,12 @@ is a decision rather than an afternoon of archaeology.
   undivided run of names. A family with thirty characters across three realms was impossible to
   read, and two characters with the same name on different realms could not be told apart.
 - **Each heading in that list has room above it**, so a section begins instead of continuing.
+- **The Wide Family panel lists members under their realm and faction**, on both sides — the
+  characters you are sharing and the ones a linked family shares with you. A family of thirty
+  arrived as one undivided column of names with nothing saying which realm a row was on, and
+  two characters with the same name could not be told apart at all.
+- **The list of what a linked family shares with you is now in a stable order.** It had none,
+  so it could rearrange itself between refreshes.
 
 ## 1.0.0 — 2026-08-29
 
