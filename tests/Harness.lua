@@ -7220,6 +7220,21 @@ print("guild share")
 			advance(3)
 			deliver("Faraway")
 
+			-- And a character of theirs called after the player, which is the ordinary case
+			-- and the one the fixture could not otherwise produce: without it, a check
+			-- that a name is not printed twice passes on rows where the two names differ.
+			advance(30)
+			sent = {}
+			Family.Comm:Send("grec", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw", rschema = 1,
+				member = "Faraway-FireMaw", line = smith,
+				spells = { 60001 }, items = { 60001 },
+				missing = 0, fingerprint = 4242, seen = time() - 400,
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+
 			wipe(GameTooltip.__lines)
 			GameTooltip.__itemName = "A Thing Made In The Guild"
 			GameTooltip.__itemLink = "|Hitem:60001|h"
@@ -7238,6 +7253,20 @@ print("guild share")
 					named = true
 				end
 			end
+
+			-- And said once where the player and the character are the same word, which is
+			-- the ordinary case for somebody on the character they are named after.
+			local twice = false
+			for _, line in ipairs(GameTooltip.__lines) do
+				if type(line[1]) == "string" then
+					local first = line[1]:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+					if first:match("^(%a+)%s+(%a+)$")
+						and first:match("^(%a+)") == first:match("(%a+)$") then
+						twice = true
+					end
+				end
+			end
+			check("and no name is printed twice over", not twice)
 
 			check("the guild's answer appears on the item's own tooltip", heading)
 			-- Both names, and the player first: guild records are keyed by whoever sent

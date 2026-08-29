@@ -230,8 +230,17 @@ local function guildCrafterLines(_, itemID)
 		local player = tostring(who.player or "?")
 		player = player:match("^([^%-]+)") or player
 
+		-- Said once where they are the same word. A player whose crafting alt is the
+		-- character they are named after - or who is on that character right now - is the
+		-- ordinary case, and "Rolando Rolando" reads like a fault rather than like two
+		-- facts.
+		local character = tostring(who.name or "")
+		local both = (character ~= "" and character:lower() ~= player:lower())
+			and string.format("%s |cff888888%s|r", player, character)
+			or player
+
 		lines[#lines + 1] = {
-			string.format("%s |cff888888%s|r", player, tostring(who.name)),
+			both,
 			string.format("|cff9d9d9d%s|r", UI:Ago(who.at)),
 			r, g, b, 1, 1, 1,
 		}
