@@ -86,6 +86,24 @@ local GROUPS = {
 	},
 
 	{
+		title = "The bank's own container, on the Possessions panel",
+		note = "It falls through to the backpack button today, so the bank reads as a bag. "
+			.. "Wanted: something that says vault or stash without being a bag.",
+		icons = {
+			{ "Interface\\MINIMAP\\TRACKING\\Banker", "what the minimap calls a bank" },
+			{ "Interface\\Icons\\INV_Misc_Coin_01", "coins - but auctions already uses 02" },
+			{ "Interface\\Icons\\INV_Box_01", "a crate" },
+			{ "Interface\\Icons\\INV_Crate_02" },
+			{ "Interface\\Icons\\INV_Crate_04" },
+			{ "Interface\\Icons\\INV_Misc_Chest_01" },
+			{ "Interface\\Icons\\INV_Misc_TreasureChest01" },
+			{ "Interface\\Icons\\INV_Misc_Bag_28", "a strongbox, if it exists here" },
+			{ "Interface\\Icons\\Achievement_GuildPerk_MobileBanking", "likely retail only" },
+			{ "Interface\\BankFrame\\Bank-Background", "not an icon - shape check only" },
+		},
+	},
+
+	{
 		title = "Summary", fit = "Summary",
 		icons = {
 			{ "Interface\\Icons\\INV_Misc_GroupLooking", "a group of people" },
