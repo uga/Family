@@ -23,8 +23,9 @@ common reason a project is sent back — so the concrete examples were kept and 
 around them was dropped, on the view that a page nobody finishes reading fails the same test a
 vague one does. The fuller text is a `git log -p` away if a moderator ever asks for more.
 
-Keep it true to the version that is actually published. Two things go stale: what Wide Family
-is doing (switched off in `1.0.0-beta.1`) and the client list.
+Keep it true to the version that is actually published. Three things go stale: whether the two
+sharing features ship on or off (both ship **off**, as of `1.0.0`), where their switches are
+(**Options**, since `1.0.0` — the panels no longer carry their own), and the client list.
 
 ---
 
@@ -83,12 +84,13 @@ data broker feed carrying the family's money.
 other their characters' gear and talent shape, including the offline ones once you have seen
 them. **Nothing else is shared** — no bags, no mail, no gold; all of it is what the game
 already shows anyone who inspects you. The Guild panel is in the list whether it is on or off,
-and the switch is on it.
+so you can read what it does before deciding, and the switch is in **Options**.
 
 **Wide Family ships switched off by default.** Linking two players' families, with per-member
 and per-category consent on a grid that starts empty, is there whenever you want it — but
 sharing is the one thing a later version cannot undo, so it waits to be asked for rather than
-arriving switched on. `/family wide on`, then a reload, and both of you need to.
+arriving switched on. The switch is in **Options** beside the guild one, or `/family wide on`.
+Neither needs a reload, and both of you need to.
 
 ### What to expect
 
