@@ -105,6 +105,69 @@ local function teaches(itemName, recipeName)
 	return itemName:sub(-#recipeName - 1, -#recipeName - 1):match("[%w]") == nil
 end
 
+-- Who in the family knows one particular recipe, found by its identifier and by nothing else.
+--
+-- `Crafters` above answers a different and larger question - who has the profession, and how
+-- each of them stands with a recipe named like this - and it needs the item's name and its
+-- skill requirement read off a tooltip to do it. This needs neither: given the spell, it is a
+-- lookup, and the answer is a plain fact rather than a judgement.
+--
+-- Which is what a recipe's own tooltip wants. An enchant has no item to be named after, no
+-- subtype to be recognised by and no skill line written on it, so the route that answers for
+-- a crafted object cannot answer for it at all - and the panel two inches away was listing
+-- the very people the tooltip left out.
+function Recipes:KnowersOf(spellID, itemID, itemName)
+	if not ((spellID and spellID ~= 0) or (itemID and itemID ~= 0) or itemName) then
+		return {}
+	end
+
+	local found = {}
+
+	for key, entry in pairs(Family.Database:Members()) do
+		local meta = entry.meta or {}
+		local payload = Family.Database:Payload(key)
+
+		for profession, record in pairs((payload or {}).professions or {}) do
+			for _, recipe in ipairs(record.recipes or {}) do
+				-- Either identifier, and the name only where neither is present -
+				-- which on Classic Era is most of enchanting. The name is this
+				-- client's word for the recipe against this client's word for the
+				-- item, so both sides are in one language (§2.1).
+				local matched = (spellID and spellID ~= 0
+						and recipe.spellID == spellID)
+					or (itemID and itemID ~= 0 and recipe.itemID == itemID)
+
+				if not matched and itemName and not recipe.itemID then
+					matched = teaches(itemName, Family.Names:Recipe(recipe, nil, nil,
+						record.locale))
+				end
+
+				if matched then
+					found[#found + 1] = {
+						key = key,
+						name = meta.name or key,
+						classFile = meta.classFile,
+						realm = meta.realm,
+						faction = meta.faction,
+						rank = (meta.skills or {})[profession]
+							and meta.skills[profession].rank or nil,
+					}
+					break
+				end
+			end
+		end
+	end
+
+	-- Highest skill first, then by name: the same order the whole-family search puts them
+	-- in, so the two do not disagree about who to ask first.
+	table.sort(found, function(a, b)
+		if (a.rank or 0) ~= (b.rank or 0) then return (a.rank or 0) > (b.rank or 0) end
+		return tostring(a.name) < tostring(b.name)
+	end)
+
+	return found
+end
+
 -- Whether an item is the thing a recipe of this name produces, or the book that teaches it.
 --
 -- Exposed because guild crafters needs the same test: what crosses from a guild is an id, the

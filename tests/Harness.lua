@@ -7322,7 +7322,7 @@ print("guild share")
 
 			local heading, named, alsoSender = false, false, false
 			for _, line in ipairs(GameTooltip.__lines) do
-				if type(line[1]) == "string" and line[1]:find("Guild crafters", 1, true) then
+				if type(line[1]) == "string" and line[1]:find("Can make it", 1, true) then
 					heading = true
 				elseif heading and type(line[1]) == "string"
 					and line[1]:find("Nervina", 1, true) then
@@ -7335,6 +7335,41 @@ print("guild share")
 			end
 
 			check("the guild's answer appears on the item's own tooltip", heading)
+
+			-- **And ours beside it.** Every other block answers about the item under the
+			-- cursor; this one used to answer only about the guild, so hovering something
+			-- one of your own characters could make said who in the guild could make it
+			-- and stayed silent about the character sitting in your own list. One question
+			-- gets one block.
+			Family.Database:SetMeta("Maker-FireMaw", { name = "Maker", realm = "Fire Maw",
+				level = 60, skills = { [smith] = { rank = 288, maxRank = 300 } } })
+			Family.Database:SetPayload("Maker-FireMaw", { professions = {
+				[smith] = { rank = 288, maxRank = 300, recipesSeen = time(),
+					recipes = { { name = "A Thing", spellID = 60001, itemID = 60001 } } },
+			} })
+
+			wipe(GameTooltip.__lines)
+			GameTooltip.__itemName = "A Thing Made In The Guild"
+			GameTooltip.__itemLink = "|Hitem:60001|h"
+			if GameTooltip.__scripts.OnTooltipCleared then
+				GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+			end
+			GameTooltip.__scripts.OnTooltipSetItem(GameTooltip)
+
+			local mine, marked = false, false
+			for _, line in ipairs(GameTooltip.__lines) do
+				if type(line[1]) == "string" then
+					if line[1]:find("Maker", 1, true) then mine = true end
+					if line[1]:find("(guild)", 1, true) then marked = true end
+				end
+			end
+
+			check("one of ours who can make it is named on the same block", mine)
+			-- One is somebody to log into and the other is somebody to whisper, so the
+			-- block says which is which without splitting into two.
+			check("and the guild's are marked as theirs", marked)
+
+			Family.Database:Forget("Maker-FireMaw")
 
 			-- **The character, and only the character.** Everything §7 shares is a character
 			-- in this guild, so the crafter is on the same roster the reader is looking at:
@@ -7356,7 +7391,7 @@ print("guild share")
 
 			local stillThere = false
 			for _, line in ipairs(GameTooltip.__lines) do
-				if type(line[1]) == "string" and line[1]:find("Guild crafters", 1, true) then
+				if type(line[1]) == "string" and line[1]:find("Can make it", 1, true) then
 					stillThere = true
 				end
 			end
@@ -7396,7 +7431,7 @@ print("guild share")
 
 				for _, line in ipairs(GameTooltip.__lines) do
 					if type(line[1]) == "string"
-						and line[1]:find(needle or "Guild crafters", 1, true) then
+						and line[1]:find(needle or "Can make it", 1, true) then
 						return true
 					end
 				end
@@ -7417,7 +7452,7 @@ print("guild share")
 				local named = false
 				for _, line in ipairs(GameTooltip.__lines) do
 					if type(line[1]) == "string"
-						and line[1]:find("Guild crafters", 1, true) then
+						and line[1]:find("Can make it", 1, true) then
 						named = true
 					end
 				end
@@ -7438,7 +7473,7 @@ print("guild share")
 
 					for _, line in ipairs(GameTooltip.__lines) do
 						if type(line[1]) == "string"
-							and line[1]:find("Guild crafters", 1, true) then
+							and line[1]:find("Can make it", 1, true) then
 							hooked = true
 						end
 					end

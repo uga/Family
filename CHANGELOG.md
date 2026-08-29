@@ -61,6 +61,13 @@ is a decision rather than an afternoon of archaeology.
   profession and the list goes with it, on their side as well as yours, without either of you
   pressing anything.
 
+- **Hovering something craftable now says who can make another one — yours as well as your
+  guild's, in one block.** It only ever said who *owned* one. The block that names crafters
+  answers about a *pattern* — who knows it, who could learn it — and finds people by the
+  subtype and skill written on a pattern's tooltip, which the thing it makes does not carry.
+  So the robe told you who had one and nothing about who could make another; and once guild
+  crafters arrived it named a guildmate who could while staying silent about the character in
+  your own list.
 - **Enchanting answers on tooltips too.** An enchanting recipe carries the spell it is and,
   on Classic Era, nothing else — the game gives no id for the thing it makes, even for the
   ones that make something. So no id on the oil under your cursor, or on the formula that

@@ -120,6 +120,9 @@ Per client: **Era**, **Anniversary**, **Mists**.
 - [ ] **Hover something one of their shared professions can make.** A *Guild crafters* block
       appears under your own family's, naming the player and the character of theirs that can
       make it. It works on the crafted item, not only on the pattern.
+- [ ] **Hover something one of your own characters can make.** A *Can make it* block names
+      them with their skill, whether or not anybody in the guild can make it too — and the
+      guild's are on the same block, marked *(guild)*.
 - [ ] **Hover an enchant** — one that makes no object at all — in a trade skill window or from
       a link. The guild's answer appears on the recipe's own tooltip, which for an enchant is
       the only tooltip there is.

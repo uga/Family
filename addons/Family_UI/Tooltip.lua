@@ -214,25 +214,48 @@ end
 -- block, which works from the item's subtype, often cannot.
 local GUILD_CAP = 5
 
--- The block itself, so that the item route and the spell route say the same thing. Local, and
--- defined above both of them: written as a forward declaration lower down it was a second
--- local that shadowed nothing, while the definition quietly made a global - and the spell
--- route called the empty one.
-local function guildLinesFor(crafters)
-	local lines = { { L["|cff66bbffGuild crafters|r"],
-		string.format("|cff888888%d|r", #crafters) } }
+-- **Who can make this**, ours and the guild's, in one block.
+--
+-- One rather than two, because it is one question. Every other block on this tooltip answers
+-- something a player asked - what have I got, who owns one - and splitting the answer to "who
+-- can make it" by which list the answer came out of would be Family showing its own filing.
+--
+-- Ours first and unadorned, the guild's marked as theirs, because what you do about them
+-- differs: one is a character to log into and the other is somebody to whisper. Local, and
+-- defined above both routes that use it: written as a forward declaration lower down it was a
+-- second local that shadowed nothing, while the definition quietly made a global - and the
+-- spell route called the empty one.
+local function makerLines(ours, theirs)
+	local total = #ours + #theirs
+	if total == 0 then return nil end
 
-	for index = 1, math.min(GUILD_CAP, #crafters) do
-		local who = crafters[index]
+	local lines = { { L["|cff66bbffCan make it|r"],
+		string.format("|cff888888%d|r", total) } }
+	local room = GUILD_CAP
+
+	for index = 1, math.min(room, #ours) do
+		local who = labelled(ours)[index]
+		local r, g, b = classColour(who.classFile)
+		lines[#lines + 1] = {
+			who.label,
+			string.format("|cff888888%s|r", tostring(who.rank or "?")),
+			r, g, b, 1, 1, 1,
+		}
+	end
+
+	room = room - math.min(room, #ours)
+
+	for index = 1, math.min(room, #theirs) do
+		local who = theirs[index]
 		local r, g, b = classColour(who.classFile)
 
-		-- The realm taken off for reading: this is a name somebody is about to type into a
-		-- whisper, not the lower-cased key the protocol matches on.
+		-- The realm taken off for reading: this is a name somebody is about to type into
+		-- a whisper, not the lower-cased key the protocol matches on.
 		local character = tostring(who.name or who.key or "?")
 		character = character:match("^([^%-]+)") or character
 
 		lines[#lines + 1] = {
-			character,
+			string.format(L["%s |cff66bbff(guild)|r"], character),
 			string.format("|cff9d9d9d%s|r", UI:Ago(who.at)),
 			r, g, b, 1, 1, 1,
 		}
@@ -240,24 +263,31 @@ local function guildLinesFor(crafters)
 
 	-- A tooltip that fills the screen has answered a different question from the one asked,
 	-- so the rest are counted rather than listed.
-	if #crafters > GUILD_CAP then
+	if total > GUILD_CAP then
 		lines[#lines + 1] = { string.format(L["|cff888888and %d more|r"],
-			#crafters - GUILD_CAP), "" }
+			total - GUILD_CAP), "" }
 	end
 
 	return lines
 end
 
-local function guildCrafterLines(_, itemID)
-	if not (Family.Guild and Family.Guild:Enabled()) then return nil end
+-- On the thing itself, rather than on the pattern that teaches it.
+--
+-- The block above this one answers about a *recipe* - who knows it, who could learn it - and
+-- it finds people by the item's subtype and the skill written on its tooltip, which only a
+-- pattern carries. Hovering the robe rather than the plans for it therefore said who owned one
+-- and nothing about who could make another, and once the guild's answer arrived it said who in
+-- the guild could make one while staying silent about the character sitting in your own list.
+--
+-- Answered by identifier here, and by the name only where a client gave no identifier at all.
+local function makerBlock(_, itemID)
+	local itemName = Family.Names:CachedItem(itemID)
 
-	-- The item's own name as well as its id. A recipe that crossed with a spell and no item -
-	-- everything enchanting, on Classic Era - can only be recognised by what this client calls
-	-- it, and that covers both the thing it makes and the formula that teaches it.
-	local crafters = Family.Guild:CraftersOf(nil, itemID, Family.Names:CachedItem(itemID))
-	if #crafters == 0 then return nil end
+	local ours = Family.Recipes:KnowersOf(nil, itemID, itemName)
+	local theirs = (Family.Guild and Family.Guild:Enabled())
+		and Family.Guild:CraftersOf(nil, itemID, itemName) or {}
 
-	return guildLinesFor(crafters)
+	return makerLines(ours, theirs)
 end
 
 --------------------------------------------------------------------------------------------
@@ -295,13 +325,17 @@ local function onSpell(tooltip, spellID)
 	if lastDescribed[tooltip] == "spell:" .. spellID then return end
 	lastDescribed[tooltip] = "spell:" .. spellID
 
-	if not (Family.Guild and Family.Guild:Enabled()) then return end
+	-- The same block as the item route, because it is the same question: a recipe's own
+	-- tooltip is simply the only place an enchant can be asked it.
+	local ours = Family.Recipes:KnowersOf(spellID)
+	local theirs = (Family.Guild and Family.Guild:Enabled())
+		and Family.Guild:CraftersOf(spellID, nil, nil) or {}
 
-	local crafters = Family.Guild:CraftersOf(spellID, nil, nil)
-	if #crafters == 0 then return end
+	local lines = makerLines(ours, theirs)
+	if not lines then return end
 
 	tooltip:AddLine(" ")
-	for index, line in ipairs(guildLinesFor(crafters)) do
+	for index, line in ipairs(lines) do
 		if index == 1 then
 			tooltip:AddDoubleLine(line[1], line[2], 0.4, 0.73, 1, 0.53, 0.53, 0.53)
 		else
@@ -338,7 +372,7 @@ local function onItem(tooltip, itemID)
 	-- whatever is added next reads as part of this list.
 	local blocks = {}
 
-	for _, build in ipairs { possessionLines, crafterLines, guildCrafterLines } do
+	for _, build in ipairs { possessionLines, crafterLines, makerBlock } do
 		local lines = build(tooltip, itemID)
 		if lines and #lines > 0 then blocks[#blocks + 1] = lines end
 	end
