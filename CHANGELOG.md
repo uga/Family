@@ -55,6 +55,11 @@ is a decision rather than an afternoon of archaeology.
 - **A character who leaves a guild is no longer recorded as still being in it.**
 - **`/family guild test` now lists any of your characters with no guild recorded**, so the
   cause is something you can read rather than something you have to guess at.
+- **A profession window with its categories folded up is now read in full.** The window lists
+  only the rows it is showing, so a collapsed heading hid every recipe under it and the scan
+  came away with nothing — the same trap Family has avoided in the skill list since it was
+  written, in the one window the recipes are actually in. It is unfolded, read, and folded
+  back exactly as it was found.
 - **A link request to a second character of a family you are already linked with no longer
   waits for ever.** Ask two characters of the same family, link through the first, and the
   request to the second used to sit on the Wide Family panel saying *waiting for them to

@@ -229,14 +229,101 @@ local function idFromLink(link, ...)
 	return nil
 end
 
+--------------------------------------------------------------------------------------------
+-- A recipe window lists what it shows, not what the character knows
+--
+-- The same fault as the skill list, in the window the recipes are actually in, and it went
+-- unguarded for longer because it is one function further down. A collapsed sub-class header
+-- hides every recipe under it, and the count is of rows on screen - so a window whose headers
+-- are collapsed reads back as no recipes at all. Both readers below return nil for that,
+-- which the professions panel renders as **never opened**: a profession opened twice, and
+-- still reported as never seen.
+--
+-- Expanded before reading and put back afterwards, exactly as collapsedHeaders and restore do
+-- for the skill list. Leaving somebody's window rearranged because an addon looked at it is
+-- rude, and it is also how a player learns not to trust the addon.
+--------------------------------------------------------------------------------------------
+
+-- Expanding a header moves everything below it, so the list is read again after each one
+-- rather than trusting an index taken before the move.
+--
+-- Bounded rather than a `while`, for the reason `restore` is walked backwards: a client that
+-- answers for an index past the end would otherwise spin until the game killed it. Forty is
+-- far more sub-classes than any profession has and far fewer than a hang.
+local function expandRows(rows, collapsedAt, expand)
+	local collapsed = {}
+
+	for _ = 1, 40 do
+		local found, name
+		for index = 1, rows() do
+			name = collapsedAt(index)
+			if name then found = index break end
+		end
+
+		if not found then break end
+
+		collapsed[name] = true
+		Family:TryCall(expand, found)
+	end
+
+	return collapsed
+end
+
+local function restoreRows(collapsed, rows, headerAt, collapse)
+	if not next(collapsed) then return end
+
+	-- Backwards, so that collapsing one header does not move another that has not been
+	-- reached yet.
+	for index = rows(), 1, -1 do
+		local name = headerAt(index)
+		if name and collapsed[name] then Family:TryCall(collapse, index) end
+	end
+end
+
+local function tradeSkillRows() return Family:TryCall(GetNumTradeSkills) or 0 end
+
+local function tradeSkillHeaderAt(index)
+	local name, kind = Family:TryCall(GetTradeSkillInfo, index)
+	if name and kind == "header" then return name end
+	return nil
+end
+
+local function collapsedTradeSkillAt(index)
+	local name, kind, _, isExpanded = Family:TryCall(GetTradeSkillInfo, index)
+	if name and kind == "header" and not isExpanded then return name end
+	return nil
+end
+
+local function craftRows() return Family:TryCall(GetNumCrafts) or 0 end
+
+local function craftHeaderAt(index)
+	local name, _, kind = Family:TryCall(GetCraftInfo, index)
+	if name and kind == "header" then return name end
+	return nil
+end
+
+local function collapsedCraftAt(index)
+	local name, _, kind, _, isExpanded = Family:TryCall(GetCraftInfo, index)
+	if name and kind == "header" and not isExpanded then return name end
+	return nil
+end
+
 -- Era and Burning Crusade: a flat list of headers and skills, with the difficulty as one of
 -- the client's own unlocalised keys - optimal, medium, easy, trivial.
 local function readClassicRecipes()
 	local name = Family:TryCall(GetTradeSkillLine)
 	if not name or name == "UNKNOWN" then return nil end
 
-	local count = Family:TryCall(GetNumTradeSkills) or 0
-	if count == 0 then return nil end
+	local wasCollapsed = expandRows(tradeSkillRows, collapsedTradeSkillAt,
+		ExpandTradeSkillSubClass)
+
+	local function putBack()
+		restoreRows(wasCollapsed, tradeSkillRows, tradeSkillHeaderAt,
+			CollapseTradeSkillSubClass)
+	end
+
+	local count = tradeSkillRows()
+	if count == 0 then putBack() return nil end
 
 	local recipes = {}
 
@@ -269,6 +356,7 @@ local function readClassicRecipes()
 		end
 	end
 
+	putBack()
 	return name, recipes
 end
 
@@ -315,8 +403,14 @@ local function readCraftRecipes()
 	local name = Family:TryCall(GetCraftName)
 	if not name or name == "UNKNOWN" then return nil end
 
-	local count = Family:TryCall(GetNumCrafts) or 0
-	if count == 0 then return nil end
+	local wasCollapsed = expandRows(craftRows, collapsedCraftAt, ExpandCraftSkillLine)
+
+	local function putBack()
+		restoreRows(wasCollapsed, craftRows, craftHeaderAt, CollapseCraftSkillLine)
+	end
+
+	local count = craftRows()
+	if count == 0 then putBack() return nil end
 
 	local recipes = {}
 
@@ -352,6 +446,8 @@ local function readCraftRecipes()
 			recipes[#recipes + 1] = recipe
 		end
 	end
+
+	putBack()
 
 	if #recipes == 0 then return nil end
 

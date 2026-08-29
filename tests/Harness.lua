@@ -893,21 +893,42 @@ local CRAFTS = {
 	{ "Huile de sorcier", "easy", 2, "|Henchant:25128|h", "|Hitem:20749|h" },
 }
 GetCraftName = function() return "Enchantement" end
-GetNumCrafts = function() return #CRAFTS end
+
+-- The Craft frame collapses the same way and hides the same way.
+CRAFT_COLLAPSED = false
+
+local function visibleCrafts()
+	local rows = { CRAFTS[1] }
+	if not CRAFT_COLLAPSED then
+		for index = 2, #CRAFTS do rows[#rows + 1] = CRAFTS[index] end
+	end
+	return rows
+end
+
+GetNumCrafts = function() return #visibleCrafts() end
 GetCraftInfo = function(index)
-	local c = CRAFTS[index]
+	local c = visibleCrafts()[index]
 	if not c then return nil end
+	if c[2] == "header" then return c[1], nil, "header", 0, not CRAFT_COLLAPSED end
 	return c[1], nil, c[2], c[3]
 end
+ExpandCraftSkillLine = function() CRAFT_COLLAPSED = false end
+CollapseCraftSkillLine = function() CRAFT_COLLAPSED = true end
 GetCraftCooldown = function(index)
 	-- One thing on a real cooldown, so the "not ready yet" case exists at all.
 	return index == 2 and 3600 or nil
 end
 GetCraftIcon = function(index)
-	return CRAFTS[index] and ("Interface\\Icons\\Craft_" .. index)
+	return visibleCrafts()[index] and ("Interface\\Icons\\Craft_" .. index)
 end
-GetCraftRecipeLink = function(index) return CRAFTS[index] and CRAFTS[index][4] end
-GetCraftItemLink = function(index) return CRAFTS[index] and CRAFTS[index][5] end
+GetCraftRecipeLink = function(index)
+	local c = visibleCrafts()[index]
+	return c and c[4]
+end
+GetCraftItemLink = function(index)
+	local c = visibleCrafts()[index]
+	return c and c[5]
+end
 GetSpellSubtext = function() return "Rang 3" end
 GetItemIcon = function(id) return "Interface\\Icons\\Item_" .. id end
 
@@ -1122,19 +1143,42 @@ TRADE_SKILL_OPEN = true
 GetTradeSkillLine = function()
 	return TRADE_SKILL_OPEN and "Blacksmithing" or "UNKNOWN"
 end
-GetNumTradeSkills = function() return #TRADE_RECIPES end
+-- The window lists what it *shows*, exactly as the skill list above does: a collapsed
+-- sub-class header hides every row under it and the count is of rows on screen. Modelled
+-- rather than assumed away, because reading a collapsed window is the fault this fixture
+-- exists to reproduce - the recipes are still known, and the client will not name one of them.
+TRADE_COLLAPSED = false
+
+local function visibleTradeRows()
+	local rows = { TRADE_RECIPES[1] }
+	if not TRADE_COLLAPSED then
+		for index = 2, #TRADE_RECIPES do rows[#rows + 1] = TRADE_RECIPES[index] end
+	end
+	return rows
+end
+
+GetNumTradeSkills = function() return #visibleTradeRows() end
 GetTradeSkillInfo = function(index)
-	local r = TRADE_RECIPES[index]
+	local r = visibleTradeRows()[index]
 	if not r then return nil end
+	if r[2] == "header" then return r[1], "header", 0, not TRADE_COLLAPSED end
 	return r[1], r[2], r[3]
 end
+ExpandTradeSkillSubClass = function() TRADE_COLLAPSED = false end
+CollapseTradeSkillSubClass = function() TRADE_COLLAPSED = true end
 -- The client's own icon for each row, which is the only thing that is right for every kind
 -- of recipe: the crafting spell of a bandage is not drawn as a bandage.
 GetTradeSkillIcon = function(index)
-	return TRADE_RECIPES[index] and ("Interface\\Icons\\Recipe_" .. index)
+	return visibleTradeRows()[index] and ("Interface\\Icons\\Recipe_" .. index)
 end
-GetTradeSkillRecipeLink = function(index) return TRADE_RECIPES[index] and TRADE_RECIPES[index][4] end
-GetTradeSkillItemLink = function(index) return TRADE_RECIPES[index] and TRADE_RECIPES[index][5] end
+GetTradeSkillRecipeLink = function(index)
+	local r = visibleTradeRows()[index]
+	return r and r[4]
+end
+GetTradeSkillItemLink = function(index)
+	local r = visibleTradeRows()[index]
+	return r and r[5]
+end
 GetTradeSkillCooldown = function() return nil end
 
 -- The bank: container -1, plus one bought bank bag at 6. Bag 5 is deliberately absent.
@@ -1920,6 +1964,55 @@ check("and one that makes an oil has both",
 	ench and ench.recipes[2].spellID == 25128 and ench.recipes[2].itemID == 20749)
 check("opening a window marks it as a profession",
 	FamilyDB.professionNames["Enchantement"] == true)
+
+-- A window whose sub-class headers are collapsed
+--
+-- The window lists what it *shows*: a collapsed header hides every row under it, and the
+-- count is of rows on screen. The skill list has been expanded and put back since this
+-- scanner was written, and the window the recipes are actually in never was - so a player
+-- who keeps their categories folded had their recipe list read as one row of heading.
+--
+-- Put back afterwards, because leaving somebody's window rearranged is how they learn not to
+-- trust the addon.
+do
+	CRAFT_COLLAPSED = true
+	check("a collapsed window hides its rows from the client, as the game's does",
+		(Family:TryCall(GetNumCrafts) or 0) == 1, tostring(Family:TryCall(GetNumCrafts)))
+
+	-- Wiped first, or this proves nothing. The craft reader answers nil when it finds no
+	-- rows, and a nil leaves the record from the scan before it in place - so the check
+	-- would pass on a list read while the window was open, which is the opposite of what
+	-- it is asking about.
+	Family.Database:Payload(key).professions[SKILL.enchanting].recipes = nil
+
+	Family.Professions:Scan(true)
+	local folded = Family.Database:Payload(key).professions[SKILL.enchanting]
+	check("and every recipe is read anyway", folded and #folded.recipes == 2,
+		folded and tostring(#folded.recipes) or "nothing recorded")
+	check("with the window left folded as it was found", CRAFT_COLLAPSED == true)
+
+	CRAFT_COLLAPSED = false
+end
+
+-- The same for the trade skill window, which is the one Alchemy and Cooking are in.
+do
+	local realOpen = TRADE_SKILL_OPEN
+	TRADE_SKILL_OPEN = true
+	TRADE_COLLAPSED = true
+
+	check("a collapsed trade skill window hides its rows too",
+		(Family:TryCall(GetNumTradeSkills) or 0) == 1,
+		tostring(Family:TryCall(GetNumTradeSkills)))
+
+	Family.Professions:Scan(true)
+	local smithing = Family.Database:Payload(key).professions[SKILL.blacksmithing]
+	check("and its recipes are read anyway", smithing and #smithing.recipes == 2,
+		smithing and tostring(#smithing.recipes) or "nothing recorded")
+	check("with that window left folded as it was found too", TRADE_COLLAPSED == true)
+
+	TRADE_COLLAPSED = false
+	TRADE_SKILL_OPEN = realOpen
+end
 
 -- Beast Training: the same frame a third time, with no skill line and no skill - so not a
 -- profession, and not nothing either. A hunter's pet abilities are a real list of things that
