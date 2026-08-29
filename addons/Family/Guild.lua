@@ -1349,6 +1349,49 @@ function Guild:Diagnose()
 	for _ in pairs(self:Known(guildKey)) do known = known + 1 end
 	Family:Print(L["  characters held for this guild: %d"], known)
 
+	-- What is actually shareable, and what has actually arrived (§7.1).
+	--
+	-- Both are invisible from the panel: a profession can be ticked and have nothing to send
+	-- because its window has never been opened, and a list can be asked for and never turn
+	-- up. Neither shows anywhere, and the last thing this project learned the expensive way
+	-- is that state nobody can look at costs an evening the first time it is wrong.
+	do
+		local ticked, ready = 0, 0
+
+		for memberKey, perMember in pairs((store().grants[guildKey]) or {}) do
+			for line in pairs(perMember) do
+				ticked = ticked + 1
+				if self:RecipeMark(memberKey, line) then ready = ready + 1 end
+			end
+		end
+
+		if ticked > 0 then
+			Family:Print(L["  professions ticked: %d, of which %d have a recipe list to "
+				.. "send"], ticked, ready)
+			if ready < ticked then
+				Family:Print(L["  |cff888888the rest share a rank and nothing else until "
+					.. "that profession's window has been opened once|r"])
+			end
+		end
+
+		local lists, recipes = 0, 0
+		for _, perMember in pairs(self:AllRecipes(guildKey)) do
+			for _, list in pairs(perMember) do
+				lists = lists + 1
+				recipes = recipes + #(list.spells or {})
+			end
+		end
+
+		Family:Print(L["  recipe lists held from the guild: %d, %d recipe(s) in all"],
+			lists, recipes)
+
+		if lists == 0 and known > 0 then
+			Family:Print(L["  |cff888888nothing yet: they arrive a few seconds after an "
+				.. "exchange, and only for professions the other end has ticked and "
+				.. "opened|r"])
+		end
+	end
+
 	if stats.sent > 0 and stats.arrived == 0 then
 		Family:Print(L["|cffffaa00This client has sent and heard nothing at all, not even its "
 			.. "own announcement coming back off the guild channel. That points at the "

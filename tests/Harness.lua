@@ -6865,6 +6865,34 @@ print("guild share")
 		check("and one with no guild at all, without going through the roster to find them",
 			listed)
 
+		-- What is shareable and what has arrived, both of which are invisible on the panel:
+		-- a profession can be ticked and have nothing to send because its window has never
+		-- been opened, and a list can be asked for and never turn up.
+		do
+			-- Something ticked, because the line only exists when there is something to
+			-- say: a grid nobody has touched has nothing to report about.
+			local mine = Family:CurrentMember()
+			Family.Guild:SetShare(guildKey, mine, 164, true)
+
+			local mark = #DEFAULT_CHAT_FRAME.messages
+			Family.Guild:Diagnose()
+
+			local ticked, held = false, false
+			for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+				local message = tostring(DEFAULT_CHAT_FRAME.messages[index])
+				if message:find("professions ticked", 1, true) then ticked = true end
+				if message:find("recipe lists held from the guild", 1, true) then
+					held = true
+				end
+			end
+
+			check("and says how many professions are ticked and how many can send a list",
+				ticked)
+			check("and how many lists have come back", held)
+
+			Family.Guild:SetShare(guildKey, mine, 164, false)
+		end
+
 		Family.Database:Forget("Hermit-FireMaw")
 	end
 	check("and counts what crossed the wire", Family.Guild.stats.sent > 0,
