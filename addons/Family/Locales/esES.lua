@@ -454,6 +454,7 @@ Family.locales.esES = {
 	["      and something is in slot(s) %s, past where the size call says this container ends"] = "      y hay algo en el/los espacio(s) %s, más allá del final que indica la llamada",
 	["  a bank window is open"] = "  hay una ventana del banco abierta",
 	["  no bank window is open - what follows is what the client says anyway"] = "  no hay ventana del banco abierta: lo que sigue es lo que dice el cliente de todos modos",
+	["       the talent table names %d of those %d"] = "       la tabla de talentos nombra %d de esos %d",
 	["never"] = "nunca",
 	["Accept"] = "Aceptar",  -- 10
 	["Forget"] = "Olvidar",  -- 10

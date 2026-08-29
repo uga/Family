@@ -454,6 +454,7 @@ Family.locales.frFR = {
 	["      and something is in slot(s) %s, past where the size call says this container ends"] = "      et il y a quelque chose dans le(s) emplacement(s) %s, au-delà de la fin annoncée par l'appel",
 	["  a bank window is open"] = "  une fenêtre de banque est ouverte",
 	["  no bank window is open - what follows is what the client says anyway"] = "  aucune fenêtre de banque ouverte - ce qui suit est ce que le client dit quand même",
+	["       the talent table names %d of those %d"] = "       la table des talents en nomme %d sur %d",
 	["never"] = "jamais",
 	["Accept"] = "Accepter",  -- 10
 	["Forget"] = "Oublier",  -- 10

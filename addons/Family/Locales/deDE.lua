@@ -454,6 +454,7 @@ Family.locales.deDE = {
 	["      and something is in slot(s) %s, past where the size call says this container ends"] = "      und in Platz/Plätzen %s liegt etwas, hinter dem Ende, das der Aufruf angibt",
 	["  a bank window is open"] = "  ein Bankfenster ist offen",
 	["  no bank window is open - what follows is what the client says anyway"] = "  kein Bankfenster offen - was folgt, sagt der Client trotzdem",
+	["       the talent table names %d of those %d"] = "       die Talenttabelle benennt %d davon, von %d",
 	["never"] = "nie",
 	["Accept"] = "Annehmen",  -- 10
 	["Forget"] = "Vergessen",  -- 10

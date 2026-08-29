@@ -454,6 +454,7 @@ Family.locales.ruRU = {
 	["      and something is in slot(s) %s, past where the size call says this container ends"] = "      и что-то лежит в ячейке(ах) %s, за концом, о котором сообщает вызов",
 	["  a bank window is open"] = "  окно банка открыто",
 	["  no bank window is open - what follows is what the client says anyway"] = "  окно банка не открыто - дальше то, что клиент говорит всё равно",
+	["       the talent table names %d of those %d"] = "       таблица талантов называет %d из этих %d",
 	["never"] = "никогда",
 	["Accept"] = "Принять",  -- 10
 	["Forget"] = "Забыть",  -- 10

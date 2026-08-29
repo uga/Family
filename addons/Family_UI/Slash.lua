@@ -363,6 +363,25 @@ add("talents", L["what talent data is actually stored, and for whom"], function(
 					Family:Print(L["     spec %d: %d point(s), %d tab(s), %d talent(s) ranked%s"],
 						group, data.pointsSpent or 0, #(data.tabs or {}), ranked,
 						data.visited == false and L[" |cff888888(unvisited)|r"] or "")
+
+					-- How many of them the generated table can name, asked without a
+					-- fallback so a miss answers nothing instead of quietly handing back
+					-- the word this record was written with. On a client whose language
+					-- matches the record the two are identical on screen, so a table that
+					-- names nothing at all looks exactly like one that works.
+					local named, total = 0, 0
+					local class = (Family.Database:Meta(key) or {}).classFile
+					for tab, tabData in pairs(data.tabs or {}) do
+						for _, talent in pairs(tabData.talents or {}) do
+							total = total + 1
+							if Family:TalentName(class, tab, talent.tier, talent.column)
+							then
+								named = named + 1
+							end
+						end
+					end
+					Family:Print(L["       the talent table names %d of those %d"],
+						named, total)
 				else
 					local chosen = 0
 					for _, row in pairs(data.tiers or {}) do
@@ -370,6 +389,18 @@ add("talents", L["what talent data is actually stored, and for whom"], function(
 					end
 					Family:Print(L["     spec %d: %d tier(s), %d chosen, spec id %s"],
 						group, #(data.tiers or {}), chosen, tostring(data.specID))
+
+					local named, total = 0, 0
+					for _, row in pairs(data.tiers or {}) do
+						for _, choice in pairs(row.choices or {}) do
+							total = total + 1
+							if Family:TalentNameByID(choice.id) then
+								named = named + 1
+							end
+						end
+					end
+					Family:Print(L["       the talent table names %d of those %d"],
+						named, total)
 				end
 			end
 		end
