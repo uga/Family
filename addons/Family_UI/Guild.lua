@@ -278,7 +278,9 @@ local function build(frame)
 		local off = not Family.Guild:Enabled()
 		offNote:SetShown(off)
 
-		local drop = 6
+		-- Sixteen under the title when there is no note, which is about where the status sat
+		-- when a checkbox stood between the two. Six put it against the heading.
+		local drop = 16
 		if off then
 			local height = math.max(14, math.ceil(offNote:GetStringHeight() or 14))
 			offNote:SetHeight(height)

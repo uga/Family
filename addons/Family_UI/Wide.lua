@@ -283,7 +283,8 @@ local function build(frame)
 
         -- Where the rest of the panel starts depends on how many lines that sentence took,
         -- which is one in English and two in French. Measured rather than assumed.
-        local drop = 30
+        -- Clear of the title rather than against it, the same gap the guild panel leaves.
+        local drop = 34
         if not on then
             local height = math.max(14, math.ceil(offNote:GetStringHeight() or 14))
             offNote:SetHeight(height)
