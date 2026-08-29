@@ -451,6 +451,7 @@ Family.locales.ruRU = {
 	["Share with families you link to"] = "Делиться со связанными семьями",
 	["Show the Wide Family tab"] = "Показывать вкладку «Большая семья»",
 	["Where families are linked and what each may see. Linking is off until you switch it on there; this only decides whether the tab is in the list. Takes effect after a reload."] = "Где семьи связываются и что каждая может видеть. Связывание выключено, пока вы не включите его там; это решает лишь, есть ли вкладка в списке. Действует после перезагрузки.",
+	["  bank bag slots bought: %s, all used: %s"] = "  куплено ячеек для сумок банка: %s, все заняты: %s",
 	["never"] = "никогда",
 	["Accept"] = "Принять",  -- 10
 	["Forget"] = "Забыть",  -- 10

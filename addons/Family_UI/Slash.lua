@@ -168,6 +168,14 @@ function()
 	local getItem = containerAPI.GetContainerItemInfo or _G.GetContainerItemInfo
 	local toInventory = containerAPI.ContainerIDToInventoryID or _G.ContainerIDToInventoryID
 
+	-- How many bank bag slots have been bought, and whether they are all used. Asked because
+	-- the bank's free count exceeds what its size allows and the difference has to come from
+	-- somewhere; empty bag slots are the nearest thing to it on that window. Printed, not
+	-- acted on - the last theory about this fitted perfectly and was wrong.
+	local bought, full = Family:TryCall(GetNumBankSlots)
+	Family:Print(L["  bank bag slots bought: %s, all used: %s"],
+		tostring(bought), tostring(full))
+
 	Family:Print(L["  open now, as the client reports it:"])
 	for bag = -1, 11 do
 		if bag == -1 or bag >= 5 then

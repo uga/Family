@@ -451,6 +451,7 @@ Family.locales.frFR = {
 	["Share with families you link to"] = "Partager avec les familles liées",
 	["Show the Wide Family tab"] = "Afficher l'onglet Famille élargie",
 	["Where families are linked and what each may see. Linking is off until you switch it on there; this only decides whether the tab is in the list. Takes effect after a reload."] = "Où les familles se lient et ce que chacune peut voir. La liaison est désactivée tant que vous ne l'activez pas là-bas ; ceci décide seulement si l'onglet est dans la liste. Prend effet après un rechargement.",
+	["  bank bag slots bought: %s, all used: %s"] = "  emplacements de sac de banque achetés : %s, tous utilisés : %s",
 	["never"] = "jamais",
 	["Accept"] = "Accepter",  -- 10
 	["Forget"] = "Oublier",  -- 10

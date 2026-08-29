@@ -451,6 +451,7 @@ Family.locales.esES = {
 	["Share with families you link to"] = "Compartir con familias enlazadas",
 	["Show the Wide Family tab"] = "Mostrar la pestaña Familia amplia",
 	["Where families are linked and what each may see. Linking is off until you switch it on there; this only decides whether the tab is in the list. Takes effect after a reload."] = "Donde se enlazan las familias y qué puede ver cada una. El enlace está desactivado hasta que lo actives allí; esto solo decide si la pestaña aparece en la lista. Surte efecto tras recargar.",
+	["  bank bag slots bought: %s, all used: %s"] = "  espacios de bolsa del banco comprados: %s, todos usados: %s",
 	["never"] = "nunca",
 	["Accept"] = "Aceptar",  -- 10
 	["Forget"] = "Olvidar",  -- 10
