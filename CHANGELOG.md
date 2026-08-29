@@ -31,6 +31,14 @@ is a decision rather than an afternoon of archaeology.
   Guild share itself is still off until you switch it on in Options, and the grid is greyed
   and says so until you do.
 
+  The grid starts **folded**, because the Guild tab is about the guild's people and a player
+  with eight characters in it has thirty rows of grid above the roster. Its heading says how
+  much you are offering while it is folded, and one click opens it.
+
+- **The panel counts people rather than characters.** "9 running Family" in a guild where
+  eight of those nine were your own alts is not an answer to the question that number is
+  there to ask. Your characters count as one — you.
+
 ### Fixed
 
 - **Leaving a guild now clears what that guild had shared with you**, and what you had offered

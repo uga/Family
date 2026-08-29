@@ -288,6 +288,14 @@ local function build(frame)
 		local b = CreateFrame("CheckButton", nil, list, "UICheckButtonTemplate")
 		b:SetSize(20, 20)
 
+		-- **Lifted above the rows, or nothing here can be clicked.** A row is a Button as
+		-- wide as the list, it takes the mouse whether or not anything is hooked to its
+		-- click, and it is a sibling of this box at the same frame level - so the row wins
+		-- the hit test and a grid of tick boxes silently becomes a picture of one. What the
+		-- player sees is the row's hover highlight coming up under a box that will not
+		-- answer, which is exactly how this was found.
+		b:SetFrameLevel(list:GetFrameLevel() + 5)
+
 		b.label = b:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		b.label:SetPoint("LEFT", b, "RIGHT", 2, 0)
 		b.label:SetWidth(TICK - 24)
@@ -344,6 +352,10 @@ local function build(frame)
 			-- heading and another for a guildmate's professions, and both want more room than
 			-- a name column - so the width has to be put back or the next roster row that
 			-- borrows the frame keeps it.
+			-- And the mouse back on. The grid's rows switch it off so that a hover
+			-- highlight does not come up under a tick box, and a roster row that borrows
+			-- one of those frames afterwards has to be clickable again.
+			r:EnableMouse(true)
 			r.text:SetWidth(220)
 			r.text:SetText("")
 			r.middle:SetText("")
@@ -425,127 +437,163 @@ local function build(frame)
 			local on = Family.Guild:Enabled()
 			local width = UI:ListWidth(scroll)
 			local perLine = math.max(1, math.floor((width - 24) / TICK))
+			local ticks = Family.Guild:CountShared(guildKey)
 
-			local offering = Family.Guild:Offering() or {}
-			local members = Family.Database:Members()
-
+			-- **Folded away by default.** This panel is about the guild's people, and the grid
+			-- is something you open when you want to change what you offer: a player with eight
+			-- characters in the guild has thirty rows of it above a roster of a hundred and
+			-- sixty, which is a grid hiding the panel it was put on. Folded, the heading still
+			-- says how much is offered, so the state is stated rather than hidden with the rows.
 			local heading = nextRow()
 			heading.text:SetWidth(width - 8)
-			heading.text:SetText(string.format(
-				L["|cffffd700What you share with %s|r   |cff888888one profession at a time, and "
-				.. "nothing until it is ticked|r"], guildName))
+			heading:SetScript("OnClick", function()
+				FamilyDB.ui = FamilyDB.ui or {}
+				FamilyDB.ui.guildGrid = not (FamilyDB.ui.guildGrid == true)
+				frame:Refresh()
+			end)
 
-			-- Whose characters they are, in a settled order. Offering() is the authority on
-			-- which of ours are in this guild - the same answer the wire gets, so the grid
-			-- cannot offer a box for somebody who would never be sent.
-			local keys = {}
-			for key in pairs(offering) do keys[#keys + 1] = key end
-			table.sort(keys)
+			local open = (FamilyDB.ui or {}).guildGrid == true
 
-			if #keys == 0 then
-				local none = nextRow()
-				none.text:SetWidth(width - 8)
-				none.text:SetText(L["   |cff9d9d9dNone of your characters is in this guild, so "
-					.. "there is nothing to offer it.|r"])
-			end
+			heading.text:SetText(string.format(open
+				and L["|cffffd700- What you share with %s|r   |cff888888one profession at a time, "
+					.. "and nothing until it is ticked|r"]
+				or (ticks > 0
+					and L["|cffffd700+ What you share with %s|r   |cff888888%d offered - click to "
+						.. "open|r"]
+					or L["|cffffd700+ What you share with %s|r   |cff888888nothing ticked - click "
+						.. "to open|r"]), guildName, ticks))
 
-			local nameless = 0
+			if open then
 
-			for _, key in ipairs(keys) do
-				local meta = (members[key] or {}).meta or {}
+				-- Whose characters they are, in a settled order. Offering() is the authority on
+				-- which of ours are in this guild - the same answer the wire gets, so the grid
+				-- cannot offer a box for somebody who would never be sent.
+				local offering = Family.Guild:Offering() or {}
+				local members = Family.Database:Members()
 
-				local who = nextRow()
-				local red, green, blue = UI:ClassColour(meta.classFile)
-				who.text:SetWidth(width - 8)
-				who.text:SetText(string.format("   |cff%02x%02x%02x%s|r  |cff888888%s|r",
-					red * 255, green * 255, blue * 255, meta.name or key,
-					tostring(meta.level or "?")))
+				local keys = {}
+				for key in pairs(offering) do keys[#keys + 1] = key end
+				table.sort(keys)
 
-				-- Identifiers, never names (§2.1). A profession this client gave no id for is
-				-- filed under a word, and a word is one language, so it cannot cross and is not
-				-- offered. It is counted instead of being left out in silence, which is the
-				-- same promise §7.1 makes about recipes without ids.
-				local offered = {}
-				for id, skill in pairs(meta.skills or {}) do
-					if type(id) == "number" then
-						offered[#offered + 1] = { id = id, skill = skill,
-							name = Family:ProfessionName(id, skill.name) }
-					else
-						nameless = nameless + 1
-					end
-				end
-				table.sort(offered, function(a, b) return a.name < b.name end)
-
-				if #offered == 0 then
-					local note = nextRow()
-					note.text:SetWidth(width - 8)
-					note.text:SetText(L["      |cff9d9d9dNo professions recorded on this "
-						.. "character yet. Open one of its profession windows once.|r"])
+				if #keys == 0 then
+					local none = nextRow()
+					none:EnableMouse(false)
+					none.text:SetWidth(width - 8)
+					none.text:SetText(L["   |cff9d9d9dNone of your characters is in this guild, so "
+						.. "there is nothing to offer it.|r"])
 				end
 
-				local placed = 0
-				while placed < #offered do
-					nextRow(TICK_ROW)
-					for column = 1, perLine do
-						local entry = offered[placed + column]
-						if entry then
-							local b = placeBox(24 + (column - 1) * TICK,
-								y - TICK_ROW + 1)
+				-- Named rather than counted. "1 left out" tells a player that something is wrong
+				-- and gives them no way to find out what, which is a worse answer than none; the
+				-- word the client used for it is the one thing that identifies it, and it is the
+				-- one thing this end has.
+				local nameless = {}
 
-							-- Greyed in the words as well as in the widget. The game
-							-- greys a disabled box on its own and cannot grey the font
-							-- string beside it, so a live-looking label would sit next
-							-- to a dead box.
-							b.label:SetText(string.format(
-								on and "%s |cffffd700%d|r|cff888888/%d|r"
-									or "|cff777777%s %d/%d|r",
-								entry.name, entry.skill.rank or 0,
-								entry.skill.maxRank or 0))
+				for _, key in ipairs(keys) do
+					local meta = (members[key] or {}).meta or {}
 
-							b:SetChecked(Family.Guild:Shares(guildKey, key, entry.id))
-							b:SetEnabled(on)
+					local who = nextRow()
+					who:EnableMouse(false)
+					local red, green, blue = UI:ClassColour(meta.classFile)
+					who.text:SetWidth(width - 8)
+					who.text:SetText(string.format("   |cff%02x%02x%02x%s|r  |cff888888%s|r",
+						red * 255, green * 255, blue * 255, meta.name or key,
+						tostring(meta.level or "?")))
 
-							if on then
-								b:SetScript("OnClick", function(self)
-									Family.Guild:SetShare(guildKey, key,
-										entry.id,
-										self:GetChecked() and true or false)
-									frame:Refresh()
-								end)
-							end
+					-- Identifiers, never names (§2.1). A profession this client gave no id for is
+					-- filed under a word, and a word is one language, so it cannot cross and is not
+					-- offered. It is named below instead of being left out in silence, which is the
+					-- same promise §7.1 makes about recipes without ids.
+					local offered = {}
+					for id, skill in pairs(meta.skills or {}) do
+						if type(id) == "number" then
+							offered[#offered + 1] = { id = id, skill = skill,
+								name = Family:ProfessionName(id, skill.name) }
+						else
+							nameless[#nameless + 1] = string.format("%s (%s)",
+								tostring(skill.name or id), tostring(meta.name or key))
 						end
 					end
-					placed = placed + perLine
+					table.sort(offered, function(a, b) return a.name < b.name end)
+
+					if #offered == 0 then
+						local note = nextRow()
+						note:EnableMouse(false)
+						note.text:SetWidth(width - 8)
+						note.text:SetText(L["      |cff9d9d9dNo professions recorded on this "
+							.. "character yet. Open one of its profession windows once.|r"])
+					end
+
+					local placed = 0
+					while placed < #offered do
+						-- The row is a spacer holding the height, and it must not take the mouse:
+						-- it is as wide as the list and the boxes sit on top of it.
+						nextRow(TICK_ROW):EnableMouse(false)
+
+						for column = 1, perLine do
+							local entry = offered[placed + column]
+							if entry then
+								local b = placeBox(24 + (column - 1) * TICK,
+									y - TICK_ROW + 1)
+
+								-- Greyed in the words as well as in the widget. The game
+								-- greys a disabled box on its own and cannot grey the font
+								-- string beside it, so a live-looking label would sit next
+								-- to a dead box.
+								b.label:SetText(string.format(
+									on and "%s |cffffd700%d|r|cff888888/%d|r"
+										or "|cff777777%s %d/%d|r",
+									entry.name, entry.skill.rank or 0,
+									entry.skill.maxRank or 0))
+
+								b:SetChecked(Family.Guild:Shares(guildKey, key, entry.id))
+								b:SetEnabled(on)
+
+								if on then
+									b:SetScript("OnClick", function(self)
+										Family.Guild:SetShare(guildKey, key,
+											entry.id,
+											self:GetChecked() and true or false)
+										frame:Refresh()
+									end)
+								end
+							end
+						end
+						placed = placed + perLine
+					end
 				end
-			end
 
-			-- What the grid adds up to, said in a line, because a player scrolling past it wants
-			-- to know whether they are sharing anything without reading every box.
-			local ticks = Family.Guild:CountShared(guildKey)
-			local total = nextRow()
-			total.text:SetWidth(width - 8)
+				-- What the grid adds up to, said in a line, because a player scrolling past it wants
+				-- to know whether they are sharing anything without reading every box.
+				local total = nextRow()
+				total:EnableMouse(false)
+				total.text:SetWidth(width - 8)
 
-			if not on then
-				total.text:SetText(L["   |cff9d9d9dGuild share is switched off, so nothing is "
-					.. "offered whatever is ticked here. The switch is in Options.|r"])
-			elseif ticks == 0 then
-				total.text:SetText(L["   |cff9d9d9dNothing is ticked, so this guild is sent no "
-					.. "professions at all.|r"])
-			else
-				-- Said where somebody can read it, because it is the half of the promise
-				-- Family can actually keep: unticking stops the next offering carrying it,
-				-- and everything one player sends replaces everything held from them.
-				total.text:SetText(string.format(L["   |cff888888%d offered. Unticking one "
-					.. "stops it being sent, and what they already hold is replaced the next "
-					.. "time they hear from you.|r"], ticks))
-			end
+				if not on then
+					total.text:SetText(L["   |cff9d9d9dGuild share is switched off, so nothing is "
+						.. "offered whatever is ticked here. The switch is in Options.|r"])
+				elseif ticks == 0 then
+					total.text:SetText(L["   |cff9d9d9dNothing is ticked, so this guild is sent no "
+						.. "professions at all.|r"])
+				else
+					-- Said where somebody can read it, because it is the half of the promise
+					-- Family can actually keep: unticking stops the next offering carrying it,
+					-- and everything one player sends replaces everything held from them.
+					total.text:SetText(string.format(L["   |cff888888%d offered. Unticking one "
+						.. "stops it being sent, and what they already hold is replaced the next "
+						.. "time they hear from you.|r"], ticks))
+				end
 
-			if nameless > 0 then
-				local left = nextRow()
-				left.text:SetWidth(width - 8)
-				left.text:SetText(string.format(L["   |cffffaa00%d left out: this client gave no "
-					.. "identifier for them, and a word is one language, so they cannot be "
-					.. "shared.|r"], nameless))
+				if #nameless > 0 then
+					local left = nextRow()
+					left:EnableMouse(false)
+					left.text:SetWidth(width - 8)
+					left.text:SetText(string.format(L["   |cffffaa00Not offered: %s. This client did "
+						.. "not say which profession that is, only what it is called - and a name is "
+						.. "readable in one language, so it cannot cross.|r"],
+						table.concat(nameless, ", ")))
+				end
+
 			end
 
 			y = y + 10
@@ -565,9 +613,22 @@ local function build(frame)
 		local everyone = roster()
 		local shown, users = 0, 0
 
+		-- **People, not characters.** A player with eight alts in the guild is eight rows on
+		-- this roster and one person running Family, and counting the rows made the panel
+		-- tell them that nine clients were out there when eight of the nine were their own -
+		-- which is the one number on the panel that is supposed to answer "is anybody else
+		-- out there". Ours collapse into one, because they are one; everybody else is
+		-- already one row per player, since a guildmate's alts are their own guild rows and
+		-- what identifies a player is the bare name their client sends.
+		local ourselves = false
 		for _, member in ipairs(everyone) do
-			if Family.Guild:RunsFamily(guildKey, member.name) then users = users + 1 end
+			if Family.Guild:IsOurs(member.name) then
+				ourselves = true
+			elseif Family.Guild:RunsFamily(guildKey, member.name) then
+				users = users + 1
+			end
 		end
+		if ourselves then users = users + 1 end
 
 		for _, member in ipairs(everyone) do
 			if member.online or not onlineOnly then
@@ -736,8 +797,11 @@ local function build(frame)
 		-- indistinguishable here from somebody who is not running it at all - that is what
 		-- the addon channel gives us, and saying so beats implying otherwise.
 		return finish(string.format(
-			L["|cffffd700%s|r   |cff888888|||r   %d shown of %d   |cff888888|||r   "
-			.. "|cffffd700%d|r running Family   |cff888888|||r   "
+			-- "guildmates shown" rather than "shown", because the grid now sits between
+			-- this line and the roster it counts, and a bare number that far from its list
+			-- reads as though it might be counting the rows just above it.
+			L["|cffffd700%s|r   |cff888888|||r   %d guildmates shown of %d   "
+			.. "|cff888888|||r   |cffffd700%d|r running Family   |cff888888|||r   "
 			.. "|cff888888%s|r"],
 			guildName, shown, #everyone, users,
 			users <= 1

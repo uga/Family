@@ -217,6 +217,9 @@ function frameMethods:SetWidth(w) self.__width = w end
 function frameMethods:SetHeight(h) self.__height = h end
 function frameMethods:GetWidth() return self.__width or 800 end
 function frameMethods:GetHeight() return 500 end
+-- Recorded rather than ignored, because whether a frame takes the mouse is the whole of
+-- whether anything drawn on top of it can be clicked. See takesMouse below.
+function frameMethods:EnableMouse(v) self.__mouse = v and true or false end
 function frameMethods:SetEnabled(v) self.__enabled = v end
 function frameMethods:Enable() self.__enabled = true end
 function frameMethods:Disable() self.__enabled = false end
@@ -975,6 +978,22 @@ function spansWidth(f)
 	return (left and right) and true or false
 end
 
+-- Whether the game would hand this frame the mouse at all.
+--
+-- **Not "does it have an OnClick".** A frame takes the mouse because its mouse is enabled,
+-- and a Button created with CreateFrame has it enabled from birth - so a row with nothing
+-- hooked to its click, carrying only a hover highlight, still swallows every click aimed at
+-- something drawn on it. Asking about OnClick was the whole of this test until a grid of tick
+-- boxes was drawn on exactly such rows, passed here, and could not be clicked in the game.
+-- What the player saw was the row's highlight coming up under a box that would not answer.
+function takesMouse(f)
+	if f.__mouse == false then return false end
+
+	local scripts = f.__scripts or {}
+	return (scripts.OnClick or scripts.PostClick or scripts.OnEnter or scripts.OnLeave
+		or scripts.OnMouseDown or scripts.OnMouseUp) ~= nil
+end
+
 function coveredBy(f)
 	-- A row is not drawn on anything. Two rows never overlap: they are laid out one under
 	-- the next by the same counter.
@@ -982,7 +1001,7 @@ function coveredBy(f)
 
 	for _, other in ipairs(frames) do
 		if other ~= f and other.__parent == f.__parent and other.__shown == true
-			and clickable(other) and spansWidth(other)
+			and takesMouse(other) and spansWidth(other)
 			and other:GetFrameLevel() >= f:GetFrameLevel() then
 			return other
 		end
@@ -6504,6 +6523,48 @@ print("guild share")
 	------------------------------------------------------------------------------------
 
 	do
+		-- Rows on this panel and rows on every other one are the same kind of frame with the
+		-- same kind of name written on them, and fontStrings holds every font string the
+		-- harness has ever built. Scoped to the frame the grid's heading sits in, or the
+		-- first "Faraway" of the whole run gets clicked and it belongs to somebody else.
+		local function guildList()
+			for _, f in ipairs(fontStrings) do
+				local parent = type(f.__parent) == "table" and f.__parent or nil
+				if type(f.__text) == "string"
+					and f.__text:find("What you share with", 1, true)
+					and parent and parent.__shown ~= false then
+					return parent.__parent
+				end
+			end
+			return nil
+		end
+
+		local function clickRow(needle)
+			local within = guildList()
+			for _, f in ipairs(fontStrings) do
+				local parent = type(f.__parent) == "table" and f.__parent or nil
+				if type(f.__text) == "string" and f.__text:find(needle, 1, true)
+					and parent and within and parent.__parent == within
+					and parent.__scripts and parent.__scripts.OnClick then
+					parent.__scripts.OnClick(parent)
+					return true
+				end
+			end
+			return false
+		end
+
+		-- A tick box, found by the words written beside it.
+		local function labelled(needle)
+			for _, f in ipairs(fontStrings) do
+				local parent = type(f.__parent) == "table" and f.__parent or nil
+				if type(f.__text) == "string" and f.__text:find(needle, 1, true)
+					and parent and parent.label == f and parent.__shown ~= false then
+					return parent
+				end
+			end
+			return nil
+		end
+
 		local smith = Family:SkillLineFor("Blacksmithing")
 		local mining = Family:SkillLineFor("Mining")
 		check("the skill line table knows the professions this section is written about",
@@ -6606,32 +6667,78 @@ print("guild share")
 		-- The grid, on the panel it governs
 		------------------------------------------------------------------------------------
 
-		local function labelled(needle)
-			for _, f in ipairs(fontStrings) do
-				local parent = type(f.__parent) == "table" and f.__parent or nil
-				if type(f.__text) == "string" and f.__text:find(needle, 1, true)
-					and parent and parent.label == f and parent.__shown ~= false then
-					return parent
-				end
-			end
-			return nil
-		end
-
 		Family.UI:Show()
 		Family.UI:ShowTab("guild")
 
 		check("the panel says what is shared and with whom",
 			visibleText("What you share with"))
 
+		-- Folded away to begin with. The panel is about the guild's people; a player with
+		-- eight characters in it has thirty rows of grid sitting on a roster of a hundred
+		-- and sixty, which is a grid hiding the panel it was put on.
+		check("the grid is folded to begin with", labelled("Blacksmithing") == nil)
+		check("and the heading says so, and says how much is offered while folded",
+			visibleText("click to open"))
+		check("the heading opens it", clickRow("What you share with"))
+		check("and the boxes are there once it is open", labelled("Blacksmithing") ~= nil)
+
 		local box = labelled("Blacksmithing")
 		check("with a box per character per profession", box ~= nil)
 		check("ticked where the grid says it is ticked", box and box.__checked == true)
 		check("and live while guild share is on", box and box.__enabled ~= false)
 
+		-- **And clickable, which is not the same question.** A row is as wide as the list
+		-- and takes the mouse whether or not anything is hooked to its click, so a box drawn
+		-- on one at the same frame level is a picture of a box. This is the check that was
+		-- missing when the grid shipped: every line above it passed while not one box in the
+		-- game would answer.
+		check("and a click actually reaches it", box and reachable(box),
+			box and tostring(coveredBy(box) ~= nil) or "no box")
+
+		-- And the rows the grid draws do not light up under the cursor. A highlight coming
+		-- up on a row nothing will happen on tells the player their click is going somewhere
+		-- it is not, and it is how the dead boxes were noticed in the first place: the
+		-- highlight answered and the box did not.
+		-- The character's own row, matched on the name *followed by the colour the level is
+		-- written in* rather than on the name alone. "Smith" also occurs inside
+		-- "Blacksmithing" and inside the note naming what could not be offered, and the note
+		-- has its mouse switched off for its own reasons - so a looser needle found that row
+		-- instead and passed whatever this panel did.
+		local nameRow
+		for _, f in ipairs(fontStrings) do
+			local parent = type(f.__parent) == "table" and f.__parent or nil
+			if type(f.__text) == "string" and f.__text:find("Smith|r  |cff888888", 1, true)
+				and parent and parent.text == f and parent.__parent == guildList() then
+				nameRow = parent
+			end
+		end
+		check("and the grid's own rows do not light up under the cursor",
+			nameRow ~= nil and nameRow.__mouse == false,
+			nameRow and tostring(nameRow.__mouse) or "no row")
+
+		-- The rows the boxes sit on carry no text at all - they are spacers holding the
+		-- height while the boxes are placed on top - so a row with nothing written on it
+		-- that still answers the mouse is one of those, lighting up under a cursor that is
+		-- aimed at a tick box. Said this way rather than by finding the spacer, because a
+		-- blank row that highlights is wrong on any panel and for any reason.
+		local liveBlank = 0
+		for _, f in ipairs(frames) do
+			if f.__parent == guildList() and f.__shown == true and takesMouse(f)
+				and type(f.text) == "table" and (f.text.__text or "") == "" then
+				liveBlank = liveBlank + 1
+			end
+		end
+		check("and a row with nothing written on it does not light up either",
+			liveBlank == 0, tostring(liveBlank) .. " blank rows answering the mouse")
+
 		-- A profession this client has no id for is not offered, because it could not cross
 		-- if it were - and it is counted rather than quietly left off the grid.
 		check("a profession with no identifier is not offered", labelled("Cheesemaking") == nil)
-		check("and is counted rather than left off in silence", visibleText("1 left out"))
+		-- Named, not counted. "1 left out" says something is wrong and gives nobody a way to
+		-- find out what; the word the client used is the one thing that identifies it and
+		-- the one thing this end has.
+		check("and is named rather than left off in silence",
+			visibleText("Not offered: Cheesemaking (Smith)"))
 
 		-- Off means the grid looks inert as well as being inert. A live-looking grid that
 		-- recorded grants before the transport existed would be the one way this feature
@@ -6752,6 +6859,18 @@ print("guild share")
 			return false
 		end
 
+		-- One player with several characters in the guild is one client running Family, and
+		-- the roster is a list of characters. Counting its rows told a player with eight alts
+		-- in the guild that there were nine clients out there, eight of which were theirs -
+		-- and that number exists to answer "is anybody else out there".
+		Family.Database:SetMeta("Absent-FireMaw", { name = "Absent", realm = "Fire Maw",
+			guild = guildName, classFile = "MAGE", level = 61 })
+		Family.UI:Refresh()
+		check("our own characters count as one person between them, not one each",
+			visibleText("|cffffd7002|r running Family"))
+		Family.Database:Forget("Absent-FireMaw")
+		Family.UI:Refresh()
+
 		check("their row opens", clickRow("Faraway"))
 		-- 285 of 300, which is a rank and says nothing about any particular recipe. That
 		-- distinction is the whole of what slice 1 is allowed to claim.
@@ -6789,6 +6908,30 @@ print("guild share")
 		-- is in it by then.
 		check("and so is the grid that was ticked for it",
 			Family.Guild:Shares(guildKey, "Smith-FireMaw", smith) == false)
+
+		-- And the rule, rather than one more panel that happens to obey it.
+		--
+		-- Every box any panel has drawn for somebody to tick, swept together: shown, with a
+		-- click hooked to it, and nothing wide sitting over it. Written here because this is
+		-- where the fault was found, but deliberately not written about this panel - the
+		-- first version of the reachability test was used only where its fault had already
+		-- been found, which is exactly why the same fault could be built again a fortnight
+		-- later on a different panel.
+		do
+			local blocked = {}
+			for _, f in ipairs(frames) do
+				if f.__shown == true and f.__checked ~= nil
+					and f.__scripts and f.__scripts.OnClick then
+					local over = coveredBy(f)
+					if over then
+						blocked[#blocked + 1] = tostring(
+							(type(f.label) == "table" and f.label.__text) or "a box")
+					end
+				end
+			end
+			check("every tick box a panel draws can actually be clicked",
+				#blocked == 0, table.concat(blocked, ", "))
+		end
 
 		GetGuildInfo = realGuildInfo
 		Family.Database:SetMeta(Family:CurrentMember(), { guild = guildName })

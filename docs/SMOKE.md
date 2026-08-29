@@ -118,8 +118,15 @@ Everything here is testable alone, and it is a section of its own for that reaso
 above need a guildmate, and a pass that honestly says *not run: no guildmate* would otherwise
 take these with it.
 
-- [ ] The Guild tab shows **What you share with <guild>** above the roster, with a row per
-      character of yours in the guild and a tick box per profession each of them has.
+- [ ] The Guild tab shows **What you share with <guild>** above the roster, folded, with the
+      heading saying how much is offered. Clicking the heading opens it: a row per character
+      of yours in the guild, and a tick box per profession each of them has. It stays as you
+      left it across a reload.
+- [ ] **Every box actually ticks when clicked**, and no row lights up under the cursor while
+      you are aiming at one. A row that highlights under a box is a row that is swallowing the
+      click, and the box will be a picture (L-022).
+- [ ] The **running Family** count on the line above is a count of *people*. If several of
+      your own characters are in the guild, they count as one between them — you.
 - [ ] With guild share **off**, every box is greyed and so are the words beside it, and the
       panel says the switch is in Options. Nothing can be ticked.
 - [ ] Switch it on. The boxes come live and **every one of them starts unticked.** A grid

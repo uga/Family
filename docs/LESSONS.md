@@ -662,3 +662,43 @@ It lives there rather than in `CLAUDE.md` because `CLAUDE.md` is not in the repo
 kept only there protects one machine and no clone. `CLAUDE.md` points at it, and does not carry
 a second copy — two copies of a rule drift, which is the same reason the harness has one list of
 the interface files rather than two.
+
+## L-022 — A grid of tick boxes nobody could tick, under a check that said they could
+
+The guild crafters grid shipped with thirty-two checks behind it, twelve mutations tried
+against them, and not one box in the game would answer a click. What the player saw was the
+row underneath lighting up as the cursor crossed it, which is the panel saying out loud where
+the click was going.
+
+**What was wrong:** each row on that panel is a `Button` as wide as the list. A `Button` takes
+the mouse from the moment it is created, whether or not anything is hooked to its click — the
+rows carry only an `OnEnter`/`OnLeave` pair for the hover highlight. The tick boxes were
+siblings of those rows at the same frame level, so the row won the hit test and the boxes were
+a picture.
+
+**The part worth writing down is not the bug.** The harness already had `coveredBy` and
+`reachable`, written for this exact class of fault on the Wide Family panel. They did not fire,
+because `coveredBy` asked whether the covering frame had an `OnClick`. A row with a highlight
+and no click is invisible to that question and opaque to the mouse, which is the worst possible
+combination — the model was built from the one instance that had been found, and the instance
+that had been found happened to have an `OnClick`.
+
+The file already says this about itself, a few lines above the function: *"the one rule that was
+meant to be checked everywhere was in fact checked in the one place the fault had already been
+found."* It was written about the previous version of the same test, and it was still true of
+the version that replaced it.
+
+**What now catches it:** `coveredBy` asks `takesMouse` — mouse enabled, and any of the six
+mouse scripts, not `OnClick` alone. And the reachability question is no longer asked one widget
+at a time: a sweep over every frame the run has drawn checks that **every tick box any panel
+draws can actually be clicked**, so a panel written next month is examined without anybody
+remembering to examine it. Two more checks hold the cosmetic half — that the grid's own rows do
+not light up under the cursor, and that no blank row anywhere answers the mouse.
+
+**And a check that finds the wrong thing is not a check.** The first version of the hover test
+matched a row by searching for `Smith`, which also occurs inside `Blacksmithing` and inside the
+note naming what could not be offered — it found the note, whose mouse is off for its own
+reasons, and passed whatever the panel did. Mutation testing is what said so: removing the line
+it was meant to protect changed nothing. A needle that matches a substring of something else is
+a needle that will eventually match it.
+
