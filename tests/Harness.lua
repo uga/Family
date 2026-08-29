@@ -3397,6 +3397,14 @@ check("and the mail as a letter, not as a backpack",
 	(iconOfBagShowing("Mail") or ""):find("Letter", 1, true) ~= nil,
 	tostring(iconOfBagShowing("Mail")))
 
+-- The bank's own window had no icon of its own, so it fell through to the backpack button:
+-- a vault drawn as a bag, on the one panel where what a container is matters. The bags bought
+-- to go in the bank are still drawn as the bags they are, which is why this is asked of the
+-- bank container by name rather than of everything filed under the bank.
+check("the bank's own window is drawn as a bank, not as a bag",
+	(iconOfBagShowing("Bank") or ""):find("Banker", 1, true) ~= nil,
+	tostring(iconOfBagShowing("Bank")))
+
 -- And the scanner does not record one at all, which is where the helm came from.
 local keyringEntry = Family.Database:Payload(key).bags[-2]
 check("the keyring is not recorded as being some item somebody equipped",

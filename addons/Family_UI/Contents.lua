@@ -69,12 +69,26 @@ local CONTAINER_ICON = {
 	mail     = "Interface\\Icons\\INV_Letter_15",
 	auctions = "Interface\\Icons\\INV_Misc_Coin_02",
 	guild    = "Interface\\Icons\\INV_Shirt_GuildTabard_01",
+	-- The bank's own window, which had no icon of its own and so fell through to the
+	-- backpack button below - a vault drawn as a bag, on a panel whose whole idea is that
+	-- where a thing sits is information. This is the game's own symbol for a bank: what the
+	-- minimap draws when you track one. Confirmed rendering on all three clients before it
+	-- was written here, because a texture path is the one thing in Family that cannot be
+	-- probed (tools/FamilyIconSheet).
+	bank     = "Interface\\MINIMAP\\TRACKING\\Banker",
 	fallback = "Interface\\Buttons\\Button-Backpack-Up",
 }
 
 local function containerIcon(entry)
 	if entry.where == "bags" and entry.bag == KEYRING then
 		return CONTAINER_ICON.keyring
+	end
+
+	-- The bank's own window rather than a bag bought to go in it. Said before the item icon
+	-- below, not after: the bags in the bank are drawn as the bags they are, and this one is
+	-- not a bag at all.
+	if entry.where == "bank" and entry.bag == BANK then
+		return CONTAINER_ICON.bank
 	end
 
 	if entry.itemID then

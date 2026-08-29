@@ -61,6 +61,8 @@ yours.
 
 ### Fixed since the last beta
 
+- **The bank is drawn as a bank** on Possessions, rather than as another bag.
+
 - **A bank record can no longer be replaced by an empty one.** Family could scan a bank that
   was not in front of it — the game answers about the bank whether or not you are standing at
   one — and the result was a tidy record of an empty bank written over a real one. If a
