@@ -11,6 +11,30 @@ on data and on everything in `tools/`;
 [`Project high level specs.md`](Project%20high%20level%20specs.md) says what Family does and
 is authoritative on behaviour.
 
+## Which document answers which question
+
+**Route by the shape of the question, not by how sure the answer feels.**
+
+| The question is about | Read before answering |
+|---|---|
+| what a version number means, or how a release is cut | [`RELEASING.md`](RELEASING.md) |
+| where a fact comes from, or anything in `tools/` | [`DATASOURCES.md`](DATASOURCES.md) |
+| what Family does, or should do | [the specification](Project%20high%20level%20specs.md) |
+| whether this was already settled | [`DECISIONS.md`](DECISIONS.md) |
+| whether this has already gone wrong once | [`LESSONS.md`](LESSONS.md) |
+
+Every one of these exists to override an answer that is plausible in general — a document that
+only confirmed the obvious would never have been written. Semantic versioning is the world's
+convention and this project deliberately chose another. Asking the client rather than assuming
+is good instinct, and this project has drawn a line where it stops. So each document is sited
+exactly where the general answer feels strongest, which makes **a fluent answer the signal to
+open the file rather than permission to skip it**.
+
+Two ways past this table, both of which have been taken (L-020, L-021). "Archive, fetch only
+when the task is about them" means the task and not the file: a passing question about which
+number comes next *is* a question about releasing. And a number that can be counted is counted
+— a round one chosen because it sounded ample is a guess wearing a fact's clothes.
+
 ---
 
 ## 1. Architecture — where "more efficient" actually is

@@ -651,9 +651,14 @@ has drawn a line where it stops. A document that only confirmed the obvious woul
 been written. So the moments when one is most needed are exactly the moments when it feels least
 necessary to open.
 
-**What now catches it:** `CLAUDE.md` §Grounding carries a routing table keyed on the *shape* of
-the question rather than on confidence, so the trigger is topical and does not depend on
-noticing doubt. It says in terms that a fluent answer is the signal to open the file rather than
-permission to skip it, and that "archive, fetch only when the task is about them" refers to the
-task and not the file — a passing question about which number comes next is a question about
-releasing.
+**What now catches it:** `HANDOFF.md` — the document a new session reads first — opens with a
+routing table keyed on the *shape* of the question rather than on confidence, so the trigger is
+topical and does not depend on noticing doubt. It says in terms that a fluent answer is the
+signal to open the file rather than permission to skip it, that "archive, fetch only when the
+task is about them" refers to the task and not the file, and that a number which can be counted
+is counted.
+
+It lives there rather than in `CLAUDE.md` because `CLAUDE.md` is not in the repository: a rule
+kept only there protects one machine and no clone. `CLAUDE.md` points at it, and does not carry
+a second copy — two copies of a rule drift, which is the same reason the harness has one list of
+the interface files rather than two.
