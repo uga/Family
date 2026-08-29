@@ -54,6 +54,8 @@ local function buildPopup()
 	popup:EnableMouse(true)
 	popup:Hide()
 
+	UI:PaintOpaque(popup)
+
 	popup.rows = {}
 
 	popup:SetScript("OnHide", function() activePicker = nil end)

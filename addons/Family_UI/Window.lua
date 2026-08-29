@@ -172,6 +172,24 @@ UI.SCROLLBAR_W = 32
 -- The panel's own content width is known before any frame is laid out, so it is what a panel
 -- gets when the client has nothing to tell it. A fallback has to be a width the panel can
 -- actually be drawn at, or it is just a different way of being wrong.
+-- Something solid behind a frame that floats over a panel.
+--
+-- TooltipBorderedFrameTemplate draws an edge and, on these clients, nothing behind it, so a
+-- list opened over a panel had that panel's words read straight through its own: a member's
+-- name over a recipe's, and neither of them legible. Every popup here paints its own fill
+-- rather than trusting the template, because what a template paints differs between these
+-- clients and is the one thing that cannot be probed - the client echoes back whatever texture
+-- path it was handed, whether or not it drew a single pixel of it.
+--
+-- BACKGROUND at the lowest sub-level, so a row's own hover highlight still shows over it.
+function UI:PaintOpaque(frame)
+	if not frame or not frame.CreateTexture then return end
+	local fill = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
+	fill:SetAllPoints()
+	fill:SetColorTexture(0, 0, 0, 0.95)
+	return fill
+end
+
 function UI:ListWidth(scroll)
 	local room = scroll and scroll.GetWidth and scroll:GetWidth()
 	if type(room) == "number" and room >= 200 then return room end

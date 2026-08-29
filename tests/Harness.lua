@@ -6239,6 +6239,30 @@ print("guild share")
 			#offenders == 0, table.concat(offenders, ", "))
 	end
 
+	-- The same shape of rule for the same shape of fault. A frame built on the bordered
+	-- template floats over a panel and the template draws no back to it, so whatever is
+	-- underneath reads through. Two pickers were built that way and only one of them had been
+	-- noticed; the other was found by somebody opening it and reading two words at once.
+	--
+	-- Matched on the quoted template name, so that writing about it in a comment - which the
+	-- file defining UI:PaintOpaque does - is not mistaken for building one.
+	do
+		local bare = {}
+		for _, file in ipairs(UI_FILES) do
+			local handle = io.open(ROOT .. "/addons/Family_UI/" .. file)
+			if handle then
+				local text = handle:read("*a")
+				handle:close()
+				if text:find('"TooltipBorderedFrameTemplate"', 1, true)
+					and not text:find("UI:PaintOpaque(", 1, true) then
+					bare[#bare + 1] = file
+				end
+			end
+		end
+		check("every frame that floats over a panel is given something solid behind it",
+			#bare == 0, table.concat(bare, ", "))
+	end
+
 	-- And its buttons are greyed, because neither can do anything: there is no roster to
 	-- filter and nothing to ask a guild nobody is speaking to. A live-looking button that
 	-- answers nothing is worse than one that says it is not available.

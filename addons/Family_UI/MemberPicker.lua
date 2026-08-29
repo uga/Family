@@ -50,18 +50,7 @@ local function buildPopup()
 	popup:EnableMouse(true)
 	popup:Hide()
 
-	-- The bordered template draws an edge and, on these clients, nothing solid behind it:
-	-- the panel underneath read straight through the list, so a member's name sat on top of
-	-- a recipe's and neither could be made out. This is an opaque fill of our own rather
-	-- than a reliance on whatever the template happens to paint, because what a template
-	-- paints differs between these clients and is the one thing here that cannot be probed -
-	-- the client echoes back whatever texture path it was handed, whether or not it drew it.
-	--
-	-- Behind everything else in the frame: BACKGROUND layer at the lowest sub-level, so the
-	-- rows' own hover highlight still shows over it.
-	local fill = popup:CreateTexture(nil, "BACKGROUND", nil, -8)
-	fill:SetAllPoints()
-	fill:SetColorTexture(0, 0, 0, 0.95)
+	UI:PaintOpaque(popup)
 
 	local search = CreateFrame("EditBox", nil, popup, "InputBoxTemplate")
 	search:SetPoint("TOPLEFT", 12, -10)
