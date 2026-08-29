@@ -1097,12 +1097,19 @@ Recorded so the project can be measured against it.
 
 ## 11. Open questions
 
-0. ~~**Whether Guild share ships switched on.**~~ Settled 2026-08-27: it ships on, and the
-   1.0.0-beta.2 live pass confirmed it does what it claims on all three clients — guildmates
-   running Family appear, one not running it is named as such rather than left blank, the
-   switch silences it in both directions, and nothing but class, level, gear and talent shape
-   crosses. The consent argument that gates §6.0 never applied here, because everything it
-   carries is what Inspect already gives away.
+0. ~~**Whether Guild share ships switched on.**~~ Settled twice, and the second answer is the
+   one that shipped. On 2026-08-27 it was to ship on; on 2026-08-28 that was reversed and it
+   **ships off, like Wide Family** — not on consent grounds, since the §7 argument stands, but
+   because a first release should not begin talking to a guild on somebody's behalf before
+   they have asked, whatever it is saying. Both rows are in `DECISIONS.md`, which is
+   authoritative here.
+
+   What the 1.0.0-beta.2 live pass confirmed is unchanged and still worth having: switched on,
+   it does what it claims on all three clients — guildmates running Family appear, one not
+   running it is named as such rather than left blank, the switch silences it in both
+   directions, and nothing but class, level, gear and talent shape crosses. The consent
+   argument that gates §6.0 never applied here, because everything it carries is what Inspect
+   already gives away.
 1. ~~**Cross-realm addon messaging.**~~ Settled by the 1.0.0 pass: **any realm**. Two families
    on unrelated realms exchanged, so Wide Family reaches as far as two people who both run it,
    and a realm is not a boundary. Established by testing rather than assumed, which is what
