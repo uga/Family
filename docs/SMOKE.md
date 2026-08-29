@@ -125,6 +125,10 @@ take these with it.
 - [ ] **Every box actually ticks when clicked**, and no row lights up under the cursor while
       you are aiming at one. A row that highlights under a box is a row that is swallowing the
       click, and the box will be a picture (L-022).
+- [ ] `/family guild test` names **no** characters of yours as "on the roster, but not
+      recorded as being in this guild". If it names any, log in on one of them and run it
+      again — it should clear. If it does not clear, that is a finding and the character and
+      the client go in the row (L-023).
 - [ ] The **running Family** count on the line above is a count of *people*. If several of
       your own characters are in the guild, they count as one between them — you.
 - [ ] With guild share **off**, every box is greyed and so are the words beside it, and the

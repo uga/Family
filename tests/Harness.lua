@@ -1618,6 +1618,86 @@ check("experience is dropped at the level cap",
 UnitLevel = function() return 60 end
 Family.Identity:Scan()
 
+-- The guild, which is the one thing on this scan the client answers late
+--
+-- Reported from a live client: a character played that morning, in the guild, with guild
+-- share switched on, reading as "not running Family" on the player's own roster and missing
+-- from the grid of what they share. Everything in §7 is keyed by the guild a character is
+-- *recorded* as being in, and that field had never been written.
+--
+-- IsInGuild answers the moment the client loads and GetGuildInfo does not. The scan runs two
+-- seconds after entering the world and one second after PLAYER_GUILD_UPDATE, both of which
+-- can land inside that gap - and SetMeta merges, so a nil field is skipped rather than
+-- written. Nothing fires afterwards to put it right: the event that scheduled the scan which
+-- missed has already been and gone.
+do
+	local realInGuild, realGuildInfo = IsInGuild, GetGuildInfo
+
+	local recorded = Family.Database:Meta(key).guild
+	check("the guild is on the record to begin with", recorded == "Late Night Raiders",
+		tostring(recorded))
+
+	-- In a guild, and the client will not yet say which.
+	IsInGuild = function() return true end
+	GetGuildInfo = function() return nil end
+	Family.Identity:Scan()
+
+	check("a client that will not name the guild yet does not unname it",
+		Family.Database:Meta(key).guild == "Late Night Raiders",
+		tostring(Family.Database:Meta(key).guild))
+
+	-- And it asks again rather than leaving it. The name arriving between one attempt and
+	-- the next is the whole of what the retry is for.
+	Family.Database:SetMeta(key, { guild = Family.CLEAR })
+	Family.Identity:Scan()
+	check("with nothing on the record, it is still not guessed at",
+		Family.Database:Meta(key).guild == nil)
+
+	GetGuildInfo = function() return "Late Night Raiders", "Officer", 2 end
+	advance(4)
+	check("and the scan it asked for records it once the client answers",
+		Family.Database:Meta(key).guild == "Late Night Raiders",
+		tostring(Family.Database:Meta(key).guild))
+
+	-- A few times and then it stops. A scanner waking up for ever is what "wait for it to
+	-- arrive" turns into when it never does.
+	GetGuildInfo = function() return nil end
+	Family.Database:SetMeta(key, { guild = Family.CLEAR })
+	Family.Identity.waitingForGuild = nil
+	Family.Identity:Scan()
+	for _ = 1, 12 do advance(4) end
+	check("and it gives up rather than asking for ever",
+		Family.Identity.waitingForGuild ~= nil and Family.Identity.waitingForGuild <= 7,
+		tostring(Family.Identity.waitingForGuild))
+
+	-- Not in a guild at all, which is a different answer from "has not said yet" and has to
+	-- be written: SetMeta merges, so a nil would leave the last guild sitting there and a
+	-- character who left one would go on being offered to it.
+	IsInGuild = function() return false end
+	Family.Database:SetMeta(key, { guild = "Late Night Raiders", guildRank = "Officer" })
+	Family.Identity:Scan()
+	check("a character who is in no guild has the last one cleared rather than kept",
+		Family.Database:Meta(key).guild == nil
+			and Family.Database:Meta(key).guildRank == nil,
+		tostring(Family.Database:Meta(key).guild))
+
+	-- And on a client with no IsInGuild there is no way to tell the two apart, so nothing is
+	-- written either way - clearing on "has not said yet" would take a guild away from
+	-- somebody who is in one.
+	IsInGuild = nil
+	Family.Database:SetMeta(key, { guild = "Late Night Raiders" })
+	Family.Identity:Scan()
+	check("a client that cannot be asked leaves the record alone",
+		Family.Database:Meta(key).guild == "Late Night Raiders",
+		tostring(Family.Database:Meta(key).guild))
+
+	IsInGuild, GetGuildInfo = realInGuild, realGuildInfo
+	Family.Identity.waitingForGuild = nil
+	Family.Identity:Scan()
+	check("and the fixture is put back", Family.Database:Meta(key).guild
+		== "Late Night Raiders")
+end
+
 print()
 print("currencies")
 
@@ -6508,6 +6588,37 @@ print("guild share")
 	-- The diagnosis has to survive being asked in every state, because the state it will
 	-- actually be asked in is the broken one.
 	check("the diagnosis runs", pcall(Family.Guild.Diagnose, Family.Guild))
+
+	-- And it names the one state nobody can diagnose from outside.
+	--
+	-- A character on the guild roster whose own record does not place them in this guild is
+	-- absent from the offering and reads as "not running Family" on every roster, while
+	-- looking perfectly ordinary on every other panel in Family. From the player's chair
+	-- that is indistinguishable from the addon being broken; from in here it is one line.
+	do
+		local held = Family.Database:Meta(Family:CurrentMember()).guild
+		Family.Database:SetMeta(Family:CurrentMember(), { guild = Family.CLEAR })
+
+		local mark = #DEFAULT_CHAT_FRAME.messages
+		Family.Guild:Diagnose()
+
+		local named = false
+		for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+			local message = tostring(DEFAULT_CHAT_FRAME.messages[index])
+			-- Matched on the sentence and on the reason, not on the character's name:
+			-- the block above borrows this client's identity to play the other end of
+			-- the wire, so which name our own record carries at this point in the run
+			-- is not what this check is about.
+			if message:find("not recorded as being in this guild", 1, true)
+				and message:find("no guild recorded", 1, true) then
+				named = true
+			end
+		end
+		check("and it names one of ours the roster knows but our records do not place here",
+			named)
+
+		Family.Database:SetMeta(Family:CurrentMember(), { guild = held })
+	end
 	check("and counts what crossed the wire", Family.Guild.stats.sent > 0,
 		tostring(Family.Guild.stats.sent))
 	check("including announcements from somebody who is not us",

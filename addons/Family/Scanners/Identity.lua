@@ -84,10 +84,55 @@ function Identity:Scan()
 		fields.hearthID = Family.CLEAR
 	end
 
+	-- The guild, which is the one fact on this scan the client will not answer straight away.
+	--
+	-- **IsInGuild answers the moment the client loads and GetGuildInfo does not** - the same
+	-- fact Scanners/Bank.lua sets out at length, and the same handling, because the cost of
+	-- getting it wrong is higher here. The two read together say three different things:
+	--
+	--   in a guild, and named       record it
+	--   in a guild, not yet named   the client has not caught up: keep what is held, ask
+	--                               again in a moment, and give up after a few
+	--   not in a guild              clear it, because SetMeta merges and a nil field is
+	--                               skipped rather than written - so the last guild would sit
+	--                               there for ever, and a character who left one would go on
+	--                               being offered to it
+	--
+	-- Writing nothing in the middle case is what this did, and it cost a character their
+	-- whole guild identity: everything in §7 is keyed by the guild a character is *recorded*
+	-- as being in, so one whose scan landed in the gap was absent from the offering and read
+	-- as "not running Family" on every guildmate's roster, while looking perfectly ordinary
+	-- on every other panel. Nothing fires afterwards to put it right - PLAYER_GUILD_UPDATE
+	-- has been and gone by then, and it is what scheduled the scan that missed.
+	local canAsk = type(IsInGuild) == "function"
 	local guild, rank, rankIndex = Family:TryCall(GetGuildInfo, "player")
-	fields.guild = guild
-	fields.guildRank = rank
-	fields.guildRankIndex = rankIndex
+
+	if type(guild) == "string" and guild ~= "" then
+		self.waitingForGuild = nil
+		fields.guild = guild
+		fields.guildRank = rank
+		fields.guildRankIndex = rankIndex
+	elseif canAsk and Family:TryCall(IsInGuild) then
+		self.waitingForGuild = (self.waitingForGuild or 0) + 1
+
+		-- A few times and then it stops, for the reason the guild bank gives: a client that
+		-- is going to answer does so within a few seconds, and a scanner waking up for ever
+		-- is what "wait for it to arrive" turns into when it never does.
+		if self.waitingForGuild > 5 then
+			Family:Debug("in a guild and the client will not say which - none recorded")
+		else
+			Family:Debug("in a guild but it has no name yet - asking again")
+			Family:After(3, "identity.guild", function() Identity:Scan() end)
+		end
+	elseif canAsk then
+		self.waitingForGuild = nil
+		fields.guild = Family.CLEAR
+		fields.guildRank = Family.CLEAR
+		fields.guildRankIndex = Family.CLEAR
+	end
+	-- ...and where the client has no IsInGuild at all, nothing is written either way. There
+	-- is then no way to tell "not in a guild" from "has not said yet", and clearing on the
+	-- second of those would take a guild away from somebody who is in one.
 
 	Family.Database:SetMeta(key, fields)
 end

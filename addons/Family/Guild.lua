@@ -831,6 +831,59 @@ function Guild:Diagnose()
 	for _ in pairs(offering or {}) do mine = mine + 1 end
 	Family:Print(L["  characters of ours in it: %d"], mine)
 
+	-- Which of ours the roster knows about but our own records do not place in this guild.
+	--
+	-- Everything in §7 is keyed by the guild a character is *recorded* as being in, never by
+	-- the roster - the roster is only ever about the character being stood in, and says
+	-- nothing about the alt who was played this morning. So a character whose guild was never
+	-- written is missing from the offering and reads as "not running Family" on every
+	-- guildmate's roster, while looking perfectly ordinary on every other panel in Family.
+	--
+	-- That is a difficult thing to guess at from outside and a trivial thing to name from
+	-- inside, which is the whole argument for printing it. The realm case beside it is the
+	-- other way the same row can go quiet: Offering() takes characters on this realm, and on
+	-- connected realms two characters in one guild do not agree about what realm they are on
+	-- (see Guild:Key).
+	if guildName then
+		local onRoster = {}
+		for index = 1, (Family:TryCall(GetNumGuildMembers) or 0) do
+			local who = Family:TryCall(GetGuildRosterInfo, index)
+			local bare = bareName(who)
+			if bare then onRoster[bare] = true end
+		end
+
+		local unrecorded, elsewhere = {}, {}
+
+		for key, entry in pairs(Family.Database:Members()) do
+			local meta = entry.meta or {}
+			if onRoster[bareName(meta.name or key) or ""] then
+				if meta.guild ~= guildName then
+					unrecorded[#unrecorded + 1] = string.format("%s (%s)",
+						tostring(meta.name or key),
+						meta.guild and tostring(meta.guild) or L["no guild recorded"])
+				elseif meta.realm ~= realm then
+					elsewhere[#elsewhere + 1] = string.format("%s (%s)",
+						tostring(meta.name or key), tostring(meta.realm))
+				end
+			end
+		end
+
+		table.sort(unrecorded)
+		table.sort(elsewhere)
+
+		if #unrecorded > 0 then
+			Family:Print(L["  |cffffaa00on the roster, but not recorded as being in this "
+				.. "guild: %s|r"], table.concat(unrecorded, ", "))
+			Family:Print(L["  |cff888888log in on them once and it will be filled in|r"])
+		end
+
+		if #elsewhere > 0 then
+			Family:Print(L["  |cffffaa00in this guild but recorded on another realm, so they "
+				.. "are not offered: %s (this one is %s)|r"],
+				table.concat(elsewhere, ", "), tostring(realm))
+		end
+	end
+
 	local stats = self.stats
 	Family:Print(L["  messages sent from here: %d"], stats.sent)
 	Family:Print(L["  announcements arrived: %d  (%d ours coming back, %d for another guild, "

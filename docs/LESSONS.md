@@ -702,3 +702,45 @@ reasons, and passed whatever the panel did. Mutation testing is what said so: re
 it was meant to protect changed nothing. A needle that matches a substring of something else is
 a needle that will eventually match it.
 
+## L-023 — A field the client answers late, written by a merge that skips nothing said
+
+A character played that morning, in the guild, with guild share switched on, read as *not
+running Family* on their own player's roster and was missing from the grid of what they share.
+Every other panel in Family showed them correctly.
+
+**What was wrong:** `Scanners/Identity.lua` wrote `fields.guild = GetGuildInfo("player")` and
+moved on. `GetGuildInfo` does not answer for the first few seconds of a session — a fact this
+project had already established and written down in `Scanners/Bank.lua`, at length, with a
+bounded retry built around it. The identity scan runs two seconds after entering the world and
+one second after `PLAYER_GUILD_UPDATE`, and both of those can land inside the gap.
+
+Then the second half: `Database:SetMeta` merges, and its loop is `for name, value in
+pairs(fields)`. A nil field is not written as nil — it is **not iterated at all**. So "the
+client did not answer" and "do not change this" are the same instruction, and nothing later
+fires to correct it. The event that scheduled the scan which missed has already been and gone.
+
+**Why the consequence was out of all proportion to the field.** Everything in §7 is keyed by
+the guild a character is *recorded* as being in — `Offering()` and `IsOurs` are the only two
+places in the whole addon where a scanned field decides whether a member exists for a feature.
+One unwritten string removed a character from guild share entirely while leaving them perfect
+everywhere else, which from the player's chair is indistinguishable from the addon being
+broken.
+
+**What now catches it:** the two calls are read together and mean three things, not two — named
+(record it), in a guild but not yet named (keep what is held, ask again, give up after five),
+and in no guild (clear it, because the merge would otherwise leave the last guild there for
+ever and go on offering a character to a guild they left). Six checks, and the one that matters
+most is aimed at the plausible wrong fix rather than at the old bug: clearing the field on *has
+not said yet* is caught by its own mutation.
+
+**The part that is not about guilds.** The answer was already in the tree, in another scanner,
+written out in fifteen lines of comment — and the scanner with the larger consequence did the
+naive thing. A fact learned about a client is worth grepping for before it is learned again:
+`Bank.lua` says *"IsInGuild answers the moment the client loads and GetGuildInfo does not"*, and
+that sentence would have been found by searching for the function name.
+
+And the general rule underneath it: **a merging write and an API that can answer nothing are a
+silent-failure pair.** Wherever `SetMeta` is handed a field straight from the client, ask what
+happens on the scan where the client says nothing — and whether anything will ever run again to
+put it right.
+
