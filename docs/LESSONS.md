@@ -751,7 +751,16 @@ The character it was written for was offline. So it could not see the case it ex
 it said nothing, which reads exactly like "nothing is wrong".
 
 **A check that cannot see the case it was written for is worse than no check, because it
-answers.** The no-guild half is now asked of our own records and never of the roster; the two
-lines that genuinely need the roster — recorded under a different guild, recorded on another
-realm — still use it, and are honest about needing it.
+answers.** The no-guild half was moved off the roster at once.
 
+**And the other two lines were left on it, for a reason that was simply wrong.** "Both are
+about a character who is on the roster by definition" — true of the guild, false of
+`GetGuildRosterInfo`, which is a *filtered* view of it. The next reading from the live client
+came back with the no-guild line working and the other two silent about a character who was
+neither in the offering nor short of a guild, which is what a blind spot looks like when only
+part of it has been fixed. None of the three questions needs the roster: `Offering()` decides
+from our own records, so our own records can say why somebody is not in it. All three now do.
+
+The generalisable form: **when a fault is found in one branch of a function, the sibling
+branches are suspects, not bystanders.** Fixing the one that was reported and leaving the two
+that share its mechanism is how one bug is paid for twice.

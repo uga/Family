@@ -6597,7 +6597,12 @@ print("guild share")
 	-- that is indistinguishable from the addon being broken; from in here it is one line.
 	do
 		local held = Family.Database:Meta(Family:CurrentMember()).guild
-		Family.Database:SetMeta(Family:CurrentMember(), { guild = Family.CLEAR })
+
+		-- Recorded under a different guild, which is what a character last played before
+		-- they joined this one looks like, and one of the three reasons the offering can
+		-- leave somebody out.
+		Family.Database:SetMeta("Wanderer-FireMaw", { name = "Wanderer", realm = "Fire Maw",
+			level = 44, guild = "Some Other Guild" })
 
 		local mark = #DEFAULT_CHAT_FRAME.messages
 		Family.Guild:Diagnose()
@@ -6605,18 +6610,33 @@ print("guild share")
 		local named = false
 		for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
 			local message = tostring(DEFAULT_CHAT_FRAME.messages[index])
-			-- Matched on the sentence and on the reason, not on the character's name:
-			-- the block above borrows this client's identity to play the other end of
-			-- the wire, so which name our own record carries at this point in the run
-			-- is not what this check is about.
-			if message:find("not recorded as being in this guild", 1, true)
-				and message:find("no guild recorded", 1, true) then
+			if message:find("recorded in another guild", 1, true)
+				and message:find("Wanderer (Some Other Guild)", 1, true) then
 				named = true
 			end
 		end
-		check("and it names one of ours the roster knows but our records do not place here",
+		check("and it names one of ours recorded under a different guild, with the guild",
 			named)
 
+		-- On this realm, in this guild by name, and left out anyway - which on connected
+		-- realms happens to characters who are genuinely in it.
+		Family.Database:SetMeta("Wanderer-FireMaw",
+			{ guild = guildName, realm = "Somewhere Else" })
+
+		mark = #DEFAULT_CHAT_FRAME.messages
+		Family.Guild:Diagnose()
+
+		local realmed = false
+		for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+			local message = tostring(DEFAULT_CHAT_FRAME.messages[index])
+			if message:find("recorded on another realm", 1, true)
+				and message:find("Wanderer (Somewhere Else)", 1, true) then
+				realmed = true
+			end
+		end
+		check("and one in this guild but recorded on another realm, with the realm", realmed)
+
+		Family.Database:Forget("Wanderer-FireMaw")
 		Family.Database:SetMeta(Family:CurrentMember(), { guild = held })
 
 		-- And it names one the roster cannot be asked about.
