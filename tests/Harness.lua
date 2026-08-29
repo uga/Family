@@ -7039,6 +7039,141 @@ print("guild share")
 		Family.Guild:SetShare(guildKey, "Smith-FireMaw", smith, true)
 
 		------------------------------------------------------------------------------------
+		-- Slice 2: the recipe list itself, and the fingerprint that keeps it affordable
+		------------------------------------------------------------------------------------
+
+		Family.Database:SetPayload("Smith-FireMaw", { professions = { [smith] = {
+			rank = 300, maxRank = 300, recipesSeen = time(), recipes = {
+				{ name = "Copper Chain Belt", spellID = 2661, itemID = 2864 },
+				{ name = "Silver Rod", spellID = 3339, itemID = 6338 },
+				{ name = "Runed Copper Rod", spellID = 7421 },
+				-- The client gave no id for this one. It cannot cross - a name is one
+				-- language and the whole point is that a French list answers a German
+				-- search - so it is left out, and counted rather than quietly dropped.
+				{ name = "Something The Client Would Not Name" },
+			},
+		} } })
+
+		local spells, items, missing, fingerprint = Family.Guild:RecipesFor("Smith-FireMaw",
+			smith)
+
+		check("what one of ours can make is read back as identifiers",
+			spells and #spells == 3, spells and tostring(#spells) or "nothing")
+		check("sorted, because both ends fingerprint the order",
+			spells and spells[1] == 2661 and spells[2] == 3339 and spells[3] == 7421)
+		check("with what each one makes beside it, and nought where it makes nothing",
+			items and items[1] == 2864 and items[2] == 6338 and items[3] == 0)
+		check("and a recipe the client would not name is omitted and counted",
+			missing == 1, tostring(missing))
+		check("the fingerprint is a number both ends can compute", type(fingerprint) == "number")
+
+		-- A different list must fingerprint differently, or the whole traffic control is a
+		-- way of never sending an update.
+		local before = fingerprint
+		Family.Database:Payload("Smith-FireMaw").professions[smith].recipes[3].spellID = 7422
+		local _, _, _, after = Family.Guild:RecipesFor("Smith-FireMaw", smith)
+		check("and one recipe changing changes it", after ~= before,
+			tostring(before) .. " / " .. tostring(after))
+		Family.Database:Payload("Smith-FireMaw").professions[smith].recipes[3].spellID = 7421
+
+		-- It rides with the ranks, and the list does not: two numbers on a message that was
+		-- going anyway, against a thousand bytes that were not.
+		local mark = (Family.Guild:Offering() or {})["Smith-FireMaw"].professions[1]
+		check("the count and the fingerprint go out with the rank",
+			mark.count == 3 and mark.fingerprint == fingerprint,
+			tostring(mark.count) .. " / " .. tostring(mark.fingerprint))
+		check("and the list itself does not", mark.spells == nil and mark.recipes == nil)
+
+		-- Their end: a list arriving, then the same one announced again, then a changed one.
+		local asked = {}
+		local realAsk = Family.Guild.AskRecipes
+		Family.Guild.AskRecipes = function(this, name, memberKey, line)
+			asked[#asked + 1] = tostring(memberKey) .. "/" .. tostring(line)
+			return realAsk(this, name, memberKey, line)
+		end
+
+		local function theyAnnounce(count, print_)
+			advance(30)
+			asked = {}
+			sent = {}
+			Family.Comm:Send("gdata", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw",
+				characters = { ["Faraway-FireMaw"] = {
+					meta = { name = "Faraway", realm = "Fire Maw", level = 70 },
+					professions = { { skillLine = smith, rank = 300, maxRank = 300,
+						count = count, fingerprint = print_ } },
+				} },
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+			advance(30)
+			return #asked
+		end
+
+		check("a list we have never held is asked for", theyAnnounce(2, 4242) == 1,
+			table.concat(asked, ", "))
+
+		advance(30)
+		sent = {}
+		Family.Comm:Send("grec", Family.Codec:ToWire {
+			schema = 1, version = Family.version, guild = guildName,
+			character = "Faraway-FireMaw", rschema = 1,
+			member = "Faraway-FireMaw", line = smith,
+			-- Deltas, not ids: sorted ids differ by tens and LibSerialize spends one byte
+			-- on a small integer and three on a large one.
+			spells = { 2661, 678 }, items = { 2864, 0 },
+			missing = 4, fingerprint = 4242,
+		}, "WHISPER", "Tester")
+		advance(3)
+		deliver("Faraway")
+
+		local theirList = Family.Guild:HeldRecipes(guildKey, "Faraway-FireMaw", smith)
+		check("and what comes back is stored", theirList ~= nil)
+		check("with the gaps read back as the ids they were",
+			theirList and theirList.spells[1] == 2661 and theirList.spells[2] == 3339,
+			theirList and tostring(theirList.spells[2]) or "nothing")
+		check("and what they could not share counted rather than implied away",
+			theirList and theirList.missing == 4, theirList and tostring(theirList.missing))
+
+		check("the same list announced again is not asked for again",
+			theyAnnounce(2, 4242) == 0, table.concat(asked, ", "))
+		check("but a changed one is", theyAnnounce(3, 9999) == 1, table.concat(asked, ", "))
+		check("and so is one whose count moved without its fingerprint",
+			theyAnnounce(7, 4242) == 1, table.concat(asked, ", "))
+
+		Family.Guild.AskRecipes = realAsk
+
+		-- Unticked on their side. Nothing has to be sent to take a grant away: the profession
+		-- is simply absent from what arrives next, and the list we held goes with it.
+		advance(30)
+		sent = {}
+		Family.Comm:Send("gdata", Family.Codec:ToWire {
+			schema = 1, version = Family.version, guild = guildName,
+			character = "Faraway-FireMaw",
+			characters = { ["Faraway-FireMaw"] = {
+				meta = { name = "Faraway", realm = "Fire Maw", level = 70 },
+			} },
+		}, "WHISPER", "Tester")
+		advance(3)
+		deliver("Faraway")
+
+		check("a profession they stop offering takes its recipe list with it",
+			Family.Guild:HeldRecipes(guildKey, "Faraway-FireMaw", smith) == nil)
+
+		-- And our side keeps the same promise: a request naming a profession that has been
+		-- unticked since is answered by today's grid, not by the one they last heard about.
+		advance(30)
+		sent = {}
+		Family.Guild:SetShare(guildKey, "Smith-FireMaw", smith, false)
+		check("a request for something no longer offered is refused",
+			Family.Guild:SendRecipes("Faraway", "Smith-FireMaw", smith) == false)
+		Family.Guild:SetShare(guildKey, "Smith-FireMaw", smith, true)
+		check("and answered once it is offered again",
+			Family.Guild:SendRecipes("Faraway", "Smith-FireMaw", smith) ~= false)
+		advance(30)
+
+		------------------------------------------------------------------------------------
 		-- The grid, on the panel it governs
 		------------------------------------------------------------------------------------
 

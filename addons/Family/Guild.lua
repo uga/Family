@@ -50,6 +50,19 @@ Family.Guild = Guild
 
 local SCHEMA = 1
 
+-- Recipe lists travel as their own kind with their own version (§7.1). `gdata` stays at
+-- SCHEMA above: bumping it would make every 1.0.0 client drop the whole message and be
+-- dropped in turn, while an unknown *kind* is discarded harmlessly (Comm.lua) - so a client
+-- too old for this exchanges gear and talents exactly as it always did and simply never asks
+-- for a recipe list.
+local RECIPE_SCHEMA = 1
+
+-- How many recipes one message may carry. A maxed primary is around 250 and weighs 983 bytes
+-- on the wire, five chunks - measured, `tools/wire-size.lua`, not guessed. The cap is far
+-- above that and exists only so that a client sending something absurd cannot make this one
+-- spend a minute of channel on it.
+local RECIPE_CEILING = 1000
+
 -- How old what we hold about somebody has to be before hearing from them is a reason to ask
 -- again. This is the whole of the traffic control, and it is what makes "once seen, it is
 -- kept" (§7) cheap rather than expensive: a guild of twenty Family users costs one round of
@@ -76,6 +89,13 @@ local function store()
 	guild.known = guild.known or {}     -- guildKey -> memberKey -> what they sent
 	guild.users = guild.users or {}     -- guildKey -> bare name -> when we last heard them
 	guild.grants = guild.grants or {}   -- guildKey -> memberKey -> skill line -> true
+	guild.recipes = guild.recipes or {} -- guildKey -> memberKey -> skill line -> what they can make
+
+	-- Kept apart from `known` on purpose. Everything a player sends in `gdata` replaces
+	-- everything held from that player, which is what makes a withdrawal take effect - and a
+	-- recipe list is the one thing that must survive that, because it is asked for once and
+	-- then never again while its fingerprint holds. Filed here, it is pruned deliberately
+	-- when a profession stops being offered rather than swept away on every hello.
 
 	-- The grid is created empty and stays empty until somebody ticks something, for the same
 	-- reason nothing is written for the switch above: a value written at creation is a
@@ -172,6 +192,107 @@ function Guild:CountShared(guildKey)
 	end
 
 	return ticks, members
+end
+
+--------------------------------------------------------------------------------------------
+-- What a recipe list is, and how to tell two of them apart cheaply (§7.1)
+--------------------------------------------------------------------------------------------
+
+-- A cheap hash of the sorted spell ids, which with the count beside it is what says "this is
+-- the list you already have" without sending the list.
+--
+-- Not a cryptographic digest and not trying to be: the question is whether a list has changed
+-- since the last exchange, the two ends are cooperating, and the cost of a collision is one
+-- stale list until the next recipe is learnt. Djb2 over the ids, modulo a prime below 2^24 so
+-- that every intermediate stays exact in a double - Lua 5.1 has no integers, and a hash that
+-- silently loses its low bits on one client and not another would answer differently at each
+-- end, which is the one thing a fingerprint may not do.
+local function fingerprintOf(spells)
+	local hash = 5381
+
+	for _, id in ipairs(spells) do
+		hash = (hash * 33 + id) % 16777213
+	end
+
+	return hash
+end
+
+Guild.RECIPE_CEILING = RECIPE_CEILING
+
+-- What one of our characters can make with one profession, in the shape it is stored and
+-- compared in: spell ids, sorted, with the item each one makes beside it.
+--
+-- **Identifiers, never names** (§2.1). A recipe the client gave no id for cannot cross - a
+-- name is one language, and the whole point is that a French list answers a German search -
+-- so it is left out and *counted*, because a panel claiming a shorter list than it shows is
+-- worse than one that says how many it could not carry.
+function Guild:RecipesFor(memberKey, skillLine)
+	local payload = Family.Database:Payload(memberKey)
+	local record = payload and payload.professions and payload.professions[skillLine]
+
+	if not (record and record.recipes) then return nil end
+
+	local rows, missing = {}, 0
+
+	for _, recipe in ipairs(record.recipes) do
+		if type(recipe.spellID) == "number" then
+			rows[#rows + 1] = { spell = recipe.spellID, item = tonumber(recipe.itemID) or 0 }
+		else
+			missing = missing + 1
+		end
+	end
+
+	-- Sorted, because the fingerprint is over the order and two clients must agree on it.
+	table.sort(rows, function(a, b) return a.spell < b.spell end)
+
+	local spells, items = {}, {}
+	for index, row in ipairs(rows) do
+		spells[index] = row.spell
+		items[index] = row.item
+	end
+
+	return spells, items, missing, fingerprintOf(spells), record.recipesSeen
+end
+
+-- The same, said in the two numbers that ride with the ranks: how many, and which list.
+function Guild:RecipeMark(memberKey, skillLine)
+	local spells, _, _, fingerprint = self:RecipesFor(memberKey, skillLine)
+	if not spells then return nil end
+	return #spells, fingerprint
+end
+
+-- What we hold from somebody else, for one of their characters and one profession.
+function Guild:HeldRecipes(guildKey, memberKey, skillLine)
+	local perMember = ((store().recipes[guildKey] or {})[memberKey])
+	return perMember and perMember[skillLine] or nil
+end
+
+-- Sorted ids differ by tens or hundreds and LibSerialize spends one byte on a small integer
+-- and three on a large one, so what crosses is the gaps rather than the numbers - a sixth off
+-- the whole message, measured in `tools/wire-size.lua`. Item ids stay absolute: they travel in
+-- spell order and are therefore in no order of their own, and delta-encoding an unsorted run
+-- makes it larger.
+local function toDeltas(spells)
+	local out, previous = {}, 0
+
+	for index, id in ipairs(spells) do
+		out[index] = id - previous
+		previous = id
+	end
+
+	return out
+end
+
+local function fromDeltas(deltas)
+	local out, running = {}, 0
+
+	for index, gap in ipairs(deltas) do
+		if type(gap) ~= "number" or gap < 0 then return nil end
+		running = running + gap
+		out[index] = running
+	end
+
+	return out
 end
 
 --------------------------------------------------------------------------------------------
@@ -273,10 +394,18 @@ local function sharedProfessions(guildKey, memberKey, meta)
 		if line and not seen[line] and Guild:Shares(guildKey, memberKey, line) then
 			seen[line] = true
 			out = out or {}
+
+			-- The count and the fingerprint ride with the rank, and the list itself does
+			-- not: that pair is what lets the other end decide whether to ask (§7.1). Two
+			-- numbers against a thousand bytes, on a message that was going anyway.
+			local count, fingerprint = Guild:RecipeMark(memberKey, line)
+
 			out[#out + 1] = {
 				skillLine = line,
 				rank = tonumber(skill.rank) or 0,
 				maxRank = tonumber(skill.maxRank) or 0,
+				count = count,
+				fingerprint = fingerprint,
 			}
 		end
 	end
@@ -467,6 +596,7 @@ function Guild:Forget(guildKey)
 	guild.known[guildKey] = nil
 	guild.users[guildKey] = nil
 	guild.grants[guildKey] = nil
+	guild.recipes[guildKey] = nil
 	Family.Database:Changed("guild")
 end
 
@@ -497,7 +627,7 @@ function Guild:ForgetLeft()
 	end
 
 	local stale = {}
-	for _, held in ipairs { guild.known, guild.users, guild.grants } do
+	for _, held in ipairs { guild.known, guild.users, guild.grants, guild.recipes } do
 		for guildKey in pairs(held) do
 			if not ours[guildKey] then stale[guildKey] = true end
 		end
@@ -606,6 +736,50 @@ function Guild:SendTo(name)
 	if not offering then return false, L["nothing of ours is in this guild"] end
 
 	return say("gdata", "WHISPER", name, { characters = offering }, true)
+end
+
+-- Asking one player for one character's one profession, because the fingerprint they sent
+-- does not match what we hold.
+--
+-- One profession per message rather than everything at once. A maxed primary is five chunks
+-- and a character with five professions is fifteen, so asking for a family's worth in one
+-- breath is the burst §7 spends its whole traffic control avoiding - and the answers arrive
+-- one list at a time whatever we do.
+function Guild:AskRecipes(name, memberKey, skillLine)
+	if type(name) ~= "string" or name == "" then return false end
+	if not (memberKey and skillLine) then return false end
+
+	return say("gwantrec", "WHISPER", name, { member = memberKey, line = skillLine })
+end
+
+-- What one of ours can make, to the one person who asked for it. Bulk: it is the largest
+-- thing §7 has ever carried, and nobody is watching the moment it lands.
+function Guild:SendRecipes(name, memberKey, skillLine)
+	local guildKey = self:Current()
+	if not guildKey then return false end
+
+	-- Offered, or not sent. The grid is consulted here as well as where the offering is
+	-- built, because this message is answered on request rather than sent in a round: a
+	-- request naming a profession that was ticked an hour ago and unticked since must be
+	-- answered by today's grid, not by the one they last heard about.
+	if not self:Shares(guildKey, memberKey, skillLine) then
+		Family:Debug("guild: asked for %s on %s, which is not offered", tostring(skillLine),
+			tostring(memberKey))
+		return false
+	end
+
+	local spells, items, missing, fingerprint = self:RecipesFor(memberKey, skillLine)
+	if not spells then return false end
+
+	return say("grec", "WHISPER", name, {
+		rschema = RECIPE_SCHEMA,
+		member = memberKey,
+		line = skillLine,
+		spells = toDeltas(spells),
+		items = items,
+		missing = missing,
+		fingerprint = fingerprint,
+	}, true)
 end
 
 --------------------------------------------------------------------------------------------
@@ -743,6 +917,13 @@ local function readProfessions(list)
 				skillLine = entry.skillLine,
 				rank = tonumber(entry.rank) or 0,
 				maxRank = tonumber(entry.maxRank) or 0,
+				-- How many recipes and which list, where they sent them. Kept because
+				-- this pair is the whole of the traffic control: without it every
+				-- announcement is a reason to ask for a thousand bytes again. Absent
+				-- from an older client, and absent is a fine answer - it means "no
+				-- recipe list", which is exactly what an older client has.
+				count = tonumber(entry.count),
+				fingerprint = tonumber(entry.fingerprint),
 			}
 		end
 	end
@@ -793,6 +974,137 @@ local function onData(_, text, sender)
 	end
 
 	Family:Debug("guild: %d character(s) arrived from %s", arrived, tostring(sender))
+
+	-- What they no longer offer, dropped; and what they offer that we do not hold, asked for.
+	--
+	-- Both fall out of the same walk, and both have to happen here rather than at the next
+	-- Update: a withdrawn profession must stop being answerable the moment its owner says so,
+	-- and a changed list is only known to have changed because this message said which list
+	-- it is now.
+	local recipes = store().recipes[guildKey]
+	local wanted = {}
+
+	for memberKey, entry in pairs(body.characters or {}) do
+		local offered = {}
+
+		for _, profession in ipairs(entry.professions or {}) do
+			offered[profession.skillLine] = true
+
+			-- Asked for only when the count or the fingerprint differs from what is held.
+			-- A settled guild costs nothing after the day everybody met, which is what
+			-- makes "once seen, it is kept" affordable for a list this size (§7.1).
+			if type(profession.fingerprint) == "number" then
+				local mine = Guild:HeldRecipes(guildKey, memberKey, profession.skillLine)
+
+				if not mine or mine.fingerprint ~= profession.fingerprint
+					or #mine.spells ~= (profession.count or -1) then
+					wanted[#wanted + 1] = { memberKey, profession.skillLine }
+				end
+			end
+		end
+
+		-- A profession that has been unticked is absent from what just arrived, and the
+		-- list we hold for it goes with it. Nothing has to be sent to take a grant away -
+		-- this is the other end keeping the promise that nothing does.
+		local mine = recipes and recipes[memberKey]
+		if mine then
+			for line in pairs(mine) do
+				if not offered[line] then mine[line] = nil end
+			end
+			if not next(mine) then recipes[memberKey] = nil end
+		end
+	end
+
+	-- Spread out, and one at a time. Fifteen lists is fifteen requests and forty-three chunks
+	-- of answer; asking for them in one breath is the burst the queue exists to avoid.
+	for index, want in ipairs(wanted) do
+		Family:After(2 + index * 3, string.format("guild.recipes.%s.%s", want[1], want[2]),
+			function()
+				if not Guild:Enabled() then return end
+				Guild:AskRecipes(sender, want[1], want[2])
+			end)
+	end
+
+	Family.Database:Changed("guild")
+end
+
+local function onWantRecipes(_, text, sender)
+	local body = Family.Codec:FromWire(text)
+	local guildKey = forThisGuild(body)
+	if not guildKey then return end
+
+	noteUser(guildKey, sender)
+
+	if type(body.member) ~= "string" or type(body.line) ~= "number" then return end
+
+	Guild:SendRecipes(sender, body.member, body.line)
+end
+
+local function onRecipes(_, text, sender)
+	local body = Family.Codec:FromWire(text)
+	local guildKey = forThisGuild(body)
+	if not guildKey then return end
+
+	noteUser(guildKey, sender)
+
+	-- Its own version, checked on its own. A mismatch here costs the recipe half and leaves
+	-- gear and talents exchanging normally, which is the whole reason this is a separate
+	-- kind rather than a bigger `gdata` (§7.1).
+	if body.rschema ~= RECIPE_SCHEMA then
+		Family:Debug("guild: %s writes recipe schema %s and this one reads %s",
+			tostring(sender), tostring(body.rschema), tostring(RECIPE_SCHEMA))
+		return
+	end
+
+	if type(body.member) ~= "string" or type(body.line) ~= "number" then return end
+	if type(body.spells) ~= "table" then return end
+	if #body.spells > RECIPE_CEILING then
+		Family:Debug("guild: %s sent %d recipes for one profession - ignored",
+			tostring(sender), #body.spells)
+		return
+	end
+
+	local spells = fromDeltas(body.spells)
+	if not spells then
+		Family:Debug("guild: %s sent a recipe list that does not decode", tostring(sender))
+		return
+	end
+
+	-- Only from somebody whose offering says this profession is theirs to send. An arriving
+	-- list about a character we hold nothing for is a client answering a question nobody
+	-- asked, and it is not written to our disk on its say-so (§2.3).
+	local held = (store().known[guildKey] or {})[body.member]
+	if not (held and bareName(held.from) == bareName(sender)) then
+		Family:Debug("guild: %s sent recipes for %s, who is not theirs", tostring(sender),
+			tostring(body.member))
+		return
+	end
+
+	local items = {}
+	if type(body.items) == "table" then
+		for index = 1, #spells do items[index] = tonumber(body.items[index]) or 0 end
+	end
+
+	local guild = store()
+	guild.recipes[guildKey] = guild.recipes[guildKey] or {}
+	guild.recipes[guildKey][body.member] = guild.recipes[guildKey][body.member] or {}
+
+	guild.recipes[guildKey][body.member][body.line] = {
+		spells = spells,
+		items = items,
+		-- Recipes the other end could not share because their client gave no id for them.
+		-- Carried across so that a panel can say a list is short rather than implying it
+		-- is complete (§7.1).
+		missing = tonumber(body.missing) or 0,
+		fingerprint = tonumber(body.fingerprint) or fingerprintOf(spells),
+		-- When it reached us. How old the *list* is on their side is the other half, and
+		-- the older of the two is what any answer built on it carries (§7.1).
+		at = time(),
+		from = sender,
+	}
+
+	Family:Debug("guild: %d recipe(s) for %s from %s", #spells, tostring(body.member),
+		tostring(sender))
 	Family.Database:Changed("guild")
 end
 
@@ -977,6 +1289,8 @@ Family:OnDatabaseReady("guild", function()
 	Family.Comm:On("ghello", whenEnabled(onHello))
 	Family.Comm:On("gwant", whenEnabled(onWant))
 	Family.Comm:On("gdata", whenEnabled(onData))
+	Family.Comm:On("gwantrec", whenEnabled(onWantRecipes))
+	Family.Comm:On("grec", whenEnabled(onRecipes))
 
 	Family:RegisterEvent("PLAYER_ENTERING_WORLD", "guild", function()
 		Family:After(ANNOUNCE_AFTER, "guild.hello", function()
