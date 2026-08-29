@@ -126,6 +126,9 @@ Per client: **Era**, **Anniversary**, **Mists**.
 | v1.0.0-beta.3 | Anniversary | 27/8/26 | Alberto | Pass  |
 | v1.0.0-beta.3 | Era | 27/8/26 | Alberto | Pass |
 | v1.0.0-beta.3 | Mists | 27/8/26 | Alberto | Pass |
+| v1.0.0 | Anniversary | 29/8/26 | Alberto | Pass  |
+| v1.0.0 | Era | 29/8/26 | Alberto | Pass |
+| v1.0.0 | Mists | 29/8/26 | Alberto | Pass |
 
 *Client* is `Era`, `Anniversary` or `Mists` — the three the `.toc` names. *Result* is `pass`, or what was not run and
 why — the sections needing a guildmate or a second family are the ones that will honestly say

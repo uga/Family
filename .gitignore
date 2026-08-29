@@ -24,3 +24,11 @@ addons/Family/Data/
 # on the documents. The rule is kept by the copy on this machine, where it does the work.
 CLAUDE.md
 .claude/
+
+# What this project cost, in time and tokens. Derived from Claude Code's own transcripts and
+# from what Alberto declares of the hours spent in the game. It is nobody else's business and
+# was never meant to be published - the same rule CLAUDE.md is kept by, and for the same
+# reason. The files stay on this machine and out of every clone.
+docs/EFFORT.md
+docs/effort/
+tools/effort.py
