@@ -3,6 +3,12 @@
 What changed in each release, in the words a player needs rather than the words a commit
 message uses. `tools/release.sh` cuts the top section into the release notes CurseForge shows.
 
+A player knows nothing about how Family is built and should not have to. No mechanism, no
+internal names, no reasoning about how something came to be wrong, no lessons learned: an entry
+says what the addon now does, and what it used to do only where that is what the reader
+noticed. Everything else belongs in the commit, in `DECISIONS.md` or in `LESSONS.md`, all three
+of which exist so that none of it has to be here.
+
 Newest first. Anything under **Unreleased** is written as it lands, so that cutting a release
 is a decision rather than an afternoon of archaeology.
 
@@ -12,9 +18,8 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
-- **A bank bag Family has no name for is numbered the way you number them.** The bank's own
-  window is container −1 and the bags bought for it start at five, so an unnamed first bank bag
-  was called *Bank bag 5*.
+- **A bank bag Family cannot name yet is numbered the way you number them.** The first one was
+  being called *Bank bag 5*.
 
 ## 1.0.0-beta.3 — 2026-08-28
 

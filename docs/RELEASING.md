@@ -66,6 +66,15 @@ That order is deliberate. The pass is run against the build about to be tagged, 
 `tools/FetchLibs.sh` and `Deploy.bat`, rather than against the version already published; it
 is the only order in which a red result can still stop something.
 
+**Then the manual.** Read the **Unreleased** section of the changelog against
+[`MANUAL.md`](MANUAL.md) and bring the manual into line with anything a user would meet: a new
+column, a panel that behaves differently, a question §15 should now answer. Nothing enforces
+this — a document cannot be checked for describing last month's behaviour — so it is a step
+here, done before the notes are consumed by the command below and are still in front of you.
+
+The manual is English only, deliberately. The one inside the addon, on the **About** tab, is
+translated into all five languages and is the one a player who never leaves the game will read.
+
 ```bash
 tools/release.sh 0.2.0
 ```

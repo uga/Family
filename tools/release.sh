@@ -133,6 +133,10 @@ Committed and tagged v$version, which will be published as $channel.
 
 Nothing has been published yet.
 
+Before you push: does docs/MANUAL.md still describe what these notes say Family does? Nothing
+checks that and nothing can - a document cannot be tested for describing last month's
+behaviour. It is the last thing that is still cheap to fix.
+
     git push && git push origin v$version
 
 That push is what starts the workflow, and the workflow is what uploads. Until then this

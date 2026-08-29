@@ -43,6 +43,12 @@ you play. A character appears in it the first time you log in on them. A family 
 ten logins to be complete, and then stays complete on its own. There is no import from any
 other addon and there never will be, and that is not going to change.
 
+**It speaks your language.** Family is written in English, German, French, Spanish and
+Russian, and follows whatever your client is set to. Where the game already has a word for
+something — a gear slot, a class, a reputation standing, a profession, a race — Family uses the
+game's own word rather than one of its own, so it says what the rest of your interface says.
+Anything not yet translated appears in English rather than as a blank.
+
 **Three windows need opening once per character.** Bags, money, gear, skills, talents,
 currencies and quests are read without being asked. Three things are only visible to the game
 while their own window is open, so open each of these once on each character and Family has
@@ -99,7 +105,7 @@ The buttons across the top change **which columns** are shown rather than which 
 |---|---|
 | **Overview** | level, item level, rested experience, money, time played, when last seen |
 | **Bags** | free and total slots, in bags and in the bank, and when each was last seen |
-| **Activity** | mail and when it expires, auctions, what is bid and what is asked |
+| **Activity** | mail, mail on its way, when it expires, auctions, what is bid and what is asked |
 | **Professions** | every profession and its rank, primaries first |
 | **Currencies** | honor, arena points, and whatever else this client calls a currency |
 | **Crafting** | every crafting cooldown the family has: available, or when it comes back |
@@ -657,6 +663,12 @@ or it is a gathering profession that has none. The Professions panel says which.
 
 **"Talent names are in the wrong language."** See §4 — that is the one exception, and it is
 Era and Burning Crusade only.
+
+**"A profession or its recipes are in the wrong language."** Professions and races are shown in
+your language whoever recorded them, and a recipe is named from what it makes, which your own
+client translates. A recipe list read before you changed language may take a moment to catch up
+the first time the panel is opened, while the client loads the items it has not seen this
+session.
 
 **Something errored.** Turn on *Narrate what the scanners are doing* in Options, reproduce it,
 and report the message together with the line at the bottom of the Options panel. It says
