@@ -318,3 +318,32 @@ re-derive them.
 |---|---|
 | Craft-level recipes | Era 1536, TBC +956, MoP +2804 = 5048 |
 | Era items whose reputation requirement the client states outright | 418 |
+
+### What a shared recipe list weighs, `tools/wire-size.lua`
+
+Not from the client's tables but from the libraries the addon channel is fed through, and
+here for the same reason: so that nobody re-derives it, and so that the next person to size
+something for that channel has a real number to scale from.
+
+Measured 2026-08-29 against LibSerialize and LibDeflate as fetched by `tools/FetchLibs.sh`,
+encoded for the addon channel, and divided by `Comm.lua`'s own 200-byte chunk and two-chunks-
+per-fifth-of-a-second queue.
+
+| recipes | array of `{spellID, itemID}` | two parallel arrays | two arrays, spell ids delta-encoded |
+|---:|---:|---:|---:|
+| 50 | 339 | 284 | **250** |
+| 150 | 893 | 739 | **617** |
+| 250 | 1,444 | 1,178 | **983** |
+| 400 | 2,282 | 1,884 | **1,511** |
+
+A maxed primary profession is around 250 recipes: **983 bytes, five chunks, half a second**.
+A character with two maxed primaries and three secondaries is 2,824 bytes and 15 chunks.
+
+**The shape matters more than it looks.** An array of two-key tables costs about a third more
+than two parallel arrays, because every entry pays for its own keys; delta-encoding the sorted
+spell ids saves a further sixth, because LibSerialize spends one byte on a small integer and
+three on a large one. Item ids are left absolute: they travel in spell order and so are in no
+order of their own, and delta-encoding an unsorted run makes it bigger.
+
+**The harness cannot answer this.** It stubs both libraries with pass-throughs on purpose, so
+it can prove the protocol and not weigh it. That is why this is a tool and not a check.
