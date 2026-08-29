@@ -323,7 +323,17 @@ local function readClassicRecipes()
 	end
 
 	local count = tradeSkillRows()
-	if count == 0 then putBack() return nil end
+
+	-- **A window that is open and lists nothing is not a window nobody has opened**, and
+	-- returning nil here made them the same thing: both were stored as no recipes at all,
+	-- and the panel said "never opened" about a profession whose window was in front of the
+	-- player. That is what an addon filtering or replacing the window looks like from in
+	-- here, and it cost somebody an evening. The name is what proves the window was open, so
+	-- the name goes back with an empty list rather than nothing going back at all.
+	if count == 0 then
+		putBack()
+		return name, {}
+	end
 
 	local recipes = {}
 
@@ -410,7 +420,10 @@ local function readCraftRecipes()
 	end
 
 	local count = craftRows()
-	if count == 0 then putBack() return nil end
+	if count == 0 then
+		putBack()
+		return name, {}
+	end
 
 	local recipes = {}
 
@@ -448,8 +461,6 @@ local function readCraftRecipes()
 	end
 
 	putBack()
-
-	if #recipes == 0 then return nil end
 
 	-- The skill line's own name is preferred where there is one: it is the profession, and
 	-- GetCraftName is only what the window happens to be titled.

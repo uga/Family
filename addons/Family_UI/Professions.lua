@@ -684,10 +684,17 @@ local function build(frame)
 		-- them, and how far they have taken them, is the summary's business - it says so in
 		-- one line per member, which is where that question is actually asked.
 		--
-		-- "Makes nothing" and "never opened" remain two different facts (§2.2) and Family can
-		-- only tell them apart by having seen the window, so the ones left out are named below
-		-- with whichever of the two they are.
-		local ordered, makesNothing, notOpened = {}, {}, {}
+		-- "Opened and listed nothing" and "never opened" remain two different facts (§2.2)
+		-- and Family can only tell them apart by having seen the window, so the ones left out
+		-- are named below with whichever of the two they are.
+		--
+		-- **Said as what was seen, not as what it means.** This bucket used to read "makes
+		-- nothing", which is a claim about the character; what Family actually knows is that
+		-- the window was open and the client listed no rows. Those are the same for
+		-- herbalism and very much not the same for alchemy behind an addon that filters the
+		-- window - and reading the second as the first is what sent somebody looking for a
+		-- fault in Family for an evening.
+		local ordered, listedNothing, notOpened = {}, {}, {}
 
 		-- There used to be a third thing that could be true of a profession here: recorded
 		-- under another language's word, and so unmatchable. Professions are keyed by
@@ -702,7 +709,7 @@ local function build(frame)
 			if record and record.recipes and #record.recipes > 0 then
 				ordered[#ordered + 1] = { name = name, id = id, skill = skill }
 			elseif record and record.recipes then
-				makesNothing[#makesNothing + 1] = name
+				listedNothing[#listedNothing + 1] = name
 			else
 				notOpened[#notOpened + 1] = name
 			end
@@ -715,20 +722,34 @@ local function build(frame)
 			if aSecond ~= bSecond then return bSecond end
 			return a.name < b.name
 		end)
-		table.sort(makesNothing)
+		table.sort(listedNothing)
 		table.sort(notOpened)
 
 		local left = {}
-		if #makesNothing > 0 then
-			left[#left + 1] = string.format(L["%s make nothing"],
-				table.concat(makesNothing, ", "))
+		if #listedNothing > 0 then
+			left[#left + 1] = string.format(L["%s opened, and listed nothing"],
+				table.concat(listedNothing, ", "))
 		end
 		if #notOpened > 0 then
 			left[#left + 1] = string.format(L["%s never opened"],
 				table.concat(notOpened, ", "))
 		end
-		setOmitted(#left > 0 and string.format(L["Not listed: %s.  Summary / Professions "
-			.. "has every profession and its level."], table.concat(left, "; ")) or nil)
+
+		local omitted = #left > 0 and string.format(L["Not listed: %s.  Summary / Professions "
+			.. "has every profession and its level."], table.concat(left, "; ")) or nil
+
+		-- Said where somebody can act on it. Gathering professions list nothing because they
+		-- make nothing, and that is unremarkable; a crafting profession that lists nothing is
+		-- almost always another addon standing in front of the window, and naming the
+		-- likeliest cause beside the symptom is the difference between a diagnosis and a
+		-- puzzle.
+		if omitted and #listedNothing > 0 then
+			omitted = omitted .. "  " .. L["A profession that makes things and lists nothing "
+				.. "is usually another addon filtering or replacing that window - open it "
+				.. "again with those switched off."]
+		end
+
+		setOmitted(omitted)
 
 		if #ordered == 0 then
 			status:SetText(next(skills)

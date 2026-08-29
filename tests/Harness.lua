@@ -2014,6 +2014,36 @@ do
 	TRADE_SKILL_OPEN = realOpen
 end
 
+-- A window that is open and lists nothing at all
+--
+-- Which is what another addon filtering or replacing that window looks like from in here. It
+-- must not be recorded as a window nobody ever opened: those are two different facts (§2.2),
+-- and collapsing the first into the second is what sent somebody hunting a fault in Family
+-- for an evening over a conflict on their own machine.
+do
+	local realCount, realOpen = GetNumTradeSkills, TRADE_SKILL_OPEN
+	TRADE_SKILL_OPEN = true
+	GetNumTradeSkills = function() return 0 end
+
+	Family.Database:Payload(key).professions[SKILL.blacksmithing].recipes = nil
+	Family.Professions:Scan(true)
+
+	local empty = Family.Database:Payload(key).professions[SKILL.blacksmithing]
+	check("a window that opens and lists nothing is recorded as opened, not as never opened",
+		empty and type(empty.recipes) == "table" and #empty.recipes == 0,
+		empty and tostring(empty.recipes) or "no record at all")
+
+	-- Put back with the window still open, or the scan that is meant to restore the list
+	-- takes the craft path instead and blacksmithing keeps the empty one.
+	GetNumTradeSkills = realCount
+	Family.Professions:Scan(true)
+	check("and the real list comes back on the next scan",
+		#Family.Database:Payload(key).professions[SKILL.blacksmithing].recipes == 2,
+		tostring(#Family.Database:Payload(key).professions[SKILL.blacksmithing].recipes))
+
+	TRADE_SKILL_OPEN = realOpen
+end
+
 -- Beast Training: the same frame a third time, with no skill line and no skill - so not a
 -- profession, and not nothing either. A hunter's pet abilities are a real list of things that
 -- member can do, and they are filed as abilities rather than thrown away.
@@ -3902,11 +3932,19 @@ check("and the ones left out are named, with the reason", visibleText("Herbalism
 
 -- The two reasons are still two different facts (§2.2). A window Family has opened and found
 -- empty is not the same as one it has never opened, and it does not say it is.
+--
+-- Said as what was seen rather than as what it means. "Makes nothing" is a claim about the
+-- character and is right for herbalism; for a crafting profession behind an addon that
+-- filters or replaces the window it is wrong, and reading it as the truth is what sent
+-- somebody hunting a fault in Family for an evening.
 local testerSkills = Family.Database:Meta(key).skills
 testerSkills.Tailoring = { rank = 40, maxRank = 75 }
 Family.Database:Payload(key).professions.Tailoring = { recipesSeen = time(), recipes = {} }
 Family.UI:ShowProfessionFor(key, "Blacksmithing")
-check("a window opened and found empty says so", visibleText("Tailoring make nothing"))
+check("a window opened and found empty says so",
+	visibleText("Tailoring opened, and listed nothing"))
+check("and names the likeliest reason beside it",
+	visibleText("another addon filtering or replacing that window"))
 check("and one never opened says that instead", visibleText("Herbalism never opened"))
 
 testerSkills.Tailoring = nil

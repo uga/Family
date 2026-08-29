@@ -66,9 +66,10 @@ Per client: **Era**, **Anniversary**, **Mists**.
       two.
 - [ ] **Fold a profession window's categories up and open it again.** Every recipe is still
       recorded, and the window is left folded as you left it. If a profession reads *never
-      opened* after its window has been open, suspect another addon that replaces or filters
-      that window before suspecting Family — `/family recipes` with the window open shows what
-      the client is actually handing back.
+      opened, and listed nothing* after its window has been open, that is the panel telling
+      you the window was there and empty — suspect another addon that replaces or filters it
+      before suspecting Family. `/family recipes` with the window open shows what the client
+      is actually handing back.
 - [ ] **On the talent grid, every name matches the talent it sits on**, and the three tree
       headings are the game's own. These come from a generated table, per expansion, and the
       grid is where a wrong one shows: a name one square out means the whole table is
