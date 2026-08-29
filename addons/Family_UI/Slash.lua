@@ -157,10 +157,13 @@ function()
 
 	-- What the client says this moment, which is the only place the answer to a bag in the
 	-- wrong slot can come from: the record keeps container ids and the player sees positions.
-	if not Family.Bank:IsOpen() then
-		Family:Print(L["  no bank window open - stand at a bank and ask again for the rest"])
-		return
-	end
+	-- Described whether or not a window is open, and it says which. What the client answers
+	-- about the bank container with no bank in front of you is the question: a scan that ran
+	-- there and got an answer would record a bank with nothing in it, over whatever was
+	-- there before.
+	local open = Family.Bank:IsOpen()
+	Family:Print(open and L["  a bank window is open"]
+		or L["  no bank window is open - what follows is what the client says anyway"])
 
 	local containerAPI = C_Container or {}
 	local numSlots = containerAPI.GetContainerNumSlots or _G.GetContainerNumSlots
