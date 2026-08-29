@@ -627,6 +627,8 @@ Family.locales.esES = {
 	["|cff9d9d9dmay know it|r"] = "|cff9d9d9dquizá lo conozca|r",
 	["|cffffd700can learn it|r"] = "|cffffd700puede aprenderlo|r",
 	["|cff66bbffFamily crafters|r"] = "|cff66bbffArtesanos de la familia|r",
+	["|cff66bbffGuild crafters|r"] = "|cff66bbffArtesanos de la hermandad|r",
+	["|cff888888and %d more|r"] = "|cff888888y %d más|r",
 	["|cff66bbffFamily possessions|r"] = "|cff66bbffPosesiones de la familia|r",
 
 	-- The member picker

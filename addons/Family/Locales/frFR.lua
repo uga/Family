@@ -627,6 +627,8 @@ Family.locales.frFR = {
 	["|cff9d9d9dmay know it|r"] = "|cff9d9d9dle connaît peut-être|r",
 	["|cffffd700can learn it|r"] = "|cffffd700peut l'apprendre|r",
 	["|cff66bbffFamily crafters|r"] = "|cff66bbffArtisans de la famille|r",
+	["|cff66bbffGuild crafters|r"] = "|cff66bbffArtisans de la guilde|r",
+	["|cff888888and %d more|r"] = "|cff888888et %d de plus|r",
 	["|cff66bbffFamily possessions|r"] = "|cff66bbffPossessions de la famille|r",
 
 	-- The member picker

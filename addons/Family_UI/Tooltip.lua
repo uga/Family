@@ -196,6 +196,57 @@ local function crafterLines(tooltip, itemID)
 	return lines
 end
 
+-- The same question, answered by the guild (§7.1).
+--
+-- A block of its own under the family's, rather than more rows in theirs: they are two
+-- sources with two different kinds of certainty behind them, and a guildmate's alt is
+-- somebody to whisper rather than somebody to log into.
+--
+-- **These are people, not characters.** A guild record is keyed by whoever sent it, so what
+-- is named is the player, with the character of theirs that can make it beside them - which
+-- is the pair somebody needs to decide whether to say anything.
+--
+-- Answered by identifier, so it needs no profession and no skill requirement read off the
+-- tooltip: what crossed is the spell of each recipe and the item it makes, and hovering
+-- either one matches. That is why this block appears on a crafted item where the family's
+-- block, which works from the item's subtype, often cannot.
+local GUILD_CAP = 5
+
+local function guildCrafterLines(_, itemID)
+	if not (Family.Guild and Family.Guild:Enabled()) then return nil end
+
+	local crafters = Family.Guild:CraftersOf(nil, itemID)
+	if #crafters == 0 then return nil end
+
+	local lines = { { L["|cff66bbffGuild crafters|r"],
+		string.format("|cff888888%d|r", #crafters) } }
+
+	for index = 1, math.min(GUILD_CAP, #crafters) do
+		local who = crafters[index]
+		local r, g, b = classColour(who.classFile)
+
+		-- The realm taken off for reading, not the lower-cased key the protocol matches
+		-- on: this is a name somebody is about to type into a whisper.
+		local player = tostring(who.player or "?")
+		player = player:match("^([^%-]+)") or player
+
+		lines[#lines + 1] = {
+			string.format("%s |cff888888%s|r", player, tostring(who.name)),
+			string.format("|cff9d9d9d%s|r", UI:Ago(who.at)),
+			r, g, b, 1, 1, 1,
+		}
+	end
+
+	-- A tooltip that fills the screen has answered a different question from the one asked,
+	-- so the rest are counted rather than listed.
+	if #crafters > GUILD_CAP then
+		lines[#lines + 1] = { string.format(L["|cff888888and %d more|r"],
+			#crafters - GUILD_CAP), "" }
+	end
+
+	return lines
+end
+
 --------------------------------------------------------------------------------------------
 -- Hooking
 --
@@ -231,7 +282,7 @@ local function onItem(tooltip, itemID)
 	-- whatever is added next reads as part of this list.
 	local blocks = {}
 
-	for _, build in ipairs { possessionLines, crafterLines } do
+	for _, build in ipairs { possessionLines, crafterLines, guildCrafterLines } do
 		local lines = build(tooltip, itemID)
 		if lines and #lines > 0 then blocks[#blocks + 1] = lines end
 	end

@@ -646,6 +646,73 @@ function Guild:ForgetLeft()
 	return dropped
 end
 
+-- Who in this guild can make this, found by identifier and never by name (§2.1).
+--
+-- Both ids are looked at, because both were sent: the spell is the pattern and the item is
+-- the thing it makes, so hovering either one answers. That second id is the whole reason the
+-- answer can appear on a crafted item and not only on a recipe.
+--
+-- **The answer is a person, not a character.** Guild records are keyed by whoever sent them,
+-- so a row reads as *this player has a character who can make it* - and whispering the player
+-- is what somebody does about it. Naming only the alt would name somebody who is not there.
+function Guild:CraftersOf(spellID, itemID)
+	local guildKey = self:Current()
+	if not (guildKey and (spellID or itemID)) then return {} end
+
+	local known = self:Known(guildKey)
+	local found = {}
+
+	for memberKey, perLine in pairs((store().recipes[guildKey]) or {}) do
+		local entry = known[memberKey]
+
+		for line, list in pairs(perLine) do
+			local knows = false
+
+			for index, spell in ipairs(list.spells or {}) do
+				if (spellID and spell == spellID)
+					or (itemID and itemID ~= 0 and (list.items or {})[index] == itemID) then
+					knows = true
+					break
+				end
+			end
+
+			if knows and entry then
+				local rank
+				for _, profession in ipairs(entry.professions or {}) do
+					if profession.skillLine == line then rank = profession.rank end
+				end
+
+				-- The older of the two ages, which is all an answer built from them can
+				-- honestly claim. A list read a fortnight ago and heard from an hour ago
+				-- is a fortnight old (§7.1).
+				local age = list.at
+				if list.seen and list.seen < age then age = list.seen end
+
+				found[#found + 1] = {
+					player = list.from or entry.from,
+					key = memberKey,
+					name = (entry.meta or {}).name or memberKey,
+					classFile = (entry.meta or {}).classFile,
+					level = (entry.meta or {}).level,
+					skillLine = line,
+					rank = rank,
+					missing = list.missing,
+					at = age,
+				}
+			end
+		end
+	end
+
+	-- Whoever we heard from most recently first, then by name, so the list is the same
+	-- twice running. Somebody deciding who to whisper reads it top down.
+	table.sort(found, function(a, b)
+		if (a.at or 0) ~= (b.at or 0) then return (a.at or 0) > (b.at or 0) end
+		return tostring(a.name) < tostring(b.name)
+	end)
+
+	return found
+end
+
 --------------------------------------------------------------------------------------------
 -- Talking
 --------------------------------------------------------------------------------------------
@@ -768,7 +835,7 @@ function Guild:SendRecipes(name, memberKey, skillLine)
 		return false
 	end
 
-	local spells, items, missing, fingerprint = self:RecipesFor(memberKey, skillLine)
+	local spells, items, missing, fingerprint, seen = self:RecipesFor(memberKey, skillLine)
 	if not spells then return false end
 
 	return say("grec", "WHISPER", name, {
@@ -779,6 +846,10 @@ function Guild:SendRecipes(name, memberKey, skillLine)
 		items = items,
 		missing = missing,
 		fingerprint = fingerprint,
+		-- When *this* side last read the list, which is not when it was sent. A fact does
+		-- not get younger by being posted (§2.2), and an answer built on this is only as
+		-- current as the older of the two ages it was built from (§7.1).
+		seen = seen,
 	}, true)
 end
 
@@ -1097,9 +1168,11 @@ local function onRecipes(_, text, sender)
 		-- is complete (§7.1).
 		missing = tonumber(body.missing) or 0,
 		fingerprint = tonumber(body.fingerprint) or fingerprintOf(spells),
-		-- When it reached us. How old the *list* is on their side is the other half, and
-		-- the older of the two is what any answer built on it carries (§7.1).
+		-- When it reached us, and when they last read it. Two ages, kept apart, because
+		-- the older of the two is what any answer built on this carries (§7.1) and an
+		-- older client sends only the first of them.
 		at = time(),
+		seen = tonumber(body.seen),
 		from = sender,
 	}
 

@@ -7136,6 +7136,94 @@ print("guild share")
 		check("and what they could not share counted rather than implied away",
 			theirList and theirList.missing == 4, theirList and tostring(theirList.missing))
 
+		-- On the item's own tooltip, which is where the question is actually asked (§7.1),
+		-- and answered by identifier - so it lands on the *thing they make* and not only on
+		-- the pattern, which is the whole reason the item id crosses beside the spell.
+		do
+			-- An alt of theirs with a different name, because that is the whole point:
+			-- a player's characters are not named after them, and the one thing that
+			-- says Faraway and Nervina are one person is that one client sent both. A
+			-- fixture where the two names match cannot tell the answer apart from the
+			-- character it is about.
+			advance(30)
+			sent = {}
+			Family.Comm:Send("gdata", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw",
+				characters = {
+					["Faraway-FireMaw"] = {
+						meta = { name = "Faraway", realm = "Fire Maw", level = 70 },
+						professions = { { skillLine = smith, rank = 300,
+							maxRank = 300, count = 2, fingerprint = 4242 } },
+					},
+					["Nervina-FireMaw"] = {
+						meta = { name = "Nervina", realm = "Fire Maw", level = 61,
+							classFile = "MAGE" },
+						professions = { { skillLine = smith, rank = 275,
+							maxRank = 300, count = 1, fingerprint = 777 } },
+					},
+				},
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+
+			advance(30)
+			sent = {}
+			Family.Comm:Send("grec", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw", rschema = 1,
+				member = "Nervina-FireMaw", line = smith,
+				spells = { 60001 }, items = { 60001 },
+				missing = 0, fingerprint = 777, seen = time() - 400,
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+
+			wipe(GameTooltip.__lines)
+			GameTooltip.__itemName = "A Thing Made In The Guild"
+			GameTooltip.__itemLink = "|Hitem:60001|h"
+			if GameTooltip.__scripts.OnTooltipCleared then
+				GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+			end
+			GameTooltip.__scripts.OnTooltipSetItem(GameTooltip)
+
+			local heading, named = false, false
+			for _, line in ipairs(GameTooltip.__lines) do
+				if type(line[1]) == "string" and line[1]:find("Guild crafters", 1, true) then
+					heading = true
+				elseif heading and type(line[1]) == "string"
+					and line[1]:find("Faraway", 1, true)
+					and line[1]:find("Nervina", 1, true) then
+					named = true
+				end
+			end
+
+			check("the guild's answer appears on the item's own tooltip", heading)
+			-- Both names, and the player first: guild records are keyed by whoever sent
+			-- them, whispering that player is what somebody does about the answer, and the
+			-- character beside them is which of theirs can actually make it.
+			check("naming the player, with the character of theirs that can make it", named)
+
+			-- Switched off means off in both directions, and that includes not answering
+			-- out of what was collected while it was on.
+			Family.Guild:SetEnabled(false)
+			wipe(GameTooltip.__lines)
+			GameTooltip.__itemLink = "|Hitem:60001|h"
+			if GameTooltip.__scripts.OnTooltipCleared then
+				GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+			end
+			GameTooltip.__scripts.OnTooltipSetItem(GameTooltip)
+
+			local stillThere = false
+			for _, line in ipairs(GameTooltip.__lines) do
+				if type(line[1]) == "string" and line[1]:find("Guild crafters", 1, true) then
+					stillThere = true
+				end
+			end
+			check("and says nothing at all once guild share is switched off", not stillThere)
+			Family.Guild:SetEnabled(true)
+		end
+
 		check("the same list announced again is not asked for again",
 			theyAnnounce(2, 4242) == 0, table.concat(asked, ", "))
 		check("but a changed one is", theyAnnounce(3, 9999) == 1, table.concat(asked, ", "))

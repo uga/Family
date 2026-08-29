@@ -627,6 +627,8 @@ Family.locales.deDE = {
 	["|cff9d9d9dmay know it|r"] = "|cff9d9d9dkennt es vielleicht|r",
 	["|cffffd700can learn it|r"] = "|cffffd700kann es lernen|r",
 	["|cff66bbffFamily crafters|r"] = "|cff66bbffFamily-Hersteller|r",
+	["|cff66bbffGuild crafters|r"] = "|cff66bbffGildenhandwerker|r",
+	["|cff888888and %d more|r"] = "|cff888888und %d weitere|r",
 	["|cff66bbffFamily possessions|r"] = "|cff66bbffFamily-Besitz|r",
 
 	-- The member picker
