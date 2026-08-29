@@ -5055,6 +5055,78 @@ do
 			Family.Wide:Forget("Nobody") == false)
 	end)
 
+	----------------------------------------------------------------------------------------
+	-- A second character of a family we are already linked with
+	--
+	-- Reported from a live client. Two characters of one family were asked, the first
+	-- accepted, and the request to the second sat on the panel reading "waiting for them to
+	-- answer" for ever - about a link that already existed. A link is between families, so
+	-- the second request was answered by the fact of the link, and the answer was never sent:
+	-- the far end recognised the case, wrote a comment about a client that had lost track,
+	-- and returned in silence, leaving that client exactly as lost.
+	----------------------------------------------------------------------------------------
+
+	sent = {}
+	ours = wearing(ours, function()
+		Family.Wide:RequestLink("Nervina")
+		check("a second character of a linked family can still be asked",
+			#Family.Wide:Outgoing() == 1, #Family.Wide:Outgoing() .. " pending")
+	end)
+
+	local answered = 0
+	theirs = wearing(theirs, function()
+		deliver("Tester")
+		check("their side does not raise a second decision about it",
+			next(Family.Wide:Requests()) == nil)
+		answered = #sent
+	end)
+
+	check("but answers it rather than meeting it with silence", answered > 0,
+		tostring(answered) .. " sent back")
+
+	ours = wearing(ours, function()
+		local mark = #DEFAULT_CHAT_FRAME.messages
+		deliver("Nervina")
+
+		check("and the answer ends the waiting", #Family.Wide:Outgoing() == 0,
+			#Family.Wide:Outgoing() .. " still pending")
+
+		-- Said once, when the link is made. Announcing it again for a link that was already
+		-- there is how the fix for one confusion becomes another.
+		local said = false
+		for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+			if tostring(DEFAULT_CHAT_FRAME.messages[index]):find("Linked with", 1, true) then
+				said = true
+			end
+		end
+		check("without announcing a link that was already there", said == false)
+	end)
+
+	-- The other half, which does not need the far end to be new enough to answer at all: a
+	-- character of theirs that arrives in an exchange is one there is no point waiting on,
+	-- whatever their client does about the request itself.
+	local theirLinkID
+	theirs = wearing(theirs, function()
+		for id in pairs(Family.Wide:Links()) do theirLinkID = id end
+	end)
+
+	sent = {}
+	ours = wearing(ours, function()
+		Family.Wide:Store().pendingOut["Faraway"] = { at = time() }
+		check("a character of theirs we already know can be asked", #Family.Wide:Outgoing() == 1)
+	end)
+
+	sent = {}
+	theirs = wearing(theirs, function()
+		Family.Wide:ExchangeWith(theirLinkID, "a check")
+	end)
+
+	ours = wearing(ours, function()
+		deliver("Faraway")
+		check("and hearing from them at all ends it, with no answer to the request needed",
+			#Family.Wide:Outgoing() == 0, #Family.Wide:Outgoing() .. " still pending")
+	end)
+
 	print()
 	print("  what may be seen, one member and one category at a time")
 

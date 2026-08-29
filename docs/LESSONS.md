@@ -779,3 +779,37 @@ from our own records, so our own records can say why somebody is not in it. All 
 The generalisable form: **when a fault is found in one branch of a function, the sibling
 branches are suspects, not bystanders.** Fixing the one that was reported and leaving the two
 that share its mechanism is how one bug is paid for twice.
+
+## L-024 — A branch that named the problem in a comment and then returned
+
+Ask two characters of one family to link, accept on the first, and the request to the second
+stayed on the Wide Family panel reading *waiting for them to answer* — for ever, about a link
+that already existed.
+
+The receiving end was not confused. `onLink` had a branch for exactly this, with a comment
+saying what it was:
+
+> *Already linked: treat it as a hello rather than as a request, because a second link request
+> from somebody already linked is a client that lost track, not a decision to be asked about
+> again.*
+
+It then returned without sending anything, leaving the client that had lost track exactly as
+lost. The diagnosis was right, was written down, and was never acted on.
+
+**What makes this its own lesson rather than a missing line.** The comment reads as though the
+case is handled, and it is handled *locally* — nothing wrong is recorded on the receiving side,
+which is what the branch was written to prevent. The half that is missing is on the other end,
+where nobody was looking. A branch that correctly declines to act still owes an answer to
+whoever is waiting for one, and the addon channel acknowledges nothing (§11.1), so silence is
+never a message.
+
+**What now catches it:** the branch whispers `linked` back, so the asker's existing acceptance
+path clears the request. And the same conclusion is reached independently from what this end
+already holds — any request addressed to a character of a family we are linked with is dropped
+the moment we hear from that character or it arrives in an exchange — so a far end too old to
+answer costs nothing. Four checks, one for each half and one that the link is not announced a
+second time.
+
+**The generalisable form: when a handler decides not to act, ask what the other end is still
+waiting for.** "Ignored harmlessly" is a statement about one side of a wire.
+

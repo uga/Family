@@ -565,8 +565,22 @@ local function onLink(_, text, sender)
     -- Already linked: treat it as a hello rather than as a request, because a second link
     -- request from somebody already linked is a client that lost track, not a decision to
     -- be asked about again.
+    --
+    -- **And say so, which this used to leave unsaid.** A link is between families, so a
+    -- request addressed to a second character of a family we are already linked with is
+    -- answered by the fact of the link rather than by a decision - but returning in silence
+    -- left the asker waiting for an answer that was never coming. Reported from a live
+    -- client: somebody asked two characters of one family, linked through the first, and the
+    -- request to the second sat on their panel reading "waiting for them to answer" for ever,
+    -- about a link they already had.
+    --
+    -- Whispered back to whoever asked rather than sent through the link, because the link
+    -- picks whichever of their characters it last heard from and the answer belongs to the
+    -- one that just spoke.
     if wide.links[body.family] then
         noteHeard(wide.links[body.family], sender)
+        Family.Comm:Send("linked", Family.Codec:ToWire(envelope({})) or "", "WHISPER",
+            sender, false)
         return
     end
 
@@ -591,6 +605,39 @@ end
 local function bareName(name)
     if type(name) ~= "string" then return nil end
     return (name:match("^([^%-]+)") or name):lower()
+end
+
+-- Any request of ours addressed to a character of a family we are already linked with.
+--
+-- The link is what was wanted and it is had, so the request is now about nothing. This is the
+-- half that does not need the other end to be new enough to answer: a character of theirs we
+-- have heard from, or one that arrived in an exchange, is proof enough on its own that asking
+-- them again would only produce the link we already have.
+local function dropPendingFor(link)
+    local wide = store()
+    if not (link and wide.pendingOut) then return false end
+
+    local theirs = {}
+
+    for name in pairs(link.characters or {}) do
+        local bare = bareName(name)
+        if bare then theirs[bare] = true end
+    end
+
+    for _, entry in pairs(link.members or {}) do
+        local bare = bareName((entry.meta or {}).name)
+        if bare then theirs[bare] = true end
+    end
+
+    local dropped = false
+    for name in pairs(wide.pendingOut) do
+        if theirs[bareName(name) or ""] then
+            wide.pendingOut[name] = nil
+            dropped = true
+        end
+    end
+
+    return dropped
 end
 
 local function onLinked(_, text, sender)
@@ -618,6 +665,8 @@ local function onLinked(_, text, sender)
         return
     end
 
+    local newLink = wide.links[body.family] == nil
+
     wide.links[body.family] = wide.links[body.family] or {
         name = body.character or sender,
         grants = {},
@@ -629,8 +678,17 @@ local function onLinked(_, text, sender)
 
     if asked and wide.pendingOut then wide.pendingOut[asked] = nil end
 
-    Family:Print(L["Linked with |cffffd700%s|r. Nothing is shared until you say what may be."],
-        tostring(sender))
+    -- And every other character of theirs we had asked. One link answers all of them.
+    dropPendingFor(wide.links[body.family])
+
+    -- Said once, when the link is made. An acceptance arriving for a link we already have is
+    -- the answer to a request about a second character of theirs, and announcing it again as
+    -- though something had changed is how a fix for one confusion becomes another.
+    if newLink then
+        Family:Print(L["Linked with |cffffd700%s|r. "
+            .. "Nothing is shared until you say what may be."], tostring(sender))
+    end
+
     Family.Database:Changed("wide")
 end
 
@@ -702,6 +760,9 @@ local function onData(_, text, sender)
             end
         end
     end
+
+    -- Whoever of theirs has just arrived is somebody we need not go on waiting to hear from.
+    dropPendingFor(link)
 
     link.lastExchange = time()
     Family:Debug("wide: %d member(s) arrived from %s", arrived, tostring(sender))

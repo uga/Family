@@ -55,6 +55,12 @@ is a decision rather than an afternoon of archaeology.
 - **A character who leaves a guild is no longer recorded as still being in it.**
 - **`/family guild test` now lists any of your characters with no guild recorded**, so the
   cause is something you can read rather than something you have to guess at.
+- **A link request to a second character of a family you are already linked with no longer
+  waits for ever.** Ask two characters of the same family, link through the first, and the
+  request to the second used to sit on the Wide Family panel saying *waiting for them to
+  answer* — about a link you already had. Their copy of Family recognised the situation and
+  said nothing back; it now answers, and the request clears itself. Hearing from that family
+  at all clears it too, so an older copy on the other end costs you nothing.
 - **Leaving a guild now clears what that guild had shared with you**, and what you had offered
   it. It used to stay out of sight on disk and come back out of date if you ever rejoined.
 

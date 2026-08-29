@@ -162,6 +162,8 @@ take these with it.
       `Deploy.bat` copies the checkout, so without `tools/FetchLibs.sh` there is no Wide
       Family on this build to test and every line below it would pass by being absent.
 - [ ] A link request reaches the other family and can be accepted.
+- [ ] **Ask two characters of the same family, then accept on one.** The request to the other
+      clears itself on your panel rather than waiting for ever — a link is between families.
 - [ ] Exactly what was granted crosses, and nothing else.
 - [ ] An exchange interrupted by a logout is abandoned rather than hanging.
 - [ ] **Reach.** Note which realm the other family is on and whether it worked: same realm,
