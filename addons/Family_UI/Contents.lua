@@ -542,7 +542,7 @@ local function build(frame)
 
 		local member = picker:Reconcile()
 
-		local width = math.max(scroll:GetWidth(), 200)
+		local width = UI:ListWidth(scroll)
 		list:SetWidth(width)
 
 		local perRow = math.max(math.floor((width - 8) / (SLOT + GAP)), 1)

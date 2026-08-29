@@ -331,7 +331,7 @@ local function build(frame)
         local usedRows, usedCells, usedButtons = 0, 0, 0
         local y = 0
 
-        list:SetWidth(math.max(scroll:GetWidth(), 200))
+        list:SetWidth(UI:ListWidth(scroll))
         auto:SetChecked(Family.Wide:AutoUpdate())
 
         -- Off is a state this panel draws rather than a panel nobody can reach. The

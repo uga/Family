@@ -31,10 +31,11 @@ is a decision rather than an afternoon of archaeology.
   two characters with the same name could not be told apart at all.
 - **The list of what a linked family shares with you is now in a stable order.** It had none,
   so it could rearrange itself between refreshes.
-- **The Guild panel no longer draws its first row on top of itself.** The first time the panel
-  was opened, a guildmate's name, rank and item level were written over one another in the same
-  place; closing the window and opening it again appeared to fix it. It is drawn correctly the
-  first time now.
+- **Panels no longer draw themselves squashed the first time they are opened.** On the Guild
+  panel a guildmate's name, rank and item level were written over one another in the same
+  place, and closing the window and opening it again appeared to fix it. The same fault was
+  waiting on Abilities & Talents, Wide Family, Possessions and About. All of them are drawn at
+  their proper width the first time now.
 
 ## 1.0.0 — 2026-08-29
 

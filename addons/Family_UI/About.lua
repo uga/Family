@@ -222,7 +222,7 @@ local function build(frame)
 
 	function frame:Refresh()
 		local used, y = 0, 0
-		local width = math.max(scroll:GetWidth() - 16, 200)
+		local width = math.max(UI:ListWidth(scroll) - 16, 200)
 		list:SetWidth(width + 16)
 
 		-- Laid out by measuring, not by guessing: a paragraph's height depends on how many

@@ -284,7 +284,7 @@ local function build(frame)
 		local usedRows, usedCells, usedLabels = 0, 0, 0
 		local y = 0
 
-		list:SetWidth(math.max(scroll:GetWidth(), 200))
+		list:SetWidth(UI:ListWidth(scroll))
 
 		-- The spellbook is read by its pictures as much as by its words, so its rows are
 		-- twice the height and carry an icon to match - the same reason the gear list is.
@@ -299,7 +299,7 @@ local function build(frame)
 			r.middle:SetPoint("LEFT", 180 + rowHeight + 2, 0)
 			r:SetPoint("TOPLEFT", 0, -y)
 			r:SetPoint("TOPRIGHT", 0, -y)
-			r.middle:SetWidth(math.max(scroll:GetWidth() - 360, 40))
+			r.middle:SetWidth(math.max(UI:ListWidth(scroll) - 360, 40))
 			r.spellID = nil
 			r.icon:SetTexture(nil)
 			r.left:SetText("")
