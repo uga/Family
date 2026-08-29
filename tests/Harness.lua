@@ -4122,6 +4122,28 @@ SlashCmdList["FAMILY"]("recipes")
 check("/family recipes reports what each recipe has to be named by",
 	#DEFAULT_CHAT_FRAME.messages > before)
 
+-- Whether the client can name a place from its id decides whether the hearthstone column can
+-- ever be translated: the tables that would do it out of a file measure 876 KB (L-020), so
+-- the only affordable answer is the client's own, and no file can say whether it has one.
+--
+-- What this can check is that the question gets asked and survives a client that answers
+-- none of it - which is the case the harness is, having no map API at all. That it reports
+-- the right thing about a real client is not checkable here and is the whole reason the
+-- command exists.
+before = #DEFAULT_CHAT_FRAME.messages
+SlashCmdList["FAMILY"]("hearth")
+check("/family hearth reports whether the client can name a place",
+	#DEFAULT_CHAT_FRAME.messages > before)
+check("and says so plainly when the client cannot",
+	(function()
+		for _, line in ipairs(DEFAULT_CHAT_FRAME.messages) do
+			if type(line) == "string" and line:find("cannot be translated", 1, true) then
+				return true
+			end
+		end
+		return false
+	end)())
+
 before = #DEFAULT_CHAT_FRAME.messages
 SlashCmdList["FAMILY"]("rescan")
 check("/family rescan runs both scanners",

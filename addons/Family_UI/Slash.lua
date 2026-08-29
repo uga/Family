@@ -411,6 +411,91 @@ add("talents", L["what talent data is actually stored, and for whom"], function(
 	end
 end)
 
+-- Whether this client can name a place from its id, which decides whether the hearthstone
+-- column can ever be right.
+--
+-- Family stores where a hearthstone is bound as the word GetBindLocation hands back, and a word
+-- is one language and one expansion: a French Era client says "Ironforge" where a French
+-- Burning Crusade client says "Forgefer" (L-020). The fix wants an id, and the tables that
+-- would turn an id back into a word in five languages measure 876 KB - so the only affordable
+-- fix is the client naming its own places, and nothing in a file can say whether it can.
+--
+-- Three known ids are asked for by name so the answer can be read rather than trusted: 1537 is
+-- Ironforge, 1519 Stormwind City, 3703 Shattrath City. A client that answers with the words
+-- this player's game uses is a client that makes the table unnecessary.
+add("hearth", L["whether this client can name a place from its id: /family hearth"], function()
+	Family:Print(L["language %s, expansion %s"],
+		tostring(Family.locale), tostring(Family.Capabilities.expansion))
+
+	local bound = Family:TryCall(GetBindLocation)
+	if bound and bound ~= "" then
+		Family:Print(L["this client calls your hearthstone's home %s"],
+			"|cff44dd44" .. tostring(bound) .. "|r")
+	else
+		Family:Print(L["|cffffaa00This client does not say where your hearthstone is "
+			.. "bound.|r"])
+		bound = nil
+	end
+
+	-- Held by name rather than called directly, so that a client without one says so instead
+	-- of erroring, and so that what was asked is printed beside what came back.
+	local candidates = {
+		{ "C_Map.GetAreaInfo", C_Map and C_Map.GetAreaInfo },
+		{ "GetAreaInfo", _G.GetAreaInfo },
+		{ "C_Map.GetMapInfo", C_Map and C_Map.GetMapInfo },
+	}
+
+	local namer
+	for _, candidate in ipairs(candidates) do
+		local label, fn = candidate[1], candidate[2]
+		if type(fn) ~= "function" then
+			Family:Print(L["  %s: |cffffaa00not on this client|r"], label)
+		else
+			local answers = {}
+			for _, id in ipairs { 1537, 1519, 3703 } do
+				local ok, answer = pcall(fn, id)
+				if ok and type(answer) == "table" then answer = answer.name end
+				if ok and type(answer) == "string" and answer ~= "" then
+					answers[#answers + 1] = string.format("%d=%s", id, answer)
+					namer = namer or fn
+				else
+					answers[#answers + 1] = string.format("%d=?", id)
+				end
+			end
+			Family:Print(L["  %s: %s"], label, table.concat(answers, "  "))
+		end
+	end
+
+	if not namer then
+		Family:Print(L["|cffffaa00Nothing here can name a place from its id.|r The "
+			.. "hearthstone column cannot be translated without shipping a table."])
+		return
+	end
+
+	if not bound then return end
+
+	-- The other half of the question: a name can be turned back into an id only by asking
+	-- for every id until one matches. Worth knowing what that costs before relying on it.
+	local found, asked = nil, 0
+	for id = 1, 6000 do
+		asked = id
+		local ok, answer = pcall(namer, id)
+		if ok and type(answer) == "table" then answer = answer.name end
+		if ok and answer == bound then
+			found = id
+			break
+		end
+	end
+
+	if found then
+		Family:Print(L["|cff44dd44Found it at id %d|r after %d calls, so a record could "
+			.. "store the id instead of the word."], found, asked)
+	else
+		Family:Print(L["|cffffaa00No id in %d matched|r what this client calls that "
+			.. "place, so the word cannot be turned into an id here."], asked)
+	end
+end)
+
 add("ready", L["which crafting cooldowns have come back, and for whom"], function()
 	local waiting = Family.Cooldowns:Ready()
 
