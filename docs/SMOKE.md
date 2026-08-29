@@ -199,6 +199,9 @@ take these with it.
       clears itself on your panel rather than waiting for ever — a link is between families.
 - [ ] Exactly what was granted crosses, and nothing else.
 - [ ] An exchange interrupted by a logout is abandoned rather than hanging.
+- [ ] **Press *Update now* on a linked family with nobody online.** Family names each of their
+      characters once as it tries them, and says *none of them is online* once at the end —
+      not four times over, and not four rounds of the game's own "no player named …".
 - [ ] **Reach.** Note which realm the other family is on and whether it worked: same realm,
       a connected one, an unconnected one. This is spec §11.1 and it is the one open question
       a pass can close — but only if the answer is written down, so put it in the row.

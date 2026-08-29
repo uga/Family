@@ -479,9 +479,23 @@ end
 --
 -- This terminates on its own: every attempt marks one more name absent, so the list
 -- reachableName can offer shrinks by one each time and runs out.
-Family.Comm:OnAbsent("wide", function(name)
+--
+-- **Once per name, and not once per message.** An exchange is many messages - a member's bags
+-- do not fit in one - and the client refuses each of them that had already left. Every one of
+-- those refusals used to run this: walk the family again, print again, and send a whole
+-- further exchange. A family of five characters became twenty attempts, twenty refusals from
+-- the server, four copies of every sentence here and four times the traffic for somebody who
+-- was not there at all.
+--
+-- Comm says which refusal is the first, because only Comm can: everything else can see that a
+-- name is absent and not that it has just become so.
+Family.Comm:OnAbsent("wide", function(name, _, already)
     local store_ = store()
     if not (store_.enabled and store_.links) then return false end
+
+    -- Answered when the first arrived. Answering again would be this client shouting at a
+    -- character who is still not there.
+    if already then return true end
 
     local handled = false
 

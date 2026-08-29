@@ -9115,6 +9115,32 @@ print("a family is a person with several characters")
 	check("and being told they are not there tries the next of theirs",
 		tried == "Grellina-Thunderstrike", tostring(tried))
 
+	-- **And once, not once per message.** An exchange is many messages and the client refuses
+	-- each of the ones that had already left, so the same name comes back three or four times.
+	-- Every one of those used to walk the family again and send another whole exchange: five
+	-- characters became twenty attempts, twenty refusals from the server, and four copies of
+	-- every sentence Family prints about it. Reported from a live client.
+	do
+		sent = {}
+		local saidBefore = #DEFAULT_CHAT_FRAME.messages
+
+		notFound("Grella")
+		notFound("Grella")
+		notFound("Grella")
+
+		check("and the same refusal arriving again sends nothing further",
+			#sent == 0, tostring(#sent) .. " sent again")
+
+		local repeated = 0
+		for index = saidBefore + 1, #DEFAULT_CHAT_FRAME.messages do
+			if DEFAULT_CHAT_FRAME.messages[index]:find("is not online", 1, true) then
+				repeated = repeated + 1
+			end
+		end
+		check("and says nothing further about it either", repeated == 0,
+			tostring(repeated) .. " more lines")
+	end
+
 	sent = {}
 	notFound("Grellina")
 	check("and the next after that",

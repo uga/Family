@@ -16,6 +16,15 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Fixed
+
+- **Trying to reach a linked family who is offline no longer says so four times over.** An
+  exchange is many messages, and the game refuses each one that had already been sent — so
+  every refusal set Family walking that family's characters again and sending another
+  exchange. A family of five characters became twenty attempts, four copies of every line
+  Family printed about it, and twenty refusals from the game. It now answers the first and
+  ignores the rest, which is the same news arriving again.
+
 ### Added
 
 - **You can now show your guild what your characters can craft, one profession at a time.**

@@ -281,6 +281,19 @@ Family:RegisterEvent("CHAT_MSG_SYSTEM", "comm.absent", function(_, text)
     local name = text:match(pattern)
     if not name then return end
 
+    -- Whether we had already been told about this one, asked *before* it is written down.
+    --
+    -- One refusal comes back for every message that had already left, and an exchange is many
+    -- messages - so the second, third and fourth are the same news arriving again. What was
+    -- still queued has been abandoned by the time the first is answered; the rest are about
+    -- messages nothing can be done with. A listener that acts on each of them walks the same
+    -- ground again and sends again, which is how a family of five characters became twenty
+    -- attempts and four copies of every sentence.
+    --
+    -- Told rather than worked out by each listener, because only this file knows: everything
+    -- else can see that a name is absent and not that it has just become so.
+    local already = Comm:Absent(name)
+
     absent[nameKey(name)] = time()
 
     -- Everything still queued for them, dropped at once. What has already gone is already
@@ -293,7 +306,7 @@ Family:RegisterEvent("CHAT_MSG_SYSTEM", "comm.absent", function(_, text)
     -- every one of them has been tried.
     local handled
     for _, listener in pairs(absentListeners) do
-        local ok, answer = pcall(listener, name, dropped)
+        local ok, answer = pcall(listener, name, dropped, already)
         if ok and answer then handled = true end
     end
 
