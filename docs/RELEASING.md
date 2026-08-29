@@ -66,6 +66,12 @@ That order is deliberate. The pass is run against the build about to be tagged, 
 `tools/FetchLibs.sh` and `Deploy.bat`, rather than against the version already published; it
 is the only order in which a red result can still stop something.
 
+**Then the effort log.** `tools/effort.py --write` regenerates
+[`EFFORT.md`](EFFORT.md) from Claude Code's own transcripts. Before running it, add anything to
+[`docs/effort/declared.csv`](effort/declared.csv) that happened away from the tool since the
+last release — testing in the game above all, which is most of the real work on an addon and
+appears in no transcript anywhere. Approximate is fine; absent is not.
+
 **Then the manual.** Read the **Unreleased** section of the changelog against
 [`MANUAL.md`](MANUAL.md) and bring the manual into line with anything a user would meet: a new
 column, a panel that behaves differently, a question §15 should now answer. Nothing enforces

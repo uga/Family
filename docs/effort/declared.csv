@@ -1,0 +1,12 @@
+# Time that no transcript can see, declared by the person who spent it.
+#
+# Claude Code records everything that happens inside it, to the second. It records nothing
+# about a bank being checked in Ironforge, a screenshot being compared against a French client,
+# or a decision being turned over on a walk - and on this project that is a large share of the
+# work. This file is that share, and it is the only part of the accounting that is remembered
+# rather than measured. Kept apart from the derived figures for exactly that reason.
+#
+# Add a row whenever you think of one. Approximate is fine and better than absent; say so in
+# the note if a figure is a guess. Lines beginning with # are ignored.
+#
+# date,hours,who,what
