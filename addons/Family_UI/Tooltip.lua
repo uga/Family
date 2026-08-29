@@ -214,15 +214,11 @@ end
 -- block, which works from the item's subtype, often cannot.
 local GUILD_CAP = 5
 
-local function guildCrafterLines(_, itemID)
-	if not (Family.Guild and Family.Guild:Enabled()) then return nil end
-
-	-- The item's own name as well as its id. A recipe that crossed with a spell and no item -
-	-- everything enchanting, on Classic Era - can only be recognised by what this client calls
-	-- it, and that covers both the thing it makes and the formula that teaches it.
-	local crafters = Family.Guild:CraftersOf(nil, itemID, Family.Names:CachedItem(itemID))
-	if #crafters == 0 then return nil end
-
+-- The block itself, so that the item route and the spell route say the same thing. Local, and
+-- defined above both of them: written as a forward declaration lower down it was a second
+-- local that shadowed nothing, while the definition quietly made a global - and the spell
+-- route called the empty one.
+local function guildLinesFor(crafters)
 	local lines = { { L["|cff66bbffGuild crafters|r"],
 		string.format("|cff888888%d|r", #crafters) } }
 
@@ -252,6 +248,18 @@ local function guildCrafterLines(_, itemID)
 	return lines
 end
 
+local function guildCrafterLines(_, itemID)
+	if not (Family.Guild and Family.Guild:Enabled()) then return nil end
+
+	-- The item's own name as well as its id. A recipe that crossed with a spell and no item -
+	-- everything enchanting, on Classic Era - can only be recognised by what this client calls
+	-- it, and that covers both the thing it makes and the formula that teaches it.
+	local crafters = Family.Guild:CraftersOf(nil, itemID, Family.Names:CachedItem(itemID))
+	if #crafters == 0 then return nil end
+
+	return guildLinesFor(crafters)
+end
+
 --------------------------------------------------------------------------------------------
 -- Hooking
 --
@@ -261,6 +269,49 @@ end
 --------------------------------------------------------------------------------------------
 
 local lastDescribed = {}
+
+-- A recipe that makes nothing has no item tooltip to appear on.
+--
+-- An enchant is a spell and produces no object, so there is nothing in the world to hover:
+-- it is seen in a trade skill window, in a recipe link somebody posted, and on Family's own
+-- panels. Everything above this hooks OnTooltipSetItem, so the one profession whose answers
+-- are most worth having was the one profession that could never be asked.
+--
+-- Answered by id here, and only by id: a spell tooltip states which spell it is, and that is
+-- the same number the guild sent. No name is involved at all, which the item route cannot
+-- always manage.
+local function onSpell(tooltip, spellID)
+	if not tooltip then return end
+	if tooltip.IsForbidden and tooltip:IsForbidden() then return end
+	if not (FamilyDB and FamilyDB.tooltips ~= false) then return end
+
+	if not spellID and tooltip.GetSpell then
+		spellID = select(2, tooltip:GetSpell())
+	end
+	if not spellID then return end
+
+	-- The same guard the item route uses, and the same reason: OnTooltipSetSpell can fire
+	-- more than once for one tooltip, and a block added twice reads as a fault.
+	if lastDescribed[tooltip] == "spell:" .. spellID then return end
+	lastDescribed[tooltip] = "spell:" .. spellID
+
+	if not (Family.Guild and Family.Guild:Enabled()) then return end
+
+	local crafters = Family.Guild:CraftersOf(spellID, nil, nil)
+	if #crafters == 0 then return end
+
+	tooltip:AddLine(" ")
+	for index, line in ipairs(guildLinesFor(crafters)) do
+		if index == 1 then
+			tooltip:AddDoubleLine(line[1], line[2], 0.4, 0.73, 1, 0.53, 0.53, 0.53)
+		else
+			tooltip:AddDoubleLine(line[1], line[2], line[3] or 1, line[4] or 1,
+				line[5] or 1, line[6] or 0.61, line[7] or 0.61, line[8] or 0.61)
+		end
+	end
+	tooltip:AddLine(" ")
+	tooltip:Show()
+end
 
 local function onItem(tooltip, itemID)
 	if not tooltip then return end
@@ -325,6 +376,11 @@ local function hookSetItem(tooltip)
 	tooltip:HookScript("OnTooltipSetItem", function(self) onItem(self) end)
 end
 
+local function hookSetSpell(tooltip)
+	if not tooltip or not tooltip.HookScript then return end
+	tooltip:HookScript("OnTooltipSetSpell", function(self) onSpell(self) end)
+end
+
 Family:OnDatabaseReady("tooltips", function()
 	local tooltips = { _G.GameTooltip, _G.ItemRefTooltip,
 		_G.ShoppingTooltip1, _G.ShoppingTooltip2 }
@@ -360,6 +416,19 @@ Family:OnDatabaseReady("tooltips", function()
 	end
 
 	for _, tooltip in ipairs(tooltips) do hookSetItem(tooltip) end
+
+	-- And the same pair of routes for spells, which is where an enchant lives.
+	UI.__modernSpellCallback = function(tooltip, data)
+		onSpell(tooltip, data and data.id)
+	end
+
+	if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall
+		and Enum and Enum.TooltipDataType and Enum.TooltipDataType.Spell then
+		pcall(TooltipDataProcessor.AddTooltipPostCall,
+			Enum.TooltipDataType.Spell, UI.__modernSpellCallback)
+	end
+
+	for _, tooltip in ipairs(tooltips) do hookSetSpell(tooltip) end
 
 	Family.tooltipRoute = modern and "both" or "classic"
 	Family:Debug("tooltip hooks installed: %s", Family.tooltipRoute)

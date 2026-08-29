@@ -138,7 +138,7 @@ local KNOWN = {
 	SetNormalTexture = 1, SetHighlightTexture = 1, SetPushedTexture = 1,
 	SetAutoFocus = 1, ClearFocus = 1, HighlightText = 1, SetMaxLetters = 1,
 	SetNumeric = 1, SetFocus = 1,
-	SetOwner = 1,
+	SetOwner = 1, GetSpell = 1,
 	-- Secure buttons: the game casts what the attributes say when a player clicks them,
 	-- which is the only way an addon may cast anything at all.
 	SetAttribute = 1, GetAttribute = 1,
@@ -355,6 +355,10 @@ end
 function frameMethods:GetParent() return self.__parent end
 
 function frameMethods:GetItem() return self.__itemName, self.__itemLink end
+-- What a tooltip says about the spell it is describing. The older clients answer here and the
+-- newer ones hand the id to a post-call instead, and both routes have to be exercised: the
+-- one that is only ever called by the harness is the one that can rot in the game unseen.
+function frameMethods:GetSpell() return self.__spellName, self.__spellID end
 function frameMethods:IsForbidden() return false end
 
 -- Attributes are remembered, because whether a button is armed to cast is the whole of what
@@ -7397,6 +7401,50 @@ print("guild share")
 					end
 				end
 				return false
+			end
+
+			-- And on the recipe's own tooltip, which for an enchant is the only tooltip
+			-- there is: it makes no object, so there is nothing in the world to hover.
+			-- Answered by id alone there - a spell tooltip states which spell it is, and
+			-- that is the number the guild sent.
+			do
+				wipe(GameTooltip.__lines)
+				if GameTooltip.__scripts.OnTooltipCleared then
+					GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+				end
+				Family.UI.__modernSpellCallback(GameTooltip, { id = 25128 })
+
+				local named = false
+				for _, line in ipairs(GameTooltip.__lines) do
+					if type(line[1]) == "string"
+						and line[1]:find("Guild crafters", 1, true) then
+						named = true
+					end
+				end
+				check("a recipe that makes nothing is answered on its own tooltip", named)
+
+				-- And by the other route. Classic Era has no modern tooltip system at
+				-- all, so the hook is the only thing that fires there - and a check that
+				-- exercises the post-call alone is exactly the check this file already
+				-- warns about, one route deep, for items.
+				GameTooltip.__spellID = 25128
+				wipe(GameTooltip.__lines)
+				if GameTooltip.__scripts.OnTooltipCleared then
+					GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+				end
+				local hooked = false
+				if GameTooltip.__scripts.OnTooltipSetSpell then
+					GameTooltip.__scripts.OnTooltipSetSpell(GameTooltip)
+
+					for _, line in ipairs(GameTooltip.__lines) do
+						if type(line[1]) == "string"
+							and line[1]:find("Guild crafters", 1, true) then
+							hooked = true
+						end
+					end
+				end
+				check("by the hook as well as by the post-call", hooked)
+				GameTooltip.__spellID = nil
 			end
 
 			check("the thing a spell-only recipe makes is answered for", hovered(70010))
