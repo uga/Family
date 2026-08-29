@@ -215,7 +215,10 @@ Two measurements it rests on:
   clients. They are kept apart, keyed by the expansion number `Family.Capabilities` already
   derives from the interface version.
 
-Mists is not in it: its talents have ids of their own that the client resolves for any class.
+Mists is in it too, in a shape of its own: six tiers of three, each talent carrying an id the
+client reports and Family records, so there is no position to key on. It uses `SpellID` where
+the other two use `SpellRank_0` — measured, not assumed: the ranked column is zero for a third
+of the Mists rows and set for every one of the Era ones.
 
 `ChrRaces` is what `addons/Family/Races.lua` is generated from, by `tools/races.py`. Three
 findings there, all of which a hand-written table gets wrong:

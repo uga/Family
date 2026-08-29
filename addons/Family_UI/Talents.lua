@@ -640,14 +640,19 @@ local function build(frame)
 			for column = 1, math.max(#choices, 3) do
 				local choice = choices[column]
 				if choice then
+					-- Mists talents carry an id of their own, so the position is not
+					-- needed: the id is the spell, and the client names any spell for
+					-- any class. Same answer as the tree grid above, by a shorter road.
+					local shownName = Family:TalentNameByID(choice.id, choice.name)
+
 					nextCell(left + (column - 1) * CELL, rowY, {
 						icon = choice.icon,
 						taken = column == picked,
 						chosen = column == picked,
-						dim = not matches(choice.name),
+						dim = not (matches(shownName) or matches(choice.name)),
 						talentID = choice.id,
 						fallback = {
-							{ choice.name or "?" },
+							{ shownName or "?" },
 							{ string.format(L["|cff888888tier %d|r"], tier),
 								column == picked and L["|cff40bf40taken|r"]
 									or L["|cff9d9d9dpassed over|r"] },
@@ -660,7 +665,8 @@ local function build(frame)
 			-- name says what it is without a hover for each.
 			local taken = picked and choices[picked]
 			nextLabel(left + 3 * CELL + 8, rowY + 8,
-				taken and taken.name or L["|cff9d9d9dnothing chosen|r"], 220)
+				taken and Family:TalentNameByID(taken.id, taken.name)
+					or L["|cff9d9d9dnothing chosen|r"], 220)
 		end
 
 		y = #data.tiers * CELL + 8

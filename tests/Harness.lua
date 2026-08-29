@@ -653,6 +653,8 @@ local SPELL_NAMES = {
 	-- TalentSpells.lua maps their positions to. A talent is a spell, so this is the client
 	-- answering about them the way it answers about any other.
 	[11210] = "Arcane Subtlety", [11222] = "Arcane Focus",
+	-- The Mists talent the choices fixture takes, by the spell its id maps to.
+	[29838] = "Sacred Shield",
 	[6057] = "Improved Arcane Missiles", [29441] = "Wand Specialization",
 }
 GetSpellInfo = function(id)
@@ -2940,6 +2942,14 @@ do
 	-- as Era, and the warrior's second tier is one of the thirty-two: 12295 here, 12300
 	-- there. A single table would be right about most of the grid and quietly wrong about
 	-- those, which is worse than being wrong about all of it.
+	-- Mists asks the same question with a shorter answer: its talents carry an id of their
+	-- own, so there is no position to look up.
+	check("a Mists talent is named from the spell its id maps to",
+		Family:TalentNameByID(15757, "recorded") == "Sacred Shield",
+		tostring(Family:TalentNameByID(15757, "recorded")))
+	check("and one no table knows keeps the word it was recorded under",
+		Family:TalentNameByID(999999, "Heiliger Schild") == "Heiliger Schild")
+
 	check("a position the two builds disagree about is read from this client's build",
 		Family:TalentName("WARRIOR", 1, 2, 2, "recorded") == "Spell 12295",
 		tostring(Family:TalentName("WARRIOR", 1, 2, 2, "recorded")))
@@ -4067,7 +4077,12 @@ talentPayload.talents = {
 	seen = time(), system = "choices", activeGroup = 1, groupCount = 1,
 	groups = { [1] = { system = "choices", group = 1, visited = true, specID = 66,
 		tiers = { [1] = { tier = 1, chosen = 1,
-			choices = { [1] = { id = 1010, name = "Sacred Shield", selected = true } } } } } },
+			-- A real Mists talent id, so the table is actually asked. 15757 is the
+			-- spell 29838, which is what the client below is made to answer for.
+			-- Recorded in German, on a client that is not German: the panel below has
+			-- to show what this client calls it, not what was written down.
+			choices = { [1] = { id = 15757, name = "Heiliger Schild",
+				selected = true } } } } } },
 }
 Family.Database:SetPayload(key, talentPayload)
 
@@ -4081,7 +4096,9 @@ check("the specialisation is named on the line above the grid", visibleText("Pro
 check("with the role the game gives it", visibleText("Tank"))
 check("and the talents drawn as a grid, a tier to a row", visibleText("tier 1"))
 check("with what was taken on each tier spelled out beside it",
-	visibleText("Sacred Shield"))
+	visibleText("Sacred Shield"),
+	"the Mists grid is showing the word it was recorded under")
+check("and not the word it was recorded under", not visibleText("Heiliger Schild"))
 
 talentPayload.talents = eraTalents
 Family.Database:SetPayload(key, talentPayload)
