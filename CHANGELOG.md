@@ -61,6 +61,15 @@ is a decision rather than an afternoon of archaeology.
   profession and the list goes with it, on their side as well as yours, without either of you
   pressing anything.
 
+- **Opening a shared profession's window now tells the guild there is something new to send.**
+  Ticking a profession you had never opened shared a skill level and nothing else, and opening
+  it afterwards changed nothing anybody could see: no box had moved, so nothing was announced,
+  and both ends went on holding recent gear and talents in silence. The recipe list never
+  crossed.
+- **Update now means it.** It used to send an ordinary announcement, which the other end is
+  entitled to answer with "nothing has changed" — so the one button you press because you
+  think what you are looking at is stale could do nothing at all, and look no different from
+  one that is broken.
 - **Professions recorded before Family kept track of them by identity can now be shared.**
   A character last played a while ago had its professions filed under their names, and the grid
   would not offer any of them — it said the character had no professions at all, while the line

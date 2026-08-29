@@ -90,6 +90,7 @@ local function store()
 	guild.users = guild.users or {}     -- guildKey -> bare name -> when we last heard them
 	guild.grants = guild.grants or {}   -- guildKey -> memberKey -> skill line -> true
 	guild.recipes = guild.recipes or {} -- guildKey -> memberKey -> skill line -> what they can make
+	guild.announced = guild.announced or {} -- guildKey -> what we last told them we can make
 
 	-- Kept apart from `known` on purpose. Everything a player sends in `gdata` replaces
 	-- everything held from that player, which is what makes a withdrawal take effect - and a
@@ -259,6 +260,55 @@ function Guild:RecipeMark(memberKey, skillLine)
 	local spells, _, _, fingerprint = self:RecipesFor(memberKey, skillLine)
 	if not spells then return nil end
 	return #spells, fingerprint
+end
+
+-- Whether what we offer has changed since the guild was last told, and telling them if it has.
+--
+-- **The grid is not the only thing that changes an offering.** Opening a profession's window
+-- for the first time gives a ticked profession a recipe list where it had none; learning one
+-- recipe changes a list that was already there. Neither touches the grid, so neither went
+-- through offerChanged - and the traffic control then did exactly what it exists to do: both
+-- ends held recent gear and talents, so no exchange happened, so the new fingerprint never
+-- crossed, so the list was never asked for.
+--
+-- Reported from a live guild, and the symptom is the worst kind: a profession ticked, its
+-- window opened, everything on both panels correct, and nothing whatever on the wire. The
+-- sending client's own diagnosis said "messages sent from here: 1".
+--
+-- What was last said is remembered per guild, so this is a comparison rather than a reason to
+-- announce on every scan.
+function Guild:MarkChanged()
+	local guildKey = self:Current()
+	if not guildKey then return false end
+
+	local guild = store()
+	local last = guild.announced[guildKey] or {}
+	local now, changed = {}, false
+
+	for memberKey, perMember in pairs(guild.grants[guildKey] or {}) do
+		for line in pairs(perMember) do
+			local count, fingerprint = self:RecipeMark(memberKey, line)
+			local at = memberKey .. "/" .. tostring(line)
+
+			-- A profession with no list yet is a state worth remembering as much as a
+			-- list is: going from nothing to something is the change this exists for.
+			now[at] = count and (count .. ":" .. fingerprint) or "-"
+			if last[at] ~= now[at] then changed = true end
+		end
+	end
+
+	for at in pairs(last) do
+		if now[at] == nil then changed = true end
+	end
+
+	guild.announced[guildKey] = now
+
+	if changed then
+		Family:Debug("guild: what our characters can make has changed")
+		offerChanged()
+	end
+
+	return changed
 end
 
 -- What we hold from somebody else, for one of their characters and one profession.
@@ -1203,7 +1253,14 @@ function Guild:Refresh(why)
 
 	-- One announcement rather than a whisper each. Everybody running Family hears it and
 	-- answers, and everybody who is not is not troubled by a message they cannot read.
-	return self:Announce(why or "asked for")
+	--
+	-- **Marked as a change, because that is what pressing the button means.** The traffic
+	-- control skips the exchange when the other end holds something recent, which is right
+	-- for a login and wrong for the one button somebody presses precisely because they think
+	-- what they are looking at is stale. Update now that answers "no need" is a button that
+	-- does nothing, and it looks identical to one that is broken.
+	Family:Debug("guild: asked for an exchange (%s)", tostring(why or "asked for"))
+	return self:AnnounceChange()
 end
 
 --------------------------------------------------------------------------------------------
@@ -1414,6 +1471,20 @@ Family:OnDatabaseReady("guild", function()
 	Family.Comm:On("gdata", whenEnabled(onData))
 	Family.Comm:On("gwantrec", whenEnabled(onWantRecipes))
 	Family.Comm:On("grec", whenEnabled(onRecipes))
+
+	-- A scan that gives a ticked profession something new to say is told to the guild, on the
+	-- same debounce as a grid change - one message however many recipes were learnt.
+	--
+	-- Filtered on the key, because this handler's own work writes to the database under
+	-- "guild" and answering that would be a loop. Everything else is a member being scanned.
+	Family.Database:OnChanged("guild.offer", function(what)
+		if what == "guild" then return end
+		if not Guild:Enabled() then return end
+
+		Family:After(6, "guild.marks", function()
+			if Guild:Enabled() then Guild:MarkChanged() end
+		end)
+	end)
 
 	Family:RegisterEvent("PLAYER_ENTERING_WORLD", "guild", function()
 		Family:After(ANNOUNCE_AFTER, "guild.hello", function()

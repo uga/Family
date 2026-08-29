@@ -7371,6 +7371,98 @@ print("guild share")
 		advance(30)
 
 		------------------------------------------------------------------------------------
+		-- A list that appears when the grid did not change
+		--
+		-- Reported from a live guild: a profession ticked, its window opened, both panels
+		-- correct, and nothing at all on the wire - the sending client's own diagnosis said
+		-- "messages sent from here: 1".
+		--
+		-- The grid is not the only thing that changes an offering. Opening a profession's
+		-- window for the first time gives a ticked profession a recipe list where it had
+		-- none, and that touches no box. Nothing announced it, so the traffic control did
+		-- what it is for: both ends held recent gear and talents, no exchange happened, the
+		-- new fingerprint never crossed, and the list was never asked for.
+		------------------------------------------------------------------------------------
+
+		Family.Guild:SetShare(guildKey, "Smith-FireMaw", mining, true)
+		advance(30)
+		Family.Guild:MarkChanged()
+		advance(30)
+		sent = {}
+
+		check("with nothing new to say, nothing is said",
+			Family.Guild:MarkChanged() == false)
+		advance(30)
+		check("and the guild is not told about it", #sent == 0, tostring(#sent))
+
+		-- Their window, opened for the first time.
+		Family.Database:Payload("Smith-FireMaw").professions[mining] = {
+			rank = 275, maxRank = 300, recipesSeen = time(),
+			recipes = { { name = "Smelt Copper", spellID = 2657, itemID = 2840 } },
+		}
+
+		sent = {}
+		check("a ticked profession that gains a list has something new to say",
+			Family.Guild:MarkChanged() == true)
+		advance(30)
+
+		local told = 0
+		for _, message in ipairs(sent) do
+			if message.channel == "GUILD" then told = told + 1 end
+		end
+		check("and the guild is told, without a box having been touched", told == 1,
+			tostring(told) .. " announcements")
+
+		check("and having told them, it does not tell them again",
+			Family.Guild:MarkChanged() == false)
+
+		Family.Guild:SetShare(guildKey, "Smith-FireMaw", mining, false)
+		advance(30)
+
+		-- And Update now means it. The traffic control skips an ordinary announcement when
+		-- the other end holds something recent, which is right for a login and wrong for the
+		-- one button somebody presses because they think what they see is stale.
+		local forced = false
+		local realForce = Family.Guild.AnnounceChange
+		Family.Guild.AnnounceChange = function(this, ...)
+			forced = true
+			return realForce(this, ...)
+		end
+
+		Family.Guild:Refresh("a check")
+		Family.Guild.AnnounceChange = realForce
+
+		check("Update now asks in a way the other end will not skip", forced)
+		advance(30)
+
+		-- **And nothing has to call any of that.** A scan writing a member's payload is what
+		-- tells this side that a list has appeared, and the whole of the live bug was that
+		-- nothing was listening: every check above would have passed with no watcher at all,
+		-- because every one of them asks the question by hand.
+		Family.Guild:SetShare(guildKey, "Smith-FireMaw", mining, true)
+		advance(30)
+		Family.Guild:MarkChanged()
+		advance(30)
+		sent = {}
+
+		Family.Database:Payload("Smith-FireMaw").professions[mining].recipes = {
+			{ name = "Smelt Copper", spellID = 2657, itemID = 2840 },
+			{ name = "Smelt Tin", spellID = 3304, itemID = 3576 },
+		}
+		Family.Database:Changed("Smith-FireMaw")
+		advance(30)
+
+		local noticed = 0
+		for _, message in ipairs(sent) do
+			if message.channel == "GUILD" then noticed = noticed + 1 end
+		end
+		check("a scan that adds a recipe is noticed without anybody asking it to be",
+			noticed == 1, tostring(noticed) .. " announcements")
+
+		Family.Guild:SetShare(guildKey, "Smith-FireMaw", mining, false)
+		advance(30)
+
+		------------------------------------------------------------------------------------
 		-- The grid, on the panel it governs
 		------------------------------------------------------------------------------------
 

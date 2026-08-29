@@ -813,3 +813,32 @@ second time.
 **The generalisable form: when a handler decides not to act, ask what the other end is still
 waiting for.** "Ignored harmlessly" is a statement about one side of a wire.
 
+## L-025 — Six checks of a thing nothing was calling
+
+A guildmate ticked a profession, opened its window, and the recipe list never crossed. Both
+panels were right, both ends were healthy, and the sending client's own diagnosis read
+`messages sent from here: 1`.
+
+**What was wrong:** the grid is not the only thing that changes what a character offers.
+Opening a profession's window for the first time gives a ticked profession a recipe list where
+it had none; learning one recipe changes a list that was already there. Neither touches a box,
+so neither went through the path that announces a change — and the traffic control then did
+exactly what it exists to do. Both ends held recent gear and talents, so no exchange happened,
+so the new fingerprint never crossed, so the list was never asked for. Every piece behaved
+correctly and the feature did nothing.
+
+**The part worth the entry.** The fix was `MarkChanged`, and it came with six checks: nothing
+to say means nothing is said, a profession that gains a list has something new to say, the
+guild is told, it is not told twice, and so on. Every one of them passed **with the watcher
+that calls it deleted**, because every one of them called `MarkChanged` by hand.
+
+**When the bug is "nothing triggers this", a check that pulls the trigger itself proves
+nothing.** It tests the mechanism and is silent about the wiring, which is the half that was
+broken. The check that earned its place is the one that changes a member's payload, fires the
+database's own notification, and waits — touching nothing belonging to guild share at all. It
+is the only one of the seven that fails when the watcher is removed.
+
+The same shape appeared twice more the same evening, in `Refresh` and in the *Update now*
+button: a mechanism that works, reached by nobody. Worth asking of any fix that adds a
+function — **who calls this, and is that in the check?**
+
