@@ -16,6 +16,16 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Fixed
+
+- **The member list you pick from is no longer see-through.** The panel underneath showed
+  through it, so a character's name and a recipe's name were drawn on top of each other and
+  neither could be read.
+- **Members shared by a linked family are now listed under the realm they are on**, not in one
+  undivided run of names. A family with thirty characters across three realms was impossible to
+  read, and two characters with the same name on different realms could not be told apart.
+- **Each heading in that list has room above it**, so a section begins instead of continuing.
+
 ## 1.0.0 — 2026-08-29
 
 Family records what each of your characters owns and knows, and shows it to you while you are

@@ -823,14 +823,23 @@ function UI:EveryMember(keep)
 	for _, member in ipairs(Family.Wide:BorrowedMembers()) do
 		local meta = member.meta or {}
 		if not keep or keep(meta, member.borrowedKey) then
+			-- Under the family that shared them AND the realm they are on. Whose they
+			-- are is the fact that decides what this panel can say about them, so it
+			-- leads; but §6 asks for them "as a sub-section of the realm they are on,
+			-- under the family they belong to", and a family with thirty members spread
+			-- over three realms was one undivided run of names without it.
+			--
+			-- The realm rides on the end of the localised sentence rather than inside
+			-- it, so that adding it costs no translator anything.
+			local realm = meta.realm or "?"
+			local where = meta.faction and (realm .. " " .. meta.faction) or realm
+
 			theirs[#theirs + 1] = {
 				key = member.borrowedKey,
 				meta = meta,
-				-- Under the family that shared them rather than under their realm.
-				-- Their realm is a fact about them; whose they are is the fact that
-				-- decides what this panel can and cannot say (§6).
 				group = string.format(L["|cffc79fefshared by %s|r"],
-					tostring(member.familyName)),
+					tostring(member.familyName))
+					.. "  |cff888888" .. where .. "|r",
 			}
 		end
 	end

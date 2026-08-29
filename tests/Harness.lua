@@ -191,15 +191,30 @@ function frameMethods:CreateFontString()
 	fs.__parent = self
 	return fs
 end
+-- Textures are kept on the frame that made them, and remember the colour they were filled
+-- with. A texture path cannot be checked here and is not checked anywhere - the client echoes
+-- back whatever path it was handed - but "is there something opaque behind this list" is a
+-- question about geometry and alpha, and it is one worth being able to ask: the member picker
+-- shipped for months with the panel underneath reading straight through it.
 function frameMethods:CreateTexture()
 	local fs = newFontString()
 	fs.__parent = self
+	fs.SetColorTexture = function(texture, r, g, b, a)
+		texture.__fill = { r = r, g = g, b = b, a = a }
+	end
+	fs.SetAllPoints = function(texture) texture.__allPoints = true end
+	self.__textures = self.__textures or {}
+	self.__textures[#self.__textures + 1] = fs
 	return fs
 end
 -- Records what it is given, because the panels now size their own buttons and a stub that
 -- answers a constant cannot be asked whether they did. Anything that never sets a width
 -- still gets the old answer, which is what the scroll frames and lists rely on.
 function frameMethods:SetWidth(w) self.__width = w end
+-- Recorded but not answered back: GetHeight stays the constant the scroll frames rely on.
+-- What this is for is asking a list how tall it made itself, which is the only way to tell
+-- from outside whether it left room between its sections or packed them flush.
+function frameMethods:SetHeight(h) self.__height = h end
 function frameMethods:GetWidth() return self.__width or 800 end
 function frameMethods:GetHeight() return 500 end
 function frameMethods:SetEnabled(v) self.__enabled = v end
@@ -3962,6 +3977,35 @@ check("the shared list exists once opened", list ~= nil)
 if list then
 	check("and is showing", list:IsShown() == true)
 
+	-- The list floats over whichever panel opened it. The bordered template draws an edge
+	-- and nothing solid behind it, so the professions panel read straight through the names
+	-- and neither could be made out. Geometry and alpha, which are checkable; what the
+	-- texture would actually paint is not, here or anywhere.
+	local fill
+	for _, texture in ipairs(list.__textures or {}) do
+		if texture.__allPoints and texture.__fill
+			and (texture.__fill.a or 0) >= 0.9 then
+			fill = texture
+		end
+	end
+	check("and is drawn on something opaque, so the panel beneath does not read through",
+		fill ~= nil)
+
+	-- Every row was one ROW tall including the headings, so a heading sat flush against the
+	-- last name above it and "shared by ..." read as one more member with an odd name. The
+	-- list is taller than its rows exactly when it has left air above its headings.
+	local shownRows, headings = 0, 0
+	for _, row in ipairs(list.rows or {}) do
+		if row:IsShown() then
+			shownRows = shownRows + 1
+			if row.__enabled == false then headings = headings + 1 end
+		end
+	end
+	check("with more than one section on screen", headings > 1, tostring(headings))
+	check("and air above each heading rather than rows packed flush",
+		(list.list.__height or 0) > shownRows * 16,
+		tostring(list.list.__height) .. " for " .. tostring(shownRows) .. " rows")
+
 	local okFilter = pcall(function()
 		list.search:SetText("oth")
 		list:Rebuild()
@@ -5413,8 +5457,51 @@ do
 
 			check("but a panel about one member can still be pointed at them",
 				offered(Family.UI:EveryMember()) ~= nil)
-			check("and says whose they are rather than filing them under a realm",
-				(offered(Family.UI:EveryMember()) or {}).group ~= nil)
+			-- Against the link's own name rather than a literal, so that renaming the
+			-- fixture cannot leave this check quietly passing against nothing.
+			local theirName = select(2, next(Family.Wide:Links())).name
+			check("and says whose they are",
+				type(theirName) == "string" and theirName ~= ""
+					and ((offered(Family.UI:EveryMember()) or {}).group or ""):find(
+						theirName, 1, true) ~= nil,
+				tostring(theirName))
+
+			-- §6 asks for a borrowed member "as a sub-section of the realm they are on,
+			-- under the family they belong to". Whose they are used to be the whole of
+			-- the heading, so a family with members spread over three realms arrived as
+			-- one undivided run of names and the picker could not say which of two
+			-- identically named characters was which.
+			check("and the realm they are on, which the heading used to leave out",
+				((offered(Family.UI:EveryMember()) or {}).group or ""):find(
+					"Fire Maw", 1, true) ~= nil)
+
+			-- Two realms have to make two headings, which is the whole point and is not
+			-- provable from a fixture where everybody shares one realm. Added here and
+			-- taken away again rather than put in the shared fixture, where it would
+			-- quietly change every count the other checks make about this link.
+			do
+				local id, link = next(Family.Wide:Links())
+				link.members["Faraway-Earthshaker"] = {
+					meta = { name = "Faraway", realm = "Earthshaker",
+						classFile = "MAGE", level = 12 },
+				}
+
+				local awayKey = Family.Wide:BorrowedKey(id, "Faraway-Earthshaker")
+				local here, away
+				for _, member in ipairs(Family.UI:EveryMember()) do
+					if member.key == guestKey then here = member.group end
+					if member.key == awayKey then away = member.group end
+				end
+
+				check("two realms from one family are two headings, not one",
+					here ~= nil and away ~= nil and here ~= away,
+					tostring(here) .. " / " .. tostring(away))
+				check("and each heading names its own realm",
+					(away or ""):find("Earthshaker", 1, true) ~= nil
+						and (away or ""):find("Fire Maw", 1, true) == nil)
+
+				link.members["Faraway-Earthshaker"] = nil
+			end
 			check("and the filtered lists keep them where they qualify",
 				offered(Family.UI:EveryMember(function(meta)
 					return meta.skills and next(meta.skills) and true or false

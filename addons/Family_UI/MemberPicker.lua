@@ -25,6 +25,11 @@ local ROW = 16
 local LIST_HEIGHT = 260
 local LIST_WIDTH = 220
 
+-- Air above a heading, so that a section starts rather than merely continues. Every row was
+-- the same height including the headings, which put "shared by ..." hard against the last
+-- name of the realm above it and read as one more member with a strange name.
+local HEADING_GAP = 6
+
 --------------------------------------------------------------------------------------------
 -- The popup, of which there is exactly one, reused by whichever picker opened it
 --
@@ -44,6 +49,19 @@ local function buildPopup()
 	popup:SetFrameStrata("FULLSCREEN_DIALOG")
 	popup:EnableMouse(true)
 	popup:Hide()
+
+	-- The bordered template draws an edge and, on these clients, nothing solid behind it:
+	-- the panel underneath read straight through the list, so a member's name sat on top of
+	-- a recipe's and neither could be made out. This is an opaque fill of our own rather
+	-- than a reliance on whatever the template happens to paint, because what a template
+	-- paints differs between these clients and is the one thing here that cannot be probed -
+	-- the client echoes back whatever texture path it was handed, whether or not it drew it.
+	--
+	-- Behind everything else in the frame: BACKGROUND layer at the lowest sub-level, so the
+	-- rows' own hover highlight still shows over it.
+	local fill = popup:CreateTexture(nil, "BACKGROUND", nil, -8)
+	fill:SetAllPoints()
+	fill:SetColorTexture(0, 0, 0, 0.95)
 
 	local search = CreateFrame("EditBox", nil, popup, "InputBoxTemplate")
 	search:SetPoint("TOPLEFT", 12, -10)
@@ -157,7 +175,11 @@ local function buildPopup()
 			return row
 		end
 
-		for _, realm in ipairs(realms) do
+		for index, realm in ipairs(realms) do
+			-- Above every heading but the first, which has the search box above it and
+			-- needs no separating from anything.
+			if index > 1 then y = y + HEADING_GAP end
+
 			local heading = nextRow()
 			heading.text:SetText("|cff8888ff" .. realm .. "|r")
 			heading:SetScript("OnClick", nil)
