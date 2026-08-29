@@ -628,6 +628,7 @@ Family.locales.esES = {
 	["|cffffd700can learn it|r"] = "|cffffd700puede aprenderlo|r",
 	["|cff66bbffFamily crafters|r"] = "|cff66bbffArtesanos de la familia|r",
 	["|cff66bbffGuild crafters|r"] = "|cff66bbffArtesanos de la hermandad|r",
+	["|cff66bbffguild|r |cff888888%s|r"] = "|cff66bbffhermandad|r |cff888888%s|r",
 	["|cff888888and %d more|r"] = "|cff888888y %d más|r",
 	["|cff66bbffFamily possessions|r"] = "|cff66bbffPosesiones de la familia|r",
 

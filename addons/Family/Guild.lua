@@ -646,6 +646,13 @@ function Guild:ForgetLeft()
 	return dropped
 end
 
+-- Every recipe list we hold for a guild, for a caller that means to walk the lot. The search
+-- is the only one: everything else asks about one thing and uses CraftersOf below.
+function Guild:AllRecipes(guildKey)
+	if not guildKey then return {} end
+	return (store().recipes[guildKey]) or {}
+end
+
 -- Who in this guild can make this, found by identifier and never by name (§2.1).
 --
 -- Both ids are looked at, because both were sent: the spell is the pattern and the item is

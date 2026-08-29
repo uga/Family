@@ -117,6 +117,16 @@ Per client: **Era**, **Anniversary**, **Mists**.
       else in the guild.
 - [ ] A guildmate on an **older Family** still exchanges gear and talents with you, and simply
       shows no professions. Note their version in the row if you have one to test against.
+- [ ] **Hover something one of their shared professions can make.** A *Guild crafters* block
+      appears under your own family's, naming the player and the character of theirs that can
+      make it. It works on the crafted item, not only on the pattern.
+- [ ] Search that recipe's name in **Professions / Whole family**. The row carries a *guild*
+      group beside your own crafters, or is a row of its own if nobody at home knows it.
+- [ ] **On a client set to another language**, the same search finds the same recipe. Only
+      identifiers crossed, so the name comes from your own client — this is the one line that
+      proves it end to end, and the languages used go in the row.
+- [ ] Untick that profession on their side. Within a minute, and with neither of you pressing
+      *Update now*, the recipe stops being attributed to them here.
 
 ### Shared professions — the grid, which needs nobody but you
 

@@ -7224,6 +7224,87 @@ print("guild share")
 			Family.Guild:SetEnabled(true)
 		end
 
+		-- The recipe search, which is the other place the question gets asked (§7.1)
+		--
+		-- **And the check the whole of §2.1 is for.** Nothing that arrived carried a word:
+		-- what crossed was spell 25128 and nothing else, and the name it is searched by comes
+		-- from *this* client's own tables. A list recorded on a French client is found by
+		-- somebody typing in German, and neither end ever held a word the other could read.
+		do
+			advance(30)
+			sent = {}
+			Family.Comm:Send("grec", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw", rschema = 1,
+				member = "Nervina-FireMaw", line = smith,
+				spells = { 25128 }, items = { 0 },
+				missing = 0, fingerprint = 555, seen = time() - 60,
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+
+			-- A second character of the same player who knows it too. One guildmate to
+			-- whisper, not two: the whole premise is that Faraway and Nervina are one
+			-- person, and the only thing that says so is that one client sent both.
+			advance(30)
+			sent = {}
+			Family.Comm:Send("grec", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw", rschema = 1,
+				member = "Faraway-FireMaw", line = smith,
+				spells = { 25128 }, items = { 0 },
+				missing = 0, fingerprint = 556, seen = time() - 60,
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+
+			local hits = Family.Recipes:Search("wizard oil")
+			local row
+			for _, found in ipairs(hits) do
+				if found.spellID == 25128 then row = found end
+			end
+
+			check("a guild recipe is found by the name this client gives its id", row ~= nil,
+				tostring(#hits) .. " rows")
+			check("and the guildmate is named on it, as a person",
+				row and row.guild and row.guild[1]
+					and row.guild[1].player:find("Faraway", 1, true) ~= nil,
+				row and row.guild and row.guild[1]
+					and tostring(row.guild[1].player) or "nobody")
+			check("with nothing of that name recorded in the family",
+				row and #row.members == 0, row and tostring(#row.members) or "no row")
+			check("and two characters of theirs who know it are one person to whisper",
+				row and #row.guild == 1, row and tostring(#row.guild) or "no row")
+
+			-- Off is off here too, and it has to be checked separately: this reads out of
+			-- what was collected rather than off the wire, so the switch is the only thing
+			-- stopping it.
+			Family.Guild:SetEnabled(false)
+			local quiet = Family.Recipes:Search("wizard oil")
+			local stillFound = false
+			for _, found in ipairs(quiet) do
+				if found.spellID == 25128 then stillFound = true end
+			end
+			check("and the search says nothing about the guild once it is switched off",
+				not stillFound)
+			Family.Guild:SetEnabled(true)
+
+			-- Put back the list the fingerprint checks below are written about. The block
+			-- above deliberately replaced it, and a check that depends on what the block
+			-- before it left behind passes or fails according to the order of the file.
+			advance(30)
+			sent = {}
+			Family.Comm:Send("grec", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw", rschema = 1,
+				member = "Faraway-FireMaw", line = smith,
+				spells = { 2661, 678 }, items = { 60001, 0 },
+				missing = 0, fingerprint = 4242, seen = time() - 400,
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+		end
+
 		check("the same list announced again is not asked for again",
 			theyAnnounce(2, 4242) == 0, table.concat(asked, ", "))
 		check("but a changed one is", theyAnnounce(3, 9999) == 1, table.concat(asked, ", "))

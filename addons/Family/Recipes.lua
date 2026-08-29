@@ -105,6 +105,104 @@ local function teaches(itemName, recipeName)
 	return itemName:sub(-#recipeName - 1, -#recipeName - 1):match("[%w]") == nil
 end
 
+-- The same question asked of the guild (§7.1), as a second source on the same rows rather
+-- than a second search on a second screen. One box, one question, two answers.
+--
+-- **Guild lists hold identifiers and not one word**, so a name has to be found for each id
+-- before it can be matched against what somebody typed. That is the point rather than the
+-- price: the name comes from *this* client, so a list recorded on a French client is found by
+-- somebody typing German, and neither end has ever held a word the other could read. Nothing
+-- else in Family shows what §2.1 buys quite as plainly.
+--
+-- Bounded, because this runs on every keystroke and a guild of Family users can hold some
+-- thousands of ids. The ceiling is far above a real guild and exists so that a client sending
+-- something absurd cannot make the search box stutter.
+local GUILD_CEILING = 20000
+
+local function guildCrafters(byName, order, needle, limit)
+	local Guild = Family.Guild
+	if not (Guild and Guild:Enabled()) then return end
+
+	local guildKey = Guild:Current()
+	if not guildKey then return end
+
+	local known, looked = Guild:Known(guildKey), 0
+
+	for memberKey, perLine in pairs(Guild:AllRecipes(guildKey)) do
+		local entry = known[memberKey]
+		local meta = (entry or {}).meta or {}
+
+		for line, list in pairs(perLine) do
+			for index, spellID in ipairs(list.spells or {}) do
+				looked = looked + 1
+				if looked > GUILD_CEILING then return end
+
+				local itemID = (list.items or {})[index]
+
+				-- What this client calls it. The item is preferred where there is one,
+				-- because the thing a player types is usually the thing being made
+				-- rather than the spell that makes it.
+				local name = (itemID and itemID ~= 0
+					and Family.Names:CachedItem(itemID)) or Family.Names:Spell(spellID)
+
+				if name and name:lower():find(needle, 1, true) then
+					-- Keyed exactly as the family's rows are, so a recipe somebody at
+					-- home and somebody in the guild both know is one row carrying
+					-- both answers rather than two rows saying half each.
+					local id = "spell:" .. spellID
+
+					if not byName[id] and #order < limit then
+						byName[id] = {
+							name = name,
+							id = spellID,
+							profession = line,
+							spellID = spellID,
+							itemID = (itemID ~= 0) and itemID or nil,
+							members = {},
+							guild = {},
+						}
+						order[#order + 1] = byName[id]
+					end
+
+					local row = byName[id]
+					if row then
+						row.guild = row.guild or {}
+
+						-- A person, not a character. Two of their alts knowing the
+						-- same recipe is one guildmate to whisper, not two.
+						local player = tostring(list.from or entry and entry.from or "?")
+						local seen = false
+						for _, who in ipairs(row.guild) do
+							if who.player == player then seen = true end
+						end
+
+						if not seen then
+							local age = list.at
+							if list.seen and list.seen < age then age = list.seen end
+
+							row.guild[#row.guild + 1] = {
+								player = player,
+								key = memberKey,
+								name = meta.name or memberKey,
+								classFile = meta.classFile,
+								at = age,
+							}
+						end
+					end
+				end
+			end
+		end
+	end
+
+	for _, row in ipairs(order) do
+		if row.guild then
+			table.sort(row.guild, function(a, b)
+				return tostring(a.player) < tostring(b.player)
+			end)
+		end
+	end
+end
+
 -- Every recipe anybody in the family knows whose name matches, and who knows it.
 --
 -- This reads payloads, unlike most things - there is no index of recipes and building one
@@ -179,13 +277,20 @@ function Recipes:Search(needle, limit)
 		end
 	end
 
+	-- The guild's answer onto the same rows, and rows of its own for anything only a
+	-- guildmate knows - which is the case the whole feature exists for.
+	guildCrafters(byName, order, needle, limit)
+
 	for _, found in ipairs(order) do
 		table.sort(found.members, function(a, b) return a.name < b.name end)
 	end
 
 	table.sort(order, function(a, b)
 		if a.name ~= b.name then return a.name < b.name end
-		return a.profession < b.profession
+		-- Two professions can hold the same word, and a guild row's profession is a skill
+		-- line while an unidentified family row's is the word the client used. Compared as
+		-- strings so that a number never meets a word in a comparison the sort cannot make.
+		return tostring(a.profession) < tostring(b.profession)
 	end)
 
 	while #order > limit do table.remove(order) end

@@ -628,6 +628,7 @@ Family.locales.ruRU = {
 	["|cffffd700can learn it|r"] = "|cffffd700может выучить|r",
 	["|cff66bbffFamily crafters|r"] = "|cff66bbffРемесленники семьи|r",
 	["|cff66bbffGuild crafters|r"] = "|cff66bbffРемесленники гильдии|r",
+	["|cff66bbffguild|r |cff888888%s|r"] = "|cff66bbffгильдия|r |cff888888%s|r",
 	["|cff888888and %d more|r"] = "|cff888888и ещё %d|r",
 	["|cff66bbffFamily possessions|r"] = "|cff66bbffИмущество семьи|r",
 

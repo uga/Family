@@ -41,6 +41,26 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **"Which guildie can craft this?" now has an answer.** A profession you share with the guild
+  carries what it can make, and a guildmate running Family sees it in two places: on the
+  item's own tooltip, under the crafters from your own family, and in the recipe search on the
+  Professions panel, as a second group beside your own. One box, one question, two sources.
+
+  The answer names the **player**, with the character of theirs that can make it beside them —
+  that is who you whisper. Two of their characters knowing the same thing is one guildmate,
+  not two.
+
+  Nothing but identifiers crosses, so a recipe list read on a French client is found by
+  somebody typing German, and neither of you has ever held a word the other could read. A
+  recipe your client gives no identifier for is not shared, and the panel says how many were
+  left out rather than implying the list is complete.
+
+  It is carried once. Each shared profession sends how many recipes it has and a fingerprint
+  of them, and the list itself is asked for only when that differs from what the other end
+  already holds — so a settled guild costs nothing after the day everybody met. Untick a
+  profession and the list goes with it, on their side as well as yours, without either of you
+  pressing anything.
+
 - **Professions recorded before Family kept track of them by identity can now be shared.**
   A character last played a while ago had its professions filed under their names, and the grid
   would not offer any of them — it said the character had no professions at all, while the line

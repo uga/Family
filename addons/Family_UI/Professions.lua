@@ -627,8 +627,38 @@ local function build(frame)
 						and string.format("%s |cff888888%d|r", who.label, who.rank)
 						or who.label
 				end
+
+				-- The guild's answer as a second group on the same row, labelled as
+				-- theirs (§7.1). One box, one question, two sources - and they are kept
+				-- apart because they are two different kinds of thing: your own
+				-- characters are somebody to log into and a guildmate is somebody to
+				-- whisper.
+				--
+				-- People, not characters. A guild record is keyed by whoever sent it, so
+				-- what is named is the player.
+				local guild = {}
+				for _, who in ipairs(recipe.guild or {}) do
+					local player = tostring(who.player or "?")
+					guild[#guild + 1] = player:match("^([^%-]+)") or player
+				end
+
+				local note = table.concat(names, ", ")
+				if #guild > 0 then
+					-- Capped, because this line does not wrap and a guild of twenty
+					-- Family users would push the recipe's own name off the row.
+					local shown = {}
+					for index = 1, math.min(3, #guild) do shown[index] = guild[index] end
+					if #guild > 3 then
+						shown[#shown + 1] = string.format(L["+%d"], #guild - 3)
+					end
+
+					local block = string.format(L["|cff66bbffguild|r |cff888888%s|r"],
+						table.concat(shown, ", "))
+					note = (note ~= "" and (note .. "   ") or "") .. block
+				end
+
 				r.note:SetWidth(250)
-				r.note:SetText(table.concat(names, ", "))
+				r.note:SetText(note)
 			end
 
 			for index = used + 1, #rows do rows[index]:Hide() end
