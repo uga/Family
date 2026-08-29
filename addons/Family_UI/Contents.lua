@@ -35,6 +35,12 @@ local BACKPACK = 0
 local BANK = _G.BANK_CONTAINER or -1
 local KEYRING = _G.KEYRING_CONTAINER or -2
 
+-- The first container id the bank's own bags use. The bank window itself is BANK, and the
+-- bags bought to go in it start above the carried ones - so the first bank bag is container
+-- five and is the player's "bank bag 1". Numbering them by their container id told somebody
+-- their first bank bag was their fifth.
+local FIRST_BANK_BAG = (_G.NUM_BAG_SLOTS or 4) + 1
+
 --------------------------------------------------------------------------------------------
 
 local function membersWithContents()
@@ -95,7 +101,10 @@ local function containerName(entry, bag, where)
 		if name then return name end
 	end
 
-	return string.format(where == "bank" and L["Bank bag %d"] or L["Bag %d"], bag)
+	if where == "bank" then
+		return string.format(L["Bank bag %d"], bag - FIRST_BANK_BAG + 1)
+	end
+	return string.format(L["Bag %d"], bag)
 end
 
 --------------------------------------------------------------------------------------------

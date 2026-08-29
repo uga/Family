@@ -3139,6 +3139,36 @@ end
 check("the possessions panel draws the mail as a container of its own",
 	bagTooltip("Mail") ~= nil)
 check("a bag says which bag it is when asked", bagTooltip("Backpack") ~= nil)
+
+-- A bank bag the client has no name for is numbered as the player numbers them, not by the
+-- container id it happens to have. The bank's own window is container -1 and its bags start
+-- at five, so the first bank bag was being called the fifth - and a player counting bank bags
+-- in this panel has already had to work out that the first block is the bank itself.
+do
+	-- The panel draws the member being played, so this borrows their bank and gives it back.
+	local who = Family:CurrentMember()
+	local payload = Family.Database:Payload(who) or {}
+	local held = payload.bank
+
+	payload.bank = { seen = time(), containers = {
+		[-1] = { size = 28, free = 28, slots = {} },
+		-- No itemID on either, so the name has to be made rather than looked up.
+		[5] = { size = 16, free = 16, slots = {} },
+		[6] = { size = 16, free = 16, slots = {} },
+	} }
+	Family.Database:SetPayload(who, payload)
+
+	Family.UI:Show()
+	Family.UI:ShowTab("contents")
+	Family.UI:Refresh()
+
+	check("the first bank bag is called the first, not the fifth",
+		bagTooltip("Bank bag 1") ~= nil, "it is numbered by its container id")
+	check("and the one after it the second", bagTooltip("Bank bag 2") ~= nil)
+
+	payload.bank = held
+	Family.Database:SetPayload(who, payload)
+end
 check("and how full it is", bagTooltip("14 of 16 free") ~= nil)
 
 -- §3 has nowhere else left to be said. A quiver's free slots are not room for anything else,

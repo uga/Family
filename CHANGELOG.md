@@ -10,6 +10,12 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Fixed
+
+- **A bank bag Family has no name for is numbered the way you number them.** The bank's own
+  window is container −1 and the bags bought for it start at five, so an unnamed first bank bag
+  was called *Bank bag 5*.
+
 ## 1.0.0-beta.3 — 2026-08-28
 
 ### Added
