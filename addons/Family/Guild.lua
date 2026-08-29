@@ -16,20 +16,26 @@
 -- trip, across characters who are not standing in front of you and at hours when neither of
 -- you is online.
 --
--- **That is the whole of the argument for it having no consent grid**, and it is worth stating
--- rather than leaving as an omission, because §6 spends a file insisting on the opposite. A
--- dialogue in front of a fact the game gives away for free does not protect anybody; it
--- teaches players to click through dialogues, which costs §6 its grid. So: no grid, one
--- switch, and the switch works in both directions at once - a client with this off neither
--- asks nor answers.
+-- **That is the whole of the argument for the list above having no consent grid**, and it is
+-- worth stating rather than leaving as an omission, because §6 spends a file insisting on the
+-- opposite. A dialogue in front of a fact the game gives away for free does not protect
+-- anybody; it teaches players to click through dialogues, which costs §6 its grid. So: no grid
+-- for that list, one switch, and the switch works in both directions at once - a client with
+-- this off neither asks nor answers.
+--
+-- **One thing is offered beyond that list, and it is the exception that has a grid**:
+-- professions (§7.1). Inspect shows a guildmate's gear and talents and shows nobody's recipe
+-- list, so the same argument that refuses a dialogue in front of the first demands one in
+-- front of the second. The grid is our characters by their professions, it starts empty, and
+-- nothing is offered until a box in it is ticked. It is not a second switch: guild share's
+-- switch is the transport, and an empty grid already says "nothing".
 --
 -- It still ships off. Not because consent needs it - the argument above stands - but because
 -- a first release that starts talking to a guild on somebody's behalf before they have asked
 -- is a poor introduction, whatever it is saying. The panel is there and the switch is on it.
 --
--- **Never** bags, bank, mail, quests, professions, money, auctions, reputations. Not "not
--- yet". Wanting a guildmate's bags is a perfectly reasonable thing to want, and it is a Wide
--- Family link.
+-- **Never** bags, bank, mail, quests, money, auctions, reputations. Not "not yet". Wanting a
+-- guildmate's bags is a perfectly reasonable thing to want, and it is a Wide Family link.
 --
 -- The two features know nothing about each other and neither implies the other. Two routes to
 -- the same fact would mean two places to look for it and two places to withdraw it, and the
@@ -69,6 +75,12 @@ local function store()
 
 	guild.known = guild.known or {}     -- guildKey -> memberKey -> what they sent
 	guild.users = guild.users or {}     -- guildKey -> bare name -> when we last heard them
+	guild.grants = guild.grants or {}   -- guildKey -> memberKey -> skill line -> true
+
+	-- The grid is created empty and stays empty until somebody ticks something, for the same
+	-- reason nothing is written for the switch above: a value written at creation is a
+	-- decision taken by whichever version happened to create the file, on behalf of a player
+	-- who was never asked.
 
 	return guild
 end
@@ -84,6 +96,82 @@ function Guild:SetEnabled(on)
 	store().enabled = on and true or false
 	Family.Database:Changed("guild")
 	return store().enabled
+end
+
+--------------------------------------------------------------------------------------------
+-- What is offered, one character and one profession at a time (§7.1)
+--------------------------------------------------------------------------------------------
+
+-- Whether one of our characters offers one of its professions to one guild.
+--
+-- **Absence is the answer.** Nothing is written for a box that has never been ticked, so a
+-- grid nobody has touched shares nothing and there is no default for a version to make
+-- permanent - exactly as Enabled() has it a few lines above.
+--
+-- Keyed by the guild as well as by the character and the profession, because that is what was
+-- agreed to: *this guild may see this*. A grant that followed its owner into the next guild
+-- would not be a grant anybody had made.
+function Guild:Shares(guildKey, memberKey, skillLine)
+	if not (guildKey and memberKey and skillLine) then return false end
+
+	local perMember = (store().grants[guildKey] or {})[memberKey]
+	return (perMember and perMember[skillLine]) and true or false
+end
+
+-- Whatever was just decided, told to the guild - once, a few seconds after the last box was
+-- ticked, rather than once per box.
+--
+-- **Prompt rather than at the next Update**, for the reason §6 gives and §7.1 repeats: the
+-- half of an exchange that takes something away must not wait for somebody to press a button.
+-- Nothing has to be sent to undo a grant - everything one player sends replaces everything
+-- held from that player, so the next offering simply no longer contains what was withdrawn.
+-- What has to happen is that a next offering happens at all.
+--
+-- Which is why this is an announcement marked as a change rather than a whisper each to
+-- however many people run Family here. One small message, on the channel §7 built for small
+-- messages, and everybody who hears it asks - including the ones whose traffic control would
+-- otherwise have decided that what they hold from us is recent enough to skip.
+local function offerChanged()
+	Family.Database:Changed("guild")
+
+	-- Family:After replaces a pending timer of the same name, so a player working down a grid
+	-- of eight professions puts one message on the channel and not eight.
+	Family:After(8, "guild.offer", function()
+		if not Guild:Enabled() then return end
+		if not Guild:Current() then return end
+		Guild:AnnounceChange()
+	end)
+end
+
+function Guild:SetShare(guildKey, memberKey, skillLine, on)
+	if not (guildKey and memberKey and skillLine) then return false end
+
+	local grants = store().grants
+	grants[guildKey] = grants[guildKey] or {}
+	grants[guildKey][memberKey] = grants[guildKey][memberKey] or {}
+	grants[guildKey][memberKey][skillLine] = on and true or nil
+
+	-- Emptied rather than left as a table of nothing. A grid that has been unticked should
+	-- leave nothing behind on disk, and "has this character granted anything" should be one
+	-- next() rather than a walk over keys that are all nil.
+	if not next(grants[guildKey][memberKey]) then grants[guildKey][memberKey] = nil end
+	if not next(grants[guildKey]) then grants[guildKey] = nil end
+
+	offerChanged()
+	return true
+end
+
+-- How much of one guild's grid is ticked, for a panel that wants to say so without walking it.
+function Guild:CountShared(guildKey)
+	local ticks, members = 0, 0
+
+	for _, perMember in pairs((store().grants[guildKey]) or {}) do
+		local any = false
+		for _ in pairs(perMember) do ticks = ticks + 1; any = true end
+		if any then members = members + 1 end
+	end
+
+	return ticks, members
 end
 
 --------------------------------------------------------------------------------------------
@@ -161,6 +249,39 @@ local function talentDigest(talents)
 	return out
 end
 
+-- The professions one of our characters offers to this guild, with their ranks (§7.1).
+--
+-- Read from the record as it stands now, like everything else in the offering: a rank that
+-- went up this evening goes out this evening, and a profession that has been dropped stops
+-- being sent whether or not its box is still ticked.
+--
+-- **Identifiers, never names** (§2.1). A profession this client's skill line table has no id
+-- for is filed under the word the client used, and a word is one language - so it cannot
+-- cross. The grid does not offer those and says how many it left out rather than appearing to
+-- share them; this is the other half of that promise, kept where the wire is.
+local function sharedProfessions(guildKey, memberKey, meta)
+	local out
+
+	for id, skill in pairs(meta.skills or {}) do
+		if type(id) == "number" and Guild:Shares(guildKey, memberKey, id) then
+			out = out or {}
+			out[#out + 1] = {
+				skillLine = id,
+				rank = tonumber(skill.rank) or 0,
+				maxRank = tonumber(skill.maxRank) or 0,
+			}
+		end
+	end
+
+	-- Sorted, so that two clients holding the same grant build the same list. Slice 2's
+	-- fingerprint is taken over a sorted list, and this is where that habit starts.
+	if out then
+		table.sort(out, function(a, b) return a.skillLine < b.skillLine end)
+	end
+
+	return out
+end
+
 -- Our own characters in that guild, in the shape they go over the wire.
 --
 -- Built now, from the records as they stand now, and never from what was sent last time -
@@ -193,6 +314,8 @@ function Guild:Offering()
 				},
 				equipment = payload.equipment,
 				talents = talentDigest(payload.talents),
+				-- Only what the grid says, and absent entirely when it says nothing.
+				professions = sharedProfessions(guildKey, key, meta),
 				-- When this side last looked, not when it was sent. A fact does not get
 				-- younger by being posted (§2.2).
 				seen = meta.lastSeen,
@@ -286,6 +409,7 @@ function Guild:CharactersOf(guildKey, playerName)
 		for memberKey, entry in pairs(self:Offering() or {}) do
 			out[#out + 1] = { key = memberKey, meta = entry.meta or {},
 				equipment = entry.equipment, talents = entry.talents,
+				professions = entry.professions,
 				seen = entry.seen, at = entry.seen, from = playerName, ours = true }
 		end
 
@@ -302,6 +426,7 @@ function Guild:CharactersOf(guildKey, playerName)
 		if bareName(entry.from) == bare then
 			out[#out + 1] = { key = memberKey, meta = entry.meta or {},
 				equipment = entry.equipment, talents = entry.talents,
+				professions = entry.professions,
 				seen = entry.seen, at = entry.at, from = entry.from }
 		end
 	end
@@ -323,11 +448,64 @@ function Guild:HeardFrom(guildKey, playerName)
 	return (store().users[guildKey] or {})[bare]
 end
 
+-- Everything about one guild: what it told us, who in it we have heard from, and what we
+-- offered it.
+--
+-- The grid goes with the rest deliberately. A grant said *this guild may see this*, and a
+-- guild we are no longer in is not the guild that was agreed to; rejoining it a year later
+-- should present an empty grid rather than quietly resume sharing with whoever is in it now.
 function Guild:Forget(guildKey)
 	local guild = store()
 	guild.known[guildKey] = nil
 	guild.users[guildKey] = nil
+	guild.grants[guildKey] = nil
 	Family.Database:Changed("guild")
+end
+
+-- Every guild we still hold something about, dropped unless one of our characters is still in
+-- it. **This is Forget's caller**, and until now it had none: leaving a guild stopped you
+-- *seeing* its records, because every panel looks them up by the guild being stood in, while
+-- the records themselves sat on disk waiting to come back stale on a rejoin.
+--
+-- Decided from our own records rather than from the roster, because a roster is only ever
+-- about the guild being stood in and can say nothing at all about the other one.
+--
+-- **Wrong in the safe direction on purpose.** A character's meta.guild is only refreshed when
+-- that character is played (Scanners/Identity.lua), so one who was kicked while logged out
+-- still reads as a member until their next login, and this keeps that guild a little too
+-- long. That is the direction to be wrong in: keeping costs a stale record the next login
+-- corrects, and dropping costs somebody the grid they ticked.
+function Guild:ForgetLeft()
+	local guild = store()
+
+	local ours = {}
+	local current = self:Current()
+	if current then ours[current] = true end
+
+	for _, entry in pairs(Family.Database:Members()) do
+		local meta = entry.meta or {}
+		local guildKey = self:Key(meta.guild, meta.realm)
+		if guildKey then ours[guildKey] = true end
+	end
+
+	local stale = {}
+	for _, held in ipairs { guild.known, guild.users, guild.grants } do
+		for guildKey in pairs(held) do
+			if not ours[guildKey] then stale[guildKey] = true end
+		end
+	end
+
+	local dropped = {}
+	for guildKey in pairs(stale) do dropped[#dropped + 1] = guildKey end
+	table.sort(dropped)
+
+	for _, guildKey in ipairs(dropped) do
+		Family:Debug("guild: dropping everything about %s - no character of ours is in it",
+			guildKey)
+		self:Forget(guildKey)
+	end
+
+	return dropped
 end
 
 --------------------------------------------------------------------------------------------
@@ -374,6 +552,23 @@ function Guild:Announce(why)
 
 	Family:Debug("guild: announcing (%s)", tostring(why or "login"))
 	return say("ghello", "GUILD", nil, {})
+end
+
+-- The same announcement, marked as saying that what we offer has changed.
+--
+-- The traffic control in onHello skips the exchange when what the other end holds from us is
+-- recent, which is right for a login and wrong for exactly this: a profession that has just
+-- been withdrawn is the one case where what they hold being recent is the problem rather than
+-- the reason to relax. So the mark, and one line in onHello that reads it.
+--
+-- A client too old to know the field ignores it and behaves as it always did. It has no
+-- professions to be stale about, so there is nothing for it to be wrong about either.
+function Guild:AnnounceChange()
+	local guildKey = self:Current()
+	if not guildKey then return false end
+
+	Family:Debug("guild: announcing that what we share has changed")
+	return say("ghello", "GUILD", nil, { changed = true })
 end
 
 -- Hello, said back to one person rather than to the guild.
@@ -493,7 +688,11 @@ local function onHello(_, text, sender)
 	-- Family: every one of those clients held recent data from them, decided there was
 	-- nothing to do, and sent nothing - and being heard from is the only way anybody knows
 	-- anybody runs this at all (§7).
-	local quiet = newest and (time() - newest) < STALE_AFTER
+	--
+	-- Except when they say outright that what they offer has changed, which is the one case
+	-- where holding something recent is the problem: a withdrawn profession is undone by the
+	-- next offering arriving, and skipping the exchange is precisely what would stop it.
+	local quiet = (not body.changed) and newest and (time() - newest) < STALE_AFTER
 
 	-- A moment later, and not the same moment for everybody: a guild logging in together
 	-- would otherwise put every one of its clients on the channel at once. Both branches
@@ -520,6 +719,28 @@ local function onWant(_, text, sender)
 	noteUser(guildKey, sender)
 	Guild:SendTo(sender)
 	Family:Debug("guild: answered %s", tostring(sender))
+end
+
+-- What arrived, kept only in the shape it was promised in: a skill line id, a rank and a
+-- ceiling. Anything else is somebody else's client being wrong, and it is not written to our
+-- disk on their say-so - a name that arrived where an id was expected would be a word stored
+-- as an identity, which is the one mistake §2.1 exists to prevent.
+local function readProfessions(list)
+	if type(list) ~= "table" then return nil end
+
+	local out = {}
+	for _, entry in ipairs(list) do
+		if type(entry) == "table" and type(entry.skillLine) == "number" then
+			out[#out + 1] = {
+				skillLine = entry.skillLine,
+				rank = tonumber(entry.rank) or 0,
+				maxRank = tonumber(entry.maxRank) or 0,
+			}
+		end
+	end
+
+	if not next(out) then return nil end
+	return out
 end
 
 local function onData(_, text, sender)
@@ -555,6 +776,7 @@ local function onData(_, text, sender)
 	local arrived = 0
 	for memberKey, entry in pairs(body.characters or {}) do
 		if type(entry) == "table" and type(entry.meta) == "table" then
+			entry.professions = readProfessions(entry.professions)
 			entry.from = sender
 			entry.at = time()
 			guild.known[guildKey][memberKey] = entry
@@ -651,6 +873,11 @@ Family:OnDatabaseReady("guild", function()
 
 	Family:RegisterEvent("PLAYER_ENTERING_WORLD", "guild", function()
 		Family:After(ANNOUNCE_AFTER, "guild.hello", function()
+			-- Ahead of the switch, because a guild none of our characters is in any more
+			-- is not ours to keep whether or not we are talking to anybody. With the
+			-- feature off there is nothing held and this costs one empty loop.
+			Guild:ForgetLeft()
+
 			if not Guild:Enabled() then return end
 			if not Family.Codec:CanTalk() then
 				Family:Debug("guild: no serialisation libraries, so nothing can be shared")
@@ -664,6 +891,10 @@ Family:OnDatabaseReady("guild", function()
 	-- some seconds after the world has loaded as often as not.
 	Family:RegisterEvent("PLAYER_GUILD_UPDATE", "guild", function()
 		Family:After(5, "guild.rejoin", function()
+			-- The moment this is actually for: a guild left is a guild whose records and
+			-- whose grid stop being ours the same evening, rather than at the next login.
+			Guild:ForgetLeft()
+
 			if not Guild:Enabled() then return end
 			if Guild:Current() then Guild:Announce("guild changed") end
 		end)

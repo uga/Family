@@ -6494,6 +6494,309 @@ print("guild share")
 	check("including announcements from somebody who is not us",
 		Family.Guild.stats.answered > 0, tostring(Family.Guild.stats.answered))
 
+	------------------------------------------------------------------------------------
+	-- Shared professions, slice 1: ranks (§7.1)
+	--
+	-- The one thing §7 carries that Inspect does not give away for free, and therefore the
+	-- one thing in it with a grid in front of it. Everything below is about that grid meaning
+	-- what it says: nothing is offered until a box is ticked, unticking one takes it back out
+	-- of what would be sent, and what crosses is an identifier rather than a word.
+	------------------------------------------------------------------------------------
+
+	do
+		local smith = Family:SkillLineFor("Blacksmithing")
+		local mining = Family:SkillLineFor("Mining")
+		check("the skill line table knows the professions this section is written about",
+			type(smith) == "number" and type(mining) == "number",
+			tostring(smith) .. " / " .. tostring(mining))
+
+		-- Characters of our own, made here rather than borrowed from the sections above, so
+		-- that what this block asserts does not depend on which members survived them.
+		Family.Database:SetMeta("Smith-FireMaw", { name = "Smith", realm = "Fire Maw",
+			guild = guildName, classFile = "WARRIOR", level = 70, skills = {
+				[smith] = { rank = 300, maxRank = 300, name = "Blacksmithing" },
+				[mining] = { rank = 275, maxRank = 300, name = "Mining" },
+				-- A profession from a client newer than the skill line table is filed
+				-- under the word that client used, and a word is one language. It can
+				-- never cross, and it is counted rather than dropped in silence.
+				["Cheesemaking"] = { rank = 12, maxRank = 75, name = "Cheesemaking" },
+			} })
+		Family.Database:SetMeta("Backup-FireMaw", { name = "Backup", realm = "Fire Maw",
+			guild = guildName, classFile = "MAGE", level = 60 })
+
+		-- The character being played is called Tester. It says so here because the block
+		-- above borrowed this client's identity to play the other end of the wire, and a
+		-- scan that ran while it was borrowed wrote the borrowed name onto our own record -
+		-- which makes IsOurs answer yes about the guildmate this section is about, and
+		-- CharactersOf then answers out of our own records instead of out of what arrived.
+		Family.Database:SetMeta(Family:CurrentMember(), { name = "Tester" })
+
+		check("a profession is not offered until it is ticked",
+			Family.Guild:Shares(guildKey, "Smith-FireMaw", smith) == false)
+		check("and nothing is written for a box nobody has touched",
+			(FamilyDB.guild.grants or {})[guildKey] == nil)
+		check("so what would be sent says nothing about professions",
+			(Family.Guild:Offering() or {})["Smith-FireMaw"].professions == nil)
+
+		Family.Guild:SetShare(guildKey, "Smith-FireMaw", smith, true)
+		check("ticking one records it",
+			Family.Guild:Shares(guildKey, "Smith-FireMaw", smith))
+		check("and records only it",
+			Family.Guild:Shares(guildKey, "Smith-FireMaw", mining) == false)
+
+		local offered = (Family.Guild:Offering() or {})["Smith-FireMaw"].professions
+		check("the ticked one crosses, with its rank and its ceiling",
+			offered and #offered == 1 and offered[1].skillLine == smith
+				and offered[1].rank == 300 and offered[1].maxRank == 300,
+			offered and tostring(offered[1] and offered[1].skillLine) or "nothing")
+		check("as an identifier and not as a word (§2.1)",
+			offered and offered[1].name == nil)
+
+		-- The grant is made to a guild. A character of ours who is not in it has nothing to
+		-- offer it, whatever any grid ever said.
+		Family.Database:SetMeta("Smith-FireMaw", { guild = "Somewhere Else" })
+		check("a character who is not in this guild is not offered to it",
+			(Family.Guild:Offering() or {})["Smith-FireMaw"] == nil)
+		Family.Database:SetMeta("Smith-FireMaw", { guild = guildName })
+
+		-- Prompt, because the half of an exchange that takes something away must not wait
+		-- for somebody to press Update now.
+		advance(10)
+		sent = {}
+		Family.Guild:SetShare(guildKey, "Smith-FireMaw", mining, true)
+		Family.Guild:SetShare(guildKey, "Smith-FireMaw", mining, false)
+		advance(10)
+
+		local announced = 0
+		for _, message in ipairs(sent) do
+			if message.channel == "GUILD" then announced = announced + 1 end
+		end
+		check("changing the grid tells the guild rather than waiting to be asked",
+			announced == 1, tostring(announced) .. " announcements")
+
+		-- Once, however many boxes were ticked. A player working down a grid of eight
+		-- professions is one decision to everybody else in the guild.
+		advance(10)
+		sent = {}
+		Family.Guild:SetShare(guildKey, "Smith-FireMaw", mining, true)
+		Family.Guild:SetShare(guildKey, "Smith-FireMaw", mining, false)
+		Family.Guild:SetShare(guildKey, "Smith-FireMaw", mining, true)
+		advance(10)
+
+		announced = 0
+		for _, message in ipairs(sent) do
+			if message.channel == "GUILD" then announced = announced + 1 end
+		end
+		check("and tells it once however many boxes were ticked",
+			announced == 1, tostring(announced) .. " announcements")
+
+		Family.Guild:SetShare(guildKey, "Smith-FireMaw", mining, false)
+
+		-- Unticking. Nothing has to be sent to undo a grant - what is sent next simply no
+		-- longer contains it - so this is the check that the next thing sent is right.
+		Family.Guild:SetShare(guildKey, "Smith-FireMaw", smith, false)
+		check("unticking takes it back out of what would be sent",
+			(Family.Guild:Offering() or {})["Smith-FireMaw"].professions == nil)
+		check("and leaves nothing behind on disk",
+			(FamilyDB.guild.grants or {})[guildKey] == nil)
+
+		Family.Guild:SetShare(guildKey, "Smith-FireMaw", smith, true)
+
+		------------------------------------------------------------------------------------
+		-- The grid, on the panel it governs
+		------------------------------------------------------------------------------------
+
+		local function labelled(needle)
+			for _, f in ipairs(fontStrings) do
+				local parent = type(f.__parent) == "table" and f.__parent or nil
+				if type(f.__text) == "string" and f.__text:find(needle, 1, true)
+					and parent and parent.label == f and parent.__shown ~= false then
+					return parent
+				end
+			end
+			return nil
+		end
+
+		Family.UI:Show()
+		Family.UI:ShowTab("guild")
+
+		check("the panel says what is shared and with whom",
+			visibleText("What you share with"))
+
+		local box = labelled("Blacksmithing")
+		check("with a box per character per profession", box ~= nil)
+		check("ticked where the grid says it is ticked", box and box.__checked == true)
+		check("and live while guild share is on", box and box.__enabled ~= false)
+
+		-- A profession this client has no id for is not offered, because it could not cross
+		-- if it were - and it is counted rather than quietly left off the grid.
+		check("a profession with no identifier is not offered", labelled("Cheesemaking") == nil)
+		check("and is counted rather than left off in silence", visibleText("1 left out"))
+
+		-- Off means the grid looks inert as well as being inert. A live-looking grid that
+		-- recorded grants before the transport existed would be the one way this feature
+		-- could undo a default it has no business touching.
+		Family.Guild:SetEnabled(false)
+		Family.UI:Refresh()
+
+		local greyed = labelled("Blacksmithing")
+		check("switched off, the grid is greyed rather than merely inert",
+			greyed and greyed.__enabled == false,
+			tostring(greyed and greyed.__enabled))
+		check("and it still shows what would be offered, and where the switch is",
+			visibleText("The switch is in Options"))
+
+		Family.Guild:SetEnabled(true)
+		Family.UI:Refresh()
+
+		------------------------------------------------------------------------------------
+		-- What arrives
+		------------------------------------------------------------------------------------
+
+		-- Anything already on a timer out of the way first, so what is delivered below is
+		-- this message and not an announcement an earlier check left pending.
+		advance(10)
+		sent = {}
+		Family.Comm:Send("gdata", Family.Codec:ToWire {
+			schema = 1, version = Family.version, guild = guildName,
+			character = "Faraway-FireMaw",
+			characters = { ["Faraway-FireMaw"] = {
+				meta = { name = "Faraway", realm = "Fire Maw", classFile = "WARRIOR",
+					level = 70, guild = guildName },
+				professions = {
+					{ skillLine = smith, rank = 285, maxRank = 300 },
+					-- Somebody else's client being wrong, or being older than §2.1.
+					-- A word arriving where an identifier was promised is the one
+					-- mistake that must not reach our disk.
+					{ skillLine = "Blacksmithing", rank = 300, maxRank = 300 },
+				},
+			} },
+		}, "WHISPER", "Tester")
+		-- Comm sends two chunks every fifth of a second, so a message is not on the wire
+		-- the instant it is handed over. Delivering without this delivers nothing.
+		advance(3)
+		deliver("Faraway")
+
+		local held = Family.Guild:CharactersOf(guildKey, "Faraway")
+		local theirs2
+		for _, entry in ipairs(held) do
+			if entry.key == "Faraway-FireMaw" then theirs2 = entry end
+		end
+
+		check("a rank crosses and is read back", theirs2 and theirs2.professions
+			and theirs2.professions[1] and theirs2.professions[1].rank == 285,
+			theirs2 and tostring(theirs2.professions
+				and theirs2.professions[1] and theirs2.professions[1].rank) or "nobody")
+		check("and a profession that arrived as a word is not written to disk",
+			theirs2 and theirs2.professions and #theirs2.professions == 1,
+			theirs2 and tostring(#(theirs2.professions or {})) or "nobody")
+
+		-- The traffic control skips the whole exchange when what we hold from somebody is
+		-- recent. That is right for a login and wrong for exactly this: a grid that has just
+		-- changed is the one case where holding something recent is the problem rather than
+		-- the reason to relax, and a withdrawal that waits for the six hours to run out is
+		-- not a withdrawal.
+		--
+		-- Measured against the quiet case rather than against a number, because what a full
+		-- exchange comes to in chunks depends on how much gear the fixture is wearing.
+		local function helloFromFaraway(changed)
+			advance(10)
+			sent = {}
+			Family.Comm:Send("ghello", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw", changed = changed or nil,
+			}, "GUILD", nil)
+			advance(3)
+			deliver("Faraway")
+			sent = {}
+			advance(9)
+			return #sent
+		end
+
+		local quiet = helloFromFaraway(false)
+		local loud = helloFromFaraway(true)
+		check("a hello from somebody we already hold is still answered with a hello",
+			quiet > 0, tostring(quiet))
+		check("and one saying their grid has changed gets the exchange the skip avoids",
+			loud > quiet, tostring(loud) .. " against " .. tostring(quiet))
+
+		Family.UI:Refresh()
+
+		-- Rows on this panel and rows on every other one are the same kind of frame with
+		-- the same kind of name written on them, and fontStrings holds every font string the
+		-- harness has ever built. Scoped to the frame the grid's heading sits in, or the
+		-- first "Faraway" in the whole run gets clicked and it belongs to somebody else.
+		local function guildList()
+			for _, f in ipairs(fontStrings) do
+				local parent = type(f.__parent) == "table" and f.__parent or nil
+				if type(f.__text) == "string"
+					and f.__text:find("What you share with", 1, true)
+					and parent and parent.__shown ~= false then
+					return parent.__parent
+				end
+			end
+			return nil
+		end
+
+		local function clickRow(needle)
+			local within = guildList()
+			for _, f in ipairs(fontStrings) do
+				local parent = type(f.__parent) == "table" and f.__parent or nil
+				if type(f.__text) == "string" and f.__text:find(needle, 1, true)
+					and parent and within and parent.__parent == within
+					and parent.__scripts and parent.__scripts.OnClick then
+					parent.__scripts.OnClick(parent)
+					return true
+				end
+			end
+			return false
+		end
+
+		check("their row opens", clickRow("Faraway"))
+		-- 285 of 300, which is a rank and says nothing about any particular recipe. That
+		-- distinction is the whole of what slice 1 is allowed to claim.
+		check("and what they share is shown with its rank beside it", visibleText("285"))
+
+		------------------------------------------------------------------------------------
+		-- Leaving, which is what Forget is for and what nothing called it for
+		------------------------------------------------------------------------------------
+
+		check("we are holding something for this guild",
+			next(Family.Guild:Known(guildKey)) ~= nil)
+
+		local realGuildInfo = GetGuildInfo
+		GetGuildInfo = function() return "Somewhere Else", "Member", 3 end
+		Family.Database:SetMeta(Family:CurrentMember(), { guild = "Somewhere Else" })
+		Family.Database:SetMeta("Smith-FireMaw", { guild = "Somewhere Else" })
+
+		-- The half that matters more, and the reason this is decided from our own records
+		-- rather than from whichever guild is being stood in: a player with an alt in each
+		-- of two guilds is ordinary, and dropping the other one's records on a login would
+		-- be this feature eating a grid nobody withdrew.
+		Family.Guild:ForgetLeft()
+		check("a guild another of our characters is still in is not forgotten",
+			next(Family.Guild:Known(guildKey)) ~= nil)
+
+		Family.Database:SetMeta("Backup-FireMaw", { guild = "Somewhere Else" })
+
+		local dropped = Family.Guild:ForgetLeft()
+		check("a guild none of them is in any more is forgotten",
+			next(Family.Guild:Known(guildKey)) == nil, table.concat(dropped, ", "))
+		check("and so is who in it we had heard from",
+			Family.Guild:HeardFrom(guildKey, "Faraway") == nil)
+		-- The grid goes with it. A grant said *this guild may see this*, and rejoining a
+		-- year later should present an empty grid rather than resume sharing with whoever
+		-- is in it by then.
+		check("and so is the grid that was ticked for it",
+			Family.Guild:Shares(guildKey, "Smith-FireMaw", smith) == false)
+
+		GetGuildInfo = realGuildInfo
+		Family.Database:SetMeta(Family:CurrentMember(), { guild = guildName })
+		Family.Database:Forget("Smith-FireMaw")
+		Family.Database:Forget("Backup-FireMaw")
+		Family.Database:Forget("Faraway-FireMaw")
+	end
+
 	-- Off means off in both directions at once.
 	Family.Guild:SetEnabled(false)
 	sent = {}

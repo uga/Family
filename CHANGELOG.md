@@ -16,6 +16,26 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Added
+
+- **You can now show your guild what your characters can craft, one profession at a time.**
+  The Guild tab has a grid of your characters who are in the guild and the professions each of
+  them has, and nothing is shared until you tick a box. A guildmate running Family then sees
+  that profession and its skill level beside that character of yours. Untick a box and it
+  stops being sent; what they already hold is replaced the next time they hear from you,
+  without either of you pressing anything.
+
+  This is the first part of it, and it carries skill levels rather than recipe lists. A skill
+  level says somebody might know a pattern. It never says they do.
+
+  Guild share itself is still off until you switch it on in Options, and the grid is greyed
+  and says so until you do.
+
+### Fixed
+
+- **Leaving a guild now clears what that guild had shared with you**, and what you had offered
+  it. It used to stay out of sight on disk and come back out of date if you ever rejoined.
+
 ## 1.1.0 — 2026-08-29
 
 ### Fixed
