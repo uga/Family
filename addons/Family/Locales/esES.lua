@@ -444,7 +444,6 @@ Family.locales.esES = {
 	["  %s: %s, %d container(s), %d item(s), meta says %s"] = "  %s: %s, %d contenedor(es), %d objeto(s), meta dice %s",
 	["seen %s"] = "visto %s",
 	["no bank record"] = "sin registro del banco",
-	["  no bank window open - stand at a bank and ask again for the rest"] = "  no hay ventana del banco abierta: ve a un banco y vuelve a preguntar",
 	["  open now, as the client reports it:"] = "  abierto ahora, según lo que dice el cliente:",
 	["    container %d: %d slots, %s free, inventory slot %s, bag item %s %s"] = "    contenedor %d: %d espacios, %s libres, espacio de inventario %s, bolsa %s %s",
 	["      %d of those %d slots have something in them"] = "      %d de esos %d espacios tienen algo",

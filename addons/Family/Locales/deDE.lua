@@ -444,7 +444,6 @@ Family.locales.deDE = {
 	["  %s: %s, %d container(s), %d item(s), meta says %s"] = "  %s: %s, %d Behälter, %d Gegenstände, Meta sagt %s",
 	["seen %s"] = "gesehen %s",
 	["no bank record"] = "kein Bankeintrag",
-	["  no bank window open - stand at a bank and ask again for the rest"] = "  kein Bankfenster offen - stell dich an eine Bank und frag noch einmal",
 	["  open now, as the client reports it:"] = "  jetzt offen, wie der Client es meldet:",
 	["    container %d: %d slots, %s free, inventory slot %s, bag item %s %s"] = "    Behälter %d: %d Plätze, %s frei, Inventarplatz %s, Taschengegenstand %s %s",
 	["      %d of those %d slots have something in them"] = "      %d dieser %d Plätze sind belegt",

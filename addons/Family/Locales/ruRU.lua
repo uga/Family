@@ -444,7 +444,6 @@ Family.locales.ruRU = {
 	["  %s: %s, %d container(s), %d item(s), meta says %s"] = "  %s: %s, контейнеров %d, предметов %d, мета говорит %s",
 	["seen %s"] = "осмотрен %s",
 	["no bank record"] = "нет записи о банке",
-	["  no bank window open - stand at a bank and ask again for the rest"] = "  окно банка не открыто - подойдите к банку и спросите снова",
 	["  open now, as the client reports it:"] = "  открыто сейчас, как сообщает клиент:",
 	["    container %d: %d slots, %s free, inventory slot %s, bag item %s %s"] = "    контейнер %d: ячеек %d, свободно %s, ячейка инвентаря %s, сумка %s %s",
 	["      %d of those %d slots have something in them"] = "      в %d из этих %d ячеек что-то лежит",
