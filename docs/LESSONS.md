@@ -490,35 +490,42 @@ of the reported fault. The fault was reported in English, so the check was writt
 
 --------------------------------------------------------------------------------------------
 
-## L-018 — A fix shipped on an inference the person with the client then contradicted
+## L-018 — A fix shipped on an inference, and the number that was being believed
 
-**2026-08-28.** A player reported that his bank contents were not being saved and could not say
-when. With narration on, his client printed `scanned bank: 56/52 free` — more free slots than
-the bank has. That number is certainly wrong, and it is arithmetic over what the client
-answered, so one of the three containers open at the time was reporting more free than it had.
+**2026-08-28.** A player reported bank contents that were not being saved and could not say
+when. With narration on his client printed `scanned bank: 56/52 free` — more free slots than
+the bank has, which is arithmetic over what the client answered rather than a display fault.
 
-From there I reasoned: the free count knows about slots the size call does not, therefore
-`GetContainerNumSlots(BANK_CONTAINER)` under-reports, therefore Family reads four slots fewer
-than the bank has and anything in them is never recorded. It explained the report exactly. I
-changed the scanner to take the larger of the call and `NUM_BANKGENERIC_SLOTS`, wrote a fixture
-around it, wrote a lesson about asymmetric costs, and pushed it.
+**The first answer was wrong, and it fitted perfectly.** I reasoned that a free count exceeding
+the size means the size call under-reports, so Family reads fewer slots than the bank has and
+anything in the rest is never recorded. It explained the report exactly. I changed the scanner
+to take the larger of the size call and `NUM_BANKGENERIC_SLOTS`, built a fixture around it,
+wrote a lesson about asymmetric costs, and pushed it. Alberto then looked at his client: Era's
+bank is 24 slots. The fix reported 28 where there are 24, for a fault never established. Backed
+out.
 
-**Alberto then looked at his own client: the Era bank's built-in space is 24 slots.** If that is
-so, the size call is right and the fix reports 28 where there are 24 — a wrong total on every
-character, to fix a fault I had not established. It is backed out.
+**What settled it was making the client answer per container.** With size, free, and how many
+of the read slots hold something, printed for each: every bank bag added up — held plus free
+equals size, four times over — and only the bank's own window did not. Twenty-four slots,
+twenty-four of them holding something, four reported free. And no empty square on screen: the
+player looked.
 
-The evidence I had was two clients whose *free* counts exceed what their *sizes* allow. That
-still needs explaining, and the explanation is not yet known: it may be the size, it may be the
-free count covering something other than the container it was asked about. Those want opposite
-fixes, which is precisely why one of them should not have been chosen from an armchair.
+Twenty-eight minus twenty-four is four. The client computes the bank's free count from a size
+the bank does not have, and is therefore out by exactly four whatever is in it — full, as here,
+or empty, as on the other client where an empty bank reported twenty-eight free of twenty-four.
 
-**What now catches it:** the harness asserts only the thing that is certainly wrong when it
-happens — a bank never reports more free slots than it has — and `/family bank` prints, per
-container, its size, its free count, and how many of the slots that were read hold something.
-That third number is what tells the two hypotheses apart, and it comes from the client.
+**The fix is to stop asking.** Every slot is read anyway, so how many are free is the size less
+what was found. Derived that way the record cannot contradict itself, which is what `56 of 52`
+was. The client is still asked what *kind* of bag it is, because that it answers correctly.
 
-**The shape.** Earlier the same day I refused to add a retry loop for a recipe fault because the
-cause was unproven, and refused an item-id key because no mutation of it could fail. Both were
-right. Then a hypothesis arrived that explained the symptom *exactly*, and explaining the
-symptom exactly is the most persuasive thing a wrong hypothesis can do. Fit is not evidence. The
-person holding the client is.
+**Two things worth keeping.**
+
+A number that cannot be true is not a display fault to be tidied away. It is the one visible
+symptom of something wrong upstream, and the fix is upstream.
+
+And a hypothesis that explains the symptom exactly is the most dangerous kind, because
+explaining it exactly is what a wrong one does best. Earlier the same day I refused a retry
+loop and a search-index key for being unproven, and both refusals were right; this one I
+talked myself into. What broke the deadlock was not better reasoning but a diagnostic that made
+the client answer the question per container, and a person who looked at the screen and said
+there were no empty squares.

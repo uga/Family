@@ -1104,6 +1104,11 @@ GetTradeSkillItemLink = function(index) return TRADE_RECIPES[index] and TRADE_RE
 GetTradeSkillCooldown = function() return nil end
 
 -- The bank: container -1, plus one bought bank bag at 6. Bag 5 is deliberately absent.
+-- The bank's own window answers 20 free while holding one thing in twenty-four slots, which
+-- is what a live Classic Era client does: it computes that count from twenty-eight and the
+-- bank is twenty-four, so it is four out whatever is in it. Family does not ask - it reads
+-- every slot anyway, so free is the size less what was found - and this fixture is the client
+-- being wrong about it.
 local BANK_BAGS = {
 	[-1] = { size = 24, free = 20, bagType = 0, items = { [1] = { 7909, 3 } } },
 	[6]  = { size = 16, free = 16, bagType = 0, items = {} },
@@ -1953,17 +1958,34 @@ local bankMeta = Family.Database:Meta(key)
 check("bank scanned when the window opens", bankMeta.bankSeen ~= nil)
 check("bank slots counted across container and bank bags", bankMeta.bankSlots == 40,
 	tostring(bankMeta.bankSlots))
-check("free bank slots counted", bankMeta.bankFree == 36, tostring(bankMeta.bankFree))
+-- Twenty-three of the twenty-four, one being occupied, and all sixteen of the bag. Not the
+-- forty-four the client's own counts add up to, and not the thirty-six they used to give.
+check("free bank slots counted", bankMeta.bankFree == 39, tostring(bankMeta.bankFree))
+
 
 -- The invariant a live client broke: it reported 56 free of 52, which cannot be true of any
--- bank. The cause is not settled - see L-018 - so this asserts only the thing that is certainly
--- wrong when it happens, which is the arithmetic being impossible.
+-- bank, because its own free count is computed from a bank four slots larger than the one it
+-- has. Family derives the count instead, so the record cannot contradict itself.
 check("a bank never has more free slots than it has slots",
 	bankMeta.bankFree <= bankMeta.bankSlots,
 	tostring(bankMeta.bankFree) .. " free of " .. tostring(bankMeta.bankSlots))
 
 local bank = Family.Database:Payload(key).bank
 check("bank contents kept by id", bank and bank.containers[-1].slots[1].id == 7909)
+
+-- The client says twenty of those twenty-four are free while one of them holds something.
+-- Believing it is what put "56 of 52 free" on somebody's screen; counting is what does not.
+check("a container's free count is what was found, not what the client claims",
+	bank and bank.containers[-1].free == 23,
+	bank and tostring(bank.containers[-1].free))
+local everySum = true
+for _, entry in pairs((bank or {}).containers or {}) do
+	local used = 0
+	for _ in pairs(entry.slots) do used = used + 1 end
+	if used + entry.free ~= entry.size then everySum = false end
+end
+check("and every container adds up: what is in it, plus what is free, is its size",
+	everySum)
 
 check("carried bags are not scanned again as bank bags",
 	bank and bank.containers[1] == nil)
@@ -1981,7 +2003,7 @@ bank = Family.Database:Payload(key).bank
 check("emptying a bank slot while the window is open is noticed",
 	bank and bank.containers[-1].slots[1] == nil,
 	bank and bank.containers[-1].slots[1] and tostring(bank.containers[-1].slots[1].id))
-check("and the free count follows it", Family.Database:Meta(key).bankFree == 37,
+check("and the free count follows it", Family.Database:Meta(key).bankFree == 40,
 	tostring(Family.Database:Meta(key).bankFree))
 
 -- With the window shut there is nothing to read, and what was last seen has to survive

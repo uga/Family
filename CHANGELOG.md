@@ -59,6 +59,13 @@ talent — Family uses the game's own word, so it says what the rest of your int
 character recorded on somebody else's client, in a language you do not read, still reads in
 yours.
 
+### Fixed since the last beta
+
+- **The free space in a bank is counted rather than asked for.** The game reports four more
+  free slots than a bank has, so a full bank could read *4 free* and an empty one could total
+  more free slots than it has room for. Visit a bank once on each character and the figure
+  corrects itself.
+
 ### Upgrading from a beta
 
 Open each profession window once per character. Nothing else needs doing, and nothing is lost

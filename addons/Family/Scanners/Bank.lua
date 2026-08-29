@@ -77,17 +77,28 @@ function Bank:Scan()
 			local size = GetNumSlots and GetNumSlots(bag) or 0
 
 			if size and size > 0 then
-				local bagFree, bagType = 0, 0
+				-- The client is asked what kind of bag this is and not how much of it is
+				-- free, because on Classic Era it answers the second one wrongly for the
+				-- bank's own window: it reports four more free slots than the bank has,
+				-- whatever is in it. Measured on a live client - twenty-four slots, all
+				-- twenty-four holding something, and four reported free - and on another
+				-- whose empty bank reported twenty-eight of twenty-four. Twenty-eight is
+				-- the size the count is computed from and twenty-four is the size the
+				-- bank is.
+				--
+				-- Every slot is read here anyway, so how many are free is not something
+				-- that has to be asked for at all: it is the size less what was found.
+				-- Derived that way the record cannot contradict itself, which is what
+				-- "56 of 52 free" was.
+				local _, bagType = 0, 0
 				if GetNumFreeSlots then
-					bagFree, bagType = GetNumFreeSlots(bag)
-					bagFree = bagFree or 0
+					_, bagType = GetNumFreeSlots(bag)
 				end
 
 				local special = (bagType or 0) ~= 0 and bag ~= BANK
 
 				local entry = {
 					size = size,
-					free = bagFree,
 					bagType = bagType or 0,
 					special = special,
 					slots = {},
@@ -97,12 +108,17 @@ function Bank:Scan()
 					entry.itemID = GetInventoryItemID("player", ToInventoryId(bag))
 				end
 
+				local used = 0
 				for slot = 1, size do
 					local itemID, count, worth = slotContents(bag, slot)
 					if itemID then
 						entry.slots[slot] = { id = itemID, count = count, item = worth }
+						used = used + 1
 					end
 				end
+
+				local bagFree = size - used
+				entry.free = bagFree
 
 				containers[bag] = entry
 
