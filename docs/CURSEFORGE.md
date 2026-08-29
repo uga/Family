@@ -79,10 +79,11 @@ data broker feed carrying the family's money.
 
 ### Sharing
 
-**Guild share is on, and one switch turns it off.** Guildmates running Family show each other
-their characters' gear and talent shape, including the offline ones once you have seen them.
-**Nothing else is shared** — no bags, no mail, no gold. It is on by default because all of it
-is what the game already shows anyone who inspects you.
+**Guild share ships off, and one switch turns it on.** Guildmates running Family show each
+other their characters' gear and talent shape, including the offline ones once you have seen
+them. **Nothing else is shared** — no bags, no mail, no gold; all of it is what the game
+already shows anyone who inspects you. The Guild panel is in the list whether it is on or off,
+and the switch is on it.
 
 **Wide Family ships switched off by default.** Linking two players' families, with per-member
 and per-category consent on a grid that starts empty, is there whenever you want it — but

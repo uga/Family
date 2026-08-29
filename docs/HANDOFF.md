@@ -261,11 +261,15 @@ than look. Cheap to fix the next time somebody has all three clients open.
    presses Inspect, so a consent dialogue in front of it teaches people to click through
    consent dialogues and costs specification §6's grid its meaning.
 
-   That argument holds and is why it is not gated the way Wide Family is. The narrower
-   question — that nothing in it had crossed a real server either — is **settled as of
-   2026-08-27**: the 1.0.0-beta.2 pass ran the Guild share section on all three clients and
-   every line of it passed. It ships on, deliberately, and the judgement that was to be made
-   on purpose has been made on purpose. See `SMOKE.md` for the rows.
+   That argument holds and is still why Guild share has no consent grid. The narrower
+   question — that nothing in it had crossed a real server — was settled on 2026-08-27 by the
+   1.0.0-beta.2 pass, on all three clients.
+
+   **Decided on 2026-08-28: it ships off.** Not because consent requires it, but because a
+   first release should not begin talking to a guild on somebody's behalf before they have
+   asked, whatever it is saying. What the argument above buys is that turning it on needs no
+   dialogue and no grid — one switch, on a panel that is in the list whether the feature is on
+   or off. The same reasoning put Wide Family's panel there too.
 
 7. **Verifying the API guesses against a real client.** `Capabilities.lua`'s probes, the
    `C_Container` fallbacks in `Scanners/Bags.lua`, and the multi-value `## Interface:` line
