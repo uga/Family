@@ -141,23 +141,27 @@ local function guildCrafters(byName, order, needle, limit)
 
 				-- What this client calls it. The item is preferred where there is one,
 				-- because the thing a player types is usually the thing being made
-				-- rather than the spell that makes it.
+				-- rather than the spell that makes it - and on Classic Era it is the
+				-- only id most recipes have at all (DATASOURCES §2).
 				local name = (itemID and itemID ~= 0
-					and Family.Names:CachedItem(itemID)) or Family.Names:Spell(spellID)
+					and Family.Names:CachedItem(itemID))
+					or (spellID ~= 0 and Family.Names:Spell(spellID))
 
 				if name and name:lower():find(needle, 1, true) then
 					-- Keyed exactly as the family's rows are, so a recipe somebody at
 					-- home and somebody in the guild both know is one row carrying
-					-- both answers rather than two rows saying half each.
-					local id = "spell:" .. spellID
+					-- both answers rather than two rows saying half each. Either id
+					-- may be the one a row has, and which it is differs by client.
+					local id = (spellID ~= 0) and ("spell:" .. spellID)
+						or ("item:" .. tostring(itemID))
 
 					if not byName[id] and #order < limit then
 						byName[id] = {
 							name = name,
 							id = spellID,
 							profession = line,
-							spellID = spellID,
-							itemID = (itemID ~= 0) and itemID or nil,
+							spellID = (spellID ~= 0) and spellID or nil,
+							itemID = (itemID and itemID ~= 0) and itemID or nil,
 							members = {},
 							guild = {},
 						}
@@ -241,8 +245,13 @@ function Recipes:Search(needle, limit)
 					-- Where there is no id, by recipe and profession together: two
 					-- professions can make things of the same name, and "who can make
 					-- this" is a different answer for each of them.
-					local id = recipe.spellID
-						and ("spell:" .. recipe.spellID)
+					--
+					-- Or by the item it makes where the client gave no spell, which on
+					-- Classic Era is most recipes (DATASOURCES §2). Without that rung
+					-- an Era row keyed by its word could never meet a guild row keyed
+					-- by an id, and the same recipe appeared twice on one screen.
+					local id = recipe.spellID and ("spell:" .. recipe.spellID)
+						or recipe.itemID and ("item:" .. recipe.itemID)
 						or (profession .. "\0" .. name)
 					-- Where the same recipe is held under two professions - a real one
 					-- and something that is not in the client's table, like a rogue's

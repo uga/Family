@@ -7120,6 +7120,51 @@ print("guild share")
 			missing == 1, tostring(missing))
 		check("the fingerprint is a number both ends can compute", type(fingerprint) == "number")
 
+		------------------------------------------------------------------------------------
+		-- A client that names recipes by what they make, and not by the spell
+		--
+		-- `GetTradeSkillRecipeLink` returns nothing at all on Classic Era, so a character
+		-- there holds a hundred and fifty leatherworking recipes with an item id on every one
+		-- and a spell id on none (DATASOURCES §2, measured on 1.15.9). This wire asked for a
+		-- spell and dropped everything without one, so on Era it shared nothing whatever -
+		-- and the Craft frame on the same client is the mirror image, answering with an
+		-- enchant id and no item, which is why enchanting was the one thing that did cross.
+		------------------------------------------------------------------------------------
+
+		do
+			local held = Family.Database:Payload("Smith-FireMaw").professions[smith].recipes
+
+			Family.Database:Payload("Smith-FireMaw").professions[smith].recipes = {
+				{ name = "Renfort d'armure robuste", itemID = 15564 },
+				{ name = "Renfort d'armure epais", itemID = 8173 },
+				-- Neither id. It cannot cross under any name, and is counted.
+				{ name = "Something The Client Would Not Name" },
+			}
+
+			local eraSpells, eraItems, eraMissing, eraPrint =
+				Family.Guild:RecipesFor("Smith-FireMaw", smith)
+
+			check("a recipe with an item id and no spell still crosses",
+				eraSpells and #eraSpells == 2, eraSpells and tostring(#eraSpells) or "none")
+			check("with nought where the client gave no spell",
+				eraSpells and eraSpells[1] == 0 and eraSpells[2] == 0)
+			check("and the item it makes beside it",
+				eraItems and eraItems[1] == 8173 and eraItems[2] == 15564,
+				eraItems and (tostring(eraItems[1]) .. "," .. tostring(eraItems[2])) or "none")
+			check("and one the client would name in neither way is left out and counted",
+				eraMissing == 1, tostring(eraMissing))
+
+			-- The fingerprint has to tell two such lists apart, and a hash over the spells
+			-- alone answers the same number for every list on that client - every spell in
+			-- it being nought.
+			Family.Database:Payload("Smith-FireMaw").professions[smith].recipes[1].itemID = 9999
+			local moved = select(4, Family.Guild:RecipesFor("Smith-FireMaw", smith))
+			check("and the fingerprint moves when only the item does", moved ~= eraPrint,
+				tostring(eraPrint) .. " / " .. tostring(moved))
+
+			Family.Database:Payload("Smith-FireMaw").professions[smith].recipes = held
+		end
+
 		-- Nothing shareable is no list, not an empty one. A profession whose window came
 		-- back with no rows had a perfectly good count and fingerprint of nothing, which the
 		-- far end asked about and received nothing for - seen on a live client as "recipe
@@ -7348,6 +7393,34 @@ print("guild share")
 			}, "WHISPER", "Tester")
 			advance(3)
 			deliver("Faraway")
+
+			-- Two recipes with an item id and no spell, which is the ordinary Era shape.
+			-- Keyed by the spell they have not got, they would collide into one row.
+			ITEM_NAMES[70001] = "Pyrewood Pie"
+			ITEM_NAMES[70002] = "Pyrewood Pudding"
+
+			advance(30)
+			sent = {}
+			Family.Comm:Send("grec", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw", rschema = 1,
+				member = "Nervina-FireMaw", line = mining,
+				-- Nought where the client gave no spell, and one row with neither id,
+				-- which is a row about nothing and must not reach our disk (§2.3).
+				spells = { 0, 0, 0 }, items = { 70001, 70002, 0 },
+				missing = 0, fingerprint = 606, seen = time() - 60,
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+
+			local eraList = Family.Guild:HeldRecipes(guildKey, "Nervina-FireMaw", mining)
+			check("a row carrying neither identifier is not written to disk",
+				eraList and #eraList.spells == 2,
+				eraList and tostring(#eraList.spells) or "nothing")
+
+			local pyrewood = Family.Recipes:Search("pyrewood")
+			check("and two item-only recipes are two rows, not one",
+				#pyrewood == 2, tostring(#pyrewood) .. " rows")
 
 			local hits = Family.Recipes:Search("wizard oil")
 			local row

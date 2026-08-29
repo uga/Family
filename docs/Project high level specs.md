@@ -806,12 +806,20 @@ nobody's recipe list. The two answers are one answer applied to two different fa
 grid is where the difference is visible. Nothing about it weakens the case above it; it is
 what that case predicts.
 
-**What crosses is identifiers, and never names.** A shared recipe travels as the spell it is,
-with the id of the item it makes beside it — so a French guild and a German one answer each
-other's questions without either having recorded a word the other can read (§2.1), and so the
-answer can appear on a crafted item as well as on a pattern. **A recipe the client gives no id
-for is not shared**, and the panel says how many were left out rather than quietly sharing
-fewer than it appears to.
+**What crosses is identifiers, and never names — whichever identifier the client gave.** A
+shared recipe travels as the spell it is and as the item it makes, and it travels when it has
+*either* of them: a French guild and a German one then answer each other's questions without
+either having recorded a word the other can read (§2.1), and the answer appears on a crafted
+item as well as on a pattern. **A recipe the client names in neither way is not shared**, and
+the panel says how many were left out rather than quietly sharing fewer than it appears to.
+
+*Amended 2026-08-30.* This asked for the spell and treated the item as an extra, which is the
+shape of some clients and not of all of them: `GetTradeSkillRecipeLink` returns nothing at all
+on Classic Era, where a character's recipes carry an item id apiece and no spell whatever, and
+the Craft frame on that same client is the mirror image. Written the first way, guild crafters
+shared nothing on Era except enchanting. Both ids are read, either will carry a recipe, and
+neither is assumed — which is the rule `DATASOURCES.md` already drew from the same
+measurement.
 
 **Ranks alone are an honest answer and are treated as one.** A profession that has been ticked
 but whose window has never been opened shares a rank and nothing else, and that guildmate is

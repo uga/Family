@@ -208,11 +208,15 @@ end
 -- that every intermediate stays exact in a double - Lua 5.1 has no integers, and a hash that
 -- silently loses its low bits on one client and not another would answer differently at each
 -- end, which is the one thing a fingerprint may not do.
-local function fingerprintOf(spells)
+-- Over **both** ids, because on some clients only one of them exists and which one it is
+-- differs by window. A hash over spells alone answered the same number for every Era trade
+-- skill list, since every entry's spell is nought there.
+local function fingerprintOf(spells, items)
 	local hash = 5381
 
-	for _, id in ipairs(spells) do
+	for index, id in ipairs(spells) do
 		hash = (hash * 33 + id) % 16777213
+		hash = (hash * 33 + ((items or {})[index] or 0)) % 16777213
 	end
 
 	return hash
@@ -252,10 +256,21 @@ Guild.RECIPE_CEILING = RECIPE_CEILING
 -- What one of our characters can make with one profession, in the shape it is stored and
 -- compared in: spell ids, sorted, with the item each one makes beside it.
 --
--- **Identifiers, never names** (§2.1). A recipe the client gave no id for cannot cross - a
--- name is one language, and the whole point is that a French list answers a German search -
--- so it is left out and *counted*, because a panel claiming a shorter list than it shows is
--- worse than one that says how many it could not carry.
+-- **Identifiers, never names** (§2.1), and **whichever identifier the client gave**.
+--
+-- This asked for a spell id and dropped everything without one, which is the shape of the
+-- clients it was written against and not the shape of all of them. DATASOURCES §2 has the
+-- measurement: `GetTradeSkillRecipeLink` returns nothing at all on Classic Era, so a
+-- character there holds a hundred and fifty leatherworking recipes with **an item id on every
+-- one and a spell id on none** - and this shared none of them. The Craft frame on the same
+-- client is the mirror image, answering with an enchant id and no item, which is why
+-- enchanting was the one thing that did cross.
+--
+-- So a recipe crosses when it has either id, and carries both where it has both. A recipe the
+-- client would name in neither way cannot cross - a name is one language, and the whole point
+-- is that a French list answers a German search - so it is left out and *counted*, because a
+-- panel claiming a shorter list than it shows is worse than one saying what it could not
+-- carry.
 function Guild:RecipesFor(memberKey, skillLine)
 	local payload = Family.Database:Payload(memberKey)
 	local record = payload and payload.professions and payload.professions[skillLine]
@@ -265,22 +280,29 @@ function Guild:RecipesFor(memberKey, skillLine)
 	local rows, missing = {}, 0
 
 	for _, recipe in ipairs(record.recipes) do
-		if type(recipe.spellID) == "number" then
-			rows[#rows + 1] = { spell = recipe.spellID, item = tonumber(recipe.itemID) or 0 }
+		local spell = tonumber(recipe.spellID) or 0
+		local item = tonumber(recipe.itemID) or 0
+
+		if spell ~= 0 or item ~= 0 then
+			rows[#rows + 1] = { spell = spell, item = item }
 		else
 			missing = missing + 1
 		end
 	end
 
 	-- Nothing shareable is not an empty list, it is no list. A profession whose window came
-	-- back with no rows at all - or whose every recipe the client would not name - has
-	-- nothing to advertise, and advertising it anyway produced a count and a fingerprint
+	-- back with no rows at all - or whose every recipe the client would name in neither way -
+	-- has nothing to advertise, and advertising it anyway produced a count and a fingerprint
 	-- that the far end dutifully asked about and received nothing for. Seen on a live
 	-- client as "recipe lists held from the guild: 4, 0 recipe(s) in all".
 	if #rows == 0 then return nil end
 
-	-- Sorted, because the fingerprint is over the order and two clients must agree on it.
-	table.sort(rows, function(a, b) return a.spell < b.spell end)
+	-- Sorted, and by both, because a client where every spell is nought would otherwise have
+	-- no order at all and two ends would disagree about it.
+	table.sort(rows, function(a, b)
+		if a.spell ~= b.spell then return a.spell < b.spell end
+		return a.item < b.item
+	end)
 
 	local spells, items = {}, {}
 	for index, row in ipairs(rows) do
@@ -288,7 +310,7 @@ function Guild:RecipesFor(memberKey, skillLine)
 		items[index] = row.item
 	end
 
-	return spells, items, missing, fingerprintOf(spells), record.recipesSeen
+	return spells, items, missing, fingerprintOf(spells, items), record.recipesSeen
 end
 
 -- The same, said in the two numbers that ride with the ranks: how many, and which list.
@@ -828,7 +850,8 @@ function Guild:CraftersOf(spellID, itemID)
 			local knows = false
 
 			for index, spell in ipairs(list.spells or {}) do
-				if (spellID and spell == spellID)
+				-- Either id answers, because either may be the only one a client gave.
+				if (spellID and spellID ~= 0 and spell == spellID)
 					or (itemID and itemID ~= 0 and (list.items or {})[index] == itemID) then
 					knows = true
 					break
@@ -1347,6 +1370,18 @@ local function onRecipes(_, text, sender)
 		for index = 1, #spells do items[index] = tonumber(body.items[index]) or 0 end
 	end
 
+	-- One of the two may be nought on any given row - which of them depends on the client
+	-- and on the window (DATASOURCES §2) - but a row that is nought in both is a row about
+	-- nothing, and is not written to our disk on somebody's say-so (§2.3).
+	local kept = { spells = {}, items = {} }
+	for index, spell in ipairs(spells) do
+		if spell ~= 0 or (items[index] or 0) ~= 0 then
+			kept.spells[#kept.spells + 1] = spell
+			kept.items[#kept.items + 1] = items[index] or 0
+		end
+	end
+	spells, items = kept.spells, kept.items
+
 	local guild = store()
 	guild.recipes[guildKey] = guild.recipes[guildKey] or {}
 	guild.recipes[guildKey][body.member] = guild.recipes[guildKey][body.member] or {}
@@ -1358,7 +1393,7 @@ local function onRecipes(_, text, sender)
 		-- Carried across so that a panel can say a list is short rather than implying it
 		-- is complete (§7.1).
 		missing = tonumber(body.missing) or 0,
-		fingerprint = tonumber(body.fingerprint) or fingerprintOf(spells),
+		fingerprint = tonumber(body.fingerprint) or fingerprintOf(spells, items),
 		-- When it reached us, and when they last read it. Two ages, kept apart, because
 		-- the older of the two is what any answer built on this carries (§7.1) and an
 		-- older client sends only the first of them.

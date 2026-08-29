@@ -61,6 +61,11 @@ is a decision rather than an afternoon of archaeology.
   profession and the list goes with it, on their side as well as yours, without either of you
   pressing anything.
 
+- **Shared recipes now work on Classic Era.** A recipe was carried as the spell it is, and on
+  Era the game does not give a spell for trade skill recipes at all — it gives the item each
+  one makes. So a guild on Era shared nothing but enchanting, which is the one thing there
+  with a spell and no item. A recipe now travels with whichever identifier your client gives
+  it, and with both where it gives both.
 - **A profession with nothing to share no longer advertises an empty list.** One whose window
   came back with no recipes still announced a count and a fingerprint of nothing, which the
   other end asked about and received nothing for — showing up as *4 lists, 0 recipes in all*.

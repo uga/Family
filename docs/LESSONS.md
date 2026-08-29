@@ -842,3 +842,37 @@ The same shape appeared twice more the same evening, in `Refresh` and in the *Up
 button: a mechanism that works, reached by nobody. Worth asking of any fix that adds a
 function — **who calls this, and is that in the check?**
 
+## L-026 — A wire designed from the design document, not from the measurements
+
+Guild crafters shared nothing at all on Classic Era except enchanting. Two clients in one
+guild, both healthy, both panels correct: `professions ticked: 4, of which 0 have a recipe list
+to send`.
+
+**What was wrong:** the wire carried a recipe as its spell id, with the item it makes as an
+extra, and dropped anything without a spell. On Classic Era `GetTradeSkillRecipeLink` returns
+nothing at all — every recipe there has an item id and no spell — so the wire dropped all of
+them. The Craft frame on the same client is the mirror image, answering with an enchant id and
+no item, which is why enchanting was the one thing that crossed and made the failure look like
+a fault in the guild exchange rather than in what it was carrying.
+
+**All of that was already measured and written down**, in `DATASOURCES.md` §2, *Recipe links,
+measured rather than assumed*, with the row dumps and the counts — *"150 leatherworking, 67
+cooking and 12 first aid recipes, an item id on every one and a spell id on none"* — and with
+the rule spelled out at the end of it: **read every link for every id it might carry, and do
+not trust a call's name to say what it returns.**
+
+**I designed the wire from `GUILD-CRAFTERS.md` §4.3, which says "a shared recipe is its
+spellID", and never opened `DATASOURCES.md`.** The routing table says DATASOURCES beats
+everything on data. A working document's summary of what crosses the wire *is* a claim about
+data, and it was written before the measurement existed.
+
+**What now catches it:** four checks over a list with item ids and no spells — that it crosses
+at all, that the item rides with it, that the fingerprint moves when only an item does, and
+that a row with neither id never reaches disk. And a fifth on the search, because two item-only
+recipes keyed by the spell they have not got collapse into one row.
+
+**The general form, and it is L-021 wearing different clothes:** a design document that
+summarises a measurement is a copy, and a copy drifts. When a design says what an API returns,
+that sentence is the one to go and check — it is exactly the sentence nobody re-derives, because
+somebody clearly derived it once.
+
