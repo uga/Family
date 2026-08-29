@@ -374,7 +374,8 @@ rather than *no cooldown*.
 
 ## 11. Wide Family
 
-> **Switched off by default.** To enable it: `/family wide on`, then `/reload`. Both of you
+> **Switched off until you ask for it.** The panel is there either way, so you can read what
+> it does before deciding; tick the box on it, or `/family wide on`. Both of you
 > need to do it. Nothing is shared with anybody until you link and tick what they may see.
 > `/family wide off` puts it back; anything already borrowed simply stops being shown.
 >

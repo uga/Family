@@ -122,7 +122,7 @@ local function build(frame)
     -- Asking. A character name, because that is what one player knows about another - the
     -- family id is Family's business and nobody should ever have to see one.
     local ask = CreateFrame("EditBox", "FamilyWideAsk", frame, "InputBoxTemplate")
-    ask:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 4, -8)
+    ask:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -52)
     ask:SetSize(180, 20)
     ask:SetAutoFocus(false)
 
@@ -158,6 +158,24 @@ local function build(frame)
     status:SetPoint("TOPLEFT", ask, "BOTTOMLEFT", -2, -8)
     status:SetPoint("RIGHT", -8, 0)
     status:SetJustifyH("LEFT")
+
+    -- The switch for the feature itself, on the panel the feature is about. Everything
+    -- below it is drawn whether it is on or off, and refuses to do anything while it is off -
+    -- which is what a panel explaining a switched-off feature should look like.
+    local enabled = CreateFrame("CheckButton", "FamilyWideEnabled", frame,
+        "UICheckButtonTemplate")
+    enabled:SetSize(24, 24)
+    enabled:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -4)
+    enabled:SetScript("OnClick", function(self)
+        Family.Wide:SetEnabled(self:GetChecked() and true or false)
+        frame:Refresh()
+    end)
+
+    local enabledLabel = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    enabledLabel:SetPoint("LEFT", enabled, "RIGHT", 2, 0)
+    enabledLabel:SetPoint("RIGHT", frame, "RIGHT", -12, 0)
+    enabledLabel:SetJustifyH("LEFT")
+    enabledLabel:SetText(L["Share with families you link to"])
 
     -- Automatic exchange, which is a preference and lives beside the thing it governs
     -- rather than three panels away in Options.
@@ -264,6 +282,15 @@ local function build(frame)
 
         list:SetWidth(math.max(scroll:GetWidth(), 200))
         auto:SetChecked(Family.Wide:AutoUpdate())
+
+        -- Off is a state this panel draws rather than a panel nobody can reach. The
+        -- controls stay where they are and stop working, which says what the switch does
+        -- better than hiding them would.
+        local on = Family.Wide:Enabled()
+        enabled:SetChecked(on)
+        askButton:SetEnabled(on)
+        ask:SetEnabled(on)
+        auto:SetEnabled(on)
 
         -- One number, read by the column headings and by the tick boxes under them, so the
         -- two cannot come to disagree about where a column is.
@@ -794,10 +821,20 @@ end
 -- strip. Turning the feature on therefore wants a /reload, which is what the slash command
 -- says.
 --
--- Not a tab that says "unavailable": a panel advertising an untested consent feature invites
--- exactly the use it is being withheld from.
+-- The tab is here whether the feature is on or off, and the switch is on it - the same
+-- arrangement the Guild panel has always had, and for the reason that panel gives: hiding the
+-- switch inside the feature it turns off is a poor joke.
+--
+-- It was hidden because a panel advertising an untested consent feature invites the use it is
+-- being withheld from. That stopped being true when the live pass reached Wide Family on all
+-- three clients; what is left is a choice about consent, and a choice nobody can find is not
+-- one they have made. A player who never reads a manual would never have learnt the feature
+-- existed.
+--
+-- Hiding it is now a preference of its own, in Options, for somebody who has decided and does
+-- not want the tab.
 Family:OnDatabaseReady("ui.wide", function()
-    if Family.Wide:Enabled() then
+    if UI:IsWideTabShown() then
         UI:RegisterTab("wide", L["Wide Family"], build)
     end
 end)

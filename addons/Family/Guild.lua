@@ -19,9 +19,13 @@
 -- **That is the whole of the argument for it having no consent grid**, and it is worth stating
 -- rather than leaving as an omission, because §6 spends a file insisting on the opposite. A
 -- dialogue in front of a fact the game gives away for free does not protect anybody; it
--- teaches players to click through dialogues, which costs §6 its grid. So: on by default, one
+-- teaches players to click through dialogues, which costs §6 its grid. So: no grid, one
 -- switch, and the switch works in both directions at once - a client with this off neither
 -- asks nor answers.
+--
+-- It still ships off. Not because consent needs it - the argument above stands - but because
+-- a first release that starts talking to a guild on somebody's behalf before they have asked
+-- is a poor introduction, whatever it is saying. The panel is there and the switch is on it.
 --
 -- **Never** bags, bank, mail, quests, professions, money, auctions, reputations. Not "not
 -- yet". Wanting a guildmate's bags is a perfectly reasonable thing to want, and it is a Wide
@@ -59,9 +63,9 @@ local function store()
 	FamilyDB.guild = FamilyDB.guild or {}
 	local guild = FamilyDB.guild
 
-	-- On unless somebody says otherwise (§7). Written as "not false" rather than defaulted
-	-- at creation, so a database written before this feature existed is on as well.
-	if guild.enabled == nil then guild.enabled = true end
+	-- No default is written here. Whether guild share is on is Enabled()'s answer alone, and
+	-- a value written at creation would be that answer made permanent by whichever version
+	-- happened to create the file first.
 
 	guild.known = guild.known or {}     -- guildKey -> memberKey -> what they sent
 	guild.users = guild.users or {}     -- guildKey -> bare name -> when we last heard them
@@ -69,7 +73,12 @@ local function store()
 	return guild
 end
 
-function Guild:Enabled() return store().enabled ~= false end
+-- Off until it is asked for, like Wide Family. Everything guild share carries is what the
+-- game already shows anybody who targets you and presses Inspect, so consent is not the
+-- argument - but a first release that starts talking to a guild on somebody's behalf,
+-- however harmlessly, is not the first impression to make. The panel is there, the switch is
+-- on it, and it takes one click.
+function Guild:Enabled() return store().enabled == true end
 
 function Guild:SetEnabled(on)
 	store().enabled = on and true or false

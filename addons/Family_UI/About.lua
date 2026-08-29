@@ -123,10 +123,11 @@ local MANUAL = {
 		.. "already, who can learn it today, and who is not high enough yet."] },
 
 	{ heading = L["Wide Family"] },
-	{ text = L["|cff9d9d9dSwitched off by default, so there is no panel for it until you ask. "
-		.. "Sharing is the one thing here a later version cannot take back, so it waits to "
-		.. "be asked for rather than arriving switched on. To enable it: |cffffd700/family "
-		.. "wide on|r|cff9d9d9d, then reload. Both of you need to.|r"] },
+	{ text = L["|cff9d9d9dSwitched off until you ask for it. Sharing is the one thing here a "
+		.. "later version cannot take back, so it waits to be asked for rather than "
+		.. "arriving switched on - but the panel is there so you can see what it is before "
+		.. "deciding. Tick the box on it, or |cffffd700/family wide on|r|cff9d9d9d. Both of "
+		.. "you need to.|r"] },
 	{ text = L["A family need not be one account. Type another player's character name on the "
 		.. "Wide Family panel and ask to link; they accept, and then each of you says what "
 		.. "the other may see — one member and one category at a time, on a grid that "

@@ -735,8 +735,15 @@ guildmate who targets you and presses Inspect. Family is not disclosing it; it i
 of you the trip, across characters who are not standing in front of you and at hours when
 neither of you is online. A consent dialogue in front of a fact the game gives away for free
 teaches players to click through consent dialogues, which is the opposite of what §6's grid is
-for. **It is on by default and one switch turns it off,** and the switch turns it off in both
-directions at once: a client with Guild share disabled neither asks nor answers.
+for. **One switch turns it on, and the same switch turns it off in both directions at once:**
+a client with Guild share disabled neither asks nor answers.
+
+It ships off, like Wide Family. Not because consent requires it — the argument above stands —
+but because a first release that begins talking to a guild on somebody's behalf before they
+have asked is a poor introduction, whatever it is saying. What matters is that the switch is
+findable: the Guild panel is in the strip whether the feature is on or off, and so is Wide
+Family's, which used to appear only once its feature was already on. A choice nobody can find
+is not a choice anybody has made.
 
 ### The Guild tab
 

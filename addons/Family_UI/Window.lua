@@ -335,6 +335,25 @@ function UI:FitColumns(columns, budget, measure)
 	for index, column in ipairs(columns) do column.drawWidth = need[index] end
 end
 
+-- Whether the Wide Family tab is in the strip.
+--
+-- Shown unless somebody has said otherwise, which is the opposite of how it started: the tab
+-- used to appear only once the feature was switched on, so a player who had never read the
+-- manual had no way to learn the feature existed. Sharing still ships off; being able to find
+-- the switch is not the same as having flipped it.
+--
+-- Read at load, because that is when the strip is built, so changing it wants a reload - the
+-- same as every other tab in Family.
+function UI:IsWideTabShown()
+	return not (FamilyDB.ui and FamilyDB.ui.wideTab == false)
+end
+
+function UI:SetWideTabShown(on)
+	FamilyDB.ui = FamilyDB.ui or {}
+	FamilyDB.ui.wideTab = on and true or false
+	return FamilyDB.ui.wideTab
+end
+
 function UI:RegisterTab(id, label, builder)
 	local index = #tabs + 1
 
@@ -480,6 +499,16 @@ end
 -- know whether you are already there.
 function UI:CurrentTab()
 	return current and current.id or nil
+end
+
+-- Whether a tab is in the strip at all. Two of them are conditional - Wide Family on a
+-- preference, and any tab a future client cannot support - so "is it there" is a question
+-- worth being able to ask rather than inferring from a panel being blank.
+function UI:HasTab(id)
+	for _, tab in ipairs(tabs) do
+		if tab.id == id then return true end
+	end
+	return false
 end
 
 function UI:Hide()

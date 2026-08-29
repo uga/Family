@@ -16,6 +16,14 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Changed
+
+- **Guild share now ships switched off**, like Wide Family, and both panels are in the list
+  whether their feature is on or not. Wide Family's used to appear only once you had switched
+  it on, which meant the only way to find out it existed was to read the manual. Neither
+  shares anything until you tick its box.
+- **The Wide Family tab can be hidden** from Options if you have decided against it.
+
 ### Fixed
 
 - **Talents are shown in your language, whoever recorded the character.** A member last played

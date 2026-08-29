@@ -1407,8 +1407,10 @@ check("wide family is off in a database nobody has touched",
 check("and asking to link while it is off is refused rather than sent",
 	select(1, Family.Wide:RequestLink("Somebody")) == false)
 
-Family.Wide:SetEnabled(true)
-check("and it can be switched on", Family.Wide:Enabled() == true)
+-- Left off across the interface loading below, because whether its tab appears is decided
+-- while the strip is built and the case worth testing is the one a stranger meets: the
+-- feature off, and the tab there regardless. Switched on after that, the way a player would,
+-- and checked there.
 
 -- Narration is a fault-finding tool and a stranger should not be reading it. Nothing sets
 -- FamilyDB.debug, so a fresh database leaves it nil and Family:Debug returns early - but
@@ -1427,6 +1429,23 @@ for _, file in ipairs { "Window.lua", "MemberPicker.lua", "ChoicePicker.lua", "T
 	load("addons/Family_UI/" .. file, "Family_UI", UIPrivate)
 end
 fire("ADDON_LOADED", "Family_UI")
+
+-- But the tab is there. It used to appear only once the feature was on, so the only way to
+-- learn Wide Family existed was to read a manual - and a choice nobody can find is not a
+-- choice anybody has made. Sharing still ships off; finding the switch is not flipping it.
+check("its tab is in the strip anyway, with the switch on it",
+	Family.UI:HasTab("wide"))
+check("and it is shown unless somebody says otherwise",
+	Family.UI:IsWideTabShown() == true)
+
+-- And it can be put away by somebody who has decided against it.
+Family.UI:SetWideTabShown(false)
+check("hiding it is a preference of its own", Family.UI:IsWideTabShown() == false)
+Family.UI:SetWideTabShown(true)
+
+-- On from here, the way a player would, because the rest of this file exercises the protocol.
+Family.Wide:SetEnabled(true)
+check("and it can be switched on", Family.Wide:Enabled() == true)
 
 check("FamilyDB created with a schema", FamilyDB and FamilyDB.schema == 1,
 	FamilyDB and tostring(FamilyDB.schema) or "no FamilyDB")
@@ -5854,7 +5873,16 @@ print("guild share")
 		return which
 	end
 
-	check("it is on without anybody switching it on", Family.Guild:Enabled() == true)
+	-- Off in a database nobody has touched, like Wide Family. Everything guild share carries
+	-- is what Inspect already gives away, so this is not a consent gate - it is a first
+	-- release not starting conversations on somebody's behalf before they have asked.
+	check("it is off in a database nobody has touched", Family.Guild:Enabled() == false)
+	check("and the panel is there anyway, with the switch on it",
+		Family.UI:HasTab("guild"))
+
+	-- Everything below is about the protocol, which needs it on.
+	Family.Guild:SetEnabled(true)
+	check("and it can be switched on", Family.Guild:Enabled() == true)
 
 	local guildKey, guildName = Family.Guild:Current()
 	check("it knows which guild on which realm", guildKey == "Late Night Raiders-Fire Maw",
