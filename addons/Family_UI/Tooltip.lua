@@ -217,7 +217,10 @@ local GUILD_CAP = 5
 local function guildCrafterLines(_, itemID)
 	if not (Family.Guild and Family.Guild:Enabled()) then return nil end
 
-	local crafters = Family.Guild:CraftersOf(nil, itemID)
+	-- The item's own name as well as its id. A recipe that crossed with a spell and no item -
+	-- everything enchanting, on Classic Era - can only be recognised by what this client calls
+	-- it, and that covers both the thing it makes and the formula that teaches it.
+	local crafters = Family.Guild:CraftersOf(nil, itemID, Family.Names:CachedItem(itemID))
 	if #crafters == 0 then return nil end
 
 	local lines = { { L["|cff66bbffGuild crafters|r"],

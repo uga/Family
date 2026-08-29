@@ -1092,7 +1092,11 @@ local function build(frame)
 	-- font, in the real client, that is wider. This is one of the few things only the game
 	-- can answer, which is exactly why that warning is printed at runtime rather than
 	-- assumed at build time.
-	UI:LayOutRow(setRow, SET_BUTTON_WIDTH, 1, 0, nil, CHOOSER_WIDTH - FACTION_ROOM)
+	-- No gap at all between them. Seven sets whose English labels come to 666 pixels in a
+	-- row that has 664 is two pixels short, and the six single-pixel gaps are the only six
+	-- pixels in it that are not somebody's word: the buttons carry their own padding, and a
+	-- segmented row of them reads as one control rather than as seven with hairlines.
+	UI:LayOutRow(setRow, SET_BUTTON_WIDTH, 0, 0, nil, CHOOSER_WIDTH - FACTION_ROOM)
 
 	-- The two sides, anchored to the right-hand end of the row rather than laid out after
 	-- the last set button.

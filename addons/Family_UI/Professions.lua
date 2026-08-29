@@ -26,6 +26,11 @@ local NOTE_ROOM = 210
 
 local ROW = 32
 
+-- What the "who can make it" column gets in a whole-family search. Two hundred and fifty left
+-- a recipe eight characters know running off the right-hand edge mid-name, and the recipe's
+-- own name is a short line with room going spare beside it.
+local NOTE_WIDTH = 420
+
 -- The profession buttons along the top. Wider than they were by what a picture takes, so that
 -- "Leatherworking 375" lost no room to it - the same trade the tab strip made.
 local SKILL_W = 158
@@ -619,14 +624,23 @@ local function build(frame)
 
 				r.text:SetText(string.format("%s   |cff888888%s|r", recipe.name or "?",
 					profession))
-				r.text:SetWidth(UI:ListWidth(scroll) - 260 - ROW)
+				r.text:SetWidth(UI:ListWidth(scroll) - NOTE_WIDTH - 10 - ROW)
 
-				local names = {}
+				-- Capped, and counted past the cap. The line does not wrap, so a recipe
+				-- that eight of your characters know ran off the edge mid-name - "Ermete
+				-- 300, G..." - which loses the count as well as the names. Four and a
+				-- number is a shorter true answer than five and a truncation.
+				local names, spare = {}, 0
 				for _, who in ipairs(UI:NamesOf(recipe.members)) do
-					names[#names + 1] = who.rank
-						and string.format("%s |cff888888%d|r", who.label, who.rank)
-						or who.label
+					if #names < 4 then
+						names[#names + 1] = who.rank
+							and string.format("%s |cff888888%d|r", who.label, who.rank)
+							or who.label
+					else
+						spare = spare + 1
+					end
 				end
+				if spare > 0 then names[#names + 1] = string.format(L["+%d"], spare) end
 
 				-- The guild's answer as a second group on the same row, labelled as
 				-- theirs (§7.1). One box, one question, two sources - and they are kept
@@ -658,7 +672,7 @@ local function build(frame)
 					note = (note ~= "" and (note .. "   ") or "") .. block
 				end
 
-				r.note:SetWidth(250)
+				r.note:SetWidth(NOTE_WIDTH)
 				r.note:SetText(note)
 			end
 

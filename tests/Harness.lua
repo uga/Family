@@ -7358,6 +7358,82 @@ print("guild share")
 			end
 			check("and says nothing at all once guild share is switched off", not stillThere)
 			Family.Guild:SetEnabled(true)
+
+			-- A recipe that crossed with a spell and no item, which is everything
+			-- enchanting on Classic Era: the Craft frame gives no item id at all, even
+			-- for the rows that make one. The oil under the cursor has an item id that is
+			-- in no list, and the formula that teaches an enchant has one that was never
+			-- related to it - so no id could ever match and enchanting answered nothing.
+			ITEM_NAMES[70010] = "Wizard Oil"
+			ITEM_NAMES[70011] = "Formula: Wizard Oil"
+
+			advance(30)
+			sent = {}
+			Family.Comm:Send("grec", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw", rschema = 1,
+				member = "Nervina-FireMaw", line = mining,
+				-- 25128 is Wizard Oil in this client's own tables. No item id, which is
+				-- what that window answers with.
+				spells = { 25128 }, items = { 0 },
+				missing = 0, fingerprint = 909, seen = time() - 60,
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+
+			local function hovered(id, needle)
+				wipe(GameTooltip.__lines)
+				GameTooltip.__itemName = ITEM_NAMES[id]
+				GameTooltip.__itemLink = "|Hitem:" .. id .. "|h"
+				if GameTooltip.__scripts.OnTooltipCleared then
+					GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+				end
+				GameTooltip.__scripts.OnTooltipSetItem(GameTooltip)
+
+				for _, line in ipairs(GameTooltip.__lines) do
+					if type(line[1]) == "string"
+						and line[1]:find(needle or "Guild crafters", 1, true) then
+						return true
+					end
+				end
+				return false
+			end
+
+			check("the thing a spell-only recipe makes is answered for", hovered(70010))
+			check("and so is the formula that teaches it", hovered(70011))
+
+			-- **And the same client set to another language answers the same.**
+			--
+			-- Matching on a name is the one thing §2.1 forbids across a wire, and this does
+			-- not do it: nothing but the id crossed, and *both* sides of the comparison are
+			-- worked out here - the recipe's name from the id that arrived, the item's name
+			-- from the item under the cursor. Change what this client calls things and the
+			-- answer does not move, because neither side of it came from the sender.
+			--
+			-- Nothing stored is touched below. Only the client's answers change.
+			do
+				local realSpell, realLocale = SPELL_NAMES[25128], Family.locale
+
+				-- Different item ids, because the names of the old ones are already
+				-- cached from the hovers above and this is about what the client says,
+				-- not about what it said an hour ago.
+				ITEM_NAMES[70012] = "Huile de sorcier"
+				ITEM_NAMES[70013] = "Formule : Huile de sorcier"
+
+				SPELL_NAMES[25128] = "Huile de sorcier"
+				Family.locale = "frFR"
+
+				-- Looked for by the crafter's name rather than by the block's heading:
+				-- the heading is translated along with everything else, and a check that
+				-- searched for the English one would be measuring the locale switch.
+				check("a client speaking another language answers the same",
+					hovered(70012, "Nervina"))
+				check("and about the formula in that language too",
+					hovered(70013, "Nervina"))
+
+				SPELL_NAMES[25128], Family.locale = realSpell, realLocale
+			end
+			Family.Guild:SetEnabled(true)
 		end
 
 		-- The recipe search, which is the other place the question gets asked (§7.1)
@@ -7421,6 +7497,87 @@ print("guild share")
 			local pyrewood = Family.Recipes:Search("pyrewood")
 			check("and two item-only recipes are two rows, not one",
 				#pyrewood == 2, tostring(#pyrewood) .. " rows")
+
+			-- A picture is not an identifier and does not cross the wire, so a recipe
+			-- nobody at home knows has none of its own - and came up as a question mark
+			-- beside the ones that do. The call that names an id hands back its picture.
+			local drawn = 0
+			for _, found in ipairs(pyrewood) do
+				if found.icon then drawn = drawn + 1 end
+			end
+			check("a recipe only the guild knows is given the client's own picture for it",
+				drawn == 2, tostring(drawn) .. " of " .. tostring(#pyrewood))
+
+			-- A list that decodes to nothing is dropped rather than written empty. An
+			-- older client still sends them - this end stopped - and one held counts on
+			-- the panel as something that arrived while answering no question ever put
+			-- to it.
+			advance(30)
+			sent = {}
+			Family.Comm:Send("grec", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw", rschema = 1,
+				member = "Nervina-FireMaw", line = mining,
+				spells = { 0, 0 }, items = { 0, 0 },
+				missing = 0, fingerprint = 607, seen = time() - 60,
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+
+			check("a list that decodes to nothing at all is not held as an empty one",
+				Family.Guild:HeldRecipes(guildKey, "Nervina-FireMaw", mining) == nil)
+
+			-- And a profession they still tick but can no longer send anything for takes
+			-- the list we held for it with it: they cannot replace it, so keeping it makes
+			-- them look like they still share something they do not.
+			advance(30)
+			sent = {}
+			Family.Comm:Send("grec", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw", rschema = 1,
+				member = "Nervina-FireMaw", line = mining,
+				spells = { 0 }, items = { 70001 },
+				missing = 0, fingerprint = 608, seen = time() - 60,
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+			check("a real list is held again", Family.Guild:HeldRecipes(guildKey,
+				"Nervina-FireMaw", mining) ~= nil)
+
+			advance(30)
+			sent = {}
+			Family.Comm:Send("gdata", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw",
+				characters = {
+					["Nervina-FireMaw"] = {
+						meta = { name = "Nervina", realm = "Fire Maw", level = 61 },
+						professions = {
+							-- Ticked, and with nothing to send for it.
+							{ skillLine = mining, rank = 275, maxRank = 300 },
+							-- And the one the checks below are written about,
+							-- carried along unchanged: a profession absent from
+							-- what arrives loses the list held for it, which is
+							-- the rule two checks above this one.
+							{ skillLine = smith, rank = 275, maxRank = 300,
+								count = 1, fingerprint = 555 },
+						},
+					},
+					-- Carried along unchanged. Everything one player sends replaces
+					-- everything held from them, so leaving this out would drop the
+					-- character the checks below are written about.
+					["Faraway-FireMaw"] = {
+						meta = { name = "Faraway", realm = "Fire Maw", level = 70 },
+						professions = { { skillLine = smith, rank = 300,
+							maxRank = 300, count = 2, fingerprint = 4242 } },
+					},
+				},
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+
+			check("a profession they can no longer send for loses the list we held",
+				Family.Guild:HeldRecipes(guildKey, "Nervina-FireMaw", mining) == nil)
 
 			local hits = Family.Recipes:Search("wizard oil")
 			local row

@@ -61,6 +61,17 @@ is a decision rather than an afternoon of archaeology.
   profession and the list goes with it, on their side as well as yours, without either of you
   pressing anything.
 
+- **Enchanting answers on tooltips too.** An enchanting recipe carries the spell it is and,
+  on Classic Era, nothing else — the game gives no id for the thing it makes, even for the
+  ones that make something. So no id on the oil under your cursor, or on the formula that
+  teaches it, could ever match, and enchanting was the one profession that answered nothing.
+  Family now also recognises them by what **your own** client calls them, which is how the
+  crafters from your own family have always been found.
+- **A recipe only somebody in the guild knows now has its picture**, instead of a question
+  mark. A picture is not an identifier and does not cross, so there was nothing to draw until
+  Family started asking its own client for one.
+- **The list of who can make a recipe no longer runs off the right of the panel.** It is four
+  names and a count of the rest, and the column is wider.
 - **Shared recipes now work on Classic Era.** A recipe was carried as the spell it is, and on
   Era the game does not give a spell for trade skill recipes at all — it gives the item each
   one makes. So a guild on Era shared nothing but enchanting, which is the one thing there

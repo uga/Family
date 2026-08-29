@@ -105,6 +105,15 @@ local function teaches(itemName, recipeName)
 	return itemName:sub(-#recipeName - 1, -#recipeName - 1):match("[%w]") == nil
 end
 
+-- Whether an item is the thing a recipe of this name produces, or the book that teaches it.
+--
+-- Exposed because guild crafters needs the same test: what crosses from a guild is an id, the
+-- name is worked out from it *here*, and the item under the cursor is named here too - so both
+-- sides of the comparison are in the reader's language and §2.1 is kept rather than broken.
+function Recipes:Teaches(itemName, recipeName)
+	return teaches(itemName, recipeName)
+end
+
 -- The same question asked of the guild (§7.1), as a second source on the same rows rather
 -- than a second search on a second screen. One box, one question, two answers.
 --
@@ -143,9 +152,22 @@ local function guildCrafters(byName, order, needle, limit)
 				-- because the thing a player types is usually the thing being made
 				-- rather than the spell that makes it - and on Classic Era it is the
 				-- only id most recipes have at all (DATASOURCES §2).
-				local name = (itemID and itemID ~= 0
-					and Family.Names:CachedItem(itemID))
-					or (spellID ~= 0 and Family.Names:Spell(spellID))
+				local name, icon
+				if itemID and itemID ~= 0 then
+					name = Family.Names:CachedItem(itemID)
+					icon = Family:TryCall(GetItemIcon, itemID)
+				end
+
+				if spellID ~= 0 then
+					-- The client's own picture for the spell, which is the only one a
+					-- guild row can have: an icon is not an identifier and does not
+					-- cross the wire, so a recipe nobody at home knows had nothing to
+					-- draw and came up as a question mark. The same call that names it
+					-- hands back its picture.
+					local spellName, spellIcon = Family.Names:Spell(spellID)
+					name = name or spellName
+					icon = icon or spellIcon
+				end
 
 				if name and name:lower():find(needle, 1, true) then
 					-- Keyed exactly as the family's rows are, so a recipe somebody at
@@ -160,6 +182,7 @@ local function guildCrafters(byName, order, needle, limit)
 							name = name,
 							id = spellID,
 							profession = line,
+							icon = icon,
 							spellID = (spellID ~= 0) and spellID or nil,
 							itemID = (itemID and itemID ~= 0) and itemID or nil,
 							members = {},
@@ -170,6 +193,9 @@ local function guildCrafters(byName, order, needle, limit)
 
 					local row = byName[id]
 					if row then
+						-- A row the family put there has its own picture; one that has
+						-- none takes this.
+						row.icon = row.icon or icon
 						row.guild = row.guild or {}
 
 						-- One entry per character, because a character is what can

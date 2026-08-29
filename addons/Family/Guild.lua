@@ -836,9 +836,36 @@ end
 -- **The answer is a person, not a character.** Guild records are keyed by whoever sent them,
 -- so a row reads as *this player has a character who can make it* - and whispering the player
 -- is what somebody does about it. Naming only the alt would name somebody who is not there.
-function Guild:CraftersOf(spellID, itemID)
+-- What this client calls a spell, remembered for as long as the session lasts.
+--
+-- The name pass below walks every recipe held for the guild, which is some hundreds, and it
+-- runs on a mouseover. Asking the client once per id and keeping the answer turns every hover
+-- after the first into table lookups. Not written to disk: it is a word, and a word is one
+-- language - the ids are what is stored (§2.1).
+local spellNames, namedIn = {}, nil
+
+local function spellNamed(id)
+	if id == 0 then return nil end
+
+	-- Emptied if the client's language has changed under it. A language is chosen between
+	-- sessions, so in the game this never fires - but a memo of words that outlived one
+	-- would answer in the wrong ones, and the rule is worth stating where it is kept rather
+	-- than assumed from how the game happens to be started.
+	if namedIn ~= Family.locale then
+		spellNames, namedIn = {}, Family.locale
+	end
+
+	local known = spellNames[id]
+	if known ~= nil then return known ~= false and known or nil end
+
+	local name = Family.Names:Spell(id)
+	spellNames[id] = name or false
+	return name
+end
+
+function Guild:CraftersOf(spellID, itemID, itemName)
 	local guildKey = self:Current()
-	if not (guildKey and (spellID or itemID)) then return {} end
+	if not (guildKey and (spellID or itemID or itemName)) then return {} end
 
 	local known = self:Known(guildKey)
 	local found = {}
@@ -855,6 +882,29 @@ function Guild:CraftersOf(spellID, itemID)
 					or (itemID and itemID ~= 0 and (list.items or {})[index] == itemID) then
 					knows = true
 					break
+				end
+
+				-- And where no id can answer, the name can.
+				--
+				-- An enchanting recipe on Classic Era crosses as its enchant id and
+				-- nothing else - the Craft frame gives no item id at all, even for the
+				-- rows that make an item (DATASOURCES §2). So the oil under the cursor
+				-- has an item id that is in no list, and the formula that teaches an
+				-- enchant has one that was never related to it. Neither could ever
+				-- match, and enchanting answered nothing while every other profession
+				-- answered.
+				--
+				-- The name is worked out *here*, from the id that crossed, and the item
+				-- is named here too. Both sides of the comparison are in the reader's
+				-- language, so this is §2.1 being spent rather than broken - which is
+				-- exactly what the family's own crafters block has always done.
+				if itemName and spell ~= 0 then
+					local recipeName = spellNamed(spell)
+					if recipeName
+						and Family.Recipes:Teaches(itemName, recipeName) then
+						knows = true
+						break
+					end
 				end
 			end
 
@@ -1273,7 +1323,11 @@ local function onData(_, text, sender)
 		local offered = {}
 
 		for _, profession in ipairs(entry.professions or {}) do
-			offered[profession.skillLine] = true
+			-- Offered *with something to send*. A profession they still tick but that has
+			-- nothing to share carries no fingerprint, and a list we hold for it is one
+			-- they can no longer replace - so it is dropped here rather than kept until
+			-- they untick the profession itself.
+			offered[profession.skillLine] = profession.fingerprint ~= nil
 
 			-- Asked for only when the count or the fingerprint differs from what is held.
 			-- A settled guild costs nothing after the day everybody met, which is what
@@ -1294,7 +1348,7 @@ local function onData(_, text, sender)
 		local mine = recipes and recipes[memberKey]
 		if mine then
 			for line in pairs(mine) do
-				if not offered[line] then mine[line] = nil end
+				if offered[line] ~= true then mine[line] = nil end
 			end
 			if not next(mine) then recipes[memberKey] = nil end
 		end
@@ -1385,6 +1439,22 @@ local function onRecipes(_, text, sender)
 	local guild = store()
 	guild.recipes[guildKey] = guild.recipes[guildKey] or {}
 	guild.recipes[guildKey][body.member] = guild.recipes[guildKey][body.member] or {}
+
+	-- A list of nothing is not a list, and holding one is worse than holding none: it counts
+	-- on the panel and in the diagnosis as something that arrived, and answers no question
+	-- ever put to it. An older client can still send one - this end stopped, but the far end
+	-- may not have - so the entry goes rather than being written empty.
+	if #spells == 0 then
+		guild.recipes[guildKey][body.member][body.line] = nil
+		if not next(guild.recipes[guildKey][body.member]) then
+			guild.recipes[guildKey][body.member] = nil
+		end
+
+		Family:Debug("guild: %s sent an empty list for %s - dropped", tostring(sender),
+			tostring(body.member))
+		Family.Database:Changed("guild")
+		return
+	end
 
 	guild.recipes[guildKey][body.member][body.line] = {
 		spells = spells,
