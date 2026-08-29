@@ -48,9 +48,10 @@ local SWITCHES = {
 		set = function(on) FamilyDB.cooldownNotice = on and true or false end,
 	},
 	{
-		-- The same switch as the one on the Guild panel, reading the same answer. Two
-		-- places to find it rather than two settings: this is where a player looks for a
-		-- switch, and that is where they are when they decide they want it off.
+		-- The only switch there is. The Guild panel had one of its own once and no longer
+		-- does: it is always shown, and says in grey that sharing is off and that this is
+		-- where to turn it on. One switch in the place a player goes looking for switches
+		-- beats two that have to be kept agreeing with each other.
 		label = L["Share gear and talents with your guild"],
 		note = L["Both ways: what your guild sees of you, and what you see of them. "
 			.. "Nothing else is shared - bags, mail and the rest need a Wide Family link."],
@@ -58,9 +59,9 @@ local SWITCHES = {
 		set = function(on) Family.Guild:SetEnabled(on) end,
 	},
 	{
-		-- The same switch as the one on the Wide Family panel, reading the same answer, for
-		-- the same reason the guild one is here twice: this is where a player looks for a
-		-- switch, and that is where they are when they decide they want it.
+		-- The only switch there is, exactly as above. The Wide Family panel is always
+		-- shown and greys itself out with a line saying what it would do and where to
+		-- enable it, so that the decision is made having read what it is.
 		label = L["Share with families you link to"],
 		note = L["Wide Family: linking with another player, so each of you sees the members "
 			.. "and categories the other allows. Nothing is shared until you link and tick "
