@@ -375,8 +375,8 @@ rather than *no cooldown*.
 ## 11. Wide Family
 
 > **Switched off until you ask for it.** The panel is there either way, so you can read what
-> it does before deciding; tick the box on it, or `/family wide on`. Both of you
-> need to do it. Nothing is shared with anybody until you link and tick what they may see.
+> it does before deciding; the switch is in **Options**, beside the one for Guild share, or
+> `/family wide on`. Neither needs a reload. Both of you need to do it. Nothing is shared with anybody until you link and tick what they may see.
 > `/family wide off` puts it back; anything already borrowed simply stops being shown.
 >
 > The rest of this section describes it as it works once switched on.

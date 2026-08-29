@@ -741,9 +741,11 @@ a client with Guild share disabled neither asks nor answers.
 It ships off, like Wide Family. Not because consent requires it — the argument above stands —
 but because a first release that begins talking to a guild on somebody's behalf before they
 have asked is a poor introduction, whatever it is saying. What matters is that the switch is
-findable: the Guild panel is in the strip whether the feature is on or off, and so is Wide
-Family's, which used to appear only once its feature was already on. A choice nobody can find
-is not a choice anybody has made.
+findable. Both sharing panels are in the strip whether their feature is on or off — Wide
+Family's used to appear only once its feature was already on, and a choice nobody can find is
+not a choice anybody has made. Both switches are in Options, together and nowhere else, so a
+player looks in one place rather than hunting the panel each feature governs; a panel whose
+feature is off says so and points at them. Neither switch needs a reload.
 
 ### The Guild tab
 
