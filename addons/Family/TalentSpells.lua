@@ -620,6 +620,106 @@ Family.TalentSpells = {
 -- Mists, by the id the client reports. SpellID rather than the ranked column, which
 -- is zero for a third of these rows where it is set for every one of them - the
 -- other way round from the two tables above.
+-- What each class calls its three trees. The one part of this with no spell behind
+-- it, so the names are shipped the way profession and race names are - and for the
+-- same reason: the client answers only for the class being played.
+Family.TalentTrees = {
+	[1] = {
+		DRUID = {
+			[1] = { enUS = "Balance", deDE = "Gleichgewicht", frFR = "Equilibre", esES = "Equilibrio", ruRU = "Баланс" },
+			[2] = { enUS = "Feral Combat", deDE = "Wilder Kampf", frFR = "Combat farouche", esES = "Combate feral", ruRU = "Сила зверя" },
+			[3] = { enUS = "Restoration", deDE = "Wiederherst", frFR = "Restauration", esES = "Recuperación", ruRU = "Исцеление" },
+		},
+		HUNTER = {
+			[1] = { enUS = "Beast Mastery", deDE = "Tierherrschaft", frFR = "Maîtrise des bêtes", esES = "Dominio de bestias", ruRU = "Чувство зверя" },
+			[2] = { enUS = "Marksmanship", deDE = "Treffsicherheit", frFR = "Précision", esES = "Puntería", ruRU = "Стрельба" },
+			[3] = { enUS = "Survival", deDE = "Überleben", frFR = "Survie", esES = "Supervivencia", ruRU = "Выживание" },
+		},
+		MAGE = {
+			[1] = { enUS = "Arcane", deDE = "Arkan", frFR = "Arcanes", esES = "Arcano", ruRU = "Тайная магия" },
+			[2] = { enUS = "Fire", deDE = "Feuer", frFR = "Feu", esES = "Fuego", ruRU = "Огонь" },
+			[3] = { enUS = "Frost", deDE = "Frost", frFR = "Givre", esES = "Escarcha", ruRU = "Лед" },
+		},
+		PALADIN = {
+			[1] = { enUS = "Holy", deDE = "Heilig", frFR = "Sacré", esES = "Sagrado", ruRU = "Свет" },
+			[2] = { enUS = "Protection", deDE = "Schutz", frFR = "Protection", esES = "Protección", ruRU = "Защита" },
+			[3] = { enUS = "Retribution", deDE = "Vergeltung", frFR = "Vindicte", esES = "Reprensión", ruRU = "Воздаяние" },
+		},
+		PRIEST = {
+			[1] = { enUS = "Discipline", deDE = "Disziplin", frFR = "Discipline", esES = "Disciplina", ruRU = "Послушание" },
+			[2] = { enUS = "Holy", deDE = "Heilig", frFR = "Sacré", esES = "Sagrado", ruRU = "Свет" },
+			[3] = { enUS = "Shadow", deDE = "Schatten", frFR = "Ombre", esES = "Sombra", ruRU = "Тьма" },
+		},
+		ROGUE = {
+			[1] = { enUS = "Assassination", deDE = "Meucheln", frFR = "Assassinat", esES = "Asesinato", ruRU = "Ликвидация" },
+			[2] = { enUS = "Combat", deDE = "Kampf", frFR = "Combat", esES = "Combate", ruRU = "Бой" },
+			[3] = { enUS = "Subtlety", deDE = "Täuschung", frFR = "Finesse", esES = "Sutileza", ruRU = "Скрытность" },
+		},
+		SHAMAN = {
+			[1] = { enUS = "Elemental", deDE = "Elementar", frFR = "Elémentaire", esES = "Elemental", ruRU = "Стихии" },
+			[2] = { enUS = "Enhancement", deDE = "Verstärk", frFR = "Amélioration", esES = "Mejora", ruRU = "Совершенствование" },
+			[3] = { enUS = "Restoration", deDE = "Wiederherst", frFR = "Restauration", esES = "Recuperación", ruRU = "Исцеление" },
+		},
+		WARLOCK = {
+			[1] = { enUS = "Affliction", deDE = "Gebrechen", frFR = "Affliction", esES = "Aflicción", ruRU = "Колдовство" },
+			[2] = { enUS = "Demonology", deDE = "Dämonologie", frFR = "Démonologie", esES = "Demonología", ruRU = "Демонология" },
+			[3] = { enUS = "Destruction", deDE = "Zerstörung", frFR = "Destruction", esES = "Destrucción", ruRU = "Разрушение" },
+		},
+		WARRIOR = {
+			[1] = { enUS = "Arms", deDE = "Waffen", frFR = "Armes", esES = "Armas", ruRU = "Оружие" },
+			[2] = { enUS = "Fury", deDE = "Furor", frFR = "Fureur", esES = "Furia", ruRU = "Неистовство" },
+			[3] = { enUS = "Protection", deDE = "Schutz", frFR = "Protection", esES = "Protección", ruRU = "Защита" },
+		},
+	},
+	[2] = {
+		DRUID = {
+			[1] = { enUS = "Balance", deDE = "Gleichgewicht", frFR = "Equilibre", esES = "Equilibrio", ruRU = "Баланс" },
+			[2] = { enUS = "Feral Combat", deDE = "Wilder Kampf", frFR = "Combat farouche", esES = "Combate feral", ruRU = "Сила зверя" },
+			[3] = { enUS = "Restoration", deDE = "Wiederherst", frFR = "Restauration", esES = "Restauración", ruRU = "Восстановление" },
+		},
+		HUNTER = {
+			[1] = { enUS = "Beast Mastery", deDE = "Tierherrschaft", frFR = "Maîtrise des bêtes", esES = "Bestias", ruRU = "Чувство зверя" },
+			[2] = { enUS = "Marksmanship", deDE = "Treffsicherheit", frFR = "Précision", esES = "Puntería", ruRU = "Стрельба" },
+			[3] = { enUS = "Survival", deDE = "Überleben", frFR = "Survie", esES = "Supervivencia", ruRU = "Выживание" },
+		},
+		MAGE = {
+			[1] = { enUS = "Arcane", deDE = "Arkan", frFR = "Arcanes", esES = "Arcano", ruRU = "Тайная магия" },
+			[2] = { enUS = "Fire", deDE = "Feuer", frFR = "Feu", esES = "Fuego", ruRU = "Огонь" },
+			[3] = { enUS = "Frost", deDE = "Frost", frFR = "Givre", esES = "Escarcha", ruRU = "Лед" },
+		},
+		PALADIN = {
+			[1] = { enUS = "Holy", deDE = "Heilig", frFR = "Sacré", esES = "Sagrado", ruRU = "Свет" },
+			[2] = { enUS = "Protection", deDE = "Schutz", frFR = "Protection", esES = "Protección", ruRU = "Защита" },
+			[3] = { enUS = "Retribution", deDE = "Vergeltung", frFR = "Vindicte", esES = "Reprensión", ruRU = "Воздаяние" },
+		},
+		PRIEST = {
+			[1] = { enUS = "Discipline", deDE = "Disziplin", frFR = "Discipline", esES = "Disciplina", ruRU = "Послушание" },
+			[2] = { enUS = "Holy", deDE = "Heilig", frFR = "Sacré", esES = "Sagrado", ruRU = "Свет" },
+			[3] = { enUS = "Shadow", deDE = "Schatten", frFR = "Ombre", esES = "Sombra", ruRU = "Тьма" },
+		},
+		ROGUE = {
+			[1] = { enUS = "Assassination", deDE = "Meucheln", frFR = "Assassinat", esES = "Asesinato", ruRU = "Ликвидация" },
+			[2] = { enUS = "Combat", deDE = "Kampf", frFR = "Combat", esES = "Combate", ruRU = "Бой" },
+			[3] = { enUS = "Subtlety", deDE = "Täuschung", frFR = "Finesse", esES = "Sutileza", ruRU = "Скрытность" },
+		},
+		SHAMAN = {
+			[1] = { enUS = "Elemental", deDE = "Elementar", frFR = "Elémentaire", esES = "Elemental", ruRU = "Стихии" },
+			[2] = { enUS = "Enhancement", deDE = "Verstärk", frFR = "Amélioration", esES = "Mejora", ruRU = "Совершенствование" },
+			[3] = { enUS = "Restoration", deDE = "Wiederherst", frFR = "Restauration", esES = "Restauración", ruRU = "Восстановление" },
+		},
+		WARLOCK = {
+			[1] = { enUS = "Affliction", deDE = "Gebrechen", frFR = "Affliction", esES = "Aflicción", ruRU = "Колдовство" },
+			[2] = { enUS = "Demonology", deDE = "Dämonologie", frFR = "Démonologie", esES = "Demonología", ruRU = "Демонология" },
+			[3] = { enUS = "Destruction", deDE = "Zerstörung", frFR = "Destruction", esES = "Destrucción", ruRU = "Разрушение" },
+		},
+		WARRIOR = {
+			[1] = { enUS = "Arms", deDE = "Waffen", frFR = "Armes", esES = "Armas", ruRU = "Оружие" },
+			[2] = { enUS = "Fury", deDE = "Furor", frFR = "Fureur", esES = "Furia", ruRU = "Неистовство" },
+			[3] = { enUS = "Protection", deDE = "Schutz", frFR = "Protection", esES = "Protección", ruRU = "Защита" },
+		},
+	},
+}
+
 Family.TalentSpellByID = {
 	[15757] = 29838,
 	[15758] = 103840,
@@ -862,6 +962,22 @@ function Family:TalentName(classFile, tab, tier, column, recorded)
 		if type(name) == "string" and name ~= "" then return name end
 	end
 
+	return recorded
+end
+
+-- What a class calls one of its three trees, in the reader's language.
+--
+-- The one part of this that is a name rather than an id, because a tree has no spell to be
+-- named from. Falls back to the word the recording client wrote, which is right for a client
+-- whose language this does not ship and for anything newer than the table.
+function Family:TalentTreeName(classFile, tab, recorded)
+	local expansion = Family.Capabilities and Family.Capabilities.expansion
+	local byClass = expansion and Family.TalentTrees[expansion]
+	local tabs = byClass and classFile and byClass[classFile]
+	local names = tabs and tab and tabs[tab]
+	local name = names and (names[Family.locale] or names.enUS)
+
+	if type(name) == "string" and name ~= "" then return name end
 	return recorded
 end
 

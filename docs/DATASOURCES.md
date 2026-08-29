@@ -215,6 +215,14 @@ Two measurements it rests on:
   clients. They are kept apart, keyed by the expansion number `Family.Capabilities` already
   derives from the interface version.
 
+`TalentTab.Name_lang` supplies the three tree headings — *Arcane*, *Fire*, *Frost* — which are
+the one part of the talent panel with no spell behind them. Fetched per locale, like
+`SkillLine` and `ChrRaces`, because `GetTalentTabInfo` has the same limitation
+`GetTalentInfo` has: it answers only for the class being played. Which class a tab belongs to
+is taken by joining through the talents themselves — every `Talent` row carries both `TabID`
+and `ClassID` — rather than by decoding `TalentTab`'s class bitmask, so it is the table saying
+it rather than a person.
+
 Mists is in it too, in a shape of its own: six tiers of three, each talent carrying an id the
 client reports and Family records, so there is no position to key on. It uses `SpellID` where
 the other two use `SpellRank_0` — measured, not assumed: the ranked column is zero for a third

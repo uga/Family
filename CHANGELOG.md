@@ -20,8 +20,8 @@ is a decision rather than an afternoon of archaeology.
 
 - **Talents are shown in your language, whoever recorded the character.** A member last played
   on a German client used to show German talent names on an English one — the last thing in
-  Family that was still shown in the language it was written down in. Nothing needs rescanning,
-  and it works in every language the game speaks rather than the five Family writes.
+  Family that was still shown in the language it was written down in. The trees above them —
+  *Arcane*, *Fire*, *Frost* — read in your language too. Nothing needs rescanning.
 - **A bank bag Family cannot name yet is numbered the way you number them.** The first one was
   being called *Bank bag 5*.
 

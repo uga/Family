@@ -1216,7 +1216,9 @@ GetNumTalentGroups = function() return 2 end
 GetActiveTalentGroup = function() return 1 end
 
 local TREES = {
-	[1] = { name = "Arcane", icon = "arcane-icon", points = { [1] = 8, [2] = 0 },
+	-- Named as a German client would have named it. The panel is not German, and the tree
+	-- headings have to come from the game's own table rather than from this word.
+	[1] = { name = "Arkan", icon = "arcane-icon", points = { [1] = 8, [2] = 0 },
 	        talents = {
 	          [1] = { "Arcane Subtlety", "icon1", 1, 1, { [1] = 2, [2] = 0 }, 2 },
 	          [2] = { "Arcane Focus",    "icon2", 1, 2, { [1] = 5, [2] = 0 }, 5 },
@@ -2529,8 +2531,10 @@ if talents then
 	-- 2 + 5 + 1 across the stubbed talents, summed from ranks rather than asked for.
 	check("points are summed from ranks, not read positionally",
 		one and one.pointsSpent == 8, one and tostring(one.pointsSpent))
+	-- What the client said, which is what the scanner's job is. The panel turns it into the
+	-- reader's language later; recording it is not where that happens.
 	check("the tab name survives a different return order",
-		one and one.tabs[1].name == "Arcane", one and tostring(one.tabs[1].name))
+		one and one.tabs[1].name == "Arkan", one and tostring(one.tabs[1].name))
 	check("and so does the icon", one and tostring(one.tabs[1].icon):find("arcane%-icon")
 		~= nil, one and tostring(one.tabs[1].icon))
 	check("a fully specced tree is never called unvisited",
@@ -2882,7 +2886,12 @@ end
 --
 -- Only Tester has talents; Other-FireMaw has meta and nothing else and sorts first. So this
 -- is also the check that a picker defaults to the character being played.
-check("with the tree they are in and what was spent in it", textShowing("Arcane"))
+-- The tree heading, in the reader's language. The client answers only for the class being
+-- played, so a tree belonging to somebody else's character comes from the game's own table -
+-- the same place profession and race names come from. This member's was recorded in German.
+check("with the tree they are in and what was spent in it", textShowing("Arcane"),
+	"the heading is still showing the word the recording client used")
+check("and not the word the recording client used", not textShowing("Arkan"))
 
 local function talentCellShowing(name)
 	for _, f in ipairs(frames) do
@@ -2944,6 +2953,25 @@ do
 	-- those, which is worse than being wrong about all of it.
 	-- Mists asks the same question with a shorter answer: its talents carry an id of their
 	-- own, so there is no position to look up.
+	-- The trees themselves are the one part of this with no spell behind them, so their
+	-- names are shipped - and, like every shipped name, fall back to English for a language
+	-- Family does not write and to the recorded word for anything the table has never heard
+	-- of.
+	do
+		local was = Family.locale
+		Family.locale = "frFR"
+		check("a talent tree is named in the reader's language",
+			Family:TalentTreeName("MAGE", 1, "Arkan") == "Arcanes",
+			tostring(Family:TalentTreeName("MAGE", 1, "Arkan")))
+		Family.locale = "itIT"
+		check("and in English for a language this table does not ship",
+			Family:TalentTreeName("MAGE", 1, "Arkan") == "Arcane",
+			tostring(Family:TalentTreeName("MAGE", 1, "Arkan")))
+		Family.locale = was
+		check("a tree no table knows keeps the word it was recorded under",
+			Family:TalentTreeName("MAGE", 9, "Arkan") == "Arkan")
+	end
+
 	check("a Mists talent is named from the spell its id maps to",
 		Family:TalentNameByID(15757, "recorded") == "Sacred Shield",
 		tostring(Family:TalentNameByID(15757, "recorded")))

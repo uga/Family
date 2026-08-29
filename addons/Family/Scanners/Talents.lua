@@ -40,8 +40,12 @@
 -- no table knows falls back to, which is a client newer than the table or a talent that has
 -- moved. It is a fallback now rather than the only answer.
 --
--- Mists is elsewhere again: a specialisation has an id and GetSpecializationInfoByID answers
--- for any class, so that half has always stored an id.
+-- The three trees a class has are named the same way, and are the one part of this with no
+-- spell behind them: TalentSpells.lua carries their names, from the game's own table, the way
+-- SkillLines.lua and Races.lua carry theirs. Their recorded name is the fallback again.
+--
+-- Mists talents carry an id of their own, which is recorded below and maps straight to a
+-- spell - and its specialisations have always resolved for any class.
 
 local _, Family = ...
 

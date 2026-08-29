@@ -51,10 +51,19 @@ MISTS = ("Mists of Pandaria Classic", "5.5.4.69078")
 
 TABLES = ["Talent", "TalentTab", "ChrClasses"]
 
+# The three trees above each grid - Arcane, Fire, Frost - are the one part of this that has no
+# spell to be named from, so their names are shipped the way profession and race names are.
+# GetTalentTabInfo has the same limitation GetTalentInfo has: it answers for the class being
+# played, so a tree belonging to another class has to come from somewhere, and the game's own
+# table is where profession and race names already come from.
+TREE_LOCALES = ["enUS", "deDE", "frFR", "esES", "ruRU"]
+
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".talents-cache")
 
 
-def path_for(table, build):
+def path_for(table, build, locale=None):
+    if locale and locale != "enUS":
+        return os.path.join(CACHE, "%s-%s-%s.csv" % (table, build, locale))
     return os.path.join(CACHE, "%s-%s.csv" % (table, build))
 
 
@@ -72,6 +81,19 @@ def fetch():
                 open(target, "wb").write(response.read())
 
     for _, (game, build) in BUILDS.items():
+        for locale in TREE_LOCALES:
+            if locale == "enUS":
+                continue
+            target = path_for("TalentTab", build, locale)
+            if os.path.exists(target) and os.path.getsize(target) > 0:
+                print("  have   %s TalentTab %s" % (game, locale))
+                continue
+            print("  fetch  %s TalentTab %s" % (game, locale))
+            with urllib.request.urlopen(
+                    "https://wago.tools/db2/TalentTab/csv?build=%s&locale=%s"
+                    % (build, locale), timeout=300) as response:
+                open(target, "wb").write(response.read())
+
         for table in TABLES:
             target = path_for(table, build)
             if os.path.exists(target) and os.path.getsize(target) > 0:
@@ -83,8 +105,8 @@ def fetch():
                 open(target, "wb").write(response.read())
 
 
-def rows_of(table, build):
-    target = path_for(table, build)
+def rows_of(table, build, locale=None):
+    target = path_for(table, build, locale)
     if not os.path.exists(target) or os.path.getsize(target) == 0:
         return None
     return list(csv.DictReader(io.StringIO(open(target, encoding="utf-8").read())))
@@ -135,6 +157,50 @@ def build_table():
     return out, complaints
 
 
+def tree_names():
+    """What each class's three trees are called, in every language Family writes.
+
+    The class a tab belongs to is taken by joining through the talents themselves - every
+    Talent row carries both its TabID and its ClassID - rather than by decoding TalentTab's
+    class bitmask. The join is the table saying it; the bitmask would be me saying it.
+    """
+    out = {}
+    complaints = []
+
+    for expansion, (game, build) in BUILDS.items():
+        talents = rows_of("Talent", build)
+        english = rows_of("TalentTab", build)
+        classes = rows_of("ChrClasses", build)
+        if not (talents and english and classes):
+            continue
+
+        by_class = {row["ID"]: row["Filename"] for row in classes}
+        order = {row["ID"]: int(row["OrderIndex"]) + 1 for row in english}
+
+        # Which class each tab belongs to, from the talents in it.
+        owner = {}
+        for row in talents:
+            name = by_class.get(row["ClassID"])
+            if name:
+                owner[row["TabID"]] = name
+
+        here = {}
+        for locale in TREE_LOCALES:
+            rows = rows_of("TalentTab", build, locale)
+            if rows is None:
+                complaints.append("missing: %s TalentTab %s" % (game, locale))
+                continue
+            for row in rows:
+                tab, name = order.get(row["ID"]), row["Name_lang"].strip()
+                who = owner.get(row["ID"])
+                if tab and name and who:
+                    here.setdefault(who, {}).setdefault(tab, {})[locale] = name
+
+        out[expansion] = here
+
+    return out, complaints
+
+
 def mists_table():
     """Mists talents, by the id the client reports them under.
 
@@ -176,6 +242,10 @@ def disagreements(out):
     return found
 
 
+def lua_string(s):
+    return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
 ACCESSORS = """
 -- What to call a talent, in the language of whoever is reading.
 --
@@ -201,6 +271,22 @@ function Family:TalentName(classFile, tab, tier, column, recorded)
 \treturn recorded
 end
 
+-- What a class calls one of its three trees, in the reader's language.
+--
+-- The one part of this that is a name rather than an id, because a tree has no spell to be
+-- named from. Falls back to the word the recording client wrote, which is right for a client
+-- whose language this does not ship and for anything newer than the table.
+function Family:TalentTreeName(classFile, tab, recorded)
+\tlocal expansion = Family.Capabilities and Family.Capabilities.expansion
+\tlocal byClass = expansion and Family.TalentTrees[expansion]
+\tlocal tabs = byClass and classFile and byClass[classFile]
+\tlocal names = tabs and tab and tabs[tab]
+\tlocal name = names and (names[Family.locale] or names.enUS)
+
+\tif type(name) == "string" and name ~= "" then return name end
+\treturn recorded
+end
+
 -- The same question on Mists, where a talent has an id of its own and needs no position at
 -- all: the id is the spell. The client names any spell for any class, so this is the same
 -- answer as the grid above by a shorter road.
@@ -215,7 +301,7 @@ end
 """
 
 
-def emit(out, mists, path):
+def emit(out, mists, trees, path):
     lines = []
     add = lines.append
     add('-- Family - an alt manager for World of Warcraft Classic')
@@ -274,6 +360,23 @@ def emit(out, mists, path):
     add('-- Mists, by the id the client reports. SpellID rather than the ranked column, which')
     add('-- is zero for a third of these rows where it is set for every one of them - the')
     add('-- other way round from the two tables above.')
+    add('-- What each class calls its three trees. The one part of this with no spell behind')
+    add('-- it, so the names are shipped the way profession and race names are - and for the')
+    add('-- same reason: the client answers only for the class being played.')
+    add('Family.TalentTrees = {')
+    for expansion in sorted(trees):
+        add('\t[%d] = {' % expansion)
+        for who in sorted(trees[expansion]):
+            add('\t\t%s = {' % who)
+            for tab in sorted(trees[expansion][who]):
+                names = trees[expansion][who][tab]
+                inline = ", ".join('%s = %s' % (loc, lua_string(names[loc]))
+                                   for loc in TREE_LOCALES if loc in names)
+                add('\t\t\t[%d] = { %s },' % (tab, inline))
+            add('\t\t},')
+        add('\t},')
+    add('}')
+    add('')
     add('Family.TalentSpellByID = {')
     for talent in sorted(mists):
         add('\t[%d] = %d,' % (talent, mists[talent]))
@@ -292,6 +395,8 @@ if __name__ == "__main__":
     out, complaints = build_table()
     mists, more = mists_table()
     complaints.extend(more)
+    trees, more = tree_names()
+    complaints.extend(more)
     if complaints:
         print("\n".join("  ! " + c for c in complaints))
     if not out:
@@ -306,7 +411,9 @@ if __name__ == "__main__":
 
     target = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                           "..", "addons", "Family", "TalentSpells.lua")
-    emit(out, mists, os.path.normpath(target))
+    emit(out, mists, trees, os.path.normpath(target))
+    print("%d classes of trees, %d languages"
+          % (len(trees.get(1, {})), len(TREE_LOCALES)))
     print("%d Mists talents, by id" % len(mists))
     total = sum(len(c) for e in out.values() for t in e.values()
                 for ti in t.values() for c in [ti])

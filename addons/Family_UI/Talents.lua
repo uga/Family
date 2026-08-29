@@ -559,9 +559,14 @@ local function build(frame)
 				local tree = data.tabs[tab]
 				local left = (tab - 1) * (4 * CELL + TREE_GAP)
 
+				-- The tree's own name, in the reader's language. The client answers only
+				-- for the class being played, so this comes from the game's own table -
+				-- the same place profession and race names come from.
+				local treeName = Family:TalentTreeName(member.meta.classFile, tab,
+					tree.name) or string.format(L["Tree %d"], tab)
+
 				nextLabel(left, 0, string.format("|cff88bbff%s|r |cffffd700%d|r",
-					tree.name or string.format(L["Tree %d"], tab), tree.points or 0),
-					4 * CELL)
+					treeName, tree.points or 0), 4 * CELL)
 
 				for _, talent in pairs(tree.talents or {}) do
 					local tier = talent.tier or 1
@@ -598,7 +603,7 @@ local function build(frame)
 							or (rank > 0 and "" or nil),
 						fallback = {
 							{ shownName or "?" },
-							{ tree.name or string.format(L["Tree %d"], tab) },
+							{ treeName },
 							{ string.format(L["|cffffd700%d|r of %d"], rank, maxRank),
 								string.format(L["|cff888888tier %d|r"], tier) },
 						},
