@@ -140,7 +140,13 @@ take these with it.
       ticked.
 - [ ] A character of yours in the guild with no professions recorded says so, and says to open
       a profession window once — rather than showing an empty row.
-- [ ] **Whether the *left out* line appears at all, and what number it carries.** It counts
+- [ ] On a character not played for a while, the grid offers its professions rather than
+      claiming it has none. Those were recorded under their names before Family kept track of
+      professions by identity, and they are resolved on the way in.
+- [ ] The *Not offered* line, if it appears, **fits on one line**. It does not wrap and it is
+      capped at six names, so a longer list ends with "and N more" rather than running off the
+      right-hand edge. The harness cannot measure text, so this one is only checkable here.
+- [ ] **Whether the *left out* line appears at all, and what it names.** It counts
       professions this client gave no identifier for, and on a healthy client it should not
       appear. If it does, write the number and the client into the row: it means the skill
       line table is missing something that client has, which is a finding and not a passing

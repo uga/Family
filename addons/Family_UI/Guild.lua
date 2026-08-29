@@ -487,7 +487,7 @@ local function build(frame)
 				-- and gives them no way to find out what, which is a worse answer than none; the
 				-- word the client used for it is the one thing that identifies it, and it is the
 				-- one thing this end has.
-				local nameless = {}
+				local nameless, namelessMore = {}, 0
 
 				for _, key in ipairs(keys) do
 					local meta = (members[key] or {}).meta or {}
@@ -504,14 +504,37 @@ local function build(frame)
 					-- filed under a word, and a word is one language, so it cannot cross and is not
 					-- offered. It is named below instead of being left out in silence, which is the
 					-- same promise §7.1 makes about recipes without ids.
-					local offered = {}
+					-- A profession filed under a word rather than an id, where the skill line
+					-- table knows the word, is that profession - so it is looked up and offered
+					-- like any other. Recipes:Crafters has resolved names this way since
+					-- whole-family search was written, and the professions scanner does it when
+					-- it re-keys a member.
+					--
+					-- Without this a character recorded by a version that had no ids, and not
+					-- played since, offered nothing and was told it had no professions at all
+					-- while the line at the foot of the grid listed three of them by name. The
+					-- ids were a lookup away the whole time.
+					local offered, seen, cannot = {}, {}, 0
+
 					for id, skill in pairs(meta.skills or {}) do
-						if type(id) == "number" then
-							offered[#offered + 1] = { id = id, skill = skill,
-								name = Family:ProfessionName(id, skill.name) }
-						else
-							nameless[#nameless + 1] = string.format("%s (%s)",
-								tostring(skill.name or id), tostring(meta.name or key))
+						local line = type(id) == "number" and id or Family:SkillLineFor(id)
+
+						if line and not seen[line] then
+							seen[line] = true
+							offered[#offered + 1] = { id = line, skill = skill,
+								name = Family:ProfessionName(line, skill.name) }
+						elseif not line then
+							-- A word this client's table has never heard of: a rogue's
+							-- poisons, or a skill from a client newer than the table. It
+							-- cannot cross and it is named at the foot of the grid.
+							cannot = cannot + 1
+							if #nameless < 6 then
+								nameless[#nameless + 1] = string.format("%s (%s)",
+									tostring(skill.name or id),
+									tostring(meta.name or key))
+							else
+								namelessMore = namelessMore + 1
+							end
 						end
 					end
 					table.sort(offered, function(a, b) return a.name < b.name end)
@@ -520,8 +543,16 @@ local function build(frame)
 						local note = nextRow()
 						note:EnableMouse(false)
 						note.text:SetWidth(width - 8)
-						note.text:SetText(L["      |cff9d9d9dNo professions recorded on this "
-							.. "character yet. Open one of its profession windows once.|r"])
+
+						-- Two different states, and saying the first about the second is how
+						-- this panel came to tell a player that a character had no
+						-- professions in the same breath as listing three of them.
+						note.text:SetText(cannot > 0
+							and L["      |cff9d9d9dNothing on this character can be offered. "
+								.. "The line at the foot of the grid says why.|r"]
+							or L["      |cff9d9d9dNo professions recorded on this "
+								.. "character yet. Open one of its profession windows "
+								.. "once.|r"])
 					end
 
 					local placed = 0
@@ -588,10 +619,15 @@ local function build(frame)
 					local left = nextRow()
 					left:EnableMouse(false)
 					left.text:SetWidth(width - 8)
-					left.text:SetText(string.format(L["   |cffffaa00Not offered: %s. This client did "
-						.. "not say which profession that is, only what it is called - and a name is "
-						.. "readable in one language, so it cannot cross.|r"],
-						table.concat(nameless, ", ")))
+					-- Capped rather than allowed to run off the edge of the panel. The row
+					-- does not wrap, so a long list was silently cut in half by the frame's
+					-- right-hand edge - which is the same failure as saying nothing.
+					left.text:SetText(string.format(L["   |cffffaa00Not offered: %s%s. This client "
+						.. "gave no identifier for those, only what they are called - and a name "
+						.. "is readable in one language, so it cannot cross.|r"],
+						table.concat(nameless, ", "),
+						namelessMore > 0
+							and string.format(L[" and %d more"], namelessMore) or ""))
 				end
 
 			end

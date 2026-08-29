@@ -6741,6 +6741,22 @@ print("guild share")
 		Family.Database:SetMeta("Backup-FireMaw", { name = "Backup", realm = "Fire Maw",
 			guild = guildName, classFile = "MAGE", level = 60 })
 
+		-- A member recorded by a version that had no skill line ids: every profession filed
+		-- under the word the client used. Reported from a live client, where two characters
+		-- were told they had no professions at all in the same breath as a line at the foot
+		-- of the grid listing three of them by name.
+		Family.Database:SetMeta("Oldtimer-FireMaw", { name = "Oldtimer", realm = "Fire Maw",
+			guild = guildName, classFile = "DRUID", level = 60, skills = {
+				["Herbalism"] = { rank = 300, maxRank = 300, name = "Herbalism" },
+			} })
+
+		-- And one whose only skill is a word no table has an id for - a rogue's poisons, on
+		-- the client this was found on. That one genuinely cannot cross.
+		Family.Database:SetMeta("Poisoner-FireMaw", { name = "Poisoner", realm = "Fire Maw",
+			guild = guildName, classFile = "ROGUE", level = 60, skills = {
+				["Cheesemaking"] = { rank = 12, maxRank = 75, name = "Cheesemaking" },
+			} })
+
 		-- The character being played is called Tester. It says so here because the block
 		-- above borrowed this client's identity to play the other end of the wire, and a
 		-- scan that ran while it was borrowed wrote the borrowed name onto our own record -
@@ -6838,6 +6854,60 @@ print("guild share")
 		check("the heading opens it", clickRow("What you share with"))
 		check("and the boxes are there once it is open", labelled("Blacksmithing") ~= nil)
 
+		-- A profession filed under a word the skill line table knows is that profession, and
+		-- is offered like any other. The ids were a lookup away the whole time, and refusing
+		-- them made a member recorded by an older version unshareable for ever.
+		local herbs = Family:SkillLineFor("Herbalism")
+		Family.Guild:SetShare(guildKey, "Oldtimer-FireMaw", herbs, true)
+		Family.UI:Refresh()
+
+		-- Found by being ticked, not by the word on it. Another member of this fixture has
+		-- Herbalism too, keyed by an id, and a needle that matched the word alone found
+		-- their box and passed whatever this panel did to Oldtimer's.
+		local older
+		for _, f in ipairs(fontStrings) do
+			local parent = type(f.__parent) == "table" and f.__parent or nil
+			if type(f.__text) == "string" and f.__text:find("Herbalism", 1, true)
+				and parent and parent.label == f and parent.__shown ~= false
+				and parent.__checked == true then
+				older = parent
+			end
+		end
+		check("a profession recorded under a word rather than an id is still offered",
+			older ~= nil and older.__enabled ~= false)
+
+		local theirs3 = (Family.Guild:Offering() or {})["Oldtimer-FireMaw"].professions
+		check("and it crosses under its identifier, not under the word",
+			theirs3 and #theirs3 == 1 and theirs3[1].skillLine == herbs
+				and theirs3[1].rank == 300,
+			theirs3 and tostring(theirs3[1] and theirs3[1].skillLine) or "nothing")
+		Family.Guild:SetShare(guildKey, "Oldtimer-FireMaw", herbs, false)
+
+		-- A record holding the same profession twice, once under its id and once under the
+		-- word - which is what half a migration looks like, and what a saved variables file
+		-- Family did not write may hold. One box, one entry on the wire.
+		Family.Database:SetMeta("Twice-FireMaw", { name = "Twice", realm = "Fire Maw",
+			guild = guildName, classFile = "DRUID", level = 60, skills = {
+				[herbs] = { rank = 275, maxRank = 300, name = "Herbalism" },
+				["Herbalism"] = { rank = 275, maxRank = 300, name = "Herbalism" },
+			} })
+		Family.Guild:SetShare(guildKey, "Twice-FireMaw", herbs, true)
+
+		local twice = (Family.Guild:Offering() or {})["Twice-FireMaw"].professions
+		check("and one held under both an id and a word crosses once, not twice",
+			twice and #twice == 1, twice and tostring(#twice) or "nothing")
+
+		Family.Guild:SetShare(guildKey, "Twice-FireMaw", herbs, false)
+		Family.Database:Forget("Twice-FireMaw")
+		Family.UI:Refresh()
+
+		-- The two states said apart. Saying the first about the second is how the panel came
+		-- to tell a player a character had no professions while listing three of them.
+		check("a character with nothing offerable says so, rather than claiming it has none",
+			visibleText("Nothing on this character can be offered"))
+		check("and one that really has none still says that",
+			visibleText("No professions recorded on this character yet"))
+
 		local box = labelled("Blacksmithing")
 		check("with a box per character per profession", box ~= nil)
 		check("ticked where the grid says it is ticked", box and box.__checked == true)
@@ -6894,7 +6964,7 @@ print("guild share")
 		-- find out what; the word the client used is the one thing that identifies it and
 		-- the one thing this end has.
 		check("and is named rather than left off in silence",
-			visibleText("Not offered: Cheesemaking (Smith)"))
+			visibleText("Cheesemaking (Smith)") and visibleText("Not offered:"))
 
 		-- Off means the grid looks inert as well as being inert. A live-looking grid that
 		-- recorded grants before the transport existed would be the one way this feature
@@ -7053,6 +7123,8 @@ print("guild share")
 			next(Family.Guild:Known(guildKey)) ~= nil)
 
 		Family.Database:SetMeta("Backup-FireMaw", { guild = "Somewhere Else" })
+		Family.Database:SetMeta("Oldtimer-FireMaw", { guild = "Somewhere Else" })
+		Family.Database:SetMeta("Poisoner-FireMaw", { guild = "Somewhere Else" })
 
 		local dropped = Family.Guild:ForgetLeft()
 		check("a guild none of them is in any more is forgotten",
@@ -7093,6 +7165,8 @@ print("guild share")
 		Family.Database:SetMeta(Family:CurrentMember(), { guild = guildName })
 		Family.Database:Forget("Smith-FireMaw")
 		Family.Database:Forget("Backup-FireMaw")
+		Family.Database:Forget("Oldtimer-FireMaw")
+		Family.Database:Forget("Poisoner-FireMaw")
 		Family.Database:Forget("Faraway-FireMaw")
 	end
 

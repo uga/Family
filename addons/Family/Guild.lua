@@ -260,13 +260,21 @@ end
 -- cross. The grid does not offer those and says how many it left out rather than appearing to
 -- share them; this is the other half of that promise, kept where the wire is.
 local function sharedProfessions(guildKey, memberKey, meta)
-	local out
+	local out, seen = nil, {}
 
 	for id, skill in pairs(meta.skills or {}) do
-		if type(id) == "number" and Guild:Shares(guildKey, memberKey, id) then
+		-- A profession filed under a word rather than an id is still that profession where
+		-- the skill line table knows the word, so it is looked up rather than refused. A
+		-- member recorded by a version that had no ids, and not played since, is filed that
+		-- way for every profession they have; the grid resolves them the same way, and both
+		-- ends have to agree or a box could be ticked for something that never crossed.
+		local line = type(id) == "number" and id or Family:SkillLineFor(id)
+
+		if line and not seen[line] and Guild:Shares(guildKey, memberKey, line) then
+			seen[line] = true
 			out = out or {}
 			out[#out + 1] = {
-				skillLine = id,
+				skillLine = line,
 				rank = tonumber(skill.rank) or 0,
 				maxRank = tonumber(skill.maxRank) or 0,
 			}

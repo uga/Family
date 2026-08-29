@@ -41,6 +41,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Professions recorded before Family kept track of them by identity can now be shared.**
+  A character last played a while ago had its professions filed under their names, and the grid
+  would not offer any of them — it said the character had no professions at all, while the line
+  beneath it listed them by name. They are offered now, and that line is left only for the ones
+  the client really gave no identifier for.
 - **A character could end up with no guild recorded at all**, and then behave as though they
   had never been in one: missing from the grid of what you share, and shown as *not running
   Family* on your own guild roster, while looking perfectly ordinary everywhere else in

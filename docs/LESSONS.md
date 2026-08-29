@@ -702,11 +702,26 @@ reasons, and passed whatever the panel did. Mutation testing is what said so: re
 it was meant to protect changed nothing. A needle that matches a substring of something else is
 a needle that will eventually match it.
 
+**And it happened again the same evening, in the same file.** A check that a profession recorded
+under a *word* is still offered looked for a box labelled `Herbalism` — and another member of
+the fixture has Herbalism, keyed by an id, so it found that box and passed while the code under
+test refused the case entirely. Its mutation caught it, as before. Both times the repair was the
+same shape: match on something only the intended widget can have. Here that is *being ticked*,
+because the check ticks it first.
+
 ## L-023 — A field the client answers late, written by a merge that skips nothing said
 
-A character played that morning, in the guild, with guild share switched on, read as *not
-running Family* on their own player's roster and was missing from the grid of what they share.
-Every other panel in Family showed them correctly.
+**First, the attribution, because getting that wrong is its own lesson.** A guildmate showed as
+*not running Family* although they had played that day, and the defect below was found while
+looking into it — but it was not the cause. That guildmate was another player, not one of this
+player's own characters; the two clients had simply not been online together yet, and the row
+went green the moment they were. The premise "this is one of their alts" came from a name in an
+earlier, unrelated conversation and was never checked. **A report explains a symptom only once
+somebody has confirmed what the symptom is about**, and a plausible reading of a screenshot is
+not that confirmation.
+
+The defect below is real and was found by reading rather than by the report, which is the only
+reason this entry survives its own opening.
 
 **What was wrong:** `Scanners/Identity.lua` wrote `fields.guild = GetGuildInfo("player")` and
 moved on. `GetGuildInfo` does not answer for the first few seconds of a session — a fact this
