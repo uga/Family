@@ -94,7 +94,51 @@ Per client: **Era**, **Anniversary**, **Mists**.
 - [ ] Someone in the guild not running Family is named as such rather than left blank.
 - [ ] Switching it off silences it in both directions — announcing does nothing, and asking
       for an update says so rather than appearing to work.
-- [ ] Nothing but class, level, gear and talent shape crosses. Bags, mail and money do not.
+- [ ] Nothing but class, level, gear and talent shape crosses. Bags, mail and money do not —
+      **except a profession you have ticked**, which is the section below.
+
+#### Shared professions, with a guildmate
+- [ ] Tick **one** profession on one of your characters. On their client, that character
+      shows that profession with its skill level beside it — and only that one, not the
+      others the same character has.
+- [ ] What crossed is a **rank**. Nothing on their side says your character knows any
+      particular pattern, because no recipe list has been sent yet.
+- [ ] **Untick it, and then touch nothing on either client.** Within a minute it is gone from
+      their side. Neither of you presses *Update now*: a withdrawal that waits for a button is
+      not a withdrawal, and this is the only place that can be tested at all.
+- [ ] Tick four boxes one after another, then `/family guild test` on your side. It counts
+      **one** message sent for the lot, not four. Ticking a grid is one decision to everybody
+      else in the guild.
+- [ ] A guildmate on an **older Family** still exchanges gear and talents with you, and simply
+      shows no professions. Note their version in the row if you have one to test against.
+
+### Shared professions — the grid, which needs nobody but you
+
+Everything here is testable alone, and it is a section of its own for that reason: the lines
+above need a guildmate, and a pass that honestly says *not run: no guildmate* would otherwise
+take these with it.
+
+- [ ] The Guild tab shows **What you share with <guild>** above the roster, with a row per
+      character of yours in the guild and a tick box per profession each of them has.
+- [ ] With guild share **off**, every box is greyed and so are the words beside it, and the
+      panel says the switch is in Options. Nothing can be ticked.
+- [ ] Switch it on. The boxes come live and **every one of them starts unticked.** A grid
+      nobody has touched is the state Family arrives in, so a box already ticked on a database
+      where nobody has ever ticked one is a fault rather than a convenience.
+- [ ] Tick one and the line under the grid counts it. Untick it and the line says nothing is
+      ticked.
+- [ ] A character of yours in the guild with no professions recorded says so, and says to open
+      a profession window once — rather than showing an empty row.
+- [ ] **Whether the *left out* line appears at all, and what number it carries.** It counts
+      professions this client gave no identifier for, and on a healthy client it should not
+      appear. If it does, write the number and the client into the row: it means the skill
+      line table is missing something that client has, which is a finding and not a passing
+      line.
+- [ ] On a non-English client, every profession in the grid is named in that client's own
+      language.
+- [ ] Log to an alt in a **different guild**, and back. The first guild's records and its
+      ticked grid are **still there.** What Family forgets is decided from your own
+      characters' guilds, and having a second guild must never cost you the first one's.
 
 ### Wide Family — only once the above is clean
 - [ ] About says *compressed storage*, not *uncompressed*. A checkout has no `Libs` and
