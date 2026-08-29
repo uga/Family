@@ -164,6 +164,8 @@ function()
 
 	local containerAPI = C_Container or {}
 	local numSlots = containerAPI.GetContainerNumSlots or _G.GetContainerNumSlots
+	local numFree = containerAPI.GetContainerNumFreeSlots or _G.GetContainerNumFreeSlots
+	local getItem = containerAPI.GetContainerItemInfo or _G.GetContainerItemInfo
 	local toInventory = containerAPI.ContainerIDToInventoryID or _G.ContainerIDToInventoryID
 
 	Family:Print(L["  open now, as the client reports it:"])
@@ -174,10 +176,26 @@ function()
 				local inventory = toInventory and Family:TryCall(toInventory, bag)
 				local itemID = inventory
 					and Family:TryCall(GetInventoryItemID, "player", inventory)
-				Family:Print(L["    container %d: %d slots, inventory slot %s, bag item "
-					.. "%s %s"],
-					bag, size, tostring(inventory), tostring(itemID),
+
+				-- Free as well as size, because a container reporting more free than it
+				-- has is the whole of the fault being chased: a bank totalling "56 of 52
+				-- free" is one of these lying, and this says which.
+				local free = numFree and Family:TryCall(numFree, bag)
+
+				Family:Print(L["    container %d: %d slots, %s free, inventory slot %s, "
+					.. "bag item %s %s"],
+					bag, size, tostring(free), tostring(inventory), tostring(itemID),
 					tostring(itemID and Family.Names:CachedItem(itemID) or ""))
+
+				-- And what is actually in it, counted by asking every slot the size
+				-- claims. If the size is short, this is short by the same amount, and the
+				-- items in the slots past it are ones Family has never seen.
+				local held = 0
+				for slot = 1, (size or 0) do
+					if Family:TryCall(getItem, bag, slot) then held = held + 1 end
+				end
+				Family:Print(L["      %d of those %d slots have something in them"],
+					held, size)
 			end
 		end
 	end
