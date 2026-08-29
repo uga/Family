@@ -488,3 +488,33 @@ short enough to fit the cell it was pinned to, "just now" in three languages, an
 Which is this lesson again, one turn later and from the inside: a check written to the shape
 of the reported fault. The fault was reported in English, so the check was written in English.
 
+--------------------------------------------------------------------------------------------
+
+## L-018 — An impossible number was the visible half of a silent one
+
+**2026-08-28.** A player reported that his bank contents were not being saved and could not
+say when. Two rounds of diagnosis went into the write path — whether the record reached disk,
+whether the events fired — because "not saved" describes a write.
+
+It was a read. With narration on, his client printed `scanned bank: 56/52 free`: more free
+slots than the bank has. `GetContainerNumSlots(BANK_CONTAINER)` answers **24** on Classic Era
+while the bank has **28**, and `GetContainerNumFreeSlots` answers for all 28. The impossible
+total was the harmless half. The other half is that a container's contents are read by asking
+every slot from one to that size, so **four bank slots were never looked at** and anything in
+them was never recorded — for every player, on every scan, since Family was written.
+
+Nobody had seen it because it only shows when the last four slots are occupied, and it hides
+completely when they are not: free is capped by how empty the bank actually is, so a bank with
+anything in it reports a total that looks fine.
+
+**The check that now catches it:** the harness's bank window answers 24 and has 28, with an
+item in slot 27, and asserts both that the item arrives and that a bank never reports more free
+slots than it has. Trusting the call alone fails both.
+
+**The general shape, and it is two things.** An impossible number on screen is not a display
+fault to be tidied away — it is the one visible symptom of something that is silent everywhere
+else, and it is worth chasing to its cause rather than to a plausible-looking sum. And where
+two ways of asking the same question disagree, the costs of being wrong are rarely symmetric:
+asking a slot that does not exist answers nothing, and not asking one that does loses what is
+in it. That asymmetry decides which answer to take, not which call looks more official.
+

@@ -155,6 +155,12 @@ container  7: 20 slots, inventory slot 90, bag item 22248
 container  8: 20 slots, inventory slot 91, bag item 22248
 ```
 
+**`GetContainerNumSlots(BANK_CONTAINER)` under-reports.** It answers 24 on 1.15.9 where the
+bank has 28 — `NUM_BANKGENERIC_SLOTS` says 28 and `GetContainerNumFreeSlots` counts all 28,
+which is how a live client came to print `scanned bank: 56/52 free`. Read the larger of the two.
+The total was the harmless half: contents are read slot by slot up to that size, so the four
+past it were never looked at (L-018).
+
 Written down because a player reported a bag shown one slot along from where it sits, and the
 mapping was the obvious suspect. It was not: the panel lists the bank's own window first and
 the bags after it, so the first *bank bag* is the second *block*. There is nothing to fix in
