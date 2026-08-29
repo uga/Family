@@ -384,6 +384,10 @@ rather than *no cooldown*.
 A family need not be one account. You can add another player's characters as members of yours,
 and they can add yours.
 
+**Any realm.** They do not have to play where you play, share a guild with you, or be in a
+group with you — only be online and running Family at the moment you ask. Tested between two
+families on unrelated realms.
+
 > *A picture of this is still to be taken: `docs/images/wide-family.png`.*
 
 One principle governs the whole feature: **nothing is ever visible that was not deliberately

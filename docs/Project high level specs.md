@@ -952,13 +952,11 @@ Recorded so the project can be measured against it.
    switch silences it in both directions, and nothing but class, level, gear and talent shape
    crosses. The consent argument that gates §6.0 never applied here, because everything it
    carries is what Inspect already gives away.
-1. **Cross-realm addon messaging.** Which pairs of players can actually exchange addon
-   messages, per client, decides how far Wide Family reaches beyond a guild. To be
-   established by testing, not assumed — and **still open after the beta.2 pass**, which
-   linked two families successfully without establishing which realm pairs can and cannot.
-   `SMOKE.md` was written claiming a completed pass closes this; its Wide Family section has
-   no line that tests reach, so it closed the other three and not this one. The line is there
-   now and the next pass can settle it.
+1. ~~**Cross-realm addon messaging.**~~ Settled by the 1.0.0 pass: **any realm**. Two families
+   on unrelated realms exchanged, so Wide Family reaches as far as two people who both run it,
+   and a realm is not a boundary. Established by testing rather than assumed, which is what
+   this question was asked for — the beta.2 pass had linked two families without recording
+   which realms, and `SMOKE.md` gained the line that asks.
 2. ~~**A generated talent table.**~~ Done: `addons/Family/TalentSpells.lua`, from `Talent`
    and `TalentTab` via `tools/talents.py`. A talent's position maps to the spell id of its
    first rank and the reader's own client names it, so talent names work in every language
