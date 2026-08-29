@@ -272,6 +272,13 @@ function Guild:RecipesFor(memberKey, skillLine)
 		end
 	end
 
+	-- Nothing shareable is not an empty list, it is no list. A profession whose window came
+	-- back with no rows at all - or whose every recipe the client would not name - has
+	-- nothing to advertise, and advertising it anyway produced a count and a fingerprint
+	-- that the far end dutifully asked about and received nothing for. Seen on a live
+	-- client as "recipe lists held from the guild: 4, 0 recipe(s) in all".
+	if #rows == 0 then return nil end
+
 	-- Sorted, because the fingerprint is over the order and two clients must agree on it.
 	table.sort(rows, function(a, b) return a.spell < b.spell end)
 
@@ -1575,16 +1582,30 @@ function Guild:Diagnose()
 			end
 		end
 
-		local lists, recipes = 0, 0
+		local lists, recipes, withItem = 0, 0, 0
 		for _, perMember in pairs(self:AllRecipes(guildKey)) do
 			for _, list in pairs(perMember) do
 				lists = lists + 1
 				recipes = recipes + #(list.spells or {})
+
+				for index = 1, #(list.spells or {}) do
+					local item = (list.items or {})[index]
+					if item and item ~= 0 then withItem = withItem + 1 end
+				end
 			end
 		end
 
-		Family:Print(L["  recipe lists held from the guild: %d, %d recipe(s) in all"],
-			lists, recipes)
+		-- **How many carry the id of what they make**, which is the half that answers on a
+		-- crafted item. A recipe with only its spell answers on the pattern and on nothing
+		-- else, so a guild whose lists are all spell and no item looks exactly like a guild
+		-- whose lists never arrived - to anybody hovering the food rather than the recipe.
+		Family:Print(L["  recipe lists held from the guild: %d, %d recipe(s) in all, "
+			.. "%d with the id of what they make"], lists, recipes, withItem)
+
+		if recipes > 0 and withItem == 0 then
+			Family:Print(L["  |cffffaa00none of them says what it makes, so they can only "
+				.. "answer on a recipe and never on the thing itself|r"])
+		end
 
 		if lists == 0 and known > 0 then
 			Family:Print(L["  |cff888888nothing yet: they arrive a few seconds after an "

@@ -61,6 +61,12 @@ is a decision rather than an afternoon of archaeology.
   profession and the list goes with it, on their side as well as yours, without either of you
   pressing anything.
 
+- **A profession with nothing to share no longer advertises an empty list.** One whose window
+  came back with no recipes still announced a count and a fingerprint of nothing, which the
+  other end asked about and received nothing for — showing up as *4 lists, 0 recipes in all*.
+- **`/family guild test` says how many of the recipes you hold carry the id of what they make.**
+  A recipe with only its spell can answer on the pattern and never on the food, so a guild
+  whose lists are all spell and no item looks exactly like a guild whose lists never arrived.
 - **A guildmate who was offline when you shared something now gets it as soon as they log in.**
   Two clients that had spoken to each other in the last six hours exchanged nothing further,
   which is what keeps a settled guild quiet — but it also meant that anything you shared while

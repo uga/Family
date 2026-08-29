@@ -6889,6 +6889,18 @@ print("guild share")
 			check("and says how many professions are ticked and how many can send a list",
 				ticked)
 
+			-- And how many of the recipes held carry the id of what they make, which is the
+			-- half that answers on a crafted item. Lists that are all spell and no item look
+			-- exactly like lists that never arrived, to anybody hovering the food.
+			local counted = false
+			for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+				if tostring(DEFAULT_CHAT_FRAME.messages[index])
+					:find("with the id of what they make", 1, true) then
+					counted = true
+				end
+			end
+			check("and how many of what arrived says what it makes", counted)
+
 			-- Named, not counted. "One of three has nothing to send" says something is
 			-- missing and gives nobody a way to find out which window to open.
 			local named = false
@@ -7107,6 +7119,22 @@ print("guild share")
 		check("and a recipe the client would not name is omitted and counted",
 			missing == 1, tostring(missing))
 		check("the fingerprint is a number both ends can compute", type(fingerprint) == "number")
+
+		-- Nothing shareable is no list, not an empty one. A profession whose window came
+		-- back with no rows had a perfectly good count and fingerprint of nothing, which the
+		-- far end asked about and received nothing for - seen on a live client as "recipe
+		-- lists held from the guild: 4, 0 recipe(s) in all".
+		do
+			local held = Family.Database:Payload("Smith-FireMaw").professions[smith].recipes
+			Family.Database:Payload("Smith-FireMaw").professions[smith].recipes = {}
+
+			check("a profession with nothing shareable offers no list at all",
+				Family.Guild:RecipesFor("Smith-FireMaw", smith) == nil)
+			check("and nothing for the other end to ask about",
+				Family.Guild:RecipeMark("Smith-FireMaw", smith) == nil)
+
+			Family.Database:Payload("Smith-FireMaw").professions[smith].recipes = held
+		end
 
 		-- A different list must fingerprint differently, or the whole traffic control is a
 		-- way of never sending an update.
