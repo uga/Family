@@ -452,6 +452,7 @@ Family.locales.deDE = {
 	["Show the Wide Family tab"] = "Reiter \"Große Familie\" zeigen",
 	["Where families are linked and what each may see. Linking is off until you switch it on there; this only decides whether the tab is in the list. Takes effect after a reload."] = "Wo Familien verknüpft werden und was jede sehen darf. Das Verknüpfen ist aus, bis du es dort einschaltest; dies entscheidet nur, ob der Reiter in der Liste steht. Wirkt nach einem Neuladen.",
 	["  bank bag slots bought: %s, all used: %s"] = "  gekaufte Bankfachplätze: %s, alle belegt: %s",
+	["      and something is in slot(s) %s, past where the size call says this container ends"] = "      und in Platz/Plätzen %s liegt etwas, hinter dem Ende, das der Aufruf angibt",
 	["never"] = "nie",
 	["Accept"] = "Annehmen",  -- 10
 	["Forget"] = "Vergessen",  -- 10

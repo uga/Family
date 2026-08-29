@@ -452,6 +452,7 @@ Family.locales.frFR = {
 	["Show the Wide Family tab"] = "Afficher l'onglet Famille élargie",
 	["Where families are linked and what each may see. Linking is off until you switch it on there; this only decides whether the tab is in the list. Takes effect after a reload."] = "Où les familles se lient et ce que chacune peut voir. La liaison est désactivée tant que vous ne l'activez pas là-bas ; ceci décide seulement si l'onglet est dans la liste. Prend effet après un rechargement.",
 	["  bank bag slots bought: %s, all used: %s"] = "  emplacements de sac de banque achetés : %s, tous utilisés : %s",
+	["      and something is in slot(s) %s, past where the size call says this container ends"] = "      et il y a quelque chose dans le(s) emplacement(s) %s, au-delà de la fin annoncée par l'appel",
 	["never"] = "jamais",
 	["Accept"] = "Accepter",  -- 10
 	["Forget"] = "Oublier",  -- 10

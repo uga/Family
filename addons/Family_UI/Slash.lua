@@ -204,6 +204,22 @@ function()
 				end
 				Family:Print(L["      %d of those %d slots have something in them"],
 					held, size)
+
+				-- And past where the size call says the container ends. A slot that does
+				-- not exist answers nothing, and so does an empty one - so this only ever
+				-- proves the container is bigger, never that it is not. Put something in a
+				-- bank square the panel does not show and it will be found here.
+				local beyond = {}
+				for slot = (size or 0) + 1, (size or 0) + 8 do
+					if Family:TryCall(getItem, bag, slot) then
+						beyond[#beyond + 1] = tostring(slot)
+					end
+				end
+				if #beyond > 0 then
+					Family:Print(L["      and something is in slot(s) %s, past where the "
+						.. "size call says this container ends"],
+						table.concat(beyond, ", "))
+				end
 			end
 		end
 	end

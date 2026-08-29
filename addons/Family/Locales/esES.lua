@@ -452,6 +452,7 @@ Family.locales.esES = {
 	["Show the Wide Family tab"] = "Mostrar la pestaña Familia amplia",
 	["Where families are linked and what each may see. Linking is off until you switch it on there; this only decides whether the tab is in the list. Takes effect after a reload."] = "Donde se enlazan las familias y qué puede ver cada una. El enlace está desactivado hasta que lo actives allí; esto solo decide si la pestaña aparece en la lista. Surte efecto tras recargar.",
 	["  bank bag slots bought: %s, all used: %s"] = "  espacios de bolsa del banco comprados: %s, todos usados: %s",
+	["      and something is in slot(s) %s, past where the size call says this container ends"] = "      y hay algo en el/los espacio(s) %s, más allá del final que indica la llamada",
 	["never"] = "nunca",
 	["Accept"] = "Aceptar",  -- 10
 	["Forget"] = "Olvidar",  -- 10
