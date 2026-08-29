@@ -122,6 +122,67 @@ add("recipes", L["why a recipe is in the wrong language: /family recipes"], func
 	end
 end)
 
+-- Why a bank record is missing, or a bag is shown in the wrong slot.
+--
+-- Two questions this repository cannot answer about somebody's client: which members have a
+-- bank record at all, and whether the container the client reports a bag in is the container
+-- the player sees it in. The first is in the saved data and the second can only be had from a
+-- bank window that is open right now.
+add("bank", L["why a bank record is missing or a bag is in the wrong slot: /family bank"],
+function()
+	Family:Print(L["|cffffd700Bank records|r"])
+
+	local members = {}
+	for key in pairs(Family.Database:Members()) do members[#members + 1] = key end
+	table.sort(members)
+
+	for _, key in ipairs(members) do
+		local meta = Family.Database:Meta(key) or {}
+		local payload = Family.Database:Payload(key)
+		local bank = payload and payload.bank
+
+		local containers, filled = 0, 0
+		for _, entry in pairs((bank or {}).containers or {}) do
+			containers = containers + 1
+			for _ in pairs(entry.slots or {}) do filled = filled + 1 end
+		end
+
+		Family:Print(L["  %s: %s, %d container(s), %d item(s), meta says %s"],
+			key,
+			bank and bank.seen and string.format(L["seen %s"], UI:Ago(bank.seen))
+				or L["no bank record"],
+			containers, filled,
+			meta.bankSeen and UI:Ago(meta.bankSeen) or L["never"])
+	end
+
+	-- What the client says this moment, which is the only place the answer to a bag in the
+	-- wrong slot can come from: the record keeps container ids and the player sees positions.
+	if not Family.Bank:IsOpen() then
+		Family:Print(L["  no bank window open - stand at a bank and ask again for the rest"])
+		return
+	end
+
+	local containerAPI = C_Container or {}
+	local numSlots = containerAPI.GetContainerNumSlots or _G.GetContainerNumSlots
+	local toInventory = containerAPI.ContainerIDToInventoryID or _G.ContainerIDToInventoryID
+
+	Family:Print(L["  open now, as the client reports it:"])
+	for bag = -1, 11 do
+		if bag == -1 or bag >= 5 then
+			local size = numSlots and Family:TryCall(numSlots, bag) or 0
+			if (size or 0) > 0 then
+				local inventory = toInventory and Family:TryCall(toInventory, bag)
+				local itemID = inventory
+					and Family:TryCall(GetInventoryItemID, "player", inventory)
+				Family:Print(L["    container %d: %d slots, inventory slot %s, bag item "
+					.. "%s %s"],
+					bag, size, tostring(inventory), tostring(itemID),
+					tostring(itemID and Family.Names:CachedItem(itemID) or ""))
+			end
+		end
+	end
+end)
+
 add("guild", L["guild share on, off, or test: /family guild test"], function(argument)
 	local wanted = (argument or ""):lower():match("^%S*")
 

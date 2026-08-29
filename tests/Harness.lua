@@ -3829,6 +3829,15 @@ check("/family talents reports what is stored",
 -- Says whether a recipe has an id to be named by at all, which is the difference between a
 -- display fault and a scan that has to be run again - and is not something this file can
 -- answer about somebody else's saved data.
+-- Which members have a bank record and what the client says about the bag in each bank
+-- container. Reported from a live client: a bank that does not save, and a bag shown one slot
+-- along from where it is. Neither is answerable from here - one is in somebody's saved data
+-- and the other only exists while a bank window is open.
+before = #DEFAULT_CHAT_FRAME.messages
+SlashCmdList["FAMILY"]("bank")
+check("/family bank reports what is recorded for every member",
+	#DEFAULT_CHAT_FRAME.messages > before)
+
 before = #DEFAULT_CHAT_FRAME.messages
 SlashCmdList["FAMILY"]("recipes")
 check("/family recipes reports what each recipe has to be named by",
