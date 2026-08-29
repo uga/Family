@@ -1413,21 +1413,38 @@ function Guild:Diagnose()
 	-- up. Neither shows anywhere, and the last thing this project learned the expensive way
 	-- is that state nobody can look at costs an evening the first time it is wrong.
 	do
-		local ticked, ready = 0, 0
+		local ticked, ready, silent = 0, 0, {}
 
 		for memberKey, perMember in pairs((store().grants[guildKey]) or {}) do
 			for line in pairs(perMember) do
 				ticked = ticked + 1
-				if self:RecipeMark(memberKey, line) then ready = ready + 1 end
+
+				if self:RecipeMark(memberKey, line) then
+					ready = ready + 1
+				elseif #silent < 8 then
+					-- Named, not counted. "One of three has nothing to send" tells a
+					-- player something is missing and gives them no way to find out
+					-- which window to open, which is the same fault as the note that
+					-- said "1 left out" and made somebody go looking.
+					local entry = Family.Database:Members()[memberKey] or {}
+					silent[#silent + 1] = string.format("%s (%s)",
+						Family:ProfessionName(line),
+						tostring((entry.meta or {}).name or memberKey))
+				end
 			end
 		end
 
 		if ticked > 0 then
 			Family:Print(L["  professions ticked: %d, of which %d have a recipe list to "
 				.. "send"], ticked, ready)
-			if ready < ticked then
-				Family:Print(L["  |cff888888the rest share a rank and nothing else until "
-					.. "that profession's window has been opened once|r"])
+
+			if #silent > 0 then
+				table.sort(silent)
+				Family:Print(L["  |cffffaa00nothing to send for: %s|r"],
+					table.concat(silent, ", "))
+				Family:Print(L["  |cff888888those share a rank and nothing else. Open each "
+					.. "one's window once - and if it stays on this list afterwards, "
+					.. "another addon is standing in front of that window|r"])
 			end
 		end
 

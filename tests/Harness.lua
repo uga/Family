@@ -6888,6 +6888,19 @@ print("guild share")
 
 			check("and says how many professions are ticked and how many can send a list",
 				ticked)
+
+			-- Named, not counted. "One of three has nothing to send" says something is
+			-- missing and gives nobody a way to find out which window to open.
+			local named = false
+			for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+				local message = tostring(DEFAULT_CHAT_FRAME.messages[index])
+				if message:find("nothing to send for", 1, true)
+					and message:find("Blacksmithing", 1, true) then
+					named = true
+				end
+			end
+			check("naming the ones with nothing to send, so the window can be found",
+				named)
 			check("and how many lists have come back", held)
 
 			Family.Guild:SetShare(guildKey, mine, 164, false)
