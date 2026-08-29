@@ -120,6 +120,11 @@ Per client: **Era**, **Anniversary**, **Mists**.
 - [ ] **Hover something one of their shared professions can make.** A *Guild crafters* block
       appears under your own family's, naming the player and the character of theirs that can
       make it. It works on the crafted item, not only on the pattern.
+- [ ] **Hover an enchant** — one that makes no object at all — in a trade skill window or from
+      a link. The guild's answer appears on the recipe's own tooltip, which for an enchant is
+      the only tooltip there is.
+- [ ] **Click a recipe row that ends in a count** (`+3`). It unfolds into every crafter and
+      folds away again on a second click.
 - [ ] Search that recipe's name in **Professions / Whole family**. The row carries a *guild*
       group beside your own crafters, or is a row of its own if nobody at home knows it.
 - [ ] **On a client set to another language**, the same search finds the same recipe. Only

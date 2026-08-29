@@ -7693,6 +7693,71 @@ print("guild share")
 			typed("a recipe of no such name")
 			check("and with it on, that it was", visibleText("family or the guild"))
 
+			-- A row with more crafters than it can show unfolds into all of them - rows
+			-- rather than a taller row, because the list hands out fixed-height frames
+			-- from a pool and scrolls by their count.
+			Family.Guild:SetEnabled(true)
+
+			-- Five of ours who know the same thing, because a row only offers to unfold
+			-- when it is hiding somebody - and with four shown, four crafters hide none.
+			--
+			-- Their skills run *against* their names on purpose: Alfa is the least skilled
+			-- and Echo the most. Ranked the same way round as the alphabet, a check that
+			-- the four shown are the four highest passes whichever order the panel used.
+			for index, who in ipairs { "Alfa", "Bravo", "Charlie", "Delta", "Echo" } do
+				Family.Database:SetMeta(who .. "-FireMaw", { name = who,
+					realm = "Fire Maw", level = 60,
+					skills = { [smith] = { rank = 290 + index, maxRank = 300 } } })
+				Family.Database:SetPayload(who .. "-FireMaw", { professions = {
+					[smith] = { rank = 290 + index, maxRank = 300, recipesSeen = time(),
+						recipes = { { name = "Wizard Oil", spellID = 25128 } } },
+				} })
+			end
+
+			typed("wizard oil")
+
+			local opener
+			for _, f in ipairs(frames) do
+				if f.__shown == true and f.expandKey ~= nil then opener = f end
+			end
+			check("a row with more crafters than it shows offers to unfold", opener ~= nil)
+
+			-- Highest skill first, which is what makes the cap bearable: alphabetical made
+			-- "+3" hide three arbitrary people, and by rank it hides the three you would
+			-- ask last. Echo is the most skilled of the five and Alfa the least, so by rank
+			-- Echo is on the line and Alfa is behind the fold - and alphabetically it is
+			-- the other way about, which is what lets this tell them apart.
+			check("and the names it does show are the highest skilled",
+				visibleText("Echo") and not visibleText("Alfa"))
+
+			if opener then
+				opener.__scripts.OnClick(opener)
+				check("and unfolding it names every one of them",
+					visibleText("Nervina") and visibleText("Faraway"))
+
+				local rowsOpen = 0
+				for _, f in ipairs(frames) do
+					if f.__shown == true and f.__parent and f.icon then
+						rowsOpen = rowsOpen + 1
+					end
+				end
+
+				opener.__scripts.OnClick(opener)
+
+				local rowsShut = 0
+				for _, f in ipairs(frames) do
+					if f.__shown == true and f.__parent and f.icon then
+						rowsShut = rowsShut + 1
+					end
+				end
+				check("and folding it again puts them away", rowsShut < rowsOpen,
+					tostring(rowsShut) .. " against " .. tostring(rowsOpen))
+			end
+
+			for _, who in ipairs { "Alfa", "Bravo", "Charlie", "Delta", "Echo" } do
+				Family.Database:Forget(who .. "-FireMaw")
+			end
+
 			if not wasEveryone then
 				_G.FamilyProfessionsEveryone.__scripts.OnClick(
 					_G.FamilyProfessionsEveryone)

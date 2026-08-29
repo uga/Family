@@ -70,8 +70,13 @@ is a decision rather than an afternoon of archaeology.
 - **A recipe only somebody in the guild knows now has its picture**, instead of a question
   mark. A picture is not an identifier and does not cross, so there was nothing to draw until
   Family started asking its own client for one.
-- **The list of who can make a recipe no longer runs off the right of the panel.** It is four
-  names and a count of the rest, and the column is wider.
+- **The list of who can make a recipe no longer runs off the right of the panel, and nobody is
+  hidden by it.** It shows the four highest-skilled and counts the rest, and **clicking the row
+  unfolds every one of them** — your characters with their skill, and your guildmates with how
+  old the record is. Clicking again folds it away.
+
+  The four it shows are the four you would actually ask: sorted by skill rather than by name,
+  so what the count hides is the people you would ask last.
 - **Shared recipes now work on Classic Era.** A recipe was carried as the spell it is, and on
   Era the game does not give a spell for trade skill recipes at all — it gives the item each
   one makes. So a guild on Era shared nothing but enchanting, which is the one thing there

@@ -466,6 +466,17 @@ local function build(frame)
 		r:RegisterForClicks("LeftButtonUp")
 
 		r:SetScript("OnClick", function(self)
+			-- A row in the whole-family search that has more crafters than it can show
+			-- unfolds instead of casting. It has nothing to cast: the search is about
+			-- everybody's recipes and this row is usually somebody else's, which is why
+			-- it is disarmed there in the first place.
+			if self.expandKey then
+				UI.__openCrafters =
+					(UI.__openCrafters ~= self.expandKey) and self.expandKey or nil
+				if frame:IsShown() then frame:Refresh() end
+				return
+			end
+
 			if UI:SelectRecipe(self.memberKey, self.profession, self.recipeName) then
 				-- Family stays where it is. This opened nothing: it found the recipe in
 				-- the window that was already in front of you and selected it there. The
@@ -605,6 +616,7 @@ local function build(frame)
 
 				r.spellID, r.itemID = recipe.spellID, recipe.itemID
 				r.memberKey, r.profession, r.recipeName = nil, nil, nil
+				r.expandKey = nil
 				-- A row about the whole family is about somebody else as often as not, so
 				-- it is disarmed: rows are pooled, and one left armed from a previous draw
 				-- would cast for a recipe it is no longer showing.
@@ -626,10 +638,21 @@ local function build(frame)
 					profession))
 				r.text:SetWidth(UI:ListWidth(scroll) - NOTE_WIDTH - 10 - ROW)
 
+				-- Highest skill first, then by name. The line is capped, so the order
+				-- decides which four survive it - alphabetical made "+14" hide fourteen
+				-- arbitrary people, and by rank it hides the fourteen you would ask last.
+				table.sort(recipe.members, function(a, b)
+					if (a.rank or 0) ~= (b.rank or 0) then
+						return (a.rank or 0) > (b.rank or 0)
+					end
+					return tostring(a.name or a.key) < tostring(b.name or b.key)
+				end)
+
 				-- Capped, and counted past the cap. The line does not wrap, so a recipe
 				-- that eight of your characters know ran off the edge mid-name - "Ermete
 				-- 300, G..." - which loses the count as well as the names. Four and a
-				-- number is a shorter true answer than five and a truncation.
+				-- number is a shorter true answer than five and a truncation, and the
+				-- rest are a click away rather than gone.
 				local names, spare = {}, 0
 				for _, who in ipairs(UI:NamesOf(recipe.members)) do
 					if #names < 4 then
@@ -674,6 +697,66 @@ local function build(frame)
 
 				r.note:SetWidth(NOTE_WIDTH)
 				r.note:SetText(note)
+
+				------------------------------------------------------------------------
+				-- Everybody, when a row is asked to show everybody
+				--
+				-- Rows rather than a taller row: the list hands out fixed-height frames
+				-- from a pool and scrolls by their count, and one row of a different
+				-- height would break both. It is the same unfolding the Guild tab does
+				-- with a player's characters, for the same reason.
+				------------------------------------------------------------------------
+
+				local key = recipe.spellID or recipe.itemID or recipe.name
+				-- Three of the guild's are shown beside four of ours; the rest are the fold.
+				local hidden = spare + math.max(0, #guild - 3)
+
+				if hidden > 0 or UI.__openCrafters == key then
+					r.expandKey = key
+				end
+
+				if UI.__openCrafters == key then
+					local everybody = {}
+
+					for _, who in ipairs(recipe.members) do
+						everybody[#everybody + 1] = { label = who.label or who.name,
+							rank = who.rank }
+					end
+
+					for _, who in ipairs(recipe.guild or {}) do
+						local character = tostring(who.name or who.key or "?")
+						everybody[#everybody + 1] = {
+							label = character:match("^([^%-]+)") or character,
+							guild = true, at = who.at }
+					end
+
+					for _, who in ipairs(everybody) do
+						used = used + 1
+						local line = row(used)
+						line:SetPoint("TOPLEFT", 0, -y)
+						line:SetPoint("TOPRIGHT", 0, -y)
+						line:SetHeight(ROW)
+						line:Show()
+						y = y + ROW
+
+						line.spellID, line.itemID = nil, nil
+						line.memberKey, line.profession, line.recipeName = nil, nil, nil
+						line.canOpen, line.expandKey = false, nil
+						line.fallback = nil
+						line.icon:SetTexture(nil)
+
+						line.text:SetWidth(UI:ListWidth(scroll) - NOTE_WIDTH - 10 - ROW)
+						line.text:SetText(string.format("        %s%s",
+							tostring(who.label or "?"),
+							who.rank and string.format(" |cff888888%d|r", who.rank) or ""))
+
+						line.note:SetWidth(NOTE_WIDTH)
+						line.note:SetText(who.guild
+							and string.format(L["|cff66bbffguild|r |cff888888%s|r"],
+								who.at and UI:Ago(who.at) or "")
+							or "")
+					end
+				end
 			end
 
 			for index = used + 1, #rows do rows[index]:Hide() end
