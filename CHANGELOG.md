@@ -61,6 +61,10 @@ is a decision rather than an afternoon of archaeology.
   profession and the list goes with it, on their side as well as yours, without either of you
   pressing anything.
 
+- **A pattern now says which of your guildmates already knows it.** A guildmate's shared list
+  *is* the list of recipes they know, so a formula one of them is holding is one you may not
+  need to buy — you can ask instead. It sits on the same block that says which of your own
+  characters know it or could learn it.
 - **Hovering something craftable now says who can make another one — yours as well as your
   guild's, in one block.** A pattern still gets the other answer instead: who knows that
   recipe and who could learn it. They are two questions about two different items — the plans,

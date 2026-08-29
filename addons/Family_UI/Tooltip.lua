@@ -162,6 +162,14 @@ local STATE = {
 	unknown = function() return L["|cff9d9d9dmay know it|r"] end,
 }
 
+-- How many names either crafters block will list before it starts counting instead. A tooltip
+-- that fills the screen has answered a different question from the one asked.
+--
+-- Declared above both of them: written below the first, it was a global there and nil, and the
+-- guild half of the pattern block would have thrown the moment a guildmate turned out to know
+-- one - which nothing exercised, so the harness was quiet about it.
+local GUILD_CAP = 5
+
 local function crafterLines(tooltip, itemID)
 	local profession, minLevel, certain, itemName = Family.Recipes:ItemProfession(itemID)
 	if not profession then return nil end
@@ -193,6 +201,38 @@ local function crafterLines(tooltip, itemID)
 		}
 	end
 
+	-- And whoever in the guild already knows it.
+	--
+	-- The same question this block has always asked, from the second source: a guildmate's
+	-- shared list *is* the list of recipes they know, so a pattern they are already holding
+	-- is one you may not need to buy. Found by name, because a formula's own id has nothing
+	-- to do with the id of what it teaches - and both sides of that comparison are worked
+	-- out by this client, from the ids that crossed (§2.1).
+	--
+	-- Only "knows it": the states above are about learning, and nothing in a shared list
+	-- says what a guildmate could learn - only what they have.
+	if Family.Guild and Family.Guild:Enabled() and itemName then
+		local theirs = Family.Guild:CraftersOf(nil, nil, itemName)
+
+		for index = 1, math.min(GUILD_CAP, #theirs) do
+			local who = theirs[index]
+			local r, g, b = classColour(who.classFile)
+
+			local character = tostring(who.name or who.key or "?")
+			character = character:match("^([^%-]+)") or character
+
+			lines[#lines + 1] = {
+				string.format(L["%s |cff66bbff(guild)|r"], character),
+				L["|cff40bf40knows it|r"], r, g, b, 1, 1, 1,
+			}
+		end
+
+		if #theirs > GUILD_CAP then
+			lines[#lines + 1] = { string.format(L["|cff888888and %d more|r"],
+				#theirs - GUILD_CAP), "" }
+		end
+	end
+
 	return lines
 end
 
@@ -212,8 +252,6 @@ end
 -- tooltip: what crossed is the spell of each recipe and the item it makes, and hovering
 -- either one matches. That is why this block appears on a crafted item where the family's
 -- block, which works from the item's subtype, often cannot.
-local GUILD_CAP = 5
-
 -- **Who can make this**, ours and the guild's, in one block.
 --
 -- One rather than two, because it is one question. Every other block on this tooltip answers

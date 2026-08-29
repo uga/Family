@@ -126,6 +126,9 @@ Per client: **Era**, **Anniversary**, **Mists**.
       live client, so this line is a measurement rather than a tick. Write the answer in the
       row — and if the item ids are absent, *Smelt Copper* will not be found by hovering a
       Copper Bar.
+- [ ] **Hover a pattern a guildmate already knows** — a formula in the auction house is the
+      easy case. They are named on the same block as your own characters, marked *(guild)* and
+      saying *knows it*.
 - [ ] **Hover something one of your own characters can make.** A *Can make it* block names
       them with their skill, whether or not anybody in the guild can make it too — and the
       guild's are on the same block, marked *(guild)*.

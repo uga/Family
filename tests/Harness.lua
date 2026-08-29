@@ -2736,6 +2736,52 @@ do
 	end
 	check("and not the block about making the thing it teaches", not madeBy)
 end
+
+-- And whoever in the guild already knows it.
+--
+-- A guildmate's shared list *is* the list of recipes they know, so a pattern one of them is
+-- holding is a pattern you may not need to buy. Found by name, because a formula's own id has
+-- nothing to do with the id of what it teaches - and both sides of that comparison are worked
+-- out here, from the ids that crossed.
+do
+	local wasOn = Family.Guild:Enabled()
+	Family.Guild:SetEnabled(true)
+
+	local guildKey = Family.Guild:Current()
+	-- Switching it on has already built the tables; this is the panel being checked, not
+	-- the protocol, so the state is written rather than exchanged for.
+	local store = FamilyDB.guild
+
+	store.known[guildKey] = store.known[guildKey] or {}
+	store.known[guildKey]["Faraway-FireMaw"] = {
+		meta = { name = "Faraway", realm = "Fire Maw" }, from = "Faraway", at = time(),
+		professions = { { skillLine = 164, rank = 300, maxRank = 300 } },
+	}
+	-- Two entries, one of each shape, because a client gives one or the other and which it
+	-- is differs by client and by window (DATASOURCES §2). The first is named by its spell,
+	-- the second only by the thing it makes - which is every trade skill record on Era, and
+	-- the shape a fixture with spells in it cannot test.
+	RECIPE_ITEMS[7191] = { name = "Copper Chain Belt", profession = "Blacksmithing",
+		class = 4, minLevel = 10 }
+
+	store.recipes[guildKey] = { ["Faraway-FireMaw"] = { [164] = {
+		spells = { 0 }, items = { 7191 }, missing = 0, fingerprint = 1,
+		at = time(), from = "Faraway" } } }
+
+	craftersFor(2881, "Requires Blacksmithing (100)")
+
+	local guilded = false
+	for _, line in ipairs(GameTooltip.__lines) do
+		if type(line[1]) == "string" and line[1]:find("(guild)", 1, true) then
+			guilded = true
+		end
+	end
+	check("a guildmate who already knows the pattern is named on it", guilded)
+
+	store.known[guildKey]["Faraway-FireMaw"] = nil
+	store.recipes[guildKey] = nil
+	Family.Guild:SetEnabled(wasOn)
+end
 check("the member who knows it says so", crafters.Tester
 	and crafters.Tester:find("knows it", 1, true) ~= nil, tostring(crafters.Tester))
 check("one with the skill, the level and a list it is not on can learn it",

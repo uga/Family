@@ -898,8 +898,15 @@ function Guild:CraftersOf(spellID, itemID, itemName)
 				-- is named here too. Both sides of the comparison are in the reader's
 				-- language, so this is §2.1 being spent rather than broken - which is
 				-- exactly what the family's own crafters block has always done.
-				if itemName and spell ~= 0 then
-					local recipeName = spellNamed(spell)
+				if itemName then
+					-- Whichever of the two the sender's client gave a name to. A
+					-- spell where there is one, and otherwise the thing it makes -
+					-- which for a trade skill recipe is what it is named after, and
+					-- is the only id an Era trade skill record carries at all.
+					local made = (list.items or {})[index]
+					local recipeName = (spell ~= 0 and spellNamed(spell))
+						or (made and made ~= 0 and Family.Names:CachedItem(made))
+
 					if recipeName
 						and Family.Recipes:Teaches(itemName, recipeName) then
 						knows = true
