@@ -18,6 +18,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **The summary no longer complains in the chat frame every time it is drawn.** Its row of
+  column-set buttons was four pixels wider than the room it had, in English, and said so on
+  every draw. The buttons now sit a pixel closer together.
+
 - **The member list you pick from is no longer see-through.** The panel underneath showed
   through it, so a character's name and a recipe's name were drawn on top of each other and
   neither could be read.

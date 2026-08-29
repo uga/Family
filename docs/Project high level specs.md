@@ -710,9 +710,10 @@ broken (§11).
 
 A lighter Wide Family: **it carries much less, and it carries it with much more automation.**
 Those two facts are the same decision. Wide Family asks a player to approve one member and one
-category at a time because it can reach anything a member owns; Guild share needs no approval
-at all because what it reaches is small, fixed, and already visible to everyone it is shared
-with.
+category at a time because it can reach anything a member owns; Guild share carries a small
+fixed handful of facts that are already visible to everyone it is shared with, and asks
+nobody's approval for them. One thing is offered beyond that handful — professions — and it
+is the exception that has a grid, for the reason §7.1 sets out.
 
 **What it carries, and nothing else:** for a guildmate and for every one of their characters
 who is also in this guild — class, race, level, **both talent specialisations**, and **equipped
@@ -725,12 +726,15 @@ everybody in the guild running Family, down a channel shared with every other ad
 It is also exactly what the panel draws. Wanting somebody's build talent by talent is a Wide
 Family link, where it goes to one person who asked for it.
 
-**Never:** bags, bank, mail, quests, professions, money, auctions, reputations, achievements.
-Not "not yet" — those belong to Wide Family and require its consent. Wanting a guildmate's bag
-contents is a perfectly reasonable thing to want; it is a Wide Family link, and it is one on
-purpose.
+**Never:** bags, bank, mail, quests, money, auctions, reputations, achievements. Not "not yet"
+— those belong to Wide Family and require its consent. Wanting a guildmate's bag contents is a
+perfectly reasonable thing to want; it is a Wide Family link, and it is one on purpose.
 
-**Why this needs no consent grid.** Everything in that list is what the game already shows any
+Professions were on that list and are no longer. What took them off is not a change of mind
+about where the line is: it is that they came back with a grid in front of them, and §7.1 is
+that grid.
+
+**Why the list above needs no consent grid.** Everything in it is what the game already shows any
 guildmate who targets you and presses Inspect. Family is not disclosing it; it is saving both
 of you the trip, across characters who are not standing in front of you and at hours when
 neither of you is online. A consent dialogue in front of a fact the game gives away for free
@@ -777,6 +781,151 @@ Being heard from is the only way one client knows another runs Family at all, an
 end holds from somebody says nothing about what that end holds from us: a player who cleared
 their saved variables would otherwise announce to a guild of clients that each decided, on
 their own, that there was nothing to say, and read every one of them as not running Family.
+
+### 7.1 Shared professions, and who can craft what
+
+*"Which guildie can craft this?"* is asked in guild chat several times an evening, and it is
+answered by whoever happens to be awake and remembers. The person who could actually make the
+thing is usually offline, and so is the alt of theirs that has the profession. That is the
+question this answers, and the reason it is worth carrying something the rest of §7 refuses.
+
+**It is offered one character and one profession at a time, and nothing is offered until it
+is.** Each of your characters in the guild lists its professions, and each of those is ticked
+separately: only Leatherworking on one, only Tailoring on another, Alchemy and Blacksmithing
+on a third. A grid with nothing ticked is the state Family arrives in, and it shares nothing.
+
+**A tick is one decision and carries three things together** — the rank, what that profession
+can make, and its cooldowns. Splitting them into separate ticks was considered and refused:
+it doubles the grid in exchange for a distinction almost nobody holds an opinion about, and a
+grid that is tedious to read is a grid that gets agreed to without being read, which is the
+same failure §7 avoids by not putting a dialogue in front of gear.
+
+**Why this one has a grid when gear does not.** Inspect shows a guildmate's gear and talents,
+so a dialogue in front of those teaches players to click through dialogues. Inspect shows
+nobody's recipe list. The two answers are one answer applied to two different facts, and the
+grid is where the difference is visible. Nothing about it weakens the case above it; it is
+what that case predicts.
+
+**What crosses is identifiers, and never names.** A shared recipe travels as the spell it is,
+with the id of the item it makes beside it — so a French guild and a German one answer each
+other's questions without either having recorded a word the other can read (§2.1), and so the
+answer can appear on a crafted item as well as on a pattern. **A recipe the client gives no id
+for is not shared**, and the panel says how many were left out rather than quietly sharing
+fewer than it appears to.
+
+**Ranks alone are an honest answer and are treated as one.** A profession that has been ticked
+but whose window has never been opened shares a rank and nothing else, and that guildmate is
+reported as *may know it* — never as unable. This is §2.2 in a place where getting it wrong
+would send somebody to the wrong person.
+
+**Two ages compose, and the older one is what the answer carries.** A guild recipe list is as
+old as the last time that character opened that profession, and as old as the last time we
+heard from that player. What is shown is the older of the two, because an answer is only as
+current as the least current thing it was built from.
+
+**Scope is unchanged.** Only characters in the guild may be offered, exactly as the rest of §7
+has it. A crafting alt outside the guild is a Wide Family link, and a scope with a switch to
+widen it is not a scope.
+
+### What a grant is attached to
+
+**A grant is made to a guild, not to the world.** It is keyed by the guild as well as by the
+character and the profession, so it means what it said when it was made: *this guild may see
+this*. That has two consequences and both of them are the point.
+
+**A character who leaves the guild stops sharing.** Not "stops being added to the next
+message" — stops, and what was already sent is replaced by what is sent next, which no
+longer contains them. Everything one player sends replaces everything held from that player
+rather than being merged into it, so a character who has stopped sharing disappears from the
+other end without anything having to go and delete them. Joining a different guild does not
+resume it either: the new guild was never the guild that was agreed to, and a grant that
+follows its owner around is not a grant anybody made.
+
+**A player who leaves the guild stops seeing what the guild shared.** What was held for a
+guild is dropped when it is no longer their guild, rather than sitting on disk to be
+resurrected stale if they ever rejoin. This is the half that Family can actually keep, and it
+is worth being plain about the half it cannot: the other end is somebody else's computer
+running somebody else's copy, and no addon compels it. What Family promises is that it will
+not send what was not granted and will ask the other side to forget what was withdrawn. That
+is a promise honestly kept on this side, not a lock, and it is as true here as in §6.
+
+### Cooldowns
+
+A transmute, a bolt of mooncloth, a salt shaker: the things a guild most often needs and the
+things nobody remembers the state of. **Cooldowns cross for shared professions and for no
+others**, which follows from a tick meaning one thing rather than three.
+
+They travel as **the time remaining**, and are stored on arrival as the moment they come ready.
+Two clients need not agree on an epoch, and a duration is right whoever reads it; storing it as
+a moment is still the rule everywhere in Family, because a countdown written down yesterday
+is wrong today and a moment is still true.
+
+The distinction Family already draws between a craft's cooldown and an item's is carried
+across unchanged. A craft is used through a window Family watches, so a transmute reading
+*ready* is evidence. An item is used out of the bags where Family sees nothing, so an item
+cooldown crosses only while it is still running, and never as a claim that it is
+available.
+
+**They appear beside the crafter and not as a board of their own.** For anything with a
+cooldown, "who can make this" is the wrong question and "whose is up" is the right one, so the
+answer sorts a guildmate whose transmute is ready above one whose is seven hours out. A
+standing list of everything ready across a guild is a reasonable thing to want and is not this;
+it can be added later without changing anything here.
+
+### What this is not
+
+It is not a directory of crafters for hire, it does not price anything, it does not rank people
+by who is best to ask, and it does not advise. It reports who is known to be able to make
+a thing and how old that knowledge is, and stops — §2.5, in the one feature where the
+temptation to go further is strongest.
+
+### Traffic, and how it stays affordable
+
+A recipe list is the largest thing §7 has ever carried, and it is carried once rather than
+every login. Each shared profession announces **how many recipes it has and a fingerprint of
+them**; the list itself is asked for only when that fingerprint differs from what this end
+already holds. A settled guild therefore costs nothing after the day everybody met, which is
+what makes "once seen, it is kept" affordable here as well.
+
+Withdrawing a profession changes the fingerprint, so a withdrawal is never mistaken for
+something already held and skipped. That is deliberate and it is the same promise §6 makes:
+the half of an exchange that takes something away does not wait for anybody to press a button.
+
+**Professions travel as their own message with their own schema version.** A client too old
+to understand them still exchanges gear and talents with one that is not, rather than both
+ends dropping every message the other sends. Two versions degrade to *that cannot be read
+here*, named, exactly as §6 requires — and never to a silence that looks like a guild where
+nobody runs Family.
+
+### Where the answer appears
+
+In two places, because there are two ways the question gets asked, and in no third place:
+
+- **On the item's own tooltip**, under the crafters from your own family. Hovering a pattern
+  in the auction house, or the thing it makes, is where the question is actually asked.
+  The list is capped and ordered — knows it first, online first — because a tooltip that
+  fills the screen has answered a different question than the one asked.
+- **In the recipe search that already exists**, as a second group beside your own family's
+  crafters, labelled as the guild's. One box, one question, two sources.
+
+The Guild tab keeps being about people: who runs Family, and what each of their characters is
+wearing. **The grid of what you share lives there**, next to the roster it governs, in the same
+way Wide Family's grid lives on Wide Family's panel — a switch belongs in Options and a grid
+does not, because a grid is the feature rather than a preference about it.
+
+**The answer is a person, not a character.** Guild records are keyed by the player who sent
+them, so a row reads as *this player, online now on that character, has an alt who can make
+it*. You whisper the player. Naming only the alt would name somebody who is not there.
+
+### Built in three slices
+
+Each is recorded, stored and shown before the next begins, and each is worth having on its own:
+
+1. **Ranks.** The grid, and profession with rank crossing the wire. Answers *may know it* and
+   *not enough skill yet* on the tooltip. Small enough to ride with what §7 already sends.
+2. **Recipes.** The list of ids, the fingerprint, and the search. This is the slice that
+   answers the question the feature is named for.
+3. **Cooldowns.** What is ready, beside whoever it is ready for.
 
 ### The two are independent
 

@@ -1074,7 +1074,20 @@ local function build(frame)
 	-- and the whole row held to the pixels there are. Where a language needs more than the
 	-- row has, the room comes off whichever buttons have the most to spare - the same rule
 	-- the columns below use, and the same code.
-	UI:LayOutRow(setRow, SET_BUTTON_WIDTH, 2, 0, nil, CHOOSER_WIDTH - FACTION_ROOM)
+	--
+	-- A gap of one rather than two, which is six pixels across seven buttons. English itself
+	-- was four over - the client reported 668 against 664 and said so every time the summary
+	-- was built - and there was nowhere else to take it from: the padding is shared with
+	-- every other button row, and the room to the right holds the two faction buttons. One
+	-- pixel between buttons is not a thing anybody can see; a warning in the chat frame on
+	-- every draw is.
+	--
+	-- Nothing here can check this. The harness measures text at a flat rate per character and
+	-- makes these seven labels 549 pixels, comfortably inside the budget - it is the real
+	-- font, in the real client, that is wider. This is one of the few things only the game
+	-- can answer, which is exactly why that warning is printed at runtime rather than
+	-- assumed at build time.
+	UI:LayOutRow(setRow, SET_BUTTON_WIDTH, 1, 0, nil, CHOOSER_WIDTH - FACTION_ROOM)
 
 	-- The two sides, anchored to the right-hand end of the row rather than laid out after
 	-- the last set button.
