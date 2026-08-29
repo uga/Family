@@ -4684,6 +4684,10 @@ do
 		-- clears one line of it and not two is exactly the fault: right in English, drawn
 		-- through itself in French.
 		local wanted = math.ceil(note and note:GetStringHeight() or 0) + 30
+		check("and its own controls are greyed too, for the same reason",
+			_G.FamilyWideAskButton and _G.FamilyWideAskButton.__enabled == false,
+			tostring(_G.FamilyWideAskButton and _G.FamilyWideAskButton.__enabled))
+
 		check("and the box under it starts below the whole of it",
 			note ~= nil and under ~= nil and math.abs(under.y) >= wanted,
 			(under and tostring(under.y) or "not anchored") .. " against " .. tostring(wanted))
@@ -6020,8 +6024,20 @@ print("guild share")
 	check("and the panel points at the switch rather than looking empty",
 		visibleText("nothing here will fill in"))
 
+	-- And its buttons are greyed, because neither can do anything: there is no roster to
+	-- filter and nothing to ask a guild nobody is speaking to. A live-looking button that
+	-- answers nothing is worse than one that says it is not available.
+	check("and its buttons are greyed while it is off",
+		_G.FamilyGuildUpdate and _G.FamilyGuildUpdate.__enabled == false
+			and _G.FamilyGuildWho and _G.FamilyGuildWho.__enabled == false,
+		tostring(_G.FamilyGuildUpdate and _G.FamilyGuildUpdate.__enabled))
+
 	Family.Guild:SetEnabled(true)
 	check("and it can be switched on", Family.Guild:Enabled() == true)
+
+	Family.UI:Refresh()
+	check("and its buttons come back with it",
+		_G.FamilyGuildUpdate and _G.FamilyGuildUpdate.__enabled ~= false)
 
 	local guildKey, guildName = Family.Guild:Current()
 	check("it knows which guild on which realm", guildKey == "Late Night Raiders-Fire Maw",

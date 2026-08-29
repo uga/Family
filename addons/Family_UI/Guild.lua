@@ -291,6 +291,13 @@ local function build(frame)
 		status:ClearAllPoints()
 		status:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 2, -drop)
 		status:SetPoint("RIGHT", -8, 0)
+
+		-- Greyed while the feature is off, because neither of them can do anything: there
+		-- is no roster to filter and nothing to ask a guild that is not being spoken to.
+		-- A button that looks live and answers nothing is worse than one that says it is
+		-- not available, which is what the Wide Family panel does with its own controls.
+		updateButton:SetEnabled(not off)
+		whoButton:SetEnabled(not off)
 		whoButton:SetText(onlineOnly and L["Online only"] or L["Everyone"])
 		UI:FitButton(whoButton, 110)
 
