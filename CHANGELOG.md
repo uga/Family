@@ -16,22 +16,53 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
-### Changed
+Family records what each of your characters owns and knows, and shows it to you while you are
+logged in on a different one. It starts empty and fills as you play: a character appears the
+first time you log in on them, and a family of ten takes ten logins to be complete.
 
-- **Guild share now ships switched off**, like Wide Family, and both panels are in the list
-  whether their feature is on or not. Wide Family's used to appear only once you had switched
-  it on, which meant the only way to find out it existed was to read the manual. Neither
-  shares anything until you tick its box.
-- **The Wide Family tab can be hidden** from Options if you have decided against it.
+Everything it holds, it holds because it watched it happen. There is no import from another
+addon, nothing is fetched from a server, and every screen says how old what it is showing is —
+because a number with no date on it is a guess wearing a fact's clothes.
 
-### Fixed
+### What it shows you
 
-- **Talents are shown in your language, whoever recorded the character.** A member last played
-  on a German client used to show German talent names on an English one — the last thing in
-  Family that was still shown in the language it was written down in. The trees above them —
-  *Arcane*, *Fire*, *Frost* — read in your language too. Nothing needs rescanning.
-- **A bank bag Family cannot name yet is numbered the way you number them.** The first one was
-  being called *Bank bag 5*.
+- **A summary of the whole family**, a row each, with the columns you choose: level and item
+  level, money, rested experience, time played, bags and bank space, mail and what is about to
+  expire, auctions and what is riding on them, professions and their ranks, currencies,
+  crafting cooldowns, guild, hearthstone, race and class.
+- **Possessions** — one character's bags, bank, mailbox, auctions and guild bank, drawn as the
+  containers themselves rather than as a list, because where a thing sits is information.
+- **Professions**, with every recipe each character knows, sorted by difficulty, by the item
+  level of what it makes, or by the skill it needs. Search the whole family for a recipe and
+  it tells you who can make it.
+- **Abilities and talents** — both specialisations, drawn as the tree they actually are, with
+  glyphs and the spellbook.
+- **Character** — gear with item levels, reputations, played time, experience.
+- **On every item tooltip in the game**: who in the family has one and where it is, and on a
+  recipe, who can make it, who could learn it today, and who is not high enough yet.
+
+### Sharing, if you want it
+
+Both of these ship switched off, and both have a panel you can read before deciding.
+
+- **Guild share** shows your guild the gear and talents of your characters in it, and shows
+  you theirs. Nothing else — and nothing that Inspect does not already give away.
+- **Wide Family** links two families that are not one account. Each of you says what the other
+  may see, one character and one category at a time, on a grid that starts with nothing
+  ticked. Nothing is exchanged until both of you agree, and either of you can end it.
+
+### In your language
+
+English, German, French, Spanish and Russian, following whatever your client is set to. Where
+the game already has a word for something — a gear slot, a class, a profession, a race, a
+talent — Family uses the game's own word, so it says what the rest of your interface says. A
+character recorded on somebody else's client, in a language you do not read, still reads in
+yours.
+
+### Upgrading from a beta
+
+Open each profession window once per character. Nothing else needs doing, and nothing is lost
+if you do not.
 
 ## 1.0.0-beta.3 — 2026-08-28
 
