@@ -6193,6 +6193,19 @@ print("guild share")
 	check("and the panel points at the switch rather than looking empty",
 		visibleText("nothing here will fill in"))
 
+	-- A panel's first draw happens before the client has measured its scroll frame, so
+	-- GetWidth answers nought. Falling back to 200 was the guild row's undoing: it anchors
+	-- its middle column at x=244 and its right column to the right-hand edge, so at 200 all
+	-- three of its texts landed on top of one another - and closing and reopening the window
+	-- "fixed" it, having only given the second draw a measurement the first was refused.
+	check("a list asked for its width before the client has measured anything gets a real one",
+		Family.UI:ListWidth({ GetWidth = function() return 0 end }) > 400,
+		tostring(Family.UI:ListWidth({ GetWidth = function() return 0 end })))
+	check("and gets the measurement itself once there is one",
+		Family.UI:ListWidth({ GetWidth = function() return 903 end }) == 903)
+	check("and survives being handed nothing at all",
+		Family.UI:ListWidth(nil) > 400)
+
 	-- And its buttons are greyed, because neither can do anything: there is no roster to
 	-- filter and nothing to ask a guild nobody is speaking to. A live-looking button that
 	-- answers nothing is worse than one that says it is not available.

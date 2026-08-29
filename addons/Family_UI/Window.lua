@@ -158,6 +158,26 @@ UI.CONTENT_W = WIDTH - (12 + STRIP_W) - 8
 -- What a scroll bar and its inset take out of that, for a panel whose columns live in one.
 UI.SCROLLBAR_W = 32
 
+-- How wide to make a list inside a scroll frame, and what to answer when the client has not
+-- measured the scroll frame yet.
+--
+-- Panels read scroll:GetWidth() while refreshing, and on a panel's first draw that answer is
+-- nought - the frame exists and has not been laid out. Several panels fell back to 200, which
+-- is not a width any of them can be drawn at: the guild row anchors its middle column at x=244
+-- and its right column to the right-hand edge with a width of 200, so at a list width of 200
+-- all three of its texts were written on top of one another. Closing the window and opening it
+-- again appeared to fix it, and had only given the second draw a measurement the first was
+-- refused.
+--
+-- The panel's own content width is known before any frame is laid out, so it is what a panel
+-- gets when the client has nothing to tell it. A fallback has to be a width the panel can
+-- actually be drawn at, or it is just a different way of being wrong.
+function UI:ListWidth(scroll)
+	local room = scroll and scroll.GetWidth and scroll:GetWidth()
+	if type(room) == "number" and room >= 200 then return room end
+	return (UI.CONTENT_W or 740) - UI.SCROLLBAR_W
+end
+
 local content = CreateFrame("Frame", nil, window)
 content:SetPoint("TOPLEFT", 12 + STRIP_W, -32)
 content:SetPoint("BOTTOMRIGHT", -8, 8)

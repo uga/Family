@@ -271,7 +271,7 @@ local function build(frame)
 	function frame:Refresh()
 		local used, usedCells, y = 0, 0, 0
 
-		list:SetWidth(math.max(scroll:GetWidth(), 200))
+		list:SetWidth(UI:ListWidth(scroll))
 		-- The note is a sentence, and a sentence is one line in English and two in French.
 		-- Measured and the status moved below it, rather than a fixed drop that was right
 		-- in the language it was written in and drew the two through each other elsewhere.
