@@ -585,3 +585,35 @@ let through was well-formed, plausible, and wrong — and because it was well-fo
 displayed it without complaint. When a record can be built from an absence, the check has to be
 on whether the source was there, not on whether the result looks like data.
 
+
+## L-020 — Asking the client a question the files had already answered
+
+**2026-08-29.** A French player on Burning Crusade reported a hearthstone reading `Ironforge`
+where their client says `Forgefer`. The cause was the familiar one — a localised word stored as
+though it were identity (L-015) — and the fix was the familiar one, a table generated from the
+client's own data the way `Races.lua` and `SkillLines.lua` already are.
+
+I proposed a runtime probe instead. A `/family hearth` command, run in game on three clients, to
+find out whether `C_Map.GetAreaInfo` could name an area id, so that Family could ask the client
+rather than ship a table.
+
+Two documents in this repository already said not to. `CLAUDE.md` sets the precedence: **the
+specification beats everything on behaviour and DATASOURCES beats everything on data.**
+`DATASOURCES.md` §3 lists the tables wago.tools serves per build, and the first row of that
+table is `AreaTable | ID, AreaName_lang — the area ids`. The answer was named, in the file whose
+job is to name it, before the question was asked.
+
+**Two rules, and I reached for the wrong one.** "Ask the client rather than assume" is about
+*capability* — what this build can do, where the symbol surface lies and only the running game
+knows (L-018). It is not about *data*. What the game calls an area is not a capability; it is a
+fact recorded per build and per locale, sitting in a file, identical every time it is read. A
+probe cannot answer it better than the source can, and costs a session in game to find out.
+
+The discriminator is one question: **does the answer change depending on which client is
+running?** If it does, ask the client. If it is the same fact however you reach it, read it from
+DATASOURCES, and the probe is a way of taking longer to be less certain.
+
+**What now catches it:** nothing mechanical, and it is worth saying so rather than inventing a
+check that would not have fired. What catches it is the precedence line in `CLAUDE.md` being
+read as a routing rule rather than a tie-breaker — data questions go to DATASOURCES first, and
+`DATASOURCES.md` §3 gets read before any probe is designed, not after one is proposed.
