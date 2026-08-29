@@ -122,7 +122,6 @@ local function build(frame)
     -- Asking. A character name, because that is what one player knows about another - the
     -- family id is Family's business and nobody should ever have to see one.
     local ask = CreateFrame("EditBox", "FamilyWideAsk", frame, "InputBoxTemplate")
-    ask:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -52)
     ask:SetSize(180, 20)
     ask:SetAutoFocus(false)
 
@@ -281,6 +280,19 @@ local function build(frame)
         -- better than hiding them would.
         local on = Family.Wide:Enabled()
         offNote:SetShown(not on)
+
+        -- Where the rest of the panel starts depends on how many lines that sentence took,
+        -- which is one in English and two in French. Measured rather than assumed.
+        local drop = 30
+        if not on then
+            local height = math.max(14, math.ceil(offNote:GetStringHeight() or 14))
+            offNote:SetHeight(height)
+            -- Fourteen clear of the last line of it, not four. A sentence that ends four
+            -- pixels above the box it is explaining reads as one crowded thing.
+            drop = height + 46
+        end
+        ask:ClearAllPoints()
+        ask:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -drop)
         askButton:SetEnabled(on)
         ask:SetEnabled(on)
         auto:SetEnabled(on)

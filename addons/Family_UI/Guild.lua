@@ -166,8 +166,10 @@ local function build(frame)
 		frame:Refresh()
 	end)
 
-	-- Stops where the buttons begin rather than running underneath them.
-	offNote:SetPoint("RIGHT", whoButton, "LEFT", -8, 0)
+	-- A width rather than a right anchor, because this line is measured: how far down the
+	-- status sits depends on how many lines it takes, and a string that knows its right edge
+	-- only by where it is pinned cannot answer that. Stops where the buttons begin.
+	offNote:SetWidth((UI.CONTENT_W or 740) - 250)
 	updateButton:SetScript("OnClick", function()
 		local ok, why = Family.Guild:Refresh("asked for")
 		if ok then
@@ -179,7 +181,6 @@ local function build(frame)
 	end)
 
 	local status = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	status:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 2, -28)
 	status:SetPoint("RIGHT", -8, 0)
 	status:SetJustifyH("LEFT")
 
@@ -271,7 +272,23 @@ local function build(frame)
 		local used, usedCells, y = 0, 0, 0
 
 		list:SetWidth(math.max(scroll:GetWidth(), 200))
-		offNote:SetShown(not Family.Guild:Enabled())
+		-- The note is a sentence, and a sentence is one line in English and two in French.
+		-- Measured and the status moved below it, rather than a fixed drop that was right
+		-- in the language it was written in and drew the two through each other elsewhere.
+		local off = not Family.Guild:Enabled()
+		offNote:SetShown(off)
+
+		local drop = 6
+		if off then
+			local height = math.max(14, math.ceil(offNote:GetStringHeight() or 14))
+			offNote:SetHeight(height)
+			-- Clear of the last line rather than against it, the same gap the Wide Family
+			-- panel leaves under the same sentence.
+			drop = height + 20
+		end
+		status:ClearAllPoints()
+		status:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 2, -drop)
+		status:SetPoint("RIGHT", -8, 0)
 		whoButton:SetText(onlineOnly and L["Online only"] or L["Everyone"])
 		UI:FitButton(whoButton, 110)
 

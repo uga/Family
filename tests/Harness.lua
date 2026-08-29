@@ -4667,6 +4667,28 @@ do
 	check("the wide family panel points at the switch rather than looking broken",
 		visibleText("nothing here will do anything yet"))
 
+	-- And what is under it starts below it. The sentence is one line in English and two in
+	-- French, and the box beneath it used to be pinned at a fixed drop measured in the
+	-- language it was written in - so in French the two were drawn through each other.
+	do
+		local note
+		for _, f in ipairs(fontStrings) do
+			if type(f.__text) == "string"
+				and f.__text:find("nothing here will do anything yet", 1, true) then
+				note = f
+			end
+		end
+		local box = _G.FamilyWideAsk
+		local under = box and box.__offsets and box.__offsets.TOPLEFT
+		-- Below the title the note hangs from, plus the whole of the note. A drop that
+		-- clears one line of it and not two is exactly the fault: right in English, drawn
+		-- through itself in French.
+		local wanted = math.ceil(note and note:GetStringHeight() or 0) + 30
+		check("and the box under it starts below the whole of it",
+			note ~= nil and under ~= nil and math.abs(under.y) >= wanted,
+			(under and tostring(under.y) or "not anchored") .. " against " .. tostring(wanted))
+	end
+
 	Family.Wide:SetEnabled(was)
 	Family.UI:Refresh()
 	check("and stops saying it once the feature is on",
