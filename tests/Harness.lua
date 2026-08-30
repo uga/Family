@@ -12028,6 +12028,57 @@ print("what each client calls a race")
 end)()
 
 print()
+print("a client's answer, handed straight to something that takes a second argument")
+
+-- Family:TryCall returns whatever the client returned, however many values that is. That is its
+-- whole job - the calls it wraps differ across three clients and some of them answer in two
+-- values where others answer in one - and it makes every use of it a variadic expression.
+--
+-- tonumber's second parameter is a *base*. So tonumber(Family:TryCall(GetNumGuildMembers))
+-- became tonumber(5, 2) on a live client, which is five read in binary, which is nil. The guild
+-- roster probe then reported an empty guild while standing in a guild of five, twice, and the
+-- Lua was valid throughout.
+--
+-- One extra pair of brackets fixes each site and the brackets are invisible in review, so the
+-- rule is held here instead. Scoped to TryCall rather than to every nested call, because TryCall
+-- is the one that is variadic *by design*: a match with one capture returns one value and can be
+-- read locally, while what a client answers cannot.
+;(function()
+	local FILES = {
+		"addons/Family/Core.lua", "addons/Family/Comm.lua", "addons/Family/Guild.lua",
+		"addons/Family/Wide.lua", "addons/Family/Database.lua", "addons/Family/Cooldowns.lua",
+		"addons/Family/Recipes.lua", "addons/Family/Scanners/Talents.lua",
+		"addons/Family/Scanners/Mail.lua", "addons/Family/Scanners/Currencies.lua",
+		"addons/Family/Scanners/Professions.lua", "addons/Family/Scanners/Identity.lua",
+		"addons/Family/Scanners/Bank.lua", "addons/Family/Scanners/Quests.lua",
+		"addons/Family_UI/Tooltip.lua", "addons/Family_UI/Slash.lua",
+		"addons/Family_UI/Guild.lua", "addons/Family_UI/Options.lua",
+	}
+
+	local read, bare = 0, {}
+	for _, path in ipairs(FILES) do
+		local handle = io.open(ROOT .. "/" .. path)
+		if handle then
+			local text = handle:read("*a")
+			handle:close()
+			read = read + 1
+
+			-- The unsafe shape: exactly one bracket between the outer call and TryCall.
+			for outer in text:gmatch("(%a[%w_]*)%(Family:TryCall%(") do
+				if outer == "tonumber" or outer == "select" then
+					bare[#bare + 1] = path .. ": " .. outer .. "(Family:TryCall("
+				end
+			end
+		end
+	end
+
+	check("the source files this rule covers are all there", read == #FILES,
+		string.format("%d of %d", read, #FILES))
+	check("no client answer is handed straight to something that takes a second argument",
+		#bare == 0, table.concat(bare, " | "))
+end)()
+
+print()
 print("what this client calls a character, and whether two can collide")
 
 -- A probe, not a feature. onHello decides an announcement is our own by comparing bare names

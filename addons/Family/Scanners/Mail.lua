@@ -204,8 +204,8 @@ function Mail:NoteSend(recipient, subject)
 	posted = {
 		key = key,
 		subject = subject,
-		money = tonumber(Family:TryCall(GetSendMailMoney)) or 0,
-		cod = tonumber(Family:TryCall(GetSendMailCOD)) or 0,
+		money = tonumber((Family:TryCall(GetSendMailMoney))) or 0,
+		cod = tonumber((Family:TryCall(GetSendMailCOD))) or 0,
 		attachments = attachmentsNow(),
 		at = time(),
 	}

@@ -134,7 +134,7 @@ local function requiredSkill(tooltip, profession)
 	local name = tooltip.GetName and tooltip:GetName()
 	if not name then return nil end
 
-	local lines = tonumber(Family:TryCall(tooltip.NumLines, tooltip)) or 0
+	local lines = tonumber((Family:TryCall(tooltip.NumLines, tooltip))) or 0
 
 	for index = 1, lines do
 		local widget = _G[name .. "TextLeft" .. index]

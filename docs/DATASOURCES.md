@@ -266,12 +266,36 @@ nothing here establishes that connected realms permit one. The one same-named pa
 (`Eccebombo` on Mirage Raceway and on Hydraxian Waterlords) is no use: Hydraxian Waterlords is
 an Era realm, outside this cluster and unable to share a guild with it.
 
-**Roster calls: unanswered on this client so far.** `GetNumGuildMembers` returned 0 on a
-character standing in a guild, before and after the guild window was opened. The probe's first
-version read the roster cold and reported that as an empty guild; it now asks the server and
-reads back three seconds later, and prints what `GetNumGuildMembers` and `GetGuildRosterInfo`
-actually return so that a count of zero can be told from a call that is not there. Rerun
-needed.
+**The roster, once it was asked for and read back:**
+
+    GetNumGuildMembers()  -> 1:5(number) 2:2(number)
+    GetGuildRosterInfo(1) -> 1:Minttuu-Shek'zeer(string) 2:Member(string) 3:3(number)
+                             4:14(number) 5:Hunter(string) 6:Westfall(string)
+                             7:(string) 8:(string) 9:true(boolean) 10:0(number)
+                             11:HUNTER(string) 12:20(number) 13:2(number)
+                             14:false(boolean) 15:false(boolean) 16:6(number)
+                             17:Player-4454-062C5110(string)
+
+**`GetNumGuildMembers` answers in two values** - total and online - and that is not a detail.
+`tonumber(Family:TryCall(GetNumGuildMembers))` passed both on, `tonumber`'s second parameter is
+a base, and five read in binary is nil. The probe reported an empty guild while standing in a
+guild of five, twice, with valid Lua throughout. See L-031.
+
+**A guild holds characters from other realms in the connected group, measured.** Entry 1 is
+`Minttuu-Shek'zeer` in a guild on Mirage Raceway. So the roster carries a realm on the name for
+a member from another realm of the cluster, and cross-realm guild membership is a fact here
+rather than an inference from `GetAutoCompleteRealms`.
+
+**What is still not measured** is a *duplicate name* inside one connected group, which is what
+the collision in `onHello` would need. Two characters called Eccebombo exist on this account,
+on Mirage Raceway and on Hydraxian Waterlords - but those realms are not connected (the second
+is Era), they cannot share a guild, and the pair therefore says nothing about the case. Nothing
+here establishes that a connected group permits a duplicate at all.
+
+**Position 17 is a GUID** (`Player-4454-062C5110`), which is an identifier in §2.1's sense and
+survives every renaming and realm question a name does not. `CHAT_MSG_ADDON` does not carry
+one, so it is not available where the comparison that matters is made - noted because it is the
+first thing anybody will reach for.
 
 ### The guild event log, measured on all three clients 2026-08-30
 

@@ -1017,3 +1017,39 @@ The generalisable form: **when a check can only fail one way, ask what a weakene
 would look like.** If the answer is "identical", the check is guarding its inputs and not its
 claim. And a proxy — a filename, a directory, a naming convention — is a measurement of the
 codebase on the day it was chosen, not a property of it.
+
+## L-031 — A client's answer handed straight to something that takes a second argument
+
+`Family:TryCall` returns whatever the client returned, however many values that is. That is its
+whole purpose: the calls it wraps differ across three clients, and some of them answer in two
+values where others answer in one. It makes every use of it a variadic expression.
+
+`tonumber`'s second parameter is a base.
+
+    local total = tonumber(Family:TryCall(GetNumGuildMembers)) or 0
+
+`GetNumGuildMembers` answers `5, 2` — five members, two online. So this was `tonumber(5, 2)`,
+which is five read in binary, which is `nil`, which is `0`. The guild roster probe reported an
+empty guild while standing in a guild of five, printed it twice, and was rewritten once in
+between on the theory that the roster had not been asked for — a theory that was also true and
+fixed a second real fault, which is exactly how the first one survived the rewrite.
+
+**The Lua is valid, the fix is one pair of brackets, and the brackets are invisible in review.**
+Nothing about the line looks wrong. It read like every other guarded call in the file.
+
+It is the second time in one session. An hour earlier a harness fixture wrote
+`noted:find("L%[", noted:find("\n"))` — where the inner `find` returns two values, the second
+became `find`'s plain-search flag, and the pattern silently stopped being a pattern. That one
+died loudly and was fixed in a minute; this one returned a plausible number and cost an
+afternoon of chasing a guild that appeared to be empty.
+
+**Caught by:** `tests/Harness.lua` — *no client answer is handed straight to something that
+takes a second argument*, which reads the addon sources for `tonumber(Family:TryCall(` and
+`select(Family:TryCall(` and lists every one it finds. Scoped to `TryCall` deliberately rather
+than to every nested call: `TryCall` is the one that is variadic *by design*, while a `match`
+with one capture returns one value and can be read locally. A second check holds that the file
+list is all present, because a rule that scans files it cannot open passes beautifully.
+
+The generalisable form: **wrapping a call in `tonumber`, `select`, `find` or `gsub` is a place
+where extra return values change meaning rather than being discarded.** If the inner call is one
+whose arity is the client's business and not ours, bracket it.

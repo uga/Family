@@ -575,7 +575,7 @@ function Talents:Scan()
 	-- fifty-one is a character nobody has finished, and eight of eight is a level eighteen.
 	-- The client answers for the character rather than for a specialisation, and the
 	-- allowance is the same for both, so it is kept once rather than per group.
-	local unspent = tonumber(Family:TryCall(UnitCharacterPoints)) or 0
+	local unspent = tonumber((Family:TryCall(UnitCharacterPoints))) or 0
 	local active = groups[activeGroup()]
 	local total = (active and active.pointsSpent or 0) + unspent
 

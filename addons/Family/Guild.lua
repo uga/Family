@@ -2386,7 +2386,7 @@ function Guild:ReadRoster()
 	Family:Print("  GetNumGuildMembers() -> %s", callLine("GetNumGuildMembers"))
 	Family:Print("  GetGuildRosterInfo(1) -> %s", callLine("GetGuildRosterInfo", 1))
 
-	local total = tonumber(Family:TryCall(GetNumGuildMembers)) or 0
+	local total = tonumber((Family:TryCall(GetNumGuildMembers))) or 0
 	if total == 0 then
 		Family:Print(L["  |cffffaa00no roster came back, even after asking - the two lines "
 			.. "above say whether this client has those calls at all|r"])
@@ -2455,7 +2455,7 @@ function Guild:ProbeEventLog()
 	Family:Print(L["  asked the server - reading it back in a moment"])
 
 	Family:After(3, "guild.eventlog", function()
-		local count = tonumber(Family:TryCall(_G.GetNumGuildEvents)) or 0
+		local count = tonumber((Family:TryCall(_G.GetNumGuildEvents))) or 0
 		Family:Print(L["  entries: %d"], count)
 
 		if count == 0 then

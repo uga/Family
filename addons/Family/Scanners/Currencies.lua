@@ -80,7 +80,7 @@ local function readModernList()
 	local api = _G.C_CurrencyInfo
 	if type(api) ~= "table" then return nil end
 
-	local size = tonumber(Family:TryCall(api.GetCurrencyListSize)) or 0
+	local size = tonumber((Family:TryCall(api.GetCurrencyListSize))) or 0
 	if size == 0 then return nil end
 
 	local found = {}
@@ -105,7 +105,7 @@ end
 local function readGlobalList()
 	if type(_G.GetCurrencyListSize) ~= "function" then return nil end
 
-	local size = tonumber(Family:TryCall(GetCurrencyListSize)) or 0
+	local size = tonumber((Family:TryCall(GetCurrencyListSize))) or 0
 	if size == 0 then return nil end
 
 	local found = {}
