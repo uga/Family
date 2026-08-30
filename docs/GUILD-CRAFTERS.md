@@ -527,8 +527,18 @@ Mirage Raceway and Zinetta on Garalon, two realms of the same connected group. R
         Pinetta (Mirage Raceway) (this character is on Garalon)
 
 So a character genuinely in the guild is silently withheld from it, and the size of the loss is
-the size of the cluster — five realms here. **Not yet fixed:** widening the test changes what
-leaves the machine, which is a decision to be asked rather than taken.
+the size of the cluster — five realms here.
+
+**Fixed the same day**, once asked. `Offering()` takes a character whose realm is in the
+client's connected group and keeps the exact match where `GetAutoCompleteRealms` does not
+answer, which is the older clients and any client with no connected realms. The grid moved with
+it: a grant is filed under that character's own guild key rather than under the key of whoever
+is looking, or the panel would draw Zinetta's row out of Pinetta's drawer, find it empty, and
+write a second grant for a decision already taken.
+
+It earns its place twice over, because a partner-realm character cannot announce at all —
+routing their records through a home-realm character of the same account is the one path that
+reaches the guild.
 
 
 Mists of Pandaria may already show guildmates' professions, and possibly their recipes, in its

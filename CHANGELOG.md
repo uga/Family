@@ -18,6 +18,14 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Characters on a connected realm are shared with your guild.** If your guild spans connected
+  realms — most do — Family only ever offered the characters on the realm you were standing on.
+  The rest were in the guild, listed by the game, and invisible in Family. What you had already
+  ticked for them is kept and takes effect now.
+- **`/family guild test` says when your announcements are not leaving.** A character on a realm
+  other than the guild's own can hear the guild and cannot speak to it — the game's doing, not
+  Family's. It used to look like a broken channel. It now says so, and says that what you share
+  still reaches anybody who says hello first.
 - **Guild records from somebody nobody has heard from in two weeks are dropped.** If a
   guildmate turns a profession off and then stops playing, the message that says so has nobody
   to reach — so what they last shared would otherwise stay answerable on your client for ever.
