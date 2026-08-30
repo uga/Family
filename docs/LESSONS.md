@@ -4,8 +4,52 @@ Mistakes that cost real time, and the check that now catches each one. A lesson 
 observation; it is promoted once a check exists that catches it, whatever the bite count — a
 lesson a check enforces is enforced, and one without it is not. The ratchet only turns one way.
 
-An entry naming no check is the useful signal in this file: it means the lesson is still being
-held in somebody's head, which is where the last three went wrong.
+**A check that catches the instance does not promote a lesson. A check that catches the rule
+does.** The test is whether it fails when the rule is broken *somewhere the original fault
+never happened* — a second panel, a second scanner, a second language, a second call site. A
+check written against the one place a fault was found passes the moment that place is fixed and
+is silent about every other, which is the failure this file records more often than any other
+(see below). Where no such check is possible, say so plainly rather than promoting on an
+instance: an entry naming no check is the useful signal here, because it means the lesson is
+still being held in somebody's head.
+
+---
+
+## The one this project keeps making
+
+Read the entries below and a single failure appears six times in six disguises: **the check was
+modelled on the instance rather than on the rule.**
+
+| | what was too narrow |
+|---|---|
+| L-014 | a list of call shapes — it never occurred to anybody that a string could be `return`ed |
+| L-016 | a check that reproduces a reported fault, passing the moment that fault is fixed |
+| L-017 | the cell-width check written in English, because English is what it was reported in |
+| L-022 | `coveredBy` asking for an `OnClick`, because the one instance found had one |
+| L-025 | six checks of a mechanism, every one of them calling it by hand |
+| L-030 | guards on what a scan gathered, none on what the rule demanded of it |
+
+Each was written up as its own lesson and each is accurate. What none of them says is that the
+next one is coming, which is why L-025's own sentence — *"who calls this, and is that in the
+check?"* — was violated three times in one afternoon by somebody who had written it that
+morning. **A lesson filed under the story it was learnt in does not come to mind in a different
+file.**
+
+Two questions, then, of any check being written here:
+
+1. **What would a weakened version of this look like?** If the answer is "identical", the check
+   is guarding its own inputs and not its claim.
+2. **Who calls the thing under test, and is that caller in the check?** A mechanism exercised by
+   hand proves the mechanism and is silent about the wiring, which is usually the broken half.
+
+Three entries below state a general rule and enforce it with a single example — **L-001** (every
+capability probe gets a check: there is one, for dual specialisation on Era), **L-005** (an event
+handler is exercised by firing it: there is one, for `CHAT_MSG_ADDON`) and **L-011** (both ends
+must address the same object: there is one, counting tabs). The rules are right. The enforcement
+is an instance, and by the standard above those three are observations wearing a promotion.
+
+**L-003 is the oldest open one** and belongs to the same family: the harness still answers a
+`noop` for anything nobody stubbed, so a panel calling an unstubbed API passes.
 
 ---
 
