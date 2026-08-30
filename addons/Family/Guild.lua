@@ -2223,6 +2223,44 @@ end
 
 --------------------------------------------------------------------------------------------
 
+-- Announcing as soon as the client will say which guild this is.
+--
+-- **`GetGuildInfo` answers late**, and the two moments that matters most are the two where it
+-- is slowest: joining a guild, and creating one. Every announcement here looked once and gave
+-- up - `if Guild:Current() then Announce() end` and nothing else - so a character who had just
+-- joined told the guild nothing, and nothing tried again until the next login. Reported from a
+-- live client: a character invited, accepted and standing in the guild, and the guild master
+-- two feet away never heard of them.
+--
+-- The same shape as L-027 one file over, and the same fix: a wait that is bounded has to be
+-- re-armed by whatever counts as a fresh reason, and a wait that is *not* re-armed has to at
+-- least be tried more than once.
+--
+-- Bounded for the reason every wait here is bounded: a client that is going to answer does so
+-- within a few seconds, and one that never will must not be woken for ever.
+local function announceWhenReady(why, tries)
+	tries = tries or 0
+
+	if not Guild:Enabled() then return end
+	if not Family.Codec:CanTalk() then
+		Family:Debug("guild: no serialisation libraries, so nothing can be shared")
+		return
+	end
+
+	if Guild:Current() then
+		Guild:Announce(why)
+		return
+	end
+
+	if tries >= 5 then
+		Family:Debug("guild: in a guild the client will not name - nothing announced (%s)",
+			tostring(why))
+		return
+	end
+
+	Family:After(3, "guild.announce", function() announceWhenReady(why, tries + 1) end)
+end
+
 local function whenEnabled(handler)
 	return function(...)
 		if not Guild:Enabled() then return end
@@ -2258,12 +2296,7 @@ Family:OnDatabaseReady("guild", function()
 			-- feature off there is nothing held and this costs one empty loop.
 			Guild:ForgetLeft()
 
-			if not Guild:Enabled() then return end
-			if not Family.Codec:CanTalk() then
-				Family:Debug("guild: no serialisation libraries, so nothing can be shared")
-				return
-			end
-			Guild:Announce("login")
+			announceWhenReady("login")
 		end)
 	end)
 
@@ -2275,8 +2308,7 @@ Family:OnDatabaseReady("guild", function()
 			-- whose grid stop being ours the same evening, rather than at the next login.
 			Guild:ForgetLeft()
 
-			if not Guild:Enabled() then return end
-			if Guild:Current() then Guild:Announce("guild changed") end
+			announceWhenReady("guild changed")
 		end)
 	end)
 end)

@@ -8815,6 +8815,65 @@ print("guild share")
 
 
 
+
+		------------------------------------------------------------------------------------
+		-- Announcing when the client is slow to name the guild
+		--
+		-- Joining a guild and creating one are the two moments GetGuildInfo is slowest, and
+		-- they are exactly the two moments an announcement matters most. This looked once,
+		-- five seconds after the event, and gave up - so a character who had just joined told
+		-- the guild nothing and nothing tried again until the next login. Reported live: a
+		-- character invited, accepted and standing in the guild, and the guild master two feet
+		-- away never heard of them.
+		------------------------------------------------------------------------------------
+
+		do
+			local realGuildInfo = GetGuildInfo
+			local realInGuild = IsInGuild
+
+			local function announcements()
+				local said = 0
+				for _, message in ipairs(sent) do
+					if message.channel == "GUILD" then said = said + 1 end
+				end
+				return said
+			end
+
+			-- The client will not name the guild yet, which is what it does for some seconds
+			-- after a join.
+			advance(30)
+			GetGuildInfo = function() return nil end
+			sent = {}
+
+			fire("PLAYER_GUILD_UPDATE")
+			advance(8)
+			check("nothing is announced while the client will not name the guild",
+				announcements() == 0, tostring(announcements()))
+
+			-- And then it does, and the announcement goes without anybody pressing anything.
+			GetGuildInfo = realGuildInfo
+			advance(8)
+			check("and it is announced as soon as the client answers",
+				announcements() == 1, tostring(announcements()))
+
+			-- Bounded, because a client that never answers must not be woken for ever.
+			advance(30)
+			GetGuildInfo = function() return nil end
+			sent = {}
+
+			fire("PLAYER_GUILD_UPDATE")
+			for _ = 1, 12 do advance(4) end
+
+			GetGuildInfo = realGuildInfo
+			advance(10)
+			check("and it gives up rather than asking for ever",
+				announcements() == 0, tostring(announcements()))
+
+			GetGuildInfo, IsInGuild = realGuildInfo, realInGuild
+			advance(30)
+			sent = {}
+		end
+
 		------------------------------------------------------------------------------------
 		-- Switching guild share on says so
 		--

@@ -18,6 +18,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Joining a guild tells the guild you are there.** The announcement was made five seconds
+  after you joined and abandoned if your client had not yet named the guild — which just after
+  joining is most of the time. So a character who had joined, and was standing in the guild,
+  stayed unknown to everybody in it until their next login. It now waits until the client can
+  answer.
 - **A character in a brand-new guild is recorded as being in it.** If your client was slow to
   name the guild — which it often is just after one is created — Family gave up asking and did
   not try again until your next login. The character stayed recorded as being in no guild, so it
