@@ -541,45 +541,129 @@ permanent aura, so the residual time of what is inside is not there either.
 22783 for Mage Armour, 349981 for the Chronoboon, 10157 for Arcane Intellect, each in position
 ten of the same dump. That matters because a spell id is §2.1-clean where a name is not.
 
-**Closed, and the answer is no.** Six routes, each measured rather than reasoned about:
+**Reversed the same day, and the answer is yes.** The table below is what each route answered.
+The row that matters is the last one, and it is the same row as the fourth: it was **misread**,
+not unmeasured.
 
 | route | what came back |
 |---|---|
 | the item's own tooltip (184938) | 4 lines, no buff among them |
 | the player's auras, walked | only the Chronoboon's own; the banked ones are not auras |
-| a private tooltip, `SetUnitBuff`, not shown | 1 line — the title |
-| a private tooltip, `SetUnitBuff`, then `Show()` | 2 lines — title, `World effects suspended:` |
-| the real `GameTooltip`, `SetUnitBuff` | 3 lines — those two, plus one an addon had added |
 | `GetSpellDescription(349981)`, after `RequestLoadSpellData` | `loaded 349981 true`, **length 0** |
 | `GetSpellDescription` on the two item spells | 117 and 38 characters, and the wrong text |
+| a private tooltip, `SetUnitBuff`, **line 2 read whole** | **162 characters, the buffs among them** |
+| the real `GameTooltip`, `SetUnitBuff`, line 2 read whole | the same 162 characters |
 
-The last two are what make this firm rather than a shrug. The aura's data **loaded** - the
-client said so - and its description is empty; and the two spells that do have descriptions have
-the generic ones:
+**`NumLines()` counts tooltip lines, not text lines.** That single sentence is the whole of the
+error. A Chronoboon aura's tooltip is **two** tooltip lines, and the second of them is one string
+of 162 characters containing eight rows separated by `\r\n`. The first version of this entry read
+`2` and wrote *"2 lines - title, `World effects suspended:`"*, having looked only at the first
+row of a multi-row string, and every conclusion after that followed from the word "line" meaning
+two different things in the same sentence.
 
-    349858  Alters the fabric of time, suspending beneficial world effects from
-            dragonslaying, Dire Maul, Zul'Gurub, and Felwood.
-    349863  Restores your suspended world effects.
+**The string, row by row, with each row's own byte length** - `enUS` Era, one buff stored:
 
-Neither is a list of anything. And on the tooltip side, three lines came back from the game's own
-tooltip **while the tooltip on screen was showing `Rallying Cry of the Dragonslayer (120m)`
-between them** - so the rows are not tooltip text lines, on any frame, shown or not.
+    162
+    #24[World effects suspended:]
+    #66[  Rallying Cry of the Dragonslayer (120m)]
+    #58[While a world effect is suspended, you cannot benefit from]
 
-**The string exists in Blizzard's data.** Wowhead renders it, with a conditional block per buff
-and the variables unresolved. What the table above says is not that the text is absent; it is
-that **no call this client exposes hands it to an addon**.
+24 + 66 + 58 = 148, and seven `\r\n` pairs make 162. Nothing here is inferred by subtraction.
 
-**What this costs is less than it sounds.** *Which character has a boon banked* is answered by
-item 184938 sitting in a bag, needs no tooltip and no spell data, and is what the Chrono column
-in Summary / Miscellaneous shows. What is lost is *which buff, and how long is left* - and that
-would have been a **name** and a duration, the one shape §2.1 refuses, storable only with the
-locale it was written in.
+**A buff row is 66 bytes and reads as 41.** The other 25 are escapes, read out as bytes because
+every probe that typed a literal `|` came back with a false negative - the chat edit box doubles
+it, so `s:find("|", 1, true)` searches for `||`. See L-035. The row is:
 
-**Two traps, and this entry exists mostly for them.** The tooltip a player sees does contain the
-buffs, so a screenshot proves nothing about what an addon can read. And an empty description is
-not the same as an unloaded one: `RequestLoadSpellData` and `SPELL_DATA_LOAD_RESULT` are how that
-was told apart here, and anyone reopening this should tell it apart the same way rather than
-assuming either.
+     |T134153:24|t |cffffffffRallying Cry of the Dragonslayer (120m)|r
+
+    32                              space
+    124 84 49 51 52 49 53 51 58 50 52 124 116   |T134153:24|t   icon escape, fileID, 24px
+    32                              space
+    124 99 102 102 102 102 102 102 102 102      |cffffffff      white
+    82 97 108 108 121 ...           Rallying Cry of the Dragonslayer (120m)
+    124 114                         |r
+
+So a parser must strip `|T...|t`, `|c%x%x%x%x%x%x%x%x` and `|r` before it reads anything, and
+the leading and trailing space besides.
+
+**A private tooltip reads it.** `FPTTextLeft2` on a `GameTooltipTemplate` frame that was never
+shown returns the same 162 characters as `GameTooltipTextLeft2` does, byte for byte. So this is
+readable through the scanner tooltip Family already owns for oils, and nothing has to touch the
+tooltip a player is looking at.
+
+**The aura is found by id, never by index.** `UnitBuff`'s tenth return is the spell id, and
+349981 is the one to look for; it was at index 1 in the dump above and that is luck, not a rule.
+
+**What a row looks like, and what a parser may lean on.** The header and the closing sentence are
+localised - the same aura on a French client reads `Deplaceur de chronochance surcharge` - so
+neither is a landmark. What is stable is the shape: a stored buff is a row ending in a
+parenthesised duration, and neither the header nor the footer ends that way. Blank rows are real
+and are dropped.
+
+**The twelve buffs a Chronoboon can hold, with their ids and icons**, taken from wago's
+`SpellName` and `SpellMisc` at the Era build pinned in section 3. The names came from Wowhead's
+render of the conditional block and were used only as search terms; every id and every icon below
+is the client's own table:
+
+| buff | spell | icon |
+|---|---|---|
+| Fengus' Ferocity | 22817 | 136109 |
+| Mol'dar's Moxie | 22818 | 136054 |
+| Slip'kik's Savvy | 22820 | 135930 |
+| Rallying Cry of the Dragonslayer | 22888 | 134153 |
+| Warchief's Blessing | 16609 | 135759 |
+| Spirit of Zandalar | 24425 | 132107 |
+| Songflower Serenade | 15366 | 135934 |
+| Sayge's Dark Fortune, eight of them | 23735, 23736, 23737, 23738, 23766, 23767, 23768, 23769 | 134334 |
+| Boon of Blackfathom | 430947 | 236403 |
+| Spark of Inspiration | 438536 | 236424 |
+| Fervor of the Temple Explorer | 446695 | 236368 |
+| Might of Stormwind | 460939 | 135763 |
+
+**134153 is Rallying Cry's icon in the client's table and 134153 is what the tooltip handed
+back**, which is what makes this a confirmation rather than a correspondence: the icon in the
+escape is the spell's own.
+
+**Twelve distinct icons, no collision** - checked rather than assumed, since the whole route rests
+on it. The single merge is Sayge's Dark Fortune: eight fortunes, one icon, so the icon says *a*
+Sayge's and not which one. That is the price of not putting a localised name on disk.
+
+**Each buff has a second id** in the `355xxx` range for the vanilla ones and `43xxxx`/`46xxxx` for
+the Season of Discovery ones - `355363` beside `22888`, `431111` beside `430947` - and the pair
+always shares an icon. Which of the two the tooltip is built from has not been measured and does
+not need to be, because the icon is the same either way. That is the second reason the icon is the
+key and the spell id is not.
+
+**Four of the twelve are Season of Discovery**, and this was asked of all three pinned builds
+rather than reasoned about from what Season of Discovery is:
+
+| | Era | Burning Crusade | Mists |
+|---|---|---|---|
+| the eight vanilla buffs | yes | yes | yes |
+| Boon of Blackfathom, Spark of Inspiration, Fervor of the Temple Explorer, Might of Stormwind | yes | absent | absent |
+
+A generator that treats a missing id as a bad name would be wrong about exactly those four.
+
+**The icon is the same fileID on every build it exists on** - 134153 is Rallying Cry on all
+three, and so for each of the eight - so the key needs no branch and no per-build table, which is
+the standard `ChargedItems.lua` was held to and the reason a union works there too.
+
+**Two things here are inferred and not measured**, and are marked so rather than written as fact:
+that two stored buffs give two such rows in the same string, and what order they come in. One
+sample is one buff. The parser is built to take any number of rows in any order precisely so that
+neither guess is load-bearing - if both are wrong, it reads what is there anyway.
+
+**What this still costs.** A row is a **name** and a duration, which is the one shape §2.1
+refuses: `Rallying Cry of the Dragonslayer` is the enUS string and nothing else. Storing it whole
+would put a locale on disk and answer wrongly for anyone who changes clients. See the decision on
+how the name is turned back into a spell id before it is recorded.
+
+**Two traps, and this entry exists mostly for them.** A screenshot proves nothing about what an
+addon can read - the Wowhead render that reopened this was right about the *shape* and could not
+have settled the *access*. And an empty answer is not the same as an unloaded one:
+`RequestLoadSpellData` and `SPELL_DATA_LOAD_RESULT` are how that was told apart for
+`GetSpellDescription`, which really is empty and really is loaded. That route stays closed; it is
+simply not the only route.
 
 ### The same name calls on Era, measured 2026-08-30
 

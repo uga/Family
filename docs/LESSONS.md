@@ -1181,3 +1181,66 @@ its routes in a table, and that a conclusion of the form *nothing can* is not wr
 what gets written is *these were tried, and this is what each said*. The two traps that produced
 this one are named in the entry itself: a screenshot proves nothing about what an addon can read,
 and an empty answer is not the same as an unloaded one.
+
+## L-034 — A tooltip line is not a line of text
+
+`GameTooltip:NumLines()` returned **2** for a charged Chronoboon's aura, and that number went
+into `DATASOURCES.md` as *"2 lines — title, `World effects suspended:`"*. The second of those two
+tooltip lines is a **162-character string containing eight rows separated by `\r\n`**, and the
+buffs were in it the whole time. One of the rows was even quoted in the entry as evidence for the
+opposite conclusion: the tooltip on screen was showing `Rallying Cry of the Dragonslayer (120m)`
+while the read "came back short", and that contradiction was written down as *proof the rows are
+not tooltip text lines* rather than read as a signal that the read was wrong.
+
+The whole error is one word meaning two things in one sentence. `NumLines` counts the **rows the
+tooltip lays out**, each with its own `TextLeft`*n* font string; a single one of those font
+strings holds as much text as the game put in it, newlines included. Reading `GetText()` and
+looking at what appears before the first line break is not reading the line.
+
+**What made it undetectable from the outside:** the printed evidence looked complete. `print` on
+a multi-row string renders every row, so the chat frame showed a plausible-looking dump; the
+first row was a plausible-looking header; and nothing anywhere says "there is more". The check
+that would have caught it is arithmetic — `#s` against the length of what was read — and it was
+not run because the string did not look like it needed one.
+
+**And a second time, in the same string.** With `#s` finally measured at 162, the rows as
+transcribed came to 137. The missing 25 bytes were not missing: they are escape sequences the
+chat frame **renders rather than prints**, so a copy of what is on screen is not a copy of the
+string. A dump that is going to be counted has to have its pipes neutralised first.
+
+**Caught by:** `#s` against the sum of what was read, every time a tooltip line is parsed rather
+than compared — the harness fixture for the boon carries the real byte length and a mutation that
+drops a row fails on the total, not on the row. And, standing: **when reading a tooltip, read
+`GetText()` in full and split it; never treat `NumLines` as the number of things said.**
+
+## L-035 — A literal pipe cannot survive the chat box, and a false negative looks like a fact
+
+Hunting for colour codes and icon escapes in a tooltip string, three probes in a row reported
+there were none:
+
+    s:find("|", 1, true)      -->  nil
+    s:gsub("|", "!")          -->  unchanged
+
+Both are false. The row contained `|T134153:24|t` and `|cffffffff...|r`, twenty-five bytes of
+them, which is precisely the gap that had been chased for four exchanges. **WoW's chat edit box
+doubles a `|` on the way in**, so a `|` typed into `/run` reaches Lua as `||`: the plain `find`
+searched for a two-character string that is not in the text, and the `gsub` pattern matched
+nothing. Any probe that needs a pipe must build it - `string.char(124)` - and never type it.
+
+**The worse half is what was done with the answer.** `162 nil` came back while a screenshot of
+the same tooltip, on screen, showed the icon. That contradiction was resolved *in favour of the
+instrument*: an explanation was invented for it - tooltips can hang a texture off a line with
+`AddTexture`, which would not appear in `GetText()` - and written down as though it had been
+measured. It is a true sentence about the API and it was not true here, which is the most
+dangerous kind of wrong answer: plausible, mechanism-shaped, and load-bearing.
+
+The rule that falls out is not about pipes. **When a measurement contradicts something already
+seen, the measurement is the suspect.** A probe is an instrument and instruments are wrong;
+reaching for a mechanism that would explain the contradiction away is the moment to stop and
+re-measure by a different route instead.
+
+**Caught by:** arithmetic, which is the only thing that worked in this whole sequence. `#s`
+against the sum of the rows read gave 162 against 137 and would not go away no matter which story
+was told about it, and the byte dump that finally settled it was forced by that gap rather than by
+any suspicion. Standing rule: **a probe reports bytes, not conclusions** - `s:byte(i)` over a
+range costs one line and cannot be escaped, doubled, rendered or collapsed on the way back.
