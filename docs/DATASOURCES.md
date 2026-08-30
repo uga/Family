@@ -300,8 +300,14 @@ Two things fell out of the same run.
   anything deciding *is this character in the guild now* has to take their **last** mention and
   not their first. With the oldest at index 1, that is the highest index that names them.
 
-**Being kicked is its own kind, `remove`** - measured 2026-08-30 by kicking somebody, and the
-opposite of what 200 entries across two guilds had suggested. Neither of those guilds had kicked
+**Being kicked is its own kind, `remove`** - measured 2026-08-30, and the opposite of what 200
+entries across two guilds had suggested.
+
+Done through the **guild frame's Remove button**, because `/gkick` appears not to exist on Mists
+of Pandaria Classic - reported by the player taking the measurement; `/gquit` on the same client
+worked. Both routes ask the server the same thing, so a `remove` from the slash command would be
+surprising - but it is untested, and this records what was actually pressed. The chat line was
+*"Pinetta has been kicked out of the guild by Eccebombo"*. Neither of those guilds had kicked
 anybody in its window, which is why a count of nothing is not a measurement.
 
 **And it names the departed in a different position from `quit`.** This is the trap in the whole
