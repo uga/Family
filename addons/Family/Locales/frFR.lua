@@ -679,4 +679,8 @@ Family.locales.frFR = {
 	["  |cffffaa00nothing came back. Either this rank may not read it, or the guild has no history, or asking is not enough|r"] = "  |cffffaa00rien n'est revenu. Soit ce rang n'a pas le droit de le lire, soit la guilde n'a pas d'historique, soit demander ne suffit pas|r",
 	["  |cff888888every value each call returned, by position and type. These go into DATASOURCES, not into a memory|r"] = "  |cff888888chaque valeur renvoyée par chaque appel, par position et par type. Elles vont dans DATASOURCES, pas dans une mémoire|r",
 	["  kinds of event in the whole log: %s"] = "  types d'entrée dans tout le journal : %s",
+
+	-- Options.lua - Wide Family's chat reports
+	["Say in chat how a Wide Family update went"] = "Dire dans le chat comment s'est passée une mise à jour Famille élargie",
+	["Whether a linked family had anybody online to talk to. Somebody asking to link, a link made or ended, and anything that has gone wrong are always said."] = "Si une famille liée avait quelqu'un de connecté à qui parler. Une demande de liaison, une liaison établie ou rompue, et tout ce qui s'est mal passé sont toujours dits.",
 }

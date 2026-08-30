@@ -175,6 +175,27 @@ function Wide:SetAutoUpdate(on)
     store().auto = on and true or false
 end
 
+-- Whether Wide Family says in chat how an exchange went.
+--
+-- **What this governs is one kind of line and not all of them.** A report is Family telling
+-- you what happened on the wire - that a family had nobody online, so nothing was sent. It is
+-- worth reading once and it is noise on the twentieth automatic update against a linked family
+-- whose one character is usually offline, which is what it looks like from the other chair.
+--
+-- What it deliberately does not govern: somebody asking to link, a link made, a link ended,
+-- and anything that has gone wrong. The first is a decision waiting for the player, the middle
+-- two are their family changing shape, and a fault silenced is a fault that looks like it was
+-- fixed. None of those is feedback about an exchange, and a switch labelled for one that
+-- quietly took the others would be the wrong switch.
+--
+-- On unless it is turned off, because the first time this line appears it is the answer to a
+-- question - why did nothing happen - and only the tenth time is it noise.
+function Wide:Reports() return store().reports ~= false end
+
+function Wide:SetReports(on)
+    store().reports = on and true or false
+end
+
 --------------------------------------------------------------------------------------------
 -- Siblings
 --
@@ -529,12 +550,24 @@ Family.Comm:OnAbsent("wide", function(name, _, already)
                 Wide:ExchangeWith(familyID, "the last one was offline")
             elseif anyKnown then
                 local count = characterCount(link)
-                Family:Print(count == 1
-                    and L["|cffffaa00None of %s's %d character is online.|r Nothing was "
-                        .. "sent. Try again when one of them is."]
-                    or L["|cffffaa00None of %s's %d characters are online.|r Nothing was "
-                        .. "sent. Try again when one of them is."],
-                    tostring(link.name), count)
+
+                -- The answer rather than the working, which is why this one is printed
+                -- where the line above it is narrated. Unless the player has asked not to
+                -- be told: against a linked family whose one character is rarely on, the
+                -- automatic update produces this every time and the answer stops being
+                -- news. It still goes to the narration, so switching it off loses the
+                -- interruption and not the fact.
+                if Wide:Reports() then
+                    Family:Print(count == 1
+                        and L["|cffffaa00None of %s's %d character is online.|r Nothing "
+                            .. "was sent. Try again when one of them is."]
+                        or L["|cffffaa00None of %s's %d characters are online.|r Nothing "
+                            .. "was sent. Try again when one of them is."],
+                        tostring(link.name), count)
+                else
+                    Family:Debug("wide: none of %s's %d character(s) are online",
+                        tostring(link.name), count)
+                end
             end
         end
     end

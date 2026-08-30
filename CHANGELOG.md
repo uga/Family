@@ -18,6 +18,14 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **A switch for Wide Family's chat reports.** Options, under the Wide Family switch. A link
+  to a family whose one character is rarely online says *nobody was there, nothing was sent*
+  every time it tries, which is the answer the first time and noise by the tenth. Turn it off
+  and the line stops; turn on *Narrate what the scanners are doing* and it is still there if
+  you want it.
+
+  It governs that report and nothing else. Somebody asking to link, a link made or ended, and
+  anything that has gone wrong are always said.
 - **Guild crafters now say whose cooldown is up.** Hover a transmute, a bolt of mooncloth or
   anything else on a daily timer and the people who can make it are listed with the state of
   their timer beside them — *ready now*, or *ready in 4h* — and whoever can do it now is

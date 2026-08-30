@@ -679,4 +679,8 @@ Family.locales.ruRU = {
 	["  |cffffaa00nothing came back. Either this rank may not read it, or the guild has no history, or asking is not enough|r"] = "  |cffffaa00ничего не пришло. Либо этот ранг не может читать, либо у гильдии нет истории, либо запроса мало|r",
 	["  |cff888888every value each call returned, by position and type. These go into DATASOURCES, not into a memory|r"] = "  |cff888888каждое значение каждого вызова, по позиции и типу. Они идут в DATASOURCES, а не в память|r",
 	["  kinds of event in the whole log: %s"] = "  виды записей во всём журнале: %s",
+
+	-- Options.lua - Wide Family's chat reports
+	["Say in chat how a Wide Family update went"] = "Сообщать в чат, как прошло обновление Большой семьи",
+	["Whether a linked family had anybody online to talk to. Somebody asking to link, a link made or ended, and anything that has gone wrong are always said."] = "Был ли в связанной семье кто-то в сети. Запрос на связь, установленная или разорванная связь и всё, что пошло не так, сообщаются всегда.",
 }

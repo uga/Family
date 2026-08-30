@@ -83,6 +83,16 @@ local SWITCHES = {
 		set = function(on) Family.Wide:SetEnabled(on) end,
 	},
 	{
+		-- Under Wide Family's own switch, because it is about Wide Family and nothing
+		-- else, and a player looking for it will look there.
+		label = L["Say in chat how a Wide Family update went"],
+		note = L["Whether a linked family had anybody online to talk to. Somebody asking to "
+			.. "link, a link made or ended, and anything that has gone wrong are always "
+			.. "said."],
+		get = function() return Family.Wide:Reports() end,
+		set = function(on) Family.Wide:SetReports(on) end,
+	},
+	{
 		label = L["Narrate what the scanners are doing"],
 		note = L["Chat messages while Family records things. For working out faults."],
 		get = function() return FamilyDB.debug and true or false end,

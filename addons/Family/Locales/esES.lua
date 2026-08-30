@@ -679,4 +679,8 @@ Family.locales.esES = {
 	["  |cffffaa00nothing came back. Either this rank may not read it, or the guild has no history, or asking is not enough|r"] = "  |cffffaa00no llegó nada. O este rango no puede leerlo, o la hermandad no tiene historial, o preguntar no basta|r",
 	["  |cff888888every value each call returned, by position and type. These go into DATASOURCES, not into a memory|r"] = "  |cff888888cada valor que devolvió cada llamada, por posición y tipo. Estos van a DATASOURCES, no a la memoria|r",
 	["  kinds of event in the whole log: %s"] = "  tipos de entrada en todo el registro: %s",
+
+	-- Options.lua - Wide Family's chat reports
+	["Say in chat how a Wide Family update went"] = "Decir en el chat cómo fue una actualización de Familia amplia",
+	["Whether a linked family had anybody online to talk to. Somebody asking to link, a link made or ended, and anything that has gone wrong are always said."] = "Si una familia vinculada tenía a alguien conectado con quien hablar. Una petición de vínculo, un vínculo creado o roto, y todo lo que haya salido mal se dicen siempre.",
 }

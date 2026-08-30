@@ -10101,6 +10101,96 @@ print("a family is a person with several characters")
 	check("and says that none of them is, rather than naming one of the three",
 		told ~= nil and told:find("None of", 1, true) ~= nil, tostring(told))
 
+
+	------------------------------------------------------------------------------------------
+	-- And the switch that turns that sentence off
+	------------------------------------------------------------------------------------------
+
+	check("the report is on until somebody turns it off", Family.Wide:Reports() == true)
+
+	-- A fresh character of theirs each time, because the report is said once per name and
+	-- everybody in this fixture has already been through it. Without a name that has not been
+	-- refused before, both halves below would measure a silence that was already there.
+	local function walkOut(who)
+		local link = Family.Wide:Links()["theirs"]
+		link.characters[who .. "-Thunderstrike"] = time() + 120
+
+		sent = {}
+		Family.Wide:ExchangeWith("theirs", "another go")
+		advance(0.4)
+
+		local from = #DEFAULT_CHAT_FRAME.messages
+		notFound(who)
+
+		local lines = 0
+		for index = from + 1, #DEFAULT_CHAT_FRAME.messages do
+			if DEFAULT_CHAT_FRAME.messages[index]:find("None of", 1, true) then
+				lines = lines + 1
+			end
+		end
+
+		link.characters[who .. "-Thunderstrike"] = nil
+		return lines
+	end
+
+	Family.Wide:SetReports(false)
+	local whenOff = walkOut("Grellotto")
+	Family.Wide:SetReports(true)
+	local whenOn = walkOut("Grellozzo")
+
+	check("and switched off the player is not told", whenOff == 0, tostring(whenOff) .. " lines")
+	check("and switched on they are, which is what makes the line above mean anything",
+		whenOn == 1, tostring(whenOn) .. " lines")
+
+	-- The fact is not lost with the interruption. Switching a report off should cost the line
+	-- in the chat frame and nothing else, so it goes where the working already goes.
+	local wasNarrating2 = FamilyDB.debug
+	FamilyDB.debug = true
+	Family.Wide:SetReports(false)
+
+	local narrationFrom = #DEFAULT_CHAT_FRAME.messages
+	walkOut("Grellucci")
+
+	local narrated = false
+	for index = narrationFrom + 1, #DEFAULT_CHAT_FRAME.messages do
+		if DEFAULT_CHAT_FRAME.messages[index]:find("are online", 1, true) then
+			narrated = true
+		end
+	end
+	check("and narrates it instead, so what is lost is the interruption and not the fact",
+		narrated)
+
+	FamilyDB.debug = wasNarrating2
+	Family.Wide:SetReports(true)
+
+	-- **What it must not cover.** A request to link, a link made, a link ended and a version
+	-- mismatch are all Family:Print in this same file, and every one of them is either a
+	-- decision waiting for the player, their family changing shape, or a fault - none is
+	-- feedback about an exchange, and a fault silenced is a fault that looks fixed.
+	--
+	-- Counted in the source rather than proved with a fixture each, because four fixtures to
+	-- establish one rule are four fixtures that go stale separately - and because the thing
+	-- worth catching is somebody later putting a fifth Print inside this guard.
+	do
+		local handle = io.open(ROOT .. "/addons/Family/Wide.lua")
+		local source = handle and handle:read("*a") or ""
+		if handle then handle:close() end
+
+		local _, guards = source:gsub("if Wide:Reports%\(%\) then", "")
+		local guarded = 0
+		for block in source:gmatch("if Wide:Reports%\(%\) then\n(.-)\n%s*else\n") do
+			local _, prints = block:gsub("Family:Print", "")
+			guarded = guarded + prints
+		end
+		local _, total = source:gsub("Family:Print", "")
+
+		check("the switch stands in front of exactly one report",
+			guards == 1 and guarded == 1,
+			tostring(guards) .. " guard(s), " .. tostring(guarded) .. " print(s)")
+		check("and leaves the lines that are decisions, changes and faults alone",
+			total - guarded >= 4, tostring(total - guarded) .. " ungoverned")
+	end
+
 	-- Pressing the button now must not start the whole thing over.
 	sent = {}
 	local again, why = Family.Wide:ExchangeWith("theirs", "pressed again")
