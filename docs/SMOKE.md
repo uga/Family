@@ -155,6 +155,12 @@ Per client: **Era**, **Anniversary**, **Mists**.
 - [ ] Untick that profession on their side. Within a minute, and with neither of you pressing
       *Update now*, the recipe stops being attributed to them here.
 
+- [ ] **Does this client hear its own guild announcement?** In a guild with nobody else on,
+      `/family guild test` and read `announcements arrived: N (X ours coming back…)`. On Mists
+      X is always 0 — a client there never receives its own addon message on the guild channel.
+      Note what Era and Burning Crusade do, because a diagnosis line was written assuming they
+      all echo.
+
 #### The guild event log — a probe, not a feature
 
 `/family guild log`. Nothing in Family reads this log; this is finding out whether it could,

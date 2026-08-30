@@ -2059,10 +2059,21 @@ function Guild:Diagnose()
 		end
 	end
 
+	-- **Said as what is known rather than as a verdict.** This used to read "not even its own
+	-- announcement coming back off the guild channel - that points at the channel", and on
+	-- Mists that is a false alarm every time: a client there does not hear its own addon
+	-- message on the guild channel, so being the only Family user online produces this line
+	-- with nothing whatever wrong. Measured on a live client that had received somebody else's
+	-- announcement perfectly well and never once seen its own (DATASOURCES §2).
+	--
+	-- A diagnosis that names the wrong culprit is worse than one that says less: it sends
+	-- somebody to look at the channel, which is the one part they cannot inspect.
 	if stats.sent > 0 and stats.arrived == 0 then
-		Family:Print(L["|cffffaa00This client has sent and heard nothing at all, not even its "
-			.. "own announcement coming back off the guild channel. That points at the "
-			.. "channel rather than at either end.|r"])
+		Family:Print(L["|cffffaa00Nothing has arrived here at all.|r In a guild where nobody "
+			.. "else runs Family that is the ordinary answer - and on some clients your own "
+			.. "announcement does not come back to you either, so by itself this is not proof "
+			.. "of a fault. Ask somebody else in the guild to run this: if their copy shows "
+			.. "messages arriving, the channel is working."])
 	end
 end
 

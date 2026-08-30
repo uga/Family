@@ -876,7 +876,7 @@ summarises a measurement is a copy, and a copy drifts. When a design says what a
 that sentence is the one to go and check — it is exactly the sentence nobody re-derives, because
 somebody clearly derived it once.
 
-## L-027 — A counter that bounded the session instead of the attempt
+## L-027 — A counter that bounded the session, and a diagnosis that could not say which character
 
 `GetGuildInfo` answers late, so `Scanners/Identity.lua` retries: five tries, three seconds
 apart, and then it gives up rather than waking for ever. L-023 is why that retry exists.
@@ -886,10 +886,22 @@ stayed above the limit for the rest of the session - so every later scan increme
 was past five, and gave up on its first try. A client slow to name a guild *once* never asked
 again until the next login, however many times the game said `PLAYER_GUILD_UPDATE`.
 
-Reported from a freshly created guild on Mists. The guild master, standing in his own guild,
-was recorded as being in none - and everything in §7 is keyed on the guild a character is
-*recorded* in, so he was absent from his own offering while the panel beside it drew him from
-the server's roster as Guild Master. Two lines on one screen disagreeing about one character.
+**How it was found is its own lesson, and the more useful half.** A diagnosis on a freshly
+created guild appeared to say that the guild master, standing in his own guild, was recorded as
+being in none. It did not say that. The line listing characters with no guild recorded printed
+the bare *name*, and there was another character of the same name on another realm - so the
+reading was "Eccebombo has no guild" when the truth was "an Eccebombo somewhere else has none,
+and the one in this guild is fine".
+
+An hour went into that, and the counter above was found by reading the code while chasing it.
+The bug is real and is fixed; it was not what the diagnosis was showing. **A defect found while
+chasing a phantom is still a defect, and the phantom is still a defect of its own** - the
+instrument that could not tell two characters apart, and answered anyway. It is the same shape
+as L-023's postscript, one level up: there the check could not see the case it existed for, and
+here it could not see *which* case it was looking at.
+
+The check that now catches it: two of ours with one name on two realms are told apart in the
+diagnosis, by realm, in the style the two lines below it already used.
 
 **The harness had been resetting the counter by hand between checks**, and that is the tell.
 A fixture reaching into a scanner to make the next check possible is describing something a

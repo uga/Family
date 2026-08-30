@@ -199,6 +199,24 @@ publishing what it collected is an out-of-game job.
 
 ---
 
+### A client does not hear its own guild-channel addon message, measured on Mists 2026-08-30
+
+Sending on the `GUILD` addon channel does **not** come back to the sender on Mists of Pandaria
+Classic. Measured on a live client whose diagnosis read `announcements arrived: 1 (0 ours coming
+back)` - it had received somebody else's announcement over that channel perfectly well and had
+never once seen its own, across three runs.
+
+Not Family dropping it: `Comm:Receive` has no filter on the sender, and `onHello` counts an
+arrival *before* the echo guard discards it, so an echo would show in both numbers.
+
+It matters because a diagnosis was built on the opposite assumption. *"This client has sent and
+heard nothing at all, not even its own announcement coming back off the guild channel - that
+points at the channel"* fires on Mists every time somebody is the only Family user online, and
+names the one part of the system they cannot inspect. It now says what is known instead.
+
+**Unmeasured on Era and Burning Crusade.** If they do echo, the sentence is only wrong on one
+client; if they do not, it was never right anywhere.
+
 ### The guild event log, measured on all three clients 2026-08-30
 
 `/family guild log`, run four times: in **ZERO** on Pyrewood Village (Era) as **rank index 8**,
