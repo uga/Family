@@ -2280,6 +2280,110 @@ local function eventLine(index)
 	return table.concat(bits, " "), got[2]
 end
 
+-- A value as it actually came back, tables expanded rather than printed as an address.
+local function shown(value)
+	if type(value) ~= "table" then return tostring(value) end
+
+	local bits = {}
+	for index = 1, #value do bits[#bits + 1] = tostring(value[index]) end
+	return "{" .. table.concat(bits, ", ") .. "}"
+end
+
+-- Any call at all, as whatever it turned out to be. The same discipline `eventLine` follows and
+-- for the same reason: the shape of the answer is part of what is being asked, and a client
+-- that answers in two values where another answers in one is the finding rather than a detail.
+local function callLine(name, ...)
+	local fn = _G[name]
+	if type(fn) ~= "function" then return "|cffff5555no such call|r" end
+
+	local count, got = pack(pcall(fn, ...))
+	if not got[1] then return "|cffff5555the call errored|r" end
+	if count < 2 then return "|cff888888returned nothing|r" end
+
+	local bits = {}
+	for at = 2, count do
+		bits[#bits + 1] = string.format("%d:%s(%s)", at - 1, shown(got[at]), type(got[at]))
+	end
+	return table.concat(bits, " ")
+end
+
+-- The names two clients compare, and whether that comparison can be wrong.
+--
+-- `onHello` decides an announcement is our own by comparing bare names with the realm stripped
+-- from both sides (`bareName`). That is not a guess, and the measurement that shows it is the
+-- client's own echo: a Mists client hears its own guild announcement come back, and it comes
+-- back as `Eccebombo-MirageRaceway` while `UnitName("player")` answers `Eccebombo`. The same
+-- character, spelled two ways by the same client in the same second. So the realm is the part
+-- of the comparison deliberately thrown away, rather than the part that was never there.
+--
+-- **If a guild can hold two characters of the same name on two realms, that comparison reads
+-- one of them as us.** Their announcement is counted as an echo and dropped, they are never
+-- answered, and their panel says we are not running Family - for ever, with nothing to notice
+-- it. `IsOurs` compares the same way and would claim their row as well.
+--
+-- Whether a guild can hold two is a question about the client, not about Family, and it is the
+-- only part of this that is unmeasured. So it is asked rather than reasoned about: what the
+-- client calls this character, which realms it considers connected, and whether anybody in the
+-- roster right now already collides.
+--
+-- Raw returns with types, nothing interpreted, exactly as the event log probe does it.
+function Guild:ProbeNames()
+	local _, guildName, realm = self:Current()
+
+	Family:Print(L["|cffffd700Names and realms|r on %s"], Family.Capabilities.name)
+	Family:Print(L["  guild: %s"], guildName and string.format("%s (realm %s)", guildName,
+		tostring(realm)) or "|cffff5555not in one|r")
+
+	Family:Print(L["  |cff888888every value each call returned, by position and type. "
+		.. "These go into DATASOURCES, not into a memory|r"])
+
+	Family:Print("  UnitName(\"player\") -> %s", callLine("UnitName", "player"))
+	Family:Print("  UnitFullName(\"player\") -> %s", callLine("UnitFullName", "player"))
+	Family:Print("  GetRealmName() -> %s", callLine("GetRealmName"))
+	Family:Print("  GetNormalizedRealmName() -> %s", callLine("GetNormalizedRealmName"))
+	Family:Print("  GetAutoCompleteRealms() -> %s", callLine("GetAutoCompleteRealms"))
+
+	-- What the comparison in onHello actually reduces us to.
+	local ours = bareName(Family:TryCall(UnitName, "player"))
+	Family:Print(L["  what an announcement is compared against: %s"],
+		ours and string.format("%q", ours) or "|cffff5555nothing|r")
+
+	-- And the roster, which is where a collision would have to exist to matter.
+	local total = tonumber(Family:TryCall(GetNumGuildMembers)) or 0
+	if total == 0 then
+		Family:Print(L["  |cffffaa00the roster is empty here - open the guild window once "
+			.. "and run this again|r"])
+		return
+	end
+
+	local withRealm, sharing, examples = 0, 0, {}
+	for index = 1, total do
+		local name = Family:TryCall(GetGuildRosterInfo, index)
+		if type(name) == "string" then
+			if name:find("-", 1, true) then
+				withRealm = withRealm + 1
+				if #examples < 4 then examples[#examples + 1] = name end
+			end
+			if ours and bareName(name) == ours then sharing = sharing + 1 end
+		end
+	end
+
+	Family:Print(L["  roster: %d entries, %d of them carrying a realm"], total, withRealm)
+	if #examples > 0 then
+		Family:Print(L["  the ones that do, as the client spells them: %s"],
+			table.concat(examples, ", "))
+	end
+
+	-- The payload. One is this character; two is the case this probe was written for.
+	if sharing > 1 then
+		Family:Print(L["  |cffff5555%d entries share this character's name, and only one of "
+			.. "them is this character - the collision is real here|r"], sharing)
+	else
+		Family:Print(L["  |cff888888nobody else in the roster shares this character's name, "
+			.. "so the collision cannot be shown from this guild today|r"])
+	end
+end
+
 function Guild:ProbeEventLog()
 	local _, guildName, realm = self:Current()
 

@@ -12028,6 +12028,105 @@ print("what each client calls a race")
 end)()
 
 print()
+print("what this client calls a character, and whether two can collide")
+
+-- A probe, not a feature. onHello decides an announcement is our own by comparing bare names
+-- with the realm stripped from both sides, and the client's own echo shows the two sides are
+-- spelled differently: the message comes back as "Eccebombo-MirageRaceway" while
+-- UnitName("player") answers "Eccebombo". If a guild can hold two characters of one name on
+-- two realms, one of them is read as us - dropped as an echo, never answered, and listed as
+-- not running Family for ever.
+--
+-- Whether a guild can hold two is a question about the client, so it is asked rather than
+-- reasoned about. These checks are about the questions being put properly: every value each
+-- call returned, with its type, and nothing interpreted.
+;(function()
+	local held = {}
+	for _, name in ipairs { "UnitName", "UnitFullName", "GetRealmName",
+		"GetNormalizedRealmName", "GetAutoCompleteRealms", "GetNumGuildMembers",
+		"GetGuildRosterInfo" } do
+		held[name] = _G[name]
+	end
+
+	local function restore()
+		for name, fn in pairs(held) do _G[name] = fn end
+	end
+
+	local function lines(from)
+		local out = {}
+		for index = from + 1, #DEFAULT_CHAT_FRAME.messages do
+			out[#out + 1] = tostring(DEFAULT_CHAT_FRAME.messages[index])
+		end
+		return table.concat(out, "\n")
+	end
+
+	_G.UnitName = function() return "Ecce" end
+	_G.UnitFullName = function() return "Ecce", "MirageRaceway" end
+	_G.GetRealmName = function() return "Mirage Raceway" end
+	_G.GetNormalizedRealmName = nil
+	_G.GetAutoCompleteRealms = function() return { "MirageRaceway", "Whitemane" } end
+	_G.GetNumGuildMembers = function() return 0 end
+	_G.GetGuildRosterInfo = function() return nil end
+
+	local mark = #DEFAULT_CHAT_FRAME.messages
+	Family.Guild:ProbeNames()
+	local said = lines(mark)
+
+	-- The whole point of a probe: the answer's shape is part of what is being asked, so a
+	-- call that answers in two values must show both, each with its type.
+	check("every value a call returned is printed, with its type",
+		said:find("1:Ecce(string) 2:MirageRaceway(string)", 1, true) ~= nil)
+
+	-- A client that simply does not have one of these must say so rather than error or be
+	-- reported as having answered nothing.
+	check("a call this client does not have says so",
+		said:find("GetNormalizedRealmName() -> ", 1, true) ~= nil
+			and said:find("no such call", 1, true) ~= nil)
+
+	-- A table printed as an address answers nothing at all, and the connected-realm list is
+	-- the one call here that returns one.
+	check("a table is expanded rather than printed as an address",
+		said:find("{MirageRaceway, Whitemane}", 1, true) ~= nil)
+
+	check("and an empty roster is said to be empty rather than reported on",
+		said:find("the roster is empty here", 1, true) ~= nil
+			and said:find("entries,", 1, true) == nil)
+
+	-- The case this probe was written for.
+	_G.GetNumGuildMembers = function() return 2 end
+	_G.GetGuildRosterInfo = function(index)
+		if index == 1 then return "Ecce-MirageRaceway" end
+		return "Ecce-Whitemane"
+	end
+
+	mark = #DEFAULT_CHAT_FRAME.messages
+	Family.Guild:ProbeNames()
+	said = lines(mark)
+
+	check("two characters of one name on two realms are reported as a collision",
+		said:find("2 entries share this character's name", 1, true) ~= nil)
+	check("and the roster says how many entries carry a realm at all",
+		said:find("2 entries, 2 of them carrying a realm", 1, true) ~= nil)
+
+	-- And the ordinary guild, where it cannot be shown. Said as what is known: a guild that
+	-- has no collision today is not a client that cannot produce one.
+	_G.GetGuildRosterInfo = function(index)
+		if index == 1 then return "Ecce-MirageRaceway" end
+		return "Somebody-Whitemane"
+	end
+
+	mark = #DEFAULT_CHAT_FRAME.messages
+	Family.Guild:ProbeNames()
+	said = lines(mark)
+
+	check("a guild with nobody of our name says the collision cannot be shown here",
+		said:find("nobody else in the roster shares this character's name", 1, true) ~= nil)
+	check("and does not claim a collision", said:find("collision is real", 1, true) == nil)
+
+	restore()
+end)()
+
+print()
 print("dropping a player nobody has heard from")
 
 -- The other half of the promise in spec §7.1, and the only half that does not need the other

@@ -228,10 +228,11 @@ function()
 	end
 end)
 
-add("guild", L["guild share on, off, test or log: /family guild test"], function(argument)
+add("guild", L["guild share on, off, test, log or names: /family guild test"], function(argument)
 	local wanted = (argument or ""):lower():match("^%S*")
 
-	if wanted ~= "on" and wanted ~= "off" and wanted ~= "test" and wanted ~= "log" then
+	if wanted ~= "on" and wanted ~= "off" and wanted ~= "test" and wanted ~= "log"
+		and wanted ~= "names" then
 		Family:Print(L["Guild share is currently |cffffd700%s|r."],
 			Family.Guild:Enabled() and L["on"] or L["off"])
 		Family:Print(L["It shows your guild the gear and talents of your characters in it, "
@@ -246,6 +247,9 @@ add("guild", L["guild share on, off, test or log: /family guild test"], function
 		Family:Print(L["|cffffd700/family guild log|r asks this client what it can read of "
 			.. "the guild's own event log. Family does not use it; this is finding out "
 			.. "whether it could."])
+		Family:Print(L["|cffffd700/family guild names|r asks what this client calls your "
+			.. "character and everybody in the roster, which decides whether two people of "
+			.. "the same name can be told apart."])
 		return
 	end
 
@@ -256,6 +260,11 @@ add("guild", L["guild share on, off, test or log: /family guild test"], function
 
 	if wanted == "log" then
 		Family.Guild:ProbeEventLog()
+		return
+	end
+
+	if wanted == "names" then
+		Family.Guild:ProbeNames()
 		return
 	end
 

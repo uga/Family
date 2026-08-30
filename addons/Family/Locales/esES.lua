@@ -676,7 +676,15 @@ Family.locales.esES = {
 	["Summary"] = "Resumen",  -- 20
 
 	-- Guild.lua - the event log probe, and the slash word that runs it
-	["guild share on, off, test or log: /family guild test"] = "compartir con la hermandad on, off, test o log: /family guild test",
+	["guild share on, off, test, log or names: /family guild test"] = "compartir hermandad on, off, test, log o names: /family guild test",
+	["|cffffd700Names and realms|r on %s"] = "|cffffd700Nombres y reinos|r en %s",
+	["  what an announcement is compared against: %s"] = "  con qué se compara un anuncio: %s",
+	["  roster: %d entries, %d of them carrying a realm"] = "  lista de miembros: %d entradas, %d de ellas con un reino",
+	["  the ones that do, as the client spells them: %s"] = "  las que lo llevan, tal como las escribe el cliente: %s",
+	["  |cffffaa00the roster is empty here - open the guild window once and run this again|r"] = "  |cffffaa00la lista de miembros está vacía aquí - abre una vez la ventana de hermandad y vuelve a ejecutar esto|r",
+	["  |cffff5555%d entries share this character's name, and only one of them is this character - the collision is real here|r"] = "  |cffff5555%d entradas comparten el nombre de este personaje, y solo una de ellas es este personaje - aquí la colisión es real|r",
+	["  |cff888888nobody else in the roster shares this character's name, so the collision cannot be shown from this guild today|r"] = "  |cff888888nadie más en la lista comparte el nombre de este personaje, así que la colisión no puede mostrarse desde esta hermandad hoy|r",
+	["|cffffd700/family guild names|r asks what this client calls your character and everybody in the roster, which decides whether two people of the same name can be told apart."] = "|cffffd700/family guild names|r pregunta cómo llama este cliente a tu personaje y a todos los de la lista, lo que decide si dos personas con el mismo nombre pueden distinguirse.",
 	["|cffffd700/family guild log|r asks this client what it can read of the guild's own event log. Family does not use it; this is finding out whether it could."] = "|cffffd700/family guild log|r pregunta a este cliente qué puede leer del registro de la hermandad. Family no lo usa; esto sirve para saber si podría.",
 	["|cffffd700Guild event log|r on %s"] = "|cffffd700Registro de hermandad|r en %s",
 	["  asking as: %s, rank index %s"] = "  preguntando como: %s, índice de rango %s",

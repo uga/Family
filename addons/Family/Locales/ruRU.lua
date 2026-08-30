@@ -676,7 +676,15 @@ Family.locales.ruRU = {
 	["Summary"] = "Обзор",  -- 20
 
 	-- Guild.lua - the event log probe, and the slash word that runs it
-	["guild share on, off, test or log: /family guild test"] = "общий доступ гильдии on, off, test или log: /family guild test",
+	["guild share on, off, test, log or names: /family guild test"] = "общий доступ гильдии on, off, test, log или names: /family guild test",
+	["|cffffd700Names and realms|r on %s"] = "|cffffd700Имена и миры|r на %s",
+	["  what an announcement is compared against: %s"] = "  с чем сравнивается объявление: %s",
+	["  roster: %d entries, %d of them carrying a realm"] = "  список гильдии: %d записей, из них %d с указанием мира",
+	["  the ones that do, as the client spells them: %s"] = "  те, где он есть, в написании клиента: %s",
+	["  |cffffaa00the roster is empty here - open the guild window once and run this again|r"] = "  |cffffaa00список гильдии здесь пуст - откройте окно гильдии один раз и запустите это снова|r",
+	["  |cffff5555%d entries share this character's name, and only one of them is this character - the collision is real here|r"] = "  |cffff5555%d записей носят имя этого персонажа, и лишь одна из них - этот персонаж; столкновение здесь настоящее|r",
+	["  |cff888888nobody else in the roster shares this character's name, so the collision cannot be shown from this guild today|r"] = "  |cff888888больше никто в списке не носит имя этого персонажа, так что показать столкновение на этой гильдии сегодня нельзя|r",
+	["|cffffd700/family guild names|r asks what this client calls your character and everybody in the roster, which decides whether two people of the same name can be told apart."] = "|cffffd700/family guild names|r спрашивает, как этот клиент называет вашего персонажа и всех в списке гильдии, а это решает, можно ли различить двух человек с одинаковым именем.",
 	["|cffffd700/family guild log|r asks this client what it can read of the guild's own event log. Family does not use it; this is finding out whether it could."] = "|cffffd700/family guild log|r спрашивает клиент, что он может прочесть из журнала гильдии. Family его не использует; так мы выясняем, мог бы ли.",
 	["|cffffd700Guild event log|r on %s"] = "|cffffd700Журнал гильдии|r на %s",
 	["  asking as: %s, rank index %s"] = "  спросил: %s, индекс ранга %s",

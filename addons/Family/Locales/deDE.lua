@@ -676,7 +676,15 @@ Family.locales.deDE = {
 	["Summary"] = "Übersicht",  -- 20
 
 	-- Guild.lua - the event log probe, and the slash word that runs it
-	["guild share on, off, test or log: /family guild test"] = "Gildenfreigabe an, aus, testen oder log: /family guild test",
+	["guild share on, off, test, log or names: /family guild test"] = "Gildenfreigabe on, off, test, log oder names: /family guild test",
+	["|cffffd700Names and realms|r on %s"] = "|cffffd700Namen und Realms|r auf %s",
+	["  what an announcement is compared against: %s"] = "  womit eine Ankündigung verglichen wird: %s",
+	["  roster: %d entries, %d of them carrying a realm"] = "  Mitgliederliste: %d Einträge, davon %d mit einem Realm",
+	["  the ones that do, as the client spells them: %s"] = "  die mit einem, so wie der Client sie schreibt: %s",
+	["  |cffffaa00the roster is empty here - open the guild window once and run this again|r"] = "  |cffffaa00die Mitgliederliste ist hier leer - öffne einmal das Gildenfenster und führe dies erneut aus|r",
+	["  |cffff5555%d entries share this character's name, and only one of them is this character - the collision is real here|r"] = "  |cffff5555%d Einträge tragen den Namen dieses Charakters, und nur einer davon ist dieser Charakter - die Kollision ist hier echt|r",
+	["  |cff888888nobody else in the roster shares this character's name, so the collision cannot be shown from this guild today|r"] = "  |cff888888niemand sonst in der Mitgliederliste trägt den Namen dieses Charakters, die Kollision lässt sich aus dieser Gilde heute also nicht zeigen|r",
+	["|cffffd700/family guild names|r asks what this client calls your character and everybody in the roster, which decides whether two people of the same name can be told apart."] = "|cffffd700/family guild names|r fragt, wie dieser Client deinen Charakter und alle in der Mitgliederliste nennt, was entscheidet, ob zwei Personen gleichen Namens unterschieden werden können.",
 	["|cffffd700/family guild log|r asks this client what it can read of the guild's own event log. Family does not use it; this is finding out whether it could."] = "|cffffd700/family guild log|r fragt diesen Client, was er vom Ereignisprotokoll der Gilde lesen kann. Family nutzt es nicht; hier wird geklärt, ob es das könnte.",
 	["|cffffd700Guild event log|r on %s"] = "|cffffd700Gilden-Protokoll|r auf %s",
 	["  asking as: %s, rank index %s"] = "  fragt als: %s, Rangindex %s",
