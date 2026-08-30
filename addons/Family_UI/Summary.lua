@@ -605,7 +605,19 @@ end
 CELL.prof1 = function(meta) return skillText(skillsOf(meta, false)[1]) or UNKNOWN end
 CELL.prof2 = function(meta) return skillText(skillsOf(meta, false)[2]) or UNKNOWN end
 
-CELL.guild = function(meta) return meta.guild or UNKNOWN end
+-- A name, blank for somebody the client said is in no guild, and a dash for everybody else.
+--
+-- Three answers rather than two. A nil guild used to draw a dash whatever caused it, so a
+-- character in no guild looked exactly like one nobody has ever scanned - and the second is a
+-- gap Family should be honest about while the first is simply the truth about them. What
+-- separates them is `guildless`, which the identity scan writes only where the client answered
+-- outright; where it would not say, both stay a dash, which is the honest answer to a question
+-- nobody got a reply to.
+CELL.guild = function(meta)
+	if meta.guild then return meta.guild end
+	if meta.guildless then return "" end
+	return UNKNOWN
+end
 -- Named from the id where there is one, so a member recorded on a French Era client reads
 -- "Forgefer" on a French Burning Crusade one instead of "Ironforge". Falls back to the word
 -- that was recorded, which is what a member carries until somebody next logs into them.

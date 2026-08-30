@@ -1804,6 +1804,54 @@ do
 		Family.Identity.waitingForGuild ~= nil and Family.Identity.waitingForGuild <= 7,
 		tostring(Family.Identity.waitingForGuild))
 
+	-- Not in a guild, recorded as an answer rather than as an absence.
+	--
+	-- A missing guild name meant four things at once - never scanned, the client had not
+	-- caught up, the client has no IsInGuild, and genuinely in no guild - and only the last is
+	-- a fact about the character. The panel drew one dash for all four and looked complete.
+	Family.Identity.waitingForGuild = nil
+	IsInGuild = function() return false end
+	GetGuildInfo = function() return nil end
+	Family.Identity:Scan()
+	check("a client that says outright there is no guild records that",
+		Family.Database:Meta(key).guildless == true,
+		tostring(Family.Database:Meta(key).guildless))
+	check("and takes the guild off the record with it",
+		Family.Database:Meta(key).guild == nil,
+		tostring(Family.Database:Meta(key).guild))
+
+	-- Joining one takes it away again, or a character who joined a guild would go on being
+	-- drawn as having none for as long as the record lasted.
+	IsInGuild = function() return true end
+	GetGuildInfo = function() return "Late Night Raiders", "Officer", 2 end
+	Family.Identity:Scan()
+	check("and joining a guild clears it rather than leaving both on the record",
+		Family.Database:Meta(key).guildless == nil
+			and Family.Database:Meta(key).guild == "Late Night Raiders",
+		tostring(Family.Database:Meta(key).guildless))
+
+	-- In a guild the client will not name. Nothing may be written here either way: guessing
+	-- which of the two silences this is, is the whole of what the field exists to avoid.
+	Family.Database:SetMeta(key, { guildless = Family.CLEAR })
+	Family.Identity.waitingForGuild = nil
+	GetGuildInfo = function() return nil end
+	Family.Identity:Scan()
+	check("a client that will not name the guild records neither answer",
+		Family.Database:Meta(key).guildless == nil,
+		tostring(Family.Database:Meta(key).guildless))
+
+	-- And a client with no IsInGuild at all, which is the same silence for a different reason.
+	Family.Identity.waitingForGuild = nil
+	IsInGuild = nil
+	Family.Identity:Scan()
+	check("nor does one with no way of being asked",
+		Family.Database:Meta(key).guildless == nil,
+		tostring(Family.Database:Meta(key).guildless))
+
+	IsInGuild, GetGuildInfo = realInGuild, realGuildInfo
+	Family.Identity.waitingForGuild = nil
+	Family.Identity:Scan()
+
 
 	------------------------------------------------------------------------------------------
 	-- And a fresh reason to ask re-arms the attempts
@@ -5484,6 +5532,41 @@ do
 		boonCellOf(key) == Family.UI.UNKNOWN, tostring(boonCellOf(key)))
 
 	Family.Database:SetMeta(key, { bagsSeen = heldSeen })
+	clickButton("Overview") clickButton("Miscellaneous")
+
+	-- The Guild cell, one column to the left, and the same §2.2 question asked of it. Second:
+	-- member, then this.
+	local function guildCellOf(memberKey)
+		for _, f in ipairs(frames) do
+			if f.cells and f.__shown == true and f.memberKey == memberKey then
+				local cell = f.cells[2]
+				if cell then return cell.__text end
+			end
+		end
+		return nil
+	end
+
+	local heldGuild = (Family.Database:Members()[key].meta or {}).guild
+
+	Family.Database:SetMeta(key, { guild = "Late Night Raiders", guildless = Family.CLEAR })
+	clickButton("Overview") clickButton("Miscellaneous")
+	check("a character in a guild is named by it",
+		guildCellOf(key) == "Late Night Raiders", tostring(guildCellOf(key)))
+
+	-- Said outright by the client, so it is a fact about the character and is drawn as one.
+	Family.Database:SetMeta(key, { guild = Family.CLEAR, guildless = true })
+	clickButton("Overview") clickButton("Miscellaneous")
+	check("one the client said is in no guild says nothing at all",
+		guildCellOf(key) == "", tostring(guildCellOf(key)))
+
+	-- And everybody else. Nobody has scanned them, or the client would not say - and the two
+	-- used to look exactly like the line above, which is the bug this separates out.
+	Family.Database:SetMeta(key, { guildless = Family.CLEAR })
+	clickButton("Overview") clickButton("Miscellaneous")
+	check("and one nobody has asked says it does not know",
+		guildCellOf(key) == Family.UI.UNKNOWN, tostring(guildCellOf(key)))
+
+	Family.Database:SetMeta(key, { guild = heldGuild or Family.CLEAR })
 	clickButton("Overview") clickButton("Miscellaneous")
 end
 

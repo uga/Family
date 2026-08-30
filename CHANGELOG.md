@@ -18,6 +18,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The Guild column tells "no guild" apart from "not known".** A character who is in no guild
+  now has that column left blank, and the dash is kept for characters nobody has logged into
+  since Family started recording. Both looked the same before. Each character's fills in the
+  next time you play them.
+
 - **The Chrono column now says how many world buffs are trapped, and opens.** Click the figure
   and a line unfolds under the character showing which ones their Chronoboon is holding — each
   as its own icon, with the time left written on it, and the game's own description when you

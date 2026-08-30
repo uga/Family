@@ -126,6 +126,7 @@ function Identity:Scan(retrying)
 		fields.guild = guild
 		fields.guildRank = rank
 		fields.guildRankIndex = rankIndex
+		fields.guildless = Family.CLEAR
 	elseif canAsk and Family:TryCall(IsInGuild) then
 		self.waitingForGuild = (self.waitingForGuild or 0) + 1
 
@@ -143,6 +144,18 @@ function Identity:Scan(retrying)
 		fields.guild = Family.CLEAR
 		fields.guildRank = Family.CLEAR
 		fields.guildRankIndex = Family.CLEAR
+
+		-- The **answer** recorded, not merely the absence of one. A missing guild name means
+		-- four different things - nobody has scanned this character, the client had not
+		-- caught up, the client has no IsInGuild at all, and this character is in no guild -
+		-- and only the last of them is a fact about the character. A panel reading a nil
+		-- cannot tell them apart and drew one dash for all four, which is §2.2 broken in the
+		-- quietest way: the screen looked complete.
+		--
+		-- Written only where the client said so outright. The two "will not say" branches
+		-- above deliberately write nothing here either, because a guess about which of them
+		-- happened is exactly what this field exists to stop.
+		fields.guildless = true
 	end
 	-- ...and where the client has no IsInGuild at all, nothing is written either way. There
 	-- is then no way to tell "not in a guild" from "has not said yet", and clearing on the
