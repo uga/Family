@@ -240,8 +240,12 @@ nil in position three on `join` and `quit`. Nothing here is Era-only.
 
 **Capped at exactly 100 entries on both.** How far that reaches is the guild's business and not
 the client's: 100 entries covered **a month and ten days** in the busy guild and **ten months
-and twenty-eight days** in the quiet one. A count, not a period. So this is an accelerator and
-never a guarantee, and any expiry has to stay as the backstop.
+and twenty-eight days** in the quiet one. A count, not a period.
+
+That cap matters less than it looks, and `GUILD-CRAFTERS.md` §6a has the argument: what the log
+reaches falls as a guild's churn rises, and so does the need for it, because a guild busy enough
+to fill a hundred entries in two months is a guild where everybody is exchanging with everybody
+anyway.
 
 | | Era, ZERO | Burning Crusade, Loch Modan Yachting Club |
 |---|---:|---:|
