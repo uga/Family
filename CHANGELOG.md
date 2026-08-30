@@ -23,6 +23,7 @@ is a decision rather than an afternoon of archaeology.
   are playing. The member count beside it narrows too, and hovering says which you are looking
   at. A middle click does the same. Warnings about mail expiring still cover everybody,
   wherever they are.
+- **Charges are read in the guild bank too**, for the tabs you have actually opened.
 - **Family shows how many charges are left on an oil.** Wizard Oil, Mana Oil, a Bag of Marbles
   — anything used a fixed number of times now carries its remaining count from your bags and
   your bank, and Possessions draws it in the corner of the icon where the game itself puts it.

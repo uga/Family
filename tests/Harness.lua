@@ -2498,9 +2498,37 @@ do
 	GetNumGuildBankTabs = function() return 1 end
 	GetGuildBankItemLink = function(tab, slot)
 		if tab == 1 and slot == 1 then return "|Hitem:2589:0:0:0|h[Linen Cloth]|h" end
+		-- Charged, and reached by link like everything else in here - which is exactly why
+		-- the charge must not be read off the link.
+		if tab == 1 and slot == 2 then return "|Hitem:20747:0:0:0|h[Lesser Mana Oil]|h" end
+		-- 18149 is a Rune of Recall: charged, and an id nothing else in this run names, so
+		-- the client genuinely does not know it yet. Once known, always known.
+		if tab == 1 and slot == 3 then return "|Hitem:18149:0:0:0|h[Rune of Recall]|h" end
 		return nil
 	end
-	GetGuildBankItemInfo = function() return "Linen Cloth", 20 end
+	GetGuildBankItemInfo = function(_, slot)
+		if slot == 2 then return "Lesser Mana Oil", 1 end
+		return "Linen Cloth", 20
+	end
+
+	-- The guild bank has its own setter, because a link carries no charges: reading one off
+	-- the link would answer with the item's maximum and file a full oil for one with a single
+	-- use left. The stub answers only for the right one, so using the wrong setter reads
+	-- nothing at all.
+	local aimedAt, everyAim = nil, {}
+	function frameMethods:SetGuildBankItem(tab, slot)
+		aimedAt = tostring(tab) .. ":" .. tostring(slot)
+		everyAim[#everyAim + 1] = aimedAt
+		wipe(self.__lines)
+		local lines = (slot == 2) and { "Lesser Mana Oil", "3 Charges" }
+			or (slot == 3) and { "Rune of Recall", "20 Charges" } or {}
+		for index = 1, 12 do
+			local text = lines[index]
+			if text then table.insert(self.__lines, { text }) end
+			_G[(self.__name or "?") .. "TextLeft" .. index] =
+				text and { GetText = function() return text end } or nil
+		end
+	end
 
 	FamilyDB.guilds = nil
 
@@ -2544,6 +2572,45 @@ do
 		and vault.tabs[1].slots[1] and vault.tabs[1].slots[1].id == 2589,
 		vault and vault.tabs[1] and vault.tabs[1].slots[1]
 			and tostring(vault.tabs[1].slots[1].id))
+
+	-- And with how many charges are left on the one that has any.
+	local oil = vault and vault.tabs[1] and vault.tabs[1].slots[2]
+	check("and how many charges are left on a charged one", oil and oil.charges == 3,
+		oil and tostring(oil.charges) or "no slot 2")
+
+	-- Read through the guild bank's own setter, aimed at that tab and slot. A link cannot
+	-- answer this: it describes the item, not the one in the vault.
+	check("read through the guild bank's own setter, at that tab and slot",
+		aimedAt == "1:2", tostring(aimedAt))
+
+	-- An item the client has never heard of records nothing yet, and asks again when it does.
+	-- The same wait as the bags, and it needs its own check: without one this scanner could
+	-- stop waiting and every check here would stay green (L-030).
+	check("an item the client does not know yet records no charges here either",
+		vault and vault.tabs[1].slots[3] and vault.tabs[1].slots[3].charges == nil,
+		vault and vault.tabs[1].slots[3] and tostring(vault.tabs[1].slots[3].charges)
+			or "no slot 3")
+
+	ITEM_NAMES[18149] = "Rune of Recall"
+	fire("GET_ITEM_INFO_RECEIVED", 18149, true)
+	advance(2)
+	vault = FamilyDB.guilds and FamilyDB.guilds["Late Night Raiders-Fire Maw"]
+	check("and the count arrives once the client answers about it",
+		vault and vault.tabs[1].slots[3] and vault.tabs[1].slots[3].charges == 20,
+		vault and vault.tabs[1].slots[3] and tostring(vault.tabs[1].slots[3].charges))
+	ITEM_NAMES[18149] = nil
+
+	-- The cloth is not charged, so it must not be tooltipped at all - the gate is what makes
+	-- a hundred-slot tab affordable.
+	-- Asked of what the setter was *aimed at*, not of what came back. A tab holds a hundred
+	-- slots and the gate is what makes reading one affordable, so "the cloth has no charges"
+	-- is not the claim - "the cloth was never tooltipped" is.
+	local askedAboutCloth = false
+	for _, at in ipairs(everyAim) do
+		if at == "1:1" then askedAboutCloth = true end
+	end
+	check("and nothing that cannot carry charges is asked about at all",
+		not askedAboutCloth, table.concat(everyAim, ", "))
 
 	-- A character with no guild at all. Skillet fell over on exactly this - the guild bank
 	-- frame announced itself and its guild name was nil - so it is worth knowing that

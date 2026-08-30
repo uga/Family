@@ -284,6 +284,32 @@ function Bank:ScanGuildBank()
 				if itemID then
 					slots[slot] = { id = itemID, count = tonumber(count) or 1,
 						item = Family:ItemString(link) }
+
+					-- The same gate as the bags and the bank, and the same wait: a
+					-- tooltip is empty until the client has the item.
+					--
+					-- Read through SetGuildBankItem rather than from the link. The
+					-- link is how everything else here reaches a guild bank slot and
+					-- it carries no charges at all, so reading one off it would
+					-- answer with the item's maximum and file a full oil for one
+					-- with a single use left.
+					--
+					-- A tab nobody has opened never gets here: the loop above only
+					-- records a slot whose link came back, and an unopened tab
+					-- answers with nothing for every slot in it.
+					if Family.ChargedItems and Family.ChargedItems[itemID] then
+						local _, has = Family.Names:Item(itemID, "guildbank.charges",
+							function()
+								Family:After(0.5, "bank.guild", function()
+									Bank:ScanGuildBank()
+								end)
+							end)
+
+						if has then
+							slots[slot].charges =
+								Family:ChargesInGuildBank(tab, slot)
+						end
+					end
 				end
 			end
 		end

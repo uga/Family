@@ -230,11 +230,17 @@ local function chargesPattern()
 	return builtPattern
 end
 
--- How many charges are left on the item in one container slot, or nothing.
+-- How many charges are left on whatever the tooltip is pointed at, or nothing.
 --
 -- Nothing is the ordinary answer and is not a fault: an item with no charges has no such line,
--- and a client that will not build the tooltip says so by having no lines to read.
-function Family:ChargesIn(bag, slot)
+-- and a client that will not build the tooltip - or has no such setter at all - says so by
+-- having no lines to read.
+--
+-- **The setter is the caller's, and it has to be the one for that instance.** A guild bank slot
+-- is reached by link, and a link carries no charges: `SetHyperlink` would answer with the
+-- item's *maximum* and Family would file a full oil for one with a single use left. Which is
+-- worse than not knowing.
+local function chargesShown(aim)
 	local pattern = chargesPattern()
 	if not pattern then return nil end
 
@@ -242,7 +248,7 @@ function Family:ChargesIn(bag, slot)
 	if not tip then return nil end
 
 	Family:TryCall(tip.SetOwner, tip, _G.UIParent, "ANCHOR_NONE")
-	Family:TryCall(tip.SetBagItem, tip, bag, slot)
+	aim(tip)
 
 	-- Bracketed, because TryCall hands back whatever the client returned and tonumber's
 	-- second argument is a base (L-031).
@@ -258,6 +264,25 @@ function Family:ChargesIn(bag, slot)
 	end
 
 	return nil
+end
+
+-- A slot in one of this character's own containers - a bag, or the bank.
+function Family:ChargesIn(bag, slot)
+	return chargesShown(function(tip)
+		Family:TryCall(tip.SetBagItem, tip, bag, slot)
+	end)
+end
+
+-- A slot in the guild bank, which is not a container and is not reached the same way.
+--
+-- `SetGuildBankItem` is the only setter that reads the instance rather than the item, and
+-- whether it exists on all three clients is unmeasured. `TryCall` answers nil where it does
+-- not, the tooltip then has no lines, and the charge is simply not recorded - which is the
+-- right answer for a client that cannot be asked.
+function Family:ChargesInGuildBank(tab, slot)
+	return chargesShown(function(tip)
+		Family:TryCall(tip.SetGuildBankItem, tip, tab, slot)
+	end)
 end
 
 --------------------------------------------------------------------------------------------
