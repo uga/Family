@@ -1072,6 +1072,37 @@ would look like.** If the answer is "identical", the check is guarding its input
 claim. And a proxy — a filename, a directory, a naming convention — is a measurement of the
 codebase on the day it was chosen, not a property of it.
 
+### Postscript, 2026-08-31 — the other half of the same rule, two lines below
+
+Everything above was written about `printed`, the scan of what Family says to the chat frame.
+The **second** half of the rule — `asked`, every `L[...]` the addon looks up — kept the exact
+filename proxy this entry condemns, on the same reasoning, in the same paragraph:
+
+    for key, path in pairs(asked) do
+        if path == "addons/Family_UI/Slash.lua" then mustTranslate[key] = path end
+    end
+
+So the lesson was written, the guards were added, four checks were put around the half that had
+failed — and the identical fault sat two lines further down and survived all of it. What it left
+unguarded was **the About panel**, which is Family's own manual, seventy strings of prose, the
+thing a player reads first. Dropping a German line out of it failed nothing.
+
+**What it cost to fix: one string.** Measured before the change rather than after — 638 keys in
+the tree, one missing from all four languages — so the tree had been fully translated by hand
+the whole time and only the gate was narrow. Which is the trap restated: a narrow rule over a
+correct tree is invisible, and it was invisible here for the second time in two days.
+
+**And the guard needed the same guard.** Widening `asked` and then narrowing it back left every
+check green again, exactly as the entry above says it would. The check that catches it is the
+same shape as the one already written for `printed`: not *is everything translated* but **is
+everything the addon looks up actually demanded** — the rule asserted rather than its
+consequences. A second one asserts that the scan still reaches About.lua at all, because a file
+the scan stopped reading would satisfy the first by having nothing to ask for.
+
+The generalisable form is unchanged and is now twice-earned: **fixing an instance of a rule is
+not fixing the rule.** When a lesson names a fault, the next thing to do is grep for the fault,
+not close the file.
+
 ## L-031 — A client's answer handed straight to something that takes a second argument
 
 `Family:TryCall` returns whatever the client returned, however many values that is. That is its

@@ -50,6 +50,7 @@ Family.locales.frFR = {
 	-- The summary: its column sets, its columns and its totals
 	["%dm"] = "%dm",
 	["%dh"] = "%dh",
+	["+%d"] = "+%d",
 	["Bags"] = "Sacs",  -- 14
 	["Race"] = "Race",  -- 15
 	["Chrono"] = "Chrono",

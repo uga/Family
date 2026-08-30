@@ -14112,11 +14112,22 @@ print("the translations")
 	check("and it sees them outside Slash.lua, which is the whole of this widening",
 		beyondSlash, "only Slash.lua - the rule has narrowed back to the file it was moved off")
 
+	-- Everything the addon asks the locale table for, wherever it asks from.
+	--
+	-- This used to take Slash.lua's `L[...]` lookups and nobody else's, on the reasoning that
+	-- Slash.lua is where the sentences are and everywhere else has labels. Two things were
+	-- wrong with it. Labels are read by players too - the About panel is Family's own manual,
+	-- six dozen strings of prose, and dropping a German line out of it failed nothing at all.
+	-- And a rule drawn at a filename goes stale the moment somebody writes a sentence in a
+	-- different file, which is the same fault the `printed` scan above was rewritten to fix.
+	--
+	-- Widening it cost one string. Measured before it was done, rather than after: 638 keys in
+	-- the tree and one of them missing from all four languages, so the tree was already
+	-- translated and only the gate was narrow. A check that would have passed either way is
+	-- worth having anyway - it is the next one that it catches.
 	local mustTranslate = {}
 	for key, path in pairs(printed) do mustTranslate[key] = path end
-	for key, path in pairs(asked) do
-		if path == "addons/Family_UI/Slash.lua" then mustTranslate[key] = path end
-	end
+	for key, path in pairs(asked) do mustTranslate[key] = path end
 
 	-- The rule held against the scan, because with the tree fully translated a rule that has
 	-- narrowed fails nothing at all.
@@ -14132,6 +14143,29 @@ print("the translations")
 	table.sort(dropped)
 	check("and every sentence found is a sentence required", #dropped == 0,
 		table.concat(dropped, " | "))
+
+	-- And the same guard for the widening beside it, for the same reason and found the same
+	-- way. Putting the Slash.lua filter back on the `asked` line left every check in this file
+	-- green, exactly as it had for `printed`: with the tree fully translated, a rule that has
+	-- narrowed fails nothing at all until somebody writes the next untranslated string, and by
+	-- then nobody is looking at this. So the rule is asserted rather than its consequences.
+	local narrowed = {}
+	for key, path in pairs(asked) do
+		if mustTranslate[key] == nil then narrowed[#narrowed + 1] = path .. ": " .. key end
+	end
+	table.sort(narrowed)
+	check("and every string the addon looks up is required, not one file's worth",
+		#narrowed == 0, table.concat(narrowed, " | "))
+
+	-- The scan reaching the panel that made this worth widening. `asked` being empty for a
+	-- file, whether because the scan stopped reading it or because somebody moved it, would
+	-- satisfy the check above by having nothing to demand.
+	local fromAbout = 0
+	for _, path in pairs(mustTranslate) do
+		if path == "addons/Family_UI/About.lua" then fromAbout = fromAbout + 1 end
+	end
+	check("and the About panel - Family's own manual - is among the files it reads",
+		fromAbout > 20, tostring(fromAbout))
 
 	for _, code in ipairs { "deDE", "frFR", "esES", "ruRU" } do
 		local table_ = Family.locales[code] or {}
