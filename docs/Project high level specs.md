@@ -844,10 +844,30 @@ this*. That has two consequences and both of them are the point.
 **A character who leaves the guild stops sharing.** Not "stops being added to the next
 message" — stops, and what was already sent is replaced by what is sent next, which no
 longer contains them. Everything one player sends replaces everything held from that player
-rather than being merged into it, so a character who has stopped sharing disappears from the
+rather than being merged into it, so a character who has stopped sharing is dropped at the
 other end without anything having to go and delete them. Joining a different guild does not
 resume it either: the new guild was never the guild that was agreed to, and a grant that
 follows its owner around is not a grant anybody made.
+
+**They are dropped when the next offering arrives, which is not when the withdrawal was
+made.** *Amended 2026-08-30, having been stated unconditionally.* Two clients can only talk
+while both are online and there is no offline mailbox, so a withdrawal reaches each person
+holding the old copy at the moment those two next overlap — not at the moment it is
+withdrawn. Until then the profession that was withdrawn is still answerable on their client.
+No design can do better: a withdrawal cannot reach somebody who is not there. What can be
+done is to bound how long it runs, by dropping what is held from a player nobody has heard
+from in a long time. **How long that is, is a decision about consent and not about disk**,
+and it belongs in this section rather than among the housekeeping for exactly that reason.
+
+**Two withdrawals reach nobody, ever, and saying so is part of the promise.** A character
+removed from the guild while its owner is not playing it, and a character that is deleted. In
+both, the owner's own client goes on offering what it still believes, and every other client
+faithfully repeats it — so no exchange corrects it, because the correction would have to come
+from the owner and the owner is the one who is wrong. Neither the replacement above nor the
+bound above reaches those two: the first faithfully replaces the wrong list with the same
+wrong list, and the second is about an owner who has gone rather than one who is playing
+every day. The guild's own event log is the only thing that knows, and whether Family reads
+it is open.
 
 **A player who leaves the guild stops seeing what the guild shared.** What was held for a
 guild is dropped when it is no longer their guild, rather than sitting on disk to be
