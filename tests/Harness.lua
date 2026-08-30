@@ -7220,9 +7220,13 @@ print("guild share")
 		-- under the word the client used. Reported from a live client, where two characters
 		-- were told they had no professions at all in the same breath as a line at the foot
 		-- of the grid listing three of them by name.
+		-- Tailoring rather than a gathering profession, and that is not incidental: the
+		-- perimeter excludes the ones that make nothing, so a fixture built on Herbalism
+		-- would prove that a word resolves to an id by watching it be refused for an
+		-- entirely different reason.
 		Family.Database:SetMeta("Oldtimer-FireMaw", { name = "Oldtimer", realm = "Fire Maw",
 			guild = guildName, classFile = "DRUID", level = 60, skills = {
-				["Herbalism"] = { rank = 300, maxRank = 300, name = "Herbalism" },
+				["Tailoring"] = { rank = 300, maxRank = 300, name = "Tailoring" },
 			} })
 
 		-- And one whose only skill is a word no table has an id for - a rogue's poisons, on
@@ -8671,17 +8675,17 @@ print("guild share")
 		-- A profession filed under a word the skill line table knows is that profession, and
 		-- is offered like any other. The ids were a lookup away the whole time, and refusing
 		-- them made a member recorded by an older version unshareable for ever.
-		local herbs = Family:SkillLineFor("Herbalism")
+		local herbs = Family:SkillLineFor("Tailoring")
 		Family.Guild:SetShare(guildKey, "Oldtimer-FireMaw", herbs, true)
 		Family.UI:Refresh()
 
 		-- Found by being ticked, not by the word on it. Another member of this fixture has
-		-- Herbalism too, keyed by an id, and a needle that matched the word alone found
+		-- Tailoring too, keyed by an id, and a needle that matched the word alone found
 		-- their box and passed whatever this panel did to Oldtimer's.
 		local older
 		for _, f in ipairs(fontStrings) do
 			local parent = type(f.__parent) == "table" and f.__parent or nil
-			if type(f.__text) == "string" and f.__text:find("Herbalism", 1, true)
+			if type(f.__text) == "string" and f.__text:find("Tailoring", 1, true)
 				and parent and parent.label == f and parent.__shown ~= false
 				and parent.__checked == true then
 				older = parent
@@ -8702,14 +8706,100 @@ print("guild share")
 		-- Family did not write may hold. One box, one entry on the wire.
 		Family.Database:SetMeta("Twice-FireMaw", { name = "Twice", realm = "Fire Maw",
 			guild = guildName, classFile = "DRUID", level = 60, skills = {
-				[herbs] = { rank = 275, maxRank = 300, name = "Herbalism" },
-				["Herbalism"] = { rank = 275, maxRank = 300, name = "Herbalism" },
+				[herbs] = { rank = 275, maxRank = 300, name = "Tailoring" },
+				["Tailoring"] = { rank = 275, maxRank = 300, name = "Tailoring" },
 			} })
 		Family.Guild:SetShare(guildKey, "Twice-FireMaw", herbs, true)
 
 		local twice = (Family.Guild:Offering() or {})["Twice-FireMaw"].professions
 		check("and one held under both an id and a word crosses once, not twice",
 			twice and #twice == 1, twice and tostring(#twice) or "nothing")
+
+
+		------------------------------------------------------------------------------------
+		-- The perimeter: professions that make nothing are not offered at all
+		--
+		-- Guild crafters answers "who can make this", so a profession that makes nothing has
+		-- no answer to give and a tick box beside it is a box that does nothing. Three places
+		-- have to agree about which those are - the grid that draws the boxes, the count under
+		-- it, and the wire - and a box drawn for something that never crosses is a box that
+		-- lies.
+		------------------------------------------------------------------------------------
+
+		do
+			local fishing = Family:SkillLineFor("Fishing")
+			local mining = Family:SkillLineFor("Mining")
+			local smith2 = Family:SkillLineFor("Blacksmithing")
+
+			check("the table knows the professions this is about",
+				fishing and mining and smith2 ~= nil,
+				tostring(fishing) .. "/" .. tostring(mining) .. "/" .. tostring(smith2))
+
+			-- One character with one of each: something that gathers and nothing else,
+			-- something that gathers *and* smelts, and something that plainly crafts.
+			Family.Database:SetMeta("Angler-FireMaw", { name = "Angler", realm = "Fire Maw",
+				guild = guildName, classFile = "HUNTER", level = 60, skills = {
+					[fishing] = { rank = 300, maxRank = 300, secondary = true },
+					[mining] = { rank = 300, maxRank = 300 },
+					[smith2] = { rank = 300, maxRank = 300 },
+				} })
+			Family.UI:Refresh()
+
+			-- The grid itself. Nobody else in this fixture has Fishing, so its absence from
+			-- the boxes is Angler's absence and not somebody else's presence.
+			check("no box is drawn for a profession that gathers and nothing else",
+				labelled("Fishing") == nil)
+			check("but one is for the profession that smelts",
+				labelled("Mining") ~= nil)
+			check("and for the one that plainly crafts",
+				labelled("Blacksmithing") ~= nil)
+
+			-- The predicate the three of them share, asked directly.
+			check("the perimeter refuses what gathers",
+				Family.Guild:Shareable(fishing) == false
+					and Family.Guild:Shareable(Family:SkillLineFor("Herbalism")) == false
+					and Family.Guild:Shareable(Family:SkillLineFor("Skinning")) == false)
+			check("and refuses first aid and archaeology, which was a decision not an argument",
+				Family.Guild:Shareable(Family:SkillLineFor("First Aid")) == false
+					and Family.Guild:Shareable(Family:SkillLineFor("Archaeology")) == false)
+			check("and admits mining, for the smelting",
+				Family.Guild:Shareable(mining) == true)
+
+			-- A grant written by a version whose perimeter was wider stops counting the
+			-- moment it is read, and is not deleted to make that true: the tick is somebody's
+			-- decision and a narrowed perimeter is not a reason to throw it away.
+			Family.Guild:SetShare(guildKey, "Angler-FireMaw", fishing, true)
+			Family.Guild:SetShare(guildKey, "Angler-FireMaw", mining, true)
+
+			check("a grant for something outside the perimeter reads as not shared",
+				Family.Guild:Shares(guildKey, "Angler-FireMaw", fishing) == false)
+			check("and one inside it reads as shared",
+				Family.Guild:Shares(guildKey, "Angler-FireMaw", mining) == true)
+
+			local ticks = Family.Guild:CountShared(guildKey)
+			Family.Guild:SetShare(guildKey, "Angler-FireMaw", fishing, false)
+			local without = Family.Guild:CountShared(guildKey)
+			check("and the count under the grid does not count it either",
+				ticks == without, tostring(ticks) .. " against " .. tostring(without))
+
+			-- And the wire, which is the half that actually reaches somebody else.
+			Family.Guild:SetShare(guildKey, "Angler-FireMaw", fishing, true)
+			local offered = (Family.Guild:Offering() or {})["Angler-FireMaw"]
+			local lines = {}
+			for _, profession in ipairs((offered or {}).professions or {}) do
+				lines[profession.skillLine] = true
+			end
+
+			check("a profession outside the perimeter does not cross, ticked or not",
+				lines[fishing] ~= true)
+			check("and the one that smelts does",
+				lines[mining] == true)
+
+			Family.Guild:SetShare(guildKey, "Angler-FireMaw", fishing, false)
+			Family.Guild:SetShare(guildKey, "Angler-FireMaw", mining, false)
+			Family.Database:Forget("Angler-FireMaw")
+			Family.UI:Refresh()
+		end
 
 		Family.Guild:SetShare(guildKey, "Twice-FireMaw", herbs, false)
 		Family.Database:Forget("Twice-FireMaw")

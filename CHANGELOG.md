@@ -18,6 +18,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The guild grid only offers professions that make something.** Fishing, Herbalism, Skinning,
+  First Aid and Archaeology no longer get a tick box: guild crafters answers *who can make
+  this*, and a profession that makes nothing has no answer to give. Mining keeps its box, for
+  the smelting.
 - **The Options panel scrolls.** It had grown past the bottom of the window: the last caption
   was drawn over the version line and anything below that was not on the screen at all. The
   switches now scroll — with the mouse wheel, not only the bar — and the version line stays

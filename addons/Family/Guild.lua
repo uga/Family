@@ -135,6 +135,51 @@ end
 -- What is offered, one character and one profession at a time (§7.1)
 --------------------------------------------------------------------------------------------
 
+--------------------------------------------------------------------------------------------
+-- Which professions guild share is even about
+--------------------------------------------------------------------------------------------
+
+-- Professions that make nothing anybody would ask a guildmate for.
+--
+-- Guild crafters answers one question - *who can make this* - so a profession that makes
+-- nothing has no answer to give, and a tick box beside it is a box that does nothing. Five of
+-- the fifteen the skill line table knows:
+--
+--   Herbalism, Fishing, Skinning   gather. There is no recipe list behind them at all.
+--   Archaeology                    makes artifacts, on its own schedule rather than on
+--                                  request, and the generated table has names for it in two
+--                                  locales out of five (DATASOURCES §3).
+--   First Aid                      makes bandages, and is excluded by decision rather than by
+--                                  argument: everybody has it, it is trivial to level, and
+--                                  nobody has ever whispered a guildmate for a bandage.
+--
+-- **Mining is not here**, and that is the one that needed deciding: it gathers, but it also
+-- smelts, and "can you smelt these bars" is a real request.
+--
+-- Poisons and Runeforging need no entry. Neither has a skill line id at all, so §2.1 has
+-- refused them since the wire was written - a profession filed under a word cannot cross.
+--
+-- An exclusion rather than a list of what is allowed, which is the shorter statement of the
+-- decision and lets each entry carry its reason. The cost of that choice is stated rather than
+-- hidden: a profession a future client adds is included until somebody puts it here.
+local MAKES_NOTHING = {
+	[129] = true,   -- First Aid
+	[182] = true,   -- Herbalism
+	[356] = true,   -- Fishing
+	[393] = true,   -- Skinning
+	[794] = true,   -- Archaeology
+}
+
+-- Whether guild share has anything to say about this profession at all.
+--
+-- One predicate, consulted by the grid that draws the boxes, by the count under it, and by the
+-- wire. Three places that have to agree: a box drawn for something that never crosses is a box
+-- that lies, and a count that includes it is a number that does not match the panel.
+function Guild:Shareable(skillLine)
+	if type(skillLine) ~= "number" then return false end
+	return not MAKES_NOTHING[skillLine]
+end
+
 -- Whether one of our characters offers one of its professions to one guild.
 --
 -- **Absence is the answer.** Nothing is written for a box that has never been ticked, so a
@@ -146,6 +191,13 @@ end
 -- would not be a grant anybody had made.
 function Guild:Shares(guildKey, memberKey, skillLine)
 	if not (guildKey and memberKey and skillLine) then return false end
+
+	-- Asked here rather than only where boxes are drawn, so that a grant ticked by a version
+	-- that offered more professions than this one does stops counting the moment it is read.
+	-- Nothing is deleted from the grid to achieve that: the tick is somebody's, it costs a
+	-- few bytes, and a version that narrowed the perimeter is not a reason to throw away a
+	-- decision they made.
+	if not self:Shareable(skillLine) then return false end
 
 	local perMember = (store().grants[guildKey] or {})[memberKey]
 	return (perMember and perMember[skillLine]) and true or false
@@ -200,7 +252,9 @@ function Guild:CountShared(guildKey)
 
 	for _, perMember in pairs((store().grants[guildKey]) or {}) do
 		local any = false
-		for _ in pairs(perMember) do ticks = ticks + 1; any = true end
+		for line in pairs(perMember) do
+			if Guild:Shareable(line) then ticks = ticks + 1; any = true end
+		end
 		if any then members = members + 1 end
 	end
 
@@ -646,7 +700,11 @@ local function sharedProfessions(guildKey, memberKey, meta)
 		-- ends have to agree or a box could be ticked for something that never crossed.
 		local line = type(id) == "number" and id or Family:SkillLineFor(id)
 
-		if line and not seen[line] and Guild:Shares(guildKey, memberKey, line) then
+		-- Shares() already refuses a profession outside the perimeter, so the wire is covered
+		-- by that alone. Named here as well because this loop is what somebody reads to find
+		-- out what crosses, and a rule enforced two files away is a rule they will not find.
+		if line and not seen[line] and Guild:Shareable(line)
+			and Guild:Shares(guildKey, memberKey, line) then
 			seen[line] = true
 			out = out or {}
 

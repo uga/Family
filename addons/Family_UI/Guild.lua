@@ -523,7 +523,16 @@ local function build(frame)
 					for id, skill in pairs(meta.skills or {}) do
 						local line = type(id) == "number" and id or Family:SkillLineFor(id)
 
-						if line and not seen[line] then
+						-- Outside the perimeter, and passed over in silence rather than
+						-- counted with the ones that cannot cross. Those two look alike on
+						-- a panel and are not alike: one is a profession Family would share
+						-- and cannot, which is worth saying, and this is a profession that
+						-- makes nothing anybody would ask a guildmate for. Explaining why
+						-- there is no Fishing box teaches a player about a rule instead of
+						-- answering a question they had.
+						if line and not Family.Guild:Shareable(line) then
+							seen[line] = true
+						elseif line and not seen[line] then
 							seen[line] = true
 							offered[#offered + 1] = { id = line, skill = skill,
 								name = Family:ProfessionName(line, skill.name) }
