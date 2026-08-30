@@ -465,9 +465,27 @@ So *"which of my characters has a boon stored"* is answerable **by id, today, wi
 new**: a bag holding 184938 is a character with one banked. Family already records bag contents
 by id, so the fact is on disk already and only wants surfacing.
 
-*Which* buffs are inside is per-instance state and appears only in that item's tooltip, as
-names - the one shape §2.1 refuses. It would need the same scanning tooltip as charges, and
-what it produced would be words rather than identifiers.
+*Which* buffs are inside is **not in the item's tooltip**, measured on a French Era client with
+a charged one in the bag:
+
+    lines 4
+    1  Déplaceur de chronochance surchargé
+    2  Lié
+    3  Unique
+    4  Utiliser : Restaure tous vos effets mondiaux suspendus.
+
+Four lines, no right-hand text on any of them, and not one names a buff or a duration. So the
+route that answers charges does not answer this: the scanning tooltip reads the item perfectly
+well and the item does not say.
+
+**One thing that is not ruled out.** These lines came from a tooltip that was never shown, and
+some tooltip content is added by handlers that run on the visible one. Whether the tooltip a
+player actually sees carries more than these four lines is a separate question and is not
+settled here - if it does, the contents exist and are being missed rather than absent.
+
+If the visible tooltip says no more, the remaining candidate is the player's own auras while a
+charged one is carried, and whether those answer with spell ids decides whether this is
+recordable at all under §2.1.
 
 ### The guild event log, measured on all three clients 2026-08-30
 
