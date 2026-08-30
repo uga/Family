@@ -1970,6 +1970,19 @@ function Guild:Diagnose()
 	local wire = Family.Comm.stats or {}
 	Family:Print(L["  messages sent from here: %d"], stats.sent)
 
+	-- Sent means *queued*, which is not the same as gone. Two things can happen to a message
+	-- between here and the wire and neither is visible from the count above it: the queue can
+	-- still be holding it, and the client can refuse it. A refused message is reported as sent
+	-- by every count in this file.
+	Family:Print(L["  what the client answered to those: %s"], Family.Comm:Answers()
+		or L["|cffff5555nothing has been handed to it at all|r"])
+
+	local pending = Family.Comm:Pending()
+	if pending > 0 then
+		Family:Print(L["  |cffffaa00still in Family's own queue, never handed over: %d|r"],
+			pending)
+	end
+
 	-- One layer below every other count here, and the only pair of numbers that says whose
 	-- silence this is. Everything else on this page counts what happened to a message once it
 	-- was Family's; these two count what the client handed over in the first place, ours and

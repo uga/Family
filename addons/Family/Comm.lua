@@ -41,6 +41,27 @@ Family.Comm = Comm
 -- resource shared with every other addon loaded.
 local PREFIX = "Family"
 
+-- What actually happened on the wire, at the seam between this file and the client.
+--
+-- Guild.stats counts every point a guild announcement can be dropped *once it is Family's*,
+-- and that is one layer too high to answer the question two silent clients actually pose. A
+-- guild diagnosis reading "announcements arrived: 0" is produced identically by a channel that
+-- delivered nothing and by a channel that delivered everything into a handler that dropped it,
+-- and the difference is the whole of the diagnosis: one is somebody else's fault and the other
+-- is ours.
+--
+-- The line joining this file to the game has been wrong before, in exactly the way these
+-- counters would have shown at a glance - the handler read the event's own name as the prefix
+-- and every message Family was ever sent died on its first line, while five hundred checks
+-- that called Comm:Receive directly all passed. So the count that matters is taken *above*
+-- the prefix test, not below it: `events` proves the event is live at all, and `ours` proves
+-- the prefix test is letting our own traffic through.
+--
+-- `answers` is the same argument pointed the other way. Guild.stats.sent counts what Family
+-- *queued*; it says nothing about what the client did with it, so a message the client
+-- refused outright is reported as sent. What the call answers is therefore kept too.
+Comm.stats = { events = 0, ours = 0, malformed = 0, unhandled = 0, answers = {} }
+
 -- What fits in a message, less the header this file puts on the front. 255 is the game's
 -- limit; the rest is the message id, the sequence numbers and their separators, and it is
 -- generous rather than exact because being wrong here truncates silently.
@@ -63,14 +84,46 @@ local outgoing = {}
 local nextMessageID = 0
 local ticker
 
+-- What the client said when it was handed a message, kept verbatim and never interpreted.
+--
+-- By value *and* by type, and decoded against nothing. These clients are three different
+-- builds and the answer is part of what is being asked (DATASOURCES §2): reading a number
+-- against a table of result codes written from memory would be Family claiming to know what
+-- the number means when all it has is the number. The same rule the guild event log probe is
+-- built on, for the same reason.
+--
+-- Counted per distinct answer rather than only kept as the last one, because "four sends and
+-- all four said the same thing" and "three fine and one refused" are quite different
+-- diagnoses and the last answer alone shows them as identical.
+local function noteAnswer(key)
+    local answers = Comm.stats.answers
+    answers[key] = (answers[key] or 0) + 1
+    Comm.stats.lastAnswer = key
+end
+
 -- The client's own call, wherever it lives. It moved into C_ChatInfo partway through these
 -- clients' lives and the older global is still there on the older ones.
 local function sendRaw(text, channel, target)
     local api = _G.C_ChatInfo
-    if api and api.SendAddonMessage then
-        return Family:TryCall(api.SendAddonMessage, PREFIX, text, channel, target)
+    local call = (api and api.SendAddonMessage) or _G.SendAddonMessage
+
+    if type(call) ~= "function" then
+        noteAnswer("no such call")
+        return nil
     end
-    return Family:TryCall(_G.SendAddonMessage, PREFIX, text, channel, target)
+
+    -- pcall rather than Family:TryCall, which is what the rest of Family uses and which
+    -- returns nil both when a call throws and when it returns nil. Those are different
+    -- diagnoses - one is a client that refused and one is a client that has no opinion - and
+    -- telling them apart is the entire reason this is being recorded.
+    local ok, answer = pcall(call, PREFIX, text, channel, target)
+    if not ok then
+        noteAnswer("threw")
+        return nil
+    end
+
+    noteAnswer(type(answer) .. " " .. tostring(answer))
+    return answer
 end
 
 -- Whether anything may go out right now.
@@ -406,22 +459,8 @@ end)
 -- Receiving
 --------------------------------------------------------------------------------------------
 
--- What the client actually handed us, counted at the seam rather than inside it.
---
--- Guild.stats counts every point a guild announcement can be dropped *once it is Family's*,
--- and that is one layer too high to answer the question two silent clients actually pose. A
--- guild diagnosis reading "announcements arrived: 0" is produced identically by a channel that
--- delivered nothing and by a channel that delivered everything into a handler that dropped it,
--- and the difference is the whole of the diagnosis: one is somebody else's fault and the other
--- is ours.
---
--- The line joining this file to the game has been wrong before, in exactly the way these
--- counters would have shown at a glance - the handler read the event's own name as the prefix
--- and every message Family was ever sent died on its first line, while five hundred checks
--- that called Comm:Receive directly all passed. So the count that matters is taken *above*
--- the prefix test, not below it: `events` proves the event is live at all, and `ours` proves
--- the prefix test is letting our own traffic through.
-Comm.stats = { events = 0, ours = 0, malformed = 0, unhandled = 0 }
+-- Comm.stats, declared at the top of this file, is where the counting happens. Everything
+-- below adds to it.
 
 local partial = {}
 local handlers = {}
@@ -525,6 +564,26 @@ function Comm:Heard(prefix, text, channel, sender)
 
     Comm:Receive(text, sender, channel)
     return true
+end
+
+-- Everything the client has answered this session, most frequent first and by name after
+-- that, so that two runs of the same session print the same line.
+function Comm:Answers()
+    local keys = {}
+    for key in pairs(Comm.stats.answers) do keys[#keys + 1] = key end
+    if #keys == 0 then return nil end
+
+    table.sort(keys, function(a, b)
+        local left, right = Comm.stats.answers[a], Comm.stats.answers[b]
+        if left ~= right then return left > right end
+        return a < b
+    end)
+
+    local parts = {}
+    for _, key in ipairs(keys) do
+        parts[#parts + 1] = string.format("%d x %s", Comm.stats.answers[key], key)
+    end
+    return table.concat(parts, ", ")
 end
 
 function Comm:Prefix() return PREFIX end

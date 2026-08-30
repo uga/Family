@@ -10193,6 +10193,70 @@ print("an addon message arriving the way the game delivers it")
 end)()
 
 print()
+print("what the client says when it is handed a message")
+
+-- "messages sent from here: 4" counts what Family queued. It says nothing about what the
+-- client did with it, so a message the client refused outright is reported as sent - which is
+-- exactly the half of a two-client silence that had no instrumentation at all.
+--
+-- Kept verbatim, by value and by type, and decoded against nothing: reading a result code
+-- against a table written from memory would be Family claiming to know what the number means
+-- when all it has is the number. DATASOURCES §2, the same rule the guild log probe follows.
+;(function()
+    Family.Comm:Abandon()
+    Family.Comm.stats.answers = {}
+    Family.Comm.stats.lastAnswer = nil
+
+    check("with nothing sent there is nothing to report", Family.Comm:Answers() == nil,
+        tostring(Family.Comm:Answers()))
+
+    C_ChatInfo = {
+        RegisterAddonMessagePrefix = function() return true end,
+        SendAddonMessage = function() return 0 end,
+    }
+    Family.Comm:Send("answers", "one", "WHISPER", "Somebody", false)
+    check("the client's answer is kept with its type", Family.Comm:Answers() == "1 x number 0",
+        tostring(Family.Comm:Answers()))
+
+    C_ChatInfo.SendAddonMessage = function() return 4 end
+    Family.Comm:Send("answers", "two", "WHISPER", "Somebody", false)
+    Family.Comm:Send("answers", "three", "WHISPER", "Somebody", false)
+    check("a different answer is counted apart from the first",
+        Family.Comm:Answers() == "2 x number 4, 1 x number 0", tostring(Family.Comm:Answers()))
+
+    -- Three sends that all said the same thing and two that said different things are
+    -- different diagnoses, and the last answer alone shows them as identical.
+    check("and the last one is remembered by name", Family.Comm.stats.lastAnswer == "number 4",
+        tostring(Family.Comm.stats.lastAnswer))
+
+    -- A call that throws and a call that returns nil are a client that refused and a client
+    -- with no opinion. Family:TryCall answers nil to both, which is why this one uses pcall.
+    C_ChatInfo.SendAddonMessage = function() error("no") end
+    Family.Comm:Send("answers", "four", "WHISPER", "Somebody", false)
+    check("a call that throws is not a call that answered nothing",
+        Family.Comm.stats.lastAnswer == "threw", tostring(Family.Comm.stats.lastAnswer))
+
+    C_ChatInfo.SendAddonMessage = function() return nil end
+    Family.Comm:Send("answers", "five", "WHISPER", "Somebody", false)
+    check("and one that answers nothing says so", Family.Comm.stats.lastAnswer == "nil nil",
+        tostring(Family.Comm.stats.lastAnswer))
+
+    -- A client with no such call at all, which is the shape Era and Burning Crusade were
+    -- written for and the one that must not be reported as a refusal.
+    C_ChatInfo = nil
+    local wasGlobal = _G.SendAddonMessage
+    _G.SendAddonMessage = nil
+    Family.Comm:Send("answers", "six", "WHISPER", "Somebody", false)
+    check("a client with no such call says that instead",
+        Family.Comm.stats.lastAnswer == "no such call",
+        tostring(Family.Comm.stats.lastAnswer))
+    _G.SendAddonMessage = wasGlobal
+
+    Family.Comm:Abandon()
+    Family.Comm.stats.answers = {}
+end)()
+
+print()
 print("counting what the client hands over, above the prefix test")
 
 -- Two silent clients produce "announcements arrived: 0" whether the channel delivered nothing
