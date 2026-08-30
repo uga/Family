@@ -179,9 +179,12 @@ whole point is that they stop being recollection.
 - [x] **Ordering — settled 2026-08-30.** Oldest first, measured in a guild made for it: a
       character was `/gquit`, invited and joined, in that order and by hand, and the log came
       back `[1] quit`, `[2] invite`, `[3] join`. No need to run it a day apart.
-- [ ] **What does a deletion look like?** Roll a level-one alt, invite it, log it in, delete
-      it, run the probe again. If nothing new appears in *kinds of event*, a deleted character
-      leaves no trace and only the owner's own records can say it has gone.
+- [x] **What a deletion looks like — settled 2026-08-30.** It produces a `quit`, exactly as
+      leaving does, and the client says "X left the guild" in chat. There is a trace, which is
+      what the probe was opened to find out.
+- [ ] **Is a kick a `quit` or a `remove`?** Invite a throwaway alt and `/gkick` it. No `remove`
+      has appeared in 200 entries across two guilds beside 77 quits, which is suggestive and
+      not proof — and anything reading this log has to know every kind that means *gone*.
 
 #### Cooldowns, with a guildmate
 

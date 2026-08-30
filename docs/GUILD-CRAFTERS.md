@@ -406,11 +406,14 @@ What it does not give, and what therefore cannot be built on it alone:
 
 - It is **capped at 100 entries**, a count and not a period. That covered a month and ten days
   in a busy guild and eleven months in a quiet one.
-- **Whether a deleted character appears at all is untested**, and that is the case this was
-  opened for.
+- ~~**Whether a deleted character appears at all is untested.**~~ **Answered 2026-08-30: it
+  produces a `quit`.** Deletion is indistinguishable from leaving, which costs nothing - the
+  consequence is the same. The case this was opened for has a source.
 - **Whether being kicked is a `quit` or a `remove` is unknown** — no removes in 200 entries
-  across two guilds, beside 77 quits.
-- Mists is unrun.
+  across two guilds, beside 77 quits. It matters less now, but anything reading this has to
+  know every kind that means *gone*.
+- **The log is a stream, not a state.** A character appears once per thing that happened to
+  them, so *is this character in the guild now* is their **last** mention and not their first.
 
 **The hundred-entry cap is not the problem it looks like**, and the reason is that its weakness
 cancels itself. What 100 entries *reaches* falls as a guild's churn rises - two months in a

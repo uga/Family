@@ -265,12 +265,28 @@ anyway.
 | `demote` | 2 | 18 |
 | `remove` | — | — |
 
-**Two questions still open.** No `remove` appeared in **200 entries across two guilds beside 77
-`quit`**, so whether being kicked is its own kind or looks like quitting is still unknown -
-suggestive now rather than merely untested, but not proof, because neither guild may have
-kicked anybody in the window. And whether **deleting** a character leaves any trace at all is
-untested; that is the case the log was opened for, and it needs the experiment `SMOKE.md`
-describes. Mists is unrun.
+**Deleting a character produces a `quit`**, measured 2026-08-30 by deleting one: the log gained
+`quit / Ginetta / nil / Initiate`, and the client also said *"Ginetta left the guild"* in chat.
+So a deletion is indistinguishable from a departure, and that costs nothing - the consequence
+is the same either way, which is that the character is gone and nothing of it should still be
+offered. **This is the question the probe was opened for, and the answer is that there is a
+trace.**
+
+Two things fell out of the same run.
+
+- **Position four is the rank at the moment of the event**, not the character's rank now.
+  Ginetta reads `Member` on the entry where she left as a charter signee and `Initiate` on the
+  one where she was deleted, because she rejoined at the default rank in between.
+- **The log is a stream and not a state.** One character appears as many times as things
+  happened to them - Ginetta is `quit`, `invite`, `join`, `quit` across four entries - so
+  anything deciding *is this character in the guild now* has to take their **last** mention and
+  not their first. With the oldest at index 1, that is the highest index that names them.
+
+**One question still open.** No `remove` appeared in 200 entries across two guilds beside 77
+`quit`, so whether being kicked is its own kind or looks like quitting is still unknown -
+suggestive rather than untested, but not proof, because neither guild need have kicked anybody
+in the window. It matters less than it did now that deletion is known to register, but anything
+reading this log has to know every kind that means *gone*.
 
 ---
 
