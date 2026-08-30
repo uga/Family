@@ -18,6 +18,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Switching guild share on now tells your guild you are there.** It used to write the setting
+  and say nothing, so you stayed listed as *not running Family* on everybody's Guild panel until
+  your next login — even with both of you switched on and both online. Switching it off still
+  says nothing, which is the point of switching it off.
 - **The guild grid only offers professions that make something.** Fishing, Herbalism, Skinning,
   First Aid and Archaeology no longer get a tick box: guild crafters answers *who can make
   this*, and a profession that makes nothing has no answer to give. Mining keeps its box, for

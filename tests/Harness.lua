@@ -6817,6 +6817,13 @@ print("guild share")
 	Family.Guild:SetEnabled(true)
 	check("and it can be switched on", Family.Guild:Enabled() == true)
 
+	-- Switching it on announces two seconds later, and that is its own check further down.
+	-- This section measures how an announcement is *answered*, so a second one arriving inside
+	-- the same window would be counted as an answer that told the whole guild. The pending
+	-- timer is replaced with nothing rather than drained by moving the clock: everything below
+	-- turns on what each side does and does not know *yet*, and time passing changes that.
+	Family:After(0.01, "guild.enabled", function() end)
+
 	Family.UI:Refresh()
 	check("and its buttons come back with it",
 		_G.FamilyGuildUpdate and _G.FamilyGuildUpdate.__enabled ~= false)
@@ -8715,6 +8722,64 @@ print("guild share")
 		check("and one held under both an id and a word crosses once, not twice",
 			twice and #twice == 1, twice and tostring(#twice) or "nothing")
 
+
+
+		------------------------------------------------------------------------------------
+		-- Switching guild share on says so
+		--
+		-- Reported from a live client: two characters in one guild, both switched on, and each
+		-- panel went on reading "not running Family" about the other. Being heard from is the
+		-- only way anybody knows anybody runs this at all - and switching the feature on sent
+		-- nothing whatever, so a player was invisible until their next login.
+		------------------------------------------------------------------------------------
+
+		do
+			local function announcements()
+				local said = 0
+				for _, message in ipairs(sent) do
+					if message.channel == "GUILD" then said = said + 1 end
+				end
+				return said
+			end
+
+			-- Off, quietly. Off means this client neither asks nor answers, and a parting
+			-- announcement would be it doing one last of both.
+			advance(30)
+			sent = {}
+			Family.Guild:SetEnabled(false)
+			advance(10)
+			check("switching guild share off says nothing to the guild",
+				announcements() == 0, tostring(announcements()))
+
+			-- And on, loudly.
+			sent = {}
+			Family.Guild:SetEnabled(true)
+			advance(10)
+			check("switching it on announces to the guild",
+				announcements() == 1, tostring(announcements()))
+
+			-- Marked as a change, which is the half that matters. An ordinary hello lets the
+			-- far end answer "what I hold from you is recent, so nothing to do" - and somebody
+			-- who has this second switched the feature on is exactly who that must not
+			-- silence.
+			local marked = false
+			for _, message in ipairs(sent) do
+				if message.channel == "GUILD" then
+					local body = Family.Codec:FromWire(message.text:match("[^\1]*$") or "")
+					if type(body) == "table" and body.changed == true then marked = true end
+				end
+			end
+			check("and says that what it offers has changed, so nobody stays quiet at it",
+				marked)
+
+			-- Only on the edge. A panel that writes the same value twice, or an options
+			-- screen redrawing itself, must not put a second message on the channel.
+			sent = {}
+			Family.Guild:SetEnabled(true)
+			advance(10)
+			check("and switching it on when it is already on says nothing further",
+				announcements() == 0, tostring(announcements()))
+		end
 
 		------------------------------------------------------------------------------------
 		-- The perimeter: professions that make nothing are not offered at all

@@ -126,8 +126,36 @@ end
 function Guild:Enabled() return store().enabled == true end
 
 function Guild:SetEnabled(on)
+	local was = store().enabled == true
 	store().enabled = on and true or false
 	Family.Database:Changed("guild")
+
+	-- **Switching it on says so.** Being heard from is the only way anybody knows anybody runs
+	-- this at all - §7, and `onHello` argues the same where the traffic control could swallow
+	-- it - and until this, a player who turned guild share on stayed invisible to their guild
+	-- until their next login, or until somebody else happened to announce and they answered.
+	-- Reported from a live client: two characters, both switched on, and each panel went on
+	-- reading "not running Family" about the other.
+	--
+	-- Marked as a change rather than sent as a plain hello, and for the reason Refresh is
+	-- marked: the far end skips the exchange when what it holds from us is recent, and
+	-- somebody who has this moment switched the feature on is precisely who that rule must not
+	-- silence.
+	--
+	-- **Switching it off says nothing, and must not.** Off means this client neither asks nor
+	-- answers, and a parting announcement would be it doing one last of both.
+	--
+	-- Only on the edge, so a panel that writes the same value twice does not put two messages
+	-- on the channel.
+	if store().enabled and not was then
+		Family:After(2, "guild.enabled", function()
+			if not Guild:Enabled() then return end
+			if not Guild:Current() then return end
+			if not Family.Codec:CanTalk() then return end
+			Guild:AnnounceChange()
+		end)
+	end
+
 	return store().enabled
 end
 
