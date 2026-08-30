@@ -640,7 +640,9 @@ Family.locales.frFR = {
 	["|cff9d9d9dNothing recorded yet.|r"] = "|cff9d9d9dRien d'enregistré pour l'instant.|r",
 	["|cff888888name, level, item level|r"] = "|cff888888nom, niveau, niveau d'objet|r",
 	["|cff40bf40Crafting cooldowns ready|r"] = "|cff40bf40Temps de recharge d'artisanat prêts|r",
-	["|cff888888Left-click for the family. Right-click for the options.|r"] = "|cff888888Clic gauche pour la famille. Clic droit pour les options.|r",
+	["|cff888888Left-click for the family. Right-click for the options. Middle-click to change what the money counts.|r"] = "|cff888888Clic gauche pour la famille. Clic droit pour les options. Clic du milieu pour changer ce que compte l'argent.|r",
+	["|cff888888the bar is counting|r"] = "|cff888888la barre compte|r",
+	["this character"] = "ce personnage",
 
 	-- What Family adds to an item tooltip
 	["%d guild bank"] = "%d banque de guilde",

@@ -4989,6 +4989,97 @@ do
 
 	local before = Family.UI.broker.text
 	Family.Database:SetMeta("Tester-Auberdine", { money = 999999999 })
+	do
+		-- What the bar counts, and the way back.
+		--
+		-- A grand total across every realm is a number nobody can spend: two sides on one
+		-- realm share no bank, no mailbox and no auction house, which the tooltip below
+		-- already says at length. So the money narrows to what this side of this realm holds
+		-- and then to this character's own pocket, and comes back round.
+		local held = FamilyDB.ui and FamilyDB.ui.brokerScope
+
+		check("the bar counts the whole family until asked otherwise",
+			Family.UI:BrokerScope() == "all", tostring(Family.UI:BrokerScope()))
+
+		local wide = Family.UI.broker.text
+		check("and cycling goes realm, then character, then back",
+			Family.UI:CycleBrokerScope() == "realm"
+				and Family.UI:CycleBrokerScope() == "character"
+				and Family.UI:CycleBrokerScope() == "all")
+
+		-- Two sides on one realm, which is the whole reason the realm scope is not just the
+		-- realm: they share no bank, no mailbox and no auction house, so counting them
+		-- together would be a total nobody can spend. The fixture has one realm and no sides
+		-- at all until this puts them there.
+		Family.Database:SetMeta("Other-FireMaw", { faction = "Horde" })
+		Family.Database:SetMeta("Formulaic-FireMaw", { faction = "Alliance" })
+
+		-- And somebody far away with mail about to be destroyed, to hold the one count that
+		-- must *not* narrow.
+		Family.Database:SetMeta("Tester-Auberdine", { mailExpiresBy = time() + 3600 })
+
+		Family.UI:CycleBrokerScope()
+		local realmText = Family.UI.broker.text
+		check("the realm scope counts this side of this realm and not the other side of it",
+			tonumber((realmText:match("^(%d+)"))) == 2, realmText)
+		check("and still warns about mail on a character it is no longer counting",
+			brokerTooltipText():find("Mail expiring soon", 1, true) ~= nil,
+			"narrowing what the bar counts must not narrow what it warns about")
+
+		Family.UI:CycleBrokerScope()
+		local charText = Family.UI.broker.text
+		check("and the character scope counts exactly one",
+			tonumber((charText:match("^(%d+)"))) == 1, charText)
+
+		Family.Database:SetMeta("Other-FireMaw", { faction = Family.CLEAR })
+		Family.Database:SetMeta("Formulaic-FireMaw", { faction = Family.CLEAR })
+		Family.Database:SetMeta("Tester-Auberdine", { mailExpiresBy = Family.CLEAR })
+		Family.UI:CycleBrokerScope()
+
+		-- The button somebody actually presses, rather than the function behind it.
+		local minimap = _G.FamilyMinimapButton
+		local was, wasTab = Family.UI:BrokerScope(), Family.UI:CurrentTab()
+		if minimap and minimap.__scripts and minimap.__scripts.OnClick then
+			minimap.__scripts.OnClick(minimap, "MiddleButton")
+		end
+		check("and the middle button on the minimap changes it", Family.UI:BrokerScope() ~= was,
+			was .. " -> " .. Family.UI:BrokerScope())
+		-- Rather than doing what the other two buttons do. The window may well be open
+		-- already from an earlier section, so what is asked is that this click did not move
+		-- it - not that nothing is on screen.
+		check("and does not send the window somewhere while it is at it",
+			Family.UI:CurrentTab() == wasTab,
+			tostring(wasTab) .. " -> " .. tostring(Family.UI:CurrentTab()))
+		while Family.UI:BrokerScope() ~= "all" do Family.UI:CycleBrokerScope() end
+
+		-- The claim, rather than the helper: the number on the bar has to move with it.
+		Family.UI:CycleBrokerScope()
+		local narrowed = Family.UI.broker.text
+		check("and the bar itself says something different once it has",
+			narrowed ~= wide, tostring(wide) .. " -> " .. tostring(narrowed))
+
+		-- Both numbers together, or "29 members, 4200g" is a puzzle rather than a sentence.
+		local mine = tonumber((narrowed:match("^(%d+)")))
+		local all = tonumber((wide:match("^(%d+)")))
+		check("with the member count narrowed alongside the money",
+			mine ~= nil and all ~= nil and mine < all,
+			tostring(all) .. " members -> " .. tostring(mine))
+
+		-- And it says so on hover, or a number that quietly changed meaning is worse than
+		-- no number at all.
+		check("and the tooltip names what the bar is counting",
+			brokerTooltipText():find("the bar is counting", 1, true) ~= nil)
+
+		-- An unknown value on disk - an older version, or a hand-edited file - must read as
+		-- the whole family rather than as nothing at all.
+		FamilyDB.ui.brokerScope = "whatever"
+		check("and a scope it does not recognise reads as the whole family",
+			Family.UI:BrokerScope() == "all")
+
+		FamilyDB.ui.brokerScope = held
+		Family.UI:UpdateBroker()
+	end
+	Family.Database:SetMeta("Tester-Auberdine", { money = 999999999 })
 	local text = Family.UI.broker.text
 	check("the broker bar is brought up to date when the database changes",
 		text ~= before, tostring(before) .. " -> " .. tostring(text))

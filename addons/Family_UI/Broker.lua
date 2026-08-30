@@ -39,17 +39,75 @@ local RADIUS = 80
 -- What both of them say
 --------------------------------------------------------------------------------------------
 
+-- How much of the family the bar is counting.
+--
+-- **All of it is not always the useful answer.** The tooltip below already sets out why: an
+-- Alliance member and a Horde member on one realm share nothing but the realm - not a bank, not
+-- a mailbox, not an auction house - so a grand total across every realm is a number nobody can
+-- spend. What one *can* spend is what this side of this realm holds between them, and what is
+-- in this character's own pocket.
+--
+-- Three, not two, because the total this shipped with is somebody's answer already and taking
+-- it away would be answering a question nobody asked.
+local SCOPES = { "all", "realm", "character" }
+
+function UI:BrokerScope()
+	local wanted = FamilyDB and FamilyDB.ui and FamilyDB.ui.brokerScope
+	for _, scope in ipairs(SCOPES) do
+		if scope == wanted then return scope end
+	end
+	return SCOPES[1]
+end
+
+function UI:CycleBrokerScope()
+	local now = self:BrokerScope()
+	local at = 1
+	for index, scope in ipairs(SCOPES) do
+		if scope == now then at = index end
+	end
+
+	if FamilyDB then
+		FamilyDB.ui = FamilyDB.ui or {}
+		FamilyDB.ui.brokerScope = SCOPES[(at % #SCOPES) + 1]
+	end
+
+	self:UpdateBroker()
+	return self:BrokerScope()
+end
+
+-- Whether one member is inside the scope on show.
+--
+-- Both halves of "this realm" are asked, because the realm alone is not the pool: two sides on
+-- one realm are two families that cannot pass each other a copper.
+local function inScope(scope, key, meta)
+	if scope == "all" then return true end
+	if scope == "character" then return key == Family:CurrentMember() end
+
+	local mine = Family.Database:Members()[Family:CurrentMember()]
+	local ours = (mine and mine.meta) or {}
+	return meta.realm == ours.realm and meta.faction == ours.faction
+end
+
 local function summary()
 	local members, money = 0, 0
 	local needsAttention = 0
+	local scope = UI:BrokerScope()
 
 	for key, entry in pairs(Family.Database:Members()) do
 		local meta = entry.meta or {}
-		members = members + 1
-		money = money + (meta.money or 0)
+
+		-- Counted together, so the two numbers on the bar always describe one another:
+		-- "15 members, 4200g" is a sentence and "29 members, 4200g" is a puzzle.
+		if inScope(scope, key, meta) then
+			members = members + 1
+			money = money + (meta.money or 0)
+		end
 
 		-- Mail about to be destroyed is the one thing worth saying on a minimap button,
 		-- because it is the one thing that gets worse while you are not looking.
+		-- Deliberately outside the scope test above. Mail rotting on a character three
+		-- realms away is exactly the thing somebody is not looking at, and narrowing what
+		-- the bar counts must not narrow what it warns about.
 		local remaining = Family.Mail:TimeToExpiry(meta)
 		if remaining and remaining < 3 * 86400 then
 			needsAttention = needsAttention + 1
@@ -222,8 +280,26 @@ local function describe(tooltip)
 				needsAttention))
 	end
 
+	-- What the bar itself is counting, said where somebody will read it.
+	--
+	-- A number that quietly means something else is worse than no number: middle-click once by
+	-- accident and the money on the bar drops, with nothing anywhere to say why. So the scope
+	-- is named on hover whenever it is not the whole family, and the way back is named with it.
+	local scope = UI:BrokerScope()
+	if scope ~= "all" then
+		local mine = Family.Database:Members()[Family:CurrentMember()]
+		local ours = (mine and mine.meta) or {}
+
+		tooltip:AddLine(" ")
+		tooltip:AddDoubleLine(L["|cff888888the bar is counting|r"],
+			scope == "character" and (ours.name or L["this character"])
+				or string.format("%s |cff888888(%s)|r", tostring(ours.realm or "?"),
+					tostring(ours.faction or UI.UNKNOWN_SIDE)))
+	end
+
 	tooltip:AddLine(" ")
-	tooltip:AddLine(L["|cff888888Left-click for the family. Right-click for the options.|r"])
+	tooltip:AddLine(L["|cff888888Left-click for the family. Right-click for the options. "
+		.. "Middle-click to change what the money counts.|r"])
 end
 
 -- Each click goes to a fixed place rather than to wherever the window was left.
@@ -235,6 +311,17 @@ end
 -- one. So left is always the summary and right is always the options, and clicking for where
 -- you already are closes the window.
 local function onClick(button)
+	-- The middle button changes what the money is counting.
+	--
+	-- Not the money's own click: a broker bar is one label and its display hands the whole of
+	-- it to one handler, so there is no "on the money" to click on. Left and right are already
+	-- the two panels, and the middle button is free on both the bar and our own minimap
+	-- button, which registers AnyUp.
+	if button == "MiddleButton" then
+		UI:CycleBrokerScope()
+		return
+	end
+
 	local wanted = (button == "RightButton") and "options" or "summary"
 
 	if UI:IsShown() and UI:CurrentTab() == wanted then
