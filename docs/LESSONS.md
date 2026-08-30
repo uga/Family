@@ -916,3 +916,31 @@ The checks that now catch it: a scan after the series has been exhausted starts 
 one rather than giving up, and records the guild when the client finally answers. And the roster
 arriving - which is the client saying outright that it knows which guild this is - is a reason
 to ask again, but only where the fact is missing, because that event fires on every refresh.
+
+## L-028 — A verb in a report is not a measurement of a mechanism
+
+While writing up the guild event log, a note in `DATASOURCES.md` said that a character had been
+`/gquit` out of the guild, and a second note said `/gquit` worked on that client while `/gkick`
+did not.
+
+Neither was reported. What was reported was *"I had to gquit her before reinviting her"* - a
+player using the word as a verb for *make her leave*. The write-up turned an informal verb into
+a named slash command, gave it a client it worked on, and set it beside a command that had
+genuinely been tried and had genuinely failed. On that client `/gquit` does not exist either.
+
+**Nothing was misremembered.** The report was read correctly and then had a mechanism added to
+it that nobody had claimed. That is worse than a bad memory, because it produces a document
+that reads like a measurement and cites a session that never took it.
+
+It happened in the same file, and within the hour, as a commit whose message reads *"a
+measurement without its method is a claim"* - which was true, and which the fix for answered by
+inventing the method.
+
+The generalisable form: **a person describing what they did is reporting an outcome, not an
+API.** *Left the guild*, *kicked them*, *turned it off* name results. Which command, which
+button, which call is a separate question, and if it is worth writing down it is worth asking.
+
+The check is the same one the rest of this file rests on and there is no automating it: where a
+document names a mechanism, the session has to be able to point at where that mechanism was
+named to it. Both notes now say what was pressed where it is known and say nothing where it is
+not.

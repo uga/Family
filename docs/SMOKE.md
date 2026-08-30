@@ -183,8 +183,8 @@ whole point is that they stop being recollection.
       than assuming Era's answer; and note the reach in the row, because a busy guild fills
       100 entries in days and a fortnight away then means the event has gone.
 - [x] **Ordering — settled 2026-08-30.** Oldest first, measured in a guild made for it: a
-      character was `/gquit`, invited and joined, in that order and by hand, and the log came
-      back `[1] quit`, `[2] invite`, `[3] join`. No need to run it a day apart.
+      character was taken out of the guild, invited and joined, in that order and by hand, and
+      the log came back `[1] quit`, `[2] invite`, `[3] join`. No need to run it a day apart.
 - [x] **What a deletion looks like — settled 2026-08-30.** It produces a `quit`, exactly as
       leaving does, and the client says "X left the guild" in chat. There is a trace, which is
       what the probe was opened to find out.

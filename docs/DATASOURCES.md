@@ -243,8 +243,10 @@ Three things that are not what they look like:
   of nothing and could not be a date at all.
 - **Index 1 is the oldest and the last index is the newest**, which is the opposite way round
   from a chat log. **Measured outright** in a guild made for the purpose: a character was
-  `/gquit`, then invited, then joined, in that order and by hand, and the log came back
-  `[1] quit`, `[2] invite`, `[3] join`. Nothing is inferred there - the events were caused in
+  taken out of the guild, then invited, then joined, in that order and by hand, and the log
+  came back `[1] quit`, `[2] invite`, `[3] join`. **How** the first was done is not recorded,
+  because it was not reported and must not be guessed - what was caused in a known order is the
+  order, and that is all this rests on. Nothing is inferred there - the events were caused in
   a known order and the indices match it. It agrees with the offsets on the two older clients:
   Era `[1]` 1 month 10 days, `[3]` 1 month 7 days, `[100]` four hours; Burning Crusade `[1]` 10
   months 28 days, `[8]` 9 months 19 days, `[100]` 8 days.
@@ -303,11 +305,11 @@ Two things fell out of the same run.
 **Being kicked is its own kind, `remove`** - measured 2026-08-30, and the opposite of what 200
 entries across two guilds had suggested.
 
-Done through the **guild frame's Remove button**, because `/gkick` appears not to exist on Mists
-of Pandaria Classic - reported by the player taking the measurement; `/gquit` on the same client
-worked. Both routes ask the server the same thing, so a `remove` from the slash command would be
-surprising - but it is untested, and this records what was actually pressed. The chat line was
-*"Pinetta has been kicked out of the guild by Eccebombo"*. Neither of those guilds had kicked
+Done through the **guild frame's Remove button**. `/gkick` does not exist on Mists of Pandaria
+Classic and neither does `/gquit` - both answer *Unknown command*, reported by the player taking
+the measurement. Whether a slash command elsewhere produces the same kind is untested; this
+records what was actually pressed. The chat line was *"Pinetta has been kicked out of the guild
+by Eccebombo"*. Neither of those guilds had kicked
 anybody in its window, which is why a count of nothing is not a measurement.
 
 **And it names the departed in a different position from `quit`.** This is the trap in the whole
