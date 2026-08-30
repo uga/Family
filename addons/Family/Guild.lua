@@ -2068,8 +2068,13 @@ function Guild:Diagnose()
 	-- between here and the wire and neither is visible from the count above it: the queue can
 	-- still be holding it, and the client can refuse it. A refused message is reported as sent
 	-- by every count in this file.
-	Family:Print(L["  what the client answered to those: %s"], Family.Comm:Answers()
-		or L["|cffff5555nothing has been handed to it at all|r"])
+	-- **Pieces, not messages, and the label has to say so.** A message over 200 bytes is cut
+	-- up and each piece is handed to the client separately, so three messages can perfectly
+	-- well produce six answers. Printed beside "messages sent from here", a line reading "to
+	-- those" invites the reader to compare two numbers that do not count the same thing - and
+	-- the first live run of it did exactly that.
+	Family:Print(L["  what the client said to each piece it was handed: %s"],
+		Family.Comm:Answers() or L["|cffff5555nothing has been handed to it at all|r"])
 
 	local pending = Family.Comm:Pending()
 	if pending > 0 then
