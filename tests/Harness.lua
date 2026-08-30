@@ -12274,6 +12274,59 @@ print("dropping a player nobody has heard from")
 end)()
 
 print()
+print("the changelog, as release.sh will cut it")
+
+-- release.sh cuts everything between "## Unreleased" and the next "## " and sends it to
+-- CurseForge as the release notes. Nobody reads that block whole until it is being published,
+-- which is exactly why it drifts: entries are appended a slice at a time, over weeks, by
+-- somebody looking at the top of the file.
+--
+-- It had drifted. The Unreleased section carried "### Added", "### Fixed", "### Added",
+-- "### Fixed" - written in two passes a day apart, each pass adding its own headings without
+-- looking down - and the release page would have shown all four. Found by reading the section
+-- for a status report, not by anything that runs.
+;(function()
+	local handle = io.open(ROOT .. "/CHANGELOG.md")
+	local text = handle and handle:read("*a") or ""
+	if handle then handle:close() end
+
+	local sections, headings, twice, loose = 0, 0, {}, {}
+	local section, seen = nil, {}
+
+	for line in (text .. "\n"):gmatch("([^\n]*)\n") do
+		if line:match("^## ") then
+			section, seen = line, {}
+			sections = sections + 1
+		elseif line:match("^### ") then
+			headings = headings + 1
+			if seen[line] then
+				twice[#twice + 1] = string.format("%s -> %s", tostring(section), line)
+			end
+			seen[line] = true
+			seen.any = true
+		elseif line:match("^%- %*%*") and section and not seen.any then
+			-- An entry above its section's first heading. It reads as belonging to the
+			-- version rather than to Added or Fixed, and it is the same drift by another
+			-- route: appended to the top of a section instead of the top of a heading.
+			loose[#loose + 1] = string.format("%s -> %s", tostring(section),
+				line:sub(1, 50))
+		end
+	end
+
+	-- The scan before anything is concluded from it. A pattern that stops matching reports a
+	-- perfectly clean changelog, and this one reads a file the harness does not otherwise
+	-- touch, so nothing else would notice.
+	check("the changelog is there and has versions and headings in it",
+		text ~= "" and sections > 1 and headings > 1,
+		string.format("%d section(s), %d heading(s)", sections, headings))
+
+	check("no version repeats a heading, which release.sh would publish twice",
+		#twice == 0, table.concat(twice, " | "))
+	check("and no entry sits above the heading it belongs under",
+		#loose == 0, table.concat(loose, " | "))
+end)()
+
+print()
 print("the translations")
 ;(function()
 	local function slurp(path)
