@@ -409,10 +409,40 @@ function UI:RegisterTab(id, label, builder)
 		if text.SetWordWrap then text:SetWordWrap(false) end
 	end
 
+	-- The star that says which panel Family opens on. A texture the game ships with, so
+	-- there is no path of Family's own to be wrong about (HANDOFF §3), and a button over it
+	-- because a texture cannot be clicked.
+	local star = CreateFrame("Button", nil, button)
+	star:SetSize(14, 14)
+	star:SetPoint("RIGHT", -4, 0)
+	star:SetNormalTexture("Interface\\Common\\ReputationStar")
+	if star.GetNormalTexture and star:GetNormalTexture() then
+		star:GetNormalTexture():SetTexCoord(0, 0.5, 0, 0.5)
+	end
+	star:SetScript("OnClick", function()
+		UI:SetDefaultPanel(id)
+		UI:ShowTab(id)
+	end)
+	UI:AttachTooltip(star, function()
+		return nil, nil, { { L["Open Family here"] },
+			{ L["|cff9d9d9dFamily opens on this panel, every time.|r"] } }
+	end)
+	star:Hide()
+
+	button.star = star
+
 	tabs[index] = { id = id, label = label, builder = builder, frame = nil, icon = path }
 	tabButtons[id] = button
 
+	UI:RefreshStars()
+
 	return index
+end
+
+-- The buttons themselves, for the harness: whether a star is offered and which one is filled
+-- is a fact about the strip, and nothing outside this file can otherwise see it.
+function UI:TabButtons()
+	return tabButtons
 end
 
 -- Which tabs there are, and what each is drawn with. For the harness, which is the only thing
@@ -422,41 +452,72 @@ function UI:Tabs()
 	return tabs
 end
 
--- Whether Family is to reopen where it was left, and where that was.
+-- Whether Family opens on a panel somebody chose, rather than on the first one.
 --
--- Off unless somebody asks for it. A window that opens somewhere different each time is
--- disorienting for a player who uses one screen and useful for one who uses several, and
--- there is no way to tell which from here - so it is a switch rather than a guess.
-function UI:RemembersPlace()
-	return (FamilyDB and FamilyDB.ui and FamilyDB.ui.rememberPlace) and true or false
+-- Off unless it is asked for, and *chosen* rather than inferred. Reopening wherever you
+-- happened to be last is a different thing and the wrong one: go to a second panel, close the
+-- window, and it has quietly moved your home - which is exactly what somebody who wants to
+-- land on the same screen every time did not ask for.
+function UI:UsesDefaultPanel()
+	return (FamilyDB and FamilyDB.ui and FamilyDB.ui.useDefaultPanel) and true or false
 end
 
--- Where a panel was last looking, for the panels that have somewhere to be. The tab is
--- remembered here; a panel with sets or sections of its own records its own, because only it
--- knows what those are.
-function UI:RememberPlace(key, value)
-	if not UI:RemembersPlace() then return false end
-
+function UI:SetUsesDefaultPanel(on)
 	FamilyDB.ui = FamilyDB.ui or {}
-	FamilyDB.ui[key] = value
-	return true
+	FamilyDB.ui.useDefaultPanel = on and true or false
+	UI:RefreshStars()
 end
 
-function UI:RememberedPlace(key)
-	if not UI:RemembersPlace() then return nil end
-	return (FamilyDB.ui or {})[key]
+-- Which panel is starred, whether or not the switch is on. Kept while it is off so that
+-- switching it back on lands where it did before rather than forgetting.
+function UI:DefaultPanel()
+	return (FamilyDB and FamilyDB.ui and FamilyDB.ui.defaultPanel) or nil
+end
+
+-- Starring a panel takes it as it stands. For the summary that means the set of columns
+-- showing at the time, because "Activity" and "Currencies" are as different as two panels and
+-- a home that landed on whichever was last used would have the same fault as the version this
+-- replaces.
+function UI:SetDefaultPanel(id)
+	FamilyDB.ui = FamilyDB.ui or {}
+	FamilyDB.ui.defaultPanel = id
+	FamilyDB.ui.defaultSet = (id == "summary") and UI.__summarySet or nil
+	UI:RefreshStars()
+end
+
+-- What the summary should open on, or nothing where no choice has been made.
+function UI:DefaultSet()
+	if not UI:UsesDefaultPanel() then return nil end
+	if UI:DefaultPanel() ~= "summary" then return nil end
+	return (FamilyDB.ui or {}).defaultSet
 end
 
 -- Which tab a window with nothing open yet should open on.
 --
--- Its own function so that it can be asked without opening anything: the alternative is a
--- check that closes and reopens the window, and closing does not forget which tab is up -
--- within one session it already reopens where it was, and the switch is about surviving a
--- logout.
+-- Its own function so that it can be asked without opening anything: closing the window does
+-- not forget which tab is up, so within one session it already comes back where it was. What
+-- this decides is the first opening after a login, which no check can stage.
 function UI:StartingTab()
-	local last = UI:RememberedPlace("lastTab")
-	if last and UI:HasTab(last) then return last end
+	if UI:UsesDefaultPanel() then
+		local home = UI:DefaultPanel()
+		if home and UI:HasTab(home) then return home end
+	end
+
 	return tabs[1] and tabs[1].id
+end
+
+-- The star on each tab: hollow on the others, filled on the one that is home, and gone
+-- entirely while the switch is off. Nobody who has not asked for this should have to look at
+-- nine stars.
+function UI:RefreshStars()
+	local on, home = UI:UsesDefaultPanel(), UI:DefaultPanel()
+
+	for id, button in pairs(tabButtons) do
+		if button.star then
+			button.star:SetShown(on)
+			button.star:SetAlpha(id == home and 1 or 0.35)
+		end
+	end
 end
 
 function UI:ShowTab(id)
@@ -492,7 +553,6 @@ function UI:ShowTab(id)
 
 		if selected then
 			current = tab
-			UI:RememberPlace("lastTab", tab.id)
 			window.TitleText:SetText(string.format(L["Family - %s"], tab.label))
 
 			if tab.frame.Refresh then

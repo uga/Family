@@ -23,9 +23,11 @@ is a decision rather than an afternoon of archaeology.
   it is called on the left, **what is attached to it as icons on the right** — hover one to
   see what it is — with the gold beside them, cash on delivery in red, and how long that
   letter has left. Click it again to fold it away.
-- **Family can reopen where you left it.** A new switch in Options: with it on, the panel you
-  were last looking at — and the set of columns on the summary — is where Family opens next
-  time, including after logging out. Off unless you ask for it.
+- **Family can always open on the panel you choose.** A new switch in Options puts a star on
+  every panel in the strip; click one and Family opens there every time, including after
+  logging out. Starring the summary takes the set of columns you are looking at with it, so a
+  star can mean *Activity* rather than the whole panel. Off unless you ask for it, and walking
+  to another panel never moves it — only starring one does.
 
 ### Fixed
 

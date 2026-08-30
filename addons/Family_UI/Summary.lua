@@ -1150,14 +1150,18 @@ local function build(frame)
 	-- row came to run under the side filters at the right-hand end: seven buttons at the width
 	-- four had is wider than the panel, and nothing complains - it just overlaps. Worked out
 	-- once, above, where the check that it is still legible lives beside it.
-	-- Where this panel was last looking, if Family was asked to remember. Read once, as the
-	-- panel is built, which is the first time it is looked at rather than at login.
-	local lastSet = UI:RememberedPlace("lastSet")
-	if lastSet then
+	-- The set this panel was starred on, if it was. Read once, as the panel is built, which
+	-- is the first time it is looked at rather than at login.
+	local home = UI:DefaultSet()
+	if home then
 		for _, set in ipairs(SETS) do
-			if set.id == lastSet then currentSet = set end
+			if set.id == home then currentSet = set end
 		end
 	end
+
+	-- Which set is showing, so that starring this panel can take it as it stands. Kept where
+	-- the window can read it rather than reached for across files.
+	UI.__summarySet = currentSet.id
 
 	local setRow = {}
 	for _, set in ipairs(SETS) do
@@ -1166,7 +1170,7 @@ local function build(frame)
 		button:SetText(set.label)
 		button:SetScript("OnClick", function()
 			currentSet = set
-			UI:RememberPlace("lastSet", set.id)
+			UI.__summarySet = set.id
 			frame:Refresh()
 		end)
 		setButtons[set.id] = button

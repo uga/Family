@@ -35,14 +35,13 @@ local SWITCHES = {
 		set = function(on) UI:SetMinimapShown(on) end,
 	},
 	{
-		label = L["Reopen Family where you left it"],
-		note = L["The panel you were last on, and the set of columns on the summary - "
-			.. "rather than the summary's first. Kept when you log out."],
-		get = function() return UI:RemembersPlace() end,
-		set = function(on)
-			FamilyDB.ui = FamilyDB.ui or {}
-			FamilyDB.ui.rememberPlace = on and true or false
-		end,
+		label = L["Always open Family on one panel"],
+		note = L["A star appears on every panel in the strip; click one to make it the "
+			.. "panel Family opens on, every time. The summary is starred with the set of "
+			.. "columns you are looking at, so a star can mean Activity rather than the "
+			.. "whole panel."],
+		get = function() return UI:UsesDefaultPanel() end,
+		set = function(on) UI:SetUsesDefaultPanel(on) end,
 	},
 	{
 		label = L["Add Family to item tooltips"],

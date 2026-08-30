@@ -8709,64 +8709,83 @@ print("opening one of the game's own windows")
 end)()
 
 --------------------------------------------------------------------------------------------
--- Reopening where you left it
+-- Opening on the panel you chose
 --
--- Off unless somebody asks for it. A window that opens somewhere different each time is
--- disorienting for a player who uses one screen and useful for one who uses several, and
--- there is no telling which from here.
+-- Chosen rather than inferred. Reopening wherever you happened to be last is a different thing
+-- and the wrong one: go to a second panel, close the window, and it has quietly moved your
+-- home - which is what somebody who wants to land on the same screen every time did not ask
+-- for.
 --
 -- Asked of UI:StartingTab rather than by closing and reopening: closing does not forget which
--- tab is up, so within one session it already comes back where it was. The switch is about
--- surviving a logout, which no check can stage.
+-- tab is up, so within one session it already comes back where it was. What this decides is
+-- the first opening after a login, and no check can stage one.
 --------------------------------------------------------------------------------------------
 
 print()
-print("reopening where you left it")
+print("opening on the panel you chose")
 
 ;(function()
 	FamilyDB.ui = FamilyDB.ui or {}
-	local wasOn, wasTab = FamilyDB.ui.rememberPlace, FamilyDB.ui.lastTab
-	FamilyDB.ui.rememberPlace, FamilyDB.ui.lastTab = nil, nil
+	local wasOn, wasHome = FamilyDB.ui.useDefaultPanel, FamilyDB.ui.defaultPanel
+
+	Family.UI:SetUsesDefaultPanel(false)
+	FamilyDB.ui.defaultPanel = nil
 
 	Family.UI:Show()
 	Family.UI:ShowTab("guild")
 
 	check("it is off in a database nobody has touched",
-		Family.UI:RemembersPlace() == false)
-	check("and nothing is written down while it is off",
-		Family.UI:RememberedPlace("lastTab") == nil
-			and FamilyDB.ui.lastTab == nil)
+		Family.UI:UsesDefaultPanel() == false)
+	check("and being on a panel does not make it home",
+		Family.UI:DefaultPanel() == nil)
 	check("so a fresh window opens on the first panel",
 		Family.UI:StartingTab() == "summary", tostring(Family.UI:StartingTab()))
 
-	FamilyDB.ui.rememberPlace = true
-	Family.UI:ShowTab("guild")
+	-- The star is the whole of the marking, and it is not there to be clicked while the
+	-- switch is off: nobody who has not asked for this should have to look at nine stars.
+	local strip = Family.UI:TabButtons()
+	check("and no star is offered on any panel",
+		strip.guild.star.__shown == false,
+		"a star showing while the switch is off")
 
-	check("switched on, where you are is written down",
-		Family.UI:RememberedPlace("lastTab") == "guild",
-		tostring(Family.UI:RememberedPlace("lastTab")))
+	Family.UI:SetUsesDefaultPanel(true)
+	check("switched on, the stars appear", strip.guild.star.__shown == true)
+
+	-- Starring one is a decision, and it is the only thing that moves home.
+	strip.guild.star.__scripts.OnClick(strip.guild.star)
+	check("starring a panel makes it home", Family.UI:DefaultPanel() == "guild",
+		tostring(Family.UI:DefaultPanel()))
 	check("and a fresh window would open there",
 		Family.UI:StartingTab() == "guild", tostring(Family.UI:StartingTab()))
 
-	-- Two of the tabs come and go with the features they belong to, so a remembered name
-	-- may no longer answer - and opening on nothing at all is worse than opening on the
-	-- first thing.
-	FamilyDB.ui.lastTab = "a panel that was removed"
-	check("but a panel that is no longer there falls back to the first",
+	-- The fault in the version this replaces: walking to another panel must not move it.
+	Family.UI:ShowTab("summary")
+	check("but walking to another panel does not", Family.UI:DefaultPanel() == "guild",
+		tostring(Family.UI:DefaultPanel()))
+	check("and home is still where it was", Family.UI:StartingTab() == "guild")
+
+	-- Two of the tabs come and go with the features they belong to, so a starred name may no
+	-- longer answer - and opening on nothing at all is worse than opening on the first thing.
+	FamilyDB.ui.defaultPanel = "a panel that was removed"
+	check("a panel that is no longer there falls back to the first",
 		Family.UI:StartingTab() == "summary", tostring(Family.UI:StartingTab()))
 
-	-- The summary's columns are its own business, so it records them itself.
+	-- Starring the summary takes the set of columns it is showing, because "Activity" and
+	-- "Currencies" are as different as two panels are.
 	Family.UI:ShowTab("summary")
-	check("the summary's own set is remembered beside the panel",
-		clickButton("Activity") and Family.UI:RememberedPlace("lastSet") == "activity",
-		tostring(Family.UI:RememberedPlace("lastSet")))
+	clickButton("Activity")
+	strip.summary.star.__scripts.OnClick(strip.summary.star)
+	check("starring the summary takes the columns it is showing",
+		Family.UI:DefaultSet() == "activity", tostring(Family.UI:DefaultSet()))
 
-	FamilyDB.ui.rememberPlace = false
-	Family.UI:ShowTab("guild")
-	check("and switched off again it stops writing anything down",
-		Family.UI:RememberedPlace("lastTab") == nil)
+	Family.UI:SetUsesDefaultPanel(false)
+	check("switched off, it opens on the first panel again",
+		Family.UI:StartingTab() == "summary")
+	check("but what was starred is kept, so switching back on lands where it did",
+		Family.UI:DefaultPanel() == "summary", tostring(Family.UI:DefaultPanel()))
 
-	FamilyDB.ui.rememberPlace, FamilyDB.ui.lastTab = wasOn, wasTab
+	FamilyDB.ui.useDefaultPanel, FamilyDB.ui.defaultPanel = wasOn, wasHome
+	Family.UI:RefreshStars()
 	Family.UI:ShowTab("summary")
 end)()
 
