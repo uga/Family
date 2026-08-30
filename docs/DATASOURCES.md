@@ -541,9 +541,34 @@ permanent aura, so the residual time of what is inside is not there either.
 22783 for Mage Armour, 349981 for the Chronoboon, 10157 for Arcane Intellect, each in position
 ten of the same dump. That matters because a spell id is §2.1-clean where a name is not.
 
-**Still open:** the stored buffs are not separate auras - only the Chronoboon's own appears -
-so if they are anywhere readable it is in *that aura's* tooltip rather than the item's. That is
-the last candidate and it is one `SetUnitBuff` away.
+**Closed, and the answer is no.** The stored buffs are not separate auras - only the
+Chronoboon's own appears - and they are not readable from that aura's tooltip either. Every
+route was tried:
+
+| tried | lines |
+|---|---|
+| a private tooltip, `SetUnitBuff`, not shown | 1 — the title alone |
+| a private tooltip, `SetUnitBuff`, then `Show()` | 2 — title, `World effects suspended:` |
+| the real `GameTooltip`, `SetUnitBuff` | 3 — the same two, plus a line added by an addon |
+
+Three lines, on the game's own tooltip, while the tooltip **on screen** was showing
+`Rallying Cry of the Dragonslayer (120m)` between them. So the buff rows are not tooltip text
+lines: `GameTooltipTextLeft<n>` never carries them, on any frame, shown or not.
+
+**Which fits what they look like.** Each row is an icon beside a name and a time - a drawn row
+rather than a line of text - so the text API is not a route that was missed, it is a route that
+does not lead there. What exactly draws them is not established here and does not need to be:
+nothing Family can call returns them.
+
+**What this costs, and it is less than it sounds.** *Which character has a boon banked* is
+answered by item 184938 sitting in a bag, needs no tooltip at all, and is what the Chrono column
+in Summary / Miscellaneous shows. What is lost is *which buff, and how long is left* - and that
+would have been a **name** and a duration, the one shape §2.1 refuses, storable only with the
+locale it was written in.
+
+**Do not reopen this from the screenshot.** The tooltip a player sees genuinely contains the
+buffs; that is the whole trap. Seeing them on screen says nothing about whether an addon can
+read them, and the measurement above is what settles it.
 
 ### The same name calls on Era, measured 2026-08-30
 
