@@ -10,6 +10,7 @@ tools/.skill-lines-cache/
 tools/.races-cache/
 tools/.areas-cache/
 tools/.talents-cache/
+tools/.game-words-cache/
 
 # Bytecode left behind when one generator imports another
 tools/__pycache__/
@@ -33,4 +34,3 @@ CLAUDE.md
 docs/EFFORT.md
 docs/effort/
 tools/effort.py
-tools/.game-words-cache/
