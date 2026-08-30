@@ -161,20 +161,21 @@ local function drain()
 
     -- Compacted rather than removed one at a time: taking from the front of a list inside
     -- the loop that is walking it is how a queue comes to skip every other item.
-    local kept, waiting = {}, {}
+    local kept = {}
     for _, entry in ipairs(outgoing) do
-        if not entry.done then
-            kept[#kept + 1] = entry
-            local key = entry.target and nameKey(entry.target)
-            if key then waiting[key] = true end
-        end
+        if not entry.done then kept[#kept + 1] = entry end
     end
     outgoing = kept
 
-    -- A target with nothing left queued starts fresh next time. One canary per transfer
-    -- rather than one per session: somebody who was there an hour ago may not be now.
-    for key in pairs(probing) do
-        if not waiting[key] then probing[key] = nil end
+    -- A probe is forgotten after a while, so that a transfer minutes later probes again:
+    -- somebody who was there an hour ago may not be now.
+    --
+    -- By age rather than by the queue emptying, which is what this did first and was wrong.
+    -- An exchange is two messages, and where the first is short enough to be one chunk the
+    -- queue empties between them - so the second arrived to find no probe outstanding,
+    -- started its own, and went straight out beside the one that was meant to be alone.
+    for key, at in pairs(probing) do
+        if (now() - at) > PROBATION * 4 then probing[key] = nil end
     end
 
     if #outgoing == 0 and ticker then

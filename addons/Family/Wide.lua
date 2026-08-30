@@ -461,7 +461,14 @@ function Wide:ExchangeWith(familyID, why)
 
     if not ok then return false, problem end
 
-    send(link, "want", envelope({}))
+    -- Bulk, although it is one line long.
+    --
+    -- Not because of its size but because of when it goes: it is the second half of the
+    -- exchange above, and bulk is what makes the queue hold it behind that one's first
+    -- message until the character has proved they are there. Sent eagerly, it went out
+    -- beside the canary and cost a second refusal from the client for somebody who was not
+    -- online - which is the whole of what the canary is for.
+    send(link, "want", envelope({}), true)
 
     link.lastAsked = time()
     Family:Debug("wide: exchanged with %s (%d members offered, %s)",

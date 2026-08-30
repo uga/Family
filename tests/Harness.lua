@@ -9326,6 +9326,27 @@ print("whispering somebody who is not there")
 			Family.Comm:Pending() - before < queued - 1,
 			tostring(Family.Comm:Pending() - before) .. " still queued")
 
+		-- Both halves of an exchange, not only the big one. An exchange is everything we
+		-- are sharing and a request for theirs, and the request going out beside the
+		-- canary cost a second refusal from the client for a character who was not there.
+		advance(5)
+		do
+			local base = Family.Comm:Pending()
+			Family.Comm:Send("bulk", string.rep("z", 900), "WHISPER",
+				"Nobodyelsehasheardfromthem-Thunderstrike", true)
+			Family.Comm:Send("want", "x", "WHISPER",
+				"Nobodyelsehasheardfromthem-Thunderstrike", true)
+
+			local queuedBoth = Family.Comm:Pending() - base
+			advance(0.4)
+
+			check("a second message queued beside it waits as well",
+				(queuedBoth - (Family.Comm:Pending() - base)) <= 1,
+				tostring(queuedBoth - (Family.Comm:Pending() - base)) .. " sent")
+
+			advance(5)
+		end
+
 		InCombatLockdown = realCombat
 	end
 
@@ -9398,6 +9419,36 @@ print("a family is a person with several characters")
 	check("an exchange goes to the one we heard from last", ok
 		and sent[1] and sent[1].target == "Grella-Thunderstrike",
 		sent[1] and tostring(sent[1].target) or "nothing sent")
+
+	-- And it goes one message at a time to somebody nobody has heard from.
+	--
+	-- An exchange is two things - everything we are sharing, and a request for theirs - and
+	-- the second is one line. Sent eagerly it went out beside the first, so a character who
+	-- was not online cost two refusals from the client instead of one. Both halves belong to
+	-- the same exchange and wait on the same proof that anybody is there.
+	do
+		local link = Family.Wide:Links()["theirs"]
+		link.characters["Neverheardofhim-Thunderstrike"] = time() + 60
+
+		sent = {}
+		Family.Wide:ExchangeWith("theirs", "a test")
+		advance(0.4)
+
+		local toThem = 0
+		for _, message in ipairs(sent) do
+			if message.target == "Neverheardofhim-Thunderstrike" then
+				toThem = toThem + 1
+			end
+		end
+		check("and one message at a time to somebody nobody has heard from",
+			toThem <= 1, tostring(toThem) .. " messages")
+
+		link.characters["Neverheardofhim-Thunderstrike"] = nil
+		Family.Comm:AbandonTo("Neverheardofhim-Thunderstrike")
+		advance(5)
+	end
+
+	sent = {}
 
 	-- That one is not the one they are playing. The next is tried without anybody pressing
 	-- anything, which is the whole point: a link is to the family, not to whichever of them
