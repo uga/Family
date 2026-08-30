@@ -107,27 +107,61 @@ local function build(frame)
 	title:SetPoint("TOPLEFT", 4, -4)
 	title:SetText(L["Options"])
 
+	-- The footer first, because the scroller is measured against it. It stays pinned to the
+	-- bottom of the panel rather than scrolling with the switches: what it says is about this
+	-- installation and not about any switch, and a line that scrolls away is a line somebody
+	-- has to go looking for.
+	local footer = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+	footer:SetPoint("BOTTOMLEFT", 8, 8)
+	footer:SetPoint("BOTTOMRIGHT", -8, 8)
+	footer:SetJustifyH("LEFT")
+
+	-- **Scrolled, because the switches outgrew the panel.** Nine of them with a wrapping
+	-- caption each, plus the strata row, run past the bottom in English and further in every
+	-- other language - the last caption was drawn over the footer, and anything below that
+	-- was simply not on the screen. There is no shorter way to say what these do, and a
+	-- caption is what makes a switch safe to flip, so the panel scrolls instead.
+	local scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
+	-- The bottom edge follows the footer rather than sitting a fixed distance off the panel.
+	-- That line is one line in English and can be two in German, and a scroller that assumed
+	-- one would put the second through the last caption - which is the fault being fixed
+	-- here, reintroduced in the fix.
+	scroll:SetPoint("TOPLEFT", 4, -32)
+	scroll:SetPoint("RIGHT", frame, "RIGHT", -26, 0)
+	scroll:SetPoint("BOTTOM", footer, "TOP", 0, 6)
+
+	local list = CreateFrame("Frame", nil, scroll)
+	list:SetSize(1, 1)
+	scroll:SetScrollChild(list)
+	UI:MakeScrollable(scroll)
+
+	-- Every caption stops here rather than at whatever width its sentence happens to be, and
+	-- it is a width rather than a right-hand anchor now: the scroll child is one pixel wide
+	-- until it is told otherwise, so anchoring to its edge would wrap every sentence to
+	-- nothing.
+	local room = math.max(UI:ListWidth(scroll) - MARGIN - 8, 200)
+
 	local checkboxes = {}
 
-	local y = -34
+	local y = 2
 	for index, switch in ipairs(SWITCHES) do
-		local box = CreateFrame("CheckButton", "FamilyOption" .. index, frame,
+		local box = CreateFrame("CheckButton", "FamilyOption" .. index, list,
 			"UICheckButtonTemplate")
 		box:SetSize(24, 24)
-		box:SetPoint("TOPLEFT", 8, y)
+		box:SetPoint("TOPLEFT", 4, -y)
 
-		local label = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+		local label = list:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 		label:SetPoint("LEFT", box, "RIGHT", 4, 0)
-		label:SetPoint("RIGHT", frame, "RIGHT", -MARGIN, 0)
+		label:SetWidth(room - 32)
 		label:SetJustifyH("LEFT")
 		label:SetText(switch.label)
 
-		local note = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+		local note = list:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 		note:SetPoint("TOPLEFT", box, "BOTTOMLEFT", 28, 4)
 		-- A right edge, so the note wraps inside the panel instead of growing until it
 		-- runs out of one. Without it these were drawn to the natural width of the
 		-- sentence: fine in English, and straight through the border in French.
-		note:SetPoint("RIGHT", frame, "RIGHT", -MARGIN, 0)
+		note:SetWidth(room - 32)
 		note:SetJustifyH("LEFT")
 		if note.SetWordWrap then note:SetWordWrap(true) end
 		note:SetText(switch.note)
@@ -141,18 +175,18 @@ local function build(frame)
 
 		-- Stepped by what this row actually took. A note that wraps to two lines is two
 		-- lines tall, and a fixed step would have the next switch sitting on top of it.
-		y = y - ROW - math.max(12, math.ceil(note:GetStringHeight() or 12) + 2)
+		y = y + ROW + math.max(12, math.ceil(note:GetStringHeight() or 12) + 2)
 	end
 
 	-- Strata is a list rather than a switch, and it is here because a window hidden behind
 	-- somebody's HUD is the sort of thing that needs fixing from inside the window.
-	local strataLabel = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-	strataLabel:SetPoint("TOPLEFT", 12, y - 6)
+	local strataLabel = list:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+	strataLabel:SetPoint("TOPLEFT", 8, -(y + 6))
 	strataLabel:SetText(L["How far in front the window sits"])
 
-	local strataNote = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+	local strataNote = list:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 	strataNote:SetPoint("TOPLEFT", strataLabel, "BOTTOMLEFT", 0, -2)
-	strataNote:SetPoint("RIGHT", frame, "RIGHT", -MARGIN, 0)
+	strataNote:SetWidth(room - 8)
 	strataNote:SetJustifyH("LEFT")
 	strataNote:SetText(L["Raise this if another addon draws over Family."])
 
@@ -168,7 +202,7 @@ local function build(frame)
 
 	local strataButtons, strataRow = {}, {}
 	for _, name in ipairs(UI:StrataChoices()) do
-		local button = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+		local button = CreateFrame("Button", nil, list, "UIPanelButtonTemplate")
 		button:SetHeight(22)
 		button:SetText(L[name])
 		button:SetScript("OnClick", function()
@@ -180,18 +214,22 @@ local function build(frame)
 	end
 	UI:LayOutRow(strataRow, 90, 4, 0, function(button, x)
 		button:SetPoint("TOPLEFT", strataNote, "BOTTOMLEFT", x, -6)
-	end, (UI.CONTENT_W or 740) - 24)
+	end, room - 8)
 
-	local strataMeaning = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	local strataMeaning = list:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	strataMeaning:SetPoint("TOPLEFT", strataNote, "BOTTOMLEFT", 0, -34)
-	strataMeaning:SetPoint("RIGHT", -8, 0)
+	strataMeaning:SetWidth(room - 8)
 	strataMeaning:SetJustifyH("LEFT")
 	strataMeaning:SetTextColor(0.7, 0.7, 0.7)
 
-	local footer = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-	footer:SetPoint("BOTTOMLEFT", 8, 8)
-	footer:SetPoint("BOTTOMRIGHT", -8, 8)
-	footer:SetJustifyH("LEFT")
+	-- What the scroller scrolls. Measured from the switches rather than guessed, and with the
+	-- strata block's own height added: the label, its caption, the row of buttons and the
+	-- sentence under them all sit below the last switch, and a child that stops at the last
+	-- switch would leave that sentence unreachable - which is the fault this is fixing, moved
+	-- rather than fixed.
+	local STRATA_BLOCK = 6 + 16 + 2 + 14 + 6 + 22 + 12 + 30
+	list:SetWidth(math.max(room, 1))
+	list:SetHeight(math.max(y + STRATA_BLOCK, 1))
 
 	function frame:Refresh()
 		for index, switch in ipairs(SWITCHES) do

@@ -18,6 +18,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The Options panel scrolls.** It had grown past the bottom of the window: the last caption
+  was drawn over the version line and anything below that was not on the screen at all. The
+  switches now scroll — with the mouse wheel, not only the bar — and the version line stays
+  pinned where it was.
 - **Spanish and Russian now call things what the game calls them.** Family's own text names a
   few things from the game — mooncloth, salt shakers, mageweave — and those names had been
   translated by hand rather than taken from the game. Spanish called mooncloth *paño lunar* and

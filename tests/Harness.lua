@@ -235,6 +235,11 @@ function frameMethods:LockHighlight() self.__highlighted = true end
 function frameMethods:UnlockHighlight() self.__highlighted = false end
 function frameMethods:GetFontString() return self.__fontString end
 
+-- Recorded, because which frame a scroller scrolls is the whole of whether content past the
+-- bottom of a panel can be reached at all - and there is no other way to ask from outside.
+function frameMethods:SetScrollChild(child) self.__scrollChild = child end
+function frameMethods:GetScrollChild() return self.__scrollChild end
+
 -- Buttons remember their label, so a test can find one by what it says and click it. Without
 -- this the only way to exercise a button is to reach inside the panel that made it.
 function frameMethods:SetText(text) self.__text = text end
@@ -4564,6 +4569,85 @@ check("and that angle is where the cursor was", FamilyDB.ui.minimapAngle == 45,
 	tostring(FamilyDB.ui.minimapAngle))
 
 tabDrawsCleanly("options", "the options panel builds and draws")
+
+--------------------------------------------------------------------------------------------
+-- The Options panel scrolls, because it outgrew the window
+--
+-- Nine switches with a wrapping caption each, plus the strata row and the sentence under it,
+-- run past the bottom of the panel in English and further in every other language. The last
+-- caption was being drawn over the footer and everything below it was simply not on the
+-- screen - which is the same fault as an unclickable tick box: the thing is there in the code
+-- and not there for the player.
+--
+-- Three things have to hold, and each of them was false before this.
+--------------------------------------------------------------------------------------------
+
+do
+	Family.UI:Show()
+	Family.UI:ShowTab("options")
+
+	local panel, scroll
+	for _, f in ipairs(frames) do
+		if f.__kind == "ScrollFrame" and f.__parent and f.__parent.Refresh
+			and f.__parent.__optionsPanel then
+			scroll = f
+		end
+	end
+
+	-- Found by what it holds rather than by a marker, because a marker is a thing the panel
+	-- would have to remember to set and this has to be true of the panel as it is written.
+	if not scroll then
+		for _, f in ipairs(frames) do
+			if f.__kind == "ScrollFrame" then
+				local child = f.__scrollChild
+				if child then
+					for _, box in ipairs(frames) do
+						if box.__name == "FamilyOption1" and box.__parent == child then
+							scroll, panel = f, f.__parent
+						end
+					end
+				end
+			end
+		end
+	end
+
+	check("the options panel has a scroller with the switches inside it", scroll ~= nil)
+
+	local child = scroll and scroll.__scrollChild
+	check("and the switches are its child rather than the panel's", child ~= nil)
+
+	-- Taller than the window, which is what says there is something below the fold to reach.
+	-- A scroller around content that fits is a scroller nobody needs and proves nothing.
+	check("and it is taller than the panel, so there is something to scroll to",
+		child ~= nil and (child.__height or 0) > (scroll:GetHeight() or 500),
+		child and tostring(child.__height) or "no child")
+
+	-- And a wheel reaches it. UIPanelScrollFrameTemplate brings a bar and two arrows and
+	-- nothing that answers a wheel, which most people will not think to drag.
+	check("and the wheel scrolls it",
+		scroll ~= nil and type(scroll.__scripts.OnMouseWheel) == "function")
+
+	-- The last thing on the panel, which is the one that was drawn over the footer. Inside
+	-- the child means reachable; on the panel means printed wherever the maths happened to
+	-- put it, which is off the bottom.
+	local meaning, footer = nil, nil
+	for _, f in ipairs(fontStrings) do
+		if type(f.__text) == "string" then
+			if f.__text:find("In front of unit frames", 1, true) then meaning = f end
+			if f.__text:find("tooltips hooked", 1, true) then footer = f end
+		end
+	end
+
+	check("the sentence under the strata buttons is inside the scroller",
+		meaning ~= nil and child ~= nil and meaning.__parent == child,
+		meaning and tostring(meaning.__parent == child) or "not drawn")
+
+	-- And the footer is not, because it is about this installation rather than about any
+	-- switch, and a line that scrolls away is a line somebody has to go looking for.
+	check("and the footer is pinned to the panel rather than scrolling with them",
+		footer ~= nil and child ~= nil and footer.__parent ~= child,
+		footer and tostring(footer.__parent == child) or "not drawn")
+end
 
 -- The tab you are on is marked by being held highlighted, not by being disabled. Greying it
 -- is how the game says "you cannot do this", which is the opposite of what is meant.
