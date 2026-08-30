@@ -967,3 +967,53 @@ The check: a mutation is reverted from a **copy of the file taken immediately be
 mutation**, never from git, and the loop ends by re-running the harness and reading the words
 `all checks passed` rather than counting `FAIL` lines. Commit before mutating, or copy first;
 never both untracked and reverted by version control.
+
+## L-030 — A check sited at a filename, and a guard that watched the wrong half
+
+The rule that every sentence Family says to a player must exist in all four languages was
+written as *everything `Family_UI/Slash.lua` asks for*, on the stated grounds that Slash.lua is
+where Family writes sentences rather than labels.
+
+That was true when it was written. It stopped being true without anybody being told.
+`Guild:Diagnose` grew to forty-one printed lines in `Family/Guild.lua`, and on 2026-08-30 three
+sentences went into it with no translation in any language while the check stayed green. They
+were translated by hand, because the person writing them happened to think of it — which is
+precisely the state the check exists to replace.
+
+**A rule sited at a filename holds exactly until somebody writes the thing somewhere else, and
+nothing warns them.** The filename was never the rule; it was a proxy for one, and the proxy
+was accurate on the day it was chosen. Nothing about it degrades loudly. The check goes on
+passing, more confidently each release, over a shrinking fraction of what it was written to
+cover.
+
+The rule is now sited at `Family:Print`, which is the one door to the chat frame — so a literal
+handed straight to it is a sentence being said to somebody by definition. It went from 105
+required sentences in one file to 180 across eleven.
+
+**The second half of this is worse, and was found by mutation rather than by thinking.** Having
+widened the rule, three guards were added to stop the scan silently narrowing again. Then
+putting the Slash.lua filter back on the rule — the exact regression all of this was written to
+prevent — left every check in the file green, guards included.
+
+The reason is worth keeping: with the tree fully translated, a *narrower* rule fails nothing.
+Every check in that section only fires when something is untranslated, so a rule that quietly
+asks less is indistinguishable from a rule that asks everything and is satisfied. The three
+guards watched what the scan **gathered**. Nothing watched what the rule **demanded** of it, and
+those are not the same thing.
+
+The same shape sat one line further down: the span walk's string and comment skipping changed
+what the scan found by exactly nothing, so both were unexercised code standing on a plausible
+argument about brackets inside strings.
+
+**Caught by:** `tests/Harness.lua`, four checks rather than one, because one was not enough:
+*the sources print sentences the scan can see* and *it sees them outside Slash.lua* hold the
+scan; *every sentence found is a sentence required* holds the rule against the scan, and is the
+one that catches the regression above; *the span walk finds everything the plainest pattern
+does* runs a second, much simpler scan as a floor under the first. The string and comment
+skipping are exercised on fixtures with an **unbalanced** bracket, which is the only case
+either exists for.
+
+The generalisable form: **when a check can only fail one way, ask what a weakened version of it
+would look like.** If the answer is "identical", the check is guarding its inputs and not its
+claim. And a proxy — a filename, a directory, a naming convention — is a measurement of the
+codebase on the day it was chosen, not a property of it.
