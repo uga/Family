@@ -33,3 +33,4 @@ CLAUDE.md
 docs/EFFORT.md
 docs/effort/
 tools/effort.py
+tools/.game-words-cache/

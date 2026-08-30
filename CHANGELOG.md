@@ -18,6 +18,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Spanish and Russian now call things what the game calls them.** Family's own text names a
+  few things from the game — mooncloth, salt shakers, mageweave — and those names had been
+  translated by hand rather than taken from the game. Spanish called mooncloth *paño lunar* and
+  mageweave *tela mágica*; Russian called mooncloth *лунная ткань*. None of those is what you
+  see on your own screen. They are now read from the client's own tables, in every language.
 - **A switch for Wide Family's chat reports.** Options, under the Wide Family switch. A link
   to a family whose one character is rarely online says *nobody was there, nothing was sent*
   every time it tries, which is the answer the first time and noise by the tenth. Turn it off

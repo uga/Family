@@ -357,6 +357,39 @@ spell ids saves a further sixth, because LibSerialize spends one byte on a small
 three on a large one. Item ids are left absolute: they travel in spell order and so are in no
 order of their own, and delta-encoding an unsorted run makes it bigger.
 
+### The game's own word for every game noun Family's text uses, `tools/game-words.py`
+
+Family writes sentences that name things in the game, and those nouns were translated by hand.
+A hand-translated item name is a name no player recognises: the word on their screen came from
+Blizzard and the word in the sentence came from a guess. A French player found two of them; the
+Spanish and Russian ones nobody was going to find, and there were three.
+
+Measured 2026-08-30 from `ItemSparse.Display_lang`, per locale, at the three builds pinned
+above.
+
+| our word | id | deDE | frFR | esES | ruRU |
+|---|---:|---|---|---|---|
+| mooncloth | 14342 | Mondstoff | Étoffe lunaire | Tela lunar | Луноткань |
+| salt shaker | 15846 | Salzstreuer | Tamis à sel | Salero | Солонка |
+| mageweave | 4338 | Magiestoff | Étoffe de tisse-mage | *see below* | Магическая ткань |
+| hearthstone | 6948 | Ruhestein | Pierre de foyer | Piedra de hogar | Камень возвращения |
+
+**The builds disagree about one of them.** Spanish calls item 4338 *Tela de paño mágico* on
+Classic Era and *Paño de tejido mágico* on both Burning Crusade and Mists. The two newer builds
+win, and it is written down here because it is the client's disagreement and not ours.
+
+**Two things are deliberately not checked.** A spell name that is a verb phrase cannot be
+pluralised into a sentence - the game says *Transmute: Arcanite*, *Transmutieren: Arkanit*,
+*Transmutation d'arcanite*, and our text says "transmutes" as an ordinary plural noun, for which
+there is no game string. And *auction house*, *mailbox* and *guild bank* are places and panels,
+named by globals the client supplies at runtime rather than by anything in a DB2. Only nouns
+with an id are checked.
+
+**wago.tools answers 403 to Python's default User-Agent**, measured the same day: the same URL
+is 200 to `curl` and 403 to a bare `urlopen`, and 200 again with any header set. `game-words.py`
+sets one. Every other fetcher in `tools/` has the same shape and would fail the same way - they
+run today only because their caches are already full.
+
 **What a cooldown adds**, measured the same way on 2026-08-30: a shared profession on the
 offering is **98 bytes**, and **170** with four cooldowns attached to it — about eighteen bytes
 each, on a message that was going anyway. Four on one profession is already generous; a busy

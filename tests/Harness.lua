@@ -11897,6 +11897,98 @@ print("the translations")
 		end
 	end
 
+
+	--------------------------------------------------------------------------------------------
+	-- The game's own word for every game noun Family's own sentences use
+	--
+	-- Family writes prose that names things in the game - "transmutes, mooncloth, salt shakers" -
+	-- and those nouns were translated by hand. A hand-translated item name is a name no player
+	-- recognises, because the word on their screen came from Blizzard and the word in the sentence
+	-- came from a guess. A French player found two of them; nobody was going to find the Spanish
+	-- and Russian ones, and there were three.
+	--
+	-- `tools/game-words.py` is what settles them: it reads the id out of the client's own tables
+	-- per locale, per pinned build, and says whether each locale file uses the answer. It needs the
+	-- network, so it cannot be a check - and a table nothing enforces is a table that rots the
+	-- first time somebody rewrites a sentence.
+	--
+	-- So the answers live here as well, as the exact fragment each file should carry, with the id
+	-- they were measured from. Run the tool when the words change; this is what notices when the
+	-- files stop agreeing with them.
+	--
+	-- Fragments rather than whole names on purpose, and each one for a stated reason: Russian makes
+	-- its plural by changing the ending, so "solonka" is carried as its stem; French and Spanish
+	-- capitalise these at the start of a heading and not mid-sentence, so the first letter is left
+	-- off where that happens.
+	--------------------------------------------------------------------------------------------
+	
+	local GAME_WORDS = {
+		deDE = {
+			{ 14342, "Mondstoff", "mooncloth" },
+			{ 15846, "Salzstreuer", "salt shaker" },
+			{ 4338, "Magiestoff", "mageweave" },
+			{ 6948, "Ruhestein", "hearthstone" },
+		},
+		frFR = {
+			{ 14342, "étoffe lunaire", "mooncloth" },
+			{ 15846, "tamis à sel", "salt shaker" },
+			{ 4338, "étoffe de tisse-mage", "mageweave" },
+			{ 6948, "ierre de foyer", "hearthstone" },
+		},
+		esES = {
+			{ 14342, "tela lunar", "mooncloth" },
+			{ 15846, "salero", "salt shaker" },
+			-- Era calls this "Tela de paño mágico" and both later builds call it "Paño de
+			-- tejido mágico". The newer two win, and the disagreement is in DATASOURCES §3
+			-- rather than only here, because it is the client's and not ours.
+			{ 4338, "paño de tejido mágico", "mageweave" },
+			{ 6948, "iedra de hogar", "hearthstone" },
+		},
+		ruRU = {
+			{ 14342, "луноткань", "mooncloth" },
+			{ 15846, "солонк", "salt shaker" },
+			{ 4338, "агическая ткань", "mageweave" },
+			{ 6948, "амень возвр", "hearthstone" },
+		},
+	}
+	
+	for _, code in ipairs { "deDE", "frFR", "esES", "ruRU" } do
+		local handle = io.open(ROOT .. "/addons/Family/Locales/" .. code .. ".lua")
+		local text = handle and handle:read("*a") or ""
+		if handle then handle:close() end
+	
+		local absent = {}
+		for _, row in ipairs(GAME_WORDS[code]) do
+			if not text:find(row[2], 1, true) then
+				absent[#absent + 1] = string.format("%s (id %d, our word %q)",
+					row[2], row[1], row[3])
+			end
+		end
+	
+		check(code .. " calls each thing in the game what the game calls it",
+			#absent == 0, table.concat(absent, " | "))
+	end
+	
+	-- And the English is where the list comes from, so a noun added to a sentence without being
+	-- added here would be a noun nothing checks. There is no way to notice that from inside a
+	-- harness with no client - but there is one thing it can hold: that the tool which *can*
+	-- notice it still exists and still names every id these rows do.
+	do
+		local handle = io.open(ROOT .. "/tools/game-words.py")
+		local tool = handle and handle:read("*a") or ""
+		if handle then handle:close() end
+	
+		local missing = {}
+		for _, row in ipairs(GAME_WORDS.enUS or GAME_WORDS.deDE) do
+			if not tool:find(tostring(row[1]), 1, true) then
+				missing[#missing + 1] = tostring(row[1])
+			end
+		end
+	
+		check("and tools/game-words.py knows every id those rows were measured from",
+			tool ~= "" and #missing == 0, table.concat(missing, ", "))
+	end
+
 	-- Every sentence the slash commands print is translated in all four languages.
 	--
 	-- Not a rule about coverage in general. A missing translation degrades to readable
