@@ -76,7 +76,6 @@ Family.locales.esES = {
 	["Bank slots"] = "Ranuras ban.",  -- 13
 	["Currencies"] = "Monedas",  -- 14
 	["Expires in"] = "Caduca en",  -- 12
-	["|cffffd700%d item(s)|r"] = "|cffffd700%d objeto(s)|r",
 	["|cffff4444C.O.D. %s|r"] = "|cffff4444Contra reembolso %s|r",
 	["      |cff9d9d9dnothing in the post that Family has seen|r"] = "      |cff9d9d9dnada en el correo que Family haya visto|r",
 	["Hearthstone"] = "Piedra de hogar",  -- 26

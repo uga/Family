@@ -76,7 +76,6 @@ Family.locales.frFR = {
 	["Bank slots"] = "Empl. banque",  -- 13
 	["Currencies"] = "Monnaies",  -- 14
 	["Expires in"] = "Expire",  -- 10
-	["|cffffd700%d item(s)|r"] = "|cffffd700%d objet(s)|r",
 	["|cffff4444C.O.D. %s|r"] = "|cffff4444Contre remboursement %s|r",
 	["      |cff9d9d9dnothing in the post that Family has seen|r"] = "      |cff9d9d9drien dans le courrier que Family ait vu|r",
 	["Hearthstone"] = "Pierre de foyer",  -- 26

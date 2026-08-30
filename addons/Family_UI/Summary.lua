@@ -20,6 +20,14 @@ local Family = _G.Family
 local L = Family.L
 
 local ROW_HEIGHT = 18
+
+-- A letter's own line, which is taller than a row of figures because it carries pictures.
+-- Twelve is what a letter can hold, and an icon small enough to fit an eighteen-pixel row is
+-- an icon nobody can recognise - which is the whole reason for showing one rather than a
+-- count.
+local LETTER_HEIGHT = 26
+local LETTER_ICON = 22
+local LETTER_SLOTS = 12
 local HEADER_HEIGHT = 22
 
 -- One set of columns at a time (§4.1). Cramming everything into a single view is what made
@@ -421,22 +429,20 @@ local function describeLetter(letter)
 		parts[#parts + 1] = "|cff9d9d9d" .. letter.subject .. "|r"
 	end
 
-	local attached = #(letter.attachments or {})
-	if attached > 0 then
-		parts[#parts + 1] = string.format(L["|cffffd700%d item(s)|r"], attached)
-	end
-
-	if (letter.money or 0) > 0 then
-		parts[#parts + 1] = UI:Money(letter.money)
-	end
-
-	-- Cash on delivery is the one thing on a letter that costs rather than gives, and it is
-	-- worth saying loudly: opening one by mistake is a real loss.
-	if (letter.cod or 0) > 0 then
-		parts[#parts + 1] = string.format(L["|cffff4444C.O.D. %s|r"], UI:Money(letter.cod))
-	end
-
 	return table.concat(parts, "  ")
+end
+
+-- The gold on a letter, and what it costs to take it.
+--
+-- Cash on delivery is the one thing on a letter that takes rather than gives, so it is said
+-- in red and on its own: opening one by mistake is a real loss, and it must not read like the
+-- money that is being sent to you.
+local function letterMoney(letter)
+	if (letter.cod or 0) > 0 then
+		return string.format(L["|cffff4444C.O.D. %s|r"], UI:Money(letter.cod))
+	end
+	if (letter.money or 0) > 0 then return UI:Money(letter.money) end
+	return nil
 end
 
 CELL.mailexp = function(meta)
@@ -981,6 +987,40 @@ local function makeRow(parent)
 	row.mailHit:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
 	row.mailHit:Hide()
 
+	-- What is attached to a letter, as pictures rather than as a number: "2 items" says
+	-- nothing anybody wanted to know, and the point of looking is to see what is there.
+	--
+	-- Buttons rather than plain textures so each one can say what it is on hover. An icon
+	-- nobody can identify is decoration.
+	row.attach = {}
+	for index = 1, LETTER_SLOTS do
+		local slot = CreateFrame("Button", nil, row)
+		slot:SetSize(LETTER_ICON, LETTER_ICON)
+
+		slot.icon = slot:CreateTexture(nil, "ARTWORK")
+		slot.icon:SetAllPoints()
+
+		slot.count = slot:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
+		slot.count:SetPoint("BOTTOMRIGHT", -1, 1)
+
+		slot:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
+		UI:AttachTooltip(slot, function(self)
+			if self.itemLink then return "itemlink", self.itemLink end
+			if self.itemID then return "item", self.itemID end
+			return nil
+		end)
+
+		slot:Hide()
+		row.attach[index] = slot
+	end
+
+	-- The gold in the letter, beside its attachments and never folded into the line of
+	-- prose, where it was the first thing the column's width threw away.
+	row.attachMoney = row:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	row.attachMoney:SetJustifyH("RIGHT")
+	row.attachMoney:Hide()
+	UI:NoWrap(row.attachMoney)
+
 	row.highlight = row:CreateTexture(nil, "BACKGROUND")
 	row.highlight:SetAllPoints()
 	row.highlight:SetColorTexture(1, 1, 1, 0.06)
@@ -1278,7 +1318,7 @@ local function build(frame)
 			UI:ShowProfessionFor(row.memberKey, profession)
 		end
 
-		local function nextRow()
+		local function nextRow(height)
 			used = used + 1
 			local row = rows[used]
 			if not row then
@@ -1294,10 +1334,17 @@ local function build(frame)
 			row.borrowed = nil
 			layOut(row.cells, columns)
 			for index = 1, MAX_CELLS do setCell(row, index, "") end
+
+			-- Put away whatever the last thing drawn on this row left behind. Rows come
+			-- out of a pool and a letter's pictures would otherwise sit under a member.
+			for _, slot in ipairs(row.attach) do slot:Hide() end
+			row.attachMoney:Hide()
+
+			row:SetHeight(height or ROW_HEIGHT)
 			row:SetPoint("TOPLEFT", 0, -y)
 			row:SetPoint("TOPRIGHT", 0, -y)
 			row:Show()
-			y = y + ROW_HEIGHT
+			y = y + (height or ROW_HEIGHT)
 			return row
 		end
 
@@ -1429,7 +1476,7 @@ local function build(frame)
 				local letters = Family.Mail:Live(payload.mail)
 
 				for _, letter in ipairs(letters) do
-					local line = nextRow()
+					local line = nextRow(LETTER_HEIGHT)
 					line.memberKey = member.key
 					line.memberName = member.meta.name or member.key
 					line.memberRealm = member.meta.realm
@@ -1444,6 +1491,44 @@ local function build(frame)
 								and (duration(letter.expiresBy - time()) or L["soon"])
 								or "")
 						end
+					end
+
+					-- What is in it, right-aligned so that a letter with one attachment
+					-- and one with twelve end at the same edge and the eye can compare
+					-- them down the column.
+					local attachments = letter.attachments or {}
+					local shown = math.min(LETTER_SLOTS, #attachments)
+
+					for index = 1, shown do
+						local carried = attachments[index]
+						local slot = line.attach[index]
+
+						slot:ClearAllPoints()
+						slot:SetPoint("RIGHT", -6 - (shown - index) * (LETTER_ICON + 2), 0)
+
+						-- Asked for by id, and the name asked for with it: an item this
+						-- client has never seen answers nothing until it has, and the
+						-- panel redraws when it does.
+						Family.Names:Item(carried.id, "summary.mail", function()
+							if frame:IsShown() then frame:Refresh() end
+						end)
+
+						slot.itemID = carried.id
+						slot.itemLink = carried.item
+						slot.icon:SetTexture(Family:TryCall(GetItemIcon, carried.id)
+							or "Interface\\Icons\\INV_Misc_QuestionMark")
+						slot.count:SetText((carried.count or 1) > 1
+							and tostring(carried.count) or "")
+						slot:Show()
+					end
+
+					local money = letterMoney(letter)
+					if money then
+						line.attachMoney:ClearAllPoints()
+						line.attachMoney:SetPoint("RIGHT",
+							-6 - shown * (LETTER_ICON + 2) - 4, 0)
+						line.attachMoney:SetText(money)
+						line.attachMoney:Show()
 					end
 				end
 

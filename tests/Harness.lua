@@ -8818,6 +8818,18 @@ print("what is in the post")
 		if f.cells and f.__shown == true then before = before + 1 end
 	end
 
+	-- Gold on the letter that is actually going to be drawn, rather than trusting the
+	-- fixture to have put it on one that has not expired by the time this runs.
+	do
+		local payload = Family.Database:Payload(armed[1].memberKey) or {}
+		-- Every one of them, because which are still live depends on how far the clock
+		-- has been wound on by the checks before this, and a letter that has expired is
+		-- not drawn at all.
+		for _, letter in ipairs((payload.mail or {}).letters or {}) do
+			letter.money = 12345
+		end
+	end
+
 	armed[1].mailHit.__scripts.OnClick(armed[1].mailHit)
 
 	local after = 0
@@ -8829,14 +8841,58 @@ print("what is in the post")
 		tostring(after) .. " rows against " .. tostring(before))
 	check("naming who each one is from", visibleText("Auctioneer"))
 
+	-- What is in a letter is the thing somebody opened it to find out, and "2 items" is not
+	-- an answer to that. The pictures are the answer, and they need a taller line than a row
+	-- of figures does - an icon small enough for eighteen pixels is one nobody recognises.
+	do
+		local drawn, tall, moneyed = 0, 0, 0
+		for _, f in ipairs(frames) do
+			if f.attach and f.__shown == true then
+				for _, slot in ipairs(f.attach) do
+					if slot.__shown == true then drawn = drawn + 1 end
+				end
+				if (f.__height or 0) > 18 then tall = tall + 1 end
+				-- Shown *and* saying something. A font string records being made
+				-- visible in a different field from a frame, and asking a font string
+				-- the frame's question gets nil for ever - while asking only what it
+				-- says passes on one that was written and never shown.
+				if f.attachMoney and f.attachMoney.__visible == true
+					and type(f.attachMoney.__text) == "string"
+					and f.attachMoney.__text ~= "" then
+					moneyed = moneyed + 1
+				end
+			end
+		end
+
+		check("with what is attached to it drawn rather than counted", drawn > 0,
+			tostring(drawn) .. " attachments")
+		check("on a line tall enough to make a picture out", tall > 0,
+			tostring(tall) .. " taller lines")
+		check("and the gold in it said beside them", moneyed > 0,
+			tostring(moneyed) .. " with money")
+	end
+
 	armed[1].mailHit.__scripts.OnClick(armed[1].mailHit)
 
-	local shut = 0
+	local shut, leftBehind = 0, 0
 	for _, f in ipairs(frames) do
-		if f.cells and f.__shown == true then shut = shut + 1 end
+		if f.cells and f.__shown == true then
+			shut = shut + 1
+
+			-- Rows come out of a pool, so a letter's pictures have to be put away when
+			-- one is handed out again - or they sit under a member who has no post.
+			for _, slot in ipairs(f.attach or {}) do
+				if slot.__shown == true then leftBehind = leftBehind + 1 end
+			end
+			if f.attachMoney and f.attachMoney.__visible == true then
+				leftBehind = leftBehind + 1
+			end
+		end
 	end
 	check("and clicking it again folds them away", shut == before,
 		tostring(shut) .. " against " .. tostring(before))
+	check("leaving no pictures behind on the rows they came out of",
+		leftBehind == 0, tostring(leftBehind) .. " left over")
 end)()
 
 --------------------------------------------------------------------------------------------

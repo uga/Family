@@ -19,9 +19,10 @@ is a decision rather than an afternoon of archaeology.
 ### Added
 
 - **Click the mail figure on Activity to see what is waiting.** The number said how much and
-  never what. It now unfolds under that character: who each letter is from, what it is called,
-  what is attached, any gold, any cash on delivery, and how long each one has left. Click it
-  again to fold it away.
+  never what. It now unfolds under that character, a line per letter: who it is from and what
+  it is called on the left, **what is attached to it as icons on the right** — hover one to
+  see what it is — with the gold beside them, cash on delivery in red, and how long that
+  letter has left. Click it again to fold it away.
 - **Family can reopen where you left it.** A new switch in Options: with it on, the panel you
   were last looking at — and the set of columns on the summary — is where Family opens next
   time, including after logging out. Off unless you ask for it.
