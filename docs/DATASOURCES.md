@@ -450,6 +450,26 @@ others. Reading it out is §2.1-clean: what is stored is an integer.
 
 Line 5 is worth noting in passing: the crafter's name is in the tooltip too, and it is a name.
 
+**The guild bank has its own setter, and it works.** Measured on Burning Crusade with a guild
+bank open - Era has none at all, so it is the client for this question:
+
+    type(tooltip.SetGuildBankItem)  ->  function
+
+    SetGuildBankItem(1, 1)  ->  lines 4
+    1  Minor Wizard Oil
+    2  Requires Level 5
+    3  Use: While applied to target weapon it increases spell damage by up to 8.
+       Lasts for 1 hour. (1 Sec Cooldown)
+    4  5 Charges
+
+Four lines rather than the bag item's five - no *Made by* line on this one - and the charge
+count on a line of its own exactly as in a bag.
+
+**A link cannot answer this.** Everything else in the guild bank scanner reaches a slot by
+`GetGuildBankItemLink`, and a link describes the *item*: reading a charge off it through
+`SetHyperlink` would give the maximum and file a full oil for one with a single use left.
+`SetGuildBankItem` is the only setter that describes the instance in the vault.
+
 **The Chronoboon Displacer's charged state is a different item id.** `ItemSparse` on Era:
 
 | id | name | stacks to | spell | category cooldown |

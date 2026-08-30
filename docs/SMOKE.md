@@ -139,11 +139,12 @@ Per client: **Era**, **Anniversary**, **Mists**.
       window open: `Mining: 8 recipe(s), 8 with a spell id, 8 with an item id`, and Cooking 54
       for 54, each item id resolving to the product. So *Smelt Copper* is found by hovering a
       Copper Bar, which is where most people ask. Recorded in `DATASOURCES.md` §2.
-- [ ] **Charges in the guild bank**, on a client that has one. Put an oil or a Bag of Marbles
-      in a tab, open it, and look at that tab in Possessions: the remaining count is in the
-      corner of the icon, as it is for a bag. **Does `SetGuildBankItem` exist on this client?**
-      If it does not, nothing is recorded and nothing breaks — but write down which way it went,
-      because a link cannot answer this and there is no second route.
+- [x] **`SetGuildBankItem` — settled on Burning Crusade 2026-08-30.** It exists and reads the
+      instance: four lines for a Minor Wizard Oil with `5 Charges` on its own line. Era has no
+      guild bank at all, so that client cannot be asked and does not need to be.
+- [ ] **Charges in the guild bank, end to end.** Put an oil in a tab, open the tab, and look at
+      it in Possessions: the remaining count belongs in the corner of the icon as it is for a
+      bag. Reading the tooltip and drawing it are two claims and only the first is measured.
 - [x] **End to end — settled 2026-08-30.** Hovering a Copper Bar names the miner on a *Can make
       it* block with their skill, so the ids are recorded *and* the lookup uses them. Two claims,
       both measured, on the crafted item rather than the pattern.
