@@ -302,6 +302,14 @@ on Mirage Raceway and on Hydraxian Waterlords - but those realms are not connect
 is Era), they cannot share a guild, and the pair therefore says nothing about the case. Nothing
 here establishes that a connected group permits a duplicate at all.
 
+**A same-named pair exists in this tree already.** Hovering a Copper Bar draws two rows -
+`Eccebombo (@Mirage Raceway)` and `Eccebombo (@Hydraxian Waterlords)` - so the panels do
+disambiguate by realm where two characters share a name, and they have to. `onHello`'s echo
+guard and `Guild:IsOurs` compare bare names with the realm stripped, which is the same
+codebase holding two standards for the same question. It costs nothing here because those two
+realms are not connected and cannot share a guild (see above), but the ambiguity is in the
+data rather than in a hypothetical.
+
 **Position 17 is a GUID** (`Player-4454-062C5110`), which is an identifier in §2.1's sense and
 survives every renaming and realm question a name does not. `CHAT_MSG_ADDON` does not carry
 one, so it is not available where the comparison that matters is made - noted because it is the

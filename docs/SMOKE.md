@@ -139,9 +139,9 @@ Per client: **Era**, **Anniversary**, **Mists**.
       window open: `Mining: 8 recipe(s), 8 with a spell id, 8 with an item id`, and Cooking 54
       for 54, each item id resolving to the product. So *Smelt Copper* is found by hovering a
       Copper Bar, which is where most people ask. Recorded in `DATASOURCES.md` §2.
-- [ ] **Confirm it end to end once**, since the ids being recorded and the tooltip finding them
-      are two claims: hover a Copper Bar with a miner of yours scanned, and a *Can make it*
-      block should name them.
+- [x] **End to end — settled 2026-08-30.** Hovering a Copper Bar names the miner on a *Can make
+      it* block with their skill, so the ids are recorded *and* the lookup uses them. Two claims,
+      both measured, on the crafted item rather than the pattern.
 - [ ] **Hover a pattern a guildmate already knows** — a formula in the auction house is the
       easy case. They are named on the same block as your own characters, marked *(guild)* and
       saying *knows it*.
