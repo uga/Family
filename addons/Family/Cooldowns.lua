@@ -200,3 +200,74 @@ function Cooldowns:Ready()
 	table.sort(members, function(a, b) return a.name < b.name end)
 	return members
 end
+
+--------------------------------------------------------------------------------------------
+-- What may be told to somebody else (§7.1, §4.5)
+--------------------------------------------------------------------------------------------
+
+-- Every cooldown of this member's that can honestly cross the wire, one flat list.
+--
+-- It lives here rather than in Guild.lua because the rule it keeps is this file's rule, argued
+-- at length above: **a craft may say it is ready and an item may not.** A craft is used through
+-- a window Family scans, so a transmute still reading ready is evidence that it has not been
+-- used; an item is used out of the bags where Family sees nothing, so "ready" would mean only
+-- "it was running the last time anybody looked". Guild share makes that worse rather than
+-- better - the reader is a different player looking at a record of unknown age - so the item
+-- half crosses while it is still counting down, which is a fact, and stops there.
+--
+-- Durations rather than moments, and this is the one place in Family that sends one. Two
+-- clients need not agree about what time it is; a duration is right whoever reads it, and the
+-- other end turns it back into a moment the instant it arrives.
+--
+-- **Identifiers, never names** (§2.1). A cooldown Family only has a word for is one that
+-- cannot cross, and it is left out rather than sent in a language the reader may not read.
+-- Both ids ride along for the reason slice 2's recipe lists carry both: which of the two a
+-- client hands over differs by expansion, and the far end matches on either.
+--
+-- Each row is { profession, spell, item, left, bags }, where `profession` is the key
+-- Scanners/Professions.lua files that profession under and `left` is absent for a craft that
+-- is ready. The caller decides which professions are shared; this decides what is true.
+function Cooldowns:Sharable(meta)
+	if not meta then return {} end
+
+	local now = time()
+	local out = {}
+
+	for _, entry in ipairs(meta.craftCooldowns or {}) do
+		local spell = tonumber(entry.spellID) or 0
+		local item = tonumber(entry.itemID) or 0
+		local left = entry.readyAt and entry.readyAt - now or nil
+
+		if (spell ~= 0 or item ~= 0) and entry.profession then
+			out[#out + 1] = {
+				profession = entry.profession,
+				spell = spell ~= 0 and spell or nil,
+				item = item ~= 0 and item or nil,
+				-- A moment that has passed is a craft that is ready, which crosses as
+				-- the absence of a duration rather than as a zero.
+				left = (left and left > 0) and left or nil,
+			}
+		end
+	end
+
+	-- Which profession an item's cooldown answers to is worked out by the scanner, from what
+	-- this member's own recipes make, and it is the only thing that can say so - nothing in
+	-- the client relates a salt shaker to leatherworking. An item no recipe of theirs
+	-- produces belongs to no profession, so there is no tick that could have offered it and
+	-- it does not cross.
+	for _, entry in ipairs(meta.itemCooldowns or {}) do
+		local profession = entry.id and (meta.cooldownItems or {})[entry.id]
+		local left = entry.readyAt and entry.readyAt - now or nil
+
+		if profession and left and left > 0 then
+			out[#out + 1] = {
+				profession = profession,
+				item = entry.id,
+				left = left,
+				bags = true,
+			}
+		end
+	end
+
+	return out
+end

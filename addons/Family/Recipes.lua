@@ -143,6 +143,21 @@ function Recipes:KnowersOf(spellID, itemID, itemName)
 				end
 
 				if matched then
+					-- Whether this one is on a timer, and whether it has come back.
+					--
+					-- A recipe carries hasCooldown only once Family has watched it
+					-- run (Scanners/Professions.lua), so its presence is what makes
+					-- "ready" sayable at all - and its absence is not a claim that
+					-- there is no cooldown, only that none has been seen. A craft
+					-- reading ready is evidence, because using one needs the window
+					-- Family scans.
+					local cooldown
+					if recipe.hasCooldown then
+						local ready = not recipe.readyAt or recipe.readyAt <= time()
+						cooldown = { ready = ready,
+							readyAt = (not ready) and recipe.readyAt or nil }
+					end
+
 					found[#found + 1] = {
 						key = key,
 						name = meta.name or key,
@@ -151,6 +166,7 @@ function Recipes:KnowersOf(spellID, itemID, itemName)
 						faction = meta.faction,
 						rank = (meta.skills or {})[profession]
 							and meta.skills[profession].rank or nil,
+						cooldown = cooldown,
 					}
 					break
 				end
@@ -158,9 +174,20 @@ function Recipes:KnowersOf(spellID, itemID, itemName)
 		end
 	end
 
-	-- Highest skill first, then by name: the same order the whole-family search puts them
-	-- in, so the two do not disagree about who to ask first.
+	-- Whoever cannot do it yet goes last, soonest of them first, and everybody else keeps
+	-- the old order: highest skill, then by name - the same order the whole-family search
+	-- puts them in, so the two do not disagree about who to ask first. For a transmute the
+	-- rank is not the question and the timer is (§4.5), and the guild's half of this block
+	-- sorts by exactly the same rule.
 	table.sort(found, function(a, b)
+		local aWaiting = (a.cooldown and not a.cooldown.ready) and 1 or 0
+		local bWaiting = (b.cooldown and not b.cooldown.ready) and 1 or 0
+		if aWaiting ~= bWaiting then return aWaiting < bWaiting end
+
+		if aWaiting == 1 and (a.cooldown.readyAt or 0) ~= (b.cooldown.readyAt or 0) then
+			return (a.cooldown.readyAt or 0) < (b.cooldown.readyAt or 0)
+		end
+
 		if (a.rank or 0) ~= (b.rank or 0) then return (a.rank or 0) > (b.rank or 0) end
 		return tostring(a.name) < tostring(b.name)
 	end)
@@ -283,6 +310,12 @@ local function guildCrafters(byName, order, needle, limit)
 								name = meta.name or memberKey,
 								classFile = meta.classFile,
 								at = age,
+								-- Asked by their ids for this row rather than by
+								-- the row's, for the same reason the tooltip's
+								-- half asks that way: which of the two ids a
+								-- client hands over differs by expansion.
+								cooldown = Guild:CooldownOn(entry, line,
+									spellID, itemID),
 							}
 						end
 					end
@@ -291,9 +324,22 @@ local function guildCrafters(byName, order, needle, limit)
 		end
 	end
 
+	-- Whoever cannot do it yet last, soonest of them first, and by name for everybody else -
+	-- the same rule the tooltip's guild block sorts by, because it is the same list read on
+	-- a different surface and the two disagreeing about who to ask would be worse than
+	-- either order (§4.5).
 	for _, row in ipairs(order) do
 		if row.guild then
 			table.sort(row.guild, function(a, b)
+				local aWaiting = (a.cooldown and not a.cooldown.ready) and 1 or 0
+				local bWaiting = (b.cooldown and not b.cooldown.ready) and 1 or 0
+				if aWaiting ~= bWaiting then return aWaiting < bWaiting end
+
+				if aWaiting == 1
+					and (a.cooldown.readyAt or 0) ~= (b.cooldown.readyAt or 0) then
+					return (a.cooldown.readyAt or 0) < (b.cooldown.readyAt or 0)
+				end
+
 				return tostring(a.name) < tostring(b.name)
 			end)
 		end
@@ -365,6 +411,17 @@ function Recipes:Search(needle, limit)
 						order[#order + 1] = byName[id]
 					end
 
+					-- Whether this one is on a timer, worked out exactly as
+					-- KnowersOf works it out: a recipe is marked as having a cooldown
+					-- only once Family has watched it run, and a moment that has passed
+					-- is the craft being ready rather than a gap.
+					local cooldown
+					if recipe.hasCooldown then
+						local ready = not recipe.readyAt or recipe.readyAt <= time()
+						cooldown = { ready = ready,
+							readyAt = (not ready) and recipe.readyAt or nil }
+					end
+
 					table.insert(byName[id].members, {
 						key = key,
 						name = meta.name or key,
@@ -373,6 +430,7 @@ function Recipes:Search(needle, limit)
 						faction = meta.faction,
 						rank = (meta.skills or {})[profession]
 							and meta.skills[profession].rank or nil,
+						cooldown = cooldown,
 					})
 				end
 			end
@@ -383,8 +441,22 @@ function Recipes:Search(needle, limit)
 	-- guildmate knows - which is the case the whole feature exists for.
 	guildCrafters(byName, order, needle, limit)
 
+	-- Whoever cannot do it yet last, soonest of them first: the same rule the guild half
+	-- above sorts by and the same rule both tooltip blocks sort by, so the four surfaces
+	-- that answer "who can make this" never disagree about who to ask.
 	for _, found in ipairs(order) do
-		table.sort(found.members, function(a, b) return a.name < b.name end)
+		table.sort(found.members, function(a, b)
+			local aWaiting = (a.cooldown and not a.cooldown.ready) and 1 or 0
+			local bWaiting = (b.cooldown and not b.cooldown.ready) and 1 or 0
+			if aWaiting ~= bWaiting then return aWaiting < bWaiting end
+
+			if aWaiting == 1
+				and (a.cooldown.readyAt or 0) ~= (b.cooldown.readyAt or 0) then
+				return (a.cooldown.readyAt or 0) < (b.cooldown.readyAt or 0)
+			end
+
+			return a.name < b.name
+		end)
 	end
 
 	table.sort(order, function(a, b)

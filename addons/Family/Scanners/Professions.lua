@@ -779,6 +779,13 @@ function Professions:ScanNow(includeRecipes)
 				if recipe.hasCooldown then
 					cooldowns[#cooldowns + 1] = {
 						name = recipe.name, profession = name, readyAt = recipe.readyAt,
+						-- The identifiers as well as the word, because a cooldown that
+						-- is only a word is one this character can be told about and
+						-- nobody else can (§2.1). Both are kept for the reason slice 2
+						-- keeps both: a client that gives no spell id gives an item id
+						-- and the other way about, and which it is differs by
+						-- expansion. Free here - the recipe row already carries them.
+						spellID = recipe.spellID, itemID = recipe.itemID,
 					}
 				end
 

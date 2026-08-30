@@ -263,6 +263,22 @@ end
 -- defined above both routes that use it: written as a forward declaration lower down it was a
 -- second local that shadowed nothing, while the definition quietly made a global - and the
 -- spell route called the empty one.
+-- What the right-hand column says when the thing under the cursor is on a timer.
+--
+-- **A cooldown outranks whatever that column would otherwise have said** - a rank, or how long
+-- ago we heard from them - for the same reason the professions panel lets it outrank "can make
+-- 4": a transmute nobody can do for another six hours is not one they can make, whatever else
+-- is true of the crafter. Where there is no cooldown the column says exactly what it said
+-- before, which is most rows on most tooltips.
+--
+-- The two strings are the panel's own, reused rather than restated: "ready now" and "ready in
+-- three hours" already exist in five languages and mean here what they mean there.
+local function readyText(cooldown)
+	if not cooldown then return nil end
+	if cooldown.ready then return L["|cff40bf40ready now|r"] end
+	return string.format(L["|cffff8040ready %s|r"], UI:In(cooldown.readyAt))
+end
+
 local function makerLines(ours, theirs)
 	local total = #ours + #theirs
 	if total == 0 then return nil end
@@ -276,7 +292,8 @@ local function makerLines(ours, theirs)
 		local r, g, b = classColour(who.classFile)
 		lines[#lines + 1] = {
 			who.label,
-			string.format("|cff888888%s|r", tostring(who.rank or "?")),
+			readyText(who.cooldown)
+				or string.format("|cff888888%s|r", tostring(who.rank or "?")),
 			r, g, b, 1, 1, 1,
 		}
 	end
@@ -292,9 +309,17 @@ local function makerLines(ours, theirs)
 		local character = tostring(who.name or who.key or "?")
 		character = character:match("^([^%-]+)") or character
 
+		-- The age is kept rather than replaced, which the family's half does not need to
+		-- do. Ours is read off this machine and is current; theirs is a record of an
+		-- announcement made at some point in the past, and "ready" out of a record four
+		-- hours old is a weaker claim than "ready" out of one from a minute ago. Saying
+		-- both is what lets the reader tell those apart (§2.2).
+		local age = string.format("|cff9d9d9d%s|r", UI:Ago(who.at))
+		local state = readyText(who.cooldown)
+
 		lines[#lines + 1] = {
 			string.format(L["%s |cff66bbff(guild)|r"], character),
-			string.format("|cff9d9d9d%s|r", UI:Ago(who.at)),
+			state and (state .. " " .. age) or age,
 			r, g, b, 1, 1, 1,
 		}
 	end

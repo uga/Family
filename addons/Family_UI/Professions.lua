@@ -720,14 +720,14 @@ local function build(frame)
 
 					for _, who in ipairs(recipe.members) do
 						everybody[#everybody + 1] = { label = who.label or who.name,
-							rank = who.rank }
+							rank = who.rank, cooldown = who.cooldown }
 					end
 
 					for _, who in ipairs(recipe.guild or {}) do
 						local character = tostring(who.name or who.key or "?")
 						everybody[#everybody + 1] = {
 							label = character:match("^([^%-]+)") or character,
-							guild = true, at = who.at }
+							guild = true, at = who.at, cooldown = who.cooldown }
 					end
 
 					for _, who in ipairs(everybody) do
@@ -750,11 +750,23 @@ local function build(frame)
 							tostring(who.label or "?"),
 							who.rank and string.format(" |cff888888%d|r", who.rank) or ""))
 
+						-- A cooldown displaces whatever this column would have said,
+						-- as it does on the tooltip and for the same reason: which
+						-- guildmate to ask about a transmute is decided by whose is up
+						-- and by nothing else (§4.5). The row still says it is the
+						-- guild's, because that decides whether you whisper or log in.
+						local state
+						if who.cooldown then
+							state = who.cooldown.ready and L["|cff40bf40ready now|r"]
+								or string.format(L["|cffff8040ready %s|r"],
+									UI:In(who.cooldown.readyAt))
+						end
+
 						line.note:SetWidth(NOTE_WIDTH)
 						line.note:SetText(who.guild
 							and string.format(L["|cff66bbffguild|r |cff888888%s|r"],
-								who.at and UI:Ago(who.at) or "")
-							or "")
+								state or (who.at and UI:Ago(who.at)) or "")
+							or (state or ""))
 					end
 				end
 			end

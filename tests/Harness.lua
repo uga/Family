@@ -8193,6 +8193,379 @@ print("guild share")
 		advance(30)
 
 		------------------------------------------------------------------------------------
+		-- Slice 3: cooldowns
+		--
+		-- The one question in here whose answer changes on its own while nobody is looking,
+		-- and the one where "who can make this" is the wrong question and "whose is up" is
+		-- the right one (§4.5). Two rules are being checked as much as any transport is: a
+		-- craft may say it is ready and an item may not, and what crosses is a duration
+		-- while what is kept is a moment.
+		------------------------------------------------------------------------------------
+
+		do
+			local now = time()
+
+			-- A cooldown starting is a change the guild is told about, and it has to be:
+			-- the far end holds a duration it has been counting down since the last
+			-- announcement, and a transmute used this afternoon would otherwise go on
+			-- reading "ready" over there until something else happened to be worth
+			-- sending. Using a craft means having its window open, and that means a scan,
+			-- so this costs one small message at the moment the fact changes and nothing
+			-- at all on the days it does not.
+			advance(30)
+			Family.Guild:MarkChanged()
+			advance(30)
+			sent = {}
+
+			Family.Database:SetMeta("Smith-FireMaw", {
+				craftCooldowns = {
+					-- Running, and identified both ways.
+					{ name = "Transmute: Arcanite", profession = smith,
+						spellID = 17187, itemID = 12360, readyAt = now + 3600 },
+					-- Ready. In the list at all because Family has watched it run once,
+					-- and carrying no moment because none is running now.
+					{ name = "Mooncloth", profession = smith,
+						spellID = 18560, itemID = 14342 },
+					-- The client named it and identified it in neither way, so there is
+					-- nothing that could cross in a language the reader can read (§2.1).
+					{ name = "Something The Client Would Not Name", profession = smith },
+					-- A profession of ours that nobody has ticked. A tick means one
+					-- thing, and this was not it.
+					{ name = "Smelt Dark Iron", profession = mining,
+						spellID = 22967, itemID = 11371, readyAt = now + 60 },
+				},
+				itemCooldowns = {
+					-- Still running, so still a fact.
+					{ id = 15846, readyAt = now + 1800 },
+					-- Come ready while nobody was watching the bags it lives in.
+					{ id = 15847, readyAt = now - 10 },
+					-- On cooldown, and nothing of ours makes it - so no tick could ever
+					-- have offered it.
+					{ id = 20000, readyAt = now + 900 },
+				},
+				cooldownItems = { [15846] = smith, [15847] = smith },
+			})
+
+			Family.Database:Changed("Smith-FireMaw")
+			advance(30)
+
+			local told = 0
+			for _, message in ipairs(sent) do
+				if message.channel == "GUILD" then told = told + 1 end
+			end
+			check("a scan where a cooldown has started is told to the guild",
+				told == 1, tostring(told) .. " announcement(s)")
+
+			-- And the same cooldown, scanned again a second later, is not. This is the
+			-- case the fixture has to produce rather than assume: a rescan writes
+			-- `time()` plus whatever the client answered, so the moment lands a second
+			-- or two from where it did before while nothing whatever has happened. A
+			-- marker built out of that number puts a message on the guild channel every
+			-- time somebody opens a profession window.
+			advance(30)
+			sent = {}
+
+			local drifted = Family.Database:Meta("Smith-FireMaw").craftCooldowns
+			for _, entry in ipairs(drifted) do
+				if entry.readyAt then entry.readyAt = entry.readyAt - 2 end
+			end
+			Family.Database:SetMeta("Smith-FireMaw", { craftCooldowns = drifted })
+
+			Family.Database:Changed("Smith-FireMaw")
+			advance(30)
+
+			local again = 0
+			for _, message in ipairs(sent) do
+				if message.channel == "GUILD" then again = again + 1 end
+			end
+			check("and the same one scanned again a second later is not",
+				again == 0, tostring(again) .. " announcement(s)")
+
+			-- Put back, so the durations the wire checks below are written about are the
+			-- round numbers they were set to rather than the drifted ones.
+			for _, entry in ipairs(drifted) do
+				if entry.readyAt then entry.readyAt = entry.readyAt + 2 end
+			end
+			Family.Database:SetMeta("Smith-FireMaw", { craftCooldowns = drifted })
+
+			local offered = (Family.Guild:Offering() or {})["Smith-FireMaw"]
+			local line
+			for _, profession in ipairs((offered or {}).professions or {}) do
+				if profession.skillLine == smith then line = profession end
+			end
+
+			local rows = (line or {}).cooldowns or {}
+			local byID = {}
+			for _, row in ipairs(rows) do
+				byID[(row.spell and "spell:" .. row.spell)
+					or ("item:" .. tostring(row.item))] = row
+			end
+
+			check("what is on cooldown rides out with the profession it belongs to",
+				#rows == 3, tostring(#rows) .. " row(s)")
+
+			local running = byID["spell:17187"]
+			check("a running cooldown crosses as how long is left",
+				running ~= nil and running.left == 3600,
+				running and tostring(running.left) or "nothing")
+			check("and never as a moment, because two clients need not agree on one",
+				running ~= nil and running.readyAt == nil)
+			check("with both ids, so either end of the wire can match it",
+				running ~= nil and running.spell == 17187 and running.item == 12360)
+
+			local ready = byID["spell:18560"]
+			check("a craft that is ready crosses, as the absence of a duration",
+				ready ~= nil and ready.left == nil and ready.bags == nil,
+				ready and tostring(ready.left) or "nothing")
+
+			local bagged = byID["item:15846"]
+			check("an item still counting down crosses, marked as the bags'",
+				bagged ~= nil and bagged.left == 1800 and bagged.bags == true,
+				bagged and tostring(bagged.left) or "nothing")
+
+			check("an item cooldown that has come ready does not cross at all",
+				byID["item:15847"] == nil)
+			check("nor one belonging to no profession of theirs",
+				byID["item:20000"] == nil)
+			check("nor a cooldown the client would only give a word for",
+				#rows == 3 and byID["spell:0"] == nil)
+			check("nor one of a profession nobody ticked",
+				byID["spell:22967"] == nil
+					and (offered or {}).professions ~= nil
+					and #offered.professions == 1)
+
+			----------------------------------------------------------------------------
+			-- Their end
+			----------------------------------------------------------------------------
+
+			advance(30)
+			sent = {}
+			Family.Comm:Send("gdata", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw",
+				characters = {
+					["Faraway-FireMaw"] = {
+						meta = { name = "Faraway", realm = "Fire Maw", level = 70 },
+						professions = { { skillLine = smith, rank = 300,
+							maxRank = 300, count = 1, fingerprint = 4242,
+							cooldowns = {
+								{ spell = 60001, item = 60001, left = 7200 },
+							} } },
+					},
+					["Nervina-FireMaw"] = {
+						meta = { name = "Nervina", realm = "Fire Maw", level = 61,
+							classFile = "MAGE" },
+						professions = { { skillLine = smith, rank = 275,
+							maxRank = 300, count = 1, fingerprint = 777,
+							cooldowns = {
+								{ spell = 60001, item = 60001 },
+							} } },
+					},
+				},
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+
+			-- The lists themselves, planted fresh: earlier blocks have moved on and
+			-- what a cooldown is attached to has to be a recipe this end still holds.
+			for _, who in ipairs { { "Faraway-FireMaw", 4242 }, { "Nervina-FireMaw", 777 } } do
+				advance(30)
+				sent = {}
+				Family.Comm:Send("grec", Family.Codec:ToWire {
+					schema = 1, version = Family.version, guild = guildName,
+					character = "Faraway-FireMaw", rschema = 1,
+					member = who[1], line = smith,
+					spells = { 60001 }, items = { 60001 },
+					missing = 0, fingerprint = who[2], seen = time() - 400,
+				}, "WHISPER", "Tester")
+				advance(3)
+				deliver("Faraway")
+			end
+
+			local crafters = Family.Guild:CraftersOf(60001, nil, nil)
+			local mine = {}
+			for _, who in ipairs(crafters) do mine[who.name] = who end
+
+			check("a cooldown arrives beside the crafter it belongs to",
+				mine.Faraway ~= nil and mine.Faraway.cooldown ~= nil)
+			check("and the duration that crossed is kept as a moment",
+				mine.Faraway ~= nil and mine.Faraway.cooldown ~= nil
+					and mine.Faraway.cooldown.readyAt == time() + 7200,
+				mine.Faraway and mine.Faraway.cooldown
+					and tostring(mine.Faraway.cooldown.readyAt) or "nothing")
+			check("a craft sent without one is read as ready",
+				mine.Nervina ~= nil and mine.Nervina.cooldown ~= nil
+					and mine.Nervina.cooldown.ready == true)
+
+			-- The half a tooltip is read for. Whoever can do it now is above whoever
+			-- cannot, whatever else is true of either of them.
+			check("and whoever's is up is named before whoever is still waiting",
+				crafters[1] ~= nil and crafters[1].name == "Nervina",
+				crafters[1] and tostring(crafters[1].name) or "nobody")
+
+			-- On the tooltip itself, which is where this is read.
+			wipe(GameTooltip.__lines)
+			GameTooltip.__itemName = "A Thing Made In The Guild"
+			GameTooltip.__itemLink = "|Hitem:60001|h"
+			if GameTooltip.__scripts.OnTooltipCleared then
+				GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+			end
+			GameTooltip.__scripts.OnTooltipSetItem(GameTooltip)
+
+			local said, waiting = false, false
+			for _, entry in ipairs(GameTooltip.__lines) do
+				if type(entry[1]) == "string" and entry[1]:find("Nervina", 1, true)
+					and type(entry[2]) == "string"
+					and entry[2]:find("ready now", 1, true) then
+					said = true
+				end
+				if type(entry[1]) == "string" and entry[1]:find("Faraway", 1, true)
+					and type(entry[2]) == "string"
+					and entry[2]:find("ready ", 1, true)
+					and not entry[2]:find("ready now", 1, true) then
+					waiting = true
+				end
+			end
+
+			check("the tooltip says beside the crafter that theirs is up", said)
+			check("and says when the other one's comes back", waiting)
+
+			-- And the age is still there, because a record of an announcement made some
+			-- hours ago is a weaker "ready" than one made a minute ago (§2.2).
+			local aged = false
+			for _, entry in ipairs(GameTooltip.__lines) do
+				if type(entry[1]) == "string" and entry[1]:find("Nervina", 1, true)
+					and type(entry[2]) == "string"
+					and entry[2]:find("ready now", 1, true)
+					and entry[2]:find("ago", 1, true) then
+					aged = true
+				end
+			end
+			check("without dropping how old the record it came out of is", aged)
+
+			----------------------------------------------------------------------------
+			-- What must not be believed
+			----------------------------------------------------------------------------
+
+			advance(30)
+			sent = {}
+			Family.Comm:Send("gdata", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw",
+				characters = {
+					["Faraway-FireMaw"] = {
+						meta = { name = "Faraway", realm = "Fire Maw", level = 70 },
+						professions = { { skillLine = smith, rank = 300,
+							maxRank = 300, count = 1, fingerprint = 4242,
+							cooldowns = {
+								-- A duration no cooldown in the game has.
+								{ spell = 60001, item = 60001,
+									left = 400 * 86400 },
+							} } },
+					},
+					["Nervina-FireMaw"] = {
+						meta = { name = "Nervina", realm = "Fire Maw", level = 61,
+							classFile = "MAGE" },
+						professions = { { skillLine = smith, rank = 275,
+							maxRank = 300, count = 1, fingerprint = 777,
+							cooldowns = {
+								-- An item's, with no duration on it - which is a
+								-- claim about somebody else's bags, and is not
+								-- one Family will repeat.
+								{ item = 60001, bags = true },
+							} } },
+					},
+				},
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+
+			local after = {}
+			for _, who in ipairs(Family.Guild:CraftersOf(60001, nil, nil)) do
+				after[who.name] = who
+			end
+
+			check("an item cooldown arriving with no duration is not read as ready",
+				after.Nervina ~= nil and after.Nervina.cooldown == nil)
+
+			-- And is not written down either, which is not the same question. A record
+			-- kept and then declined every time it is read is a record waiting for the
+			-- one reader that forgets to decline it.
+			local kept
+			for _, profession in ipairs((Family.Guild:Known(guildKey)["Nervina-FireMaw"]
+				or {}).professions or {}) do
+				if profession.skillLine == smith then kept = profession.cooldowns end
+			end
+			check("and is not written to our disk on their say-so either", kept == nil,
+				kept and tostring(#kept) .. " row(s)" or "nothing")
+			check("and a duration longer than any cooldown in the game is dropped",
+				after.Faraway ~= nil and after.Faraway.cooldown == nil)
+
+			----------------------------------------------------------------------------
+			-- And what happens to both of them once their moment passes
+			--
+			-- The distinction Cooldowns.lua draws for one's own characters, kept across
+			-- the wire where it matters more rather than less: the reader is a different
+			-- player, looking at a record made at some point in the past. A craft that
+			-- has come back is a craft that has come back, because using one needs the
+			-- window its owner's client scans. An item that has come back is a guess
+			-- about a bag nobody has looked in since (§2.2).
+			----------------------------------------------------------------------------
+
+			advance(30)
+			sent = {}
+			Family.Comm:Send("gdata", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw",
+				characters = {
+					["Faraway-FireMaw"] = {
+						meta = { name = "Faraway", realm = "Fire Maw", level = 70 },
+						professions = { { skillLine = smith, rank = 300,
+							maxRank = 300, count = 1, fingerprint = 4242,
+							cooldowns = {
+								{ spell = 60001, item = 60001, left = 600 },
+							} } },
+					},
+					["Nervina-FireMaw"] = {
+						meta = { name = "Nervina", realm = "Fire Maw", level = 61,
+							classFile = "MAGE" },
+						professions = { { skillLine = smith, rank = 275,
+							maxRank = 300, count = 1, fingerprint = 777,
+							cooldowns = {
+								{ item = 60001, left = 600, bags = true },
+							} } },
+					},
+				},
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+
+			local before = {}
+			for _, who in ipairs(Family.Guild:CraftersOf(60001, nil, nil)) do
+				before[who.name] = who
+			end
+			check("an item of theirs still counting down is a fact and is shown",
+				before.Nervina ~= nil and before.Nervina.cooldown ~= nil
+					and before.Nervina.cooldown.ready == false)
+
+			local realTime = time
+			time = function() return realTime() + 3600 end
+
+			local later = {}
+			for _, who in ipairs(Family.Guild:CraftersOf(60001, nil, nil)) do
+				later[who.name] = who
+			end
+
+			check("an hour on, their craft has come back and says so",
+				later.Faraway ~= nil and later.Faraway.cooldown ~= nil
+					and later.Faraway.cooldown.ready == true)
+			check("and their item's has stopped being a fact rather than become a ready one",
+				later.Nervina ~= nil and later.Nervina.cooldown == nil)
+
+			time = realTime
+		end
+
+		------------------------------------------------------------------------------------
 		-- The grid, on the panel it governs
 		------------------------------------------------------------------------------------
 
@@ -8458,6 +8831,113 @@ print("guild share")
 		-- 285 of 300, which is a rank and says nothing about any particular recipe. That
 		-- distinction is the whole of what slice 1 is allowed to claim.
 		check("and what they share is shown with its rank beside it", visibleText("285"))
+
+		------------------------------------------------------------------------------------
+		-- A character of theirs who goes, rather than a profession they untick
+		--
+		-- Three ways a shared list stops being ours to hold, and this is the third. A guild
+		-- we leave is `ForgetLeft`; a profession unticked is absent from the next offering
+		-- and dropped in the walk that reads one. A *character* who leaves the guild or is
+		-- deleted is absent from the offering too - but the walk only reaches the characters
+		-- that arrived, so nothing ever looked at theirs.
+		------------------------------------------------------------------------------------
+
+		do
+			-- Two characters of Faraway's, each with a list, planted here rather than
+			-- assumed: blocks above have moved on, and a check about what is dropped needs
+			-- to know what was there.
+			advance(30)
+			sent = {}
+			Family.Comm:Send("gdata", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw",
+				characters = {
+					["Faraway-FireMaw"] = {
+						meta = { name = "Faraway", realm = "Fire Maw", level = 70 },
+						professions = { { skillLine = smith, rank = 300,
+							maxRank = 300, count = 1, fingerprint = 4242 } },
+					},
+					["Nervina-FireMaw"] = {
+						meta = { name = "Nervina", realm = "Fire Maw", level = 61,
+							classFile = "MAGE" },
+						professions = { { skillLine = smith, rank = 275,
+							maxRank = 300, count = 1, fingerprint = 777 } },
+					},
+				},
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+
+			for _, who in ipairs { { "Faraway-FireMaw", 4242 }, { "Nervina-FireMaw", 777 } } do
+				advance(30)
+				sent = {}
+				Family.Comm:Send("grec", Family.Codec:ToWire {
+					schema = 1, version = Family.version, guild = guildName,
+					character = "Faraway-FireMaw", rschema = 1,
+					member = who[1], line = smith,
+					spells = { 60001 }, items = { 60001 },
+					missing = 0, fingerprint = who[2], seen = time() - 400,
+				}, "WHISPER", "Tester")
+				advance(3)
+				deliver("Faraway")
+			end
+
+			-- Somebody else in the guild entirely, so the sender test below has two senders
+			-- to tell apart rather than being a comparison with itself.
+			advance(30)
+			sent = {}
+			Family.Comm:Send("gdata", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Otherguy-FireMaw",
+				characters = { ["Otherguy-FireMaw"] = {
+					meta = { name = "Otherguy", realm = "Fire Maw", level = 60 },
+					professions = { { skillLine = smith, rank = 300, maxRank = 300,
+						count = 1, fingerprint = 31337 } },
+				} },
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Otherguy")
+
+			advance(30)
+			sent = {}
+			Family.Comm:Send("grec", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Otherguy-FireMaw", rschema = 1,
+				member = "Otherguy-FireMaw", line = smith,
+				spells = { 60002 }, items = { 60002 },
+				missing = 0, fingerprint = 31337, seen = time() - 60,
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Otherguy")
+
+			check("we hold a list for a character of theirs",
+				Family.Guild:HeldRecipes(guildKey, "Nervina-FireMaw", smith) ~= nil)
+			check("and one for somebody else's",
+				Family.Guild:HeldRecipes(guildKey, "Otherguy-FireMaw", smith) ~= nil)
+
+			-- Faraway offers again, and Nervina is not in it. Nothing is sent to say she
+			-- has gone; her absence is the whole of the message.
+			advance(30)
+			sent = {}
+			Family.Comm:Send("gdata", Family.Codec:ToWire {
+				schema = 1, version = Family.version, guild = guildName,
+				character = "Faraway-FireMaw",
+				characters = { ["Faraway-FireMaw"] = {
+					meta = { name = "Faraway", realm = "Fire Maw", level = 70 },
+					professions = { { skillLine = smith, rank = 300, maxRank = 300,
+						count = 1, fingerprint = 4242 } },
+				} },
+			}, "WHISPER", "Tester")
+			advance(3)
+			deliver("Faraway")
+
+			check("a character who has left the guild takes their list with them",
+				Family.Guild:HeldRecipes(guildKey, "Nervina-FireMaw", smith) == nil)
+			check("and one still in it keeps theirs",
+				Family.Guild:HeldRecipes(guildKey, "Faraway-FireMaw", smith) ~= nil)
+			check("and somebody else's is not dropped on this sender's say-so",
+				Family.Guild:HeldRecipes(guildKey, "Otherguy-FireMaw", smith) ~= nil)
+		end
 
 		------------------------------------------------------------------------------------
 		-- Leaving, which is what Forget is for and what nothing called it for

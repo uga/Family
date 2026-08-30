@@ -107,3 +107,27 @@ print(string.format("one character, two maxed primaries and three secondaries: "
 print(string.format("three such characters, which is what §4.4 sizes the feature by: "
 	.. "%d bytes, %d chunks, %.1f seconds of queue",
 	character * 3, chunks(character * 3), seconds(chunks(character * 3))))
+
+-- And what slice 3's cooldowns add to a profession that was going out anyway.
+--
+-- The question this answers is whether they can ride along on `gdata` rather than needing a
+-- message of their own. Four on one profession is already generous - a busy alchemist has a
+-- transmute and a salt shaker - and the recipe list they sit beside is the row above.
+local function profession(count)
+	local entry = { skillLine = 164, rank = 300, maxRank = 300, count = 250,
+		fingerprint = 16711423 }
+
+	if count > 0 then
+		entry.cooldowns = {}
+		for index = 1, count do
+			entry.cooldowns[index] = { spell = 17187 + index, item = 12360 + index,
+				left = 3600 * index }
+		end
+	end
+
+	return { characters = { ["Someone-Somewhere"] = { professions = { entry } } } }
+end
+
+print()
+print(string.format("a shared profession on the offering: %d bytes, and %d with four "
+	.. "cooldowns on it", weigh(profession(0)), weigh(profession(4))))

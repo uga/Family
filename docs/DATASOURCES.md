@@ -357,5 +357,11 @@ spell ids saves a further sixth, because LibSerialize spends one byte on a small
 three on a large one. Item ids are left absolute: they travel in spell order and so are in no
 order of their own, and delta-encoding an unsorted run makes it bigger.
 
+**What a cooldown adds**, measured the same way on 2026-08-30: a shared profession on the
+offering is **98 bytes**, and **170** with four cooldowns attached to it — about eighteen bytes
+each, on a message that was going anyway. Four on one profession is already generous; a busy
+alchemist has a transmute and a salt shaker. This is why they ride along on `gdata` rather than
+having a message of their own.
+
 **The harness cannot answer this.** It stubs both libraries with pass-throughs on purpose, so
 it can prove the protocol and not weigh it. That is why this is a tool and not a check.

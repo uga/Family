@@ -155,6 +155,26 @@ Per client: **Era**, **Anniversary**, **Mists**.
 - [ ] Untick that profession on their side. Within a minute, and with neither of you pressing
       *Update now*, the recipe stops being attributed to them here.
 
+#### Cooldowns, with a guildmate
+
+- [ ] **Have them use a daily craft** — a transmute, a bolt of mooncloth, a salt shaker — with
+      the profession window open, and leave it open a moment. Hover what it makes on your side:
+      their line now reads *ready in Xh* rather than the age alone, and the time counts down as
+      you rehover.
+- [ ] **Neither of you presses anything.** Using it is what starts the timer and opening the
+      window is what tells the guild, so a cooldown that has just started should reach you
+      within a minute of their scan.
+- [ ] **A crafter who can do it now is listed above one who cannot**, on the tooltip and in the
+      whole-family search alike.
+- [ ] **A guildmate's line still says how old the answer is** — the *ready* and the *4h ago*
+      both, not one instead of the other.
+- [ ] **Family says nothing about a cooldown it has never watched run.** A transmute nobody has
+      used since installing Family carries no state at all: that is right, not a fault.
+- [ ] **An item's own cooldown** — a salt shaker or a mana stone rather than a recipe — is shown
+      while it counts down and disappears entirely once it comes back, rather than turning into
+      *ready now*. This is the one line here that is a claim Family refuses to make, so it is
+      worth waiting out a short one to see.
+
 ### Shared professions — the grid, which needs nobody but you
 
 Everything here is testable alone, and it is a section of its own for that reason: the lines

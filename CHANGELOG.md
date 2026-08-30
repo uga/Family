@@ -18,6 +18,20 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Guild crafters now say whose cooldown is up.** Hover a transmute, a bolt of mooncloth or
+  anything else on a daily timer and the people who can make it are listed with the state of
+  their timer beside them — *ready now*, or *ready in 4h* — and whoever can do it now is
+  listed first. Your own characters and your guildmates alike, on the item's tooltip and in
+  the whole-family recipe search.
+
+  A guildmate's line still says how long ago you heard from them, because that is how old the
+  answer is.
+
+  Two things Family will not claim. It says nothing about a cooldown it has never watched
+  running, because until then there is no way to tell a transmute from a bandage. And where a
+  cooldown lives on an item in somebody's bags rather than on a recipe, it is shown only while
+  it is still counting down — once it comes back Family has no way of knowing whether it has
+  been used again, so it stops saying anything.
 - **Click the mail figure on Activity to see what is waiting.** The number said how much and
   never what. It now unfolds under that character, a line per letter: who it is from and what
   it is called on the left, **what is attached to it as icons on the right** — hover one to

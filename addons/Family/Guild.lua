@@ -63,6 +63,18 @@ local RECIPE_SCHEMA = 1
 -- spend a minute of channel on it.
 local RECIPE_CEILING = 1000
 
+-- How many cooldowns one profession may carry, for the same reason and with the same kind of
+-- margin. A busy character has three or four of these across every profession they have; a
+-- profession with forty of its own does not exist, so this can only ever catch a client
+-- saying something absurd.
+local COOLDOWN_CEILING = 40
+
+-- The longest cooldown that can be believed, in seconds. Nothing in the game is on a timer of
+-- days - the longest of them are a day, and a shutdown or a client with a wrong clock is what
+-- produces a bigger number. A duration beyond this is dropped rather than turned into a
+-- moment years away that no panel would ever stop showing.
+local COOLDOWN_LONGEST = 7 * 86400
+
 -- How old what we hold about somebody has to be before hearing from them is a reason to ask
 -- again. This is the whole of the traffic control, and it is what makes "once seen, it is
 -- kept" (§7) cheap rather than expensive: a guild of twenty Family users costs one round of
@@ -401,6 +413,32 @@ end
 --
 -- What was last said is remembered per guild, so this is a comparison rather than a reason to
 -- announce on every scan.
+-- Which of one profession's cooldowns are running, as a short string that two scans apart can
+-- be compared by. Identifiers and a flag; never a moment.
+--
+-- Coarse on purpose. `readyAt` is `time()` plus whatever the client answered a moment ago, so
+-- it moves by a second or two on every scan of the same unchanged cooldown - and a marker
+-- built out of it would announce to the guild each time somebody opened a profession window.
+local function runningMark(memberKey, line)
+	local meta = Family.Database:Meta(memberKey)
+	if not meta then return "" end
+
+	local marks = {}
+
+	for _, entry in ipairs(Family.Cooldowns:Sharable(meta)) do
+		local at = type(entry.profession) == "number" and entry.profession
+			or Family:SkillLineFor(entry.profession)
+
+		if at == line then
+			marks[#marks + 1] = string.format("%d:%d:%s",
+				entry.spell or 0, entry.item or 0, entry.left and "r" or "-")
+		end
+	end
+
+	table.sort(marks)
+	return table.concat(marks, ",")
+end
+
 function Guild:MarkChanged()
 	local guildKey = self:Current()
 	if not guildKey then return false end
@@ -417,6 +455,22 @@ function Guild:MarkChanged()
 			-- A profession with no list yet is a state worth remembering as much as a
 			-- list is: going from nothing to something is the change this exists for.
 			now[at] = count and (count .. ":" .. fingerprint) or "-"
+
+			-- And whether its cooldowns are running, which is the other thing a scan can
+			-- change and the fingerprint deliberately does not cover.
+			--
+			-- **A cooldown starting has an event behind it rather than a clock.** Using a
+			-- craft means having its window open, and having it open means a scan - so
+			-- the moment the fact changes is a moment this side is already awake for, and
+			-- it costs the one small message a grid change costs. Nothing announces when
+			-- one comes back, because nothing needs to: what crossed was a duration, and
+			-- the far end has been counting it down ever since.
+			--
+			-- Kept out of the fingerprint on purpose. That number decides whether the
+			-- other end asks for the whole recipe list again, and a transmute would then
+			-- cost a thousand bytes twice a day for nothing.
+			now[at] = now[at] .. "/" .. runningMark(memberKey, line)
+
 			if last[at] ~= now[at] then changed = true end
 		end
 	end
@@ -557,6 +611,33 @@ end
 local function sharedProfessions(guildKey, memberKey, meta)
 	local out, seen = nil, {}
 
+	-- What is on cooldown, gathered once and filed by skill line, rather than walked again
+	-- for each of the eight professions this loop may ask about. Cooldowns:Sharable decides
+	-- what may cross at all; this only decides which tick it belongs to.
+	--
+	-- Resolved by the same rule the loop below uses, and it has to be the same rule: a
+	-- profession filed under a word is looked up in the skill line table, and if the two
+	-- disagreed a cooldown would be attached to a profession nobody had granted.
+	local waiting = {}
+	for _, entry in ipairs(Family.Cooldowns:Sharable(meta)) do
+		local line = type(entry.profession) == "number" and entry.profession
+			or Family:SkillLineFor(entry.profession)
+
+		if line then
+			local rows = waiting[line] or {}
+			waiting[line] = rows
+
+			if #rows < COOLDOWN_CEILING then
+				rows[#rows + 1] = {
+					spell = entry.spell,
+					item = entry.item,
+					left = entry.left and math.floor(entry.left) or nil,
+					bags = entry.bags,
+				}
+			end
+		end
+	end
+
 	for id, skill in pairs(meta.skills or {}) do
 		-- A profession filed under a word rather than an id is still that profession where
 		-- the skill line table knows the word, so it is looked up rather than refused. A
@@ -580,6 +661,13 @@ local function sharedProfessions(guildKey, memberKey, meta)
 				maxRank = tonumber(skill.maxRank) or 0,
 				count = count,
 				fingerprint = fingerprint,
+				-- Riding along on a message that was going anyway, and never a reason
+				-- to send one: what is on cooldown changes every hour of the day, and a
+				-- guild whose members announced each time would be a guild talking to
+				-- itself about nothing. MarkChanged is deliberately blind to these -
+				-- it compares recipe lists - so a cooldown is as fresh as the last
+				-- thing that was worth saying, and the age beside it says so.
+				cooldowns = waiting[line],
 			}
 		end
 	end
@@ -863,6 +951,56 @@ local function spellNamed(id)
 	return name
 end
 
+-- The cooldown on one recipe of theirs, or nothing at all - which is the ordinary answer,
+-- because most recipes have none.
+--
+-- Matched on the ids *they* sent for that row rather than on the ids under the cursor, and the
+-- two are not the same thing: an Era client knows a transmute only as the item it makes, a
+-- Burning Crusade one sends the spell as well, so a lookup by whichever id the reader happens
+-- to be hovering matches on one client and quietly fails on the next. The row that matched is
+-- known, so their own pair for it is known, and that is what to ask with.
+--
+-- A cooldown with no moment on it is a craft that is ready, which is an answer rather than a
+-- gap: it is in the list at all only because its owner has been watched doing it once. An
+-- item's is let go the moment it passes, for the reason Cooldowns.lua gives at length -
+-- nobody watched their bags, so "ready" would be a claim rather than a fact (§2.2).
+local function cooldownFor(profession, spell, item)
+	if not profession then return nil end
+
+	local now = time()
+	spell, item = tonumber(spell) or 0, tonumber(item) or 0
+
+	for _, entry in ipairs(profession.cooldowns or {}) do
+		if (spell ~= 0 and entry.spell == spell)
+			or (item ~= 0 and entry.item == item) then
+
+			local ready = not entry.readyAt or entry.readyAt <= now
+			if entry.bags and ready then return nil end
+
+			return {
+				ready = ready,
+				readyAt = (not ready) and entry.readyAt or nil,
+				bags = entry.bags,
+			}
+		end
+	end
+
+	return nil
+end
+
+-- The same lookup, for a caller holding one of their characters and one of their rows. The
+-- whole-family search reads its guild half straight out of the recipe lists rather than
+-- through CraftersOf, so it has the pair in hand already and needs only this.
+function Guild:CooldownOn(entry, skillLine, spellID, itemID)
+	for _, profession in ipairs((entry or {}).professions or {}) do
+		if profession.skillLine == skillLine then
+			return cooldownFor(profession, spellID, itemID)
+		end
+	end
+
+	return nil
+end
+
 function Guild:CraftersOf(spellID, itemID, itemName)
 	local guildKey = self:Current()
 	if not (guildKey and (spellID or itemID or itemName)) then return {} end
@@ -874,13 +1012,17 @@ function Guild:CraftersOf(spellID, itemID, itemName)
 		local entry = known[memberKey]
 
 		for line, list in pairs(perLine) do
-			local knows = false
+			-- Which row of their list matched, not merely that one did. Their own ids for
+			-- that recipe are what a cooldown is looked up by below, and looking it up by
+			-- the ids under the cursor instead would miss on every client that gave only
+			-- one of the two - which is most of them, and a different one each time.
+			local knows, matched = false, nil
 
 			for index, spell in ipairs(list.spells or {}) do
 				-- Either id answers, because either may be the only one a client gave.
 				if (spellID and spellID ~= 0 and spell == spellID)
 					or (itemID and itemID ~= 0 and (list.items or {})[index] == itemID) then
-					knows = true
+					knows, matched = true, index
 					break
 				end
 
@@ -909,16 +1051,21 @@ function Guild:CraftersOf(spellID, itemID, itemName)
 
 					if recipeName
 						and Family.Recipes:Teaches(itemName, recipeName) then
-						knows = true
+						knows, matched = true, index
 						break
 					end
 				end
 			end
 
 			if knows and entry then
-				local rank
+				local rank, cooldown
 				for _, profession in ipairs(entry.professions or {}) do
-					if profession.skillLine == line then rank = profession.rank end
+					if profession.skillLine == line then
+						rank = profession.rank
+						cooldown = matched and cooldownFor(profession,
+							(list.spells or {})[matched],
+							(list.items or {})[matched]) or nil
+					end
 				end
 
 				-- The older of the two ages, which is all an answer built from them can
@@ -937,14 +1084,26 @@ function Guild:CraftersOf(spellID, itemID, itemName)
 					rank = rank,
 					missing = list.missing,
 					at = age,
+					cooldown = cooldown,
 				}
 			end
 		end
 	end
 
-	-- Whoever we heard from most recently first, then by name, so the list is the same
-	-- twice running. Somebody deciding who to whisper reads it top down.
+	-- Whoever cannot do it yet goes last, and among those the one whose turn comes soonest
+	-- goes first. For anything on a timer this is the whole question: "who can make this" has
+	-- an answer everybody already knows and "whose is up" is what somebody is actually asking
+	-- (§4.5). Everyone else keeps the old order - whoever we heard from most recently, then by
+	-- name - so the list is the same twice running and reads top down.
 	table.sort(found, function(a, b)
+		local aWaiting = (a.cooldown and not a.cooldown.ready) and 1 or 0
+		local bWaiting = (b.cooldown and not b.cooldown.ready) and 1 or 0
+		if aWaiting ~= bWaiting then return aWaiting < bWaiting end
+
+		if aWaiting == 1 and (a.cooldown.readyAt or 0) ~= (b.cooldown.readyAt or 0) then
+			return (a.cooldown.readyAt or 0) < (b.cooldown.readyAt or 0)
+		end
+
 		if (a.at or 0) ~= (b.at or 0) then return (a.at or 0) > (b.at or 0) end
 		return tostring(a.name) < tostring(b.name)
 	end)
@@ -1249,6 +1408,54 @@ end
 -- ceiling. Anything else is somebody else's client being wrong, and it is not written to our
 -- disk on their say-so - a name that arrived where an id was expected would be a word stored
 -- as an identity, which is the one mistake §2.1 exists to prevent.
+-- Durations back into moments, and the item rule kept on this side as well as on the other.
+--
+-- **A duration crossed and a moment is stored**, which is the whole reason a duration crossed:
+-- two clients need not agree about what time it is, but they agree about how long is left.
+-- Everything Family keeps is a moment, for the reason mail expiry is - a countdown written
+-- down yesterday is wrong today - so the conversion happens here, once, at the door.
+--
+-- An item's cooldown that arrives without a duration is dropped rather than read as ready. It
+-- should never have been sent (Cooldowns:Sharable), and this is the other end of that promise:
+-- what Family cannot know about somebody else's bags, it does not say (§2.2).
+local function readCooldowns(list)
+	if type(list) ~= "table" then return nil end
+
+	local now, out = time(), {}
+
+	for _, entry in ipairs(list) do
+		if type(entry) == "table" and #out < COOLDOWN_CEILING then
+			local spell = tonumber(entry.spell) or 0
+			local item = tonumber(entry.item) or 0
+			local left = tonumber(entry.left)
+			local bags = entry.bags == true
+
+			-- A duration of nothing or less is a craft that is ready, said the long way
+			-- round, and is read as one.
+			--
+			-- A duration longer than anything the game has, or one that is not a number
+			-- at all, is not a duration: a clock set wrong, or a client saying something
+			-- absurd. The row goes rather than being turned into a moment years away
+			-- that no panel would ever stop showing - and rather than being read as
+			-- ready, which would be Family making a claim nobody sent.
+			local absurd = entry.left ~= nil and (left == nil or left > COOLDOWN_LONGEST)
+			if left and left <= 0 then left = nil end
+
+			if not absurd and (spell ~= 0 or item ~= 0) and not (bags and not left) then
+				out[#out + 1] = {
+					spell = spell,
+					item = item,
+					readyAt = left and (now + left) or nil,
+					bags = bags or nil,
+				}
+			end
+		end
+	end
+
+	if not next(out) then return nil end
+	return out
+end
+
 local function readProfessions(list)
 	if type(list) ~= "table" then return nil end
 
@@ -1266,6 +1473,13 @@ local function readProfessions(list)
 				-- recipe list", which is exactly what an older client has.
 				count = tonumber(entry.count),
 				fingerprint = tonumber(entry.fingerprint),
+				-- What of this profession is on cooldown, as of when they said so.
+				-- Held here rather than beside the recipe list on purpose: a recipe
+				-- list is asked for once and kept for as long as its fingerprint holds,
+				-- and a cooldown is only ever as good as the last announcement. Filed
+				-- with the thing that is replaced wholesale, it can never be stale in a
+				-- way the age beside it does not admit to.
+				cooldowns = readCooldowns(entry.cooldowns),
 			}
 		end
 	end
@@ -1358,6 +1572,29 @@ local function onData(_, text, sender)
 				if offered[line] ~= true then mine[line] = nil end
 			end
 			if not next(mine) then recipes[memberKey] = nil end
+		end
+	end
+
+	-- And a character of theirs who has gone altogether: left the guild, or was deleted.
+	--
+	-- The walk above only reaches the characters that arrived, so a list held for one who did
+	-- not arrive stayed on our disk for ever. Harmless to read - every answer is built by
+	-- looking the character up in `known`, and the sweep at the top of this function has just
+	-- taken them out of it - which is exactly why nothing noticed. It is still somebody's
+	-- recipes kept after they stopped offering them, and only forgetting the whole guild ever
+	-- cleared it.
+	--
+	-- Decided by whether anybody is still offering that character, and not by who this
+	-- message came from. `known` is the record of what is on offer, from everybody in the
+	-- guild; a list for a character nobody appears in it with is a list nobody is offering,
+	-- whichever message happens to be the one that noticed. A test on the sender was written
+	-- here first and could not be given a case that told the two apart, which is the whole
+	-- argument against keeping it.
+	for memberKey in pairs(recipes or {}) do
+		if guild.known[guildKey][memberKey] == nil then
+			recipes[memberKey] = nil
+			Family:Debug("guild: dropping the recipes held for %s - nobody offers them now",
+				tostring(memberKey))
 		end
 	end
 
