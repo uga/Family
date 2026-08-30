@@ -470,6 +470,16 @@ count on a line of its own exactly as in a bag.
 `SetHyperlink` would give the maximum and file a full oil for one with a single use left.
 `SetGuildBankItem` is the only setter that describes the instance in the vault.
 
+**First sight of an unfamiliar item costs a second visit.** The tooltip is empty until the
+client has the item, and the scan asks again when it learns - but `ScanGuildBank` can only read
+a vault that is still open, since every link call answers nil once the window shuts. So an item
+this client has never seen before shows no charge until the tab is opened again. Measured live
+on Burning Crusade: correct on the second open, without anything else being done.
+
+Not a fault and not fixable from here: nothing can read a vault nobody is standing at. It is
+written down because "I had to reopen it" is the sort of thing that otherwise becomes folklore
+about the addon being unreliable.
+
 **The Chronoboon Displacer's charged state is a different item id.** `ItemSparse` on Era:
 
 | id | name | stacks to | spell | category cooldown |

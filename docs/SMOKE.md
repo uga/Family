@@ -142,9 +142,11 @@ Per client: **Era**, **Anniversary**, **Mists**.
 - [x] **`SetGuildBankItem` — settled on Burning Crusade 2026-08-30.** It exists and reads the
       instance: four lines for a Minor Wizard Oil with `5 Charges` on its own line. Era has no
       guild bank at all, so that client cannot be asked and does not need to be.
-- [ ] **Charges in the guild bank, end to end.** Put an oil in a tab, open the tab, and look at
-      it in Possessions: the remaining count belongs in the corner of the icon as it is for a
-      bag. Reading the tooltip and drawing it are two claims and only the first is measured.
+- [x] **Charges in the guild bank, end to end — settled on Burning Crusade 2026-08-30.** The
+      remaining count is in the corner of the icon in Possessions, as it is for a bag.
+      **Expect to open the tab twice** the first time it holds an item this client has never
+      seen: the tooltip is empty until the item data arrives, and a vault that has been closed
+      cannot be read again. Correct on the second open with nothing else done.
 - [x] **End to end — settled 2026-08-30.** Hovering a Copper Bar names the miner on a *Can make
       it* block with their skill, so the ids are recorded *and* the lookup uses them. Two claims,
       both measured, on the crafted item rather than the pattern.
