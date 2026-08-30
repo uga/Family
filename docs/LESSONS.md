@@ -1145,3 +1145,39 @@ outside this repository. The rules are: hand over Lua with **no run of underscor
 — capture into a table and index it, `local r = {UnitBuff("player", i)}` and then `r[10]`, which
 also survives a signature changing under it; and ask for `/console scriptErrors 1` before any
 probing session, so that a failure is a message rather than a silence.
+
+## L-033 — An elimination is only as wide as the routes tried
+
+The stored contents of a Chronoboon were declared unreadable, in `DATASOURCES.md`, in the
+words *"nothing Family can call returns them"*.
+
+That sentence was written after trying **one family of calls**: the tooltip text API, on a
+private frame and on the game's own. The measurement behind it was sound and is still in the
+entry — three lines came back while the tooltip on screen was showing the buff between them.
+The *conclusion* was several times wider than the evidence.
+
+Alberto reopened it with a screenshot from Wowhead showing the same tooltip with its variables
+unresolved — `[$null ... Fengus' Ferocity (0m)][$null ...` — which says the content is not rows
+drawn beside icons at all, but **one string with a conditional block per buff**. A completely
+different shape, reachable by a completely different call, and one I had not tried because I had
+stopped looking.
+
+It turned out still to be unreadable: `GetSpellDescription` answers an empty string for that
+aura, and `RequestLoadSpellData` reports the data **loaded** rather than pending. So the entry's
+verdict survived. **The reasoning behind it did not**, and that is the lesson: it was right by
+luck, and the next question of this shape will not be.
+
+**Why this is worse than being wrong.** A wrong entry gets contradicted the next time somebody
+looks. An entry saying *this cannot be done* is a door nobody opens again — it removes the
+question rather than answering it, and it does so on the authority of this file.
+
+The generalisable form: **"no route works" and "the routes I tried do not work" are different
+claims, and only the second one is ever measured.** An elimination is a list, so write the list:
+the entry now carries all six routes and what each answered, and a reader can see immediately
+which ones were not tried.
+
+**Caught by:** nothing automatic, and nothing can be. The rule is that a negative finding names
+its routes in a table, and that a conclusion of the form *nothing can* is not written at all —
+what gets written is *these were tried, and this is what each said*. The two traps that produced
+this one are named in the entry itself: a screenshot proves nothing about what an addon can read,
+and an empty answer is not the same as an unloaded one.
