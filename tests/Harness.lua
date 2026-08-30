@@ -8939,6 +8939,96 @@ print("guild share")
 				Family.Guild:HeldRecipes(guildKey, "Otherguy-FireMaw", smith) ~= nil)
 		end
 
+
+		------------------------------------------------------------------------------------------
+		-- The guild event log probe
+		--
+		-- A probe rather than a feature: nothing in Family reads this log, and these checks are
+		-- about whether the questions get *asked* properly. The one that matters is the last: the
+		-- probe exists to find out what the client actually answers, so it has to print every
+		-- value the call returned - including a nil in the middle and a nil at the end, which are
+		-- exactly the shapes a table's length operator cannot see.
+		------------------------------------------------------------------------------------------
+
+		do
+			local heldQuery, heldNum, heldInfo =
+				_G.QueryGuildEventLog, _G.GetNumGuildEvents, _G.GetGuildEventInfo
+
+			-- A client with no event log at all, which is what Era may turn out to be. It has to
+			-- say so and stop, rather than erroring or claiming an empty log.
+			_G.QueryGuildEventLog, _G.GetNumGuildEvents, _G.GetGuildEventInfo = nil, nil, nil
+
+			local mark = #DEFAULT_CHAT_FRAME.messages
+			Family.Guild:ProbeEventLog()
+			advance(5)
+
+			local said, claimed = false, false
+			for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+				local message = tostring(DEFAULT_CHAT_FRAME.messages[index])
+				if message:find("no event log to read", 1, true) then said = true end
+				if message:find("entries:", 1, true) then claimed = true end
+			end
+			check("a client with no event log is told so", said)
+			check("and is not asked how many entries it has", not claimed)
+
+			-- And one that has it. The middle value is nil and so is the last, because a call
+			-- that answers with either is the case this probe is for and the case a length
+			-- operator cannot see.
+			local asked = 0
+			_G.QueryGuildEventLog = function() asked = asked + 1 end
+			_G.GetNumGuildEvents = function() return 11 end
+			_G.GetGuildEventInfo = function(index)
+				if index == 11 then return "join", "Oldest", nil, 4, 2, 1, 0, nil end
+				return "quit", "Someone" .. index, nil, 3, 0, 1, 2, nil
+			end
+
+			mark = #DEFAULT_CHAT_FRAME.messages
+			Family.Guild:ProbeEventLog()
+
+			check("nothing is read before the server has been asked", asked == 1
+				and not tostring(DEFAULT_CHAT_FRAME.messages[#DEFAULT_CHAT_FRAME.messages])
+					:find("entries:", 1, true), tostring(asked))
+
+			advance(5)
+
+			local count, rows, oldest, kinds, positions = false, 0, false, false, nil
+			for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+				local message = tostring(DEFAULT_CHAT_FRAME.messages[index])
+				if message:find("entries: 11", 1, true) then count = true end
+				if message:find("[1] ", 1, true) then
+					rows = rows + 1
+					positions = message
+				end
+				if message:find("2:Someone", 1, true) then rows = rows + 1 end
+				if message:find("2:Oldest", 1, true) then oldest = true end
+				if message:find("kinds of event", 1, true)
+					and message:find("quit x10", 1, true)
+					and message:find("join x1", 1, true) then kinds = true end
+			end
+
+			check("a client that has one says how many entries came back", count)
+			check("and prints the newest few of them", rows > 1, tostring(rows))
+			check("and the far end as well, because how far back it goes is the question",
+				oldest)
+			check("and counts every kind of event in the whole log, not only the ones shown",
+				kinds)
+
+			-- The one that is the point of the whole exercise.
+			check("and prints every value the call returned, nils in the middle and at the end",
+				positions ~= nil and positions:find("3:nil", 1, true) ~= nil
+					and positions:find("8:nil", 1, true) ~= nil,
+				tostring(positions))
+
+			-- With the type beside each, because "3" and "3" are a number and a string on
+			-- different clients and the difference is what a reader of DATASOURCES needs.
+			check("with the type of each beside it",
+				positions ~= nil and positions:find("(string)", 1, true) ~= nil
+					and positions:find("(number)", 1, true) ~= nil)
+
+			_G.QueryGuildEventLog, _G.GetNumGuildEvents, _G.GetGuildEventInfo =
+				heldQuery, heldNum, heldInfo
+		end
+
 		------------------------------------------------------------------------------------
 		-- Leaving, which is what Forget is for and what nothing called it for
 		------------------------------------------------------------------------------------

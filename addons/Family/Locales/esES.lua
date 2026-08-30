@@ -177,7 +177,6 @@ Family.locales.esES = {
 	["     spec %d: %d tier(s), %d chosen, spec id %s"] = "     esp %d: %d nivel(es), %d elegido(s), id de esp %s",
 	["  %s: %d (bags %d, bank %d, mail %d, auction %d)"] = "    %s: %d (bolsas %d, banco %d, correo %d, subasta %d)",
 	["Raise it if another addon draws over the window."] = "Súbelo si otro addon se dibuja sobre la ventana.",
-	["guild share on, off, or test: /family guild test"] = "compartir con la hermandad on, off o test: /family guild test",
 	["what talent data is actually stored, and for whom"] = "qué datos de talentos hay guardados realmente, y de quién",
 	-- /family hearth - si el cliente sabe nombrar un lugar desde su id
 	["  %s: %s"] = "",
@@ -667,4 +666,17 @@ Family.locales.esES = {
 
 	-- Locale.lua
 	["Summary"] = "Resumen",  -- 20
+
+	-- Guild.lua - the event log probe, and the slash word that runs it
+	["guild share on, off, test or log: /family guild test"] = "compartir con la hermandad on, off, test o log: /family guild test",
+	["|cffffd700/family guild log|r asks this client what it can read of the guild's own event log. Family does not use it; this is finding out whether it could."] = "|cffffd700/family guild log|r pregunta a este cliente qué puede leer del registro de la hermandad. Family no lo usa; esto sirve para saber si podría.",
+	["|cffffd700Guild event log|r on %s"] = "|cffffd700Registro de hermandad|r en %s",
+	["  asking as: %s, rank index %s"] = "  preguntando como: %s, índice de rango %s",
+	["  %s exists: %s"] = "  %s existe: %s",
+	["  |cffffaa00this client has no event log to read, so it cannot be a source here|r"] = "  |cffffaa00este cliente no tiene registro que leer, así que no puede ser una fuente aquí|r",
+	["  asked the server - reading it back in a moment"] = "  servidor consultado - se leerá en un momento",
+	["  entries: %d"] = "  entradas: %d",
+	["  |cffffaa00nothing came back. Either this rank may not read it, or the guild has no history, or asking is not enough|r"] = "  |cffffaa00no llegó nada. O este rango no puede leerlo, o la hermandad no tiene historial, o preguntar no basta|r",
+	["  |cff888888every value each call returned, by position and type. These go into DATASOURCES, not into a memory|r"] = "  |cff888888cada valor que devolvió cada llamada, por posición y tipo. Estos van a DATASOURCES, no a la memoria|r",
+	["  kinds of event in the whole log: %s"] = "  tipos de entrada en todo el registro: %s",
 }

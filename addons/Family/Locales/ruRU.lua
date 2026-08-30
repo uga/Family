@@ -177,7 +177,6 @@ Family.locales.ruRU = {
 	["     spec %d: %d tier(s), %d chosen, spec id %s"] = "     спец %d: ярусов - %d, выбрано - %d, id спец. %s",
 	["  %s: %d (bags %d, bank %d, mail %d, auction %d)"] = "    %s: %d (сумки %d, банк %d, почта %d, аукцион %d)",
 	["Raise it if another addon draws over the window."] = "Увеличьте, если другой аддон рисует поверх окна.",
-	["guild share on, off, or test: /family guild test"] = "общий доступ гильдии on, off или test: /family guild test",
 	["what talent data is actually stored, and for whom"] = "какие данные о талантах действительно хранятся и для кого",
 	-- /family hearth - умеет ли клиент назвать место по его id
 	["  %s: %s"] = "",
@@ -667,4 +666,17 @@ Family.locales.ruRU = {
 
 	-- Locale.lua
 	["Summary"] = "Обзор",  -- 20
+
+	-- Guild.lua - the event log probe, and the slash word that runs it
+	["guild share on, off, test or log: /family guild test"] = "общий доступ гильдии on, off, test или log: /family guild test",
+	["|cffffd700/family guild log|r asks this client what it can read of the guild's own event log. Family does not use it; this is finding out whether it could."] = "|cffffd700/family guild log|r спрашивает клиент, что он может прочесть из журнала гильдии. Family его не использует; так мы выясняем, мог бы ли.",
+	["|cffffd700Guild event log|r on %s"] = "|cffffd700Журнал гильдии|r на %s",
+	["  asking as: %s, rank index %s"] = "  спросил: %s, индекс ранга %s",
+	["  %s exists: %s"] = "  %s есть: %s",
+	["  |cffffaa00this client has no event log to read, so it cannot be a source here|r"] = "  |cffffaa00у этого клиента нет журнала, значит он тут не источник|r",
+	["  asked the server - reading it back in a moment"] = "  сервер опрошен - прочтём через миг",
+	["  entries: %d"] = "  записей: %d",
+	["  |cffffaa00nothing came back. Either this rank may not read it, or the guild has no history, or asking is not enough|r"] = "  |cffffaa00ничего не пришло. Либо этот ранг не может читать, либо у гильдии нет истории, либо запроса мало|r",
+	["  |cff888888every value each call returned, by position and type. These go into DATASOURCES, not into a memory|r"] = "  |cff888888каждое значение каждого вызова, по позиции и типу. Они идут в DATASOURCES, а не в память|r",
+	["  kinds of event in the whole log: %s"] = "  виды записей во всём журнале: %s",
 }

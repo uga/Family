@@ -1971,6 +1971,144 @@ function Guild:Diagnose()
 end
 
 --------------------------------------------------------------------------------------------
+-- The guild's own event log, which Family does not read and might
+--
+-- Printed by /family guild log. A **probe**, not a diagnosis: nothing in Family uses this, and
+-- the question is whether it could. Blizzard records who joined a guild and who left it, and
+-- that is a second source for the one fact §7 has no good answer for - a character who is
+-- *gone*, whose absence nothing announces, nobody can be asked about, and which currently only
+-- comes to light when their owner next logs in on another alt.
+--
+-- **Written to read the answers back rather than to confirm what the calls are named.** Every
+-- value each call returns is printed, by position and with its type, however many there turn
+-- out to be - the shape of the answer is part of what is being asked. That is DATASOURCES §2's
+-- rule, and L-023's postscript is why it is not negotiable here: `GetGuildRosterInfo` reads
+-- like the roster, is a *filtered* view of it, and a diagnostic built on the name could not see
+-- the case it was written for.
+--
+-- Four questions, and each of them decides something:
+--
+--   does it exist at all   On three clients, one of which is 1.15. "No" on Era ends the idea:
+--                          a second source two clients out of three lack is not a source.
+--   who may read it        Run it as a rank-and-file member *and* as an officer. A log only
+--                          officers can read is no use here - everybody has to reach the same
+--                          conclusion, or the guild disagrees about who is in it.
+--   how far back it goes   It is capped. If being away a fortnight means the event has
+--                          scrolled off, this is an accelerator and never a guarantee, and
+--                          the expiry has to stay as the backstop.
+--   what a deletion looks  Leaving is something a player does. Deleting is a character
+--   like                   ceasing to exist, and whether that leaves any trace at all is the
+--                          whole question for the case this was opened for.
+--
+-- The answers go into DATASOURCES §2 as measurements. Until they do, nothing may be built on
+-- top of this.
+--------------------------------------------------------------------------------------------
+
+-- How many entries are printed in full. A probe, not a listing: a hundred lines in the chat
+-- frame answers nothing that eight do not.
+local EVENT_SHOWN = 8
+
+-- Lua 5.1 has no table.pack, and the count is the point: a call that answers with a nil in the
+-- middle or at the end is exactly the shape this exists to notice, and `#` on such a table
+-- cannot be trusted to say so.
+local function pack(...) return select("#", ...), { ... } end
+
+-- One entry, as whatever it turned out to be.
+local function eventLine(index)
+	local count, got = pack(pcall(_G.GetGuildEventInfo, index))
+	if not got[1] then return nil end
+
+	local bits = {}
+	for at = 2, count do
+		bits[#bits + 1] = string.format("%d:%s(%s)", at - 1, tostring(got[at]),
+			type(got[at]))
+	end
+
+	return table.concat(bits, " "), got[2]
+end
+
+function Guild:ProbeEventLog()
+	local _, guildName, realm = self:Current()
+
+	Family:Print(L["|cffffd700Guild event log|r on %s"], Family.Capabilities.name)
+	Family:Print(L["  guild: %s"], guildName and string.format("%s (realm %s)", guildName,
+		tostring(realm)) or "|cffff5555not in one|r")
+
+	-- Which rank is asking, because the answer may well depend on it and comparing two ranks
+	-- is half the point of running this. Index 0 is the guild master.
+	local _, rankName, rankIndex = Family:TryCall(GetGuildInfo, "player")
+	Family:Print(L["  asking as: %s, rank index %s"], tostring(rankName or "?"),
+		tostring(rankIndex or "?"))
+
+	local absent = false
+	for _, name in ipairs { "QueryGuildEventLog", "GetNumGuildEvents", "GetGuildEventInfo" } do
+		local there = type(_G[name]) == "function"
+		Family:Print(L["  %s exists: %s"], name, there and "yes" or "|cffff5555no|r")
+		if not there then absent = true end
+	end
+
+	if absent then
+		Family:Print(L["  |cffffaa00this client has no event log to read, so it cannot be a "
+			.. "source here|r"])
+		return
+	end
+
+	-- Asked for, and read back a moment later rather than in the same breath. The log comes
+	-- from the server the way the roster does, and reading it straight away reads whatever
+	-- happened to be there already - which is how a probe answers about the last question
+	-- somebody asked instead of about this one.
+	Family:TryCall(_G.QueryGuildEventLog)
+	Family:Print(L["  asked the server - reading it back in a moment"])
+
+	Family:After(3, "guild.eventlog", function()
+		local count = tonumber(Family:TryCall(_G.GetNumGuildEvents)) or 0
+		Family:Print(L["  entries: %d"], count)
+
+		if count == 0 then
+			Family:Print(L["  |cffffaa00nothing came back. Either this rank may not read "
+				.. "it, or the guild has no history, or asking is not enough|r"])
+			return
+		end
+
+		Family:Print(L["  |cff888888every value each call returned, by position and type. "
+			.. "These go into DATASOURCES, not into a memory|r"])
+
+		for index = 1, math.min(EVENT_SHOWN, count) do
+			local line = eventLine(index)
+			Family:Print("  [%d] %s", index, line or "|cffff5555the call errored|r")
+		end
+
+		-- And the far end of the log, because how far back it reaches is one of the four
+		-- questions and the newest eight cannot answer it.
+		if count > EVENT_SHOWN then
+			local line = eventLine(count)
+			Family:Print("  [%d] %s", count, line or "|cffff5555the call errored|r")
+		end
+
+		-- Every kind of event in the whole log, which is what says how a departure appears -
+		-- and, run again after deleting a character, whether that appears at all.
+		local kinds, order = {}, {}
+		for index = 1, count do
+			local _, kind = eventLine(index)
+			if kind ~= nil then
+				local word = tostring(kind)
+				if not kinds[word] then order[#order + 1] = word end
+				kinds[word] = (kinds[word] or 0) + 1
+			end
+		end
+
+		table.sort(order)
+		local bits = {}
+		for _, word in ipairs(order) do
+			bits[#bits + 1] = string.format("%s x%d", word, kinds[word])
+		end
+
+		Family:Print(L["  kinds of event in the whole log: %s"],
+			#bits > 0 and table.concat(bits, ", ") or "|cffffaa00none said|r")
+	end)
+end
+
+--------------------------------------------------------------------------------------------
 
 local function whenEnabled(handler)
 	return function(...)

@@ -177,7 +177,6 @@ Family.locales.frFR = {
 	["     spec %d: %d tier(s), %d chosen, spec id %s"] = "     spé %d : %d palier(s), %d choisi(s), id de spé %s",
 	["  %s: %d (bags %d, bank %d, mail %d, auction %d)"] = "    %s : %d (sacs %d, banque %d, courrier %d, enchères %d)",
 	["Raise it if another addon draws over the window."] = "Augmentez-le si un autre addon se dessine par-dessus la fenêtre.",
-	["guild share on, off, or test: /family guild test"] = "partage de guilde on, off ou test : /family guild test",
 	["what talent data is actually stored, and for whom"] = "quelles données de talents sont réellement stockées, et pour qui",
 	-- /family hearth - si le client sait nommer un lieu depuis son id
 	["  %s: %s"] = "",
@@ -667,4 +666,17 @@ Family.locales.frFR = {
 
 	-- Locale.lua
 	["Summary"] = "Résumé",  -- 20
+
+	-- Guild.lua - the event log probe, and the slash word that runs it
+	["guild share on, off, test or log: /family guild test"] = "partage de guilde on, off, test ou log : /family guild test",
+	["|cffffd700/family guild log|r asks this client what it can read of the guild's own event log. Family does not use it; this is finding out whether it could."] = "|cffffd700/family guild log|r demande à ce client ce qu'il peut lire du journal de la guilde. Family ne s'en sert pas ; il s'agit de savoir s'il le pourrait.",
+	["|cffffd700Guild event log|r on %s"] = "|cffffd700Journal de guilde|r sur %s",
+	["  asking as: %s, rank index %s"] = "  demande faite par : %s, indice de rang %s",
+	["  %s exists: %s"] = "  %s présent : %s",
+	["  |cffffaa00this client has no event log to read, so it cannot be a source here|r"] = "  |cffffaa00ce client n'a aucun journal à lire, il ne peut donc pas servir de source ici|r",
+	["  asked the server - reading it back in a moment"] = "  serveur interrogé - relecture dans un instant",
+	["  entries: %d"] = "  entrées : %d",
+	["  |cffffaa00nothing came back. Either this rank may not read it, or the guild has no history, or asking is not enough|r"] = "  |cffffaa00rien n'est revenu. Soit ce rang n'a pas le droit de le lire, soit la guilde n'a pas d'historique, soit demander ne suffit pas|r",
+	["  |cff888888every value each call returned, by position and type. These go into DATASOURCES, not into a memory|r"] = "  |cff888888chaque valeur renvoyée par chaque appel, par position et par type. Elles vont dans DATASOURCES, pas dans une mémoire|r",
+	["  kinds of event in the whole log: %s"] = "  types d'entrée dans tout le journal : %s",
 }

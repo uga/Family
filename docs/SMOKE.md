@@ -155,6 +155,29 @@ Per client: **Era**, **Anniversary**, **Mists**.
 - [ ] Untick that profession on their side. Within a minute, and with neither of you pressing
       *Update now*, the recipe stops being attributed to them here.
 
+#### The guild event log — a probe, not a feature
+
+`/family guild log`. Nothing in Family reads this log; this is finding out whether it could,
+because Blizzard records who left a guild and that is a second source for the one departure
+Family cannot otherwise learn about. **Write the answers into `docs/DATASOURCES.md` §2** — the
+whole point is that they stop being recollection.
+
+- [ ] **Run it on all three clients.** Does the client have `QueryGuildEventLog`,
+      `GetNumGuildEvents` and `GetGuildEventInfo` at all? A *no* on Era ends the idea: a
+      source two clients out of three lack is not a source.
+- [ ] **Run it as a rank-and-file member and as an officer**, on the same guild, and compare.
+      If only officers see entries, the log cannot settle anything — everyone has to reach the
+      same conclusion or the guild disagrees about who is in it.
+- [ ] **Copy the `[n]` lines verbatim.** They are every value the call returned, by position
+      and type, and the position of the date fields and of the event word is exactly what is
+      not known.
+- [ ] **How far back does it reach?** The last line is the oldest entry the client holds.
+      If a fortnight away means an event has scrolled off, this is an accelerator and never a
+      guarantee.
+- [ ] **What does a deletion look like?** Roll a level-one alt, invite it, log it in, delete
+      it, run the probe again. If nothing new appears in *kinds of event*, a deleted character
+      leaves no trace and only the owner's own records can say it has gone.
+
 #### Cooldowns, with a guildmate
 
 - [ ] **Have them use a daily craft** — a transmute, a bolt of mooncloth, a salt shaker — with

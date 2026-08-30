@@ -228,10 +228,10 @@ function()
 	end
 end)
 
-add("guild", L["guild share on, off, or test: /family guild test"], function(argument)
+add("guild", L["guild share on, off, test or log: /family guild test"], function(argument)
 	local wanted = (argument or ""):lower():match("^%S*")
 
-	if wanted ~= "on" and wanted ~= "off" and wanted ~= "test" then
+	if wanted ~= "on" and wanted ~= "off" and wanted ~= "test" and wanted ~= "log" then
 		Family:Print(L["Guild share is currently |cffffd700%s|r."],
 			Family.Guild:Enabled() and L["on"] or L["off"])
 		Family:Print(L["It shows your guild the gear and talents of your characters in it, "
@@ -243,11 +243,19 @@ add("guild", L["guild share on, off, or test: /family guild test"], function(arg
 		Family:Print(L["|cffffd700/family guild test|r says what has actually crossed the "
 			.. "wire. Run it on both clients and compare - the fault is wherever the two "
 			.. "stop agreeing."])
+		Family:Print(L["|cffffd700/family guild log|r asks this client what it can read of "
+			.. "the guild's own event log. Family does not use it; this is finding out "
+			.. "whether it could."])
 		return
 	end
 
 	if wanted == "test" then
 		Family.Guild:Diagnose()
+		return
+	end
+
+	if wanted == "log" then
+		Family.Guild:ProbeEventLog()
 		return
 	end
 
