@@ -242,9 +242,15 @@ silence rather than evidence about echoing at all. That silence is still unexpla
 this client's own announcements returning, and the last was named `Nervina-PyrewoodVillage on
 GUILD`.
 
-**Burning Crusade remains unmeasured**, which is why the diagnosis still hedges: the branch that
-names a client whose announcements never come back is gated on having heard somebody else, so
-that a lone user on a client that might not echo is never told they are broken.
+**Burning Crusade does too, measured the same day.** Sole guildie online: `sent 2`,
+`announcements arrived: 2 (2 ours coming back)`, `from somebody else: none`, the last named
+`Milionario-Thunderstrike on GUILD`.
+
+**So all three clients echo**, and the entry this replaced said the opposite of the first one
+measured. The diagnosis still gates its "your announcements are not coming back" branch on
+having heard somebody else - not now because echoing is in doubt, but because an echo takes a
+round trip and a diagnosis run in the second after an announcement would otherwise accuse a
+healthy client.
 
 ### What a client calls a character, measured on Mists 2026-08-30
 
@@ -536,6 +542,30 @@ duplicates - only that this guild has none.
 
 **`GetNumGuildMembers` answers in two values here as well** (773 and 13), so the `tonumber(5, 2)`
 fault would have bitten identically on Era. See L-031.
+
+### The same name calls on Burning Crusade, measured 2026-08-30
+
+    UnitName("player")        -> 1:Milionario(string) 2:nil(nil)
+    UnitFullName("player")    -> 1:Milionario(string) 2:Thunderstrike(string)
+    GetRealmName()            -> 1:Thunderstrike(string)
+    GetNormalizedRealmName()  -> 1:Thunderstrike(string)
+    GetAutoCompleteRealms()   -> 1:{}(table)
+    GetNumGuildMembers()      -> 1:2(number) 2:1(number)
+    GetGuildRosterInfo(1)     -> 1:Milionario-Thunderstrike(string) ...
+
+**Every call exists on all three clients.** `UnitName` never gives the realm, `UnitFullName`
+and `GetNormalizedRealmName` always do, and the roster always qualifies a name - two entries
+here, both carrying a realm, on a realm with no partners at all.
+
+**`GetAutoCompleteRealms` answers an empty table, not nothing.** The call is present and the
+list is empty, which is what a realm outside a connected group returns. That is a different case
+from the call being absent and `SameRealmGroup` has to narrow to an exact match for both - an
+empty list must not be read as "everything is connected". The absent-call case was the one
+written from imagination; this is the one most realms will actually hit.
+
+**`GetRealmName` and `GetNormalizedRealmName` agree here**, both `Thunderstrike`, because the
+name has no space. The two differ only where one does, which is why the comparison strips
+spaces from both sides rather than trusting either call.
 
 ### The guild event log, measured on all three clients 2026-08-30
 

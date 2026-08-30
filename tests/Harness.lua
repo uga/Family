@@ -12301,6 +12301,16 @@ print("a guild that spans a connected group")
 		Family.Guild:SameRealmGroup("Garalon", "Garalon")
 			and Family.Guild:SameRealmGroup("Garalon", "Mirage Raceway") == false)
 
+	-- **An empty table, which is what a realm with no partners actually answers.** Measured on
+	-- Burning Crusade: `GetAutoCompleteRealms() -> 1:{}(table)`, the call present and the list
+	-- empty. The absent-call case above was the one written from imagination; this is the one
+	-- two clients out of three will hit, and nothing had exercised it.
+	_G.GetAutoCompleteRealms = function() return {} end
+	check("and so does one whose list of connected realms is empty",
+		Family.Guild:SameRealmGroup("Thunderstrike", "Thunderstrike")
+			and Family.Guild:SameRealmGroup("Garalon", "Thunderstrike") == false,
+		"an empty list must narrow to the exact match, not widen to everything")
+
 	_G.GetAutoCompleteRealms = function()
 		return { "MirageRaceway", "Garalon" }
 	end

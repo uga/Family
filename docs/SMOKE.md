@@ -168,9 +168,9 @@ Per client: **Era**, **Anniversary**, **Mists**.
       from is corrected in `DATASOURCES.md`.
 - [x] **Era — settled 2026-08-30. It echoes.** Sole Family user in a 773-member guild: `sent 2`,
       `announcements arrived: 2 (2 ours coming back)`, `from somebody else: none`.
-- [ ] **Burning Crusade: does it echo?** Same method — be the only Family user online in the
-      guild, `/family guild test`, read `X ours coming back`. The last of the three, and the
-      closing sentence of the diagnosis leans on the answer.
+- [x] **Burning Crusade — settled 2026-08-30. It echoes.** `sent 2`, `announcements arrived: 2
+      (2 ours coming back)`, `from somebody else: none`. **All three clients echo**, which is
+      the opposite of what this file said before any of them was measured alone.
 
 #### What actually crossed the wire — the two-sided count
 
@@ -196,8 +196,10 @@ that a silence has three different causes that used to print identically.
       hold: the talent panel shows unspent points (51 of 51), a letter with an item and money
       records both, and tooltips render. `UnitCharacterPoints` was the one to watch, since Era
       has unspent points where Mists mostly does not.
-- [ ] **The bracket fix, on Burning Crusade.** Same three: talents, a letter with money, any
-      Family tooltip appearing at all.
+- [x] **The bracket fix, on Burning Crusade — settled 2026-08-30.** The talent panel and the
+      currencies panel both draw. Note the character used was level 5 with no talent points at
+      all, so `UnitCharacterPoints` was not exercised the way Era's 51-of-51 exercised it — what
+      this shows is that nothing errors, not that the number is right.
 - [ ] **Watch for the silence.** Twice on 30/8, on two clients, `/family guild test` reported
       `handed us: 0` — the client passing over nothing at all, from any addon — while sends
       were succeeding. It has not reproduced since: a settled character alone in its guild
@@ -221,9 +223,9 @@ read as your own echo and never answered. **Write the answers into `docs/DATASOU
 - [x] **Era — settled 2026-08-30.** All three exist and answer in the same shapes as Mists;
       `GetAutoCompleteRealms` returns three realms, and all 773 roster entries carry one. So the
       connected-group widening of `Offering()` is live on Era rather than falling back.
-- [ ] **Run it on Burning Crusade.** Do `UnitFullName`, `GetNormalizedRealmName` and
-      `GetAutoCompleteRealms` exist at all? The probe says `no such call` rather than erroring,
-      and a client with no connected realms cannot produce the collision.
+- [x] **Burning Crusade — settled 2026-08-30.** All three exist. `GetAutoCompleteRealms`
+      answers an **empty table** on a realm with no partners — the call present and the list
+      empty, which is not the same as the call being absent and is now its own check.
 - [ ] **Do senders carry a realm on Era and Burning Crusade?** Read `addon messages the client
       handed us: … (last from X on Y)` in `/family guild test`. On Mists they always do,
       same-realm included. If either older client sends bare names, any realm-aware comparison
