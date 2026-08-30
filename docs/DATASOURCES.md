@@ -388,6 +388,44 @@ Not only smelting: Cooking answers the same way, 54 for 54, so it is the client 
 window. Fishing, Skinning and First Aid show zero recipes because their windows had not been
 opened, which is §2.2 and not a fault.
 
+### Charges on an item, and the Chronoboon Displacer, measured 2026-08-30
+
+**A container slot carries no charges.** `C_Container.GetContainerItemInfo(0, 1)` on Mists,
+with a Lesser Mana Oil in the slot, returns exactly these fields:
+
+    itemName, hasLoot, hyperlink, iconFileID, hasNoValue, isLocked, itemID,
+    isBound, stackCount, isFiltered, isReadable, quality
+
+`stackCount` is **1**, not the charge count, and there is no charges field of any name. So the
+remaining charges on an oil are not available to the bag scanner at all.
+
+**The maximum is static and wago has it.** `ItemEffect` carries a `Charges` column:
+`Lesser Mana Oil` (20747) and `Wizard Oil` (20749) are both `-5`, negative being the "spends a
+charge" convention. That is how many it *starts* with and says nothing about how many are left.
+
+**The remaining count exists only in the tooltip**, behind `ITEM_SPELL_CHARGES`, which on an
+English client is `%d |4Charge:Charges;`. Reading it means a scanning tooltip, which Family has
+never had - `Family_UI/Tooltip.lua` writes to the visible `GameTooltip` and nothing anywhere
+reads one. The number itself would be §2.1-clean, an integer rather than a word, and the
+`|4singular:plural;` construct has to become a wildcard in any pattern built from the global
+because the rendered text contains one of the two words and not the markup.
+
+**The Chronoboon Displacer's charged state is a different item id.** `ItemSparse` on Era:
+
+| id | name | stacks to | spell | category cooldown |
+|---|---|---|---|---|
+| 184937 | Chronoboon Displacer | 10 | 349858 | 1 hour |
+| 184938 | **Supercharged** Chronoboon Displacer | 1 | 349863 | none |
+| 212160 | Chronoboon Displacer | 10 | 1223679 | 5 minutes |
+
+So *"which of my characters has a boon stored"* is answerable **by id, today, with nothing
+new**: a bag holding 184938 is a character with one banked. Family already records bag contents
+by id, so the fact is on disk already and only wants surfacing.
+
+*Which* buffs are inside is per-instance state and appears only in that item's tooltip, as
+names - the one shape §2.1 refuses. It would need the same scanning tooltip as charges, and
+what it produced would be words rather than identifiers.
+
 ### The guild event log, measured on all three clients 2026-08-30
 
 `/family guild log`, run four times: in **ZERO** on Pyrewood Village (Era) as **rank index 8**,
