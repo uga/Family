@@ -319,6 +319,47 @@ What *is* affected is `Offering()`, which takes our characters on `meta.guild ==
 meta.realm == realm`. Measured on Zinetta: Pinetta is in the same guild, on the same account,
 and is not offered. See GUILD-CRAFTERS §7.0.
 
+### A character on a partner realm cannot **send** on the guild addon channel, measured on Mists 2026-08-30
+
+In guild *Uga*, spanning a connected group of five realms:
+
+| character | realm | `GUILD` send | own echo | reached others | `GUILD` receive | whisper |
+|---|---|---|---|---|---|---|
+| Eccebombo (GM) | Mirage Raceway | yes | yes | yes | yes | yes |
+| Pinetta | Mirage Raceway | yes | yes | yes | yes | yes |
+| Zinetta | Garalon | **no** | **no** | **no** | yes | yes |
+
+Zinetta's client accepts every send - `9 x number 0`, the same answer it gives when a message
+does arrive - and the message then does not exist. Not for Eccebombo, and **not for Zinetta
+herself**, which is what rules out every explanation involving the other end or the distance
+between them.
+
+**What was eliminated, each by measurement rather than by argument:**
+
+- **Guild chat permission.** `/g` carries both ways between Zinetta and Eccebombo, with Zinetta
+  an Initiate.
+- **Rank.** Zinetta was promoted above Initiate and nothing changed - `sent` rose from 5 to 7,
+  every send accepted, `ours coming back` still 0. Pinetta transmits perfectly *without* being
+  promoted.
+- **The account.** Pinetta and Zinetta are on the same account; one transmits, one does not.
+- **Cross-realm delivery in general.** Eccebombo's `GUILD` announcements reach Zinetta, and
+  Zinetta's whispers reach Eccebombo. Only her `GUILD` *sends* vanish.
+- **Family's sending path.** `Comm:Send` chunks and queues identically either way, and the
+  client answers `0` to every piece.
+
+**What is not established** is the exact rule. One partner-realm character was tested, on a
+guild created on Mirage Raceway, so *"the realm the guild is on"*, *"the realm the guild was
+created on"* and *"any realm but one"* all fit equally. `Guild:Current()` reports the
+**character's** realm and Family has no call that reports the guild's, so Family cannot ask the
+question directly - what it can observe is its own echo failing to come back.
+
+**Why it matters to §7.** A character on a partner realm can never announce, so nobody learns
+they run Family unless somebody else announces first - and then the reply, being a whisper,
+works. The exchange is not broken; the *opening* of it is, in one direction, for part of the
+guild. It also makes GUILD-CRAFTERS §7.0 worth fixing for a second reason: routing a
+partner-realm character's records through a home-realm character of the same account is the one
+path that reaches the guild at all.
+
 ### The guild event log, measured on all three clients 2026-08-30
 
 `/family guild log`, run four times: in **ZERO** on Pyrewood Village (Era) as **rank index 8**,
