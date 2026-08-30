@@ -11,6 +11,7 @@ tools/.races-cache/
 tools/.areas-cache/
 tools/.talents-cache/
 tools/.game-words-cache/
+tools/.charged-items-cache/
 
 # Bytecode left behind when one generator imports another
 tools/__pycache__/

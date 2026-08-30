@@ -1483,7 +1483,7 @@ for _, file in ipairs {
 	"Locales/deDE.lua", "Locales/frFR.lua", "Locales/esES.lua", "Locales/ruRU.lua",
 	-- What each client calls each profession and each race, and which spell each talent
 	-- is, generated from the client's own tables.
-	"SkillLines.lua", "Races.lua", "TalentSpells.lua",
+	"SkillLines.lua", "Races.lua", "TalentSpells.lua", "ChargedItems.lua",
 	"Capabilities.lua", "Codec.lua",
 	"Comm.lua", "Database.lua", "Names.lua", "Index.lua",
 	"Recipes.lua", "Cooldowns.lua",
@@ -12391,6 +12391,57 @@ print("a guild that spans a connected group")
 	Family.Database.Members = heldMembers
 	FamilyDB.guild = held
 	_G.GetAutoCompleteRealms = heldRealms
+end)()
+
+print()
+print("which items can carry more than one charge")
+
+-- No container call says how many charges are left: GetContainerItemInfo answers twelve fields
+-- and stackCount is 1, not the count. The remaining number is only in the tooltip, and reading
+-- a tooltip per slot is not free when a bag is eighty slots of mostly cloth.
+--
+-- So this table is the gate - a slot whose item is not in it is never tooltipped - and it is
+-- generated from the client's own ItemEffect rather than typed, because the alternative is a
+-- hand-kept list of oils that is wrong the first time somebody carries a Bag of Marbles.
+;(function()
+	local table_ = Family.ChargedItems
+	check("the generated table is there", type(table_) == "table")
+
+	local count, worst = 0, nil
+	for id, most in pairs(table_ or {}) do
+		count = count + 1
+		if type(id) ~= "number" or type(most) ~= "number" or most < 2 then
+			worst = worst or string.format("%s = %s", tostring(id), tostring(most))
+		end
+	end
+
+	-- A number rather than a range, because the table is generated: a build that halved it
+	-- would be a fetch that half failed, and that is exactly what should stop a release.
+	check("and holds the union of the three builds", count > 300,
+		count .. " items, and three builds gave 181, 158 and 246 with 355 distinct")
+
+	-- Ids are keys and maxima are values, and one charge is not a charge worth tooltipping.
+	check("every row is an id against a maximum of two or more", worst == nil, tostring(worst))
+
+	-- Anchors, measured from wago on 2026-08-30 and named here so that a regenerated table
+	-- that has quietly lost its oils fails rather than passes smaller.
+	check("the oils are in it", (table_ or {})[20747] == 5 and (table_ or {})[20749] == 5,
+		"Lesser Mana Oil and Wizard Oil are the items this was built for")
+	check("and so is the one with the most", (table_ or {})[234142] == 200,
+		"Bottomless Noggenfogger Elixir, 200 charges, the top of the range")
+
+	-- And the generator still exists and still names every build DATASOURCES pins, because a
+	-- table nothing can rebuild is a table that goes stale in silence.
+	local handle = io.open(ROOT .. "/tools/charged-items.py")
+	local tool = handle and handle:read("*a") or ""
+	if handle then handle:close() end
+
+	local missing = {}
+	for _, build in ipairs { "1.15.9.69109", "2.5.6.69110", "5.5.4.69078" } do
+		if not tool:find(build, 1, true) then missing[#missing + 1] = build end
+	end
+	check("tools/charged-items.py knows every build this table was measured from",
+		tool ~= "" and #missing == 0, table.concat(missing, ", "))
 end)()
 
 print()

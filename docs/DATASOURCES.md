@@ -567,6 +567,36 @@ written from imagination; this is the one most realms will actually hit.
 name has no space. The two differ only where one does, which is why the comparison strips
 spaces from both sides rather than trusting either call.
 
+### `tools/charged-items.py` — which items can carry more than one charge
+
+`addons/Family/ChargedItems.lua` is generated from `ItemEffect.Charges` and holds **355 item
+ids** — the union of the three pinned builds, each mapped to the largest maximum seen for it.
+
+| build | items with 2+ charges | new to the union |
+|---|---|---|
+| Classic Era `1.15.9.69109` | 181 | 181 |
+| Burning Crusade `2.5.6.69110` | 158 | 68 |
+| Mists `5.5.4.69078` | 246 | 106 |
+| **union** | | **355** |
+
+It exists to be a gate rather than an answer. The charge count a player wants is the one on the
+item in their bag, which is only in the tooltip; a tooltip per slot is not free when a bag is
+eighty slots of mostly cloth, so a slot whose item is not in this table is never tooltipped.
+
+**Items with exactly one charge are deliberately absent** — four to ten thousand per build,
+every potion and scroll in the game, and they show no charges line at all.
+
+**The union rather than a table per build.** An id means the same item wherever it exists, the
+set is small, and choosing between per-build tables would need a client check this project does
+not make.
+
+**What is actually in it**, because 355 sounds larger than it is: 73 of Era's 181 are one family
+of quest items (`Deputization Authorization: Ashenvale Mission I` through `IX`), and the useful
+core is nearer a hundred — the oils at 5, Bag of Marbles and Bethor's Potion at 10, Triage
+Bandage and Rune of Recall at 20, Elune's Candle at 88, Bottomless Noggenfogger Elixir at 200.
+The chaff is kept: filtering it would mean a judgement about what matters, encoded in a
+generator, that goes stale the day Blizzard adds something. A charge count is a charge count.
+
 ### The guild event log, measured on all three clients 2026-08-30
 
 `/family guild log`, run four times: in **ZERO** on Pyrewood Village (Era) as **rank index 8**,
@@ -711,7 +741,7 @@ Tables that earned their keep:
 | `SkillLineAbility` | `MinSkillLineRank`, `TrivialSkillLineRankLow` (yellow), `TrivialSkillLineRankHigh` (grey) |
 | `ItemSparse` | `Display_lang`, `OverallQualityID`, `ItemLevel`, `RequiredLevel`, `InventoryType`, `RequiredSkillRank`, `MinFactionID`, `MinReputation` |
 | `Item` | `ClassID`, `SubclassID` |
-| `ItemEffect` | `ParentItemID` → `SpellID`, which links a recipe item to what it teaches |
+| `ItemEffect` | `ParentItemID` → `SpellID`, which links a recipe item to what it teaches; and `Charges`, the maximum an item carries |
 | `SpellName`, `SkillLine` | names, `DisplayName_lang` |
 | `Talent` | `TierID`, `ColumnIndex`, `TabID`, `ClassID`, `SpellRank_0` — the spell a talent is |
 | `TalentTab` | `ID`, `OrderIndex`, `ClassMask` — which of a class's three trees this is |

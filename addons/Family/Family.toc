@@ -35,6 +35,7 @@ Locales\ruRU.lua
 SkillLines.lua
 Races.lua
 TalentSpells.lua
+ChargedItems.lua
 Capabilities.lua
 Codec.lua
 Comm.lua
