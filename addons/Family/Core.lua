@@ -285,6 +285,97 @@ function Family:ChargesInGuildBank(tab, slot)
 	end)
 end
 
+-- The world buffs a Chronoboon has suspended, which are in a tooltip and nowhere else
+--
+-- A Supercharged Chronoboon Displacer is an item in a bag (184938) and an aura on the player
+-- (349981). The item says which character has one banked; only the aura says what is inside,
+-- and only as tooltip text. Six other routes were tried and each is written up in
+-- DATASOURCES §2 with what it answered - the spell description is loaded and empty, and the
+-- banked buffs are not auras of their own.
+--
+-- **Every tooltip line is walked, and every row inside every line.** `NumLines` counts the
+-- rows the tooltip lays out, not lines of text: the aura's second tooltip line is one string
+-- of 162 bytes holding eight `\r\n`-separated rows, and reading only as far as the first row
+-- is the mistake that closed this question wrongly for a day (L-034).
+--
+-- **What is stored is the icon's fileID, never the name.** A row reads
+-- `|T134153:24|t |cffffffffRallying Cry of the Dragonslayer (120m)|r`, and the name in the
+-- middle of it is the enUS string only. The fileID is an identifier, is the same on all three
+-- builds, and is distinct for each of the twelve buffs a boon can hold - all measured, in
+-- DATASOURCES §2. So nothing here needs a table of buffs at all: a thirteenth one added by
+-- Blizzard records correctly on a client nobody has regenerated.
+local BOON_AURA = 349981
+
+-- Escapes out, and the space they were padding with them. Pipes are not magic in a Lua
+-- pattern, so these are literal; the icon has to be read before this runs.
+local function bareRow(row)
+	row = row:gsub("|T.-|t", "")
+	row = row:gsub("|A.-|a", "")
+	row = row:gsub("|c%x%x%x%x%x%x%x%x", "")
+	row = row:gsub("|r", "")
+	return (row:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+-- Which aura index the boon is at, or nothing. **By id and never by index**: it was at 1 in
+-- every dump taken, and that is where the player's first buff happens to be.
+local function boonAuraIndex()
+	if type(_G.UnitBuff) ~= "function" then return nil end
+
+	for slot = 1, 40 do
+		-- Captured into a table rather than read off a run of placeholders, which survives
+		-- the signature changing underneath (L-032). Tenth return is the spell id.
+		local aura = { Family:TryCall(_G.UnitBuff, "player", slot) }
+		if aura[10] == BOON_AURA then return slot end
+	end
+
+	return nil
+end
+
+-- A list of `{ icon = fileID, minutes = n }`, or nothing.
+--
+-- Nothing is the ordinary answer and is not a fault: a character with no boon has no such
+-- aura, and a client that will not build the tooltip has no lines to read. A boon holding
+-- buffs this cannot make sense of also answers nothing rather than an empty list, so that
+-- §2.2 stays honest - not seen and none are not the same fact.
+function Family:BankedBuffs()
+	local index = boonAuraIndex()
+	if not index then return nil end
+
+	local tip = scanTooltip()
+	if not tip then return nil end
+
+	Family:TryCall(tip.SetOwner, tip, _G.UIParent, "ANCHOR_NONE")
+	Family:TryCall(tip.ClearLines, tip)
+	Family:TryCall(tip.SetUnitBuff, tip, "player", index)
+
+	-- Bracketed, because TryCall hands back whatever the client returned and tonumber's
+	-- second argument is a base (L-031).
+	local lines = tonumber((Family:TryCall(tip.NumLines, tip))) or 0
+	local found = {}
+
+	for line = 1, lines do
+		local region = _G[SCAN_TOOLTIP .. "TextLeft" .. line]
+		local text = region and Family:TryCall(region.GetText, region)
+		if type(text) == "string" then
+			for row in text:gmatch("[^\r\n]+") do
+				local icon = tonumber(row:match("|T(%d+)"))
+
+				-- A stored buff is a row ending in a parenthesised duration. The header and
+				-- the closing sentence are localised and neither ends that way, so nothing
+				-- here reads a word of any language.
+				local minutes = tonumber(bareRow(row):match("%((%d+)%a*%)$"))
+
+				if icon and minutes then
+					found[#found + 1] = { icon = icon, minutes = minutes }
+				end
+			end
+		end
+	end
+
+	if #found == 0 then return nil end
+	return found
+end
+
 --------------------------------------------------------------------------------------------
 -- Deferred work
 --

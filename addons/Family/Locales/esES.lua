@@ -49,6 +49,7 @@ Family.locales.esES = {
 
 	-- The summary: its column sets, its columns and its totals
 	["%dm"] = "%dm",
+	["%dh"] = "%dh",
 	["Bags"] = "Bolsas",  -- 14
 	["Race"] = "Raza",  -- 15
 	["Chrono"] = "Crono",
@@ -79,6 +80,7 @@ Family.locales.esES = {
 	["Expires in"] = "Caduca en",  -- 12
 	["|cffff4444C.O.D. %s|r"] = "|cffff4444Contra reembolso %s|r",
 	["      |cff9d9d9dnothing in the post that Family has seen|r"] = "      |cff9d9d9dnada en el correo que Family haya visto|r",
+	["      |cff9d9d9dnothing in the boon that Family has read|r"] = "      |cff9d9d9dnada en el chronoboon que Family haya leído|r",
 	["Hearthstone"] = "Piedra de hogar",  -- 26
 	["Grand totals"] = "Totales generales",
 	["Miscellaneous"] = "Varios",  -- 14

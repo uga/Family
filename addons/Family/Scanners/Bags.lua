@@ -267,6 +267,14 @@ function Bags:Scan()
 		-- A count rather than a flag: a character can carry more than one, and "two banked"
 		-- is a different answer from "one" to somebody deciding who to log in.
 		boons       = boons > 0 and boons or Family.CLEAR,
+		-- And what is inside one, which is the aura's tooltip and not the item's - a list of
+		-- `{ icon, minutes }`, an identifier and a number, no name among them (§2.1).
+		--
+		-- Read here rather than in a scanner of its own because it is the same fact from the
+		-- same moment: the boon in the bag and the buffs inside it go to disk together, so a
+		-- panel can never show contents for a boon this character no longer carries. Only
+		-- ever readable for whoever is logged in, which is true of every other bag fact too.
+		banked      = Family:BankedBuffs() or Family.CLEAR,
 		bagSlots    = generalSlots,
 		bagFree     = generalFree,
 		specialSlots = specialSlots,

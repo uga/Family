@@ -18,6 +18,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The Chrono column now opens.** Click the figure and a line unfolds under the character
+  showing which world buffs their Chronoboon is holding — each as its own icon, with the time
+  left written on it, and the game's own description when you hover. Click again to close it.
+
 - **Shift-click the minimap button or the broker bar to change what the money counts.** It
   cycles between your whole family, everyone on this side of this realm, and the character you
   are playing. The member count beside it narrows too, and hovering says which you are looking

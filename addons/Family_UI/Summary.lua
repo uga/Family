@@ -26,6 +26,11 @@ local ROW_HEIGHT = 18
 -- an icon nobody can recognise - which is the whole reason for showing one rather than a
 -- count.
 local LETTER_HEIGHT = 26
+-- A boon's contents get one line and no more: twelve icons in a row, which is the most a
+-- Chronoboon can hold (DATASOURCES §2), each with the game's own tooltip on it.
+local BOON_ICON = 22
+local BOON_SLOTS = 12
+
 local LETTER_ICON = 22
 local LETTER_SLOTS = 12
 local HEADER_HEIGHT = 22
@@ -265,6 +270,10 @@ local currentSet = SETS[1]
 -- character.
 local openMail
 
+-- And whose boon is open, kept apart from the letters so that opening one does not shut the
+-- other: they are different questions about the same character and both fit on the screen.
+local openBoon
+
 local function columnsOf(set)
 	local columns = { MEMBER_COLUMN }
 	for _, column in ipairs(set.build and set.build() or set.columns) do
@@ -384,6 +393,18 @@ local function duration(seconds)
 
 	if days > 0 then return string.format(L["%dd %dh"], days, hours) end
 	if hours > 0 then return string.format(L["%dh %dm"], hours, minutes) end
+	return string.format(L["%dm"], minutes)
+end
+
+-- What is left on a banked buff, short enough to sit in the corner of a 22-pixel icon.
+--
+-- Whole hours as hours, because a world buff is two hours or one and "2h" is what a player
+-- would say; anything else in minutes, because "1h 45m" does not fit and rounding it to "1h"
+-- would be Family stating something untrue about a number it was given exactly.
+local function boonLeft(minutes)
+	if minutes >= 60 and minutes % 60 == 0 then
+		return string.format(L["%dh"], minutes / 60)
+	end
 	return string.format(L["%dm"], minutes)
 end
 
@@ -1045,6 +1066,40 @@ local function makeRow(parent)
 		row.attach[index] = slot
 	end
 
+	-- The Chrono figure, made clickable the same way the mail figure is.
+	row.boonHit = CreateFrame("Button", nil, row)
+	row.boonHit:RegisterForClicks("LeftButtonUp")
+	row.boonHit:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
+	row.boonHit:Hide()
+
+	-- What is inside a boon, as the game's own pictures with the time left written on them.
+	--
+	-- The tooltip is the **spell's**, not anything Family wrote: what a world buff does is the
+	-- game's to say, in the player's language, and a summary that paraphrased it would be one
+	-- more thing to keep true. The recorded fileID is turned back into a spell through
+	-- `Family.WorldBuffs`; a buff too new for that table still draws its own icon and simply
+	-- has no tooltip, which is the honest answer rather than a wrong one.
+	row.boon = {}
+	for index = 1, BOON_SLOTS do
+		local slot = CreateFrame("Button", nil, row)
+		slot:SetSize(BOON_ICON, BOON_ICON)
+
+		slot.icon = slot:CreateTexture(nil, "ARTWORK")
+		slot.icon:SetAllPoints()
+
+		slot.count = slot:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
+		slot.count:SetPoint("BOTTOMRIGHT", -1, 1)
+
+		slot:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
+		UI:AttachTooltip(slot, function(self)
+			if self.spellID then return "spell", self.spellID end
+			return nil
+		end)
+
+		slot:Hide()
+		row.boon[index] = slot
+	end
+
 	-- The gold in the letter, beside its attachments and never folded into the line of
 	-- prose, where it was the first thing the column's width threw away.
 	row.attachMoney = row:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
@@ -1296,9 +1351,10 @@ local function build(frame)
 		-- Asked of the columns rather than of the set's name, so that moving the mail column
 		-- to another set takes its unfold with it rather than leaving this behind to be found
 		-- the next time somebody rearranges a panel.
-		local showsMail = false
+		local showsMail, showsBoon = false, false
 		for _, column in ipairs(columns) do
 			if column.key == "mail" then showsMail = true end
+			if column.key == "boon" then showsBoon = true end
 		end
 		UI:FitColumns(columns, ROW_BUDGET, measure)
 		local realms, byRealm, totals, siblings = gather()
@@ -1391,6 +1447,7 @@ local function build(frame)
 			-- Put away whatever the last thing drawn on this row left behind. Rows come
 			-- out of a pool and a letter's pictures would otherwise sit under a member.
 			for _, slot in ipairs(row.attach) do slot:Hide() end
+			for _, slot in ipairs(row.boon) do slot:Hide() end
 			row.attachMoney:Hide()
 
 			row:SetHeight(height or ROW_HEIGHT)
@@ -1463,6 +1520,9 @@ local function build(frame)
 			row.mailHit:Hide()
 			row.mailHit:SetScript("OnClick", nil)
 
+			row.boonHit:Hide()
+			row.boonHit:SetScript("OnClick", nil)
+
 			for index, column in ipairs(columns) do
 				-- Called rather than folded into an and/or, because a cell returns
 				-- its colour alongside its text and that would keep only the text.
@@ -1492,6 +1552,23 @@ local function build(frame)
 						frame:Refresh()
 					end)
 					row.mailHit:Show()
+				end
+
+				-- The Chrono figure, the same way. Armed only where something was recorded:
+				-- the column also shows a dash for a character whose bags nobody has read,
+				-- and a dash that opens an empty line answers a question with a shrug.
+				if column.key == "boon" and member.meta.banked then
+					local width = column.drawWidth or column.width
+					local key = member.key
+
+					row.boonHit:ClearAllPoints()
+					row.boonHit:SetPoint("LEFT", column.drawX or 0, 0)
+					row.boonHit:SetSize(width, ROW_HEIGHT)
+					row.boonHit:SetScript("OnClick", function()
+						openBoon = (openBoon ~= key) and key or nil
+						frame:Refresh()
+					end)
+					row.boonHit:Show()
 				end
 			end
 
@@ -1589,6 +1666,44 @@ local function build(frame)
 					local line = nextRow()
 					setCell(line, 1, L["      |cff9d9d9dnothing in the post that Family "
 						.. "has seen|r"])
+				end
+			end
+
+			-- What the boon is holding: one line, the buffs in the order the game listed
+			-- them, each as its own picture with the time left written on it.
+			--
+			-- One line and not one per buff, unlike the post. A letter is a paragraph - a
+			-- sender, a subject, an expiry - and a world buff is a picture and a number, so
+			-- twelve of them fit across a row and reading them as a row is how the eye
+			-- compares two characters' boons.
+			if openBoon == member.key and showsBoon then
+				local banked = member.meta.banked or {}
+				local line = nextRow(LETTER_HEIGHT)
+				line.memberKey = member.key
+				line.memberName = member.meta.name or member.key
+				line.memberRealm = member.meta.realm
+				line.borrowed = row.borrowed
+
+				local shown = math.min(BOON_SLOTS, #banked)
+				for index = 1, shown do
+					local buff = banked[index]
+					local slot = line.boon[index]
+
+					slot:ClearAllPoints()
+					slot:SetPoint("LEFT", 24 + (index - 1) * (BOON_ICON + 2), 0)
+
+					-- The fileID is what was recorded and is what is drawn, so a buff this
+					-- table has never heard of still appears as itself. The spell is only
+					-- ever for the tooltip, and nil is a fine answer for it.
+					slot.spellID = (Family.WorldBuffs or {})[buff.icon]
+					slot.icon:SetTexture(buff.icon)
+					slot.count:SetText(boonLeft(buff.minutes or 0))
+					slot:Show()
+				end
+
+				if shown == 0 then
+					setCell(line, 1, L["      |cff9d9d9dnothing in the boon that Family "
+						.. "has read|r"])
 				end
 			end
 

@@ -49,6 +49,7 @@ Family.locales.ruRU = {
 
 	-- The summary: its column sets, its columns and its totals
 	["%dm"] = "%dм",
+	["%dh"] = "%dч",
 	["Bags"] = "Сумки",  -- 14
 	["Race"] = "Раса",  -- 15
 	["Chrono"] = "Темп.",
@@ -79,6 +80,7 @@ Family.locales.ruRU = {
 	["Expires in"] = "Истекает",  -- 12
 	["|cffff4444C.O.D. %s|r"] = "|cffff4444Наложенный платёж %s|r",
 	["      |cff9d9d9dnothing in the post that Family has seen|r"] = "      |cff9d9d9dв почте нет ничего, что Family видела|r",
+	["      |cff9d9d9dnothing in the boon that Family has read|r"] = "      |cff9d9d9dв хронобуне нет ничего, что Family прочла|r",
 	["Hearthstone"] = "Камень возвр.",  -- 26
 	["Grand totals"] = "Общий итог",
 	["Miscellaneous"] = "Разное",  -- 14

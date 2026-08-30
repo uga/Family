@@ -291,6 +291,37 @@ function frameMethods:SetBagItem(bag, slot)
 	end
 end
 
+-- The player's auras, and what a tooltip pointed at one says.
+--
+-- A Chronoboon's contents are tooltip text and nothing else (DATASOURCES §2), and the shape
+-- matters more than the content: the whole of it arrives in **one** tooltip line, as rows
+-- separated by \r\n, each buff row carrying an icon escape and a colour code. A fake that
+-- handed back one row per tooltip line would pass a reader that only ever read the first row -
+-- which is exactly the reader that was written first, and exactly the misread behind L-034.
+PLAYER_AURAS = {}
+AURA_LINES = {}
+AURA_ASKED = 0
+
+function UnitBuff(unit, index)
+	local aura = PLAYER_AURAS[index]
+	if not aura then return nil end
+	-- Ten returns, because the tenth is the spell id and that is the one Family reads.
+	return aura.name, nil, aura.count, nil, nil, nil, nil, nil, nil, aura.spellID
+end
+
+function frameMethods:SetUnitBuff(unit, index)
+	AURA_ASKED = AURA_ASKED + 1
+	wipe(self.__lines)
+
+	local lines = AURA_LINES[index] or {}
+	for line = 1, 12 do
+		local text = lines[line]
+		if text then table.insert(self.__lines, { text }) end
+		_G[(self.__name or "?") .. "TextLeft" .. line] =
+			text and { GetText = function() return text end } or nil
+	end
+end
+
 ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
 
 function frameMethods:SetItemByID(id)
@@ -1521,6 +1552,7 @@ for _, file in ipairs {
 	-- What each client calls each profession and each race, and which spell each talent
 	-- is, generated from the client's own tables.
 	"SkillLines.lua", "Races.lua", "TalentSpells.lua", "ChargedItems.lua",
+	"WorldBuffs.lua",
 	"Capabilities.lua", "Codec.lua",
 	"Comm.lua", "Database.lua", "Names.lua", "Index.lua",
 	"Recipes.lua", "Cooldowns.lua",
@@ -12690,7 +12722,38 @@ print("reading a charge count off a tooltip")
 -- says, without either word appearing here.
 ;(function()
 	local heldFormat = _G.ITEM_SPELL_CHARGES
-	_G.ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
+	_G.-- The player's auras, and what a tooltip pointed at one says.
+--
+-- A Chronoboon's contents are tooltip text and nothing else (DATASOURCES §2), and the shape
+-- matters more than the content: the whole of it arrives in **one** tooltip line, as rows
+-- separated by \r\n, each buff row carrying an icon escape and a colour code. A fake that
+-- handed back one row per tooltip line would pass a reader that only ever read the first row -
+-- which is exactly the reader that was written first, and exactly the misread behind L-034.
+PLAYER_AURAS = {}
+AURA_LINES = {}
+AURA_ASKED = 0
+
+function UnitBuff(unit, index)
+	local aura = PLAYER_AURAS[index]
+	if not aura then return nil end
+	-- Ten returns, because the tenth is the spell id and that is the one Family reads.
+	return aura.name, nil, aura.count, nil, nil, nil, nil, nil, nil, aura.spellID
+end
+
+function frameMethods:SetUnitBuff(unit, index)
+	AURA_ASKED = AURA_ASKED + 1
+	wipe(self.__lines)
+
+	local lines = AURA_LINES[index] or {}
+	for line = 1, 12 do
+		local text = lines[line]
+		if text then table.insert(self.__lines, { text }) end
+		_G[(self.__name or "?") .. "TextLeft" .. line] =
+			text and { GetText = function() return text end } or nil
+	end
+end
+
+ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
 
 	-- First call builds the tooltip through the real CreateFrame, which registers the global.
 	Family:ChargesIn(0, 1)
@@ -12711,7 +12774,38 @@ print("reading a charge count off a tooltip")
 		end
 	end
 
-	_G.ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
+	_G.-- The player's auras, and what a tooltip pointed at one says.
+--
+-- A Chronoboon's contents are tooltip text and nothing else (DATASOURCES §2), and the shape
+-- matters more than the content: the whole of it arrives in **one** tooltip line, as rows
+-- separated by \r\n, each buff row carrying an icon escape and a colour code. A fake that
+-- handed back one row per tooltip line would pass a reader that only ever read the first row -
+-- which is exactly the reader that was written first, and exactly the misread behind L-034.
+PLAYER_AURAS = {}
+AURA_LINES = {}
+AURA_ASKED = 0
+
+function UnitBuff(unit, index)
+	local aura = PLAYER_AURAS[index]
+	if not aura then return nil end
+	-- Ten returns, because the tenth is the spell id and that is the one Family reads.
+	return aura.name, nil, aura.count, nil, nil, nil, nil, nil, nil, aura.spellID
+end
+
+function frameMethods:SetUnitBuff(unit, index)
+	AURA_ASKED = AURA_ASKED + 1
+	wipe(self.__lines)
+
+	local lines = AURA_LINES[index] or {}
+	for line = 1, 12 do
+		local text = lines[line]
+		if text then table.insert(self.__lines, { text }) end
+		_G[(self.__name or "?") .. "TextLeft" .. line] =
+			text and { GetText = function() return text end } or nil
+	end
+end
+
+ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
 	showing("Lesser Mana Oil", "Requires Level 40",
 		"Use: While applied to target weapon it restores 8 mana. (1 Sec Cooldown)",
 		"5 Charges", "<Made by Nervina>")
@@ -12761,7 +12855,38 @@ print("and recording it, for the few slots that need it")
 -- altogether and nothing would have said so.
 ;(function()
 	local heldFormat = _G.ITEM_SPELL_CHARGES
-	_G.ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
+	_G.-- The player's auras, and what a tooltip pointed at one says.
+--
+-- A Chronoboon's contents are tooltip text and nothing else (DATASOURCES §2), and the shape
+-- matters more than the content: the whole of it arrives in **one** tooltip line, as rows
+-- separated by \r\n, each buff row carrying an icon escape and a colour code. A fake that
+-- handed back one row per tooltip line would pass a reader that only ever read the first row -
+-- which is exactly the reader that was written first, and exactly the misread behind L-034.
+PLAYER_AURAS = {}
+AURA_LINES = {}
+AURA_ASKED = 0
+
+function UnitBuff(unit, index)
+	local aura = PLAYER_AURAS[index]
+	if not aura then return nil end
+	-- Ten returns, because the tenth is the spell id and that is the one Family reads.
+	return aura.name, nil, aura.count, nil, nil, nil, nil, nil, nil, aura.spellID
+end
+
+function frameMethods:SetUnitBuff(unit, index)
+	AURA_ASKED = AURA_ASKED + 1
+	wipe(self.__lines)
+
+	local lines = AURA_LINES[index] or {}
+	for line = 1, 12 do
+		local text = lines[line]
+		if text then table.insert(self.__lines, { text }) end
+		_G[(self.__name or "?") .. "TextLeft" .. line] =
+			text and { GetText = function() return text end } or nil
+	end
+end
+
+ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
 
 	local key = Family:CurrentMember()
 	local tip = _G.FamilyScanTooltip
@@ -12955,6 +13080,156 @@ print("a world buff banked in a Chronoboon")
 	check("and using them clears it rather than leaving it on disk",
 		(Family.Database:Members()[key].meta or {}).boons == nil,
 		tostring((Family.Database:Members()[key].meta or {}).boons))
+
+	-- What is inside goes to disk in the same scan as the boon itself, so a panel can never
+	-- draw contents for a boon this character no longer carries.
+	local REAL = "World effects suspended:\r\n\r\n"
+		.. " |T134153:24|t |cffffffffRallying Cry of the Dragonslayer (120m)|r\r\n\r\n"
+		.. "While a world effect is suspended, you cannot benefit from"
+
+	slot[6] = { 184938, 1 }
+	PLAYER_AURAS[1] = { name = "Supercharged Chronoboon Displacer", spellID = 349981 }
+	AURA_LINES[1] = { "Supercharged Chronoboon Displacer", REAL }
+	Family.Bags:Scan()
+
+	local banked = (Family.Database:Members()[key].meta or {}).banked
+	check("a bag scan records what is inside the boon", banked and #banked == 1,
+		tostring(banked and #banked))
+	check("as an icon and a number, with no name among them",
+		banked and banked[1].icon == 134153 and banked[1].minutes == 120
+			and banked[1].name == nil,
+		tostring(banked and banked[1] and banked[1].icon))
+
+	-- Released between one scan and the next. A stale list of buffs is worse than none: it
+	-- sends somebody to log in a character whose boon is already spent.
+	PLAYER_AURAS[1], AURA_LINES[1] = nil, nil
+	Family.Bags:Scan()
+	check("and releasing it clears them rather than leaving them on disk",
+		(Family.Database:Members()[key].meta or {}).banked == nil,
+		tostring((Family.Database:Members()[key].meta or {}).banked))
+
+	slot[6] = nil
+	Family.Bags:Scan()
+end)()
+
+-- The generated table that puts a name under a recorded icon
+--
+-- Keyed by icon and not by spell, because the icon is what a tooltip row carries and what
+-- Family records. 134153 is Rallying Cry both in the client's own SpellMisc and in the bytes
+-- the game returned when this was measured (DATASOURCES §2), which is what makes the table a
+-- confirmation rather than a correspondence.
+;(function()
+	local buffs = Family.WorldBuffs or {}
+
+	check("the world buff table is keyed by icon fileID", buffs[134153] == 22888,
+		tostring(buffs[134153]))
+
+	local count = 0
+	for _ in pairs(buffs) do count = count + 1 end
+	check("and holds the twelve a boon can carry", count == 12, tostring(count))
+
+	-- The whole design rests on one icon meaning one buff. If two ever shared one, the panel
+	-- would file one under the other's picture and say nothing about it.
+	local spells = {}
+	local shared = {}
+	for icon, spell in pairs(buffs) do
+		if spells[spell] then shared[#shared + 1] = tostring(spell) end
+		spells[spell] = icon
+	end
+	check("with no two icons pointing at one spell", #shared == 0, table.concat(shared, " "))
+end)()
+
+-- What is inside a boon, which is one tooltip line and eight rows
+--
+-- The fixture is the string the game actually returned, byte for byte, measured on an enUS Era
+-- client with one buff stored (DATASOURCES §2). Its length is checked *first* and on its own,
+-- because the whole of L-034 is that a string of this shape can be misread as a shorter one:
+-- if a later edit trims the fixture to something tidier, every check below would still pass
+-- against a shape the client never produces.
+;(function()
+	local ROW = " |T134153:24|t |cffffffffRallying Cry of the Dragonslayer (120m)|r"
+	local HEAD = "World effects suspended:"
+	local FOOT = "While a world effect is suspended, you cannot benefit from"
+	local REAL = HEAD .. "\r\n\r\n\r\n" .. ROW .. "\r\n\r\n\r\n\r\n" .. FOOT
+
+	check("the fixture is the 162 bytes the client returned", #REAL == 162, tostring(#REAL))
+	check("and the buff row inside it is 66 of them, not the 41 it reads as",
+		#ROW == 66, tostring(#ROW))
+
+	PLAYER_AURAS, AURA_LINES = {}, {}
+
+	check("a character with no boon has nothing banked", Family:BankedBuffs() == nil)
+
+	-- The boon is deliberately not first. It was at index 1 in every dump taken, and a reader
+	-- that walked to the first aura would have passed every one of them.
+	PLAYER_AURAS[1] = { name = "Arcane Intellect", spellID = 10157 }
+	PLAYER_AURAS[2] = { name = "Mage Armor", spellID = 22783 }
+	PLAYER_AURAS[3] = { name = "Supercharged Chronoboon Displacer", spellID = 349981 }
+	AURA_LINES[3] = { "Supercharged Chronoboon Displacer", REAL }
+
+	local banked = Family:BankedBuffs()
+	check("a boon with one buff in it reads as one", banked and #banked == 1,
+		tostring(banked and #banked))
+	check("the icon is the fileID out of the escape, not a name",
+		banked and banked[1].icon == 134153, tostring(banked and banked[1].icon))
+	check("and the duration is the number of minutes",
+		banked and banked[1].minutes == 120, tostring(banked and banked[1].minutes))
+
+	-- The header and the closing sentence are rows of the same string and must not be read as
+	-- buffs. Neither ends in a parenthesised duration, which is the whole of the test the
+	-- reader applies - and the only one available, since both are localised.
+	check("the header and the footer are not counted as buffs", #banked == 1)
+
+	-- A localised client says all of this differently, and nothing in the reader may depend on
+	-- an English word. Only the icon escape and the parenthesised duration survive translation.
+	AURA_LINES[3] = { "Déplaceur de chronochance surchargé",
+		"Effets de monde suspendus :\r\n\r\n" ..
+		" |T134153:24|t |cffffffffCri de ralliement du Tueur de dragons (120m)|r\r\n\r\n" ..
+		"Tant qu'un effet de monde est suspendu, vous ne pouvez pas bénéficier de" }
+	local french = Family:BankedBuffs()
+	check("a French client reads the same icon and the same minutes",
+		french and #french == 1 and french[1].icon == 134153 and french[1].minutes == 120,
+		tostring(french and french[1] and french[1].icon))
+
+	-- Two buffs in one string. **This shape is inferred, not measured** - every dump taken had
+	-- one buff in it (DATASOURCES §2 says so in as many words). The check exists so that the
+	-- reader's behaviour on more than one is decided here rather than in the game, and it is
+	-- written to take any number in any order precisely so the guess is not load-bearing.
+	AURA_LINES[3] = { "Supercharged Chronoboon Displacer",
+		HEAD .. "\r\n\r\n" ..
+		" |T136109:24|t |cffffffffFengus' Ferocity (60m)|r\r\n" ..
+		ROW .. "\r\n\r\n" .. FOOT }
+	local two = Family:BankedBuffs()
+	check("two buffs in one string read as two", two and #two == 2, tostring(two and #two))
+	check("in the order the game wrote them", two and two[1].icon == 136109
+		and two[2].icon == 134153, tostring(two and two[1].icon))
+	check("each with its own duration", two and two[1].minutes == 60
+		and two[2].minutes == 120, tostring(two and two[1].minutes))
+
+	-- The duration is the parenthesised number **at the end of the row**, and not the first one
+	-- in it. This row is synthetic - no measured buff name carries a bracket - and the check is
+	-- here to pin the rule rather than a string: the header and the footer are already excluded
+	-- by having no icon escape at all, so anchoring is the only thing standing between a name
+	-- with a number in it and a duration read out of the middle of a sentence.
+	AURA_LINES[3] = { "Supercharged Chronoboon Displacer",
+		HEAD .. "\r\n\r\n" ..
+		" |T134153:24|t |cffffffffRallying Cry (2) (120m)|r\r\n\r\n" .. FOOT }
+	local bracketed = Family:BankedBuffs()
+	check("the duration is the group at the end of the row, not the first one in it",
+		bracketed and bracketed[1].minutes == 120,
+		tostring(bracketed and bracketed[1] and bracketed[1].minutes))
+
+	-- A boon whose rows say nothing this can parse answers *nothing*, not an empty list. Not
+	-- looked and none are different facts (§2.2), and an empty list is the second one.
+	AURA_LINES[3] = { "Supercharged Chronoboon Displacer", HEAD .. "\r\n\r\n" .. FOOT }
+	check("a boon holding nothing readable answers nothing, not an empty list",
+		Family:BankedBuffs() == nil)
+
+	-- Released: the aura goes, and so must the answer.
+	PLAYER_AURAS[3] = nil
+	check("and releasing the boon clears it", Family:BankedBuffs() == nil)
+
+	PLAYER_AURAS, AURA_LINES = {}, {}
 end)()
 
 print()
