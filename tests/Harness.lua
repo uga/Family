@@ -12199,6 +12199,176 @@ print("what this client calls a character, and whether two can collide")
 end)()
 
 print()
+print("heard by others, never by ourselves")
+
+-- A character on a realm other than the guild's own can receive on the guild addon channel and
+-- cannot send on it (DATASOURCES §2, measured on Mists). Every send is accepted - the same
+-- answer the client gives when a message does arrive - and the message then does not exist,
+-- for anybody, this client included.
+--
+-- Family cannot fix that. What it must stop doing is sending the player to look at the channel,
+-- which is the one part they cannot inspect, when the shape of it is right here in the counts.
+;(function()
+	local stats = Family.Guild.stats
+	local held = { sent = stats.sent, echo = stats.echo, answered = stats.answered,
+		arrived = stats.arrived }
+
+	local function saidOn(sent, echo, answered)
+		stats.sent, stats.echo, stats.answered = sent, echo, answered
+		stats.arrived = echo + answered
+
+		local mark = #DEFAULT_CHAT_FRAME.messages
+		Family.Guild:Diagnose()
+
+		local out = {}
+        for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+			out[#out + 1] = tostring(DEFAULT_CHAT_FRAME.messages[index])
+		end
+		return table.concat(out, "\n")
+	end
+
+	local WARNING = "Your own announcements are not coming back"
+
+	check("somebody heard and nothing of ours came back is named",
+		saidOn(3, 0, 1):find(WARNING, 1, true) ~= nil)
+
+	-- Gated on having heard somebody. A lone Family user on a client that simply does not echo
+	-- would otherwise be told they are broken, and whether Era and Burning Crusade echo at all
+	-- is unmeasured.
+	check("but being alone in the guild is not, on any client",
+		saidOn(3, 0, 0):find(WARNING, 1, true) == nil,
+		"a lone user on a client that does not echo would be told they are broken")
+
+	check("and neither is a client whose own announcements do come back",
+		saidOn(3, 2, 1):find(WARNING, 1, true) == nil)
+
+	check("and neither is one that has sent nothing",
+		saidOn(0, 0, 1):find(WARNING, 1, true) == nil)
+
+	stats.sent, stats.echo, stats.answered, stats.arrived =
+		held.sent, held.echo, held.answered, held.arrived
+end)()
+
+print()
+print("a guild that spans a connected group")
+
+-- Measured 2026-08-30: guild Uga holds Eccebombo-MirageRaceway and Zinetta-Garalon at once, and
+-- Offering() required an exact realm match - so a character genuinely in the guild was withheld
+-- from it, and the loss is the size of the cluster.
+--
+-- The grid is the trap. Guild:Key builds the key from the realm, so a box ticked while playing
+-- Zinetta lands in "Uga-Garalon" and one ticked while playing Pinetta in "Uga-Mirage Raceway" -
+-- the same guild, two drawers. Harmless while Offering() only described this realm; once it
+-- describes the group, the panel would draw a row from the wrong drawer, find it empty, and
+-- write a second grant for a decision already taken.
+;(function()
+	local held, heldRealms = FamilyDB.guild, _G.GetAutoCompleteRealms
+	_G.GetAutoCompleteRealms = function()
+		return { "MirageRaceway", "Garalon", "Norushen" }
+	end
+
+	check("a realm is its own group", Family.Guild:SameRealmGroup("Garalon", "Garalon"))
+	check("and two realms the client calls one group are one group",
+		Family.Guild:SameRealmGroup("Garalon", "Mirage Raceway"),
+		"GetRealmName spells it with a space and the list without one")
+	check("but a realm outside the list is not",
+		Family.Guild:SameRealmGroup("Pyrewood Village", "Mirage Raceway") == false)
+
+	-- A list that does not contain us is a list about somebody else.
+	check("and neither is one where we are not in the list ourselves",
+		Family.Guild:SameRealmGroup("Garalon", "Pyrewood Village") == false)
+
+	-- Where the client will not answer, the exact match is the answer. Widening on a list
+	-- nobody returned would offer a character in a guild called Ronin on one realm to a guild
+	-- called Ronin on an unconnected other.
+	_G.GetAutoCompleteRealms = nil
+	check("a client with no such call falls back to an exact match",
+		Family.Guild:SameRealmGroup("Garalon", "Garalon")
+			and Family.Guild:SameRealmGroup("Garalon", "Mirage Raceway") == false)
+
+	_G.GetAutoCompleteRealms = function()
+		return { "MirageRaceway", "Garalon" }
+	end
+
+	-- One decision, read from either character.
+	FamilyDB.guild = { known = {}, users = {}, grants = {}, recipes = {}, announced = {} }
+	local heldMembers = Family.Database.Members
+	Family.Database.Members = function()
+		return {
+			["Pinetta-MirageRaceway"] = { meta = { guild = "Uga", realm = "Mirage Raceway" } },
+			["Zinetta-Garalon"] = { meta = { guild = "Uga", realm = "Garalon" } },
+			["Elsewhere-Pyrewood"] = { meta = { guild = "Uga", realm = "Pyrewood Village" } },
+		}
+	end
+
+	-- Ticked while playing Zinetta, whose client calls the guild Uga-Garalon.
+	Family.Guild:SetShare("Uga-Garalon", "Zinetta-Garalon", 197, true)
+	check("a grant ticked on one realm is filed under that character's own guild key",
+		FamilyDB.guild.grants["Uga-Garalon"]
+			and FamilyDB.guild.grants["Uga-Garalon"]["Zinetta-Garalon"][197] == true)
+
+	-- Read while playing Pinetta, whose client calls the same guild Uga-Mirage Raceway.
+	check("and is read as ticked from a character on the other realm",
+		Family.Guild:Shares("Uga-Mirage Raceway", "Zinetta-Garalon", 197),
+		"the panel would draw an empty box over a decision already taken")
+
+	-- And ticking from there must not open a second drawer for the same decision.
+	Family.Guild:SetShare("Uga-Mirage Raceway", "Zinetta-Garalon", 197, false)
+	check("and unticking it from there undoes the same grant, not a second one",
+		Family.Guild:Shares("Uga-Garalon", "Zinetta-Garalon", 197) == false
+			and FamilyDB.guild.grants["Uga-Mirage Raceway"] == nil,
+		"a second grant was written for one decision")
+
+	-- A character who has since joined another guild must not have that guild's grants read
+	-- under this one's name.
+	Family.Guild:SetShare("Somewhere Else-Garalon", "Zinetta-Garalon", 197, true)
+	check("a grant in another guild is not read under this one",
+		Family.Guild:Shares("Uga-Mirage Raceway", "Zinetta-Garalon", 197) == false)
+
+	-- And that Offering and the diagnosis actually *use* the predicate.
+	--
+	-- The checks above hold the predicate and not the claim, which is L-030 exactly: putting
+	-- the exact realm match back into Offering left every one of them green.
+	local heldGuildInfo, heldRealmName = _G.GetGuildInfo, _G.GetRealmName
+	local heldPayload = Family.Database.Payload
+	_G.GetGuildInfo = function() return "Uga", "Member", 3 end
+	_G.GetRealmName = function() return "Mirage Raceway" end
+	Family.Database.Payload = function() return {} end
+
+	local offering = Family.Guild:Offering() or {}
+	check("a character on a connected realm is offered to the guild",
+		offering["Zinetta-Garalon"] ~= nil,
+		"in the guild, on a realm the client calls the same group, and withheld from it")
+	check("our own character on this realm still is",
+		offering["Pinetta-MirageRaceway"] ~= nil)
+	check("and one in the same guild on an unconnected realm still is not",
+		offering["Elsewhere-Pyrewood"] == nil)
+
+	-- The diagnosis has to agree with what was actually sent, or it names people who are
+	-- being offered as people who are not.
+	local mark = #DEFAULT_CHAT_FRAME.messages
+	Family.Guild:Diagnose()
+	local said = {}
+	for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+		said[#said + 1] = tostring(DEFAULT_CHAT_FRAME.messages[index])
+	end
+	said = table.concat(said, "\n")
+
+	check("the diagnosis names the one on an unconnected realm as not offered",
+		said:find("recorded on another realm", 1, true) ~= nil
+			and said:find("Elsewhere", 1, true) ~= nil)
+	check("and does not name the one it is now offering",
+		said:find("Zinetta", 1, true) == nil,
+		"the diagnosis says withheld about a character that was sent")
+
+	Family.Database.Payload = heldPayload
+	_G.GetGuildInfo, _G.GetRealmName = heldGuildInfo, heldRealmName
+	Family.Database.Members = heldMembers
+	FamilyDB.guild = held
+	_G.GetAutoCompleteRealms = heldRealms
+end)()
+
+print()
 print("dropping a player nobody has heard from")
 
 -- The other half of the promise in spec §7.1, and the only half that does not need the other

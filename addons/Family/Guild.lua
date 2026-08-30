@@ -238,6 +238,33 @@ end
 -- Keyed by the guild as well as by the character and the profession, because that is what was
 -- agreed to: *this guild may see this*. A grant that followed its owner into the next guild
 -- would not be a grant anybody had made.
+-- The guild key as *that character* files its own grants under.
+--
+-- A grant is made to a guild, and on a connected group two characters of ours in one guild do
+-- not agree what realm it is on - Guild:Key builds the key from the realm, so a box ticked
+-- while playing Zinetta lands in "Uga-Garalon" and one ticked while playing Pinetta in
+-- "Uga-Mirage Raceway". The same guild, two drawers.
+--
+-- That was harmless while Offering() only ever described characters on this realm. Now that it
+-- describes the whole connected group, the panel would draw Zinetta's row from Pinetta's drawer,
+-- find it empty, and write a second grant for a decision already taken - so the box would read
+-- unticked on one character and ticked on the other, for one profession, in one guild.
+--
+-- Resolved from the member rather than from whoever is looking. One drawer per character, and
+-- both panels open the same one.
+--
+-- Only when the guild agrees, tested on the key's own shape rather than by splitting it: a
+-- character who has since joined another guild must not have that guild's grants read here.
+local function grantKey(guildKey, memberKey)
+	local entry = (Family.Database:Members() or {})[memberKey]
+	local meta = entry and entry.meta
+	if type(meta) ~= "table" then return guildKey end
+	if type(meta.guild) ~= "string" or type(guildKey) ~= "string" then return guildKey end
+	if guildKey:sub(1, #meta.guild + 1) ~= meta.guild .. "-" then return guildKey end
+
+	return Guild:Key(meta.guild, meta.realm) or guildKey
+end
+
 function Guild:Shares(guildKey, memberKey, skillLine)
 	if not (guildKey and memberKey and skillLine) then return false end
 
@@ -248,7 +275,8 @@ function Guild:Shares(guildKey, memberKey, skillLine)
 	-- decision they made.
 	if not self:Shareable(skillLine) then return false end
 
-	local perMember = (store().grants[guildKey] or {})[memberKey]
+	local key = grantKey(guildKey, memberKey)
+	local perMember = (store().grants[key] or {})[memberKey]
 	return (perMember and perMember[skillLine]) and true or false
 end
 
@@ -279,6 +307,8 @@ end
 
 function Guild:SetShare(guildKey, memberKey, skillLine, on)
 	if not (guildKey and memberKey and skillLine) then return false end
+
+	guildKey = grantKey(guildKey, memberKey)
 
 	local grants = store().grants
 	grants[guildKey] = grants[guildKey] or {}
@@ -639,6 +669,47 @@ end
 -- carrying this key would be dropped by everybody whose client answered GetRealmName
 -- differently, which is how a guild of Family users can sit there reading "0 running Family".
 -- What crosses is the guild's name, because that is the thing everybody in it agrees on.
+-- A realm name as it can be compared, whichever call it came from.
+--
+-- Measured on Mists: GetRealmName answers "Mirage Raceway", GetNormalizedRealmName and
+-- GetAutoCompleteRealms answer "MirageRaceway", and the addon channel uses the second form.
+-- Apostrophes survive normalising and spaces do not, so the spaces come out of both sides
+-- rather than one being trusted to match the other.
+local function realmKey(realm)
+	if type(realm) ~= "string" or realm == "" then return nil end
+	return (realm:gsub("%s+", "")):lower()
+end
+
+-- Whether two realms are one group as far as the client is concerned.
+--
+-- **Asked of the client rather than assumed** (DATASOURCES §2). GetAutoCompleteRealms answers
+-- with the connected group - five realms, measured - and a guild spans it: Uga holds
+-- Eccebombo-MirageRaceway and Zinetta-Garalon at once. Offering() used to require an exact
+-- realm match, which withheld a character genuinely in the guild from the guild.
+--
+-- The exact match stays as the answer where the call does not exist, which is the older
+-- clients and any client with no connected realms: widening on a list nobody returned would be
+-- offering a character in a guild called *Ronin* on one realm to a guild called *Ronin* on an
+-- unconnected other, which is the conflation the realm test was there to prevent.
+function Guild:SameRealmGroup(theirs, ours)
+	local a, b = realmKey(theirs), realmKey(ours)
+	if not (a and b) then return false end
+	if a == b then return true end
+
+	local list = Family:TryCall(GetAutoCompleteRealms)
+	if type(list) ~= "table" then return false end
+
+	local group = {}
+	for _, name in ipairs(list) do
+		local key = realmKey(name)
+		if key then group[key] = true end
+	end
+
+	-- Both ends in the same list, not just theirs. A list that does not contain us is a list
+	-- about somebody else.
+	return (group[a] and group[b]) and true or false
+end
+
 function Guild:Key(name, realm)
 	if type(name) ~= "string" or name == "" then return nil end
 	if type(realm) ~= "string" or realm == "" then return nil end
@@ -802,7 +873,7 @@ function Guild:Offering()
 	for key, entry in pairs(Family.Database:Members()) do
 		local meta = entry.meta or {}
 
-		if meta.guild == name and meta.realm == realm then
+		if meta.guild == name and self:SameRealmGroup(meta.realm, realm) then
 			local payload = Family.Database:Payload(key) or {}
 
 			out[key] = {
@@ -2025,7 +2096,7 @@ function Guild:Diagnose()
 				else
 					moreGuilds = moreGuilds + 1
 				end
-			elseif meta.realm ~= realm then
+			elseif not self:SameRealmGroup(meta.realm, realm) then
 				-- In this guild by name and left out anyway, which on connected realms is a
 				-- thing that happens to characters who are genuinely in it: two members of
 				-- one guild do not agree about what realm they are on (see Guild:Key), and
@@ -2185,6 +2256,27 @@ function Guild:Diagnose()
 				.. "exchange, and only for professions the other end has ticked and "
 				.. "opened|r"])
 		end
+	end
+
+	-- Heard by others and never by ourselves, which is a thing a client can be.
+	--
+	-- Measured on Mists (DATASOURCES §2): a character on a realm other than the guild's own
+	-- can *receive* on the guild addon channel and cannot *send* on it. Every send is accepted
+	-- - the same answer the client gives when a message does arrive - and the message then
+	-- does not exist, for anybody, including this client. Rank, guild chat permission and the
+	-- account were each eliminated by measurement; only the realm was left.
+	--
+	-- The signature is precise: somebody else's announcement arrived, so the channel delivers
+	-- *here*, and none of ours ever came back. Gated on having heard somebody, because a lone
+	-- Family user on a client that simply does not echo would otherwise be told they are
+	-- broken - and whether Era and Burning Crusade echo is still unmeasured.
+	if stats.sent > 0 and stats.echo == 0 and stats.answered > 0 then
+		Family:Print(L["|cffffaa00Your own announcements are not coming back.|r Somebody "
+			.. "else's reached this client, so the channel delivers here - but nothing of "
+			.. "yours has returned, which on a guild spanning connected realms is what a "
+			.. "character on another realm looks like: able to hear the guild and not to "
+			.. "speak to it. What you share still reaches anybody who announces first. Ask a "
+			.. "guildmate whether they can see you."])
 	end
 
 	-- **Said as what is known rather than as a verdict, and split three ways to keep it that
