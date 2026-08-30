@@ -1054,6 +1054,13 @@ The generalisable form: **wrapping a call in `tonumber`, `select`, `find` or `gs
 where extra return values change meaning rather than being discarded.** If the inner call is one
 whose arity is the client's business and not ours, bracket it.
 
+**Postscript, measured the same day.** `UnitCharacterPoints("player")` returns **one** value on
+Burning Crusade, so that site was never at risk and the bracket there is insurance rather than a
+repair. `GetNumGuildMembers` remains the only site confirmed broken, and it answers two values
+on Mists *and* Era. The other five are unmeasured and stay bracketed: the point of the rule is
+that the arity is the client's to change and not ours to assume, and six sites that read
+correctly today cost one bracket each to stop being a question.
+
 ## L-032 — A snippet handed to somebody is text, and text goes through a renderer
 
 Three exchanges were spent on probes that "returned nothing" in the game. They were syntax
