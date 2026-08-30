@@ -409,9 +409,10 @@ What it does not give, and what therefore cannot be built on it alone:
 - ~~**Whether a deleted character appears at all is untested.**~~ **Answered 2026-08-30: it
   produces a `quit`.** Deletion is indistinguishable from leaving, which costs nothing - the
   consequence is the same. The case this was opened for has a source.
-- **Whether being kicked is a `quit` or a `remove` is unknown** — no removes in 200 entries
-  across two guilds, beside 77 quits. It matters less now, but anything reading this has to
-  know every kind that means *gone*.
+- ~~**Whether being kicked is a `quit` or a `remove` is unknown.**~~ **Answered 2026-08-30: it
+  is a `remove`**, and it names the departed in **position 3** where `quit` names them in
+  position 2 — position 2 on a `remove` is whoever did the kicking. Reading it the way `quit`
+  allows would conclude the guild master had left. Both kinds mean *gone*.
 - **The log is a stream, not a state.** A character appears once per thing that happened to
   them, so *is this character in the guild now* is their **last** mention and not their first.
 

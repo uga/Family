@@ -188,9 +188,9 @@ whole point is that they stop being recollection.
 - [x] **What a deletion looks like — settled 2026-08-30.** It produces a `quit`, exactly as
       leaving does, and the client says "X left the guild" in chat. There is a trace, which is
       what the probe was opened to find out.
-- [ ] **Is a kick a `quit` or a `remove`?** Invite a throwaway alt and `/gkick` it. No `remove`
-      has appeared in 200 entries across two guilds beside 77 quits, which is suggestive and
-      not proof — and anything reading this log has to know every kind that means *gone*.
+- [x] **A kick is a `remove` — settled 2026-08-30**, and it names the departed in position 3
+      where `quit` names them in position 2. Position 2 on a `remove` is whoever did the
+      kicking, so reading it the way `quit` allows concludes that the guild master left.
 
 #### Cooldowns, with a guildmate
 

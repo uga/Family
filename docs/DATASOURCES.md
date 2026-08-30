@@ -300,11 +300,33 @@ Two things fell out of the same run.
   anything deciding *is this character in the guild now* has to take their **last** mention and
   not their first. With the oldest at index 1, that is the highest index that names them.
 
-**One question still open.** No `remove` appeared in 200 entries across two guilds beside 77
-`quit`, so whether being kicked is its own kind or looks like quitting is still unknown -
-suggestive rather than untested, but not proof, because neither guild need have kicked anybody
-in the window. It matters less than it did now that deletion is known to register, but anything
-reading this log has to know every kind that means *gone*.
+**Being kicked is its own kind, `remove`** - measured 2026-08-30 by kicking somebody, and the
+opposite of what 200 entries across two guilds had suggested. Neither of those guilds had kicked
+anybody in its window, which is why a count of nothing is not a measurement.
+
+**And it names the departed in a different position from `quit`.** This is the trap in the whole
+table:
+
+| kind | who has gone | who did it |
+|---|---|---|
+| `quit` | position **2** | — |
+| `remove` | position **3** | position 2 |
+
+`remove / Eccebombo / Pinetta / Initiate` is *Eccebombo removed Pinetta*. Reading position 2 the
+way `quit` allows would conclude that **the guild master had left**.
+
+**Position four means different things by kind**, so nothing may key on it. It is the departed
+character's rank on `quit` (`Member`, then `Initiate` for the same character after a rejoin) and
+on `remove` (`Initiate`, the removed one's, not the remover's); it is the *actor's* rank on
+`invite` (`Guild Master`); and it is empty on `join`.
+
+**The offsets tick.** The three oldest entries read `0, 0, 0, 0` when they were minutes old and
+`0, 0, 0, 1` an hour later - the same rows, one hour older. That is positions five to eight
+being an elapsed time, watched changing rather than deduced.
+
+**Out of the guild, the log reads nothing.** A character kicked from the guild reads
+`entries: 0`, with the calls all present. So this is only ever readable about a guild you are
+currently in, which is the only case that matters.
 
 ---
 
