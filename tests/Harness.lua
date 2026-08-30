@@ -1218,7 +1218,11 @@ C_Container.GetContainerNumFreeSlots = function(bag)
 end
 -- A thing in a bag with a long cooldown of its own: a salt shaker, an alchemy stone. Short
 -- ones are every potion in the bags after every fight and are deliberately not recorded.
-GetTime = function() return 1000 end
+-- The game's fractional clock, and it has to move when advance() does. Frozen, anything that
+-- waits a moment before doing something waits for ever - which is not a stub being unhelpful,
+-- it is a stub answering a question wrongly.
+FAKE_CLOCK = 1000
+GetTime = function() return FAKE_CLOCK end
 -- One thing on a real daily cooldown, and one hearthstone. The hearthstone is the case that
 -- proved the floor was wrong: half an hour is a cooldown, and being told at login that a
 -- character's hearthstone is ready is not information anybody wanted.
@@ -1373,6 +1377,10 @@ local function advance(seconds)
 	local step = 0.1
 	local elapsed = 0
 	while elapsed < seconds do
+		-- The fractional clock moves with the frames, because something that waits half a
+		-- second between two sends is waiting on this and not on the tick count.
+		FAKE_CLOCK = FAKE_CLOCK + step
+
 		for _, f in ipairs(frames) do
 			if f.__scripts.OnUpdate and f.__shown then
 				f.__scripts.OnUpdate(f, step)
@@ -9278,6 +9286,48 @@ print("whispering somebody who is not there")
 		Family.Comm:Pending() .. " left of " .. both)
 	check("and leaves what was queued for anybody else", Family.Comm:Pending() > 0,
 		tostring(Family.Comm:Pending()))
+
+	-- One chunk first, to somebody nobody has heard from.
+	--
+	-- The client refuses a whisper to somebody who is not there, once per message, in red in
+	-- the chat frame. Abandoning what is still queued at the first refusal is not enough: the
+	-- queue drains two chunks every fifth of a second and a refusal takes a round trip, so
+	-- three or four had gone before it arrived - and a family of five characters tried in
+	-- turn produced twenty of those lines, none of them Family's to suppress.
+	--
+	-- Somebody we have just heard from needs no canary, because receiving a message is proof
+	-- they are there. This is the other case, and it is the one that makes the noise.
+	do
+		-- Out of combat, because bulk waits for that as well and a check that cannot tell
+		-- the two waits apart is measuring neither.
+		local realCombat = InCombatLockdown
+		InCombatLockdown = function() return false end
+
+		-- An empty queue first, or this measures whatever the checks above left in it.
+		Family.Comm:AbandonTo("Tossica-Thunderstrike")
+		advance(5)
+
+		local before = Family.Comm:Pending()
+		Family.Comm:Send("bulk", string.rep("z", 900), "WHISPER",
+			"Nobodyhasheardfromthem-Thunderstrike", true)
+
+		local queued = Family.Comm:Pending() - before
+		advance(1)
+		local left = Family.Comm:Pending() - before
+
+		check("only one chunk goes to somebody nobody has heard from",
+			left >= queued - 1, tostring(queued - left) .. " of " .. tostring(queued)
+				.. " sent")
+
+		-- And the rest once the wait is over, so a character who is there costs a second
+		-- and a half on a transfer nobody is watching rather than never arriving.
+		advance(4)
+		check("and the rest follows once the wait is over",
+			Family.Comm:Pending() - before < queued - 1,
+			tostring(Family.Comm:Pending() - before) .. " still queued")
+
+		InCombatLockdown = realCombat
+	end
 
 	-- One line about it, not one per message.
 	local said = 0

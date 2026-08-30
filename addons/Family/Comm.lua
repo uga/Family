@@ -78,36 +78,123 @@ end
 -- Bulk waits for the fight to be over; control does not. The distinction is the caller's to
 -- make, because only the caller knows whether what it is sending is an answer somebody is
 -- waiting for or a hundred chunks nobody is watching.
+-- A character's name without its realm, in lower case. Two things need it before the queue is
+-- drained and one of them is the queue itself, so it lives above both rather than being
+-- forward-declared: a name used above the line that declares it is a global and nil, and this
+-- file has already been caught by that once.
+local function nameKey(name)
+    if type(name) ~= "string" then return nil end
+    local base = name:match("^([^%-]+)") or name
+    return base:lower()
+end
+
+-- One chunk first, and the rest a moment later.
+--
+-- The client refuses a whisper to somebody who is not there, once per message, and says so in
+-- the chat frame in red. Abandoning what is still queued at the first refusal is not enough:
+-- the queue drains two chunks every fifth of a second and the refusal takes a round trip, so
+-- three or four had already left. A family of five characters, tried one after another,
+-- produced twenty of those lines - and none of them was Family's to suppress.
+--
+-- So a bulk transfer sends its first chunk and then waits. If that character is not there the
+-- refusal arrives inside the wait, everything else for them is dropped, and the player is told
+-- once instead of four times. If they are there, the pause costs a second and a half on a
+-- transfer that already takes several and that nobody is watching.
+--
+-- Only bulk, and only whispers: an announcement is one message and has nothing to hold back.
+local PROBATION = 1.5
+
+local probing = {}
+
+-- When we last had a message from somebody, which is proof they were there. Kept beside the
+-- queue rather than asked of Comm:Present, which records the same thing for a different
+-- question and clears it on being asked.
+local present = {}
+
+local function now()
+    return Family:TryCall(GetTime) or time()
+end
+
 local function readyFor(entry)
     if not entry.bulk then return true end
-    return not Family:TryCall(InCombatLockdown)
+    if Family:TryCall(InCombatLockdown) then return false end
+
+    if entry.channel ~= "WHISPER" or not entry.target then return true end
+
+    local key = nameKey(entry.target)
+    if not key then return true end
+
+    -- Somebody we have just heard from is somebody who is there. Receiving a message marks
+    -- its sender present, so a reply needs no canary: this paces the case of writing to a
+    -- character nobody has heard from in a while, which is the case that produces the
+    -- refusals.
+    if present[key] and (now() - present[key]) < PROBATION * 20 then return true end
+
+    local since = probing[key]
+    if not since then
+        -- This one is the canary. Nothing else for them goes until it has had time to
+        -- come back refused.
+        probing[key] = now()
+        return true
+    end
+
+    return (now() - since) >= PROBATION
 end
 
 local function drain()
-    local sent = 0
+    local sent, held = 0, 0
 
     for index = 1, #outgoing do
         if sent >= PER_TICK then break end
 
         local entry = outgoing[index]
-        if entry and not entry.done and readyFor(entry) then
-            sendRaw(entry.text, entry.channel, entry.target)
-            entry.done = true
-            sent = sent + 1
+        if entry and not entry.done then
+            if readyFor(entry) then
+                sendRaw(entry.text, entry.channel, entry.target)
+                entry.done = true
+                sent = sent + 1
+            else
+                held = held + 1
+            end
         end
     end
 
     -- Compacted rather than removed one at a time: taking from the front of a list inside
     -- the loop that is walking it is how a queue comes to skip every other item.
-    local kept = {}
+    local kept, waiting = {}, {}
     for _, entry in ipairs(outgoing) do
-        if not entry.done then kept[#kept + 1] = entry end
+        if not entry.done then
+            kept[#kept + 1] = entry
+            local key = entry.target and nameKey(entry.target)
+            if key then waiting[key] = true end
+        end
     end
     outgoing = kept
+
+    -- A target with nothing left queued starts fresh next time. One canary per transfer
+    -- rather than one per session: somebody who was there an hour ago may not be now.
+    for key in pairs(probing) do
+        if not waiting[key] then probing[key] = nil end
+    end
 
     if #outgoing == 0 and ticker then
         ticker:Cancel()
         ticker = nil
+    end
+
+    -- Something is waiting on the canary rather than on the channel, so something has to
+    -- come back for it.
+    --
+    -- The ticker would, where there is one. There is not always one - a client without
+    -- C_Timer drains in a single pass and stops - and on that path the held chunks would
+    -- have waited for a caller that was never coming. Which is exactly what happened the
+    -- first time this was written, and the harness is one of those clients.
+    if #outgoing > 0 and held > 0 then
+        -- A little after the wait rather than exactly at it. A clock accumulated a tenth of
+        -- a second at a time lands a hair under the number it was counting to, so a retry
+        -- scheduled for the instant the wait ends arrives to find it has not quite ended -
+        -- and then schedules another, for ever.
+        Family:After(PROBATION + 0.3, "comm.probation", drain)
     end
 end
 
@@ -205,12 +292,6 @@ end
 -- Two characters of the same name on two realms would be conflated by this. That is a real
 -- cost and it is the smaller one: the alternative is what was happening, and a link is to one
 -- family whose characters are usually all in one place.
-local function nameKey(name)
-    if type(name) ~= "string" then return nil end
-    local base = name:match("^([^%-]+)") or name
-    return base:lower()
-end
-
 local absent = {}
 
 -- Who wants to know that a name turned out not to be there. One entry per interested part of
@@ -271,7 +352,12 @@ end
 
 function Comm:Present(target)
     local key = nameKey(target)
-    if key then absent[key] = nil end
+    if not key then return end
+
+    absent[key] = nil
+    -- And noted as the moment we last had proof, which is what lets the queue skip its
+    -- canary when writing back to somebody who has just spoken.
+    present[key] = now()
 end
 
 Family:RegisterEvent("CHAT_MSG_SYSTEM", "comm.absent", function(_, text)

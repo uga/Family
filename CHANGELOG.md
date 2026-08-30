@@ -37,6 +37,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **And the game itself says it far less.** Reaching somebody who is not there produced one
+  red *"No player named …"* from the game for every message that had already been sent — four
+  per character, twenty for a family of five, and none of them Family's to take back. A
+  transfer to somebody Family has not just heard from now sends one message and waits a moment
+  before sending the rest, so a character who is not there costs one line instead of four.
 - **Trying to reach a linked family who is offline no longer says so four times over.** An
   exchange is many messages, and the game refuses each one that had already been sent — so
   every refusal set Family walking that family's characters again and sending another
