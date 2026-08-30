@@ -67,6 +67,12 @@ def path_for(table, build, locale=None):
     return os.path.join(CACHE, "%s-%s.csv" % (table, build))
 
 
+# wago.tools answers 403 to Python's default User-Agent, measured 2026-08-30: the same URL is
+# 200 to curl, 403 to a bare urlopen, and 200 again the moment any header is set. This tool ran
+# for months without one because its cache was already full - the fetch path is only reached at
+# a new build, which is exactly when nobody wants to debug the fetcher.
+AGENT = "Family-addon-tools (+https://github.com/uga/Family)"
+
 def fetch():
     os.makedirs(CACHE, exist_ok=True)
     for game, build in [MISTS]:
@@ -75,9 +81,10 @@ def fetch():
             print("  have   %s Talent" % game)
         else:
             print("  fetch  %s Talent" % game)
-            with urllib.request.urlopen(
-                    "https://wago.tools/db2/Talent/csv?build=%s&locale=enUS" % build,
-                    timeout=300) as response:
+            request = urllib.request.Request(
+                "https://wago.tools/db2/Talent/csv?build=%s&locale=enUS" % build,
+                headers={"User-Agent": AGENT})
+            with urllib.request.urlopen(request, timeout=300) as response:
                 open(target, "wb").write(response.read())
 
     for _, (game, build) in BUILDS.items():
@@ -89,9 +96,10 @@ def fetch():
                 print("  have   %s TalentTab %s" % (game, locale))
                 continue
             print("  fetch  %s TalentTab %s" % (game, locale))
-            with urllib.request.urlopen(
-                    "https://wago.tools/db2/TalentTab/csv?build=%s&locale=%s"
-                    % (build, locale), timeout=300) as response:
+            request = urllib.request.Request(
+                "https://wago.tools/db2/TalentTab/csv?build=%s&locale=%s" % (build, locale),
+                headers={"User-Agent": AGENT})
+            with urllib.request.urlopen(request, timeout=300) as response:
                 open(target, "wb").write(response.read())
 
         for table in TABLES:
@@ -101,7 +109,8 @@ def fetch():
                 continue
             url = ("https://wago.tools/db2/%s/csv?build=%s&locale=enUS" % (table, build))
             print("  fetch  %s %s" % (game, table))
-            with urllib.request.urlopen(url, timeout=300) as response:
+            request = urllib.request.Request(url, headers={"User-Agent": AGENT})
+            with urllib.request.urlopen(request, timeout=300) as response:
                 open(target, "wb").write(response.read())
 
 

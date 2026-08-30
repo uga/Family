@@ -19,6 +19,12 @@ which is the only thing that could quietly make the table wrong.
 
 import csv, io, os, sys, urllib.request
 
+# wago.tools answers 403 to Python's default User-Agent, measured 2026-08-30: the same URL is
+# 200 to curl, 403 to a bare urlopen, and 200 again the moment any header is set. This tool ran
+# for months without one because its cache was already full - the fetch path is only reached at
+# a new build, which is exactly when nobody wants to debug the fetcher.
+AGENT = "Family-addon-tools (+https://github.com/uga/Family)"
+
 BUILDS = {
     "Classic Era": "1.15.9.69109",
     "Burning Crusade Anniversary": "2.5.6.69110",
@@ -50,7 +56,8 @@ def fetch():
             url = ("https://wago.tools/db2/SkillLine/csv?build=%s&locale=%s"
                    % (build, locale))
             print("  fetch  %s %s" % (game, locale))
-            with urllib.request.urlopen(url, timeout=300) as response:
+            request = urllib.request.Request(url, headers={"User-Agent": AGENT})
+            with urllib.request.urlopen(request, timeout=300) as response:
                 open(target, "wb").write(response.read())
 
 

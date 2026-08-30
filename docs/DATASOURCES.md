@@ -386,9 +386,20 @@ named by globals the client supplies at runtime rather than by anything in a DB2
 with an id are checked.
 
 **wago.tools answers 403 to Python's default User-Agent**, measured the same day: the same URL
-is 200 to `curl` and 403 to a bare `urlopen`, and 200 again with any header set. `game-words.py`
-sets one. Every other fetcher in `tools/` has the same shape and would fail the same way - they
-run today only because their caches are already full.
+is 200 to `curl` and 403 to a bare `urlopen`, and 200 again with any header set.
+
+Every fetcher in `tools/` now sends one, and each was **exercised against the live server rather
+than read**: its own `fetch()` was called with the cache pointed at a temporary directory and
+stopped after the first request, and `skill-lines.py`, `races.py`, `talents.py`, `areas.py` and
+`game-words.py` all answered 200. `areas.py` and `GenerateCraftLevels.py` already sent one.
+
+The header names the project rather than pretending to be curl. This is somebody else's server
+given away for nothing, and the courtesy sleep `areas.py` puts between requests is there for the
+same reason.
+
+The fetch path is only reached at a new build, which is exactly when nobody wants to be
+debugging the fetcher - three of these had been broken for an unknown length of time and ran
+only because their caches were already full.
 
 **What a cooldown adds**, measured the same way on 2026-08-30: a shared profession on the
 offering is **98 bytes**, and **170** with four cooldowns attached to it — about eighteen bytes

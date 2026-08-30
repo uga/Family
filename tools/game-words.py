@@ -44,6 +44,8 @@ BUILDS = {
 LOCALES = ["enUS", "deDE", "frFR", "esES", "ruRU"]
 TRANSLATED = ["deDE", "frFR", "esES", "ruRU"]
 
+AGENT = "Family-addon-tools (+https://github.com/uga/Family)"
+
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".game-words-cache")
 LOCALE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                           "..", "addons", "Family", "Locales")
@@ -86,10 +88,12 @@ def fetch():
 
                 # A User-Agent, because wago.tools answers 403 to Python's default one.
                 # Measured 2026-08-30: the same URL is 200 to curl and 403 to a bare
-                # urlopen, and 200 again the moment a header is set. Every other fetcher
-                # in this directory has the same shape and would fail the same way -
-                # they run today only because their caches are already full.
-                request = urllib.request.Request(url, headers={"User-Agent": "curl/8.0"})
+                # urlopen, and 200 again the moment a header is set.
+                #
+                # Saying who we are rather than pretending to be curl. This is somebody
+                # else's server given away for nothing, and a tool that lies about itself
+                # in order to be served is not a tool to write.
+                request = urllib.request.Request(url, headers={"User-Agent": AGENT})
                 with urllib.request.urlopen(request, timeout=600) as response:
                     open(target, "wb").write(response.read())
 
