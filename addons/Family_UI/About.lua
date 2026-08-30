@@ -66,12 +66,16 @@ local MANUAL = {
 	{ item = L["the minimap button: left-click opens Family, right-click the options. Drag it "
 		.. "around the edge to move it"] },
 	{ item = L["any data broker bar shows the same, with the family's money on it"] },
+	{ item = L["shift-click the money, on the button or on a broker bar, to change what it "
+		.. "counts: the whole family, this side of this realm, or the character you are "
+		.. "playing"] },
 
 	{ heading = L["Summary"] },
 	{ text = L["Every member on one table, one line each. The buttons along the top change "
 		.. "which columns are shown - money and bags, professions, quests, everything else "
 		.. "- and each realm is totalled separately."] },
 	{ item = L["left-click a profession to open that member's recipes"] },
+	{ item = L["left-click the letters or the Chrono figure to unfold what is behind it"] },
 	{ item = L["right-click a member to remove them from the family"] },
 
 	{ heading = L["Abilities & Talents"] },
@@ -83,6 +87,8 @@ local MANUAL = {
 	{ text = L["One member's bags, bank, mailbox, auctions and guild bank, drawn as the bags "
 		.. "themselves. Clicking an item opens the bag it is in, when it is the character "
 		.. "you are playing."] },
+	{ text = L["An item used a fixed number of times - an oil, a Bag of Marbles - shows what "
+		.. "is left of it in the corner of its icon, the way the game does."] },
 	{ text = L["Tick |cffffd700the whole family|r and the search looks through everybody at "
 		.. "once, and says who has what it found."] },
 

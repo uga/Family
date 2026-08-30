@@ -80,6 +80,17 @@ question is nearly always *when did Family last see it* — and the answer is on
 | **minimap button**, right-click | opens the options |
 | **minimap button**, drag | moves it around the edge of the minimap |
 | any **data broker** bar | the same, with the family's money on it |
+| **shift-click** the button or the broker | changes what the money counts |
+
+The money **shift-click** cycles through three answers: the whole family, everybody on this
+side of this realm, and the character you are playing. The member count beside it narrows with
+it, and the tooltip says which of the three you are looking at whenever it is not the whole
+family. A middle click does the same, for the hands that prefer it.
+
+Three rather than two, because a grand total across every realm is a number nobody can spend:
+two sides of one realm share no bank, no mailbox and no auction house. The warning about mail
+expiring deliberately does **not** narrow — mail rotting three realms away is precisely what
+nobody is looking at.
 
 Clicking for the place you are already looking at closes the window. Left-click always lands
 on the summary and right-click always lands on the options — an entry point that goes
@@ -109,7 +120,7 @@ The buttons across the top change **which columns** are shown rather than which 
 | **Professions** | every profession and its rank, primaries first |
 | **Currencies** | honor, arena points, and whatever else this client calls a currency |
 | **Crafting** | every crafting cooldown the family has: available, or when it comes back |
-| **Miscellaneous** | guild, hearthstone, race, class |
+| **Miscellaneous** | guild, hearthstone, race, class, world buffs banked in a Chronoboon |
 
 A realm with characters on **both sides is split into them**, with a subtotal under each.
 Two characters on one realm on opposite sides share nothing this table is asked about —
@@ -130,7 +141,23 @@ they were letters until the banners were verified, and "A" and "H" are the initi
 English words and of nothing else.
 
 - **Left-click a profession** to open that member's recipes.
+- **Left-click the letters figure** on Activity to unfold that member's post — one line per
+  letter, with its sender, what is attached and when it expires.
+- **Left-click the Chrono figure** on Miscellaneous to unfold what their Chronoboon is
+  holding — the world buffs as their own icons, with the time left written on each and the
+  game's own description when you hover one. Only the buffs still suspended, in the order the
+  game lists them.
 - **Right-click a member** to remove them. You are asked first, by name and realm.
+
+The two unfolds are independent: opening one does not close the other, and each stays with the
+member it belongs to.
+
+**Two columns that distinguish "none" from "not known"**, because they are different facts and
+a table that draws them the same way is guessing on your behalf. **Chrono** shows how many
+buffs are trapped, a blank when the boon is empty or absent, and a dash when nobody has read
+that character's bags. **Guild** shows the guild's name, a blank for a character the game said
+is in no guild, and a dash for one nobody has scanned since — or one whose client would not
+say which guild it was. Each fills in the next time you play that character.
 
 If you have made anyone a **sibling** (§11), they appear here too: under the realm they are
 on, after your own members, in a small section under the name of the family they belong to.
@@ -179,6 +206,13 @@ slots are not room for anything else, and it says so.
 
 **Clicking an item opens the bag it is in**, when it is the character you are playing. A bag
 of somebody else's is a picture, and clicking a picture of a bag cannot open it.
+
+**An item used a fixed number of times shows what is left of it.** A Wizard Oil with two uses
+gone reads `3` in the corner of its icon, where the game itself puts the number — Mana Oils,
+Wizard Oils, a Bag of Marbles, anything with charges. It comes from your bags, your bank and
+the guild bank tabs you have actually opened. Nothing else can say: no call the game offers
+tells an addon how many charges are left on an item, so this is read off the item's own
+tooltip, and an item the client has not finished loading is read again when it has.
 
 Mail and the auction house are drawn as containers too. They are not bags and do not pretend
 to be — but *where is that thing* is one question, and answering it in two shapes on one panel
@@ -601,6 +635,19 @@ offline, because there is nobody there to fetch it from.
 **Alts outside the guild are not offered**, and there is no setting to add them. A scope with
 a switch to widen it is not a scope; somebody's characters elsewhere are a Wide Family link.
 
+**Connected realms count as one.** Most guilds now span a group of connected realms, and your
+characters on any of them are offered to the guild — not only the ones on the realm you happen
+to be standing on. The realm test is still a real test: it is the game's own list of connected
+realms, not a name match, so a guild that shares a name with one on an unconnected realm is
+still a different guild. Anything you had already ticked for those characters was kept and
+takes effect now.
+
+**Records from somebody nobody has heard from in a fortnight are dropped.** If a guildmate
+turns a profession off and then stops playing, the message saying so has nobody to reach, so
+what they last shared would otherwise stay answerable on your client for ever. It expires
+after two weeks and rebuilds itself the moment they come back. Your own sharing grid is never
+touched by this — what you have chosen to share is yours and does not expire.
+
 The two features know nothing about each other. Linking families with a guildmate does not
 change what the guild panel shows, and what the guild panel shows is never affected by a link.
 Two routes to the same fact would mean two places to look for it and two places to withdraw
@@ -610,7 +657,17 @@ Guild share needs `LibSerialize` and `LibDeflate` for the same reason Wide Famil
 says so plainly when they are missing.
 
 `/family guild on` and `/family guild off` do the same as the switch in Options, and
-`/family guild` on its own says which it currently is.
+`/family guild` on its own says which it currently is — along with what is actually happening
+on the channel: how many addon messages your client is handing over at all, what it did with
+each thing Family gave it to send, and how many of your guildmates have answered.
+
+`/family guild test` sends one announcement and reports what became of it. The case it exists
+for is a real one and looks exactly like a bug: **a character on a realm other than the
+guild's own can hear the guild and cannot speak to it.** Guild chat works both ways, addon
+messages arrive normally, and nothing you send ever leaves — the game's doing and not Family's.
+The report says so in as many words, and says that what you share still reaches anybody who
+says hello first. If you have alts on a connected realm and one of them seems invisible to the
+guild while the others are fine, this is why.
 
 ---
 

@@ -65,6 +65,13 @@ mailbox drawn as the containers they are rather than as a list, and every member
 sortable by difficulty that orders properly *within* each colour band rather than alphabetically.
 Both carry a search that answers *who has this* and *who can make this*.
 
+**Two things the client will not tell you twice.** How many charges are left on a Wizard Oil or
+a Bag of Marbles — no call in the game hands that to an addon, so Family reads it off the item
+itself and prints it in the corner of the icon, for your bags, your bank and the guild bank
+tabs you have opened. And which of your characters has world buffs banked in a **Chronoboon**,
+how many, and which ones: click the figure and they unfold as their own icons with the time
+left on each.
+
 **Mail written down as you post it.** Send gold or items to one of your own characters and it
 appears against them straight away, marked as being in the post, until that character opens
 their own mailbox and the truth replaces it. Mail approaching its return-or-destroy date is
@@ -75,14 +82,15 @@ as a duration, so they stay correct however long the client has been shut, and a
 login. Thirty alchemy transmutes share one timer and appear as a single column.
 
 Also: a full character sheet for any member, with enchants, gems, reputations, quests and
-achievements; both talent specialisations, glyphs and the spellbook; a minimap button and a
-data broker feed carrying the family's money.
+achievements; both talent specialisations, glyphs and the spellbook; and a minimap button and
+data broker feed carrying the family's money — shift-click it to count one realm's side, or
+one character, instead of everybody.
 
 ### Sharing
 
 **Guild share ships off, and one switch turns it on.** Guildmates running Family show each
 other their characters' gear and talent shape, including the offline ones once you have seen
-them. **Nothing else is shared** — no bags, no mail, no gold; all of it is what the game
+them. Guilds spanning **connected realms** are handled as the one guild they are. **Nothing else is shared** — no bags, no mail, no gold; all of it is what the game
 already shows anyone who inspects you. The Guild panel is in the list whether it is on or off,
 so you can read what it does before deciding, and the switch is in **Options**.
 
