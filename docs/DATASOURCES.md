@@ -418,6 +418,23 @@ because the rendered text contains one of the two words and not the markup.
 | 184938 | **Supercharged** Chronoboon Displacer | 1 | 349863 | none |
 | 212160 | Chronoboon Displacer | 10 | 1223679 | 5 minutes |
 
+**All three clients know it**, which was asked rather than assumed:
+
+| build | 184937 | 184938 | 212160 |
+|---|---|---|---|
+| Era `1.15.9.69109` | yes, stacks to 10 | yes | yes |
+| Burning Crusade `2.5.6.69110` | yes, stacks to 10 | yes | yes |
+| Mists `5.5.4.69078` | yes, **stacks to 5** | yes | **absent** |
+
+So the pair that matters - 184937 empty, 184938 charged - is the same on all three and needs no
+branch. Two things differ and neither is a detail: the same id stacks to ten on the older
+clients and to five on Mists, and the third id is not in the Mists build at all.
+
+**Being in `ItemSparse` is not the same as being obtainable.** These are the tables the client
+ships with, and a client can carry an item nobody can get. Whether the Chronoboon is a live
+mechanic on each of the three is a question for the game and not for this file - what is settled
+here is that a bag holding 184938 means the same thing wherever it is found.
+
 So *"which of my characters has a boon stored"* is answerable **by id, today, with nothing
 new**: a bag holding 184938 is a character with one banked. Family already records bag contents
 by id, so the fact is on disk already and only wants surfacing.
