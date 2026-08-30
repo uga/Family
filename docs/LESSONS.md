@@ -1053,3 +1053,34 @@ list is all present, because a rule that scans files it cannot open passes beaut
 The generalisable form: **wrapping a call in `tonumber`, `select`, `find` or `gsub` is a place
 where extra return values change meaning rather than being discarded.** If the inner call is one
 whose arity is the client's business and not ours, bracket it.
+
+## L-032 — A snippet handed to somebody is text, and text goes through a renderer
+
+Three exchanges were spent on probes that "returned nothing" in the game. They were syntax
+errors. What was written was
+
+    local n,_,_,_,_,_,_,_,_,id = UnitBuff("player", i)
+
+and what arrived was
+
+    local n,,,,,,,,,id = UnitBuff("player", i)
+
+**A run of `_` separated by commas is markdown emphasis.** `_,_` is a pair, and the pair is
+consumed rendering the text between them in italics. A lone `_G[...]` in the same snippet came
+through untouched, which is why some of the probes worked and others did not, and why the fault
+looked like something about the game.
+
+It was invisible for two compounding reasons. The mangled line is still *plausible* Lua at a
+glance. And WoW's `scriptErrors` defaults to **0**, so a `/run` that throws prints nothing at
+all — identical, from the outside, to one that ran perfectly and found nothing. Every "returns
+nothing" was read as a measurement when it was a crash.
+
+That is §2.2 again, in the place it keeps appearing: **an absence is not a result.** The same
+error that produced a retracted DATASOURCES entry that morning produced this in the afternoon,
+by a different route.
+
+**Caught by:** nothing automatic, and there is nothing to automate — the mangling happens
+outside this repository. The rules are: hand over Lua with **no run of underscore placeholders**
+— capture into a table and index it, `local r = {UnitBuff("player", i)}` and then `r[10]`, which
+also survives a signature changing under it; and ask for `/console scriptErrors 1` before any
+probing session, so that a failure is a message rather than a silence.
