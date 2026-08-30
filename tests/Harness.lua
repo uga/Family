@@ -522,7 +522,7 @@ KEYRING_CONTAINER = -2
 -- Bag 1: 16-slot normal bag, 1 used.
 -- Bag 2: 16-slot QUIVER (bagType nonzero) - must not count towards free space.
 -- Bags 3,4: absent.
-local BAGS = {
+BAGS = {
 	[0] = { size = 16, free = 14, bagType = 0,
 	        items = { [1] = { 6948, 1 }, [2] = { 2589, 20 } } },
 	[1] = { size = 16, free = 15, bagType = 0, items = { [5] = { 4306, 12 } } },
@@ -12366,6 +12366,53 @@ print("a guild that spans a connected group")
 	Family.Database.Members = heldMembers
 	FamilyDB.guild = held
 	_G.GetAutoCompleteRealms = heldRealms
+end)()
+
+print()
+print("a world buff banked in a Chronoboon")
+
+-- A charged Chronoboon is a different item from an empty one - 184937 the Displacer, 184938 the
+-- Supercharged one - and that pair is identical on all three builds (DATASOURCES §3). So which
+-- character has a buff banked is answerable by id, with no tooltip and no new capability, from
+-- bag contents Family already records.
+--
+-- Recorded into meta rather than read out of the payload at draw time, because the summary
+-- draws every member at once and meta is what it may read for all of them. What is *inside* one
+-- is a different question and is not this.
+;(function()
+	local key = Family:CurrentMember()
+	local slot = BAGS[1].items
+
+	check("no boon is recorded when none is carried",
+		(Family.Database:Members()[key].meta or {}).boons == nil)
+
+	slot[6] = { 184938, 1 }
+	Family.Bags:Scan()
+	check("a Supercharged Chronoboon in a bag is recorded",
+		(Family.Database:Members()[key].meta or {}).boons == 1,
+		tostring((Family.Database:Members()[key].meta or {}).boons))
+
+	-- An empty Displacer is not a banked buff, and recording it as one would send somebody to
+	-- log in a character that has nothing.
+	slot[6] = { 184937, 1 }
+	Family.Bags:Scan()
+	check("an empty Displacer is not", (Family.Database:Members()[key].meta or {}).boons == nil,
+		tostring((Family.Database:Members()[key].meta or {}).boons))
+
+	-- Two banked is a different answer from one, to somebody deciding who to log in.
+	slot[6] = { 184938, 1 }
+	slot[7] = { 184938, 1 }
+	Family.Bags:Scan()
+	check("and two of them are counted as two",
+		(Family.Database:Members()[key].meta or {}).boons == 2,
+		tostring((Family.Database:Members()[key].meta or {}).boons))
+
+	-- Used, and the fact has to go: a stale "has a boon" is worse than none.
+	slot[6], slot[7] = nil, nil
+	Family.Bags:Scan()
+	check("and using them clears it rather than leaving it on disk",
+		(Family.Database:Members()[key].meta or {}).boons == nil,
+		tostring((Family.Database:Members()[key].meta or {}).boons))
 end)()
 
 print()

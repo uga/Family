@@ -44,6 +44,22 @@ local GetLink = container.GetContainerItemLink or _G.GetContainerItemLink
 
 local lastBagSlot = _G.NUM_BAG_SLOTS or 4
 
+-- A world buff banked in a Chronoboon Displacer.
+--
+-- **A charged one is a different item from an empty one**: 184937 is the Displacer and 184938
+-- the Supercharged Displacer holding buffs. Measured from `ItemSparse` on all three builds
+-- (DATASOURCES §3), where that pair is identical everywhere - so this needs no branch, and a
+-- bag holding 184938 means the same thing wherever it is found.
+--
+-- By id, which is the whole of what §2.1 asks of it. What is *inside* one is per-instance
+-- tooltip text and a different question: this records that a character has one banked, not
+-- which buffs are in it.
+--
+-- Bags only. A boon in the bank is not recorded here, and the bank is scanned by another file
+-- against a window that is usually shut - a fact that would be present for one character and
+-- absent for the next is worse than one that is honestly about bags.
+local BOON_STORED = 184938
+
 -- GetContainerItemInfo returns a table on newer clients and a list on older ones. The item id
 -- and the stack size are nearly always the whole of it - everything else about an item is the
 -- client's to answer later, by id (§2.1).
@@ -120,6 +136,7 @@ function Bags:Scan()
 	local key = Family:CurrentMember()
 
 	local cooldowns = {}
+	local boons = 0
 	local bags = {}
 	local generalSlots, generalFree = 0, 0
 	local specialSlots, specialFree = 0, 0
@@ -183,6 +200,8 @@ function Bags:Scan()
 					if readyAt then
 						cooldowns[#cooldowns + 1] = { id = itemID, readyAt = readyAt }
 					end
+
+					if itemID == BOON_STORED then boons = boons + (count or 1) end
 				end
 			end
 
@@ -219,6 +238,9 @@ function Bags:Scan()
 		-- the bag figures are a week old for.
 		bagsSeen    = time(),
 		itemCooldowns = next(cooldowns) and cooldowns or Family.CLEAR,
+		-- A count rather than a flag: a character can carry more than one, and "two banked"
+		-- is a different answer from "one" to somebody deciding who to log in.
+		boons       = boons > 0 and boons or Family.CLEAR,
 		bagSlots    = generalSlots,
 		bagFree     = generalFree,
 		specialSlots = specialSlots,
