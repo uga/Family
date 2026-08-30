@@ -199,11 +199,12 @@ publishing what it collected is an out-of-game job.
 
 ---
 
-### The guild event log, measured on Classic Era and Burning Crusade 2026-08-30
+### The guild event log, measured on all three clients 2026-08-30
 
-`/family guild log`, run twice: in **ZERO** on Pyrewood Village as **rank index 8**, a
-rank-and-file member; and in **Loch Modan Yachting Club** on Thunderstrike as **Officer, rank
-index 2**. Both ends of the rank ladder, and two clients.
+`/family guild log`, run four times: in **ZERO** on Pyrewood Village (Era) as **rank index 8**,
+a rank-and-file member; in **Loch Modan Yachting Club** on Thunderstrike (Burning Crusade) as
+**Officer, rank index 2**; and in **Uga** on Mirage Raceway (Mists) as both **Initiate, rank
+index 4** and **Guild Master, rank index 0**.
 
 `QueryGuildEventLog`, `GetNumGuildEvents` and `GetGuildEventInfo` all exist. `GetGuildEventInfo`
 answers with **eight values**:
@@ -211,32 +212,40 @@ answers with **eight values**:
 | # | type | what it is |
 |---:|---|---|
 | 1 | string | the event: `invite`, `join`, `promote`, `demote`, `quit` |
-| 2 | string | the character it is about, realm-qualified where the realm differs — `Ethelberg-NethergardeKeep` |
-| 3 | string or **nil** | the second party, present on `invite` and nil on `join` and `quit` |
+| 2 | string | **the actor**, realm-qualified where the realm differs — `Ethelberg-NethergardeKeep`. On `invite` this is the person doing the inviting |
+| 3 | string or **nil** | **the subject**, where the actor is not it: the invitee on `invite`, and nil on `join` and `quit` |
 | 4 | string | a **rank name**, and this guild's own words — `Alt`, `Member`, `Guild Master`, and empty on `join` |
 | 5–8 | number | **how long ago**, as years, months, days, hours |
 
 Three things that are not what they look like:
 
 - **Positions 5 to 8 are an elapsed time, not a date.** A row reading `0, 0, 0, 4` is four hours
-  ago, and `0, 1, 10, 4` is a month and ten days ago. A calendar month is never 0.
+  ago, and `0, 1, 10, 4` is a month and ten days ago. A calendar month is never 0 - and the
+  Mists guild settles it: three events minutes old came back `0, 0, 0, 0`, which is a duration
+  of nothing and could not be a date at all.
 - **Index 1 is the oldest and the last index is the newest**, which is the opposite way round
-  from a chat log. Read off the offsets on Era — `[1]` 1 month 10 days, `[3]` 1 month 7 days,
-  `[100]` four hours — and again on Burning Crusade across a far longer span: `[1]` 10 months
-  28 days, `[8]` 9 months 19 days, `[100]` 8 days. Two clients, two guilds, one month and
-  eleven months, both marching the same way. Inferred from monotonicity rather than proved
-  outright, but corroborated well enough to build on; `docs/SMOKE.md` keeps the cheap direct
-  reading — run it a day apart and see whether the same entry is still first.
+  from a chat log. **Measured outright** in a guild made for the purpose: a character was
+  `/gquit`, then invited, then joined, in that order and by hand, and the log came back
+  `[1] quit`, `[2] invite`, `[3] join`. Nothing is inferred there - the events were caused in
+  a known order and the indices match it. It agrees with the offsets on the two older clients:
+  Era `[1]` 1 month 10 days, `[3]` 1 month 7 days, `[100]` four hours; Burning Crusade `[1]` 10
+  months 28 days, `[8]` 9 months 19 days, `[100]` 8 days.
 - **Position 4 is a guild's own rank name**, not an index and not a game constant. `Alt` is a
   rank this guild invented. Nothing can key on it.
 
-**A rank-and-file member reads the whole log**, and so does an officer. That was the question
-that decided whether this could be a source at all: a log only officers can read cannot settle
-anything, because everyone has to reach the same conclusion or the guild disagrees about who is
-in it.
+**A rank-and-file member reads the whole log**, and so do an officer and the guild master. Four
+ranks across three clients, and on Mists an Initiate and the Guild Master read the same three
+entries. That was the question that decided whether this could be a source at all: a log only
+officers can read cannot settle anything, because everyone has to reach the same conclusion or
+the guild disagrees about who is in it.
 
-**The two clients answer identically** — same three calls, same eight values, same types, same
-nil in position three on `join` and `quit`. Nothing here is Era-only.
+**All three clients answer identically** — same three calls, same eight values, same types,
+same nil in position three on `join` and `quit`, same rank name in position four. Nothing here
+is any one client's.
+
+**A guild's own creation is not an event, and neither is its founder's membership.** The Mists
+guild read `entries: 0` until somebody was invited, then 3. So asking is enough on Mists - the
+zero was an empty history and not a failure to fetch.
 
 **Capped at exactly 100 entries on both.** How far that reaches is the guild's business and not
 the client's: 100 entries covered **a month and ten days** in the busy guild and **ten months

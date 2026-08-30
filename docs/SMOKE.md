@@ -176,9 +176,9 @@ whole point is that they stop being recollection.
       date, so the rows say which end is which. Check that on the other two clients rather
       than assuming Era's answer; and note the reach in the row, because a busy guild fills
       100 entries in days and a fortnight away then means the event has gone.
-- [ ] **Run it twice, a day apart.** If the same entry is still at index 1, the order is
-      stable and the oldest really is first. This is the one reading that is inferred rather
-      than measured, and it is cheap to settle.
+- [x] **Ordering — settled 2026-08-30.** Oldest first, measured in a guild made for it: a
+      character was `/gquit`, invited and joined, in that order and by hand, and the log came
+      back `[1] quit`, `[2] invite`, `[3] join`. No need to run it a day apart.
 - [ ] **What does a deletion look like?** Roll a level-one alt, invite it, log it in, delete
       it, run the probe again. If nothing new appears in *kinds of event*, a deleted character
       leaves no trace and only the owner's own records can say it has gone.
