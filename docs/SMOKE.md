@@ -166,9 +166,11 @@ Per client: **Era**, **Anniversary**, **Mists**.
       (2 ours coming back)` on the `GUILD` channel. This file previously said the opposite,
       from runs that saw no echo — an absence read as a rule (§2.2), and the entry it came
       from is corrected in `DATASOURCES.md`.
-- [ ] **Era and Burning Crusade: do they echo?** Same method — be the only Family user online
-      in the guild, `/family guild test`, read `X ours coming back`. Still unmeasured on both,
-      and the closing sentence of the diagnosis leans on the answer.
+- [x] **Era — settled 2026-08-30. It echoes.** Sole Family user in a 773-member guild: `sent 2`,
+      `announcements arrived: 2 (2 ours coming back)`, `from somebody else: none`.
+- [ ] **Burning Crusade: does it echo?** Same method — be the only Family user online in the
+      guild, `/family guild test`, read `X ours coming back`. The last of the three, and the
+      closing sentence of the diagnosis leans on the answer.
 
 #### What actually crossed the wire — the two-sided count
 
@@ -190,6 +192,12 @@ that a silence has three different causes that used to print identically.
 - [ ] **The closing sentence matches the numbers.** Nothing at all handed over should send you
       to guild chat; ours arriving with no announcement among them should blame Family; and
       neither should blame the channel.
+- [x] **The bracket fix, on Era — settled 2026-08-30.** The six sites changed blind on 30/8 all
+      hold: the talent panel shows unspent points (51 of 51), a letter with an item and money
+      records both, and tooltips render. `UnitCharacterPoints` was the one to watch, since Era
+      has unspent points where Mists mostly does not.
+- [ ] **The bracket fix, on Burning Crusade.** Same three: talents, a letter with money, any
+      Family tooltip appearing at all.
 - [ ] **Watch for the silence.** Twice on 30/8, on two clients, `/family guild test` reported
       `handed us: 0` — the client passing over nothing at all, from any addon — while sends
       were succeeding. It has not reproduced since: a settled character alone in its guild
@@ -210,7 +218,10 @@ read as your own echo and never answered. **Write the answers into `docs/DATASOU
       `MirageRaceway`; `GetRealmName` gives `Mirage Raceway` with a space. The addon channel
       and the roster both use the normalised form, on every name including same-realm ones —
       `UnitName("player")` is the only one of them that answers bare.
-- [ ] **Run it on Era and Burning Crusade.** Do `UnitFullName`, `GetNormalizedRealmName` and
+- [x] **Era — settled 2026-08-30.** All three exist and answer in the same shapes as Mists;
+      `GetAutoCompleteRealms` returns three realms, and all 773 roster entries carry one. So the
+      connected-group widening of `Offering()` is live on Era rather than falling back.
+- [ ] **Run it on Burning Crusade.** Do `UnitFullName`, `GetNormalizedRealmName` and
       `GetAutoCompleteRealms` exist at all? The probe says `no such call` rather than erroring,
       and a client with no connected realms cannot produce the collision.
 - [ ] **Do senders carry a realm on Era and Burning Crusade?** Read `addon messages the client

@@ -236,7 +236,15 @@ here. The runs that showed no echo also showed `addon messages the client handed
 client handing over nothing whatever, from any addon - so they may be the same unexplained
 silence rather than evidence about echoing at all. That silence is still unexplained.
 
-**Still unmeasured on Era and Burning Crusade.**
+**Era does too, measured 2026-08-30.** As the only Family user online in a 773-member guild:
+`messages sent from here: 2`, `announcements arrived: 2 (2 ours coming back)`,
+`announcements from somebody else: none`. Nobody else was there, so both arrivals can only be
+this client's own announcements returning, and the last was named `Nervina-PyrewoodVillage on
+GUILD`.
+
+**Burning Crusade remains unmeasured**, which is why the diagnosis still hedges: the branch that
+names a client whose announcements never come back is gated on having heard somebody else, so
+that a lone user on a client that might not echo is never told they are broken.
 
 ### What a client calls a character, measured on Mists 2026-08-30
 
@@ -500,6 +508,34 @@ ten of the same dump. That matters because a spell id is §2.1-clean where a nam
 **Still open:** the stored buffs are not separate auras - only the Chronoboon's own appears -
 so if they are anywhere readable it is in *that aura's* tooltip rather than the item's. That is
 the last candidate and it is one `SetUnitBuff` away.
+
+### The same name calls on Era, measured 2026-08-30
+
+`/family guild names` on Classic Era, realm Pyrewood Village, in a 773-member guild:
+
+    UnitName("player")        -> 1:Nervina(string) 2:nil(nil)
+    UnitFullName("player")    -> 1:Nervina(string) 2:PyrewoodVillage(string)
+    GetRealmName()            -> 1:Pyrewood Village(string)
+    GetNormalizedRealmName()  -> 1:PyrewoodVillage(string)
+    GetAutoCompleteRealms()   -> 1:{PyrewoodVillage, NethergardeKeep, MirageRaceway}(table)
+    GetNumGuildMembers()      -> 1:773(number) 2:13(number)
+    GetGuildRosterInfo(1)     -> 1:Carlingblack-NethergardeKeep(string) ...
+                                 17:Player-5284-01C325A6(string)
+
+**Every one of these calls exists on Era**, and answers in the same shapes as Mists: the realm
+absent from `UnitName`, present and normalised on `UnitFullName`, spaced on `GetRealmName`. So
+the `SameRealmGroup` widening of `Offering()` works on this client rather than falling back.
+
+**Era has connected realms too** - three of them - and **all 773 roster entries carry a realm**,
+including `Carlingblack-NethergardeKeep` from another realm of the group. Cross-realm guild
+membership on Era is therefore measured, not inferred.
+
+**No name collision in 773 members.** A far stronger negative than the five-member guild the
+same question was asked of on Mists, and still not a proof that a connected group forbids
+duplicates - only that this guild has none.
+
+**`GetNumGuildMembers` answers in two values here as well** (773 and 13), so the `tonumber(5, 2)`
+fault would have bitten identically on Era. See L-031.
 
 ### The guild event log, measured on all three clients 2026-08-30
 
