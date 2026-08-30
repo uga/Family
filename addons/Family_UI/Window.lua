@@ -420,12 +420,29 @@ function UI:RegisterTab(id, label, builder)
 		star:GetNormalTexture():SetTexCoord(0, 0.5, 0, 0.5)
 	end
 	star:SetScript("OnClick", function()
-		UI:SetDefaultPanel(id)
+		-- Filled means you are looking at home, so clicking it takes the star off. One
+		-- control, both ways: a star you can put on and not take off is a decision a
+		-- player has to visit Options to undo, and Options is not where they set it.
+		--
+		-- Written out rather than as `looking and nil or id`, which is the oldest trap in
+		-- Lua and always answers `id`: `true and nil` is nil, and `nil or id` is id. It
+		-- was written that way first and the check caught it.
+		if UI:LookingAtHome(id) then
+			UI:SetDefaultPanel(nil)
+		else
+			UI:SetDefaultPanel(id)
+		end
+
 		UI:ShowTab(id)
 	end)
 	UI:AttachTooltip(star, function()
+		if UI:LookingAtHome(id) then
+			return nil, nil, { { L["Open Family here"] },
+				{ L["|cff9d9d9dThis is where Family opens. Click to stop.|r"] } }
+		end
+
 		return nil, nil, { { L["Open Family here"] },
-			{ L["|cff9d9d9dFamily opens on this panel, every time.|r"] } }
+			{ L["|cff9d9d9dFamily will open on this panel, as it is now, every time.|r"] } }
 	end)
 	star:Hide()
 
@@ -506,16 +523,31 @@ function UI:StartingTab()
 	return tabs[1] and tabs[1].id
 end
 
--- The star on each tab: hollow on the others, filled on the one that is home, and gone
+-- Whether what is on screen right now is what home is set to.
+--
+-- The panel, *and* the summary's set: with Activity starred and Bags showing, the summary is
+-- not home. Saying otherwise would leave a filled star on a screen that clicking it would
+-- change, which reads as a button that does nothing.
+function UI:LookingAtHome(id)
+	if id ~= UI:DefaultPanel() then return false end
+	if id ~= "summary" then return true end
+	return ((FamilyDB.ui or {}).defaultSet or false) == (UI.__summarySet or false)
+end
+
+-- The star on each tab: filled on the one that is home, hollow everywhere else, and gone
 -- entirely while the switch is off. Nobody who has not asked for this should have to look at
 -- nine stars.
+--
+-- Hollow is not decoration - it is the invitation. A hollow star on the panel you are looking
+-- at means clicking it would move home here, which is the whole of how home is changed, and
+-- it is the only instruction this feature gives.
 function UI:RefreshStars()
-	local on, home = UI:UsesDefaultPanel(), UI:DefaultPanel()
+	local on = UI:UsesDefaultPanel()
 
 	for id, button in pairs(tabButtons) do
 		if button.star then
 			button.star:SetShown(on)
-			button.star:SetAlpha(id == home and 1 or 0.35)
+			button.star:SetAlpha(UI:LookingAtHome(id) and 1 or 0.35)
 		end
 	end
 end

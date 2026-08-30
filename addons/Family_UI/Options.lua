@@ -36,10 +36,14 @@ local SWITCHES = {
 	},
 	{
 		label = L["Always open Family on one panel"],
-		note = L["A star appears on every panel in the strip; click one to make it the "
-			.. "panel Family opens on, every time. The summary is starred with the set of "
-			.. "columns you are looking at, so a star can mean Activity rather than the "
-			.. "whole panel."],
+		note = L["Switch this on and a star appears beside every panel in the strip. "
+			.. "Clicking one locks Family to that panel: it opens there every time, now "
+			.. "and after you log out. The star is solid on the panel it is locked to and "
+			.. "faint everywhere else - and clicking the solid one unlocks it again.\n"
+			.. "On the summary the lock takes the set of columns you are looking at too, "
+			.. "so it can mean Activity rather than the whole panel. To move it to another "
+			.. "set, go to that set and click the star again: it goes faint the moment the "
+			.. "columns change, which is what says it can be moved."],
 		get = function() return UI:UsesDefaultPanel() end,
 		set = function(on) UI:SetUsesDefaultPanel(on) end,
 	},

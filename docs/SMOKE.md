@@ -77,10 +77,11 @@ Per client: **Era**, **Anniversary**, **Mists**.
       look on each of the three, because each has its own table and Mists has its own shape.
 - [ ] `/fam` and `/family` both open the window.
 - [ ] **Always open on one panel**, in Options. Switch it on: a star appears on every panel in
-      the strip. Star one, log out and back in, open Family: it opens there. Star the summary
+      the strip. Click one, log out and back in, open Family: it opens there. Lock the summary
       while Activity is showing and it comes back on Activity — the harness builds that panel
-      once and cannot un-build it, so **this half is only checkable here**. Switch it off and
-      it opens on the summary again, with the star remembered for when you switch it back on.
+      once and cannot un-build it, so **this half is only checkable here**. Click a different
+      set: the star goes faint. Click the solid star: it unlocks. Switch the option off and it
+      opens on the summary again, with the lock remembered for when you switch it back on.
 - [ ] The **Wide Family** tab is in the strip without anything being switched on, its panel
       explains itself, and its controls do nothing until its box is ticked.
 - [ ] **Guild share** is off, and the Guild panel says so rather than looking empty.

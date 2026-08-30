@@ -23,11 +23,17 @@ is a decision rather than an afternoon of archaeology.
   it is called on the left, **what is attached to it as icons on the right** — hover one to
   see what it is — with the gold beside them, cash on delivery in red, and how long that
   letter has left. Click it again to fold it away.
-- **Family can always open on the panel you choose.** A new switch in Options puts a star on
-  every panel in the strip; click one and Family opens there every time, including after
-  logging out. Starring the summary takes the set of columns you are looking at with it, so a
-  star can mean *Activity* rather than the whole panel. Off unless you ask for it, and walking
-  to another panel never moves it — only starring one does.
+- **Family can be locked to one panel.** A new switch in Options puts a star beside every
+  panel in the strip. Click one and Family opens there every time, now and after you log out.
+  The star is solid on the panel it is locked to and faint everywhere else, and clicking the
+  solid one unlocks it again.
+
+  On the summary the lock takes the set of columns you are looking at with it, so it can mean
+  *Activity* rather than the whole panel. To move it, go to another set and click the star
+  again — it goes faint the moment the columns change, which is what says it can be moved.
+
+  Off unless you ask for it, and walking to another panel never moves the lock: only clicking
+  a star does.
 
 ### Fixed
 

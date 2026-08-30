@@ -1171,6 +1171,9 @@ local function build(frame)
 		button:SetScript("OnClick", function()
 			currentSet = set
 			UI.__summarySet = set.id
+			-- The star above goes hollow when the columns stop being the starred ones,
+			-- which is how somebody discovers they can move home to this set.
+			UI:RefreshStars()
 			frame:Refresh()
 		end)
 		setButtons[set.id] = button

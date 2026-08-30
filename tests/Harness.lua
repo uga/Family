@@ -125,6 +125,7 @@ local KNOWN = {
 	StartMoving = 1, StopMovingOrSizing = 1, SetClampedToScreen = 1,
 	SetFrameStrata = 1, SetToplevel = 1, Raise = 1,
 	Show = 1, Hide = 1, IsShown = 1, SetShown = 1, SetAlpha = 1,
+	GetNormalTexture = 1, SetTexCoord = 1,
 	SetScript = 1, GetScript = 1,
 	RegisterEvent = 1, UnregisterEvent = 1,
 	CreateFontString = 1, CreateTexture = 1,
@@ -220,6 +221,9 @@ function frameMethods:GetHeight() return 500 end
 -- Recorded rather than ignored, because whether a frame takes the mouse is the whole of
 -- whether anything drawn on top of it can be clicked. See takesMouse below.
 function frameMethods:EnableMouse(v) self.__mouse = v and true or false end
+-- Recorded, because a star says which panel is home by how solid it is drawn and there is no
+-- other way to ask.
+function frameMethods:SetAlpha(v) self.__alpha = v end
 function frameMethods:SetEnabled(v) self.__enabled = v end
 function frameMethods:Enable() self.__enabled = true end
 function frameMethods:Disable() self.__enabled = false end
@@ -8777,6 +8781,39 @@ print("opening on the panel you chose")
 	strip.summary.star.__scripts.OnClick(strip.summary.star)
 	check("starring the summary takes the columns it is showing",
 		Family.UI:DefaultSet() == "activity", tostring(Family.UI:DefaultSet()))
+	check("and the star is filled while those columns are the ones showing",
+		Family.UI:LookingAtHome("summary"))
+	-- Drawn, not merely decided: the star says which panel is home by how solid it is, and
+	-- a rule nothing draws is a rule nobody can see.
+	check("and drawn solid rather than merely known to be home",
+		strip.summary.star.__alpha == 1, tostring(strip.summary.star.__alpha))
+	check("while every other panel's is faint",
+		strip.guild.star.__alpha ~= 1, tostring(strip.guild.star.__alpha))
+
+	-- Changing your mind is clicking a different set and starring again, and the star going
+	-- hollow is the only thing that says so. A filled star on a screen that clicking would
+	-- change reads as a button that does nothing.
+	clickButton("Bags")
+	check("changing the columns leaves it hollow, which is the invitation",
+		Family.UI:LookingAtHome("summary") == false)
+	check("and the star goes faint the moment they change",
+		strip.summary.star.__alpha ~= 1, tostring(strip.summary.star.__alpha))
+
+	strip.summary.star.__scripts.OnClick(strip.summary.star)
+	check("and starring again moves home to the new columns",
+		Family.UI:DefaultSet() == "bags", tostring(Family.UI:DefaultSet()))
+	check("with the star filled again", Family.UI:LookingAtHome("summary"))
+
+	-- And off again with the same click. A star you can put on and not take off is a
+	-- decision that has to be undone somewhere else, and somewhere else is not where it was
+	-- made.
+	strip.summary.star.__scripts.OnClick(strip.summary.star)
+	check("clicking the filled star takes it off again",
+		Family.UI:DefaultPanel() == nil, tostring(Family.UI:DefaultPanel()))
+	check("and with nothing starred it opens on the first panel",
+		Family.UI:StartingTab() == "summary", tostring(Family.UI:StartingTab()))
+
+	strip.summary.star.__scripts.OnClick(strip.summary.star)
 
 	Family.UI:SetUsesDefaultPanel(false)
 	check("switched off, it opens on the first panel again",
