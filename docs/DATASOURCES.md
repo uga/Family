@@ -199,23 +199,44 @@ publishing what it collected is an out-of-game job.
 
 ---
 
-### A client does not hear its own guild-channel addon message, measured on Mists 2026-08-30
+### A client DOES hear its own guild-channel addon message, measured on Mists 2026-08-30
 
-Sending on the `GUILD` addon channel does **not** come back to the sender on Mists of Pandaria
-Classic. Measured on a live client whose diagnosis read `announcements arrived: 1 (0 ours coming
-back)` - it had received somebody else's announcement over that channel perfectly well and had
-never once seen its own, across three runs.
+Sending on the `GUILD` addon channel **does** come back to the sender on Mists of Pandaria
+Classic. Measured on a live client that was the only one running Family online in its guild:
 
-Not Family dropping it: `Comm:Receive` has no filter on the sender, and `onHello` counts an
-arrival *before* the echo guard discards it, so an echo would show in both numbers.
+    messages sent from here: 2
+    what the client answered to those: 2 x number 0
+    addon messages the client handed us: 4, 2 of them Family's
+        (last from Eccebombo-MirageRaceway on GUILD)
+    announcements arrived: 2  (2 ours coming back, 0 for another guild, 0 unreadable)
+    announcements from somebody else: none
 
-It matters because a diagnosis was built on the opposite assumption. *"This client has sent and
-heard nothing at all, not even its own announcement coming back off the guild channel - that
-points at the channel"* fires on Mists every time somebody is the only Family user online, and
-names the one part of the system they cannot inspect. It now says what is known instead.
+Unambiguous because nobody else was there: with `from somebody else: none`, the two arrivals
+can only be this client's own two announcements returning, and the channel they arrived on is
+named.
 
-**Unmeasured on Era and Burning Crusade.** If they do echo, the sentence is only wrong on one
-client; if they do not, it was never right anywhere.
+**It also settles how the sender is spelled.** The client's own message comes back as
+`Eccebombo-MirageRaceway`, in the same second that `UnitName("player")` answers `Eccebombo`.
+The realm is present on one side of that comparison and absent on the other, which is what
+`Guild:ProbeNames` was built to follow up.
+
+#### This entry previously said the opposite, and how that happened is the useful part
+
+It read *"a client does not hear its own guild-channel addon message"*, from a live diagnosis
+showing `announcements arrived: 1 (0 ours coming back)` across three runs - somebody else's
+announcement received perfectly well, and never once its own.
+
+Those runs are not disputed. **The conclusion drawn from them was: no echo was seen, therefore
+this client cannot echo.** That is §2.2 - not seen is not the same as not there - applied to
+Family's own instrumentation rather than to the game's, and it went into this file as a
+measurement because a number was quoted beside it.
+
+What actually differed between those runs and this one is **not known**, and is not guessed at
+here. The runs that showed no echo also showed `addon messages the client handed us: 0` - the
+client handing over nothing whatever, from any addon - so they may be the same unexplained
+silence rather than evidence about echoing at all. That silence is still unexplained.
+
+**Still unmeasured on Era and Burning Crusade.**
 
 ### The guild event log, measured on all three clients 2026-08-30
 

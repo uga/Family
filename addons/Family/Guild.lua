@@ -2209,15 +2209,20 @@ function Guild:Diagnose()
 				.. "over. Check that this character may speak in guild chat: type something "
 				.. "in /g and see whether anybody answers."])
 		else
-			-- **Said as what is known rather than as a verdict.** Other addons are being
-			-- heard and ours is not, which on Mists is what being the only Family user
-			-- online looks like: a client there does not hear its own guild announcement
-			-- come back (DATASOURCES §2). A diagnosis that names the wrong culprit is worse
-			-- than one that says less.
-			Family:Print(L["|cffffaa00Nothing of Family's has arrived here.|r In a guild "
-				.. "where nobody else runs Family that is the ordinary answer - and on some "
-				.. "clients your own announcement does not come back to you either, so by "
-				.. "itself this is not proof of a fault. Ask somebody else in the guild to "
+			-- **Said as what is known rather than as a verdict, and what is known has
+			-- changed.** This used to offer "on some clients your own announcement does not
+			-- come back to you either" as the reason not to worry, on the strength of a
+			-- Mists client that had never been seen to echo. It does echo - measured, alone
+			-- in its guild, two sent and two back off the GUILD channel (DATASOURCES §2).
+			--
+			-- So on that client this state is a real signal rather than the ordinary answer.
+			-- Era and Burning Crusade are still unmeasured and this must not branch on the
+			-- client, so it says which way the evidence points and still refuses to name the
+			-- channel - the one part the reader cannot inspect.
+			Family:Print(L["|cffffaa00Nothing of Family's has arrived here|r - not even this "
+				.. "client's own announcement, which on at least one client does come back. "
+				.. "In a guild where nobody else runs Family this can still be ordinary, so "
+				.. "it is not proof of a fault by itself. Ask somebody else in the guild to "
 				.. "run this: if their copy shows messages arriving, the channel is working."])
 		end
 	end
