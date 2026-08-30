@@ -196,10 +196,14 @@ that a silence has three different causes that used to print identically.
       hold: the talent panel shows unspent points (51 of 51), a letter with an item and money
       records both, and tooltips render. `UnitCharacterPoints` was the one to watch, since Era
       has unspent points where Mists mostly does not.
-- [x] **The bracket fix, on Burning Crusade — settled 2026-08-30.** The talent panel and the
-      currencies panel both draw. Note the character used was level 5 with no talent points at
-      all, so `UnitCharacterPoints` was not exercised the way Era's 51-of-51 exercised it — what
-      this shows is that nothing errors, not that the number is right.
+- [x] **The bracket fix, on Burning Crusade — settled 2026-08-30.** The talent panel draws a
+      full build (`59 of 59 points spent`, `specialisation 1 of 2`, three trees) and the
+      currencies panel draws. **What it still does not show is a non-zero unspent count**: both
+      Era's 51-of-51 and this one have nothing unspent, and `unspent` is exactly the value the
+      bracket protects. A character mid-levelling with points in hand would settle it, or
+      `/run local r={UnitCharacterPoints("player")} print(#r, unpack(r))` settles it outright by
+      saying how many values the call returns — one, and the old form could never have failed
+      here at all.
 - [ ] **Watch for the silence.** Twice on 30/8, on two clients, `/family guild test` reported
       `handed us: 0` — the client passing over nothing at all, from any addon — while sends
       were succeeding. It has not reproduced since: a settled character alone in its guild
