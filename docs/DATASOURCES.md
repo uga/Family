@@ -199,6 +199,51 @@ publishing what it collected is an out-of-game job.
 
 ---
 
+### The guild event log, measured on Classic Era 2026-08-30
+
+`/family guild log`, in the guild **ZERO** on Pyrewood Village, run as **rank index 8** — a
+rank-and-file member, not an officer.
+
+`QueryGuildEventLog`, `GetNumGuildEvents` and `GetGuildEventInfo` all exist. `GetGuildEventInfo`
+answers with **eight values**:
+
+| # | type | what it is |
+|---:|---|---|
+| 1 | string | the event: `invite`, `join`, `promote`, `demote`, `quit` |
+| 2 | string | the character it is about, realm-qualified where the realm differs — `Ethelberg-NethergardeKeep` |
+| 3 | string or **nil** | the second party, present on `invite` and nil on `join` and `quit` |
+| 4 | string | a **rank name**, and this guild's own words — `Alt`, `Member`, `Guild Master`, and empty on `join` |
+| 5–8 | number | **how long ago**, as years, months, days, hours |
+
+Three things that are not what they look like:
+
+- **Positions 5 to 8 are an elapsed time, not a date.** A row reading `0, 0, 0, 4` is four hours
+  ago, and `0, 1, 10, 4` is a month and ten days ago. A calendar month is never 0.
+- **Index 1 is the oldest and the last index is the newest**, which is the opposite way round
+  from a chat log. Read off the offsets: `[1]` was 1 month 10 days old, `[3]` 1 month 7 days,
+  `[100]` four hours. *Inferred from monotonicity rather than measured directly* — running the
+  probe a day apart settles it, and `docs/SMOKE.md` asks for that.
+- **Position 4 is a guild's own rank name**, not an index and not a game constant. `Alt` is a
+  rank this guild invented. Nothing can key on it.
+
+**A rank-and-file member reads the whole log.** That was the question that decided whether this
+could be a source at all: a log only officers can read cannot settle anything, because everyone
+has to reach the same conclusion or the guild disagrees about who is in it.
+
+**Capped at exactly 100 entries**, which in this guild reached back a month and ten days. That
+is a count and not a period: a busy guild fills 100 entries in days. So this is an accelerator
+and never a guarantee, and any expiry has to stay as the backstop.
+
+Kinds seen across the whole 100: `invite` ×29, `join` ×27, `quit` ×26, `promote` ×16,
+`demote` ×2.
+
+**Two questions still open.** No `remove` appeared in 100 entries beside 26 `quit`, so whether
+being kicked is recorded as its own kind or as a `quit` is unknown. And whether **deleting** a
+character leaves any trace at all is untested — that is the case the log was opened for, and it
+needs the experiment `SMOKE.md` describes. Burning Crusade and Mists are also unrun.
+
+---
+
 ## 3. wago.tools — the client's own tables, out of game
 
 `https://wago.tools/db2/<Table>/csv?build=<build>` returns the client's DB2 tables as CSV, for

@@ -171,9 +171,14 @@ whole point is that they stop being recollection.
 - [ ] **Copy the `[n]` lines verbatim.** They are every value the call returned, by position
       and type, and the position of the date fields and of the event word is exactly what is
       not known.
-- [ ] **How far back does it reach?** The last line is the oldest entry the client holds.
-      If a fortnight away means an event has scrolled off, this is an accelerator and never a
-      guarantee.
+- [ ] **How far back does it reach?** On Era it is capped at exactly 100 entries and the
+      *first* index is the oldest — the last four numbers on each row are how long ago, not a
+      date, so the rows say which end is which. Check that on the other two clients rather
+      than assuming Era's answer; and note the reach in the row, because a busy guild fills
+      100 entries in days and a fortnight away then means the event has gone.
+- [ ] **Run it twice, a day apart.** If the same entry is still at index 1, the order is
+      stable and the oldest really is first. This is the one reading that is inferred rather
+      than measured, and it is cheap to settle.
 - [ ] **What does a deletion look like?** Roll a level-one alt, invite it, log it in, delete
       it, run the probe again. If nothing new appears in *kinds of event*, a deleted character
       leaves no trace and only the owner's own records can say it has gone.

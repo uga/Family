@@ -2078,8 +2078,14 @@ function Guild:ProbeEventLog()
 			Family:Print("  [%d] %s", index, line or "|cffff5555the call errored|r")
 		end
 
-		-- And the far end of the log, because how far back it reaches is one of the four
-		-- questions and the newest eight cannot answer it.
+		-- And the other end of the log, because how far it reaches is one of the four
+		-- questions and eight rows from one end cannot answer it.
+		--
+		-- Which end is which is not assumed here and was got wrong before it was measured:
+		-- on Era the **first** index is the oldest and the last is the newest, which is the
+		-- opposite of what a chat log looks like. The row says so itself - what those last
+		-- four numbers carry is how long ago, not a date - so printing both ends and reading
+		-- them is what settles it on a client nobody has run this on yet.
 		if count > EVENT_SHOWN then
 			local line = eventLine(count)
 			Family:Print("  [%d] %s", count, line or "|cffff5555the call errored|r")
