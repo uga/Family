@@ -299,7 +299,7 @@ local function describe(tooltip)
 
 	tooltip:AddLine(" ")
 	tooltip:AddLine(L["|cff888888Left-click for the family. Right-click for the options. "
-		.. "Middle-click to change what the money counts.|r"])
+		.. "Shift-click to change what the money counts.|r"])
 end
 
 -- Each click goes to a fixed place rather than to wherever the window was left.
@@ -311,13 +311,18 @@ end
 -- one. So left is always the summary and right is always the options, and clicking for where
 -- you already are closes the window.
 local function onClick(button)
-	-- The middle button changes what the money is counting.
+	-- Shift and the left button change what the money is counting, and so does the middle
+	-- button on a mouse that has one.
 	--
 	-- Not the money's own click: a broker bar is one label and its display hands the whole of
-	-- it to one handler, so there is no "on the money" to click on. Left and right are already
-	-- the two panels, and the middle button is free on both the bar and our own minimap
-	-- button, which registers AnyUp.
-	if button == "MiddleButton" then
+	-- it to one handler, so there is no "on the money" to click on. Plain left and right are
+	-- already the two panels.
+	--
+	-- **Shift-left is the one that is named**, because a middle button is not a thing everybody
+	-- has - a trackpad often has two - and an action reachable only by hardware some people
+	-- lack is an action those people do not have. The middle button stays because it costs one
+	-- comparison and some hands prefer it.
+	if button == "MiddleButton" or (IsShiftKeyDown and IsShiftKeyDown()) then
 		UI:CycleBrokerScope()
 		return
 	end

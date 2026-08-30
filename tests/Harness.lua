@@ -581,6 +581,11 @@ C_Container = {
 
 GetInventoryItemID = function(_, slot) return 4000 + slot end
 
+-- Held down or not, which a click handler asks about rather than being told. Set SHIFT_DOWN
+-- to drive it.
+SHIFT_DOWN = false
+IsShiftKeyDown = function() return SHIFT_DOWN end
+
 -- Identity. The character is below the cap so experience exists; the max-level case is
 -- checked separately, because a capped character must read "max level" and not "0%".
 UnitSex = function() return 2 end
@@ -1277,7 +1282,10 @@ C_Container.GetContainerItemInfo = function(bag, slot)
 	return baseItemInfo(bag, slot)
 end
 
-local ITEM_NAMES = { [6948] = "Hearthstone", [2589] = "Linen Cloth" }
+local ITEM_NAMES = { [6948] = "Hearthstone", [2589] = "Linen Cloth",
+	-- Charged, and the client knows it - which is the ordinary case once an item
+	-- has been seen. The case where it does not yet is held further down.
+	[20747] = "Lesser Mana Oil" }
 
 -- Recipe items, and one deliberate impostor. Arcane dust is trade goods with a subclass
 -- named after a profession, which is exactly why a subtype matching a profession cannot on
@@ -5039,11 +5047,32 @@ do
 		-- The button somebody actually presses, rather than the function behind it.
 		local minimap = _G.FamilyMinimapButton
 		local was, wasTab = Family.UI:BrokerScope(), Family.UI:CurrentTab()
-		if minimap and minimap.__scripts and minimap.__scripts.OnClick then
-			minimap.__scripts.OnClick(minimap, "MiddleButton")
+		local function press(button)
+			if minimap and minimap.__scripts and minimap.__scripts.OnClick then
+				minimap.__scripts.OnClick(minimap, button)
+			end
 		end
+
+		press("MiddleButton")
 		check("and the middle button on the minimap changes it", Family.UI:BrokerScope() ~= was,
 			was .. " -> " .. Family.UI:BrokerScope())
+
+		-- The one that is named in the tooltip, because a middle button is not something
+		-- everybody has and a trackpad often has two.
+		local afterMiddle = Family.UI:BrokerScope()
+		SHIFT_DOWN = true
+		press("LeftButton")
+		SHIFT_DOWN = false
+		check("and so does shift with the left one, which everybody has",
+			Family.UI:BrokerScope() ~= afterMiddle,
+			afterMiddle .. " -> " .. Family.UI:BrokerScope())
+
+		-- And a plain left click still opens Family rather than changing the money.
+		local beforePlain = Family.UI:BrokerScope()
+		press("LeftButton")
+		check("while a plain left click leaves the money alone",
+			Family.UI:BrokerScope() == beforePlain, beforePlain .. " -> "
+				.. Family.UI:BrokerScope())
 		-- Rather than doing what the other two buttons do. The window may well be open
 		-- already from an earlier section, so what is asked is that this click did not move
 		-- it - not that nothing is on screen.
@@ -12674,6 +12703,47 @@ print("and recording it, for the few slots that need it")
 	BANK_BAGS[6].items[2] = nil
 	Family.Bank:Scan()
 	fire("BANKFRAME_CLOSED")
+
+	------------------------------------------------------------------------------------
+	-- An item the client does not have yet
+	--
+	-- Reported live: an oil showed no charge count until it was moved between slots. The
+	-- tooltip is empty until the client has the item, and at login it has not - so the scan
+	-- that runs first read nothing, recorded nil, and nothing ever asked again. The reader
+	-- was working perfectly the whole time, which is why it took a probe to find.
+	------------------------------------------------------------------------------------
+	-- 21713 is Elune's Candle: in the charged table, and an id nothing anywhere in this run
+	-- names or looks up - which matters twice over, because Names caches a name once it has
+	-- one and the client itself never forgets. Once known, always known, here as in the game,
+	-- so a "does not know it yet" check needs an id nothing has introduced.
+	BAGS[1].items[9] = { 21713, 1 }
+	CHARGE_LINES["1:9"] = { "Elune's Candle", "5 Charges" }
+	Family.Bags:Scan()
+
+	local bags = (Family.Database:Payload(key) or {}).bags or {}
+	check("an item the client does not have yet records no charges",
+		((bags[1] or {}).slots or {})[9]
+			and ((bags[1] or {}).slots or {})[9].charges == nil,
+		((bags[1] or {}).slots or {})[9]
+			and ("charges " .. tostring(((bags[1] or {}).slots or {})[9].charges))
+			or "no slot 9 at all")
+
+	-- And the client answering is what asks again. Without this the nil above is what the
+	-- panel shows until something unrelated moves the item.
+	ITEM_NAMES[21713] = "Elune's Candle"
+	fire("GET_ITEM_INFO_RECEIVED", 21713, true)
+	advance(2)
+
+	bags = (Family.Database:Payload(key) or {}).bags or {}
+	check("and the count arrives once the client answers about it",
+		((bags[1] or {}).slots or {})[9]
+			and ((bags[1] or {}).slots or {})[9].charges == 5,
+		tostring(((bags[1] or {}).slots or {})[9]
+			and ((bags[1] or {}).slots or {})[9].charges))
+
+	ITEM_NAMES[21713] = nil
+	BAGS[1].items[9] = nil
+	Family.Bags:Scan()
 	_G.ITEM_SPELL_CHARGES = heldFormat
 	_G.FamilyScanTooltipTextLeft1, _G.FamilyScanTooltipTextLeft2 = nil, nil
 end)()

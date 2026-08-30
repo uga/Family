@@ -640,7 +640,7 @@ Family.locales.deDE = {
 	["|cff9d9d9dNothing recorded yet.|r"] = "|cff9d9d9dNoch nichts aufgezeichnet.|r",
 	["|cff888888name, level, item level|r"] = "|cff888888Name, Stufe, Gegenstandsstufe|r",
 	["|cff40bf40Crafting cooldowns ready|r"] = "|cff40bf40Herstellungs-Abklingzeiten bereit|r",
-	["|cff888888Left-click for the family. Right-click for the options. Middle-click to change what the money counts.|r"] = "|cff888888Linksklick für die Familie. Rechtsklick für die Optionen. Mittelklick, um zu ändern, was das Geld zählt.|r",
+	["|cff888888Left-click for the family. Right-click for the options. Shift-click to change what the money counts.|r"] = "|cff888888Linksklick für die Familie. Rechtsklick für die Optionen. Umschalt+Klick, um zu ändern, was das Geld zählt.|r",
 	["|cff888888the bar is counting|r"] = "|cff888888die Leiste zählt|r",
 	["this character"] = "dieser Charakter",
 

@@ -153,7 +153,23 @@ function Bank:Scan()
 						-- and a charge read off a tab that has not arrived would be wrong
 						-- rather than absent.
 						if Family.ChargedItems and Family.ChargedItems[itemID] then
-							entry.slots[slot].charges = Family:ChargesIn(bag, slot)
+						-- **The tooltip is empty until the client has the item**, and at login
+						-- it has not: a scan that runs first reads no charges, records nil, and
+						-- nothing ever asks again - measured live, where an oil showed no count
+						-- until it was moved between slots.
+						--
+						-- So the id is asked for the way everything else in Family asks for one,
+						-- and the scan runs again when the client answers. Family:After replaces
+						-- a pending timer of the same name, so a bagful of unknown items costs
+						-- one more scan rather than one each.
+							local _, known = Family.Names:Item(itemID, "bank.charges",
+								function()
+									Family:After(0.5, "bank", function() Bank:Scan() end)
+								end)
+
+							if known then
+								entry.slots[slot].charges = Family:ChargesIn(bag, slot)
+							end
 						end
 						used = used + 1
 					end

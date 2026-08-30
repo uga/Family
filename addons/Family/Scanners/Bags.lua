@@ -200,7 +200,23 @@ function Bags:Scan()
 					-- tooltip eighty times a scan to learn nothing is the reason the gate
 					-- exists rather than a bare attempt on every slot (DATASOURCES §3).
 					if Family.ChargedItems and Family.ChargedItems[itemID] then
-						entry.slots[slot].charges = Family:ChargesIn(bag, slot)
+					-- **The tooltip is empty until the client has the item**, and at login
+					-- it has not: a scan that runs first reads no charges, records nil, and
+					-- nothing ever asks again - measured live, where an oil showed no count
+					-- until it was moved between slots.
+					--
+					-- So the id is asked for the way everything else in Family asks for one,
+					-- and the scan runs again when the client answers. Family:After replaces
+					-- a pending timer of the same name, so a bagful of unknown items costs
+					-- one more scan rather than one each.
+						local _, known = Family.Names:Item(itemID, "bags.charges",
+							function()
+								Family:After(0.5, "bags", function() Bags:Scan() end)
+							end)
+
+						if known then
+							entry.slots[slot].charges = Family:ChargesIn(bag, slot)
+						end
 					end
 
 					-- Things with a cooldown of their own - a salt shaker, a hearth,

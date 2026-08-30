@@ -640,7 +640,7 @@ Family.locales.ruRU = {
 	["|cff9d9d9dNothing recorded yet.|r"] = "|cff9d9d9dПока ничего не записано.|r",
 	["|cff888888name, level, item level|r"] = "|cff888888имя, уровень, уровень предметов|r",
 	["|cff40bf40Crafting cooldowns ready|r"] = "|cff40bf40Ремесленные восстановления готовы|r",
-	["|cff888888Left-click for the family. Right-click for the options. Middle-click to change what the money counts.|r"] = "|cff888888Левый щелчок - семья. Правый - настройки. Средний щелчок меняет то, что считают деньги.|r",
+	["|cff888888Left-click for the family. Right-click for the options. Shift-click to change what the money counts.|r"] = "|cff888888Левый щелчок - семья. Правый - настройки. Shift+щелчок меняет то, что считают деньги.|r",
 	["|cff888888the bar is counting|r"] = "|cff888888полоса считает|r",
 	["this character"] = "этот персонаж",
 
