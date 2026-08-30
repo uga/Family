@@ -483,9 +483,23 @@ some tooltip content is added by handlers that run on the visible one. Whether t
 player actually sees carries more than these four lines is a separate question and is not
 settled here - if it does, the contents exist and are being missed rather than absent.
 
-If the visible tooltip says no more, the remaining candidate is the player's own auras while a
-charged one is carried, and whether those answer with spell ids decides whether this is
-recordable at all under §2.1.
+**A charged Chronoboon is also an aura on the player**, measured on the same client:
+
+    1  Armure du mage                     ... 22783  (Magic, 1800s)
+    2  Déplaceur de chronochance surchargé ... 349981 (no type, duration 0, expires 0)
+    3  Intelligence des arcanes           ... 10157  (Magic, 1800s)
+
+So the fact *"this character has buffs banked"* is available twice over - as item 184938 in a
+bag and as spell 349981 on the player - and the aura carries **no duration**: 0 and 0, a
+permanent aura, so the residual time of what is inside is not there either.
+
+**`UnitBuff`'s tenth return is the spell id**, measured rather than counted off a signature:
+22783 for Mage Armour, 349981 for the Chronoboon, 10157 for Arcane Intellect, each in position
+ten of the same dump. That matters because a spell id is §2.1-clean where a name is not.
+
+**Still open:** the stored buffs are not separate auras - only the Chronoboon's own appears -
+so if they are anywhere readable it is in *that aura's* tooltip rather than the item's. That is
+the last candidate and it is one `SetUnitBuff` away.
 
 ### The guild event log, measured on all three clients 2026-08-30
 
