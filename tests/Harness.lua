@@ -7148,6 +7148,29 @@ print("guild share")
 		local mark2 = #DEFAULT_CHAT_FRAME.messages
 		Family.Guild:Diagnose()
 
+		-- Two of ours with the same name on different realms, which is ordinary and is what
+		-- made this line unreadable: it printed the bare name, so the character standing in
+		-- the guild looked as though it were on the list of those with no guild. An evening
+		-- went into reading that as a fault in the scanner.
+		Family.Database:SetMeta("Hermit-Somewhere", { name = "Hermit",
+			realm = "Somewhere Else", level = 31 })
+
+		local bothMark = #DEFAULT_CHAT_FRAME.messages
+		Family.Guild:Diagnose()
+
+		local apart = false
+		for index = bothMark + 1, #DEFAULT_CHAT_FRAME.messages do
+			local message = tostring(DEFAULT_CHAT_FRAME.messages[index])
+			if message:find("with no guild recorded", 1, true)
+				and message:find("Hermit (Fire Maw)", 1, true)
+				and message:find("Hermit (Somewhere Else)", 1, true) then
+				apart = true
+			end
+		end
+		check("and tells two of ours with one name on two realms apart", apart)
+
+		Family.Database:Forget("Hermit-Somewhere")
+
 		local listed = false
 		for index = mark2 + 1, #DEFAULT_CHAT_FRAME.messages do
 			local message = tostring(DEFAULT_CHAT_FRAME.messages[index])

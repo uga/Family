@@ -1873,11 +1873,21 @@ function Guild:Diagnose()
 	do
 		local blank, extra = {}, 0
 
+		-- **Named with their realm.** This printed the bare name, and a player with an alt
+		-- of the same name on another realm - which is ordinary, and is how a name gets
+		-- reused - saw the character standing in the guild on this list when it was not on
+		-- it. An evening went into reading that as a fault in the scanner. A diagnosis that
+		-- cannot tell two characters apart is answering about neither.
 		for key, entry in pairs(Family.Database:Members()) do
 			local meta = entry.meta or {}
 			if meta.guild == nil then
+				local named = meta.realm
+					and string.format("%s (%s)", tostring(meta.name or key),
+						tostring(meta.realm))
+					or tostring(meta.name or key)
+
 				if #blank < 10 then
-					blank[#blank + 1] = tostring(meta.name or key)
+					blank[#blank + 1] = named
 				else
 					extra = extra + 1
 				end
