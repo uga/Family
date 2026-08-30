@@ -199,10 +199,11 @@ publishing what it collected is an out-of-game job.
 
 ---
 
-### The guild event log, measured on Classic Era 2026-08-30
+### The guild event log, measured on Classic Era and Burning Crusade 2026-08-30
 
-`/family guild log`, in the guild **ZERO** on Pyrewood Village, run as **rank index 8** — a
-rank-and-file member, not an officer.
+`/family guild log`, run twice: in **ZERO** on Pyrewood Village as **rank index 8**, a
+rank-and-file member; and in **Loch Modan Yachting Club** on Thunderstrike as **Officer, rank
+index 2**. Both ends of the rank ladder, and two clients.
 
 `QueryGuildEventLog`, `GetNumGuildEvents` and `GetGuildEventInfo` all exist. `GetGuildEventInfo`
 answers with **eight values**:
@@ -220,27 +221,43 @@ Three things that are not what they look like:
 - **Positions 5 to 8 are an elapsed time, not a date.** A row reading `0, 0, 0, 4` is four hours
   ago, and `0, 1, 10, 4` is a month and ten days ago. A calendar month is never 0.
 - **Index 1 is the oldest and the last index is the newest**, which is the opposite way round
-  from a chat log. Read off the offsets: `[1]` was 1 month 10 days old, `[3]` 1 month 7 days,
-  `[100]` four hours. *Inferred from monotonicity rather than measured directly* — running the
-  probe a day apart settles it, and `docs/SMOKE.md` asks for that.
+  from a chat log. Read off the offsets on Era — `[1]` 1 month 10 days, `[3]` 1 month 7 days,
+  `[100]` four hours — and again on Burning Crusade across a far longer span: `[1]` 10 months
+  28 days, `[8]` 9 months 19 days, `[100]` 8 days. Two clients, two guilds, one month and
+  eleven months, both marching the same way. Inferred from monotonicity rather than proved
+  outright, but corroborated well enough to build on; `docs/SMOKE.md` keeps the cheap direct
+  reading — run it a day apart and see whether the same entry is still first.
 - **Position 4 is a guild's own rank name**, not an index and not a game constant. `Alt` is a
   rank this guild invented. Nothing can key on it.
 
-**A rank-and-file member reads the whole log.** That was the question that decided whether this
-could be a source at all: a log only officers can read cannot settle anything, because everyone
-has to reach the same conclusion or the guild disagrees about who is in it.
+**A rank-and-file member reads the whole log**, and so does an officer. That was the question
+that decided whether this could be a source at all: a log only officers can read cannot settle
+anything, because everyone has to reach the same conclusion or the guild disagrees about who is
+in it.
 
-**Capped at exactly 100 entries**, which in this guild reached back a month and ten days. That
-is a count and not a period: a busy guild fills 100 entries in days. So this is an accelerator
-and never a guarantee, and any expiry has to stay as the backstop.
+**The two clients answer identically** — same three calls, same eight values, same types, same
+nil in position three on `join` and `quit`. Nothing here is Era-only.
 
-Kinds seen across the whole 100: `invite` ×29, `join` ×27, `quit` ×26, `promote` ×16,
-`demote` ×2.
+**Capped at exactly 100 entries on both.** How far that reaches is the guild's business and not
+the client's: 100 entries covered **a month and ten days** in the busy guild and **ten months
+and twenty-eight days** in the quiet one. A count, not a period. So this is an accelerator and
+never a guarantee, and any expiry has to stay as the backstop.
 
-**Two questions still open.** No `remove` appeared in 100 entries beside 26 `quit`, so whether
-being kicked is recorded as its own kind or as a `quit` is unknown. And whether **deleting** a
-character leaves any trace at all is untested — that is the case the log was opened for, and it
-needs the experiment `SMOKE.md` describes. Burning Crusade and Mists are also unrun.
+| | Era, ZERO | Burning Crusade, Loch Modan Yachting Club |
+|---|---:|---:|
+| `invite` | 29 | 5 |
+| `join` | 27 | 4 |
+| `quit` | 26 | 51 |
+| `promote` | 16 | 22 |
+| `demote` | 2 | 18 |
+| `remove` | — | — |
+
+**Two questions still open.** No `remove` appeared in **200 entries across two guilds beside 77
+`quit`**, so whether being kicked is its own kind or looks like quitting is still unknown -
+suggestive now rather than merely untested, but not proof, because neither guild may have
+kicked anybody in the window. And whether **deleting** a character leaves any trace at all is
+untested; that is the case the log was opened for, and it needs the experiment `SMOKE.md`
+describes. Mists is unrun.
 
 ---
 
