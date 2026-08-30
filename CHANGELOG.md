@@ -42,12 +42,13 @@ is a decision rather than an afternoon of archaeology.
   per character, twenty for a family of five, and none of them Family's to take back. Family
   now sends one message to somebody it has not just heard from and waits a moment before
   sending anything else, so a character who is not there costs one line instead of four.
-- **Trying to reach a linked family who is offline no longer says so four times over.** An
-  exchange is many messages, and the game refuses each one that had already been sent — so
-  every refusal set Family walking that family's characters again and sending another
-  exchange. A family of five characters became twenty attempts, four copies of every line
-  Family printed about it, and twenty refusals from the game. It now answers the first and
-  ignores the rest, which is the same news arriving again.
+- **Trying to reach a linked family who is offline is quiet now.** It used to walk that
+  family's characters four times over — twenty attempts for a family of five, four copies of
+  every line Family printed, and twenty refusals from the game. It answers the first refusal
+  and ignores the rest, which is the same news arriving again; and the lines naming each
+  character as it tries them have gone from the chat frame, because the working is not the
+  answer. What is left is the one sentence saying nobody was there. Switch on *Narrate what
+  the scanners are doing* in Options to see the working.
 
 ### Added
 

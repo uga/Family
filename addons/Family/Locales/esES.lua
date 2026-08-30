@@ -521,7 +521,6 @@ Family.locales.esES = {
 	["|cffffd700Waiting for them to answer|r"] = "|cffffd700Esperando su respuesta|r",
 	["Sent %d member(s) and asked for theirs."] = "Enviado(s) %d miembro(s) y pedidos los suyos.",
 	["nobody of theirs has ever been heard from"] = "no se ha sabido nunca de ninguno de los suyos",
-	["|cff888888%s is not online - trying %s.|r"] = "|cff888888%s no está conectado - probando con %s.|r",
 	["|cffffd700What %s may see of your characters|r"] = "|cffffd700Lo que %s puede ver de tus personajes|r",
 	["|cff9d9d9dThey say which categories they share.|r"] = "|cff9d9d9dEllos dicen qué categorías comparten.|r",
 	["%s   |cff888888|||r   you are sharing %s across %s"] = "%s   |cff888888|||r   compartes %s en %s",

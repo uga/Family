@@ -521,7 +521,6 @@ Family.locales.ruRU = {
 	["|cffffd700Waiting for them to answer|r"] = "|cffffd700Ожидает их ответа|r",
 	["Sent %d member(s) and asked for theirs."] = "Отправлено персонажей: %d, запрошены их.",
 	["nobody of theirs has ever been heard from"] = "ни от кого из них ничего не приходило",
-	["|cff888888%s is not online - trying %s.|r"] = "|cff888888%s не в сети - пробуем %s.|r",
 	["|cffffd700What %s may see of your characters|r"] = "|cffffd700Что %s может видеть о ваших персонажах|r",
 	["|cff9d9d9dThey say which categories they share.|r"] = "|cff9d9d9dОни сообщают, какими категориями делятся.|r",
 	["%s   |cff888888|||r   you are sharing %s across %s"] = "%s   |cff888888|||r   вы делитесь: %s в %s",

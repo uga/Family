@@ -9477,7 +9477,8 @@ print("a family is a person with several characters")
 
 		local repeated = 0
 		for index = saidBefore + 1, #DEFAULT_CHAT_FRAME.messages do
-			if DEFAULT_CHAT_FRAME.messages[index]:find("is not online", 1, true) then
+			if DEFAULT_CHAT_FRAME.messages[index]:find("is not online", 1, true)
+				or DEFAULT_CHAT_FRAME.messages[index]:find("None of", 1, true) then
 				repeated = repeated + 1
 			end
 		end
@@ -9485,8 +9486,28 @@ print("a family is a person with several characters")
 			tostring(repeated) .. " more lines")
 	end
 
+	-- Nothing said to the player while it is still working through them. Four lines naming
+	-- which character is being tried next are the working, not the answer, and the answer is
+	-- the one sentence at the end that says nobody was there. Anybody who wants the working
+	-- switches the narration on, which is what this turns off to measure.
 	sent = {}
+	local wasNarrating = FamilyDB.debug
+	FamilyDB.debug = false
+
+	local quietFrom = #DEFAULT_CHAT_FRAME.messages
 	notFound("Grellina")
+
+	local said = 0
+	for index = quietFrom + 1, #DEFAULT_CHAT_FRAME.messages do
+		if DEFAULT_CHAT_FRAME.messages[index]:find("is not online", 1, true) then
+			said = said + 1
+		end
+	end
+	check("and says nothing to the player while it works through them",
+		said == 0, tostring(said) .. " lines")
+
+	FamilyDB.debug = wasNarrating
+
 	check("and the next after that",
 		sent[1] and sent[1].target == "Grellone-Thunderstrike",
 		sent[1] and tostring(sent[1].target) or "nothing sent")

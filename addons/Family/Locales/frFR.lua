@@ -521,7 +521,6 @@ Family.locales.frFR = {
 	["|cffffd700Waiting for them to answer|r"] = "|cffffd700En attente de leur réponse|r",
 	["Sent %d member(s) and asked for theirs."] = "%d membre(s) envoyé(s) et demande des leurs.",
 	["nobody of theirs has ever been heard from"] = "aucun des leurs ne s'est jamais manifesté",
-	["|cff888888%s is not online - trying %s.|r"] = "|cff888888%s n'est pas connecté - essai avec %s.|r",
 	["|cffffd700What %s may see of your characters|r"] = "|cffffd700Ce que %s peut voir de vos personnages|r",
 	["|cff9d9d9dThey say which categories they share.|r"] = "|cff9d9d9dIls indiquent quelles catégories ils partagent.|r",
 	["%s   |cff888888|||r   you are sharing %s across %s"] = "%s   |cff888888|||r   vous partagez %s dans %s",

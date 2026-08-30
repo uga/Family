@@ -519,7 +519,13 @@ Family.Comm:OnAbsent("wide", function(name, _, already)
             local nextName, anyKnown = reachableName(link)
 
             if nextName then
-                Family:Print(L["|cff888888%s is not online - trying %s.|r"], name, nextName)
+                -- Said to the debug narration rather than to the player.
+                --
+                -- Walking a family of five is four of these lines and four refusals from
+                -- the client beside them, and none of the four is news: they are the
+                -- working, and the answer is the sentence below that says nobody was
+                -- there. A player who wants the working can switch the narration on.
+                Family:Debug("wide: %s is not online - trying %s", name, nextName)
                 Wide:ExchangeWith(familyID, "the last one was offline")
             elseif anyKnown then
                 local count = characterCount(link)
