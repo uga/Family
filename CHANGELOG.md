@@ -16,6 +16,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 1.2.0 — 2026-08-31
+
 ### Added
 
 - **The Guild column tells "no guild" apart from "not known".** A character who is in no guild
