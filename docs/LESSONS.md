@@ -968,6 +968,16 @@ mutation**, never from git, and the loop ends by re-running the harness and read
 `all checks passed` rather than counting `FAIL` lines. Commit before mutating, or copy first;
 never both untracked and reverted by version control.
 
+**It happened again the same day, and the rule above is why.** The second time was not a
+mutation loop at all - it was `git checkout -- tests/Harness.lua` to drop a temporary debug
+print, on a file carrying an afternoon of uncommitted checks. The rule had been written for the
+loop it was learnt in, so it did not cover the case that came next.
+
+The rule is therefore not about mutation loops. It is: **`git checkout --` is not an undo.** It
+is a revert to the last commit, it cannot see which of the changes in that file were yours to
+throw away, and there is no confirmation. To drop a temporary edit, remove the temporary edit -
+by hand, or from a copy taken before it was made.
+
 ## L-030 — A check sited at a filename, and a guard that watched the wrong half
 
 The rule that every sentence Family says to a player must exist in all four languages was

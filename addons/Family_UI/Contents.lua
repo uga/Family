@@ -795,7 +795,20 @@ local function build(frame)
 
 					button.icon:SetTexture(Family:TryCall(GetItemIcon, item.id)
 						or "Interface\\Icons\\INV_Misc_QuestionMark")
-					button.count:SetText(item.count > 1 and item.count or "")
+					-- Charges in the corner where a stack count would be, which is where
+					-- the game itself puts them: an oil with five uses is one item, its
+					-- stackCount says 1, so that corner is empty and the number somebody is
+					-- looking for is the charges. A player reading it has seen it there
+					-- every time they opened a bag.
+					--
+					-- Preferred over the count rather than added beside it, and the two
+					-- cannot both be interesting: **no charged item stacks**. Measured,
+					-- not assumed - of the 187 ids in the generated table that Era's
+					-- ItemSparse knows, not one has Stackable above 1 (DATASOURCES §3).
+					-- So the order here is unreachable rather than a preference, and a
+					-- mutation that swaps it changes nothing, which is the honest reason
+					-- no check holds it.
+					button.count:SetText(item.charges or (item.count > 1 and item.count) or "")
 
 					-- Filtering dims rather than hides. A bag with the matches taken
 					-- out of it is not that bag any more, and where a thing sits is

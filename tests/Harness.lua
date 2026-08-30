@@ -269,6 +269,30 @@ end
 
 function frameMethods:NumLines() return #self.__lines end
 
+-- What a bag slot's tooltip says, by "bag:slot". The one thing in Family that reads a tooltip
+-- is the charge count (Core.lua), and it reads the lines through the named globals the game
+-- makes for a tooltip rather than off the frame - so the stub has to make those too, or the
+-- reader is exercised against a shape the client never produces.
+CHARGE_LINES = {}
+CHARGE_ASKED = 0
+
+function frameMethods:SetOwner() end
+
+function frameMethods:SetBagItem(bag, slot)
+	CHARGE_ASKED = CHARGE_ASKED + 1
+	wipe(self.__lines)
+
+	local lines = CHARGE_LINES[tostring(bag) .. ":" .. tostring(slot)] or {}
+	for index = 1, 12 do
+		local text = lines[index]
+		if text then table.insert(self.__lines, { text }) end
+		_G[(self.__name or "?") .. "TextLeft" .. index] =
+			text and { GetText = function() return text end } or nil
+	end
+end
+
+ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
+
 function frameMethods:SetItemByID(id)
 	wipe(self.__lines)
 	self.__shownAs = { kind = "item", id = id }
@@ -525,12 +549,17 @@ KEYRING_CONTAINER = -2
 BAGS = {
 	[0] = { size = 16, free = 14, bagType = 0,
 	        items = { [1] = { 6948, 1 }, [2] = { 2589, 20 } } },
-	[1] = { size = 16, free = 15, bagType = 0, items = { [5] = { 4306, 12 } } },
+	-- 20747 is Lesser Mana Oil: in the generated charged-items table at 5, one item rather
+	-- than a stack, and carried for the whole run so every panel and scanner meets one.
+	[1] = { size = 16, free = 15, bagType = 0,
+	        items = { [5] = { 4306, 12 }, [8] = { 20747, 1 } } },
 	[2] = { size = 16, free = 16, bagType = 1, items = {} },
 	-- The keyring, whose container number is negative. Everything about it is a special
 	-- case and it was never in this list, so none of those cases was ever exercised.
 	[-2] = { size = 8, free = 6, bagType = 0, items = { [1] = { 5178, 1 } } },
 }
+
+CHARGE_LINES["1:8"] = { "Lesser Mana Oil", "Requires Level 40", "5 Charges" }
 
 C_Container = {
 	GetContainerNumSlots = function(bag)
@@ -3875,6 +3904,31 @@ for _, f in ipairs(frames) do
 end
 check("and the backpack drawn as a bag, with what is in it where it really is",
 	backpackSlot ~= nil)
+
+-- Charges in the corner where a stack count would be, which is where the game itself puts
+-- them: an oil with five uses is one item and its stackCount says 1, so that corner is empty
+-- and the number somebody wants is the charges. Recording it and drawing it are two claims,
+-- and only the first was held (L-030).
+do
+	local charged, stacked
+	for _, f in ipairs(frames) do
+		if f.__shown == true and f.block and f.block.where == "bags" and f.count then
+			-- By id for the oil, which is in exactly one slot. The cloth is looked for by
+			-- what it should say rather than by id: buttons are pooled, and one that drew
+			-- a slot in an earlier refresh is still in the list with its old id on it.
+			if f.itemID == 20747 then charged = f end
+			if f.itemID == 2589 and tostring(f.count.__text) == "20" then stacked = f end
+		end
+	end
+
+	check("a charged item is drawn", charged ~= nil,
+		"Lesser Mana Oil is in the bags for the whole run")
+	check("with its charges in the corner, not an empty one",
+		charged and tostring(charged.count.__text) == "5",
+		charged and tostring(charged.count.__text) or "no button")
+	check("and an ordinary stack still shows how many there are", stacked ~= nil,
+		"the charges displaced the count rather than joining it")
+end
 
 -- Clicking a slot opens the real container - for the member being played, since a bag of
 -- somebody else's is a picture and clicking a picture of a bag cannot open it.

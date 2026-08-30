@@ -590,6 +590,10 @@ every potion and scroll in the game, and they show no charges line at all.
 set is small, and choosing between per-build tables would need a client check this project does
 not make.
 
+**No charged item stacks.** Of the 187 ids in the table that Era's `ItemSparse` knows, not one
+has `Stackable` above 1. So a charge count and a stack count are never both interesting for one
+slot, and a panel drawing charges where the stack count would go displaces nothing.
+
 **What is actually in it**, because 355 sounds larger than it is: 73 of Era's 181 are one family
 of quest items (`Deputization Authorization: Ashenvale Mission I` through `IX`), and the useful
 core is nearer a hundred — the oils at 5, Bag of Marbles and Bethor's Potion at 10, Triage
