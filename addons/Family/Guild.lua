@@ -2406,9 +2406,11 @@ function Guild:ReadRoster()
 	end
 
 	Family:Print(L["  roster: %d entries, %d of them carrying a realm"], total, withRealm)
+	-- Capped, and the cap is stated. "The ones that do" over a list of four when the count
+	-- above it says five is a probe inviting the reader to a wrong conclusion about the fifth.
 	if #examples > 0 then
-		Family:Print(L["  the ones that do, as the client spells them: %s"],
-			table.concat(examples, ", "))
+		Family:Print(L["  the first %d of those, as the client spells them: %s"],
+			#examples, table.concat(examples, ", "))
 	end
 
 	-- The payload. One is this character; two is the case this probe was written for.

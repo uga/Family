@@ -286,6 +286,16 @@ guild of five, twice, with valid Lua throughout. See L-031.
 a member from another realm of the cluster, and cross-realm guild membership is a fact here
 rather than an inference from `GetAutoCompleteRealms`.
 
+**Every roster entry carries a realm, including same-realm ones.** Five entries, five of them
+qualified: `Minttuu-Shek'zeer` from another realm of the cluster, and `Eccebombo-MirageRaceway`,
+`Pinetta-MirageRaceway`, `Pinuccia-MirageRaceway` from the player's own. So the roster never
+hands back a bare name on this client, which matches what the addon channel does with senders -
+this client's own guild announcement comes back qualified too. **`UnitName("player")` is the
+only one of these that answers without a realm.**
+
+**No collision in this guild.** Five members, nobody sharing a name. The hazard is not
+demonstrable here today, which is not the same as it being impossible.
+
 **What is still not measured** is a *duplicate name* inside one connected group, which is what
 the collision in `onHello` would need. Two characters called Eccebombo exist on this account,
 on Mirage Raceway and on Hydraxian Waterlords - but those realms are not connected (the second

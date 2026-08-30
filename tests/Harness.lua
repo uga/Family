@@ -12174,6 +12174,10 @@ print("what this client calls a character, and whether two can collide")
 		said:find("2 entries share this character's name", 1, true) ~= nil)
 	check("and the roster says how many entries carry a realm at all",
 		said:find("2 entries, 2 of them carrying a realm", 1, true) ~= nil)
+	-- The examples are capped at four, and a list of four under a count of five would invite
+	-- a conclusion about the fifth. The cap is stated rather than implied.
+	check("and says how many of them it is about to spell out",
+		said:find("the first 2 of those", 1, true) ~= nil)
 
 	-- And the ordinary guild, where it cannot be shown. Said as what is known: a guild that
 	-- has no collision today is not a client that cannot produce one.
