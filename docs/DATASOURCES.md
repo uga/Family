@@ -307,6 +307,18 @@ survives every renaming and realm question a name does not. `CHAT_MSG_ADDON` doe
 one, so it is not available where the comparison that matters is made - noted because it is the
 first thing anybody will reach for.
 
+### A guild spans a connected group, and a character's realm is its own, measured 2026-08-30
+
+Guild *Uga* holds `Eccebombo-MirageRaceway`, `Pinetta-MirageRaceway` and `Zinetta-Garalon` at
+once. `Guild:Current()` answers `Uga (realm Mirage Raceway)` on one and `Uga (realm Garalon)`
+on the other — **the same guild, and the two clients do not agree what realm it is on.** This
+is the fact `Guild:Key` sets out and the reason the key never crosses the wire; what crosses is
+the guild's *name*, and `forThisGuild` compares names, so the exchange is unaffected.
+
+What *is* affected is `Offering()`, which takes our characters on `meta.guild == name and
+meta.realm == realm`. Measured on Zinetta: Pinetta is in the same guild, on the same account,
+and is not offered. See GUILD-CRAFTERS §7.0.
+
 ### The guild event log, measured on all three clients 2026-08-30
 
 `/family guild log`, run four times: in **ZERO** on Pyrewood Village (Era) as **rank index 8**,

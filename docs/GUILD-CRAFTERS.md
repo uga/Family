@@ -502,7 +502,7 @@ built.
 
 ## 7. To check in the game
 
-### 7.0 Connected realms and `Offering()`'s realm test — open, suspected
+### 7.0 Connected realms and `Offering()`'s realm test — **confirmed 2026-08-30**
 
 `Guild.lua` `Offering()` takes our characters where `meta.guild == name` **and `meta.realm ==
 realm`**. On connected realms two characters in one guild do not agree about what realm they
@@ -517,6 +517,18 @@ probably the right trade, but it should be made on evidence.
 
 `/family guild test` now names the case — *"in this guild but recorded on another realm, so
 they are not offered"* — so the next live pass on a connected realm settles it either way.
+
+**It did, and it is real.** Two characters of one account, both in the guild *Uga*: Pinetta on
+Mirage Raceway and Zinetta on Garalon, two realms of the same connected group. Run on Zinetta:
+
+    guild: Uga (realm Garalon)
+    characters of ours in it: 1
+    in this guild but recorded on another realm, so they are not offered:
+        Pinetta (Mirage Raceway) (this character is on Garalon)
+
+So a character genuinely in the guild is silently withheld from it, and the size of the loss is
+the size of the cluster — five realms here. **Not yet fixed:** widening the test changes what
+leaves the machine, which is a decision to be asked rather than taken.
 
 
 Mists of Pandaria may already show guildmates' professions, and possibly their recipes, in its
