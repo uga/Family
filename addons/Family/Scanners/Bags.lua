@@ -193,6 +193,16 @@ function Bags:Scan()
 				if itemID then
 					entry.slots[slot] = { id = itemID, count = count, item = worth }
 
+					-- How many charges are left, for the few items that have any.
+					--
+					-- Gated on the generated table, so a bag of cloth costs one lookup a
+					-- slot and no tooltip: no container call answers this, and reading a
+					-- tooltip eighty times a scan to learn nothing is the reason the gate
+					-- exists rather than a bare attempt on every slot (DATASOURCES §3).
+					if Family.ChargedItems and Family.ChargedItems[itemID] then
+						entry.slots[slot].charges = Family:ChargesIn(bag, slot)
+					end
+
 					-- Things with a cooldown of their own - a salt shaker, a hearth,
 					-- an alchemy stone. Kept beside the crafting cooldowns because the
 					-- question is the same one: what of mine is ready.

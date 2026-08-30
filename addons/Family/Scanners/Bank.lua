@@ -147,6 +147,14 @@ function Bank:Scan()
 					local itemID, count, worth = slotContents(bag, slot)
 					if itemID then
 						entry.slots[slot] = { id = itemID, count = count, item = worth }
+
+						-- The same gate as the bags, and the same reason. The guild bank
+						-- below is deliberately left out: its tabs load a page at a time,
+						-- and a charge read off a tab that has not arrived would be wrong
+						-- rather than absent.
+						if Family.ChargedItems and Family.ChargedItems[itemID] then
+							entry.slots[slot].charges = Family:ChargesIn(bag, slot)
+						end
 						used = used + 1
 					end
 				end

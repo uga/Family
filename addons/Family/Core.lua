@@ -168,6 +168,99 @@ function Family:ItemString(link)
 end
 
 --------------------------------------------------------------------------------------------
+-- Charges, which no container call will answer
+--
+-- `GetContainerItemInfo` returns twelve fields on Mists and `stackCount` is 1 for a five-charge
+-- oil, not 5. There is no charges field under any name, on any of the three clients. The
+-- remaining count exists only in the tooltip (DATASOURCES §2), so this reads one - the only
+-- place in Family that does.
+--
+-- **It is never used to read a word.** What comes back is an integer, which is what §2.1 asks;
+-- the sentence around it is the client's and is thrown away. And it is gated on
+-- `Family.ChargedItems` at every call site, so a bag of cloth costs one table lookup per slot
+-- and no tooltip at all.
+--------------------------------------------------------------------------------------------
+
+local SCAN_TOOLTIP = "FamilyScanTooltip"
+
+-- One tooltip, made when first wanted and never shown. Owned by UIParent with ANCHOR_NONE,
+-- which is how a tooltip is positioned nowhere: it is set, read and left alone.
+local scanner
+
+local function scanTooltip()
+	if scanner then return scanner end
+
+	-- An existing one is taken rather than a second made. Nothing in the game creates this
+	-- but ourselves; what it guards against is a reload leaving the first behind.
+	scanner = _G[SCAN_TOOLTIP]
+		or Family:TryCall(CreateFrame, "GameTooltip", SCAN_TOOLTIP, nil, "GameTooltipTemplate")
+	return scanner
+end
+
+-- "%d Charges", turned into something to match against, out of the client's own format string.
+--
+-- Never the English. `ITEM_SPELL_CHARGES` is `%d |4Charge:Charges;` on an English client and
+-- something else in every other language, and the global holding it is the same everywhere -
+-- the same reasoning `Comm.lua` applies to the "no player named X" message.
+--
+-- Three steps, and the third is the one that is easy to miss. `|4singular:plural;` is markup
+-- the player never sees: the rendered line carries one of the two words and none of the
+-- punctuation, so a pattern that kept it literally would match nothing at all.
+-- Cached on the string it was built from rather than on having been built once. A client whose
+-- global is not loaded yet would otherwise have a nil cached against it for the session, and
+-- nothing would ever read a charge again.
+local builtFrom, builtPattern
+
+local function chargesPattern()
+	local format = _G.ITEM_SPELL_CHARGES
+	if type(format) ~= "string" or format == "" then return nil end
+	if builtFrom == format then return builtPattern end
+
+	-- Escaped first, so a locale whose sentence carries a bracket or a full stop does not
+	-- turn it into a pattern of its own.
+	local escaped = format:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+
+	-- The escaped form of "%d" is "%%d", and it is the only capture there is.
+	escaped = escaped:gsub("%%%%d", "(%%d+)")
+
+	-- And the plural markup becomes a wildcard.
+	escaped = escaped:gsub("|4[^;]*;", ".+")
+
+	builtFrom, builtPattern = format, "^" .. escaped .. "$"
+	return builtPattern
+end
+
+-- How many charges are left on the item in one container slot, or nothing.
+--
+-- Nothing is the ordinary answer and is not a fault: an item with no charges has no such line,
+-- and a client that will not build the tooltip says so by having no lines to read.
+function Family:ChargesIn(bag, slot)
+	local pattern = chargesPattern()
+	if not pattern then return nil end
+
+	local tip = scanTooltip()
+	if not tip then return nil end
+
+	Family:TryCall(tip.SetOwner, tip, _G.UIParent, "ANCHOR_NONE")
+	Family:TryCall(tip.SetBagItem, tip, bag, slot)
+
+	-- Bracketed, because TryCall hands back whatever the client returned and tonumber's
+	-- second argument is a base (L-031).
+	local lines = tonumber((Family:TryCall(tip.NumLines, tip))) or 0
+
+	for index = 1, lines do
+		local line = _G[SCAN_TOOLTIP .. "TextLeft" .. index]
+		local text = line and Family:TryCall(line.GetText, line)
+		if type(text) == "string" then
+			local found = text:match(pattern)
+			if found then return tonumber(found) end
+		end
+	end
+
+	return nil
+end
+
+--------------------------------------------------------------------------------------------
 -- Deferred work
 --
 -- Several things are worth doing once, shortly after a burst of events, rather than once per

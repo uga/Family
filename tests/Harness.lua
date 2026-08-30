@@ -1200,7 +1200,7 @@ GetTradeSkillCooldown = function() return nil end
 -- bank is twenty-four, so it is four out whatever is in it. Family does not ask - it reads
 -- every slot anyway, so free is the size less what was found - and this fixture is the client
 -- being wrong about it.
-local BANK_BAGS = {
+BANK_BAGS = {
 	[-1] = { size = 24, free = 20, bagType = 0, items = { [1] = { 7909, 3 } } },
 	[6]  = { size = 16, free = 16, bagType = 0, items = {} },
 }
@@ -12391,6 +12391,146 @@ print("a guild that spans a connected group")
 	Family.Database.Members = heldMembers
 	FamilyDB.guild = held
 	_G.GetAutoCompleteRealms = heldRealms
+end)()
+
+print()
+print("reading a charge count off a tooltip")
+
+-- The only place in Family that reads a tooltip. No container call answers this: on Mists
+-- GetContainerItemInfo returns twelve fields and stackCount is 1 for a five-charge oil.
+--
+-- What comes back is an integer, which is what §2.1 asks. The sentence around it is the
+-- client's and is thrown away - and the pattern is built from ITEM_SPELL_CHARGES rather than
+-- written out, so a French client matches "5 Charges" and a German one matches whatever German
+-- says, without either word appearing here.
+;(function()
+	local heldFormat = _G.ITEM_SPELL_CHARGES
+	_G.ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
+
+	-- First call builds the tooltip through the real CreateFrame, which registers the global.
+	Family:ChargesIn(0, 1)
+	local tip = _G.FamilyScanTooltip
+	check("a scanning tooltip is made, and only one", tip ~= nil and tip.__name == "FamilyScanTooltip")
+
+	-- The frame stub answers nil for methods it does not know and TryCall pcalls, so the real
+	-- lines have to be supplied here.
+	local lines = {}
+	tip.NumLines = function() return #lines end
+	tip.SetOwner = function() end
+	tip.SetBagItem = function() end
+	local function showing(...)
+		lines = { ... }
+		for index = 1, #lines do
+			_G["FamilyScanTooltipTextLeft" .. index] =
+				{ GetText = function() return lines[index] end }
+		end
+	end
+
+	_G.ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
+	showing("Lesser Mana Oil", "Requires Level 40",
+		"Use: While applied to target weapon it restores 8 mana. (1 Sec Cooldown)",
+		"5 Charges", "<Made by Nervina>")
+	check("the charge line is found among the others", Family:ChargesIn(0, 1) == 5,
+		tostring(Family:ChargesIn(0, 1)))
+
+	-- The lines either side are the ones that would be matched by a sloppier pattern: one
+	-- begins with a number and one contains a bracketed one.
+	showing("Requires Level 40", "Use: something. (1 Sec Cooldown)", "<Made by Nervina>")
+	check("and an item with no charge line answers nothing",
+		Family:ChargesIn(0, 1) == nil, tostring(Family:ChargesIn(0, 1)))
+
+	showing("Wizard Oil", "1 Charge")
+	check("one charge reads as one, not as the plural markup",
+		Family:ChargesIn(0, 1) == 1, tostring(Family:ChargesIn(0, 1)))
+
+	-- The whole reason the pattern is built rather than written: this client speaks French and
+	-- nothing in the source says "Charges" in any language.
+	_G.ITEM_SPELL_CHARGES = "%d |4charge:charges;"
+	showing("Huile de mage mineure", "3 charges")
+	check("a client in another language is read by the same code",
+		Family:ChargesIn(0, 1) == 3, tostring(Family:ChargesIn(0, 1)))
+
+	-- A locale whose sentence carries pattern punctuation must not become a pattern.
+	_G.ITEM_SPELL_CHARGES = "Charges (%d)"
+	showing("Something", "Charges (7)")
+	check("and one whose wording carries brackets is escaped rather than matched",
+		Family:ChargesIn(0, 1) == 7, tostring(Family:ChargesIn(0, 1)))
+
+	-- A client whose global is not there must answer nothing rather than throw. The pattern
+	-- is cached on the string it came from, so this also holds that a missing global is not
+	-- cached as an answer for the session.
+	_G.ITEM_SPELL_CHARGES = nil
+	showing("Something", "5 Charges")
+	check("a client with no such global reads no charges and does not throw",
+		Family:ChargesIn(0, 1) == nil, tostring(Family:ChargesIn(0, 1)))
+
+	_G.ITEM_SPELL_CHARGES = heldFormat
+end)()
+
+print()
+print("and recording it, for the few slots that need it")
+
+-- The reader above is held by its own checks; these hold that anything *uses* it. Putting the
+-- exact realm match back into Offering() left every check green this morning for exactly this
+-- reason (L-030), and the same shape was waiting here: the scanners could stop reading charges
+-- altogether and nothing would have said so.
+;(function()
+	local heldFormat = _G.ITEM_SPELL_CHARGES
+	_G.ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
+
+	local key = Family:CurrentMember()
+	local tip = _G.FamilyScanTooltip
+	local asked = 0
+	tip.SetOwner = function() end
+	tip.NumLines = function() return 2 end
+	tip.SetBagItem = function(_, bag, slot) asked = asked + 1 end
+	_G.FamilyScanTooltipTextLeft1 = { GetText = function() return "Lesser Mana Oil" end }
+	_G.FamilyScanTooltipTextLeft2 = { GetText = function() return "5 Charges" end }
+
+	-- 20747 is Lesser Mana Oil and is in the generated table at 5; the other slots hold a
+	-- hearthstone and cloth, which are not.
+	BAGS[1].items[8] = { 20747, 1 }
+	asked = 0
+	Family.Bags:Scan()
+
+	local bags = (Family.Database:Payload(key) or {}).bags or {}
+	local slot = ((bags[1] or {}).slots or {})[8]
+	check("a charged item in a bag records how many are left",
+		slot and slot.charges == 5, slot and tostring(slot.charges) or "no slot")
+
+	-- The gate is the whole reason this is affordable: a bag of cloth must cost a table
+	-- lookup a slot and no tooltip at all.
+	check("and nothing else in the bags is tooltipped", asked == 1,
+		asked .. " slots were tooltipped, and one holds a charged item")
+
+	BAGS[1].items[8] = nil
+	Family.Bags:Scan()
+	bags = (Family.Database:Payload(key) or {}).bags or {}
+	check("and using the last charge leaves nothing behind",
+		((bags[1] or {}).slots or {})[8] == nil)
+
+	-- The personal bank, on the same gate. The guild bank is deliberately not on it: its tabs
+	-- arrive a page at a time and a charge read off one that has not would be wrong rather
+	-- than absent.
+	-- An earlier section takes this bag away and shuts the window, and the bank refuses to
+	-- record anything with no window in front of it - which is the point of that section.
+	BANK_BAGS[6] = BANK_BAGS[6] or { size = 16, free = 15, bagType = 0, items = {} }
+	BANK_BAGS[6].items[2] = { 20747, 1 }
+	fire("BANKFRAME_OPENED")
+	asked = 0
+	Family.Bank:Scan()
+
+	local bank = (Family.Database:Payload(key) or {}).bank or {}
+	local held = ((bank.containers or {})[6] or {}).slots or {}
+	check("a charged item in the bank records it too",
+		held[2] and held[2].charges == 5, held[2] and tostring(held[2].charges) or "no slot")
+	check("and the bank is gated the same way", asked == 1, tostring(asked))
+
+	BANK_BAGS[6].items[2] = nil
+	Family.Bank:Scan()
+	fire("BANKFRAME_CLOSED")
+	_G.ITEM_SPELL_CHARGES = heldFormat
+	_G.FamilyScanTooltipTextLeft1, _G.FamilyScanTooltipTextLeft2 = nil, nil
 end)()
 
 print()

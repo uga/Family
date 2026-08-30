@@ -18,6 +18,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Family records how many charges are left on an oil.** Wizard Oil, Mana Oil, a Bag of
+  Marbles — anything that is used a fixed number of times now carries its remaining count from
+  your bags and your bank, so you can tell which character has one worth logging in for. The
+  guild bank is not read yet.
 - **Characters on a connected realm are shared with your guild.** If your guild spans connected
   realms — most do — Family only ever offered the characters on the realm you were standing on.
   The rest were in the guild, listed by the game, and invisible in Family. What you had already
