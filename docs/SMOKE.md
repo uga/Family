@@ -189,6 +189,14 @@ that a silence has three different causes that used to print identically.
 - [ ] **The closing sentence matches the numbers.** Nothing at all handed over should send you
       to guild chat; ours arriving with no announcement among them should blame Family; and
       neither should blame the channel.
+- [ ] **Watch for the silence.** Twice on 30/8, on two clients, `/family guild test` reported
+      `handed us: 0` — the client passing over nothing at all, from any addon — while sends
+      were succeeding. It has not reproduced since: a settled character alone in its guild
+      hears its own announcement back every time, and the counter climbs with other addons'
+      traffic. **Two things differed on those runs and neither is isolated:** the build was one
+      commit older, and the guild was mid-churn from invites and kicks. If `handed us` is ever
+      0 again on a settled character thirty seconds after a reload, stop and write down what
+      had just happened to the guild — that is the measurement nobody has.
 
 #### Names and realms — a probe, not a feature
 
