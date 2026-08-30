@@ -238,6 +238,41 @@ silence rather than evidence about echoing at all. That silence is still unexpla
 
 **Still unmeasured on Era and Burning Crusade.**
 
+### What a client calls a character, measured on Mists 2026-08-30
+
+`/family guild names`, on Mists of Pandaria Classic, realm Mirage Raceway:
+
+    UnitName("player")        -> 1:Eccebombo(string) 2:nil(nil)
+    UnitFullName("player")    -> 1:Eccebombo(string) 2:MirageRaceway(string)
+    GetRealmName()            -> 1:Mirage Raceway(string)
+    GetNormalizedRealmName()  -> 1:MirageRaceway(string)
+    GetAutoCompleteRealms()   -> 1:{MirageRaceway, Shek'zeer, Garalon, Norushen,
+                                    Hoptallus}(table)
+
+**Four spellings of one realm, and the addon channel uses the normalised one.** A sender
+arrives as `Eccebombo-MirageRaceway` - no space - which matches `GetNormalizedRealmName` and
+the second return of `UnitFullName`, and does not match `GetRealmName`. Apostrophes survive
+normalising (`Shek'zeer`); spaces do not.
+
+**`UnitName("player")` answers the realm as nil**, so a comparison built on it has no realm to
+use even when the other side carries one. That is the shape behind `Guild:ProbeNames` existing
+at all: `onHello` compares `bareName(sender)` against `bareName(UnitName("player"))`, and the
+sender's realm is discarded rather than absent.
+
+**Five connected realms.** A guild can therefore hold characters from any of the five, which
+is the precondition for two characters of one name being in one guild. **Whether that can
+actually happen is not measured** - it needs a duplicate name inside one connected group, and
+nothing here establishes that connected realms permit one. The one same-named pair available
+(`Eccebombo` on Mirage Raceway and on Hydraxian Waterlords) is no use: Hydraxian Waterlords is
+an Era realm, outside this cluster and unable to share a guild with it.
+
+**Roster calls: unanswered on this client so far.** `GetNumGuildMembers` returned 0 on a
+character standing in a guild, before and after the guild window was opened. The probe's first
+version read the roster cold and reported that as an empty guild; it now asks the server and
+reads back three seconds later, and prints what `GetNumGuildMembers` and `GetGuildRosterInfo`
+actually return so that a count of zero can be told from a call that is not there. Rerun
+needed.
+
 ### The guild event log, measured on all three clients 2026-08-30
 
 `/family guild log`, run four times: in **ZERO** on Pyrewood Village (Era) as **rank index 8**,

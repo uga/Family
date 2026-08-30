@@ -12044,9 +12044,15 @@ print("what this client calls a character, and whether two can collide")
 	local held = {}
 	for _, name in ipairs { "UnitName", "UnitFullName", "GetRealmName",
 		"GetNormalizedRealmName", "GetAutoCompleteRealms", "GetNumGuildMembers",
-		"GetGuildRosterInfo" } do
+		"GetGuildRosterInfo", "GuildRoster" } do
 		held[name] = _G[name]
 	end
+
+	-- The roster is asked for and read back three seconds later, so every run below has to
+	-- let the clock move. A probe that reads the roster cold reports zero on a client
+	-- standing in a guild, which is what the first version of this did on a live client.
+	local asked = 0
+	_G.GuildRoster = function() asked = asked + 1 end
 
 	local function restore()
 		for name, fn in pairs(held) do _G[name] = fn end
@@ -12070,6 +12076,9 @@ print("what this client calls a character, and whether two can collide")
 
 	local mark = #DEFAULT_CHAT_FRAME.messages
 	Family.Guild:ProbeNames()
+	check("the roster is asked for before it is read", asked == 1
+		and lines(mark):find("entries,", 1, true) == nil, tostring(asked))
+	advance(5)
 	local said = lines(mark)
 
 	-- The whole point of a probe: the answer's shape is part of what is being asked, so a
@@ -12089,8 +12098,14 @@ print("what this client calls a character, and whether two can collide")
 		said:find("{MirageRaceway, Whitemane}", 1, true) ~= nil)
 
 	check("and an empty roster is said to be empty rather than reported on",
-		said:find("the roster is empty here", 1, true) ~= nil
+		said:find("no roster came back", 1, true) ~= nil
 			and said:find("entries,", 1, true) == nil)
+
+	-- A count of zero and a call that is not there are different answers, and TryCall
+	-- returns nil for both. The probe has to print which it got.
+	check("with the roster calls printed, so zero can be told from absent",
+		said:find("GetNumGuildMembers() -> ", 1, true) ~= nil
+			and said:find("GetGuildRosterInfo(1) -> ", 1, true) ~= nil)
 
 	-- The case this probe was written for.
 	_G.GetNumGuildMembers = function() return 2 end
@@ -12101,6 +12116,7 @@ print("what this client calls a character, and whether two can collide")
 
 	mark = #DEFAULT_CHAT_FRAME.messages
 	Family.Guild:ProbeNames()
+	advance(5)
 	said = lines(mark)
 
 	check("two characters of one name on two realms are reported as a collision",
@@ -12117,6 +12133,7 @@ print("what this client calls a character, and whether two can collide")
 
 	mark = #DEFAULT_CHAT_FRAME.messages
 	Family.Guild:ProbeNames()
+	advance(5)
 	said = lines(mark)
 
 	check("a guild with nobody of our name says the collision cannot be shown here",

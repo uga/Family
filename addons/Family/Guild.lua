@@ -2354,10 +2354,42 @@ function Guild:ProbeNames()
 		ours and string.format("%q", ours) or "|cffff5555nothing|r")
 
 	-- And the roster, which is where a collision would have to exist to matter.
+	--
+	-- Asked for, and read back a moment later. The first version read it cold and got zero on
+	-- a live client standing in a guild of people - the roster comes from the server the way
+	-- the event log does, and a probe that reads before asking reports the client's silence as
+	-- the guild's emptiness. The same mistake `ProbeEventLog` was written not to make, made
+	-- one function further down the same file.
+	--
+	-- Both spellings, because the call moved into C_GuildInfo partway through these clients'
+	-- lives and the older global is still there on the older ones - the same shape as
+	-- `sendRaw`.
+	local roster = (_G.C_GuildInfo and _G.C_GuildInfo.GuildRoster) or _G.GuildRoster
+	Family:TryCall(roster)
+	Family:Print(L["  asked the server - reading it back in a moment"])
+
+	Family:After(3, "guild.names", function() self:ReadRoster() end)
+end
+
+-- The second half of ProbeNames, after the server has had a moment to answer.
+function Guild:ReadRoster()
+	local ours = bareName(Family:TryCall(UnitName, "player"))
+
+	-- What the roster calls answer, before anything at all is concluded from a count.
+	--
+	-- The first version printed "the roster is empty" on a live client standing in a guild,
+	-- and said it again after the guild window had been opened - which is a probe reporting
+	-- its own silence as the guild's emptiness. A count of zero and a call that is not there
+	-- are different answers and `TryCall` returns nil for both, so the count alone cannot
+	-- tell them apart. The event log probe asks "%s exists" for exactly this reason, one
+	-- function further up the same file, and this did not.
+	Family:Print("  GetNumGuildMembers() -> %s", callLine("GetNumGuildMembers"))
+	Family:Print("  GetGuildRosterInfo(1) -> %s", callLine("GetGuildRosterInfo", 1))
+
 	local total = tonumber(Family:TryCall(GetNumGuildMembers)) or 0
 	if total == 0 then
-		Family:Print(L["  |cffffaa00the roster is empty here - open the guild window once "
-			.. "and run this again|r"])
+		Family:Print(L["  |cffffaa00no roster came back, even after asking - the two lines "
+			.. "above say whether this client has those calls at all|r"])
 		return
 	end
 
