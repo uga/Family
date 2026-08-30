@@ -135,12 +135,13 @@ Per client: **Era**, **Anniversary**, **Mists**.
 - [ ] **Hover something one of their shared professions can make.** A *Guild crafters* block
       appears under your own family's, naming the player and the character of theirs that can
       make it. It works on the crafted item, not only on the pattern.
-- [ ] **On Mists only:** open a profession and run `/family recipes`. Each row should print an
-      item id as well as a spell id. That window answers with recipe ids and has to be asked
-      separately what each one makes; the call is made but has never been seen answering on a
-      live client, so this line is a measurement rather than a tick. Write the answer in the
-      row — and if the item ids are absent, *Smelt Copper* will not be found by hovering a
-      Copper Bar.
+- [x] **On Mists only — settled 2026-08-30. It answers.** `/family recipes` with the smelting
+      window open: `Mining: 8 recipe(s), 8 with a spell id, 8 with an item id`, and Cooking 54
+      for 54, each item id resolving to the product. So *Smelt Copper* is found by hovering a
+      Copper Bar, which is where most people ask. Recorded in `DATASOURCES.md` §2.
+- [ ] **Confirm it end to end once**, since the ids being recorded and the tooltip finding them
+      are two claims: hover a Copper Bar with a miner of yours scanned, and a *Can make it*
+      block should name them.
 - [ ] **Hover a pattern a guildmate already knows** — a formula in the auction house is the
       easy case. They are named on the same block as your own characters, marked *(guild)* and
       saying *knows it*.

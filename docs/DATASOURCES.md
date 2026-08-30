@@ -360,6 +360,26 @@ guild. It also makes GUILD-CRAFTERS §7.0 worth fixing for a second reason: rout
 partner-realm character's records through a home-realm character of the same account is the one
 path that reaches the guild at all.
 
+### Mists answers with both identifiers, measured 2026-08-30
+
+`/family recipes` on Mists of Pandaria Classic, with the smelting window open:
+
+    Mining:  8 recipe(s), 8 with a spell id, 8 with an item id
+      Smelt Mithril  spell 10097 -> Smelt Mithril  item 3860 -> Mithril Bar
+      Smelt Gold     spell 3308  -> Smelt Gold     item 3577 -> Gold Bar
+      Smelt Iron     spell 3307  -> Smelt Iron     item 3575 -> Iron Bar
+    Cooking: 54 recipe(s), 54 with a spell id, 54 with an item id
+
+**Every recipe carries both, and the item id is the product** rather than the recipe. This was
+the open one: that client answers with recipe ids and has to be asked separately what each one
+makes, the call was written but had never been seen answering, and if it had come back empty
+then *Smelt Copper* would not be found by hovering a Copper Bar - the crafted item being where
+most people ask the question, not the pattern.
+
+Not only smelting: Cooking answers the same way, 54 for 54, so it is the client and not one
+window. Fishing, Skinning and First Aid show zero recipes because their windows had not been
+opened, which is §2.2 and not a fault.
+
 ### The guild event log, measured on all three clients 2026-08-30
 
 `/family guild log`, run four times: in **ZERO** on Pyrewood Village (Era) as **rank index 8**,
