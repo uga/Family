@@ -81,6 +81,27 @@ local COOLDOWN_LONGEST = 7 * 86400
 -- transfers on the day you meet them and nothing on the days after.
 local STALE_AFTER = 6 * 3600
 
+-- How long a player nobody has heard from goes on being answerable.
+--
+-- **This is a consent number, not a housekeeping one** (spec §7.1). A withdrawal is carried by
+-- the next offering, and an offering has to be heard: two clients can only talk while both are
+-- online and there is no offline mailbox, so somebody who unticks a profession and stops
+-- playing goes on being answerable on every client that holds their last one, for as long as
+-- that client keeps it. Dropping it is the only bound there is.
+--
+-- Fourteen days, chosen on an asymmetry rather than on taste. Dropping too early costs one
+-- exchange: with nothing held from somebody, `quiet` in onHello is false, so their next hello
+-- runs SendTo and AskOne and the record rebuilds itself. Dropping too late costs a consent
+-- window nobody can close - not the person who withdrew, not the person holding it. A cheap,
+-- self-repairing failure on one side and an unclosable one on the other argues short.
+--
+-- Not shorter, because a fortnight is the longest ordinary absence - a holiday, a busy month -
+-- and anybody met inside it never expires at all. Past it they have stopped playing that
+-- character, which is exactly the population whose withdrawal can never arrive by any other
+-- route. Thirty days was considered for matching mail expiry and refused: it doubles the window
+-- and saves no traffic, because the traffic is only ever paid by people who were not met.
+local ABANDON_AFTER = 14 * 86400
+
 -- Long enough after entering the world that this character's own scanners have run, so what
 -- goes out is who they are now rather than who they were while the client was still loading.
 -- The same reasoning, and the same number, as Wide Family's announcement.
@@ -991,6 +1012,79 @@ function Guild:ForgetLeft()
 		self:Forget(guildKey)
 	end
 
+	return dropped
+end
+
+-- Everything held from a player nobody has heard from inside ABANDON_AFTER, dropped.
+--
+-- The other half of the promise in §7.1, and the only half of it that does not need the other
+-- person to turn up. `ForgetLeft` above drops a whole guild once none of our characters is in
+-- it; this drops one player out of a guild we are still in, on the one ground that can be
+-- decided without them - that nothing has been heard.
+--
+-- **The grid is not touched.** `grants` is our own decision about what we offer, keyed by our
+-- own characters; it is only ever cleared by the player or by leaving the guild. What goes is
+-- what *they* sent: their characters out of `known`, and the recipe lists filed under those
+-- characters. Confusing the two would silently untick somebody's own professions because a
+-- guildmate went on holiday.
+--
+-- Measured from `users`, which records every hello and is therefore "heard anything at all"
+-- rather than "sent us data". A database written before `users` existed has records with no
+-- entry there at all, and those would never expire, so the newest `at` among what they sent
+-- stands in - it is the same question asked of the other table.
+function Guild:ForgetAbandoned()
+	local guild = store()
+	local now = time()
+
+	local dropped = {}
+	for guildKey, known in pairs(guild.known) do
+		local heard = guild.users[guildKey] or {}
+
+		-- When we last had anything from each player, by either measure.
+		local last = {}
+		for bare, at in pairs(heard) do
+			if type(at) == "number" then last[bare] = at end
+		end
+		for _, entry in pairs(known) do
+			local bare = bareName(entry.from)
+			local at = tonumber(entry.at)
+			if bare and at and (not last[bare] or at > last[bare]) then last[bare] = at end
+		end
+
+		for bare, at in pairs(last) do
+			-- Never ourselves. Our own characters are answered out of our own records and
+			-- never out of `known`, and `noteUser` is reached only past the echo guard, so
+			-- this should not be able to fire - which is the reason it is cheap to keep.
+			if (now - at) > ABANDON_AFTER and not self:IsOurs(bare) then
+				dropped[#dropped + 1] = { guildKey = guildKey, name = bare,
+					silent = now - at }
+			end
+		end
+	end
+
+	table.sort(dropped, function(a, b)
+		if a.guildKey ~= b.guildKey then return a.guildKey < b.guildKey end
+		return a.name < b.name
+	end)
+
+	for _, gone in ipairs(dropped) do
+		local known = guild.known[gone.guildKey] or {}
+		local recipes = guild.recipes[gone.guildKey] or {}
+
+		for memberKey, entry in pairs(known) do
+			if bareName(entry.from) == gone.name then
+				known[memberKey] = nil
+				recipes[memberKey] = nil
+			end
+		end
+
+		if guild.users[gone.guildKey] then guild.users[gone.guildKey][gone.name] = nil end
+
+		Family:Debug("guild: dropping everything held from %s in %s - nothing heard for %d day(s)",
+			gone.name, gone.guildKey, math.floor(gone.silent / 86400))
+	end
+
+	if #dropped > 0 then Family.Database:Changed("guild") end
 	return dropped
 end
 
@@ -2347,6 +2441,7 @@ Family:OnDatabaseReady("guild", function()
 			-- is not ours to keep whether or not we are talking to anybody. With the
 			-- feature off there is nothing held and this costs one empty loop.
 			Guild:ForgetLeft()
+			Guild:ForgetAbandoned()
 
 			announceWhenReady("login")
 		end)
@@ -2359,6 +2454,7 @@ Family:OnDatabaseReady("guild", function()
 			-- The moment this is actually for: a guild left is a guild whose records and
 			-- whose grid stop being ours the same evening, rather than at the next login.
 			Guild:ForgetLeft()
+			Guild:ForgetAbandoned()
 
 			announceWhenReady("guild changed")
 		end)

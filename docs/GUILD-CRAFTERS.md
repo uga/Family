@@ -466,6 +466,15 @@ their last one. A stale character is cosmetic; this is consent. So **how long th
 timeout runs is a decision about consent rather than about disk**, and that argues for a shorter
 number than tidying up would suggest.
 
+*Answered 2026-08-30: **fourteen days**, and built - `Guild:ForgetAbandoned`, called beside
+`ForgetLeft` on login and on a guild change.* Decided on the asymmetry rather than on taste:
+dropping too early costs one exchange, because with nothing held from somebody `quiet` in
+`onHello` is false and their next hello rebuilds the record; dropping too late costs a window
+nobody can close. Thirty days was considered for matching mail expiry and refused - it doubles
+the window and saves no traffic, since the traffic is only ever paid by people who were not
+met. Our own grid is untouched by it: `grants` is keyed by our own characters and only the
+player or leaving the guild clears it.
+
 ### The case the argument does not cover, and where this earns its keep
 
 A character removed from the guild **while its owner is not playing it**.

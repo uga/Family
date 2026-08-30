@@ -18,6 +18,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Guild records from somebody nobody has heard from in two weeks are dropped.** If a
+  guildmate turns a profession off and then stops playing, the message that says so has nobody
+  to reach — so what they last shared would otherwise stay answerable on your client for ever.
+  It now expires, and rebuilds itself the moment they come back. Your own sharing grid is
+  untouched.
 - **`/family guild` says whether anything is reaching your client at all.** When two people in
   a guild cannot see each other, the report used to end the same way whether the messages were
   never arriving or were arriving and being dropped — and those need looking at in opposite

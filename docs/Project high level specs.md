@@ -855,9 +855,17 @@ while both are online and there is no offline mailbox, so a withdrawal reaches e
 holding the old copy at the moment those two next overlap — not at the moment it is
 withdrawn. Until then the profession that was withdrawn is still answerable on their client.
 No design can do better: a withdrawal cannot reach somebody who is not there. What can be
-done is to bound how long it runs, by dropping what is held from a player nobody has heard
-from in a long time. **How long that is, is a decision about consent and not about disk**,
-and it belongs in this section rather than among the housekeeping for exactly that reason.
+done is to bound how long it runs, and it is bounded at **fourteen days** — everything held
+from a player nobody has heard from for that long is dropped, and rebuilds itself from one
+exchange if they ever come back.
+
+**That number is a decision about consent and not about disk**, which is why it is here and
+not among the housekeeping. It is short because the two failures are not symmetrical:
+dropping too early costs a single exchange the next time those two meet, while keeping too
+long is a window nobody can close — not the person who withdrew, not the person holding it.
+Fourteen days is longer than any ordinary absence, so nobody active is ever dropped; past it
+a player has stopped playing that character, which is exactly the case whose withdrawal can
+never arrive by any other route.
 
 **Two withdrawals reach nobody, ever, and saying so is part of the promise.** A character
 removed from the guild while its owner is not playing it, and a character that is deleted. In

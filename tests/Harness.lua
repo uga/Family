@@ -12028,6 +12028,81 @@ print("what each client calls a race")
 end)()
 
 print()
+print("dropping a player nobody has heard from")
+
+-- The other half of the promise in spec §7.1, and the only half that does not need the other
+-- person to turn up. A withdrawal travels in the next offering and an offering has to be heard,
+-- so somebody who unticks a profession and stops playing stays answerable on every client that
+-- holds their last one. Fourteen days is the bound; this is what it does when it fires.
+--
+-- The one that would be a real fault: `grants` is our own grid, keyed by our own characters,
+-- and confusing it with what somebody sent us would quietly untick a player's own professions
+-- because a guildmate went on holiday.
+;(function()
+	local held = FamilyDB.guild
+	local NOW, DAY = time(), 86400
+	local KEY = "Testers-Fire Maw"
+
+	FamilyDB.guild = {
+		known = { [KEY] = {
+			["Ancient-FireMaw"] = { from = "Faraway-FireMaw", at = NOW - 15 * DAY,
+				meta = { name = "Ancient" } },
+			["Fresh-FireMaw"] = { from = "Nearby-FireMaw", at = NOW - 13 * DAY,
+				meta = { name = "Fresh" } },
+			-- Nothing in `users` for this one at all, which is what a database written
+			-- before that table existed looks like. It must still expire.
+			["Orphan-FireMaw"] = { from = "Nobody-FireMaw", at = NOW - 30 * DAY,
+				meta = { name = "Orphan" } },
+		} },
+		-- Lower case, because that is what bareName returns and what noteUser writes.
+		users = { [KEY] = { faraway = NOW - 15 * DAY, nearby = NOW - 13 * DAY } },
+		grants = { [KEY] = { ["Ours-FireMaw"] = { [197] = true } } },
+		recipes = { [KEY] = {
+			["Ancient-FireMaw"] = { [197] = { spells = { 1 } } },
+			["Fresh-FireMaw"] = { [197] = { spells = { 2 } } },
+			["Orphan-FireMaw"] = { [197] = { spells = { 3 } } },
+		} },
+		announced = {},
+	}
+
+	local dropped = Family.Guild:ForgetAbandoned()
+
+	local names = {}
+	for _, gone in ipairs(dropped) do names[#names + 1] = gone.name end
+	check("the ones nobody has heard from are dropped, and named",
+		table.concat(names, ",") == "faraway,nobody", table.concat(names, ","))
+
+	local known = FamilyDB.guild.known[KEY]
+	check("their characters go with them", known["Ancient-FireMaw"] == nil
+		and known["Orphan-FireMaw"] == nil)
+	check("and so do the recipe lists filed under those characters",
+		FamilyDB.guild.recipes[KEY]["Ancient-FireMaw"] == nil
+			and FamilyDB.guild.recipes[KEY]["Orphan-FireMaw"] == nil)
+	check("and the note of when they were last heard",
+		FamilyDB.guild.users[KEY].faraway == nil)
+
+	-- Thirteen days against fourteen. A bound nobody is inside is not a bound.
+	check("somebody heard from inside the window is left alone",
+		known["Fresh-FireMaw"] ~= nil)
+	check("with their recipe list", FamilyDB.guild.recipes[KEY]["Fresh-FireMaw"] ~= nil)
+	check("and their place in who we have heard from",
+		FamilyDB.guild.users[KEY].nearby ~= nil)
+
+	-- The fault this check exists for.
+	check("our own grid is not touched by any of it",
+		FamilyDB.guild.grants[KEY] and FamilyDB.guild.grants[KEY]["Ours-FireMaw"]
+			and FamilyDB.guild.grants[KEY]["Ours-FireMaw"][197] == true,
+		"a guildmate going quiet unticked our own professions")
+
+	-- One that had nothing to say the first time must have nothing to say the second, or
+	-- every login writes to disk and marks the database changed for nothing.
+	local again = Family.Guild:ForgetAbandoned()
+	check("and running it again drops nothing", #again == 0, tostring(#again))
+
+	FamilyDB.guild = held
+end)()
+
+print()
 print("the translations")
 ;(function()
 	local function slurp(path)
