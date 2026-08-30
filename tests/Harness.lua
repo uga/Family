@@ -1735,6 +1735,74 @@ do
 		Family.Identity.waitingForGuild ~= nil and Family.Identity.waitingForGuild <= 7,
 		tostring(Family.Identity.waitingForGuild))
 
+
+	------------------------------------------------------------------------------------------
+	-- And a fresh reason to ask re-arms the attempts
+	--
+	-- The counter bounds one series and not the session. Seen live on a freshly created guild:
+	-- the character who had just made it was recorded as being in none, and everything in §7 is
+	-- keyed on the guild a character is *recorded* in - so the guild master was absent from his
+	-- own offering.
+	------------------------------------------------------------------------------------------
+
+	GetGuildInfo = function() return nil end
+	IsInGuild = function() return true end
+	Family.Database:SetMeta(key, { guild = Family.CLEAR })
+	Family.Identity.waitingForGuild = nil
+
+	Family.Identity:Scan()
+	for _ = 1, 12 do advance(4) end
+	check("it has given up after a series of tries",
+		(Family.Identity.waitingForGuild or 0) > 5,
+		tostring(Family.Identity.waitingForGuild))
+
+	-- Which is exactly what a PLAYER_GUILD_UPDATE means: the game saying this has changed, ask
+	-- again. Before this it was answered with one attempt and a shrug.
+	Family.Identity:Scan()
+	check("and a fresh scan starts the count over rather than giving up at once",
+		(Family.Identity.waitingForGuild or 0) == 1,
+		tostring(Family.Identity.waitingForGuild))
+
+	GetGuildInfo = function() return "Late Night Raiders", "Officer", 2 end
+	advance(4)
+	check("so the guild is recorded when the client finally answers",
+		Family.Database:Meta(key).guild == "Late Night Raiders",
+		tostring(Family.Database:Meta(key).guild))
+
+	-- And the roster arriving is a reason of its own, because it is the client saying it knows
+	-- which guild this is. Only where the fact is missing: it fires on every refresh, and a
+	-- scan per refresh would be this scanner running all evening in a guild somebody is
+	-- looking at.
+	GetGuildInfo = function() return nil end
+	Family.Database:SetMeta(key, { guild = Family.CLEAR })
+	Family.Identity.waitingForGuild = nil
+
+	fire("GUILD_ROSTER_UPDATE")
+	GetGuildInfo = function() return "Late Night Raiders", "Officer", 2 end
+	advance(3)
+	check("the roster arriving is reason enough to ask again",
+		Family.Database:Meta(key).guild == "Late Night Raiders",
+		tostring(Family.Database:Meta(key).guild))
+
+	-- And costs nothing where there is nothing to settle.
+	local scans = 0
+	local realScan = Family.Identity.Scan
+	Family.Identity.Scan = function(self, retrying) scans = scans + 1
+		return realScan(self, retrying) end
+
+	fire("GUILD_ROSTER_UPDATE")
+	advance(3)
+	check("and does nothing at all when the guild is already recorded",
+		scans == 0, tostring(scans) .. " scan(s)")
+
+	Family.Identity.Scan = realScan
+
+	-- Put back what the checks below are written against: a client that will not name the
+	-- guild. Restoring it to the value this block happened to leave, rather than to the one
+	-- the next check needs, is how a fixture passes its own state to the next one - which has
+	-- cost an evening here before.
+	GetGuildInfo = function() return nil end
+
 	-- Not in a guild at all, which is a different answer from "has not said yet" and has to
 	-- be written: SetMeta merges, so a nil would leave the last guild sitting there and a
 	-- character who left one would go on being offered to it.

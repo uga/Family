@@ -18,6 +18,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **A character in a brand-new guild is recorded as being in it.** If your client was slow to
+  name the guild — which it often is just after one is created — Family gave up asking and did
+  not try again until your next login. The character stayed recorded as being in no guild, so it
+  was missing from everything guild share does while the panel beside it listed you from the
+  game's own roster.
 - **Switching guild share on now tells your guild you are there.** It used to write the setting
   and say nothing, so you stayed listed as *not running Family* on everybody's Guild panel until
   your next login — even with both of you switched on and both online. Switching it off still

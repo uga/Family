@@ -876,3 +876,31 @@ summarises a measurement is a copy, and a copy drifts. When a design says what a
 that sentence is the one to go and check — it is exactly the sentence nobody re-derives, because
 somebody clearly derived it once.
 
+## L-027 — A counter that bounded the session instead of the attempt
+
+`GetGuildInfo` answers late, so `Scanners/Identity.lua` retries: five tries, three seconds
+apart, and then it gives up rather than waking for ever. L-023 is why that retry exists.
+
+The counter it gave up on was never reset. Once five attempts had gone by, `waitingForGuild`
+stayed above the limit for the rest of the session - so every later scan incremented it, saw it
+was past five, and gave up on its first try. A client slow to name a guild *once* never asked
+again until the next login, however many times the game said `PLAYER_GUILD_UPDATE`.
+
+Reported from a freshly created guild on Mists. The guild master, standing in his own guild,
+was recorded as being in none - and everything in §7 is keyed on the guild a character is
+*recorded* in, so he was absent from his own offering while the panel beside it drew him from
+the server's roster as Guild Master. Two lines on one screen disagreeing about one character.
+
+**The harness had been resetting the counter by hand between checks**, and that is the tell.
+A fixture reaching into a scanner to make the next check possible is describing something a
+real caller cannot do - and the check it was setting up, *it gives up rather than asking for
+ever*, passed either way. The bug was underneath a passing check the whole time.
+
+The generalisable form: **a limit exists to bound one attempt at something, and the state that
+tracks it has to be reset by whatever counts as a new attempt.** If nothing resets it, the
+limit is against the process rather than against the try.
+
+The checks that now catch it: a scan after the series has been exhausted starts the count at
+one rather than giving up, and records the guild when the client finally answers. And the roster
+arriving - which is the client saying outright that it knows which guild this is - is a reason
+to ask again, but only where the fact is missing, because that event fires on every refresh.

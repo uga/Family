@@ -25,8 +25,22 @@ Family.Identity = Identity
 
 --------------------------------------------------------------------------------------------
 
-function Identity:Scan()
+-- `retrying` is set only by the retry below re-entering. Everything else - a login, a guild
+-- change, the roster arriving - is a *fresh reason to ask*, and re-arms the attempts.
+function Identity:Scan(retrying)
 	local key = Family:CurrentMember()
+
+	-- The counter bounds one series of attempts, not the session, and until this it did the
+	-- second. Once five had gone by, every later scan incremented it, saw it was past the
+	-- limit and gave up on its first try - so a client that was slow to name a guild once
+	-- never asked again until the next login, however many times the game said the guild had
+	-- changed. Seen on a freshly created guild: the character who had just made it was still
+	-- recorded as being in none, and everything in §7 is keyed on that.
+	--
+	-- The harness had been resetting this by hand between checks, which is the tell: a fixture
+	-- that has to reach into a scanner to make the next check possible is describing something
+	-- a real caller cannot do.
+	if not retrying then self.waitingForGuild = nil end
 
 	local fields = {
 		name = UnitName("player"),
@@ -122,7 +136,7 @@ function Identity:Scan()
 			Family:Debug("in a guild and the client will not say which - none recorded")
 		else
 			Family:Debug("in a guild but it has no name yet - asking again")
-			Family:After(3, "identity.guild", function() Identity:Scan() end)
+			Family:After(3, "identity.guild", function() Identity:Scan(true) end)
 		end
 	elseif canAsk then
 		self.waitingForGuild = nil
@@ -184,6 +198,19 @@ Family:OnDatabaseReady("identity", function()
 	Family:RegisterEvent("TIME_PLAYED_MSG", "identity", function(_, total, atLevel)
 		asked = false
 		recordPlayed(total, atLevel)
+	end)
+
+	-- The roster arriving is the client saying outright that it knows which guild this is,
+	-- and it is the one event that says so. Kept apart from the list below because it fires
+	-- constantly - every refresh, and a client with the guild frame open refreshes over and
+	-- over - so it does nothing at all unless the fact it would settle is actually missing.
+	Family:RegisterEvent("GUILD_ROSTER_UPDATE", "identity.roster", function()
+		if not Family:TryCall(IsInGuild) then return end
+
+		local meta = Family.Database:Meta(Family:CurrentMember())
+		if meta and type(meta.guild) == "string" and meta.guild ~= "" then return end
+
+		Family:After(1, "identity", function() Identity:Scan() end)
 	end)
 
 	for _, event in ipairs {
