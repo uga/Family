@@ -175,6 +175,24 @@ local SETS = {
 			{ key = "hearth", label = L["Hearthstone"], width = 170, justify = "LEFT" },
 			{ key = "race",   label = L["Race"],        width = 100, justify = "LEFT" },
 			{ key = "class",  label = L["Class"],       width = 110, justify = "LEFT" },
+			-- World buffs banked in a Chronoboon, beside the other per-character facts
+			-- about a thing somebody is carrying. Forty pixels, which is what this set had
+			-- left of ROW_BUDGET and is more than a small number needs.
+			--
+			-- **Deliberately not added up.** Miscellaneous is a set where nothing adds up,
+			-- and a set where nothing adds up is given no totals line at all - a rule that
+			-- exists because a blank one under the professions kept whatever the previous
+			-- set had left in those cells. A family-wide count of banked buffs would be
+			-- mildly interesting and would put a new row on a panel nobody asked to change,
+			-- to answer a question this column is not for: what is wanted here is *who*.
+			--
+			-- The heading is a **stem of the game's own word**, not the English nickname.
+			-- Forty pixels carries no language's full name for it - `Chronoboon Displacer`,
+			-- `Déplaceur de chronochance`, `Chronostärkungsversetzer`, `Reubicador
+			-- cronológico`, `Темпоральный манипулятор` - and four of those five share one.
+			-- "Boon" is what English players say and appears in nobody else's item at all,
+			-- which is §2.1's argument applied to a column heading.
+			{ key = "boon",   label = L["Chrono"],      width = 40,  justify = "RIGHT" },
 		},
 	},
 }
@@ -574,6 +592,19 @@ CELL.hearth = function(meta)
 	return Family.Names:Area(meta.hearthID, meta.hearth) or UNKNOWN
 end
 CELL.race = function(meta) return UI:RaceName(meta) end
+
+-- How many world buffs this character has banked, which is how many Supercharged Chronoboon
+-- Displacers are in their bags (Scanners/Bags.lua).
+--
+-- **Three answers, not two.** Nothing banked and never looked are different facts and §2.2 is
+-- the whole of why: a character whose bags have never been read has no answer here, and drawing
+-- a blank for them would say "none" about somebody nobody has asked. `bagsSeen` is what tells
+-- the two apart, and it is set by the same scan that would have counted a boon.
+CELL.boon = function(meta)
+	if not meta.bagsSeen then return UNKNOWN end
+	if not meta.boons or meta.boons == 0 then return "" end
+	return tostring(meta.boons)
+end
 
 CELL.class = function(meta)
 	if not meta.classFile then return UNKNOWN end

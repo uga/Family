@@ -24,6 +24,10 @@ is a decision rather than an afternoon of archaeology.
   at. A middle click does the same. Warnings about mail expiring still cover everybody,
   wherever they are.
 - **Charges are read in the guild bank too**, for the tabs you have actually opened.
+- **Summary / Miscellaneous says who has a world buff banked.** A Chronoboon Displacer holding
+  buffs is a different item from an empty one, so Family can tell — the column shows how many
+  each character has waiting, and says it does not know for anyone whose bags it has never
+  read.
 - **Family shows how many charges are left on an oil.** Wizard Oil, Mana Oil, a Bag of Marbles
   — anything used a fixed number of times now carries its remaining count from your bags and
   your bank, and Possessions draws it in the corner of the icon where the game itself puts it.

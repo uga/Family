@@ -5397,6 +5397,50 @@ clickLastButton("Overview")
 -- the previous column set had left in those cells - which is how a realm came to be given
 -- two totals, one of them showing another panel's figures.
 clickButton("Miscellaneous")
+
+-- What a character has banked in a Chronoboon, beside the other facts about a thing they are
+-- carrying. Recording it and showing it are two claims, and until now only the first was held -
+-- the count went to disk every bag scan and no panel ever drew it.
+do
+	local key = Family:CurrentMember()
+
+	-- The cell on this member's row, found by walking the row rather than by guessing at a
+	-- column position: the rows are pooled and a cell knows its own text and nothing else.
+	local function boonCellOf(memberKey)
+		for _, f in ipairs(frames) do
+			if f.cells and f.__shown == true and f.memberKey == memberKey then
+				-- Sixth: member, guild, hearthstone, race, class, then this. Not the
+				-- last cell of the row - every row is built with enough cells for the
+				-- widest set there is, so the spares beyond a set's own columns are
+				-- blank and the last one is always empty.
+				local cell = f.cells[6]
+				if cell then return cell.__text end
+			end
+		end
+		return nil
+	end
+
+	-- Three answers and not two, which is §2.2: a character whose bags have never been read
+	-- has no answer, and drawing a blank for them would say "none" about somebody nobody has
+	-- asked.
+	Family.Database:SetMeta(key, { boons = 2 })
+	clickButton("Overview") clickButton("Miscellaneous")
+	check("a character with buffs banked says how many", boonCellOf(key) == "2", tostring(boonCellOf(key)))
+
+	Family.Database:SetMeta(key, { boons = Family.CLEAR })
+	clickButton("Overview") clickButton("Miscellaneous")
+	check("one with none says nothing at all", boonCellOf(key) == "", tostring(boonCellOf(key)))
+
+	local heldSeen = (Family.Database:Members()[key].meta or {}).bagsSeen
+	Family.Database:SetMeta(key, { bagsSeen = Family.CLEAR })
+	clickButton("Overview") clickButton("Miscellaneous")
+	check("and one whose bags nobody has read says it does not know",
+		boonCellOf(key) == Family.UI.UNKNOWN, tostring(boonCellOf(key)))
+
+	Family.Database:SetMeta(key, { bagsSeen = heldSeen })
+	clickButton("Overview") clickButton("Miscellaneous")
+end
+
 check("a column set with nothing to add up is given no totals line",
 	visibleText("Total") == false)
 -- Exactly, not merely containing: the footer under the table says "Grand totals:" whatever

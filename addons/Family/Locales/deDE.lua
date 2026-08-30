@@ -51,6 +51,7 @@ Family.locales.deDE = {
 	["%dm"] = "%dm",
 	["Bags"] = "Taschen",  -- 14
 	["Race"] = "Volk",  -- 15
+	["Chrono"] = "Chrono",
 	["soon"] = "bald",
 	["Total"] = "Summe",
 	["Buyout"] = "Sofortkauf",  -- 16

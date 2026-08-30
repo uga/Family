@@ -51,6 +51,7 @@ Family.locales.frFR = {
 	["%dm"] = "%dm",
 	["Bags"] = "Sacs",  -- 14
 	["Race"] = "Race",  -- 15
+	["Chrono"] = "Chrono",
 	["soon"] = "bientôt",
 	["Total"] = "Total",
 	["Buyout"] = "Achat imm.",  -- 16

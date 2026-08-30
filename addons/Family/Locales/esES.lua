@@ -51,6 +51,7 @@ Family.locales.esES = {
 	["%dm"] = "%dm",
 	["Bags"] = "Bolsas",  -- 14
 	["Race"] = "Raza",  -- 15
+	["Chrono"] = "Crono",
 	["soon"] = "pronto",
 	["Total"] = "Total",
 	["Buyout"] = "Compra dir.",  -- 16
