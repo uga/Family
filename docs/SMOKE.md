@@ -122,6 +122,11 @@ Per client: **Era**, **Anniversary**, **Mists**.
 - [ ] **Untick it, and then touch nothing on either client.** Within a minute it is gone from
       their side. Neither of you presses *Update now*: a withdrawal that waits for a button is
       not a withdrawal, and this is the only place that can be tested at all.
+- [ ] **A withdrawal only reaches somebody who is there** (spec §7.1), and what is held from a
+      player nobody has heard from for **fourteen days** is dropped instead. Not testable in an
+      afternoon and not worth faking with a clock: what *is* checkable is that a guildmate you
+      have seen today survives a login, and that your own ticked grid is still ticked after
+      one — the grid is ours and must never be touched by that sweep.
 - [ ] Tick four boxes one after another, then `/family guild test` on your side. It counts
       **one** message sent for the lot, not four. Ticking a grid is one decision to everybody
       else in the guild.
@@ -155,11 +160,58 @@ Per client: **Era**, **Anniversary**, **Mists**.
 - [ ] Untick that profession on their side. Within a minute, and with neither of you pressing
       *Update now*, the recipe stops being attributed to them here.
 
-- [ ] **Does this client hear its own guild announcement?** In a guild with nobody else on,
-      `/family guild test` and read `announcements arrived: N (X ours coming back…)`. On Mists
-      X is always 0 — a client there never receives its own addon message on the guild channel.
-      Note what Era and Burning Crusade do, because a diagnosis line was written assuming they
-      all echo.
+- [x] **Does this client hear its own guild announcement? — settled on Mists 2026-08-30.**
+      **It does.** Alone in the guild, two announcements sent and `announcements arrived: 2
+      (2 ours coming back)` on the `GUILD` channel. This file previously said the opposite,
+      from runs that saw no echo — an absence read as a rule (§2.2), and the entry it came
+      from is corrected in `DATASOURCES.md`.
+- [ ] **Era and Burning Crusade: do they echo?** Same method — be the only Family user online
+      in the guild, `/family guild test`, read `X ours coming back`. Still unmeasured on both,
+      and the closing sentence of the diagnosis leans on the answer.
+
+#### What actually crossed the wire — the two-sided count
+
+`/family guild test` counts both ends of every message now, and the point of these lines is
+that a silence has three different causes that used to print identically.
+
+- [ ] **`addon messages the client handed us: N, M of them Family's`.** Run it on a character
+      with other addons loaded. `N` counts every addon's traffic, `M` only ours — so `N` at 0
+      means the client is handing over nothing at all, and `N` high with `M` at 0 means ours
+      alone is missing. Note both numbers in the row.
+- [ ] **`what the client answered to those`.** Whatever `SendAddonMessage` returned, verbatim,
+      by value and type, counted per distinct answer — `2 x number 0` on Mists. **Copy it into
+      `DATASOURCES.md` for each client**: nothing decodes it, and what these three clients
+      answer is not known.
+- [ ] **`still in Family's own queue, never handed over: N`.** Should be absent. It only
+      appears when the queue has not drained, which is a fault on this side rather than on the
+      channel — worth provoking once by pressing *Update now* during a fight, since bulk waits
+      for combat to end.
+- [ ] **The closing sentence matches the numbers.** Nothing at all handed over should send you
+      to guild chat; ours arriving with no announcement among them should blame Family; and
+      neither should blame the channel.
+
+#### Names and realms — a probe, not a feature
+
+`/family guild names`. `onHello` decides an announcement is our own by comparing bare names
+with the realm stripped from both sides, so a guildmate sharing your character's name would be
+read as your own echo and never answered. **Write the answers into `docs/DATASOURCES.md` §2.**
+
+- [x] **What the client calls a character — settled on Mists 2026-08-30.** `UnitName("player")`
+      answers the realm as `nil`; `UnitFullName` and `GetNormalizedRealmName` give
+      `MirageRaceway`; `GetRealmName` gives `Mirage Raceway` with a space. The addon channel
+      and the roster both use the normalised form, on every name including same-realm ones —
+      `UnitName("player")` is the only one of them that answers bare.
+- [ ] **Run it on Era and Burning Crusade.** Do `UnitFullName`, `GetNormalizedRealmName` and
+      `GetAutoCompleteRealms` exist at all? The probe says `no such call` rather than erroring,
+      and a client with no connected realms cannot produce the collision.
+- [ ] **Do senders carry a realm on Era and Burning Crusade?** Read `addon messages the client
+      handed us: … (last from X on Y)` in `/family guild test`. On Mists they always do,
+      same-realm included. If either older client sends bare names, any realm-aware comparison
+      has to fall back to today's behaviour there.
+- [ ] **The collision itself.** The last line says how many roster entries share this
+      character's name; one is you. **Two has never been seen** — it needs a duplicate name
+      inside one connected group, and whether that is even permitted is unmeasured. Note it if
+      you ever see two, because that is the whole question.
 
 #### The guild event log — a probe, not a feature
 
