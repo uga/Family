@@ -944,3 +944,26 @@ The check is the same one the rest of this file rests on and there is no automat
 document names a mechanism, the session has to be able to point at where that mechanism was
 named to it. Both notes now say what was pressed where it is known and say nothing where it is
 not.
+
+## L-029 — `git checkout --` reverts to the last commit, not to the last edit
+
+A mutation test needs to put the file back afterwards, and the helper that ran seven of them
+did it with `git checkout -- addons/Family/Comm.lua`.
+
+The mutations were being applied to a file whose new code had not been committed yet. The first
+revert therefore threw away the whole afternoon's work in that file — the counters, the new
+function, the thinned event handler — and put back the version from `HEAD`. The six mutations
+that followed reported nothing useful, because their anchors no longer existed, and the "clean
+tree" run afterwards reported *zero* failures for the same reason: the harness died before it
+reached the new section, and a crash prints no `FAIL` lines.
+
+**Both halves of that are the lesson.** `git checkout --` is a destructive command whose usual
+use is exactly this — undo my scratch edit — and it does not distinguish the scratch edit from
+everything else uncommitted in that file. And a count of failures is not a measure of health: a
+harness that dies early and a harness that passes both print no failures, and the mutation
+loop was reading the number rather than the last line.
+
+The check: a mutation is reverted from a **copy of the file taken immediately before the first
+mutation**, never from git, and the loop ends by re-running the harness and reading the words
+`all checks passed` rather than counting `FAIL` lines. Commit before mutating, or copy first;
+never both untracked and reverted by version control.

@@ -10193,6 +10193,64 @@ print("an addon message arriving the way the game delivers it")
 end)()
 
 print()
+print("counting what the client hands over, above the prefix test")
+
+-- Two silent clients produce "announcements arrived: 0" whether the channel delivered nothing
+-- or delivered everything into a handler that dropped it, and those two have opposite answers:
+-- one is somebody else's and one is ours. Guild.stats cannot tell them apart because every one
+-- of its counters is taken after the message is already Family's.
+--
+-- So the count is taken at the seam, above the prefix test - which is exactly where the bug
+-- the section above exists for was living, invisible to five hundred checks.
+;(function()
+	local before = {
+		events = Family.Comm.stats.events,
+		ours = Family.Comm.stats.ours,
+		malformed = Family.Comm.stats.malformed,
+		unhandled = Family.Comm.stats.unhandled,
+	}
+
+	Family.Comm:On("counted", function() end)
+
+	-- Somebody else's addon. Counted as traffic, not as ours: the pair is the whole point.
+	local mine = Family.Comm:Heard("SomeOtherAddon", "1\0011\0011\001counted\001x",
+		"GUILD", "Grella")
+	check("another addon's message is not ours", mine == false, tostring(mine))
+	check("but it still counts as the client handing something over",
+		Family.Comm.stats.events == before.events + 1,
+		tostring(Family.Comm.stats.events - before.events))
+	check("and not as one of ours", Family.Comm.stats.ours == before.ours,
+		tostring(Family.Comm.stats.ours - before.ours))
+
+	mine = Family.Comm:Heard("Family", "1\0011\0011\001counted\001x", "GUILD", "Ginetta")
+	check("one of ours is ours", mine == true, tostring(mine))
+	check("and counts in both places",
+		Family.Comm.stats.events == before.events + 2
+			and Family.Comm.stats.ours == before.ours + 1,
+		string.format("%d/%d", Family.Comm.stats.events - before.events,
+			Family.Comm.stats.ours - before.ours))
+	check("naming who it came from", Family.Comm.stats.lastFrom == "Ginetta",
+		tostring(Family.Comm.stats.lastFrom))
+	check("and on which channel", Family.Comm.stats.lastChannel == "GUILD",
+		tostring(Family.Comm.stats.lastChannel))
+
+	-- A body with no header at all. It reached us and it is ours; it is the parse that failed,
+	-- and saying so is the difference between blaming the guild and reading our own code.
+	Family.Comm:Heard("Family", "not a message at all", "GUILD", "Ginetta")
+	check("something of ours that will not parse is counted as that",
+		Family.Comm.stats.malformed == before.malformed + 1,
+		tostring(Family.Comm.stats.malformed - before.malformed))
+
+	-- A well-formed message for a kind nobody registered.
+	Family.Comm:Heard("Family", "1\0011\0011\001nobodyhandlesthis\001x", "GUILD", "Ginetta")
+	check("and one nothing handles is counted separately",
+		Family.Comm.stats.unhandled == before.unhandled + 1
+			and Family.Comm.stats.malformed == before.malformed + 1,
+		string.format("%d/%d", Family.Comm.stats.unhandled - before.unhandled,
+			Family.Comm.stats.malformed - before.malformed))
+end)()
+
+print()
 print("whispering somebody who is not there")
 
 -- An exchange is hundreds of whispers, and the client answers every one of them with a line

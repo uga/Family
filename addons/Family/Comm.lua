@@ -406,6 +406,23 @@ end)
 -- Receiving
 --------------------------------------------------------------------------------------------
 
+-- What the client actually handed us, counted at the seam rather than inside it.
+--
+-- Guild.stats counts every point a guild announcement can be dropped *once it is Family's*,
+-- and that is one layer too high to answer the question two silent clients actually pose. A
+-- guild diagnosis reading "announcements arrived: 0" is produced identically by a channel that
+-- delivered nothing and by a channel that delivered everything into a handler that dropped it,
+-- and the difference is the whole of the diagnosis: one is somebody else's fault and the other
+-- is ours.
+--
+-- The line joining this file to the game has been wrong before, in exactly the way these
+-- counters would have shown at a glance - the handler read the event's own name as the prefix
+-- and every message Family was ever sent died on its first line, while five hundred checks
+-- that called Comm:Receive directly all passed. So the count that matters is taken *above*
+-- the prefix test, not below it: `events` proves the event is live at all, and `ours` proves
+-- the prefix test is letting our own traffic through.
+Comm.stats = { events = 0, ours = 0, malformed = 0, unhandled = 0 }
+
 local partial = {}
 local handlers = {}
 
@@ -421,6 +438,7 @@ local function complete(key, entry, sender, channel)
 
     local handler = handlers[entry.kind]
     if not handler then
+        Comm.stats.unhandled = Comm.stats.unhandled + 1
         Family:Debug("comm: nothing handles %s", tostring(entry.kind))
         return
     end
@@ -441,7 +459,10 @@ function Comm:Receive(text, sender, channel)
 
     local id, index, total, kind, piece =
         text:match("^(%d+)\1(%d+)\1(%d+)\1([^\1]*)\1(.*)$")
-    if not id then return end
+    if not id then
+        Comm.stats.malformed = Comm.stats.malformed + 1
+        return
+    end
 
     index, total = tonumber(index), tonumber(total)
     if not index or not total or index > total then return end
@@ -488,6 +509,24 @@ end
 
 --------------------------------------------------------------------------------------------
 
+-- One addon message off the wire, whoever it was for.
+--
+-- The whole of the event handler except for unpacking its arguments, and here rather than
+-- there so that the seam can be exercised by a check. Everything the game hands us passes
+-- through this function: the ones for other addons are counted and dropped, and ours are
+-- counted again and passed on.
+function Comm:Heard(prefix, text, channel, sender)
+    Comm.stats.events = Comm.stats.events + 1
+    if prefix ~= PREFIX then return false end
+
+    Comm.stats.ours = Comm.stats.ours + 1
+    Comm.stats.lastFrom = tostring(sender)
+    Comm.stats.lastChannel = tostring(channel)
+
+    Comm:Receive(text, sender, channel)
+    return true
+end
+
 function Comm:Prefix() return PREFIX end
 
 Family:OnDatabaseReady("comm", function()
@@ -524,8 +563,7 @@ Family:OnDatabaseReady("comm", function()
     -- which is the shape of gap worth looking for elsewhere: the seam between our code and the
     -- client is exactly where a harness stops being able to help.
     Family:RegisterEvent("CHAT_MSG_ADDON", "comm", function(_, prefix, text, channel, sender)
-        if prefix ~= PREFIX then return end
-        Comm:Receive(text, sender, channel)
+        Comm:Heard(prefix, text, channel, sender)
     end)
 
     Family:RegisterEvent("PLAYER_REGEN_ENABLED", "comm", function()

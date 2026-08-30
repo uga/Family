@@ -18,6 +18,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **`/family guild` says whether anything is reaching your client at all.** When two people in
+  a guild cannot see each other, the report used to end the same way whether the messages were
+  never arriving or were arriving and being dropped — and those need looking at in opposite
+  places. It now counts the addon messages your client hands over, every addon's and Family's
+  own, and says which of the two is happening.
 - **Joining a guild tells the guild you are there.** The announcement was made five seconds
   after you joined and abandoned if your client had not yet named the guild — which just after
   joining is most of the time. So a character who had joined, and was standing in the guild,

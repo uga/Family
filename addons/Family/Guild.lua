@@ -1967,7 +1967,23 @@ function Guild:Diagnose()
 	end
 
 	local stats = self.stats
+	local wire = Family.Comm.stats or {}
 	Family:Print(L["  messages sent from here: %d"], stats.sent)
+
+	-- One layer below every other count here, and the only pair of numbers that says whose
+	-- silence this is. Everything else on this page counts what happened to a message once it
+	-- was Family's; these two count what the client handed over in the first place, ours and
+	-- everybody's. Two clients that cannot hear each other look identical from up here and
+	-- quite different from down there. See Comm.stats for the argument in full.
+	Family:Print(L["  addon messages the client handed us: %d, %d of them Family's%s"],
+		wire.events or 0, wire.ours or 0,
+		wire.lastFrom and string.format(L[" (last from %s on %s)"], tostring(wire.lastFrom),
+			tostring(wire.lastChannel)) or "")
+
+	if (wire.malformed or 0) > 0 or (wire.unhandled or 0) > 0 then
+		Family:Print(L["  |cffffaa00of ours, %d would not parse and %d had nothing to handle "
+			.. "them|r"], wire.malformed or 0, wire.unhandled or 0)
+	end
 	Family:Print(L["  announcements arrived: %d  (%d ours coming back, %d for another guild, "
 		.. "%d unreadable)"], stats.arrived, stats.echo, stats.otherGuild, stats.unreadable)
 	Family:Print(L["  announcements from somebody else: %s"], stats.answered > 0
@@ -2059,21 +2075,44 @@ function Guild:Diagnose()
 		end
 	end
 
-	-- **Said as what is known rather than as a verdict.** This used to read "not even its own
-	-- announcement coming back off the guild channel - that points at the channel", and on
-	-- Mists that is a false alarm every time: a client there does not hear its own addon
-	-- message on the guild channel, so being the only Family user online produces this line
-	-- with nothing whatever wrong. Measured on a live client that had received somebody else's
-	-- announcement perfectly well and never once seen its own (DATASOURCES §2).
+	-- **Said as what is known rather than as a verdict, and split three ways to keep it that
+	-- way.** Nothing arriving has three quite different causes - the client handing this
+	-- character no addon traffic at all, handing it everybody's but not ours, and handing it
+	-- ours only for us to drop it - and a single sentence covering all three usefully advises
+	-- none of them. It sends somebody to look at the channel, which is the one part they
+	-- cannot inspect, when the answer might be sitting in our own counters.
 	--
-	-- A diagnosis that names the wrong culprit is worse than one that says less: it sends
-	-- somebody to look at the channel, which is the one part they cannot inspect.
+	-- The three tests are on Comm.stats rather than on anything here, because every count in
+	-- this file is taken after the point where the interesting failures happen.
 	if stats.sent > 0 and stats.arrived == 0 then
-		Family:Print(L["|cffffaa00Nothing has arrived here at all.|r In a guild where nobody "
-			.. "else runs Family that is the ordinary answer - and on some clients your own "
-			.. "announcement does not come back to you either, so by itself this is not proof "
-			.. "of a fault. Ask somebody else in the guild to run this: if their copy shows "
-			.. "messages arriving, the channel is working."])
+		if (wire.ours or 0) > 0 then
+			-- The client did hand Family messages to this character, and none of them was
+			-- an announcement this code counted. Whatever is wrong is on this side of the
+			-- wire, which is the half that can actually be looked at.
+			Family:Print(L["|cffffaa00Family messages did reach this client|r, and none of "
+				.. "them was an announcement. The channel is carrying our traffic, so "
+				.. "whatever is dropping it is in Family rather than in the guild. Worth "
+				.. "reporting with this whole page."])
+		elseif (wire.events or 0) == 0 then
+			-- Not one addon message from anybody. It is not proof on its own - a quiet
+			-- moment on a quiet realm can produce it - but it is the one reading that
+			-- points away from Family entirely, and it is worth saying which way to look.
+			Family:Print(L["|cffffaa00No addon message from any addon has reached this "
+				.. "character.|r That is not about Family - nothing at all is being handed "
+				.. "over. Check that this character may speak in guild chat: type something "
+				.. "in /g and see whether anybody answers."])
+		else
+			-- **Said as what is known rather than as a verdict.** Other addons are being
+			-- heard and ours is not, which on Mists is what being the only Family user
+			-- online looks like: a client there does not hear its own guild announcement
+			-- come back (DATASOURCES §2). A diagnosis that names the wrong culprit is worse
+			-- than one that says less.
+			Family:Print(L["|cffffaa00Nothing of Family's has arrived here.|r In a guild "
+				.. "where nobody else runs Family that is the ordinary answer - and on some "
+				.. "clients your own announcement does not come back to you either, so by "
+				.. "itself this is not proof of a fault. Ask somebody else in the guild to "
+				.. "run this: if their copy shows messages arriving, the channel is working."])
+		end
 	end
 end
 
