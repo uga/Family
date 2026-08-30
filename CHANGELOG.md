@@ -98,22 +98,6 @@ is a decision rather than an afternoon of archaeology.
   Off unless you ask for it, and walking to another panel never moves the lock: only clicking
   a star does.
 
-### Fixed
-
-- **And the game itself says it far less.** Reaching somebody who is not there produced one
-  red *"No player named …"* from the game for every message that had already been sent — four
-  per character, twenty for a family of five, and none of them Family's to take back. Family
-  now sends one message to somebody it has not just heard from and waits a moment before
-  sending anything else, so a character who is not there costs one line instead of four.
-- **Trying to reach a linked family who is offline is quiet now.** It used to walk that
-  family's characters four times over — twenty attempts for a family of five, four copies of
-  every line Family printed, and twenty refusals from the game. It answers the first refusal
-  and ignores the rest, which is the same news arriving again; and the lines naming each
-  character as it tries them have gone from the chat frame, because the working is not the
-  answer. What is left is the one sentence saying nobody was there. Switch on *Narrate what
-  the scanners are doing* in Options to see the working.
-
-### Added
 
 - **You can now show your guild what your characters can craft, one profession at a time.**
   The Guild tab has a grid of your characters who are in the guild and the professions each of
@@ -137,6 +121,20 @@ is a decision rather than an afternoon of archaeology.
   there to ask. Your characters count as one — you.
 
 ### Fixed
+
+- **And the game itself says it far less.** Reaching somebody who is not there produced one
+  red *"No player named …"* from the game for every message that had already been sent — four
+  per character, twenty for a family of five, and none of them Family's to take back. Family
+  now sends one message to somebody it has not just heard from and waits a moment before
+  sending anything else, so a character who is not there costs one line instead of four.
+- **Trying to reach a linked family who is offline is quiet now.** It used to walk that
+  family's characters four times over — twenty attempts for a family of five, four copies of
+  every line Family printed, and twenty refusals from the game. It answers the first refusal
+  and ignores the rest, which is the same news arriving again; and the lines naming each
+  character as it tries them have gone from the chat frame, because the working is not the
+  answer. What is left is the one sentence saying nobody was there. Switch on *Narrate what
+  the scanners are doing* in Options to see the working.
+
 
 - **"Which guildie can craft this?" now has an answer.** A profession you share with the guild
   carries what it can make, and a guildmate running Family sees it in two places: on the
