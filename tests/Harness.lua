@@ -5452,12 +5452,26 @@ do
 		return nil
 	end
 
-	-- Three answers and not two, which is §2.2: a character whose bags have never been read
-	-- has no answer, and drawing a blank for them would say "none" about somebody nobody has
-	-- asked.
-	Family.Database:SetMeta(key, { boons = 2 })
+	-- Four answers and not two, which is §2.2 plus the difference between the two facts. The
+	-- figure counts the **buffs trapped**, not the boons carried: there is only ever one boon,
+	-- so counting those was counting to one.
+	Family.Database:SetMeta(key, { boons = true,
+		banked = { { icon = 134153, minutes = 120 }, { icon = 136109, minutes = 60 } } })
 	clickButton("Overview") clickButton("Miscellaneous")
-	check("a character with buffs banked says how many", boonCellOf(key) == "2", tostring(boonCellOf(key)))
+	check("the figure is how many buffs are trapped", boonCellOf(key) == "2",
+		tostring(boonCellOf(key)))
+
+	-- One buff in the boon is 1 and not "a boon", which is the whole of the change: with the
+	-- old cell both of these said 1 and one of them was counting the wrong thing.
+	Family.Database:SetMeta(key, { banked = { { icon = 134153, minutes = 120 } } })
+	clickButton("Overview") clickButton("Miscellaneous")
+	check("and one trapped buff is one", boonCellOf(key) == "1", tostring(boonCellOf(key)))
+
+	-- A boon carried whose rows nobody could read is not none, and is not a number either.
+	Family.Database:SetMeta(key, { banked = Family.CLEAR, boons = true })
+	clickButton("Overview") clickButton("Miscellaneous")
+	check("a boon whose contents were never read says it does not know",
+		boonCellOf(key) == Family.UI.UNKNOWN, tostring(boonCellOf(key)))
 
 	Family.Database:SetMeta(key, { boons = Family.CLEAR })
 	clickButton("Overview") clickButton("Miscellaneous")
@@ -13056,7 +13070,7 @@ print("a world buff banked in a Chronoboon")
 	slot[6] = { 184938, 1 }
 	Family.Bags:Scan()
 	check("a Supercharged Chronoboon in a bag is recorded",
-		(Family.Database:Members()[key].meta or {}).boons == 1,
+		(Family.Database:Members()[key].meta or {}).boons == true,
 		tostring((Family.Database:Members()[key].meta or {}).boons))
 
 	-- An empty Displacer is not a banked buff, and recording it as one would send somebody to
@@ -13066,12 +13080,15 @@ print("a world buff banked in a Chronoboon")
 	check("an empty Displacer is not", (Family.Database:Members()[key].meta or {}).boons == nil,
 		tostring((Family.Database:Members()[key].meta or {}).boons))
 
-	-- Two banked is a different answer from one, to somebody deciding who to log in.
+	-- A flag and not a count, and it stays one however many are found. There is no way to hold
+	-- two - the supercharged item is made by using the empty one, which cannot be used again
+	-- until the first is released - so a number here could only ever be 1, and a column that
+	-- showed it would be counting to one while the question was how many buffs are inside.
 	slot[6] = { 184938, 1 }
 	slot[7] = { 184938, 1 }
 	Family.Bags:Scan()
-	check("and two of them are counted as two",
-		(Family.Database:Members()[key].meta or {}).boons == 2,
+	check("and it stays a flag however many a bag is made to hold",
+		(Family.Database:Members()[key].meta or {}).boons == true,
 		tostring((Family.Database:Members()[key].meta or {}).boons))
 
 	-- Used, and the fact has to go: a stale "has a boon" is worse than none.

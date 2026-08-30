@@ -18,9 +18,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
-- **The Chrono column now opens.** Click the figure and a line unfolds under the character
-  showing which world buffs their Chronoboon is holding — each as its own icon, with the time
-  left written on it, and the game's own description when you hover. Click again to close it.
+- **The Chrono column now says how many world buffs are trapped, and opens.** Click the figure
+  and a line unfolds under the character showing which ones their Chronoboon is holding — each
+  as its own icon, with the time left written on it, and the game's own description when you
+  hover. Click again to close it. It used to count the boons themselves, which was always one.
 
 - **Shift-click the minimap button or the broker bar to change what the money counts.** It
   cycles between your whole family, everyone on this side of this realm, and the character you

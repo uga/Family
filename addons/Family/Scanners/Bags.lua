@@ -264,9 +264,14 @@ function Bags:Scan()
 		-- the bag figures are a week old for.
 		bagsSeen    = time(),
 		itemCooldowns = next(cooldowns) and cooldowns or Family.CLEAR,
-		-- A count rather than a flag: a character can carry more than one, and "two banked"
-		-- is a different answer from "one" to somebody deciding who to log in.
-		boons       = boons > 0 and boons or Family.CLEAR,
+		-- A flag and not a count. There is no way to hold two: the supercharged item is made
+		-- by using the empty one, which cannot be used again until the first is released, so
+		-- a number here could only ever be 1 and would invite a column that added it up.
+		--
+		-- Kept beside `banked` rather than replaced by it, because a boon whose rows Family
+		-- could not parse still means this character has one - §2.2 again, where nothing read
+		-- and nothing there are different facts.
+		boons       = boons > 0 or Family.CLEAR,
 		-- And what is inside one, which is the aura's tooltip and not the item's - a list of
 		-- `{ icon, minutes }`, an identifier and a number, no name among them (§2.1).
 		--

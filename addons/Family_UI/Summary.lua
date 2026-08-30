@@ -621,10 +621,19 @@ CELL.race = function(meta) return UI:RaceName(meta) end
 -- the whole of why: a character whose bags have never been read has no answer here, and drawing
 -- a blank for them would say "none" about somebody nobody has asked. `bagsSeen` is what tells
 -- the two apart, and it is set by the same scan that would have counted a boon.
+-- How many world buffs are trapped, which is the question somebody is actually asking. It
+-- used to be how many boons were carried, and that number could only ever be one.
+--
+-- A boon whose contents were never read answers *unknown* rather than a number, because the
+-- column asks one question and "there is a boon" is not an answer to it. That happens to a
+-- character recorded before Family could read them, and it fills in the next time they are
+-- played - and it is not clickable meanwhile, which is the same dash meaning the same thing
+-- everywhere else on this panel.
 CELL.boon = function(meta)
 	if not meta.bagsSeen then return UNKNOWN end
-	if not meta.boons or meta.boons == 0 then return "" end
-	return tostring(meta.boons)
+	if meta.banked then return tostring(#meta.banked) end
+	if meta.boons then return UNKNOWN end
+	return ""
 end
 
 CELL.class = function(meta)
@@ -1690,7 +1699,12 @@ local function build(frame)
 					local slot = line.boon[index]
 
 					slot:ClearAllPoints()
-					slot:SetPoint("LEFT", 24 + (index - 1) * (BOON_ICON + 2), 0)
+					-- Anchored to the right edge and growing leftwards, the way a letter's
+					-- attachments are: a character with one buff and a character with four
+					-- then end at the same edge, and the eye compares them down the column
+					-- instead of measuring from a name of a different length each time.
+					-- The order the game listed them in is kept.
+					slot:SetPoint("RIGHT", -6 - (shown - index) * (BOON_ICON + 2), 0)
 
 					-- The fileID is what was recorded and is what is drawn, so a buff this
 					-- table has never heard of still appears as itself. The spell is only
