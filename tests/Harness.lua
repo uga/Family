@@ -12076,59 +12076,173 @@ print("the translations")
 
 	-- Every L[...] the source asks for, with the concatenated forms joined back into the one
 	-- string the client will actually look up. L["a " .. "b"] is one key, "a b".
+	-- One L["..."] lookup, read out of the source at the bracket that opens it.
+	--
+	-- A function rather than a loop body because two scans below need it - what the addon asks
+	-- for, and what it *prints* - and a key read two slightly different ways is a key the two
+	-- scans would disagree about while both looked right.
+	--
+	-- Returns nil for the forms that cannot be read statically, and in every case the position
+	-- to carry on scanning from.
+	local function keyFrom(text, open)
+		local i = text:find("%[", open)
+		if not i then return nil, open + 1 end
+
+		local depth, j = 1, i + 1
+		while depth > 0 and j <= #text do
+			local c = text:sub(j, j)
+			if c == "[" then depth = depth + 1
+			elseif c == "]" then depth = depth - 1 end
+			if depth > 0 then j = j + 1 end
+		end
+
+		local inside = text:sub(i + 1, j - 1)
+		-- Only the literal forms. L[name] with a variable cannot be read statically and
+		-- is deliberately not counted; the strata buttons are the one such site.
+		if not inside:match('^%s*"') then return nil, j end
+
+		-- Walked rather than matched. A Lua pattern cannot say "a quote that is not
+		-- preceded by a backslash", so '"([^"]*)"' ends a literal at the first \"
+		-- inside it and splits the key in two - which showed up as three perfectly
+		-- good translations being reported as orphans.
+		local joined = {}
+		local at = 1
+		while true do
+			local from = inside:find('"', at, true)
+			if not from then break end
+			local scan, out = from + 1, {}
+			while scan <= #inside do
+				local c = inside:sub(scan, scan)
+				if c == "\\" then
+					out[#out + 1] = inside:sub(scan, scan + 1)
+					scan = scan + 2
+				elseif c == '"' then
+					break
+				else
+					out[#out + 1] = c
+					scan = scan + 1
+				end
+			end
+			joined[#joined + 1] = table.concat(out)
+			at = scan + 1
+		end
+
+		-- Read out of the file as text, so an escape is still two characters here
+		-- and is one character in the table the client builds. Undone, or every
+		-- string with a newline in it would be reported as an orphan.
+		local key = table.concat(joined)
+			:gsub("\\n", "\n"):gsub("\\t", "\t"):gsub('\\"', '"'):gsub("\\\\", "\\")
+		return key, j
+	end
+
 	local asked = {}
 	for path, text in pairs(sources) do
 		local at = 1
 		while true do
 			local open = text:find("%f[%w_]L%[", at)
 			if not open then break end
-			local i = text:find("%[", open)
-			local depth, j = 1, i + 1
-			while depth > 0 and j <= #text do
-				local c = text:sub(j, j)
-				if c == "[" then depth = depth + 1
-				elseif c == "]" then depth = depth - 1 end
-				if depth > 0 then j = j + 1 end
-			end
-			local inside = text:sub(i + 1, j - 1)
-			-- Only the literal forms. L[name] with a variable cannot be read statically and
-			-- is deliberately not counted; the strata buttons are the one such site.
-			if inside:match('^%s*"') then
-				-- Walked rather than matched. A Lua pattern cannot say "a quote that is not
-				-- preceded by a backslash", so '"([^"]*)"' ends a literal at the first \"
-				-- inside it and splits the key in two - which showed up as three perfectly
-				-- good translations being reported as orphans.
-				local joined = {}
-				do
-					local at = 1
-					while true do
-						local open = inside:find('"', at, true)
-						if not open then break end
-						local scan, out = open + 1, {}
-						while scan <= #inside do
-							local c = inside:sub(scan, scan)
-							if c == "\\" then
-								out[#out + 1] = inside:sub(scan, scan + 1)
-								scan = scan + 2
-							elseif c == '"' then
-								break
-							else
-								out[#out + 1] = c
-								scan = scan + 1
-							end
-						end
-						joined[#joined + 1] = table.concat(out)
-						at = scan + 1
-					end
-				end
-				-- Read out of the file as text, so an escape is still two characters here
-				-- and is one character in the table the client builds. Undone, or every
-				-- string with a newline in it would be reported as an orphan.
-				local key = table.concat(joined)
-					:gsub("\\n", "\n"):gsub("\\t", "\t"):gsub('\\"', '"'):gsub("\\\\", "\\")
-				asked[key] = path
-			end
+			local key, j = keyFrom(text, open)
+			if key then asked[key] = path end
 			at = j + 1
+		end
+	end
+
+	-- What Family says to the player's chat frame, wherever it says it from.
+	--
+	-- The rule below used to be drawn at a file - everything Slash.lua asks for - on the
+	-- grounds that Slash.lua is where Family writes sentences rather than labels. That was
+	-- true when it was written and stopped being true without anybody noticing: Guild:Diagnose
+	-- prints some forty lines from Family/Guild.lua, and three sentences were added to it with
+	-- no translation in any language while this check stayed green.
+	--
+	-- So the rule follows the call rather than the file. Family:Print is the one way anything
+	-- reaches the chat frame, and a string handed straight to it is a sentence being said to
+	-- somebody by definition - which is exactly the distinction the comment below draws and
+	-- the filename was only ever standing in for.
+	--
+	-- The whole argument list of each call, not the first thing in it. Three shapes reach the
+	-- chat frame and only one of them puts the literal where a simpler scan would look:
+	--
+	--   Family:Print(L["..."], x)                     the ordinary one
+	--   Family:Print(Family.L["..."], x)              Core.lua, which has no local L
+	--   Family:Print(n == 1 and L["..."] or L["..."]) singular and plural, both of them said
+	--
+	-- A scan anchored on "L[ immediately after the bracket" sees the first and misses the
+	-- other two, which between them are eight sentences including every error Family prints
+	-- when one of its own handlers throws.
+	--
+	-- Walking to the closing bracket means stepping over string literals rather than counting
+	-- brackets blindly: "%d container(s)" is a real argument to a real call, and its bracket
+	-- would close the call three arguments early.
+	local function callEnd(text, open)
+		local depth, j = 1, open + 1
+		while depth > 0 and j <= #text do
+			local c = text:sub(j, j)
+			if c == '"' then
+				j = j + 1
+				while j <= #text do
+					local d = text:sub(j, j)
+					if d == "\\" then j = j + 2
+					elseif d == '"' then break
+					else j = j + 1 end
+				end
+			elseif c == "-" and text:sub(j, j + 1) == "--" then
+				j = (text:find("\n", j, true) or #text + 1)
+			elseif c == "(" then depth = depth + 1
+			elseif c == ")" then depth = depth - 1
+			end
+			j = j + 1
+		end
+		return j
+	end
+
+	-- Exercised on a fixture, because nothing in the addon needs it today and that is a fact
+	-- rather than an assumption: taking the string-skipping out changes what the scan finds by
+	-- exactly nothing. Every real call puts its literal first, so the walk has already read the
+	-- key before it reaches any bracket, and a bracket inside a string is balanced in every one
+	-- of them - "%d container(s)" closes itself.
+	--
+	-- It stays for the call that is one character different. A lone bracket inside a string is
+	-- ordinary English, and the first Family:Print that has one before its second sentence -
+	-- the singular-or-plural form puts one there - would lose that sentence with no sign that
+	-- it had. The fixture is the only place that case exists, so the fixture is where it is
+	-- held.
+	do
+		local fixture = 'Family:Print("ends here :)", L["kept"])'
+		check("the span walk steps over a bracket inside a string",
+			callEnd(fixture, fixture:find("%(")) > fixture:find("L%["),
+			"a bracket inside a string closed the call early")
+
+		-- And over one inside a comment, for the same reason and by the same measurement:
+		-- no call in the addon has a comment in the middle of it today, and a comment in the
+		-- middle of a call is an ordinary thing to write.
+		local noted = 'Family:Print(L["a"], -- a note with ) in it\n\t\tL["kept"])'
+		check("and over a bracket inside a comment",
+			-- Bracketed, both of them. find returns two values, and an inner call left bare
+			-- hands its second one on as the next argument - which for find is the plain-search
+			-- flag, so the pattern stops being a pattern. This check found that by dying.
+			callEnd(noted, (noted:find("%("))) > (noted:find("L%[", (noted:find("\n")))),
+			"a bracket inside a comment closed the call early")
+	end
+
+	local printed = {}
+	for path, text in pairs(sources) do
+		local at = 1
+		while true do
+			-- find returns where the match ended, and the match ends on the bracket.
+			local call, open = text:find("Family:Print%s*%(", at)
+			if not call then break end
+
+			local last = callEnd(text, open)
+			local scan = open
+			while true do
+				local found = text:find("%f[%w_]L%[", scan)
+				if not found or found > last then break end
+				local key, j = keyFrom(text, found)
+				if key then printed[key] = path end
+				scan = j + 1
+			end
+			at = last
 		end
 	end
 
@@ -12500,7 +12614,7 @@ print("the translations")
 			tool ~= "" and #missing == 0, table.concat(missing, ", "))
 	end
 
-	-- Every sentence the slash commands print is translated in all four languages.
+	-- Every sentence Family says to the player is translated in all four languages.
 	--
 	-- Not a rule about coverage in general. A missing translation degrades to readable
 	-- English on purpose, and that is right for a label standing on its own. It is wrong for
@@ -12509,18 +12623,91 @@ print("the translations")
 	-- reads "seen il y a 19j, 2 container(s), meta says jamais", half of each, which is what
 	-- a French player was sent when a diagnosis was added without its translations.
 	--
-	-- Slash.lua is where Family writes sentences rather than labels, which is why the rule
-	-- is drawn there and not everywhere.
+	-- **Drawn at the call, not at the file.** It used to say "everything Slash.lua asks for",
+	-- because Slash.lua was where Family wrote sentences rather than labels. That was true
+	-- when it was written and quietly stopped being true: Guild:Diagnose grew to some forty
+	-- printed lines in Family/Guild.lua, and three sentences were added to it in one afternoon
+	-- with no translation in any language while this check stayed green. A rule sited at a
+	-- filename holds only until somebody writes a sentence somewhere else, and nothing warns
+	-- them.
+	--
+	-- Family:Print is the one door to the chat frame, so a literal handed straight to it is a
+	-- sentence being said to somebody by definition. Slash.lua is kept whole beside it rather
+	-- than replaced by it: nearly all of it is printed, and the handful that is passed through
+	-- a variable first is covered by the file it lives in and would be lost by the swap.
+	-- The scan itself, held up before anything is concluded from it.
+	--
+	-- A check whose input is gathered by a pattern passes perfectly when the pattern stops
+	-- matching, and this one gathers its input from eleven files by three different shapes.
+	-- The second of these is the widening stated as a property: a rule sited at Slash.lua is
+	-- what was wrong, so a scan that has quietly narrowed back to Slash.lua is the failure to
+	-- look for, and it would otherwise be invisible.
+	local printedCount, printedFiles, beyondSlash = 0, {}, false
+	for _, path in pairs(printed) do
+		printedCount = printedCount + 1
+		printedFiles[path] = true
+		if path ~= "addons/Family_UI/Slash.lua" then beyondSlash = true end
+	end
+
+	check("the sources print sentences the scan can see", printedCount > 0,
+		"no Family:Print(L[...]) calls found - the scan is broken, not the addon")
+
+	-- A floor under the scan above, found a second and much simpler way.
+	--
+	-- Everything in this section only fails when something is *untranslated*, so a scan that
+	-- quietly stops finding keys breaks nothing and reports nothing - it just asks less. The
+	-- span walk is the part that could do that: it steps over string literals and comments to
+	-- find the end of a call, and getting that wrong loses whole calls silently.
+	--
+	-- So the plainest possible pattern - a literal sitting immediately inside the bracket -
+	-- runs as well, and every key it finds must be one the walk found too. It cannot see the
+	-- Family.L and the singular-or-plural forms, which is why it is a floor and not the rule.
+	local floor = {}
+	for path, text in pairs(sources) do
+		local at = 1
+		while true do
+			local call, open = text:find("Family:Print%s*%(%s*L%[", at)
+			if not call then break end
+			local key, j = keyFrom(text, text:find("L%[", call))
+			if key and printed[key] == nil then floor[#floor + 1] = key end
+			at = (j or open) + 1
+		end
+	end
+	table.sort(floor)
+	check("and the span walk finds everything the plainest pattern does", #floor == 0,
+		table.concat(floor, " | "))
+	check("and it sees them outside Slash.lua, which is the whole of this widening",
+		beyondSlash, "only Slash.lua - the rule has narrowed back to the file it was moved off")
+
+	local mustTranslate = {}
+	for key, path in pairs(printed) do mustTranslate[key] = path end
+	for key, path in pairs(asked) do
+		if path == "addons/Family_UI/Slash.lua" then mustTranslate[key] = path end
+	end
+
+	-- The rule held against the scan, because with the tree fully translated a rule that has
+	-- narrowed fails nothing at all.
+	--
+	-- This was found by mutation and not by reasoning: putting the Slash.lua filter back on
+	-- the line above - the exact regression this section was rewritten to prevent - left every
+	-- check in the file green, including the two guarding the scan. Those watch what was
+	-- gathered; this watches what is actually demanded of it, and they are not the same thing.
+	local dropped = {}
+	for key in pairs(printed) do
+		if mustTranslate[key] == nil then dropped[#dropped + 1] = key end
+	end
+	table.sort(dropped)
+	check("and every sentence found is a sentence required", #dropped == 0,
+		table.concat(dropped, " | "))
+
 	for _, code in ipairs { "deDE", "frFR", "esES", "ruRU" } do
 		local table_ = Family.locales[code] or {}
 		local half = {}
-		for key, path in pairs(asked) do
-			if path == "addons/Family_UI/Slash.lua" and rawget(table_, key) == nil then
-				half[#half + 1] = key
-			end
+		for key in pairs(mustTranslate) do
+			if rawget(table_, key) == nil then half[#half + 1] = key end
 		end
 		table.sort(half)
-		check(code .. " translates every sentence the slash commands print",
+		check(code .. " translates every sentence Family says to the player",
 			#half == 0, table.concat(half, " | "))
 	end
 end)()
