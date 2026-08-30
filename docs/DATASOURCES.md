@@ -404,11 +404,37 @@ remaining charges on an oil are not available to the bag scanner at all.
 charge" convention. That is how many it *starts* with and says nothing about how many are left.
 
 **The remaining count exists only in the tooltip**, behind `ITEM_SPELL_CHARGES`, which on an
-English client is `%d |4Charge:Charges;`. Reading it means a scanning tooltip, which Family has
-never had - `Family_UI/Tooltip.lua` writes to the visible `GameTooltip` and nothing anywhere
-reads one. The number itself would be §2.1-clean, an integer rather than a word, and the
-`|4singular:plural;` construct has to become a wildcard in any pattern built from the global
-because the rendered text contains one of the two words and not the markup.
+English client is `%d |4Charge:Charges;`.
+
+#### Reading it, measured on Era 2026-08-30
+
+**`C_TooltipInfo` does not exist on Era.** The structured reader is not available there, so the
+old scanning tooltip is the only route on that client. Unmeasured on Mists, which is a modern
+engine and may well have it.
+
+**A scanning tooltip works, and does not need to be shown.** Created once as
+`CreateFrame("GameTooltip", <name>, nil, "GameTooltipTemplate")`, given `SetOwner(UIParent,
+"ANCHOR_NONE")` and then `SetBagItem(bag, slot)`, it answers `NumLines()` immediately and its
+lines are readable as the globals `<name>TextLeft<i>`. A Lesser Mana Oil in the backpack:
+
+    lines 5
+    1  Lesser Mana Oil
+    2  Requires Level 40
+    3  Use: While applied to target weapon it restores 8 mana to the caster every 5
+       seconds.  Lasts for 30 minutes. (1 Sec Cooldown)
+    4  5 Charges
+    5  <Made by Nervina>
+
+**Charges are a line of their own**, matching `ITEM_SPELL_CHARGES` exactly. **No line carried
+any right-hand text**, so `<name>TextRight<i>` is empty throughout for this item.
+
+The pattern has to be built from the global rather than written out, and in three steps: escape
+the magic characters, turn the escaped `%d` into a capture, and replace the whole
+`|4singular:plural;` run with a wildcard - the rendered text contains one of the two words and
+none of the markup. For English that yields `^(%d+) .+$`, which matches line 4 and none of the
+others. Reading it out is §2.1-clean: what is stored is an integer.
+
+Line 5 is worth noting in passing: the crafter's name is in the tooltip too, and it is a name.
 
 **The Chronoboon Displacer's charged state is a different item id.** `ItemSparse` on Era:
 
