@@ -1254,6 +1254,21 @@ local function build(frame)
 
 	function frame:Refresh()
 		local columns = columnsOf(currentSet)
+
+		-- Whether the set on screen is the one whose mail figure opens the letters.
+		--
+		-- The unfold is drawn under the **member** column, which every set has, so nothing
+		-- about it was ever tied to the set that owns the count - and clicking a mail figure
+		-- on Activity then left the letters sitting on Currencies, a panel with no mail on it
+		-- at all. Reported live.
+		--
+		-- Asked of the columns rather than of the set's name, so that moving the mail column
+		-- to another set takes its unfold with it rather than leaving this behind to be found
+		-- the next time somebody rearranges a panel.
+		local showsMail = false
+		for _, column in ipairs(columns) do
+			if column.key == "mail" then showsMail = true end
+		end
 		UI:FitColumns(columns, ROW_BUDGET, measure)
 		local realms, byRealm, totals, siblings = gather()
 
@@ -1478,7 +1493,7 @@ local function build(frame)
 			-- Only the live ones. A letter that has expired is gone from the mailbox and
 			-- listing it would be Family showing something that is not there any more -
 			-- which is the opposite of what §2.2 asks of every other screen.
-			if openMail == member.key then
+			if openMail == member.key and showsMail then
 				local payload = Family.Database:Payload(member.key) or {}
 				local letters = Family.Mail:Live(payload.mail)
 

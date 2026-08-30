@@ -130,6 +130,9 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Opened mail no longer follows you to another panel.** Clicking the mail count on Activity
+  unfolded the letters, and they stayed on screen after switching to Currencies or any other
+  panel, under members that had nothing to do with them.
 - **And the game itself says it far less.** Reaching somebody who is not there produced one
   red *"No player named …"* from the game for every message that had already been sent — four
   per character, twenty for a family of five, and none of them Family's to take back. Family

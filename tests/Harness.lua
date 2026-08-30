@@ -11050,6 +11050,21 @@ print("the fixes the live check asked for are still in place")
 	check("and Last seen says when a sibling was shared",
 		sum:match('L%["|cff888888shared|r %%s"%], UI:Ago%(sharedAt%)') ~= nil,
 		"a borrowed row's date is somebody else's exchange, not our own sighting")
+
+	-- Reported live: clicking a mail count on Activity left the letters drawn on Currencies.
+	-- The unfold hangs off the **member** column, which every set has, so nothing about it was
+	-- ever tied to the set that owns the figure that opens it.
+	check("the letters are drawn only where the mail column is",
+		sum:match("if openMail == member%.key and showsMail then") ~= nil,
+		"the unfold is drawn on every set, including the ones with no mail on them")
+
+	-- Derived from the columns rather than from a set's name, so that moving the mail column
+	-- takes its unfold with it instead of leaving this behind for somebody to find the next
+	-- time a panel is rearranged. Naming the set here would fix the bug and plant the next one.
+	check("and which set that is comes from the columns rather than a set's name",
+		sum:match('if column%.key == "mail" then showsMail = true end') ~= nil
+			and sum:match('currentSet%.id == "activity"') == nil,
+		"gated on a hardcoded set id, which moves the fault rather than removing it")
 end)()
 
 --------------------------------------------------------------------------------------------
