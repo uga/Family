@@ -58,7 +58,8 @@ BORROW = {
     "SkillLineAbility": (os.path.join(HERE, ".specialisations-cache"),
                          "SkillLineAbility-%(build)s.csv"),
 }
-TABLES = ["ItemEffect", "SpellEffect", "ItemSparse", "SkillLine", "SkillLineAbility"]
+TABLES = ["ItemEffect", "SpellEffect", "ItemSparse", "SkillLine", "SkillLineAbility",
+          "SpellReagents"]
 
 PRIMARY_CATEGORY = "11"
 
@@ -130,12 +131,33 @@ def build():
                        if r.get("CategoryID") == PRIMARY_CATEGORY}
         taught = {int(r["Spell"]) for r in read("SkillLineAbility", build_id)
                   if int(r["SkillLine"]) in professions}
-        crafted = set()
+        # Which profession spells make which item. Kept as a set per item rather than a flag,
+        # because the reagent test below has to be able to ignore them.
+        craftedBy = {}
         for row in read("SpellEffect", build_id):
             if int(row.get("Effect") or 0) == CREATE_ITEM and int(row["SpellID"]) in taught:
                 made = int(row.get("EffectItemType") or 0)
                 if made:
-                    crafted.add(made)
+                    craftedBy.setdefault(made, set()).add(int(row["SpellID"]))
+
+        # And which products a profession actually uses.
+        #
+        # "Crafted by a profession" was not enough on its own. A Super Snapper FX is an
+        # engineering item with a cooldown that makes something, and it turned up as a column
+        # on the Crafting panel - reported from play, right after a Chronoboon Displacer did.
+        # What separates a salt shaker from a toy is not how the maker was obtained but what
+        # the thing it makes is *for*: Refined Deeprock Salt and Snowballs are reagents in
+        # somebody's recipe, and a Snapshot of Gammerita is not.
+        usedBy = {}
+        for row in read("SpellReagents", build_id):
+            spell = int(row["SpellID"])
+            if spell not in taught:
+                continue
+            for column, value in row.items():
+                if column.startswith("Reagent_") and not column.startswith("ReagentCount"):
+                    item = int(value or 0)
+                    if item:
+                        usedBy.setdefault(item, set()).add(spell)
 
         here = 0
         for row in read("ItemEffect", build_id):
@@ -153,9 +175,20 @@ def build():
 
             made = creates[spell]
             skill, rank = needs.get(parent, (0, 0))
+            # A profession makes the maker, and something *other than the maker's own recipe*
+            # uses what it makes.
+            #
+            # That last clause is not fussiness. Without it a SnowMaster 9000 qualifies: the
+            # engineering recipe that builds one takes Snowballs, and a SnowMaster makes
+            # Snowballs, so the product is a reagent of the very recipe that makes the thing
+            # producing it. Reported from play - "in how far is a Snowball a profession
+            # reagent" - and the loop is the whole of the answer. Excluding it leaves exactly
+            # one item on Classic Era: a Salt Shaker, whose Refined Deeprock Salt goes into
+            # Cured Rugged Hide.
             was = makers.setdefault(made, {}).get(parent)
-            makers[made][parent] = (skill, rank,
-                                    (parent in crafted) or bool(was and was[2]))
+            elsewhere = usedBy.get(made, set()) - craftedBy.get(parent, set())
+            useful = bool(craftedBy.get(parent)) and bool(elsewhere)
+            makers[made][parent] = (skill, rank, useful or bool(was and was[2]))
             seen_in.setdefault(made, set()).add(game)
             here += 1
 
@@ -189,7 +222,9 @@ def build():
                 bits.append("skill = %d" % skill)
                 bits.append("rank = %d" % rank)
             if madeByHand:
-                bits.append("crafted = true")
+                # Made by a profession, and what it makes is a reagent in one. Both, because
+                # either alone lets a toy through - see the note above the reagent scan.
+                bits.append("crafting = true")
             parts.append("{ %s }" % ", ".join(bits))
         lines.append("\t[%d] = { %s }," % (made, ", ".join(parts)))
     lines += ["}", ""]

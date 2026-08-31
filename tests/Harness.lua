@@ -11055,6 +11055,11 @@ print("crafting cooldowns")
 	-- Three transmutes on one timer, a mooncloth on its own, and a salt shaker that is an
 	-- item rather than a recipe and belongs to leatherworking all the same.
 	--
+	-- 15846 is the real Salt Shaker, not a stand-in. It has to be: the panel now takes an
+	-- item cooldown only where the generated table says a profession makes the maker and uses
+	-- what it makes, so an invented id would be filtered out and every check below would be
+	-- testing a member with no cooldowns at all.
+	--
 	-- **Filed by skill line id, which is how the scanner really files them.** This fixture
 	-- said `profession = "Alchemy"` for a year and every check below passed, while the panel
 	-- drew "?" over the transmute column on every real client: the payload is keyed by id,
@@ -11073,8 +11078,8 @@ print("crafting cooldowns")
 				readyAt = time() + 3600 },
 			{ name = "Bolt of Imbued Netherweave", profession = 197 },
 		},
-		itemCooldowns = { { id = 30046, readyAt = time() + 7200 } },
-		cooldownItems = { [30046] = 165 },
+		itemCooldowns = { { id = 15846, readyAt = time() + 7200 } },
+		cooldownItems = { [15846] = 165 },
 	})
 
 	local kinds = Family.Cooldowns:Crafting(Family.Database:Meta(key))
@@ -11101,7 +11106,7 @@ print("crafting cooldowns")
 	-- The salt shaker case: an item's cooldown, attributed to the profession that makes it.
 	local shaker
 	for _, kind in ipairs(kinds) do
-		if kind.item == 30046 then shaker = kind end
+		if kind.item == 15846 then shaker = kind end
 	end
 	check("an item on cooldown is one of these too", shaker ~= nil)
 	check("and it answers to the profession that makes it",
@@ -11190,17 +11195,30 @@ print("crafting cooldowns")
 	-- shaker while it was unavailable - reported from play, and the same complaint as
 	-- "it shows only what is on cooldown".
 	Family.Database:SetMeta(key, {
-		itemCooldowns = { { id = 30046 } },
-		cooldownItems = { [30046] = 165 },
+		itemCooldowns = { { id = 15846 } },
+		cooldownItems = { [15846] = 165 },
 	})
 	local back = Family.Cooldowns:Crafting(Family.Database:Meta(key))
 	local idle
 	for _, kind in ipairs(back) do
-		if kind.item == 30046 then idle = kind end
+		if kind.item == 15846 then idle = kind end
 	end
 	check("an item off cooldown is still one of these", idle ~= nil)
 	check("and it says it is ready", idle and idle.ready == true,
 		tostring(idle and idle.ready))
+
+	-- And an entry already on the record from an older rule is filtered where it is *shown*,
+	-- not only where it is written. `cooldownItems` is learned and never pruned, so an item
+	-- that qualified once is on disk for good - which is how a Super Snapper FX survived a fix
+	-- that only changed what gets recorded.
+	Family.Database:SetMeta(key, { itemCooldowns = { { id = 9328 } },
+		cooldownItems = { [9328] = 202 } })
+	local stale = Family.Cooldowns:Crafting(Family.Database:Meta(key))
+	local lingering = false
+	for _, kind in ipairs(stale) do
+		if kind.item == 9328 then lingering = true end
+	end
+	check("an entry left on the record by an older rule is not shown", lingering == false)
 
 	-- And it is still not *announced* at login. The panel is a table somebody opened; the
 	-- login line is a claim pushed at them, and an item is used out of the bags with nothing
@@ -11208,7 +11226,7 @@ print("crafting cooldowns")
 	local announced = Family.Cooldowns:For(Family.Database:Meta(key))
 	local shouted = false
 	for _, entry in ipairs(announced) do
-		if entry.id == 30046 then shouted = true end
+		if entry.id == 15846 then shouted = true end
 	end
 	check("but a ready item is not announced at login", shouted == false)
 
@@ -11219,14 +11237,14 @@ print("crafting cooldowns")
 	do
 		local mine = Family:CurrentMember()
 		local held = Family.Database:Meta(mine).cooldownItems
-		Family.Database:SetMeta(mine, { cooldownItems = { [30046] = 165 } })
+		Family.Database:SetMeta(mine, { cooldownItems = { [15846] = 165 } })
 
-		BAGS[0].items[3] = { 30046, 1 }
+		BAGS[0].items[3] = { 15846, 1 }
 		Family.Bags:Scan()
 
 		local recorded
 		for _, entry in ipairs(Family.Database:Meta(mine).itemCooldowns or {}) do
-			if entry.id == 30046 then recorded = entry end
+			if entry.id == 15846 then recorded = entry end
 		end
 		check("a bag scan records an item whose cooldown has come back",
 			recorded ~= nil and recorded.readyAt == nil,
@@ -11257,6 +11275,19 @@ print("crafting cooldowns")
 			if entry.id == 184937 then boon = true end
 		end
 		check("a Chronoboon is not a crafting cooldown", boon == false)
+		BAGS[0].items[6] = nil
+
+		-- Nor is a Super Snapper FX, which a profession *does* make. It has a cooldown and it
+		-- makes something, so "crafted by a profession" was not enough to keep it out -
+		-- reported from play an hour after the Chronoboon. What it makes is a reagent in
+		-- nothing, which is the rule that separates it from the salt shaker.
+		BAGS[0].items[6] = { 9328, 1 }
+		Family.Bags:Scan()
+		local toy = false
+		for _, entry in ipairs(Family.Database:Meta(mine).itemCooldowns or {}) do
+			if entry.id == 9328 then toy = true end
+		end
+		check("nor is a Super Snapper FX, whose product feeds nothing", toy == false)
 		BAGS[0].items[6] = nil
 
 		-- And an item nobody has ever seen a cooldown on is not invented as ready. Slot 4

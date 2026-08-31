@@ -145,16 +145,18 @@ local makersKnown
 local function itemHasCooldown(itemID, learned)
 	if learned[itemID] then return true end
 
-	-- **Only the makers a profession makes.** A Chronoboon Displacer creates a supercharged
-	-- one and has an hour's cooldown, so it is a maker like any other - and it appeared as a
-	-- column on the Crafting panel beside Alchemy and the salt shaker, which is not what that
-	-- panel is about. Reported from play. A crafting cooldown belongs to something a
-	-- profession makes, which the generated table now says: of 147 makers, three are.
+	-- **Only the makers whose product feeds a profession.** A Chronoboon Displacer and a Super
+	-- Snapper FX both have a cooldown and both make something, so both are makers - and both
+	-- turned up as columns on the Crafting panel, an hour apart, and neither belongs there.
+	-- What separates them from a salt shaker is what the thing they make is *for*: Refined
+	-- Deeprock Salt is a reagent in somebody's recipe and a Snapshot of Gammerita is a reagent
+	-- in nothing. The generated table marks the pairs where a profession makes the maker and
+	-- uses what it makes.
 	if not makersKnown and Family.MadeByItem then
 		makersKnown = {}
 		for _, makers in pairs(Family.MadeByItem) do
 			for _, maker in ipairs(makers) do
-				if maker.item and maker.crafted then makersKnown[maker.item] = true end
+				if maker.item and maker.crafting then makersKnown[maker.item] = true end
 			end
 		end
 	end

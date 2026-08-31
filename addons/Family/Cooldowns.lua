@@ -84,6 +84,32 @@ function Cooldowns:For(meta)
 	return found
 end
 
+-- Whether an item's cooldown is a *crafting* cooldown.
+--
+-- Two things were reported on the Crafting panel within an hour of each other: a Chronoboon
+-- Displacer, and a Super Snapper FX. Both have a cooldown and both make something, so both are
+-- makers in the generated table - and neither belongs on a panel about professions.
+--
+-- The rule that separates them is not how the maker was obtained but what the thing it makes
+-- is **for**. A profession makes the salt shaker, and Refined Deeprock Salt is a reagent in
+-- somebody's recipe; nothing makes a Chronoboon, and a Snapshot of Gammerita is a reagent in
+-- nothing. `made-by-item.py` marks the pairs where both hold.
+--
+-- Asked here as well as when recording, because `cooldownItems` is learned and never pruned:
+-- an item that qualified under an older rule is still on the record, and filtering only where
+-- things are written would leave it on the panel for ever.
+function Cooldowns:IsCraftingItem(itemID)
+	if not itemID then return false end
+
+	for _, makers in pairs(Family.MadeByItem or {}) do
+		for _, maker in ipairs(makers) do
+			if maker.item == itemID then return maker.crafting == true end
+		end
+	end
+
+	return false
+end
+
 -- Whether a recipe has a cooldown at all, and how long it is, from the client's own tables.
 --
 -- `GetTradeSkillCooldown` answers with the time remaining and nothing at all when there is
@@ -215,6 +241,7 @@ function Cooldowns:Crafting(meta, key, callback)
 	-- a claim pushed at them. `For` above says why the second one stays cautious - an item is
 	-- used out of the bags with nothing open - and the difference is deliberate.
 	for _, entry in ipairs(meta.itemCooldowns or {}) do
+		if self:IsCraftingItem(entry.id) then
 		local when = entry.readyAt and entry.readyAt > now and entry.readyAt or nil
 		local found = group("item\1" .. tostring(entry.id),
 			(entry.id and Family.Names:Item(entry.id, key, callback))
@@ -227,6 +254,7 @@ function Cooldowns:Crafting(meta, key, callback)
 		if when then
 			found.ready = false
 			found.readyAt = when
+		end
 		end
 	end
 

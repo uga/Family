@@ -22,7 +22,10 @@ is a decision rather than an afternoon of archaeology.
   headed with its French name on an English one, beside columns that were in English. They are
   now named from the ids Family stores, so a family played across clients reads as one.
 
-- **A Chronoboon Displacer is no longer listed as a crafting cooldown.** It has a cooldown and
+- **Only real crafting cooldowns are on the Crafting panel.** Things that have a cooldown and
+  make something — a Chronoboon Displacer, a Super Snapper FX, a SnowMaster 9000 — were being
+  listed there. A cooldown belongs on that panel when a profession makes the item and another
+  recipe uses what it produces, which on Classic Era means the Salt Shaker and nothing else. It has a cooldown and
   makes something, but no profession makes it, so it has no business on that panel.
 
 - **A transmute shows up before you have ever been caught doing one.** Family used to learn
