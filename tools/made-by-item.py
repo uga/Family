@@ -54,8 +54,13 @@ OUT = os.path.join(HERE, "..", "addons", "Family", "MadeByItem.lua")
 BORROW = {
     "ItemEffect": (os.path.join(HERE, ".charged-items-cache"), "ItemEffect-%(build)s.csv"),
     "ItemSparse": (os.path.join(HERE, ".game-words-cache"), "ItemSparse-%(build)s-enUS.csv"),
+    "SkillLine": (os.path.join(HERE, ".skill-lines-cache"), "%(build)s-enUS.csv"),
+    "SkillLineAbility": (os.path.join(HERE, ".specialisations-cache"),
+                         "SkillLineAbility-%(build)s.csv"),
 }
-TABLES = ["ItemEffect", "SpellEffect", "ItemSparse"]
+TABLES = ["ItemEffect", "SpellEffect", "ItemSparse", "SkillLine", "SkillLineAbility"]
+
+PRIMARY_CATEGORY = "11"
 
 
 def path_for(table, build):
@@ -110,6 +115,28 @@ def build():
             if made:
                 creates.setdefault(int(row["SpellID"]), made)
 
+        # Which of these makers a profession itself makes.
+        #
+        # A Chronoboon Displacer creates a Supercharged one and has an hour's cooldown, so it
+        # is a maker like any other - and it turned up as a column on the **Crafting** panel
+        # beside Alchemy and Salt Shaker, which is not what that panel is about. Reported from
+        # play. A crafting cooldown belongs to something a profession makes: of 147 makers,
+        # three are - the Salt Shaker, the SnowMaster 9000 and a Heavy Leather Ball - and the
+        # Chronoboon is not among them.
+        #
+        # Marked rather than dropped, because the other use of this table is "who can make me
+        # one of these", and there the Chronoboon belongs perfectly well.
+        professions = {int(r["ID"]) for r in read("SkillLine", build_id)
+                       if r.get("CategoryID") == PRIMARY_CATEGORY}
+        taught = {int(r["Spell"]) for r in read("SkillLineAbility", build_id)
+                  if int(r["SkillLine"]) in professions}
+        crafted = set()
+        for row in read("SpellEffect", build_id):
+            if int(row.get("Effect") or 0) == CREATE_ITEM and int(row["SpellID"]) in taught:
+                made = int(row.get("EffectItemType") or 0)
+                if made:
+                    crafted.add(made)
+
         here = 0
         for row in read("ItemEffect", build_id):
             parent = int(row.get("ParentItemID") or 0)
@@ -126,7 +153,9 @@ def build():
 
             made = creates[spell]
             skill, rank = needs.get(parent, (0, 0))
-            makers.setdefault(made, {})[parent] = (skill, rank)
+            was = makers.setdefault(made, {}).get(parent)
+            makers[made][parent] = (skill, rank,
+                                    (parent in crafted) or bool(was and was[2]))
             seen_in.setdefault(made, set()).add(game)
             here += 1
 
@@ -154,11 +183,14 @@ def build():
     for made in sorted(makers):
         parts = []
         for parent in sorted(makers[made]):
-            skill, rank = makers[made][parent]
+            skill, rank, madeByHand = makers[made][parent]
+            bits = ["item = %d" % parent]
             if skill:
-                parts.append("{ item = %d, skill = %d, rank = %d }" % (parent, skill, rank))
-            else:
-                parts.append("{ item = %d }" % parent)
+                bits.append("skill = %d" % skill)
+                bits.append("rank = %d" % rank)
+            if madeByHand:
+                bits.append("crafted = true")
+            parts.append("{ %s }" % ", ".join(bits))
         lines.append("\t[%d] = { %s }," % (made, ", ".join(parts)))
     lines += ["}", ""]
 
@@ -166,7 +198,7 @@ def build():
         handle.write("\n".join(lines))
 
     everywhere = len([m for m in seen_in if len(seen_in[m]) == len(BUILDS)])
-    gated = len([m for m in makers if any(s for s, _ in makers[m].values())])
+    gated = len([m for m in makers if any(v[0] for v in makers[m].values())])
     print("\n  %d things in the union, %d of them on all three builds, %d whose maker "
           "demands a profession" % (len(makers), everywhere, gated))
 

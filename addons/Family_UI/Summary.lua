@@ -174,6 +174,9 @@ local SETS = {
 		build = function() return craftingColumns() end,
 		-- Only the members who have one. Everybody else is a blank row on a panel whose
 		-- every column is about waiting for something.
+		-- Counted, not named: this only asks *whether* there are any, and asking the client
+		-- for names it has not loaded would redraw the panel to answer a question about how
+		-- many rows it has, which redraws it again.
 		only = function(meta) return #Family.Cooldowns:Crafting(meta) > 0 end,
 	},
 	{
@@ -945,7 +948,8 @@ local function craftingKinds()
 	for _, entry in pairs(Family.Database:Members()) do
 		local meta = entry.meta or {}
 		if factionShown(meta.faction) then
-			for _, kind in ipairs(Family.Cooldowns:Crafting(meta)) do
+			for _, kind in ipairs(Family.Cooldowns:Crafting(meta, "summary.crafting",
+				function() UI:Refresh() end)) do
 				-- Keyed by what it is called rather than by the group's own key, which
 				-- carries the moment it comes back and would make a column per member.
 				local found = byLabel[kind.label]
@@ -986,7 +990,8 @@ function craftingColumns()
 			width = CRAFTING_WIDTH, justify = "RIGHT" }
 
 		CELL[key] = function(meta)
-			for _, kind in ipairs(Family.Cooldowns:Crafting(meta)) do
+			for _, kind in ipairs(Family.Cooldowns:Crafting(meta, "summary.crafting",
+				function() UI:Refresh() end)) do
 				if kind.label == label then
 					if kind.ready then
 						return L["|cff40bf40ready|r"]

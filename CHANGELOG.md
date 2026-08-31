@@ -18,6 +18,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Crafting column headings are in your language.** A recipe recorded on a French client was
+  headed with its French name on an English one, beside columns that were in English. They are
+  now named from the ids Family stores, so a family played across clients reads as one.
+
+- **A Chronoboon Displacer is no longer listed as a crafting cooldown.** It has a cooldown and
+  makes something, but no profession makes it, so it has no business on that panel.
+
 - **A transmute shows up before you have ever been caught doing one.** Family used to learn
   that a recipe had a cooldown only by watching one run, so an alchemist who had never
   transmuted while Family was watching was simply absent from the Crafting panel. It now knows

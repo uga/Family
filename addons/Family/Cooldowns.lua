@@ -153,7 +153,9 @@ end
 -- where `key` is stable across members and across draws, so a table can make a column of it.
 --------------------------------------------------------------------------------------------
 
-function Cooldowns:Crafting(meta)
+-- `key` and `callback` are for naming: an item the client has not loaded is asked for and the
+-- caller is told when it lands, exactly as the mail block asks for its attachments.
+function Cooldowns:Crafting(meta, key, callback)
 	if not meta then return {} end
 
 	local now = time()
@@ -184,12 +186,20 @@ function Cooldowns:Crafting(meta)
 		local profession = entry.profession
 		local named = Family:ProfessionName(profession)
 
+		-- The recipe's name **in the reader's language**, from the ids recorded beside it.
+		--
+		-- `entry.name` is the word the client that scanned it wrote down, and a family is
+		-- played across clients: a Mooncloth recorded in French was headed "Etoffe lunaire"
+		-- on an English panel, beside columns that said Alchemy and Salt Shaker. Reported
+		-- from play, and it is §2.1 - the ids are what was stored for exactly this.
+		local recipeName = Family.Names:Recipe(entry, key, callback, nil) or entry.name
+
 		-- Running ones are keyed by the moment they come back, which is what puts every
 		-- recipe on one timer into one group. Ready ones share a key of their own, for the
 		-- same reason: they are all "the transmute", and it is available.
 		local when = entry.readyAt and entry.readyAt > now and entry.readyAt or nil
 		local found = group(tostring(profession or "?") .. "\1" .. tostring(when or "ready"),
-			entry.name or named, profession)
+			recipeName or named, profession)
 
 		found.count = found.count + 1
 		if found.count > 1 then found.label = named end
@@ -207,7 +217,7 @@ function Cooldowns:Crafting(meta)
 	for _, entry in ipairs(meta.itemCooldowns or {}) do
 		local when = entry.readyAt and entry.readyAt > now and entry.readyAt or nil
 		local found = group("item\1" .. tostring(entry.id),
-			(entry.id and Family.Names:CachedItem(entry.id))
+			(entry.id and Family.Names:Item(entry.id, key, callback))
 				or ("item " .. tostring(entry.id)),
 			(meta.cooldownItems or {})[entry.id])
 

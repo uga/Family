@@ -11129,6 +11129,30 @@ print("crafting cooldowns")
 		older[1] and older[1].label == "Alchemy", older[1] and tostring(older[1].label))
 	Family.Database:Forget("Elder-FireMaw")
 
+	-- The label is the reader's word, not the scanner's.
+	--
+	-- A family is played across clients, and a recipe's name is stored as the word the client
+	-- that scanned it wrote down. A Mooncloth recorded on a French client was headed "Etoffe
+	-- lunaire" on an English panel, beside columns saying Alchemy and Salt Shaker. Reported
+	-- from play. The ids were recorded beside the word for exactly this (§2.1).
+	Family.Database:SetMeta("Abroad-FireMaw", { name = "Abroad", realm = "Fire Maw",
+		craftCooldowns = { { name = "Etoffe lunaire", profession = 197, itemID = 2589,
+			readyAt = time() + 3600 } } })
+	local abroad = Family.Cooldowns:Crafting(Family.Database:Meta("Abroad-FireMaw"))
+	check("a recipe recorded in another language is labelled in this one",
+		abroad[1] and abroad[1].label == "Linen Cloth",
+		abroad[1] and tostring(abroad[1].label))
+
+	-- And where the client cannot name it, the recorded word beats nothing at all.
+	Family.Database:SetMeta("Abroad-FireMaw", { craftCooldowns = {
+		{ name = "Etoffe lunaire", profession = 197, itemID = 999999,
+			readyAt = time() + 3600 } } })
+	local unnamed = Family.Cooldowns:Crafting(Family.Database:Meta("Abroad-FireMaw"))
+	check("and one the client cannot name keeps the word it was recorded with",
+		unnamed[1] and unnamed[1].label == "Etoffe lunaire",
+		unnamed[1] and tostring(unnamed[1].label))
+	Family.Database:Forget("Abroad-FireMaw")
+
 	-- A cooldown whose recipe name never made it to disk falls back to the profession, and
 	-- that fallback has to be a word too. It is the same fault one line over, and it survived
 	-- a mutation until this fixture existed: every other cooldown here carries a name, so the
@@ -11222,6 +11246,18 @@ print("crafting cooldowns")
 		check("a salt shaker nobody has watched counting down is still ready",
 			shaker ~= nil and shaker.readyAt == nil, tostring(shaker and shaker.readyAt))
 		BAGS[0].items[5] = nil
+
+		-- And a Chronoboon Displacer is not. It creates a supercharged one and has an hour's
+		-- cooldown, so it is a maker in the generated table - but no profession makes it, and
+		-- it turned up as a column on the Crafting panel beside Alchemy. Reported from play.
+		BAGS[0].items[6] = { 184937, 1 }
+		Family.Bags:Scan()
+		local boon = false
+		for _, entry in ipairs(Family.Database:Meta(mine).itemCooldowns or {}) do
+			if entry.id == 184937 then boon = true end
+		end
+		check("a Chronoboon is not a crafting cooldown", boon == false)
+		BAGS[0].items[6] = nil
 
 		-- And an item nobody has ever seen a cooldown on is not invented as ready. Slot 4
 		-- holds one this member has no history with, and which the generated table has never
