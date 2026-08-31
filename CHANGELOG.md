@@ -33,6 +33,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Things made by using an item now say who can make them.** Refined Deeprock Salt comes out
+  of a Salt Shaker rather than off a recipe list, so its tooltip used to say who already had
+  some and nothing about who could make more. It now names whoever owns the shaker *and* has
+  the profession to use it, and says whether theirs is ready or when it comes back.
+
 - **The transmute column on Crafting was headed `?`.** Any column standing for more than one
   recipe on a shared timer had no heading at all — it now carries the profession's name, in
   your language.

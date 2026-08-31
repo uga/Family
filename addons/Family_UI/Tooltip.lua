@@ -351,6 +351,67 @@ end
 -- the guild could make one while staying silent about the character sitting in your own list.
 --
 -- Answered by identifier here, and by the name only where a client gave no identifier at all.
+-- Who owns the thing that makes this, and whether theirs is ready.
+--
+-- Refined Deeprock Salt is on nobody's recipe list. It comes out of a Salt Shaker, which is an
+-- item with a four-day cooldown - so *who can make me one* is really *who owns a shaker, and is
+-- theirs ready*. Family already answered both halves separately: the index knows who owns what,
+-- and a member's own record knows which of their items are counting down. What was missing was
+-- the join between the salt and the shaker, which no call in the client exposes and which is
+-- therefore generated (DATASOURCES §2). Reported from play: the salt showed who *had* some and
+-- said nothing at all about who could make more.
+--
+-- **No record of a cooldown is read as ready**, because `itemCooldowns` holds the running ones
+-- and drops them as they come back - so an absence is "not counting down when this member was
+-- last read", which is what every other figure on this panel means too.
+local function makersOwned(itemID)
+	local makers = (Family.MadeByItem or {})[itemID]
+	if not makers then return {} end
+
+	local found, seen = {}, {}
+
+	for _, maker in ipairs(makers) do
+		for _, owner in ipairs(Family.Index:Owners(maker.item)) do
+			if not seen[owner.key] then
+				local meta = Family.Database:Meta(owner.key) or {}
+
+				-- **Owning it is not using it.** A Salt Shaker asks 250 leatherworking of
+				-- whoever picks it up, so a character can hold one and be no use at all -
+				-- reported from play, and the client's own table carried the condition the
+				-- whole time. Where the profession has never been read for that member,
+				-- nothing is claimed and they are left out: this block is a list of people
+				-- to go and ask, and a name on it that cannot help is worse than a short
+				-- list.
+				local able = true
+				if maker.skill then
+					local skill = (meta.skills or {})[maker.skill]
+					able = skill ~= nil and (skill.rank or 0) >= (maker.rank or 0)
+				end
+
+				if able then
+					seen[owner.key] = true
+
+					local cooldown = { ready = true }
+					for _, entry in ipairs(meta.itemCooldowns or {}) do
+						if entry.id == maker.item and entry.readyAt
+							and entry.readyAt > time() then
+							cooldown = { ready = false, readyAt = entry.readyAt }
+						end
+					end
+
+					found[#found + 1] = {
+						key = owner.key, name = owner.name, realm = owner.realm,
+						classFile = owner.classFile, familyName = owner.familyName,
+						cooldown = cooldown,
+					}
+				end
+			end
+		end
+	end
+
+	return found
+end
+
 local function makerBlock(_, itemID)
 	-- Not on a pattern. A profession window lists the crafting *spells* a character has
 	-- learnt, and a pattern in a bag or an auction house is the book that teaches one - two
@@ -369,6 +430,15 @@ local function makerBlock(_, itemID)
 	local ours = Family.Recipes:KnowersOf(nil, itemID, itemName)
 	local theirs = (Family.Guild and Family.Guild:Enabled())
 		and Family.Guild:CraftersOf(nil, itemID, itemName) or {}
+
+	-- And whoever owns the item that makes it, where a recipe is not what makes it. Added
+	-- rather than replacing: nothing stops a thing being both, and a member who turns up
+	-- twice would read as two.
+	local seen = {}
+	for _, who in ipairs(ours) do seen[who.key] = true end
+	for _, who in ipairs(makersOwned(itemID)) do
+		if not seen[who.key] then ours[#ours + 1] = who end
+	end
 
 	return makerLines(ours, theirs)
 end

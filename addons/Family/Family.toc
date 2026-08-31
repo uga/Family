@@ -38,6 +38,7 @@ TalentSpells.lua
 ChargedItems.lua
 WorldBuffs.lua
 Specialisations.lua
+MadeByItem.lua
 Capabilities.lua
 Codec.lua
 Comm.lua

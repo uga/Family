@@ -1561,7 +1561,7 @@ for _, file in ipairs {
 	-- What each client calls each profession and each race, and which spell each talent
 	-- is, generated from the client's own tables.
 	"SkillLines.lua", "Races.lua", "TalentSpells.lua", "ChargedItems.lua",
-	"WorldBuffs.lua", "Specialisations.lua",
+	"WorldBuffs.lua", "Specialisations.lua", "MadeByItem.lua",
 	"Capabilities.lua", "Codec.lua",
 	"Comm.lua", "Database.lua", "Names.lua", "Index.lua",
 	"Recipes.lua", "Cooldowns.lua",
@@ -2927,6 +2927,96 @@ local function tooltipFor(itemID, viaData)
 end
 
 check("an item somebody owns gets a possessions block", tooltipFor(2589) == true)
+
+-- A thing made by using an item rather than by a recipe
+--
+-- Refined Deeprock Salt (15409) is on nobody's recipe list. It comes out of a Salt Shaker
+-- (15846), an item with a four-day cooldown - so the question "who can make me one" is really
+-- "who owns a shaker, and is theirs ready". Reported from play: the salt's tooltip said who
+-- had some and nothing about who could make more.
+do
+	local function textOf()
+		local lines = {}
+		for _, line in ipairs(GameTooltip.__lines) do
+			lines[#lines + 1] = tostring(line[1]) .. "  " .. tostring(line[2])
+		end
+		return table.concat(lines, "\n")
+	end
+
+	local made = (Family.MadeByItem or {})[15409]
+	check("the generated table knows what makes the salt",
+		made and made[1] and made[1].item == 15846,
+		tostring(made and made[1] and made[1].item))
+
+	-- Owning the shaker is not using it: it asks 250 leatherworking of whoever picks it up,
+	-- and the client's own table says so.
+	check("and what the shaker asks of whoever holds it",
+		made and made[1] and made[1].skill == 165 and made[1].rank == 250,
+		tostring(made and made[1] and made[1].skill))
+
+	-- Nobody owns a shaker yet, so there is nothing to say and nothing is said.
+	tooltipFor(15409)
+	check("with nobody holding the shaker, the salt says nothing about making it",
+		textOf():find("Can make it", 1, true) == nil, textOf())
+
+	Family.Database:SetMeta("Salter-FireMaw", { name = "Salter", realm = "Fire Maw",
+		level = 60, classFile = "SHAMAN",
+		skills = { [165] = { rank = 300, maxRank = 300 } } })
+	Family.Database:SetPayload("Salter-FireMaw", { bags = {
+		{ slots = { { id = 15846, count = 1 } } } } })
+	Family.Index:Invalidate("Salter-FireMaw")
+
+	tooltipFor(15409)
+	check("the owner of the shaker is who can make the salt",
+		textOf():find("Salter", 1, true) ~= nil, textOf())
+	check("and the block says so in as many words",
+		textOf():find("Can make it", 1, true) ~= nil, textOf())
+	check("and theirs is ready, having never been seen counting down",
+		textOf():find("ready now", 1, true) ~= nil, textOf())
+
+    -- And when it is counting down, the tooltip says when rather than saying ready.
+	Family.Database:SetMeta("Salter-FireMaw",
+		{ itemCooldowns = { { id = 15846, readyAt = time() + 86400 } } })
+	tooltipFor(15409)
+	check("a shaker on cooldown is not reported as ready",
+		textOf():find("ready now", 1, true) == nil, textOf())
+	check("and the owner is still named, because they are still who to ask",
+		textOf():find("Salter", 1, true) ~= nil, textOf())
+
+	-- A second owner who has the shaker and cannot use it. Reported from play, and the whole
+	-- reason the table carries the requirement rather than only the join.
+	Family.Database:SetMeta("Novice-FireMaw", { name = "Novice", realm = "Fire Maw",
+		level = 60, classFile = "MAGE",
+		skills = { [165] = { rank = 200, maxRank = 300 } } })
+	Family.Database:SetPayload("Novice-FireMaw", { bags = {
+		{ slots = { { id = 15846, count = 1 } } } } })
+	Family.Index:Invalidate("Novice-FireMaw")
+
+	tooltipFor(15409)
+	check("an owner without the skill to use it is not named",
+		textOf():find("Novice", 1, true) == nil, textOf())
+
+	-- And one whose professions nobody has read is not claimed for either way.
+	Family.Database:SetMeta("Unread-FireMaw", { name = "Unread", realm = "Fire Maw",
+		level = 60, classFile = "ROGUE" })
+	Family.Database:SetPayload("Unread-FireMaw", { bags = {
+		{ slots = { { id = 15846, count = 1 } } } } })
+	Family.Index:Invalidate("Unread-FireMaw")
+
+	tooltipFor(15409)
+	check("nor is one whose professions have never been read",
+		textOf():find("Unread", 1, true) == nil, textOf())
+
+	Family.Database:Forget("Novice-FireMaw")
+	Family.Database:Forget("Unread-FireMaw")
+
+	-- The shaker itself is unaffected: it is not made by anything.
+	tooltipFor(15846)
+	check("the maker itself gets no such block",
+		textOf():find("Can make it", 1, true) == nil, textOf())
+
+	Family.Database:Forget("Salter-FireMaw")
+end
 
 -- The total leads, in gold, with where they are behind it: "37 (17 bags, 20 bank)".
 local ownedLine

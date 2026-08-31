@@ -665,6 +665,48 @@ have settled the *access*. And an empty answer is not the same as an unloaded on
 `GetSpellDescription`, which really is empty and really is loaded. That route stays closed; it is
 simply not the only route.
 
+### Things made by using an item, measured 2026-08-31
+
+Refined Deeprock Salt is on nobody's recipe list. It comes out of a **Salt Shaker**, an item
+with a four-day cooldown - so *who can make me one* is really *who owns a shaker, is theirs
+ready, and can they use it*. Family answered none of that and showed only who already held some.
+
+**The chain, in the client's own tables**, since no API exposes it:
+
+    ItemEffect.ParentItemID   the item
+      -> ItemEffect.SpellID   the spell it casts
+      -> SpellEffect where Effect = 24 (create item)
+      -> SpellEffect.EffectItemType   what comes out
+
+Item 15846 (Salt Shaker) casts a spell whose effect 24 creates item 15409 (Refined Deeprock
+Salt), which is the reported case, resolved by the tables rather than by a hand-written pair.
+
+**Only the makers that make you wait.**
+
+| build | items that create an item | of those, on a cooldown |
+|---|---|---|
+| Classic Era | 584 | 58 |
+| Burning Crusade | 1842 | 61 |
+| Mists | 3577 | 131 |
+
+The union of the cooldowned ones is **131 things**. The wider set is noise for this question - a
+Staff of Conjuring makes a Conjured Muffin and a Muisek Vessel makes a Muisek - and being told
+who owns a Lei of Lilies while hovering a Lily Root answers nothing anybody asked. A cooldown is
+what makes an item a thing you go to a particular character for.
+
+**Several items can make one thing**, so each entry is a list. Two `OLDCeremonial Club`s both
+make Broken Tools, and refusing that was the generator's first behaviour and was wrong. Nothing
+is filtered by name: an `OLD` prefix is a judgement about what matters, encoded in a generator.
+
+**Owning it is not using it**, which is the half that was nearly missed. `ItemSparse` carries
+`RequiredSkill` and `RequiredSkillRank`, and for the Salt Shaker they are **165 and 250** -
+Leatherworking at 250. A character can hold one and be no use at all. Three of the 131 makers
+demand a profession this way, and the table carries the condition beside the join:
+
+    [15409] = { { item = 15846, skill = 165, rank = 250 } },
+
+Reported from play, after the first version of this had already been written on ownership alone.
+
 ### Profession specialisations, and what gates a recipe, measured 2026-08-31
 
 A blacksmith is an armoursmith or a weaponsmith and cannot be both; an engineer is gnomish or
