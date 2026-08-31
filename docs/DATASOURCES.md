@@ -792,6 +792,28 @@ because that expansion removed them.
 **What is still learned by watching.** Anything the table has never heard of - and a nil here is
 not a claim that there is no cooldown, only that this table does not know of one.
 
+#### The generated table checked against a live client, measured 2026-08-31
+
+Reported from play: a Burning Crusade tailor who knows Mooncloth was not on the Crafting panel,
+where the same character on Classic Era would have been. The table says Mooncloth has no
+cooldown on that build, and the client was asked whether it agrees. Burning Crusade
+Anniversary 2.5.6, spell 18560:
+
+```
+GetSpellBaseCooldown(18560)   0
+SetSpellByID(18560)           4 lines - title, reagents, flavour text, "Mooncloth"
+                              no cooldown on any of them, left or right
+```
+
+So the client and the build's `SpellCooldowns` agree, and the panel was right: **the cooldown
+moved to the tier above.** Primal Mooncloth (26751), Spellcloth (31373) and Shadowcloth (36686)
+each carry 92h on that build, and plain Mooncloth carries nothing, where Classic Era gives
+18560 a `RecoveryTime` of 96h.
+
+This is the second time an Era habit has been read as a Burning Crusade bug - the first was
+Mote-to-Primal, in the other direction - and it is the argument for the per-expansion tables
+stated as a measurement rather than as a principle.
+
 ### What the server says when an auction is bought out, measured 2026-08-31
 
 Buying something out sends it by mail, exactly as posting to an alt does, so it belongs in the
