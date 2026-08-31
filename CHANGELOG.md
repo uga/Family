@@ -25,7 +25,8 @@ is a decision rather than an afternoon of archaeology.
 - **Only real crafting cooldowns are on the Crafting panel.** Things that have a cooldown and
   make something — a Chronoboon Displacer, a Super Snapper FX, a SnowMaster 9000 — were being
   listed there. A cooldown belongs on that panel when a profession makes the item and another
-  recipe uses what it produces, which on Classic Era means the Salt Shaker and nothing else. It has a cooldown and
+  recipe uses what it produces, and the wait is at least six hours — which means the Salt
+  Shaker on Classic Era and Burning Crusade, and nothing at all on Mists. It has a cooldown and
   makes something, but no profession makes it, so it has no business on that panel.
 
 - **A transmute shows up before you have ever been caught doing one.** Family used to learn

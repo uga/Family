@@ -36,7 +36,7 @@ Family.MadeByItem = {
 	[11834] = { { item = 50742 } },
 	[12241] = { { item = 12287 } },
 	[14894] = { { item = 1315 } },
-	[15409] = { { item = 15846, skill = 165, rank = 250, crafting = true } },
+	[15409] = { { item = 15846, skill = 165, rank = 250 } },
 	[16202] = { { item = 16203 } },
 	[16203] = { { item = 16202 } },
 	[17202] = { { item = 17716, skill = 202, rank = 190 } },
@@ -45,13 +45,13 @@ Family.MadeByItem = {
 	[19696] = { { item = 19697 } },
 	[19858] = { { item = 19707 }, { item = 19708 }, { item = 19709 }, { item = 19710 }, { item = 19711 }, { item = 19712 }, { item = 19713 }, { item = 19714 }, { item = 19715 }, { item = 20880 }, { item = 213170 }, { item = 234145 } },
 	[21536] = { { item = 21540 } },
-	[21884] = { { item = 22574, crafting = true } },
+	[21884] = { { item = 22574 } },
 	[21885] = { { item = 22578 } },
 	[21886] = { { item = 22575 } },
 	[22446] = { { item = 22447 } },
 	[22447] = { { item = 22446 } },
 	[22451] = { { item = 22572 } },
-	[22452] = { { item = 22573, crafting = true } },
+	[22452] = { { item = 22573 } },
 	[22456] = { { item = 22577 } },
 	[22457] = { { item = 22576 } },
 	[22484] = { { item = 22485 } },
@@ -79,12 +79,12 @@ Family.MadeByItem = {
 	[36768] = { { item = 36775 } },
 	[36860] = { { item = 37702 } },
 	[37303] = { { item = 37306 } },
-	[37700] = { { item = 35623, crafting = true } },
-	[37701] = { { item = 35624, crafting = true } },
-	[37702] = { { item = 36860, crafting = true } },
-	[37703] = { { item = 35627, crafting = true } },
-	[37704] = { { item = 35625, crafting = true } },
-	[37705] = { { item = 35622, crafting = true } },
+	[37700] = { { item = 35623 } },
+	[37701] = { { item = 35624 } },
+	[37702] = { { item = 36860 } },
+	[37703] = { { item = 35627 } },
+	[37704] = { { item = 35625 } },
+	[37705] = { { item = 35622 } },
 	[38266] = { { item = 38266 } },
 	[38308] = { { item = 38308 } },
 	[38324] = { { item = 38323 } },
@@ -142,4 +142,19 @@ Family.MadeByItem = {
 	[228325] = { { item = 228323 } },
 	[235143] = { { item = 235142 } },
 	[243065] = { { item = 208196 } },
+}
+
+-- Which of those makers are a **crafting** cooldown, per expansion.
+--
+-- A profession makes the item, something other than that item's own recipe uses what
+-- it makes, and the wait is at least six hours - the same floor the bag scanner
+-- refuses anything under. Read through Family.Capabilities.expansion.
+--
+-- Per expansion because a maker that qualifies on one build often does not on
+-- another: a Mote of Fire has a third of a second on Mists and nothing at all on
+-- Burning Crusade, and a union carried that onto a build where it does not exist.
+Family.CraftingItems = {
+	[1] = { [15846] = true },
+	[2] = { [15846] = true },
+	[5] = {  },
 }

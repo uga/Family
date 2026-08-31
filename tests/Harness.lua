@@ -11207,6 +11207,33 @@ print("crafting cooldowns")
 	check("and it says it is ready", idle and idle.ready == true,
 		tostring(idle and idle.ready))
 
+	-- Per expansion, because a maker that waits on one build does not on another. The salt
+	-- shaker is three days on Era, just under three on Burning Crusade and nothing at all on
+	-- Mists - and a Mote of Fire is a third of a second on Mists and the "no cooldown"
+	-- sentinel on Burning Crusade, which a union carried onto builds where it does not exist.
+	-- Reported from play: Mote to Primal is not a cooldown to show on Burning Crusade.
+	do
+		local heldXpac = Family.Capabilities.expansion
+		check("the salt shaker is a crafting cooldown on Era",
+			Family.Cooldowns:IsCraftingItem(15846) == true)
+
+		Family.Capabilities.expansion = 2
+		check("the salt shaker is one on Burning Crusade too",
+			Family.Cooldowns:IsCraftingItem(15846) == true)
+
+		Family.Capabilities.expansion = 5
+		check("and not on Mists, where it has no cooldown at all",
+			Family.Cooldowns:IsCraftingItem(15846) == false)
+
+		for _, xpac in ipairs { 1, 2, 5 } do
+			Family.Capabilities.expansion = xpac
+			check("a Mote of Fire is not one on expansion " .. xpac,
+				Family.Cooldowns:IsCraftingItem(22574) == false)
+		end
+
+		Family.Capabilities.expansion = heldXpac
+	end
+
 	-- And an entry already on the record from an older rule is filtered where it is *shown*,
 	-- not only where it is written. `cooldownItems` is learned and never pruned, so an item
 	-- that qualified once is on disk for good - which is how a Super Snapper FX survived a fix

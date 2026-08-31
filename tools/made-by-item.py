@@ -45,6 +45,16 @@ BUILDS = {
 # Effect 24 is CREATE_ITEM. Numeric and the same on every build, unlike anything named.
 CREATE_ITEM = 24
 
+# The number Capabilities derives from the interface version, for the per-expansion half.
+EXPANSION = {"Classic Era": 1, "Burning Crusade Anniversary": 2,
+             "Mists of Pandaria Classic": 5}
+
+# The same six hours the bag scanner refuses anything under, and for the same reason: a thing
+# you go to a particular character for waits the better part of a day. A Mote of Fire has a
+# third of a second on Mists and the "no cooldown" sentinel on Burning Crusade, and it reached
+# the Crafting panel on both - the union carried a Mists property onto a build without it.
+CRAFTING_FLOOR_MS = 6 * 60 * 60 * 1000
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, ".made-by-item-cache")
 OUT = os.path.join(HERE, "..", "addons", "Family", "MadeByItem.lua")
@@ -96,6 +106,7 @@ def read(table, build):
 
 def build():
     makers, seen_in = {}, {}
+    crafting = {}
 
     for game, build_id in BUILDS.items():
         # What each maker demands of whoever picks it up. A Salt Shaker is no use to a
@@ -187,8 +198,14 @@ def build():
             # Cured Rugged Hide.
             was = makers.setdefault(made, {}).get(parent)
             elsewhere = usedBy.get(made, set()) - craftedBy.get(parent, set())
-            useful = bool(craftedBy.get(parent)) and bool(elsewhere)
+            longest = max(int(row.get("CoolDownMSec") or 0),
+                          int(row.get("CategoryCoolDownMSec") or 0))
+            useful = (bool(craftedBy.get(parent)) and bool(elsewhere)
+                      and longest >= CRAFTING_FLOOR_MS)
             makers[made][parent] = (skill, rank, useful or bool(was and was[2]))
+
+            if useful:
+                crafting.setdefault(EXPANSION[game], set()).add(parent)
             seen_in.setdefault(made, set()).add(game)
             here += 1
 
@@ -221,12 +238,27 @@ def build():
             if skill:
                 bits.append("skill = %d" % skill)
                 bits.append("rank = %d" % rank)
-            if madeByHand:
-                # Made by a profession, and what it makes is a reagent in one. Both, because
-                # either alone lets a toy through - see the note above the reagent scan.
-                bits.append("crafting = true")
+            # Whether this maker is a *crafting* cooldown is answered by the per-expansion
+            # table below rather than by a flag here, because it differs by build.
             parts.append("{ %s }" % ", ".join(bits))
         lines.append("\t[%d] = { %s }," % (made, ", ".join(parts)))
+    lines += ["}", ""]
+
+    lines += [
+        "-- Which of those makers are a **crafting** cooldown, per expansion.",
+        "--",
+        "-- A profession makes the item, something other than that item's own recipe uses what",
+        "-- it makes, and the wait is at least six hours - the same floor the bag scanner",
+        "-- refuses anything under. Read through Family.Capabilities.expansion.",
+        "--",
+        "-- Per expansion because a maker that qualifies on one build often does not on",
+        "-- another: a Mote of Fire has a third of a second on Mists and nothing at all on",
+        "-- Burning Crusade, and a union carried that onto a build where it does not exist.",
+        "Family.CraftingItems = {",
+    ]
+    for xpac in sorted(EXPANSION.values()):
+        inside = ", ".join("[%d] = true" % item for item in sorted(crafting.get(xpac, ())))
+        lines.append("\t[%d] = { %s }," % (xpac, inside))
     lines += ["}", ""]
 
     with open(OUT, "w", encoding="utf-8") as handle:

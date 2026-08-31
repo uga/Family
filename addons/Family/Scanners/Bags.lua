@@ -140,8 +140,6 @@ local SIX_HOURS = 6 * 60 * 60
 -- ever mention their salt shaker, while the item's own tooltip named them as able to make one
 -- and said "ready now". Two parts of Family answering one question differently, reported from
 -- play with both on screen at once.
-local makersKnown
-
 local function itemHasCooldown(itemID, learned)
 	if learned[itemID] then return true end
 
@@ -152,16 +150,7 @@ local function itemHasCooldown(itemID, learned)
 	-- Deeprock Salt is a reagent in somebody's recipe and a Snapshot of Gammerita is a reagent
 	-- in nothing. The generated table marks the pairs where a profession makes the maker and
 	-- uses what it makes.
-	if not makersKnown and Family.MadeByItem then
-		makersKnown = {}
-		for _, makers in pairs(Family.MadeByItem) do
-			for _, maker in ipairs(makers) do
-				if maker.item and maker.crafting then makersKnown[maker.item] = true end
-			end
-		end
-	end
-
-	return makersKnown ~= nil and makersKnown[itemID] == true
+	return Family.Cooldowns:IsCraftingItem(itemID)
 end
 
 local function itemReadyAt(bag, slot)

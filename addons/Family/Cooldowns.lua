@@ -101,13 +101,14 @@ end
 function Cooldowns:IsCraftingItem(itemID)
 	if not itemID then return false end
 
-	for _, makers in pairs(Family.MadeByItem or {}) do
-		for _, maker in ipairs(makers) do
-			if maker.item == itemID then return maker.crafting == true end
-		end
-	end
+	-- Per expansion: the salt shaker waits three days on Classic Era, just under three on
+	-- Burning Crusade, and has no cooldown at all on Mists. A Mote of Fire has a third of a
+	-- second on Mists and the "no cooldown" sentinel on Burning Crusade, and a union of the
+	-- three carried it onto builds where it does not exist - reported from play.
+	local expansion = Family.Capabilities and Family.Capabilities.expansion
+	local here = expansion and (Family.CraftingItems or {})[expansion]
 
-	return false
+	return (here and here[itemID]) == true
 end
 
 -- Whether a recipe has a cooldown at all, and how long it is, from the client's own tables.
