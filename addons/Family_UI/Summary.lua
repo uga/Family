@@ -172,6 +172,9 @@ local SETS = {
 		id = "crafting", label = L["Crafting"],
 		columns = {},
 		build = function() return craftingColumns() end,
+		-- Only the members who have one. Everybody else is a blank row on a panel whose
+		-- every column is about waiting for something.
+		only = function(meta) return #Family.Cooldowns:Crafting(meta) > 0 end,
 	},
 	{
 		id = "misc", label = L["Miscellaneous"],
@@ -749,12 +752,12 @@ end
 -- Whose they are is never merged away, which is why they are grouped by family rather than
 -- mixed in with our own members and marked somehow. A row that has to be inspected to find
 -- out whose it is has already blurred the one line §6 exists to hold.
-local function gatherSiblings()
+local function gatherSiblings(only)
 	local byRealm = {}
 
 	for _, member in ipairs(Family.Wide:Siblings()) do
 		local meta = member.meta or {}
-		if factionShown(meta.faction) then
+		if factionShown(meta.faction) and (not only or only(meta)) then
 			local realm = meta.realm or L["Unknown realm"]
 			local here = byRealm[realm]
 			if not here then
@@ -787,24 +790,34 @@ local function gatherSiblings()
 	return byRealm
 end
 
-local function gather()
+-- `only` narrows which members get a **row**, and nothing else.
+--
+-- The Crafting set uses it: a family of thirty with three alchemists was twenty-seven blank
+-- lines and three with anything on them, which is a table nobody can read. Asked for from play.
+--
+-- The totals below are counted over everybody regardless, because the line under the window
+-- says what the *family* has and that does not change because a column set is showing fewer
+-- rows. A realm nobody passes the filter on gets no heading at all rather than an empty one.
+local function gather(only)
 	local byRealm, realms = {}, {}
 	local totalMoney, totalFree, totalSlots, count = 0, 0, 0, 0
 
 	for key, entry in pairs(Family.Database:Members()) do
 		local meta = entry.meta
 		if meta and factionShown(meta.faction) then
-			local realm = meta.realm or L["Unknown realm"]
-			if not byRealm[realm] then
-				byRealm[realm] = {}
-				tinsert(realms, realm)
-			end
-			tinsert(byRealm[realm], { key = key, meta = meta })
-
 			totalMoney = totalMoney + (meta.money or 0)
 			totalFree = totalFree + (meta.bagFree or 0)
 			totalSlots = totalSlots + (meta.bagSlots or 0)
 			count = count + 1
+
+			if not only or only(meta) then
+				local realm = meta.realm or L["Unknown realm"]
+				if not byRealm[realm] then
+					byRealm[realm] = {}
+					tinsert(realms, realm)
+				end
+				tinsert(byRealm[realm], { key = key, meta = meta })
+			end
 		end
 	end
 
@@ -812,7 +825,7 @@ local function gather()
 	-- have a heading for them to sit under. Nothing is added to the totals, here or below:
 	-- the money on the totals line is this family's money, and adding somebody else's would
 	-- produce a figure that describes nobody.
-	local siblings = gatherSiblings()
+	local siblings = gatherSiblings(only)
 	for realm in pairs(siblings) do
 		if not byRealm[realm] then
 			byRealm[realm] = {}
@@ -1378,7 +1391,7 @@ local function build(frame)
 			if column.key == "boon" then showsBoon = true end
 		end
 		UI:FitColumns(columns, ROW_BUDGET, measure)
-		local realms, byRealm, totals, siblings = gather()
+		local realms, byRealm, totals, siblings = gather(currentSet.only)
 
 		-- The set being shown is the one you cannot click, which is how the tab strip
 		-- already says the same thing.

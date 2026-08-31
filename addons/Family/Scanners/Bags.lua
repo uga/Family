@@ -145,6 +145,11 @@ function Bags:Scan()
 	local key = Family:CurrentMember()
 
 	local cooldowns = {}
+
+	-- Which items this member has been seen carrying a cooldown on. Learned rather than
+	-- listed: nothing in the client says an item has a cooldown while it is ready.
+	local knownCooldowns = (Family.Database:Meta(key) or {}).cooldownItems or {}
+
 	local boons = 0
 	local bags = {}
 	local generalSlots, generalFree = 0, 0
@@ -231,9 +236,19 @@ function Bags:Scan()
 					-- Things with a cooldown of their own - a salt shaker, a hearth,
 					-- an alchemy stone. Kept beside the crafting cooldowns because the
 					-- question is the same one: what of mine is ready.
+					--
+					-- **A ready one is recorded too, and used to be dropped.** The client
+					-- cannot say "this item has a cooldown and it is not running" any more
+					-- than it can for a recipe, so the same answer is used: once Family has
+					-- seen one counting down it remembers that it has a cooldown at all,
+					-- and `cooldownItems` is where that was already being kept. Without
+					-- this the Crafting panel could only ever show an item while it was
+					-- unavailable - reported from play, and fair.
 					local readyAt = itemReadyAt(bag, slot)
 					if readyAt then
 						cooldowns[#cooldowns + 1] = { id = itemID, readyAt = readyAt }
+					elseif knownCooldowns[itemID] then
+						cooldowns[#cooldowns + 1] = { id = itemID }
 					end
 
 					if itemID == BOON_STORED then boons = boons + (count or 1) end

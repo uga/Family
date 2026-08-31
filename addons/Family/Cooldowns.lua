@@ -69,7 +69,7 @@ function Cooldowns:For(meta)
 	-- While it is still counting down it is a fact and it is kept: "ready in two hours" is
 	-- something Family does know.
 	for _, entry in ipairs(meta.itemCooldowns or {}) do
-		if entry.readyAt > now then
+		if entry.readyAt and entry.readyAt > now then
 			found[#found + 1] = {
 				kind = "item",
 				id = entry.id,
@@ -168,18 +168,23 @@ function Cooldowns:Crafting(meta)
 		end
 	end
 
+	-- Items, running or ready. A ready one is shown here and is still not *announced* at
+	-- login: this panel is a table somebody chose to open and read, and the login message is
+	-- a claim pushed at them. `For` above says why the second one stays cautious - an item is
+	-- used out of the bags with nothing open - and the difference is deliberate.
 	for _, entry in ipairs(meta.itemCooldowns or {}) do
-		if entry.readyAt and entry.readyAt > now then
-			local profession = (meta.cooldownItems or {})[entry.id]
-			local found = group("item\1" .. tostring(entry.id),
-				(entry.id and Family.Names:CachedItem(entry.id))
-					or ("item " .. tostring(entry.id)),
-				profession)
+		local when = entry.readyAt and entry.readyAt > now and entry.readyAt or nil
+		local found = group("item\1" .. tostring(entry.id),
+			(entry.id and Family.Names:CachedItem(entry.id))
+				or ("item " .. tostring(entry.id)),
+			(meta.cooldownItems or {})[entry.id])
 
-			found.count = found.count + 1
-			found.item = entry.id
+		found.count = found.count + 1
+		found.item = entry.id
+
+		if when then
 			found.ready = false
-			found.readyAt = entry.readyAt
+			found.readyAt = when
 		end
 	end
 

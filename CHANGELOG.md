@@ -18,6 +18,14 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Crafting only lists characters who actually have a cooldown.** It used to give every
+  member a row, so a family of thirty with three alchemists was twenty-seven empty lines.
+
+- **The Crafting panel shows what is ready, not only what is waiting.** A salt shaker or
+  anything else with a cooldown of its own vanished from the panel the moment it became
+  usable, which is precisely when you want to see it. Family still says nothing about it at
+  login, because an item can be used without Family ever seeing it happen.
+
 - **Something you buy out at the auction house counts as being in the post.** It arrives by
   mail just as a parcel from an alt does, so it now shows the same way — the buyer's mail count
   goes up straight away, and the item is listed as on its way until they open their mailbox. If

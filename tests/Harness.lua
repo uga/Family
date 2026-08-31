@@ -11102,6 +11102,82 @@ print("crafting cooldowns")
 
 	check("the summary has a set for them", clickLast("Crafting"))
 	check("what is available says so", visibleText("ready"))
+
+	-- An item whose cooldown has come back is shown as ready, and used to vanish instead.
+	-- The bag scan dropped a ready item entirely, so the panel could only ever show a salt
+	-- shaker while it was unavailable - reported from play, and the same complaint as
+	-- "it shows only what is on cooldown".
+	Family.Database:SetMeta(key, {
+		itemCooldowns = { { id = 30046 } },
+		cooldownItems = { [30046] = 165 },
+	})
+	local back = Family.Cooldowns:Crafting(Family.Database:Meta(key))
+	local idle
+	for _, kind in ipairs(back) do
+		if kind.item == 30046 then idle = kind end
+	end
+	check("an item off cooldown is still one of these", idle ~= nil)
+	check("and it says it is ready", idle and idle.ready == true,
+		tostring(idle and idle.ready))
+
+	-- And it is still not *announced* at login. The panel is a table somebody opened; the
+	-- login line is a claim pushed at them, and an item is used out of the bags with nothing
+	-- open for Family to see. That difference is deliberate and this holds it.
+	local announced = Family.Cooldowns:For(Family.Database:Meta(key))
+	local shouted = false
+	for _, entry in ipairs(announced) do
+		if entry.id == 30046 then shouted = true end
+	end
+	check("but a ready item is not announced at login", shouted == false)
+
+	-- The recording half, driven through the real bag scan rather than by writing meta.
+	-- Slot 3 of the backpack has no cooldown running on it; the item in it is one this
+	-- member has been seen with a cooldown on before, which is the only thing that makes
+	-- "ready" sayable at all.
+	do
+		local mine = Family:CurrentMember()
+		local held = Family.Database:Meta(mine).cooldownItems
+		Family.Database:SetMeta(mine, { cooldownItems = { [30046] = 165 } })
+
+		BAGS[0].items[3] = { 30046, 1 }
+		Family.Bags:Scan()
+
+		local recorded
+		for _, entry in ipairs(Family.Database:Meta(mine).itemCooldowns or {}) do
+			if entry.id == 30046 then recorded = entry end
+		end
+		check("a bag scan records an item whose cooldown has come back",
+			recorded ~= nil and recorded.readyAt == nil,
+			tostring(recorded and recorded.readyAt))
+
+		-- And an item nobody has ever seen a cooldown on is not invented as ready. Slot 4
+		-- holds one this member has no history with.
+		BAGS[0].items[4] = { 2589, 1 }
+		Family.Bags:Scan()
+		local invented = false
+		for _, entry in ipairs(Family.Database:Meta(mine).itemCooldowns or {}) do
+			if entry.id == 2589 then invented = true end
+		end
+		check("and does not invent one for an item it has never seen counting down",
+			invented == false)
+
+		BAGS[0].items[3], BAGS[0].items[4] = nil, nil
+		Family.Bags:Scan()
+		Family.Database:SetMeta(mine, { cooldownItems = held or Family.CLEAR })
+	end
+
+	-- Only the members who have a cooldown at all get a row on this set. A family of thirty
+	-- with three alchemists was twenty-seven blank lines.
+	Family.Database:SetMeta("Idle-FireMaw", { name = "Idle", realm = "Fire Maw",
+		level = 60, faction = "Horde" })
+	Family.UI:ShowTab("summary")
+	clickLast("Overview") clickLast("Crafting")
+	check("a member with no cooldown at all is not listed here",
+		visibleText("Idle") == false)
+	clickLast("Overview")
+	check("but is listed on a set that is about everybody", visibleText("Idle"))
+	Family.Database:Forget("Idle-FireMaw")
+	clickLast("Crafting")
 	check("and what is not says when it comes back", visibleText("1h"))
 	check("with the shared one under the profession's name", visibleText("Alchemy"))
 
