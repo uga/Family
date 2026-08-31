@@ -99,6 +99,16 @@ somewhere different depending on what you did last is not an entry point.
 Hovering the minimap button or the broker gives the whole family at a glance: every realm,
 every member with their level and item level, the money, and anything ready or expiring.
 
+**It fits your screen, however many characters you have.** The realm totals, the grand total
+and the warnings are always drawn; the list of characters takes whatever room is left, and says
+`and 14 more` where it had to stop. Which characters survive is decided by money, richest
+first, and the realm you are standing on is served before the others. A family that already
+fitted looks exactly as it did — none of this happens until it has to.
+
+The grand total is always the sum of the realms listed above it. If you have changed what the
+**bar** counts, the tooltip still shows everybody and says near the bottom what the bar itself
+is counting, which is the one number that narrowed.
+
 ![The minimap button hovered: every realm, every member, and the totals](images/broker-tooltip.png)
 
 ---
@@ -328,6 +338,22 @@ Both blocks name the realm on a member only when two members with the same name 
 and mark anybody on the opposing faction.
 
 Turn either off in Options.
+
+---
+
+**Recipes that need a specialisation.** An armoursmith cannot make a sword and a goblin
+engineer cannot make a gnomish one. Where a recipe belongs to a branch, a character on a
+different branch is not offered as able to learn it — the line names the branch it wanted
+instead, in your language. Blacksmithing, Leatherworking and Engineering on Classic Era, those
+plus Tailoring on Burning Crusade, and Engineering alone on Mists, the rest having been removed
+from the game. A character you have not logged into since Family learned to ask says *may know
+it* rather than guessing either way; log in on them once and it fills in.
+
+**Things made by using an item rather than a recipe.** Refined Deeprock Salt is on nobody's
+recipe list — it comes out of a Salt Shaker, which has a four-day cooldown. Hovering the salt
+names whoever owns a shaker **and** has the profession to use it, and says whether theirs is
+ready or when it comes back. Owning one is not enough: a Salt Shaker asks 250 Leatherworking of
+whoever picks it up, so a character holding one without the skill is not listed.
 
 ---
 
