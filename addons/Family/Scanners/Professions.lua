@@ -800,7 +800,41 @@ function Professions:ScanNow(includeRecipes)
 		return (a.readyAt or 0) < (b.readyAt or 0)
 	end)
 
+	-- Which specialisation branches this character took.
+	--
+	-- A blacksmith is an armoursmith or a weaponsmith and cannot be both; an engineer is
+	-- gnomish or goblin. Recipes belonging to a branch cannot be learnt by anybody on the
+	-- other one, so without this Family tells most of the family it "can learn" things it
+	-- never could - the same false claim in a different place (DATASOURCES §2).
+	--
+	-- Asked by id, one question per branch, of the client that knows the answer. A branch is a
+	-- passive spell the character either has or has not, which is a fact in every language.
+	--
+	-- **Two answers and not one.** `known` is what they have; `askedSpecs` says the question
+	-- was put at all. A client with no `IsSpellKnown` writes neither, so a character recorded
+	-- there is *unknown* rather than *has none* - §2.2, and the difference between admitting
+	-- ignorance and asserting an absence.
+	local branches, askedSpecs = nil, false
+
+	if type(_G.IsSpellKnown) == "function" then
+		askedSpecs = true
+		for spell in pairs(Family.Specialisations or {}) do
+			if Family:TryCall(_G.IsSpellKnown, spell) then
+				branches = branches or {}
+				branches[#branches + 1] = spell
+			end
+		end
+		if branches then table.sort(branches) end
+	end
+
 	Family.Database:SetMeta(key, {
+		-- Both written only where the question could be put. `SetMeta` merges and skips a
+		-- nil field, so a client with no `IsSpellKnown` leaves whatever is on the record
+		-- alone rather than erasing it - the same handling the guild gets one file over, and
+		-- for the same reason: clearing on "cannot ask" takes a true fact away from somebody
+		-- because we changed clients.
+		specs = askedSpecs and (branches or Family.CLEAR) or nil,
+		specsSeen = askedSpecs and time() or nil,
 		skills = summary,
 		-- Which language these names are in.
 		--

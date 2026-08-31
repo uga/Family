@@ -13,6 +13,7 @@ tools/.talents-cache/
 tools/.game-words-cache/
 tools/.charged-items-cache/
 tools/.world-buffs-cache/
+tools/.specialisations-cache/
 
 # Bytecode left behind when one generator imports another
 tools/__pycache__/

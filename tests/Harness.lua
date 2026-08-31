@@ -322,6 +322,15 @@ function frameMethods:SetUnitBuff(unit, index)
 	end
 end
 
+-- Which specialisation branches this character has taken, asked one spell at a time.
+--
+-- A branch is a passive spell and `IsSpellKnown` is the whole of the question. Set to nil in
+-- one check below, because a client that cannot be asked has to record *nothing* rather than
+-- "took no branch" - and those two are drawn differently.
+KNOWN_SPELLS = {}
+
+function IsSpellKnown(spellID) return KNOWN_SPELLS[spellID] == true end
+
 ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
 
 function frameMethods:SetItemByID(id)
@@ -1552,7 +1561,7 @@ for _, file in ipairs {
 	-- What each client calls each profession and each race, and which spell each talent
 	-- is, generated from the client's own tables.
 	"SkillLines.lua", "Races.lua", "TalentSpells.lua", "ChargedItems.lua",
-	"WorldBuffs.lua",
+	"WorldBuffs.lua", "Specialisations.lua",
 	"Capabilities.lua", "Codec.lua",
 	"Comm.lua", "Database.lua", "Names.lua", "Index.lua",
 	"Recipes.lua", "Cooldowns.lua",
@@ -3066,6 +3075,117 @@ check("and one too low a level to use it is told which level",
 	tostring(crafters.Young))
 check("a member without the profession is left out entirely",
 	crafters.Other == nil, tostring(crafters.Other))
+
+-- The branch a recipe belongs to, and the members who took a different one
+--
+-- A blacksmith is an armoursmith or a weaponsmith and cannot be both. Recipes belonging to one
+-- branch can never be learnt by anybody on the other, however much skill they gain - so
+-- "can learn it" was a false claim about most of the family for 239 recipe items across the
+-- three builds, and no amount of levelling would have made it true.
+--
+-- Item 11612 needs Armorsmith (9788), taken from ItemSparse.RequiredAbility (DATASOURCES §2).
+;(function()
+	local ARMOURSMITH, WEAPONSMITH, GATED = 9788, 9787, 11612
+
+	check("the generated table knows what the gated item needs",
+		(Family.RecipeNeeds or {})[GATED] == ARMOURSMITH,
+		tostring((Family.RecipeNeeds or {})[GATED]))
+	check("and which profession that branch belongs to",
+		(Family.Specialisations or {})[ARMOURSMITH] == 164,
+		tostring((Family.Specialisations or {})[ARMOURSMITH]))
+
+	local function smith(key, name, fields)
+		local meta = { name = name, realm = "Fire Maw", level = 60,
+			skills = { [164] = { rank = 300, maxRank = 300 } } }
+		for field, value in pairs(fields) do meta[field] = value end
+		Family.Database:SetMeta(key, meta)
+		Family.Database:SetPayload(key, { professions = { [164] = {
+			rank = 300, maxRank = 300, recipesSeen = time(), recipes = {} } } })
+	end
+
+	smith("Plated-FireMaw", "Plated", { specs = { ARMOURSMITH }, specsSeen = time() })
+	smith("Bladed-FireMaw", "Bladed", { specs = { WEAPONSMITH }, specsSeen = time() })
+	smith("Neither-FireMaw", "Neither", { specsSeen = time() })
+	smith("Older-FireMaw", "Older", {})
+
+	local function states(itemID)
+		local by = {}
+		for _, who in ipairs(Family.Recipes:Crafters("Blacksmithing", "Dark Iron Plate",
+			nil, nil, itemID)) do
+			by[who.name] = who
+		end
+		return by
+	end
+
+	local gated = states(GATED)
+
+	check("the member on the branch it needs can learn it",
+		gated.Plated and gated.Plated.state == "can",
+		tostring(gated.Plated and gated.Plated.state))
+	check("the one who took the other branch cannot, however much skill they have",
+		gated.Bladed and gated.Bladed.state == "branch",
+		tostring(gated.Bladed and gated.Bladed.state))
+	check("and is told which branch it wanted, by id",
+		gated.Bladed and gated.Bladed.needs == ARMOURSMITH,
+		tostring(gated.Bladed and gated.Bladed.needs))
+	check("one asked who took no branch at all cannot either",
+		gated.Neither and gated.Neither.state == "branch",
+		tostring(gated.Neither and gated.Neither.state))
+
+	-- §2.2. A member recorded before Family knew to ask has no answer, and inventing one for
+	-- them would be the same mistake in the opposite direction.
+	check("and one nobody has asked says it may know it, not that it cannot",
+		gated.Older and gated.Older.state == "unknown",
+		tostring(gated.Older and gated.Older.state))
+
+	-- The great majority of recipes have no branch, and none of this may touch them.
+	local plain = states(2881)
+	for _, name in ipairs { "Plated", "Bladed", "Neither", "Older" } do
+		check("an ungated recipe is unaffected for " .. name,
+			plain[name] and plain[name].state ~= "branch" and plain[name].needs == nil,
+			tostring(plain[name] and plain[name].state))
+	end
+
+	for _, key in ipairs { "Plated-FireMaw", "Bladed-FireMaw", "Neither-FireMaw",
+		"Older-FireMaw" } do
+		Family.Database:Forget(key)
+	end
+
+	-- And the recording half: the branches this character took, asked of the client by id.
+	local key = Family:CurrentMember()
+
+	KNOWN_SPELLS = { [ARMOURSMITH] = true }
+	Family.Professions:Scan(true)
+	local meta = Family.Database:Members()[key].meta or {}
+	check("a scan records the branch this character took",
+		meta.specs and #meta.specs == 1 and meta.specs[1] == ARMOURSMITH,
+		tostring(meta.specs and meta.specs[1]))
+	check("and stamps when it asked", type(meta.specsSeen) == "number",
+		tostring(meta.specsSeen))
+
+	-- Asked, and the answer was none. Different from never asked, and the tooltip draws them
+	-- differently, so the record has to keep them apart too.
+	KNOWN_SPELLS = {}
+	Family.Professions:Scan(true)
+	meta = Family.Database:Members()[key].meta or {}
+	check("taking no branch is recorded as an answer, not as silence",
+		meta.specs == nil and type(meta.specsSeen) == "number",
+		tostring(meta.specs) .. " " .. tostring(meta.specsSeen))
+
+	-- A client that cannot be asked leaves the record alone. Clearing here would take a true
+	-- fact away from a character because somebody logged in on a different client.
+	KNOWN_SPELLS = { [ARMOURSMITH] = true }
+	Family.Professions:Scan(true)
+	local held = IsSpellKnown
+	IsSpellKnown = nil
+	Family.Professions:Scan(true)
+	meta = Family.Database:Members()[key].meta or {}
+	check("a client with no way of being asked leaves what was recorded alone",
+		meta.specs and meta.specs[1] == ARMOURSMITH and type(meta.specsSeen) == "number",
+		tostring(meta.specs and meta.specs[1]))
+	IsSpellKnown = held
+	KNOWN_SPELLS = {}
+end)()
 
 -- Which recipe an item teaches, across the five languages Family speaks
 --

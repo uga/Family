@@ -550,8 +550,12 @@ end
 -- `required` is the skill the recipe needs, read off the item's own tooltip, and may be nil -
 -- in which case nobody is told they cannot learn it yet, because nothing is known about what
 -- it would take. Guessing there would be worse than the gap.
-function Recipes:Crafters(profession, itemName, required, minLevel)
+function Recipes:Crafters(profession, itemName, required, minLevel, itemID)
 	local found = {}
+
+	-- Which branch this recipe belongs to, if any. Nil for the great majority of recipes,
+	-- which anybody with the profession can learn.
+	local needs = itemID and (Family.RecipeNeeds or {})[itemID] or nil
 
 	-- The item's subtype is a word in this client's language; members are filed by identity.
 	-- Resolving it here is what lets a French client's Couture find a member whose window
@@ -583,14 +587,39 @@ function Recipes:Crafters(profession, itemName, required, minLevel)
 				end
 			end
 
+			-- Whether this member is on the branch the recipe belongs to. Only asked of
+			-- recipes that have one.
+			local onBranch = true
+			if needs then
+				if not meta.specsSeen then
+					-- Never asked. Not the same as "took a different branch", and saying
+					-- so would be inventing an answer for every member recorded before
+					-- Family knew to ask (§2.2). Fills in at their next login.
+					onBranch = nil
+				else
+					onBranch = false
+					for _, spell in ipairs(meta.specs or {}) do
+						if spell == needs then onBranch = true break end
+					end
+				end
+			end
+
 			-- The order these are decided in is the order they are true in. A member who
 			-- knows it is not also short of skill; one whose recipes have never been read
 			-- is not reported as able to learn something they may have learnt years ago.
+			--
+			-- The branch sits above skill and level because it is the one that never
+			-- changes: another twenty points of blacksmithing will come, and an armoursmith
+			-- will still never make a sword.
 			local state
 			if knows then
 				state = "knows"
 			elseif not recipes then
 				state = "unknown"
+			elseif onBranch == nil then
+				state = "unknown"
+			elseif onBranch == false then
+				state = "branch"
 			elseif required and (skill.rank or 0) < required then
 				state = "later"
 			elseif minLevel and minLevel > 0 and (meta.level or 0) < minLevel then
@@ -609,17 +638,25 @@ function Recipes:Crafters(profession, itemName, required, minLevel)
 				maxRank = skill.maxRank,
 				level = meta.level,
 				state = state,
+				-- What they would have had to take. Carried as the spell's id; the word for
+				-- it is the client's to supply, in the language of whoever is reading.
+				needs = needs,
 			}
 		end
 	end
 
 	-- Knows it, then can, then the ones that are only a matter of time, then the ones
-	-- nothing can be said about. Highest skill first inside each, which is the order
-	-- somebody deciding who to send is reading them in.
-	local ORDER = { knows = 1, can = 2, later = 3, level = 4, unknown = 5 }
+	-- nothing can be said about, and last the ones for whom it is never going to happen.
+	-- Highest skill first inside each, which is the order somebody deciding who to send is
+	-- reading them in.
+	--
+	-- A state missing from here sorts as nil and throws inside table.sort, which is how the
+	-- branch state announced itself the moment it was first returned. Anything added above
+	-- has to be added here.
+	local ORDER = { knows = 1, can = 2, later = 3, level = 4, unknown = 5, branch = 6 }
 
 	table.sort(found, function(a, b)
-		if a.state ~= b.state then return ORDER[a.state] < ORDER[b.state] end
+		if a.state ~= b.state then return (ORDER[a.state] or 99) < (ORDER[b.state] or 99) end
 		if (a.rank or 0) ~= (b.rank or 0) then return (a.rank or 0) > (b.rank or 0) end
 		return a.name < b.name
 	end)

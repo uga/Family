@@ -665,6 +665,68 @@ have settled the *access*. And an empty answer is not the same as an unloaded on
 `GetSpellDescription`, which really is empty and really is loaded. That route stays closed; it is
 simply not the only route.
 
+### Profession specialisations, and what gates a recipe, measured 2026-08-31
+
+A blacksmith is an armoursmith or a weaponsmith and cannot be both; an engineer is gnomish or
+goblin. Recipes belonging to a branch cannot be learnt by anybody on another one, ever - so
+*can learn it* was a false claim, and no amount of levelling would have made it true.
+
+**Specialisations are not skill lines**, which is the first thing that was tried and the first
+thing that failed. `SkillLine.ParentSkillLineID` is empty for every profession on Classic Era
+and Burning Crusade; on Mists it names the six cooking ways and nothing else. There is no
+child-skill-line relation to walk.
+
+**`SkillLineAbility` does not carry it either.** A Gnomish Death Ray row and a Copper Chain Belt
+row are the same in every column that exists:
+
+    ID     SkillLine  Spell   MinSkillLineRank  SupercedesSpell  AcquireMethod  Flags
+    6950   202        12759   1                 0                0              0      Gnomish Death Ray
+    1632   164        2661    55                0                0              0      Copper Chain Belt
+
+**It is on the item.** `ItemSparse.RequiredAbility` is the spell a character must already know
+before the item will teach them anything, and that is the whole relation:
+
+| build | gated recipe items | specialisations |
+|---|---|---|
+| Classic Era | 149 | 10 |
+| Burning Crusade | 89 | 13 |
+| Mists | 23 | 14 |
+
+The union is **239 items across 14 specialisations and 5 professions**, and it agrees with what
+players know: Era has Blacksmithing, Leatherworking and Engineering; Burning Crusade adds the
+three Tailoring branches; on Mists only Gnomish and Goblin Engineer still gate anything, the
+rest having been removed from the game.
+
+**`RequiredAbility` is not only specialisations, and this is the trap.** It carries riding
+skills - 514 mount items on Mists alone - and battle pet training. So an ability counts only if
+it is **itself a spell taught under a primary profession's skill line**, which the client's own
+tables answer:
+
+| ability | in `SkillLineAbility` under |
+|---|---|
+| Armorsmith 9788, Weaponsmith 9787, Master Sword/Hammer/Axesmith | Blacksmithing 164 |
+| Dragonscale 10656, Elemental 10658, Tribal 10660 | Leatherworking 165 |
+| Gnomish Engineer 20219, Goblin Engineer 20222 | Engineering 202 |
+| Journeyman Riding 33391, Battle Pet Training 119467, Potion Master 28675 | **not there at all** on Era |
+
+So the filter is a question rather than a list, and `tools/specialisations.py` writes no
+specialisation name into anything.
+
+**One thing that contradicts the common account.** `Potion Master` (28675) gates exactly one
+item on Mists, where it *is* taught under Alchemy - so "alchemy specialisations have no
+exclusive recipes" is true on Era and Burning Crusade and false by one item on Mists. It is in
+the table because the client says it belongs there.
+
+**What this cannot cover.** A specialisation recipe taught only by a trainer has no item and
+therefore no row. That is the right shape for a tooltip - there is nothing to hover - and it is
+a real gap for any other question, so nothing here should be read as a complete list of what a
+branch can make.
+
+**The other half is asked of the client, not of a table.** Which branches a character took is
+`IsSpellKnown(20219)` and its like: a passive spell they either have or have not, answered in
+any language. Recorded as ids, with a stamp saying the question was put at all - a client with
+no `IsSpellKnown` records neither, so *nobody asked* stays distinct from *took no branch*.
+
 ### The same name calls on Era, measured 2026-08-30
 
 `/family guild names` on Classic Era, realm Pyrewood Village, in a 773-member guild:

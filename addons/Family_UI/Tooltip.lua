@@ -160,6 +160,14 @@ local STATE = {
 		return string.format(L["|cffff8040level %d|r"], minLevel or 0)
 	end,
 	unknown = function() return L["|cff9d9d9dmay know it|r"] end,
+	-- Named rather than merely refused. "Cannot learn it" leaves somebody wondering why; the
+	-- branch's own name says why, and says which character to look for instead. The word comes
+	-- from the client, so it is in the reader's language and no list of branches is shipped.
+	branch  = function(who)
+		local name = who.needs and Family:TryCall(GetSpellInfo, who.needs)
+		if not name then return L["|cffff8040another branch|r"] end
+		return string.format(L["|cffff8040needs %s|r"], name)
+	end,
 }
 
 -- How many names either crafters block will list before it starts counting instead. A tooltip
@@ -181,7 +189,7 @@ local function crafterLines(tooltip, itemID)
 	-- requirement written on the tooltip is, and a stack of arcane dust has neither.
 	if not certain and not required then return nil end
 
-	local crafters = Family.Recipes:Crafters(profession, itemName, required, minLevel)
+	local crafters = Family.Recipes:Crafters(profession, itemName, required, minLevel, itemID)
 
 	-- No heading unless somebody has the profession. A recipe for something nobody in the
 	-- family can make is a recipe this block has nothing to say about.

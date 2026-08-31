@@ -16,6 +16,15 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Added
+
+- **Family knows about profession specialisations.** An armoursmith cannot make a sword and a
+  goblin engineer cannot make a gnomish one, and Family used to tell you they could. Recipes
+  that need a branch now say which branch, and characters on a different one are no longer
+  offered as able to learn them. Blacksmithing, Leatherworking and Engineering on Classic Era,
+  those plus Tailoring on Burning Crusade, and Engineering on Mists. A character you have not
+  played since this version says it does not know rather than guessing.
+
 ### Fixed
 
 - **Family said your characters could learn recipes they already knew.** It matched a recipe to

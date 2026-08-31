@@ -37,6 +37,7 @@ Races.lua
 TalentSpells.lua
 ChargedItems.lua
 WorldBuffs.lua
+Specialisations.lua
 Capabilities.lua
 Codec.lua
 Comm.lua
