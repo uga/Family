@@ -16,6 +16,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 1.4.0 — 2026-08-31
+
 ### Fixed
 
 - **An enchanter who already knew a formula was offered it as one to learn.** Family matched

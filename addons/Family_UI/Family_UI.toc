@@ -2,7 +2,7 @@
 ## Title: Family |cff888888(interface)|r
 ## Notes: Everything Family shows you. Requires Family.
 ## Author: Alberto Pittaluga
-## Version: 1.3.0
+## Version: 1.4.0
 ## X-License: GPL-3.0-or-later
 ## X-Website: https://github.com/uga/Family
 ## Dependencies: Family
