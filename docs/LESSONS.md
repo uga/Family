@@ -1275,3 +1275,50 @@ against the sum of the rows read gave 162 against 137 and would not go away no m
 was told about it, and the byte dump that finally settled it was forced by that gap rather than by
 any suspicion. Standing rule: **a probe reports bytes, not conclusions** - `s:byte(i)` over a
 range costs one line and cannot be escaped, doubled, rendered or collapsed on the way back.
+
+## L-036 — `string.lower` is ASCII, and two of the five languages are not
+
+A recipe item and the thing it makes do not agree about capitals, and Family decided *who
+already knows this recipe* by comparing the two as a case-sensitive suffix. Reported from a
+French client: a Potion de Purification the character had learnt years ago was offered as one
+they *could* learn, four lines above another addon saying plainly that they knew it.
+
+The item's name was `Recette : Potion de Purification` and the recipe's was `Potion de
+purification`. One letter.
+
+**The size of it was the finding, not the bug.** Measured afterwards against the client's own
+`ItemSparse` at the pinned Era build, counting every item whose name reads like a recipe:
+
+    client   the two names agree in case   they differ
+    enUS                            1015             4
+    deDE                            1007             0
+    frFR                             856           105
+    esES                               6           920
+    ruRU                              24          1006
+
+So on a Spanish or a Russian client this answered *no* for very nearly every recipe in the
+game. Not a French edge case: **two of the five languages had the feature switched off**, in
+every release, and the only reason nobody said so is that the two languages the work is done in
+are the two that happen to agree.
+
+**The obvious fix would have been half a fix.** `string.lower` folds ASCII and nothing else, so
+it would have rescued Spanish - whose differing letter is usually a plain `e` or `i` - and left
+Russian exactly where it was, while looking like a fix and passing any check written in
+English. What is there instead folds the three ranges the five locales actually use: ASCII, the
+Latin-1 supplement, and Cyrillic. All three preserve byte length, which is what lets the suffix
+arithmetic around it stay as it was.
+
+**Caught by:** eleven checks in `tests/Harness.lua`, every fixture a real pair lifted out of
+`ItemSparse` rather than invented - an invented pair would have been written to match whatever
+the code already did. Six mutations, and the sixth is the one worth keeping: **dropping the
+Cyrillic lead-byte carry failed nothing**, because both Russian fixtures happened to use the
+half of the alphabet that folds within one lead byte. Cyrillic capitals straddle two lead
+bytes; only a third fixture, chosen for the byte and not for the word, exercised the other
+half. A branch is not exercised because the language it serves has a check - it is exercised
+when a fixture reaches that branch, and which fixture that is can be a question about bytes.
+
+The generalisable form: **a comparison written and checked in English is a comparison checked
+in one alphabet.** When a rule touches text the game supplies, the question is not "does this
+work" but "in which of the languages we ship does this work", and the answer is countable from
+the client's own tables rather than arguable.
+

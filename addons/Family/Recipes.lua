@@ -92,17 +92,90 @@ function Recipes:ItemProfession(itemID)
 	return subType, tonumber(minLevel) or 0, tonumber(classID) == RECIPE_CLASS, name
 end
 
+-- Case folded far enough for the five languages Family speaks, which `string.lower` is not.
+--
+-- `string.lower` is ASCII. The game is not: a Russian client calls the book `Рецепт: похлебка
+-- Западного Края` and the thing it makes `Похлебка Западного Края`, and the only difference
+-- between them is a letter `string.lower` will not touch. Measured against the client's own
+-- `ItemSparse` at the pinned Era build, over every item whose name reads like a recipe:
+--
+--     client   the two names agree in case   they differ
+--     enUS                            1015             4
+--     deDE                            1007             0
+--     frFR                             856           105
+--     esES                               6           920
+--     ruRU                              24          1006
+--
+-- So on a Spanish or a Russian client this comparison answered *no* for very nearly every
+-- recipe in the game, and English and German are why nobody saw it.
+--
+-- Three ranges and no more, because those are the alphabets the five locales use: ASCII,
+-- the Latin-1 supplement that carries the accented letters, and Cyrillic. Every one of them
+-- folds without changing the number of bytes, which the arithmetic below depends on.
+local function fold(text)
+	local out, index, last = {}, 1, #text
+
+	while index <= last do
+		local byte = text:byte(index)
+
+		if byte < 0x80 then
+			out[#out + 1] = string.char(byte >= 65 and byte <= 90 and byte + 32 or byte)
+			index = index + 1
+
+		-- À-Þ, minus × at 0x97, which is a multiplication sign and not a letter.
+		elseif byte == 0xC3 and index < last then
+			local second = text:byte(index + 1)
+			if second >= 0x80 and second <= 0x9E and second ~= 0x97 then
+				second = second + 0x20
+			end
+			out[#out + 1] = string.char(0xC3, second)
+			index = index + 2
+
+		-- А-Я, which straddles a lead byte: the first sixteen fold within 0xD0 and the rest
+		-- carry into 0xD1. Ё is filed on its own, away from the run, and folds to ё.
+		elseif byte == 0xD0 and index < last then
+			local second = text:byte(index + 1)
+			if second >= 0x90 and second <= 0x9F then
+				out[#out + 1] = string.char(0xD0, second + 0x20)
+			elseif second >= 0xA0 and second <= 0xAF then
+				out[#out + 1] = string.char(0xD1, second - 0x20)
+			elseif second == 0x81 then
+				out[#out + 1] = string.char(0xD1, 0x91)
+			else
+				out[#out + 1] = string.char(byte, second)
+			end
+			index = index + 2
+
+		else
+			out[#out + 1] = string.char(byte)
+			index = index + 1
+		end
+	end
+
+	return table.concat(out)
+end
+
 -- Whether this item is the one that teaches that recipe.
 --
--- The character before the match has to be something other than a letter or a digit, so a
--- recipe called "Bag" is not taken to be what "Pattern: Frostweave Bag" teaches.
+-- The character before the match has to be something other than a letter or a digit, so that
+-- the tail cannot land in the middle of a word: "Pattern: Frostweave Bag" does not teach a
+-- recipe called "weave Bag". It does *not* stop a one-word recipe matching the last word of a
+-- longer name - "Bag" is preceded by a space and a space is not a letter - and the comment
+-- here claimed for a long time that it did, using that exact example. Checked both ways now.
+--
+-- Compared folded, because a client does not capitalise the name inside the book the same way
+-- it capitalises the thing itself, and which of the two is capitalised differs by language.
+-- The lengths are taken from the unfolded strings on purpose: folding preserves every byte
+-- count above, and the boundary test reads a byte of the original either way.
 local function teaches(itemName, recipeName)
 	if type(itemName) ~= "string" or type(recipeName) ~= "string" then return false end
 	if recipeName == "" or #recipeName > #itemName then return false end
-	if itemName:sub(-#recipeName) ~= recipeName then return false end
-	if #recipeName == #itemName then return true end
 
-	return itemName:sub(-#recipeName - 1, -#recipeName - 1):match("[%w]") == nil
+	local item, recipe = fold(itemName), fold(recipeName)
+	if item:sub(-#recipe) ~= recipe then return false end
+	if #recipe == #item then return true end
+
+	return item:sub(-#recipe - 1, -#recipe - 1):match("[%w]") == nil
 end
 
 -- Who in the family knows one particular recipe, found by its identifier and by nothing else.

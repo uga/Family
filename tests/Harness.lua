@@ -3067,6 +3067,75 @@ check("and one too low a level to use it is told which level",
 check("a member without the profession is left out entirely",
 	crafters.Other == nil, tostring(crafters.Other))
 
+-- Which recipe an item teaches, across the five languages Family speaks
+--
+-- The book and the thing it makes do not agree about capitals, and which of the two is
+-- capitalised differs by language. Every pair below is a real one, taken from the client's own
+-- ItemSparse at the pinned Era build (DATASOURCES §2) rather than invented, because the shape
+-- of the disagreement is the whole point and an invented pair would have been written to
+-- match whatever the code already did.
+--
+-- Reported live on a French client: a Potion de Purification the character had already learnt
+-- was offered as one they *could* learn. Measured afterwards, it was 105 recipes in French,
+-- 920 in Spanish and 1006 in Russian - very nearly every recipe in the game on two of the five
+-- clients - and 4 in English, which is why it went unseen for so long.
+;(function()
+	local teaches = function(item, recipe) return Family.Recipes:Teaches(item, recipe) end
+
+	-- The one that was reported. ASCII letter, French.
+	check("a French book teaches the potion it names in different capitals",
+		teaches("Recette : Potion de Purification", "Potion de purification"))
+
+	-- Cyrillic, which is the case string.lower cannot touch at all and Russian is made of.
+	check("a Russian book teaches its stew", teaches(
+		"\208\160\208\181\209\134\208\181\208\191\209\130: \208\191\208\190\209\133\208\187\208\181\208\177\208\186\208\176 \208\151\208\176\208\191\208\176\208\180\208\189\208\190\208\179\208\190 \208\154\209\128\208\176\209\143",
+		"\208\159\208\190\209\133\208\187\208\181\208\177\208\186\208\176 \208\151\208\176\208\191\208\176\208\180\208\189\208\190\208\179\208\190 \208\154\209\128\208\176\209\143"))
+
+	-- Cyrillic folds in two halves and both need a fixture. Б and П sit at 0xD0 0x91 and
+	-- 0xD0 0x9F and fold within the same lead byte; Т sits at 0xD0 0xA2 and folds to т at
+	-- 0xD1 0x82, carrying into the next one. Dropping the carry failed nothing at all until
+	-- the third fixture below was added - both Russian pairs here used the easy half.
+	check("and its jacket, whose letter folds within one lead byte", teaches(
+		"\208\146\209\139\208\186\209\128\208\190\208\185\208\186\208\176: \208\177\208\181\208\187\209\139\208\185 \208\186\208\190\208\182\208\176\208\189\209\139\208\185 \208\182\208\176\208\186\208\181\209\130",
+		"\208\145\208\181\208\187\209\139\208\185 \208\186\208\190\208\182\208\176\208\189\209\139\208\185 \208\182\208\176\208\186\208\181\209\130"))
+
+	-- The half that carries: Т at 0xD0 0xA2 becomes т at 0xD1 0x82.
+	check("and its boots, whose letter carries into the next lead byte", teaches(
+		"\208\146\209\139\208\186\209\128\208\190\208\185\208\186\208\176: \209\130\208\190\208\189\208\186\208\184\208\181 \208\186\208\190\208\182\208\176\208\189\209\139\208\181 \209\129\208\176\208\191\208\190\208\179\208\184",
+		"\208\162\208\190\208\189\208\186\208\184\208\181 \208\186\208\190\208\182\208\176\208\189\209\139\208\181 \209\129\208\176\208\191\208\190\208\179\208\184"))
+
+	-- An accented capital, which is the Latin-1 branch and is exercised by exactly one recipe
+	-- in French and three in Spanish. Rare is not the same as absent.
+	check("a French book whose difference is an accented letter",
+		teaches("Recette : \195\169lixir des regrets accumul\195\169s",
+			"\195\137lixir des regrets accumul\195\169s"))
+	check("and a Spanish one", teaches("F\195\179rmula: \195\173dolo de c\195\179lera sideral",
+		"\195\141dolo de c\195\179lera sideral"))
+
+	-- English and German agreed all along, and must go on agreeing.
+	check("an English book still teaches what it always did",
+		teaches("Recipe: Elixir of Fortitude", "Elixir of Fortitude"))
+	check("a German one too", teaches("Rezept: Heiltrank", "Heiltrank"))
+	check("and the four English recipes that never matched now do",
+		teaches("Schematic: EZ-Thro Dynamite", "Ez-Thro Dynamite"))
+
+	-- Folding must not start matching things that are not the same recipe. The boundary rule
+	-- is what stops a tail landing in the middle of a word.
+	check("a name starting mid-word is still not what the book teaches",
+		teaches("Pattern: Frostweave Bag", "weave Bag") == false)
+
+	-- And what the boundary rule does *not* do, which the comment above it used to claim it
+	-- did. A one-word recipe matching the last word of a longer name is allowed through,
+	-- because a space is not a letter. Written down as behaviour rather than left as a
+	-- sentence in a comment that nothing was holding to account.
+	check("but a whole word at the end is, space being no letter",
+		teaches("Pattern: Frostweave Bag", "Bag"))
+	check("and a different recipe entirely is still not",
+		teaches("Recipe: Elixir of Fortitude", "Elixir of Defence") == false)
+	check("nor is a recipe name longer than the item's",
+		teaches("Rezept: Heiltrank", "Rezept: Heiltrank und mehr") == false)
+end)()
+
 -- Whose side a member is on decides what can be done about an item at all: their bank is a
 -- different bank and their auction house is a different auction house. So anybody on the
 -- other side to the player is marked, and nobody on the same side is.

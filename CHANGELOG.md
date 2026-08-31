@@ -16,6 +16,14 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Fixed
+
+- **Family said your characters could learn recipes they already knew.** It matched a recipe to
+  the thing it makes by name, and a recipe book does not capitalise that name the way the item
+  itself does — so a Potion de Purification you learnt years ago was offered as one to learn.
+  This was worst in Spanish and Russian, where it affected very nearly every recipe in the
+  game, and rare in English and absent in German, which is why it lasted so long.
+
 ## 1.2.0 — 2026-08-31
 
 ### Added
