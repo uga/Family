@@ -21,6 +21,11 @@ is a decision rather than an afternoon of archaeology.
 - **Crafting only lists characters who actually have a cooldown.** It used to give every
   member a row, so a family of thirty with three alchemists was twenty-seven empty lines.
 
+- **A character's salt shaker shows on Crafting without having been caught mid-cooldown.**
+  Family used to need to have seen one counting down before it would mention it at all, so a
+  character could be named on the item's own tooltip as able to make one while the panel said
+  nothing about them.
+
 - **The Crafting panel shows what is ready, not only what is waiting.** A salt shaker or
   anything else with a cooldown of its own vanished from the panel the moment it became
   usable, which is precisely when you want to see it. Family still says nothing about it at

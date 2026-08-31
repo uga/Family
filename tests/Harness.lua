@@ -11150,8 +11150,24 @@ print("crafting cooldowns")
 			recorded ~= nil and recorded.readyAt == nil,
 			tostring(recorded and recorded.readyAt))
 
+		-- A maker nobody has ever been caught mid-cooldown with is still recorded as ready.
+		-- The generated table says the salt shaker has a cooldown, so nothing has to be
+		-- watched first - which is the difference between the panel and the item tooltip
+		-- that was reported: the tooltip named a character as able to make one and said
+		-- "ready now" while the panel did not list them at all.
+		BAGS[0].items[5] = { 15846, 1 }
+		Family.Bags:Scan()
+		local shaker
+		for _, entry in ipairs(Family.Database:Meta(mine).itemCooldowns or {}) do
+			if entry.id == 15846 then shaker = entry end
+		end
+		check("a salt shaker nobody has watched counting down is still ready",
+			shaker ~= nil and shaker.readyAt == nil, tostring(shaker and shaker.readyAt))
+		BAGS[0].items[5] = nil
+
 		-- And an item nobody has ever seen a cooldown on is not invented as ready. Slot 4
-		-- holds one this member has no history with.
+		-- holds one this member has no history with, and which the generated table has never
+		-- heard of either.
 		BAGS[0].items[4] = { 2589, 1 }
 		Family.Bags:Scan()
 		local invented = false

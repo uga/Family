@@ -129,6 +129,34 @@ end
 -- for are comfortably clear of it.
 local SIX_HOURS = 6 * 60 * 60
 
+-- Which items carry a cooldown at all, whether or not anybody has watched one run.
+--
+-- Two answers, and the second one is why this exists. **Learned**: an item Family has seen
+-- counting down on this member, kept in `cooldownItems`. **Generated**: `MadeByItem` holds, by
+-- construction, only makers that make you wait - the filter that builds it is the presence of
+-- a cooldown (DATASOURCES §2) - so its makers are exactly the items that have one, free.
+--
+-- Without the second, a character had to be caught mid-cooldown once before the panel would
+-- ever mention their salt shaker, while the item's own tooltip named them as able to make one
+-- and said "ready now". Two parts of Family answering one question differently, reported from
+-- play with both on screen at once.
+local makersKnown
+
+local function itemHasCooldown(itemID, learned)
+	if learned[itemID] then return true end
+
+	if not makersKnown and Family.MadeByItem then
+		makersKnown = {}
+		for _, makers in pairs(Family.MadeByItem) do
+			for _, maker in ipairs(makers) do
+				if maker.item then makersKnown[maker.item] = true end
+			end
+		end
+	end
+
+	return makersKnown ~= nil and makersKnown[itemID] == true
+end
+
 local function itemReadyAt(bag, slot)
 	local start, duration = Family:TryCall(GetCooldown, bag, slot)
 	if not start or start == 0 then return nil end
@@ -247,7 +275,7 @@ function Bags:Scan()
 					local readyAt = itemReadyAt(bag, slot)
 					if readyAt then
 						cooldowns[#cooldowns + 1] = { id = itemID, readyAt = readyAt }
-					elseif knownCooldowns[itemID] then
+					elseif itemHasCooldown(itemID, knownCooldowns) then
 						cooldowns[#cooldowns + 1] = { id = itemID }
 					end
 
