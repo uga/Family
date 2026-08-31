@@ -334,6 +334,13 @@ Hover a **recipe** and it adds a **Family crafters** block: who already knows it
 learn it today, and who has the profession but is not high enough yet. Only members with that
 profession are listed, because nobody else is an answer to the question.
 
+**A recipe is recognised by what it is, not by what it is called.** The trade skill window
+abbreviates some names and shortens others, and a family played across languages writes them
+down in whichever one scanned them — so matching on the word left an enchanter who had known a
+formula for a year being offered it as one to learn. Family matches on the recipe a book
+teaches and on the thing that recipe makes, both of which are numbers and the same in every
+language. The word is still read for the few recipes neither number is known for.
+
 Both blocks name the realm on a member only when two members with the same name are listed,
 and mark anybody on the opposing faction.
 
@@ -402,10 +409,22 @@ nothing in the game says which profession it answers to — but Family records w
 makes, so an item on cooldown that one of your own recipes produces belongs to that recipe's
 profession.
 
-**A column appears only once Family has seen that cooldown running at least once.** The client
-will not say that a recipe *has* a cooldown while it is ready — a ready transmute and a bandage
-look identical to it — so Family learns which recipes have one by watching them run. Until then
-a member is blank rather than shown as available, because blank is what is true.
+**A transmute shows up before you have ever been caught doing one.** Family used to learn that
+a recipe had a cooldown only by watching one run, so an alchemist nobody had seen mid-transmute
+was simply blank. It now knows from the game's own tables which recipes carry one — and knows it
+per expansion, because the same recipe differs: mithril to truesilver is two days on Classic
+Era, twenty hours on Burning Crusade and gone on Mists, and Family says whichever of those is
+true where you are playing. Watching still fills in anything those tables have never heard of,
+and a member Family has nothing on is blank rather than shown as available, because blank is
+what is true.
+
+**Only members who have a crafting cooldown are listed.** Thirty members with three alchemists
+is three rows rather than twenty-seven blank ones. The totals under the window still count
+everybody, because that line says what the family has and does not change because a panel is
+showing fewer rows.
+
+**Columns are named in your language**, whichever client recorded the cooldown. A mooncloth
+scanned on a French character is not headed *Étoffe lunaire* on an English one.
 
 What is ready is on the broker tooltip and is announced when you log in. Turn the
 announcement off in Options. `/family ready` lists them by name, which is how you check what
@@ -424,7 +443,9 @@ differently. Using a craft needs the profession window open and Family reads tha
 transmute still reading *ready* really has not been used. Using an item needs nothing open at
 all — so once an item's cooldown elapses Family knows only that it was running the last time
 anybody looked, which is not the same as *waiting for you*. Those stop being reported when
-they come ready. While they are counting down they are shown, because that much is knowable.
+they come ready. The panel shows them either way — ready or counting down — because a panel is
+a table you opened and are reading against the ages beside it, and a salt shaker you cannot see
+is exactly what you opened it to find.
 
 A cooldown appears only if it was seen. One that started while the profession window was shut
 is not known until the window is next opened, and *no cooldown seen* is what Family says
