@@ -155,6 +155,27 @@ local function fold(text)
 	return table.concat(out)
 end
 
+-- Which spell a recipe item teaches, from the client's own tables.
+--
+-- The name test below is the fallback and was the only test. It compares the item's name
+-- against the names in a member's recipe list, and for enchanting those never agree: the trade
+-- skill window abbreviates. A French client lists `Ench. de bottes (Agilite superieure)` and
+-- names the formula `Formule : Enchantement de bottes (Agilite superieure)`, so the suffix
+-- test failed and an enchanter who had known it for a year was offered it as one to learn.
+-- Reported from play.
+--
+-- The ids were on both sides the whole time. `RecipeTeaches.lua` is the join, generated from
+-- ItemEffect and SpellEffect, and matching on it is exact: no abbreviation, no language, no
+-- suffix rule. Per expansion, because the builds disagree about a few items.
+function Recipes:TaughtBy(itemID)
+	if not itemID then return nil end
+
+	local expansion = Family.Capabilities and Family.Capabilities.expansion
+	local here = expansion and (Family.RecipeTeaches or {})[expansion]
+
+	return here and here[itemID] or nil
+end
+
 -- Whether this item is the one that teaches that recipe.
 --
 -- The character before the match has to be something other than a letter or a digit, so that
@@ -190,6 +211,10 @@ end
 -- a crafted object cannot answer for it at all - and the panel two inches away was listing
 -- the very people the tooltip left out.
 function Recipes:KnowersOf(spellID, itemID, itemName)
+	-- Where the caller has only the item, the client's tables often know which spell it
+	-- teaches - and an id settles it where a name cannot.
+	spellID = spellID or self:TaughtBy(itemID)
+
 	if not ((spellID and spellID ~= 0) or (itemID and itemID ~= 0) or itemName) then
 		return {}
 	end
@@ -583,6 +608,10 @@ function Recipes:Crafters(profession, itemName, required, minLevel, itemID)
 	-- which anybody with the profession can learn.
 	local needs = itemID and (Family.RecipeNeeds or {})[itemID] or nil
 
+	-- And which spell it teaches, where the client's tables know. An id beats every name
+	-- test below it and is what makes this right for enchanting at all.
+	local taught = self:TaughtBy(itemID)
+
 	-- The item's subtype is a word in this client's language; members are filed by identity.
 	-- Resolving it here is what lets a French client's Couture find a member whose window
 	-- was opened in English - which it could not do while both sides were words.
@@ -601,6 +630,11 @@ function Recipes:Crafters(profession, itemName, required, minLevel, itemID)
 			local knows = false
 			if recipes then
 				for _, recipe in ipairs(recipes) do
+					if taught and recipe.spellID == taught then
+						knows = true
+						break
+					end
+
 					-- Both sides of this in the same language. itemName comes from the
 					-- client and is therefore in the reader's, and the recorded recipe
 					-- name is in whoever scanned it - so this compared a French item

@@ -16,6 +16,13 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Fixed
+
+- **An enchanter who already knew a formula was offered it as one to learn.** Family matched
+  recipes by name, and the trade skill window abbreviates where the item does not — so nothing
+  in enchanting ever matched. It now matches on the spell the formula teaches, which is a
+  number and the same in every language.
+
 ### Added
 
 - **Crafting column headings are in your language.** A recipe recorded on a French client was

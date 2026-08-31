@@ -1590,6 +1590,7 @@ for _, file in ipairs {
 	-- is, generated from the client's own tables.
 	"SkillLines.lua", "Races.lua", "TalentSpells.lua", "ChargedItems.lua",
 	"WorldBuffs.lua", "Specialisations.lua", "MadeByItem.lua", "RecipeCooldowns.lua",
+	"RecipeTeaches.lua",
 	"Capabilities.lua", "Codec.lua",
 	"Comm.lua", "Database.lua", "Names.lua", "Index.lua",
 	"Recipes.lua", "Cooldowns.lua",
@@ -3359,6 +3360,89 @@ check("and one too low a level to use it is told which level",
 	tostring(crafters.Young))
 check("a member without the profession is left out entirely",
 	crafters.Other == nil, tostring(crafters.Other))
+
+-- An enchanter who already knows the formula
+--
+-- The crafters block decided "already knows it" by matching the item's name against the names
+-- in a member's recipe list. Enchanting never agrees with itself there: the trade skill window
+-- abbreviates. A French client lists "Ench. de bottes (Agilite superieure)" and names the
+-- formula "Formule : Enchantement de bottes (Agilite superieure)", so the suffix test failed
+-- and an enchanter who had known the recipe for a year was offered it as one to learn.
+-- Reported from play, with the debug output showing all 132 enchanting recipes carrying a
+-- spell id and no item id at all.
+--
+-- 16245 is Formula: Enchant Boots - Greater Agility and it teaches spell 20023.
+;(function()
+	local FORMULA, TAUGHT = 16245, 20023
+
+	check("the generated table knows what the formula teaches",
+		Family.Recipes:TaughtBy(FORMULA) == TAUGHT,
+		tostring(Family.Recipes:TaughtBy(FORMULA)))
+
+	Family.Database:SetMeta("Enchantress-FireMaw", { name = "Enchantress", realm = "Fire Maw",
+		level = 60, skills = { [333] = { rank = 300, maxRank = 300 } } })
+	Family.Database:SetPayload("Enchantress-FireMaw", { professions = { [333] = {
+		rank = 300, maxRank = 300, recipesSeen = time(),
+		-- Recorded exactly as the window hands it over: abbreviated, in another language,
+		-- and with no item id at all. Every one of those is why the name test cannot work.
+		recipes = { { name = "Ench. de bottes (Agilite superieure)", spellID = TAUGHT } } } } })
+
+	local by = {}
+	for _, who in ipairs(Family.Recipes:Crafters("Enchanting", "Formula: Enchant Boots - "
+		.. "Greater Agility", nil, nil, FORMULA)) do
+		by[who.name] = who
+	end
+
+	check("an enchanter who knows it is not offered it",
+		by.Enchantress and by.Enchantress.state == "knows",
+		tostring(by.Enchantress and by.Enchantress.state))
+
+	-- And one who does not know it still reads as able to learn it, or the fix would be a
+	-- claim that everybody knows everything.
+	Family.Database:SetPayload("Enchantress-FireMaw", { professions = { [333] = {
+		rank = 300, maxRank = 300, recipesSeen = time(),
+		recipes = { { name = "Ench. d'arme (Agilite)", spellID = 23800 } } } } })
+
+	local without = {}
+	for _, who in ipairs(Family.Recipes:Crafters("Enchanting", "Formula: Enchant Boots - "
+		.. "Greater Agility", nil, nil, FORMULA)) do
+		without[who.name] = who
+	end
+	check("and one who does not still reads as able to learn it",
+		without.Enchantress and without.Enchantress.state == "can",
+		tostring(without.Enchantress and without.Enchantress.state))
+
+	-- Per expansion, because the builds disagree about a few items: 23133 teaches 28903 on
+	-- Mists and 28906 on Burning Crusade, and Era has never heard of it. Without a pair like this the per-expansion lookup could
+	-- be pointed at any one table and nothing would fail - most items teach the same spell
+	-- everywhere, so the ones that do not are the only fixtures worth having.
+	do
+		local held = Family.Capabilities.expansion
+		Family.Capabilities.expansion = 2
+		local onTBC = Family.Recipes:TaughtBy(23133)
+		Family.Capabilities.expansion = 5
+		local onMists = Family.Recipes:TaughtBy(23133)
+		Family.Capabilities.expansion = held
+
+		check("an item the builds disagree about is answered per build",
+			onTBC ~= nil and onMists ~= nil and onTBC ~= onMists,
+			tostring(onTBC) .. " vs " .. tostring(onMists))
+	end
+
+	-- And the block on the crafted thing resolves it too: given the item and no spell, the
+	-- table supplies the spell, which is what "who can make one of these" is matched on.
+	Family.Database:SetPayload("Enchantress-FireMaw", { professions = { [333] = {
+		rank = 300, maxRank = 300, recipesSeen = time(),
+		recipes = { { name = "Ench. de bottes (Agilite superieure)", spellID = TAUGHT } } } } })
+
+	local found = false
+	for _, who in ipairs(Family.Recipes:KnowersOf(nil, FORMULA, nil)) do
+		if who.key == "Enchantress-FireMaw" then found = true end
+	end
+	check("and asking by item alone finds who knows the spell it teaches", found)
+
+	Family.Database:Forget("Enchantress-FireMaw")
+end)()
 
 -- The branch a recipe belongs to, and the members who took a different one
 --

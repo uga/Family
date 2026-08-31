@@ -40,6 +40,7 @@ WorldBuffs.lua
 Specialisations.lua
 MadeByItem.lua
 RecipeCooldowns.lua
+RecipeTeaches.lua
 Capabilities.lua
 Codec.lua
 Comm.lua

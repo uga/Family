@@ -665,6 +665,49 @@ have settled the *access*. And an empty answer is not the same as an unloaded on
 `GetSpellDescription`, which really is empty and really is loaded. That route stays closed; it is
 simply not the only route.
 
+### Which spell a recipe item teaches, measured 2026-09-01
+
+Who already knows a recipe was decided by matching the item's name against the names in a
+member's recipe list. For enchanting those never agree, because the trade skill window
+abbreviates: a French client lists `Ench. de bottes (Agilité supérieure)` and names the formula
+`Formule : Enchantement de bottes (Agilité supérieure)`. The suffix test fails, and an
+enchanter who has known the recipe for a year is offered it as one to learn. Reported from
+play, with `/family recipes` showing all 132 enchanting recipes carrying a spell id and **no**
+item id.
+
+The ids were on both sides all along. A recipe item's spell teaches another, and the taught one
+is the id the window hands back:
+
+    ItemEffect.ParentItemID  16245  Formula: Enchant Boots - Greater Agility
+      -> ItemEffect.SpellID  20080
+      -> SpellEffect Effect 36 (learn spell), EffectTriggerSpell 20023
+                             20023  the enchant, which is what the recipe list records
+
+**Two shapes, and only one of them was handled at first.** Classic Era uses the trigger form
+above. On Burning Crusade and Mists a recipe item carries *two* `ItemEffect` rows - a generic
+spell 483 with effect 36 and no trigger, and the craft spell itself:
+
+    728  Recipe: Westfall Stew   spells 483 and 2543
+         483   effect 36, trigger 0
+         2543  effect 24, creates item 733
+
+Reading only the trigger form gave **1008 items on Era and none at all on the other two**, which
+is what a generator quietly answering nothing looks like. The rule is: the row's own spell where
+a profession teaches it, or the trigger of an effect-36 row where a profession teaches that.
+
+| build | recipe items |
+|---|---|
+| Classic Era | 1008 |
+| Burning Crusade | 1480 |
+| Mists | 3346 |
+
+**Per expansion, because they disagree.** Item 23133 teaches 28903 on Mists and 28906 on
+Burning Crusade. A union would assert one build's answer on another - the same fault the
+cooldown tables were corrected for twice on the same day.
+
+Only where the taught spell is one a profession teaches, which keeps out mounts, riding and
+everything else that also learns a spell from an item.
+
 ### Which recipes have a cooldown, measured 2026-09-01
 
 `GetTradeSkillCooldown` answers with the time remaining and answers **nothing** when there is
