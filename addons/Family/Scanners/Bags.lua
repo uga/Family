@@ -116,8 +116,17 @@ end
 -- as having something ready. Nobody has ever needed telling that.
 --
 -- Six hours: comfortably above a hearthstone, a trinket and a mana stone, comfortably below
--- anything on a daily. There is no profession item under a day, so nothing worth reporting
--- falls through it.
+-- anything on a daily.
+--
+-- **One profession item does fall through it**, and this used to claim none did. Blingtron
+-- 4000 has a four-hour cooldown on Mists - measured 2026-08-31 - so an engineer's Blingtron is
+-- never reported. Lowering the floor to catch it is the wrong trade: 259 items on that build
+-- carry a cooldown between half an hour and six hours, and the company Blingtron keeps in that
+-- band is reputation tabards, guild cloaks, wormhole generators and transporters. Catching one
+-- and admitting the rest would make the login message useless, and catching it *alone* means an
+-- allow-list of items somebody has judged to matter, which goes stale the first time Blizzard
+-- adds another. The salt shaker is 72 hours and the Snowmaster 24, so the ones this was written
+-- for are comfortably clear of it.
 local SIX_HOURS = 6 * 60 * 60
 
 local function itemReadyAt(bag, slot)
