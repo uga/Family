@@ -1022,6 +1022,26 @@ is a revert to the last commit, it cannot see which of the changes in that file 
 throw away, and there is no confirmation. To drop a temporary edit, remove the temporary edit -
 by hand, or from a copy taken before it was made.
 
+### Postscript, 2026-08-31 — done again, two days later
+
+`git checkout tests/Harness.lua` again, to back out a block with a syntax error in it, on a file
+carrying uncommitted work. It cost almost nothing this time - the only unsaved thing was the
+broken block itself, and everything else had been committed minutes earlier - which is luck and
+not care.
+
+Worth recording because of *when* it happened. The scratchpad-copy habit this entry asks for was
+being followed correctly all session, several times an hour, for **mutation testing**: copy the
+file, mutate, run, restore. It was not followed for "undo a bad edit", which did not feel like
+the same operation and is exactly the same operation.
+
+So the shape of the failure is not forgetting the rule. It is having filed the rule under one
+activity. **A habit attached to a situation does not fire in a situation that looks different**,
+and "back out this edit" and "restore after a mutation" look different and are not.
+
+**Caught by:** nothing, again, and the check is still the same one: `git status` before any
+`checkout`, and a scratchpad copy before any edit worth backing out. What has changed is the
+trigger - not *before mutating* but **before any `git checkout` of any file, for any reason**.
+
 ## L-030 — A check sited at a filename, and a guard that watched the wrong half
 
 The rule that every sentence Family says to a player must exist in all four languages was

@@ -187,6 +187,32 @@ local function knownSides(here)
 	return known
 end
 
+-- How many lines this screen has room for.
+--
+-- A tooltip does not scroll and is not clipped politely: a family of thirty runs off the top
+-- and the bottom at once, and what goes off the bottom is the grand total and the warnings -
+-- the answers, while the detail survives. Reported with a screenshot of exactly that.
+--
+-- Derived rather than chosen. A constant that fits one screen is wrong on a laptop at 0.8 UI
+-- scale and wasteful on a tall one, and the client knows the height of its own screen and the
+-- size of its own font. Nine tenths, because a tooltip anchored to a minimap button does not
+-- start at the top of the screen.
+local MINIMUM_ROWS = 6
+local SAFE_FRACTION = 0.9
+local FALLBACK_FONT = 12
+local LINE_PADDING = 2.5
+
+local function rowsOnScreen()
+	local parent = _G.UIParent
+	local height = tonumber((Family:TryCall(parent and parent.GetHeight, parent))) or 768
+
+	local font = _G.GameTooltipText
+	local size = font and select(2, Family:TryCall(font.GetFont, font))
+	local line = (tonumber(size) or FALLBACK_FONT) + LINE_PADDING
+
+	return math.max(math.floor(height * SAFE_FRACTION / line), MINIMUM_ROWS)
+end
+
 -- A tooltip has two columns and no more, so level and item level ride with the name on the
 -- left and money holds the right on its own. That is the one column where alignment earns
 -- anything: a column of gold amounts is read by comparing lengths, and the rest is not.
@@ -206,6 +232,82 @@ local function describe(tooltip)
 	-- once, at the top. The money column labels itself by being money, and is named here
 	-- only because a heading over one of two columns reads as though the other has none.
 	tooltip:AddDoubleLine(L["|cff888888name, level, item level|r"], L["|cff888888money|r"])
+
+	-- What actually carries member rows: one group per faction where a realm is split, one
+	-- per realm where it is not. Everything else on this tooltip is structure, and structure
+	-- is what must never be the thing that falls off the screen.
+	local groups = {}
+	for _, realm in ipairs(order) do
+		local here = realms[realm]
+		if knownSides(here) > 1 then
+			for _, side in ipairs(here.sides) do
+				groups[#groups + 1] = { realm = realm, list = here.bySide[side].members,
+					money = here.bySide[side].money }
+			end
+		else
+			groups[#groups + 1] = { realm = realm, list = here.members, money = here.money }
+		end
+	end
+
+	-- Counted, not guessed. Every one of these is a row this function is about to draw, and
+	-- the conditions are the same ones the code below tests.
+	local structure = 2
+	for _, realm in ipairs(order) do
+		structure = structure + 2
+		if knownSides(realms[realm]) > 1 then
+			structure = structure + #realms[realm].sides
+		end
+	end
+	structure = structure + #groups                          -- one "and N more" apiece, at worst
+	if #order > 1 then structure = structure + 2 end         -- the grand total
+	if #Family.Cooldowns:Ready() > 0 then structure = structure + 2 end
+	if needsAttention > 0 then structure = structure + 2 end
+	if UI:BrokerScope() ~= "all" then structure = structure + 2 end
+	structure = structure + 2                                -- the footer
+
+	local members = 0
+	for _, group in ipairs(groups) do members = members + #group.list end
+
+	local budget = rowsOnScreen() - structure
+	local trimming = members > budget
+
+	-- Nothing changes at all for a family that fits, which is nearly everybody: same order,
+	-- same rows, same tooltip. The trimming below is a second mode and not a new default.
+	local take = {}
+	if trimming then
+		-- Richest first, and only while trimming. On a tooltip whose subject is money, the
+		-- characters worth keeping are the ones the number is mostly about - and listing them
+		-- in that order is what makes it obvious why those are the ones that stayed.
+		local function richestFirst(a, b)
+			local moneyA, moneyB = a.meta.money or 0, b.meta.money or 0
+			if moneyA ~= moneyB then return moneyA > moneyB end
+			return (a.meta.name or "") < (b.meta.name or "")
+		end
+		for _, group in ipairs(groups) do table.sort(group.list, richestFirst) end
+
+		-- The realm you are standing on is served first and in full if it fits: it is the one
+		-- whose gold you can actually spend today, which is the argument the money scope
+		-- already makes. The rest take what is left, richest group first.
+		local ours = Family.Database:Members()[Family:CurrentMember()]
+		local home = ours and ours.meta and ours.meta.realm
+
+		local queue = {}
+		for _, group in ipairs(groups) do queue[#queue + 1] = group end
+		table.sort(queue, function(a, b)
+			local mineA = (a.realm == home) and 1 or 0
+			local mineB = (b.realm == home) and 1 or 0
+			if mineA ~= mineB then return mineA > mineB end
+			if a.money ~= b.money then return a.money > b.money end
+			return tostring(a.realm) < tostring(b.realm)
+		end)
+
+		local left = budget
+		for _, group in ipairs(queue) do
+			local room = math.max(math.min(#group.list, left), 0)
+			take[group.list] = room
+			left = left - room
+		end
+	end
 
 	local function drawMember(member, indent)
 		local meta = member.meta
@@ -227,6 +329,20 @@ local function describe(tooltip)
 			UI:Money(meta.money), r, g, b, 1, 1, 1)
 	end
 
+	-- Whatever room this group was given, and a line saying what was left out. A family that
+	-- is quietly shown as smaller than it is would be worse than one that does not fit.
+	local function drawGroup(list, indent)
+		local limit = take[list] or #list
+		if limit > #list then limit = #list end
+
+		for index = 1, limit do drawMember(list[index], indent) end
+
+		if limit < #list then
+			tooltip:AddLine(indent .. string.format(L["|cff888888and %d more|r"],
+				#list - limit))
+		end
+	end
+
 	for _, realm in ipairs(order) do
 		local here = realms[realm]
 
@@ -244,10 +360,10 @@ local function describe(tooltip)
 					UI:Money(group.money),
 					colour[1], colour[2], colour[3], 0.8, 0.8, 0.8)
 
-				for _, member in ipairs(group.members) do drawMember(member, "    ") end
+				drawGroup(group.members, "    ")
 			end
 		else
-			for _, member in ipairs(here.members) do drawMember(member, "") end
+			drawGroup(here.members, "")
 		end
 	end
 

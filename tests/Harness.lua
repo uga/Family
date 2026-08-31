@@ -5322,6 +5322,69 @@ do
 	Family.Database:Forget("Bare-FireMaw")
 end
 
+-- A family too big for the screen
+--
+-- A tooltip does not scroll and is not clipped politely. Reported with a screenshot of thirty
+-- characters running off the top and the bottom at once, where what went off the bottom was the
+-- grand total and the warnings - the answers - while the per-character detail survived.
+--
+-- So the rule is that structure never goes: realm lines, the grand total and the footer are
+-- drawn whatever happens, and member rows take the room actually left on this screen at this
+-- scale. The budget is derived from UIParent's own height, which is why this can move it.
+do
+	local held = UIParent.GetHeight
+	local made = {}
+
+	for index = 1, 40 do
+		local key = string.format("Crowd%02d-Farshire", index)
+		made[#made + 1] = key
+		Family.Database:SetMeta(key, { name = string.format("Crowd%02d", index),
+			realm = "Farshire", level = 60, faction = "Alliance", money = index * 10000 })
+	end
+
+	local function rowsOf(text)
+		return select(2, text:gsub("\n", "\n")) + 1
+	end
+
+	UIParent.GetHeight = function() return 600 end
+	local tight = brokerTooltipText()
+
+	check("a family too big for the screen is trimmed to fit",
+		rowsOf(tight) < 46, tostring(rowsOf(tight)))
+	check("and says how many it left out", tight:find("more", 1, true) ~= nil, tight)
+
+	-- The whole point: the answers survive and the detail is what gives way. These were the
+	-- lines going off the bottom of the screenshot.
+	check("the grand total survives the trimming",
+		tight:find("All realms", 1, true) ~= nil, tight)
+	check("and every realm still has its own line",
+		tight:find("Farshire", 1, true) ~= nil and tight:find("Fire Maw", 1, true) ~= nil,
+		tight)
+	check("and the footer saying what the clicks do",
+		tight:find("Right-click", 1, true) ~= nil, tight)
+
+	-- Richest first while trimming, so the ones that stayed explain themselves. Crowd40 holds
+	-- forty times what Crowd01 does.
+	check("the richest of a trimmed group is kept",
+		tight:find("Crowd40", 1, true) ~= nil, tight)
+	check("and the poorest is not", tight:find("Crowd01", 1, true) == nil, tight)
+
+	-- A screen with room changes nothing at all: no trimming line, everybody listed. The
+	-- budget is a second mode and not a new default.
+	UIParent.GetHeight = function() return 4000 end
+	local roomy = brokerTooltipText()
+
+	check("a screen with room for everybody trims nothing",
+		roomy:find("more", 1, true) == nil, roomy)
+	check("and lists the poorest character too",
+		roomy:find("Crowd01", 1, true) ~= nil, roomy)
+	check("and is longer than the trimmed one, which is the whole difference",
+		rowsOf(roomy) > rowsOf(tight), rowsOf(roomy) .. " vs " .. rowsOf(tight))
+
+	UIParent.GetHeight = held
+	for _, key in ipairs(made) do Family.Database:Forget(key) end
+end
+
 -- The bar and the tooltip are two views of one sum and must not be able to disagree. The
 -- bar was written once at login and never again, so a player who had spent two gold since
 -- read one total on their screen and a different one in the tooltip above it - and the

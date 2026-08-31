@@ -18,6 +18,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The hover tooltip fits the screen, however many characters you have.** With a large family
+  it used to run off the top and the bottom, taking the totals and the warnings with it. The
+  realm totals, the grand total and the warnings are now always shown; the character list takes
+  whatever room is left on your screen, richest first, and says how many it left out. A family
+  that already fitted looks exactly as it did.
+
 - **Family knows about profession specialisations.** An armoursmith cannot make a sword and a
   goblin engineer cannot make a gnomish one, and Family used to tell you they could. Recipes
   that need a branch now say which branch, and characters on a different one are no longer
