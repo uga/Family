@@ -5504,6 +5504,42 @@ do
 				and Family.UI:CycleBrokerScope() == "character"
 				and Family.UI:CycleBrokerScope() == "all")
 
+		-- The tooltip is the whole-family view and does not narrow with the bar. What it must
+		-- never do is narrow *half* of itself: it used to list every member of every realm and
+		-- then foot the column with whatever the bar was counting, so with the scope on one
+		-- character the realms added to one number and the line under them said another.
+		-- Reported from a screenshot of exactly that, and it shipped in 1.2.0.
+		Family.UI:CycleBrokerScope()
+		Family.UI:CycleBrokerScope()
+		check("the scope is on one character for this",
+			Family.UI:BrokerScope() == "character", tostring(Family.UI:BrokerScope()))
+
+		-- Compared against the formatter's own output rather than by picking the numbers
+		-- back out of it: the money carries a colour code between the digits and the "g",
+		-- and a pattern that missed it made both sides nought and the check vacuous. The
+		-- mutation restoring the bug passed until this was compared properly.
+		local everyone = 0
+		for _, entry in pairs(Family.Database:Members()) do
+			everyone = everyone + ((entry.meta or {}).money or 0)
+		end
+
+		local scoped = brokerTooltipText()
+		local grand
+		for line in (scoped .. "\n"):gmatch("([^\n]*)\n") do
+			if line:find("All realms", 1, true) then grand = line end
+		end
+
+		check("the tooltip's total is the whole family, not what the bar narrowed to",
+			grand ~= nil and grand:find(Family.UI:Money(everyone), 1, true) ~= nil,
+			tostring(grand) .. " wanted " .. tostring(Family.UI:Money(everyone)))
+
+		-- And it still says which narrower thing the bar is counting, which is what explains
+		-- the bar and the tooltip disagreeing on purpose.
+		check("and still names what the bar is counting",
+			scoped:find("the bar is counting", 1, true) ~= nil, scoped)
+
+		Family.UI:CycleBrokerScope()
+
 		-- Two sides on one realm, which is the whole reason the realm scope is not just the
 		-- realm: they share no bank, no mailbox and no auction house, so counting them
 		-- together would be a total nobody can spend. The fixture has one realm and no sides

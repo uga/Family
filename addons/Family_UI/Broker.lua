@@ -218,7 +218,20 @@ end
 -- anything: a column of gold amounts is read by comparing lengths, and the rest is not.
 local function describe(tooltip)
 	local order, realms = byRealm()
-	local _, total, needsAttention = summary()
+	local _, _, needsAttention = summary()
+
+	-- The tooltip's own total, added up from the realms it has just listed.
+	--
+	-- It used to come from `summary`, which narrows to whatever the bar is counting - so with
+	-- the scope set to one character the tooltip listed every member of every realm and then
+	-- footed the column with that one character's gold. The realms added to 7794g and the
+	-- line under them said 1192g. Reported from a screenshot, and it was in 1.2.0.
+	--
+	-- The tooltip is the whole-family view and stays that way; it is the **bar** that narrows,
+	-- and the line near the bottom saying what the bar is counting is what explains the
+	-- difference. A document that disagrees with itself is worse than either choice.
+	local total = 0
+	for _, realm in ipairs(order) do total = total + realms[realm].money end
 
 	tooltip:AddLine(L["Family"])
 

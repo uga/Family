@@ -33,6 +33,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **The hover tooltip's grand total disagreed with the realms above it.** If you had changed
+  what the money counts, the tooltip still listed every character on every realm but totalled
+  only what the bar was counting. The total is now the sum of what it just listed; the line
+  near the bottom still says what the bar itself is counting.
+
 - **Things made by using an item now say who can make them.** Refined Deeprock Salt comes out
   of a Salt Shaker rather than off a recipe list, so its tooltip used to say who already had
   some and nothing about who could make more. It now names whoever owns the shaker *and* has
