@@ -41,8 +41,9 @@ BUILDS = {
     "Mists of Pandaria Classic": "5.5.4.69078",
 }
 
-# Effect 36 is LEARN_SPELL. Numeric and the same on every build.
+# Effect 36 is LEARN_SPELL and effect 24 is CREATE_ITEM. Numeric and the same on every build.
 LEARN_SPELL = 36
+CREATE_ITEM = 24
 PRIMARY_CATEGORY = "11"
 
 # The number Capabilities derives from the interface version.
@@ -94,7 +95,7 @@ def read(table, build):
 
 
 def build():
-    teaches = {}
+    teaches, makes = {}, {}
 
     for game, build_id in BUILDS.items():
         professions = {int(r["ID"]) for r in read("SkillLine", build_id)
@@ -102,13 +103,21 @@ def build():
         taught = {int(r["Spell"]) for r in read("SkillLineAbility", build_id)
                   if int(r["SkillLine"]) in professions}
 
-        learns = {}
+        # Both halves of the join come out of one pass: which spell a spell teaches, and
+        # which item a spell makes.
+        learns, made = {}, {}
         for row in read("SpellEffect", build_id):
-            if int(row.get("Effect") or 0) != LEARN_SPELL:
-                continue
-            trigger = int(row.get("EffectTriggerSpell") or 0)
-            if trigger:
-                learns.setdefault(int(row["SpellID"]), trigger)
+            effect = int(row.get("Effect") or 0)
+
+            if effect == LEARN_SPELL:
+                trigger = int(row.get("EffectTriggerSpell") or 0)
+                if trigger:
+                    learns.setdefault(int(row["SpellID"]), trigger)
+
+            elif effect == CREATE_ITEM:
+                product = int(row.get("EffectItemType") or 0)
+                if product:
+                    made.setdefault(int(row["SpellID"]), set()).add(product)
 
         # Two shapes, and only one of them was handled at first - which is why two builds out
         # of three came back with nothing at all.
@@ -118,7 +127,7 @@ def build():
         # a generic 483 "Learning" with no trigger, and the craft spell itself. So the taught
         # spell is either the row's own spell where a profession teaches it, or the trigger of
         # an effect-36 row where a profession teaches that.
-        here = 0
+        here, products_here = 0, 0
         for row in read("ItemEffect", build_id):
             item = int(row.get("ParentItemID") or 0)
             spell = int(row.get("SpellID") or 0)
@@ -139,7 +148,24 @@ def build():
             teaches.setdefault(EXPANSION[game], {})[item] = lesson
             here += 1
 
-        print("  %-30s %4d recipe items" % (game, here))
+            # And what that spell makes, which is the other lane of the same join.
+            #
+            # A Classic Era trade skill record carries the product's item id and no spell
+            # at all (DATASOURCES section 2), so the spell above cannot reach it and this
+            # can. Measured at the pinned builds: 908 of Era's 1008 recipe items name a
+            # product, and of the hundred that do not, 96 are enchanting - which is the
+            # half the spell lane already answers.
+            products = made.get(lesson) or set()
+            if len(products) > 1:
+                sys.exit("spell %d makes %s on %s - a recipe that makes two different "
+                         "things has no single product, and picking one would be guessing"
+                         % (lesson, sorted(products), game))
+            if products:
+                makes.setdefault(EXPANSION[game], {})[item] = next(iter(products))
+                products_here += 1
+
+        print("  %-30s %4d recipe items, %4d of them naming what they make"
+              % (game, here, products_here))
 
     if not teaches:
         sys.exit("nothing came out at all - a column or the LEARN_SPELL number has moved, "
@@ -157,6 +183,12 @@ def build():
         "--",
         "-- ItemEffect gives the item's spell, SpellEffect effect 36 gives the spell that one",
         "-- teaches, and that is the id the recipe list records. Exact, and in no language.",
+        "--",
+        "-- Two lanes, because the clients disagree about which id a recipe record carries.",
+        "-- Classic Era's trade skill window gives the item a recipe makes and no spell at",
+        "-- all; its Craft frame gives the enchant's spell and no item. So a recipe item is",
+        "-- matched by the spell it teaches where the record has one, and by the item that",
+        "-- spell makes where it has the other - and the name test is left for neither.",
         "",
         "local _, Family = ...",
         "",
@@ -173,11 +205,28 @@ def build():
         lines.append("\t},")
     lines += ["}", ""]
 
+    lines += [
+        "-- recipe item -> the item that recipe makes",
+        "--",
+        "-- The same join read to its end. A Classic Era trade skill record carries this id",
+        "-- and no spell, so this is the lane that answers there - measured at the pinned",
+        "-- build: 908 of Era's 1008 recipe items name a product, and 96 of the hundred that",
+        "-- do not are enchanting, which the spell lane above already answers.",
+        "Family.RecipeMakes = {",
+    ]
+    for xpac in sorted(EXPANSION.values()):
+        lines.append("\t[%d] = {" % xpac)
+        for item in sorted(makes.get(xpac, {})):
+            lines.append("\t\t[%d] = %d," % (item, makes[xpac][item]))
+        lines.append("\t},")
+    lines += ["}", ""]
+
     with open(OUT, "w", encoding="utf-8") as handle:
         handle.write("\n".join(lines))
 
-    print("\n  %d recipe items across %d expansions"
-          % (sum(len(v) for v in teaches.values()), len(teaches)))
+    print("\n  %d recipe items across %d expansions, %d of them naming what they make"
+          % (sum(len(v) for v in teaches.values()), len(teaches),
+             sum(len(v) for v in makes.values())))
 
 
 if __name__ == "__main__":

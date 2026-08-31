@@ -3345,6 +3345,73 @@ do
 	store.recipes[guildKey] = nil
 	Family.Guild:SetEnabled(wasOn)
 end
+
+-- And by the ids the pattern resolves to, where no name can answer.
+--
+-- The block above finds the guildmate by name, and that is the lane that fails for exactly
+-- the recipes the family's own half used to fail on: a client abbreviates a recipe's name,
+-- so the pattern's name is not the tail of it and the suffix test says no. The pattern's own
+-- id is not the recipe's, but it resolves to both of the ids a guild list can hold - the
+-- spell it teaches and the item that spell makes - and neither of those is a word.
+do
+	local wasOn = Family.Guild:Enabled()
+	Family.Guild:SetEnabled(true)
+
+	local guildKey = Family.Guild:Current()
+	local store = FamilyDB.guild
+
+	store.known[guildKey] = store.known[guildKey] or {}
+	store.known[guildKey]["Faraway-FireMaw"] = {
+		meta = { name = "Faraway", realm = "Fire Maw" }, from = "Faraway", at = time(),
+		professions = { { skillLine = 164, rank = 300, maxRank = 300 } },
+	}
+
+	local function guilded()
+		craftersFor(2881, "Requires Blacksmithing (100)")
+		for _, line in ipairs(GameTooltip.__lines) do
+			if type(line[1]) == "string" and line[1]:find("(guild)", 1, true) then
+				return true
+			end
+		end
+		return false
+	end
+
+	-- What the plans make, and a client that abbreviates it. 2881 teaches 2667, which makes
+	-- 2864 - and this client's word for 2864 is not the tail of the pattern's name, so the
+	-- name lane is answering no while the id lane answers yes.
+	ITEM_NAMES[2864] = "Plast. en cuivre grav."
+
+	store.recipes[guildKey] = { ["Faraway-FireMaw"] = { [164] = {
+		spells = { 0 }, items = { 2864 }, missing = 0, fingerprint = 2,
+		at = time(), from = "Faraway" } } }
+
+	check("a guildmate whose list holds what the pattern makes is named on it", guilded())
+
+	-- And the other shape, which is what an enchanting list crosses as: the spell and no
+	-- item at all. The client's word for it is abbreviated too, for the same reason.
+	local realName = SPELL_NAMES[2667]
+	SPELL_NAMES[2667] = "Plast. en cuivre grav."
+
+	store.recipes[guildKey] = { ["Faraway-FireMaw"] = { [164] = {
+		spells = { 2667 }, items = { 0 }, missing = 0, fingerprint = 3,
+		at = time(), from = "Faraway" } } }
+
+	check("and one whose list holds the spell it teaches is named on it too", guilded())
+
+	-- And a guildmate holding something else is not named, or the two lanes above would be
+	-- a block that answers yes to everything.
+	store.recipes[guildKey] = { ["Faraway-FireMaw"] = { [164] = {
+		spells = { 0 }, items = { 2851 }, missing = 0, fingerprint = 4,
+		at = time(), from = "Faraway" } } }
+
+	check("and one holding something else is not", guilded() == false)
+
+	SPELL_NAMES[2667] = realName
+	ITEM_NAMES[2864] = nil
+	store.known[guildKey]["Faraway-FireMaw"] = nil
+	store.recipes[guildKey] = nil
+	Family.Guild:SetEnabled(wasOn)
+end
 check("the member who knows it says so", crafters.Tester
 	and crafters.Tester:find("knows it", 1, true) ~= nil, tostring(crafters.Tester))
 check("one with the skill, the level and a list it is not on can learn it",
@@ -3442,6 +3509,75 @@ check("a member without the profession is left out entirely",
 	check("and asking by item alone finds who knows the spell it teaches", found)
 
 	Family.Database:Forget("Enchantress-FireMaw")
+end)()
+
+-- A smith whose record carries only the thing the recipe makes
+--
+-- The lane above is the one enchanting needs, and it is the smaller of the two. Every other
+-- profession on Classic Era has the opposite shape: measured with a leatherworking window
+-- open on 1.15.9, an item id on every recipe and a spell id on none (DATASOURCES §2). So the
+-- spell the plans teach is on one side of the comparison and nothing at all is on the other,
+-- and the id the two do share is the item the recipe makes.
+--
+-- 2881 is Plans: Runed Copper Breastplate, which teaches 2667, which makes 2864.
+;(function()
+	local PLANS, MADE = 2881, 2864
+
+	check("the generated table knows what the plans make",
+		Family.Recipes:Makes(PLANS) == MADE, tostring(Family.Recipes:Makes(PLANS)))
+
+	-- Recorded the way an Era window hands it over - no spell - and under a name that shares
+	-- not one letter with the item under the cursor, so nothing but the id can answer.
+	Family.Database:SetMeta("Smithy-FireMaw", { name = "Smithy", realm = "Fire Maw",
+		level = 60, skills = { [164] = { rank = 300, maxRank = 300 } } })
+	Family.Database:SetPayload("Smithy-FireMaw", { professions = { [164] = {
+		rank = 300, maxRank = 300, recipesSeen = time(),
+		recipes = { { name = "Plastron en cuivre grav\195\169", itemID = MADE } } } } })
+
+	local by = {}
+	for _, who in ipairs(Family.Recipes:Crafters("Blacksmithing",
+		"Plans: Runed Copper Breastplate", nil, nil, PLANS)) do
+		by[who.name] = who
+	end
+
+	check("a smith whose record holds only what it makes is not offered it",
+		by.Smithy and by.Smithy.state == "knows",
+		tostring(by.Smithy and by.Smithy.state))
+
+	-- And one holding a different product still reads as able to learn it, or the lane would
+	-- be an assertion that everybody knows everything rather than a match.
+	Family.Database:SetPayload("Smithy-FireMaw", { professions = { [164] = {
+		rank = 300, maxRank = 300, recipesSeen = time(),
+		recipes = { { name = "Ceinture en cuivre", itemID = 2851 } } } } })
+
+	local without = {}
+	for _, who in ipairs(Family.Recipes:Crafters("Blacksmithing",
+		"Plans: Runed Copper Breastplate", nil, nil, PLANS)) do
+		without[who.name] = who
+	end
+
+	check("and one holding a different product still reads as able to learn it",
+		without.Smithy and without.Smithy.state == "can",
+		tostring(without.Smithy and without.Smithy.state))
+
+	-- Per expansion, exactly as the spell lane is, and pointed at the pair that disagrees:
+	-- 23133 teaches 28903 on Mists and 28906 on Burning Crusade, so what it makes differs
+	-- too. Without a fixture like this the lookup could read any one build's table and
+	-- nothing here would notice.
+	do
+		local held = Family.Capabilities.expansion
+		Family.Capabilities.expansion = 2
+		local onTBC = Family.Recipes:Makes(23133)
+		Family.Capabilities.expansion = 5
+		local onMists = Family.Recipes:Makes(23133)
+		Family.Capabilities.expansion = held
+
+		check("and what an item makes is answered per build too",
+			onTBC ~= nil and onMists ~= nil and onTBC ~= onMists,
+			tostring(onTBC) .. " vs " .. tostring(onMists))
+	end
+
+	Family.Database:Forget("Smithy-FireMaw")
 end)()
 
 -- The branch a recipe belongs to, and the members who took a different one

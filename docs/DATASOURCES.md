@@ -708,6 +708,37 @@ cooldown tables were corrected for twice on the same day.
 Only where the taught spell is one a profession teaches, which keeps out mounts, riding and
 everything else that also learns a spell from an item.
 
+#### And what that spell makes — the second lane, measured 2026-08-31
+
+The spell lane above answers for enchanting and for nothing else on Classic Era, because **the
+two windows on that client carry opposite halves of the join**. Measured, and already on this
+page: a trade skill record there holds an item id on every recipe and a spell id on none, while
+the Craft frame beside it holds the enchant's spell and no item at all.
+
+So the pattern under the cursor has to resolve to *both*: the spell it teaches, and the item
+that spell makes. `SpellEffect` effect 24 (CREATE_ITEM) with `EffectItemType` is the second
+step, read off the same rows the first step already walks.
+
+    ItemEffect.ParentItemID  2881   Plans: Runed Copper Breastplate
+      -> SpellEffect Effect 36, EffectTriggerSpell 2667   the recipe
+      -> SpellEffect Effect 24, EffectItemType     2864   Runed Copper Breastplate
+
+| build | recipe items | of them naming what they make |
+|---|---|---|
+| Classic Era | 1008 | 908 |
+| Burning Crusade | 1480 | 1337 |
+| Mists | 3346 | 2604 |
+
+**The hundred Era items with no product are not a gap.** Of them, 96 are enchanting — which is
+what the spell lane is for — and the remaining four are the Tinker schematics, which apply an
+effect to an item and create nothing, the same shape as an enchant on a client that files them
+under Engineering. Between the two lanes, every Era recipe item but those four is matched by an
+id, and the name test is what is left for them.
+
+**No spell in any of the three builds makes two different items**, checked before the generator
+was allowed to write a product at all. It refuses rather than picking one, because a wrong
+product id is not a miss - it is another recipe's answer.
+
 ### Which recipes have a cooldown, measured 2026-09-01
 
 `GetTradeSkillCooldown` answers with the time remaining and answers **nothing** when there is

@@ -213,14 +213,19 @@ local function crafterLines(tooltip, itemID)
 	--
 	-- The same question this block has always asked, from the second source: a guildmate's
 	-- shared list *is* the list of recipes they know, so a pattern they are already holding
-	-- is one you may not need to buy. Found by name, because a formula's own id has nothing
-	-- to do with the id of what it teaches - and both sides of that comparison are worked
-	-- out by this client, from the ids that crossed (§2.1).
+	-- is one you may not need to buy.
+	--
+	-- Found by the two ids a formula's own id resolves to - the spell it teaches and the item
+	-- that spell makes - because a guild list holds ids, and which of the two it holds differs
+	-- by client. The name is passed as well and still answers for the recipes neither table
+	-- has heard of; both sides of *that* comparison are worked out by this client, from the
+	-- ids that crossed (§2.1).
 	--
 	-- Only "knows it": the states above are about learning, and nothing in a shared list
 	-- says what a guildmate could learn - only what they have.
 	if Family.Guild and Family.Guild:Enabled() and itemName then
-		local theirs = Family.Guild:CraftersOf(nil, nil, itemName)
+		local theirs = Family.Guild:CraftersOf(Family.Recipes:TaughtBy(itemID),
+			Family.Recipes:Makes(itemID), itemName)
 
 		for index = 1, math.min(GUILD_CAP, #theirs) do
 			local who = theirs[index]

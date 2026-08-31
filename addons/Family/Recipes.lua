@@ -176,6 +176,23 @@ function Recipes:TaughtBy(itemID)
 	return here and here[itemID] or nil
 end
 
+-- And which item it makes, which is the other lane of the same join.
+--
+-- One table would not do, because the clients disagree about which id a recipe record
+-- carries. Measured (DATASOURCES §2): a Classic Era trade skill record holds the item a
+-- recipe makes and no spell at all, while the Craft frame beside it holds the enchant's spell
+-- and no item. So the spell above answers for enchanting and this answers for everything else
+-- on that client, and between them the name test is left with the few items neither table has
+-- heard of.
+function Recipes:Makes(itemID)
+	if not itemID then return nil end
+
+	local expansion = Family.Capabilities and Family.Capabilities.expansion
+	local here = expansion and (Family.RecipeMakes or {})[expansion]
+
+	return here and here[itemID] or nil
+end
+
 -- Whether this item is the one that teaches that recipe.
 --
 -- The character before the match has to be something other than a letter or a digit, so that
@@ -608,9 +625,12 @@ function Recipes:Crafters(profession, itemName, required, minLevel, itemID)
 	-- which anybody with the profession can learn.
 	local needs = itemID and (Family.RecipeNeeds or {})[itemID] or nil
 
-	-- And which spell it teaches, where the client's tables know. An id beats every name
-	-- test below it and is what makes this right for enchanting at all.
+	-- And which spell it teaches, and which item that spell makes, where the client's tables
+	-- know. An id beats every name test below it: the spell is what makes this right for
+	-- enchanting, and the product is what makes it right for a Classic Era trade skill, whose
+	-- record carries no spell to compare against at all.
 	local taught = self:TaughtBy(itemID)
+	local made = self:Makes(itemID)
 
 	-- The item's subtype is a word in this client's language; members are filed by identity.
 	-- Resolving it here is what lets a French client's Couture find a member whose window
@@ -631,6 +651,11 @@ function Recipes:Crafters(profession, itemName, required, minLevel, itemID)
 			if recipes then
 				for _, recipe in ipairs(recipes) do
 					if taught and recipe.spellID == taught then
+						knows = true
+						break
+					end
+
+					if made and recipe.itemID == made then
 						knows = true
 						break
 					end

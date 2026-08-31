@@ -23,6 +23,13 @@ is a decision rather than an afternoon of archaeology.
   in enchanting ever matched. It now matches on the spell the formula teaches, which is a
   number and the same in every language.
 
+- **And the same fault everywhere else it could bite.** Whether a pattern is one you already
+  know is now settled by two numbers rather than by a word: the recipe it teaches, and the
+  thing that recipe makes. Whichever of the two your client wrote down is the one Family asks
+  by, so a recipe list read on one language's client is recognised on another's — on your own
+  characters and on your guildmates' shared lists alike. Names are still read for the few
+  recipes neither number is known for.
+
 ### Added
 
 - **Crafting column headings are in your language.** A recipe recorded on a French client was
