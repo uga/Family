@@ -1342,3 +1342,42 @@ in one alphabet.** When a rule touches text the game supplies, the question is n
 work" but "in which of the languages we ship does this work", and the answer is countable from
 the client's own tables rather than arguable.
 
+## L-037 — A fixture written by hand is a guess about what the recorder writes
+
+The Crafting panel drew **`?`** as the heading over the transmute column, on every client, in
+every language. Reported with a screenshot and the right guess attached: *maybe it derives from
+the fact that transmute cd is shared amongst many recipes.*
+
+It does. Where two recipes share one timer, `Cooldowns:Crafting` labelled the group with the
+profession instead of with a recipe name - and the profession, as the scanner records it, is a
+**skill line id**. So the label was the number 171, and `shortened` in the summary returns `"?"`
+for anything that is not a string.
+
+**There was already a check for this exact grouping**, and it passed:
+
+    craftCooldowns = {
+        { name = "Transmute: Arcanite", profession = "Alchemy", ... },
+
+`profession = "Alchemy"`. Typed by hand, by somebody reasoning about what a profession is. The
+scanner writes `profession = name` where `name` is the key of the payload's professions table,
+and that table is keyed by identity - §2.1, decided long before, and the whole point of it. The
+fixture and the recorder disagreed about the *type* of a field, the checks were written against
+the fixture, and both sides went on being green for as long as nobody looked at the panel.
+
+**Why it survived so well.** The failure produced `"?"`, which is a plausible placeholder. Not a
+crash, not a blank, not a number - a character that reads as "Family does not know this", which
+is a thing Family says honestly in a dozen other places. It looked like a missing translation,
+which is what it was reported as, and a missing translation is somebody else's file.
+
+**Caught by:** the fixture now records what the scanner records - `profession = 171` - and the
+mutation restoring the old label fails four checks. Two guards beside it: every label out of
+`Crafting` must be a string, and the no-recipe-name fallback has a fixture of its own, because
+it was reached by nothing until one was written.
+
+The generalisable form: **a hand-written fixture is a claim about what the recorder produces,
+and it is checked by nobody.** Where a check can drive the real scanner it should; where it
+cannot, the fixture's shape is itself worth asserting, and the field types are the first thing
+to get wrong. This is the standing failure at the top of this file - a check modelled on the
+instance rather than on the rule - wearing the one disguise that is hardest to see, because the
+instance was invented rather than observed.
+

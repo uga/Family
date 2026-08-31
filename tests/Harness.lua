@@ -10734,18 +10734,27 @@ print("crafting cooldowns")
 
 	-- Three transmutes on one timer, a mooncloth on its own, and a salt shaker that is an
 	-- item rather than a recipe and belongs to leatherworking all the same.
+	--
+	-- **Filed by skill line id, which is how the scanner really files them.** This fixture
+	-- said `profession = "Alchemy"` for a year and every check below passed, while the panel
+	-- drew "?" over the transmute column on every real client: the payload is keyed by id,
+	-- the label became the number 171, and the summary's `shortened` returns "?" for anything
+	-- that is not a string. The check was modelled on the instance somebody typed rather than
+	-- on what the recorder writes, which is the failure the top of LESSONS.md names.
+	--
+	-- 171 is Alchemy, 197 Tailoring, 165 Leatherworking.
 	Family.Database:SetMeta(key, {
 		name = "Alchemist", realm = "Fire Maw", level = 70, faction = "Horde",
 		craftCooldowns = {
-			{ name = "Transmute: Arcanite", profession = "Alchemy", readyAt = time() + 3600 },
-			{ name = "Transmute: Earth to Water", profession = "Alchemy",
+			{ name = "Transmute: Arcanite", profession = 171, readyAt = time() + 3600 },
+			{ name = "Transmute: Earth to Water", profession = 171,
 				readyAt = time() + 3600 },
-			{ name = "Transmute: Air to Fire", profession = "Alchemy",
+			{ name = "Transmute: Air to Fire", profession = 171,
 				readyAt = time() + 3600 },
-			{ name = "Bolt of Imbued Netherweave", profession = "Tailoring" },
+			{ name = "Bolt of Imbued Netherweave", profession = 197 },
 		},
 		itemCooldowns = { { id = 30046, readyAt = time() + 7200 } },
-		cooldownItems = { [30046] = "Leatherworking" },
+		cooldownItems = { [30046] = 165 },
 	})
 
 	local kinds = Family.Cooldowns:Crafting(Family.Database:Meta(key))
@@ -10776,8 +10785,41 @@ print("crafting cooldowns")
 	end
 	check("an item on cooldown is one of these too", shaker ~= nil)
 	check("and it answers to the profession that makes it",
-		shaker and shaker.profession == "Leatherworking",
+		shaker and shaker.profession == 165,
 		shaker and tostring(shaker.profession))
+
+	-- Every label is a **word**, whatever the profession was recorded as. A number reaching
+	-- the summary is drawn as "?", which is how this hid: the fault produced a plausible
+	-- placeholder instead of an error, on a column heading nobody could argue with.
+	for _, kind in ipairs(kinds) do
+		check("the label for " .. tostring(kind.key) .. " is something a player can read",
+			type(kind.label) == "string", type(kind.label))
+	end
+
+	-- And a member recorded under the word rather than the id - an older record, or a client
+	-- with no skill line ids - still reads as that profession rather than as the raw word in
+	-- whatever language it was written in.
+	Family.Database:SetMeta("Elder-FireMaw", { name = "Elder", realm = "Fire Maw",
+		craftCooldowns = {
+			{ name = "Transmute: Arcanite", profession = "Alchemy", readyAt = time() + 60 },
+			{ name = "Transmute: Mithril", profession = "Alchemy", readyAt = time() + 60 },
+		} })
+	local older = Family.Cooldowns:Crafting(Family.Database:Meta("Elder-FireMaw"))
+	check("a profession recorded as a word is still labelled with one",
+		older[1] and older[1].label == "Alchemy", older[1] and tostring(older[1].label))
+	Family.Database:Forget("Elder-FireMaw")
+
+	-- A cooldown whose recipe name never made it to disk falls back to the profession, and
+	-- that fallback has to be a word too. It is the same fault one line over, and it survived
+	-- a mutation until this fixture existed: every other cooldown here carries a name, so the
+	-- fallback was never reached.
+	Family.Database:SetMeta("Nameless-FireMaw", { name = "Nameless", realm = "Fire Maw",
+		craftCooldowns = { { profession = 171, readyAt = time() + 60 } } })
+	local nameless = Family.Cooldowns:Crafting(Family.Database:Meta("Nameless-FireMaw"))
+	check("a cooldown with no recipe name falls back to a word, not an id",
+		nameless[1] and nameless[1].label == "Alchemy",
+		nameless[1] and tostring(nameless[1].label))
+	Family.Database:Forget("Nameless-FireMaw")
 
 	-- Available first: it is the half anybody opened the panel for.
 	check("what is available sorts to the front", kinds[1] and kinds[1].ready == true)

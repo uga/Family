@@ -33,6 +33,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **The transmute column on Crafting was headed `?`.** Any column standing for more than one
+  recipe on a shared timer had no heading at all — it now carries the profession's name, in
+  your language.
+
 - **Family said your characters could learn recipes they already knew.** It matched a recipe to
   the thing it makes by name, and a recipe book does not capitalise that name the way the item
   itself does — so a Potion de Purification you learnt years ago was offered as one to learn.

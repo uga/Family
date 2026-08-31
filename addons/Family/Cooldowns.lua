@@ -139,17 +139,28 @@ function Cooldowns:Crafting(meta)
 	end
 
 	for _, entry in ipairs(meta.craftCooldowns or {}) do
-		local profession = entry.profession or "?"
+		-- The profession is recorded as an **identity** - a skill line id on the clients that
+		-- have one, and the word it was recorded under where they do not. So it groups by
+		-- itself and is never shown by itself.
+		--
+		-- Shown by itself is exactly what happened. Where two recipes share one timer the
+		-- label became the profession, that profession was the number 171, and `shortened`
+		-- in the summary refuses anything that is not a string and draws "?" instead. The
+		-- transmute column has been headed "?" on every client with skill line ids, which is
+		-- all three - and it only ever showed up on a shared timer, which is why it looked
+		-- like a translation fault and is not one.
+		local profession = entry.profession
+		local named = Family:ProfessionName(profession)
 
 		-- Running ones are keyed by the moment they come back, which is what puts every
 		-- recipe on one timer into one group. Ready ones share a key of their own, for the
 		-- same reason: they are all "the transmute", and it is available.
 		local when = entry.readyAt and entry.readyAt > now and entry.readyAt or nil
-		local found = group(profession .. "\1" .. tostring(when or "ready"),
-			entry.name or profession, profession)
+		local found = group(tostring(profession or "?") .. "\1" .. tostring(when or "ready"),
+			entry.name or named, profession)
 
 		found.count = found.count + 1
-		if found.count > 1 then found.label = profession end
+		if found.count > 1 then found.label = named end
 
 		if when then
 			found.ready = false
