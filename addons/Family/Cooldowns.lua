@@ -84,6 +84,38 @@ function Cooldowns:For(meta)
 	return found
 end
 
+-- Whether a recipe has a cooldown at all, and how long it is, from the client's own tables.
+--
+-- `GetTradeSkillCooldown` answers with the time remaining and nothing at all when there is
+-- none, so a transmute that is ready looks exactly like a bandage. Family learned it by
+-- watching - and a character had to be caught mid-transmute once before anything would say
+-- they had one. `RecipeCooldowns.lua` is generated from `SpellCooldowns` and answers without
+-- anybody having watched.
+--
+-- **By expansion**, because the same spell differs: Transmute: Mithril to Truesilver is 48
+-- hours on Classic Era, 20 on Burning Crusade and gone on Mists. **By item as well as by
+-- spell**, because a recipe on Era often arrives with an item id and no spell at all.
+--
+-- Nil where the table has never heard of it, which is not a claim that there is no cooldown -
+-- watching still fills those in.
+function Cooldowns:Known(spellID, itemID)
+	local expansion = Family.Capabilities and Family.Capabilities.expansion
+	local here = expansion and (Family.RecipeCooldowns or {})[expansion]
+	if not here then return nil end
+
+	if spellID and here.spell then
+		local seconds = here.spell[spellID]
+		if seconds then return seconds end
+	end
+
+	if itemID and here.item then
+		local seconds = here.item[itemID]
+		if seconds then return seconds end
+	end
+
+	return nil
+end
+
 -- How many of a member's cooldowns have come ready, and when the next one will.
 function Cooldowns:Summarise(meta)
 	local ready, next_ = 0, nil

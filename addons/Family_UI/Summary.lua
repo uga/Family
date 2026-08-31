@@ -1972,10 +1972,9 @@ local function build(frame)
 				.. "shows them all the same.|r"])
 		elseif currentSet.id == "crafting" then
 			note:SetText(string.format(L["|cff888888Crafting cooldowns only - transmutes, "
-				.. "mooncloth, salt shakers. A column appears once Family has seen that "
-				.. "cooldown running at least once, because the client will not say a "
-				.. "recipe has one while it is ready. Blank means never seen it, which is "
-				.. "not the same as nought.%s|r"],
+				.. "mooncloth, salt shakers. Only the members who have one are listed. "
+				.. "Blank means Family has not seen that member's, which is not the same "
+				.. "as nought.%s|r"],
 				craftingOmitted > 0
 					and string.format(L[" |cffffaa00%d more not shown - there is only so "
 						.. "much room in a row.|r|cff888888"], craftingOmitted)

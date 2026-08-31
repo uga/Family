@@ -702,6 +702,11 @@ function Professions:ScanNow(includeRecipes)
 				recipe.hasCooldown = true
 			elseif recipe.name and known[recipe.name] then
 				recipe.hasCooldown = true
+			elseif Family.Cooldowns:Known(recipe.spellID, recipe.itemID) then
+				-- Answered from the client's own tables rather than from having watched
+				-- one run, which is what made a character invisible on the Crafting panel
+				-- until somebody caught them mid-transmute.
+				recipe.hasCooldown = true
 			end
 		end
 

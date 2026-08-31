@@ -18,6 +18,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **A transmute shows up before you have ever been caught doing one.** Family used to learn
+  that a recipe had a cooldown only by watching one run, so an alchemist who had never
+  transmuted while Family was watching was simply absent from the Crafting panel. It now knows
+  from the game's own data which recipes have a cooldown, and how long, on the client you are
+  playing.
+
 - **Crafting only lists characters who actually have a cooldown.** It used to give every
   member a row, so a family of thirty with three alchemists was twenty-seven empty lines.
 

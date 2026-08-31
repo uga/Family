@@ -665,6 +665,59 @@ have settled the *access*. And an empty answer is not the same as an unloaded on
 `GetSpellDescription`, which really is empty and really is loaded. That route stays closed; it is
 simply not the only route.
 
+### Which recipes have a cooldown, measured 2026-09-01
+
+`GetTradeSkillCooldown` answers with the time remaining and answers **nothing** when there is
+none, so a transmute that is ready is indistinguishable from a bandage. Family learned it by
+watching, which is honest and slow: a character had to be caught mid-transmute once before
+anything would say they had a cooldown at all.
+
+`SpellCooldowns` says so outright:
+
+| spell | field | value |
+|---|---|---|
+| Mooncloth (18560) | `RecoveryTime` | 96h |
+| Transmute: Arcanite (17187) | `CategoryRecoveryTime` | 48h |
+| Transmute: Iron to Gold (11479) | `CategoryRecoveryTime` | 24h |
+
+`CategoryRecoveryTime` is the shared timer and `RecoveryTime` the recipe's own, which is the
+same distinction players describe as *all the transmutes share one cooldown*.
+
+**Per expansion, and this is not a nicety.** The same spell differs on every build, and on the
+newest usually has none at all:
+
+| spell | Era | Burning Crusade | Mists |
+|---|---|---|---|
+| Transmute: Mithril to Truesilver | 48h | 20h | 1 second |
+| Transmute: Arcanite | 48h | absent | absent |
+| Void Sphere | absent | 48h | 48h |
+
+A union across builds would tell a Mists alchemist about a two-day cooldown that does not
+exist. So the table is keyed by expansion and read through `Family.Capabilities.expansion`,
+exactly as `TalentSpells.lua` is.
+
+**Keyed by spell and by what the recipe makes.** A recipe on Classic Era usually has no spell
+id: measured on a French client, all 111 alchemy recipes came back with an item id and no spell
+among them. A table keyed only by spell would miss precisely the case it exists for. The item
+is reached by the chain `made-by-item.py` already uses - `SpellEffect` with effect 24 names
+what a spell creates.
+
+**A recipe makes something, and that is the filter.** The first version took every profession
+spell over an hour, which let in engineering trinkets: a Mechanical Dragonling's *summon* is
+filed under Engineering and has an hour's use cooldown, and would have been drawn on the
+Crafting panel as a crafting cooldown. Requiring the spell to create an item removes them, and
+the hour floor then only has to exclude the vanilla transmutes on Mists, which are one second
+because that expansion removed them.
+
+| build | recipes with a cooldown | of them, reachable by what they make |
+|---|---|---|
+| Classic Era | 13 | 11 |
+| Burning Crusade | 29 | 24 |
+| Mists | 3 | 3 |
+
+**What is still learned by watching.** Anything the table has never heard of - and a nil here is
+not a claim that there is no cooldown, only that this table does not know of one.
+
 ### What the server says when an auction is bought out, measured 2026-08-31
 
 Buying something out sends it by mail, exactly as posting to an alt does, so it belongs in the

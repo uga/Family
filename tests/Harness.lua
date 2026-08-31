@@ -1240,7 +1240,7 @@ PROFESSIONS_COOKING = "Cooking"
 PROFESSIONS_FIRST_AID = "First Aid"
 PROFESSIONS_FISHING = "Fishing"
 
-local TRADE_RECIPES = {
+TRADE_RECIPES = {
 	{ "Header", "header" },
 	{ "Copper Chain Belt", "trivial", 0, "|cffffd000|Henchant:2661|h[Copper Chain Belt]|h|r",
 	  "|cffffffff|Hitem:2864|h[Copper Chain Belt]|h|r" },
@@ -1589,7 +1589,7 @@ for _, file in ipairs {
 	-- What each client calls each profession and each race, and which spell each talent
 	-- is, generated from the client's own tables.
 	"SkillLines.lua", "Races.lua", "TalentSpells.lua", "ChargedItems.lua",
-	"WorldBuffs.lua", "Specialisations.lua", "MadeByItem.lua",
+	"WorldBuffs.lua", "Specialisations.lua", "MadeByItem.lua", "RecipeCooldowns.lua",
 	"Capabilities.lua", "Codec.lua",
 	"Comm.lua", "Database.lua", "Names.lua", "Index.lua",
 	"Recipes.lua", "Cooldowns.lua",
@@ -13916,6 +13916,105 @@ print("a world buff banked in a Chronoboon")
 
 	slot[6] = nil
 	Family.Bags:Scan()
+end)()
+
+-- Which recipes have a cooldown, without anybody having watched one run
+--
+-- `GetTradeSkillCooldown` says how long is left and says nothing at all when there is none, so
+-- a transmute that is ready looks exactly like a bandage. Family learned it by watching, and a
+-- character had to be caught mid-transmute once before anything would say they had one at all.
+-- The client's own `SpellCooldowns` knows, and `RecipeCooldowns.lua` is generated from it.
+;(function()
+	local ARCANITE, TRUESILVER_BAR = 17187, 6037
+	local MITHRIL_TO_TRUESILVER = 11480
+
+	check("a transmute is known to have one, by spell",
+		Family.Cooldowns:Known(ARCANITE, nil) == 172800,
+		tostring(Family.Cooldowns:Known(ARCANITE, nil)))
+
+	-- The half that matters most: a recipe on Classic Era usually arrives with an item id and
+	-- no spell at all - measured on a French client, 111 alchemy recipes and not one spell id
+	-- among them - so a table keyed only by spell would miss exactly the case it is for.
+	check("and by what it makes, which is all an Era recipe carries",
+		Family.Cooldowns:Known(nil, TRUESILVER_BAR) == 172800,
+		tostring(Family.Cooldowns:Known(nil, TRUESILVER_BAR)))
+
+	check("something with no cooldown is not given one",
+		Family.Cooldowns:Known(nil, 2589) == nil,
+		tostring(Family.Cooldowns:Known(nil, 2589)))
+
+	-- Per expansion, and not as a nicety: the same transmute is 48 hours on Era, 20 on
+	-- Burning Crusade and gone on Mists. A single table would tell a Mists alchemist about a
+	-- two-day cooldown that does not exist.
+	local held = Family.Capabilities.expansion
+	check("on Era, mithril to truesilver has one",
+		Family.Cooldowns:Known(MITHRIL_TO_TRUESILVER, nil) == 172800,
+		tostring(Family.Cooldowns:Known(MITHRIL_TO_TRUESILVER, nil)))
+
+	Family.Capabilities.expansion = 2
+	check("on Burning Crusade it is shorter",
+		Family.Cooldowns:Known(MITHRIL_TO_TRUESILVER, nil) == 72000,
+		tostring(Family.Cooldowns:Known(MITHRIL_TO_TRUESILVER, nil)))
+
+	Family.Capabilities.expansion = 5
+	check("and on Mists it is gone entirely",
+		Family.Cooldowns:Known(MITHRIL_TO_TRUESILVER, nil) == nil,
+		tostring(Family.Cooldowns:Known(MITHRIL_TO_TRUESILVER, nil)))
+
+	Family.Capabilities.expansion = held
+
+	-- A client whose expansion the table has never heard of answers nothing rather than
+	-- reaching for whichever entry happens to be first.
+	Family.Capabilities.expansion = 99
+	check("an expansion the table does not carry answers nothing",
+		Family.Cooldowns:Known(ARCANITE, TRUESILVER_BAR) == nil)
+	Family.Capabilities.expansion = held
+
+	-- And the scanner acts on it. A recipe whose cooldown nobody has ever seen running is
+	-- marked as having one because the client's own tables say so - which is the whole point,
+	-- and was the one thing above that no check reached.
+	do
+		local held = TRADE_SKILL_OPEN
+		TRADE_SKILL_OPEN = true
+		TRADE_RECIPES[#TRADE_RECIPES + 1] = { "Transmute Truesilver", "optimal", 0,
+			"|cffffd000|Hspell:11480|h[Transmute Truesilver]|h|r",
+			"|cffffffff|Hitem:6037|h[Truesilver Bar]|h|r" }
+
+		Family.Professions:Scan(true)
+
+		local marked
+		for _, record in pairs((Family.Database:Payload(key) or {}).professions or {}) do
+			for _, recipe in ipairs(record.recipes or {}) do
+				if recipe.itemID == 6037 then marked = recipe end
+			end
+		end
+		check("a scan marks a recipe the client's tables say has a cooldown",
+			marked ~= nil and marked.hasCooldown == true,
+			tostring(marked and marked.hasCooldown))
+
+		-- And one that has none is left alone, or every recipe in the window would be
+		-- reported as a thing somebody is waiting for.
+		local plain
+		for _, record in pairs((Family.Database:Payload(key) or {}).professions or {}) do
+			for _, recipe in ipairs(record.recipes or {}) do
+				if recipe.itemID == 2864 then plain = recipe end
+			end
+		end
+		check("and leaves alone one the tables say has none",
+			plain ~= nil and plain.hasCooldown == nil,
+			tostring(plain and plain.hasCooldown))
+
+		TRADE_RECIPES[#TRADE_RECIPES] = nil
+		Family.Professions:Scan(true)
+		TRADE_SKILL_OPEN = held
+	end
+
+	-- And a trinket is not a recipe. A Mechanical Dragonling's summon is filed under
+	-- Engineering and has an hour's cooldown, which sailed over the duration floor in the
+	-- first version of the generated table. A recipe makes something; that one makes nothing.
+	check("a trinket's use cooldown is not mistaken for a recipe's",
+		Family.Cooldowns:Known(4073, nil) == nil,
+		tostring(Family.Cooldowns:Known(4073, nil)))
 end)()
 
 -- The generated table that puts a name under a recorded icon

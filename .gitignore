@@ -15,6 +15,7 @@ tools/.charged-items-cache/
 tools/.world-buffs-cache/
 tools/.specialisations-cache/
 tools/.made-by-item-cache/
+tools/.recipe-cooldowns-cache/
 
 # Bytecode left behind when one generator imports another
 tools/__pycache__/
