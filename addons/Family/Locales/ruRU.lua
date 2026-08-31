@@ -657,6 +657,7 @@ Family.locales.ruRU = {
 	["|cff40bf40knows it|r"] = "|cff40bf40знает|r",
 	["|cffff8040level %d|r"] = "|cffff8040уровень %d|r",
 	["|cff9d9d9dmay know it|r"] = "|cff9d9d9dвозможно, знает|r",
+	["Auction House"] = "Аукционный дом",
 	["|cffff8040another branch|r"] = "|cffff8040другая специализация|r",
 	["|cffff8040needs %s|r"] = "|cffff8040нужно %s|r",
 	["|cffffd700can learn it|r"] = "|cffffd700может выучить|r",

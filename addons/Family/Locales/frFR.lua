@@ -657,6 +657,7 @@ Family.locales.frFR = {
 	["|cff40bf40knows it|r"] = "|cff40bf40le connaît|r",
 	["|cffff8040level %d|r"] = "|cffff8040niveau %d|r",
 	["|cff9d9d9dmay know it|r"] = "|cff9d9d9dle connaît peut-être|r",
+	["Auction House"] = "Hôtel des ventes",
 	["|cffff8040another branch|r"] = "|cffff8040autre spécialisation|r",
 	["|cffff8040needs %s|r"] = "|cffff8040nécessite %s|r",
 	["|cffffd700can learn it|r"] = "|cffffd700peut l'apprendre|r",

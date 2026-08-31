@@ -16,6 +16,14 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Added
+
+- **Something you buy out at the auction house counts as being in the post.** It arrives by
+  mail just as a parcel from an alt does, so it now shows the same way — the buyer's mail count
+  goes up straight away, and the item is listed as on its way until they open their mailbox. If
+  the buyout does not go through, nothing is recorded. Winning a bid at its natural end cannot
+  be shown this way, because it happens hours later while you are logged out.
+
 ## 1.3.0 — 2026-08-31
 
 ### Added

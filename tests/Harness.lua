@@ -934,6 +934,13 @@ local OWNED = {
 }
 GetNumAuctionItems = function(which) return which == "owner" and #OWNED or 0 end
 GetAuctionItemInfo = function(which, index)
+	if which == "list" then
+		local row = BROWSE[index]
+		if not row then return nil end
+		-- Name, texture, count: the stack size is the third return, which is what the
+		-- bid watcher reads.
+		return "Linen Cloth", nil, row.count
+	end
 	local a = OWNED[index]
 	if not a or which ~= "owner" then return nil end
 	return a[1], nil, a[2], nil, nil, nil, nil, a[3], nil, a[4], a[5], a[6],
@@ -941,6 +948,27 @@ GetAuctionItemInfo = function(which, index)
 end
 GetAuctionItemTimeLeft = function(_, index) return OWNED[index] and OWNED[index][7] or 0 end
 GetOwnerAuctionItems = function() end
+
+-- The browse list, which is what somebody buys out of, and the bid that does it.
+--
+-- The two system messages a bid can be answered with, as the client's own globals. Both carry
+-- %s, and only one of them means an item is on its way - which is exactly what the pattern
+-- built from the first has to be able to tell.
+BROWSE = { { link = "|Hitem:2589|h[Linen Cloth]|h", count = 4 } }
+ERR_AUCTION_WON_S = "You won an auction for %s"
+ERR_AUCTION_BID_PLACED = "Bid accepted."
+ERR_AUCTION_OUTBID_S = "You were outbid on %s."
+
+-- Answers for every list, as the client does. It returned nil for anything but the browse
+-- list at first, which made the fake enforce the scanner's own guard instead of testing it:
+-- the mutation removing that guard passed. The client hands back a link for your own auctions
+-- and your bids too, and only the scanner decides which of those is a purchase.
+GetAuctionItemLink = function(which, index)
+	if which == "list" then return BROWSE[index] and BROWSE[index].link or nil end
+	return OWNED[index] and "|Hitem:2840|h[Something of yours]|h" or nil
+end
+
+PlaceAuctionBid = function() end
 
 -- The mailbox. One letter is about to expire and one is not, because the only number on the
 -- summary worth reacting to is how long until something is destroyed.
@@ -2862,6 +2890,114 @@ local selling = Family.Auctions:Live(auctions)
 check("an expired auction is not still reported", #selling == 1, tostring(#selling))
 time = realTime
 check("and it is back when the clock is", #(Family.Auctions:Live(auctions)) == 2)
+
+-- Buying something out, which the server posts to you as mail
+--
+-- The same claim as a letter posted to an alt: something is on its way to this character that
+-- is not in their bags yet. Asked for from play, on the observation that the two are the same
+-- thing arriving by two routes.
+--
+-- The bid is remembered whatever kind it was and **nothing is written until the server says
+-- the auction was won** - so a buyout somebody beat you to writes nothing at all, which is the
+-- same guarantee MAIL_SEND_SUCCESS gives the outgoing side.
+do
+	local function lettersOf()
+		local payload = Family.Database:Payload(key) or {}
+		return (payload.mail or {}).letters or {}
+	end
+
+	local before = #lettersOf()
+	local inPostBefore = Family.Mail:InPost(Family.Database:Meta(key))
+
+	-- What the record held before this block, kept so it can be put back. The letters below
+	-- carry an item the ownership checks further down count, and a fixture that leaves its
+	-- own props on the stage makes the next section fail for a reason that is not its own.
+	local heldLetters = {}
+	for index, letter in ipairs(lettersOf()) do heldLetters[index] = letter end
+	local heldMeta = Family.Database:Meta(key) or {}
+	local heldCount, heldExpiry = heldMeta.mailCount, heldMeta.mailExpiresBy
+
+	-- A bid the server never answers. Nothing may be recorded, however long anybody waits.
+	Family.Auctions:NoteBid("list", 1)
+	check("a bid nobody has answered records nothing", #lettersOf() == before,
+		tostring(#lettersOf()))
+
+	-- The outbid message carries a %s exactly as the won message does, and means the
+	-- opposite. A pattern that could not tell them apart would file every lost auction as
+	-- an item on its way.
+	fire("CHAT_MSG_SYSTEM", "You were outbid on Linen Cloth.")
+	check("and being outbid is not winning", #lettersOf() == before, tostring(#lettersOf()))
+
+	-- "Bid accepted" is said for any bid at all, including one that won nothing.
+	Family.Auctions:NoteBid("list", 1)
+	fire("CHAT_MSG_SYSTEM", "Bid accepted.")
+	check("nor is a bid merely being accepted", #lettersOf() == before, tostring(#lettersOf()))
+
+	-- Won. Now it is a letter.
+	Family.Auctions:NoteBid("list", 1)
+	fire("CHAT_MSG_SYSTEM", "You won an auction for Linen Cloth")
+	local letters = lettersOf()
+	check("winning one puts a letter on the record", #letters == before + 1,
+		tostring(#letters))
+
+	local won = letters[#letters]
+	check("with the item that was bought, by id",
+		won and won.attachments and won.attachments[1]
+			and won.attachments[1].id == 2589,
+		won and won.attachments and won.attachments[1]
+			and tostring(won.attachments[1].id))
+	check("and the stack size that was on the auction",
+		won and won.attachments[1].count == 4,
+		won and tostring(won.attachments[1].count))
+	check("marked as being in the post, not as seen in a mailbox",
+		won and won.inPost == true, tostring(won and won.inPost))
+	check("and the in-post count follows it",
+		Family.Mail:InPost(Family.Database:Meta(key)) == inPostBefore + 1,
+		tostring(Family.Mail:InPost(Family.Database:Meta(key))))
+
+	-- A win with no bid behind it - somebody else's auction closing while the player stands
+	-- there - has no item to record and must invent none.
+	local after = #lettersOf()
+	fire("CHAT_MSG_SYSTEM", "You won an auction for Linen Cloth")
+	check("a win with no bid behind it records nothing", #lettersOf() == after,
+		tostring(#lettersOf()))
+
+	-- And a bid the confirmation arrives far too late for belongs to whatever the player has
+	-- done since, not to this.
+	Family.Auctions:NoteBid("list", 1)
+	local held = time
+	time = function() return held() + 600 end
+	fire("CHAT_MSG_SYSTEM", "You won an auction for Linen Cloth")
+	time = held
+	check("nor does a confirmation that arrives ten minutes late",
+		#lettersOf() == after, tostring(#lettersOf()))
+
+	-- Only the browse list. A bid placed from the owner or bidder lists is not a purchase,
+	-- and the client answers with a link for those lists too - so this is the scanner's own
+	-- decision and not something the absence of data makes for it.
+	check("a bid outside the browse list is not remembered",
+		Family.Auctions:NoteBid("owner", 1) == nil)
+
+	-- The whole message, not a phrase inside one. Anything that reaches CHAT_MSG_SYSTEM
+	-- carrying the won sentence within a longer line is not the server saying you won, and
+	-- an unanchored pattern would take it for one. Synthetic, and here because the anchor
+	-- was unexercised until it existed.
+	Family.Auctions:NoteBid("list", 1)
+	fire("CHAT_MSG_SYSTEM", "[Someone]: You won an auction for Linen Cloth, lucky you")
+	check("and a sentence quoted inside a longer line is not the server speaking",
+		#lettersOf() == after, tostring(#lettersOf()))
+
+	local payload = Family.Database:Payload(key) or {}
+	payload.mail = payload.mail or {}
+	payload.mail.letters = heldLetters
+	Family.Database:SetPayload(key, payload)
+	Family.Database:SetMeta(key, {
+		mailCount = heldCount or Family.CLEAR,
+		mailInPost = inPostBefore > 0 and inPostBefore or Family.CLEAR,
+		mailExpiresBy = heldExpiry or Family.CLEAR,
+	})
+	Family.Index:Invalidate(key)
+end
 
 print()
 print("who owns what")

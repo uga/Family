@@ -665,6 +665,42 @@ have settled the *access*. And an empty answer is not the same as an unloaded on
 `GetSpellDescription`, which really is empty and really is loaded. That route stays closed; it is
 simply not the only route.
 
+### What the server says when an auction is bought out, measured 2026-08-31
+
+Buying something out sends it by mail, exactly as posting to an alt does, so it belongs in the
+same *in the post* count. The question was which event says it went through. Measured on a
+French Classic Era client, buying one item out, with a frame listening to everything:
+
+    ... many AUCTION_ITEM_LIST_UPDATE while browsing ...
+    CHAT_MSG_SYSTEM   Vous avez gagné les enchères pour Cristal des arcanes
+    AUCTION_ITEM_LIST_UPDATE
+    CHAT_MSG_SYSTEM   Offre acceptée.
+    AUCTION_BIDDER_LIST_UPDATE
+
+**Two system messages, and only the first one means an item is on its way.** They are the
+client's own globals:
+
+| global | value on that client | says |
+|---|---|---|
+| `ERR_AUCTION_WON_S` | `Vous avez gagné les enchères pour %s` | this auction is yours |
+| `ERR_AUCTION_BID_PLACED` | `Offre acceptée.` | a bid was accepted, and nothing more |
+| `ERR_AUCTION_OUTBID_S` | `Vous n'êtes plus le plus offrant pour %s.` | you lost it |
+
+A pattern is built from `ERR_AUCTION_WON_S` the way the oil charge line is built from
+`ITEM_SPELL_CHARGES`: escape the wording, turn the escaped `%s` into a wildcard, anchor it at
+both ends. Nothing here knows a word of French or of English.
+
+**What this makes unnecessary.** The first design compared the bid against the auction's buyout
+price to decide whether it was a buyout - which needs to know where `GetAuctionItemInfo` puts
+that price, and it moves between expansions. It is not needed. The bid is remembered whatever
+kind it was and nothing is recorded until the server says it was won, so **the server decides
+whether it was a buyout**. A buyout somebody beat you to is never confirmed and writes nothing.
+
+**What cannot be covered.** Winning a bid that runs to its end sends the item hours later,
+usually while the player is logged out. There is no event and nothing to hook, so only buyouts
+- and a bid that happens to close while you stand there, which is the same message - are
+reachable.
+
 ### Things made by using an item, measured 2026-08-31
 
 Refined Deeprock Salt is on nobody's recipe list. It comes out of a **Salt Shaker**, an item

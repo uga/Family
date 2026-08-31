@@ -657,6 +657,7 @@ Family.locales.esES = {
 	["|cff40bf40knows it|r"] = "|cff40bf40lo conoce|r",
 	["|cffff8040level %d|r"] = "|cffff8040nivel %d|r",
 	["|cff9d9d9dmay know it|r"] = "|cff9d9d9dquizá lo conozca|r",
+	["Auction House"] = "Casa de subastas",
 	["|cffff8040another branch|r"] = "|cffff8040otra especialización|r",
 	["|cffff8040needs %s|r"] = "|cffff8040necesita %s|r",
 	["|cffffd700can learn it|r"] = "|cffffd700puede aprenderlo|r",

@@ -188,6 +188,40 @@ local function attachmentsNow()
 	return attachments
 end
 
+-- One letter onto a member's record, and the three figures in meta that follow from it.
+--
+-- Shared by the two things that can put a letter on a record before anybody has seen a
+-- mailbox: posting to an alt, and winning an auction. Both are claims about the post and not
+-- about a mailbox, and both are replaced wholesale the moment that character opens their own.
+local function addLetter(key, letter)
+	local meta = Family.Database:Meta(key)
+	if not meta then return false end
+
+	local payload = Family.Database:Payload(key) or {}
+	payload.mail = payload.mail or { letters = {} }
+	payload.mail.letters = payload.mail.letters or {}
+
+	table.insert(payload.mail.letters, letter)
+	Family.Database:SetPayload(key, payload)
+
+	local inPost = 0
+	local soonest = meta.mailExpiresBy
+	for _, entry in ipairs(payload.mail.letters) do
+		if entry.inPost then inPost = inPost + 1 end
+		if entry.expiresBy and (not soonest or entry.expiresBy < soonest) then
+			soonest = entry.expiresBy
+		end
+	end
+
+	Family.Database:SetMeta(key, {
+		mailCount = #payload.mail.letters,
+		mailInPost = inPost,
+		mailExpiresBy = soonest or Family.CLEAR,
+	})
+
+	return true
+end
+
 -- Held between the send and the server saying it worked. A send the server refuses is never
 -- recorded: the record is written on the confirmation, not on the button.
 local posted
@@ -227,11 +261,7 @@ function Mail:CommitSend()
 	local from = Family.Database:Meta(Family:CurrentMember())
 	local expires = letter.at + RETURNS_AFTER
 
-	local payload = Family.Database:Payload(letter.key) or {}
-	payload.mail = payload.mail or { letters = {} }
-	payload.mail.letters = payload.mail.letters or {}
-
-	table.insert(payload.mail.letters, {
+	addLetter(letter.key, {
 		sender = (from and from.name) or Family:CurrentMember(),
 		subject = letter.subject,
 		money = letter.money,
@@ -245,27 +275,48 @@ function Mail:CommitSend()
 		attachments = letter.attachments,
 	})
 
-	Family.Database:SetPayload(letter.key, payload)
-
-	local inPost = 0
-	local soonest = meta.mailExpiresBy
-	for _, entry in ipairs(payload.mail.letters) do
-		if entry.inPost then inPost = inPost + 1 end
-		if entry.expiresBy and (not soonest or entry.expiresBy < soonest) then
-			soonest = entry.expiresBy
-		end
-	end
-
-	Family.Database:SetMeta(letter.key, {
-		mailCount = #payload.mail.letters,
-		mailInPost = inPost,
-		mailExpiresBy = soonest or Family.CLEAR,
-	})
-
 	Family:Debug("posted to %s: %d attachment(s), %d copper", letter.key,
 		#letter.attachments, letter.money)
 
 	return true
+end
+
+-- An auction won, which the server sends as mail to whoever won it.
+--
+-- The same claim as a letter posted to an alt and made the same way: something is on its way
+-- to this character that is not in their bags yet, and the moment they open their own mailbox
+-- the real contents replace it. It is written here rather than in the auction scanner because
+-- what is being recorded is a letter, and letters live in one place.
+--
+-- **Only ever on the server saying the auction was won.** Auctions.lua watches the bid go and
+-- holds what was bid on; nothing reaches here until the client is told it was won, so a buyout
+-- somebody beat you to, or one there was not gold for, writes nothing at all. That is the same
+-- guarantee `MAIL_SEND_SUCCESS` gives the outgoing side, from the same reasoning.
+--
+-- No subject: a player's letter has one because a player typed it, and an auction has an item.
+-- The name of that item is the client's to supply from the id at draw time (§2.1).
+function Mail:CommitWon(won)
+	if not won or not won.id then return false end
+
+	local key = Family:CurrentMember()
+	if not key or not Family.Database:Meta(key) then return false end
+
+	local at = time()
+
+	local ok = addLetter(key, {
+		sender = Family.L["Auction House"],
+		money = 0,
+		cod = 0,
+		expiresBy = at + RETURNS_AFTER,
+		read = false,
+		inPost = true,
+		wonAt = at,
+		sentAt = at,
+		attachments = { { id = won.id, count = won.count or 1, item = won.item } },
+	})
+
+	if ok then Family:Debug("won at auction: item %d x%d", won.id, won.count or 1) end
+	return ok
 end
 
 -- How many letters this member has that nobody has seen in a mailbox yet.

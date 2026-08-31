@@ -657,6 +657,7 @@ Family.locales.deDE = {
 	["|cff40bf40knows it|r"] = "|cff40bf40kennt es|r",
 	["|cffff8040level %d|r"] = "|cffff8040Stufe %d|r",
 	["|cff9d9d9dmay know it|r"] = "|cff9d9d9dkennt es vielleicht|r",
+	["Auction House"] = "Auktionshaus",
 	["|cffff8040another branch|r"] = "|cffff8040anderer Zweig|r",
 	["|cffff8040needs %s|r"] = "|cffff8040benötigt %s|r",
 	["|cffffd700can learn it|r"] = "|cffffd700kann es lernen|r",
