@@ -196,6 +196,28 @@ function Recipes:KnowersOf(spellID, itemID, itemName)
 
 	local found = {}
 
+	-- One line per member, not one per profession that can make it.
+	--
+	-- Some things are made two ways: a Truesilver Bar is smelted by a miner and transmuted by
+	-- an alchemist, and a character with both trades matched twice - the `break` below leaves
+	-- the recipe loop and the profession loop went on. The count at the top of the block
+	-- counted them twice, and since the block shows five names and then says how many more
+	-- there are, a duplicate took a visible place from somebody real. Reported from play, on a
+	-- Truesilver Bar, as alchemists missing from a list that had room for them.
+	--
+	-- Where both trades match, the entry that says more is kept: one carrying a cooldown over
+	-- one that does not, and the higher rank between two of a kind. A transmute on a timer is
+	-- the answer somebody wants; "smelts it, rank 300" is true and says less.
+	local best = {}
+
+	local function better(new_, old_)
+		if not old_ then return true end
+		local newTimer = new_.cooldown and 1 or 0
+		local oldTimer = old_.cooldown and 1 or 0
+		if newTimer ~= oldTimer then return newTimer > oldTimer end
+		return (new_.rank or 0) > (old_.rank or 0)
+	end
+
 	for key, entry in pairs(Family.Database:Members()) do
 		local meta = entry.meta or {}
 		local payload = Family.Database:Payload(key)
@@ -231,7 +253,7 @@ function Recipes:KnowersOf(spellID, itemID, itemName)
 							readyAt = (not ready) and recipe.readyAt or nil }
 					end
 
-					found[#found + 1] = {
+					local candidate = {
 						key = key,
 						name = meta.name or key,
 						classFile = meta.classFile,
@@ -241,11 +263,15 @@ function Recipes:KnowersOf(spellID, itemID, itemName)
 							and meta.skills[profession].rank or nil,
 						cooldown = cooldown,
 					}
+
+					if better(candidate, best[key]) then best[key] = candidate end
 					break
 				end
 			end
 		end
 	end
+
+	for _, who in pairs(best) do found[#found + 1] = who end
 
 	-- Whoever cannot do it yet goes last, soonest of them first, and everybody else keeps
 	-- the old order: highest skill, then by name - the same order the whole-family search

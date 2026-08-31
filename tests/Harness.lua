@@ -3146,6 +3146,64 @@ do
 	Family.Database:Forget("Novice-FireMaw")
 	Family.Database:Forget("Unread-FireMaw")
 
+	-- Two trades that make the same thing, and one character with both
+	--
+	-- A Truesilver Bar is smelted by a miner and transmuted by an alchemist. A character with
+	-- both matched once per profession, so the count said two where there was one person, and
+	-- the block - which shows five names and then says how many more - gave a visible place to
+	-- a duplicate. Reported from play as alchemists missing from a list with room for them.
+	--
+	-- 6037 is the bar, 164 is Blacksmithing standing in for a second trade that makes it.
+	Family.Database:SetMeta("Twofold-FireMaw", { name = "Twofold", realm = "Fire Maw",
+		level = 60, skills = { [171] = { rank = 300 }, [164] = { rank = 225 } } })
+	Family.Database:SetPayload("Twofold-FireMaw", { professions = {
+		[171] = { recipesSeen = time(), recipes = {
+			{ name = "Transmute Truesilver", itemID = 6037, hasCooldown = true,
+				readyAt = time() + 3600 } } },
+		[164] = { recipesSeen = time(), recipes = {
+			{ name = "Smelt Truesilver", itemID = 6037 } } },
+	} })
+
+	local knowers = Family.Recipes:KnowersOf(nil, 6037, "Truesilver Bar")
+	local mine = 0
+	for _, who in ipairs(knowers) do
+		if who.key == "Twofold-FireMaw" then mine = mine + 1 end
+	end
+	check("a character who can make it two ways is one line, not two", mine == 1,
+		tostring(mine))
+
+	-- And the line kept is the one that says more: a timer beats a rank, because "ready in an
+	-- hour" is the answer somebody wants and "smelts it, 225" is true and says less.
+	local kept
+	for _, who in ipairs(knowers) do
+		if who.key == "Twofold-FireMaw" then kept = who end
+	end
+	check("and it is the one carrying the cooldown",
+		kept and kept.cooldown ~= nil and kept.cooldown.ready == false,
+		tostring(kept and kept.cooldown))
+	check("with the rank of the trade that has it",
+		kept and kept.rank == 300, tostring(kept and kept.rank))
+
+	-- Neither trade on a timer, so the rank decides. Without this the tiebreak was
+	-- unexercised: every fixture above had a cooldown on one side, so "keep the higher rank"
+	-- could be deleted entirely and nothing failed.
+	Family.Database:SetMeta("Plainly-FireMaw", { name = "Plainly", realm = "Fire Maw",
+		level = 60, skills = { [171] = { rank = 120 }, [164] = { rank = 290 } } })
+	Family.Database:SetPayload("Plainly-FireMaw", { professions = {
+		[171] = { recipesSeen = time(), recipes = { { name = "A", itemID = 6037 } } },
+		[164] = { recipesSeen = time(), recipes = { { name = "B", itemID = 6037 } } },
+	} })
+
+	local plain
+	for _, who in ipairs(Family.Recipes:KnowersOf(nil, 6037, "Truesilver Bar")) do
+		if who.key == "Plainly-FireMaw" then plain = who end
+	end
+	check("with neither on a timer, the higher rank is the line kept",
+		plain and plain.rank == 290, tostring(plain and plain.rank))
+
+	Family.Database:Forget("Plainly-FireMaw")
+	Family.Database:Forget("Twofold-FireMaw")
+
 	-- The shaker itself is unaffected: it is not made by anything.
 	tooltipFor(15846)
 	check("the maker itself gets no such block",

@@ -21,6 +21,11 @@ is a decision rather than an afternoon of archaeology.
 - **Crafting only lists characters who actually have a cooldown.** It used to give every
   member a row, so a family of thirty with three alchemists was twenty-seven empty lines.
 
+- **A character who can make something two ways was listed twice.** A Truesilver Bar is
+  smelted by a miner and transmuted by an alchemist, so anyone with both trades appeared twice
+  on the item's tooltip — which inflated the count and pushed somebody else off the end of the
+  list. Gold and several Burning Crusade reagents are made two ways as well.
+
 - **A character's salt shaker shows on Crafting without having been caught mid-cooldown.**
   Family used to need to have seen one counting down before it would mention it at all, so a
   character could be named on the item's own tooltip as able to make one while the panel said
