@@ -1344,6 +1344,41 @@ the client's own tables rather than arguable.
 
 ## L-037 — A fixture written by hand is a guess about what the recorder writes
 
+### Postscript, 2026-09-01 — the same fixture, describing a world the client does not have
+
+Four occurrences of this in one day, and the last one is the plainest. The crafters block's
+fixture said three things about one recipe and the client agrees with none of them:
+
+| the fixture | the client |
+|---|---|
+| item 2881 is *Plans: Copper Chain Belt* | 2881 is *Plans: Runed Copper Breastplate* |
+| its recipe is spell 2661 | 2881 teaches 2667; 2661 makes item 2851 |
+| its product is item 2864, *Copper Chain Belt* | 2864 is *Runed Copper Breastplate* |
+
+Three ids and a name, invented as a set and internally consistent with nothing outside the
+file. It passed for as long as it did because the only test applied to it was a **name** test,
+and a name test cannot notice that an id is wrong.
+
+**It surfaced by accident.** Explaining to Alberto why recipes were matched by name rather than
+by id, a table of the three ids was printed to make the point - and the id the generated table
+gave for 2881 did not match the id the fixture recorded. The explanation found the fault, not
+a check.
+
+**And the correction cost more than the rename**, which is the part worth keeping. `2661` was
+doing two jobs in that file: the recipe's spell, and an *enchant* id inside `item:4005:2661:…`
+links in the gear fixtures. A blanket replace would have silently rewritten the gear tests. And
+the guild wire sends recipe ids as **deltas** - `{ 2667, 678 }` means 2667 then +678 - so moving
+the base moved the second id from 3339 to 3345 and failed a check three thousand lines away.
+Both were caught by the harness, which is what it is for.
+
+**Caught by:** the id route through that block is now exercised - deleting the taught-spell
+lookup fails a check that used to pass, because the fixture's ids finally line up with the
+generated table. Standing rule: **a fixture's ids come from the client's own tables, not from
+the keyboard.** Where an id is typed by hand, something that reads it should be able to
+disagree with it.
+
+
+
 The Crafting panel drew **`?`** as the heading over the transmute column, on every client, in
 every language. Reported with a screenshot and the right guess attached: *maybe it derives from
 the fact that transmute cd is shared amongst many recipes.*

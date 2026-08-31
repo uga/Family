@@ -752,7 +752,7 @@ end
 -- an item and the other makes no item at all.
 local SPELL_NAMES = {
 	[501] = "Zul'Gurub Ritual", [502] = "Apprentice Riding",
-	[2661] = "Copper Chain Belt", [3339] = "Silver Rod",
+	[2667] = "Runed Copper Breastplate", [3339] = "Silver Rod",
 	[13640] = "Enchant Chest - Major Health", [25128] = "Wizard Oil",
 	-- The four talents the arcane tree fixture puts on the grid, at the spell ids
 	-- TalentSpells.lua maps their positions to. A talent is a spell, so this is the client
@@ -1242,8 +1242,8 @@ PROFESSIONS_FISHING = "Fishing"
 
 TRADE_RECIPES = {
 	{ "Header", "header" },
-	{ "Copper Chain Belt", "trivial", 0, "|cffffd000|Henchant:2661|h[Copper Chain Belt]|h|r",
-	  "|cffffffff|Hitem:2864|h[Copper Chain Belt]|h|r" },
+	{ "Runed Copper Breastplate", "trivial", 0, "|cffffd000|Henchant:2667|h[Runed Copper Breastplate]|h|r",
+	  "|cffffffff|Hitem:2864|h[Runed Copper Breastplate]|h|r" },
 	-- Not an enchant link. A live Era client does not hand these back the way the other
 	-- rows here say it does, and reading only one kind is what left a hundred and fifty
 	-- recipes with no id to be named by.
@@ -1359,7 +1359,7 @@ local ITEM_NAMES = { [6948] = "Hearthstone", [2589] = "Linen Cloth",
 -- named after a profession, which is exactly why a subtype matching a profession cannot on
 -- its own be taken for a recipe.
 local RECIPE_ITEMS = {
-	[2881] = { name = "Plans: Copper Chain Belt", profession = "Blacksmithing",
+	[2881] = { name = "Plans: Runed Copper Breastplate", profession = "Blacksmithing",
 	           class = 9, minLevel = 10 },
 	[3608] = { name = "Plans: Silver Rod", profession = "Blacksmithing",
 	           class = 9, minLevel = 20 },
@@ -2168,9 +2168,9 @@ local bs = Family.Database:Payload(key).professions[SKILL.blacksmithing]
 check("recipes read once the window is open", bs.recipes and #bs.recipes == 2,
 	bs.recipes and tostring(#bs.recipes))
 check("the header is not a recipe", bs.recipes
-	and bs.recipes[1].name == "Copper Chain Belt", bs.recipes and bs.recipes[1].name)
+	and bs.recipes[1].name == "Runed Copper Breastplate", bs.recipes and bs.recipes[1].name)
 check("a recipe keeps the spell id from its link", bs.recipes
-	and bs.recipes[1].spellID == 2661, bs.recipes and tostring(bs.recipes[1].spellID))
+	and bs.recipes[1].spellID == 2667, bs.recipes and tostring(bs.recipes[1].spellID))
 check("and the icon the client drew it with, rather than one worked out afterwards",
 	bs.recipes and bs.recipes[1].icon ~= nil, bs.recipes and tostring(bs.recipes[1].icon))
 check("and the item id of what it makes", bs.recipes
@@ -2275,7 +2275,7 @@ do
 
 	C_TradeSkillUI = {
 		GetTradeSkillLine = function() return "Blacksmithing" end,
-		GetAllRecipeIDs = function() return { 3304, 2661 } end,
+		GetAllRecipeIDs = function() return { 3304, 2667 } end,
 		GetRecipeInfo = function(id)
 			return { learned = true, name = "Recipe " .. id, relativeDifficulty = "easy",
 				numAvailable = 0 }
@@ -2294,14 +2294,14 @@ do
 	local made, spellOnly
 	for _, recipe in ipairs((modern or {}).recipes or {}) do
 		if recipe.spellID == 3304 then made = recipe end
-		if recipe.spellID == 2661 then spellOnly = recipe end
+		if recipe.spellID == 2667 then spellOnly = recipe end
 	end
 
 	check("a recipe id window is read at all", made ~= nil and spellOnly ~= nil)
 	check("and the id of what each one makes is asked for separately",
 		made and made.itemID == 3576, made and tostring(made.itemID) or "nothing")
 	check("while one the client will not answer for keeps its spell and no more",
-		spellOnly and spellOnly.spellID == 2661 and spellOnly.itemID == nil)
+		spellOnly and spellOnly.spellID == 2667 and spellOnly.itemID == nil)
 
 	C_TradeSkillUI = nil
 	GetCraftName = realCraft
@@ -3227,7 +3227,7 @@ print()
 print("the crafters block on a recipe tooltip")
 
 -- Three members with blacksmithing and one without, so the block has all four answers to
--- give at once. Tester knows Copper Chain Belt already (it is in the recipes read from the
+-- give at once. Tester knows Runed Copper Breastplate already (it is in the recipes read from the
 -- open window above); the others differ in what they have been seen to know.
 Family.Database:SetMeta("Novice-FireMaw", { name = "Novice", realm = "Fire Maw", level = 60,
 	classFile = "WARRIOR", skills = { [164] = { name = "Blacksmithing", rank = 40, maxRank = 75 } } })
@@ -3281,7 +3281,7 @@ Family.Database:SetMeta("Formulaic-FireMaw", { name = "Formulaic", realm = "Fire
 	level = 60, skills = { [164] = { rank = 275, maxRank = 300 } } })
 Family.Database:SetPayload("Formulaic-FireMaw", { professions = { [164] = {
 	rank = 275, maxRank = 300, recipesSeen = time(),
-	recipes = { { name = "Copper Chain Belt", spellID = 2661 } } } } })
+	recipes = { { name = "Runed Copper Breastplate", spellID = 2667 } } } } })
 
 local crafters, heading = craftersFor(2881, "Requires Blacksmithing (100)")
 check("a recipe gets a crafters block", heading == true)
@@ -3324,7 +3324,7 @@ do
 	-- is differs by client and by window (DATASOURCES §2). The first is named by its spell,
 	-- the second only by the thing it makes - which is every trade skill record on Era, and
 	-- the shape a fixture with spells in it cannot test.
-	RECIPE_ITEMS[7191] = { name = "Copper Chain Belt", profession = "Blacksmithing",
+	RECIPE_ITEMS[7191] = { name = "Runed Copper Breastplate", profession = "Blacksmithing",
 		class = 4, minLevel = 10 }
 
 	store.recipes[guildKey] = { ["Faraway-FireMaw"] = { [164] = {
@@ -4788,7 +4788,7 @@ wipe(cast)
 if professionButton then fireClick(professionButton) end
 check("so clicking a profession casts the spell that opens it",
 	cast[1] == "Blacksmithing", table.concat(cast, ","))
-check("and still chooses that profession in the panel", visibleText("Copper Chain Belt"))
+check("and still chooses that profession in the panel", visibleText("Runed Copper Breastplate"))
 
 -- The line above the list, which said "129 241/300" on a live client: the profession arrives
 -- as the skill line it is keyed by and was printed as the number it is.
@@ -4858,7 +4858,7 @@ Family.Database:SetMeta("Other-FireMaw", { skills = { [164] = { name = "Blacksmi
 	rank = 100, maxRank = 300 } } })
 Family.Database:SetPayload("Other-FireMaw", { professions = { [164] = {
 	recipesSeen = time(), openWith = "Blacksmithing",
-	recipes = { { name = "Copper Chain Belt", difficulty = "medium" } } } } })
+	recipes = { { name = "Runed Copper Breastplate", difficulty = "medium" } } } } })
 Family.UI:ShowProfessionFor("Other-FireMaw", "Blacksmithing")
 
 local armedForOther = false
@@ -4933,12 +4933,12 @@ SelectTradeSkill = function(index) selectedRecipe = index end
 TRADE_SKILL_OPEN = true
 
 check("clicking a recipe selects it in the open window",
-	Family.UI:SelectRecipe(key, "Blacksmithing", "Copper Chain Belt") == true
+	Family.UI:SelectRecipe(key, "Blacksmithing", "Runed Copper Breastplate") == true
 		and selectedRecipe ~= nil, tostring(selectedRecipe))
 
 selectedRecipe = nil
 check("a recipe of somebody else's selects nothing",
-	Family.UI:SelectRecipe("Somebody-Else", "Blacksmithing", "Copper Chain Belt") == false)
+	Family.UI:SelectRecipe("Somebody-Else", "Blacksmithing", "Runed Copper Breastplate") == false)
 check("and a profession whose window is shut selects nothing",
 	Family.UI:SelectRecipe(key, "Tailoring", "Bolt of Linen Cloth") == false)
 
@@ -4947,7 +4947,7 @@ check("and a profession whose window is shut selects nothing",
 -- and a member scanned on a French client has the profession under a different name again.
 selectedRecipe = nil
 check("a recipe is found in the open window whatever that window calls itself",
-	Family.UI:SelectRecipe(key, "Forgeage", "Copper Chain Belt") == true
+	Family.UI:SelectRecipe(key, "Forgeage", "Runed Copper Breastplate") == true
 		and selectedRecipe ~= nil, tostring(selectedRecipe))
 
 TRADE_SKILL_OPEN = false
@@ -5069,7 +5069,7 @@ check("a faction, which the game will not describe, shows what Family knows inst
 -- hidden when spare, so a row belonging to a panel nobody is looking at is still a shown
 -- frame - and searching for "any row with a spell" finds the spellbook's.
 Family.UI:ShowTab("professions")
-shownAs = hoverRow(function(f) return f.spellID == 2661 end)
+shownAs = hoverRow(function(f) return f.spellID == 2667 end)
 check("hovering a recipe opens the tooltip for the spell it casts",
 	shownAs and shownAs.kind == "spell", shownAs and shownAs.kind)
 
@@ -5134,7 +5134,7 @@ if professionsEveryone then
 	Family.UI:Refresh()
 
 	check("a recipe is found by name across every profession of every member",
-		visibleText("Copper Chain Belt"))
+		visibleText("Runed Copper Breastplate"))
 	-- Not "Runeforging", which the same recipe is also filed under here: where a recipe is
 	-- held under both a real profession and one the client's table has never heard of, the
 	-- identified one is the label.
@@ -6381,7 +6381,7 @@ do
 		skills = { [164] = { name = "Blacksmithing", rank = 287, maxRank = 375 } } })
 	Family.Database:SetPayload(key, {
 		bags = { [0] = { size = 16, free = 14, slots = { [1] = { id = 6948, count = 1 } } } },
-		professions = { [164] = { recipes = { { name = "Copper Chain Belt" } } } },
+		professions = { [164] = { recipes = { { name = "Runed Copper Breastplate" } } } },
 		talents = { groups = {} },
 		quests = { list = {} },
 	})
@@ -8488,7 +8488,7 @@ print("guild share")
 
 		Family.Database:SetPayload("Smith-FireMaw", { professions = { [smith] = {
 			rank = 300, maxRank = 300, recipesSeen = time(), recipes = {
-				{ name = "Copper Chain Belt", spellID = 2661, itemID = 2864 },
+				{ name = "Runed Copper Breastplate", spellID = 2667, itemID = 2864 },
 				{ name = "Silver Rod", spellID = 3339, itemID = 6338 },
 				{ name = "Runed Copper Rod", spellID = 7421 },
 				-- The client gave no id for this one. It cannot cross - a name is one
@@ -8504,7 +8504,7 @@ print("guild share")
 		check("what one of ours can make is read back as identifiers",
 			spells and #spells == 3, spells and tostring(#spells) or "nothing")
 		check("sorted, because both ends fingerprint the order",
-			spells and spells[1] == 2661 and spells[2] == 3339 and spells[3] == 7421)
+			spells and spells[1] == 2667 and spells[2] == 3339 and spells[3] == 7421)
 		check("with what each one makes beside it, and nought where it makes nothing",
 			items and items[1] == 2864 and items[2] == 6338 and items[3] == 0)
 		check("and a recipe the client would not name is omitted and counted",
@@ -8627,7 +8627,7 @@ print("guild share")
 			member = "Faraway-FireMaw", line = smith,
 			-- Deltas, not ids: sorted ids differ by tens and LibSerialize spends one byte
 			-- on a small integer and three on a large one.
-			spells = { 2661, 678 }, items = { 2864, 0 },
+			spells = { 2667, 672 }, items = { 2864, 0 },
 			missing = 4, fingerprint = 4242,
 		}, "WHISPER", "Tester")
 		advance(3)
@@ -8636,7 +8636,7 @@ print("guild share")
 		local theirList = Family.Guild:HeldRecipes(guildKey, "Faraway-FireMaw", smith)
 		check("and what comes back is stored", theirList ~= nil)
 		check("with the gaps read back as the ids they were",
-			theirList and theirList.spells[1] == 2661 and theirList.spells[2] == 3339,
+			theirList and theirList.spells[1] == 2667 and theirList.spells[2] == 3339,
 			theirList and tostring(theirList.spells[2]) or "nothing")
 		check("and what they could not share counted rather than implied away",
 			theirList and theirList.missing == 4, theirList and tostring(theirList.missing))
@@ -9197,7 +9197,7 @@ print("guild share")
 				schema = 1, version = Family.version, guild = guildName,
 				character = "Faraway-FireMaw", rschema = 1,
 				member = "Faraway-FireMaw", line = smith,
-				spells = { 2661, 678 }, items = { 60001, 0 },
+				spells = { 2667, 672 }, items = { 60001, 0 },
 				missing = 0, fingerprint = 4242, seen = time() - 400,
 			}, "WHISPER", "Tester")
 			advance(3)
@@ -9385,7 +9385,7 @@ print("guild share")
 				Family.Guild:OfferHash() ~= was,
 				tostring(was) .. " / " .. tostring(Family.Guild:OfferHash()))
 			Family.Database:Payload("Smith-FireMaw").professions[smith]
-				.recipes[1].spellID = 2661
+				.recipes[1].spellID = 2667
 
 			advance(30)
 
@@ -11006,7 +11006,7 @@ print("cooldowns from a profession that has been dropped")
 
 	local payload = Family.Database:Payload(key) or {}
 	payload.professions = {
-		Blacksmithing = { recipes = { { name = "Copper Chain Belt" } } },
+		Blacksmithing = { recipes = { { name = "Runed Copper Breastplate" } } },
 		Alchemy = { recipes = {
 			{ name = "Transmute: Arcanite", readyAt = time() - 86400 },
 		} },
