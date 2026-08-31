@@ -16,6 +16,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 1.3.0 — 2026-08-31
+
 ### Added
 
 - **The hover tooltip fits the screen, however many characters you have.** With a large family
