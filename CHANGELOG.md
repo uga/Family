@@ -16,6 +16,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 1.4.1 — 2026-09-01
+
 ### Fixed
 
 - **Wide Family and Guild share could not send anything, on every version so far.** Both said
