@@ -66,3 +66,42 @@ jobs:
           WOWI_API_TOKEN: ${{ secrets.WOWI_API_TOKEN }}
           WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
           GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Look inside the zip that was just built
+        # The libraries are .pkgmeta externals, and a .toc silently skips a file it cannot
+        # find - so a wrong destination produces a zip that installs cleanly and loads none
+        # of them. Five releases went out that way before a player on a fresh machine found
+        # it (docs/LESSONS.md L-038).
+        #
+        # The harness compares .pkgmeta against the .toc, which catches that mismatch in the
+        # repository. This catches whatever the packager actually produced, which is the
+        # thing players install and the thing nothing had ever opened.
+        #
+        # It runs after the upload, because the action does both in one step. A red run here
+        # does not unpublish anything; it says, loudly and immediately, that the version just
+        # published needs another one behind it.
+        run: |
+          python3 - <<'PY'
+          import glob, sys, zipfile
+
+          builds = [z for z in glob.glob(".release/*.zip") if "nolib" not in z]
+          if not builds:
+              sys.exit("no zip was built - there is nothing to look inside")
+
+          missing = []
+          for build in builds:
+              names = set(zipfile.ZipFile(build).namelist())
+              for toc in ("addons/Family/Family.toc", "addons/Family_UI/Family_UI.toc"):
+                  folder = toc.split("/")[1]
+                  for line in open(toc, encoding="utf-8"):
+                      line = line.strip()
+                      if line.startswith("Libs\\"):
+                          wanted = folder + "/" + line.replace("\\", "/")
+                          if wanted not in names:
+                              missing.append(build + ": " + wanted)
+
+          if missing:
+              sys.exit("the zip is missing libraries the toc loads: " + ", ".join(missing))
+
+          print("every library the toc loads is in the zip, where the toc looks for it")
+          PY

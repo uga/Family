@@ -12324,6 +12324,14 @@ print("the release workflow may create the release it uploads")
 	check("release.yml grants the job contents: write",
 		yml:match("permissions:%s*\n%s*contents:%s*write") ~= nil,
 		"without it the CurseForge upload succeeds and the GitHub release returns 403")
+
+	-- And it opens what it built. The check below this one compares .pkgmeta against the
+	-- .toc, which is the fault as it exists in the repository; this is the workflow step
+	-- that looks in the zip the packager actually produced, which is the artifact nobody
+	-- had ever opened until a player on a fresh machine could not link (L-038).
+	check("release.yml opens the zip it built and looks for the libraries in it",
+		yml:match("Look inside the zip") ~= nil and yml:match("zipfile") ~= nil,
+		"the built artifact is the only place a wrong external destination is visible")
 end)()
 
 --------------------------------------------------------------------------------------------
