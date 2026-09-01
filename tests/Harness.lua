@@ -12327,6 +12327,89 @@ print("the release workflow may create the release it uploads")
 end)()
 
 --------------------------------------------------------------------------------------------
+-- The libraries land where the .toc looks for them
+--
+-- `addons/Family/Libs` is gitignored: the three libraries are `.pkgmeta` externals, fetched at
+-- package time and never present in a clone. So the one place their path is stated twice is
+-- between two files nobody compares - the .toc that loads them, and the .pkgmeta that puts
+-- them somewhere.
+--
+-- They disagreed from v1.0.0 to v1.4.0. An external's destination is relative to the package
+-- directory, which is the addon folder, so `Family/Libs/LibStub` resolved to
+-- `Family/Family/Libs/LibStub` - one level deeper than `Libs\LibStub\LibStub.lua` looks. The
+-- zip therefore carried all three libraries and the client loaded none of them, and since a
+-- .toc silently skips a file it cannot find, the only symptom was Wide Family and Guild share
+-- refusing to send: *this client has no serialisation libraries*. Reported from play by
+-- somebody installing from CurseForge on a machine that had never had Family on it, five
+-- releases after the fault shipped. Nothing on a developer's machine could ever show it -
+-- `tools/FetchLibs.sh` puts the libraries where the .toc expects, so the checkout is right and
+-- the release is wrong.
+--
+-- Both files are in the repository and both are readable here, which is the whole reason this
+-- check can exist at all. See docs/LESSONS.md L-038.
+--------------------------------------------------------------------------------------------
+
+print()
+print("every library the toc loads is fetched to where the toc looks")
+;(function()
+	local meta = io.open(ROOT .. "/.pkgmeta")
+	if not meta then
+		check(".pkgmeta is where the harness expects it", false, ROOT .. "/.pkgmeta")
+		return
+	end
+	local pkgmeta = meta:read("*a")
+	meta:close()
+
+	-- The externals block, and only it. `move-folders` above it is keyed the other way -
+	-- relative to the directory the package sits in rather than to the package - which is
+	-- exactly the confusion that shipped, so reading the wrong block here would repeat it.
+	local externals, inside = {}, false
+	for line in pkgmeta:gmatch("[^\n]+") do
+		if line:match("^externals:") then
+			inside = true
+		elseif inside then
+			local destination = line:match("^%s+([^:%s]+):%s*%S")
+			if destination then
+				externals[destination] = true
+			elseif line:match("^%S") then
+				inside = false
+			end
+		end
+	end
+
+	check("the externals block names three libraries",
+		externals["Libs/LibStub"] ~= nil and externals["Libs/LibSerialize"] ~= nil
+			and externals["Libs/LibDeflate"] ~= nil,
+		"read: " .. table.concat((function()
+			local names = {}
+			for name in pairs(externals) do names[#names + 1] = name end
+			table.sort(names)
+			return names
+		end)(), ", "))
+
+	for _, addon in ipairs({ "Family", "Family_UI" }) do
+		local handle = io.open(ROOT .. "/addons/" .. addon .. "/" .. addon .. ".toc")
+		if not handle then
+			check(addon .. ".toc is where the harness expects it", false, addon)
+		else
+			local toc = handle:read("*a")
+			handle:close()
+
+			for line in toc:gmatch("[^\r\n]+") do
+				local library = line:match("^Libs\\([^\\]+)\\")
+				if library then
+					check(addon .. " loads " .. library
+						.. " from a path an external writes to",
+						externals["Libs/" .. library] ~= nil,
+						"the .toc reads Libs\\" .. library
+							.. " and .pkgmeta writes it elsewhere")
+				end
+			end
+		end
+	end
+end)()
+
+--------------------------------------------------------------------------------------------
 -- The deploy script says so when it is about to strip the libraries
 --
 -- addons/Family/Libs is gitignored - the three libraries are .pkgmeta externals that only

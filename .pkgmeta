@@ -33,10 +33,18 @@ ignore:
 # They are optional everywhere in Family except Wide Family, which cannot exist without them:
 # the addon channel carries a string and nothing else. Family works without them and says
 # which it found; a player who installs from here gets them and never has to know.
+#
+# **The destination is relative to the package directory, which is the addon folder** - so it
+# is `Libs/LibStub` and not `Family/Libs/LibStub`. Written with the package name in front,
+# the packager put every library one level too deep, at `Family/Family/Libs`, where the .toc
+# above never looked - and every release from v1.0.0 to v1.4.0 shipped with Wide Family and
+# Guild share unable to send a byte. `move-folders` above is relative to the directory the
+# package sits *in*, which is why the two look inconsistent and are not. tests/Harness.lua
+# checks that every library the .toc loads is an external that lands where it looks.
 externals:
-    Family/Libs/LibStub: https://repos.wowace.com/wow/libstub/trunk
-    Family/Libs/LibSerialize: https://github.com/rossnichols/LibSerialize
-    Family/Libs/LibDeflate: https://github.com/SafeteeWoW/LibDeflate
+    Libs/LibStub: https://repos.wowace.com/wow/libstub/trunk
+    Libs/LibSerialize: https://github.com/rossnichols/LibSerialize
+    Libs/LibDeflate: https://github.com/SafeteeWoW/LibDeflate
 
 # The changelog CurseForge shows is the release's own section, cut by tools/release.sh.
 manual-changelog:

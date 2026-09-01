@@ -16,6 +16,15 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Fixed
+
+- **Wide Family and Guild share could not send anything, on every version so far.** Both said
+  *this client has no serialisation libraries* and stopped there. The two libraries they need
+  were in the download all along, in a folder one level deeper than Family looks — so a
+  CurseForge install had them on disk and never loaded them. Anybody who has been unable to
+  link two families, or to share a profession with a guild, was hitting this and not doing
+  anything wrong.
+
 ## 1.4.0 — 2026-08-31
 
 ### Fixed

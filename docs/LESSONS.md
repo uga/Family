@@ -1416,3 +1416,51 @@ to get wrong. This is the standing failure at the top of this file - a check mod
 instance rather than on the rule - wearing the one disguise that is hardest to see, because the
 instance was invented rather than observed.
 
+
+## L-038 — The libraries shipped one directory too deep, and no developer's machine could ever show it
+
+Five releases went to CurseForge — v1.0.0 through v1.4.0 — with **Wide Family and Guild share
+unable to send a single byte**. The message players got is the one Family says when it looks for
+the libraries and finds nothing: *this client has no serialisation libraries, so nothing can be
+sent*.
+
+They were in the zip. They were in the wrong place:
+
+    what the .toc loads          Libs\LibSerialize\LibSerialize.lua
+    what the zip contained       Family/Family/Libs/LibSerialize/LibSerialize.lua
+
+An external's destination in `.pkgmeta` is relative to the **package directory**, which is the
+addon folder. `move-folders`, eight lines above it in the same file, is relative to the
+directory the package sits *in*, and carries the package name as its first component. Writing
+the externals the same way — `Family/Libs/LibStub` — put them a level below where the `.toc`
+looks. Two keys in one file, keyed against two different roots, and the file gives no sign of
+it.
+
+**Nothing on this machine could have shown it.** `addons/Family/Libs` is gitignored, and
+`tools/FetchLibs.sh` puts the three libraries exactly where the `.toc` expects them — so the
+developer's checkout is right and the release is wrong, and every hour of play here, on three
+clients, exercised a layout no player has ever had. The smoke checklist could not catch it
+either: it is run on this machine, off this checkout.
+
+**What it took to find.** A report from somebody installing from CurseForge, on another account,
+on another computer, where Family had never been. Which is the only configuration that could
+have produced it, and it took five releases to arrive.
+
+**And how cheap the proof was, once the question was asked.** The published zip is a GitHub
+release asset: `gh release download`, list the names, and the fault is on the screen in one
+command. The same listing over v1.3.0, v1.2.0, v1.1.0 and v1.0.0 dated it to the first release.
+Then the packager itself, run locally against a clone with `-d -l -z`, reproduced the wrong path
+and confirmed the corrected one — no tag, no upload, no guessing about semantics that are
+written down nowhere in this repository.
+
+**Caught by:** `tests/Harness.lua` now reads both files and asserts that every `Libs\…` line
+either `.toc` loads is an external destination that writes there. Restoring `.pkgmeta` to the
+shape that shipped fails four checks. Both files are in the repository and both were readable
+from the harness on day one — the fault was never that the information was missing, only that
+nothing compared the two places it was stated.
+
+The generalisable form: **where one fact is written in two files and nothing reads both, it is
+already wrong and nobody knows yet.** The stronger version, and the one this cost five releases
+to learn: **a build artifact is not verified until something has looked inside the artifact.**
+Everything else — the checks, the smoke pass, three clients on this machine — was testing the
+source tree, and the source tree was never the thing players install.
