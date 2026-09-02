@@ -406,3 +406,9 @@ take these with it.
 *Client* is `Era`, `Anniversary` or `Mists` — the three the `.toc` names. *Result* is `pass`, or what was not run and
 why — the sections needing a guildmate or a second family are the ones that will honestly say
 so. The version cell may carry the `v` or leave it off; `release.sh` reads either.
+
+**v1.4.2 went out without a walk**, on purpose and recorded as such above. Closing the loop the
+rows promised: the fault it fixes — a linked family reachable only on the characters it had
+already written from — was confirmed gone the same day, with the exchange working in both
+directions between two machines on two accounts. The rest of the checklist was not run for that
+version and the rows still say so.
