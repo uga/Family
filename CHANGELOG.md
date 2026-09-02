@@ -16,6 +16,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 1.4.2 — 2026-09-02
+
 ### Fixed
 
 - **A linked family could only be reached on the characters it had already written from.**
