@@ -314,19 +314,58 @@ local SCHEMA = 1
 -- That is different from "we have never heard from any of them", which is the other way this
 -- can come back empty, and the two are told apart because they need different things done
 -- about them.
-local function reachableName(link)
+-- Everyone of theirs worth whispering, best first.
+--
+-- **Two sources, and they are not the same kind of evidence.** A character we have *heard
+-- from* was online when they sent, which is a reason to try them and a reason to order them
+-- by when. A character they have merely *told us about* - one of the members they share - is
+-- evidence only that the character exists, which is enough to whisper and not enough to
+-- prefer. So the heard-from go first, newest first, and the rest follow in a fixed order.
+--
+-- The told-about half was missing, and the shape of the fault is worth keeping: a family that
+-- added a character after linking could see them on the Wide Family panel, tick them as a
+-- sibling and read their bags, while Family would never whisper them. Somebody playing that
+-- character and nothing else was, to this list, nobody - so an update said *none of their 1
+-- character is online* with the player sitting in front of six. Reported from play. The union
+-- already existed ten lines below, in dropPendingFor, for a different question.
+--
+-- A member's key is "Name-Realm", which is the form a whisper wants, and it is compared
+-- through Comm:SameName because the heard-from copy may have arrived bare.
+local function candidates(link)
     local names = {}
-    for name, at in pairs(link.characters or {}) do
+
+    local function add(name, at)
+        if type(name) ~= "string" or name == "" then return end
+        for _, already in ipairs(names) do
+            if Family.Comm:SameName(already.name, name) then return end
+        end
         names[#names + 1] = { name = name, at = at or 0 }
     end
-    table.sort(names, function(a, b) return a.at > b.at end)
+
+    local heard = {}
+    for name, at in pairs(link.characters or {}) do
+        heard[#heard + 1] = { name = name, at = at or 0 }
+    end
+    table.sort(heard, function(a, b) return a.at > b.at end)
+    for _, entry in ipairs(heard) do add(entry.name, entry.at) end
+
+    -- Then everyone they have told us about. Sorted, because `pairs` is not an order and the
+    -- character a family is whispered on should not depend on where a key landed in a table.
+    local told = {}
+    for memberKey in pairs(link.members or {}) do told[#told + 1] = memberKey end
+    table.sort(told)
+    for _, memberKey in ipairs(told) do add(memberKey) end
 
     -- The name the link was made under, last, and only if we have nothing better. It is a
     -- character name too, but it is the oldest thing we know.
-    if link.name then names[#names + 1] = { name = link.name, at = 0 } end
+    add(link.name)
 
+    return names
+end
+
+local function reachableName(link)
     local anyKnown = false
-    for _, entry in ipairs(names) do
+    for _, entry in ipairs(candidates(link)) do
         anyKnown = true
         if not Family.Comm:Absent(entry.name) then return entry.name end
     end
@@ -337,11 +376,7 @@ end
 -- Everyone of theirs worth trying, so a caller can say how many were tried rather than
 -- guessing at the shape of the family.
 local function characterCount(link)
-    local seen, count = {}, 0
-    for name in pairs(link.characters or {}) do seen[name] = true end
-    if link.name then seen[link.name] = true end
-    for _ in pairs(seen) do count = count + 1 end
-    return count
+    return #candidates(link)
 end
 
 local function send(link, kind, table_, bulk)
@@ -530,9 +565,15 @@ Family.Comm:OnAbsent("wide", function(name, _, already)
     for familyID, link in pairs(store_.links) do
         -- By character rather than by string. The client complains about "Grella" and every
         -- name we hold carries a realm, so == answers false for the one link this is about.
-        local ours = Family.Comm:SameName(link.name, name)
-        for character in pairs(link.characters or {}) do
-            if Family.Comm:SameName(character, name) then ours = true end
+        --
+        -- Asked of the same list the whisper was addressed from, and not of `characters`
+        -- alone: a character they only told us about is one this now tries, so a refusal
+        -- naming them is about this link. Matched against `characters` only, it was about no
+        -- link at all - nothing was attributed, nothing moved on to the next name, and the
+        -- player was told nothing.
+        local ours = false
+        for _, entry in ipairs(candidates(link)) do
+            if Family.Comm:SameName(entry.name, name) then ours = true end
         end
 
         if ours then

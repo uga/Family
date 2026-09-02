@@ -16,6 +16,14 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Fixed
+
+- **A linked family could only be reached on the characters it had already written from.**
+  Anybody they created after linking showed up on the Wide Family panel and could be ticked
+  and read, but an update would never whisper them — so with only that character online,
+  Family said none of the family was, and sent nothing. Any of their characters now answers
+  for all of them, which is what a link to a family was always meant to mean.
+
 ## 1.4.1 — 2026-09-01
 
 ### Fixed

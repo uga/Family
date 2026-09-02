@@ -12048,6 +12048,84 @@ print("a family is a person with several characters")
 
 
 	------------------------------------------------------------------------------------------
+	-- A character they added after linking
+	--
+	-- Everything above works from `characters` - the ones we have heard from. A character
+	-- created on their side after the link is not in it and never will be until they happen
+	-- to send from it: they arrive as a *member*, which is what the Wide Family panel lists
+	-- and what the summary borrows. So a family could see six of their characters, tick one
+	-- as a sibling and read its bags, while this list held one name.
+	--
+	-- Reported from play, with the panel showing six and the update saying "none of their 1
+	-- character is online" while the player was sitting on one of the other five.
+	------------------------------------------------------------------------------------------
+	do
+		local link = Family.Wide:Links()["theirs"]
+
+		-- Two of theirs that have never said a word here, and one that is a second spelling
+		-- of somebody already in `characters` - because a member key carries the realm and
+		-- the name the client complains with does not, and counting that one twice would put
+		-- a number in front of the player that is not the size of their family.
+		link.members = {
+			["Spazzacamino-Thunderstrike"] = { meta = { name = "Spazzacamino" } },
+			["Malachia-Thunderstrike"] = { meta = { name = "Malachia" } },
+			["Grella-Thunderstrike"] = { meta = { name = "Grella" } },
+		}
+
+		-- Everybody above has already been refused once, and `time()` does not move in this
+		-- harness, so an absent mark set earlier never expires on its own. The client saying
+		-- somebody *is* there is what clears one, and it is what this uses.
+		sent = {}
+		Family.Comm:Abandon()
+		for _, who in ipairs({ "Grella", "Grellina", "Grellone", "Malachia",
+			"Spazzacamino" }) do
+			Family.Comm:Present(who .. "-Thunderstrike")
+		end
+
+		-- Heard-from first, because being heard from is evidence of having been online and
+		-- being shared is only evidence of existing.
+		Family.Wide:ExchangeWith("theirs", "after they added one")
+		check("a character they added after linking does not displace one we have heard from",
+			sent[1] and sent[1].target == "Grella-Thunderstrike",
+			sent[1] and tostring(sent[1].target) or "nothing sent")
+
+		-- And when every heard-from name has been eliminated, the shared ones are still
+		-- somebody to try - which is the whole fault: before this they were not.
+		notFound("Grella")
+		notFound("Grellina")
+		notFound("Grellone")
+
+		local reached = sent[#sent] and sent[#sent].target
+		check("and once they are all eliminated, one they only told us about is tried",
+			reached == "Malachia-Thunderstrike", tostring(reached))
+
+		-- And a refusal naming *that* one is about this link too, so it moves on rather than
+		-- landing nowhere. Matched against the heard-from list alone it belonged to no link.
+		notFound("Malachia")
+		check("and a refusal naming one of those moves on to the next",
+			sent[#sent] and sent[#sent].target == "Spazzacamino-Thunderstrike",
+			sent[#sent] and tostring(sent[#sent].target) or "nothing sent")
+
+		-- Five, not six: Grella is in both lists and is one character.
+		local from = #DEFAULT_CHAT_FRAME.messages
+		notFound("Spazzacamino")
+
+		local counted
+		for index = from + 1, #DEFAULT_CHAT_FRAME.messages do
+			local line = DEFAULT_CHAT_FRAME.messages[index]
+			if line:find("None of", 1, true) then counted = line end
+		end
+		check("and the count is of characters, not of the lists they came from",
+			counted ~= nil and counted:find("5 characters", 1, true) ~= nil,
+			tostring(counted))
+
+		link.members = {}
+		Family.Comm:Abandon()
+		advance(120)
+	end
+
+
+	------------------------------------------------------------------------------------------
 	-- And the switch that turns that sentence off
 	------------------------------------------------------------------------------------------
 
