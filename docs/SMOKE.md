@@ -402,6 +402,9 @@ take these with it.
 | v1.4.2 | Anniversary | 2/9/26 | Alberto | Not run - cut immediately on a reported fault. Harness green; the fix is in Wide Family addressing and is confirmed live by the report that follows it |
 | v1.4.2 | Era | 2/9/26 | Alberto | Not run - cut immediately on a reported fault. Harness green; the fix is in Wide Family addressing and is confirmed live by the report that follows it |
 | v1.4.2 | Mists | 2/9/26 | Alberto | Not run - cut immediately on a reported fault. Harness green; the fix is in Wide Family addressing and is confirmed live by the report that follows it |
+| v1.4.3 | Anniversary | 3/9/26 | Alberto | Pass |
+| v1.4.3 | Era | 3/9/26 | Alberto | Pass |
+| v1.4.3 | Mists | 3/9/26 | Alberto | Pass |
 
 *Client* is `Era`, `Anniversary` or `Mists` — the three the `.toc` names. *Result* is `pass`, or what was not run and
 why — the sections needing a guildmate or a second family are the ones that will honestly say
