@@ -16,6 +16,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 1.4.3 — 2026-09-03
+
 ### Fixed
 
 - **A salt shaker said it was ready in 49 days.** Its cooldown is three. At login the client
