@@ -789,6 +789,21 @@ because that expansion removed them.
 | Burning Crusade | 29 | 24 |
 | Mists | 3 | 3 |
 
+**The item lane is keyed by profession as well, measured 2026-09-03.** What a recipe makes does
+not say who made it, and on the two builds that matter the same bar is made twice:
+
+| item | one way | the other |
+|---|---|---|
+| Gold Bar 3577 | Mining, *Smelt Gold* 3308, **no cooldown** | Alchemy, *Transmute: Iron to Gold* 11479, 24h |
+| Truesilver Bar 6037 | Mining, *Smelt Truesilver* 10098, **no cooldown** | Alchemy, *Mithril to Truesilver* 11480, 48h |
+
+Keyed by item alone, the alchemist's cooldown was handed to the miner - and mining has no
+crafting cooldown at all on Classic Era, so every miner who could smelt gold grew a Mining
+column on the Crafting panel reading *ready* for ever. Reported from play from a French Era
+client, beside a real transmute column. So the skill line that teaches the spell travels with
+the number, and a match has to agree about the profession as well as the item. A spell id needs
+no such care: it names one recipe of one profession.
+
 **What is still learned by watching.** Anything the table has never heard of - and a nil here is
 not a claim that there is no cooldown, only that this table does not know of one.
 

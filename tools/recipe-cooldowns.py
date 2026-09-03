@@ -119,6 +119,12 @@ def build():
         "--",
         "-- Keyed twice within that: by spell, and by the item the recipe makes, because a",
         "-- recipe on Classic Era often arrives with an item id and no spell at all.",
+        "--",
+        "-- The item lane is keyed again by the skill line that teaches it, because what a",
+        "-- recipe makes does not say which profession made it: a Gold Bar is smelted by a",
+        "-- miner for nothing and transmuted by an alchemist on a day\'s wait. Without the",
+        "-- line, every Era miner who could smelt gold grew a Mining column that read ready",
+        "-- for ever. So a match has to agree about the profession as well as the item.",
         "",
         "local _, Family = ...",
         "",
@@ -131,8 +137,20 @@ def build():
 
         professions = {int(r["ID"]) for r in read("SkillLine", build_id)
                        if r.get("CategoryID") == PRIMARY_CATEGORY}
-        taught = {int(r["Spell"]) for r in read("SkillLineAbility", build_id)
-                  if int(r["SkillLine"]) in professions}
+        # Which professions teach each spell, and not merely whether one does.
+        #
+        # The item lane below is keyed by what a recipe makes, and two professions can make
+        # the same thing on different terms: a Gold Bar is smelted by a miner with no
+        # cooldown at all and transmuted by an alchemist on a day's wait. Keyed by item
+        # alone, the alchemist's cooldown was attributed to the miner's smelt, and every
+        # Classic Era miner who could smelt gold grew a Mining column on the Crafting panel
+        # that read "ready" for ever, because the cooldown it named does not exist for them.
+        # Reported from play. So the line that teaches it travels with the number.
+        taught = {}
+        for r in read("SkillLineAbility", build_id):
+            line = int(r["SkillLine"])
+            if line in professions:
+                taught.setdefault(int(r["Spell"]), set()).add(line)
 
         creates = {}
         for row in read("SpellEffect", build_id):
@@ -158,7 +176,10 @@ def build():
 
             seconds = longest // 1000
             bySpell[spell] = max(bySpell.get(spell, 0), seconds)
-            byItem[made] = max(byItem.get(made, 0), seconds)
+
+            for line in taught[spell]:
+                byItem.setdefault(made, {})[line] = max(
+                    byItem.get(made, {}).get(line, 0), seconds)
 
         print("  %-30s %3d recipes with a cooldown, %3d of them by what they make"
               % (game, len(bySpell), len(byItem)))
@@ -171,7 +192,9 @@ def build():
         lines.append("\t\t},")
         lines.append("\t\titem = {")
         for made in sorted(byItem):
-            lines.append("\t\t\t[%d] = %d," % (made, byItem[made]))
+            byLine = byItem[made]
+            inside = ", ".join("[%d] = %d" % (line, byLine[line]) for line in sorted(byLine))
+            lines.append("\t\t\t[%d] = { %s }," % (made, inside))
         lines.append("\t\t},")
         lines.append("\t},")
 

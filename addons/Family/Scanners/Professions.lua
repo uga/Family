@@ -692,17 +692,36 @@ function Professions:ScanNow(includeRecipes)
 		-- The cost is stated rather than hidden (§2.2): a member is silent about their
 		-- transmute until Family has seen it on cooldown once. Nothing else would be honest.
 		-- What Family knows here is what it has watched.
-		local known = {}
+		-- **What was watched is remembered; what a table said is asked again.**
+		--
+		-- Both used to be one flag, and carrying that flag forward by name made every
+		-- answer permanent - including a wrong one. When the generated table handed a
+		-- miner's Smelt Gold the alchemist's transmute cooldown, opening the mining window
+		-- again could not undo it: the flag was already stored, so the row was marked
+		-- because it had been marked. A wrong answer that survives its own correction is
+		-- worse than the wrong answer.
+		--
+		-- So only a recipe Family has actually seen counting down is carried forward, and
+		-- `readyAt` is the evidence of that - it is written when a cooldown is running and
+		-- it stays as the moment it came back. Everything else is re-derived from the
+		-- tables on every scan, which means a table that changes its mind is believed.
+		--
+		-- The cost is stated rather than hidden (§2.2): a recipe watched once, whose
+		-- cooldown the generated tables have never heard of, loses its mark at the next
+		-- scan and re-learns it the next time it is used.
+		local watched = {}
 		for _, recipe in ipairs(entry.recipes or {}) do
-			if recipe.hasCooldown and recipe.name then known[recipe.name] = true end
+			if recipe.watched and recipe.name then watched[recipe.name] = true end
 		end
 
 		for _, recipe in ipairs(recipes) do
 			if recipe.readyAt then
 				recipe.hasCooldown = true
-			elseif recipe.name and known[recipe.name] then
+				recipe.watched = true
+			elseif recipe.name and watched[recipe.name] then
 				recipe.hasCooldown = true
-			elseif Family.Cooldowns:Known(recipe.spellID, recipe.itemID) then
+				recipe.watched = true
+			elseif Family.Cooldowns:Known(recipe.spellID, recipe.itemID, recipeKey) then
 				-- Answered from the client's own tables rather than from having watched
 				-- one run, which is what made a character invisible on the Crafting panel
 				-- until somebody caught them mid-transmute.

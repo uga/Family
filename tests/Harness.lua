@@ -1255,8 +1255,12 @@ TRADE_RECIPES = {
 -- answers UNKNOWN when it is shut, which is what lets the Craft frame be tried next -
 -- without that, the trade skill path always wins and enchanting is never reached.
 TRADE_SKILL_OPEN = true
+-- Which profession's window is open. A variable rather than a constant because what a recipe
+-- makes does not say who made it: a Gold Bar is smelted by a miner for nothing and transmuted
+-- by an alchemist on a day's wait, so the same row means different things under two windows.
+TRADE_SKILL_NAME = "Blacksmithing"
 GetTradeSkillLine = function()
-	return TRADE_SKILL_OPEN and "Blacksmithing" or "UNKNOWN"
+	return TRADE_SKILL_OPEN and TRADE_SKILL_NAME or "UNKNOWN"
 end
 -- The window lists what it *shows*, exactly as the skill list above does: a collapsed
 -- sub-class header hides every row under it and the count is of rows on screen. Modelled
@@ -1294,7 +1298,14 @@ GetTradeSkillItemLink = function(index)
 	local r = visibleTradeRows()[index]
 	return r and r[5]
 end
-GetTradeSkillCooldown = function() return nil end
+-- The seconds left on a row's cooldown, or nothing at all - which is what the client answers
+-- for a recipe that has none *and* for one that is ready, the ambiguity the generated tables
+-- exist to resolve. Taken from the row so that a test can put a recipe on cooldown and then
+-- take it off again, which is the only way to earn the "Family watched this" mark honestly.
+GetTradeSkillCooldown = function(index)
+	local r = visibleTradeRows()[index]
+	return r and r[6] or nil
+end
 
 -- The bank: container -1, plus one bought bank bag at 6. Bag 5 is deliberately absent.
 -- The bank's own window answers 20 free while holding one thing in twenty-four slots, which
@@ -14418,13 +14429,39 @@ end)()
 	-- The half that matters most: a recipe on Classic Era usually arrives with an item id and
 	-- no spell at all - measured on a French client, 111 alchemy recipes and not one spell id
 	-- among them - so a table keyed only by spell would miss exactly the case it is for.
+	-- 171 is Alchemy and 186 is Mining, the skill line ids the recorder files a profession
+	-- under. Both are in SkillLines.lua, which is where those numbers come from.
+	local ALCHEMY, MINING, GOLD_BAR = 171, 186, 3577
+
 	check("and by what it makes, which is all an Era recipe carries",
-		Family.Cooldowns:Known(nil, TRUESILVER_BAR) == 172800,
-		tostring(Family.Cooldowns:Known(nil, TRUESILVER_BAR)))
+		Family.Cooldowns:Known(nil, TRUESILVER_BAR, ALCHEMY) == 172800,
+		tostring(Family.Cooldowns:Known(nil, TRUESILVER_BAR, ALCHEMY)))
+
+	-- **And only for the profession whose recipe has the cooldown.** A Truesilver Bar is
+	-- transmuted by an alchemist on a two-day wait and smelted by a miner for nothing at
+	-- all; a Gold Bar is the same pair. Answered by item alone, the alchemist's cooldown was
+	-- handed to the miner - and since mining has no cooldowns whatever on Classic Era, every
+	-- miner who could smelt gold grew a Mining column reading "ready" for ever. Reported
+	-- from play, with the panel showing it beside a real one.
+	check("but not for a profession that makes the same thing for nothing",
+		Family.Cooldowns:Known(nil, TRUESILVER_BAR, MINING) == nil,
+		tostring(Family.Cooldowns:Known(nil, TRUESILVER_BAR, MINING)))
+
+	check("and the same for gold, which is the pair that was reported",
+		Family.Cooldowns:Known(nil, GOLD_BAR, ALCHEMY) == 86400
+			and Family.Cooldowns:Known(nil, GOLD_BAR, MINING) == nil,
+		tostring(Family.Cooldowns:Known(nil, GOLD_BAR, ALCHEMY)) .. " / "
+			.. tostring(Family.Cooldowns:Known(nil, GOLD_BAR, MINING)))
+
+	-- A caller with no profession to offer gets nothing rather than whichever entry is in
+	-- the table, which is the same rule the other way round (§2.2).
+	check("and a caller who cannot say which profession is answered nothing",
+		Family.Cooldowns:Known(nil, TRUESILVER_BAR, nil) == nil,
+		tostring(Family.Cooldowns:Known(nil, TRUESILVER_BAR, nil)))
 
 	check("something with no cooldown is not given one",
-		Family.Cooldowns:Known(nil, 2589) == nil,
-		tostring(Family.Cooldowns:Known(nil, 2589)))
+		Family.Cooldowns:Known(nil, 2589, ALCHEMY) == nil,
+		tostring(Family.Cooldowns:Known(nil, 2589, ALCHEMY)))
 
 	-- Per expansion, and not as a nicety: the same transmute is 48 hours on Era, 20 on
 	-- Burning Crusade and gone on Mists. A single table would tell a Mists alchemist about a
@@ -14450,7 +14487,7 @@ end)()
 	-- reaching for whichever entry happens to be first.
 	Family.Capabilities.expansion = 99
 	check("an expansion the table does not carry answers nothing",
-		Family.Cooldowns:Known(ARCANITE, TRUESILVER_BAR) == nil)
+		Family.Cooldowns:Known(ARCANITE, TRUESILVER_BAR, ALCHEMY) == nil)
 	Family.Capabilities.expansion = held
 
 	-- And the scanner acts on it. A recipe whose cooldown nobody has ever seen running is
@@ -14490,6 +14527,101 @@ end)()
 		TRADE_RECIPES[#TRADE_RECIPES] = nil
 		Family.Professions:Scan(true)
 		TRADE_SKILL_OPEN = held
+	end
+
+	-- And the same row under two windows means two different things.
+	--
+	-- Smelt Gold is a mining recipe that makes a Gold Bar, and it carries no spell id on
+	-- Classic Era - an item id is all a trade skill record has there. Transmute: Iron to Gold
+	-- makes the same bar on a day's cooldown. So the item lane, asked without a profession,
+	-- handed the alchemist's cooldown to the miner: mining has no cooldowns at all on that
+	-- build, and every miner who could smelt gold grew a Mining column reading "ready" for
+	-- ever. Reported from play, from a French Era client, beside a real transmute column.
+	do
+		local heldOpen, heldName = TRADE_SKILL_OPEN, TRADE_SKILL_NAME
+		TRADE_SKILL_OPEN = true
+
+		-- No recipe link, which is what Era hands back for a trade skill row, so the only
+		-- id here is the bar it makes.
+		TRADE_RECIPES[#TRADE_RECIPES + 1] = { [1] = "Smelt Gold", [2] = "optimal", [3] = 0,
+			[5] = "|cffffffff|Hitem:3577|h[Gold Bar]|h|r" }
+
+		local function smeltUnder(profession)
+			TRADE_SKILL_NAME = profession
+			Family.Professions:Scan(true)
+
+			for line, record in pairs((Family.Database:Payload(key) or {}).professions or {}) do
+				if line == Family:SkillLineFor(profession) then
+					for _, recipe in ipairs(record.recipes or {}) do
+						if recipe.itemID == 3577 then return recipe end
+					end
+				end
+			end
+		end
+
+		local mined = smeltUnder("Mining")
+		check("a miner's smelt is not given the alchemist's cooldown",
+			mined ~= nil and mined.hasCooldown == nil,
+			mined and tostring(mined.hasCooldown) or "the row was not recorded at all")
+
+		-- And the alchemist still gets it, or the fix would be a way of answering nothing.
+		local transmuted = smeltUnder("Alchemy")
+		check("and the alchemist who transmutes the same bar still is",
+			transmuted ~= nil and transmuted.hasCooldown == true,
+			transmuted and tostring(transmuted.hasCooldown) or "the row was not recorded")
+
+		-- **And the wrong answer already on disk is undone by the fix, not preserved by it.**
+		--
+		-- A mark used to be carried forward by name for ever, so the miner's rows stayed
+		-- marked no matter how often the window was opened: the row was marked because it
+		-- had been marked. What is carried forward now is only what Family watched counting
+		-- down, and `readyAt` is that evidence. Written here exactly as the old version left
+		-- it - a mark and nothing behind it.
+		do
+			local stale
+			for line, record in pairs((Family.Database:Payload(key) or {}).professions or {}) do
+				if line == Family:SkillLineFor("Mining") then
+					for _, recipe in ipairs(record.recipes or {}) do
+						if recipe.itemID == 3577 then stale = recipe end
+					end
+				end
+			end
+			stale.hasCooldown = true
+			stale.watched = nil
+
+			local after = smeltUnder("Mining")
+			check("and a mark left by the old rule is dropped rather than carried forward",
+				after ~= nil and after.hasCooldown == nil,
+				after and tostring(after.hasCooldown) or "the row went missing")
+
+			-- What Family actually watched survives, or this would have thrown away the
+			-- one thing the client cannot say twice.
+			--
+			-- **Earned through the client, not written by hand.** Setting the mark in the
+			-- record and checking it is still there measures nothing: removing the line
+			-- that writes it left that check passing. So the row is put on cooldown, the
+			-- window is read, and only then is it taken off again.
+			TRADE_RECIPES[#TRADE_RECIPES][6] = 3600
+
+			local running = smeltUnder("Mining")
+			check("a row the client says is counting down is marked as watched",
+				running ~= nil and running.watched == true and running.hasCooldown == true,
+				running and tostring(running.watched) or "the row went missing")
+
+			TRADE_RECIPES[#TRADE_RECIPES][6] = nil
+
+			local kept = smeltUnder("Mining")
+			check("and stays marked once it has come back, which nothing else can say",
+				kept ~= nil and kept.hasCooldown == true and kept.watched == true,
+				kept and tostring(kept.hasCooldown) or "the row went missing")
+
+			kept.hasCooldown, kept.watched = nil, nil
+		end
+
+		TRADE_RECIPES[#TRADE_RECIPES] = nil
+		TRADE_SKILL_NAME = heldName
+		Family.Professions:Scan(true)
+		TRADE_SKILL_OPEN = heldOpen
 	end
 
 	-- And a trinket is not a recipe. A Mechanical Dragonling's summon is filed under

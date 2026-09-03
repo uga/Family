@@ -125,7 +125,22 @@ end
 --
 -- Nil where the table has never heard of it, which is not a claim that there is no cooldown -
 -- watching still fills those in.
-function Cooldowns:Known(spellID, itemID)
+--
+-- `profession` is the skill line the recipe was scanned under, and the item lane needs it.
+-- **What a recipe makes does not say which profession made it.** A Gold Bar is smelted by a
+-- miner for nothing and transmuted by an alchemist on a day's wait; a Truesilver Bar is the
+-- same pair. Answered by item alone, the alchemist's cooldown was handed to the miner, and
+-- every Classic Era miner who could smelt gold grew a Mining column on the Crafting panel
+-- reading "ready" for ever - a cooldown that does not exist, on a profession that has none at
+-- all on that build. Reported from play.
+--
+-- A spell id needs no such care: it names one recipe of one profession. So the spell lane
+-- answers on its own and the item lane has to agree about both.
+--
+-- Where the caller has no profession - a trade window Family could not resolve to a skill
+-- line - the item lane says nothing rather than guessing. §2.2: not knowing which profession
+-- asked is not permission to answer for whichever one is in the table.
+function Cooldowns:Known(spellID, itemID, profession)
 	local expansion = Family.Capabilities and Family.Capabilities.expansion
 	local here = expansion and (Family.RecipeCooldowns or {})[expansion]
 	if not here then return nil end
@@ -135,8 +150,9 @@ function Cooldowns:Known(spellID, itemID)
 		if seconds then return seconds end
 	end
 
-	if itemID and here.item then
-		local seconds = here.item[itemID]
+	if itemID and profession and here.item then
+		local byLine = here.item[itemID]
+		local seconds = byLine and byLine[profession]
 		if seconds then return seconds end
 	end
 

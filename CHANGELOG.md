@@ -16,6 +16,15 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Fixed
+
+- **Miners were shown a mining cooldown that does not exist.** A Gold Bar is smelted by a miner
+  and transmuted by an alchemist, and only the alchemist waits — but Family could not tell the
+  two apart, so any miner who could smelt gold or truesilver grew a Mining column on the
+  Crafting panel that said *ready* for ever. It now asks which profession made the thing, not
+  only what was made. The wrong mark already on your characters clears itself the next time
+  that profession's window is opened.
+
 ## 1.4.2 — 2026-09-02
 
 ### Fixed
