@@ -1464,3 +1464,40 @@ already wrong and nobody knows yet.** The stronger version, and the one this cos
 to learn: **a build artifact is not verified until something has looked inside the artifact.**
 Everything else — the checks, the smoke pass, three clients on this machine — was testing the
 source tree, and the source tree was never the thing players install.
+
+
+## L-039 — The arithmetic was right and one of its inputs was not
+
+A salt shaker was shown on the Crafting panel as ready in **49 days 15 hours**. Its cooldown is
+three days. Two characters showed the same wrong number, and rescanning either of them by hand
+corrected it.
+
+`itemReadyAt` turns the client's `start` and `duration` into a moment:
+
+    remaining = (start + duration) - now
+
+which is correct for every input where `start` is a moment that has passed. At login the
+client can answer with a `start` in the *future* — about forty-six days ahead here — before it
+has settled its cooldown clock, and Family scans the bags at login. So the wrong value was
+written once, at the only moment the client produces it, and then sat in the record.
+
+**Why it was invisible.** Every deliberate way of checking it makes it go away. Open the bags
+and look, rescan the character, ask the client what the cooldown is — all of them run after the
+client has settled, and all of them answer correctly. The state that produces the fault is one
+the client passes through rather than one it stays in, and the record outlives it.
+
+**And what I did with that.** I had both numbers in this session: three days from the client's
+own `SpellCooldowns` via wago, and 49 days from the screenshot. I asked Alberto for two probes
+instead of comparing them. He replied: *the client gives the right number, you can bet on it —
+check your arithmetic.* He was right, and no probe was needed: **a cooldown cannot have more
+time left than its own length**, because `start` has already passed. The bound was available
+offline, from data already fetched, before any question was asked.
+
+Asking for a measurement is the right instinct and it was the wrong move here. The rule that
+distinguishes them: **if a stored value contradicts a bound you already hold, the bound is the
+check.** Go to the source for what you cannot derive, not for what you can.
+
+**Caught by:** `COOLDOWN_UNSETTLED` in the harness, which makes the client answer with a start
+in the future. Dropping the guard records the item as ready in 47 days — the reported shape,
+reproduced. Clamping instead of refusing also fails: a clamp invents a moment out of a number
+already known to be wrong, and the next scan has a real one.

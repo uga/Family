@@ -1344,8 +1344,16 @@ GetTime = function() return FAKE_CLOCK end
 -- One thing on a real daily cooldown, and one hearthstone. The hearthstone is the case that
 -- proved the floor was wrong: half an hour is a cooldown, and being told at login that a
 -- character's hearthstone is ready is not information anybody wanted.
+-- And the shape a client answers with at login, before it has settled its cooldown clock: a
+-- start far in the *future*, which makes the arithmetic produce a wait longer than the
+-- cooldown itself. Switched on by a test rather than always, because it is a state the client
+-- passes through rather than one it stays in.
+COOLDOWN_UNSETTLED = false
 C_Container.GetContainerItemCooldown = function(bag, slot)
-	if bag == 0 and slot == 1 then return 900, 86400, 1 end
+	if bag == 0 and slot == 1 then
+		if COOLDOWN_UNSETTLED then return FAKE_CLOCK + 4000000, 86400, 1 end
+		return 900, 86400, 1
+	end
 	if bag == 0 and slot == 2 then return 900, 1800, 1 end
 	return 0, 0, 0
 end
@@ -2428,6 +2436,40 @@ check("and so is a thing in a bag with a long cooldown of its own",
 -- hearthstone is the one that proved this: it was being announced at login.
 check("but a half-hour cooldown is not one of the things this is for",
 	itemCooldowns and #itemCooldowns == 1, itemCooldowns and tostring(#itemCooldowns))
+
+-- And a client that has not settled its cooldown clock is not believed.
+--
+-- At login the client can answer with a `start` in the *future*, and the arithmetic that
+-- turns start and duration into a moment then produces a wait longer than the cooldown
+-- itself: a salt shaker whose cooldown is three days was recorded as ready in 49, and shown
+-- that way on the Crafting panel until the character was rescanned by hand. Reported from
+-- play, with that rescan as the clue - the arithmetic was right and one of its inputs was not.
+--
+-- A cooldown cannot have more time left than its own length, because `start` is a moment that
+-- has already passed. That is an invariant rather than a guess, and it costs one comparison.
+do
+	COOLDOWN_UNSETTLED = true
+	Family.Bags:Scan()
+
+	local unsettled = Family.Database:Meta(key).itemCooldowns
+	check("a start in the future is refused rather than written as a very long wait",
+		unsettled == nil or #unsettled == 0,
+		unsettled and tostring(#unsettled) .. " recorded, first readyAt in "
+			.. tostring(math.floor(((unsettled[1] or {}).readyAt or 0) - time()) / 86400)
+			.. " days" or "none")
+
+	-- And the next scan, once the client has settled, records it properly - which is why
+	-- refusing costs nothing: the list is rewritten whole every time.
+	COOLDOWN_UNSETTLED = false
+	Family.Bags:Scan()
+
+	local settled = Family.Database:Meta(key).itemCooldowns
+	check("and the next scan records it, so a refusal costs one scan and not the fact",
+		settled and #settled == 1 and settled[1].readyAt - time() <= 86400,
+		settled and tostring(#settled) or "none")
+end
+
+itemCooldowns = Family.Database:Meta(key).itemCooldowns
 
 local ready, nextReady = Family.Cooldowns:Summarise(Family.Database:Meta(key))
 check("nothing is ready while both are still running", ready == 0, tostring(ready))

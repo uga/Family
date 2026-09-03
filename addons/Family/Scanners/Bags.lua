@@ -162,6 +162,22 @@ local function itemReadyAt(bag, slot)
 	local remaining = (start + duration) - now
 	if remaining <= 0 then return nil end
 
+	-- **A cooldown cannot have more time left than its own length.** `start` is a moment on
+	-- the client's own clock and it is in the past, so `start + duration - now` is at most
+	-- `duration`. More than that means `start` is in the future, which is not a long wait -
+	-- it is a number that does not mean what this arithmetic assumes.
+	--
+	-- It happens at login, before the client has settled its cooldown clock: a scan there
+	-- read a start of about forty-six days ahead and wrote a salt shaker as ready in 49 days
+	-- when the item's own cooldown is three. Reported from play, with the giveaway that
+	-- rescanning the character by hand corrected it - the arithmetic was right and one of
+	-- its inputs was not.
+	--
+	-- Refused rather than clamped. A clamp would invent a moment out of a number already
+	-- known to be wrong, and the next scan will have a real one: the list is rewritten whole
+	-- each time, so a refusal here clears a bad record rather than leaving it.
+	if remaining > duration then return nil end
+
 	return time() + remaining
 end
 
