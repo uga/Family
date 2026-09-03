@@ -12440,6 +12440,75 @@ check("event dispatch isolates a failing handler", survived)
 -- rather than at the next release.
 --------------------------------------------------------------------------------------------
 
+--------------------------------------------------------------------------------------------
+-- What CurseForge is actually shown
+--
+-- `manual-changelog` in .pkgmeta names a file and the packager sends that file **whole**.
+-- Pointed at CHANGELOG.md it published every version since 1.0.0 on every release - 58 kB of
+-- history under an empty Unreleased heading - while .pkgmeta's own comment and the changelog's
+-- header both said it published the release's section. The section release.sh cuts went into
+-- the tag annotation, where nobody reads it.
+--
+-- Two files asserting one fact, nothing comparing them, and the fault visible only in the
+-- published artifact: the same shape as the libraries in L-038, found the same way, by opening
+-- what went out. So this compares them.
+--------------------------------------------------------------------------------------------
+
+print()
+print("the notes CurseForge shows are this release's and not the whole history")
+;(function()
+	local meta = io.open(ROOT .. "/.pkgmeta")
+	local pkgmeta = meta and meta:read("*a") or ""
+	if meta then meta:close() end
+
+	local named = pkgmeta:match("manual%-changelog:%s*\n%s*filename:%s*(%S+)")
+	check("the packager is pointed at a file",
+		named ~= nil, tostring(named))
+
+	check("and it is not the whole changelog, which is history rather than notes",
+		named ~= "CHANGELOG.md", tostring(named))
+
+	local script = io.open(ROOT .. "/tools/release.sh")
+	local sh = script and script:read("*a") or ""
+	if script then script:close() end
+
+	check("and release.sh writes exactly that file",
+		named ~= nil and sh:find("> " .. named, 1, true) ~= nil,
+		"release.sh does not write " .. tostring(named))
+
+	-- Compared plainly rather than as a pattern: the file's name has a hyphen in it and a
+	-- hyphen is a quantifier in a Lua pattern, so matching it as one asks a question about
+	-- repeated Es. The first version of this check did exactly that and failed on a line
+	-- that was right there.
+	local staged = false
+	for line in (sh .. "\n"):gmatch("([^\n]*)\n") do
+		if line:find("git add ", 1, true) and named and line:find(named, 1, true) then
+			staged = true
+		end
+	end
+	check("and stages it with the release commit, or the tag would not carry it", staged)
+
+	-- And what is in it now is one release's worth. A file holding two version headings is
+	-- one that stopped being cut and started being appended to.
+	local notes = named and io.open(ROOT .. "/" .. named)
+	if notes then
+		local text = notes:read("*a")
+		notes:close()
+
+		local versions = 0
+		for line in (text .. "\n"):gmatch("([^\n]*)\n") do
+			if line:match("^## ") then versions = versions + 1 end
+		end
+
+		check("and the file itself holds one version, not a history",
+			versions == 1, tostring(versions) .. " version headings")
+		check("and does not carry the Unreleased heading into a published page",
+			text:find("## Unreleased", 1, true) == nil)
+	else
+		check("the notes file is present", false, tostring(named) .. " is missing")
+	end
+end)()
+
 print()
 print("the release workflow may create the release it uploads")
 ;(function()
@@ -14872,8 +14941,8 @@ end)()
 print()
 print("the changelog, as release.sh will cut it")
 
--- release.sh cuts everything between "## Unreleased" and the next "## " and sends it to
--- CurseForge as the release notes. Nobody reads that block whole until it is being published,
+-- release.sh cuts everything between "## Unreleased" and the next "## " into RELEASE-NOTES.md,
+-- which is what CurseForge shows. Nobody reads that block whole until it is being published,
 -- which is exactly why it drifts: entries are appended a slice at a time, over weeks, by
 -- somebody looking at the top of the file.
 --

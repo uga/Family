@@ -57,6 +57,13 @@ git rev-parse --verify --quiet "refs/tags/v$version" >/dev/null \
 # What goes in the release notes: everything between the Unreleased heading and the next
 # version heading. Empty means nobody wrote down what changed, and shipping a release whose
 # notes say nothing is worse than stopping to write them.
+#
+# This is also what CurseForge shows, and it did not used to be. `manual-changelog` in
+# .pkgmeta names a file and the packager sends that file **whole** - pointed at CHANGELOG.md
+# it published every version since 1.0.0 on every release, 58 kB of history under an empty
+# Unreleased heading, while two comments in this repository said it published the section.
+# Nobody had opened a published release to look. So the section is written to its own file
+# below and .pkgmeta points at that.
 notes="$(awk '/^## Unreleased/{found=1; next} found && /^## /{exit} found' CHANGELOG.md)"
 [[ -n "$(printf '%s' "$notes" | tr -d '[:space:]')" ]] \
     || fail "CHANGELOG.md has nothing under Unreleased - write what changed first"
@@ -121,7 +128,11 @@ awk -v version="$version" -v today="$today" '
     { print }
 ' CHANGELOG.md > CHANGELOG.md.new && mv CHANGELOG.md.new CHANGELOG.md
 
-git add addons/Family/Family.toc addons/Family_UI/Family_UI.toc CHANGELOG.md
+# The notes as CurseForge will show them: this version's section, and nothing else. Written
+# into the release commit so that the tag carries it and the packager finds it in the checkout.
+printf '## %s \u2014 %s\n%s\n' "$version" "$today" "$notes" > RELEASE-NOTES.md
+
+git add addons/Family/Family.toc addons/Family_UI/Family_UI.toc CHANGELOG.md RELEASE-NOTES.md
 git commit -q -m "Release $version"
 git tag -a "v$version" -m "Family $version
 

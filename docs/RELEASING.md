@@ -80,8 +80,9 @@ tools/release.sh 0.2.0
 ```
 
 It bumps the version in both `.toc` files, turns the **Unreleased** section of
-[`CHANGELOG.md`](../CHANGELOG.md) into a dated section for this version, commits that, and
-makes an annotated tag carrying the notes. Then it prints the push command and stops, because
+[`CHANGELOG.md`](../CHANGELOG.md) into a dated section for this version, writes that same
+section to [`RELEASE-NOTES.md`](../RELEASE-NOTES.md) — which is the file CurseForge shows —
+commits both, and makes an annotated tag carrying the notes. Then it prints the push command and stops, because
 pushing is the publishing and it should be a thing you do rather than a thing that happens.
 
 ```bash
@@ -90,6 +91,14 @@ git push && git push origin v0.2.0
 
 The tag push starts [`.github/workflows/release.yml`](../.github/workflows/release.yml),
 which runs the checks, builds the zip and uploads it.
+
+**What the project page shows is `RELEASE-NOTES.md`, not the changelog.** `manual-changelog` in
+`.pkgmeta` names a file and the packager sends that file *whole*: pointed at `CHANGELOG.md` it
+published the entire history on every release, under an empty **Unreleased** heading, for five
+releases — while `.pkgmeta` and the changelog's own header both said it published the section.
+Nobody had opened a published release to look. The harness now compares the two files, and the
+release workflow opens the zip it built; both exist because the same class of fault shipped
+twice.
 
 It refuses to start on a dirty tree, on a version that already exists, on a changelog with
 nothing under **Unreleased**, on a version with no run recorded in [`SMOKE.md`](SMOKE.md), or

@@ -25,6 +25,7 @@ ignore:
     - .gitignore
     - README.md
     - CHANGELOG.md
+    - RELEASE-NOTES.md
 
 # Two libraries, fetched at package time rather than committed. That keeps them at their own
 # upstream version and keeps their licences theirs (HANDOFF §3), and it means this repository
@@ -46,7 +47,16 @@ externals:
     Libs/LibSerialize: https://github.com/rossnichols/LibSerialize
     Libs/LibDeflate: https://github.com/SafeteeWoW/LibDeflate
 
-# The changelog CurseForge shows is the release's own section, cut by tools/release.sh.
+# The changelog CurseForge shows.
+#
+# **The packager sends this file whole.** Pointed at CHANGELOG.md it published every version
+# since 1.0.0 on every release - 58 kB of history under an empty Unreleased heading - while
+# this comment and the changelog's own header both said it published the release's section.
+# Neither was true and nothing checked, because checking means opening a published release,
+# which is the same thing five releases of missing libraries were waiting for (LESSONS L-038).
+#
+# tools/release.sh writes RELEASE-NOTES.md as part of the release commit: this version's
+# section and nothing else. It is ignored above so that it does not travel inside the addon.
 manual-changelog:
-    filename: CHANGELOG.md
+    filename: RELEASE-NOTES.md
     markup-type: markdown

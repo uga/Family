@@ -1,7 +1,8 @@
 # Family — changes
 
 What changed in each release, in the words a player needs rather than the words a commit
-message uses. `tools/release.sh` cuts the top section into the release notes CurseForge shows.
+message uses. `tools/release.sh` cuts the top section into `RELEASE-NOTES.md`, which is the
+file CurseForge shows - this whole one is history and is not published.
 
 A player knows nothing about how Family is built and should not have to. No mechanism, no
 internal names, no reasoning about how something came to be wrong, no lessons learned: an entry
