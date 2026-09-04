@@ -24,8 +24,8 @@ Two things that order should not hide:
 - **Entry 2 also has a client question in it** — whether a tooltip can be redrawn while a
   modifier is held — and it is small but it is a probe, not a guess. It is not in honor's class
   and it is not nothing.
-- **Entry 4 is not work at all until it is decided.** Adopting LibDBIcon is reserved, so it sits
-  outside this order until Alberto answers it.
+- **Entry 4 is done**, and it never entered this order: it was decided on 2026-09-04 and built
+  the same turn, because the answer turned out not to need a library adopted at all.
 
 Suggested sequence for the seven, and the reason is dependency rather than size: **3 then 8**
 (the family-wide reputation view is a panel that wants the filtering from entry 3, so doing 3
@@ -81,20 +81,31 @@ beats a filter bar that half-works on six.
 
 ---
 
-## 4. A minimap button other addons can collect — RESERVED
+## 4. A minimap button other addons can collect — DONE 2026-09-04
 
 **Asked:** use LibDBIcon or similar so the icon behaves inside the popup panels other addons
 build out of minimap buttons.
 
-**Today:** confirmed, with the complaint quoted at us. `Family_UI/Broker.lua` builds
-`CreateFrame("Button", "FamilyMinimapButton", Minimap)` by hand, and the screenshot shows
+**Was:** confirmed, with the complaint quoted at us. `Family_UI/Broker.lua` built
+`CreateFrame("Button", "FamilyMinimapButton", Minimap)` by hand, and the screenshot showed
 another addon naming `FamilyMinimapButton` and asking its author to use LibDBIcon instead.
-Altoholic and GBankClassic are collected; Family is not.
+Altoholic and GBankClassic were collected; Family was not.
 
-**Reserved.** Adopting a third-party library is on the ask-never-decide list. Mechanically it
-is small — `.pkgmeta` already fetches three externals and the harness now checks that every
-library the `.toc` loads is one the packager writes where it looks — but it is not a decision
-to take while writing the code.
+**Built as: used, never shipped.** The reserved question was *adopt a library?*, and reading the
+licences turned it into a different question. LibDBIcon's terms forbid redistributing a
+stand-alone version without written permission from the Ace3 lead, and the LibDataBroker it
+hard-requires states no licence in its source, its README or its project page, where the field
+reads **All Rights Reserved**. Neither can travel inside a zip promising GPL-3.0-or-later to
+whoever receives it, whatever the rest of the ecosystem does — so nothing was adopted. Family
+registers with LibDBIcon when the player's game already has it, which it does for anyone running
+DBM, Skada, WeakAuras or most other large addons, and keeps its own button for everyone else.
+`.pkgmeta` fetches nothing new, neither `.toc` loads anything new, and the harness checks both.
+
+Two options were rejected rather than ruled out, and stay available if this is not enough:
+shipping the libraries anyway, or asking their authors in writing.
+
+`docs/DECISIONS.md` 2026-09-04 carries the reasoning; `Family_UI/Broker.lua`
+`GiveButtonToCollector` and `BuildMinimapButton` carry the code.
 
 ---
 
