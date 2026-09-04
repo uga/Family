@@ -671,7 +671,21 @@ function UI:SetMinimapShown(shown)
 		FamilyDB.ui.minimapIcon = FamilyDB.ui.minimapIcon or {}
 		FamilyDB.ui.minimapIcon.hide = not FamilyDB.ui.minimap
 
-		if FamilyDB.ui.minimap then
+		-- The frame itself where the library will hand it over, because `lib:Show` is not
+		-- only a show: it calls the library's own updatePosition, which does ClearAllPoints
+		-- and re-anchors the button to the minimap's centre. A collector that has taken the
+		-- button into a bar of its own would see it torn back onto the circle by a tick box
+		-- that only ever meant *draw it*. `lib:Hide` has no such tail, but the two belong
+		-- together or the next reader will wonder which one was deliberate.
+		--
+		-- The library's own calls remain the fallback, because `GetMinimapButton` is one more
+		-- thing to assume about something another addon loaded (§2.3).
+		local button = type(collector.GetMinimapButton) == "function"
+			and collector:GetMinimapButton("Family") or nil
+
+		if button then
+			button:SetShown(FamilyDB.ui.minimap)
+		elseif FamilyDB.ui.minimap then
 			collector:Show("Family")
 		else
 			collector:Hide("Family")

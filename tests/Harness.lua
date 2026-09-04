@@ -15794,6 +15794,37 @@ print("the minimap button, where another addon already brought a collector")
 		calls.show == 1 and calls.shown == "Family")
 	check("and says so in the same place", db and db.hide == false, tostring(db and db.hide))
 
+	-- A collector that will hand the frame over gets the frame toggled instead, because the
+	-- library's own Show repositions as well as showing - it re-anchors the button to the
+	-- minimap's centre, which would tear it out of the bar that collected it. Nothing about
+	-- that is visible from a check on `hide`, so the check is on which call was made.
+	local frame = CreateFrame("Button", nil, Minimap)
+	local second = { register = 0, show = 0, hide = 0 }
+	local handing = {
+		Register = function(_, _, _, passed) second.register = second.register + 1
+			second.db = passed end,
+		IsRegistered = function() return false end,
+		Show = function() second.show = second.show + 1 end,
+		Hide = function() second.hide = second.hide + 1 end,
+		GetMinimapButton = function(_, name) return name == "Family" and frame or nil end,
+	}
+
+	check("a collector that hands the frame over is adopted the same way",
+		Family.UI:GiveButtonToCollector(handing, object) == true and second.register == 1)
+
+	Family.UI:SetMinimapShown(false)
+	check("turning the button off hides the frame it gave us",
+		frame:IsShown() == false)
+	check("without the library's Show or Hide, which would move it",
+		second.show == 0 and second.hide == 0,
+		second.show .. "/" .. second.hide)
+	check("and it is still written down for the next login",
+		second.db and second.db.hide == true, tostring(second.db and second.db.hide))
+
+	Family.UI:SetMinimapShown(true)
+	check("turning it back on shows that same frame", frame:IsShown() == true)
+	check("still without the call that repositions", second.show == 0, tostring(second.show))
+
 	-- Nothing new is fetched or loaded for any of this. The gate that proved the libraries
 	-- were landing where the .toc looks is the same gate that would catch us shipping one.
 	local function slurp(path)
