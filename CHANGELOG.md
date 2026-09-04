@@ -19,6 +19,20 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **A linked family can share three more kinds of thing, and crafting cooldowns now travel
+  with professions.** Time played, rested experience, guild and hearthstone; currencies; and
+  Chronoboons with what is banked in them - each its own tick on the Wide Family grid, so you
+  can share where your alts are bound without saying how long you have played. Every one of
+  these was a column that stayed empty for a shared character however much had been granted.
+
+  Crafting cooldowns go with the profession they belong to rather than needing a tick of their
+  own, so a family who already shares Professions with you will start showing them at the next
+  update: a recipe list that cannot say *not for three days* only answers half the question it
+  was shared to answer.
+
+  Nothing you have already shared widens on its own. The three new categories start unticked,
+  as every category does.
+
 - **You can give a linked family a name of your own.** A link is made with a character, so
   until now every panel and tooltip labelled their characters with something like
   *Smith-PyrewoodVillage*. Open the link on the Wide Family panel and there is a box to call

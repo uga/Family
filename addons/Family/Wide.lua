@@ -49,11 +49,20 @@ local CATEGORIES = {
     -- and a category they cannot separate is a decision they cannot make.
     { id = "equipment",   label = L["Equipment"],   payload = { "equipment" },
       meta = { "itemLevel" } },
+    -- The cooldowns travel with the profession rather than in a category of their own, and
+    -- that is a widening of a consent already given: a link that granted Professions starts
+    -- sending them at the next exchange without being asked again. Alberto's call, and the
+    -- argument for it is that *when can this person make it* is the question Professions is
+    -- granted to answer - a recipe list that cannot say "not for three days" answers half of
+    -- it. The three fields go together or the panel half-works: `craftCooldowns` is the
+    -- timer, `cooldownItems` says which profession an item's timer belongs to, and
+    -- `itemCooldowns` is the timer that lives on a carried item like a salt shaker.
     { id = "professions", label = L["Professions"], payload = { "professions" },
-      meta = { "skills" } },
+      meta = { "skills", "specs", "specsSeen",
+               "craftCooldowns", "cooldownItems", "itemCooldowns" } },
     { id = "talents",     label = L["Talents"],     payload = { "talents", "spells" } },
     { id = "quests",      label = L["Quests"],      payload = { "quests" },
-      meta = { "questCount" } },
+      meta = { "questCount", "questMax" } },
     { id = "mail",        label = L["Mail"],        payload = { "mail" },
       meta = { "mailCount", "mailSeen", "mailExpiresBy" } },
     { id = "auctions",    label = L["Auctions"],    payload = { "auctions" },
@@ -61,6 +70,20 @@ local CATEGORIES = {
     { id = "reputations", label = L["Reputations"], payload = { "reputations" },
       meta = { "reputationCount" } },
     { id = "money",       label = L["Money"],       meta = { "money" } },
+
+    -- Three added 2026-09-04, because every one of these was a column a shared character
+    -- could never fill. Their own categories rather than one, for the reason §6 gives for
+    -- keeping Equipment out of Possessions: somebody will happily say where their alts are
+    -- and not how long they have played, and a category that cannot be separated is a
+    -- decision the player cannot make.
+    --
+    -- Nothing widens by itself. A category nobody has granted sends nothing, so every link
+    -- that exists keeps sending exactly what it sent yesterday until these are ticked.
+    { id = "character",   label = L["Character"],
+      meta = { "played", "rested", "xpMax", "guild", "guildless", "hearth", "hearthID" } },
+    { id = "currencies",  label = L["Currencies"],
+      meta = { "currencies", "currenciesSeen" } },
+    { id = "worldbuffs",  label = L["World buffs"], meta = { "boons", "banked" } },
 }
 
 Wide.CATEGORIES = CATEGORIES

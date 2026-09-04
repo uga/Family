@@ -16673,6 +16673,141 @@ print("an alias for a linked family")
 	store.links["fam-alias"] = nil
 end)()
 
+--------------------------------------------------------------------------------------------
+-- The consent grid's own arithmetic, and what the new categories carry
+--
+-- `Family_UI/Wide.lua` works out whether the grid fits the row it is drawn in and prints a
+-- line when it does not. Its comment says the harness reads that line, and searching for one
+-- that names it finds nothing - which is what this was written to fix.
+--
+-- **That first reading was too strong, and a mutation said so.** Putting the cell width back
+-- to what would not fit turns this check red *and* the check that nothing complains while the
+-- summary draws, because the complaint is printed at database-ready and that check sweeps
+-- whatever arrived. So it was covered, sideways, by something looking for any complaint at
+-- all. What it did not have was a check that says the number out loud - and a gate that only
+-- fires as "something printed a warning" tells you a category too many was added without ever
+-- telling you by how much, which is the difference between a red light and a diagnosis.
+--------------------------------------------------------------------------------------------
+
+print()
+print("what a linked family may be granted")
+
+;(function()
+	local function slurp(path)
+		local handle = io.open(ROOT .. "/" .. path)
+		if not handle then return nil end
+		local text = handle:read("*a")
+		handle:close()
+		return text
+	end
+
+	local source = slurp("addons/Family_UI/Wide.lua")
+	check("the grid's panel is where this check expects it", source ~= nil)
+
+	local nameWidth = tonumber((source or ""):match("local NAME_WIDTH = (%d+)"))
+	local cellMin = tonumber((source or ""):match("local CELL_MIN = (%d+)"))
+	check("and still declares the two widths this arithmetic needs",
+		nameWidth ~= nil and cellMin ~= nil)
+
+	local room = (Family.UI.CONTENT_W or 0) - (Family.UI.SCROLLBAR_W or 0)
+	local needed = (nameWidth or 0) + #Family.Wide.CATEGORIES * (cellMin or 0)
+	check("the consent grid fits the row it is drawn in", room > 0 and needed <= room,
+		needed .. " needed, " .. room .. " there, for " .. #Family.Wide.CATEGORIES
+			.. " categories")
+
+	--------------------------------------------------------------------------------------
+	-- What each category actually carries
+	--------------------------------------------------------------------------------------
+
+	local store = Family.Wide:Store()
+	store.links["fam-grant"] = { name = "Granter-FireMaw", grants = {}, siblings = {},
+		members = {} }
+
+	Family.Database:SetMeta("Granted-FireMaw", {
+		name = "Granted", realm = "Fire Maw", level = 60, classFile = "MAGE",
+		faction = "Alliance",
+		played = 123456, rested = 4321, xpMax = 9999,
+		guild = "Social Airlines", hearth = "Southshore", hearthID = 42,
+		currencies = { [1] = 7 }, currenciesSeen = os.time(),
+		boons = true, banked = { "Rallying Cry" },
+		craftCooldowns = { { profession = 171, readyAt = os.time() + 3600 } },
+		cooldownItems = { [3577] = 171 }, itemCooldowns = { [3577] = os.time() + 60 },
+		specs = { [171] = 1 }, specsSeen = os.time(),
+	})
+
+	local function offered()
+		local members = Family.Wide:Offering(store.links["fam-grant"])
+		local entry = members["Granted-FireMaw"]
+		return entry and entry.meta or {}
+	end
+
+	-- Nothing granted, nothing sent. Said first, because every check below it is only
+	-- meaningful if this one holds.
+	store.links["fam-grant"].grants["Granted-FireMaw"] = {}
+	check("a member with no category granted is not offered at all",
+		-- Parenthesised: Offering answers the members *and* a count, and next(t, count)
+		-- is next asked about a key that is not in the table.
+		next((Family.Wide:Offering(store.links["fam-grant"]))) == nil)
+
+	local expected = {
+		character  = { "played", "rested", "xpMax", "guild", "guildless", "hearth",
+			"hearthID" },
+		currencies = { "currencies", "currenciesSeen" },
+		worldbuffs = { "boons", "banked" },
+		professions = { "skills", "specs", "specsSeen", "craftCooldowns", "cooldownItems",
+			"itemCooldowns" },
+		quests     = { "questCount", "questMax" },
+	}
+
+	for id, fields in pairs(expected) do
+		store.links["fam-grant"].grants["Granted-FireMaw"] = { [id] = true }
+		local meta = offered()
+
+		local missing = {}
+		for _, field in ipairs(fields) do
+			-- `guildless` and `questMax` are not set on this fixture, so what is checked is
+			-- that the category names them, not that a value happened to exist.
+			local named = false
+			for _, category in ipairs(Family.Wide.CATEGORIES) do
+				if category.id == id then
+					for _, carried in ipairs(category.meta or {}) do
+						if carried == field then named = true end
+					end
+				end
+			end
+			if not named then missing[#missing + 1] = field end
+		end
+
+		check(id .. " carries everything the panels read for it", #missing == 0,
+			table.concat(missing, ", "))
+
+		-- And carries nothing from the categories beside it.
+		check("and nothing " .. id .. " was not granted", (function()
+			for _, other in pairs(expected) do
+				for _, field in ipairs(other) do
+					local mine = false
+					for _, want in ipairs(fields) do if want == field then mine = true end end
+					if not mine and meta[field] ~= nil then return false end
+				end
+			end
+			return true
+		end)())
+	end
+
+	-- The report that started this: a shared character's crafting cooldowns.
+	store.links["fam-grant"].grants["Granted-FireMaw"] = { professions = true }
+	local meta = offered()
+	check("a granted profession now carries its cooldowns, which is the reported fault",
+		type(meta.craftCooldowns) == "table" and #meta.craftCooldowns == 1,
+		tostring(meta.craftCooldowns))
+	check("and enough of them for the crafting panel to draw a row",
+		#Family.Cooldowns:Crafting(meta) > 0,
+		tostring(#Family.Cooldowns:Crafting(meta)))
+
+	store.links["fam-grant"] = nil
+	Family.Database:Forget("Granted-FireMaw")
+end)()
+
 print()
 if failures == 0 then
 	print("all checks passed")

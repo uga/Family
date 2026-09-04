@@ -46,7 +46,11 @@ local NAME_WIDTH = 92
 -- list that is about 712. So Money - the ninth - was drawn off the end where nobody could tick
 -- it, and Reputations was cut by the edge. The panel read as though money could not be shared
 -- at all, which was not a decision anybody had taken; it was arithmetic.
-local CELL_MIN = 58
+-- Narrowed from 58 the day three categories were added: twelve of them at 58 need 788 pixels
+-- and a row has 708, which the guard below would have said out loud and nothing would have
+-- read. The cells themselves are tick boxes and do not care; what pays is the heading above
+-- them, which is a whole word in a small font and is now closer to being cut.
+local CELL_MIN = 51
 local CELL_MAX = 92
 
 -- Where the buttons on a row sit, said once.

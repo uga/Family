@@ -562,10 +562,18 @@ Once linked, each side chooses what the other may see, and the default is nothin
 
 - Each member is offered to the link individually, and must be approved individually.
 - For each offered member, each **category** of data — possessions, equipment, professions,
-  talents, quests, mail, auctions, reputations, money — is granted or withheld separately.
+  talents, quests, mail, auctions, reputations, money, character, currencies, world buffs — is
+  granted or withheld separately.
   Equipment is its own category rather than part of possessions: what somebody is wearing is
   the thing most often worth showing a friend and the thing least like a list of what they
   own, and a player willing to share one is frequently unwilling to share the other.
+
+  The last three were added on 2026-09-04, for the same reason and after the same complaint
+  from play: every column they carry was one a shared character could never fill. **Character**
+  is time played, rested experience, guild and hearthstone; **currencies** is the currency set;
+  **world buffs** is a Chronoboon and what is in it. Kept apart rather than folded into one,
+  because somebody will happily say where their alts are bound and not how long they have
+  played, and a category that cannot be separated is a decision the player cannot make.
 - Grants are revocable at any time. Revoking a grant deletes the data already transferred
   under it from the other side at the next contact, and marks it withdrawn in the meantime.
 

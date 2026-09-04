@@ -643,6 +643,7 @@ Family.locales.esES = {
 	["mail running out:"] = "correo que caduca:",
 	["|cffffd700Call them|r"] = "|cffffd700Llámalos|r",
 	["|cff888888A name for this family on your own screens. It is never sent to them, and it does not change who Family whispers - that is still %s.|r"] = "|cff888888Un nombre para esta familia en tus propias pantallas. Nunca se les envía y no cambia a quién susurra Family: sigue siendo %s.|r",
+	["World buffs"] = "Bufos de mundo",
 	-- The minimap button and its tooltip
 	["Another addon is holding Family's minimap button and will not let go of it. It will be gone the next time you log in."] = "Otro addon está reteniendo el botón de minimapa de Family y no lo suelta. Habrá desaparecido la próxima vez que inicies sesión.",
 	["%d member"] = "%d miembro",

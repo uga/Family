@@ -643,6 +643,7 @@ Family.locales.deDE = {
 	["mail running out:"] = "Post läuft ab:",
 	["|cffffd700Call them|r"] = "|cffffd700Nenne sie|r",
 	["|cff888888A name for this family on your own screens. It is never sent to them, and it does not change who Family whispers - that is still %s.|r"] = "|cff888888Ein Name für diese Familie auf deinen eigenen Bildschirmen. Er wird nie an sie gesendet und ändert nicht, wem Family flüstert - das ist weiterhin %s.|r",
+	["World buffs"] = "Weltbuffs",
 	-- The minimap button and its tooltip
 	["Another addon is holding Family's minimap button and will not let go of it. It will be gone the next time you log in."] = "Ein anderes Addon hält Familys Minikarten-Schaltfläche fest und gibt sie nicht wieder her. Beim nächsten Anmelden ist sie verschwunden.",
 	["%d member"] = "%d Mitglied",
