@@ -86,12 +86,16 @@ weekly cap.
 
 **Today:** nothing. Family records no honor at all.
 
-**Measure first.** The three builds do not agree, and this is a `DATASOURCES.md` question
-before it is a feature: Classic Era has the standing/rank system with weekly decay, Burning
-Crusade replaced it with arena and honor points, and Mists is different again. Which calls
-exist, what each answers, and what "this week" even means have to be probed on all three
-before anything is stored — the per-expansion tables exist because this exact shape of
-difference has bitten three times.
+**Measure first, and the rules are now written down.** See *Honor: what it is on each build* in
+[`DATASOURCES.md`](DATASOURCES.md). The short of it: one word, three systems. Era has fourteen
+ranks and a **500,000 honor weekly cap**, and the decay every guide describes was removed in
+patch 1.14.4 — so the vanilla description is wrong for the client we ship against. Burning
+Crusade has no ranks at all and its weekly thing is arena points from team rating, so *missing
+for the weekly cap* has no meaning there as asked. Mists has two currencies and a conquest cap
+that **differs per character**, which Family can only read, never compute.
+
+What is still missing is every probe: which call answers what, on each build. That section
+lists them, and none has been run.
 
 ---
 

@@ -1386,3 +1386,109 @@ having a message of their own.
 
 **The harness cannot answer this.** It stubs both libraries with pass-throughs on purpose, so
 it can prove the protocol and not weigh it. That is why this is a tool and not a check.
+
+### Honor: what it is on each build, researched 2026-09-04
+
+Asked for from play: track honor, rank, this week's progress and how much is missing for the
+weekly cap. Written down before any code because **honor is not one thing across the three
+builds** — it is three systems that share a word, and the shape that has already produced three
+per-expansion tables in this project.
+
+**This section is documentation, not measurement.** Every line below comes from patch notes and
+the wiki, cited. Nothing here has been asked of a client, and none of it says which call
+answers what — that is the probe list at the end, and it is what has to exist before anything
+is stored.
+
+#### Classic Era `1.15.9` — ranks, and the old description is wrong
+
+The vanilla system every guide describes — Contribution Points, a weekly recalculation against
+everybody else on your realm and faction, ranks decaying if you stop — **was replaced in patch
+1.14.4**. The patch notes say so directly:
+
+> Ranking Points have been eliminated, Honor is visible immediately after each Honor Kill (or
+> Dishonorable Kill), and de-ranking is no longer a factor
+
+and
+
+> your Rank is no longer determined by a comparison with other players, and the amount your
+> rank increases each week during the weekly reset is solely determined by your PvP efforts in
+> a given week
+
+with a number that matters here more than anywhere:
+
+> Maximum honor gains for the week are currently set to 500,000 Honor per week.
+
+So on Era all three halves of the request are real and they are the same half: fourteen ranks
+from Private to Grand Marshal or High Warlord, honor earned this week, and a **weekly cap of
+500,000** that a character can be short of. Rank advances at the weekly reset, by that week's
+honor alone.
+
+Source: [Patch 1.14.4](https://warcraft.wiki.gg/wiki/Patch_1.14.4),
+[Honor system (Classic)](https://warcraft.wiki.gg/wiki/Honor_system_(Classic)).
+
+#### Burning Crusade Anniversary `2.5.6` — a currency, and no rank at all
+
+Patch 2.0.1 removed the rank system. Honor became a currency that accumulates, is spent on
+rewards, and **does not decay**. The cap is described only as *approximately twice the most
+expensive reward*, which is not a number anything can be built on — it has to be read from the
+client if it is to be shown.
+
+Weekly progress on this build is **arena points**, not honor. They are awarded once a week from
+the player's highest-earning team format, on a curve from team rating: 2v2 earns 76% and 3v3
+88% of the 5v5 rate. A team needs at least ten matches that week and the player at least 30% of
+them. The stockpile cap cited is 10,000, and that figure reaches the wiki through a Wrath
+Classic hotfix rather than through TBC itself — so it is exactly the kind of number to measure
+rather than ship.
+
+So *how much is missing for the weekly cap* has no meaning here as asked. What has meaning is
+the arena award and whether the character qualified for it.
+
+Source: [Honor system](https://warcraft.wiki.gg/wiki/Honor_system),
+[Arena Points](https://warcraft.wiki.gg/wiki/Arena_Points).
+
+#### Mists of Pandaria `5.5.4` — two currencies, and a cap that is per player
+
+Two currencies at once. **Honor** comes from unrated play and has a hard total cap of **4,000**,
+enforced since patch 4.0.3a. **Conquest** comes from rated play, and from patch 5.4.0 its weekly
+cap is **based on the player's own rating** — it is shown in the Rated pane of the PvP interface
+rather than being a constant. Earn rates: 180 for an arena win, 400 for a rated battleground
+win, up to 200 for a rated loss, 150 for the first random battleground won each day, 75 for
+later wins, 50 for a daily PvP quest. Nothing above the weekly cap is earned, and neither
+currency carries between seasons.
+
+So *the weekly cap* here is the conquest cap, it differs per character, and **Family cannot
+compute it** — it can only read it or say nothing.
+
+Source: [Conquest Points](https://warcraft.wiki.gg/wiki/Conquest_Points),
+[Honor Points](https://warcraft.wiki.gg/wiki/Honor_Points).
+
+#### What that means before a line is written
+
+| | Era | Burning Crusade | Mists |
+|---|---|---|---|
+| rank | 14, earned weekly | gone | gone |
+| honor | points, weekly cap 500,000 | currency, cap unstated | currency, total cap 4,000 |
+| the weekly thing | honor toward the cap | arena points, from team rating | conquest, cap per player |
+| decay | removed in 1.14.4 | none | none |
+
+One word, three systems. A single "honor" column would be wrong on two builds out of three, and
+a shared cap constant would be wrong on all three for different reasons.
+
+#### The probes this needs, none of them run yet
+
+Nothing above says which call answers what, and the client is the only authority on that. Per
+build, and read back rather than assumed:
+
+- **Era.** Which call gives the rank and its name, whether the name arrives localised, what
+  reports honor earned *this week* as distinct from lifetime and from this session, and whether
+  the 500,000 cap is readable anywhere or would have to be shipped as a constant — a constant
+  the patch notes themselves call *currently*.
+- **Burning Crusade.** Which call reports the honor currency and its cap; whether arena points
+  and a team's rating are readable from the character rather than from the arena frame; and
+  what a character with no team answers.
+- **Mists.** Which call reports honor and conquest; and above all **whether the conquest weekly
+  cap is readable**, since 5.4.0 shows it in the Rated pane and something must expose it. If it
+  is not readable, the answer is that Family says nothing about the cap on that build, which is
+  §2.2 and is better than a number that is right for one character in ten.
+
+Until those are answered, the honest position is that Family stores no honor at all.
