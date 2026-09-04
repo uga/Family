@@ -727,16 +727,20 @@ end
 -- a thing people switch off rather than read; a line each, indented under a heading, is a list
 -- somebody's eye can go down.
 --
--- A cap on the lines rather than on the characters in them, which is the arithmetic this
--- started as and got wrong: a byte budget spends part of itself on colour codes the reader
--- never sees, and measuring it correctly turned out to be a thing no check here noticed. One
--- name to a line has no such question in it.
+-- **All of them, however many there are.** This was capped at ten with the remainder counted,
+-- on the reasoning that a very long list is a wall of its own - and Alberto's answer was that
+-- a character left off is a character whose mail is lost, which no count at the bottom
+-- prevents. A list of forty is long; forty letters gone is worse, and the player is the one
+-- who set the warning period that produced the list.
 --
--- Ten is a judgement and not a measurement - how much chat is too much depends on the frame's
--- height and on how many other addons are talking at login. What a check **can** settle is
--- that nothing is dropped in silence: the count of what did not fit is the last line, the same
--- way the summary's filters say how much they are hiding.
-local MAX_LINES = 10
+-- The length is theirs to control and there is a control for it: the notice is switchable off
+-- and the warning period is a number in the options panel, so a list somebody finds too long
+-- has a shorter one behind it that does not cost them anything.
+--
+-- One name to a line also removed a question rather than only a nuisance. The first cut at
+-- this capped the *characters* in a single line against a byte budget, and measuring it
+-- correctly - the plain text rather than the coloured, twelve bytes a reader never sees per
+-- entry - was the one thing in that version no check here noticed.
 
 -- The lines the notice would print right now, or nil when it would say nothing. Separate from
 -- the event so that a check can ask the question without waiting nine seconds for a timer.
@@ -769,15 +773,9 @@ function UI:MailNotice()
 
 	local lines = { L["mail running out:"] }
 
-	for index, member in ipairs(waiting) do
-		-- Sorted by urgency, so everything after the first one that does not fit has more
-		-- time left than it does, and the count is simply what is left.
-		if #lines > MAX_LINES then
-			lines[#lines + 1] = string.format(L["  |cff888888and %d more|r"],
-				#waiting - index + 1)
-			break
-		end
-
+	-- Urgency order, so the ones that can still be saved read after the ones that cannot and
+	-- the eye stops at the right place going down.
+	for _, member in ipairs(waiting) do
 		lines[#lines + 1] = "  " .. entryFor(member)
 	end
 

@@ -16479,24 +16479,36 @@ print("the notice about mail that is about to go")
 			mailExpiresBy = now + 2 * 86400 + index })
 	end
 
-	local crowd_lines = Family.UI:MailNotice()
-	check("a big family does not get a line each all the way down",
-		crowd_lines and #crowd_lines < 30, tostring(crowd_lines and #crowd_lines))
-	check("and every line stays one character wide", (function()
-		for index = 2, #(crowd_lines or {}) do
-			if select(2, crowd_lines[index]:gsub(",", "")) > 0 then return false end
+	local crowdLines = Family.UI:MailNotice()
+	local expiring = Family.Mail:Expiring(Family.UI:MailNoticeDays() * 86400)
+
+	-- **Nobody is left off.** This was capped at ten with the remainder counted, and the
+	-- reason it is not is that a character missing from the list is a character whose mail
+	-- goes without being mentioned - which a number at the bottom does not prevent. The
+	-- length is the player's to control: the warning period is a setting.
+	check("a big family gets a line each, however big it is",
+		crowdLines and #crowdLines == #expiring + 1,
+		tostring(crowdLines and #crowdLines) .. " lines for " .. #expiring .. " members")
+
+	local crowded = table.concat(crowdLines or {}, "\n")
+	check("with every one of them named", (function()
+		for index = 1, 25 do
+			if not crowded:find(string.format("Crowder%02d-Fire Maw", index), 1, true) then
+				return false
+			end
 		end
 		return true
 	end)())
 
-	-- Nothing is dropped in silence, which is the part a check can actually settle.
-	local crowded = table.concat(crowd_lines or {}, "\n")
-	check("saying how many it did not name",
-		crowded:find("and %d+ more") ~= nil, crowded)
+	check("one character to a line and no more", (function()
+		for index = 2, #(crowdLines or {}) do
+			if select(2, crowdLines[index]:gsub(",", "")) > 0 then return false end
+		end
+		return true
+	end)())
 
-	-- The ones that get cut are the ones with the most time left.
-	check("keeping the most urgent rather than the first it happened to reach",
-		crowded:find("Losted", 1, true) ~= nil, crowded)
+	check("and the most urgent still at the top",
+		crowded:find("Losted", 1, true) < crowded:find("Crowder01", 1, true), crowded)
 
 	for _, key in ipairs(crowd) do Family.Database:Forget(key) end
 	Family.Wide:SetSibling("fam-post", "Tossica-Auberdine", false)

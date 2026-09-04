@@ -24,7 +24,8 @@ is a decision rather than an afternoon of archaeology.
   character belongs to a family you are linked to - whose they are. Something already lost is
   said to be already lost rather than dressed up as expiring now. The character you are playing
   is named too: the game puts an envelope on your minimap and never once says when what is in
-  it disappears. A long list is cut short and says how many it did not name.
+  it disappears. Everybody is listed, however many there are - if that is more than you want to
+  read, the warning period is yours to shorten.
 
   It is on to begin with and switches off in the options panel, where you also choose how much
   warning you want. Three days by default, anything from one to thirty.

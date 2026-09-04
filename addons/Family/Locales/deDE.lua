@@ -640,7 +640,6 @@ Family.locales.deDE = {
 	["Names the characters holding letters that have expired or are about to. The game puts an envelope on your minimap and never says when what is in it goes away."] = "Nennt die Charaktere, deren Briefe abgelaufen sind oder bald ablaufen. Das Spiel zeigt einen Umschlag auf der Minikarte und sagt nie, wann dessen Inhalt verschwindet.",
 	["Warn me this many days before:"] = "So viele Tage vorher warnen:",
 	["%s |cffff4444(already gone)|r"] = "%s |cffff4444(bereits verloren)|r",
-	["  |cff888888and %d more|r"] = "  |cff888888und %d weitere|r",
 	["mail running out:"] = "Post läuft ab:",
 	-- The minimap button and its tooltip
 	["Another addon is holding Family's minimap button and will not let go of it. It will be gone the next time you log in."] = "Ein anderes Addon hält Familys Minikarten-Schaltfläche fest und gibt sie nicht wieder her. Beim nächsten Anmelden ist sie verschwunden.",

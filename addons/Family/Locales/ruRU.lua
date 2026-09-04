@@ -640,7 +640,6 @@ Family.locales.ruRU = {
 	["Names the characters holding letters that have expired or are about to. The game puts an envelope on your minimap and never says when what is in it goes away."] = "Называет персонажей, чьи письма истекли или вот-вот истекут. Игра показывает конверт на миникарте и никогда не говорит, когда его содержимое пропадёт.",
 	["Warn me this many days before:"] = "Предупреждать за столько дней:",
 	["%s |cffff4444(already gone)|r"] = "%s |cffff4444(уже потеряно)|r",
-	["  |cff888888and %d more|r"] = "  |cff888888и ещё %d|r",
 	["mail running out:"] = "почта истекает:",
 	-- The minimap button and its tooltip
 	["Another addon is holding Family's minimap button and will not let go of it. It will be gone the next time you log in."] = "Другой аддон удерживает кнопку Family на миникарте и не отпускает её. Она исчезнет при следующем входе в игру.",
