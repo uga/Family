@@ -675,6 +675,80 @@ Family:OnDatabaseReady("cooldowns.notice", function()
 	end)
 end)
 
+--------------------------------------------------------------------------------------------
+-- Whose mail is about to go
+--
+-- The same shape as the notice above, with two deliberate differences.
+--
+-- **It does not leave out the character being played.** The cooldown notice does, because a
+-- transmute you can cast is already on your own action bar and being told about it is what
+-- gets an addon switched off. Mail is not like that: the game gives the player an envelope on
+-- the minimap and never once says when what is in it goes away, so the character standing
+-- there is exactly as badly informed as the other thirty-nine.
+--
+-- **A second later than the cooldowns.** Two lines of chat in the same instant read as one
+-- wall and neither gets looked at; a beat apart they read as two facts.
+--------------------------------------------------------------------------------------------
+
+local DEFAULT_MAIL_NOTICE_DAYS = 3
+UI.DEFAULT_MAIL_NOTICE_DAYS = DEFAULT_MAIL_NOTICE_DAYS
+
+-- Bounds rather than a free number. Mail lives thirty days, so a warning period longer than
+-- that names every letter in the game and a period of nought names nothing that is not
+-- already lost.
+UI.MAIL_NOTICE_MIN, UI.MAIL_NOTICE_MAX = 1, 30
+
+function UI:MailNoticeDays()
+	local days = tonumber(FamilyDB and FamilyDB.mailNoticeDays)
+	if not days then return DEFAULT_MAIL_NOTICE_DAYS end
+
+	days = math.floor(days)
+	if days < UI.MAIL_NOTICE_MIN or days > UI.MAIL_NOTICE_MAX then
+		return DEFAULT_MAIL_NOTICE_DAYS
+	end
+	return days
+end
+
+function UI:SetMailNoticeDays(days)
+	days = tonumber(days)
+	if not days then return nil end
+
+	days = math.floor(days)
+	if days < UI.MAIL_NOTICE_MIN or days > UI.MAIL_NOTICE_MAX then return nil end
+
+	FamilyDB.mailNoticeDays = days
+	return days
+end
+
+-- What the notice would say right now, or nil when it would say nothing. Separate from the
+-- event so that a check can ask the question without waiting nine seconds for a timer.
+function UI:MailNotice()
+	local waiting = Family.Mail:Expiring(UI:MailNoticeDays() * 86400)
+	if #waiting == 0 then return nil end
+
+	local said = {}
+	for _, member in ipairs(waiting) do
+		said[#said + 1] = member.expired
+			and string.format(L["%s (already gone)"], member.name)
+			or string.format("%s (%s)", member.name, UI:In(member.expiresBy))
+	end
+
+	return table.concat(said, ", ")
+end
+
+Family:OnDatabaseReady("mail.notice", function()
+	Family:RegisterEvent("PLAYER_ENTERING_WORLD", "mail.notice", function()
+		Family:After(9, "mail.notice", function()
+			if FamilyDB.mailNotice == false then return end
+
+			local said = UI:MailNotice()
+			if not said then return end
+
+			Family:Print(L["mail running out: |cffff4444%s|r"], said)
+		end)
+	end)
+end)
+
 SLASH_FAMILY1 = "/family"
 SLASH_FAMILY2 = "/fam"
 SlashCmdList["FAMILY"] = handler

@@ -54,6 +54,22 @@ local SWITCHES = {
 		set = function(on) FamilyDB.tooltips = on and true or false end,
 	},
 	{
+		label = L["Say whose mail is running out when you log in"],
+		note = L["Names the characters holding letters that have expired or are about to. "
+			.. "The game puts an envelope on your minimap and never says when what is in "
+			.. "it goes away."],
+		get = function() return FamilyDB.mailNotice ~= false end,
+		set = function(on) FamilyDB.mailNotice = on and true or false end,
+
+		-- The first setting in Family that is a number rather than a yes or a no, which is
+		-- why the schema above grew a field rather than this row growing a special case.
+		number = {
+			label = L["Warn me this many days before:"],
+			get = function() return UI:MailNoticeDays() end,
+			set = function(days) return UI:SetMailNoticeDays(days) end,
+		},
+	},
+	{
 		label = L["Say which crafting cooldowns are ready when you log in"],
 		note = L["Transmutes, mooncloth, salt shakers. Crafting only - raid and heroic "
 			.. "lockouts are a different thing and Family does not record them yet."],
@@ -142,6 +158,7 @@ local function build(frame)
 	local room = math.max(UI:ListWidth(scroll) - MARGIN - 8, 200)
 
 	local checkboxes = {}
+	local numberFields = {}
 
 	local y = 2
 	for index, switch in ipairs(SWITCHES) do
@@ -173,9 +190,59 @@ local function build(frame)
 
 		checkboxes[index] = box
 
+		-- A number under its own switch, where the sentence it belongs to is.
+		--
+		-- A box to type in rather than a slider: a slider has to be dragged to a value it
+		-- never quite lands on, and the two numbers a player actually wants here are the one
+		-- they were told and the one they already have in mind. Bounded on the way in, and
+		-- put back to what is stored when what was typed is not a number this accepts -
+		-- silently keeping a refused value would be the control lying about the setting.
+		local extra = 0
+		if switch.number then
+			-- A right edge, for the same reason the note above has one: without it a font
+			-- string is drawn to the natural width of its sentence, which is fine in
+			-- English and through the border in Russian.
+			local prompt = list:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+			prompt:SetPoint("TOPLEFT", note, "BOTTOMLEFT", 0, -6)
+			prompt:SetWidth(math.max(room - 110, 120))
+			prompt:SetJustifyH("LEFT")
+			if prompt.SetWordWrap then prompt:SetWordWrap(true) end
+			prompt:SetText(switch.number.label)
+
+			local field = CreateFrame("EditBox", "FamilyOptionNumber" .. index, list,
+				"InputBoxTemplate")
+			field:SetPoint("LEFT", prompt, "RIGHT", 10, 0)
+			field:SetSize(40, 20)
+			field:SetAutoFocus(false)
+			field:SetNumeric(true)
+			field:SetMaxLetters(3)
+			field:SetJustifyH("CENTER")
+			field:SetText(tostring(switch.number.get()))
+
+			local function settle(self)
+				if not switch.number.set(self:GetText()) then
+					self:SetText(tostring(switch.number.get()))
+				end
+				self:ClearFocus()
+			end
+
+			field:SetScript("OnEnterPressed", settle)
+			field:SetScript("OnEditFocusLost", settle)
+			field:SetScript("OnEscapePressed", function(self)
+				self:SetText(tostring(switch.number.get()))
+				self:ClearFocus()
+			end)
+
+			numberFields[index] = field
+
+			-- Stepped by what the prompt actually took, the same as the note above: a label
+			-- that wraps to two lines in one language is two lines tall in that language.
+			extra = math.max(26, math.ceil(prompt:GetStringHeight() or 12) + 12)
+		end
+
 		-- Stepped by what this row actually took. A note that wraps to two lines is two
 		-- lines tall, and a fixed step would have the next switch sitting on top of it.
-		y = y + ROW + math.max(12, math.ceil(note:GetStringHeight() or 12) + 2)
+		y = y + ROW + math.max(12, math.ceil(note:GetStringHeight() or 12) + 2) + extra
 	end
 
 	-- Strata is a list rather than a switch, and it is here because a window hidden behind
@@ -234,6 +301,14 @@ local function build(frame)
 	function frame:Refresh()
 		for index, switch in ipairs(SWITCHES) do
 			checkboxes[index]:SetChecked(switch.get() and true or false)
+
+			-- Redrawn from the setting rather than left as the player last saw it, so that
+			-- a value refused elsewhere - or a saved variables file carrying a number this
+			-- build no longer accepts - shows what is actually in force.
+			local field = numberFields[index]
+			if field and not field:HasFocus() then
+				field:SetText(tostring(switch.number.get()))
+			end
 		end
 
 		for name, button in pairs(strataButtons) do

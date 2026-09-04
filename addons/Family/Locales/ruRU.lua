@@ -636,6 +636,11 @@ Family.locales.ruRU = {
 	["|cffffaa00Nothing of Family's has arrived here|r - not even this client's own announcement, which on at least one client does come back. In a guild where nobody else runs Family this can still be ordinary, so it is not proof of a fault by itself. Ask somebody else in the guild to run this: if their copy shows messages arriving, the channel is working."] = "|cffffaa00Сюда не пришло ничего от Family|r - даже собственное объявление этого клиента, которое как минимум на одном клиенте всё же возвращается. В гильдии, где больше никто не использует Family, это всё ещё может быть обычным делом, так что само по себе это не доказывает поломку. Попросите кого-нибудь ещё в гильдии запустить это: если у него видно приходящие сообщения, канал работает.",
 
 	["|cffffaa00%d of %d shown|r"] = "|cffffaa00показано %d из %d|r",
+	["Say whose mail is running out when you log in"] = "При входе сообщать, у кого истекает почта",
+	["Names the characters holding letters that have expired or are about to. The game puts an envelope on your minimap and never says when what is in it goes away."] = "Называет персонажей, чьи письма истекли или вот-вот истекут. Игра показывает конверт на миникарте и никогда не говорит, когда его содержимое пропадёт.",
+	["Warn me this many days before:"] = "Предупреждать за столько дней:",
+	["%s (already gone)"] = "%s (уже потеряно)",
+	["mail running out: |cffff4444%s|r"] = "почта истекает: |cffff4444%s|r",
 	-- The minimap button and its tooltip
 	["Another addon is holding Family's minimap button and will not let go of it. It will be gone the next time you log in."] = "Другой аддон удерживает кнопку Family на миникарте и не отпускает её. Она исчезнет при следующем входе в игру.",
 	["%d member"] = "%d персонаж",

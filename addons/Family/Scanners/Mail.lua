@@ -334,6 +334,43 @@ function Mail:TimeToExpiry(meta)
 	return remaining
 end
 
+-- Everybody holding something that has expired or will within `within` seconds, soonest
+-- first.
+--
+-- Our own members only. A sibling belongs to another family (§6) and their mailbox is not
+-- something this player can do anything about - a login notice naming somebody else's
+-- character is a notice about a problem the reader cannot go and fix.
+--
+-- `expired` rather than a time of nought, because the two are different facts and the caller
+-- has to be able to say so: mail whose moment has passed is mail already lost, and telling
+-- somebody it expires "now" invites them to run for a mailbox that has nothing in it.
+function Mail:Expiring(within)
+	local found = {}
+
+	for key, entry in pairs(Family.Database:Members()) do
+		local meta = entry.meta
+		local left = Mail:TimeToExpiry(meta)
+
+		if left and left <= (within or 0) then
+			found[#found + 1] = {
+				key = key,
+				name = meta.name or key,
+				realm = meta.realm,
+				expiresBy = meta.mailExpiresBy,
+				left = left,
+				expired = left <= 0,
+			}
+		end
+	end
+
+	table.sort(found, function(a, b)
+		if a.left ~= b.left then return a.left < b.left end
+		return (a.name or "") < (b.name or "")
+	end)
+
+	return found
+end
+
 --------------------------------------------------------------------------------------------
 
 Family:OnDatabaseReady("mail", function()

@@ -214,7 +214,7 @@ creature rather than under the character".
 
 ---
 
-## 11. Say at login whose mail is about to expire
+## 11. Say at login whose mail is about to expire — DONE 2026-09-04
 
 **Asked:** at login, name in chat the characters whose mailbox holds mail that has expired or
 is about to. Switchable off from the options panel, on by default. And the warning period -
@@ -235,3 +235,10 @@ has ever carried an expiry. Fixed separately - see `docs/LESSONS.md` - because a
 top of it would have been quietly wrong for half the family.
 
 **Received:** 2026-09-04, from Alberto.
+
+**Built 2026-09-04.** `Mail:Expiring(within)` in the data layer, the notice beside the crafting
+one in `Family_UI/Slash.lua`, and the options panel's first numeric control - the switch schema
+grew a `number` field rather than that row growing a special case, so the next setting that is
+a number has somewhere to go. Three days by default, one to thirty. `docs/DECISIONS.md` carries
+why the character being played is named and why *already gone* is not *expiring now*.
+

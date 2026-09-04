@@ -137,8 +137,8 @@ local KNOWN = {
 	GetVerticalScroll = 1, GetVerticalScrollRange = 1, EnableMouseWheel = 1,
 	SetEnabled = 1, Enable = 1, Disable = 1, RegisterForClicks = 1,
 	SetNormalTexture = 1, SetHighlightTexture = 1, SetPushedTexture = 1,
-	SetAutoFocus = 1, ClearFocus = 1, HighlightText = 1, SetMaxLetters = 1,
-	SetNumeric = 1, SetFocus = 1,
+	SetAutoFocus = 1, HighlightText = 1, SetMaxLetters = 1,
+	SetNumeric = 1,
 	SetOwner = 1, GetSpell = 1,
 	-- Secure buttons: the game casts what the attributes say when a player clicks them,
 	-- which is the only way an addon may cast anything at all.
@@ -426,6 +426,13 @@ end
 -- secure child that asks its parent which recipe it is showing got nothing back - which
 -- reads as a fault in the addon and was a fault in here.
 function frameMethods:GetParent() return self.__parent end
+
+-- Focus, modelled rather than shrugged off. A panel that redraws a box the player is halfway
+-- through typing into takes the number out from under them, and a no-op HasFocus would have
+-- said that never happens.
+function frameMethods:SetFocus() self.__focus = true end
+function frameMethods:ClearFocus() self.__focus = false end
+function frameMethods:HasFocus() return self.__focus == true end
 
 function frameMethods:GetItem() return self.__itemName, self.__itemLink end
 -- What a tooltip says about the spell it is describing. The older clients answer here and the
@@ -16281,6 +16288,127 @@ print("what Wide Family shares is what Family records")
 
 	check("no field is shared under a name nothing in Family writes",
 		#orphans == 0, table.concat(orphans, ", "))
+end)()
+
+--------------------------------------------------------------------------------------------
+-- Saying at login whose mail is running out
+--------------------------------------------------------------------------------------------
+
+print()
+print("the notice about mail that is about to go")
+
+;(function()
+	local now = time()
+	local roster = {
+		{ key = "Losted-Fire Maw", name = "Losted", expires = now - 3600 },
+		{ key = "Postie-Fire Maw", name = "Postie", expires = now + 86400 },
+		{ key = "Latera-Fire Maw", name = "Latera", expires = now + 10 * 86400 },
+		{ key = "Nomail-Fire Maw", name = "Nomail" },
+	}
+	for _, member in ipairs(roster) do
+		Family.Database:SetMeta(member.key, { name = member.name, realm = "Fire Maw",
+			level = 60, classFile = "MAGE", faction = "Alliance",
+			mailExpiresBy = member.expires })
+	end
+
+	check("three days is what it warns at until somebody says otherwise",
+		Family.UI:MailNoticeDays() == 3, tostring(Family.UI:MailNoticeDays()))
+
+	local function named()
+		local seen = {}
+		for _, member in ipairs(Family.Mail:Expiring(Family.UI:MailNoticeDays() * 86400)) do
+			seen[member.name] = member
+		end
+		return seen
+	end
+
+	local within = named()
+	check("a character whose letters go tomorrow is in it", within["Postie"] ~= nil)
+	check("and one whose letters have already gone", within["Losted"] ~= nil)
+	check("marked as gone rather than as expiring now, which are different facts",
+		within["Losted"] and within["Losted"].expired == true)
+	check("one with ten days left is not", within["Latera"] == nil)
+	check("and one with nothing in the post is not", within["Nomail"] == nil)
+
+	-- Soonest first, so the one that cannot be saved reads before the one that can.
+	local order = Family.Mail:Expiring(Family.UI:MailNoticeDays() * 86400)
+	check("soonest first", order[1] and order[1].name == "Losted", order[1] and order[1].name)
+
+	local said = Family.UI:MailNotice()
+	check("the notice names them", said and said:find("Postie", 1, true)
+		and said:find("Losted", 1, true), tostring(said))
+	check("and leaves out the one that is not running out",
+		said and said:find("Latera", 1, true) == nil, tostring(said))
+	check("saying outright that one of them is already lost",
+		said and said:find("already gone", 1, true) ~= nil, tostring(said))
+
+	-- The number is the player's, inside bounds it is worth having.
+	check("a longer warning takes in more of them", Family.UI:SetMailNoticeDays(14) == 14
+		and named()["Latera"] ~= nil)
+	check("nought is refused", Family.UI:SetMailNoticeDays(0) == nil)
+	check("and so is longer than mail lives", Family.UI:SetMailNoticeDays(31) == nil)
+	check("and so is a word", Family.UI:SetMailNoticeDays("soon") == nil)
+	check("a refused number leaves the one in force alone",
+		Family.UI:MailNoticeDays() == 14, tostring(Family.UI:MailNoticeDays()))
+
+	-- A saved variables file from another build, or edited by hand.
+	FamilyDB.mailNoticeDays = 99
+	check("a stored number this build will not accept falls back to three",
+		Family.UI:MailNoticeDays() == 3, tostring(Family.UI:MailNoticeDays()))
+	Family.UI:SetMailNoticeDays(3)
+
+	-- The whole way through: the event, the wait, and the line in the chat frame.
+	local function saidAtLogin()
+		local mark = #DEFAULT_CHAT_FRAME.messages
+		fire("PLAYER_ENTERING_WORLD")
+		for _ = 1, 4 do advance(4) end
+
+		for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+			local message = DEFAULT_CHAT_FRAME.messages[index]
+			if message:find("mail running out", 1, true) then return message end
+		end
+	end
+
+	local atLogin = saidAtLogin()
+	check("logging in says it, without anything being opened", atLogin ~= nil)
+	check("naming the character whose letters go tomorrow",
+		atLogin and atLogin:find("Postie", 1, true) ~= nil, tostring(atLogin))
+
+	FamilyDB.mailNotice = false
+	check("and switching it off is silence, not a shorter sentence",
+		saidAtLogin() == nil)
+	FamilyDB.mailNotice = nil
+
+	-- The control in the options panel, driven the way a player drives it.
+	Family.UI:Show()
+	Family.UI:ShowTab("options")
+
+	local field
+	for _, f in ipairs(frames) do
+		local name = f.__name
+		if type(name) == "string" and name:find("FamilyOptionNumber", 1, true) then
+			field = f
+		end
+	end
+	check("the options panel has a box to put the number in", field ~= nil)
+
+	if field then
+		field:SetText("7")
+		field.__scripts.OnEnterPressed(field)
+		check("what is typed into it becomes the setting",
+			Family.UI:MailNoticeDays() == 7, tostring(Family.UI:MailNoticeDays()))
+
+		-- Silently keeping a refused value would be the control lying about the setting.
+		field:SetText("99")
+		field.__scripts.OnEnterPressed(field)
+		check("a number it will not take leaves the setting alone",
+			Family.UI:MailNoticeDays() == 7, tostring(Family.UI:MailNoticeDays()))
+		check("and the box goes back to saying what is actually in force",
+			field.__text == "7", tostring(field.__text))
+	end
+
+	Family.UI:SetMailNoticeDays(3)
+	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
 end)()
 
 print()

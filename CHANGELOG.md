@@ -19,6 +19,15 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Family says at login whose mail is running out.** One line in the chat frame naming the
+  characters holding letters that have expired or are about to, soonest first, with how long
+  each has left - and saying outright when something is already gone rather than dressing it up
+  as expiring now. The character you are playing is named too: the game puts an envelope on
+  your minimap and never once says when what is in it disappears.
+
+  It is on to begin with and switches off in the options panel, where you also choose how much
+  warning you want. Three days by default, anything from one to thirty.
+
 - **The summary can be filtered.** A box to type a name into, a class to pick, and a level
   range, on their own row above the columns. They work on whichever set of columns you are
   looking at and narrow what that set already shows rather than replacing it - so a name typed

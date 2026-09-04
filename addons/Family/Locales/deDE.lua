@@ -636,6 +636,11 @@ Family.locales.deDE = {
 	["|cffffaa00Nothing of Family's has arrived here|r - not even this client's own announcement, which on at least one client does come back. In a guild where nobody else runs Family this can still be ordinary, so it is not proof of a fault by itself. Ask somebody else in the guild to run this: if their copy shows messages arriving, the channel is working."] = "|cffffaa00Von Family ist hier nichts angekommen|r - nicht einmal die eigene Ankündigung dieses Clients, die auf mindestens einem Client sehr wohl zurückkommt. In einer Gilde, in der sonst niemand Family nutzt, kann das trotzdem gewöhnlich sein, also ist es für sich genommen kein Beweis für einen Fehler. Bitte jemand anderen in der Gilde, dies auszuführen: zeigt seine Kopie ankommende Nachrichten, dann arbeitet der Kanal.",
 
 	["|cffffaa00%d of %d shown|r"] = "|cffffaa00%d von %d angezeigt|r",
+	["Say whose mail is running out when you log in"] = "Beim Anmelden nennen, wessen Post abläuft",
+	["Names the characters holding letters that have expired or are about to. The game puts an envelope on your minimap and never says when what is in it goes away."] = "Nennt die Charaktere, deren Briefe abgelaufen sind oder bald ablaufen. Das Spiel zeigt einen Umschlag auf der Minikarte und sagt nie, wann dessen Inhalt verschwindet.",
+	["Warn me this many days before:"] = "So viele Tage vorher warnen:",
+	["%s (already gone)"] = "%s (bereits verloren)",
+	["mail running out: |cffff4444%s|r"] = "Post läuft ab: |cffff4444%s|r",
 	-- The minimap button and its tooltip
 	["Another addon is holding Family's minimap button and will not let go of it. It will be gone the next time you log in."] = "Ein anderes Addon hält Familys Minikarten-Schaltfläche fest und gibt sie nicht wieder her. Beim nächsten Anmelden ist sie verschwunden.",
 	["%d member"] = "%d Mitglied",
