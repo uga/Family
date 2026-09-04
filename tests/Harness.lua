@@ -1150,6 +1150,26 @@ function reachable(f)
 	return f.__shown == true and clickable(f) and coveredBy(f) == nil
 end
 
+-- Whether every frame between this one and the screen is shown.
+--
+-- A control on a panel that is not open still carries its own `__shown`, because hiding a
+-- panel does not walk into its children. So asking the widget alone finds whichever panel
+-- happened to build one of these first - which is exactly how a check written for the
+-- character panel's class filter came to be driving the summary's copy of the same control,
+-- the day the summary grew one. It went on passing, because it then read the button it had
+-- just moved, and the panel it was written about stopped being tested at all.
+--
+-- Global for the same reason as the two above: the main chunk is at its limit of two hundred
+-- locals and this is wanted several thousand lines further down.
+function onScreen(f)
+	local at = f
+	while type(at) == "table" do
+		if at.__shown == false then return false end
+		at = type(at.__parent) == "table" and at.__parent or nil
+	end
+	return true
+end
+
 -- The shown button whose label contains this text, whether or not a click would reach it -
 -- so a check can ask the two questions separately.
 function findButton(label)
@@ -7793,8 +7813,25 @@ print("the whole family's gear on one screen")
 		clickButton("Realm: all") and chooseFromList("Fire Maw"))
 	check("and choosing one sets the filter to it", buttonSaying("Realm: Fire Maw"))
 
+	-- On this panel, not on whichever panel built one of these first.
+	--
+	-- The summary grew a class filter of its own, and `clickButton` matches by label in
+	-- creation order - so this check began driving the summary's copy and reading back the
+	-- button it had itself just changed. It passed the whole time, and the panel it is
+	-- written about stopped being covered. `onScreen` is the question that tells them apart.
+	local function clickHere(label)
+		for _, f in ipairs(frames) do
+			if type(f.__text) == "string" and f.__text:find(label, 1, true)
+				and clickable(f) and onScreen(f) then
+				fireClick(f)
+				return true
+			end
+		end
+		return false
+	end
+
 	check("the classes are a list too",
-		clickButton("Class: all") and chooseFromList("Mage"))
+		clickHere("Class: all") and chooseFromList("Mage"))
 	check("named as the client names them",
 		buttonSaying("Class: Mage") or buttonSaying("Class: MAGE"))
 
@@ -7802,6 +7839,14 @@ print("the whole family's gear on one screen")
 	check("and everything is always back on offer",
 		clickButton("Realm: Fire Maw") and chooseFromList("all|r"))
 	check("which clears the filter", buttonSaying("Realm: all"))
+
+	-- And the class with it, or every check below this one reads a grid narrowed to one
+	-- class. This block never had to clear it before, because the click was landing on
+	-- another panel's copy of the same control and this panel's filter was never set - which
+	-- is the second thing that came out of fixing the click, and the more expensive one.
+	clickHere("Class: Mage")
+	chooseFromList("all|r")
+	check("and the class filter clears the same way", not buttonSaying("Class: Mage"))
 
 	-- Every row is a class picture and nineteen slots, so the pool has to have grown past
 	-- what a single character sheet ever needs.
@@ -16003,6 +16048,155 @@ print("the icon the addon list and the minimap share")
 		check("with every pixel present", #tga >= 18 + width * height * 4,
 			#tga .. " bytes for " .. width .. "x" .. height)
 	end
+end)()
+
+--------------------------------------------------------------------------------------------
+-- Filtering the summary
+--
+-- Driven through the boxes and the list the player uses, not through the predicate behind
+-- them: L-040 is one screen away, and it says that a check on the call proves the caller and
+-- nothing else. So the text goes into the named edit box and its own OnTextChanged fires, the
+-- class is chosen by opening the picker and clicking a row in it, and every check afterwards
+-- is on which rows are on screen.
+--------------------------------------------------------------------------------------------
+
+print()
+print("filtering the summary by name, class and level")
+
+;(function()
+	local roster = {
+		{ key = "Filtera-Fire Maw", name = "Filtera", classFile = "MAGE",    level = 60 },
+		{ key = "Filterb-Fire Maw", name = "Filterb", classFile = "MAGE",    level = 24 },
+		{ key = "Otherly-Fire Maw", name = "Otherly", classFile = "WARRIOR", level = 42 },
+		-- Never told us either. It is here because a filter must not claim to know.
+		{ key = "Nameless-Fire Maw", name = "Nameless" },
+	}
+	for _, member in ipairs(roster) do
+		Family.Database:SetMeta(member.key, { name = member.name, realm = "Fire Maw",
+			classFile = member.classFile, level = member.level, faction = "Alliance" })
+	end
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	clickButton("Overview")
+	Family.UI:Refresh()
+
+	local search = _G.FamilySummarySearch
+	local minBox, maxBox = _G.FamilySummaryLevelMin, _G.FamilySummaryLevelMax
+	check("the summary has a filter box", search ~= nil)
+	check("and a level range with two ends", minBox ~= nil and maxBox ~= nil)
+	if not (search and minBox and maxBox) then return end
+
+	local function typeInto(box, text)
+		box:SetText(text)
+		if box.__scripts and box.__scripts.OnTextChanged then
+			box.__scripts.OnTextChanged(box)
+		end
+	end
+
+	local function showing()
+		local seen = {}
+		for _, f in ipairs(frames) do
+			if f.__shown ~= false and f.memberKey then seen[f.memberKey] = true end
+		end
+		return seen
+	end
+
+	local everybody = showing()
+	check("with nothing typed the family is all there",
+		everybody["Filtera-Fire Maw"] and everybody["Filterb-Fire Maw"]
+			and everybody["Otherly-Fire Maw"] and everybody["Nameless-Fire Maw"])
+
+	typeInto(search, "filter")
+	local byName = showing()
+	check("a name narrows the rows to the ones that match",
+		byName["Filtera-Fire Maw"] and byName["Filterb-Fire Maw"])
+	check("and takes the ones that do not off the screen",
+		not byName["Otherly-Fire Maw"] and not byName["Nameless-Fire Maw"])
+
+	-- The whole point of saying so. A panel that silently drops thirty rows is
+	-- indistinguishable from one that has lost them.
+	check("and the panel says how much it is hiding", visibleText(" shown|r"))
+
+	typeInto(search, "")
+	check("clearing the box brings them back",
+		showing()["Otherly-Fire Maw"] ~= nil)
+
+	typeInto(minBox, "50")
+	typeInto(maxBox, "70")
+	local byLevel = showing()
+	check("a level range keeps the members inside it", byLevel["Filtera-Fire Maw"] ~= nil)
+	check("and drops the ones outside", byLevel["Filterb-Fire Maw"] == nil
+		and byLevel["Otherly-Fire Maw"] == nil)
+
+	-- Section 2.2, pointed at a filter. Hiding this member would be Family claiming to know a
+	-- level it was never told, and the side buttons on the same panel already work this way.
+	check("but a member whose level was never recorded is not filtered out by level",
+		byLevel["Nameless-Fire Maw"] ~= nil)
+
+	typeInto(minBox, "")
+	typeInto(maxBox, "")
+	check("emptying the range restores everybody", showing()["Filterb-Fire Maw"] ~= nil)
+
+	-- The class list, opened and clicked the way a player opens and clicks it. `onScreen`
+	-- rather than `__shown`, because three panels carry a control with this prefix and only
+	-- one of them is open.
+	local picker
+	for _, f in ipairs(frames) do
+		if f.prefix == Family.L["Class"] and f.Choices and onScreen(f) then picker = f end
+	end
+	check("the summary offers a class to filter by", picker ~= nil)
+
+	if picker then
+		local offered = {}
+		for _, choice in ipairs(picker:Choices()) do offered[tostring(choice.value)] = true end
+		check("offering the classes the family actually has",
+			offered["MAGE"] and offered["WARRIOR"])
+		-- Offering a warlock filter to a family with no warlock is offering a way to show
+		-- nothing, which is the rule the character panel's pickers already follow.
+		check("and not the ones it does not", offered["WARLOCK"] == nil)
+
+		picker.__scripts.OnClick(picker)
+		local list = _G.FamilyChoicePickerList
+		check("clicking it opens the list", list ~= nil and list.__shown == true)
+
+		-- A row of the list is a font string on a button rather than a button's own label,
+		-- and the choice it carries lives in its handler's closure - so it is found by what
+		-- it says, which is what a player has to go on too.
+		local picked = false
+		for _, row in ipairs(list and list.rows or {}) do
+			local text = rawget(row, "text")
+			if row.__shown ~= false and type(text) == "table"
+				and type(text.__text) == "string"
+				and text.__text:find("Mage", 1, true)
+				and row.__scripts.OnClick then
+				row.__scripts.OnClick(row)
+				picked = true
+				break
+			end
+		end
+		check("and one of its rows can be chosen", picked)
+
+		local byClass = showing()
+		check("choosing a class keeps that class", byClass["Filtera-Fire Maw"] ~= nil
+			and byClass["Filterb-Fire Maw"] ~= nil)
+		check("and drops the others", byClass["Otherly-Fire Maw"] == nil)
+		check("while a member with no class recorded is still not filtered out",
+			byClass["Nameless-Fire Maw"] ~= nil)
+
+		-- Composed with the set, not replacing it. Crafting narrows to members with a
+		-- cooldown running, and a class chosen on top of that narrows *that*.
+		clickButton("Crafting")
+		local crafting = showing()
+		check("a set that narrows on its own still narrows with a filter on",
+			crafting["Filtera-Fire Maw"] == nil and crafting["Otherly-Fire Maw"] == nil)
+		clickButton("Overview")
+	end
+
+	-- Left as it was found, so that nothing after this reads a filtered panel.
+	typeInto(search, "")
+	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
+	Family.UI:Refresh()
 end)()
 
 print()

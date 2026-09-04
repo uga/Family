@@ -79,6 +79,17 @@ to extend is named above.
 **Shape:** the largest entry here by far, and the one most worth slicing: one panel end to end
 beats a filter bar that half-works on six.
 
+**Slice one, done 2026-09-04:** the three filters that are asked for everywhere - name, class
+and level range - on the Summary panel, composed with each column set's own narrowing, with a
+count of what is being hidden. `docs/DECISIONS.md` carries why they are not remembered between
+sessions and why an unrecorded level does not hide a member.
+
+**Still open:** the per-panel filters and sorts. Overview by rested XP, money, last seen, free
+bags, free bank and bags/bank seen; activity by mail, expiry and mail seen; professions filtered
+by profession and sorted by that profession's skill; crafting by cooldown and profession; misc
+by guild and hearthstone. And the same three filters on the character panel's other sections,
+which has its own realm and class pickers already but not the level range.
+
 ---
 
 ## 4. A minimap button other addons can collect — DONE 2026-09-04
@@ -111,8 +122,12 @@ are why the library is *there*; the collector is who this is *for*.
 Two options were rejected rather than ruled out, and stay available if this is not enough:
 shipping the libraries anyway, or asking their authors in writing.
 
+Verified in play against two collectors on 2026-09-04: **HidingBar**, which is the one from the
+report and which keeps a button once it has grabbed it, and **Leatrix Plus**, which does not.
+Both collect Family now, and unticking the option removes it from either.
+
 `docs/DECISIONS.md` 2026-09-04 carries the reasoning; `Family_UI/Broker.lua`
-`GiveButtonToCollector` and `BuildMinimapButton` carry the code.
+`GiveButtonToCollector`, `registerWithCollector` and `BuildMinimapButton` carry the code.
 
 ---
 
@@ -171,3 +186,28 @@ cross a Wide Family link (`reputations` payload, `reputationCount` meta), and th
 
 **Shape:** the data is already stored and already shared; this is a panel. It shares its
 filtering problem with entry 3, and doing 3 first would make this most of the way done.
+
+---
+
+## 9. Hunters: the pet abilities known, and the pets themselves
+
+**Asked:** read which per-pet abilities a hunter has learned, and the specialisations of the
+pets they own — listing the pets as well, not only the abilities.
+
+**Today:** not measured. `Family/Scanners/Talents.lua` and `Specialisations.lua` read the
+character's own trees; nothing reads a stable. Whether the client will say what is in a stable
+while the pet is not summoned is the first question, and it is a probe, not a guess.
+
+**Received:** 2026-09-04, from Alberto.
+
+---
+
+## 10. Warlocks: the per-demon abilities known
+
+**Asked:** read which demon-specific abilities a warlock has learned.
+
+**Today:** not measured. Same shape as entry 9 and probably the same scanner, which is why the
+two are written next to each other: both are "what does this class know that is filed under a
+creature rather than under the character".
+
+**Received:** 2026-09-04, from Alberto.

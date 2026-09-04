@@ -35,6 +35,11 @@ local LETTER_ICON = 22
 local LETTER_SLOTS = 12
 local HEADER_HEIGHT = 22
 
+-- The filter row. Twenty-four is the height of the boxes in it plus the two pixels that keep
+-- a box's border off the heading below; it comes out of the scroll area, which is one row of
+-- forty fewer on screen and the trade the filters are for.
+local FILTER_HEIGHT = 24
+
 -- One set of columns at a time (§4.1). Cramming everything into a single view is what made
 -- the professions column wrap onto two lines: there is only so much width, and the answer is
 -- to show fewer things at once rather than to shrink all of them.
@@ -1232,9 +1237,20 @@ local function build(frame)
 	chooser:SetPoint("TOPRIGHT", 0, 0)
 	chooser:SetHeight(24)
 
+	-- The filters, on their own row.
+	--
+	-- Not in the chooser row above: that row is already two pixels short of its own labels in
+	-- English, and the room at its right-hand end holds the two side buttons. A control that
+	-- has to share a row nobody can widen is a control that overlaps something in the first
+	-- language that needs an extra letter.
+	local filters = CreateFrame("Frame", nil, chooser)
+	filters:SetPoint("TOPLEFT", chooser, "BOTTOMLEFT", 0, -4)
+	filters:SetPoint("TOPRIGHT", chooser, "BOTTOMRIGHT", 0, -4)
+	filters:SetHeight(FILTER_HEIGHT)
+
 	local header = CreateFrame("Frame", nil, frame)
-	header:SetPoint("TOPLEFT", chooser, "BOTTOMLEFT", 0, -2)
-	header:SetPoint("TOPRIGHT", chooser, "BOTTOMRIGHT", 0, -2)
+	header:SetPoint("TOPLEFT", filters, "BOTTOMLEFT", 0, -2)
+	header:SetPoint("TOPRIGHT", filters, "BOTTOMRIGHT", 0, -2)
 	header:SetHeight(HEADER_HEIGHT)
 
 	local headerCells = {}
@@ -1377,7 +1393,150 @@ local function build(frame)
 		factionButtons[faction] = button
 	end
 
+	--------------------------------------------------------------------------------------
+	-- What the filters hold, and what they let through
+	--------------------------------------------------------------------------------------
+
+	-- Not remembered between sessions, and that is the decision rather than an omission. The
+	-- side buttons above are remembered because they are a preference - which half of an
+	-- account somebody plays does not change from one evening to the next. A name typed into
+	-- a box is a question being asked once, and a panel that opens tomorrow still showing
+	-- four of forty members, because of a word nobody remembers typing, is a panel that looks
+	-- broken.
+	local classFilter, levelMin, levelMax
+
+	local hint = filters:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	hint:SetPoint("LEFT", 4, 0)
+	hint:SetText(L["filter"])
+
+	-- Named, like the search on the character panel, so a macro or a check can reach it.
+	local search = CreateFrame("EditBox", "FamilySummarySearch", filters, "InputBoxTemplate")
+	search:SetPoint("LEFT", hint, "RIGHT", 10, 0)
+	search:SetSize(150, 20)
+	search:SetAutoFocus(false)
+	search:SetScript("OnTextChanged", function() frame:Refresh() end)
+	search:SetScript("OnEscapePressed", function(self)
+		self:SetText("")
+		self:ClearFocus()
+	end)
+
+	-- Only the classes the family actually has. Offering a warlock filter to a family with no
+	-- warlock is offering a way to show nothing, which is the rule the character panel's own
+	-- pickers already follow.
+	local function classesHeld()
+		local seen, list = {}, {}
+		for _, entry in pairs(Family.Database:Members()) do
+			local classFile = entry.meta and entry.meta.classFile
+			if classFile and not seen[classFile] then
+				seen[classFile] = true
+				list[#list + 1] = classFile
+			end
+		end
+		table.sort(list)
+		return list
+	end
+
+	local classButton = UI:CreateChoicePicker(filters, 120, L["Class"], "all", function()
+		local names = _G.LOCALIZED_CLASS_NAMES_MALE
+		local list = {}
+		for _, classFile in ipairs(classesHeld()) do
+			local red, green, blue = UI:ClassColour(classFile)
+			list[#list + 1] = {
+				value = classFile,
+				label = (names and names[classFile]) or classFile,
+				r = red, g = green, b = blue,
+			}
+		end
+		return list
+	end, function()
+		frame:Refresh()
+	end)
+	classButton:SetPoint("LEFT", search, "RIGHT", 12, 0)
+
+	-- Two numbers rather than a list of brackets. Brackets would have to be right on three
+	-- clients whose ceilings are 60, 70 and 90, and a set of ranges built for one of them is
+	-- wrong on the other two - so the player says the range and no client has to be guessed
+	-- at.
+	local levelLabel = filters:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	levelLabel:SetPoint("LEFT", classButton, "RIGHT", 12, 0)
+	levelLabel:SetText(L["Level"])
+
+	local function levelBox(name, anchor, gap)
+		local box = CreateFrame("EditBox", name, filters, "InputBoxTemplate")
+		box:SetPoint("LEFT", anchor, "RIGHT", gap, 0)
+		box:SetSize(34, 20)
+		box:SetAutoFocus(false)
+		box:SetNumeric(true)
+		box:SetMaxLetters(3)
+		box:SetJustifyH("CENTER")
+		box:SetScript("OnTextChanged", function() frame:Refresh() end)
+		box:SetScript("OnEscapePressed", function(self)
+			self:SetText("")
+			self:ClearFocus()
+		end)
+		return box
+	end
+
+	local minBox = levelBox("FamilySummaryLevelMin", levelLabel, 10)
+	local dash = filters:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+	dash:SetPoint("LEFT", minBox, "RIGHT", 6, 0)
+	dash:SetText("-")
+	local maxBox = levelBox("FamilySummaryLevelMax", dash, 10)
+
+	-- How much is being hidden, at the right-hand end of the same row. A filter that quietly
+	-- removes thirty rows and says nothing is indistinguishable from a panel that has lost
+	-- them, which is the complaint every filter without a count eventually produces.
+	local counter = filters:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	counter:SetPoint("RIGHT", -4, 0)
+	counter:SetJustifyH("RIGHT")
+
+	local function numberIn(box)
+		local typed = tonumber(box:GetText())
+		return typed and typed > 0 and typed or nil
+	end
+
+	-- **A member is not filtered out by something Family does not know about them.** The side
+	-- buttons above already work this way and say why: a record with no faction is shown
+	-- whatever the switches say, because hiding it would claim Family knows which side it is
+	-- on. A record with no class and no level is the same claim (§2.2), and the answer is the
+	-- same one.
+	local function typedFilters(meta)
+		if classFilter and meta.classFile and meta.classFile ~= classFilter then
+			return false
+		end
+
+		local level = meta.level
+		if level then
+			if levelMin and level < levelMin then return false end
+			if levelMax and level > levelMax then return false end
+		end
+
+		local needle = (search:GetText() or ""):lower()
+		if needle ~= "" then
+			local name = (meta.name or ""):lower()
+			if not name:find(needle, 1, true) then return false end
+		end
+
+		return true
+	end
+
+	-- The set's own narrowing and the player's, composed. Crafting shows the members with a
+	-- cooldown running; a name typed into the box narrows *that*, rather than replacing it
+	-- with everybody.
+	local function passes(meta)
+		if currentSet.only and not currentSet.only(meta) then return false end
+		return typedFilters(meta)
+	end
+
 	function frame:Refresh()
+		levelMin, levelMax = numberIn(minBox), numberIn(maxBox)
+
+		-- Asked of the picker rather than remembered from the click, because Reconcile also
+		-- drops a choice the family no longer has. Filter to the one warlock, delete that
+		-- character, and a remembered value would leave the panel empty and the button still
+		-- saying Warlock - which is what the character panel already learned.
+		classFilter = classButton:Reconcile()
+
 		local columns = columnsOf(currentSet)
 
 		-- Whether the set on screen is the one whose mail figure opens the letters.
@@ -1396,7 +1555,29 @@ local function build(frame)
 			if column.key == "boon" then showsBoon = true end
 		end
 		UI:FitColumns(columns, ROW_BUDGET, measure)
-		local realms, byRealm, totals, siblings = gather(currentSet.only)
+		local realms, byRealm, totals, siblings = gather(passes)
+
+		-- Said only while something is typed. With the boxes empty this is the whole family
+		-- and a count of it against itself is noise; the moment a filter is on, it is the
+		-- difference between "there are four of them" and "thirty-six are hidden".
+		--
+		-- Counted against what this *set* would show, not against the family: on Crafting,
+		-- where the set already narrows to members with a cooldown running, comparing with
+		-- forty would report a filter nobody set.
+		if (search:GetText() or "") ~= "" or classFilter or levelMin or levelMax then
+			local shown, all = 0, 0
+			for _, entry in pairs(Family.Database:Members()) do
+				local meta = entry.meta
+				if meta and factionShown(meta.faction)
+					and (not currentSet.only or currentSet.only(meta)) then
+					all = all + 1
+					if typedFilters(meta) then shown = shown + 1 end
+				end
+			end
+			counter:SetText(string.format(L["|cffffaa00%d of %d shown|r"], shown, all))
+		else
+			counter:SetText("")
+		end
 
 		-- The set being shown is the one you cannot click, which is how the tab strip
 		-- already says the same thing.

@@ -1534,3 +1534,43 @@ to be able to *refuse*, or the check is a check on our own arithmetic. Every col
 Family talks to through an interface it did not write is the same risk: LibDBIcon here, and the
 same question is owed to LibSerialize, LibDeflate and every capability probe that reads back
 what the client said rather than what it was asked.
+
+---
+
+## L-041 — The check moved to another panel, and went on passing
+
+The summary grew a class filter. The character panel already had one, and a check written for
+the character panel's had been finding it like this:
+
+    clickButton("Class: all") and chooseFromList("Mage")
+
+`clickButton` matches a label and takes the first frame in creation order. The summary is built
+first, so from the day it grew that control the check was opening the *summary's* list, choosing
+Mage there, and then reading back `buttonSaying("Class: Mage")` — which found the button it had
+just changed. Green, every run. The panel it was written about stopped being covered at all,
+and nothing said so.
+
+It surfaced sideways: a new check on the summary reported that a level-42 warrior was missing
+from an unfiltered panel. It was missing because an earlier check three thousand lines above
+had set the summary's class filter to Mage and nobody had ever noticed it could.
+
+**Two things were wrong and only one of them was the click.** Once the click landed where it
+was aimed, four downstream checks about the family grid failed — because that block had never
+cleared the class filter it set, and had never needed to: the filter had been going to a panel
+nobody looked at. A test that leaves state behind is only safe while it is not really doing
+anything.
+
+**The check that now catches it.** `onScreen(f)` walks a frame's parents and answers whether
+every one of them is shown — because hiding a panel does not walk into its children, so a
+control on a closed panel still reports `__shown == true` and is indistinguishable from the one
+on the panel actually open. The character panel's filter checks now click through it, and that
+block clears the class filter as it already cleared the realm one.
+
+`clickButton` itself was left alone deliberately. Making it prefer an on-screen match broke
+four checks that had been relying on the old targeting, and a helper used several hundred times
+is not the place to find that out in the same commit as a feature. The narrow fix is at the one
+call site that had two candidates; the wide one is a separate piece of work with its own run.
+
+**The shape worth remembering:** a check that finds a widget by what it says will find whichever
+panel says it first. That is fine until a second panel says the same thing, and the day it does,
+nothing fails — the check just quietly changes what it is about.

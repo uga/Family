@@ -19,6 +19,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The summary can be filtered.** A box to type a name into, a class to pick, and a level
+  range, on their own row above the columns. They work on whichever set of columns you are
+  looking at and narrow what that set already shows rather than replacing it - so a name typed
+  on Crafting still only lists members with a cooldown running. The panel says how many
+  members it is hiding while a filter is on, so a short list is never mistaken for a lost one.
+  Nothing is remembered between sessions: the filters start empty every time you log in.
+
 - **Family has an icon in the game's addon list.** Both halves showed the red question mark
   the game uses for an addon that offers no picture of itself, in a list where most things
   around them had one. They now carry the same mark as the minimap button.
