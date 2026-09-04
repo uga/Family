@@ -16129,9 +16129,11 @@ print("filtering the summary by name, class and level")
 	check("and drops the ones outside", byLevel["Filterb-Fire Maw"] == nil
 		and byLevel["Otherly-Fire Maw"] == nil)
 
-	-- Section 2.2, pointed at a filter. Hiding this member would be Family claiming to know a
-	-- level it was never told, and the side buttons on the same panel already work this way.
-	check("but a member whose level was never recorded is not filtered out by level",
+	-- A guard on an invariant rather than a case from play: nothing writes a member without a
+	-- level, and Summary.lua carries the measurement that says so. This is what would catch
+	-- the guard being taken out, and the fixture is built by hand because the game has no way
+	-- to produce one.
+	check("a record with no level in it would not be filtered out by level",
 		byLevel["Nameless-Fire Maw"] ~= nil)
 
 	typeInto(minBox, "")
@@ -16181,7 +16183,7 @@ print("filtering the summary by name, class and level")
 		check("choosing a class keeps that class", byClass["Filtera-Fire Maw"] ~= nil
 			and byClass["Filterb-Fire Maw"] ~= nil)
 		check("and drops the others", byClass["Otherly-Fire Maw"] == nil)
-		check("while a member with no class recorded is still not filtered out",
+		check("and a record with no class in it would not be filtered out by class",
 			byClass["Nameless-Fire Maw"] ~= nil)
 
 		-- Composed with the set, not replacing it. Crafting narrows to members with a

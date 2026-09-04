@@ -1495,11 +1495,22 @@ local function build(frame)
 		return typed and typed > 0 and typed or nil
 	end
 
-	-- **A member is not filtered out by something Family does not know about them.** The side
-	-- buttons above already work this way and say why: a record with no faction is shown
-	-- whatever the switches say, because hiding it would claim Family knows which side it is
-	-- on. A record with no class and no level is the same claim (§2.2), and the answer is the
-	-- same one.
+	-- The two `meta.classFile and` / `if level then` guards below are a **guard on an
+	-- invariant, not a case**, and the difference is worth writing down because the first
+	-- draft of this comment claimed the second and was wrong.
+	--
+	-- Measured 2026-09-04: no record reaches this without both. `Scanners/Identity.lua` and
+	-- `Scanners/Bags.lua` are the only two writers that create a member and both write
+	-- `UnitLevel` and `UnitClass` together; every other scanner merges fields onto a record
+	-- that already exists; `addLetter` in `Scanners/Mail.lua`, the one path that could have
+	-- made a bare record out of a letter posted to an alt, refuses a key it has no meta for;
+	-- `Wide.lua` has sent `classFile` and `level` in IDENTITY since the first commit, so not
+	-- even a sibling from an older Family arrives without them; and nothing clears either.
+	--
+	-- They stay because the cost is one `and` and the failure they prevent is silent: a
+	-- member disappearing from a panel because a filter decided an absence was a mismatch.
+	-- What they are not is evidence of anything - if a check here goes red, the thing to fix
+	-- is whatever started writing records with a gap in them.
 	local function typedFilters(meta)
 		if classFilter and meta.classFile and meta.classFile ~= classFilter then
 			return false
