@@ -639,8 +639,9 @@ Family.locales.esES = {
 	["Say whose mail is running out when you log in"] = "Decir al iniciar sesión a quién le caduca el correo",
 	["Names the characters holding letters that have expired or are about to. The game puts an envelope on your minimap and never says when what is in it goes away."] = "Nombra los personajes con cartas caducadas o a punto de caducar. El juego pone un sobre en el minimapa y nunca dice cuándo desaparece lo que hay dentro.",
 	["Warn me this many days before:"] = "Avisarme estos días antes:",
-	["%s (already gone)"] = "%s (ya perdido)",
-	["mail running out: |cffff4444%s|r"] = "correo que caduca: |cffff4444%s|r",
+	["%s |cffff4444(already gone)|r"] = "%s |cffff4444(ya perdido)|r",
+	["  |cff888888and %d more|r"] = "  |cff888888y %d más|r",
+	["mail running out:"] = "correo que caduca:",
 	-- The minimap button and its tooltip
 	["Another addon is holding Family's minimap button and will not let go of it. It will be gone the next time you log in."] = "Otro addon está reteniendo el botón de minimapa de Family y no lo suelta. Habrá desaparecido la próxima vez que inicies sesión.",
 	["%d member"] = "%d miembro",

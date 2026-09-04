@@ -337,9 +337,15 @@ end
 -- Everybody holding something that has expired or will within `within` seconds, soonest
 -- first.
 --
--- Our own members only. A sibling belongs to another family (§6) and their mailbox is not
--- something this player can do anything about - a login notice naming somebody else's
--- character is a notice about a problem the reader cannot go and fix.
+-- **Siblings as well as our own**, each carrying the name of the family it belongs to. This
+-- was built the other way first, on the reasoning that a mailbox in somebody else's family is
+-- a problem the reader cannot go and fix - which turned out to be an assumption about how
+-- people use Wide Family rather than a fact about it, and Alberto's answer was that they
+-- coordinate. Whose a character is is never merged away (§6), which is what the family name
+-- is doing here.
+--
+-- The realm travels with every one of them. Same-named alts on different realms are ordinary,
+-- and a notice that names one of them names neither.
 --
 -- `expired` rather than a time of nought, because the two are different facts and the caller
 -- has to be able to say so: mail whose moment has passed is mail already lost, and telling
@@ -347,25 +353,38 @@ end
 function Mail:Expiring(within)
 	local found = {}
 
-	for key, entry in pairs(Family.Database:Members()) do
-		local meta = entry.meta
+	local function consider(key, meta, familyName)
 		local left = Mail:TimeToExpiry(meta)
+		if not left or left > (within or 0) then return end
 
-		if left and left <= (within or 0) then
-			found[#found + 1] = {
-				key = key,
-				name = meta.name or key,
-				realm = meta.realm,
-				expiresBy = meta.mailExpiresBy,
-				left = left,
-				expired = left <= 0,
-			}
-		end
+		found[#found + 1] = {
+			key = key,
+			name = meta.name or key,
+			realm = meta.realm,
+			family = familyName,
+			expiresBy = meta.mailExpiresBy,
+			left = left,
+			expired = left <= 0,
+		}
+	end
+
+	for key, entry in pairs(Family.Database:Members()) do
+		consider(key, entry.meta or {}, nil)
+	end
+
+	-- Nothing at all when Wide Family is switched off, which `Siblings` answers for us, and
+	-- nothing for a shared character whose family has not sent an expiry: a link that last
+	-- exchanged before that field was sent by the right name has no such figure, and an
+	-- absence is not a nought (§2.2).
+	for _, member in ipairs(Family.Wide and Family.Wide:Siblings() or {}) do
+		consider(member.key, member.meta or {}, member.familyName)
 	end
 
 	table.sort(found, function(a, b)
 		if a.left ~= b.left then return a.left < b.left end
-		return (a.name or "") < (b.name or "")
+		if (a.name or "") ~= (b.name or "") then return (a.name or "") < (b.name or "") end
+		if (a.realm or "") ~= (b.realm or "") then return (a.realm or "") < (b.realm or "") end
+		return (a.family or "") < (b.family or "")
 	end)
 
 	return found

@@ -19,11 +19,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
-- **Family says at login whose mail is running out.** One line in the chat frame naming the
-  characters holding letters that have expired or are about to, soonest first, with how long
-  each has left - and saying outright when something is already gone rather than dressing it up
-  as expiring now. The character you are playing is named too: the game puts an envelope on
-  your minimap and never once says when what is in it disappears.
+- **Family says at login whose mail is running out.** A short list in the chat frame, one
+  character to a line, most urgent first: the name and realm, how long is left, and - when the
+  character belongs to a family you are linked to - whose they are. Something already lost is
+  said to be already lost rather than dressed up as expiring now. The character you are playing
+  is named too: the game puts an envelope on your minimap and never once says when what is in
+  it disappears. A long list is cut short and says how many it did not name.
 
   It is on to begin with and switches off in the options panel, where you also choose how much
   warning you want. Three days by default, anything from one to thirty.

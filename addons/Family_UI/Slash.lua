@@ -720,20 +720,68 @@ function UI:SetMailNoticeDays(days)
 	return days
 end
 
--- What the notice would say right now, or nil when it would say nothing. Separate from the
--- event so that a check can ask the question without waiting nine seconds for a timer.
+-- One character to a line.
+--
+-- A family of forty with the warning set wide enough is forty names, and each carries a realm
+-- and sometimes a family as well. Run together they are a wall, and a wall of text at login is
+-- a thing people switch off rather than read; a line each, indented under a heading, is a list
+-- somebody's eye can go down.
+--
+-- A cap on the lines rather than on the characters in them, which is the arithmetic this
+-- started as and got wrong: a byte budget spends part of itself on colour codes the reader
+-- never sees, and measuring it correctly turned out to be a thing no check here noticed. One
+-- name to a line has no such question in it.
+--
+-- Ten is a judgement and not a measurement - how much chat is too much depends on the frame's
+-- height and on how many other addons are talking at login. What a check **can** settle is
+-- that nothing is dropped in silence: the count of what did not fit is the last line, the same
+-- way the summary's filters say how much they are hiding.
+local MAX_LINES = 10
+
+-- The lines the notice would print right now, or nil when it would say nothing. Separate from
+-- the event so that a check can ask the question without waiting nine seconds for a timer.
 function UI:MailNotice()
 	local waiting = Family.Mail:Expiring(UI:MailNoticeDays() * 86400)
 	if #waiting == 0 then return nil end
 
-	local said = {}
-	for _, member in ipairs(waiting) do
-		said[#said + 1] = member.expired
-			and string.format(L["%s (already gone)"], member.name)
-			or string.format("%s (%s)", member.name, UI:In(member.expiresBy))
+	-- Name-Realm, which is the form the game itself uses and the form a whisper wants, so
+	-- nobody has to learn a second one. The family in grey after it where the character is
+	-- somebody else's: §6 says whose a character is never gets merged away, and a login
+	-- notice is exactly where two families' alts would otherwise run together.
+	--
+	-- No realm is a guard rather than a case - `Identity.lua` writes name and realm in one
+	-- breath and Wide Family has always sent both - but a notice is not the place to find out
+	-- by printing "Tossica-nil".
+	--
+	local function entryFor(member)
+		local shown = member.realm and string.format("%s-%s", member.name, member.realm)
+			or member.name
+
+		if member.family then
+			shown = string.format("%s |cff888888[%s]|r", shown, member.family)
+		end
+
+		if member.expired then
+			return string.format(L["%s |cffff4444(already gone)|r"], shown)
+		end
+		return string.format("%s |cff888888(%s)|r", shown, UI:In(member.expiresBy))
 	end
 
-	return table.concat(said, ", ")
+	local lines = { L["mail running out:"] }
+
+	for index, member in ipairs(waiting) do
+		-- Sorted by urgency, so everything after the first one that does not fit has more
+		-- time left than it does, and the count is simply what is left.
+		if #lines > MAX_LINES then
+			lines[#lines + 1] = string.format(L["  |cff888888and %d more|r"],
+				#waiting - index + 1)
+			break
+		end
+
+		lines[#lines + 1] = "  " .. entryFor(member)
+	end
+
+	return lines
 end
 
 Family:OnDatabaseReady("mail.notice", function()
@@ -741,10 +789,10 @@ Family:OnDatabaseReady("mail.notice", function()
 		Family:After(9, "mail.notice", function()
 			if FamilyDB.mailNotice == false then return end
 
-			local said = UI:MailNotice()
-			if not said then return end
+			local lines = UI:MailNotice()
+			if not lines then return end
 
-			Family:Print(L["mail running out: |cffff4444%s|r"], said)
+			for _, line in ipairs(lines) do Family:Print(line) end
 		end)
 	end)
 end)

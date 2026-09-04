@@ -16334,13 +16334,29 @@ print("the notice about mail that is about to go")
 	local order = Family.Mail:Expiring(Family.UI:MailNoticeDays() * 86400)
 	check("soonest first", order[1] and order[1].name == "Losted", order[1] and order[1].name)
 
-	local said = Family.UI:MailNotice()
-	check("the notice names them", said and said:find("Postie", 1, true)
-		and said:find("Losted", 1, true), tostring(said))
+	-- One character to a line, under a heading, so the notice is a list rather than a wall.
+	local function noticeText()
+		return table.concat(Family.UI:MailNotice() or {}, "\n")
+	end
+
+	local lines = Family.UI:MailNotice()
+	check("the notice is a heading and a line for each of them",
+		lines and #lines == 4, tostring(lines and #lines))
+	check("the heading says what the list is about",
+		lines and lines[1]:find("mail running out", 1, true) ~= nil,
+		tostring(lines and lines[1]))
+
+	local said = noticeText()
+	check("the notice names them", said:find("Postie", 1, true)
+		and said:find("Losted", 1, true), said)
+
+	-- Same-named alts on two realms are ordinary, and a line that names one names neither.
+	check("with the realm beside the name",
+		said:find("Postie-Fire Maw", 1, true) ~= nil, said)
 	check("and leaves out the one that is not running out",
-		said and said:find("Latera", 1, true) == nil, tostring(said))
+		said:find("Latera", 1, true) == nil, said)
 	check("saying outright that one of them is already lost",
-		said and said:find("already gone", 1, true) ~= nil, tostring(said))
+		said:find("already gone", 1, true) ~= nil, said)
 
 	-- The number is the player's, inside bounds it is worth having.
 	check("a longer warning takes in more of them", Family.UI:SetMailNoticeDays(14) == 14
@@ -16358,15 +16374,22 @@ print("the notice about mail that is about to go")
 	Family.UI:SetMailNoticeDays(3)
 
 	-- The whole way through: the event, the wait, and the line in the chat frame.
+	-- Everything said from the heading onwards, because the notice is a heading and then a
+	-- line per character - reading only the line that carries the heading would have said
+	-- the whole thing arrived when only its first word had.
 	local function saidAtLogin()
 		local mark = #DEFAULT_CHAT_FRAME.messages
 		fire("PLAYER_ENTERING_WORLD")
 		for _ = 1, 4 do advance(4) end
 
+		local block, from = {}, nil
 		for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
 			local message = DEFAULT_CHAT_FRAME.messages[index]
-			if message:find("mail running out", 1, true) then return message end
+			if message:find("mail running out", 1, true) then from = index end
+			if from and index >= from then block[#block + 1] = message end
 		end
+
+		return #block > 0 and table.concat(block, "\n") or nil
 	end
 
 	local atLogin = saidAtLogin()
@@ -16406,6 +16429,78 @@ print("the notice about mail that is about to go")
 		check("and the box goes back to saying what is actually in force",
 			field.__text == "7", tostring(field.__text))
 	end
+
+	-- A shared character, named by the family it belongs to. Built the other way round first,
+	-- on an assumption about how Wide Family gets used; §6 is why the family name is here and
+	-- not a marker meaning "somebody else's".
+	local wide = Family.Wide:Store()
+	wide.links["fam-post"] = {
+		name = "Spazzacamino",
+		grants = {},
+		siblings = {},
+		members = {
+			["Tossica-Auberdine"] = {
+				meta = { name = "Tossica", realm = "Auberdine", classFile = "MAGE",
+					level = 60, faction = "Alliance", mailExpiresBy = now + 2 * 86400 },
+				seen = now,
+			},
+		},
+	}
+	check("a shared character can be made a sibling",
+		Family.Wide:SetSibling("fam-post", "Tossica-Auberdine", true) == true)
+
+	Family.UI:SetMailNoticeDays(3)
+	local withSibling = noticeText()
+	check("a sibling whose mail is going is named too",
+		withSibling:find("Tossica-Auberdine", 1, true) ~= nil, withSibling)
+	check("under the name of the family it belongs to",
+		withSibling:find("Spazzacamino", 1, true) ~= nil, withSibling)
+	check("and still in urgency order, ours and theirs together",
+		withSibling:find("Losted", 1, true) < withSibling:find("Tossica", 1, true),
+		withSibling)
+
+	-- Wide Family off is not "no siblings today", it is nothing shared at all.
+	local wasEnabled = Family.Wide:Enabled()
+	Family.Wide:SetEnabled(false)
+	check("with Wide Family switched off no sibling is named",
+		noticeText():find("Tossica", 1, true) == nil, noticeText())
+	Family.Wide:SetEnabled(wasEnabled)
+
+	--------------------------------------------------------------------------------------
+	-- A family big enough to be a wall of text
+	--------------------------------------------------------------------------------------
+
+	local crowd = {}
+	for index = 1, 25 do
+		local key = string.format("Crowder%02d-Fire Maw", index)
+		crowd[#crowd + 1] = key
+		Family.Database:SetMeta(key, { name = string.format("Crowder%02d", index),
+			realm = "Fire Maw", level = 60, classFile = "MAGE", faction = "Alliance",
+			mailExpiresBy = now + 2 * 86400 + index })
+	end
+
+	local crowd_lines = Family.UI:MailNotice()
+	check("a big family does not get a line each all the way down",
+		crowd_lines and #crowd_lines < 30, tostring(crowd_lines and #crowd_lines))
+	check("and every line stays one character wide", (function()
+		for index = 2, #(crowd_lines or {}) do
+			if select(2, crowd_lines[index]:gsub(",", "")) > 0 then return false end
+		end
+		return true
+	end)())
+
+	-- Nothing is dropped in silence, which is the part a check can actually settle.
+	local crowded = table.concat(crowd_lines or {}, "\n")
+	check("saying how many it did not name",
+		crowded:find("and %d+ more") ~= nil, crowded)
+
+	-- The ones that get cut are the ones with the most time left.
+	check("keeping the most urgent rather than the first it happened to reach",
+		crowded:find("Losted", 1, true) ~= nil, crowded)
+
+	for _, key in ipairs(crowd) do Family.Database:Forget(key) end
+	Family.Wide:SetSibling("fam-post", "Tossica-Auberdine", false)
+	wide.links["fam-post"] = nil
 
 	Family.UI:SetMailNoticeDays(3)
 	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
