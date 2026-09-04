@@ -16201,6 +16201,88 @@ print("filtering the summary by name, class and level")
 	Family.UI:Refresh()
 end)()
 
+--------------------------------------------------------------------------------------------
+-- Every field Wide Family shares is a field Family writes
+--
+-- `CATEGORIES` maps a grant onto the meta and payload keys it carries, and it is written by
+-- hand beside the scanners rather than derived from them - which is deliberate, because a new
+-- scanner must not be able to widen what a link already agreed to. The cost of that is a list
+-- of strings with nothing joining it to the fields those scanners actually write.
+--
+-- It cost something. `mailExpires` sat in the mail category from the first commit and nothing
+-- has ever written a field by that name: the scanner writes `mailExpiresBy`. Every sibling
+-- ever shared arrived without an expiry, silently, and both sides looked like they were
+-- working - the category was granted, the letters came through, and only the one figure that
+-- says *when you lose them* was missing.
+--
+-- A word boundary, not a substring: `mailExpires` is a prefix of `mailExpiresBy`, so a plain
+-- find would have called the typo written and passed.
+--------------------------------------------------------------------------------------------
+
+print()
+print("what Wide Family shares is what Family records")
+
+;(function()
+	local function slurp(path)
+		local handle = io.open(ROOT .. "/" .. path)
+		if not handle then return nil end
+		local text = handle:read("*a")
+		handle:close()
+		return text
+	end
+
+	local toc = slurp("addons/Family/Family.toc")
+	check("Family.toc is where this check expects it", toc ~= nil)
+
+	-- Every file the data addon loads except Wide.lua itself, because a field named only
+	-- there is by definition a field nothing writes. The libraries are fetched at package
+	-- time and are absent from a clone.
+	local sources, unreadable = {}, {}
+	for line in (toc or ""):gmatch("[^\r\n]+") do
+		local file = line:match("^%s*([%w_\\/]+%.lua)%s*$")
+		if file and not file:find("^Libs") then
+			local path = "addons/Family/" .. file:gsub("\\", "/")
+			if not path:find("Wide%.lua$") then
+				local text = slurp(path)
+				if text then sources[#sources + 1] = text
+				else unreadable[#unreadable + 1] = path end
+			end
+		end
+	end
+
+	check("and every file it lists could be read", #unreadable == 0,
+		table.concat(unreadable, " "))
+	check("with enough of them for the question to mean anything",
+		#sources > 20, tostring(#sources))
+
+	local function namedSomewhere(field)
+		local pattern = "%f[%w_]" .. field .. "%f[^%w_]"
+		for _, text in ipairs(sources) do
+			if text:find(pattern) then return true end
+		end
+		return false
+	end
+
+	local wide = slurp("addons/Family/Wide.lua") or ""
+	local identity = wide:match("local IDENTITY = {(.-)}")
+	check("Wide.lua still declares its identity fields where this reads them",
+		identity ~= nil)
+
+	local orphans = {}
+	local function consider(field)
+		if not namedSomewhere(field) then orphans[#orphans + 1] = field end
+	end
+
+	for name in (identity or ""):gmatch('"([%w_]+)"') do consider(name) end
+	for _, category in ipairs(Family.Wide.CATEGORIES or {}) do
+		for _, field in ipairs(category.meta or {}) do consider(field) end
+		for _, key in ipairs(category.payload or {}) do consider(key) end
+	end
+
+	check("no field is shared under a name nothing in Family writes",
+		#orphans == 0, table.concat(orphans, ", "))
+end)()
+
 print()
 if failures == 0 then
 	print("all checks passed")

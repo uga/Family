@@ -30,6 +30,14 @@ is a decision rather than an afternoon of archaeology.
   the game uses for an addon that offers no picture of itself, in a list where most things
   around them had one. They now carry the same mark as the minimap button.
 
+### Fixed
+
+- **A shared character's mail expiry and auction age never arrived.** Wide Family named two of
+  the figures it shares by the wrong name - one letter out in each - so a link that granted Mail
+  sent the letters and the count but never *when they expire*, and a link that granted Auctions
+  never sent how old the snapshot was. Both sides looked like they were working. They now
+  arrive; a character you already share updates the next time they are seen.
+
 ### Changed
 
 - **Family's minimap button now joins the button collectors.** Addons that gather minimap

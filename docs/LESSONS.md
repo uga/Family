@@ -1574,3 +1574,41 @@ call site that had two candidates; the wide one is a separate piece of work with
 **The shape worth remembering:** a check that finds a widget by what it says will find whichever
 panel says it first. That is fine until a second panel says the same thing, and the day it does,
 nothing fails — the check just quietly changes what it is about.
+
+---
+
+## L-042 — Two strings that named nothing, for as long as the file has existed
+
+Wide Family's `CATEGORIES` says which meta and payload keys each grant carries. Two of its
+strings named fields that Family has never written:
+
+    mailExpires   the scanner writes mailExpiresBy
+    auctionSeen   the scanner writes auctionsSeen
+
+So a link that granted Mail sent the letters, the count and the time the box was read, and
+never the moment those letters expire. A link that granted Auctions sent the snapshot and never
+its age. From the first commit, on every release.
+
+**Nothing looked wrong at either end**, and that is the whole of why it lasted. The grant was
+listed, the category arrived, the panel drew rows. What was missing was one figure per
+category, and a missing figure is indistinguishable from a character who has no mail expiring -
+which is the ordinary case. An absence that has a legitimate reading is an absence nobody
+investigates.
+
+It was found by measuring before building: the login notice about expiring mail would have
+skipped every shared character, silently, and looked correct.
+
+**The check that now catches it.** The harness reads every file `Family.toc` loads except
+`Wide.lua`, and requires each name in `CATEGORIES` and `IDENTITY` to appear as a whole word in
+at least one of them. A name that occurs only in the list that shares it is a name nothing
+writes. It found the second one on its first run - `auctionSeen` was not what anybody was
+looking for.
+
+**Word boundaries, not substrings**, and this is the part worth copying. `mailExpires` is a
+prefix of `mailExpiresBy`, so a plain `find` would have reported the typo as written and passed
+while the bug stood. A check for "does this name exist" has to mean the whole name.
+
+**The shape:** wherever one list is written by hand to describe another thing, nothing joins
+them until something is written that does. `CATEGORIES` is hand-written for a good reason - a
+scanner must not be able to widen a grant by existing - and the cost of that reason is exactly
+this, so the cost is what needs the gate.

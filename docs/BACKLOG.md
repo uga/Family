@@ -211,3 +211,27 @@ two are written next to each other: both are "what does this class know that is 
 creature rather than under the character".
 
 **Received:** 2026-09-04, from Alberto.
+
+---
+
+## 11. Say at login whose mail is about to expire
+
+**Asked:** at login, name in chat the characters whose mailbox holds mail that has expired or
+is about to. Switchable off from the options panel, on by default. And the warning period -
+how many days or hours before expiry counts as *about to* - chosen by the player in the same
+panel.
+
+**Today:** the data is recorded and the pattern exists. `Scanners/Mail.lua` writes
+`mailExpiresBy` and offers `Mail:TimeToExpiry(meta)`; `Family_UI/Slash.lua` already says which
+crafting cooldowns are ready eight seconds after `PLAYER_ENTERING_WORLD`, gated on
+`FamilyDB.cooldownNotice`, and that is the shape to follow.
+
+**What is missing is the third part.** `Family_UI/Options.lua` has tick boxes and nothing else -
+`SWITCHES` is a list of booleans - so a number the player chooses needs a control that does not
+exist yet. That is the work in this entry; the notice itself is an evening.
+
+**Found while measuring it:** `Wide.lua` shared a mail field by the wrong name, so no sibling
+has ever carried an expiry. Fixed separately - see `docs/LESSONS.md` - because a notice built on
+top of it would have been quietly wrong for half the family.
+
+**Received:** 2026-09-04, from Alberto.
