@@ -69,7 +69,21 @@ function Mail:Scan()
 			attachments = {},
 		}
 
-		for attachment = 1, (tonumber(itemCount) or 0) do
+		-- **Every slot, not the first `itemCount` of them.**
+		--
+		-- `itemCount` is how many attachments a letter has and says nothing about where they
+		-- sit. They have gaps: a letter of ten reported slots 1, 4, 7 and 8 as empty and had
+		-- four more beyond the tenth, which a loop bounded by the count never reaches. So
+		-- four stacks of linen and two of wool went unrecorded, and the record looked
+		-- complete because nothing compared what was found against what was said to be
+		-- there. Measured in play by walking the slots and printing the ones that answer
+		-- nothing (L-044).
+		--
+		-- The bound comes from the client's own constant. A number written here would be
+		-- right on the client it was written against and quietly short on the next.
+		local slots = tonumber(_G.ATTACHMENTS_MAX_RECEIVE) or 16
+
+		for attachment = 1, slots do
 			local link = Family:TryCall(GetInboxItemLink, index, attachment)
 			local _, itemID, _, quantity = Family:TryCall(GetInboxItem, index, attachment)
 
@@ -84,6 +98,16 @@ function Mail:Scan()
 					item = Family:ItemString(link),
 				}
 			end
+		end
+
+		-- What the letter said it had, kept beside what was found. They agree on every
+		-- letter anybody has looked at since the loop above stopped guessing, and the point
+		-- of keeping it is that the next disagreement says so instead of looking complete.
+		letter.attachmentsExpected = tonumber(itemCount) or 0
+
+		if #letter.attachments ~= letter.attachmentsExpected then
+			Family:Debug("mail: letter %d says %d attachment(s) and %d answered",
+				index, letter.attachmentsExpected, #letter.attachments)
 		end
 
 		if expires and (not soonest or expires < soonest) then soonest = expires end

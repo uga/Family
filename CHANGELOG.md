@@ -73,6 +73,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Some of a letter's attachments were not recorded.** A mailbox does not keep a letter's
+  attachments in its first slots, or in order - taking two out of a letter and leaving the rest
+  puts gaps in it - and Family read only as many slots as the letter said it had things in. So
+  a letter of ten with gaps had some of them read and the rest silently left out. Every slot is
+  read now, and what the letter says it holds is kept beside what was found.
+
 - **A character could be listed twice on one recipe.** Where a stored recipe list held the
   same recipe on two rows, the person who knew it was drawn twice on the same line - with
   their realm on both, because two identical names are exactly what makes Family add it. They

@@ -674,7 +674,10 @@ GuildRoster = function() end
 
 -- The outgoing mail frame (§5). Read as the letter goes and cleared by the client the moment
 -- the server confirms it, which is why Family reads it in the hook and not afterwards.
-local SEND_MAIL = { money = 12000, cod = 0, items = { { 2589, 20 }, { 4306, 5 } } }
+-- Reachable from the checks for the same reason the inbox is: a player can take some of a
+-- letter's attachments and leave the rest, so a check has to be able to put a gappy one in
+-- front of the scanner without changing what every other mail check is counting.
+SEND_MAIL = { money = 12000, cod = 0, items = { { 2589, 20 }, { 4306, 5 } } }
 ATTACHMENTS_MAX_SEND = 12
 GetSendMailMoney = function() return SEND_MAIL.money end
 GetSendMailCOD = function() return SEND_MAIL.cod end
@@ -983,7 +986,16 @@ PlaceAuctionBid = function() end
 
 -- The mailbox. One letter is about to expire and one is not, because the only number on the
 -- summary worth reacting to is how long until something is destroyed.
-local INBOX = {
+-- How many slots a letter has room for. The client's own constant, and the reason it is
+-- modelled: attachments do **not** sit in the first `itemCount` slots. They have gaps, and a
+-- letter of ten can put four of them past the tenth slot - which is how four stacks of linen
+-- and two of wool went unrecorded while the record looked complete (L-044).
+ATTACHMENTS_MAX_RECEIVE = 16
+
+-- Reachable from the checks, so that one of them can put a letter with gaps in it into the
+-- inbox for as long as it needs one and take it out again. Adding it here instead would change
+-- what every other mail check is counting.
+INBOX = {
 	{ sender = "Deiana", subject = "Cloth", money = 0, cod = 0, days = 0.5,
 	  items = { { 2589, 20 } } },
 	{ sender = "Auction House", subject = "Sold", money = 50000, cod = 0, days = 25,
@@ -993,7 +1005,13 @@ GetInboxNumItems = function() return #INBOX end
 GetInboxHeaderInfo = function(index)
 	local m = INBOX[index]
 	if not m then return nil end
-	return nil, nil, m.sender, m.subject, m.money, m.cod, m.days, #m.items, true
+	-- The count the client reports, which is how many there are and not where they are.
+	local held = m.count
+	if not held then
+		held = 0
+		for _ in pairs(m.items) do held = held + 1 end
+	end
+	return nil, nil, m.sender, m.subject, m.money, m.cod, m.days, held, true
 end
 GetInboxItem = function(index, attachment)
 	local item = INBOX[index] and INBOX[index].items[attachment]
@@ -17160,6 +17178,121 @@ print("opening Family from the keyboard")
 		_G.Family = realFamily
 		check("and pressing it before Family has loaded does nothing at all", ok)
 	end
+end)()
+
+--------------------------------------------------------------------------------------------
+-- A letter whose attachments are not in the first slots
+--
+-- `itemCount` from the header says how many a letter has and nothing about where they sit.
+-- They have gaps, and some of them are past that number - so a loop bounded by the count
+-- reads part of a letter and the record looks complete, which is how four stacks of linen and
+-- two of wool went missing without anything saying so. Measured in play by walking the slots
+-- and printing the ones that answer nothing (L-044).
+--------------------------------------------------------------------------------------------
+
+print()
+print("a letter that keeps its attachments in odd slots")
+
+;(function()
+	local key = Family:CurrentMember()
+
+	INBOX[#INBOX + 1] = {
+		sender = "Wetpaper", subject = "Wool Cloth (20)", money = 0, cod = 0, days = 19,
+		-- Six attachments; the client reports six; they sit in ten slots with gaps, and two
+		-- of them are past the sixth. Read the way this used to be read, three are lost.
+		count = 6,
+		items = { [1] = { 2592, 20 }, [3] = { 2592, 20 }, [4] = { 2592, 20 },
+		          [8] = { 2592, 20 }, [9] = { 2592, 20 }, [10] = { 2592, 20 } },
+	}
+	local at = #INBOX
+
+	local mark = #DEFAULT_CHAT_FRAME.messages
+	local wasDebug = FamilyDB.debug
+	FamilyDB.debug = true
+
+	fire("MAIL_SHOW")
+	advance(1)
+
+	local letters = (Family.Database:Payload(key) or {}).mail
+	letters = letters and letters.letters or {}
+
+	local found
+	for _, letter in ipairs(letters) do
+		if letter.subject == "Wool Cloth (20)" then found = letter end
+	end
+	check("the letter is recorded", found ~= nil)
+
+	check("with every attachment, including the ones past the count",
+		found and #found.attachments == 6, tostring(found and #found.attachments))
+
+	-- The gaps must not become entries: an empty slot is not an attachment of one.
+	local counted = 0
+	for _, carried in ipairs(found and found.attachments or {}) do
+		if carried.id == 2592 and carried.count == 20 then counted = counted + 1 end
+	end
+	check("and nothing invented for the slots that answered nothing", counted == 6,
+		tostring(counted))
+
+	check("what the letter said it had is kept beside what was found",
+		found and found.attachmentsExpected == 6,
+		tostring(found and found.attachmentsExpected))
+
+	-- Agreeing is the ordinary case, so it says nothing.
+	local said = 0
+	for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+		if DEFAULT_CHAT_FRAME.messages[index]:find("attachment(s) and", 1, true) then
+			said = said + 1
+		end
+	end
+	check("and a letter that adds up is not remarked on", said == 0, tostring(said))
+
+	-- And one that does not add up says so, rather than looking complete.
+	INBOX[at].count = 9
+	mark = #DEFAULT_CHAT_FRAME.messages
+	fire("MAIL_SHOW")
+	advance(1)
+
+	local complained = false
+	for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+		if DEFAULT_CHAT_FRAME.messages[index]:find("says 9 attachment(s) and 6 answered",
+			1, true) then complained = true end
+	end
+	check("a letter that says nine and answers six says so", complained)
+
+	INBOX[at] = nil
+	FamilyDB.debug = wasDebug
+	fire("MAIL_SHOW")
+	advance(1)
+
+	--------------------------------------------------------------------------------------
+	-- And the same on the way out
+	--
+	-- A player fills slots 2 and 8 of an outgoing letter and leaves the rest empty; a
+	-- player also opens a letter, takes two of its attachments and puts it back. Neither
+	-- side may assume the slots are filled, or filled in order. The send path already
+	-- walked every slot - it was written that way and never checked, which is a property
+	-- one refactor away from being lost.
+	--------------------------------------------------------------------------------------
+
+	local wasItems = SEND_MAIL.items
+	SEND_MAIL.items = { [2] = { 2589, 20 }, [8] = { 4306, 5 } }
+
+	local recipient = "Gappy-Fire Maw"
+	Family.Database:SetMeta(recipient, { name = "Gappy", realm = "Fire Maw" })
+
+	SendMail("Gappy", "Two of eight", "")
+	fire("MAIL_SEND_SUCCESS")
+
+	local posted = (Family.Database:Payload(recipient) or {}).mail
+	local sent = posted and posted.letters and posted.letters[1]
+	check("a letter posted with only slots 2 and 8 filled carries both",
+		sent and #sent.attachments == 2, tostring(sent and #sent.attachments))
+	check("and neither of them is an empty slot read as one",
+		sent and sent.attachments[1].id == 2589 and sent.attachments[2].id == 4306,
+		sent and sent.attachments[1].id .. "/" .. sent.attachments[2].id)
+
+	SEND_MAIL.items = wasItems
+	Family.Database:Forget(recipient)
 end)()
 
 print()

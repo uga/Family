@@ -1648,3 +1648,37 @@ changelog's `### Fixed` matches once per released version, not once - so the com
 with the code and none of the writing. It was caught by reading `git show --stat` rather than
 by anything automatic. A commit whose message describes documents it does not contain is worth
 one look at what it actually holds.
+
+---
+
+## L-044 — A count is not a layout
+
+`GetInboxHeaderInfo` says how many attachments a letter has. Family read that many slots:
+
+    for attachment = 1, itemCount do
+
+Attachments are not in the first `itemCount` slots. They have gaps - a player opens a letter,
+takes two of them and puts it back - and the ones displaced sit past the count, where that loop
+never reaches. So a letter of ten had part of it read and the rest left out, and **the record
+looked complete**, because nothing compared what was found against what the letter said it had.
+
+Reported from play twice: *two stacks of wool cloth were not read properly*, then *four stacks
+of linen*. Both were dismissible as an icon that had not loaded. The probe settled it in one
+pass - walk the slots, print the ones that answer nothing - and the empty slots came to two on
+the wool letter and four across the two linen ones. The numbers were the report.
+
+**The shape.** A count and a layout are different facts, and an API that gives you one is not
+giving you the other. `itemCount` was read as "the attachments are 1..n" because that is what it
+looks like on every letter nobody has touched. The client has a constant for the layout -
+`ATTACHMENTS_MAX_RECEIVE` - and using it costs a few iterations over empty slots and cannot
+under-read.
+
+**The checks.** The fixture now models a letter the way a mailbox actually holds one: six
+attachments reported, sitting in ten slots with gaps, two of them past the sixth. Reading it the
+old way loses three. The outgoing path was already right and had never been checked against gaps
+- a property one refactor away from being lost - so it is pinned too, with a letter posted from
+slots 2 and 8.
+
+**And the record no longer claims to be whole when it is not.** What the header said is kept
+beside what answered, and a letter where the two disagree says so in the debug log. That is the
+part that would have made the first report a one-line answer instead of a probe.
