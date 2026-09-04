@@ -17,6 +17,16 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Changed
+
+- **Family's minimap button now joins the button collectors.** Addons that gather minimap
+  buttons into a bag or a bar could not pick Family's up, because it was built by hand rather
+  than registered the way those collectors look for. Where the game already has LibDBIcon -
+  which it does for anyone running DBM, Skada, WeakAuras or most other large addons - Family
+  hands its button over, keeping it wherever you had dragged it and remembering whether you
+  had turned it off. Where nothing else provides it, the button is exactly the one that was
+  there before. Nothing new is downloaded either way.
+
 ## 1.4.3 — 2026-09-03
 
 ### Fixed

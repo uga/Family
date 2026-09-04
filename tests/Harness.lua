@@ -5947,8 +5947,10 @@ end
 -- read one total on their screen and a different one in the tooltip above it - and the
 -- tooltip, which is rebuilt on every hover, was the right one.
 do
-	-- LibDataBroker is a .pkgmeta external and is not in a clone, so there is no bar object
-	-- here unless one is made. It is one field, and the whole of what the library gives us.
+	-- LibDataBroker is used where the player already has it and is never shipped, so it is
+	-- absent here exactly as it is absent from a game running nothing else that embeds it,
+	-- and there is no bar object unless one is made. It is one field, and the whole of what
+	-- the library gives us.
 	Family.UI.broker = Family.UI.broker or { text = "" }
 
 	local before = Family.UI.broker.text
@@ -15708,6 +15710,112 @@ print("the translations")
 		check(code .. " translates every sentence Family says to the player",
 			#half == 0, table.concat(half, " | "))
 	end
+end)()
+
+--------------------------------------------------------------------------------------------
+-- Handing the minimap button to a collector the player already has
+--
+-- LibDBIcon is used and never shipped, so it is absent from a clone exactly as it is absent
+-- from the game of a player who runs nothing else that embeds it - which is why every check
+-- above drove the hand-written button. This drives the other branch by putting a library in
+-- front of the real decision function, not in front of a copy of it.
+--
+-- Last in the file on purpose: adopting a collector is one-way within a session, and every
+-- check that wanted the hand-written button has already run.
+--------------------------------------------------------------------------------------------
+
+print()
+print("the minimap button, where another addon already brought a collector")
+
+;(function()
+	local registered, calls = {}, { register = 0, show = 0, hide = 0 }
+	local fakeIcon = {
+		Register = function(_, name, object, db)
+			calls.register = calls.register + 1
+			registered[name] = { object = object, db = db }
+		end,
+		IsRegistered = function(_, name) return registered[name] ~= nil end,
+		Show = function(_, name) calls.show = calls.show + 1; calls.shown = name end,
+		Hide = function(_, name) calls.hide = calls.hide + 1; calls.hidden = name end,
+	}
+
+	local button = _G.FamilyMinimapButton
+	local object = Family.UI.broker
+	check("there is a broker object to hand over", type(object) == "table")
+
+	-- Refused before adopted, because a refusal that runs afterwards would be testing a
+	-- collector that is already in place.
+	check("a collector missing the calls we make is refused",
+		Family.UI:GiveButtonToCollector({ Register = true }, object) == false)
+	check("and so is a collector with nothing to register",
+		Family.UI:GiveButtonToCollector(fakeIcon, nil) == false)
+	check("neither of which took the button",
+		calls.register == 0 and button and button:IsShown() == true)
+
+	FamilyDB.ui.minimapIcon = nil
+	FamilyDB.ui.minimapAngle = 137
+	Family.UI:SetMinimapShown(true)
+
+	local realGetLibrary = LibStub.GetLibrary
+	LibStub.GetLibrary = function(self, name, silent)
+		if name == "LibDBIcon-1.0" then return fakeIcon end
+		return realGetLibrary(self, name, silent)
+	end
+
+	check("login hands the button to the collector", Family.UI:BuildMinimapButton() == "collector")
+	check("registering it once, under Family's own name",
+		calls.register == 1 and registered["Family"] ~= nil)
+	check("with the object the broker bars are given",
+		registered["Family"] and registered["Family"].object == object)
+
+	-- The whole point of seeding it: a player who dragged the button somewhere finds it
+	-- there, rather than back at the library's default.
+	local db = registered["Family"] and registered["Family"].db
+	check("and the angle the player left it at, in the unit the library reads",
+		db and db.minimapPos == 137, tostring(db and db.minimapPos))
+	check("the setting travels with it", db and db.hide == false, tostring(db and db.hide))
+
+	check("Family's own button gets out of the way", button and button:IsShown() == false)
+
+	-- A second login within one session must not register a second time: LibDBIcon raises an
+	-- error on a name it already has, which would take the rest of the addon down with it.
+	check("a second pass does not register twice",
+		Family.UI:BuildMinimapButton() == "collector" and calls.register == 1,
+		tostring(calls.register))
+
+	Family.UI:SetMinimapShown(false)
+	check("turning the button off asks the collector to hide it",
+		calls.hide == 1 and calls.hidden == "Family")
+	check("and writes it down where the collector will read it next login",
+		db and db.hide == true, tostring(db and db.hide))
+
+	Family.UI:SetMinimapShown(true)
+	check("turning it back on asks the collector to show it",
+		calls.show == 1 and calls.shown == "Family")
+	check("and says so in the same place", db and db.hide == false, tostring(db and db.hide))
+
+	-- Nothing new is fetched or loaded for any of this. The gate that proved the libraries
+	-- were landing where the .toc looks is the same gate that would catch us shipping one.
+	local function slurp(path)
+		local handle = io.open(ROOT .. "/" .. path)
+		if not handle then return nil end
+		local text = handle:read("*a")
+		handle:close()
+		return text
+	end
+
+	local toc = slurp("addons/Family_UI/Family_UI.toc")
+	check("the .toc is where this check expects it", toc ~= nil)
+	check("and none of this puts LibDBIcon in it",
+		toc ~= nil and toc:find("LibDBIcon", 1, true) == nil)
+
+	local pkgmeta = slurp(".pkgmeta")
+	check(".pkgmeta is where this check expects it", pkgmeta ~= nil)
+	check("nor either library among the externals the packager fetches",
+		pkgmeta ~= nil and pkgmeta:find("LibDBIcon", 1, true) == nil
+			and pkgmeta:find("LibDataBroker", 1, true) == nil)
+
+	LibStub.GetLibrary = realGetLibrary
 end)()
 
 print()

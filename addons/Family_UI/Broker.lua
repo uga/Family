@@ -16,6 +16,10 @@
 -- The minimap button is written here rather than taken from a library. It needs to sit on a
 -- circle, be dragged around it and remember where it was left, which is eighty lines - and a
 -- dependency that has to be fetched before the addon will load is a poor trade for that.
+--
+-- It is handed over to LibDBIcon when the player already has it, for the reasons at that
+-- section below. Used, never shipped: nothing here is fetched at package time and the .toc
+-- loads nothing new.
 
 local _, UI = ...
 
@@ -582,12 +586,90 @@ local function createMinimapButton()
 	return button
 end
 
+--------------------------------------------------------------------------------------------
+-- The collector, where the player already has one
+--
+-- Other addons gather minimap buttons into a bag or a bar, and what they gather is what
+-- LibDBIcon registered - so a button built by hand sits outside the bag however well it
+-- behaves. Reported from play, with Family named in somebody else's complaint while two
+-- other addons on the same minimap were collected.
+--
+-- **LibDBIcon is used and never shipped**, and that is a licence decision rather than a
+-- packaging convenience. Its terms forbid redistributing a stand-alone version without
+-- written permission, and the LibDataBroker it requires states no licence anywhere - neither
+-- can travel inside a zip that promises GPL terms to whoever receives it. Reading a library
+-- that another addon has already loaded is not redistributing it, so this asks for nothing
+-- and grants nothing. A player with DBM, Skada or WeakAuras has it; everyone else keeps the
+-- button above, which is why that button stays.
+--------------------------------------------------------------------------------------------
+
+local collector
+
+-- Hand the broker object over, and say whether it was taken.
+--
+-- The saved table is ours to fill. `minimapPos` is an angle in degrees, which is the unit our
+-- own button has been writing all along, so seeding it from `minimapAngle` leaves the button
+-- where the player put it instead of at the library's default. `hide` is how it is asked to
+-- stay away, and it has to be written as well as read or the setting would not survive a
+-- logout.
+--
+-- Nothing is assumed about what was found under that name. A library is whatever the game
+-- handed back, so the two methods used here are checked for before either is called - §2.3
+-- pointed at another addon rather than at the client.
+function UI:GiveButtonToCollector(dbicon, object)
+	if not dbicon or not object then return false end
+	if type(dbicon.Register) ~= "function" or type(dbicon.IsRegistered) ~= "function" then
+		return false
+	end
+
+	FamilyDB.ui.minimapIcon = FamilyDB.ui.minimapIcon or {}
+	local saved = FamilyDB.ui.minimapIcon
+
+	if saved.minimapPos == nil then saved.minimapPos = FamilyDB.ui.minimapAngle end
+	saved.hide = not UI:IsMinimapShown()
+
+	if not dbicon:IsRegistered("Family") then
+		dbicon:Register("Family", object, saved)
+	end
+
+	collector = dbicon
+
+	-- Two buttons on one minimap is worse than the wrong one of them.
+	if minimapButton then minimapButton:Hide() end
+
+	return true
+end
+
+-- What login decides about the button, in one function, so that the harness can put a
+-- collector in front of the real decision rather than in front of a copy of it.
+function UI:BuildMinimapButton()
+	local dbicon = LibStub and LibStub:GetLibrary("LibDBIcon-1.0", true)
+	if UI:GiveButtonToCollector(dbicon, UI.broker) then return "collector" end
+
+	minimapButton = minimapButton or createMinimapButton()
+	UI.minimapButton = minimapButton
+	if not minimapButton then return nil end
+
+	place(FamilyDB.ui.minimapAngle or 200)
+	minimapButton:SetShown(UI:IsMinimapShown())
+	return "own"
+end
+
 -- Off is a setting rather than a removal, so turning it back on does not need a reload.
 function UI:SetMinimapShown(shown)
 	FamilyDB.ui = FamilyDB.ui or {}
 	FamilyDB.ui.minimap = shown and true or false
 
-	if minimapButton then
+	if collector then
+		FamilyDB.ui.minimapIcon = FamilyDB.ui.minimapIcon or {}
+		FamilyDB.ui.minimapIcon.hide = not FamilyDB.ui.minimap
+
+		if FamilyDB.ui.minimap then
+			collector:Show("Family")
+		else
+			collector:Hide("Family")
+		end
+	elseif minimapButton then
 		minimapButton:SetShown(FamilyDB.ui.minimap)
 	end
 end
@@ -615,11 +697,5 @@ Family:OnDatabaseReady("broker", function()
 	-- add up forty numbers and format one string.
 	Family.Database:OnChanged("broker", function() UI:UpdateBroker() end)
 
-	minimapButton = createMinimapButton()
-	UI.minimapButton = minimapButton
-
-	place(FamilyDB.ui.minimapAngle or 200)
-	if minimapButton then
-		minimapButton:SetShown(UI:IsMinimapShown())
-	end
+	UI:BuildMinimapButton()
 end)
