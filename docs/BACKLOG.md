@@ -13,6 +13,25 @@ other half turns out to need a measurement before a line of code is worth writin
 
 Received 2026-09-04, from users.
 
+## The order, agreed 2026-09-04
+
+**Honor last, in a build of its own.** It is the only entry that needs research, then a model,
+then code, and its research turned up three systems sharing a word — so it would hold everything
+else behind it for no reason. The other seven ship first, then a release, then honor.
+
+Two things that order should not hide:
+
+- **Entry 2 also has a client question in it** — whether a tooltip can be redrawn while a
+  modifier is held — and it is small but it is a probe, not a guess. It is not in honor's class
+  and it is not nothing.
+- **Entry 4 is not work at all until it is decided.** Adopting LibDBIcon is reserved, so it sits
+  outside this order until Alberto answers it.
+
+Suggested sequence for the seven, and the reason is dependency rather than size: **3 then 8**
+(the family-wide reputation view is a panel that wants the filtering from entry 3, so doing 3
+first leaves 8 mostly done), with **6 and 7** available whenever a session wants something
+self-contained, **1** as a check that may turn into a small fix, and **2** after its probe.
+
 ---
 
 ## 1. Wide Family: quest sharing, verified end to end
