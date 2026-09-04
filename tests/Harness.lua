@@ -15825,6 +15825,73 @@ print("the minimap button, where another addon already brought a collector")
 	check("turning it back on shows that same frame", frame:IsShown() == true)
 	check("still without the call that repositions", second.show == 0, tostring(second.show))
 
+	-- Handing the button over is one-way: LibDBIcon registers and never unregisters. A player
+	-- who has the option off at login therefore hands nothing over at all, which is the only
+	-- way that setting can be honoured against a collector that keeps what it is given.
+	Family.UI:SetMinimapShown(false)
+
+	local third = { register = 0 }
+	local waiting = {
+		Register = function() third.register = third.register + 1 end,
+		IsRegistered = function() return third.register > 0 end,
+		Show = function() end,
+		Hide = function() end,
+	}
+
+	check("a collector is still taken while the button is switched off",
+		Family.UI:GiveButtonToCollector(waiting, object) == true)
+	check("but nothing is handed to it, so there is nothing to collect",
+		third.register == 0, tostring(third.register))
+
+	Family.UI:SetMinimapShown(true)
+	check("switching the button on is what hands it over",
+		third.register == 1, tostring(third.register))
+
+	-- A collector that grabs the frame and keeps it. HidingBar does exactly this - it takes
+	-- buttons parented to the minimap by name rather than through the broker object, and
+	-- after that Hide leaves IsShown true, measured in play on 2026-09-04. Neither the
+	-- library nor Family can win that argument, so the player is told once.
+	local grabbed = {
+		shown = true,
+		Show = function(self) self.shown = true end,
+		Hide = function() end,
+		SetShown = function(self, on) if on then self.shown = true end end,
+		IsShown = function(self) return self.shown end,
+	}
+	local stubborn = {
+		Register = function() end,
+		IsRegistered = function() return true end,
+		Show = function() end,
+		Hide = function() end,
+		GetMinimapButton = function() return grabbed end,
+	}
+	check("a collector that will not give the button up is taken like any other",
+		Family.UI:GiveButtonToCollector(stubborn, object) == true)
+
+	local function saidSince(mark)
+		local said = 0
+		for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+			if DEFAULT_CHAT_FRAME.messages[index]:find("holding Family's minimap button",
+				1, true) then said = said + 1 end
+		end
+		return said
+	end
+
+	local mark = #DEFAULT_CHAT_FRAME.messages
+	Family.UI:SetMinimapShown(false)
+	check("the button that would not go is noticed rather than assumed away",
+		grabbed:IsShown() == true)
+	check("and the player is told, instead of watching a tick box do nothing",
+		saidSince(mark) == 1, tostring(saidSince(mark)))
+	check("the setting is still recorded, so the next login hands nothing over",
+		FamilyDB.ui.minimapIcon.hide == true)
+
+	-- Once. A sentence that arrives every time the box is touched is a sentence nobody reads.
+	mark = #DEFAULT_CHAT_FRAME.messages
+	Family.UI:SetMinimapShown(true)
+	Family.UI:SetMinimapShown(false)
+	check("and told once, not on every flip", saidSince(mark) == 0, tostring(saidSince(mark)))
+
 	-- Nothing new is fetched or loaded for any of this. The gate that proved the libraries
 	-- were landing where the .toc looks is the same gate that would catch us shipping one.
 	local function slurp(path)

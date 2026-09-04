@@ -636,6 +636,7 @@ Family.locales.frFR = {
 	["|cffffaa00Nothing of Family's has arrived here|r - not even this client's own announcement, which on at least one client does come back. In a guild where nobody else runs Family this can still be ordinary, so it is not proof of a fault by itself. Ask somebody else in the guild to run this: if their copy shows messages arriving, the channel is working."] = "|cffffaa00Rien de Family n'est arrivé ici|r - pas même la propre annonce de ce client, qui sur au moins un client revient bien. Dans une guilde où personne d'autre n'utilise Family, cela peut rester ordinaire : à soi seul ce n'est donc pas la preuve d'une panne. Demandez à quelqu'un d'autre dans la guilde de lancer ceci : si sa copie montre des messages qui arrivent, le canal fonctionne.",
 
 	-- The minimap button and its tooltip
+	["Another addon is holding Family's minimap button and will not let go of it. It will be gone the next time you log in."] = "Un autre addon retient le bouton de minicarte de Family et refuse de le lâcher. Il aura disparu à votre prochaine connexion.",
 	["%d member"] = "%d membre",
 	["%d members"] = "%d membres",
 	["|cff888888money|r"] = "|cff888888argent|r",

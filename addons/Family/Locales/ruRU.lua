@@ -636,6 +636,7 @@ Family.locales.ruRU = {
 	["|cffffaa00Nothing of Family's has arrived here|r - not even this client's own announcement, which on at least one client does come back. In a guild where nobody else runs Family this can still be ordinary, so it is not proof of a fault by itself. Ask somebody else in the guild to run this: if their copy shows messages arriving, the channel is working."] = "|cffffaa00Сюда не пришло ничего от Family|r - даже собственное объявление этого клиента, которое как минимум на одном клиенте всё же возвращается. В гильдии, где больше никто не использует Family, это всё ещё может быть обычным делом, так что само по себе это не доказывает поломку. Попросите кого-нибудь ещё в гильдии запустить это: если у него видно приходящие сообщения, канал работает.",
 
 	-- The minimap button and its tooltip
+	["Another addon is holding Family's minimap button and will not let go of it. It will be gone the next time you log in."] = "Другой аддон удерживает кнопку Family на миникарте и не отпускает её. Она исчезнет при следующем входе в игру.",
 	["%d member"] = "%d персонаж",
 	["%d members"] = "Персонажей: %d",
 	["|cff888888money|r"] = "|cff888888деньги|r",

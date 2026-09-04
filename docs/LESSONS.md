@@ -1501,3 +1501,36 @@ check.** Go to the source for what you cannot derive, not for what you can.
 in the future. Dropping the guard records the item as ready in 47 days — the reported shape,
 reproduced. Clamping instead of refusing also fails: a clamp invents a moment out of a number
 already known to be wrong, and the next scan has a real one.
+
+---
+
+## L-040 — The call was made, and nothing moved
+
+Family handed its minimap button to LibDBIcon, and unticking **Show the minimap button** left
+the button sitting in the player's bar. Reported from play.
+
+The harness had four checks on that path and all four were green. They asked *was
+`collector:Hide("Family")` called* — counted on a fake library — and the answer was yes, every
+time. What none of them asked was whether anything had become hidden, because a fake that
+records the call has no button to hide.
+
+The client answered that in one line:
+
+    b:Hide() ; print(b:IsShown())   -->   true
+
+Not "true a moment later", which would have been a collector redrawing. True on the same frame:
+HidingBar takes buttons parented to the minimap by name and replaces what it takes, so the
+method ran and did nothing. No number of correct calls was going to move it.
+
+**The check that now catches it.** The harness grows a collector whose button refuses to hide —
+`Hide` is a no-op and `IsShown` stays true — and the checks are on the *state*: the button is
+still shown, the player was told, and the setting was written down so the next login hands
+nothing over. Deleting the read-back turns one of them red; so does telling the player twice.
+
+This is the guild-message lesson in another costume, and it is worth naming the shape rather
+than the instance: **a fake that records calls proves the caller and nothing else.** Wherever
+the thing being driven belongs to somebody else — the client, or another addon — the fake has
+to be able to *refuse*, or the check is a check on our own arithmetic. Every collaborator
+Family talks to through an interface it did not write is the same risk: LibDBIcon here, and the
+same question is owed to LibSerialize, LibDeflate and every capability probe that reads back
+what the client said rather than what it was asked.

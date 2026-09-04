@@ -636,6 +636,7 @@ Family.locales.esES = {
 	["|cffffaa00Nothing of Family's has arrived here|r - not even this client's own announcement, which on at least one client does come back. In a guild where nobody else runs Family this can still be ordinary, so it is not proof of a fault by itself. Ask somebody else in the guild to run this: if their copy shows messages arriving, the channel is working."] = "|cffffaa00Aquí no ha llegado nada de Family|r - ni siquiera el propio anuncio de este cliente, que en al menos un cliente sí vuelve. En una hermandad donde nadie más usa Family esto todavía puede ser normal, así que por sí solo no prueba que haya un fallo. Pide a otra persona de la hermandad que ejecute esto: si su copia muestra mensajes que llegan, el canal funciona.",
 
 	-- The minimap button and its tooltip
+	["Another addon is holding Family's minimap button and will not let go of it. It will be gone the next time you log in."] = "Otro addon está reteniendo el botón de minimapa de Family y no lo suelta. Habrá desaparecido la próxima vez que inicies sesión.",
 	["%d member"] = "%d miembro",
 	["%d members"] = "%d miembros",
 	["|cff888888money|r"] = "|cff888888dinero|r",

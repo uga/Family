@@ -610,15 +610,40 @@ end
 -- *for*; a player with neither keeps the button above, which is why that button stays.
 --------------------------------------------------------------------------------------------
 
-local collector
+local collector, collectorObject, saidCollectorHolds
 
--- Hand the broker object over, and say whether it was taken.
+local function collectorButton()
+	if not collector or type(collector.GetMinimapButton) ~= "function" then return nil end
+	return collector:GetMinimapButton("Family")
+end
+
+-- **Registering is one-way: LibDBIcon registers and never unregisters.** So it is not done
+-- until the player wants the button, and a player who has the option off at login hands the
+-- collector nothing to collect - which is the only way that setting can be honoured with
+-- certainty, for the reason in `SetMinimapShown` below.
 --
 -- The saved table is ours to fill. `minimapPos` is an angle in degrees, which is the unit our
 -- own button has been writing all along, so seeding it from `minimapAngle` leaves the button
 -- where the player put it instead of at the library's default. `hide` is how it is asked to
 -- stay away, and it has to be written as well as read or the setting would not survive a
 -- logout.
+local function registerWithCollector()
+	if not collector or not collectorObject then return nil end
+
+	if not collector:IsRegistered("Family") then
+		FamilyDB.ui.minimapIcon = FamilyDB.ui.minimapIcon or {}
+		local saved = FamilyDB.ui.minimapIcon
+
+		if saved.minimapPos == nil then saved.minimapPos = FamilyDB.ui.minimapAngle end
+		saved.hide = not UI:IsMinimapShown()
+
+		collector:Register("Family", collectorObject, saved)
+	end
+
+	return collectorButton()
+end
+
+-- Take the collector, and say whether it was taken.
 --
 -- Nothing is assumed about what was found under that name. A library is whatever the game
 -- handed back, so the two methods used here are checked for before either is called - §2.3
@@ -629,17 +654,11 @@ function UI:GiveButtonToCollector(dbicon, object)
 		return false
 	end
 
+	collector, collectorObject = dbicon, object
 	FamilyDB.ui.minimapIcon = FamilyDB.ui.minimapIcon or {}
-	local saved = FamilyDB.ui.minimapIcon
 
-	if saved.minimapPos == nil then saved.minimapPos = FamilyDB.ui.minimapAngle end
-	saved.hide = not UI:IsMinimapShown()
-
-	if not dbicon:IsRegistered("Family") then
-		dbicon:Register("Family", object, saved)
-	end
-
-	collector = dbicon
+	-- Off means off: nothing is handed over, so there is nothing on any bar to argue with.
+	if UI:IsMinimapShown() then registerWithCollector() end
 
 	-- Two buttons on one minimap is worse than the wrong one of them.
 	if minimapButton then minimapButton:Hide() end
@@ -671,6 +690,9 @@ function UI:SetMinimapShown(shown)
 		FamilyDB.ui.minimapIcon = FamilyDB.ui.minimapIcon or {}
 		FamilyDB.ui.minimapIcon.hide = not FamilyDB.ui.minimap
 
+		-- Turning it on is where the collector first gets it, if it has not had it already.
+		local button = FamilyDB.ui.minimap and registerWithCollector() or collectorButton()
+
 		-- The frame itself where the library will hand it over, because `lib:Show` is not
 		-- only a show: it calls the library's own updatePosition, which does ClearAllPoints
 		-- and re-anchors the button to the minimap's centre. A collector that has taken the
@@ -680,15 +702,26 @@ function UI:SetMinimapShown(shown)
 		--
 		-- The library's own calls remain the fallback, because `GetMinimapButton` is one more
 		-- thing to assume about something another addon loaded (§2.3).
-		local button = type(collector.GetMinimapButton) == "function"
-			and collector:GetMinimapButton("Family") or nil
-
 		if button then
 			button:SetShown(FamilyDB.ui.minimap)
 		elseif FamilyDB.ui.minimap then
 			collector:Show("Family")
 		else
 			collector:Hide("Family")
+		end
+
+		-- **Asked, and then read back.** A collector that has taken the button may keep it:
+		-- replacing its Hide, or putting a Show in its OnHide, so that nothing else can take
+		-- it off the bar. Measured in play - Hide left IsShown true on the same frame, which
+		-- means neither the library nor Family can win that argument and neither should try.
+		--
+		-- Nothing is fought over and nothing is hidden by another route. The button is gone at
+		-- the next login, because a setting that is off is never registered in the first
+		-- place, and the player is told that once instead of watching a tick box do nothing.
+		if button and not FamilyDB.ui.minimap and button:IsShown() and not saidCollectorHolds then
+			saidCollectorHolds = true
+			Family:Print(L["Another addon is holding Family's minimap button and will not let "
+				.. "go of it. It will be gone the next time you log in."])
 		end
 	elseif minimapButton then
 		minimapButton:SetShown(FamilyDB.ui.minimap)

@@ -28,9 +28,14 @@ is a decision rather than an afternoon of archaeology.
 - **Family's minimap button now joins the button collectors.** Addons that gather minimap
   buttons into a bag or a bar could not pick Family's up, because it was built by hand rather
   than registered the way those collectors look for. Family now registers it where the game
-  can take it, keeping the button wherever you had dragged it and remembering whether you had
-  turned it off. Where nothing in your game offers that, the button is exactly the one that
-  was there before. Nothing new is downloaded either way.
+  can take it, keeping the button wherever you had dragged it. Where nothing in your game
+  offers that, the button is exactly the one that was there before. Nothing new is downloaded
+  either way.
+
+  Turning the button off still turns it off. Some of these bars keep a button once they have
+  taken it and will not give it back, so Family hands nothing over at all while the setting is
+  off - and if you switch it off while such a bar is already holding the button, Family says so
+  rather than leaving you looking at a tick box that appears to do nothing.
 
 ## 1.4.3 — 2026-09-03
 
