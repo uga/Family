@@ -19,6 +19,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The whole family's reputations on one screen.** The Character panel's Reputations section
+  has the same *Whole family* switch its gear already had. It lists factions rather than
+  characters: for each one, how far anybody has got, which character got there, and how many of
+  them have met that faction at all - so *is anybody exalted with the Thorium Brotherhood* is
+  one look instead of forty. The realm, class and name filters work on it.
+
 - **A linked family can share three more kinds of thing, and crafting cooldowns now travel
   with professions.** Time played, rested experience, guild and hearthstone; currencies; and
   Chronoboons with what is banked in them - each its own tick on the Wide Family grid, so you

@@ -414,6 +414,15 @@ local function build(frame)
 		Achievements      = { L["Category"], L["Achievement"], L["Points or progress"] },
 	}
 
+	-- Which sections have a whole-family reading as well as a per-member one, and what
+	-- their columns are called when they are showing it. Gear draws a character sheet and
+	-- keeps its three blanks; reputations become a list of factions rather than of members,
+	-- so all three headings change.
+	local FAMILY_SECTIONS = { ["Equipped gear"] = true, Reputations = true }
+	local FAMILY_HEADINGS = {
+		Reputations = { L["Faction"], L["Furthest"], L["Held by"] },
+	}
+
 	local headerRow = CreateFrame("Frame", nil, frame)
 	headerRow:SetPoint("TOPLEFT", status, "BOTTOMLEFT", -2, -4)
 	-- Ends where the list ends, which is short of the panel by the width of the scroll bar.
@@ -627,7 +636,8 @@ local function build(frame)
 			UI:MarkSelected(button, name == section)
 		end
 
-		local labels = HEADINGS[section] or { "", "", "" }
+		local labels = (familyMode and FAMILY_SECTIONS[section] and FAMILY_HEADINGS[section])
+			or HEADINGS[section] or { "", "", "" }
 		for index = 1, 3 do headings[index]:SetText(labels[index] or "") end
 
 		local justify = RIGHT_JUSTIFY[section] or "RIGHT"
@@ -643,6 +653,13 @@ local function build(frame)
 		-- The family grid is the exception: the rows that come out of this pool there are
 		-- headings rather than members, and a heading is a line of text.
 		local gearSection = section == "Equipped gear"
+
+		-- Whether what is in front of the player is about the whole family. Two sections
+		-- can be, and every control below asks this rather than asking about gear - which
+		-- is what the whole of this used to ask, and what kept the switch off every other
+		-- section that could have had it.
+		local familyView = FAMILY_SECTIONS[section] and familyMode or false
+
 		local height = (gearSection and not familyMode) and (ROW * 2) or ROW
 
 		local function nextRow()
@@ -693,19 +710,19 @@ local function build(frame)
 		-- Which controls the section in front of you actually has
 		------------------------------------------------------------------------------------
 
-		wholeFamily:SetShown(gearSection)
-		UI:MarkSelected(wholeFamily, gearSection and familyMode)
-		realmButton:SetShown(gearSection and familyMode)
-		classButton:SetShown(gearSection and familyMode)
+		wholeFamily:SetShown(FAMILY_SECTIONS[section] and true or false)
+		UI:MarkSelected(wholeFamily, familyView)
+		realmButton:SetShown(familyView)
+		classButton:SetShown(familyView)
 		-- Nothing for it to choose when the panel is about everybody, and its space is
 		-- exactly where the two filters go.
-		picker:SetShown(not (gearSection and familyMode))
+		picker:SetShown(not familyView)
 
 		-- The filter box follows whatever is actually in front of it. Hung off the picker
 		-- and left there, it stayed where the picker would have been - which in the whole
 		-- family reading is underneath the two filters that replaced it.
 		hint:ClearAllPoints()
-		if gearSection and familyMode then
+		if familyView then
 			hint:SetPoint("LEFT", classButton, "RIGHT", 16, 0)
 		else
 			hint:SetPoint("LEFT", picker, "RIGHT", 16, 0)
@@ -719,7 +736,7 @@ local function build(frame)
 		-- this screen has something to say to rather than one it should apologise to.
 		------------------------------------------------------------------------------------
 
-		if gearSection and familyMode then
+		if gearSection and familyView then
 			local roster = gearRoster()
 
 			local classNames = _G.LOCALIZED_CLASS_NAMES_MALE
@@ -953,6 +970,131 @@ local function build(frame)
 					.. "   |cff888888|||r   |cff888888hover the class picture for who they "
 					.. "are, and any slot for what is in it|r"],
 				shown, total, geared))
+		end
+
+		------------------------------------------------------------------------------------
+		-- Everyone's reputations at once
+		--
+		-- The per-member reading below answers "what has this character done"; this answers
+		-- "has anybody done it", which is the question that actually gets asked - a pattern
+		-- behind exalted, a quartermaster behind honoured. So the rows are factions rather
+		-- than members, and each says how far the family has got and who got there.
+		--
+		-- Keyed by faction id where the client gave one. The name is the same faction in a
+		-- different language on a shared character's record, and two rows for one faction is
+		-- the fault §2.1 exists to prevent; the name is the fallback and nothing else.
+		------------------------------------------------------------------------------------
+
+		if section == "Reputations" and familyView then
+			local byFaction, order = {}, {}
+			local people = 0
+
+			for _, group in ipairs(gearRoster()) do
+				for _, entry in ipairs(group.members) do
+					local meta = entry.meta or {}
+					if (not realmFilter or meta.realm == realmFilter)
+						and (not classFilter or meta.classFile == classFilter) then
+						local reps = (UI:Payload(entry.key) or {}).reputations
+						if reps and #reps > 0 then people = people + 1 end
+
+						for _, faction in ipairs(reps or {}) do
+							local id = faction.id and ("id:" .. faction.id)
+								or ("name:" .. tostring(faction.name))
+							local row = byFaction[id]
+
+							if not row then
+								row = { name = faction.name, category = faction.category,
+									standing = faction.standing, value = faction.value,
+									maximum = faction.maximum, holder = entry, count = 0 }
+								byFaction[id] = row
+								order[#order + 1] = row
+							end
+
+							row.count = row.count + 1
+
+							-- Furthest wins, and within one standing the one with the most
+							-- of the bar filled. A name is never the tie-break: two people
+							-- at the same point is a tie the panel has no business
+							-- inventing an order for, so the first one seen keeps it.
+							if faction.standing > row.standing
+								or (faction.standing == row.standing
+									and (faction.value or 0) > (row.value or 0)) then
+								row.standing, row.value = faction.standing, faction.value
+								row.maximum, row.holder = faction.maximum, entry
+							end
+
+							-- A faction only some of them have met is still that faction.
+							-- Its category comes from whoever had one, because a record
+							-- from a client that never expanded that header carries none.
+							row.category = row.category or faction.category
+							row.name = row.name or faction.name
+						end
+					end
+				end
+			end
+
+			local byCategory, categories, shown = {}, {}, 0
+			for _, row in ipairs(order) do
+				if matches(row.name) or matches(row.category) then
+					local group = row.category or L["|cff888888Other|r"]
+					if not byCategory[group] then
+						byCategory[group] = {}
+						categories[#categories + 1] = group
+					end
+					table.insert(byCategory[group], row)
+					shown = shown + 1
+				end
+			end
+
+			if shown == 0 then
+				return finish(#order == 0
+					and L["|cff9d9d9dNo reputation has been recorded for anybody yet.|r"]
+					or L["|cffffaa00Nothing matches those filters.|r"])
+			end
+
+			table.sort(categories)
+
+			for _, group in ipairs(categories) do
+				local heading = nextRow()
+				heading.left:SetText("|cff88bbff" .. group .. "|r")
+				heading.left:SetWidth(220)
+				heading.right:SetText("|cff888888" .. #byCategory[group] .. "|r")
+
+				table.sort(byCategory[group], function(a, b)
+					if a.standing ~= b.standing then return a.standing > b.standing end
+					return (a.name or "") < (b.name or "")
+				end)
+
+				for _, row in ipairs(byCategory[group]) do
+					local held = row.holder and row.holder.meta or {}
+					local who = held.name or row.holder and row.holder.key or "?"
+					if row.holder and row.holder.familyName then
+						who = string.format(L["%s |cff9d9d9dof %s|r"], who,
+							tostring(row.holder.familyName))
+					end
+
+					local r = nextRow()
+					r.memberKey = row.holder and row.holder.key or nil
+					r.fallback = {
+						{ row.name or "?" },
+						{ group },
+						{ standingLabel(row.standing),
+							row.maximum and row.maximum > 0
+								and string.format("%d / %d", row.value, row.maximum) or "" },
+					}
+
+					r.left:SetText("  " .. (row.name or "?"))
+					r.left:SetWidth(220)
+					r.middle:SetText((STANDING_COLOUR[row.standing] or "|cffdddddd")
+						.. standingLabel(row.standing) .. "|r")
+					r.right:SetText(row.count > 1
+						and string.format("%s |cff888888(%d)|r", who, row.count)
+						or who)
+				end
+			end
+
+			return finish(string.format(L["|cffffd700%d|r of %d factions   |cff888888|||r"
+				.. "   %d with reputations recorded"], shown, #order, people))
 		end
 
 		if not member then

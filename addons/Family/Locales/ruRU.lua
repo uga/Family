@@ -644,6 +644,10 @@ Family.locales.ruRU = {
 	["|cffffd700Call them|r"] = "|cffffd700Название|r",
 	["|cff888888A name for this family on your own screens. It is never sent to them, and it does not change who Family whispers - that is still %s.|r"] = "|cff888888Имя для этой семьи на ваших собственных экранах. Оно никогда не отправляется им и не меняет, кому Family шепчет - это по-прежнему %s.|r",
 	["World buffs"] = "Мировые баффы",
+	["Furthest"] = "Дальше всех",
+	["Held by"] = "У кого",
+	["|cff9d9d9dNo reputation has been recorded for anybody yet.|r"] = "|cff9d9d9dНи для кого ещё не записана репутация.|r",
+	["|cffffd700%d|r of %d factions   |cff888888|||r   %d with reputations recorded"] = "|cffffd700%d|r из %d фракций   |cff888888|||r   %d с записанной репутацией",
 	-- The minimap button and its tooltip
 	["Another addon is holding Family's minimap button and will not let go of it. It will be gone the next time you log in."] = "Другой аддон удерживает кнопку Family на миникарте и не отпускает её. Она исчезнет при следующем входе в игру.",
 	["%d member"] = "%d персонаж",

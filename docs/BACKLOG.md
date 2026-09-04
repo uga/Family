@@ -176,7 +176,7 @@ Family does not otherwise hold.
 
 ---
 
-## 8. A whole-family view of reputations
+## 8. A whole-family view of reputations — DONE 2026-09-04
 
 **Asked:** a filterable family-wide reputation view.
 
@@ -186,6 +186,12 @@ cross a Wide Family link (`reputations` payload, `reputationCount` meta), and th
 
 **Shape:** the data is already stored and already shared; this is a panel. It shares its
 filtering problem with entry 3, and doing 3 first would make this most of the way done.
+
+**Built 2026-09-04**, and doing 3 first did make it most of the way done - the realm, class and
+name filters were already there and needed only to stop being gated on the gear section. The
+panel's *Whole family* switch was gated the same way in six places; one name replaces all six,
+so the next section that wants a family reading has one line to add rather than six to find.
+Rows are factions, not members: `docs/DECISIONS.md` carries why.
 
 ---
 

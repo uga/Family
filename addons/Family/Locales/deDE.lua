@@ -644,6 +644,10 @@ Family.locales.deDE = {
 	["|cffffd700Call them|r"] = "|cffffd700Nenne sie|r",
 	["|cff888888A name for this family on your own screens. It is never sent to them, and it does not change who Family whispers - that is still %s.|r"] = "|cff888888Ein Name für diese Familie auf deinen eigenen Bildschirmen. Er wird nie an sie gesendet und ändert nicht, wem Family flüstert - das ist weiterhin %s.|r",
 	["World buffs"] = "Weltbuffs",
+	["Furthest"] = "Am weitesten",
+	["Held by"] = "Gehalten von",
+	["|cff9d9d9dNo reputation has been recorded for anybody yet.|r"] = "|cff9d9d9dFür niemanden wurde bisher ein Ruf aufgezeichnet.|r",
+	["|cffffd700%d|r of %d factions   |cff888888|||r   %d with reputations recorded"] = "|cffffd700%d|r von %d Fraktionen   |cff888888|||r   %d mit aufgezeichnetem Ruf",
 	-- The minimap button and its tooltip
 	["Another addon is holding Family's minimap button and will not let go of it. It will be gone the next time you log in."] = "Ein anderes Addon hält Familys Minikarten-Schaltfläche fest und gibt sie nicht wieder her. Beim nächsten Anmelden ist sie verschwunden.",
 	["%d member"] = "%d Mitglied",

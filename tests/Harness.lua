@@ -16926,6 +16926,152 @@ print("a record that says the same thing twice is one answer")
 	Family.Database:Forget(key)
 end)()
 
+--------------------------------------------------------------------------------------------
+-- Everybody's reputations on one screen
+--------------------------------------------------------------------------------------------
+
+print()
+print("the family's reputations, as factions rather than as members")
+
+;(function()
+	-- The same lookup the panel uses, so this compares what is drawn against what the client
+	-- would call it rather than against a word written here.
+	local function standingWord(standing)
+		return _G["FACTION_STANDING_LABEL" .. standing] or tostring(standing)
+	end
+
+	local function rep(id, name, category, standing, value, maximum)
+		return { id = id, name = name, category = category, standing = standing,
+			value = value, maximum = maximum }
+	end
+
+	local ours = {
+		{ key = "Repone-Fire Maw", name = "Repone", reps = {
+			rep(59, "Thorium Brotherhood", "Steamwheedle", 5, 100, 1000),
+			rep(576, "Timbermaw Hold", "Other", 4, 500, 1000),
+		} },
+		{ key = "Reptwo-Fire Maw", name = "Reptwo", reps = {
+			-- The same faction, further along: this member must take the row rather than
+			-- adding a second one.
+			rep(59, "Thorium Brotherhood", "Steamwheedle", 7, 200, 1000),
+			-- And one nobody else has, which must still be listed.
+			rep(270, "Zandalar Tribe", "Other", 3, 10, 1000),
+		} },
+	}
+
+	for _, member in ipairs(ours) do
+		Family.Database:SetMeta(member.key, { name = member.name, realm = "Fire Maw",
+			level = 60, classFile = "MAGE", faction = "Alliance" })
+		Family.Database:SetPayload(member.key, { reputations = member.reps })
+	end
+
+	Family.UI:Show()
+	Family.UI:ShowTab("character")
+	check("the reputations section can be opened", clickButton("Reputations"))
+
+	-- Read off the rows themselves rather than swept out of every font string in the
+	-- client: two panels can say "Timbermaw Hold" and only one of them is this one.
+	local function rowSaying(needle)
+		local found = {}
+		for _, f in ipairs(frames) do
+			local left = type(f.left) == "table" and f.left.__text
+			if f.__shown ~= false and type(left) == "string"
+				and left:find(needle, 1, true) then
+				found[#found + 1] = f
+			end
+		end
+		return found
+	end
+
+	-- The switch is a toggle and something earlier in this file may have left it on, so it
+	-- is driven until the panel is showing what this block is about rather than clicked
+	-- once and hoped over. A check that depends on which order the file happens to run in
+	-- is a check that will go red for the wrong reason one day.
+	local function wholeFamilyShowing()
+		return #rowSaying("Thorium Brotherhood") > 0
+	end
+
+	check("the whole family switch is offered on this section",
+		clickButton("Whole family"))
+	Family.UI:Refresh()
+
+	if not wholeFamilyShowing() then
+		clickButton("Whole family")
+		Family.UI:Refresh()
+	end
+
+	local thorium = rowSaying("Thorium Brotherhood")
+	check("a faction two members have is one row, not two", #thorium == 1,
+		tostring(#thorium))
+
+	local right = thorium[1] and thorium[1].right and thorium[1].right.__text or ""
+	check("named after the member who has got furthest",
+		right:find("Reptwo", 1, true) ~= nil, right)
+	check("and not after the one who has not", right:find("Repone", 1, true) == nil, right)
+	check("saying how many of them have it at all", right:find("(2)", 1, true) ~= nil, right)
+
+	-- The standing shown is the furthest, which is a different fact from who is named: a
+	-- rule that took the right member's name and the first standing seen would pass the
+	-- check above and put "Friendly" beside somebody who is Exalted.
+	local middle = thorium[1] and thorium[1].middle and thorium[1].middle.__text or ""
+	check("with the furthest standing beside them, not the first one seen",
+		middle:find(standingWord(7), 1, true) ~= nil
+			and middle:find(standingWord(5), 1, true) == nil, middle)
+
+	-- A faction only one of them has ever met is still that faction.
+	local zandalar = rowSaying("Zandalar Tribe")
+	check("a faction only one member has is listed too", #zandalar == 1, tostring(#zandalar))
+	check("without a count, because one is not worth saying",
+		zandalar[1] and (zandalar[1].right.__text or ""):find("(1)", 1, true) == nil,
+		zandalar[1] and zandalar[1].right.__text)
+
+	-- The filter box, and **not** the one the global happens to hold.
+	--
+	-- This panel is built twice in this file - a second time with Mists in force, so that
+	-- the sections only that client has are drawn at all - and both builds name their box
+	-- `FamilyCharacterSearch`, so the global is the second one while the panel on screen is
+	-- the first. Typing into the wrong one filtered nothing and looked like a fault in the
+	-- filtering. L-041 again, in a file that already carries the lesson.
+	local searches = {}
+	for _, f in ipairs(frames) do
+		if f.__name == "FamilyCharacterSearch" then searches[#searches + 1] = f end
+	end
+	check("this panel still has its filter box", #searches > 0, tostring(#searches))
+
+	if #searches > 0 then
+		-- Typed into every box of that name, and the reason is not laziness. Neither build
+		-- is hidden in a way this can see, so "which one is on screen" has no answer here -
+		-- and picking one by creation order is the guess that made this look like a fault
+		-- in the filtering rather than a fault in the reaching. Typing into both drives the
+		-- one that matters and cannot drive the wrong one instead of it.
+		--
+		-- Its own handler rather than a refresh called from the side: what a player does is
+		-- type, and the box is what decides that typing redraws anything.
+		local function typeInto(text)
+			for _, box in ipairs(searches) do
+				box:SetText(text)
+				if box.__scripts and box.__scripts.OnTextChanged then
+					box.__scripts.OnTextChanged(box)
+				end
+			end
+		end
+
+		typeInto("timbermaw")
+		check("a filter narrows the factions",
+			#rowSaying("Timbermaw Hold") == 1 and #rowSaying("Thorium Brotherhood") == 0,
+			#rowSaying("Timbermaw Hold") .. " timbermaw, "
+				.. #rowSaying("Thorium Brotherhood") .. " thorium")
+
+		typeInto("")
+		check("and clearing it brings them back", #rowSaying("Thorium Brotherhood") == 1)
+	end
+
+	-- Back to one member, so nothing after this reads a panel showing everybody.
+	clickButton("Whole family")
+	Family.UI:Refresh()
+	for _, member in ipairs(ours) do Family.Database:Forget(member.key) end
+end)()
+
 print()
 if failures == 0 then
 	print("all checks passed")
