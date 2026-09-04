@@ -64,6 +64,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A character could be listed twice on one recipe.** Where a stored recipe list held the
+  same recipe on two rows, the person who knew it was drawn twice on the same line - with
+  their realm on both, because two identical names are exactly what makes Family add it. They
+  are now listed once, keeping whichever of the two copies knows about a cooldown that is
+  still running.
+
 - **A shared character's mail expiry and auction age never arrived.** Wide Family named two of
   the figures it shares by the wrong name - one letter out in each - so a link that granted Mail
   sent the letters and the count but never *when they expire*, and a link that granted Auctions

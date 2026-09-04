@@ -1612,3 +1612,39 @@ while the bug stood. A check for "does this name exist" has to mean the whole na
 them until something is written that does. `CATEGORIES` is hand-written for a good reason - a
 scanner must not be able to widen a grant by existing - and the cost of that reason is exactly
 this, so the cost is what needs the gate.
+
+---
+
+## L-043 — The realm was the symptom of the symptom
+
+*Smith (@Pyrewood Village) 300, Smith (@Pyrewood Village) 300* on one recipe row. Reported from
+play, and the realm is the interesting part: nobody had asked for it there. It appeared because
+`NamesOf` adds a realm to names said more than once in a list, and this list said Smith twice.
+
+So the visible oddity was a correct feature reacting to a fault two steps upstream:
+`Recipes:Search` inserted a member once for every recipe of theirs that matched, with no
+de-duplication, and their stored record held that recipe on two rows.
+
+**The fix went where two becomes visible, not where two comes from.** The scanner writes back
+every row the client's trade skill window listed; which of two identical rows is the real one
+is a question about the client, and no answer to it can be checked from here. It now names the
+profession and the two row numbers in the debug log and keeps both, and every reader lists a
+member once.
+
+**The half that nearly shipped wrong.** Choosing between two copies looked like "keep the one
+with a cooldown", and it is not: a record with `hasCooldown` and no `readyAt` answers *ready*.
+The first copy therefore always had one, the second copy's real timer was discarded, and the
+row said a transmute was available that was three hours off - a wrong answer worse than the
+duplicate that started it.
+
+**And the check that nearly passed vacuously.** The first fixture put the timer in the second
+copy, so a rule of "take the last one" was green. A mutation replacing the condition with
+`or true` was the one mutation in that set nothing caught. The fixture now drives both orders,
+because a tie-break is only tested by the case that breaks the tie the other way.
+
+**A third thing, about this session rather than about Family.** The three documents above were
+written in the same script as one another and that script died on its first assertion - the
+changelog's `### Fixed` matches once per released version, not once - so the commit went out
+with the code and none of the writing. It was caught by reading `git show --stat` rather than
+by anything automatic. A commit whose message describes documents it does not contain is worth
+one look at what it actually holds.
