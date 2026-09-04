@@ -1537,3 +1537,20 @@ matters, which is also the tidier answer to the question above. And `warcraft.wi
 its text under **CC BY-SA 4.0**: citing a fact and linking the page costs nothing, while pasting
 its prose into these documents would carry the share-alike with it. Quoting Blizzard's own patch
 notes briefly, with attribution, is what the honor section does.
+
+### Lockpicking, and a skill that is not on every build
+
+`tools/skill-lines.py` takes skill line **633** by id, the way it takes the four secondaries,
+because it is in category 7 with the class skills rather than in 11 with the professions.
+
+**It is on Classic Era and Burning Crusade and not on Mists**, measured rather than remembered:
+the 5.5.4 SkillLine table has 175 rows and none of them is 633, which matches the skill having
+been taken out of the game after Cataclysm. The generator needs no rule for that — a build whose
+table does not carry a line contributes no name — but it is why that entry has names from two
+builds and not three, and why a check demanding every locale of every build for every entry
+would be wrong.
+
+The Mists cache holds `enUS` and `ruRU` only. That is deliberate and predates this: the
+generator skips the other three for that build because `GetProfessions` there hands back a skill
+line id directly, so nothing has to be looked up by name, and wago serves that build slowly
+enough to time out.

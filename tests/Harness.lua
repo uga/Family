@@ -1236,7 +1236,9 @@ end
 -- Weapon skills have a maximum too, so they are here to prove they are not mistaken for
 -- professions. The Trade Skills header starts collapsed, hiding everything under it, which
 -- is the case that makes a naive scan report no professions at all.
-local SKILL_LINES = {
+-- Reachable from the checks, so that one of them can put a class skill in the list without
+-- changing what every other profession check is counting.
+SKILL_LINES = {
 	{ name = "Weapon Skills", header = true, expanded = true },
 	-- Caps at exactly the same 300 an artisan profession does, so only the fact that it
 	-- cannot be unlearned tells the two apart.
@@ -17293,6 +17295,126 @@ print("a letter that keeps its attachments in odd slots")
 
 	SEND_MAIL.items = wasItems
 	Family.Database:Forget(recipient)
+end)()
+
+--------------------------------------------------------------------------------------------
+-- A skill that is an ability
+--
+-- Lockpicking has a rank and a maximum, cannot be unlearned, is not one of the three
+-- secondaries and has no window to have opened - so every test the scanner had said it was
+-- not worth recording, and it was not recorded. The client's own SkillLine table says what it
+-- is: skill line 633, category 7, which is neither the professions category nor the secondary
+-- one. Present on Classic Era and Burning Crusade and absent from Mists, where the skill was
+-- taken out of the game.
+--------------------------------------------------------------------------------------------
+
+print()
+print("lockpicking, which is a skill and not a profession")
+
+;(function()
+	check("the table knows the skill line by id",
+		Family.SkillLines[633] ~= nil)
+	check("and files it as neither a primary nor a secondary profession",
+		Family.SkillLines[633] and Family.SkillLines[633].class == true
+			and Family.SkillLines[633].primary == false)
+	check("with the client's word for it in every language this table carries", (function()
+		local names = Family.SkillLines[633] and Family.SkillLines[633].names or {}
+		for _, locale in ipairs { "enUS", "deDE", "frFR", "esES", "ruRU" } do
+			if not (names[locale] and names[locale][1]) then return false end
+		end
+		return true
+	end)())
+
+	-- Not abandonable, not a secondary, no window: the shape that used to be skipped.
+	SKILL_LINES[#SKILL_LINES + 1] =
+		{ name = "Lockpicking", rank = 285, maxRank = 300, abandonable = false }
+
+	local key = Family:CurrentMember()
+	fire("SKILL_LINES_CHANGED")
+	advance(1)
+
+	local meta = Family.Database:Meta(key) or {}
+	local held = (meta.skills or {})[633]
+	check("a rogue's lockpicking is recorded at all", held ~= nil)
+	check("under its skill line id rather than under a word",
+		held ~= nil and (meta.skills or {})["Lockpicking"] == nil)
+	check("with the rank the client reported",
+		held and held.rank == 285 and held.maxRank == 300,
+		held and (held.rank .. "/" .. held.maxRank))
+	check("and marked as the ability it is", held and held.class == true)
+
+	-- And not as a secondary profession, which is a separate claim in the same record.
+	-- Every panel is guarded by `class`, so this one being wrong is invisible on screen
+	-- and would still be a rogue with three secondaries to anything that counts them.
+	check("and not as a secondary profession, which it is also not",
+		held and held.secondary == false, tostring(held and held.secondary))
+
+	-- Neither list on the summary. Filed as a secondary it would be a third secondary
+	-- profession for every rogue, one they cannot train, abandon or choose.
+	-- A member of this block's own. The character the scanner writes to was forgotten a long
+	-- way further up this file, so anything asking "is it drawn" about them was asking about
+	-- a row that is not there - a check that cannot fail, and three of them were written
+	-- here before this was noticed.
+	Family.Database:SetMeta("Picker-Fire Maw", {
+		name = "Picker", realm = "Fire Maw", level = 60, classFile = "ROGUE",
+		faction = "Alliance",
+		skills = {
+			[164] = { rank = 300, maxRank = 300, name = "Blacksmithing", secondary = false },
+			[633] = { rank = 285, maxRank = 300, name = "Lockpicking", secondary = false,
+				class = true },
+		},
+	})
+
+	Family.UI:Show()
+	Family.UI:ShowTab("professions")
+
+	-- Pointed at every member picker there is, for the same reason the reputation checks
+	-- type into every search box: several panels have one, none of them is hidden in a way
+	-- a check can see, and picking one by creation order points at whichever panel happened
+	-- to be built first rather than at the one in front of us.
+	local pickers = 0
+	for _, f in ipairs(frames) do
+		if f.Select and f.Reconcile then
+			pickers = pickers + 1
+			f:Select({ key = "Picker-Fire Maw",
+				meta = Family.Database:Meta("Picker-Fire Maw") })
+		end
+	end
+	check("the professions panel has a member to point at", pickers > 0, tostring(pickers))
+
+	if pickers > 0 then
+		Family.UI:Refresh()
+
+		-- Blacksmithing proves the section drew: this member has the skill and no recipe
+		-- list, so it is named among the professions whose window nobody has opened.
+		check("a profession with no recipe list is named there", visibleText("Blacksmith"))
+
+		-- **What is deliberately not checked here.** That lockpicking is *absent* from this
+		-- panel and from the summary's profession columns is guarded in two places, and
+		-- neither guard is pinned by a check. Three attempts were written and all three
+		-- passed for the wrong reason: `visibleText` sweeps every font string in the
+		-- client, several panels are built and none of them is hidden in a way this can
+		-- see, so "the word is not on screen" is answered by the word being on a screen
+		-- nobody is looking at - and once it *is* drawn somewhere, by the abilities panel
+		-- below, the same sweep finds it and the check fails for the wrong reason too.
+		--
+		-- The same shape as L-041 and the third time today. Telling two panels' text apart
+		-- is worth doing and is its own piece of work; what holds the property up until
+		-- then is the record - `class` true and `secondary` false, both checked above and
+		-- both caught by mutation - and the two guards that read them.
+	end
+
+	-- It belongs with the things this member can do.
+	Family.UI:ShowTab("talents")
+	clickButton("Spellbook")
+	Family.UI:Refresh()
+	check("it is on the abilities panel, with its rank", visibleText("Lockpicking"))
+	check("and the rank is the one recorded", visibleText("285"))
+
+	Family.Database:Forget("Picker-Fire Maw")
+	SKILL_LINES[#SKILL_LINES] = nil
+	fire("SKILL_LINES_CHANGED")
+	advance(1)
 end)()
 
 print()

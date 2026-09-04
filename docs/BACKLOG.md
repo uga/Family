@@ -168,7 +168,7 @@ syntax error a player met in the middle of a fight.
 
 ---
 
-## 7. Lockpicking, for rogues
+## 7. Lockpicking, for rogues — DONE 2026-09-04
 
 **Asked:** record lockpicking skill.
 
@@ -179,6 +179,17 @@ a name — which §2.1 exists to prevent.
 **Shape:** extend `tools/skill-lines.py` to take it, then the professions scanner. Worth
 asking what it belongs beside: it is a skill with a rank and no recipes, which is a shape
 Family does not otherwise hold.
+
+**Built 2026-09-04**, and the question of what it belongs beside had an answer: nothing it
+already held. The record grew a third state - `class`, alongside primary and secondary - and it
+is drawn on **Abilities & Talents**, under Spellbook, because it is technically an ability.
+Skill line 633, category 7, on Era and Burning Crusade; absent from Mists, where the skill left
+the game.
+
+**One property is guarded and not pinned**: that it does not appear among the professions. Three
+checks were written for it and all three passed for the wrong reason - `visibleText` sweeps every
+font string in the client and cannot tell two panels apart, which is L-041's shape for the third
+time. Telling them apart is its own piece of work and is worth doing.
 
 ---
 

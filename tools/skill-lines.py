@@ -38,6 +38,17 @@ LOCALES = ["enUS", "deDE", "frFR", "esES", "ruRU"]
 PRIMARY_CATEGORY = "11"
 SECONDARY_IDS = {129, 185, 356, 794}
 
+# Lockpicking, which is neither. It sits in category 7 with the class skills, it has a rank and
+# a maximum like a profession, and it teaches nothing - a shape this table did not hold before.
+#
+# **It exists on Classic Era and Burning Crusade and not on Mists**, measured here rather than
+# remembered: the 5.5.4 SkillLine table has 175 rows and no 633, which matches the skill being
+# taken out of the game after Cataclysm. Nothing needs saying about that in the generator - a
+# build whose table does not carry it simply contributes no name - but it is why the Lua below
+# carries names for two builds and not three, and why a check that demanded five locales for
+# every entry would be wrong.
+CLASS_IDS = {633}
+
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".skill-lines-cache")
 
 
@@ -92,14 +103,17 @@ def build_table():
             for row in rows:
                 skill_id = int(row["ID"])
                 is_primary = row["CategoryID"] == PRIMARY_CATEGORY
-                if not is_primary and skill_id not in SECONDARY_IDS:
+                is_class = skill_id in CLASS_IDS
+                if not is_primary and skill_id not in SECONDARY_IDS and not is_class:
                     continue
 
                 name = row["DisplayName_lang"].strip()
                 if not name:
                     continue
 
-                entry = professions.setdefault(skill_id, {"names": {}, "primary": is_primary})
+                entry = professions.setdefault(skill_id,
+                                               {"names": {}, "primary": is_primary,
+                                                "class": is_class})
                 seen = entry["names"].setdefault(locale, [])
                 if name not in seen:
                     if seen:
@@ -208,6 +222,11 @@ def emit(professions, out_path):
         add('\t[%d] = {' % skill_id)
         add('\t\tkey = %s,' % lua_string(entry["key"]))
         add('\t\tprimary = %s,' % ("true" if entry["primary"] else "false"))
+        # Written only where it is true. Every reader asks `not primary and not class`, which
+        # answers the same for a missing key as for a false one, and fifteen `class = false`
+        # lines would be fifteen lines saying nothing.
+        if entry.get("class"):
+            add('\t\tclass = true,')
         add('\t\tnames = {')
         for locale in LOCALES:
             names = entry["names"].get(locale) or []

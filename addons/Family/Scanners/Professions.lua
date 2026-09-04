@@ -181,7 +181,15 @@ function Professions:ReadRanks()
 		-- The proper answer is the SkillLine table's category, which distinguishes them
 		-- outright; it arrives with the generated tables that talent names also want.
 		local known = name and seenProfessions()[name] or false
-		local isProfession = (isAbandonable or SECONDARY_HINTS[name] or known)
+
+		-- And anything the client's own SkillLine table names, which is the answer the
+		-- comment above was waiting for. It is what lets lockpicking be recorded at all:
+		-- a rogue cannot unlearn it, it is not one of the three secondaries, and it has no
+		-- window to have opened - so every test beside this one says no about a skill that
+		-- plainly has a rank and a maximum.
+		local identified = name and Family.SkillLines[Family:SkillLineFor(name) or 0] or nil
+
+		local isProfession = (isAbandonable or SECONDARY_HINTS[name] or known or identified)
 			and (tonumber(maxRank) or 0) > 1
 
 		if name and not isHeader then everything[name] = true end
@@ -666,7 +674,15 @@ function Professions:ScanNow(includeRecipes)
 			-- below it - can this be unlearned, and then a special case for the three that
 			-- cannot - was the best answer available before this table existed.
 			local entry = id and Family.SkillLines[id]
-			if entry then skill.secondary = not entry.primary end
+			if entry then
+				-- Three states, not two. Lockpicking is neither a primary nor a
+				-- secondary profession - it is a class skill with a rank - and calling
+				-- it secondary would file it beside cooking and first aid, where a
+				-- player looking for their professions would find a thing that is not
+				-- one.
+				skill.class = entry.class or nil
+				skill.secondary = not entry.primary and not entry.class
+			end
 
 			out[id or name] = skill
 		end
@@ -688,6 +704,7 @@ function Professions:ScanNow(includeRecipes)
 		entry.maxRank = skill.maxRank
 		entry.modifier = skill.modifier
 		entry.secondary = skill.secondary
+		entry.class = skill.class
 		entry.name = skill.name
 		stored[id] = entry
 	end
@@ -762,6 +779,11 @@ function Professions:ScanNow(includeRecipes)
 	for id, skill in pairs(skills) do
 		summary[id] = { rank = skill.rank, maxRank = skill.maxRank,
 			secondary = skill.secondary,
+			-- Neither a primary nor a secondary profession: a class skill with a rank,
+			-- which is lockpicking and nothing else on these builds. Every panel asks
+			-- `not secondary and not class`, so a missing key answers the same as false
+			-- and only the one that is one carries it.
+			class = skill.class,
 			-- What this client called it, for the professions the table has no id for.
 			name = skill.name,
 			-- When that profession's recipes were last read. Small enough for meta, and

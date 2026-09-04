@@ -165,6 +165,18 @@ Family.SkillLines = {
 			ruRU = { "Снятие шкур", "Cнятие шкур" },
 		},
 	},
+	[633] = {
+		key = "Lockpicking",
+		primary = false,
+		class = true,
+		names = {
+			enUS = { "Lockpicking" },
+			deDE = { "Schlossknacken" },
+			frFR = { "Crochetage" },
+			esES = { "Ganzúa" },
+			ruRU = { "Вскрытие замков" },
+		},
+	},
 	[755] = {
 		key = "Jewelcrafting",
 		primary = true,

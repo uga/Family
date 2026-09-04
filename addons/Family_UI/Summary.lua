@@ -315,7 +315,14 @@ function skillsOf(meta, secondary)
 	-- Filed by skill line id; shown in the language of whoever is reading, which is not
 	-- necessarily the language it was recorded in.
 	for id, skill in pairs(meta.skills or {}) do
-		if (skill.secondary or false) == secondary then
+		-- A class skill is in neither list, and that is a decision rather than an
+		-- oversight. Lockpicking has a rank and a maximum and reads exactly like a
+		-- profession from here - it was drawn on the "everything else" line for an hour,
+		-- beside cooking and fishing, until Alberto pointed out that it is technically an
+		-- ability. A rogue would have had three secondary professions, one of which cannot
+		-- be trained, abandoned or chosen. It is on the abilities panel instead, where an
+		-- ability goes.
+		if not skill.class and (skill.secondary or false) == secondary then
 			found[#found + 1] = {
 				name = Family:ProfessionName(id, skill.name), id = id, skill = skill,
 			}

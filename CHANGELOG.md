@@ -19,6 +19,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **A rogue's lockpicking is recorded.** It shows on Abilities & Talents, under Spellbook, with
+  its rank - it is an ability rather than a profession, so it is not among your professions and
+  is not counted as one. Classic Era and Burning Crusade only: the skill does not exist on
+  Mists.
+
 - **A key can open Family.** It is in the game's own Key Bindings window, under *Family*, with
   nothing bound to begin with - choose the key you want. Pressing it again closes the window.
 
