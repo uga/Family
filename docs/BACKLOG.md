@@ -17,7 +17,15 @@ Received 2026-09-04, from users.
 
 **Honor last, in a build of its own.** It is the only entry that needs research, then a model,
 then code, and its research turned up three systems sharing a word — so it would hold everything
-else behind it for no reason. The other seven ship first, then a release, then honor.
+else behind it for no reason. Everything else ships first, then a release, then honor.
+
+**"The other seven" as first written is now nine**: entries 9 and 10 arrived on the same day and
+belong in the same batch. Restated on 2026-09-04 after a release was proposed early and Alberto
+held the order to what it says: 1.5.0 is cut when the rest of this list is done and not before,
+however full `Unreleased` looks.
+
+Done so far in this batch: **4**, **6**, **7**, **8**, **11**, and slice one of **3**. Left
+before the release: **1**, **2**, the rest of **3**, **9**, **10**.
 
 Two things that order should not hide:
 
