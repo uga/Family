@@ -1492,3 +1492,48 @@ build, and read back rather than assumed:
   §2.2 and is better than a number that is right for one character in ten.
 
 Until those are answered, the honest position is that Family stores no honor at all.
+
+#### Re-read this at a new build
+
+The rules above are pinned to the three builds in section 3 and to no others. They have already
+changed once inside a single expansion — 1.14.4 replaced the ranking system that every guide
+still describes — so *the rules of the game* are a per-build fact exactly as `SpellCooldowns` is,
+and the difference is that nothing here re-runs to tell us.
+
+**When a pinned build moves, this section is re-read by hand.** That is the price of the source
+being a page rather than a table, and it is written here rather than trusted to memory. The
+generators refuse and shout at a new build; this one cannot, so it says so.
+
+### Where facts may come from, and how each may be used
+
+Three kinds of source, and the difference is not how reliable they are — all three are reliable —
+but what may be taken from each and by what means.
+
+**The client.** The authority on everything it will answer. Asked by id, with capability probes
+whose answers are read back. Nothing on this page outranks it.
+
+**`wago.tools`.** The client's own tables, served per build as CSV, fetched mechanically by
+everything in `tools/`. Section 3 pins the builds. This is the sanctioned machine-readable
+source and the only one.
+
+**Published pages — Wowhead, the wikis, patch notes.** Read for *rules and shapes*, never
+harvested for data. The distinction is the one their terms draw and it is worth stating in our
+own words:
+
+- A **fact** is free to know and to restate: *Era caps the week at 500,000 honor* is a rule of
+  the game, and it belongs in a sentence of ours with the source beside it.
+- A **table** is the product of somebody's work. Ids, item lists, spell data — those come from
+  the client or from wago, never from a page, however much quicker the page would be.
+- **Bulk mechanical extraction from those sites is out**, and that is a rule about method rather
+  than about volume: a scraper pointed at Wowhead is the thing their terms name.
+
+The practice predates this paragraph. The Chronoboon buff names above came from a Wowhead render
+and were used **only as search terms** — every id and every icon was then resolved from the
+client's own tables, which is the shape every future use should take.
+
+Two practical notes. Wowhead does not render for an automated fetcher at all — its article
+bodies come back as navigation — so reading it means a person reading it and pasting what
+matters, which is also the tidier answer to the question above. And `warcraft.wiki.gg` publishes
+its text under **CC BY-SA 4.0**: citing a fact and linking the page costs nothing, while pasting
+its prose into these documents would carry the share-alike with it. Quoting Blizzard's own patch
+notes briefly, with attribution, is what the honor section does.
