@@ -17,6 +17,14 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Changed
+
+- **Names say which realm they are on, once you have characters on more than one.** Item
+  tooltips, search results and the broker used to add the realm only where two of the listed
+  names were identical - which told you nothing when a single character called Tossica holds
+  the thing and you still have to work out which realm to log into. If everything you have is
+  on one realm nothing changes: there is only one answer and it is not worth the width.
+
 ### Added
 
 - **Family says at login whose mail is running out.** A short list in the chat frame, one

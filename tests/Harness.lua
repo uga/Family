@@ -3885,7 +3885,13 @@ end
 
 check("two members of the same name are told apart by their realm", sameName >= 20,
 	tostring(sameName))
-check("and the ones with nothing to be confused with are left alone", otherName == 0)
+
+-- And so is everybody else here, because this account has members on two realms. It used to
+-- be the other way - a unique name was left alone - and that was right until somebody with
+-- alts spread about pointed out that "Tossica has one" is unambiguous and still does not say
+-- which realm to log into. Asked for from play.
+check("and so is everybody else, once the account is on more than one realm", otherName > 0,
+	tostring(otherName))
 
 Family.Database:Forget("Tester-Auberdine")
 
@@ -16516,6 +16522,57 @@ print("the notice about mail that is about to go")
 
 	Family.UI:SetMailNoticeDays(3)
 	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
+end)()
+
+--------------------------------------------------------------------------------------------
+-- Which names carry their realm
+--
+-- Last in the file, because the second half of it empties every realm but one out of the
+-- database to ask the other question, and nothing after it would find what it expected.
+--------------------------------------------------------------------------------------------
+
+print()
+print("the realm on a name, and when it is worth the width")
+
+;(function()
+	-- Built rather than assumed: by this point in the file every member on a second realm
+	-- has been forgotten by the checks that made them, and asking an account that has one
+	-- realm whether it has two is not the question this is about.
+	Family.Database:SetMeta("Faraway-Auberdine", { name = "Faraway", realm = "Auberdine",
+		level = 60, classFile = "MAGE", faction = "Alliance" })
+
+	check("this account is on more than one realm", Family.UI:AcrossRealms() == true)
+
+	local spread = { { name = "Solo", realm = "Fire Maw", key = "Solo-Fire Maw" } }
+	Family.UI:NamesOf(spread)
+	check("so a name that clashes with nothing still says where it is",
+		spread[1].label:find("(@Fire Maw)", 1, true) ~= nil, spread[1].label)
+
+	-- The other way round, which is the half the width argument was always about.
+	local elsewhere = {}
+	for key, entry in pairs(Family.Database:Members()) do
+		local realm = entry.meta and entry.meta.realm
+		if realm ~= "Fire Maw" then elsewhere[#elsewhere + 1] = key end
+	end
+	for _, key in ipairs(elsewhere) do Family.Database:Forget(key) end
+
+	check("an account with one realm in it knows that", Family.UI:AcrossRealms() == false)
+
+	local single = { { name = "Solo", realm = "Fire Maw", key = "Solo-Fire Maw" } }
+	Family.UI:NamesOf(single)
+	check("and spends none of the width saying the only realm there is",
+		single[1].label:find("(@", 1, true) == nil, single[1].label)
+
+	-- Two of one name are still told apart, one realm in the account or forty.
+	local twins = {
+		{ name = "Twin", realm = "Fire Maw", key = "Twin-Fire Maw" },
+		{ name = "Twin", realm = "Auberdine", key = "Twin-Auberdine" },
+	}
+	Family.UI:NamesOf(twins)
+	check("while two of the same name are told apart whatever the account looks like",
+		twins[1].label:find("(@Fire Maw)", 1, true) ~= nil
+			and twins[2].label:find("(@Auberdine)", 1, true) ~= nil,
+		twins[1].label .. " / " .. twins[2].label)
 end)()
 
 print()

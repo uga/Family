@@ -905,15 +905,54 @@ function UI:NameOf(entry, clashes)
 	return label
 end
 
--- The same for a list: which names are said more than once, so only those carry their realm.
+-- Whether this account is spread over more than one realm.
+--
+-- Read rather than remembered, on every call. It is a walk over meta and nothing else - the
+-- same walk the summary does to draw itself, which costs the same at forty members as at four
+-- - and a cached answer would need invalidating on every scan, every share and every removal
+-- for a saving nobody can measure on a hover.
+--
+-- Our own members only. A sibling's line already carries the family it belongs to, which is
+-- the thing that says *not somewhere you can walk to*; whether they are also on another realm
+-- does not change what the reader can do about it.
+function UI:AcrossRealms()
+	local seen, realms = {}, 0
+
+	for _, entry in pairs(Family.Database:Members()) do
+		local realm = entry.meta and entry.meta.realm
+		if realm and not seen[realm] then
+			seen[realm] = true
+			realms = realms + 1
+			if realms > 1 then return true end
+		end
+	end
+
+	return false
+end
+
+-- The same for a list: who carries their realm.
+--
+-- Two rules, and the second one was asked for from play. A name said twice in one list has
+-- always carried it, because a line reading "Eccebombo" twice with different numbers cannot be
+-- acted on. That is not enough for somebody whose characters are spread about: an item held by
+-- one character called Tossica is unambiguous and still does not say which realm to log into,
+-- and a tooltip that leaves that out is a trip to the wrong auction house.
+--
+-- **So the realm goes on every name once the account has more than one realm in it**, and on
+-- none of them while it has one. A player with everything on Fire Maw is told "Fire Maw" on
+-- every line of every tooltip, which is a third of the width spent saying the only thing it
+-- could have said - that was the whole argument for showing it only on a clash, and it holds
+-- exactly as long as there is one realm to be on.
 function UI:NamesOf(entries)
 	local counts = {}
 	for _, entry in ipairs(entries) do
 		counts[entry.name or entry.key] = (counts[entry.name or entry.key] or 0) + 1
 	end
 
+	local spread = UI:AcrossRealms()
+
 	for _, entry in ipairs(entries) do
-		entry.label = UI:NameOf(entry, counts[entry.name or entry.key] > 1)
+		entry.label = UI:NameOf(entry, spread or counts[entry.name or entry.key] > 1)
 	end
 
 	return entries
