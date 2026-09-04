@@ -548,6 +548,10 @@ function Recipes:Search(needle, limit)
 							spellID = recipe.spellID,
 							itemID = recipe.itemID,
 							members = {},
+							-- Who is already on this row. One member is one answer to
+							-- "who can make this", however many times their record
+							-- happens to say so.
+							listed = {},
 						}
 						order[#order + 1] = byName[id]
 					end
@@ -563,16 +567,47 @@ function Recipes:Search(needle, limit)
 							readyAt = (not ready) and recipe.readyAt or nil }
 					end
 
-					table.insert(byName[id].members, {
-						key = key,
-						name = meta.name or key,
-						classFile = meta.classFile,
-						realm = meta.realm,
-						faction = meta.faction,
-						rank = (meta.skills or {})[profession]
-							and meta.skills[profession].rank or nil,
-						cooldown = cooldown,
-					})
+					-- **Once each.** This was a plain insert, and a member whose record
+					-- holds the same recipe twice - which a stored list can, because the
+					-- scanner writes back every row the client's window listed - was
+					-- drawn twice on one line. Reported from play as "Smith, Smith" on a
+					-- transmute, with the realm on both because two identical names in
+					-- one list is exactly what makes `NamesOf` add it.
+					--
+					-- Fixed where two becomes visible rather than where two comes from:
+					-- what the client's window listed twice is a question this cannot
+					-- answer, and the scanner now says so in the debug log instead of
+					-- being made to guess.
+					local row = byName[id]
+					local already = row.listed[key]
+
+					if already then
+						-- The timer is the one thing worth taking from a second copy,
+						-- and "has a cooldown" is not the test. A record with
+						-- `hasCooldown` and no `readyAt` answers *ready*, so the first
+						-- copy already carries one and the second's real timer would be
+						-- thrown away - the row saying a transmute is ready that is
+						-- three hours off. Taken when we had none, or when what we have
+						-- claims ready and this one knows better. Never the other way:
+						-- ready must not be able to overwrite a running timer.
+						if cooldown and (not already.cooldown
+							or (already.cooldown.ready and not cooldown.ready)) then
+							already.cooldown = cooldown
+						end
+					else
+						local member = {
+							key = key,
+							name = meta.name or key,
+							classFile = meta.classFile,
+							realm = meta.realm,
+							faction = meta.faction,
+							rank = (meta.skills or {})[profession]
+								and meta.skills[profession].rank or nil,
+							cooldown = cooldown,
+						}
+						row.listed[key] = member
+						table.insert(row.members, member)
+					end
 				end
 			end
 		end

@@ -337,6 +337,13 @@ local function readClassicRecipes()
 
 	local recipes = {}
 
+	-- What this window has already listed, so that a row it lists twice is noticed rather
+	-- than silently written down twice. Nothing is dropped here: which of two identical rows
+	-- is the real one is a question about the client, and a scanner that answers it by
+	-- guessing is worse than a record with a duplicate in it. The readers list a member once
+	-- whatever this holds.
+	local seenRecipe = {}
+
 	for index = 1, count do
 		local skillName, skillType, numAvailable = Family:TryCall(GetTradeSkillInfo, index)
 
@@ -360,6 +367,16 @@ local function readClassicRecipes()
 			local cooldown = Family:TryCall(GetTradeSkillCooldown, index)
 			if cooldown and cooldown > 0 then
 				recipe.readyAt = time() + cooldown
+			end
+
+			local mark = recipe.spellID and ("spell:" .. recipe.spellID)
+				or recipe.itemID and ("item:" .. recipe.itemID)
+				or ("name:" .. tostring(skillName))
+			if seenRecipe[mark] then
+				Family:Debug("professions: %s listed %s twice (rows %d and %d)",
+					tostring(name), mark, seenRecipe[mark], index)
+			else
+				seenRecipe[mark] = index
 			end
 
 			recipes[#recipes + 1] = recipe

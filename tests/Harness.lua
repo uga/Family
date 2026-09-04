@@ -16808,6 +16808,124 @@ print("what a linked family may be granted")
 	Family.Database:Forget("Granted-FireMaw")
 end)()
 
+--------------------------------------------------------------------------------------------
+-- One member, one line
+--------------------------------------------------------------------------------------------
+
+print()
+print("a record that says the same thing twice is one answer")
+
+;(function()
+	local key = "Doubled-Fire Maw"
+	Family.Database:SetMeta(key, { name = "Doubled", realm = "Fire Maw", level = 60,
+		classFile = "MAGE", faction = "Alliance",
+		skills = { [171] = { name = "Alchemy", rank = 300, maxRank = 300 } } })
+
+	-- The same recipe twice, which is what a stored record can hold: the scanner writes back
+	-- every row the client's window listed and does not decide that two of them were one.
+	-- The second copy is the one carrying the timer, deliberately - dropping it silently is
+	-- the failure worth checking for, because the row would then say ready.
+	Family.Database:SetPayload(key, { professions = { [171] = {
+		rank = 300, maxRank = 300, recipes = {
+			{ name = "Transmute: Fire to Earth", itemID = 7078, hasCooldown = true },
+			{ name = "Transmute: Fire to Earth", itemID = 7078, hasCooldown = true,
+				readyAt = time() + 3600 },
+		},
+	} } })
+	Family.Index:Invalidate(key)
+
+	local row
+	for _, found in ipairs(Family.Recipes:Search("fire to earth")) do
+		if found.name and found.name:find("Fire to Earth", 1, true) then row = found end
+	end
+	check("the recipe is found at all", row ~= nil)
+
+	local mine, listed = 0, nil
+	for _, member in ipairs(row and row.members or {}) do
+		if member.key == key then
+			mine = mine + 1
+			listed = listed or member
+		end
+	end
+	check("and a member whose record holds it twice is listed once", mine == 1, tostring(mine))
+
+	check("with the timer the second copy carried, not the first copy's silence",
+		listed and listed.cooldown and listed.cooldown.ready == false,
+		tostring(listed and listed.cooldown and listed.cooldown.ready))
+
+	-- The other way round, and it is the half that matters more: a copy saying *ready* must
+	-- never be allowed to overwrite one that knows a timer is running. With the timer only
+	-- ever second, a rule that simply took the last copy would pass the check above and send
+	-- somebody to an alchemist who cannot transmute for another three hours.
+	local other = "Reversed-Fire Maw"
+	Family.Database:SetMeta(other, { name = "Reversed", realm = "Fire Maw", level = 60,
+		classFile = "MAGE", faction = "Alliance",
+		skills = { [171] = { name = "Alchemy", rank = 300, maxRank = 300 } } })
+	Family.Database:SetPayload(other, { professions = { [171] = {
+		rank = 300, maxRank = 300, recipes = {
+			{ name = "Transmute: Fire to Earth", itemID = 7078, hasCooldown = true,
+				readyAt = time() + 3600 },
+			{ name = "Transmute: Fire to Earth", itemID = 7078, hasCooldown = true },
+		},
+	} } })
+	Family.Index:Invalidate(other)
+
+	local reversed
+	for _, found in ipairs(Family.Recipes:Search("fire to earth")) do
+		if found.name and found.name:find("Fire to Earth", 1, true) then
+			for _, member in ipairs(found.members) do
+				if member.key == other then reversed = member end
+			end
+		end
+	end
+	check("and a running timer is not overwritten by a copy that says ready",
+		reversed and reversed.cooldown and reversed.cooldown.ready == false,
+		tostring(reversed and reversed.cooldown and reversed.cooldown.ready))
+	Family.Database:Forget(other)
+
+	--------------------------------------------------------------------------------------
+	-- And the window that listed it twice says so, rather than being guessed at
+	--------------------------------------------------------------------------------------
+
+	local wasDebug, wasOpen, wasName = FamilyDB.debug, TRADE_SKILL_OPEN, TRADE_SKILL_NAME
+	local wasRecipes = TRADE_RECIPES
+
+	FamilyDB.debug = true
+	TRADE_SKILL_OPEN, TRADE_SKILL_NAME = true, "Alchemy"
+	TRADE_RECIPES = {
+		{ "Header", "header" },
+		{ "Silver Rod", "optimal", 2, "|cffffd000|Hspell:3339|h[Silver Rod]|h|r",
+		  "|cffffffff|Hitem:6338|h[Silver Rod]|h|r" },
+		{ "Silver Rod", "optimal", 2, "|cffffd000|Hspell:3339|h[Silver Rod]|h|r",
+		  "|cffffffff|Hitem:6338|h[Silver Rod]|h|r" },
+	}
+
+	local mark = #DEFAULT_CHAT_FRAME.messages
+	fire("TRADE_SKILL_SHOW")
+	advance(1)
+
+	local noticed = false
+	for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+		if DEFAULT_CHAT_FRAME.messages[index]:find("listed spell:3339 twice", 1, true) then
+			noticed = true
+		end
+	end
+	check("a window listing one recipe on two rows says which rows", noticed)
+
+	-- Nothing is dropped: which of two identical rows is the real one is a question about
+	-- the client, and a scanner that answers it by guessing is worse than a record with a
+	-- duplicate in it that every reader already handles.
+	local stored = Family.Database:Payload(Family:CurrentMember())
+	local alchemy = stored and stored.professions and stored.professions[171]
+	check("and keeps both, because which one is real is not its question",
+		alchemy and alchemy.recipes and #alchemy.recipes == 2,
+		alchemy and alchemy.recipes and tostring(#alchemy.recipes))
+
+	TRADE_RECIPES, TRADE_SKILL_NAME = wasRecipes, wasName
+	TRADE_SKILL_OPEN, FamilyDB.debug = wasOpen, wasDebug
+	Family.Database:Forget(key)
+end)()
+
 print()
 if failures == 0 then
 	print("all checks passed")
