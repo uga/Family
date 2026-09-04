@@ -599,8 +599,15 @@ end
 -- written permission, and the LibDataBroker it requires states no licence anywhere - neither
 -- can travel inside a zip that promises GPL terms to whoever receives it. Reading a library
 -- that another addon has already loaded is not redistributing it, so this asks for nothing
--- and grants nothing. A player with DBM, Skada or WeakAuras has it; everyone else keeps the
--- button above, which is why that button stays.
+-- and grants nothing.
+--
+-- **Two different addons are involved and they are easy to run together.** LibDBIcon is
+-- *embedded* by most large addons for their own icon - DBM and WeakAuras both fetch it and
+-- LibDataBroker as externals, which is how it comes to be loaded in a game that never asked
+-- for it. Neither of them collects anything. What collects is a third addon, the kind that
+-- sweeps every LibDBIcon button into one bag, and it is the one that could not find Family.
+-- So the embedders are why the library is usually *there*, and the collector is who this is
+-- *for*; a player with neither keeps the button above, which is why that button stays.
 --------------------------------------------------------------------------------------------
 
 local collector

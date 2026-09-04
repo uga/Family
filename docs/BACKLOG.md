@@ -97,8 +97,15 @@ stand-alone version without written permission from the Ace3 lead, and the LibDa
 hard-requires states no licence in its source, its README or its project page, where the field
 reads **All Rights Reserved**. Neither can travel inside a zip promising GPL-3.0-or-later to
 whoever receives it, whatever the rest of the ecosystem does — so nothing was adopted. Family
-registers with LibDBIcon when the player's game already has it, which it does for anyone running
-DBM, Skada, WeakAuras or most other large addons, and keeps its own button for everyone else.
+registers with LibDBIcon where the player's game already has it, and keeps its own button
+everywhere else.
+
+**Two addons are involved and the entry should not blur them.** LibDBIcon is *embedded* by most
+large addons for their own icon — DBM and WeakAuras both fetch it and LibDataBroker as externals,
+measured 2026-09-04 from their `.pkgmeta` — which is why it is usually loaded in a game that
+never asked for it. None of them collects anything. The collector is a third addon, the kind
+that sweeps LibDBIcon buttons into one bag, and it is the one in the screenshot. The embedders
+are why the library is *there*; the collector is who this is *for*.
 `.pkgmeta` fetches nothing new, neither `.toc` loads anything new, and the harness checks both.
 
 Two options were rejected rather than ruled out, and stay available if this is not enough:
