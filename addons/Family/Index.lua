@@ -224,7 +224,7 @@ function Index:Owners(itemID)
 				-- Whose they are, where they are not ours. Never left off: a count on a
 				-- tooltip is read as "I can go and get that", and for somebody else's
 				-- character that is not true.
-				familyName = link and link.name or nil,
+				familyName = link and Family.Wide:Called(link) or nil,
 				name = meta.name or key,
 				realm = meta.realm,
 				faction = meta.faction,

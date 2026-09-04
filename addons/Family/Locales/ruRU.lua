@@ -641,6 +641,8 @@ Family.locales.ruRU = {
 	["Warn me this many days before:"] = "Предупреждать за столько дней:",
 	["%s |cffff4444(already gone)|r"] = "%s |cffff4444(уже потеряно)|r",
 	["mail running out:"] = "почта истекает:",
+	["|cffffd700Call them|r"] = "|cffffd700Название|r",
+	["|cff888888A name for this family on your own screens. It is never sent to them, and it does not change who Family whispers - that is still %s.|r"] = "|cff888888Имя для этой семьи на ваших собственных экранах. Оно никогда не отправляется им и не меняет, кому Family шепчет - это по-прежнему %s.|r",
 	-- The minimap button and its tooltip
 	["Another addon is holding Family's minimap button and will not let go of it. It will be gone the next time you log in."] = "Другой аддон удерживает кнопку Family на миникарте и не отпускает её. Она исчезнет при следующем входе в игру.",
 	["%d member"] = "%d персонаж",

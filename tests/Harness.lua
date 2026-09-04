@@ -427,6 +427,10 @@ end
 -- reads as a fault in the addon and was a fault in here.
 function frameMethods:GetParent() return self.__parent end
 
+-- Its pair. The stub had the reader and not the writer, so a frame moved from one parent to
+-- another - which the client does allow - died here rather than being checked.
+function frameMethods:SetParent(parent) self.__parent = parent end
+
 -- Focus, modelled rather than shrugged off. A panel that redraws a box the player is halfway
 -- through typing into takes the number out from under them, and a no-op HasFocus would have
 -- said that never happens.
@@ -16573,6 +16577,100 @@ print("the realm on a name, and when it is worth the width")
 		twins[1].label:find("(@Fire Maw)", 1, true) ~= nil
 			and twins[2].label:find("(@Auberdine)", 1, true) ~= nil,
 		twins[1].label .. " / " .. twins[2].label)
+end)()
+
+--------------------------------------------------------------------------------------------
+-- Calling a linked family something else
+--------------------------------------------------------------------------------------------
+
+print()
+print("an alias for a linked family")
+
+;(function()
+	local store = Family.Wide:Store()
+	store.links["fam-alias"] = {
+		name = "Smith-PyrewoodVillage",
+		grants = {},
+		siblings = {},
+		members = {
+			["Soulsock-PyrewoodVillage"] = {
+				meta = { name = "Soulsock", realm = "PyrewoodVillage", classFile = "WARRIOR",
+					level = 60, faction = "Horde" },
+				seen = os.time(),
+			},
+		},
+	}
+	local link = store.links["fam-alias"]
+
+	check("with no alias a family is called what the link was made under",
+		Family.Wide:Called(link) == "Smith-PyrewoodVillage",
+		tostring(Family.Wide:Called(link)))
+
+	check("setting one takes", Family.Wide:SetAlias("fam-alias", "Zia Pina") == "Zia Pina")
+	check("and it is what the family is called", Family.Wide:Called(link) == "Zia Pina")
+	check("while the name it is reached at is untouched",
+		link.name == "Smith-PyrewoodVillage", tostring(link.name))
+
+	-- The names a whisper can be addressed to are the link's own name and the members it has
+	-- told us about. None of them may become the alias: a whisper to "Zia Pina" reaches
+	-- nobody, and the failure would be silent - Wide Family would simply stop updating.
+	local addressable = { link.name }
+	for memberKey in pairs(link.members or {}) do
+		addressable[#addressable + 1] = memberKey
+	end
+
+	local aliased = false
+	for _, name in ipairs(addressable) do
+		if name:find("Zia Pina", 1, true) then aliased = true end
+	end
+	check("and no name a whisper is addressed to became the alias", not aliased,
+		table.concat(addressable, ", "))
+
+	check("spaces round it are not part of it",
+		Family.Wide:SetAlias("fam-alias", "  Zia Pina  ") == "Zia Pina")
+	check("and emptying it puts the real name back",
+		Family.Wide:SetAlias("fam-alias", "   ") == nil
+			and Family.Wide:Called(link) == "Smith-PyrewoodVillage")
+
+	Family.Wide:SetAlias("fam-alias", "Zia Pina")
+	Family.Wide:SetSibling("fam-alias", "Soulsock-PyrewoodVillage", true)
+
+	local named
+	for _, member in ipairs(Family.Wide:Siblings()) do
+		if member.memberKey == "Soulsock-PyrewoodVillage" then named = member.familyName end
+	end
+	check("a sibling is filed under the alias", named == "Zia Pina", tostring(named))
+
+	-- And the tooltip, which reads its own way round: the index looks the link up from a
+	-- borrowed key rather than being handed one. Left unchecked, a mutation putting the raw
+	-- name back here went unnoticed while every other check stayed green.
+	link.members["Soulsock-PyrewoodVillage"].payload = {
+		bags = { { slots = { { id = 2589, count = 5 } } } },
+	}
+	Family.Index:Invalidate(Family.Wide:BorrowedKey("fam-alias", "Soulsock-PyrewoodVillage"))
+
+	local onTooltip
+	for _, owner in ipairs(select(1, Family.Index:Owners(2589))) do
+		if owner.name == "Soulsock" then onTooltip = owner.familyName end
+	end
+	check("and an item tooltip says the alias too", onTooltip == "Zia Pina",
+		tostring(onTooltip))
+
+	-- **Never sent.** It is our name for their family and not theirs, and the check is on
+	-- what actually leaves rather than on a comment saying it does not.
+	local offering = Family.Wide:Offering(link)
+	local function mentions(value)
+		if type(value) == "string" then return value:find("Zia Pina", 1, true) ~= nil end
+		if type(value) ~= "table" then return false end
+		for key, item in pairs(value) do
+			if mentions(key) or mentions(item) then return true end
+		end
+		return false
+	end
+	check("and nothing carrying the alias goes out", not mentions(offering))
+
+	Family.Wide:SetSibling("fam-alias", "Soulsock-PyrewoodVillage", false)
+	store.links["fam-alias"] = nil
 end)()
 
 print()

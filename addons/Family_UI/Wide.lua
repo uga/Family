@@ -31,6 +31,10 @@ local Family = _G.Family
 local L = Family.L
 
 local ROW = 20
+
+-- One box for the whole panel rather than one per link. Only one link is open at a time, so a
+-- pool would be a pool of one that every other section had to remember to hide.
+local aliasBox
 -- The member column. Narrow, because it holds one character's name and the word "Member",
 -- and every pixel it does not need is a pixel the nine category columns do: "Possessions" and
 -- "Reputations" are eleven letters each and they are what decides whether this grid fits.
@@ -91,7 +95,9 @@ local function linkList()
         list[#list + 1] = { id = id, link = link }
     end
     table.sort(list, function(a, b)
-        return tostring(a.link.name) < tostring(b.link.name)
+        -- By what the panel says, not by what the link was made under: a list sorted on a
+        -- name nobody can see is a list that looks unsorted.
+        return tostring(Family.Wide:Called(a.link)) < tostring(Family.Wide:Called(b.link))
     end)
     return list
 end
@@ -364,6 +370,11 @@ local function build(frame)
         if cellWidth < CELL_MIN then cellWidth = CELL_MIN end
         if cellWidth > CELL_MAX then cellWidth = CELL_MAX end
 
+        -- Put away before anything is drawn. It belongs to the open link and there may not
+        -- be one this time round; a pooled row would have been reset by nextRow, and this is
+        -- not pooled, so it is reset here.
+        if aliasBox then aliasBox:Hide() end
+
         local function nextRow(height)
             usedRows = usedRows + 1
             local r = row(usedRows)
@@ -626,9 +637,16 @@ local function build(frame)
                 if member.family == entry.id then theirs[#theirs + 1] = member end
             end
 
+            -- The name they are called here, and behind it the name they are reached at.
+            -- Never one without the other where they differ: the second is the address, and
+            -- an address nobody can see is an address nobody can check against a whisper.
+            local called = Family.Wide:Called(link)
+            local address = Family.Wide:Alias(entry.id)
+                and string.format(" |cff707070(%s)|r", tostring(link.name)) or ""
+
             local r = nextRow(ROW + 2)
-            r.text:SetText(string.format("|cffffd700%s|r  |cff66bbff%s|r  |cff888888%s|r",
-                open and "-" or "+", tostring(link.name),
+            r.text:SetText(string.format("|cffffd700%s|r  |cff66bbff%s|r%s  |cff888888%s|r",
+                open and "-" or "+", tostring(called), address,
                 link.version and string.format(L["Family %s"], tostring(link.version))
                     or L["version unknown"]))
 
@@ -678,6 +696,46 @@ local function build(frame)
 
             if open then
                 y = y + 8
+
+                ----------------------------------------------------------------------------
+                -- What to call them here
+                ----------------------------------------------------------------------------
+
+                local aliasRow = nextRow()
+                aliasRow.text:SetText(L["|cffffd700Call them|r"])
+
+                aliasBox = aliasBox or CreateFrame("EditBox", "FamilyWideAlias", list,
+                    "InputBoxTemplate")
+                aliasBox:ClearAllPoints()
+                aliasBox:SetPoint("LEFT", aliasRow, "LEFT", 90, 0)
+                aliasBox:SetSize(180, 20)
+                aliasBox:SetAutoFocus(false)
+                aliasBox:SetMaxLetters(24)
+                aliasBox:SetText(Family.Wide:Alias(entry.id) or "")
+
+                -- Emptying it puts the real name back, which is why there is no separate
+                -- button to clear it: the box shows what is in force and clearing the box is
+                -- the plainest way to say "nothing".
+                local function keep(self)
+                    Family.Wide:SetAlias(entry.id, self:GetText())
+                    self:ClearFocus()
+                    frame:Refresh()
+                end
+
+                aliasBox:SetScript("OnEnterPressed", keep)
+                aliasBox:SetScript("OnEditFocusLost", keep)
+                aliasBox:SetScript("OnEscapePressed", function(self)
+                    self:SetText(Family.Wide:Alias(entry.id) or "")
+                    self:ClearFocus()
+                end)
+                aliasBox:Show()
+
+                local aliasNote = nextRow(ROW + 4)
+                aliasNote.text:SetPoint("RIGHT", -RIGHT_INSET, 0)
+                aliasNote.text:SetWordWrap(true)
+                aliasNote.text:SetText(string.format(L["|cff888888A name for this family on "
+                    .. "your own screens. It is never sent to them, and it does not change "
+                    .. "who Family whispers - that is still %s.|r"], tostring(link.name)))
 
                 ----------------------------------------------------------------------------
                 -- What they may see of ours

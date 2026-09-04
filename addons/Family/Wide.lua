@@ -213,6 +213,48 @@ end
 
 -- One name for a borrowed member that cannot collide with one of ours or with another
 -- family's. Two linked families can both have an Alberta-Firemaw, and so can we.
+-- What to call a linked family on screen.
+--
+-- A link is made with a character, so `link.name` is a character name - "Smith-PyrewoodVillage"
+-- - and it is what a whisper is addressed to. It is also what every panel and tooltip has been
+-- labelling their characters with, which is a long string that says nothing about who the
+-- person is. An alias replaces the label and nothing else.
+--
+-- **Local, and never sent.** It is our name for their family, not their name for it, and a
+-- name somebody else chose for you arriving on your screen is not a feature. `offering` builds
+-- what goes out field by field from a fixed list and this is not on it, which is what keeps
+-- that true rather than a comment saying so.
+--
+-- The real name is never hidden, only moved: the panel shows it in grey beside the alias,
+-- because it is the address, and an address nobody can see is an address nobody can check.
+function Wide:Called(link)
+    if type(link) ~= "table" then return nil end
+
+    local alias = link.alias
+    if type(alias) == "string" and alias ~= "" then return alias end
+    return link.name
+end
+
+function Wide:Alias(familyID)
+    local link = self:Links()[familyID]
+    return link and link.alias or nil
+end
+
+-- Empty, or nothing but spaces, clears it rather than storing a name made of air.
+function Wide:SetAlias(familyID, text)
+    local link = self:Links()[familyID]
+    if not link then return nil end
+
+    if type(text) ~= "string" then
+        link.alias = nil
+        return nil
+    end
+
+    local trimmed = text:match("^%s*(.-)%s*$")
+    link.alias = (trimmed ~= "") and trimmed or nil
+    return link.alias
+end
+
 function Wide:BorrowedKey(familyID, memberKey)
     return "@" .. tostring(familyID) .. "/" .. tostring(memberKey)
 end
@@ -277,7 +319,7 @@ function Wide:Siblings()
                     payload = entry.payload,
                     seen = entry.seen,
                     family = familyID,
-                    familyName = link.name,
+                    familyName = Wide:Called(link),
                     exchanged = link.lastExchange,
                     sibling = true,
                 }
@@ -391,7 +433,7 @@ local function send(link, kind, table_, bulk)
             return false, string.format(count == 1
                 and L["none of %s's %d character is online"]
                 or L["none of %s's %d characters are online"],
-                tostring(link.name), count)
+                tostring(Wide:Called(link)), count)
         end
         return false, L["nobody of theirs has ever been heard from"]
     end
@@ -528,7 +570,7 @@ function Wide:ExchangeWith(familyID, why)
 
     link.lastAsked = time()
     Family:Debug("wide: exchanged with %s (%d members offered, %s)",
-        tostring(link.name), count, tostring(why or "on request"))
+        tostring(Wide:Called(link)), count, tostring(why or "on request"))
 
     return true, count
 end
@@ -604,10 +646,10 @@ Family.Comm:OnAbsent("wide", function(name, _, already)
                             .. "was sent. Try again when one of them is."]
                         or L["|cffffaa00None of %s's %d characters are online.|r Nothing "
                             .. "was sent. Try again when one of them is."],
-                        tostring(link.name), count)
+                        tostring(Wide:Called(link)), count)
                 else
                     Family:Debug("wide: none of %s's %d character(s) are online",
-                        tostring(link.name), count)
+                        tostring(Wide:Called(link)), count)
                 end
             end
         end

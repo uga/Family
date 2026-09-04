@@ -19,6 +19,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **You can give a linked family a name of your own.** A link is made with a character, so
+  until now every panel and tooltip labelled their characters with something like
+  *Smith-PyrewoodVillage*. Open the link on the Wide Family panel and there is a box to call
+  them whatever you like; empty it and the real name comes back. It is only on your screens -
+  it is never sent to them - and it does not change who Family whispers, which the panel says
+  and shows in grey beside it.
+
 - **Family says at login whose mail is running out.** A short list in the chat frame, one
   character to a line, most urgent first: the name and realm, how long is left, and - when the
   character belongs to a family you are linked to - whose they are. Something already lost is
