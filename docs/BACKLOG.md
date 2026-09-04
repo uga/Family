@@ -236,6 +236,9 @@ top of it would have been quietly wrong for half the family.
 
 **Received:** 2026-09-04, from Alberto.
 
+**Verified in play 2026-09-04**, with the warning set to 29 days so that a thirty-day mailbox
+would answer: five characters named, soonest first, each with the time it has left.
+
 **Built 2026-09-04.** `Mail:Expiring(within)` in the data layer, the notice beside the crafting
 one in `Family_UI/Slash.lua`, and the options panel's first numeric control - the switch schema
 grew a `number` field rather than that row growing a special case, so the next setting that is
