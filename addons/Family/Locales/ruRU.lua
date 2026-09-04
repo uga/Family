@@ -648,6 +648,7 @@ Family.locales.ruRU = {
 	["Held by"] = "У кого",
 	["|cff9d9d9dNo reputation has been recorded for anybody yet.|r"] = "|cff9d9d9dНи для кого ещё не записана репутация.|r",
 	["|cffffd700%d|r of %d factions   |cff888888|||r   %d with reputations recorded"] = "|cffffd700%d|r из %d фракций   |cff888888|||r   %d с записанной репутацией",
+	["Open and close Family"] = "Открыть и закрыть Family",
 	-- The minimap button and its tooltip
 	["Another addon is holding Family's minimap button and will not let go of it. It will be gone the next time you log in."] = "Другой аддон удерживает кнопку Family на миникарте и не отпускает её. Она исчезнет при следующем входе в игру.",
 	["%d member"] = "%d персонаж",

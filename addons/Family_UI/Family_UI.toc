@@ -32,3 +32,8 @@ Broker.lua
 Options.lua
 About.lua
 Slash.lua
+
+# The key bindings. XML because the client reads bindings out of a file of this shape before
+# any addon Lua runs, and last because it needs everything above it to exist by the time a key
+# is pressed.
+Bindings.xml

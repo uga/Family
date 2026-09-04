@@ -648,6 +648,7 @@ Family.locales.frFR = {
 	["Held by"] = "Détenu par",
 	["|cff9d9d9dNo reputation has been recorded for anybody yet.|r"] = "|cff9d9d9dAucune réputation n'a encore été enregistrée pour personne.|r",
 	["|cffffd700%d|r of %d factions   |cff888888|||r   %d with reputations recorded"] = "|cffffd700%d|r sur %d factions   |cff888888|||r   %d avec une réputation enregistrée",
+	["Open and close Family"] = "Ouvrir et fermer Family",
 	-- The minimap button and its tooltip
 	["Another addon is holding Family's minimap button and will not let go of it. It will be gone the next time you log in."] = "Un autre addon retient le bouton de minicarte de Family et refuse de le lâcher. Il aura disparu à votre prochaine connexion.",
 	["%d member"] = "%d membre",

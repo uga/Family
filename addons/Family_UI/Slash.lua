@@ -797,4 +797,22 @@ end)
 
 SLASH_FAMILY1 = "/family"
 SLASH_FAMILY2 = "/fam"
+
+--------------------------------------------------------------------------------------------
+-- What the Key Bindings window calls Family's binding
+--
+-- Two more globals the client asks for by name, beside the two above, and they are the same
+-- kind of exception: the game looks them up itself and there is nowhere else to put them.
+--
+-- Set here rather than written into Bindings.xml, and that is the whole care this needed. A
+-- name in the XML is one string in one language, invisible to the locale files and therefore
+-- English on every client - and the Key Bindings window is exactly where a player who does not
+-- read English is looking for the word they know.
+--
+-- `BINDING_HEADER_FAMILY` is the heading the binding sits under and matches the `header` in
+-- Bindings.xml; `BINDING_NAME_FAMILY_TOGGLE` matches the binding's `name`. Both agreements are
+-- checked by the harness, because a rename on one side is silent on the other: the window
+-- simply shows the raw action name, which is what an unlocalised binding looks like too.
+BINDING_HEADER_FAMILY = L["Family"]
+BINDING_NAME_FAMILY_TOGGLE = L["Open and close Family"]
 SlashCmdList["FAMILY"] = handler

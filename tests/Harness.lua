@@ -17072,6 +17072,96 @@ print("the family's reputations, as factions rather than as members")
 	for _, member in ipairs(ours) do Family.Database:Forget(member.key) end
 end)()
 
+--------------------------------------------------------------------------------------------
+-- The key binding
+--
+-- Bindings live in XML because the client reads them before any addon Lua runs, which means
+-- nothing in this harness loads that file and nothing would ever notice it going wrong. What
+-- can be checked is every join it has: the .toc lists it, its binding name and header match
+-- the globals Slash.lua sets, and the Lua inside it runs and does what it says.
+--
+-- That last one matters most. The body of a binding is a string the client compiles on a key
+-- press: a typo in it is a syntax error the player meets in the middle of whatever they were
+-- doing, and nothing else in the addon would ever have compiled it.
+--------------------------------------------------------------------------------------------
+
+print()
+print("opening Family from the keyboard")
+
+;(function()
+	local function slurp(path)
+		local handle = io.open(ROOT .. "/" .. path)
+		if not handle then return nil end
+		local text = handle:read("*a")
+		handle:close()
+		return text
+	end
+
+	local toc = slurp("addons/Family_UI/Family_UI.toc")
+	check("the .toc is where this check expects it", toc ~= nil)
+	check("and loads the bindings file",
+		toc ~= nil and toc:find("%f[%w]Bindings%.xml%f[^%w]") ~= nil)
+
+	local xml = slurp("addons/Family_UI/Bindings.xml")
+	check("which is in the addon folder", xml ~= nil)
+
+	local name = xml and xml:match('<Binding%s+name="([%w_]+)"')
+	local header = xml and xml:match('header="([%w_]+)"')
+	check("declaring a binding and a heading for it", name ~= nil and header ~= nil,
+		tostring(name) .. " / " .. tostring(header))
+
+	-- The window looks these two up by name. A rename on either side is silent: what the
+	-- player sees is the raw action name, which is also what an unlocalised binding looks
+	-- like, so the two faults are indistinguishable on screen.
+	check("the client is given a word for the binding",
+		type(_G["BINDING_NAME_" .. tostring(name)]) == "string"
+			and _G["BINDING_NAME_" .. tostring(name)] ~= "",
+		tostring(_G["BINDING_NAME_" .. tostring(name)]))
+	check("and for the heading it sits under",
+		type(_G["BINDING_HEADER_" .. tostring(header)]) == "string"
+			and _G["BINDING_HEADER_" .. tostring(header)] ~= "",
+		tostring(_G["BINDING_HEADER_" .. tostring(header)]))
+
+	-- And a word, not the action name shown back at the player: BINDING_NAME_FAMILY_TOGGLE
+	-- reading "FAMILY_TOGGLE" is what a missing global looks like.
+	check("a word rather than the action's own name",
+		_G["BINDING_NAME_" .. tostring(name)] ~= name)
+
+	--------------------------------------------------------------------------------------
+	-- What the key actually does
+	--------------------------------------------------------------------------------------
+
+	-- `%s` after the tag name on purpose: without it this matches the `<Bindings>` wrapper
+	-- too, because "Bindings" begins with "Binding", and the body then starts with the
+	-- opening tag of the binding itself and will not compile.
+	local body = xml and xml:match("<Binding%s[^>]*>(.-)</Binding>")
+	check("the binding has something to run", body ~= nil and body:match("%S") ~= nil)
+
+	local chunk, err = loadstring(body or "")
+	check("and it compiles, which nothing else in the addon would ever try",
+		chunk ~= nil, tostring(err))
+
+	if chunk then
+		Family.UI:Hide()
+		local before = Family.UI:IsShown()
+		chunk()
+		check("pressing the key opens Family", Family.UI:IsShown() ~= before)
+		chunk()
+		check("and pressing it again closes it", Family.UI:IsShown() == before)
+	end
+
+	-- Guarded, because a key can be pressed while the player is still zoning in and before
+	-- Family_UI has finished loading. An error thrown from a binding lands on whatever they
+	-- were doing at the time.
+	if chunk then
+		local realFamily = _G.Family
+		_G.Family = nil
+		local ok = pcall(chunk)
+		_G.Family = realFamily
+		check("and pressing it before Family has loaded does nothing at all", ok)
+	end
+end)()
+
 print()
 if failures == 0 then
 	print("all checks passed")

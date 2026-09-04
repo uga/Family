@@ -151,7 +151,7 @@ lists them, and none has been run.
 
 ---
 
-## 6. A keybind that opens Family
+## 6. A keybind that opens Family — DONE 2026-09-04
 
 **Asked:** open the window from the keyboard.
 
@@ -159,6 +159,12 @@ lists them, and none has been run.
 
 **Shape:** small and self-contained — a bindings file and two localised strings. The only care
 needed is that the binding name is a global the client localises, not a word we ship.
+
+**Built 2026-09-04**, and that care was the whole of it. The words are `BINDING_HEADER_FAMILY`
+and `BINDING_NAME_FAMILY_TOGGLE`, set in `Slash.lua` from the locale table. The harness reads
+the XML, checks both names against those globals, and then **compiles and runs the binding's
+body** - which nothing else in the addon would ever do, so a typo in it would have been a
+syntax error a player met in the middle of a fight.
 
 ---
 

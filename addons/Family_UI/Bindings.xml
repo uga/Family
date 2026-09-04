@@ -1,0 +1,28 @@
+<!--
+    Family - an alt manager for World of Warcraft Classic
+    Copyright (C) 2026 Alberto Pittaluga
+
+    This program is free software: you can redistribute it and/or modify it under the
+    terms of the GNU General Public License as published by the Free Software
+    Foundation, either version 3 of the License, or (at your option) any later version.
+    See the LICENSE file at the root of this repository.
+
+    The one thing in Family that has to be XML. The client reads its key bindings out of a
+    file with this shape before any addon Lua has run, so there is no Lua equivalent to
+    write instead.
+
+    What the Key Bindings window *calls* these is not here: it looks up the globals
+    BINDING_HEADER_FAMILY and BINDING_NAME_FAMILY_TOGGLE, which Slash.lua sets from the
+    locale table, so the words are translated like every other sentence Family says. A name
+    written into this file would be English in every language and unreachable to the
+    translators - which is the whole of the care this needed.
+
+    Guarded, and not out of habit: a binding fires on a key press, which can happen while
+    the player is still zoning in and before Family_UI has finished loading. An error thrown
+    from here is thrown at whatever the player was doing.
+-->
+<Bindings>
+    <Binding name="FAMILY_TOGGLE" header="FAMILY">
+        if Family and Family.UI then Family.UI:Toggle() end
+    </Binding>
+</Bindings>
