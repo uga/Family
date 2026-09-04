@@ -17,6 +17,12 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Added
+
+- **Family has an icon in the game's addon list.** Both halves showed the red question mark
+  the game uses for an addon that offers no picture of itself, in a list where most things
+  around them had one. They now carry the same mark as the minimap button.
+
 ### Changed
 
 - **Family's minimap button now joins the button collectors.** Addons that gather minimap

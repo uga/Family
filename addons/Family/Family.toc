@@ -1,6 +1,7 @@
 ## Interface: 11509, 20506, 50504
 ## Title: Family
 ## Notes: Records what each of your characters owns and knows, and shows it to you from any of them.
+## IconTexture: Interface\AddOns\Family_UI\Textures\Family.tga
 ## Author: Alberto Pittaluga
 ## Version: 1.4.3
 ## X-License: GPL-3.0-or-later
@@ -10,6 +11,18 @@
 ## X-Curse-Project-ID: 1646217
 
 # The data layer. Everything the player sees lives in Family_UI.
+#
+# The icon is the one the minimap button and the broker bars already use, and the path is
+# Family_UI's on purpose: one mark for one addon, and a second copy of a 64x64 file is a
+# second thing to forget when the first is redrawn. The two ship together and always have,
+# so the file is on disk whenever this line is read. tests/Harness.lua checks that this path
+# and the ICON constant in Family_UI/Broker.lua still name the same file.
+#
+# **Whether these clients honour the field at all is a screenshot, not a claim.** IconTexture
+# was added for the addon list in 10.1.0 and Era, Anniversary and Mists are all built on
+# engines later than that, which is a reason to expect it and not evidence of it - and a
+# texture path is exactly the thing the client accepts without ever saying whether it found
+# anything (HANDOFF section 2). A red question mark still in the list is the answer being no.
 #
 # The interface numbers are major*10000 + minor*100 + patch, for Era 1.15.9, Anniversary
 # 2.5.6 and Mists 5.5.4. Anniversary reported 20506 for itself in game, which is what the

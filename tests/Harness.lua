@@ -15818,6 +15818,95 @@ print("the minimap button, where another addon already brought a collector")
 	LibStub.GetLibrary = realGetLibrary
 end)()
 
+--------------------------------------------------------------------------------------------
+-- The icon the addon list shows
+--
+-- A texture cannot be probed: the client takes whatever path it is handed and never says
+-- whether it found anything, which is why HANDOFF section 2 sends textures through a
+-- screenshot. Two things about one are checkable here anyway, and both are the kind that a
+-- screenshot taken once would not catch again six months later.
+--
+-- The first is drift. The .toc names a file and Broker.lua names a file, and nothing but
+-- reading them together stops one being redrawn under a new name while the other keeps
+-- pointing at the old one.
+--
+-- The second is the format. The client silently declines a TGA it cannot decode, and what it
+-- can decode is narrow: uncompressed, 32-bit, sides a power of two. tools/GenerateIcon.py
+-- writes one today; the check is here for the day somebody edits the file in something else
+-- and saves it compressed, which looks identical everywhere except in the game.
+--------------------------------------------------------------------------------------------
+
+print()
+print("the icon the addon list and the minimap share")
+
+;(function()
+	local function slurp(path, mode)
+		local handle = io.open(ROOT .. "/" .. path, mode)
+		if not handle then return nil end
+		local text = handle:read("*a")
+		handle:close()
+		return text
+	end
+
+	-- Interface\AddOns\Family_UI\... is where the client looks; addons/Family_UI/... is
+	-- where this repository keeps it.
+	local function onDisk(clientPath)
+		local rest = clientPath:match("^[Ii]nterface\\[Aa]dd[Oo]ns\\(.+)$")
+		if not rest then return nil end
+		return "addons/" .. rest:gsub("\\", "/")
+	end
+
+	local declared = {}
+	for _, toc in ipairs { "addons/Family/Family.toc", "addons/Family_UI/Family_UI.toc" } do
+		local text = slurp(toc)
+		check(toc .. " is where this check expects it", text ~= nil)
+
+		local named = text and text:match("##%s*IconTexture:%s*(%S+)")
+		check("and it tells the addon list which icon to draw", named ~= nil, toc)
+		declared[toc] = named
+	end
+
+	local broker = slurp("addons/Family_UI/Broker.lua") or ""
+	local fromCode = broker:match('local ICON = "([^"]+)"')
+	check("Broker.lua still names its icon where this check reads it", fromCode ~= nil)
+
+	-- Escaped in the source and plain in the .toc, so they are compared as paths.
+	local plain = fromCode and fromCode:gsub("\\\\", "\\")
+	for toc, named in pairs(declared) do
+		check(toc .. " draws the icon the minimap button draws", named == plain,
+			tostring(named) .. " vs " .. tostring(plain))
+	end
+
+	local file = plain and onDisk(plain)
+	check("and that path points inside this repository", file ~= nil, tostring(plain))
+
+	local tga = file and slurp(file, "rb")
+	check("where the file is", tga ~= nil, tostring(file))
+
+	if tga and #tga > 18 then
+		local function byte(at) return string.byte(tga, at) end
+		local function short(at) return byte(at) + byte(at + 1) * 256 end
+
+		-- Type 2 is uncompressed true-colour. Type 10 is the same picture RLE-packed, which
+		-- an image editor will hand you without mentioning it and the client will not draw.
+		check("the icon is an uncompressed true-colour TGA", byte(3) == 2, tostring(byte(3)))
+
+		local width, height, bpp = short(13), short(15), byte(17)
+		check("32 bits a pixel, so it has the alpha a round button needs",
+			bpp == 32, tostring(bpp))
+
+		local function powerOfTwo(n) return n >= 2 and (n % 2 == 0) and 2 ^ math.floor(
+			math.log(n) / math.log(2) + 0.5) == n end
+		check("and sides the client will accept, which are powers of two",
+			powerOfTwo(width) and powerOfTwo(height), width .. "x" .. height)
+
+		-- The pixels are all of it: a file that stops early draws as much of the mark as it
+		-- has and nothing says so.
+		check("with every pixel present", #tga >= 18 + width * height * 4,
+			#tga .. " bytes for " .. width .. "x" .. height)
+	end
+end)()
+
 print()
 if failures == 0 then
 	print("all checks passed")

@@ -1,6 +1,7 @@
 ## Interface: 11509, 20506, 50504
 ## Title: Family |cff888888(icon sheet)|r
 ## Notes: Development tool. Draws every candidate stock icon at final size, so a screenshot settles which of them this client actually has.
+## IconTexture: Interface\AddOns\Family_UI\Textures\Family.tga
 ## Author: Alberto Pittaluga
 ## Version: 0.1.0
 ## X-License: GPL-3.0-or-later

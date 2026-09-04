@@ -1,6 +1,7 @@
 ## Interface: 11509, 20506, 50504
 ## Title: Family |cff888888(interface)|r
 ## Notes: Everything Family shows you. Requires Family.
+## IconTexture: Interface\AddOns\Family_UI\Textures\Family.tga
 ## Author: Alberto Pittaluga
 ## Version: 1.4.3
 ## X-License: GPL-3.0-or-later
@@ -8,6 +9,9 @@
 ## Dependencies: Family
 ## X-Curse-Project-ID: 1646217
 
+# Both addons carry the same icon, because they are one thing to the player and the list
+# shows them next to each other. The file lives here; Family.toc says why it is not copied.
+#
 # The presentation layer. It reads through Family's own API and never touches FamilyDB
 # directly - that separation is what lets the storage format change without the screens
 # knowing (HANDOFF §1).
