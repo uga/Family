@@ -7700,7 +7700,12 @@ print("mail posted to another member")
 	check("marked as in the post, because nobody has seen it in a mailbox",
 		letter and letter.inPost == true)
 	check("and carrying the date it would be sent back on",
-		letter and letter.expiresBy and letter.expiresBy > os.time())
+		-- Against the clock the addon is on, not the one outside the window. This read
+		-- the real clock, and the two are different: the harness freezes `time` at
+		-- 1786000000, the letter is dated thirty days after that, and the check therefore
+		-- held until 2026-09-05 07:06:40 and not one minute longer. It went red four
+		-- minutes later, on a day nothing had changed (L-045).
+		letter and letter.expiresBy and letter.expiresBy > time())
 
 	-- Somebody who is not one of ours. Nothing is written down about them anywhere, and in
 	-- particular no member is invented out of an addressed envelope.
@@ -7748,7 +7753,7 @@ print("siblings")
 					level = 70, faction = "Horde", itemLevel = 91.5 },
 				payload = { equipment = { itemLevel = 91.5, counted = 1,
 					worn = { [1] = { id = 6948, itemLevel = 25 } } } },
-				seen = os.time(),
+				seen = time(),
 			},
 		},
 	}
@@ -16616,7 +16621,7 @@ print("an alias for a linked family")
 			["Soulsock-PyrewoodVillage"] = {
 				meta = { name = "Soulsock", realm = "PyrewoodVillage", classFile = "WARRIOR",
 					level = 60, faction = "Horde" },
-				seen = os.time(),
+				seen = time(),
 			},
 		},
 	}
@@ -16748,11 +16753,11 @@ print("what a linked family may be granted")
 		faction = "Alliance",
 		played = 123456, rested = 4321, xpMax = 9999,
 		guild = "Social Airlines", hearth = "Southshore", hearthID = 42,
-		currencies = { [1] = 7 }, currenciesSeen = os.time(),
+		currencies = { [1] = 7 }, currenciesSeen = time(),
 		boons = true, banked = { "Rallying Cry" },
-		craftCooldowns = { { profession = 171, readyAt = os.time() + 3600 } },
-		cooldownItems = { [3577] = 171 }, itemCooldowns = { [3577] = os.time() + 60 },
-		specs = { [171] = 1 }, specsSeen = os.time(),
+		craftCooldowns = { { profession = 171, readyAt = time() + 3600 } },
+		cooldownItems = { [3577] = 171 }, itemCooldowns = { [3577] = time() + 60 },
+		specs = { [171] = 1 }, specsSeen = time(),
 	})
 
 	local function offered()
@@ -17415,6 +17420,39 @@ print("lockpicking, which is a skill and not a profession")
 	SKILL_LINES[#SKILL_LINES] = nil
 	fire("SKILL_LINES_CHANGED")
 	advance(1)
+end)()
+
+--------------------------------------------------------------------------------------------
+-- One clock
+--
+-- The harness freezes `time` so that a check about "three days from now" means the same thing
+-- every run. Reaching past it to the world's clock puts one side of a comparison on one
+-- moves and the other on a clock that does not, and the check then holds until a date and not
+-- one minute longer: the mail send check was written against a letter dated thirty days after
+-- the frozen epoch and went red at 2026-09-05 07:06:40, on a day nothing had changed (L-045).
+--
+-- Checked by reading this file, which is the only thing that can: a clock fault is invisible
+-- until the day it is not.
+--------------------------------------------------------------------------------------------
+
+print()
+print("the harness lives on one clock")
+
+;(function()
+	local handle = io.open(ROOT .. "/tests/Harness.lua")
+	check("this file can read itself", handle ~= nil)
+
+	if handle then
+		local text = handle:read("*a")
+		handle:close()
+
+		-- Its own mention of the name, in the sentence above and in this check, is the one
+		-- thing that is not a use of it - so the pattern requires the call.
+		local uses = 0
+		for _ in text:gmatch("os%.time%s*%(") do uses = uses + 1 end
+
+		check("and never asks the world what time it is", uses == 0, tostring(uses))
+	end
 end)()
 
 print()

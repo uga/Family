@@ -1682,3 +1682,38 @@ slots 2 and 8.
 **And the record no longer claims to be whole when it is not.** What the header said is kept
 beside what answered, and a letter where the two disagree says so in the debug log. That is the
 part that would have made the first report a one-line answer instead of a probe.
+
+---
+
+## L-045 — The check that expired
+
+`tests/Harness.lua` went red on a morning when nothing had been changed but a document. One
+check failed:
+
+    and carrying the date it would be sent back on
+
+It compares a posted letter's return date against now. The letter is dated thirty days after
+the moment it was sent, the harness freezes `time` at **1786000000**, and the check asked the
+question of the **real** clock:
+
+    letter.expiresBy > os.time()
+
+Frozen epoch plus thirty days is **2026-09-05 07:06:40**. The run was at 07:10:24. The check had
+been true since the day it was written and became false four minutes before it was noticed, and
+it would have gone on being false for ever.
+
+**Two clocks in one comparison is the fault**, and it is not a flake — nothing was intermittent
+and nothing was environmental. It was a check with an expiry date, and the date arrived. Six
+more uses of the real clock were in the file, all of them fixtures dated by one clock and read
+by code running on the other; they had not bitten yet.
+
+**The check that now catches it.** The harness reads its own source and requires no call to the
+world's clock anywhere in it. That is the only thing that can catch this class: a clock fault
+is invisible until the day it is not, and by then it looks like an unrelated regression in
+whatever was being worked on that morning.
+
+**A second thing, about how it was found.** The commit that preceded this went out with the
+harness red, because the run was chained as `harness | grep … && git commit` - and `grep`
+succeeded, having found the failure line. That is the second time in one day that a gate was
+reported green by something that had only reported *finding text*. A verification step whose
+exit code comes from a pipeline says whether the pipeline ran, not whether the gate passed.
