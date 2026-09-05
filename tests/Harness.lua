@@ -14804,10 +14804,88 @@ print("where a character was when they logged out")
 	check("which cost a search, since the word had changed", asked > 0,
 		tostring(asked) .. " ids asked about")
 
+	-- **And a client that can name the map answers without any of that.**
+	--
+	-- Found from play 2026-09-05: a character who logged out in Ironforge on an English client
+	-- went on reading *City of Ironforge* on a French one, while the quest headings beside it
+	-- translated. `AreaFor` had done its job - Era's `AreaTable` has **no row containing "City
+	-- of"** in any locale, so that word has no area id and never will. `GetZoneText` answers
+	-- out of `UiMap`, where Ironforge is 1455, and `GetBestMapForUnit` hands that back with no
+	-- search at all.
+	do
+		local heldMap = _G.C_Map
+		_G.C_Map = {
+			GetAreaInfo = function(id)
+				asked = asked + 1
+				local areas = { [1537] = "Forgefer", [2257] = "Les Steppes Ardentes" }
+				return areas[id]
+			end,
+			GetBestMapForUnit = function(unit)
+				if unit == "player" then return 1455 end
+			end,
+			GetMapInfo = function(id)
+				if id == 1455 then return { name = "Ironforge" } end
+			end,
+		}
+
+		Family.Database:SetMeta(key, { zone = Family.CLEAR, subzone = Family.CLEAR,
+			zoneID = Family.CLEAR, mapID = Family.CLEAR })
+
+		-- The word this client answers with, which is the one that is in no area table.
+		_G.GetZoneText = function() return "City of Ironforge" end
+		_G.GetSubZoneText = function() return "Ironforge" end
+
+		asked = 0
+		fire("PLAYER_LOGOUT")
+
+		local where = Family.Database:Meta(key) or {}
+		check("logging out records which map they were on", where.mapID == 1455,
+			tostring(where.mapID))
+
+		-- The whole second reason for preferring it. The walk it replaces was running
+		-- during PLAYER_LOGOUT, twenty thousand ids at a time, for a word that could never
+		-- be in the table.
+		check("and asks no area id at all when the map answered", asked == 0,
+			tostring(asked) .. " ids asked about")
+
+		-- Which language the word is in, so a reader who speaks it can be shown the word the
+		-- game itself drew rather than a name looked up from an id.
+		check("and which language the recorded word is in",
+			where.zoneLocale == Family.locale, tostring(where.zoneLocale))
+
+		-- Named from the map, and not left as the word that has no id.
+		check("a reader elsewhere is told the map's name for it",
+			Family.Names:Where({ zone = "City of Ironforge", zoneLocale = "deDE",
+				mapID = 1455 }) == "Ironforge",
+			tostring(Family.Names:Where({ zone = "City of Ironforge",
+				zoneLocale = "deDE", mapID = 1455 })))
+
+		-- **Except for whoever wrote it.** A French client's GetZoneText says *Cité
+		-- d'Ironforge* where its own map is called *Ironforge*, so naming from the id would
+		-- make a player's own characters read less precisely than they did before. The rule
+		-- Names:Recipe and Races.lua already keep.
+		check("and whoever's client speaks that language keeps the word it drew",
+			Family.Names:Where({ zone = "City of Ironforge",
+				zoneLocale = Family.locale, mapID = 1455 }) == "City of Ironforge",
+			tostring(Family.Names:Where({ zone = "City of Ironforge",
+				zoneLocale = Family.locale, mapID = 1455 })))
+
+		-- A record written before any of this has neither, and still reads.
+		check("a record with neither id falls back to the word it was written with",
+			Family.Names:Where({ zone = "Somewhere" }) == "Somewhere",
+			tostring(Family.Names:Where({ zone = "Somewhere" })))
+
+		_G.C_Map = heldMap
+	end
+
 	-- Drawn, and drawn through the id: the recorded word is English and the client is
 	-- answering in French, so a panel showing the recorded word would show the wrong one.
+	-- Written on somebody else's client, in a language that is not this reader's - which is
+	-- the case the id exists for. Said outright rather than left to default: a record whose
+	-- word is already in the reader's language keeps that word, so a fixture that did not say
+	-- would be checking the opposite rule.
 	Family.Database:SetMeta(key, { zone = "Searing Gorge", subzone = "Pyrox Flats",
-		zoneID = 2257 })
+		zoneID = 2257, zoneLocale = "deDE", mapID = Family.CLEAR })
 
 	Family.UI:Show()
 	Family.UI:ShowTab("summary")
@@ -14849,6 +14927,65 @@ print("where a character was when they logged out")
 			end
 		end
 		check("and the row is tall enough to hold it", (tall or 0) > 18, tostring(tall))
+
+		-- **And the case that has no area id at all, drawn.** This is the fault as it was
+		-- reported: a record whose word is in no area table, so the only thing that can name
+		-- it is the map. The check above cannot tell - its record has an area id, and naming
+		-- from that reads the same either way - and the mutation that puts the old call back
+		-- failed nothing until this was here.
+		do
+			local heldMap = _G.C_Map
+			_G.C_Map = {
+				GetAreaInfo = function() end,
+				GetMapInfo = function(id)
+					if id == 1455 then return { name = "Forgefer" } end
+				end,
+			}
+
+			Family.Database:SetMeta(key, { zone = "City of Ironforge",
+				subzone = "Ironforge", zoneID = Family.CLEAR, mapID = 1455,
+				zoneLocale = "deDE" })
+			Family.UI:Refresh()
+
+			local drew
+			for _, f in ipairs(frames) do
+				if f.cells and f.__shown == true and f.memberKey == key then
+					drew = f.cells[at] and f.cells[at].__text
+				end
+			end
+
+			check("a place with no area id is named from the map it is on",
+				drew and drew:find("Forgefer", 1, true) ~= nil, tostring(drew))
+			check("and not left as the word that has no id",
+				drew and drew:find("City of Ironforge", 1, true) == nil, tostring(drew))
+
+			-- And found by typing what was drawn, which is the question the box answers:
+			-- who have I got in that place.
+			local box = _G.FamilySummarySearch
+			if box then
+				box:SetText("Forgefer")
+				if box.__scripts.OnTextChanged then
+					box.__scripts.OnTextChanged(box)
+				end
+
+				local found = false
+				for _, f in ipairs(frames) do
+					if onScreen(f) and f.memberKey == key then found = true end
+				end
+				check("and searching for the map's name finds them", found)
+
+				box:SetText("")
+				if box.__scripts.OnTextChanged then
+					box.__scripts.OnTextChanged(box)
+				end
+			end
+
+			Family.Database:SetMeta(key, { zone = "Searing Gorge",
+				subzone = "Pyrox Flats", zoneID = 2257, mapID = Family.CLEAR,
+				zoneLocale = "deDE" })
+			_G.C_Map = heldMap
+			Family.UI:Refresh()
+		end
 	end
 
 	-- **And it can be searched for**, which is what makes the column answer a question rather
@@ -14979,6 +15116,9 @@ print("where a character was when they logged out")
 			links = { ["outfam"] = { name = "Nosy-Thunderstrike",
 				grants = { [key] = { character = true } }, siblings = {}, members = {} } } }
 
+		-- Put back, because the draw fixture above cleared it to exercise the area-id path.
+		Family.Database:SetMeta(key, { mapID = 1455 })
+
 		local offered = Family.Wide:Offering(FamilyDB.wide.links["outfam"])
 		local sent = offered and offered[key]
 
@@ -14990,6 +15130,16 @@ print("where a character was when they logged out")
 		check("the subzone too", sent and sent.meta and sent.meta.subzone ~= nil)
 		check("and the id, which is the whole of what makes the zone translatable",
 			sent and sent.meta and sent.meta.zoneID ~= nil)
+
+		-- The map id with it, which is the one that answers where the area table has no such
+		-- place - and the language the word was written in, without which a reader cannot
+		-- tell a word they can trust from one they have to look up.
+		check("and the map id, which answers where no area id exists",
+			sent and sent.meta and sent.meta.mapID ~= nil,
+			tostring(sent and sent.meta and sent.meta.mapID))
+		check("and which language the word came from",
+			sent and sent.meta and sent.meta.zoneLocale ~= nil,
+			tostring(sent and sent.meta and sent.meta.zoneLocale))
 
 		FamilyDB.wide = heldWide
 	end

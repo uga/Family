@@ -229,10 +229,31 @@ local function recordWhere()
         -- Cleared rather than left alone when there is none: SetMeta merges, so the subzone
         -- of the last place would otherwise sit under the name of this one.
         subzone = (type(sub) == "string" and sub ~= "") and sub or Family.CLEAR,
+        -- Which language that word is in, so a reader whose client speaks it can be shown the
+        -- word the game itself drew rather than a name looked up from an id. The same field
+        -- races and recipes carry, for the same reason.
+        zoneLocale = Family.locale or Family.CLEAR,
     }
 
+    -- The map, which is the table `GetZoneText` actually answers out of.
+    --
+    -- Measured 2026-09-05: `GetZoneText` and `GetRealZoneText` both say *Cité d'Ironforge* on a
+    -- French Era client, and **no row of `AreaTable` contains "City of" in any locale** - so the
+    -- walk below could never find that place and never will. `GetBestMapForUnit` answers 1455
+    -- and `GetMapInfo` names it, with no search at all.
+    --
+    -- Which is the second reason to prefer it: the walk it replaces runs during `PLAYER_LOGOUT`.
+    local best = C_Map and C_Map.GetBestMapForUnit
+    local map = best and Family:TryCall(best, "player")
+    if type(map) == "number" then
+        fields.mapID = map
+    end
+
+    -- The area id stays for a client that will not answer the above, and is still guarded on the
+    -- word having changed because it is the expensive one. Where the map answered there is
+    -- nothing to look up.
     local known = Family.Database:Meta(key)
-    if not (known and known.zoneID and known.zone == zone) then
+    if not fields.mapID and not (known and known.zoneID and known.zone == zone) then
         fields.zoneID = Family.Names:AreaFor(zone) or Family.CLEAR
     end
 

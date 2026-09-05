@@ -302,8 +302,8 @@ local SETS = {
 		-- wrote is not on their screen anywhere. The recorded word is searched as well, which
 		-- costs nothing and finds a place this client has never heard of.
 		searches = function(meta)
-			local zone = Family.Names:Area(meta.zoneID, meta.zone)
-			return table.concat({ zone or "", meta.zone or "", meta.subzone or "" }, " ")
+			return table.concat({ Family.Names:Where(meta) or "", meta.zone or "",
+				meta.subzone or "" }, " ")
 		end,
 
 		-- Taller rows than every other set, because one column on it needs two lines.
@@ -802,7 +802,7 @@ CELL.race = function(meta) return UI:RaceName(meta) end
 -- §2.2: never seen is not nowhere. A character nobody has logged out on since this shipped has
 -- no answer here and says so.
 CELL.where = function(meta)
-	local zone = Family.Names:Area(meta.zoneID, meta.zone)
+	local zone = Family.Names:Where(meta)
 	if not zone then return UNKNOWN end
 
 	local under = meta.subzone

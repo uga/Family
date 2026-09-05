@@ -84,7 +84,7 @@ local CATEGORIES = {
                -- Where they logged out, which belongs with the hearthstone rather than in a
                -- category of its own: both answer "where is this character", and somebody who
                -- will tell you one will tell you the other.
-               "zone", "subzone", "zoneID" } },
+               "zone", "subzone", "zoneID", "mapID", "zoneLocale" } },
     { id = "currencies",  label = L["Currencies"],
       meta = { "currencies", "currenciesSeen" } },
     { id = "worldbuffs",  label = L["World buffs"], meta = { "boons", "banked" } },

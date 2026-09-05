@@ -1718,3 +1718,27 @@ headings are area names, which is why the hearthstone and the quest categories b
 and `GetZoneText` is the one source that is not. A word that is not in the table costs a full
 20,000-id walk and is then remembered as absent, so it is paid once and answers nothing for
 ever.
+
+**The live client, probed from Ironforge on French Era 2026-09-05:**
+
+    GetZoneText()                      Cité d'Ironforge
+    GetRealZoneText()                  Cité d'Ironforge
+    GetSubZoneText()                   Ironforge
+    C_Map.GetBestMapForUnit("player")  1455
+    C_Map.GetMapInfo(1455).name        Ironforge
+
+So `GetRealZoneText` is not a second chance - it answers the same word, and that word is in no
+area table. The map id **1455 agrees with `UiMap` character for character**, which is what makes
+it usable: an id the reader's own client turns into the reader's own word, with no search at all.
+
+Two things this does **not** settle, both of which the code degrades safely around:
+
+- Whether `GetBestMapForUnit` answers **during `PLAYER_LOGOUT`**. `GetZoneText` and
+  `GetSubZoneText` were probed there and do; this cannot be printed from there. Where it answers
+  nothing, no map id is written and the record reads exactly as it did before.
+- Whether it exists on Burning Crusade and Mists. Guarded on the symbol being there, and the
+  area-id walk is still the path where it is not.
+
+And note the wording changes with the source: `GetZoneText` says *Cité d'Ironforge* where the map
+is called *Ironforge*. That is why the recorded word wins for a reader whose own client speaks the
+language it was written in - the rule `Names:Recipe` and `Races.lua` already keep.

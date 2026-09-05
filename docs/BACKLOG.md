@@ -1121,7 +1121,7 @@ this account has read.
 
 ---
 
-## 18. `GetZoneText` answers with a word that is not an area name
+## 18. `GetZoneText` answers with a word that is not an area name — DONE 2026-09-05
 
 **Found from play, 2026-09-05.** A character who logged out in Ironforge on an English client
 kept reading *City of Ironforge* on a French one, while the quest headings beside it translated
@@ -1141,7 +1141,38 @@ Every other caller of `AreaFor` is safe and that is why nothing else showed it: 
 returns an area name, and a quest log's headings are area names. `GetZoneText` is the one source
 that is not.
 
-**Not fixed yet, and the route wants one probe first.** The decision row for entry 16 already
+**Fixed, 2026-09-05, and the probe chose the route.** From Ironforge on French Era:
+
+    GetZoneText()                      Cité d'Ironforge
+    GetRealZoneText()                  Cité d'Ironforge
+    GetSubZoneText()                   Ironforge
+    C_Map.GetBestMapForUnit("player")  1455
+    C_Map.GetMapInfo(1455).name        Ironforge
+
+So `GetRealZoneText` is not a second chance - the same word, and that word is in no area table.
+The map id is, and 1455 agrees with wago's `UiMap` character for character. `GetBestMapForUnit`
+answers it with no search at all, which also **takes the twenty-thousand-id walk out of
+`PLAYER_LOGOUT`** - the expensive half, spent looking for something that could not be found.
+
+`mapID` is its own field and never `zoneID`, because a map id and an area id are different
+numbering. The area id stays for records that already have one and for a build without the map
+call.
+
+And a rule came with it: **the recorded word wins where its language is the reader's own.** A
+French client says *Cité d'Ironforge* where its own map is called *Ironforge*, so naming
+everything from the id would make a player's own characters read less precisely than before.
+`zoneLocale` is recorded and shared for that, and `Names:Where` is the one answer both the cell
+and the search box ask.
+
+**Two things are still unmeasured, and the code degrades to the old behaviour on both:** whether
+`GetBestMapForUnit` answers during `PLAYER_LOGOUT` - which can only be read back off a record
+after a real logout - and whether it exists on Burning Crusade and Mists.
+
+Records already written keep the word they have until that character is played again.
+
+---
+
+**The route as it was written before the probe:** The decision row for entry 16 already
 left this open in the other direction - *`C_Map.GetBestMapForUnit` would answer without a search*
 - and it now looks like the fix rather than an optimisation, because a UiMapID is an id the
 client will translate and needs no walk at all. `GetRealZoneText` is the other candidate and may
@@ -1158,5 +1189,3 @@ a field and a naming call of its own rather than being written into `zoneID` whe
 would look it up in the wrong table. And whatever is recorded has to answer **during
 `PLAYER_LOGOUT`**, which is measured for `GetZoneText` and `GetSubZoneText` and is not measured
 for the map API - if it does not, the value wants keeping during play and writing at logout.
-
-Records already written keep the word they have until that character is played again.

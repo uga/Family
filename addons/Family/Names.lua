@@ -185,6 +185,55 @@ function Names:Area(id, recorded)
 	return nil
 end
 
+-- What the client calls a **map**, which is a different table from the areas above and answers
+-- where they do not.
+--
+-- `GetZoneText` does not hand back an area name. Measured 2026-09-05 after a character who logged
+-- out in Ironforge on an English client went on reading *City of Ironforge* on a French one: Era's
+-- `AreaTable` has no row containing "City of" at all, in any locale - Ironforge is area 1537 and
+-- is named `Ironforge` in both - so `AreaFor` walked all twenty thousand ids and correctly found
+-- nothing. `UiMap` is the table that word comes from, and it names Ironforge **1455**.
+--
+-- `GetBestMapForUnit` answers with that id and needs no search at all, which is the second reason
+-- to prefer it: the walk it replaces was happening during `PLAYER_LOGOUT`.
+--
+-- A map id is **not** an area id and the two must not be stored in one field. They are different
+-- numbering, and 1455 means Ironforge in one and something else entirely in the other.
+function Names:Map(id)
+	if type(id) ~= "number" then return nil end
+	if not (C_Map and C_Map.GetMapInfo) then return nil end
+
+	local info = Family:TryCall(C_Map.GetMapInfo, id)
+	if type(info) == "table" and type(info.name) == "string" and info.name ~= "" then
+		return info.name
+	end
+
+	return nil
+end
+
+-- Where a character was when they last logged out, in the words of whoever is reading.
+--
+-- **The recorded word wins where it was written in this reader's own language**, which is the rule
+-- `Names:Recipe` and `Races.lua` already apply and for the same reason: it is the word the game
+-- itself drew on that client, and nothing here beats that. It matters exactly here - a French
+-- client's `GetZoneText` says *Cité d'Ironforge* where its own map is called *Ironforge*, so
+-- naming from the id would make a player's own characters read less precisely than before.
+--
+-- Then the map, then the area, then the word as recorded. The area id is kept because records
+-- written before the map id existed have one, and because a build without `GetBestMapForUnit`
+-- still writes one.
+function Names:Where(meta)
+	if type(meta) ~= "table" then return nil end
+
+	if meta.zoneLocale and meta.zoneLocale == Family.locale
+		and type(meta.zone) == "string" and meta.zone ~= ""
+	then
+		return meta.zone
+	end
+
+	return self:Map(meta.mapID) or self:Area(meta.zoneID, meta.zone)
+end
+
 -- The id behind a place this client has just named, found the only way there is: by asking for
 -- every id until one answers with the same word. GetBindLocation returns a word and nothing
 -- returns its id.

@@ -23,6 +23,11 @@ is a decision rather than an afternoon of archaeology.
   recorded it - Family asks your game what each quest is called, the same way it already knows
   what to put in the tooltip, and remembers the answers so it only ever asks once.
 
+- **Where a character logged out now reads properly for city zones.** Some places - Ironforge
+  among them - were showing in the language of whoever logged out there rather than yours. They
+  now read in your own words, and a character who logs out somewhere keeps the exact wording their
+  own game used.
+
 - **Miscellaneous says where each character logged out.** Zone on one line and subzone under it,
   in your own language rather than in whichever one that character was played in - and shared
   with a linked family alongside the hearthstone. Rows on that page are taller to hold it, and
