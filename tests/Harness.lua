@@ -1683,7 +1683,20 @@ SlashCmdList = {}
 -- Driving it
 --------------------------------------------------------------------------------------------
 
+-- A box with the keyboard eats the modifier keys, and this now says so.
+--
+-- Measured in play 2026-09-05, and it cost a day of looking in the wrong place. Family swapped
+-- a recipe's tooltip for its product on CTRL, and the swap was dead whenever anything was typed
+-- in the panel's search box - which on the whole-family readings is always, because the search
+-- is what produces the rows. `MODIFIER_STATE_CHANGED` simply does not arrive while an EditBox
+-- has focus: the client gives the key to the box.
+--
+-- The stub delivered it regardless, so it agreed with the mistake exactly as the quest-id stub
+-- did (L-053), and no check written against the old mechanism could have gone red. It refuses
+-- now, which is what makes the watcher below measurable rather than merely different.
 local function fire(event, ...)
+	if event == "MODIFIER_STATE_CHANGED" and frameMethods.__focused then return end
+
 	for _, f in ipairs(frames) do
 		if f.__events[event] and f.__scripts.OnEvent then
 			f.__scripts.OnEvent(f, event, ...)
@@ -5622,15 +5635,119 @@ do
 	check("hovering again without the key gives what it makes", shownAs
 		and shownAs.kind == "item", shownAs and shownAs.kind)
 
+	-- Driven the way the client drives it: the watcher is a frame that is shown while the
+	-- pointer is on a row, so its OnUpdate is what notices the key. It used to be an event,
+	-- and the event is exactly what a focused search box eats - see the comment over the
+	-- watcher, and the day it cost.
+	local watcher = Family.UI.__tooltipModifiers
+
+	-- That it watches at all, said before anything drives it. Without this the mutation that
+	-- puts the event back does not fail a check - it takes the whole harness down on a nil
+	-- OnUpdate, which is a crash and not a measurement.
+	check("the key is watched rather than awaited",
+		watcher and watcher.__scripts.OnUpdate ~= nil and watcher.__events == nil
+			or (watcher and watcher.__scripts.OnUpdate ~= nil
+				and not watcher.__events["MODIFIER_STATE_CHANGED"]),
+		"an event is eaten by a focused box; a watch is not")
+
+	check("the watcher is running while the pointer is on a row",
+		watcher and watcher.__shown == true, tostring(watcher and watcher.__shown))
+
+	-- Guarded, so that a mutation which takes the watch away is *reported* by the check
+	-- above and does not also take the rest of this file down with a nil call.
+	local function tick()
+		if watcher and watcher.__scripts.OnUpdate then
+			watcher.__scripts.OnUpdate(watcher, 0)
+		end
+	end
+
 	_G.IsControlKeyDown = function() return true end
 	GameTooltip.__shownAs = nil
 	wipe(GameTooltip.__lines)
-	Family.UI.__tooltipModifiers.__scripts.OnEvent(Family.UI.__tooltipModifiers,
-		"MODIFIER_STATE_CHANGED", "LCTRL", 1)
+	tick()
 
 	check("and pressing it repaints without the pointer moving",
 		GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "spell",
 		GameTooltip.__shownAs and GameTooltip.__shownAs.kind)
+
+	-- And it notices a *change* rather than a state, or every frame would repaint the
+	-- tooltip for as long as the key is held.
+	GameTooltip.__shownAs = nil
+	tick()
+	check("while holding it changes nothing further",
+		GameTooltip.__shownAs == nil, tostring(GameTooltip.__shownAs))
+
+	-- Letting go is a change too, and puts back what the row says without it.
+	_G.IsControlKeyDown = function() return false end
+	tick()
+	check("and letting go puts back what it makes",
+		GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "item",
+		GameTooltip.__shownAs and GameTooltip.__shownAs.kind)
+
+	-- **And it works while the search box has the keyboard**, which is the fault this
+	-- mechanism exists for and the one thing the old one could not do. The event never
+	-- arrives then - the stub refuses to deliver it now, for the reason written over
+	-- `fire` - so a watcher that listened would be silent here and this would go red.
+	do
+		local box = _G.FamilyProfessionsSearch
+		check("the panel's search box is there to be typed into", box ~= nil)
+
+		if box then
+			box:SetFocus()
+			check("and it has the keyboard", box:HasFocus() == true)
+
+			-- Said out loud: the event really is gone in this state, which is why the
+			-- watcher does not use one.
+			GameTooltip.__shownAs = nil
+			fire("MODIFIER_STATE_CHANGED", "LCTRL", 1)
+			check("the modifier event does not arrive while it does",
+				GameTooltip.__shownAs == nil, tostring(GameTooltip.__shownAs))
+
+			_G.IsControlKeyDown = function() return true end
+			tick()
+			check("and the swap happens anyway, because the key is watched not awaited",
+				GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "spell",
+				GameTooltip.__shownAs and GameTooltip.__shownAs.kind)
+
+			_G.IsControlKeyDown = function() return false end
+			tick()
+			box:ClearFocus()
+		end
+	end
+
+	-- Arriving on a row with the key already held is not a press. The row's own resolver
+	-- has already taken the key into account by then, so a watcher that had not seeded
+	-- itself would repaint on its first tick - once per row entered, for ever.
+	do
+		_G.IsControlKeyDown = function() return true end
+		hoverRow(function(f) return f.spellID == 2667 end)
+
+		GameTooltip.__shownAs = nil
+		tick()
+		check("arriving with the key already held is not a press",
+			GameTooltip.__shownAs == nil, tostring(GameTooltip.__shownAs))
+		_G.IsControlKeyDown = function() return false end
+	end
+
+	-- And it stops when the pointer goes. A frame runs OnUpdate while it is shown, so this
+	-- is the whole of the cost control - and a watcher left running is one that repaints a
+	-- row nobody is pointing at.
+	do
+		local row
+		for _, f in ipairs(frames) do
+			if f.__shown ~= false and f.spellID == 2667 and f.__scripts.OnLeave then
+				row = f
+			end
+		end
+		check("the row that was hovered can be left", row ~= nil)
+		if row then
+			row.__scripts.OnEnter(row)
+			check("entering starts the watch", watcher.__shown == true)
+			row.__scripts.OnLeave(row)
+			check("and leaving stops it", watcher.__shown == false,
+				tostring(watcher.__shown))
+		end
+	end
 end
 
 -- A recipe with no product - every enchant - has nothing to swap to, and says nothing about a

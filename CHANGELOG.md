@@ -153,6 +153,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **CTRL swaps a recipe's tooltip even while you are typing in the search box.** Holding CTRL
+  over a recipe shows the recipe instead of what it makes - and it stopped working the moment
+  anything was typed into a search box, which on the whole-family pages is always.
+
 - **Switching *Whole family* on or off clears that page's filters.** A realm, class or level
   range typed for one character stayed on when the page changed to the whole family, and a
   narrowing that meant one thing over one character means another over forty - so the page

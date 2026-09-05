@@ -804,6 +804,22 @@ end
 -- that frame to show its tooltip again.
 local hovered
 
+-- The modifiers as they were the last time this looked, and how to look. Up here with
+-- `hovered` because the row's own OnEnter seeds them, and that is written before the frame
+-- that watches them is - a local declared after its first use is a global, and a global is nil.
+local lastCtrl, lastShift, lastAlt
+
+-- Made here and given its behaviour further down, where the reasoning for it is. It has to
+-- exist before `AttachTooltip`, which shows and hides it as the pointer arrives and leaves.
+local modifiers = CreateFrame("Frame")
+modifiers:Hide()
+
+local function modifierState()
+	return (IsControlKeyDown and IsControlKeyDown()) and true or false,
+		(IsShiftKeyDown and IsShiftKeyDown()) and true or false,
+		(IsAltKeyDown and IsAltKeyDown()) and true or false
+end
+
 local function showFor(frame)
 	local resolve = frame and frame.__familyTooltip
 	if not resolve then return end
@@ -875,11 +891,21 @@ function UI:AttachTooltip(frame, resolve)
 
 	frame:SetScript("OnEnter", function(self)
 		hovered = self
+
+		-- What the keys are *now*, so that arriving on a row with CTRL already held does
+		-- not read as the key having just been pressed. The row's own resolver has already
+		-- taken that into account below; this is only about what counts as a change.
+		lastCtrl, lastShift, lastAlt = modifierState()
+		modifiers:Show()
+
 		showFor(self)
 	end)
 
 	frame:SetScript("OnLeave", function(self)
-		if hovered == self then hovered = nil end
+		if hovered == self then
+			hovered = nil
+			modifiers:Hide()
+		end
 		GameTooltip:Hide()
 	end)
 end
@@ -893,9 +919,31 @@ end
 --
 -- So this does not reach into `GameTooltip`: it asks the row the pointer is on to draw its own
 -- tooltip a second time, and the row decides what the modifier now means.
-local modifiers = CreateFrame("Frame")
-modifiers:RegisterEvent("MODIFIER_STATE_CHANGED")
-modifiers:SetScript("OnEvent", function()
+-- **Watched rather than listened for, and that is the whole of this.**
+--
+-- This used `MODIFIER_STATE_CHANGED`, which is the obvious event and is the right one until a
+-- box on the same panel has the keyboard. Then the client gives the key to the box and the
+-- event never arrives - so the swap worked with an empty search box and was dead the moment
+-- anything was typed into one, which on the whole-family readings is always, because the
+-- search is what produces the rows.
+--
+-- Reported from play 2026-09-05 as *CTRL does nothing in whole family*, and it looked like two
+-- faults for a day: whole family broken, and single character breaking after the pointer left
+-- a row and came back. One cause. Alberto found it - *it only stops when there is a filter in
+-- the box* - and the confirming test was to click the filter away and watch the key start
+-- working again.
+--
+-- Taking the focus off the box instead would have been fighting the player for the keyboard
+-- while they are still typing. Reading the key is not something that needs an event.
+-- Only while the pointer is on one of our rows. A frame runs `OnUpdate` when it is shown, so
+-- being hidden the rest of the time is the whole of the cost control - there is no timer to
+-- cancel and nothing to remember to stop.
+modifiers:SetScript("OnUpdate", function()
+	local ctrl, shift, alt = modifierState()
+	if ctrl == lastCtrl and shift == lastShift and alt == lastAlt then return end
+
+	lastCtrl, lastShift, lastAlt = ctrl, shift, alt
+
 	if hovered and hovered.IsVisible and hovered:IsVisible() then
 		showFor(hovered)
 	end

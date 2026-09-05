@@ -2078,3 +2078,45 @@ helper written for one turn, not code in the tree. What replaces it is a rule fo
 back up by the whole path with the separators flattened, and have the helper re-run the harness
 after restoring and say so loudly if the tree does not come back green. The second half is what
 turns this from an hour lost into a line of output.
+
+---
+
+## L-056 — The event a focused edit box eats
+
+Family swaps a recipe row's tooltip between the item and the recipe while CTRL is held, with the
+pointer standing still. It was built on `MODIFIER_STATE_CHANGED`, which is the obvious event and
+the right one until something else on the panel has the keyboard.
+
+**An EditBox with focus takes the modifier keys, and the event does not arrive at all.**
+
+So the swap worked with an empty search box and was dead the moment anything was typed into one.
+On the whole-family readings that is always, because the search is what produces the rows.
+
+**It looked like two faults for a day.** Reported first as *CTRL does nothing in whole family*,
+and separately as *single character stops working once the pointer has left a row and come
+back*. Two symptoms, one cause, and both readings sent the looking somewhere useless: the first
+into whether the two modes attach tooltips differently - they do not, it is one row builder and
+one `AttachTooltip` - and the second into the enter/leave bookkeeping, which the harness
+reproduced faithfully and found correct.
+
+What broke it open was Alberto's own measurement: *it only stops when there is a filter in the
+box*. One sentence, and every observation fell into line - whole family always has a filter, and
+"after the pointer came back" meant "after I had typed".
+
+**The harness could not have caught it, and that is the part worth keeping.** `fire` delivered
+`MODIFIER_STATE_CHANGED` to every registered frame regardless of focus, so the stub was a
+statement about the client that was false in exactly the case that mattered - L-053's shape
+again, in a different file. No check written against the old mechanism could have gone red.
+
+**The fix is not to take the focus back.** That would be fighting the player for the keyboard
+while they are still typing. Reading a key is not something that needs an event: a frame shown
+while the pointer is on one of our rows watches the modifier state and repaints on a *change*.
+It works whoever has the keyboard, and it is hidden the rest of the time, so there is no timer
+to cancel and nothing to remember to stop.
+
+**The checks that now catch it.** `fire` refuses to deliver that event while any box has focus,
+which makes the case measurable at all; a check then types into the panel's search box, takes
+the keyboard, and asserts the swap still happens. Four mutations, and the first pass caught only
+one of them: putting the event back, leaving the watcher running after the pointer goes, and
+arriving on a row with the key already held were all invisible until three more checks were
+written for them. A mutation that "does nothing" is a check that is not there.
