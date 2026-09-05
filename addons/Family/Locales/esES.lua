@@ -360,6 +360,7 @@ Family.locales.esES = {
 	["Difficulty"] = "Dificultad",
 	["Item level"] = "Nivel de objeto",
 	["Skill needed"] = "Habilidad necesaria",
+	["|cff888888CTRL swaps the recipe and what it makes|r"] = "|cff888888CTRL intercambia la receta y lo que fabrica|r",
 	["|cff888888fewer|r"] = "|cff888888menos|r",
 	["Name"] = "Nombre",
 	["By name, which is the order the search itself comes back in."] = "Por nombre, que es el orden en el que responde la propia búsqueda.",

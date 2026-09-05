@@ -360,6 +360,7 @@ Family.locales.deDE = {
 	["Difficulty"] = "Schwierigkeit",
 	["Item level"] = "Gegenstandsstufe",
 	["Skill needed"] = "Benötigte Fertigkeit",
+	["|cff888888CTRL swaps the recipe and what it makes|r"] = "|cff888888STRG tauscht das Rezept und das, was es herstellt|r",
 	["|cff888888fewer|r"] = "|cff888888weniger|r",
 	["Name"] = "Name",
 	["By name, which is the order the search itself comes back in."] = "Nach Namen, was die Reihenfolge ist, in der die Suche selbst antwortet.",

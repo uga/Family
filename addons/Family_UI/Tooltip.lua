@@ -790,41 +790,78 @@ end
 --
 -- A row whose resolve returns nothing gets no tooltip, and a kind the client turns out not
 -- to know gets the fallback rather than an empty frame.
-function UI:AttachTooltip(frame, resolve)
-	frame:EnableMouse(true)
+-- Which of our frames the pointer is on, so that a modifier pressed without moving it can ask
+-- that frame to show its tooltip again.
+local hovered
 
-	frame:SetScript("OnEnter", function(self)
-		local kind, id, fallback = resolve(self)
-		if not kind and not fallback then return end
+local function showFor(frame)
+	local resolve = frame and frame.__familyTooltip
+	if not resolve then return end
 
-		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		Family:TryCall(GameTooltip.ClearLines, GameTooltip)
+	local kind, id, fallback, hint = resolve(frame)
+	if not kind and not fallback then return end
 
-		local show = kind and SHOW[kind]
-		if show and id then show(id) end
+	GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
+	Family:TryCall(GameTooltip.ClearLines, GameTooltip)
 
-		if not wroteAnything() then
-			if not fallback or #fallback == 0 then
-				GameTooltip:Hide()
-				return
-			end
+	local show = kind and SHOW[kind]
+	if show and id then show(id) end
 
-			for _, line in ipairs(fallback) do
-				if line[2] then
-					GameTooltip:AddDoubleLine(line[1], line[2])
-				else
-					GameTooltip:AddLine(line[1])
-				end
-			end
+	if not wroteAnything() then
+		if not fallback or #fallback == 0 then
+			GameTooltip:Hide()
+			return
 		end
 
-		GameTooltip:Show()
+		for _, line in ipairs(fallback) do
+			if line[2] then
+				GameTooltip:AddDoubleLine(line[1], line[2])
+			else
+				GameTooltip:AddLine(line[1])
+			end
+		end
+	end
+
+	-- Said out loud, because a reading you only find by holding a key you had no reason to
+	-- hold is a reading nobody finds.
+	if hint then GameTooltip:AddLine(hint) end
+
+	GameTooltip:Show()
+end
+
+function UI:AttachTooltip(frame, resolve)
+	frame:EnableMouse(true)
+	frame.__familyTooltip = resolve
+
+	frame:SetScript("OnEnter", function(self)
+		hovered = self
+		showFor(self)
 	end)
 
-	frame:SetScript("OnLeave", function()
+	frame:SetScript("OnLeave", function(self)
+		if hovered == self then hovered = nil end
 		GameTooltip:Hide()
 	end)
 end
+
+-- A modifier pressed while the pointer is held still.
+--
+-- Measured on Era and TBC before it was written (backlog entry 2). The client *will* repaint a
+-- tooltip with the mouse still - but a repaint that puts something **else** in it is painted
+-- over by whoever owns the tooltip, and on a bag it is another addon's frame that owns it.
+-- Asking the owner to show the same thing again is stable, and here the owner is ours.
+--
+-- So this does not reach into `GameTooltip`: it asks the row the pointer is on to draw its own
+-- tooltip a second time, and the row decides what the modifier now means.
+local modifiers = CreateFrame("Frame")
+modifiers:RegisterEvent("MODIFIER_STATE_CHANGED")
+modifiers:SetScript("OnEvent", function()
+	if hovered and hovered.IsVisible and hovered:IsVisible() then
+		showFor(hovered)
+	end
+end)
+
+UI.__tooltipModifiers = modifiers
 
 -- The two that came first, kept because an item row is by far the commonest case and reads
 -- better named than as a kind passed in.

@@ -360,6 +360,7 @@ Family.locales.ruRU = {
 	["Difficulty"] = "Сложность",
 	["Item level"] = "Уровень предмета",
 	["Skill needed"] = "Нужный навык",
+	["|cff888888CTRL swaps the recipe and what it makes|r"] = "|cff888888CTRL меняет рецепт и то, что он создаёт|r",
 	["|cff888888fewer|r"] = "|cff888888свернуть|r",
 	["Name"] = "Название",
 	["By name, which is the order the search itself comes back in."] = "По названию — в этом порядке отвечает и сам поиск.",

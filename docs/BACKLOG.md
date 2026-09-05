@@ -63,7 +63,7 @@ Two of the three are now drawn end to end in the harness. The third is below.
 
 ---
 
-## 2. A recipe item's tooltip, both ways
+## 2. A recipe item's tooltip, both ways — DONE 2026-09-05
 
 **Asked:** a profession item's tooltip shows the crafted item — except enchanting, which shows
 the crafting spell. Both should be reachable: hovering gives the item, hovering with **CTRL**

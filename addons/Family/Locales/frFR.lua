@@ -360,6 +360,7 @@ Family.locales.frFR = {
 	["Difficulty"] = "Difficulté",
 	["Item level"] = "Niveau d'objet",
 	["Skill needed"] = "Compétence requise",
+	["|cff888888CTRL swaps the recipe and what it makes|r"] = "|cff888888CTRL échange la recette et ce qu'elle fabrique|r",
 	["|cff888888fewer|r"] = "|cff888888moins|r",
 	["Name"] = "Nom",
 	["By name, which is the order the search itself comes back in."] = "Par nom, qui est l'ordre dans lequel la recherche répond elle-même.",

@@ -669,9 +669,26 @@ local function build(frame)
 		-- the two this one has. The spell is preferred: it is the recipe, and it says what
 		-- the thing costs to make as well as what it is.
 		--
+		-- Both readings of a recipe, and CTRL chooses.
+		--
+		-- A recipe row knows two things: the spell that makes something and the item it
+		-- makes. It showed whichever it found first, so most professions read as the recipe
+		-- and enchanting - which makes no item - read the same way by accident rather than
+		-- by agreement. Asked for as *hovering gives the item, hovering with CTRL held gives
+		-- the recipe*.
+		--
+		-- Where only one of the two is known the modifier does nothing and says nothing:
+		-- offering a swap that swaps to the same tooltip is worse than not offering it.
 		UI:AttachTooltip(r, function(self)
-			if self.spellID then return "spell", self.spellID, self.fallback end
-			if self.itemID then return "item", self.itemID, self.fallback end
+			local both = self.spellID and self.itemID
+			local hint = both and L["|cff888888CTRL swaps the recipe and what it makes|r"]
+				or nil
+			local recipe = IsControlKeyDown and IsControlKeyDown()
+
+			if self.itemID and not (both and recipe) then
+				return "item", self.itemID, self.fallback, hint
+			end
+			if self.spellID then return "spell", self.spellID, self.fallback, hint end
 			if self.fallback then return nil, nil, self.fallback end
 			return nil
 		end)

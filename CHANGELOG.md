@@ -32,6 +32,11 @@ is a decision rather than an afternoon of archaeology.
   recipe's colour and the skill it needed are what one character sees, and across forty there
   is no single answer.
 
+- **A recipe row reads both ways.** Family's recipe rows show what the recipe makes; hold CTRL
+  with the pointer on one and it shows the recipe itself, without moving the mouse. The row
+  says the key is there. Where a recipe makes no item - every enchant - nothing is offered,
+  because a swap to the same tooltip is not a swap.
+
 - **The Character panel has a level range like everywhere else.** Switch it to the whole family
   and the row of filters is realm, class and a range of levels - the same row the summary and
   the professions and possessions searches carry. It offers the realms and classes your linked

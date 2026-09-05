@@ -489,6 +489,12 @@ belonging to a linked family appear here too, marked as theirs. The breakdown ca
 to a single total for a quieter tooltip. Item identifier and item level are available and
 off by default.
 
+**A recipe row reads both ways.** A recipe is two things — the spell that makes something and
+the item it makes — and Family's own recipe rows show what it makes. Holding **CTRL** with the
+pointer on the row shows the recipe instead, and letting go puts it back, without moving the
+mouse. The row says the key is there; where only one of the two is known, nothing is offered
+and nothing is said.
+
 **New mail.** Mail arriving for the member you are playing is announced in the chat frame.
 
 **Mail nearing expiry.** Any member's mail approaching its return-or-destroy date is

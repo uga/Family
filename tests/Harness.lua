@@ -143,7 +143,7 @@ local KNOWN = {
 	SetMovable = 1, EnableMouse = 1, RegisterForDrag = 1,
 	StartMoving = 1, StopMovingOrSizing = 1, SetClampedToScreen = 1,
 	SetFrameStrata = 1, SetToplevel = 1, Raise = 1,
-	Show = 1, Hide = 1, IsShown = 1, SetShown = 1, SetAlpha = 1,
+	Show = 1, Hide = 1, IsShown = 1, IsVisible = 1, SetShown = 1, SetAlpha = 1,
 	GetNormalTexture = 1, SetTexCoord = 1,
 	SetScript = 1, GetScript = 1,
 	RegisterEvent = 1, UnregisterEvent = 1,
@@ -202,6 +202,11 @@ end
 function frameMethods:Show() visibility(self, true) end
 function frameMethods:Hide() visibility(self, false) end
 function frameMethods:IsShown() return self.__shown end
+-- Shown *and* every ancestor shown, which is what the client means by it and what `IsShown`
+-- deliberately does not answer. It was missing entirely, so a panel asking for it got the
+-- unknown-method refusal - and the first thing to ask for it was the tooltip watcher, which
+-- has to know whether the row the pointer was on is still on the screen.
+function frameMethods:IsVisible() return onScreen(self) end
 function frameMethods:SetShown(v) visibility(self, v and true or false) end
 -- The parent is recorded so a check can ask whether a piece of text is actually on screen.
 -- Rows are pooled and hidden rather than destroyed, so their last words stay in the harness
@@ -5435,9 +5440,62 @@ check("a faction, which the game will not describe, shows what Family knows inst
 -- hidden when spare, so a row belonging to a panel nobody is looking at is still a shown
 -- frame - and searching for "any row with a spell" finds the spellbook's.
 Family.UI:ShowTab("professions")
+
+-- Both readings of a recipe, and CTRL chooses.
+--
+-- A row knows the spell that makes something and the item it makes. It used to show whichever
+-- it found first, which was the spell - so every profession read as the recipe and enchanting,
+-- which makes no item, agreed with the rest by accident. Asked for as *hovering gives the item,
+-- hovering with CTRL held gives the recipe*, and the modifier is measured here rather than the
+-- variable behind it because a player presses a key.
+local heldControl = _G.IsControlKeyDown
+_G.IsControlKeyDown = function() return false end
+
 shownAs = hoverRow(function(f) return f.spellID == 2667 end)
-check("hovering a recipe opens the tooltip for the spell it casts",
+check("hovering a recipe opens the tooltip for what it makes",
+	shownAs and shownAs.kind == "item", shownAs and shownAs.kind)
+
+_G.IsControlKeyDown = function() return true end
+shownAs = hoverRow(function(f) return f.spellID == 2667 end)
+check("and with CTRL held, for the recipe itself",
 	shownAs and shownAs.kind == "spell", shownAs and shownAs.kind)
+
+-- And the row says so, because a reading you only find by holding a key you had no reason to
+-- hold is a reading nobody finds.
+do
+	local said = ""
+	for _, line in ipairs(GameTooltip.__lines) do said = said .. " " .. tostring(line[1]) end
+	check("and the row says the key is there to press",
+		said:find(Family.L["|cff888888CTRL swaps the recipe and what it makes|r"],
+			1, true) ~= nil, said)
+end
+
+-- The whole point, and the thing three probes were spent on: pressing the key with the pointer
+-- held still repaints. Family does not reach into the tooltip to do it - it asks the row the
+-- pointer is on to draw its own tooltip again, and the row decides what the key now means.
+-- Measured because a tooltip that only changes when the mouse moves is a trick rather than a
+-- feature.
+do
+	_G.IsControlKeyDown = function() return false end
+	shownAs = hoverRow(function(f) return f.spellID == 2667 end)
+	check("hovering again without the key gives what it makes", shownAs
+		and shownAs.kind == "item", shownAs and shownAs.kind)
+
+	_G.IsControlKeyDown = function() return true end
+	GameTooltip.__shownAs = nil
+	wipe(GameTooltip.__lines)
+	Family.UI.__tooltipModifiers.__scripts.OnEvent(Family.UI.__tooltipModifiers,
+		"MODIFIER_STATE_CHANGED", "LCTRL", 1)
+
+	check("and pressing it repaints without the pointer moving",
+		GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "spell",
+		GameTooltip.__shownAs and GameTooltip.__shownAs.kind)
+end
+
+-- A recipe with no product - every enchant - has nothing to swap to, and says nothing about a
+-- key that would do nothing. An offer to swap that swaps to the same tooltip is worse than no
+-- offer at all.
+_G.IsControlKeyDown = heldControl
 
 Family.UI:ShowTab("talents")
 shownAs, lineCount = hoverRow(function(f)
