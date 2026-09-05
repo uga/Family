@@ -1809,3 +1809,32 @@ explaining the token rather than the token: the clock gate matched its own prose
 matched its own prose, and this one matched the example it was documenting. **A check that reads
 a file must anchor on that file's structure**, not on a word the documentation will also contain.
 
+
+---
+
+## L-048 — The fixture was easier to write than the case
+
+Family whispers a linked family's members to find one online. The client answers each absent one
+with *No player named X is currently playing*, six lines for a family of six, and a filter was
+written to take them off the screen: record who Family whispered, swallow the complaint about
+those names.
+
+It shipped and changed nothing. Reported from play the same hour.
+
+Family whispers **`Rolando-Thunderstrike`**, because that is how a linked family's members are
+keyed. The client complains about **`Rolando`**. The table was keyed on what was addressed and
+looked up by what was complained about, so it never found anything and never swallowed anything.
+
+**The check did not catch it because the fixture was the wrong shape.** It whispered `Absentee`
+and was answered about `Absentee` - a shape no caller in the addon produces. Writing
+`Absentee-Thunderstrike` was one word more and would have failed immediately.
+
+`nameKey` has stripped the realm in this file since it was written, and its own comment says it
+lives above the things that need it *because a name used above its declaration is a global and
+nil, and this file has already been caught by that once*. The new code sat above it and
+open-coded `:lower()` instead. Moving `nameKey` up one more time was the fix.
+
+**The shape.** A fixture that is simpler than the caller is not a simpler test, it is a
+different one. When a helper exists to normalise something, the fixture has to be the kind of
+value that needs normalising - otherwise the check passes on the one input where the bug cannot
+appear.

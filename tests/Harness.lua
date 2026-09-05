@@ -17929,10 +17929,18 @@ print("the client's complaints about whispers Family sent")
 	check("a complaint about somebody Family never wrote to is left alone",
 		swallow(nil, "CHAT_MSG_SYSTEM", complaint("Astranger")) == false)
 
-	-- What a probe looks like: Family whispers, the client answers.
-	Family.Comm:Send("hello", "x", "WHISPER", "Absentee", false)
+	-- What a probe actually looks like: Family whispers **Name-Realm**, because that is what
+	-- a linked family's members are keyed as, and the client complains about the bare name.
+	--
+	-- The first version of this check whispered "Absentee" and was answered about "Absentee",
+	-- which is a shape no caller produces - and it passed while the filter, keyed on the
+	-- whole address, found nothing and swallowed nothing. Reported from play as the noise
+	-- still being there after the fix.
+	Family.Comm:Send("hello", "x", "WHISPER", "Absentee-Thunderstrike", false)
 	check("a complaint about one Family has just written to is taken off the screen",
 		swallow(nil, "CHAT_MSG_SYSTEM", complaint("Absentee")) == true)
+	check("and the realm it was addressed with is not what makes them different",
+		swallow(nil, "CHAT_MSG_SYSTEM", complaint("Absentee-Thunderstrike")) == true)
 
 	-- The same name, the player's own whisper, long after ours.
 	local wasTime = time

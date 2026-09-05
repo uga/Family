@@ -101,6 +101,16 @@ local function noteAnswer(key)
     Comm.stats.lastAnswer = key
 end
 
+-- A character's name without its realm, in lower case. Three things need it now and the
+-- earliest is the send below, so it lives above all of them rather than being forward-declared:
+-- a name used above the line that declares it is a global and nil, and this file has already
+-- been caught by that once.
+local function nameKey(name)
+    if type(name) ~= "string" then return nil end
+    local base = name:match("^([^%-]+)") or name
+    return base:lower()
+end
+
 -- Who Family has just whispered, and when.
 --
 -- Kept so that the client's complaint about them can be taken off the screen. Walking a linked
@@ -108,8 +118,11 @@ end
 -- playing* - the client's own, not Family's, which is why switching Family's reporting off did
 -- nothing to them. Reported from play.
 --
--- The raw name as it was addressed; normalised where it is read, because `nameKey` is defined
--- further down and moving it here would put a helper above the reason for it.
+-- Keyed the way every other name in this file is keyed - without the realm. Family whispers
+-- `Rolando-Thunderstrike` and the client complains about `Rolando`, so a table keyed on what
+-- was addressed is a table nothing ever finds. That shipped for an hour, and the check that
+-- should have caught it used a fixture with a bare name while every real caller sends a
+-- realm - the fixture was easier to write than the case.
 local whispered = {}
 
 -- How long a complaint can arrive after the whisper that caused it and still be ours. Short,
@@ -131,8 +144,9 @@ local function sendRaw(text, channel, target)
     -- returns nil both when a call throws and when it returns nil. Those are different
     -- diagnoses - one is a client that refused and one is a client that has no opinion - and
     -- telling them apart is the entire reason this is being recorded.
-    if channel == "WHISPER" and type(target) == "string" then
-        whispered[target:lower()] = time()
+    if channel == "WHISPER" then
+        local key = nameKey(target)
+        if key then whispered[key] = time() end
     end
 
     local ok, answer = pcall(call, PREFIX, text, channel, target)
@@ -150,16 +164,6 @@ end
 -- Bulk waits for the fight to be over; control does not. The distinction is the caller's to
 -- make, because only the caller knows whether what it is sending is an answer somebody is
 -- waiting for or a hundred chunks nobody is watching.
--- A character's name without its realm, in lower case. Two things need it before the queue is
--- drained and one of them is the queue itself, so it lives above both rather than being
--- forward-declared: a name used above the line that declares it is a global and nil, and this
--- file has already been caught by that once.
-local function nameKey(name)
-    if type(name) ~= "string" then return nil end
-    local base = name:match("^([^%-]+)") or name
-    return base:lower()
-end
-
 -- One chunk first, and the rest a moment later.
 --
 -- The client refuses a whisper to somebody who is not there, once per message, and says so in
@@ -455,7 +459,7 @@ local function swallowNotFound(_, _, text)
     local name = text:match(pattern)
     if not name then return false end
 
-    local at = whispered[name:lower()]
+    local at = whispered[nameKey(name)]
     if not at or (time() - at) > NOT_FOUND_WINDOW then return false end
 
     Family:Debug("comm: the client says %s is not playing, and we asked", name)
