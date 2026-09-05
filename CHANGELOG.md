@@ -153,6 +153,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **The login notice about crafting cooldowns puts one character on each line.** It used to run
+  every name together on one, which for anybody with a dozen crafters was a paragraph across
+  the chat frame. Each line now carries the character's realm where they are not on the one
+  you are playing, and marks a character on the other side.
+
 - **The login notice counted recipes instead of cooldowns.** An alchemist who has learned three
   transmutes has one cooldown, not three - the game puts every transmute on the same timer - and
   the line at login was announcing *(3)* where there was one thing to go and do. It now counts

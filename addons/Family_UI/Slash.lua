@@ -647,30 +647,57 @@ end
 -- own transmute is the sort of message that gets an addon switched off.
 --------------------------------------------------------------------------------------------
 
+-- One character to a line, which is the rule the mail notice below sets out at length and
+-- which this notice predates. It ran its names together with commas, and a player with a
+-- dozen crafters got one paragraph across the chat frame - the wall the other notice exists
+-- not to be. Nothing is truncated by it: `Family:Print` goes to `AddMessage`, which wraps;
+-- 255 bytes is the cap on `SendChatMessage` and on addon messages, not on this. It is simply
+-- unreadable, which is enough.
+--
+-- The name carries its realm where the character is not on the one being played, by the
+-- settled rule that a name is unique per realm and not per realm group. `UI:NameOf` applies
+-- it, and a bare list of first names had no way to say which of two namesakes was meant.
+--
+-- Returned rather than printed, so a check can ask what this would say without waiting eight
+-- seconds for a timer - the seam `UI:MailNotice` already has, and the reason nothing here was
+-- ever measured.
+function UI:CooldownNotice()
+	local lines = nil
+
+	for _, member in ipairs(Family.Cooldowns:Ready()) do
+		if member.key ~= Family:CurrentMember() then
+			-- "Crafting cooldowns" in full, every time, because the thing people
+			-- assume next is that Family also watches raid lockouts and heroic
+			-- resets. It does not. Those are specified (§3, §4.7) and not built,
+			-- which is a different statement from "cannot be done" and should not be
+			-- allowed to sound like it - a character can read its own lockouts
+			-- perfectly well while it is being played, which is how Family learns
+			-- everything else.
+			lines = lines or { L["crafting cooldowns ready:"] }
+
+			local shown = UI:NameOf(Family.Database:Meta(member.key) or {})
+
+			-- The number only where there is more than one, because "(1)" after a
+			-- name is a figure that answers a question nobody asked. It counts
+			-- timers and not recipes - three transmutes are one thing to go and do.
+			lines[#lines + 1] = string.format("  |cff40bf40%s|r", shown)
+				.. (member.count > 1 and string.format(" |cff888888(%d)|r",
+					member.count) or "")
+		end
+	end
+
+	return lines
+end
+
 Family:OnDatabaseReady("cooldowns.notice", function()
 	Family:RegisterEvent("PLAYER_ENTERING_WORLD", "cooldowns.notice", function()
 		Family:After(8, "cooldowns.notice", function()
 			if FamilyDB.cooldownNotice == false then return end
 
-			local waiting = {}
-			for _, member in ipairs(Family.Cooldowns:Ready()) do
-				if member.key ~= Family:CurrentMember() then
-					waiting[#waiting + 1] = member.count > 1
-						and string.format("%s (%d)", member.name, member.count)
-						or member.name
-				end
-			end
+			local lines = UI:CooldownNotice()
+			if not lines then return end
 
-			if #waiting == 0 then return end
-
-			-- "Crafting cooldowns" in full, every time, because the thing people assume
-			-- next is that Family also watches raid lockouts and heroic resets. It does
-			-- not. Those are specified (§3, §4.7) and not built, which is a different
-			-- statement from "cannot be done" and should not be allowed to sound like it -
-			-- a character can read its own lockouts perfectly well while it is being
-			-- played, which is how Family learns everything else.
-			Family:Print(L["crafting cooldowns ready: |cff40bf40%s|r"],
-				table.concat(waiting, ", "))
+			for _, line in ipairs(lines) do Family:Print(line) end
 		end)
 	end)
 end)

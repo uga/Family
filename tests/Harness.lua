@@ -12825,6 +12825,121 @@ print("how many crafting cooldowns a member is announced as having")
 	Family.Database:Forget(key)
 end)()
 
+print()
+print("the login line about crafting cooldowns")
+
+-- Nothing measured this notice at all until 2026-09-05, which is how it came to hold two
+-- faults at once: it counted recipes rather than timers (L-054, above) and it ran every name
+-- together on one line.
+--
+-- The one-name-a-line rule is written out over `UI:MailNotice` and was taken the day that
+-- notice was built. This one predates it and never got it, so a player with a dozen crafters
+-- got a paragraph. Asked about from play 2026-09-05, on the worry that it might overrun 255
+-- bytes - it cannot: `Family:Print` goes to `AddMessage`, which wraps, and 255 is the cap on
+-- `SendChatMessage` and on addon messages. Unreadable rather than truncated, which is reason
+-- enough and is the reason the other notice gives.
+;(function()
+	local roster = {
+		-- Three transmutes on one timer, so this one is also the count from L-054 read
+		-- back through the notice itself rather than through `Summarise`.
+		{ key = "Brewer-Fire Maw", name = "Brewer", realm = "Fire Maw", count = 3 },
+		{ key = "Weaver-Fire Maw", name = "Weaver", realm = "Fire Maw", count = 1 },
+		-- Somewhere else, so the settled realm rule has something to say about a name.
+		{ key = "Faraway-Thunderstrike", name = "Faraway", realm = "Thunderstrike",
+			count = 1 },
+	}
+
+	local came = time() - 3600
+	for _, member in ipairs(roster) do
+		local cooldowns = {}
+		for index = 1, member.count do
+			-- Each on a timer of its own, so the count is the number of timers. Three
+			-- sharing one would be one thing to do, which is what the block above holds.
+			cooldowns[index] = { name = "Transmute " .. index, profession = 170 + index,
+				readyAt = came }
+		end
+		Family.Database:SetMeta(member.key, { name = member.name, realm = member.realm,
+			classFile = "SHAMAN", level = 60, faction = "Alliance",
+			craftCooldowns = cooldowns })
+	end
+
+	local lines = Family.UI:CooldownNotice()
+	check("the notice has something to say", lines ~= nil and #lines > 1,
+		tostring(lines and #lines))
+
+	local function lineFor(name)
+		local found, seen = nil, 0
+		for index = 2, #(lines or {}) do
+			if lines[index]:find(name, 1, true) then
+				found = lines[index]
+				seen = seen + 1
+			end
+		end
+		return found, seen
+	end
+
+	-- The property the whole change is about, and it is checked by looking for the *other*
+	-- names on a line rather than by counting lines: a notice that grew a heading and still
+	-- joined the names would have the right number of lines and the wrong shape.
+	local brewer = lineFor("Brewer")
+	check("each character is named", brewer ~= nil)
+	check("and has a line to itself, with nobody else on it",
+		brewer and not brewer:find("Weaver", 1, true)
+			and not brewer:find("Faraway", 1, true), tostring(brewer))
+
+	local _, brewerLines = lineFor("Brewer")
+	check("named once and not on several lines", brewerLines == 1, tostring(brewerLines))
+
+	-- The count, and the reason it is only sometimes there: "(1)" after a name answers a
+	-- question nobody asked.
+	check("a character with several timers ready says how many",
+		brewer and brewer:find("(3)", 1, true) ~= nil, tostring(brewer))
+
+	local weaver = lineFor("Weaver")
+	-- Matched on a number in brackets rather than on a bracket, because `UI:NameOf` puts
+	-- the other side's initial in brackets too and the first draft of this check read that
+	-- as a count. The looser version failed for the right reason on the wrong evidence.
+	check("and one with a single timer carries no number",
+		weaver and weaver:find("%(%d+%)") == nil, tostring(weaver))
+
+	-- And that marker is a rule rather than an accident of the fixture: a character on the
+	-- other side keeps a different bank, mailbox and auction house, so what can be done
+	-- about their cooldown is not what can be done about anybody else's.
+	check("a character on the other side is marked as such",
+		weaver and weaver:find("(A)", 1, true) ~= nil, tostring(weaver))
+
+	-- The settled realm rule, in both directions, because a rule with one direction checked
+	-- is half a rule. Names are unique per realm and not per realm group, so a character
+	-- somewhere else has to say where.
+	local faraway = lineFor("Faraway")
+	check("a character on another realm carries it",
+		faraway and faraway:find("Thunderstrike", 1, true) ~= nil, tostring(faraway))
+	check("and one on the realm being played does not",
+		weaver and weaver:find("Fire Maw", 1, true) == nil, tostring(weaver))
+
+	-- The heading is the translated one, not a sentence built here.
+	check("with a heading a translator can reach",
+		lines and lines[1] == Family.L["crafting cooldowns ready:"], tostring(lines[1]))
+
+	-- The character being played is left out, and says why in the file: a transmute you can
+	-- cast is already on your own action bar.
+	local mine = Family:CurrentMember()
+	Family.Database:SetMeta(mine, { craftCooldowns = {
+		{ name = "Transmute: Arcanite", profession = 171, readyAt = came },
+	} })
+	local withMine = Family.UI:CooldownNotice()
+	local named = false
+	for index = 2, #(withMine or {}) do
+		if withMine[index]:find(Family.Database:Meta(mine).name or "?", 1, true) then
+			named = true
+		end
+	end
+	check("and the character being played is not on the list at all", named == false)
+	Family.Database:SetMeta(mine, { craftCooldowns = Family.CLEAR })
+
+	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
+end)()
+
 --------------------------------------------------------------------------------------------
 -- The seam between the client and us
 --
