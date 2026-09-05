@@ -168,6 +168,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A shared character's quests are filed under the zone as you call it.** With a linked family
+  playing in another language, one zone appeared twice on the whole-family quest page - once
+  under its English name and once under theirs - with its quests split between them. It is one
+  heading now, in your own language. A character's log picks this up the next time they are
+  played.
+
 - **CTRL swaps a recipe's tooltip even while you are typing in the search box.** Holding CTRL
   over a recipe shows the recipe instead of what it makes - and it stopped working the moment
   anything was typed into a search box, which on the whole-family pages is always.

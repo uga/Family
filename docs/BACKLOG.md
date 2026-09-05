@@ -1057,3 +1057,24 @@ the asker may not have.
 So the shape of the work is settled by this: the title wants `Names:Quest(id, recorded)`, and the
 category wants a **zone id recorded beside it at scan time**. The second is what actually fixes
 the view; the first fixes what it is called.
+
+**The category half is done, 2026-09-05.** The log carries a zone id per heading, both views name
+the zone through `Names:Area`, and the whole-family view groups on that - so one zone is one
+heading whatever language each record was written in. The check reproduces the case exactly: two
+siblings, two languages, one zone, and the mutation that groups on the word again reports the two
+headings side by side.
+
+**And the walk that finds an id is now paid once for a place, ever.** Alberto's, on being shown
+the arithmetic - a quest log is re-read as often as every fifteen seconds, holds six to ten zones,
+and walking twenty thousand ids for each of them would be a hundred and sixty thousand questions
+a minute. `Names:AreaFor` writes what it finds into `FamilyDB`, which is the only disk an addon
+has, so it survives the session and belongs to the **account**: twenty alts share one answer for
+one zone. A place the client does not have is remembered as absent too, or it would be walked for
+on every scan for ever - which is the expensive half and the half nobody would notice.
+
+That store is inside `AreaFor` and not beside any one caller, so the hearthstone and the logout
+zone got it without being touched.
+
+**Still open: the title.** A quest has an id and `GetQuestLink` names it in the reader's language,
+so `Names:Quest(id, recorded)` is the same shape as `Names:Area`. Until then a shared quest's
+*name* still reads in the language it was recorded in - the zone above it no longer does.

@@ -15029,6 +15029,160 @@ print("the summary's filter bar is the shared one")
 end)()
 
 print()
+print("the log writes down which zone each heading is")
+
+-- The other half, and it was uncovered: the mutation that made the scanner record no zone ids
+-- at all failed nothing, because the block below hands the siblings a `zones` table ready made.
+-- What is drawn and what is recorded are two claims.
+;(function()
+	local key = Family:CurrentMember()
+	local heldMap, heldAreas = _G.C_Map, FamilyDB.areas
+
+	_G.C_Map = { GetAreaInfo = function(id)
+		if id == 42 then return "Elwynn Forest" end
+	end }
+	FamilyDB.areas = {}
+
+	Family.Quests:Scan()
+
+	local log = (Family.Database:Payload(key) or {}).quests
+	check("the log is there to look at", log ~= nil and log.entries ~= nil)
+	check("and carries the id of a zone this client can name",
+		log and log.zones and log.zones["Elwynn Forest"] == 42,
+		log and log.zones and tostring(log.zones["Elwynn Forest"]))
+
+	-- One entry per zone and not per quest: two quests in Elwynn share the row. Counted so
+	-- that a table growing per quest would be visible rather than merely wasteful.
+	local zones = 0
+	for _ in pairs((log or {}).zones or {}) do zones = zones + 1 end
+	check("one entry per zone rather than one per quest", zones == 1, tostring(zones))
+
+	-- A zone the client cannot name is left out rather than stored as a nothing: a table of
+	-- falses would cross a Wide Family link saying nothing in more bytes than nothing takes.
+	check("and a zone it cannot name is not in the table at all",
+		log and log.zones and log.zones["Westfall"] == nil,
+		log and log.zones and tostring(log.zones["Westfall"]))
+
+	_G.C_Map, FamilyDB.areas = heldMap, heldAreas
+end)()
+
+print()
+print("one zone, however many languages recorded it")
+
+-- Alberto's question, 2026-09-05: in whole-family mode, does one quest become five - one per
+-- language - so that *who is on this quest* cannot be asked at all?
+--
+-- The quest rows already knew: they key by quest id and fall back to the title only where there
+-- is none. **Their headings did not.** A category is a word, so one zone appeared as two
+-- headings the moment two clients in two languages shared a family, and the quests under it
+-- were split between them.
+;(function()
+	local held = FamilyDB.wide
+	local heldMap = _G.C_Map
+	local heldAreas = FamilyDB.areas
+
+	-- This reader's client speaks French and can name the zone from its id, which is the whole
+	-- of the mechanism: the id is the same number in every language and the word is not.
+	_G.C_Map = { GetAreaInfo = function(id)
+		if id == 3483 then return "Peninsule des Flammes infernales" end
+	end }
+	FamilyDB.areas = {}
+
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["langfam"] = { name = "Polyglot-Thunderstrike", grants = {}, siblings = {},
+			members = {
+				-- Recorded on an English client.
+				["Englishman-Thunderstrike"] = {
+					meta = { name = "Englishman", realm = "Thunderstrike",
+						classFile = "MAGE", level = 70, faction = "Alliance" },
+					payload = { quests = { seen = time(),
+						zones = { ["Hellfire Peninsula"] = 3483 },
+						entries = { { title = "The Longbeards", level = 61, id = 9001,
+							category = "Hellfire Peninsula" } } } },
+					seen = time(),
+				},
+				-- And the same zone, recorded on a French one. A different word, the same
+				-- id, and the same place.
+				["Francais-Thunderstrike"] = {
+					meta = { name = "Francais", realm = "Thunderstrike",
+						classFile = "ROGUE", level = 70, faction = "Alliance" },
+					payload = { quests = { seen = time(),
+						zones = { ["Peninsule des Flammes infernales"] = 3483 },
+						entries = { { title = "Une autre quete", level = 61, id = 9002,
+							category = "Peninsule des Flammes infernales" } } } },
+					seen = time(),
+				},
+			} } },
+	}
+	Family.Wide:SetSibling("langfam", "Englishman-Thunderstrike", true)
+	Family.Wide:SetSibling("langfam", "Francais-Thunderstrike", true)
+
+	Family.UI:Show()
+	Family.UI:ShowTab("character")
+	check("the quests section can be opened", clickButton("Quests"))
+	if not drawnText("The Longbeards") then clickButton("Whole family") end
+	Family.UI:Refresh()
+
+	check("both siblings' quests are drawn", drawnText("The Longbeards")
+		and drawnText("Une autre quete"))
+
+	-- The headings, read off the rows. A zone heading is a row with nothing in its middle.
+	local headings = {}
+	for _, f in ipairs(frames) do
+		local left = type(f.left) == "table" and f.left.__text
+		local middle = type(f.middle) == "table" and f.middle.__text
+		if onScreen(f) and type(left) == "string" and left ~= ""
+			and (middle == nil or middle == "") then
+			headings[#headings + 1] = left
+		end
+	end
+	local said = table.concat(headings, " | ")
+
+	-- **One heading, not two.** This is the fault, and it is the reason the check exists.
+	local hellfire = 0
+	for _, heading in ipairs(headings) do
+		if heading:find("Flammes infernales", 1, true)
+			or heading:find("Hellfire", 1, true) then
+			hellfire = hellfire + 1
+		end
+	end
+	check("one zone is one heading, whichever language each record was written in",
+		hellfire == 1, tostring(hellfire) .. " headings: " .. said)
+
+	check("named in the reader's own language",
+		said:find("Peninsule des Flammes infernales", 1, true) ~= nil, said)
+	check("and not in the one the English record used",
+		said:find("Hellfire Peninsula", 1, true) == nil, said)
+
+	-- **The per-member view too**, which is a different function and was not covered: the
+	-- mutation that stopped it translating failed nothing at all. A sibling's own quest page
+	-- has the same problem as the family one, minus the grouping - their zone headings would
+	-- read in their language on our screen.
+	do
+		local key = Family.Wide:BorrowedKey("langfam", "Englishman-Thunderstrike")
+		local lines = Family.UI:QuestLines(key, Family.UI:Meta(key), nil)
+
+		local said = ""
+		for _, line in ipairs(lines or {}) do
+			said = said .. " " .. tostring(line.left)
+		end
+
+		check("a sibling's own quest page names the zone in the reader's language",
+			said:find("Peninsule des Flammes infernales", 1, true) ~= nil, said)
+		check("and not in the one their client wrote",
+			said:find("Hellfire Peninsula", 1, true) == nil, said)
+	end
+
+	Family.Wide:SetSibling("langfam", "Englishman-Thunderstrike", false)
+	Family.Wide:SetSibling("langfam", "Francais-Thunderstrike", false)
+	FamilyDB.wide = held
+	_G.C_Map = heldMap
+	FamilyDB.areas = heldAreas
+	Family.UI:Refresh()
+end)()
+
+print()
 print("the deploy script warns before it mirrors a source with no libraries")
 ;(function()
 	local f = io.open(ROOT .. "/tools/Deploy.bat")
@@ -15818,11 +15972,68 @@ print("what each client calls a recipe")
 			Family.Names:AreaFor("The Far End") == 16394,
 			tostring(Family.Names:AreaFor("The Far End")))
 
+		-- **The walk happens once for a place and never again**, which is the whole of why
+		-- the answers are written down. Counted rather than timed: what matters is that the
+		-- client stops being asked, not how long the asking took.
+		do
+			local asked = 0
+			local named = _G.C_Map.GetAreaInfo
+			_G.C_Map.GetAreaInfo = function(id)
+				asked = asked + 1
+				return named(id)
+			end
+
+			FamilyDB.areas = nil
+
+			Family.Names:AreaFor("Forgefer")
+			local first = asked
+			check("finding a place for the first time asks the client", first > 0,
+				tostring(first) .. " ids asked about")
+
+			asked = 0
+			check("and finding it again gives the same answer",
+				Family.Names:AreaFor("Forgefer") == 1537)
+			check("without asking the client at all", asked == 0,
+				tostring(asked) .. " ids asked about")
+
+			-- A place that is not there at all is worth remembering too. A Northrend zone
+			-- on an Era client would otherwise be walked for on every scan for ever, which
+			-- is the expensive half of this and the half nobody would notice.
+			asked = 0
+			Family.Names:AreaFor("Nowhere At All")
+			check("a place this client does not have is looked for once", asked > 0,
+				tostring(asked))
+
+			asked = 0
+			check("and answers nothing the second time", Family.Names:AreaFor("Nowhere At All") == nil)
+			check("without looking again", asked == 0, tostring(asked) .. " ids asked about")
+
+			-- It is the account's and not a character's: the note on it says twenty alts
+			-- share one answer, and nothing here is keyed by member.
+			check("and what was found is kept where the whole account can read it",
+				(Family.Names:AreaStore() or {})["Forgefer"] == 1537,
+				tostring((Family.Names:AreaStore() or {})["Forgefer"]))
+
+			_G.C_Map.GetAreaInfo = named
+		end
+
 		_G.C_Map = nil
 		check("with no map API at all, the recorded word is what is shown",
 			Family.Names:Area(1537, "Ironforge") == "Ironforge")
-		check("and no id can be found for anything",
-			Family.Names:AreaFor("Forgefer") == nil)
+		-- **A word already found is still found**, and that is the point of writing them
+		-- down rather than a hole in this check. An area id means the same thing on every
+		-- build, so an answer this account got from a client that had the map API is still
+		-- the right answer on one that does not.
+		--
+		-- This check used to say no id could be found for anything, which was true when
+		-- nothing was remembered and is too strong now. Split rather than weakened: the
+		-- half that still holds is the one about a word nobody has ever looked up.
+		check("a place this account has already found is still named",
+			Family.Names:AreaFor("Forgefer") == 1537,
+			tostring(Family.Names:AreaFor("Forgefer")))
+
+		check("and one it has not cannot be looked up without the map API",
+			Family.Names:AreaFor("Somewhere Unasked") == nil)
 
 		_G.C_Map = restore
 	end

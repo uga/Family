@@ -136,11 +136,27 @@ end
 
 -- Zones in the order the log had them, and the quests under each sorted hardest first, which
 -- is the order that answers "what should I go and do".
-local function byCategory(entries)
+-- What a zone is called for whoever is reading, which is not always what it was called for
+-- whoever recorded it.
+--
+-- A category arrives as a word, and a word is a language. A sibling playing in French files
+-- their quests under *Peninsule des Flammes infernales*, and drawing that on an English panel
+-- says nothing an English reader can act on - and, worse, sits beside *Hellfire Peninsula* as
+-- though the two were different places. The log carries a zone id per category since
+-- 2026-09-05; `Names:Area` turns it into this reader's word and falls back to the recorded one
+-- for a zone this client has never heard of, which is the honest answer rather than a wrong one.
+local function zoneName(log, word)
+	if type(word) ~= "string" or word == "" then return nil end
+
+	local id = log and log.zones and log.zones[word]
+	return Family.Names:Area(id, word) or word
+end
+
+local function byCategory(entries, log)
 	local order, groups = {}, {}
 
 	for _, quest in ipairs(entries) do
-		local category = quest.category or L["Elsewhere"]
+		local category = zoneName(log, quest.category) or L["Elsewhere"]
 		if not groups[category] then
 			groups[category] = {}
 			order[#order + 1] = category
@@ -215,7 +231,7 @@ function UI:QuestLines(key, meta, matches)
 	local objectives = payload.questObjectives or {}
 
 	local rows = {}
-	local order, groups = byCategory(log.entries)
+	local order, groups = byCategory(log.entries, log)
 
 	for _, category in ipairs(order) do
 		local shown = {}

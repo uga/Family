@@ -200,18 +200,61 @@ end
 -- of them getting no id at all, silently, which is the same shape of fault as the word this
 -- work exists to replace.
 --
--- Twenty thousand leaves room for a build that adds more. It is paid only when a member's
--- hearthstone has moved, so it costs a player nothing on an ordinary scan and a fraction of a
--- second on the rare one.
+-- Twenty thousand leaves room for a build that adds more.
+--
+-- **And every answer is kept, so the walk happens once for a place and never again.**
+--
+-- That mattered little while a hearthstone was the only caller - a bind location moves when
+-- somebody decides to live somewhere else. It matters entirely now that quest categories want
+-- ids too: the quest log is re-read as often as every fifteen seconds while somebody is playing,
+-- a log holds six to ten zones, and walking for each of them on each scan would be a hundred and
+-- sixty thousand questions a minute. Alberto's, on being told the arithmetic: *why not do the
+-- walk, save it, and read that instead.*
+--
+-- Kept in `FamilyDB`, which is the only disk an addon has - there is no file to open, and what
+-- the client saves and reloads for us is a Lua table. So it survives the session, and it is the
+-- **account's** rather than a character's: twenty alts share one answer for one zone.
+--
+-- A shipped table was the other way and is measured at 876 KB across five languages (see the
+-- note over `Names:Area`), which is why the client is asked instead. This keeps what the client
+-- said rather than shipping what it would have said.
+--
+-- Words from two languages sit in it together and that is not a fault: a player who switches
+-- their client adds a second word for the same place, and both map to the same id.
 local AREA_CEILING = 20000
+
+local function areaStore()
+    if type(_G.FamilyDB) ~= "table" then return nil end
+    FamilyDB.areas = FamilyDB.areas or {}
+    return FamilyDB.areas
+end
+
+-- Reachable so a check can see what was written down rather than infer it from how long
+-- something took.
+function Names:AreaStore() return areaStore() end
 
 function Names:AreaFor(word)
 	if type(word) ~= "string" or word == "" then return nil end
+
+	local known = areaStore()
+	if known then
+		local found = known[word]
+		-- `false` is "asked and there is no such place here", which is worth keeping: a
+		-- Northrend zone on an Era client would otherwise be walked for on every scan for
+		-- ever. It is not the same as never having asked.
+		if found ~= nil then return found or nil end
+	end
+
 	if not (C_Map and C_Map.GetAreaInfo) then return nil end
 
 	for id = 1, AREA_CEILING do
-		if Family:TryCall(C_Map.GetAreaInfo, id) == word then return id end
+		if Family:TryCall(C_Map.GetAreaInfo, id) == word then
+			if known then known[word] = id end
+			return id
+		end
 	end
+
+	if known then known[word] = false end
 	return nil
 end
 

@@ -280,6 +280,22 @@ function Quests:ScanNow()
 	local category = nil
 	local complete = 0
 
+	-- The id behind each zone the log is grouped under, found once and then read.
+	--
+	-- A category is a **word**, and a word is a language: a family played across clients files
+	-- one zone under as many headings as it has languages, so the whole-family view showed
+	-- *Hellfire Peninsula* and *Peninsule des Flammes infernales* as two zones. Alberto found
+	-- that by asking whether one quest could appear five times; the quest rows themselves were
+	-- already keyed by id and safe, and their headings were not.
+	--
+	-- One entry per zone rather than per quest - ten quests in Hellfire share one row - and it
+	-- travels with the log, because the id is what a **sibling** has to send us. A store on
+	-- this machine cannot help with somebody else's record.
+	--
+	-- `Names:AreaFor` writes down what it finds now, so this costs one walk the first time a
+	-- zone is seen by anybody on this account and nothing ever after.
+	local zones = {}
+
 	-- Kept apart from `entries` on purpose, and the reason is the wire rather than the shape.
 	--
 	-- `Wide.lua` shares a payload key whole - `out.payload[key] = payload[key]` - so a field
@@ -299,6 +315,11 @@ function Quests:ScanNow()
 		local entry = interpretTitle(returns)
 
 		if entry and entry.isHeader then
+			if entry.title and zones[entry.title] == nil then
+				-- False rather than nil for a zone this client cannot name, so that the
+				-- next scan reads the answer instead of asking again.
+				zones[entry.title] = Family.Names:AreaFor(entry.title) or false
+			end
 			-- A heading is where the quests below it are, and that is the whole of what
 			-- it is worth keeping: it is written onto each quest rather than stored as a
 			-- row of its own, so the panel can group, filter and sort freely.
@@ -332,7 +353,17 @@ function Quests:ScanNow()
 	-- written unless the read got as far as producing a list, and the list is allowed to be
 	-- empty - a member with no quests at all is a fact, once it has been seen.
 	local payload = Family.Database:Payload(key) or {}
-	payload.quests = { entries = entries, seen = time() }
+	-- Only the ones that answered. A table of falses is a table of nothing, and it would
+	-- cross a Wide Family link saying nothing in more bytes than saying nothing takes.
+	local named = nil
+	for word, id in pairs(zones) do
+		if id then
+			named = named or {}
+			named[word] = id
+		end
+	end
+
+	payload.quests = { entries = entries, seen = time(), zones = named }
 	payload.questObjectives = objectives
 	Family.Database:SetPayload(key, payload)
 

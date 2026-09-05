@@ -1283,6 +1283,17 @@ local function build(frame)
 							people = people + 1
 						end
 
+						-- The zone as this reader's client names it, out of the id the
+						-- log carries beside the word. Grouping on the word put one
+						-- zone under two headings the moment two clients in two
+						-- languages shared a family - the rows themselves were already
+						-- keyed by quest id and safe, and their headings were not.
+						local function zoneOf(word)
+							if type(word) ~= "string" or word == "" then return nil end
+							local at = log and log.zones and log.zones[word]
+							return Family.Names:Area(at, word) or word
+						end
+
 						for _, quest in ipairs((log or {}).entries or {}) do
 							local id = quest.id and ("id:" .. quest.id)
 								or ("title:" .. tostring(quest.title))
@@ -1291,7 +1302,7 @@ local function build(frame)
 							if not row then
 								row = { id = id, questID = quest.id,
 									title = quest.title, level = quest.level,
-									category = quest.category, people = {} }
+									category = zoneOf(quest.category), people = {} }
 								byQuest[id] = row
 								order[#order + 1] = row
 							end
@@ -1305,7 +1316,7 @@ local function build(frame)
 							-- A quest only some of them have is still that quest, and
 							-- the level and zone come from whoever's record had them.
 							row.level = row.level or quest.level
-							row.category = row.category or quest.category
+							row.category = row.category or zoneOf(quest.category)
 							row.title = row.title or quest.title
 						end
 					end
