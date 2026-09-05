@@ -1970,3 +1970,34 @@ about our own storage on purpose.
 quest log rendering rows, and a sibling named in an item's maker block. Both mutations - putting
 `Family.Database` back - fail. The summary's letter unfold has no such check yet and is written
 down as owed rather than left to look covered.
+
+## L-053 — The stub that agreed with the mistake
+
+Family's quest scanner asked for a quest's id two ways: `C_QuestLog.GetQuestIDForLogIndex`, and
+failing that `GetQuestLink(index)`.
+
+Neither has ever worked. `C_QuestLog.GetQuestIDForLogIndex` does not exist on TBC, and
+`GetQuestLink` does not take a log index - it takes a **quest id**, and the client says so in as
+many words the moment you call it wrongly: *Usage: GetQuestLink(questID)*.
+
+So every quest Family has ever stored has been anonymous.
+
+**The harness stub took an index too.** It was written from the same misunderstanding as the
+scanner, on the same afternoon, and it agreed with it - so the route the game answers nothing
+for answered perfectly here, and a check that a quest keeps its id passed for years against a
+call that does not exist in that shape. Correcting the stub turned two checks red immediately.
+
+It surfaced sideways. Alberto asked whether the quest rows could have tooltips; they could not,
+and the reason was not the tooltip lane but an id that was never recorded. Nobody would have
+reported "quests have no id" - it is invisible until something asks for one.
+
+**The shape.** A stub written by the same person, on the same day, from the same reading of the
+API is not a check on that reading - it is a second copy of it. The two agreeing proves they
+came from one head. What breaks the tie is the client: an error message, a return value, a
+probe. This one was settled by the game's own *Usage:* line, which had been one wrong call away
+the whole time.
+
+**The check that now catches it.** The stub takes a quest id, as the client does, and answers
+only for a quest that has one. Two mutations of the finder fail against it - and the second only
+after the fixture was corrected to carry the decoy numbers the real client sends before the id,
+because with noughts there "take the first number" and "ask which number" are the same page.

@@ -36,6 +36,11 @@ is a decision rather than an afternoon of archaeology.
   family the row of filters stands where the member picker does and is wider than it, so a box
   of a fixed width overlapped the switch. It takes the room that is actually left now.
 
+- **Quests are recorded with their identifier, so the game can describe them.** They never were:
+  Family asked the client for one in a way the client does not accept, so every quest it has
+  ever stored has been anonymous - which is why a quest row could only ever show Family's own
+  summary. Newly read quest logs carry it, and the rows show the game's own tooltip.
+
 - **Quest rows show the game's own description of the quest.** They always meant to, and asked
   the client for it in a form it ignores - so every quest row in Family has been showing its own
   short summary instead. The summary is still there for the quests the game will not describe.

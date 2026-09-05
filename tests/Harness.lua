@@ -944,17 +944,33 @@ GetQuestLogTitle = function(index)
 		return row.header.title, 0, nil, true, row.header.collapsed
 	end
 	local quest = row.quest
-	return quest.title, quest.level, 0, false, false, nil, 0, quest.id
+	-- The shape this client really answers with, measured on TBC 2026-09-05:
+	--
+	--     No Time for Curiosity  65  nil  false  false  1  1  9794  false ...
+	--
+	-- The two ones before the id matter. With noughts there instead, "take the first number
+	-- after the level" is indistinguishable from "ask which number is the id" - and the
+	-- mutation that skips the asking passed against the old fixture.
+	return quest.title, quest.level, nil, false, false, 1, 1, quest.id
 end
 
--- The id comes from a call that says it is one, not from a guess at which number in the
--- list above happens to be it: quest ids start at 1 here, so by size alone one is
--- indistinguishable from a level.
-GetQuestLink = function(index)
-	local row = questRows()[index]
-	if not (row and row.quest) then return nil end
-	return string.format("|cffffff00|Hquest:%d:%d|h[%s]|h|r", row.quest.id,
-		row.quest.level, row.quest.title)
+-- **By quest id, not by log index**, which is what the client actually takes.
+--
+-- This took an index, and that was a wrong claim about the client: passing one an index
+-- answers nothing, and passing it a number that happens to be a valid id answers about
+-- somebody else's quest. The game says so outright - *Usage: GetQuestLink(questID)* - and
+-- until 2026-09-05 the scanner's second route asked with an index and this stub agreed with
+-- it, so every quest in the game had no id and every quest here had one (L-037).
+--
+-- Which also makes it the way to *find* the id: hand it a candidate and read the title back.
+GetQuestLink = function(questID)
+	for _, row in ipairs(questRows()) do
+		if row.quest and row.quest.id == questID then
+			return string.format("|cffffff00|Hquest:%d:%d|h[%s]|h|r", row.quest.id,
+				row.quest.level, row.quest.title)
+		end
+	end
+	return nil
 end
 
 GetNumQuestLeaderBoards = function(index)

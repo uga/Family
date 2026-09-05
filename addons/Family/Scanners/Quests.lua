@@ -78,10 +78,36 @@ local function interpretTitle(returns)
 	}
 end
 
--- The id, from a call that answers with one rather than from a guess at which of the numbers
--- in the list might be it. Both routes name what they return, and a member whose client
--- offers neither simply has quests with no id - which costs a tooltip and nothing else.
-local function questIDAt(index)
+-- Which of `GetQuestLogTitle`'s returns holds the id, worked out by asking rather than by
+-- counting, and then reused for the rest of the session.
+--
+-- The list changes between clients and the id cannot be told from a level or a group size by
+-- size alone, which is why this file has always refused to unpack it by position. But it can be
+-- *asked about*: `GetQuestLink` takes an id - the client says so outright, *Usage:
+-- GetQuestLink(questID)* - and answers with a link carrying the quest's title. So a candidate
+-- is handed over and the answer read back (§2.1), which is the same discipline as everywhere
+-- else in Family.
+--
+-- **And it works in every language for free**, because both sides of the comparison come from
+-- the client: the title in the log and the title in the link are the same client's words, and
+-- nothing here is matched against a word Family wrote down.
+--
+-- Measured on TBC 2026-09-05, after a member's quests were found to have no ids at all: this
+-- client answers title, level, nil, false, false, 1, 1, 9794 - and 9794 is the id. Nothing
+-- below depends on it being the eighth.
+local idColumn, idGivenUp, idTried = nil, false, 0
+
+-- How many quests to ask about before deciding this client will not say. More than one,
+-- because a single quest the client happens not to link would otherwise settle it for the
+-- whole session.
+local ID_ATTEMPTS = 5
+
+local function titleIn(link)
+	if type(link) ~= "string" then return nil end
+	return link:match("%[(.-)%]")
+end
+
+local function questIDAt(index, returns, title)
 	local api = _G.C_QuestLog
 
 	if api then
@@ -92,10 +118,24 @@ local function questIDAt(index)
 		if id and id > 0 then return id end
 	end
 
-	local link = Family:TryCall(GetQuestLink, index)
-	if type(link) == "string" then
-		return tonumber(link:match("quest:(%d+)"))
+	if type(returns) ~= "table" then return nil end
+	if idColumn then return tonumber(returns[idColumn]) end
+	if idGivenUp then return nil end
+
+	-- The title and the level are the first two and are not it; everything after them is a
+	-- candidate, and the client is asked about each in turn.
+	for at = 3, returns.n or 0 do
+		local candidate = tonumber(returns[at])
+		if candidate and candidate > 0 then
+			if titleIn(Family:TryCall(GetQuestLink, candidate)) == title then
+				idColumn = at
+				return candidate
+			end
+		end
 	end
+
+	idTried = idTried + 1
+	if idTried >= ID_ATTEMPTS then idGivenUp = true end
 
 	return nil
 end
@@ -212,7 +252,10 @@ function Quests:ScanNow()
 	local complete = 0
 
 	for index = 1, count do
-		local entry = interpretTitle(pack(Family:TryCall(GetQuestLogTitle, index)))
+		-- Kept, because the id is found among these returns rather than asked for
+		-- separately, and finding it means having them.
+		local returns = pack(Family:TryCall(GetQuestLogTitle, index))
+		local entry = interpretTitle(returns)
 
 		if entry and entry.isHeader then
 			-- A heading is where the quests below it are, and that is the whole of what
@@ -220,7 +263,7 @@ function Quests:ScanNow()
 			-- row of its own, so the panel can group, filter and sort freely.
 			category = entry.title
 		elseif entry then
-			local questID = questIDAt(index)
+			local questID = questIDAt(index, returns, entry.title)
 			local done, total = progressOf(index, questID)
 
 			if done and total and done >= total then complete = complete + 1 end
