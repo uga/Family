@@ -60,7 +60,7 @@ local skillsOf, skillText
 -- Built further down, where the cells they have to register alongside are. Declared here
 -- because the sets below are written first and would otherwise capture a global that never
 -- arrives.
-local currencyColumns, craftingColumns
+local currencyColumns, craftingColumns, craftingKinds
 
 -- A profession as one thing, however it was filed.
 --
@@ -239,6 +239,39 @@ local SETS = {
 		-- for names it has not loaded would redraw the panel to answer a question about how
 		-- many rows it has, which redraws it again.
 		only = function(meta) return #Family.Cooldowns:Crafting(meta) > 0 end,
+
+		-- **Which cooldown**, and it answers both halves of what was asked - by cooldown and
+		-- by profession - because those are one list in the data rather than two. A timer
+		-- that several recipes share is named after its profession, which is what alchemy's
+		-- always is; a profession with exactly one timed recipe is named after the recipe.
+		-- So *Alchemy* and *Mooncloth* sit in the same list, each being the widest true
+		-- thing that can be said about the timer underneath it, and a second picker asking
+		-- the profession separately would offer *Tailoring* as a way of finding *Mooncloth*.
+		--
+		-- One control and not two for a reason the row can be measured for: the filters sit
+		-- on one line with the search, the class picker, two level boxes and the count of
+		-- what is hidden, and there is no room for another picker beside them. The comment
+		-- on `narrowButton` says the rest of it.
+		narrow = {
+			label = L["Cooldowns"],
+
+			-- The same list the columns are built from, so the picker cannot offer a
+			-- cooldown this panel would then have no column for.
+			choices = function()
+				local list = {}
+				for _, kind in ipairs(craftingKinds()) do
+					list[#list + 1] = { value = kind.label, label = kind.label }
+				end
+				return list
+			end,
+
+			passes = function(meta, wanted)
+				for _, kind in ipairs(Family.Cooldowns:Crafting(meta)) do
+					if kind.label == wanted then return true end
+				end
+				return false
+			end,
+		},
 	},
 	{
 		id = "misc", label = L["Miscellaneous"],
@@ -1180,7 +1213,7 @@ local CRAFTING_WIDTH = 120
 
 -- Every kind of crafting cooldown anybody in the family has, most-held first so that the ones
 -- the family really uses take the room a row has.
-local function craftingKinds()
+function craftingKinds()
 	local byLabel, order = {}, {}
 
 	for _, entry in pairs(Family.Database:Members()) do
@@ -1215,6 +1248,25 @@ local craftingOmitted = 0
 function craftingColumns()
 	local kinds = craftingKinds()
 	local columns = {}
+
+	-- The chosen cooldown takes the columns with it, which is why this set is worth a
+	-- narrowing at all: it is the one set that admits to hiding columns for want of room -
+	-- `craftingOmitted`, said out loud under the table - and choosing one is how somebody
+	-- reaches the ones it hid. Narrowing only the rows would have left the same four columns
+	-- on screen and answered nothing.
+	--
+	-- Matched against the list rather than trusted. The picker is shared with every set that
+	-- has a narrowing, and a value belonging to another set's question - a skill line id,
+	-- say - matches no cooldown's name; keeping it would leave the panel with no columns at
+	-- all rather than with all of them.
+	local wanted = UI.__summaryNarrow and UI.__summaryNarrow:Value()
+	if wanted ~= nil then
+		local chosen = {}
+		for _, kind in ipairs(kinds) do
+			if kind.label == wanted then chosen[#chosen + 1] = kind end
+		end
+		if #chosen > 0 then kinds = chosen end
+	end
 
 	local room = math.floor((ROW_BUDGET - MEMBER_COLUMN.width) / CRAFTING_WIDTH)
 	local limit = math.min(room, MAX_BUILT_COLUMNS, #kinds)

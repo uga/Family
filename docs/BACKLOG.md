@@ -234,8 +234,21 @@ answer - a talent tree is one character's arrangement of points and means nothin
 forty, and the spellbook half is already reachable per member.
 
 **Still open under the original ask and not covered above:** professions sorted by that
-profession's skill, and crafting filtered by cooldown and profession. Those are filters on a
-column set rather than on a member, which is a different mechanism again.
+profession's skill. That is an order on a column set rather than on a member, which is a
+different mechanism again.
+
+**Crafting filtered by cooldown and profession: done 2026-09-05**, and the two turned out to be
+one list rather than two controls. A timer several recipes share is headed by its profession -
+alchemy's always is, the client putting every transmute on one - and a profession with exactly
+one timed recipe is headed by the recipe, so *Alchemy* and *Mooncloth* are offered side by side
+and each is the widest true thing about the timer under it. Which also settles the room: the
+filter row holds one narrowing picker and there is no width for a second, measured rather than
+guessed.
+
+The choice cuts the **columns** as well as the rows, and that is the half worth having. This is
+the only set that admits to hiding columns for want of room - the note under the table says how
+many - so a filter that narrowed the members and left every heading up would have answered the
+easy half of the question.
 
 **Professions filtered by profession: done 2026-09-05**, asked again from play as *who are the
 blacksmiths?* A set may now declare a `narrow` of its own - a caption, the choices the family

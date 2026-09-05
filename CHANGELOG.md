@@ -19,6 +19,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The crafting columns can be narrowed to one cooldown.** The filter row on that set now
+  offers the cooldowns the family is actually waiting on - *Alchemy*, *Mooncloth*, *Salt
+  Shaker* - and choosing one leaves the members waiting on it and takes the other columns off
+  the table. A family with more cooldowns than fit across a row used to be told how many were
+  left out and given no way to see them; now they are one choice away.
+
 - **The whole family's reputations list a faction and the characters who have met it.** It used
   to name only whoever had got furthest with each one. Now every character who has a standing
   with a faction is under it, furthest first, each with their own standing and score - so *who

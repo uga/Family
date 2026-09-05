@@ -17651,6 +17651,196 @@ print("filtering the summary's professions by profession")
 	Family.UI:Refresh()
 end)()
 
+print()
+print("filtering the summary's crafting by which cooldown")
+
+-- The rest of the backlog's entry 3 for this set: *crafting by cooldown and profession*. One
+-- list answers both, because in the data they are one list - a timer several recipes share is
+-- named after its profession, and alchemy's always is, while a profession with exactly one
+-- timed recipe is named after the recipe. So "Alchemy" and "Mooncloth" are offered side by
+-- side, each being the widest true thing that can be said about the timer under it.
+--
+-- And this set is the one where a narrowing has a second job. It is the only set that admits
+-- to hiding columns for want of room, so choosing a cooldown cuts the columns to that one -
+-- narrowing only the rows would have left the same headings on screen and answered nothing.
+;(function()
+	local roster = {
+		-- Two recipes on one timer, which is what the client does with every transmute: they
+		-- arrive with the same readyAt, group into one, and are headed by the profession
+		-- because "Transmute: Arcanite" is a lie about the other one.
+		{ key = "Alchy-Fire Maw", name = "Alchy", classFile = "SHAMAN",
+			craftCooldowns = {
+				{ name = "Transmute: Arcanite", profession = 171,
+					readyAt = time() + 3600 },
+				{ name = "Transmute: Air to Fire", profession = 171,
+					readyAt = time() + 3600 },
+			} },
+		-- One timed recipe, so the recipe's own name is the more useful heading.
+		{ key = "Weaver-Fire Maw", name = "Weaver", classFile = "PRIEST",
+			craftCooldowns = {
+				{ name = "Mooncloth", profession = 197, readyAt = time() + 7200 },
+			} },
+		{ key = "Tanner-Fire Maw", name = "Tanner", classFile = "ROGUE",
+			craftCooldowns = {
+				{ name = "Salt Shaker", profession = 165, readyAt = time() + 900 },
+			} },
+	}
+	for _, member in ipairs(roster) do
+		Family.Database:SetMeta(member.key, { name = member.name, realm = "Fire Maw",
+			classFile = member.classFile, level = 60, faction = "Alliance",
+			craftCooldowns = member.craftCooldowns })
+	end
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+
+	-- The set button and not the tab of the same name, told apart by where it lives - the
+	-- same reason the professions check above tells them apart.
+	local panel = _G.FamilySummarySearch and _G.FamilySummarySearch.__parent
+	panel = panel and panel.__parent
+
+	local function inPanel(f)
+		local at = f
+		while type(at) == "table" do
+			if at == panel then return true end
+			at = type(at.__parent) == "table" and at.__parent or nil
+		end
+		return false
+	end
+
+	local function clickSet(label)
+		for _, f in ipairs(frames) do
+			if type(f.__text) == "string" and f.__text:find(label, 1, true)
+				and clickable(f) and inPanel(f) then
+				fireClick(f)
+				return true
+			end
+		end
+		return false
+	end
+
+	local function showing()
+		local seen = {}
+		for _, f in ipairs(frames) do
+			if f.__shown ~= false and f.memberKey then seen[f.memberKey] = true end
+		end
+		return seen
+	end
+
+	local function headings()
+		local said = {}
+		for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+			said[#said + 1] = tostring(column.label)
+		end
+		return said
+	end
+
+	local function heads(word)
+		for _, label in ipairs(headings()) do
+			if label:find(word, 1, true) then return true end
+		end
+		return false
+	end
+
+	check("the crafting column set can be opened", clickSet(Family.L["Crafting"]))
+	Family.UI:Refresh()
+
+	local alchemy = Family:ProfessionName(171)
+	check("a shared timer is headed by its profession", heads(alchemy), alchemy)
+	check("and a lone one by the recipe", heads("Mooncloth"))
+
+	local narrow = Family.UI.__summaryNarrow
+	check("the crafting set brings a cooldown picker with it",
+		narrow ~= nil and narrow:IsShown() == true)
+	check("captioned as the thing it narrows", narrow.prefix == Family.L["Cooldowns"],
+		tostring(narrow.prefix))
+
+	local offered = {}
+	for _, choice in ipairs(narrow:Choices()) do offered[tostring(choice.label)] = true end
+	check("offering the cooldowns the family actually has",
+		offered[alchemy] and offered["Mooncloth"] and offered["Salt Shaker"])
+
+	local everybody = showing()
+	check("with all three of them drawn before anything is chosen",
+		everybody["Alchy-Fire Maw"] and everybody["Weaver-Fire Maw"]
+			and everybody["Tanner-Fire Maw"])
+
+	narrow.__scripts.OnClick(narrow)
+	local list = _G.FamilyChoicePickerList
+
+	local picked = false
+	for _, row in ipairs(list and list.rows or {}) do
+		local text = rawget(row, "text")
+		if row.__shown ~= false and type(text) == "table"
+			and type(text.__text) == "string"
+			and text.__text:find("Mooncloth", 1, true) and row.__scripts.OnClick then
+			row.__scripts.OnClick(row)
+			picked = true
+			break
+		end
+	end
+	check("and one of them can be chosen", picked)
+
+	local byCooldown = showing()
+	check("choosing a cooldown keeps whoever is waiting on it",
+		byCooldown["Weaver-Fire Maw"] ~= nil)
+	check("and drops whoever is waiting on a different one",
+		byCooldown["Alchy-Fire Maw"] == nil and byCooldown["Tanner-Fire Maw"] == nil)
+
+	-- The half that makes this worth having on this set rather than on any other. A panel
+	-- that hides columns for want of room and then offers a filter that leaves them all up
+	-- has answered the easy half of the question.
+	check("and the columns come down to the one that was chosen", heads("Mooncloth"))
+	check("with the others gone rather than merely unpopulated",
+		heads(alchemy) == false and heads("Salt Shaker") == false,
+		table.concat(headings(), ", "))
+
+	-- Composed with the rest of the bar, like every other narrowing: both halves of "which
+	-- of my level 60s is waiting on the mooncloth" are on one row.
+	--
+	-- **Both directions**, because a rule with one direction checked is half a rule. Every
+	-- member of this roster is level 60, so a range that excludes them all would have gone
+	-- green with no narrowing in the file at all - which is what the first draft of this did,
+	-- and the mutation that removes the set's `narrow` is what said so.
+	local minBox = _G.FamilySummaryLevelMin
+	local function typeLevel(text)
+		minBox:SetText(text)
+		if minBox.__scripts and minBox.__scripts.OnTextChanged then
+			minBox.__scripts.OnTextChanged(minBox)
+		end
+	end
+
+	typeLevel("50")
+	local composed = showing()
+	check("a level range they all pass leaves the chosen cooldown's member drawn",
+		composed["Weaver-Fire Maw"] ~= nil)
+	check("and the others still dropped, so the range has not replaced the choice",
+		composed["Alchy-Fire Maw"] == nil and composed["Tanner-Fire Maw"] == nil)
+
+	typeLevel("70")
+	check("and a range none of them passes drops that member too, the other way round",
+		showing()["Weaver-Fire Maw"] == nil)
+	typeLevel("")
+
+	-- Leaving the set and coming back starts from everybody, because Reconcile drops a value
+	-- the new set does not offer - and the columns have to come back with it, or the panel
+	-- would keep the one column a choice nobody can see any more had cut it to.
+	clickSet(Family.L["Overview"])
+	Family.UI:Refresh()
+	check("a set that narrows nothing takes the picker away", narrow:IsShown() == false)
+
+	clickSet(Family.L["Crafting"])
+	Family.UI:Refresh()
+	local back = showing()
+	check("and coming back finds everybody again", back["Alchy-Fire Maw"] ~= nil)
+	check("with the columns it had cut back on the panel", heads(alchemy),
+		table.concat(headings(), ", "))
+
+	clickSet(Family.L["Overview"])
+	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
+	Family.UI:Refresh()
+end)()
+
 --------------------------------------------------------------------------------------------
 -- Every field Wide Family shares is a field Family writes
 --
