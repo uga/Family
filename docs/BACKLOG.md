@@ -92,11 +92,36 @@ and level range - on the Summary panel, composed with each column set's own narr
 count of what is being hidden. `docs/DECISIONS.md` carries why they are not remembered between
 sessions and why an unrecorded level does not hide a member.
 
-**Still open:** the per-panel filters and sorts. Overview by rested XP, money, last seen, free
-bags, free bank and bags/bank seen; activity by mail, expiry and mail seen; professions filtered
-by profession and sorted by that profession's skill; crafting by cooldown and profession; misc
-by guild and hearthstone. And the same three filters on the character panel's other sections,
-which has its own realm and class pickers already but not the level range.
+**Still open, and it is three more slices rather than one.** Measured 2026-09-05.
+
+**Slice two — sorting the summary by any of its columns.** That is most of what the original
+ask calls per-panel: rested XP, money, last seen, free bags, free bank, bags and bank seen,
+mail, expiry, mail seen, guild, hearthstone. One mechanism covers every set because the sets
+are data-driven. **Done 2026-09-05.**
+
+**Slice three — the filter bar on the panels that already show the whole family.** Asked for
+2026-09-05: Professions and Possessions each have a real *Whole family* switch and a search box
+of their own, and neither has the realm, class or level filters. The Character panel has realm
+and class in that mode and no level range.
+
+**And what a fifth copy would cost.** Two filter bars exist already - the summary's and the
+character panel's - and they were written separately. Three more would be five ideas of what a
+filter bar is. The shape this wants is the one `UI:CreateChoicePicker` already set: one widget,
+built once, used by every panel that lists characters. That extraction is the work; the filters
+themselves are a line each afterwards.
+
+**Slice four — a whole-family mode for Quests.** It has none today. The parallel is the
+professions panel's family mode, which searches recipes across everybody: here it is *which
+members have this quest*, and the filters follow from that.
+
+**Abilities & Talents is out**, said 2026-09-05 when it had been in the same sentence the day
+it was asked: it needs no whole-family reading and therefore no filters. Which is the right
+answer - a talent tree is one character's arrangement of points and means nothing averaged over
+forty, and the spellbook half is already reachable per member.
+
+**Still open under the original ask and not covered above:** professions filtered by profession
+and sorted by that profession's skill, and crafting filtered by cooldown and profession. Those
+are filters on a column set rather than on a member, which is a different mechanism again.
 
 ---
 

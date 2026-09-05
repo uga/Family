@@ -755,10 +755,135 @@ local function factionShown(faction)
 	return switches[faction] ~= false
 end
 
+-- What each column is worth when the table is put in its order.
+--
+-- A cell's *text* is not it: "3g 40s 12c" sorts before "12g" as a string, and "not seen" sorts
+-- among the dates. So a column that can be ordered says which number or word it is made of,
+-- and one that says nothing here cannot be sorted by - which is the honest answer for the
+-- professions columns, where a member's two primaries are not a value at all.
+--
+-- **Nothing is invented for what was never recorded.** A member whose money Family has never
+-- read is not a member with no money (§2.2), so `nil` comes back and the comparison below puts
+-- them last whichever way the column is pointing - never first in ascending order, which is
+-- where a nought would put them and where they would look like the poorest character in the
+-- family rather than the one nobody has logged in on.
+local SORT = {
+	name      = function(meta) return meta.name end,
+	level     = function(meta) return meta.level end,
+	ilvl      = function(meta) return meta.itemLevel end,
+	xp        = function(meta) return meta.rested end,
+	money     = function(meta) return meta.money end,
+	played    = function(meta) return meta.played end,
+	seen      = function(meta) return meta.lastSeen end,
+	bagfree   = function(meta) return meta.bagFree end,
+	bagtotal  = function(meta) return meta.bagSlots end,
+	bankfree  = function(meta) return meta.bankFree end,
+	banktotal = function(meta) return meta.bankSlots end,
+	bagseen   = function(meta) return meta.bagsSeen end,
+	bankseen  = function(meta) return meta.bankSeen end,
+	mail      = function(meta) return meta.mailCount end,
+	inpost    = function(meta) return meta.mailInPost end,
+	mailexp   = function(meta) return meta.mailExpiresBy end,
+	mailseen  = function(meta) return meta.mailSeen end,
+	aucseen   = function(meta) return meta.auctionsSeen end,
+	guild     = function(meta) return meta.guild end,
+	hearth    = function(meta) return meta.hearth end,
+
+	-- Both of these are stored as an identity and drawn in the reader's language, so they
+	-- are ordered by **what the cell draws** rather than by the identity behind it: sorted
+	-- on `classFile` a German reader would get Magier under M-for-MAGE, and sorted on the
+	-- recorded word they would get whatever language the character was last read in.
+	--
+	-- Neither reaches for the record itself. `UI:RaceName` resolves the id into this
+	-- client's language and is the accessor the cell uses, and the class names are the
+	-- client's own table - which is why sorting these is possible at all, and why the first
+	-- cut of this file left them out on the grounds that it was not.
+	race      = function(meta) return UI:RaceName(meta) end,
+	class     = function(meta)
+		local names = _G.LOCALIZED_CLASS_NAMES_MALE
+		return (names and meta.classFile and names[meta.classFile]) or meta.classFile
+	end,
+}
+
+-- Which column a set is ordered by, and which way.
+--
+-- Remembered, unlike the filters beside it, and the reasoning does not carry across: a filter
+-- left on hides rows, so a panel opened tomorrow showing four of forty looks broken. An order
+-- hides nothing - every row is there, in a different sequence - and somebody who reads this
+-- panel for money every morning should not have to say so every morning.
+--
+-- Per set, because the columns are per set: the order that makes sense of Activity means
+-- nothing on Miscellaneous.
+function UI:SummarySort(setID)
+	local kept = FamilyDB and FamilyDB.ui and FamilyDB.ui.sort
+	local chosen = kept and kept[setID]
+
+	if type(chosen) ~= "table" or not SORT[chosen.key] then return nil end
+	return chosen
+end
+
+function UI:SetSummarySort(setID, key)
+	if not setID then return nil end
+
+	FamilyDB.ui = FamilyDB.ui or {}
+	FamilyDB.ui.sort = FamilyDB.ui.sort or {}
+
+	local current = FamilyDB.ui.sort[setID]
+
+	-- Clicking the column that is already chosen turns it round, and clicking it a third
+	-- time puts the panel back to its own order. Three states rather than two, so that
+	-- there is a way back to the default without knowing what the default was.
+	if not SORT[key] then
+		FamilyDB.ui.sort[setID] = nil
+	elseif type(current) == "table" and current.key == key then
+		if current.descending then
+			FamilyDB.ui.sort[setID] = nil
+		else
+			FamilyDB.ui.sort[setID] = { key = key, descending = true }
+		end
+	else
+		FamilyDB.ui.sort[setID] = { key = key, descending = false }
+	end
+
+	return FamilyDB.ui.sort[setID]
+end
+
+function UI:SummarySortable(key) return SORT[key] ~= nil end
+
 local function byLevelThenName(a, b)
 	local levelA, levelB = a.meta.level or 0, b.meta.level or 0
 	if levelA ~= levelB then return levelA > levelB end
 	return (a.meta.name or "") < (b.meta.name or "")
+end
+
+-- The order a set is read in: the column somebody chose, or the panel's own.
+--
+-- Within a group and never across one. The rows are grouped by realm and by side because those
+-- are facts about what can be done with a character - a bank on one realm is not a bank on
+-- another - and an order that broke the grouping would be sorting a table that no longer means
+-- what its headings say.
+--
+-- Ties fall back to the panel's own order rather than to nothing, so that two members with the
+-- same money are not in whichever sequence `pairs` handed them, which changes between draws.
+local function orderFor(setID)
+	local chosen = UI:SummarySort(setID)
+	local value = chosen and SORT[chosen.key]
+	if not value then return byLevelThenName end
+
+	return function(a, b)
+		local left, right = value(a.meta or {}, a.key), value(b.meta or {}, b.key)
+
+		if left == right then return byLevelThenName(a, b) end
+
+		-- Never recorded goes last whichever way the column points. Sorted as a nought it
+		-- would head an ascending column and read as the poorest character in the family
+		-- rather than the one nobody has logged in on (§2.2).
+		if left == nil then return false end
+		if right == nil then return true end
+
+		if chosen.descending then return left > right end
+		return left < right
+	end
 end
 
 -- Siblings, arranged the way they are drawn: the realm they are on, and inside it the family
@@ -767,7 +892,7 @@ end
 -- Whose they are is never merged away, which is why they are grouped by family rather than
 -- mixed in with our own members and marked somehow. A row that has to be inspected to find
 -- out whose it is has already blurred the one line §6 exists to hold.
-local function gatherSiblings(only)
+local function gatherSiblings(only, order)
 	local byRealm = {}
 
 	for _, member in ipairs(Family.Wide:Siblings()) do
@@ -798,7 +923,7 @@ local function gatherSiblings(only)
 			return tostring(a.name) < tostring(b.name)
 		end)
 		for _, group in ipairs(here.order) do
-			table.sort(group.members, byLevelThenName)
+			table.sort(group.members, order or byLevelThenName)
 		end
 	end
 
@@ -813,7 +938,7 @@ end
 -- The totals below are counted over everybody regardless, because the line under the window
 -- says what the *family* has and that does not change because a column set is showing fewer
 -- rows. A realm nobody passes the filter on gets no heading at all rather than an empty one.
-local function gather(only)
+local function gather(only, order)
 	local byRealm, realms = {}, {}
 	local totalMoney, totalFree, totalSlots, count = 0, 0, 0, 0
 
@@ -840,7 +965,7 @@ local function gather(only)
 	-- have a heading for them to sit under. Nothing is added to the totals, here or below:
 	-- the money on the totals line is this family's money, and adding somebody else's would
 	-- produce a figure that describes nobody.
-	local siblings = gatherSiblings(only)
+	local siblings = gatherSiblings(only, order)
 	for realm in pairs(siblings) do
 		if not byRealm[realm] then
 			byRealm[realm] = {}
@@ -850,7 +975,7 @@ local function gather(only)
 
 	table.sort(realms)
 	for _, members in pairs(byRealm) do
-		table.sort(members, byLevelThenName)
+		table.sort(members, order or byLevelThenName)
 	end
 
 	return realms, byRealm, {
@@ -1267,6 +1392,26 @@ local function build(frame)
 		headerCells[index] = text
 	end
 
+	-- One button over each heading, invisible, for choosing the order.
+	--
+	-- Over rather than instead of: `layOut` positions font strings and is shared with every
+	-- row on the panel, and a heading that became a Button would have to be laid out by a
+	-- second copy of that arithmetic. It already records where each column ended up - the
+	-- comment there says it is so that something can be put over one of them - and this is
+	-- the something.
+	--
+	-- A button only where the column can be ordered at all. A heading that highlights under
+	-- the cursor and does nothing when clicked is worse than one that does not react: the
+	-- first is a promise.
+	local headerButtons = {}
+	for index = 1, MAX_CELLS do
+		local button = CreateFrame("Button", nil, header)
+		button:SetHeight(HEADER_HEIGHT)
+		button:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
+		button:Hide()
+		headerButtons[index] = button
+	end
+
 	-- Never shown, never placed. It exists to be asked how wide a heading would be.
 	measure = header:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	measure:Hide()
@@ -1573,7 +1718,7 @@ local function build(frame)
 			if column.key == "boon" then showsBoon = true end
 		end
 		UI:FitColumns(columns, ROW_BUDGET, measure)
-		local realms, byRealm, totals, siblings = gather(passes)
+		local realms, byRealm, totals, siblings = gather(passes, orderFor(currentSet.id))
 
 		-- Said only while something is typed. With the boxes empty this is the whole family
 		-- and a count of it against itself is noise; the moment a filter is on, it is the
@@ -1615,8 +1760,38 @@ local function build(frame)
 		end
 
 		layOut(headerCells, columns)
+
+		local chosen = UI:SummarySort(currentSet.id)
+
 		for index = 1, MAX_CELLS do
-			headerCells[index]:SetText(columns[index] and columns[index].label or "")
+			local column = columns[index]
+			local label = column and column.label or ""
+
+			-- The arrow says which column the table is in the order of and which way, and
+			-- it is drawn rather than said because a heading has no room for a sentence.
+			-- Only on the one column that is ordered: an arrow on every heading would be
+			-- five claims where there is one fact.
+			if column and chosen and chosen.key == column.key then
+				label = label .. (chosen.descending and " |cffffd700v|r" or " |cffffd700^|r")
+			end
+
+			headerCells[index]:SetText(label)
+
+			local button = headerButtons[index]
+			if column and column.key and UI:SummarySortable(column.key)
+				and column.drawX then
+				button:ClearAllPoints()
+				button:SetPoint("LEFT", header, "LEFT", column.drawX, 0)
+				button:SetWidth(column.drawWidth or column.width)
+				button:SetScript("OnClick", function()
+					UI:SetSummarySort(currentSet.id, column.key)
+					frame:Refresh()
+				end)
+				button:Show()
+			else
+				button:SetScript("OnClick", nil)
+				button:Hide()
+			end
 		end
 
 		local used = 0

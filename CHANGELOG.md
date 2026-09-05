@@ -19,6 +19,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The summary can be put in an order of your own.** Click a column heading to read the table
+  by it - money, rested experience, last seen, free bags, mail, when it expires, guild,
+  hearthstone, race, class - and click it again to turn it round. A third click gives the panel
+  its own order back. Each set of columns remembers its own, and remembers it between sessions.
+  A character something has never been read for goes last whichever way the column points,
+  rather than sorting as a nought and looking like the poorest character in the family.
+
 - **A rogue's lockpicking is recorded.** It shows on Abilities & Talents, under Spellbook, with
   its rank - it is an ability rather than a profession, so it is not among your professions and
   is not counted as one. Classic Era and Burning Crusade only: the skill does not exist on

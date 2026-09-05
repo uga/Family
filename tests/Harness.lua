@@ -17507,6 +17507,113 @@ print("the harness lives on one clock")
 	end
 end)()
 
+--------------------------------------------------------------------------------------------
+-- Reading the summary in an order of your own
+--------------------------------------------------------------------------------------------
+
+print()
+print("the summary sorted by a column somebody chose")
+
+;(function()
+	local realm = GetRealmName()
+	local roster = {
+		{ key = "Rich-" .. realm,  name = "Rich",  level = 60, money = 9000000 },
+		{ key = "Broke-" .. realm, name = "Broke", level = 60, money = 12 },
+		{ key = "Never-" .. realm, name = "Never", level = 60 },
+	}
+	for _, member in ipairs(roster) do
+		Family.Database:SetMeta(member.key, { name = member.name, realm = realm,
+			level = member.level, classFile = "MAGE", faction = "Alliance",
+			money = member.money })
+	end
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	clickButton("Overview")
+	Family.UI:Refresh()
+
+	-- The order the rows are actually drawn in, read off the panel rather than out of the
+	-- comparator: what is being checked is that somebody's choice reached the table.
+	local function order()
+		local seen = {}
+		for _, f in ipairs(frames) do
+			if onScreen(f) and type(f.memberKey) == "string" and f.__points then
+				local point = f.__points.TOPLEFT
+				local y = type(point) == "table" and point.y or 0
+				seen[#seen + 1] = { key = f.memberKey, y = y }
+			end
+		end
+		table.sort(seen, function(a, b) return (a.y or 0) > (b.y or 0) end)
+
+		local names = {}
+		for _, row in ipairs(seen) do names[#names + 1] = row.key end
+		return names
+	end
+
+	local function positionOf(name, list)
+		for index, key in ipairs(list) do
+			if key:find(name, 1, true) then return index end
+		end
+	end
+
+	check("nothing is chosen to begin with", Family.UI:SummarySort("overview") == nil)
+
+	-- Money ascending: the poorest first, and the one nobody has logged in on last - not
+	-- first, which is where a nought would put them.
+	Family.UI:SetSummarySort("overview", "money")
+	Family.UI:Refresh()
+
+	local up = order()
+	check("choosing a column puts the table in its order",
+		positionOf("Broke", up) < positionOf("Rich", up),
+		table.concat(up, ", "))
+	check("and a member whose money was never read is last, not poorest",
+		positionOf("Never", up) > positionOf("Rich", up), table.concat(up, ", "))
+
+	-- The same column again turns it round, and the unread member stays last.
+	Family.UI:SetSummarySort("overview", "money")
+	Family.UI:Refresh()
+
+	local down = order()
+	check("choosing it again turns the order round",
+		positionOf("Rich", down) < positionOf("Broke", down), table.concat(down, ", "))
+	check("and the one never read is still last, both ways",
+		positionOf("Never", down) > positionOf("Broke", down), table.concat(down, ", "))
+
+	-- And a third time puts the panel back to its own order, which is the way back for
+	-- somebody who does not know what the default was.
+	Family.UI:SetSummarySort("overview", "money")
+	check("and a third time gives the panel back its own order",
+		Family.UI:SummarySort("overview") == nil)
+
+	-- Per set: an order that makes sense of Activity means nothing on Miscellaneous.
+	Family.UI:SetSummarySort("overview", "money")
+	check("the order is remembered per column set",
+		Family.UI:SummarySort("overview") ~= nil
+			and Family.UI:SummarySort("misc") == nil)
+
+	-- Remembered, unlike the filters: an order hides nothing, so a panel opened tomorrow in
+	-- it does not look broken.
+	check("and it is written down rather than held for this session",
+		FamilyDB.ui.sort and FamilyDB.ui.sort.overview
+			and FamilyDB.ui.sort.overview.key == "money")
+
+	-- A column made of nothing sortable cannot be chosen, and asking is how a heading knows
+	-- whether to offer a button at all.
+	check("a column with no value behind it is not sortable",
+		Family.UI:SummarySortable("prof1") == false
+			or Family.UI:SummarySortable("prof1") == nil)
+	check("and one that is, is", Family.UI:SummarySortable("money") == true)
+
+	-- Race and class sort by what the cell draws, which is this client's word for them.
+	check("race is sortable, by the word the reader sees",
+		Family.UI:SummarySortable("race") == true)
+
+	Family.UI:SetSummarySort("overview", nil)
+	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
+	Family.UI:Refresh()
+end)()
+
 print()
 if failures == 0 then
 	print("all checks passed")
