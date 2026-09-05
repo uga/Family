@@ -5689,6 +5689,16 @@ do
 		Family.Recipes:MadeBy(999999) == nil,
 		tostring(Family.Recipes:MadeBy(999999)))
 
+	-- **And a recipe a trainer taught**, which is the half inverting the pattern lane can
+	-- never reach: no pattern item, so no row in either of the two tables that lane is made
+	-- of. Reported from play as *CTRL works on leatherworking and not on cooking or first
+	-- aid* - and cooking and first aid are worse still, being skill line category 9 where
+	-- every other table here reads category 11.
+	check("a cooking recipe nobody was handed a pattern for is named",
+		Family.Recipes:MadeBy(787) == 7752, tostring(Family.Recipes:MadeBy(787)))
+	check("and a first aid one, which is a secondary skill line",
+		Family.Recipes:MadeBy(1251) == 3275, tostring(Family.Recipes:MadeBy(1251)))
+
 	local row
 	for _, f in ipairs(frames) do
 		if f.__shown ~= false and f.spellID == 2667 then row = f end

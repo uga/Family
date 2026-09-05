@@ -46,6 +46,18 @@ LEARN_SPELL = 36
 CREATE_ITEM = 24
 PRIMARY_CATEGORY = "11"
 
+# Cooking and First Aid are category 9, not 11, and that is why the two lanes above have never
+# had a word to say about them: they are built from the primary skill lines only. The third
+# table below is the one that has to reach them, so it asks both.
+PROFESSION_CATEGORIES = {"9", "11"}
+
+# ...and it is emitted for Classic Era alone, because it is the only client that needs it. A
+# trade skill record there carries the product's item id and no spell (DATASOURCES section 2),
+# while Mists answers with both - measured, 8 smelting recipes with a spell id and an item id
+# each - and Burning Crusade behaves as Mists does. Emitting all three would be 130 KB to say
+# something two of them already say.
+MADE_BY_BUILDS = {"Classic Era"}
+
 # The number Capabilities derives from the interface version.
 EXPANSION = {"Classic Era": 1, "Burning Crusade Anniversary": 2,
              "Mists of Pandaria Classic": 5}
@@ -95,13 +107,20 @@ def read(table, build):
 
 
 def build():
-    teaches, makes = {}, {}
+    teaches, makes, madeby = {}, {}, {}
 
     for game, build_id in BUILDS.items():
-        professions = {int(r["ID"]) for r in read("SkillLine", build_id)
+        skill_lines = read("SkillLine", build_id)
+        professions = {int(r["ID"]) for r in skill_lines
                        if r.get("CategoryID") == PRIMARY_CATEGORY}
         taught = {int(r["Spell"]) for r in read("SkillLineAbility", build_id)
                   if int(r["SkillLine"]) in professions}
+
+        # Every profession, primary and secondary, for the third table only.
+        every = {int(r["ID"]) for r in skill_lines
+                 if r.get("CategoryID") in PROFESSION_CATEGORIES}
+        craftable = {int(r["Spell"]) for r in read("SkillLineAbility", build_id)
+                     if int(r["SkillLine"]) in every}
 
         # Both halves of the join come out of one pass: which spell a spell teaches, and
         # which item a spell makes.
@@ -117,7 +136,18 @@ def build():
             elif effect == CREATE_ITEM:
                 product = int(row.get("EffectItemType") or 0)
                 if product:
-                    made.setdefault(int(row["SpellID"]), set()).add(product)
+                    spell = int(row["SpellID"])
+                    made.setdefault(spell, set()).add(product)
+
+                    # And the same rows read the other way round, for the table that
+                    # answers a record holding a product and nothing else. Only where a
+                    # profession teaches the spell, so that quest rewards, consumables and
+                    # everything else that creates an item stay out of it. Lowest spell id
+                    # where two make the same thing, so two runs of this tool agree.
+                    if game in MADE_BY_BUILDS and spell in craftable:
+                        here = madeby.setdefault(EXPANSION[game], {})
+                        if product not in here or spell < here[product]:
+                            here[product] = spell
 
         # Two shapes, and only one of them was handled at first - which is why two builds out
         # of three came back with nothing at all.
@@ -221,12 +251,43 @@ def build():
         lines.append("\t},")
     lines += ["}", ""]
 
+    lines += [
+        "-- the item a recipe makes -> the spell that makes it",
+        "--",
+        "-- The two lanes above are keyed by the **recipe item** - the pattern in somebody's",
+        "-- bags. A Classic Era trade skill record holds neither: it holds the *product* and no",
+        "-- spell at all. So a professions row on that client knew what a recipe makes and not",
+        "-- what makes it, and the CTRL swap between the two readings had nothing to swap to -",
+        "-- reported from play on 2026-09-05 as broken when it was doing what it was told.",
+        "--",
+        "-- Inverting RecipeMakes answers for a recipe an item taught and not for one a trainer",
+        "-- taught, which is why cooking and first aid stayed silent while leatherworking",
+        "-- worked. This is built from SpellEffect directly, so a trainer's recipe is in it too,",
+        "-- and it asks the **secondary** skill lines as well - Cooking and First Aid are",
+        "-- category 9, and every other table here reads category 11.",
+        "--",
+        "-- Classic Era only, because it is the only client that needs it: Mists answers with",
+        "-- both ids and Burning Crusade behaves as Mists does. All three would be 130 KB to say",
+        "-- something two of them already say.",
+        "Family.RecipeMadeBy = {",
+    ]
+    for xpac in sorted(EXPANSION.values()):
+        if xpac not in madeby:
+            continue
+        lines.append("\t[%d] = {" % xpac)
+        for item in sorted(madeby[xpac]):
+            lines.append("\t\t[%d] = %d," % (item, madeby[xpac][item]))
+        lines.append("\t},")
+    lines += ["}", ""]
+
     with open(OUT, "w", encoding="utf-8") as handle:
         handle.write("\n".join(lines))
 
     print("\n  %d recipe items across %d expansions, %d of them naming what they make"
           % (sum(len(v) for v in teaches.values()), len(teaches),
              sum(len(v) for v in makes.values())))
+    print("  %d products naming what makes them, on %d build(s)"
+          % (sum(len(v) for v in madeby.values()), len(madeby)))
 
 
 if __name__ == "__main__":

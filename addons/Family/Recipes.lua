@@ -207,9 +207,18 @@ end
 -- Family already loads, the first time anybody asks. Per expansion, because a client only has
 -- one.
 --
--- It answers for a recipe somebody was taught by an item and not for one a trainer taught, which
--- has no pattern and so no row in either table. That is why the hint line is decided per row: it
--- appears where the swap is really there and stays away where it is not.
+-- **The shipped table answers first, where there is one.** Inverting `RecipeMakes` reaches a
+-- recipe somebody was taught by an item and not one a trainer taught, which has no pattern and so
+-- no row in either lane - and that showed itself immediately from play: on Era CTRL swapped on
+-- leatherworking and did nothing on cooking or first aid. Worse, the two lanes are built from the
+-- **primary** skill lines alone, and Cooking and First Aid are category 9 rather than 11, so they
+-- could never have been in them at all.
+--
+-- `RecipeMadeBy` is generated from `SpellEffect` straight to the point - the item a recipe makes,
+-- and the spell that makes it - across every profession, primary and secondary. Classic Era only,
+-- because it is the only client that needs it: 1,406 products, 26 KB, against an addon of 2,120
+-- KB. The composition below stays for the other two builds, where a record usually carries the
+-- spell anyway and this is the last resort rather than the first.
 --
 -- Where two patterns make the same thing the lower id wins, so two draws of one page agree.
 local madeBy = {}
@@ -219,6 +228,10 @@ function Recipes:MadeBy(itemID)
 
 	local expansion = Family.Capabilities and Family.Capabilities.expansion
 	if not expansion then return nil end
+
+	local shipped = (Family.RecipeMadeBy or {})[expansion]
+	local direct = shipped and shipped[itemID]
+	if direct then return direct end
 
 	local known = madeBy[expansion]
 	if not known then
