@@ -276,3 +276,72 @@ grew a `number` field rather than that row growing a special case, so the next s
 a number has somewhere to go. Three days by default, one to thirty. `docs/DECISIONS.md` carries
 why the character being played is named and why *already gone* is not *expiring now*.
 
+
+---
+
+## 12. The whole-family reputations view, as it was actually asked for
+
+**Supersedes the shape built for entry 8.** What shipped lists one row per faction showing how
+far the family has got and who got there. What was asked for is a faction and *its people*.
+
+**Asked, 2026-09-05:**
+
+- It behaves like the professions panel: turning **Whole family** on empties the panel of the
+  one-member reading, rather than sitting beside it.
+- The filter box at the top acts on **faction names**.
+- The page lists factions, and under each the alts who have a standing with it, each with the
+  standing and the score:
+
+      Ironforge                    Alt1    Friendly (1300/6000)
+                                   Alt3    Exalted (…)
+                                   Alt15   Honored (…)
+
+- **Two levels, because the list can be long.** Three alts are shown under a faction; where
+  there are more, the third is followed by **"n more"**, and clicking that drills down to the
+  rest.
+- The realm, class and name filters at the top act on **the list of alts**, in this view too.
+- An alt on a realm other than the logged-in character's carries its realm, as everywhere else.
+
+**What exists to build on:** the gathering is already written - `Family_UI/Character.lua` walks
+every member and every sibling and groups their reputations by faction id. What changes is the
+drawing: rows become faction-plus-people rather than faction-plus-best, and the panel grows a
+drill-down of the kind the professions search already has (`UI.__openCrafters`).
+
+**One thing to settle rather than assume.** The realm rule as asked is *different from the one
+Family uses now*: today a name carries its realm when the **account** spans more than one realm
+(`UI:AcrossRealms`, decided 2026-09-04), and what is asked here is when the alt's realm differs
+from **the logged-in character's**. On a single-realm account the two agree. On an account
+spread about they do not: today every name carries a realm, and the rule as asked would leave
+the ones on your own realm bare. Worth one sentence from Alberto before building, because
+changing it changes tooltips and search results too.
+
+**Received:** 2026-09-05, from Alberto.
+
+---
+
+## Owed to ourselves, not asked for
+
+This page is for requests, and these are not — they are debts this session took on knowingly.
+They are here so that there is one place to look rather than two.
+
+### The harness cannot tell two panels' text apart
+
+`visibleText` in `tests/Harness.lua` sweeps every font string in the client. Several panels are
+built, none is hidden in a way a check can see, and so "this word is not on screen" is answered
+by the word being on a screen nobody is looking at.
+
+It bit three times on 2026-09-04: a check written for the character panel's class filter that
+had silently moved to the summary's (L-041), the reputation filter box that was typed into on
+the wrong build of the panel, and lockpicking - where three checks were written, all three
+passed for the wrong reason, and the honest end was to delete them and write down that the
+property is guarded and not pinned.
+
+Entries 9, 10 and 12 are all panels. This is worth closing before them.
+
+### Three probes are out and unanswered
+
+Handed over 2026-09-04, needed before their entries can start:
+
+- **Entry 9** — whether the client will name a hunter's stabled pets while the stable is shut.
+- **Entry 10** — whether the warlock demon-ability tab exists without the demon summoned.
+- **Entry 2** — whether a tooltip can be redrawn while a modifier is held.
