@@ -794,8 +794,11 @@ CELL.race = function(meta) return UI:RaceName(meta) end
 -- languages. The word is the fallback for a place this client has never heard of - a Northrend
 -- zone on an Era client - which is the honest answer rather than a wrong one.
 --
--- **A subzone has no id.** `GetSubZoneText` answers with a word and there is nothing to look
--- it up by, so that line is the word as recorded and reads in the language it was recorded in.
+-- **A subzone is not named from an id, and that is measured rather than assumed.** This comment
+-- used to say there was nothing to look one up by, which was wrong - `Names:AreaFor` is exactly
+-- that, and it is what names a hearthstone. Asked on a live French Era client standing in the
+-- Military Ward of Ironforge, the walk answered `nil`: the word is in no area that client will
+-- name. So that line is the word as recorded and reads in the language it was recorded in.
 -- That is a property of the data and is why the zone leads: the half that can be translated is
 -- the half that says where in the world this is.
 --

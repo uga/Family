@@ -1637,8 +1637,21 @@ normally shown.
 
 **Three shared things are words with no identity behind them:**
 
-- **A subzone.** `GetSubZoneText` answers with a word and there is nothing that turns one back
-  into an id. This one is not a gap that can be closed later; there is nothing to close it with.
+- **A subzone.** `GetSubZoneText` answers with a word, and the walk that turns a word into an id
+  does not find it. **Measured 2026-09-05**, because the first version of this line asserted that
+  no such mechanism existed - which was wrong: `Names:AreaFor` is exactly that mechanism, and it
+  is what names a hearthstone and a quest category. Asked on a live French Era client standing in
+  the Military Ward of Ironforge:
+
+      sub  La Garde militaire  ->  nil
+
+  So the word is in no area the client will name, and wago's Era `AreaTable` agrees - that export
+  carries 1,212 rows and **no child of area 1537 at all**, Military Ward included. Not every
+  subzone is like that: Eccebombo's was recorded as *Ironforge*, which **is** area 1537, so a
+  subzone word that happens to name a zone would be found. Half a column translated by luck, at
+  a twenty-thousand-id walk for each new subzone word and most of them coming back empty, is not
+  a trade worth making - so this line stays as recorded, and now it stays that way for a measured
+  reason rather than an asserted one.
 - **A quest's title**, and
 - **the zone heading a quest is filed under**, both in the `quests` payload, both drawn as
   recorded by `UI:QuestLines`.
