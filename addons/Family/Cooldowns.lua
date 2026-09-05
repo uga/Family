@@ -161,7 +161,7 @@ end
 
 -- How many of a member's cooldowns have come ready, and when the next one will.
 --
--- **Timers, not recipes.** Thirty alchemy transmutes share one cooldown, and the rule that
+-- **Timers, not recipes**, and every kind of them. Thirty alchemy transmutes share one cooldown, and the rule that
 -- says so is written out at length over `Crafting` below - a group of recipes on one timer is
 -- one thing somebody can go and do. Counting the entries instead told a player with three
 -- transmutes learned that three things were waiting for them when one was. Reported from play
@@ -176,28 +176,24 @@ end
 function Cooldowns:Summarise(meta)
 	local ready, next_ = 0, nil
 
+	-- Everything `Crafting` groups, crafts and crafting items alike.
+	--
+	-- **The item half is a reversal**, taken 2026-09-05 and argued for at length in
+	-- `DECISIONS.md`. A ready item used to reach the panel and not the login line, on the
+	-- ground that a panel is a table somebody chose to open and a notice is a claim pushed
+	-- at them. What that leaves out is that the two are symmetric: an alt's bags can only be
+	-- emptied by playing that alt, and playing it runs a bag scan - exactly as a transmute
+	-- can only be used through the window whose scan records the new cooldown. The 2026-09-01
+	-- row conceded as much in its own second clause and kept the split anyway.
+	--
+	-- `Crafting` and not `For`, because `Crafting` asks `IsCraftingItem` and `For` does not:
+	-- a Chronoboon and a Super Snapper are cooldowns and are not crafting cooldowns, and the
+	-- announcement must inherit that filter rather than a looser one.
 	for _, kind in ipairs(self:Crafting(meta)) do
-		-- Crafts only, and this is the line the `kind` field was added for. `Crafting`
-		-- draws a panel and therefore also carries the crafting *items*, including ready
-		-- ones; the comment over that loop says they are shown there and deliberately not
-		-- announced, because a ready item means only that nobody has looked in the bag
-		-- since. Counting them here would have announced them by the back door.
-		if kind.kind == "craft" then
-			if kind.ready then
-				ready = ready + 1
-			elseif not next_ or kind.readyAt < next_ then
-				next_ = kind.readyAt
-			end
-		end
-	end
-
-	-- And the items, for the *next* half alone. `For` keeps one only while it is still
-	-- counting down - never a ready one - so an item can say when something comes back and
-	-- can never add to the count.
-	for _, entry in ipairs(self:For(meta)) do
-		if entry.kind == "item" and entry.readyAt
-			and (not next_ or entry.readyAt < next_) then
-			next_ = entry.readyAt
+		if kind.ready then
+			ready = ready + 1
+		elseif not next_ or kind.readyAt < next_ then
+			next_ = kind.readyAt
 		end
 	end
 

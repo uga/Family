@@ -158,7 +158,9 @@ is a decision rather than an afternoon of archaeology.
   for anybody with a dozen crafters was a paragraph across the chat frame, and never said what
   any of them was waiting on. Each line now names the cooldowns themselves, carries the
   character's realm where they are not on the one you are playing, and marks a character on
-  the other side.
+  the other side. Salt shakers and the other crafting items are announced now too, beside the
+  transmutes and the mooncloth - the Crafting table has always shown them and the line never
+  did.
 
 - **The login notice counted recipes instead of cooldowns.** An alchemist who has learned three
   transmutes has one cooldown, not three - the game puts every transmute on the same timer - and

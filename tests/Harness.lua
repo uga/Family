@@ -12811,9 +12811,25 @@ print("how many crafting cooldowns a member is announced as having")
 		tostring(shown and shown.ready))
 	check("and told apart from a craft by what it is, not by what it happens to carry",
 		shown and shown.kind == "item", tostring(shown and shown.kind))
-	check("and adds nothing to what is announced",
+	-- **And it counts**, which reverses 2026-09-01 and is argued in `DECISIONS.md`. The
+	-- ground for the old split was that a panel is a table somebody opened and a notice is
+	-- a claim pushed at them; what it left out is that the two are symmetric - an alt's
+	-- bags can only be emptied by playing that alt, and playing it runs a bag scan, exactly
+	-- as a transmute can only be used through the window whose scan records it.
+	check("and it counts towards what is announced, as any other cooldown does",
+		Family.Cooldowns:Summarise(Family.Database:Meta(key)) == 1,
+		tostring(Family.Cooldowns:Summarise(Family.Database:Meta(key))))
+
+	-- What is *not* announced is a cooldown that is not a crafting one, and that filter
+	-- comes with `Crafting` rather than being written again here: a Chronoboon has a
+	-- cooldown and makes something and is not this.
+	Family.Database:SetMeta(key, { itemCooldowns = { { id = 9328 } },
+		cooldownItems = { [9328] = 202 } })
+	check("while an item that is not a crafting cooldown still is not",
 		Family.Cooldowns:Summarise(Family.Database:Meta(key)) == 0,
 		tostring(Family.Cooldowns:Summarise(Family.Database:Meta(key))))
+	Family.Database:SetMeta(key, { itemCooldowns = { { id = 15846 } },
+		cooldownItems = { [15846] = 165 } })
 
 	-- A running item is a fact Family still has, so it may say when - and still never counts.
 	local soon = time() + 900
@@ -12954,13 +12970,20 @@ print("the login line about crafting cooldowns")
 			if withItem[index]:find("Weaver", 1, true) then line = withItem[index] end
 		end
 
-		check("a character with a ready crafting item beside a craft is still named",
+		check("a character with a ready crafting item beside a craft is named",
 			line ~= nil, tostring(line))
 		check("their craft is named", line and line:find("Transmute 1", 1, true) ~= nil,
 			tostring(line))
-		check("and the item is not, which is the split that notice keeps",
-			line and line:find("Salt", 1, true) == nil
-				and line:find("15846", 1, true) == nil, tostring(line))
+
+		-- Named by the profession that makes it, because the client here has never been
+		-- told what item 15846 is called - which is the ordinary case at login for an
+		-- alt's bag, and the reason this does not simply print the placeholder.
+		check("and the item beside it, by the profession that makes it where the client "
+			.. "cannot name it",
+			line and line:find(Family:ProfessionName(165), 1, true) ~= nil,
+			tostring(line))
+		check("rather than by a number nobody can read",
+			line and line:find("15846", 1, true) == nil, tostring(line))
 
 		Family.Database:SetMeta("Weaver-Fire Maw", {
 			itemCooldowns = Family.CLEAR, cooldownItems = Family.CLEAR })

@@ -687,20 +687,39 @@ function UI:CooldownNotice()
 			-- profession - *Alchemy*, always, the client putting every transmute on
 			-- one - and a profession with a single timed recipe after the recipe.
 			--
-			-- **Crafts only**, and that is decided rather than incidental: the same
-			-- call carries the crafting items, and a ready item is drawn on the panel
-			-- and deliberately never announced here. `DECISIONS.md` 2026-09-01 says
-			-- why - a panel is a table somebody opened, a login line is a claim pushed
-			-- at them, and "ready" for an item means only that nobody has looked in
-			-- the bag.
+			-- **Crafting items too**, which reverses 2026-09-01. Family's own help
+			-- text for `/family cooldowns` has always said this feature is about
+			-- "transmutes, mooncloth, salt shakers", and the shaker is an item - so
+			-- the login line was leaving out a thing the addon tells the player it
+			-- watches. What `Crafting` carries here is already filtered by
+			-- `IsCraftingItem`, so a Chronoboon does not come with it.
 			--
 			-- Asked with no key and no callback, like the panel's own `only`: a name
 			-- the client has not cached falls back to the word that was recorded, and
 			-- a callback here would reprint the notice rather than redraw a table.
 			local named = {}
 			for _, group in ipairs(Family.Cooldowns:Crafting(meta)) do
-				if group.kind == "craft" and group.ready then
-					named[#named + 1] = tostring(group.label)
+				if group.ready then
+					local label = tostring(group.label)
+
+					-- The panel can afford a placeholder because it asks the
+					-- client again and redraws when the answer arrives. A line
+					-- printed once cannot, and at login an alt's item is often
+					-- not in the cache at all - it is in that alt's bags, not in
+					-- the bags of whoever is being played. `Names:Item` says
+					-- outright whether it knew, and where it did not the
+					-- profession that makes the thing is the true fact left:
+					-- *Cooking* is worth having and *Item #15846* is not.
+					if group.kind == "item" and group.item then
+						local name, known = Family.Names:Item(group.item)
+						if known then
+							label = name
+						elseif group.profession then
+							label = Family:ProfessionName(group.profession)
+						end
+					end
+
+					named[#named + 1] = label
 				end
 			end
 
