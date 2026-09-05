@@ -78,6 +78,30 @@ found.
 **Unknown:** whether the tooltip hook can redraw on a modifier press, or whether the player has
 to move the mouse off and back. That decides whether this feels like a feature or a trick.
 
+**Probed 2026-09-05, and it is a step rather than the answer.** Run with a tooltip up, on Era
+and on TBC:
+
+    /run print(GameTooltip:IsShown(), GameTooltip:GetOwner()
+        and GameTooltip:GetOwner():GetName())
+
+    true  BagnonContainerItem24
+
+So while a tooltip is up the client will say **that it is up and what it is anchored to**, and
+the owner is reachable and has a name - here another addon's bag button, which is worth
+noticing on its own: whatever redraws this has to re-anchor to a frame Family did not create
+and does not control.
+
+**What is still unknown is the redraw.** Knowing the owner is what makes a redraw *possible*;
+whether calling `SetOwner` and `SetHibItem` again while the mouse has not moved actually
+repaints, rather than flickering or closing, is the thing that decides feature from trick. The
+next probe is to do it and look:
+
+    /run local o = GameTooltip:GetOwner() GameTooltip:SetOwner(o, "ANCHOR_RIGHT")
+        GameTooltip:SetHyperlink("|Hitem:2589|h") GameTooltip:Show()
+
+With the mouse held still over a bag item. If the tooltip changes to Linen Cloth without the
+pointer moving, the modifier can do the same thing.
+
 ---
 
 ## 3. Filters and sorting on every panel that lists characters
@@ -281,6 +305,31 @@ while the pet is not summoned is the first question, and it is a probe, not a gu
 
 **Received:** 2026-09-04, from Alberto.
 
+**Probed 2026-09-05, and the answer is half an answer.** Run on Era and on TBC:
+
+    /run print(GetNumStablePets and GetNumStablePets() or "no stable api")
+        for i=0,4 do local n=GetStablePetInfo and select(1,GetStablePetInfo(i))
+        print(i,tostring(n)) end
+
+- `GetNumStablePets` **does not exist** on either client - both answered *no stable api*. So
+  how many pets are in a stable is not a question this call can be asked, and the count has to
+  come from walking the slots until they run out.
+- `GetStablePetInfo` **does** exist and **does** answer with the stable shut, which was the
+  question. Era answered for slots 0, 1, 2 and 3 and nothing for 4; TBC answered for 0, 1 and
+  3 and nothing for 2 or 4 - so a nil slot is a gap rather than the end of the list, and
+  walking has to run the whole range rather than stop at the first empty one.
+
+**What it does not yet say is whether the pets are named.** The probe read `select(1, ...)`,
+and the first return of `GetStablePetInfo` is the **icon**: 132189, 132192, 132203 on Era and
+132194, 132192 on TBC are texture ids, not names. The name is the second return. So this is
+still owed, and it is one line:
+
+    /run for i=0,4 do local icon,name,level,family,loyalty = GetStablePetInfo(i)
+        print(i, tostring(name), tostring(level), tostring(family)) end
+
+Reading the wrong return and reporting it as a name would have been the whole entry built on a
+number.
+
 ---
 
 ## 10. Warlocks: the per-demon abilities known
@@ -292,6 +341,29 @@ two are written next to each other: both are "what does this class know that is 
 creature rather than under the character".
 
 **Received:** 2026-09-04, from Alberto.
+
+**Probed 2026-09-05, and it answers the question by not containing one.** Run on a warlock, on
+Era and on TBC:
+
+    /run for i=1,GetNumSpellTabs() do local n,_,o,c=GetSpellTabInfo(i) print(i,n,o,c) end
+
+    Era   1 General 0 14   2 Affliction 14 59   3 Demonology 73 46   4 Destruction 121 27
+    TBC   1 General 0 11   2 Affliction 11 47   3 Demonology 58 41   4 Destruction 99 24
+
+Four tabs, and every one of them is the character's own: General and the three talent trees.
+**There is no demon tab in the spell tabs at all**, summoned or not - *Demonology* is the
+warlock's own tree and not the demon's book, and reading it would answer a different question
+from the one this entry asks.
+
+So the spell tabs are the wrong door. What is left to probe is the pet book, which on these
+clients is reached with `HasPetSpells()` and the pet book type rather than through
+`GetSpellTabInfo` - and whether **that** answers with no demon out is the question entry 9's
+probe answered for the stable. Owed, and it is:
+
+    /run local n, texture = HasPetSpells() print(tostring(n), tostring(texture))
+
+Run it once with a demon summoned and once without, because the difference between the two
+answers is the whole entry.
 
 ---
 
