@@ -122,13 +122,6 @@ local function membersKnown()
 	return UI:EveryMember()
 end
 
--- Everyone the gear grid draws: our own members, then each linked family's siblings under
--- their own name (§6). Our own are one group with no heading, because a heading over the
--- only group that is not somebody else's would be labelling the ordinary case.
---
--- Ours, strictly - not the list the member button offers. The two were the same call for a
--- while and this grid was the loser: a shared member landed in the group that has no heading,
--- which is the one place on this screen where whose somebody is cannot be seen at all.
 -- The faction whose people are all showing, if any. On the panel rather than on a row, because
 -- rows are pooled and a row would carry it into whatever is drawn next.
 UI:OnFold("character", function()
@@ -141,6 +134,13 @@ end)
 local FACTION_PEOPLE = 3
 local FACTION_RIGHT = 200
 
+-- Everyone the gear grid draws: our own members, then each linked family's siblings under
+-- their own name (§6). Our own are one group with no heading, because a heading over the
+-- only group that is not somebody else's would be labelling the ordinary case.
+--
+-- Ours, strictly - not the list the member button offers. The two were the same call for a
+-- while and this grid was the loser: a shared member landed in the group that has no heading,
+-- which is the one place on this screen where whose somebody is cannot be seen at all.
 local function gearRoster()
 	local groups = { { name = nil, members = UI:OurMembers() } }
 
