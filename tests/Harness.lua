@@ -12110,6 +12110,173 @@ print("what is in the post")
 end)()
 
 --------------------------------------------------------------------------------------------
+-- What the letters do when the window shuts, and whose letters they are
+--
+-- Two properties of the same unfold, written into the backlog on 2026-09-05 as owed rather
+-- than closed with a check that reads the panel's source and calls a line of code proof.
+--
+-- **The fold.** `UI:FoldEverything` runs every registered folder and counts them, so a panel
+-- that never registered one is caught - and nothing said whether the summary's folder clears
+-- the right thing. `openMail` and `openBoon` are file locals in `Family_UI/Summary.lua`, so
+-- there is no reading them from here at all: the only way in is the rows they cause to be
+-- drawn, which means finding the figure on a drawn row, clicking it, and counting.
+--
+-- **The read.** The same unfold asked `Family.Database:Payload` for a member whose key may be
+-- borrowed, so a sibling's letters drew none and said nothing about why - L-052, the class
+-- entry 1 of the backlog turned up. That was fixed and the mutation putting it back failed
+-- nothing, because every check of this unfold was on a member of our own.
+--------------------------------------------------------------------------------------------
+
+print()
+print("the letters, put away with everything else")
+
+;(function()
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	clickButton("Activity")
+
+	local function rows()
+		local drawn = 0
+		for _, f in ipairs(frames) do
+			if f.cells and f.__shown == true then drawn = drawn + 1 end
+		end
+		return drawn
+	end
+
+	-- Found by what the row carries rather than by where it sits in `frames`: rows come out
+	-- of a pool that grows, so the order they were created in is not the order they are
+	-- drawn in, and walking the list to find "the next one" has been wrong twice.
+	local function armed(hit)
+		for _, f in ipairs(frames) do
+			local button = f[hit]
+			if button and f.__shown == true and button.__shown == true
+				and button.__scripts and button.__scripts.OnClick then
+				return f
+			end
+		end
+	end
+
+	local shut = rows()
+	local opener = armed("mailHit")
+	check("a member's letters can be opened", opener ~= nil)
+
+	opener.mailHit.__scripts.OnClick(opener.mailHit)
+	local open = rows()
+	check("and the figure unfolds them", open > shut,
+		tostring(open) .. " rows against " .. tostring(shut))
+
+	-- Nothing here counts the folders. That folders run at all is pinned where they are
+	-- registered, and a check that a *number* came back would have passed with this panel's
+	-- folder deleted - measured, and it did.
+	Family.UI:FoldEverything()
+	Family.UI:Refresh()
+	check("and putting everything away takes the letters with it", rows() == shut,
+		tostring(rows()) .. " against " .. tostring(shut))
+
+	-- The other half of what that folder clears, and it is a separate local for a reason:
+	-- opening one must not shut the other, so a folder that cleared only the letters would
+	-- leave a boon unfolded behind a closed window and nothing above would notice.
+	clickButton("Miscellaneous")
+
+	local boonKey = opener.memberKey
+	Family.Database:SetMeta(boonKey,
+		{ banked = { { icon = 134153, minutes = 120 } } })
+	Family.UI:Refresh()
+
+	local shutBoon = rows()
+	local boonRow = armed("boonHit")
+	check("a member's banked boon can be opened too", boonRow ~= nil)
+
+	boonRow.boonHit.__scripts.OnClick(boonRow.boonHit)
+	check("and the Chrono figure unfolds it", rows() > shutBoon,
+		tostring(rows()) .. " rows against " .. tostring(shutBoon))
+
+	Family.UI:FoldEverything()
+	Family.UI:Refresh()
+	check("which the same fold puts away as well", rows() == shutBoon,
+		tostring(rows()) .. " against " .. tostring(shutBoon))
+
+	Family.Database:SetMeta(boonKey, { banked = Family.CLEAR })
+	clickButton("Overview")
+	Family.UI:Refresh()
+end)()
+
+print()
+print("a linked family's letters, unfolded on the summary")
+
+-- The third of the three `Family.Database:Payload` calls L-052 found. The other two are drawn
+-- end to end by checks written the day they were fixed; this one was left covered by reading
+-- the line rather than by measuring it, and the backlog says so out loud.
+;(function()
+	local held = FamilyDB.wide
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["postfam"] = { name = "Postal-Thunderstrike", grants = {}, siblings = {},
+			members = {
+				["Postal-Thunderstrike"] = {
+					meta = { name = "Postal", realm = "Thunderstrike",
+						classFile = "MAGE", level = 60, faction = "Alliance",
+						mailCount = 2, mailSeen = time(),
+						mailExpiresBy = time() + 20 * 86400 },
+					payload = { mail = { seen = time(), letters = {
+						{ sender = "Borrowed Postmaster", subject = "Ashes of Al'ar",
+							expiresBy = time() + 20 * 86400 },
+						{ sender = "Borrowed Auctioneer", subject = "Sold",
+							money = 4200, expiresBy = time() + 25 * 86400 },
+					} } },
+					seen = time(),
+				},
+			} } },
+	}
+	Family.Wide:SetSibling("postfam", "Postal-Thunderstrike", true)
+
+	local key = Family.Wide:BorrowedKey("postfam", "Postal-Thunderstrike")
+
+	-- Said out loud, because a check that only asserted the first would pass with the bug
+	-- back: `UI:Payload` was always right, it was simply not the one being called.
+	check("a sibling's post is there when asked the way a panel asks",
+		(Family.UI:Payload(key) or {}).mail ~= nil)
+	check("and absent when asked of the database, which is the trap",
+		Family.Database:Payload(key) == nil)
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	clickButton("Activity")
+	Family.UI:Refresh()
+
+	check("the sibling is drawn on the set that counts letters", drawnText("Postal"))
+
+	local row
+	for _, f in ipairs(frames) do
+		if f.__shown == true and f.memberKey == key and f.mailHit
+			and f.mailHit.__shown == true and f.mailHit.__scripts
+			and f.mailHit.__scripts.OnClick then
+			row = f
+		end
+	end
+	check("with the figure counting their letters armed", row ~= nil)
+
+	check("and nothing of theirs unfolded before it is clicked",
+		drawnText("Borrowed Postmaster") == false)
+
+	row.mailHit.__scripts.OnClick(row.mailHit)
+
+	check("clicking it names who wrote to them", drawnText("Borrowed Postmaster"))
+	check("and what the letter is about", drawnText("Ashes of Al'ar"))
+	check("every letter, not the first of them", drawnText("Borrowed Auctioneer"))
+
+	Family.UI:FoldEverything()
+	Family.UI:Refresh()
+	check("and a borrowed member's letters fold away like our own",
+		drawnText("Borrowed Postmaster") == false)
+
+	Family.Wide:SetSibling("postfam", "Postal-Thunderstrike", false)
+	FamilyDB.wide = held
+	clickButton("Overview")
+	Family.UI:Refresh()
+end)()
+
+--------------------------------------------------------------------------------------------
 -- A cooldown belonging to a profession nobody has any more
 --
 -- `payload.professions` keeps every profession Family has ever read for a member, which is
@@ -18615,9 +18782,10 @@ print("the family's reputations, as factions rather than as members")
 		--
 		-- **What this does not pin** is that each folder clears the right thing. The two
 		-- above do that for their own; the summary's holds file locals this file cannot
-		-- reach, and driving its letters open would mean finding the figure that opens
-		-- them. Owed, and written down rather than papered over with a check that reads
-		-- the panel's source and calls it proof.
+		-- reach, so the only way in is the rows they cause to be drawn. That was owed for
+		-- a day and is paid: *the letters, put away with everything else* opens a member's
+		-- post and their boon and counts the rows back down, and the mutation that clears
+		-- only the letters is caught by the boon alone.
 		local folded, failed = Family.UI:FoldEverything()
 		check("every panel with something to fold has registered a way to fold it",
 			folded >= 3, tostring(folded))

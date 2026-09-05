@@ -717,7 +717,7 @@ looking for a box that does not exist.
 
 ---
 
-### Two things about the summary's letter unfold that no check reaches
+### Two things about the summary's letter unfold that no check reaches — PAID 2026-09-05
 
 **The fold.** `UI:FoldEverything` runs every registered folder and the harness counts them, so a
 panel that never registered one is caught - but nothing pins that the summary's folder clears
@@ -736,6 +736,23 @@ of those in this file already, about this same unfold, and all it says is that a
 exists.
 
 Written down 2026-09-05.
+
+**Paid the same day, and the condition above is what shaped it.** Nothing reads `openMail` or
+`openBoon`, because nothing outside `Summary.lua` can: the way in is the rows they cause to be
+drawn. So the check finds the figure on a drawn row - by what the row carries, never by where it
+sits in `frames`, which grows - clicks it, counts the rows up, folds everything, and counts them
+back down. Sixteen checks in two blocks: *the letters, put away with everything else* and *a
+linked family's letters, unfolded on the summary*. No addon code changed.
+
+Four mutations, and the fourth is the one worth recording. Deleting the panel's folder
+registration outright left *the summary has a folder of its own to run* green, because
+`FoldEverything` counts every panel's folders and three others had registered one - so that
+check was deleted rather than kept beside the ones that work. What pins the two locals being
+two is the boon: clearing only `openMail` fails exactly one check, and it is the boon's.
+
+The third mutation puts L-052 back - `Family.Database:Payload` for a borrowed key - and fails
+three. That was the site this section called covered by reading rather than by measuring, and it
+is the last of the three.
 
 ---
 
