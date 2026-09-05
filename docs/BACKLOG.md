@@ -127,9 +127,14 @@ it was asked: it needs no whole-family reading and therefore no filters. Which i
 answer - a talent tree is one character's arrangement of points and means nothing averaged over
 forty, and the spellbook half is already reachable per member.
 
-**Still open under the original ask and not covered above:** professions filtered by profession
-and sorted by that profession's skill, and crafting filtered by cooldown and profession. Those
-are filters on a column set rather than on a member, which is a different mechanism again.
+**Still open under the original ask and not covered above:** professions sorted by that
+profession's skill, and crafting filtered by cooldown and profession. Those are filters on a
+column set rather than on a member, which is a different mechanism again.
+
+**Professions filtered by profession: done 2026-09-05**, asked again from play as *who are the
+blacksmiths?* A set may now declare a `narrow` of its own - a caption, the choices the family
+holds, and a predicate - and one shared picker takes on whatever the open set is asking. The
+mechanism is there for the crafting pair above to use rather than to invent.
 
 ---
 

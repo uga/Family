@@ -360,6 +360,7 @@ Family.locales.deDE = {
 	["Difficulty"] = "Schwierigkeit",
 	["Item level"] = "Gegenstandsstufe",
 	["Skill needed"] = "Benötigte Fertigkeit",
+	["Profession"] = "Beruf",
 	["Item"] = "Gegenstand",
 	["How many"] = "Anzahl",
 	["By item, and under each of them whoever has the most."] = "Nach Gegenstand, und darunter jeweils, wer am meisten davon hat.",

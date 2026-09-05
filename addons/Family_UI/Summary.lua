@@ -62,6 +62,17 @@ local skillsOf, skillText
 -- arrives.
 local currencyColumns, craftingColumns
 
+-- A profession as one thing, however it was filed.
+--
+-- Records written before skill line ids were used are keyed by the profession's name, in the
+-- language of the client that read it; newer ones are keyed by the id. Both name one
+-- profession, and a picker that offered them separately would offer the same word twice and
+-- narrow to half a family each time.
+local function professionID(id)
+	if type(id) == "string" then return Family:SkillLineFor(id) or id end
+	return id
+end
+
 local SETS = {
 	{
 		id = "overview", label = L["Overview"],
@@ -118,6 +129,51 @@ local SETS = {
 	},
 	{
 		id = "professions", label = L["Professions"],
+
+		-- **Which profession**, which is a narrowing this set owns rather than one the
+		-- member filters beside it can express. *Who are the blacksmiths* is a question
+		-- about a column; name, class and level are questions about a member. Asked from
+		-- play 2026-09-05.
+		--
+		-- By skill line id and never by the word. The same profession is recorded in
+		-- whatever language the client that read it was set to, so two members can hold one
+		-- profession under two spellings - the fault L-015 is about - and an older record is
+		-- filed under the word itself. `Family:SkillLineFor` turns that word back into the
+		-- id, so both are one choice, and `Family:ProfessionName` puts the reader's own
+		-- language on the label.
+		narrow = {
+			label = L["Profession"],
+
+			-- Only what the family actually has, which is the rule every picker in Family
+			-- follows: offering blacksmithing to a family with no blacksmith is offering a
+			-- way to show nothing.
+			choices = function()
+				local seen, list = {}, {}
+				for _, entry in pairs(Family.Database:Members()) do
+					for _, secondary in ipairs({ false, true }) do
+						for _, held in ipairs(skillsOf(entry.meta or {}, secondary)) do
+							local id = professionID(held.id)
+							if id ~= nil and not seen[id] then
+								seen[id] = true
+								list[#list + 1] = { value = id, label = held.name }
+							end
+						end
+					end
+				end
+				table.sort(list, function(a, b) return a.label < b.label end)
+				return list
+			end,
+
+			-- Walked rather than looked up, because the key a record is filed under is not
+			-- always the key the picker offers: one of them may be a word.
+			passes = function(meta, wanted)
+				for id, skill in pairs((meta or {}).skills or {}) do
+					if not skill.class and professionID(id) == wanted then return true end
+				end
+				return false
+			end,
+		},
+
 		columns = {
 			-- Four columns, and as many lines per member as it takes. Professions do
 			-- not fit on one line - five side by side cut "Leatherworking 289/300"
@@ -1697,6 +1753,29 @@ local function build(frame)
 	dash:SetText("-")
 	local maxBox = levelBox("FamilySummaryLevelMax", dash, 10)
 
+	-- The narrowing a set brings with it, in one control that changes what it is asking.
+	--
+	-- One picker rather than one per set, because the sets that want one want *a* one - a
+	-- list of things the family holds, narrowed to one of them - and a second copy would be
+	-- the fifth filter bar this addon has already learned not to build.
+	--
+	-- Its caption and its list are the current set's, reassigned as the set changes, and its
+	-- value is asked of `Reconcile` rather than remembered: a set with no narrowing offers an
+	-- empty list, and Reconcile drops a choice that is no longer on offer. So switching from
+	-- Professions to Crafting puts it back to *all* without anything having to remember to.
+	local narrowButton = UI:CreateChoicePicker(filters, 150, "", "all", function()
+		local narrow = currentSet and currentSet.narrow
+		return narrow and narrow.choices() or {}
+	end, function()
+		frame:Refresh()
+	end)
+	narrowButton:SetPoint("LEFT", maxBox, "RIGHT", 12, 0)
+	narrowButton:Hide()
+
+	-- Reachable, so a check can drive the control a player drives rather than the variable
+	-- behind it.
+	UI.__summaryNarrow = narrowButton
+
 	-- How much is being hidden, at the right-hand end of the same row. A filter that quietly
 	-- removes thirty rows and says nothing is indistinguishable from a panel that has lost
 	-- them, which is the complaint every filter without a count eventually produces.
@@ -1750,6 +1829,14 @@ local function build(frame)
 	-- with everybody.
 	local function passes(meta)
 		if currentSet.only and not currentSet.only(meta) then return false end
+
+		-- And the set's own narrowing, where it has one and the player has chosen. Composed
+		-- with the rest rather than replacing it: "which of my level 60s are blacksmiths"
+		-- is one question and both halves of it are on the same row.
+		local narrow = currentSet.narrow
+		local wanted = narrow and narrowButton:Value()
+		if wanted ~= nil and not narrow.passes(meta, wanted) then return false end
+
 		return typedFilters(meta)
 	end
 
@@ -1761,6 +1848,14 @@ local function build(frame)
 		-- character, and a remembered value would leave the panel empty and the button still
 		-- saying Warlock - which is what the character panel already learned.
 		classFilter = classButton:Reconcile()
+
+		-- The narrowing picker takes on whatever the set on screen is asking, or goes away
+		-- where the set asks nothing. Reconciled after its provider has been pointed at the
+		-- new set, or it would be dropping a choice against the old set's list.
+		local narrow = currentSet and currentSet.narrow
+		narrowButton.prefix = narrow and narrow.label or ""
+		narrowButton:SetShown(narrow ~= nil)
+		narrowButton:Reconcile()
 
 		local columns = columnsOf(currentSet)
 

@@ -16529,10 +16529,168 @@ print("filtering the summary by name, class and level")
 		check("a set that narrows on its own still narrows with a filter on",
 			crafting["Filtera-Fire Maw"] == nil and crafting["Otherly-Fire Maw"] == nil)
 		clickButton("Overview")
+
+		-- Put back, which the teardown below says it does and did not: the box was emptied
+		-- and the roster forgotten, and the class was left on Mage. Reconcile only drops a
+		-- choice the family no longer has, and after this roster goes there are still mages
+		-- - so every check after this one was reading a panel filtered to them. Found by the
+		-- next section, whose warrior and paladin were simply not on the screen.
+		picker:Choose(Family.UI.ANY)
 	end
 
 	-- Left as it was found, so that nothing after this reads a filtered panel.
 	typeInto(search, "")
+	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
+	Family.UI:Refresh()
+end)()
+
+print()
+print("filtering the summary's professions by profession")
+
+-- "Who are the blacksmiths?" - asked from play 2026-09-05 of a summary showing twenty members
+-- and every profession each of them holds. Name, class and level are questions about a member
+-- and the bar could already ask them; which profession is a question about the column, and
+-- nothing could ask it.
+;(function()
+	local roster = {
+		-- Filed by skill line id, which is how a record written today is filed.
+		{ key = "Smithy-Fire Maw", name = "Smithy", classFile = "WARRIOR",
+			skills = { [164] = { rank = 300, max = 300 } } },
+		-- And filed under the word, which is how an older one is - the same profession, and
+		-- a picker keyed on what it finds would offer it twice and narrow to half a family
+		-- with either. This member is the whole reason the id is normalised.
+		{ key = "Oldsmith-Fire Maw", name = "Oldsmith", classFile = "PALADIN",
+			skills = { ["Blacksmithing"] = { rank = 150, max = 300 } } },
+		{ key = "Stitcher-Fire Maw", name = "Stitcher", classFile = "MAGE",
+			skills = { [197] = { rank = 300, max = 300 } } },
+	}
+	for _, member in ipairs(roster) do
+		Family.Database:SetMeta(member.key, { name = member.name, realm = "Fire Maw",
+			classFile = member.classFile, level = 60, faction = "Alliance",
+			skills = member.skills })
+	end
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+
+	-- The set button and not the tab of the same name. `clickButton` takes the first frame
+	-- whose text matches and the tab strip is built before any panel is, so asking it for
+	-- "Professions" opens the professions *panel*. Told apart by where they live: a set
+	-- button is inside the summary, and the summary is two frames above its filter box.
+	local panel = _G.FamilySummarySearch and _G.FamilySummarySearch.__parent
+	panel = panel and panel.__parent
+	check("the summary panel is where this check expects it", panel ~= nil)
+
+	local function inPanel(f)
+		local at = f
+		while type(at) == "table" do
+			if at == panel then return true end
+			at = type(at.__parent) == "table" and at.__parent or nil
+		end
+		return false
+	end
+
+	local function clickSet(label)
+		for _, f in ipairs(frames) do
+			if type(f.__text) == "string" and f.__text:find(label, 1, true)
+				and clickable(f) and inPanel(f) then
+				fireClick(f)
+				return true
+			end
+		end
+		return false
+	end
+
+	check("the professions column set can be opened", clickSet(Family.L["Professions"]))
+	Family.UI:Refresh()
+
+	local function showing()
+		local seen = {}
+		for _, f in ipairs(frames) do
+			if f.__shown ~= false and f.memberKey then seen[f.memberKey] = true end
+		end
+		return seen
+	end
+
+	local narrow = Family.UI.__summaryNarrow
+	check("the professions set brings a profession picker with it",
+		narrow ~= nil and narrow:IsShown() == true)
+
+	if narrow then
+		local offered, blacksmiths = {}, 0
+		for _, choice in ipairs(narrow:Choices()) do
+			offered[tostring(choice.label)] = true
+			if choice.label == Family:ProfessionName(164) then
+				blacksmiths = blacksmiths + 1
+			end
+		end
+		check("offering the professions the family actually has",
+			offered[Family:ProfessionName(164)] and offered[Family:ProfessionName(197)])
+
+		-- The record filed under the word and the record filed under the id are one
+		-- profession. Offered twice, either choice would find half the blacksmiths and the
+		-- list would say the same word twice.
+		check("and offering each of them once, however it was filed", blacksmiths == 1,
+			tostring(blacksmiths))
+
+		narrow.__scripts.OnClick(narrow)
+		local list = _G.FamilyChoicePickerList
+
+		local picked = false
+		for _, row in ipairs(list and list.rows or {}) do
+			local text = rawget(row, "text")
+			if row.__shown ~= false and type(text) == "table"
+				and type(text.__text) == "string"
+				and text.__text:find(Family:ProfessionName(164), 1, true)
+				and row.__scripts.OnClick then
+				row.__scripts.OnClick(row)
+				picked = true
+				break
+			end
+		end
+		check("and one of them can be chosen", picked)
+
+		local byProfession = showing()
+		check("choosing a profession keeps whoever has it",
+			byProfession["Smithy-Fire Maw"] ~= nil)
+		check("including the one whose record was filed under the word",
+			byProfession["Oldsmith-Fire Maw"] ~= nil)
+		check("and drops whoever does not have it",
+			byProfession["Stitcher-Fire Maw"] == nil)
+
+		-- Composed with the rest of the bar rather than replacing it: "which of my level 60
+		-- blacksmiths" is one question with both halves on one row.
+		local minBox = _G.FamilySummaryLevelMin
+		minBox:SetText("70")
+		if minBox.__scripts and minBox.__scripts.OnTextChanged then
+			minBox.__scripts.OnTextChanged(minBox)
+		end
+		check("and a level range on top of it narrows that rather than replacing it",
+			showing()["Smithy-Fire Maw"] == nil)
+		minBox:SetText("")
+		if minBox.__scripts and minBox.__scripts.OnTextChanged then
+			minBox.__scripts.OnTextChanged(minBox)
+		end
+
+		-- A set with no narrowing of its own takes the control away rather than leaving it
+		-- asking a question about a column that is no longer on the screen.
+		check("another set can be opened", clickSet(Family.L["Overview"]))
+		Family.UI:Refresh()
+		check("and a set that narrows nothing takes the picker away",
+			narrow:IsShown() == false)
+
+		-- And the choice with it. Reconcile drops a value that is no longer offered, so
+		-- going back finds everybody rather than the blacksmiths from a minute ago.
+		check("and going back to it starts from everybody again",
+			clickSet(Family.L["Professions"]))
+		Family.UI:Refresh()
+		local back = showing()
+		check("with nobody left out by a choice made before the set changed",
+			back["Stitcher-Fire Maw"] ~= nil, tostring(narrow:Label()))
+
+		clickSet(Family.L["Overview"])
+	end
+
 	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
 	Family.UI:Refresh()
 end)()

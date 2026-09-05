@@ -360,6 +360,7 @@ Family.locales.ruRU = {
 	["Difficulty"] = "Сложность",
 	["Item level"] = "Уровень предмета",
 	["Skill needed"] = "Нужный навык",
+	["Profession"] = "Профессия",
 	["Item"] = "Предмет",
 	["How many"] = "Количество",
 	["By item, and under each of them whoever has the most."] = "По предмету, и под каждым — у кого их больше всего.",

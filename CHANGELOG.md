@@ -19,6 +19,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The summary's professions can be narrowed to one profession.** *Who are the blacksmiths?* -
+  open Professions on the summary and there is a picker beside the class and level filters
+  offering the professions your family actually has. It works with the others rather than
+  instead of them, so *which of my level 60s are blacksmiths* is one row of controls.
+
 - **The possessions search can be put in an order of your own.** Searching the whole family
   there is now a *Sort by* row: by item, by character, or by how many. By character puts
   everything one alt is carrying together, which is the question the list could not answer

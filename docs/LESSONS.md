@@ -1874,3 +1874,34 @@ same family: the fixture that cannot fail is the fixture that was easier to writ
 well-formed. What catches it is running the mutation and reading which checks fall over: a
 mutation that removes a mechanism and fails nothing is a report about the checks, not about the
 mechanism.
+
+## L-050 — The fixture that tidied up everything except the filter
+
+The summary's filter checks build a roster, type a name into the box, set a level range, pick a
+class from the list, and then tidy up: the box is emptied and every member of the roster is
+forgotten. Its comment says *left as it was found, so that nothing after this reads a filtered
+panel.*
+
+It did not put the class back.
+
+`Reconcile` only drops a choice the family no longer has, and after that roster went there were
+still mages - so the picker stayed on Mage, and every check in the file after that point was
+reading a summary narrowed to one class. Nothing went red. A check that asks whether a row is on
+the screen passes just as well when the row was never a candidate.
+
+It was found by writing the next section. Its fixture has a warrior, a paladin and a mage, and
+only the mage appeared; the first guess was a fault in the new code, and the panel was answering
+a question asked five hundred lines earlier.
+
+**The shape.** A fixture that changes shared state has to put back *everything* it changed, and
+the dangerous half is the part that leaves no mark. An emptied search box shows up as rows
+coming back; a picker left on a value shows up as nothing at all, because the panel it filters
+looks exactly like a panel with fewer members in it.
+
+**The check that now catches it.** None directly, and that is worth saying plainly rather than
+inventing one: a harness cannot assert its own tidiness without a rule about what "tidy" is. The
+practical guard is that a fixture setting a control now resets that control on the same screen as
+the teardown that forgets its roster, so the two are read together. What actually found this was
+the next fixture failing for a reason that made no sense, which is the only reliable detector
+there has ever been for state leaking between checks - and a reason to distrust a first
+explanation that blames the code you just wrote.

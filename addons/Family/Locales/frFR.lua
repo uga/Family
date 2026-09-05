@@ -360,6 +360,7 @@ Family.locales.frFR = {
 	["Difficulty"] = "Difficulté",
 	["Item level"] = "Niveau d'objet",
 	["Skill needed"] = "Compétence requise",
+	["Profession"] = "Métier",
 	["Item"] = "Objet",
 	["How many"] = "Quantité",
 	["By item, and under each of them whoever has the most."] = "Par objet, et sous chacun d'eux celui qui en a le plus.",
