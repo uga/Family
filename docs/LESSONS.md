@@ -1838,3 +1838,39 @@ open-coded `:lower()` instead. Moving `nameKey` up one more time was the fix.
 different one. When a helper exists to normalise something, the fixture has to be the kind of
 value that needs normalising - otherwise the check passes on the one input where the bug cannot
 appear.
+
+## L-049 — The check that agreed with the fallback
+
+Two characters of one name on two realms had been one key in `Family/Comm.lua`. Splitting them
+meant the client's complaint - which arrives as a bare `Griselda` - had to be resolved back to a
+character, and there are two ways to do it: what Family addressed inside the window, or, failing
+that, the realm being played.
+
+The check written for it whispered `Griselda-Fire Maw`, fired a complaint about `Griselda`, and
+asserted that `Griselda-Fire Maw` was now absent. It passed.
+
+**Then a mutation that made the resolution return nothing passed too.** The harness's
+`GetRealmName` answers `Fire Maw`. The fallback landed on the same character the resolution
+would have, so the check had never measured the resolution at all - it had measured the
+fallback, and would have gone on passing with the new code deleted.
+
+Moving the fixture to `Griselda-Thunderstrike` - a realm the fallback gets wrong - made the
+mutation fail. Nine mutations were run against this change and it was the seventh that found
+this; the first six all failed honestly and told me nothing was wrong.
+
+**The same batch had the other half of it.** The existing fixture for this area held everything
+in combat from its first line and then fired a complaint about a whisper that had never left the
+client. That passed for as long as the absent list was keyed on the bare name: the complaint
+named a character nothing had addressed and was acted on regardless. Keyed on the character it
+failed at once, and it was right to - the client complains about whispers it was handed, so a
+fixture where none was handed describes a line that cannot arrive.
+
+**The shape.** A check on code that chooses between an answer and a fallback has to use a value
+the two disagree about. Where they agree, the check passes on either, and which one it is
+measuring is invisible until something deletes the wrong one. L-048 is one turn older and is the
+same family: the fixture that cannot fail is the fixture that was easier to write.
+
+**The check that now catches it.** Nothing static can - a fixture agreeing with a fallback is
+well-formed. What catches it is running the mutation and reading which checks fall over: a
+mutation that removes a mechanism and fails nothing is a report about the checks, not about the
+mechanism.

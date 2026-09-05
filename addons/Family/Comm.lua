@@ -101,14 +101,57 @@ local function noteAnswer(key)
     Comm.stats.lastAnswer = key
 end
 
--- A character's name without its realm, in lower case. Three things need it now and the
--- earliest is the send below, so it lives above all of them rather than being forward-declared:
--- a name used above the line that declares it is a global and nil, and this file has already
--- been caught by that once.
-local function nameKey(name)
+-- A character, as something that can be compared.
+--
+-- Two keys rather than one, because two different questions are being asked and answering both
+-- with the same key is what this file had wrong. `baseKey` is the name alone, which is the only
+-- form the client's own complaint is guaranteed to arrive in. `fullKey` is the character - name
+-- and realm together - which is what everything else in here is actually about. A linked family
+-- can hold two characters of one name on two realms, and they can be played at the same moment
+-- from two accounts, so "the same name" and "the same character" are not one question.
+--
+-- These live above all of it rather than being forward-declared: a name used above the line
+-- that declares it is a global and nil, and this file has already been caught by that once.
+local function baseKey(name)
     if type(name) ~= "string" then return nil end
     local base = name:match("^([^%-]+)") or name
     return base:lower()
+end
+
+-- A realm as it compares, which is not a realm as it is written: `GetRealmName` answers
+-- "Fire Maw" and the form a whisper is addressed in is "FireMaw". Both name one realm and the
+-- two strings are not equal. `Family/Guild.lua` was caught by this same difference and says so
+-- beside its own key; this is the second place that needs it.
+local function realmForm(realm)
+    if type(realm) ~= "string" or realm == "" then return nil end
+    return (realm:gsub("%s+", "")):lower()
+end
+
+-- The realm a name carries, or nil where it carries none.
+--
+-- Never defaulted here. A caller that wants the gap filled in asks `fullKey`; a caller that
+-- needs to know whether the name said so at all has to be able to tell the two apart, and that
+-- caller is `SameName`.
+local function realmKey(name)
+    if type(name) ~= "string" then return nil end
+    return realmForm(name:match("^[^%-]+%-(.+)$"))
+end
+
+local function hereKey()
+    return realmForm(Family:TryCall(GetRealmName))
+end
+
+-- A whole character. A bare name means one on the realm being played - that is what the client
+-- means by a bare name and where every bare name reaching this file came from - so filling it
+-- in here is what keeps a name that arrived without its realm and the same name whispered with
+-- it one key rather than two.
+local function fullKey(name)
+    local base = baseKey(name)
+    if not base then return nil end
+
+    local realm = realmKey(name) or hereKey()
+    if not realm then return base end
+    return base .. "-" .. realm
 end
 
 -- Who Family has just whispered, and when.
@@ -118,16 +161,53 @@ end
 -- playing* - the client's own, not Family's, which is why switching Family's reporting off did
 -- nothing to them. Reported from play.
 --
--- Keyed the way every other name in this file is keyed - without the realm. Family whispers
+-- Keyed on the bare name, because that is the form the complaint arrives in: Family whispers
 -- `Rolando-Thunderstrike` and the client complains about `Rolando`, so a table keyed on what
 -- was addressed is a table nothing ever finds. That shipped for an hour, and the check that
 -- should have caught it used a fixture with a bare name while every real caller sends a
 -- realm - the fixture was easier to write than the case.
+--
+-- **And the full target kept underneath it**, which is the part that was missing. Dropping the
+-- realm is right for finding the complaint and wrong for everything done about it: this is the
+-- one place that knows which Rolando was addressed, so it is the one place that can say.
+--
+--     whispered[baseKey] = { [fullKey] = { at = when, name = "Rolando-Thunderstrike" } }
 local whispered = {}
 
 -- How long a complaint can arrive after the whisper that caused it and still be ours. Short,
 -- because the one thing this must not swallow is the answer to a whisper the *player* sent.
 local NOT_FOUND_WINDOW = 15
+
+-- Who Family addressed by this name, recently enough for a complaint about it to be ours.
+--
+-- Returns how many, and the one that was addressed where there was exactly one - name as it
+-- was written, so that what is said about it afterwards is a character and not a lower-cased
+-- key. Stale entries are dropped on the way past, which is also the only thing that keeps this
+-- table from growing for the length of a session.
+local function whisperedAbout(name)
+    local base = baseKey(name)
+    if not base then return 0 end
+
+    local seen = whispered[base]
+    if not seen then return 0 end
+
+    local at, count, only = time(), 0, nil
+    for key, sent in pairs(seen) do
+        if (at - sent.at) > NOT_FOUND_WINDOW then
+            seen[key] = nil
+        else
+            count = count + 1
+            only = sent.name
+        end
+    end
+
+    if count == 0 then
+        whispered[base] = nil
+        return 0
+    end
+
+    return count, only
+end
 
 -- The client's own call, wherever it lives. It moved into C_ChatInfo partway through these
 -- clients' lives and the older global is still there on the older ones.
@@ -145,8 +225,15 @@ local function sendRaw(text, channel, target)
     -- diagnoses - one is a client that refused and one is a client that has no opinion - and
     -- telling them apart is the entire reason this is being recorded.
     if channel == "WHISPER" then
-        local key = nameKey(target)
-        if key then whispered[key] = time() end
+        local base, key = baseKey(target), fullKey(target)
+        if base and key then
+            local seen = whispered[base]
+            if not seen then
+                seen = {}
+                whispered[base] = seen
+            end
+            seen[key] = { at = time(), name = target }
+        end
     end
 
     local ok, answer = pcall(call, PREFIX, text, channel, target)
@@ -197,7 +284,7 @@ local function readyFor(entry)
 
     if entry.channel ~= "WHISPER" or not entry.target then return true end
 
-    local key = nameKey(entry.target)
+    local key = fullKey(entry.target)
     if not key then return true end
 
     -- Somebody we have just heard from is somebody who is there. Receiving a message marks
@@ -388,9 +475,19 @@ end
 -- "Grella-Thunderstrike" as the sender's name arrived, are one character and two strings.
 -- Comparing them with == is the fault that made the first two attempts at this do nothing,
 -- once in the queue and once in the list of who to try next.
+--
+-- Answered on what both sides know, which is not always the same amount. Where both carry a
+-- realm the realms decide it, so two Rolandos on two realms stop being one character here and
+-- everywhere that asks this - `Family/Wide.lua` walks a link's candidates through it. Where
+-- only one side carries a realm there is nothing to decide it with, and the tolerant answer is
+-- the right one: that is the complaint-against-stored-name case this was written for.
 function Comm:SameName(a, b)
-    local first, second = nameKey(a), nameKey(b)
-    return first ~= nil and first == second
+    local first, second = baseKey(a), baseKey(b)
+    if first == nil or first ~= second then return false end
+
+    local here, there = realmKey(a), realmKey(b)
+    if here and there then return here == there end
+    return true
 end
 
 -- How long a name stays known-absent. Long enough that the panel can answer without asking
@@ -399,12 +496,12 @@ end
 local ABSENT_FOR = 60
 
 function Comm:AbandonTo(target)
-    local wanted = nameKey(target)
+    local wanted = fullKey(target)
     if not wanted then return 0 end
 
     local dropped, kept = 0, {}
     for _, entry in ipairs(outgoing) do
-        if entry.channel == "WHISPER" and nameKey(entry.target) == wanted then
+        if entry.channel == "WHISPER" and fullKey(entry.target) == wanted then
             dropped = dropped + 1
         else
             kept[#kept + 1] = entry
@@ -417,7 +514,7 @@ end
 
 -- Whether this name was found to be offline recently enough to still believe it.
 function Comm:Absent(target)
-    local key = nameKey(target)
+    local key = fullKey(target)
     local at = key and absent[key]
     if not at then return false end
     if time() - at > ABSENT_FOR then
@@ -428,7 +525,7 @@ function Comm:Absent(target)
 end
 
 function Comm:Present(target)
-    local key = nameKey(target)
+    local key = fullKey(target)
     if not key then return end
 
     absent[key] = nil
@@ -459,8 +556,11 @@ local function swallowNotFound(_, _, text)
     local name = text:match(pattern)
     if not name then return false end
 
-    local at = whispered[nameKey(name)]
-    if not at or (time() - at) > NOT_FOUND_WINDOW then return false end
+    -- How many, not which. Hiding needs no attribution: two Rolandos produce two complaints,
+    -- both of them caused by Family's own whispering, and taking both off the screen is right
+    -- whichever is which. Working out *which* is the next listener's problem, and only because
+    -- it acts on the answer.
+    if whisperedAbout(name) == 0 then return false end
 
     Family:Debug("comm: the client says %s is not playing, and we asked", name)
     return true
@@ -479,6 +579,32 @@ Family:RegisterEvent("CHAT_MSG_SYSTEM", "comm.absent", function(_, text)
     local name = text:match(pattern)
     if not name then return end
 
+    -- Which character this is about, worked out before anything is done about it.
+    --
+    -- The client chooses the form it names them in, not us, so this asks the evidence rather
+    -- than the string. A complaint that carries a realm has said which itself. A bare one is
+    -- answered by what Family addressed inside the window: exactly one character of that name
+    -- whispered means the complaint is about that one, whatever form came back.
+    --
+    -- Two means no string and no table can say which, and both may be online - a family is a
+    -- person's characters and not an account's, so two Rolandos on two realms can be played
+    -- from two accounts at once. Marking both takes the one who is there off the list of who
+    -- to try and abandons what was queued for them. §2.2: not seen is not the same as empty,
+    -- and the honest answer here is neither rather than both.
+    local addressed, only = whisperedAbout(name)
+
+    if addressed > 1 and not realmKey(name) then
+        Family:Debug("comm: the client says %s is not playing, and %d characters of that "
+            .. "name were whispered - so marking none of them", name, addressed)
+        return
+    end
+
+    -- Named the way we addressed them wherever we know it, so that everything below this line
+    -- is about a character. `SameName` is strict once both sides carry a realm, which is what
+    -- stops a refusal about one Rolando being attributed to a link holding the other.
+    local who = name
+    if only and not realmKey(name) then who = only end
+
     -- Whether we had already been told about this one, asked *before* it is written down.
     --
     -- One refusal comes back for every message that had already left, and an exchange is many
@@ -490,13 +616,13 @@ Family:RegisterEvent("CHAT_MSG_SYSTEM", "comm.absent", function(_, text)
     --
     -- Told rather than worked out by each listener, because only this file knows: everything
     -- else can see that a name is absent and not that it has just become so.
-    local already = Comm:Absent(name)
+    local already = Comm:Absent(who)
 
-    absent[nameKey(name)] = time()
+    absent[fullKey(who)] = time()
 
     -- Everything still queued for them, dropped at once. What has already gone is already
     -- being complained about; the point is that the rest does not follow it.
-    local dropped = Comm:AbandonTo(name)
+    local dropped = Comm:AbandonTo(who)
 
     -- Told before anything is said to the player, so that whoever picks this up has the
     -- chance to try somebody else and report that instead. A family is a person with several
@@ -504,12 +630,12 @@ Family:RegisterEvent("CHAT_MSG_SYSTEM", "comm.absent", function(_, text)
     -- every one of them has been tried.
     local handled
     for _, listener in pairs(absentListeners) do
-        local ok, answer = pcall(listener, name, dropped, already)
+        local ok, answer = pcall(listener, who, dropped, already)
         if ok and answer then handled = true end
     end
 
     if dropped > 0 and not handled then
-        Family:Print(L["|cffffaa00%s is not online.|r %d message(s) not sent."], name, dropped)
+        Family:Print(L["|cffffaa00%s is not online.|r %d message(s) not sent."], who, dropped)
     end
 end)
 

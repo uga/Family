@@ -91,6 +91,16 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Two characters of the same name on different realms are two characters again.** A name
+  belongs to a realm rather than to a group of them, so a linked family - or yours together
+  with a linked one - can hold two Rolandos, and both of them can be logged in at once from
+  two accounts. Family had been treating them as one character: the game refusing to write to
+  the one who was offline took the other off the list of who to try for a minute and threw
+  away everything waiting to go to them, so an update could report that none of a family was
+  online while somebody was sitting in front of one of those characters. Where the game's
+  refusal does not say which of the two it means, and Family had just written to both, Family
+  now assumes nothing about either rather than assuming it about both.
+
 - **Two messages that were missing a word.** *Update now* on a linked family, and the guild's
   own update button, both answered a failure with "Could not:" and then the reason - a sentence
   with its verb missing. They say what could not be done now.

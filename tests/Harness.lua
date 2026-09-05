@@ -11957,11 +11957,20 @@ print("whispering somebody who is not there")
 
 	Family.Comm:Abandon()
 
-	-- Held in the queue rather than gone the moment it was sent. This harness has no timer,
-	-- so everything drains at once unless something stops it - and being in a fight stops
-	-- bulk, which is what a family's records are. That is the state the fault happens in
-	-- anyway: hundreds of messages still waiting to go to somebody who is not there.
-	InCombatLockdown = function() return true end
+	-- Out of the fight while the whispers go, and in it afterwards.
+	--
+	-- This held everything with combat from the first line, and then fired a complaint about
+	-- a whisper that had never left the client. It passed for as long as the absent list was
+	-- keyed on the bare name: the complaint named a character nothing had addressed, and it
+	-- was marked absent regardless. Keyed on the character it failed, and it was right to -
+	-- the client complains about whispers it was handed, so a fixture where none was handed
+	-- is describing a line that cannot arrive.
+	--
+	-- So the canary leaves, which is the real sequence: one chunk goes, the refusal comes
+	-- back about it, and what is still queued behind it is dropped. The fight then holds the
+	-- rest, which is the state the fault happens in - hundreds of messages waiting on
+	-- somebody who is not there.
+	InCombatLockdown = function() return false end
 
 	-- Long enough to be many messages, which is the shape of the fault: one whisper would
 	-- have produced one complaint and nobody would have minded.
@@ -11978,6 +11987,9 @@ print("whispering somebody who is not there")
 	-- Somebody else's transfer, to prove the wrong one is not thrown away with it.
 	Family.Comm:Send("bulk", string.rep("y", 600), "WHISPER", "Tossica-Thunderstrike", true)
 	local both = Family.Comm:Pending()
+
+	-- And now the fight, so that what is left stays left and the drop is what moves it.
+	InCombatLockdown = function() return true end
 
 	local before = #DEFAULT_CHAT_FRAME.messages
 	fire("CHAT_MSG_SYSTEM",
@@ -12080,6 +12092,116 @@ print("whispering somebody who is not there")
 	check("the sentence it matches is the client's own, not ours",
 		type(_G.ERR_CHAT_PLAYER_NOT_FOUND_S) == "string"
 			and _G.ERR_CHAT_PLAYER_NOT_FOUND_S:find("%%s") ~= nil)
+
+	------------------------------------------------------------------------------------
+	-- Two characters of one name, on two realms
+	------------------------------------------------------------------------------------
+
+	-- Names are unique per realm and not per realm group, so a linked family - or ours plus
+	-- a link - can hold two Rolandos. They can be played at the same moment, from two
+	-- accounts: a family is a person's characters and not an account's. So the one who is
+	-- there must not be taken off the list of who to try because the other one is not.
+
+	local function complaint(about)
+		return string.format(_G.ERR_CHAT_PLAYER_NOT_FOUND_S, about)
+	end
+
+	do
+		InCombatLockdown = function() return false end
+		Family.Comm:Abandon()
+
+		-- Both whispered, so both canaries leave and the window holds two characters of
+		-- one name. This is the case no string can decide.
+		Family.Comm:Send("bulk", string.rep("r", 900), "WHISPER",
+			"Rolando-Thunderstrike", true)
+		Family.Comm:Send("bulk", string.rep("r", 900), "WHISPER",
+			"Rolando-Fire Maw", true)
+		InCombatLockdown = function() return true end
+
+		local waiting = Family.Comm:Pending()
+		check("two characters of one name can both be waiting", waiting > 4,
+			tostring(waiting))
+
+		-- Hidden either way: the line is Family's noise whichever Rolando it is about, and
+		-- taking it off the screen needs no attribution.
+		check("the client's line about an unattributable name is still hidden",
+			Family.Comm.__swallowNotFound(nil, nil, complaint("Rolando")) == true)
+
+		fire("CHAT_MSG_SYSTEM", complaint("Rolando"))
+
+		-- And acted on for neither. §2.2: not seen is not the same as empty.
+		check("neither of them is marked absent on a refusal naming both",
+			Family.Comm:Absent("Rolando-Thunderstrike") == false
+				and Family.Comm:Absent("Rolando-Fire Maw") == false)
+		check("and nothing queued for either of them is thrown away",
+			Family.Comm:Pending() == waiting,
+			Family.Comm:Pending() .. " of " .. waiting)
+	end
+
+	-- A different name, because the window is fifteen seconds and this harness's clock does
+	-- not move: reusing Rolando would ask the second question with the first one's evidence
+	-- still in the table.
+	do
+		InCombatLockdown = function() return false end
+		Family.Comm:Abandon()
+
+		-- Only one of the two whispered this time, so the bare name the client answers with
+		-- is decided by what we addressed rather than by what it says.
+		--
+		-- **Deliberately not the realm being played.** `GetRealmName` answers "Fire Maw"
+		-- here, and a bare name with nothing to resolve it falls back to the realm the
+		-- player is on - so a check written against a Fire Maw character would pass on the
+		-- fallback and prove nothing about the resolution. Thunderstrike is the realm the
+		-- fallback would get wrong.
+		Family.Comm:Send("bulk", string.rep("g", 900), "WHISPER",
+			"Griselda-Thunderstrike", true)
+		InCombatLockdown = function() return true end
+
+		local waiting = Family.Comm:Pending()
+		fire("CHAT_MSG_SYSTEM", complaint("Griselda"))
+
+		check("one of the two whispered means the refusal is about that one",
+			Family.Comm:Absent("Griselda-Thunderstrike") == true)
+		check("and says nothing about the same name on another realm",
+			Family.Comm:Absent("Griselda-Fire Maw") == false)
+		check("and what was queued for the one it named is dropped",
+			Family.Comm:Pending() < waiting,
+			Family.Comm:Pending() .. " of " .. waiting)
+
+		-- The other direction, and what it actually holds is the pair: the listener writes
+		-- the character down and `Absent` reads the character back, so somebody being heard
+		-- from on another realm cannot reach it. Said that way rather than as "Present is
+		-- keyed on the character", which is a different claim and is held by the check
+		-- above about hearing from them settling it.
+		Family.Comm:Receive("1\0011\0011\001hello\001hi", "Griselda-Fire Maw",
+			"WHISPER")
+		check("hearing from one does not vouch for the other",
+			Family.Comm:Absent("Griselda-Thunderstrike") == true)
+
+		-- And the queue asked directly, because the refusal above cannot reach this: it
+		-- abandons the character it named, and what has to be proved is that it leaves the
+		-- other one's alone. Queued in the fight, so it is never sent and never becomes a
+		-- second character of that name inside the window.
+		Family.Comm:Send("bulk", string.rep("g", 900), "WHISPER",
+			"Griselda-Fire Maw", true)
+		local held = Family.Comm:Pending()
+		check("abandoning one realm's queue does not empty the other realm's",
+			Family.Comm:AbandonTo("Griselda-Thunderstrike") == 0
+				and Family.Comm:Pending() == held,
+			Family.Comm:Pending() .. " of " .. held)
+	end
+
+	-- The comparison everything above rests on, asked directly. It answers on what both
+	-- sides know: strict once both carry a realm, tolerant while only one does - which is
+	-- the complaint-against-a-stored-name case it was written for and still has to serve.
+	check("a bare name and the same name with its realm are one character",
+		Family.Comm:SameName("Grella", "Grella-Thunderstrike") == true)
+	check("but two realms are two characters",
+		Family.Comm:SameName("Rolando-Thunderstrike", "Rolando-Fire Maw") == false)
+	check("and a realm written with its space compares as one without",
+		Family.Comm:SameName("Rolando-FireMaw", "Rolando-Fire Maw") == true)
+	check("and two names are never one character",
+		Family.Comm:SameName("Rolando-Fire Maw", "Grella-Fire Maw") == false)
 
 	Family.Comm:Abandon()
 	InCombatLockdown = function() return false end

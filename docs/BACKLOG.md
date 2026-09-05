@@ -369,7 +369,7 @@ check that had been wrong for longer than a day - the summary writes a letter's 
 *Auction House* and the check asked for *Auctioneer*, passing on the development icon sheet -
 and three that were reading a window the harness never showed. L-046.
 
-### Two characters of one name on two realms are one character to `Comm`
+### Two characters of one name on two realms are one character to `Comm` — PAID 2026-09-05
 
 `nameKey` strips the realm, so `Rolando-Thunderstrike` and `Rolando-Fire Maw` are the same key
 everywhere in `Family/Comm.lua`: `SameName`, the absent list, the queue's abandonment, and now
@@ -417,6 +417,18 @@ it is matching a bare name the client chose; `absent`, `AbandonTo`, `reachableNa
 Narrowing `nameKey` touches the queue, the absent list and `SameName`, which is why this is
 written down rather than done in passing.
 
+**Paid 2026-09-05, and the shape held.** `nameKey` became two: `baseKey`, which the filter uses
+because it is matching a name the client chose, and `fullKey`, which `absent`, `AbandonTo`,
+`Absent`, `Present` and the queue's canary use because they are answering about a character.
+`whispered` keeps the bare name as its key and the full target underneath, which is what lets a
+bare complaint be resolved by what Family addressed rather than by the string. `SameName`
+answers on what both sides know - strict once both carry a realm - so `Family/Wide.lua` stopped
+attributing a refusal to every link holding a namesake without being touched.
+
+Nine mutations, every one caught. The seventh caught a check of my own that was passing on the
+fallback rather than on the resolution, because the fixture's realm was the realm the harness
+plays on; L-049.
+
 ### Three probes are out and unanswered
 
 Handed over 2026-09-04, needed before their entries can start:
@@ -424,5 +436,8 @@ Handed over 2026-09-04, needed before their entries can start:
 - **Entry 9** — whether the client will name a hunter's stabled pets while the stable is shut.
 - **Entry 10** — whether the warlock demon-ability tab exists without the demon summoned.
 - **Entry 2** — whether a tooltip can be redrawn while a modifier is held.
-- **The complaint above** — whether the client's *no player named* message carries the realm
-  when the whisper was addressed with one.
+- ~~**The complaint above** — whether the client's *no player named* message carries the realm
+  when the whisper was addressed with one.~~ **No longer gates anything, 2026-09-05.** The
+  refusal is attributed from what Family addressed inside the window instead: one character of
+  that name whispered decides it whatever form the client sends back, two decides nothing. An
+  answer would widen the first case and is not needed for either.
