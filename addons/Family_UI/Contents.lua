@@ -381,6 +381,10 @@ local function build(frame)
 	local memberFilters = UI:CreateMemberFilters(frame, function() frame:Refresh() end)
 	memberFilters:SetShown(false)
 
+	-- Reachable, so that the harness can ask whether the row has an area and whether
+	-- anything below it made room, and so that a `/run` can ask the same in the game.
+	UI.__contentsFilters = memberFilters
+
 	local everyone = CreateFrame("Button", "FamilyContentsEveryone", frame, "UIPanelButtonTemplate")
 	everyone:SetSize(120, 22)
 	everyone:SetPoint("TOPRIGHT", -4, -2)
@@ -536,9 +540,28 @@ local function build(frame)
 	function frame:Refresh()
 		UI:MarkSelected(everyone, wholeFamily)
 
+		-- A line of its own, with everything below it moved down to make the room.
+		--
+		-- It was anchored under the search box, and the search box sits *beside* the member
+		-- picker rather than under it - so "under the search box" is the same line the
+		-- status text starts on, and the status text runs the full width of the panel.
+		-- Nothing below reserved any space for the row either, so two things were laid
+		-- through each other on one line and the panel showed neither of them. Reported
+		-- from play: the filters were switched on, the code was switching them on, and the
+		-- screen had nothing where they belong.
 		memberFilters.frame:ClearAllPoints()
-		memberFilters.frame:SetPoint("TOPLEFT", search, "BOTTOMLEFT", 0, -6)
+		memberFilters.frame:SetPoint("TOPLEFT", picker, "BOTTOMLEFT", 2, -6)
 		memberFilters:SetShown(wholeFamily)
+
+		-- What comes next hangs off the row while the row is there. `scroll` hangs off
+		-- `status`, so moving this one moves the list with it.
+		status:ClearAllPoints()
+		status:SetPoint("RIGHT", -8, 0)
+		if wholeFamily then
+			status:SetPoint("TOPLEFT", memberFilters.frame, "BOTTOMLEFT", 0, -6)
+		else
+			status:SetPoint("TOPLEFT", picker, "BOTTOMLEFT", 2, -6)
+		end
 
 		-- The box does two different jobs and the caption has to say which. Against one
 		-- member it dims what does not match, and everything stays on screen; across the

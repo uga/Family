@@ -324,6 +324,10 @@ local function build(frame)
 	-- next; this is not pooled, so it starts hidden and Refresh decides from there.
 	memberFilters:SetShown(false)
 
+	-- Reachable, so that the harness can ask whether the row has an area and whether
+	-- anything below it made room, and so that a `/run` can ask the same in the game.
+	UI.__professionsFilters = memberFilters
+
 	local everyone = CreateFrame("Button", "FamilyProfessionsEveryone", frame, "UIPanelButtonTemplate")
 	everyone:SetSize(120, 22)
 	everyone:SetPoint("TOPRIGHT", -4, -2)
@@ -584,9 +588,21 @@ local function build(frame)
 	function frame:Refresh()
 		UI:MarkSelected(everyone, wholeFamily)
 
+		-- A line of its own, with the bars below it moved down to make the room. The search
+		-- box sits beside the member picker rather than under it, so anchoring to the box's
+		-- bottom put this row through the skill bar and nothing reserved space for it.
 		memberFilters.frame:ClearAllPoints()
-		memberFilters.frame:SetPoint("TOPLEFT", search, "BOTTOMLEFT", 0, -6)
+		memberFilters.frame:SetPoint("TOPLEFT", picker, "BOTTOMLEFT", 0, -6)
 		memberFilters:SetShown(wholeFamily)
+
+		-- Everything below hangs off the skill bar, so this one anchor moves the lot.
+		skillBar:ClearAllPoints()
+		skillBar:SetPoint("RIGHT", -8, 0)
+		if wholeFamily then
+			skillBar:SetPoint("TOPLEFT", memberFilters.frame, "BOTTOMLEFT", 0, -6)
+		else
+			skillBar:SetPoint("TOPLEFT", picker, "BOTTOMLEFT", 0, -6)
+		end
 		local member = picker:Reconcile()
 
 		for _, button in ipairs(skillButtons) do button:Hide() end

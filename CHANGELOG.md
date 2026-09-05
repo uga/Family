@@ -91,6 +91,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **The filters on the professions and possessions searches are actually on the screen.** They
+  were being switched on and drawn through the line of text under the search box, which runs
+  the full width of the panel, so neither was visible and the panel looked as though the
+  filters had never been built. They now sit on a line of their own and the results start
+  below them.
+
 - **Two characters of the same name on different realms are two characters again.** A name
   belongs to a realm rather than to a group of them, so a linked family - or yours together
   with a linked one - can hold two Rolandos, and both of them can be logged in at once from

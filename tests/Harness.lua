@@ -32,8 +32,22 @@ local frames = {}
 
 local noop = function() end
 
+-- Who is anchored to whom. Forward-declared because font strings need it as much as frames
+-- do - a caption moved down to make room for a row is a font string - and their metatable is
+-- written above the frames' method table.
+local recordAnchor, forgetAnchors
+
 local fontMeta = {}
 fontMeta.__index = function(_, key)
+	-- Font strings are anchored like anything else. Only the anchoring is kept: there is no
+	-- geometry in here to compute a position from, and pretending otherwise is how a check
+	-- comes to measure the stub instead of the panel.
+	if key == "SetPoint" then
+		return function(self, point, a, b, c, d) recordAnchor(self, point, a, b, c, d) end
+	end
+	if key == "ClearAllPoints" then
+		return function(self) forgetAnchors(self) end
+	end
 	-- How wide somebody asked this to be, which matters because these are pooled: a font
 	-- string given a narrow column by one row carries it to whatever the row is used for
 	-- next unless somebody puts it back. Nought is the game's own word for "as wide as the
@@ -212,6 +226,10 @@ end
 -- answers a constant cannot be asked whether they did. Anything that never sets a width
 -- still gets the old answer, which is what the scroll frames and lists rely on.
 function frameMethods:SetWidth(w) self.__width = w end
+-- The two of them at once, which is what most callers use and what nothing here recorded: a
+-- frame sized this way answered the default width to every check that asked, so a container
+-- given no size at all and one given a real one were the same answer.
+function frameMethods:SetSize(w, h) self.__width, self.__height = w, h end
 -- Recorded but not answered back: GetHeight stays the constant the scroll frames rely on.
 -- What this is for is asking a list how tall it made itself, which is the only way to tell
 -- from outside whether it left room between its sections or packed them flush.
@@ -486,7 +504,15 @@ end
 -- Records the offsets as well as the point. A panel that reserves room for a caption is
 -- deciding a number, and a stub that keeps only "yes, something was anchored here" cannot be
 -- asked what the number turned out to be.
-function frameMethods:SetPoint(point, a, b, c, d)
+-- Both ends of every anchor, so that the structure can be asked about.
+--
+-- There is no geometry in this harness and every frame answers that it is shown, so a row
+-- that is switched on and then laid straight through whatever was already on that line is
+-- invisible here. What is visible is the structure: a row that nothing below it is anchored
+-- to is a row nobody made room for. That is the shape of the fault that shipped on the
+-- possessions and professions panels, where the filter row was being shown all along and
+-- shared its line with a caption running the full width of the panel.
+function recordAnchor(self, point, a, b, c, d)
 	if type(point) ~= "string" then return end
 	self.__points = self.__points or {}
 	self.__points[point] = true
@@ -497,13 +523,34 @@ function frameMethods:SetPoint(point, a, b, c, d)
 	elseif type(c) == "number" then
 		self.__offsets[point] = { x = c, y = d }
 	end
+
+	if type(a) == "table" then
+		a.__anchoredBy = a.__anchoredBy or {}
+		a.__anchoredBy[self] = true
+		self.__anchoredTo = self.__anchoredTo or {}
+		self.__anchoredTo[a] = true
+	end
+end
+
+-- And forgotten at both ends, or a row re-anchored somewhere else every draw would leave a
+-- trail saying room was made for it in places it no longer is.
+function forgetAnchors(self)
+	self.__points = nil
+	for target in pairs(self.__anchoredTo or {}) do
+		if target.__anchoredBy then target.__anchoredBy[self] = nil end
+	end
+	self.__anchoredTo = nil
+end
+
+function frameMethods:SetPoint(point, a, b, c, d)
+	recordAnchor(self, point, a, b, c, d)
 end
 
 function frameMethods:SetAllPoints()
 	self.__points = { TOPLEFT = true, BOTTOMRIGHT = true }
 end
 
-function frameMethods:ClearAllPoints() self.__points = nil end
+function frameMethods:ClearAllPoints() forgetAnchors(self) end
 
 function frameMethods:SetFrameLevel(level) self.__level = level end
 function frameMethods:GetFrameLevel() return self.__level or 0 end
@@ -5384,6 +5431,36 @@ if contentsEveryone then
 	check("and the caption says it is searching rather than dimming",
 		visibleText("find across the family") and not visibleText("dim everything but"))
 
+	-- The filter row is on a line of its own, and something below it made the room.
+	--
+	-- Both halves shipped wrong and neither was visible here. The container was given a
+	-- height and never a width - the arithmetic for it existed, in `filters:Width()`, and
+	-- nothing called it - and the row was anchored under the search box, which sits *beside*
+	-- the member picker rather than under it, so it shared a line with a caption that runs
+	-- the full width of the panel while nothing below reserved any space. Reported from play
+	-- with a screenshot of the panel switched to the whole family and no filters on it.
+	--
+	-- Read off `__width` rather than `GetWidth`, which answers a default of 800 for a frame
+	-- nobody sized: the question is what the panel decided, and a stub that answers for it
+	-- turns this into a check that cannot fail.
+	--
+	-- The made-room half is structural because there is no geometry here: it asks whether
+	-- anything is anchored to the row. Nothing inside the widget anchors to its own
+	-- container, so today an entry means something outside it did.
+	local contentsFilters = Family.UI.__contentsFilters
+	check("possessions has a filter row", contentsFilters ~= nil)
+
+	if contentsFilters then
+		check("and it is shown while the panel is about everybody",
+			contentsFilters.frame:IsShown() == true)
+		check("and it was given a width as well as a height",
+			type(contentsFilters.frame.__width) == "number"
+				and contentsFilters.frame.__width > 0,
+			tostring(contentsFilters.frame.__width))
+		check("and what comes below hangs off it, which is what makes the room",
+			next(contentsFilters.frame.__anchoredBy or {}) ~= nil)
+	end
+
 	_G.FamilyContentsSearch:SetText("Linen")
 	Family.UI:Refresh()
 
@@ -5417,6 +5494,36 @@ if professionsEveryone then
 	-- identified one is the label.
 	check("with the profession it belongs to", visibleText("Blacksmithing"))
 	check("and everybody who can make it", visibleText("Tester"))
+
+	-- The filter row is on a line of its own, and something below it made the room.
+	--
+	-- Both halves shipped wrong and neither was visible here. The container was given a
+	-- height and never a width - the arithmetic for it existed, in `filters:Width()`, and
+	-- nothing called it - and the row was anchored under the search box, which sits *beside*
+	-- the member picker rather than under it, so it shared a line with a caption that runs
+	-- the full width of the panel while nothing below reserved any space. Reported from play
+	-- with a screenshot of the panel switched to the whole family and no filters on it.
+	--
+	-- Read off `__width` rather than `GetWidth`, which answers a default of 800 for a frame
+	-- nobody sized: the question is what the panel decided, and a stub that answers for it
+	-- turns this into a check that cannot fail.
+	--
+	-- The made-room half is structural because there is no geometry here: it asks whether
+	-- anything is anchored to the row. Nothing inside the widget anchors to its own
+	-- container, so today an entry means something outside it did.
+	local professionsFilters = Family.UI.__professionsFilters
+	check("professions has a filter row", professionsFilters ~= nil)
+
+	if professionsFilters then
+		check("and it is shown while the panel is about everybody",
+			professionsFilters.frame:IsShown() == true)
+		check("and it was given a width as well as a height",
+			type(professionsFilters.frame.__width) == "number"
+				and professionsFilters.frame.__width > 0,
+			tostring(professionsFilters.frame.__width))
+		check("and what comes below hangs off it, which is what makes the room",
+			next(professionsFilters.frame.__anchoredBy or {}) ~= nil)
+	end
 
 	_G.FamilyProfessionsSearch:SetText("")
 	professionsEveryone.__scripts.OnClick(professionsEveryone)

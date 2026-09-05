@@ -30,6 +30,14 @@ local L = Family.L
 
 local ROW_HEIGHT = 22
 
+-- How wide the row of them is, said once.
+--
+-- The arithmetic was here already, in `filters:Width()`, for a caller that wanted to put
+-- something after the row - and the frame holding the row was given a height and never a
+-- width. A container with a height and no width has no area. The number is one number now and
+-- the frame is the first thing to use it.
+local ROW_WIDTH = 130 + 8 + 120 + 12 + 40 + 10 + 34 + 6 + 10 + 34
+
 --------------------------------------------------------------------------------------------
 
 local function realmsHeld()
@@ -65,7 +73,7 @@ function UI:CreateMemberFilters(parent, onChange)
 	local filters = {}
 
 	local frame = CreateFrame("Frame", nil, parent)
-	frame:SetHeight(ROW_HEIGHT)
+	frame:SetSize(ROW_WIDTH, ROW_HEIGHT)
 	filters.frame = frame
 
 	local function changed()
@@ -131,7 +139,7 @@ function UI:CreateMemberFilters(parent, onChange)
 	filters.minBox, filters.maxBox = minBox, maxBox
 
 	-- How wide the row of them is, so a caller can put something after them.
-	function filters:Width() return 130 + 8 + 120 + 12 + 40 + 10 + 34 + 6 + 10 + 34 end
+	function filters:Width() return ROW_WIDTH end
 
 	function filters:SetShown(shown) frame:SetShown(shown and true or false) end
 
