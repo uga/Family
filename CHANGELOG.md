@@ -153,6 +153,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **The number beside a category heading is no longer under *Standing*.** On the reputations
+  and quests pages a heading like *Alliance* showed how many factions were under it, in the
+  column that everywhere else says how far along you are - so it read as a standing. It sits
+  beside the heading now, in brackets.
+
 - **A linked family's characters appear in the professions search.** Turning *Whole family* on
   and searching for a recipe listed only your own characters, however much a linked family had
   shared with you - and their skills were on the summary at the same time. They are named with

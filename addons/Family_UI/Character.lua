@@ -1148,9 +1148,19 @@ local function build(frame)
 			-- family where they are not ours, exactly as every other panel says it.
 			for _, group in ipairs(categories) do
 				local heading = nextRow()
-				heading.left:SetText("|cff88bbff" .. group .. "|r")
+				-- How many factions or quests are filed under this heading, beside the
+				-- heading. It used to sit in the right-hand column, which is headed
+				-- *Standing* on one of these sections and *Progress* on the other - so a
+				-- category of five read as a reputation of five, and the question *what
+				-- is that 5?* came back from play 2026-09-05. A count belongs next to
+				-- what it counts; the bracketed grey is the form the quest list's own
+				-- zone headings already use.
+				heading.left:SetText(string.format("|cff88bbff%s|r |cff888888(%d)|r",
+					group, #byCategory[group]))
 				heading.left:SetWidth(220)
-				heading.right:SetText("|cff888888" .. #byCategory[group] .. "|r")
+				-- Cleared rather than left: rows are pooled, and a heading handed out
+				-- again would keep whatever standing the last row put there.
+				heading.right:SetText("")
 
 				table.sort(byCategory[group], function(a, b)
 					return (a.name or "") < (b.name or "")
@@ -1321,9 +1331,19 @@ local function build(frame)
 
 			for _, group in ipairs(categories) do
 				local heading = nextRow()
-				heading.left:SetText("|cff88bbff" .. group .. "|r")
+				-- How many factions or quests are filed under this heading, beside the
+				-- heading. It used to sit in the right-hand column, which is headed
+				-- *Standing* on one of these sections and *Progress* on the other - so a
+				-- category of five read as a reputation of five, and the question *what
+				-- is that 5?* came back from play 2026-09-05. A count belongs next to
+				-- what it counts; the bracketed grey is the form the quest list's own
+				-- zone headings already use.
+				heading.left:SetText(string.format("|cff88bbff%s|r |cff888888(%d)|r",
+					group, #byCategory[group]))
 				heading.left:SetWidth(220)
-				heading.right:SetText("|cff888888" .. #byCategory[group] .. "|r")
+				-- Cleared rather than left: rows are pooled, and a heading handed out
+				-- again would keep whatever standing the last row put there.
+				heading.right:SetText("")
 
 				-- Hardest first inside a zone, then by name, which is the order the
 				-- per-member reading already uses for the same rows.
@@ -1572,10 +1592,11 @@ local function build(frame)
 
 			for _, group in ipairs(categories) do
 				local heading = nextRow()
-				heading.left:SetText("|cff88bbff" .. group .. "|r")
+				heading.left:SetText(string.format("|cff88bbff%s|r |cff888888(%d)|r",
+					group, #byCategory[group]))
 				heading.left:SetWidth(220)
 				heading.middle:SetText("")
-				heading.right:SetText("|cff888888" .. #byCategory[group] .. "|r")
+				heading.right:SetText("")
 
 				table.sort(byCategory[group], function(a, b)
 					if a.standing ~= b.standing then return a.standing > b.standing end

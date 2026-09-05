@@ -19493,6 +19493,29 @@ print("the family's reputations, as factions rather than as members")
 	check("a faction is named once however many of its people are under it",
 		#thorium == 1, tostring(#thorium))
 
+	-- The category heading counts what is under it, beside the heading and not in the
+	-- right-hand column. That column is headed *Standing*, so a category of two read as a
+	-- reputation of two - asked from play 2026-09-05 as *what is that 5?*, which is the
+	-- clearest possible report that a number was in the wrong place.
+	do
+		local heading
+		for _, f in ipairs(frames) do
+			local left = type(f.left) == "table" and f.left.__text
+			if f.__shown ~= false and type(left) == "string"
+				and left:find("Steamwheedle", 1, true) then
+				heading = f
+			end
+		end
+
+		check("a category heading is drawn", heading ~= nil)
+		check("with how many are under it, beside the name",
+			heading and heading.left.__text:find("(1)", 1, true) ~= nil,
+			heading and heading.left.__text)
+		check("and nothing in the column that says what a standing is",
+			heading and (heading.right.__text or "") == "",
+			heading and heading.right.__text)
+	end
+
 	-- Furthest at the top, which is the one fact the old shape did keep.
 	local head = thorium[1] and thorium[1].middle and thorium[1].middle.__text or ""
 	check("with the one who has got furthest on its own line",
