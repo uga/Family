@@ -160,13 +160,43 @@ function Cooldowns:Known(spellID, itemID, profession)
 end
 
 -- How many of a member's cooldowns have come ready, and when the next one will.
+--
+-- **Timers, not recipes.** Thirty alchemy transmutes share one cooldown, and the rule that
+-- says so is written out at length over `Crafting` below - a group of recipes on one timer is
+-- one thing somebody can go and do. Counting the entries instead told a player with three
+-- transmutes learned that three things were waiting for them when one was. Reported from play
+-- 2026-09-05 off the login notice, and confirmed against that family: three characters
+-- announced as *(3)* had exactly one ready timer each.
+--
+-- Nothing caught it because every fixture had one recipe per timer, which is the shape that
+-- makes grouped and ungrouped agree. L-054.
+--
+-- `Crafting` is called rather than its grouping repeated. Which recipes share a timer is a
+-- rule with one home, and a second copy of it here would be a second thing to keep right.
 function Cooldowns:Summarise(meta)
 	local ready, next_ = 0, nil
 
+	for _, kind in ipairs(self:Crafting(meta)) do
+		-- Crafts only, and this is the line the `kind` field was added for. `Crafting`
+		-- draws a panel and therefore also carries the crafting *items*, including ready
+		-- ones; the comment over that loop says they are shown there and deliberately not
+		-- announced, because a ready item means only that nobody has looked in the bag
+		-- since. Counting them here would have announced them by the back door.
+		if kind.kind == "craft" then
+			if kind.ready then
+				ready = ready + 1
+			elseif not next_ or kind.readyAt < next_ then
+				next_ = kind.readyAt
+			end
+		end
+	end
+
+	-- And the items, for the *next* half alone. `For` keeps one only while it is still
+	-- counting down - never a ready one - so an item can say when something comes back and
+	-- can never add to the count.
 	for _, entry in ipairs(self:For(meta)) do
-		if entry.ready then
-			ready = ready + 1
-		elseif not next_ or entry.readyAt < next_ then
+		if entry.kind == "item" and entry.readyAt
+			and (not next_ or entry.readyAt < next_) then
 			next_ = entry.readyAt
 		end
 	end
@@ -204,10 +234,16 @@ function Cooldowns:Crafting(meta, key, callback)
 	local now = time()
 	local groups, order = {}, {}
 
-	local function group(key, label, profession)
+	-- `kind` is the same word `For` above puts on its flat entries, and for the same reason:
+	-- a craft and an item are not interchangeable here. A ready craft is evidence that it has
+	-- not been used, a ready item is only evidence that nobody has looked - so anything that
+	-- pushes a claim at a player rather than drawing a table has to be able to tell them
+	-- apart, and until now the only way to do that from a group was to notice that the item
+	-- loop happens to set `item`.
+	local function group(key, kind, label, profession)
 		local found = groups[key]
 		if not found then
-			found = { key = key, label = label, profession = profession,
+			found = { key = key, kind = kind, label = label, profession = profession,
 				ready = true, count = 0 }
 			groups[key] = found
 			order[#order + 1] = found
@@ -242,7 +278,7 @@ function Cooldowns:Crafting(meta, key, callback)
 		-- same reason: they are all "the transmute", and it is available.
 		local when = entry.readyAt and entry.readyAt > now and entry.readyAt or nil
 		local found = group(tostring(profession or "?") .. "\1" .. tostring(when or "ready"),
-			recipeName or named, profession)
+			"craft", recipeName or named, profession)
 
 		-- One recipe on a timer is named; several sharing one are named by their
 		-- profession, because "Transmute: Arcanite" is a lie about the other four.
@@ -270,7 +306,7 @@ function Cooldowns:Crafting(meta, key, callback)
 	for _, entry in ipairs(meta.itemCooldowns or {}) do
 		if self:IsCraftingItem(entry.id) then
 		local when = entry.readyAt and entry.readyAt > now and entry.readyAt or nil
-		local found = group("item\1" .. tostring(entry.id),
+		local found = group("item\1" .. tostring(entry.id), "item",
 			(entry.id and Family.Names:Item(entry.id, key, callback))
 				or ("item " .. tostring(entry.id)),
 			(meta.cooldownItems or {})[entry.id])

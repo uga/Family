@@ -12724,6 +12724,107 @@ print("crafting cooldowns")
 	Family.Database:Forget(key)
 end)()
 
+print()
+print("how many crafting cooldowns a member is announced as having")
+
+-- Reported from play 2026-09-05, off the login line itself: *temps de recharge d'artisanat
+-- prêts : Ermete (3), Hooga (3), Nervina, Puzzolente (3)*. The number is how many Family
+-- thinks are ready, and three of those four characters had **one** ready timer each - they
+-- are alchemists who have learned three transmutes, and the client puts every transmute on
+-- one shared cooldown.
+--
+-- The rule was already written down, over `Crafting`: recipes of one profession sharing a
+-- readyAt are one timer, because a timer is the thing somebody can go and do. `Summarise` was
+-- walking the flat list instead and counting recipes.
+--
+-- Nothing caught it because every fixture in this file had one recipe per timer, which is
+-- exactly the shape that makes grouped and ungrouped agree. L-054.
+;(function()
+	local key = "Transmuter-Fire Maw"
+	local came = time() - 3600
+	local three = {
+		{ name = "Transmute: Arcanite", profession = 171, readyAt = came },
+		{ name = "Transmute: Air to Fire", profession = 171, readyAt = came },
+		{ name = "Transmute: Earth to Water", profession = 171, readyAt = came },
+	}
+
+	Family.Database:SetMeta(key, { name = "Transmuter", realm = "Fire Maw",
+		classFile = "SHAMAN", level = 60, faction = "Alliance",
+		craftCooldowns = three })
+
+	-- Both halves said out loud, because the fault was the two being confused: the record
+	-- really does hold three recipes, and what somebody can go and do is one thing.
+	local raw = 0
+	for _, entry in ipairs(Family.Cooldowns:For(Family.Database:Meta(key))) do
+		if entry.ready then raw = raw + 1 end
+	end
+	check("three transmutes are three recipes on the record", raw == 3, tostring(raw))
+
+	local ready = Family.Cooldowns:Summarise(Family.Database:Meta(key))
+	check("and one thing to go and do", ready == 1, tostring(ready))
+
+	-- The login line reads its number from here, and drops it entirely at one - so this is
+	-- the difference between "Transmuter (3)" and "Transmuter", which is what was reported.
+	local counted
+	for _, member in ipairs(Family.Cooldowns:Ready()) do
+		if member.key == key then counted = member.count end
+	end
+	check("so the notice names them with no number after it", counted == 1,
+		tostring(counted))
+
+	-- And the other direction, which is what stops this being fixed by always answering one.
+	Family.Database:SetMeta(key, { craftCooldowns = {
+		{ name = "Transmute: Arcanite", profession = 171, readyAt = came },
+		{ name = "Transmute: Air to Fire", profession = 171, readyAt = came },
+		{ name = "Mooncloth", profession = 197, readyAt = came },
+	} })
+	check("two professions ready are two things to go and do",
+		Family.Cooldowns:Summarise(Family.Database:Meta(key)) == 2,
+		tostring(Family.Cooldowns:Summarise(Family.Database:Meta(key))))
+
+	-- One ready and one still running: the count is about the first and the moment is about
+	-- the second, and a grouping that lost the running one would lose the moment with it.
+	local later = time() + 7200
+	Family.Database:SetMeta(key, { craftCooldowns = {
+		{ name = "Transmute: Arcanite", profession = 171, readyAt = came },
+		{ name = "Transmute: Air to Fire", profession = 171, readyAt = came },
+		{ name = "Mooncloth", profession = 197, readyAt = later },
+	} })
+	local some, next_ = Family.Cooldowns:Summarise(Family.Database:Meta(key))
+	check("one timer ready beside one still running counts one", some == 1, tostring(some))
+	check("and the running one is still when the next comes back", next_ == later,
+		tostring(next_))
+
+	-- The item half, which is the trap in doing this through `Crafting` at all. That call
+	-- draws a panel, so it carries the crafting *items* as well - including ready ones, which
+	-- it shows on purpose. The login line must not: an item is used out of the bags with
+	-- nothing open for Family to see, so "ready" means only that nobody has looked.
+	Family.Database:SetMeta(key, { craftCooldowns = Family.CLEAR,
+		itemCooldowns = { { id = 15846 } }, cooldownItems = { [15846] = 165 } })
+
+	local shown
+	for _, kind in ipairs(Family.Cooldowns:Crafting(Family.Database:Meta(key))) do
+		if kind.item == 15846 then shown = kind end
+	end
+	check("a ready crafting item is drawn on the panel", shown ~= nil and shown.ready == true,
+		tostring(shown and shown.ready))
+	check("and told apart from a craft by what it is, not by what it happens to carry",
+		shown and shown.kind == "item", tostring(shown and shown.kind))
+	check("and adds nothing to what is announced",
+		Family.Cooldowns:Summarise(Family.Database:Meta(key)) == 0,
+		tostring(Family.Cooldowns:Summarise(Family.Database:Meta(key))))
+
+	-- A running item is a fact Family still has, so it may say when - and still never counts.
+	local soon = time() + 900
+	Family.Database:SetMeta(key, {
+		itemCooldowns = { { id = 15846, readyAt = soon } } })
+	local none, when = Family.Cooldowns:Summarise(Family.Database:Meta(key))
+	check("a running item is not announced either", none == 0, tostring(none))
+	check("but it does say when it comes back", when == soon, tostring(when))
+
+	Family.Database:Forget(key)
+end)()
+
 --------------------------------------------------------------------------------------------
 -- The seam between the client and us
 --

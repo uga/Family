@@ -2001,3 +2001,45 @@ the whole time.
 only for a quest that has one. Two mutations of the finder fail against it - and the second only
 after the fixture was corrected to carry the decoy numbers the real client sends before the id,
 because with noughts there "take the first number" and "ask which number" are the same page.
+
+---
+
+## L-054 — Every fixture had one of the thing that only goes wrong when there are several
+
+Family's login line announces whose crafting cooldowns have come back, with a number where a
+character has more than one. Reported from play 2026-09-05, in French, as it was seen:
+
+    Family: temps de recharge d'artisanat prêts : Ermete (3), Hooga (3), Nervina, Puzzolente (3)
+
+Three of the four characters were announced as having three. Each had **one**. They are
+alchemists who have learned three transmutes, and the client puts every transmute on one shared
+cooldown - so there was one thing to go and do and Family named it three times.
+
+**The rule was already written, in the same file.** Over `Cooldowns:Crafting`: *thirty alchemy
+transmutes share one timer; listing thirty of them answers a question nobody asked*. The panel
+follows it. `Summarise`, which is what the notice counts with, walked the flat list from
+`Cooldowns:For` instead and counted recipes. Two readings of one record, in one module, and only
+one of them obeyed the rule the module states.
+
+**Why nothing caught it.** Every crafting fixture in the harness had exactly one recipe per
+timer - one transmute, one mooncloth, one salt shaker. That is precisely the shape in which
+grouped and ungrouped give the same answer. Three checks called `Summarise` and all three
+asserted `ready == 1` against a single recipe; they would have passed against any counting rule
+at all.
+
+**The shape, and it is not the same as L-048.** That one was about a fixture easier to write
+than the case. This one is about a fixture that is *correct* and *representative of nothing*:
+one of a thing is the value at which a count and a group are indistinguishable, and so is one of
+anything else. A rule that says "these several are one" cannot be checked with one.
+
+Worth asking of any grouping, deduplicating or collapsing rule in this repository: does a
+fixture anywhere have **two** of what it collapses? If not, the rule is unmeasured however green
+the checks are.
+
+**The check that now catches it.** A member with three transmutes sharing one readyAt: the
+record holds three recipes and `Summarise` answers one, with the notice's own number read back
+through `Cooldowns:Ready`. Reverting the count to the flat list fails four checks. Three more
+hold the edges the fix could have broken instead - two professions ready are two, a running
+timer still says when it comes back, and a crafting item that is ready is drawn on the panel and
+still never announced, which is a distinction `Crafting` carried only by accident until the
+groups were given the `kind` the flat list already had.

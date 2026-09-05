@@ -153,6 +153,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **The login notice counted recipes instead of cooldowns.** An alchemist who has learned three
+  transmutes has one cooldown, not three - the game puts every transmute on the same timer - and
+  the line at login was announcing *(3)* where there was one thing to go and do. It now counts
+  the same way the Crafting table does.
+
 - **A linked family's quests, letters and crafters are actually readable.** Opening a shared
   character's Quests said *Nothing recorded for this member* however much they had shared;
   unfolding their letters on the summary drew none; and on an item's tooltip they were left out
