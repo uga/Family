@@ -153,6 +153,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A quest's tooltip now shows that character's progress through it.** Hovering a quest said
+  *You are on this quest* and listed every requirement unmarked, whoever the row belonged to -
+  the game describes a quest as it stands for the character you are playing, and on this panel
+  that is almost never the one you are pointing at. Each objective is now listed underneath,
+  with the ones that character has finished in green and their name above them. Quest logs read
+  before this update carry no objectives until that character is played again.
+
 - **The login notice about crafting cooldowns puts one character on each line, and says what
   is ready.** It used to run every name together on one line with a count after each - which
   for anybody with a dozen crafters was a paragraph across the chat frame, and never said what

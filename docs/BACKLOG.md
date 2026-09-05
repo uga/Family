@@ -804,3 +804,17 @@ Handed over 2026-09-04, needed before their entries can start:
   refusal is attributed from what Family addressed inside the window instead: one character of
   that name whispered decides it whatever form the client sends back, two decides nothing. An
   answer would widen the first case and is not needed for either.
+
+---
+
+## 14. Guild share: a filter for the guildmates who run Family
+
+**Received:** 2026-09-05, from Alberto.
+
+**Asked:** on the Guild share panel, a filter at the top for *only the people running Family*.
+A large guild is a long list, and most of it is people this panel can never exchange anything
+with.
+
+**Today:** not measured. Whether the panel already knows which guildmates have answered is the
+first question and it is a read, not a guess - `Family/Guild.lua` records what has been heard
+from whom, and the panel may or may not have that in its hand where the rows are drawn.

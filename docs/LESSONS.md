@@ -2043,3 +2043,38 @@ hold the edges the fix could have broken instead - two professions ready are two
 timer still says when it comes back, and a crafting item that is ready is drawn on the panel and
 still never announced, which is a distinction `Crafting` carried only by accident until the
 groups were given the `kind` the flat list already had.
+
+---
+
+## L-055 — Two files of one name, and four mutation results that meant nothing
+
+Mutation testing four files at once, the throwaway helper backed each up as
+`$SCRATCH/$(basename $f)`. Two of the four are called `Quests.lua`:
+`addons/Family/Scanners/Quests.lua` and `addons/Family_UI/Quests.lua`. One backup overwrote the
+other, and the restore wrote the panel into the scanner.
+
+**The damage was not the corruption.** That was visible the moment it was looked for - the
+scanner began with the panel's header comment - and `git checkout` had it back, at the cost of
+re-applying an uncommitted change by hand.
+
+The damage was that **mutations two, three, four and five ran against a broken tree and every
+one of them reported failures**. They looked emphatic. They were the quest scanner falling over,
+identically, four times, and none of them touched the code each mutation was aimed at. Read
+quickly, that is four mutations caught and a slice proved. Nothing was proved at all.
+
+What gave it away was the shape rather than the count: a mutation that edits only
+`Family_UI/Quests.lua` cannot make *the quest log is read* fail, because that check runs before
+any panel exists. A failure in the wrong layer is not a stronger result, it is a different
+experiment.
+
+**The shape.** A red check is evidence about the mutation only if the mutation is the sole
+difference. A helper that restores by a name that is not unique breaks that silently, and every
+run after the first is measuring the wreckage of the one before. This repository has several
+same-named files across its two addons - `Quests.lua`, and `Mail.lua` is a scanner and a data
+module - so `basename` is never a key here.
+
+**The check that now catches it.** There is none, and there should not be: this was a shell
+helper written for one turn, not code in the tree. What replaces it is a rule for writing one -
+back up by the whole path with the separators flattened, and have the helper re-run the harness
+after restoring and say so loudly if the tree does not come back green. The second half is what
+turns this from an hour lost into a line of output.

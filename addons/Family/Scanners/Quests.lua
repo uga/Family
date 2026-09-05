@@ -159,9 +159,37 @@ local function progressOf(index, questID)
 	local total = Family:TryCall(GetNumQuestLeaderBoards, index) or 0
 	local done = 0
 
+	-- Each objective as the client wrote it, kept alongside the count.
+	--
+	-- The count answers *how far*, and it is the only part worth a column. What it cannot
+	-- answer is *which* - "2 of 4" says nothing about which two gems are still missing, and
+	-- that is the question somebody hovering the row is asking. Reported from play
+	-- 2026-09-05 with a screenshot of a tooltip listing all four requirements of a quest the
+	-- panel said was two-thirds done.
+	--
+	-- The client will not answer it either, and this is the §2.1 case in reverse: a quest is
+	-- described by id, and the description that comes back is about **whoever is being
+	-- played**. Hovering another character's row and reading *You are on this quest* is the
+	-- client answering a question about the player, printed beside somebody else's name. So
+	-- the per-character half has to be recorded here or it does not exist.
+	--
+	-- **Stored as words, and they are the words of the client that read the log.** An
+	-- objective has no identity of any kind on these clients - no id, no index that survives
+	-- the quest being turned in - so unlike a profession (L-015) there is nothing to file it
+	-- under but its own text. A log read on a French client reads in French afterwards, and
+	-- that is a property of the data rather than a fault to be fixed later.
+	local lines = {}
+
+	local function keep(text, finished)
+		if type(text) == "string" and text ~= "" then
+			lines[#lines + 1] = { text = text, done = finished and true or nil }
+		end
+	end
+
 	for objective = 1, total do
-		local _, _, finished = Family:TryCall(GetQuestLogLeaderBoard, objective, index)
+		local text, _, finished = Family:TryCall(GetQuestLogLeaderBoard, objective, index)
 		if finished then done = done + 1 end
+		keep(text, finished)
 	end
 
 	-- Mists moved the objectives to the quest id, and the older calls are gone with it.
@@ -169,14 +197,15 @@ local function progressOf(index, questID)
 	if total == 0 and questID and api then
 		total = Family:TryCall(api.GetNumQuestObjectives, questID) or 0
 		for objective = 1, total do
-			local _, _, finished = Family:TryCall(GetQuestObjectiveInfo, questID, objective,
-				false)
+			local text, _, finished = Family:TryCall(GetQuestObjectiveInfo, questID,
+				objective, false)
 			if finished then done = done + 1 end
+			keep(text, finished)
 		end
 	end
 
 	if total == 0 then return nil end
-	return done, total
+	return done, total, lines
 end
 
 --------------------------------------------------------------------------------------------
@@ -251,6 +280,18 @@ function Quests:ScanNow()
 	local category = nil
 	local complete = 0
 
+	-- Kept apart from `entries` on purpose, and the reason is the wire rather than the shape.
+	--
+	-- `Wide.lua` shares a payload key whole - `out.payload[key] = payload[key]` - so a field
+	-- added inside `quests` starts crossing every link the moment it is written, without
+	-- anybody deciding that it should. These are bulky, they are in one client's language,
+	-- and the channel they would travel down is 200-byte chunks on a rate-limited channel
+	-- shared with every other addon the player runs. So they live under a key no category
+	-- lists, which is what makes "not shared" the state of the code rather than a promise.
+	--
+	-- Sharing them later is one entry in `CATEGORIES`, and a decision of its own.
+	local objectives = {}
+
 	for index = 1, count do
 		-- Kept, because the id is found among these returns rather than asked for
 		-- separately, and finding it means having them.
@@ -264,7 +305,13 @@ function Quests:ScanNow()
 			category = entry.title
 		elseif entry then
 			local questID = questIDAt(index, returns, entry.title)
-			local done, total = progressOf(index, questID)
+			local done, total, lines = progressOf(index, questID)
+
+			-- Filed under the title, which is what the panel has in its hand when it draws
+			-- the row, and which the game keeps unique within one log - it will not hand a
+			-- character the same quest twice. Never under the position in the list, which
+			-- changes the moment anything is turned in.
+			if lines and #lines > 0 then objectives[entry.title] = lines end
 
 			if done and total and done >= total then complete = complete + 1 end
 
@@ -286,6 +333,7 @@ function Quests:ScanNow()
 	-- empty - a member with no quests at all is a fact, once it has been seen.
 	local payload = Family.Database:Payload(key) or {}
 	payload.quests = { entries = entries, seen = time() }
+	payload.questObjectives = objectives
 	Family.Database:SetPayload(key, payload)
 
 	Family.Database:SetMeta(key, {

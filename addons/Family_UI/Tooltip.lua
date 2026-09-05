@@ -808,7 +808,7 @@ local function showFor(frame)
 	local resolve = frame and frame.__familyTooltip
 	if not resolve then return end
 
-	local kind, id, fallback, hint = resolve(frame)
+	local kind, id, fallback, hint, extra = resolve(frame)
 	if not kind and not fallback then return end
 
 	GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
@@ -840,6 +840,25 @@ local function showFor(frame)
 			else
 				GameTooltip:AddLine(line[1])
 			end
+		end
+	end
+
+	-- What Family knows and the client does not, written under whatever the client said.
+	--
+	-- Every lane above asks the game to describe a thing by its id, and the game describes
+	-- it as it is **for whoever is being played**. That is right for an item and wrong for a
+	-- quest: hovering another character's row and reading *You are on this quest* over a
+	-- list of four requirements, on a row the panel has just said is two of four done, is
+	-- the client answering a question about the player under somebody else's name. Reported
+	-- from play 2026-09-05.
+	--
+	-- So this is not a fallback. The client's answer is kept - it is the quest's own text,
+	-- which is worth having - and the per-character half is added to it.
+	for _, line in ipairs(extra or {}) do
+		if line[2] then
+			GameTooltip:AddDoubleLine(line[1], line[2])
+		else
+			GameTooltip:AddLine(line[1])
 		end
 	end
 

@@ -978,10 +978,16 @@ GetNumQuestLeaderBoards = function(index)
 	return (row and row.quest and row.quest.objectives) or 0
 end
 
+-- Each objective says something of its own, the way a real leaderboard line does - *Gem of
+-- Smolderthorn: 1/1* - because a stub that answers one shared string for all of them cannot
+-- tell a check that reads the objectives apart from one that merely counts them, and it is
+-- the reading that Family had never done.
 GetQuestLogLeaderBoard = function(objective, index)
 	local row = questRows()[index]
 	if not (row and row.quest) then return nil end
-	return "an objective", "monster", objective <= (row.quest.done or 0)
+	local done = objective <= (row.quest.done or 0)
+	return string.format("%s %d: %d/1", row.quest.title, objective, done and 1 or 0),
+		"monster", done
 end
 
 ExpandQuestHeader = function(index)
@@ -3017,6 +3023,65 @@ Family.Quests:Scan()
 check("a second scan does not double the log",
 	#Family.Database:Payload(key).quests.entries == 3,
 	tostring(#Family.Database:Payload(key).quests.entries))
+;(function()
+	-- Each objective as the client wrote it, which is the half a count cannot answer.
+	--
+	-- Reported from play 2026-09-05 with a screenshot: the Progress column said *2 sur 4* and the
+	-- tooltip listed all four requirements with none of them marked. The client cannot answer this
+	-- and it is §2.1 in reverse - a quest is described by id, and what comes back is the quest as
+	-- it stands **for whoever is being played**, which on this panel is the wrong character on
+	-- every row but one. So the per-character half is recorded here or it does not exist.
+	local objectives = Family.Database:Payload(key).questObjectives
+	check("the objectives are recorded, not only counted", objectives ~= nil)
+	
+	local linen = objectives and objectives["Red Linen Goods"]
+	check("filed under the quest's title, which is what a row has in its hand",
+		linen ~= nil)
+	check("one entry for each objective rather than a total", linen and #linen == 2,
+		linen and tostring(#linen))
+	check("carrying the words the client used", linen and linen[1].text == "Red Linen Goods 1: 1/1",
+		linen and tostring(linen[1].text))
+	check("and which of them are finished", linen and linen[1].done == true,
+		linen and tostring(linen[1].done))
+	
+	local hogger = objectives and objectives["Wanted: Hogger"]
+	check("an unfinished objective is not marked finished",
+		hogger and hogger[1] and hogger[1].done == nil,
+		hogger and hogger[1] and tostring(hogger[1].done))
+	
+	-- The same rule the counting half already keeps: a delivery has nothing to be part-way
+	-- through, and inventing an empty list for it would put a blank block under every such row.
+	check("a quest with no objectives files none",
+		objectives and objectives["The Killing Fields"] == nil)
+	
+	-- **And they do not cross a Wide Family link.** `Wide.lua` shares a payload key whole, so a
+	-- field added inside `quests` would start travelling the moment it was written, without
+	-- anybody deciding it should: these are bulky, they are in one client's language, and the
+	-- channel is 200-byte chunks shared with every other addon the player runs. They live under a
+	-- key no category lists, and this is what makes that the state of the code rather than a
+	-- promise - the decision to share them would be an entry in CATEGORIES and a row of its own.
+	do
+		local held = FamilyDB.wide
+		FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
+			links = { ["objfam"] = { name = "Nosy-Thunderstrike",
+				grants = { [key] = { quests = true } }, siblings = {}, members = {} } } }
+	
+		-- The link itself and not its id, and a map keyed by member rather than a list -
+		-- read out of `Wide.lua` rather than assumed, because the first version of this
+		-- guessed both and got two nils that looked exactly like the property holding.
+		local offered = Family.Wide:Offering(FamilyDB.wide.links["objfam"])
+		local sent = offered and offered[key]
+	
+		check("a member whose quests are granted does send the log", sent ~= nil
+			and sent.payload ~= nil and sent.payload.quests ~= nil,
+			tostring(sent and sent.payload))
+		check("and never sends the objectives with it",
+			sent and sent.payload and sent.payload.questObjectives == nil,
+			tostring(sent and sent.payload and sent.payload.questObjectives))
+	
+		FamilyDB.wide = held
+	end
+end)()
 
 
 print()
@@ -6589,6 +6654,80 @@ print("everybody's quests at once")
 	if switch then switch.__scripts.OnClick(switch) end
 	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
 	Family.UI:Refresh()
+end)()
+
+print()
+print("a quest row's own objectives, under the client's description of the quest")
+
+-- The other half of what was reported: the Progress column said *2 of 4* and the tooltip
+-- listed all four requirements with none of them marked, because the client describes a quest
+-- as it stands for **whoever is being played** and every row here but one is somebody else.
+--
+-- So the client's answer is kept - it is the quest's own text, which is worth having - and this
+-- character's own progress is added under it. Not a fallback: a fallback replaces.
+;(function()
+	local key = Family:CurrentMember()
+
+	local lines = Family.UI:QuestLines(key, Family.UI:Meta(key), nil)
+	check("the quest rows are there to carry it", lines ~= nil and #lines > 0)
+
+	local quest, heading
+	for _, line in ipairs(lines or {}) do
+		if line.title == "Red Linen Goods" then quest = line end
+		-- A zone heading is a row in this list too, and has no quest behind it.
+		if not line.title and not heading then heading = line end
+	end
+
+	check("a quest row carries this character's objectives", quest ~= nil
+		and quest.progress ~= nil and #quest.progress == 2,
+		quest and tostring(quest.progress and #quest.progress))
+	check("in the client's own words", quest and quest.progress
+		and quest.progress[1].text == "Red Linen Goods 1: 1/1",
+		quest and quest.progress and tostring(quest.progress[1].text))
+	check("and a zone heading carries none, having no quest behind it",
+		heading ~= nil and heading.progress == nil)
+
+	-- And on the panel, where the tooltip can reach them.
+	Family.UI:Show()
+	Family.UI:ShowTab("character")
+	check("the quests section can be opened", clickButton("Quests"))
+	Family.UI:Refresh()
+
+	local row
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and f.questID == 84 then row = f end
+	end
+	check("the row for that quest is drawn", row ~= nil)
+
+	if row then
+		GameTooltip.__shownAs = nil
+		wipe(GameTooltip.__lines)
+		row.__scripts.OnEnter(row)
+
+		-- Both halves, and the point is that they are both there. A check that only
+		-- found the objectives would pass with the client's answer thrown away, which is
+		-- what a fallback does and what this deliberately is not.
+		check("hovering it still opens the quest's own tooltip",
+			GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "quest",
+			GameTooltip.__shownAs and GameTooltip.__shownAs.kind)
+
+		local said = ""
+		for _, line in ipairs(GameTooltip.__lines) do
+			said = said .. " " .. tostring(line[1]) .. " " .. tostring(line[2])
+		end
+
+		check("with this character's objectives added under it",
+			said:find("Red Linen Goods 1: 1/1", 1, true) ~= nil, said)
+		check("every one of them, not the first",
+			said:find("Red Linen Goods 2: 1/1", 1, true) ~= nil, said)
+
+		-- Whose progress it is, said out loud. The client writes *You are on this quest*
+		-- above these lines, which is a claim about the player; without a name under it
+		-- the reader has two statements about two different characters and nothing
+		-- saying which is which.
+		check("and the character it belongs to named, because the client named the player",
+			said:find(tostring(Family.UI:Meta(key).name or key), 1, true) ~= nil, said)
+	end
 end)()
 
 -- ...and drawing that section at all takes a client that has them. Which sections exist is

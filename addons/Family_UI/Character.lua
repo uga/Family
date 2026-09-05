@@ -660,7 +660,7 @@ local function build(frame)
 			if self.questID then
 				return "quest", self.questLevel
 					and (self.questID .. ":" .. self.questLevel) or self.questID,
-					self.fallback
+					self.fallback, nil, self.progress
 			end
 			if self.achievementID then
 				return "achievement", self.achievementID, self.fallback
@@ -668,7 +668,7 @@ local function build(frame)
 			if self.currencyID then
 				return "currency", self.currencyID, self.fallback
 			end
-			if self.fallback then return nil, nil, self.fallback end
+			if self.fallback then return nil, nil, self.fallback, nil, self.progress end
 			return nil
 		end)
 
@@ -739,6 +739,7 @@ local function build(frame)
 			r.expandFaction, r.expandQuest = nil, nil
 			r.itemID, r.spellID, r.questID = nil, nil, nil
 			r.achievementID, r.fallback = nil, nil
+			r.progress = nil
 			r.currencyID = nil
 			r.questLevel = nil
 			r.questTitle, r.memberKey = nil, nil
@@ -1704,6 +1705,27 @@ local function build(frame)
 						{ (line.right ~= "" and line.right) or nil },
 					}
 				end
+				-- This character's own objectives, under whatever the client says about
+				-- the quest. The client describes a quest as it stands **for whoever is
+				-- being played**, which is the wrong character on every row of this panel
+				-- bar one - so its answer is kept and this is added to it rather than
+				-- replacing it.
+				--
+				-- Named, and not only in whole-family mode. *You are on this quest* is what
+				-- the client writes above these lines, and without a name underneath it the
+				-- reader has two claims about two different characters and nothing saying
+				-- which is which.
+				if line.progress then
+					local said = { { " " }, { UI:NameOf(member.meta) } }
+					for _, objective in ipairs(line.progress) do
+						said[#said + 1] = {
+							(objective.done and "|cff40bf40" or "|cffffffff")
+								.. objective.text .. "|r",
+						}
+					end
+					r.progress = said
+				end
+
 				r.questTitle = line.title
 				r.memberKey = member.key
 				r.highlight:SetShown(playing and (line.questID or line.title) and true

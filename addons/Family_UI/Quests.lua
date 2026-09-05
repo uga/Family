@@ -207,6 +207,13 @@ function UI:QuestLines(key, meta, matches)
 			or L["|cff9d9d9dnothing ready to hand in|r"],
 		UI:Ago(log.seen))
 
+	-- The objectives are read from the same payload and not from the log, because they are
+	-- deliberately not part of it: they are recorded under a key no Wide Family category
+	-- lists, so a borrowed member has none and the rows below simply carry nothing. Which is
+	-- the right answer for a linked family rather than a gap - what the client would say
+	-- about their quest is about the player anyway.
+	local objectives = payload.questObjectives or {}
+
 	local rows = {}
 	local order, groups = byCategory(log.entries)
 
@@ -260,6 +267,7 @@ function UI:QuestLines(key, meta, matches)
 					questID = quest.id,
 					questLevel = quest.level,
 					title = quest.title,
+					progress = quest.title and objectives[quest.title] or nil,
 				}
 			end
 		end
