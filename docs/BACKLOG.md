@@ -324,7 +324,7 @@ changing it changes tooltips and search results too.
 This page is for requests, and these are not — they are debts this session took on knowingly.
 They are here so that there is one place to look rather than two.
 
-### The harness cannot tell two panels' text apart
+### The harness cannot tell two panels' text apart — PAID 2026-09-05
 
 `visibleText` in `tests/Harness.lua` sweeps every font string in the client. Several panels are
 built, none is hidden in a way a check can see, and so "this word is not on screen" is answered
@@ -337,6 +337,12 @@ passed for the wrong reason, and the honest end was to delete them and write dow
 property is guarded and not pinned.
 
 Entries 9, 10 and 12 are all panels. This is worth closing before them.
+
+**Closed.** `onScreen` walks the whole chain and is now the one rule; `visibleText` uses it, and
+`drawnText` is new for checks about a panel rather than about the screen. Sharpening it found a
+check that had been wrong for longer than a day - the summary writes a letter's sender as
+*Auction House* and the check asked for *Auctioneer*, passing on the development icon sheet -
+and three that were reading a window the harness never showed. L-046.
 
 ### Three probes are out and unanswered
 

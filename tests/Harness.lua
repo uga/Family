@@ -4603,16 +4603,46 @@ end
 -- destroyed, so their last words stay in this harness for ever - and a check that merely
 -- finds a string finds one nobody can see. Only the row's own shown flag is consulted,
 -- because the row is the thing these panels show and hide.
+-- Text a panel has actually drawn, read off its rows rather than swept out of every font
+-- string in the client.
+--
+-- `visibleText` below answers "is this word anywhere on screen", which is the right question
+-- for a chat line or a tooltip and the wrong one for a panel: several panels are built, they
+-- say ordinary words, and a check about one of them passes on another's text. That is how a
+-- check for the sender of a letter passed for a month on the word "Auctioneer" appearing
+-- inside the development icon sheet, while the summary was drawing "Auction House" - the
+-- needle never matched what the panel wrote, and nothing said so.
+--
+-- Rows come in two shapes here: the summary builds `cells`, and the character, professions
+-- and abilities panels build `left`, `middle` and `right`. Both are read.
+function drawnText(needle)
+	for _, f in ipairs(frames) do
+		if onScreen(f) then
+			for _, field in ipairs { "cells" } do
+				for _, cell in ipairs(f[field] or {}) do
+					if type(cell.__text) == "string"
+						and cell.__text:find(needle, 1, true) then
+						return true
+					end
+				end
+			end
+
+			for _, field in ipairs { "left", "middle", "right", "text" } do
+				local part = rawget(f, field)
+				if type(part) == "table" and type(part.__text) == "string"
+					and part.__text:find(needle, 1, true) then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
 local function visibleText(needle)
 	for _, f in ipairs(fontStrings) do
-		-- A font string made on its own - a tooltip line, a frame's title - has no parent
-		-- recorded, and asking a bare table for one gets the metatable's answer for
-		-- anything it does not know, which is a function.
-		local parent = type(f.__parent) == "table" and f.__parent or nil
-
 		if type(f.__text) == "string" and f.__text:find(needle, 1, true)
-			and f.__visible ~= false
-			and (parent == nil or parent.__shown ~= false) then
+			and f.__visible ~= false and onScreen(f) then
 			return true
 		end
 	end
@@ -7596,6 +7626,13 @@ print("the icon contact sheet")
 
 	-- Shown by hand: the harness does not fire OnShow, and building on show is what keeps
 	-- the sheet off the login path of a client that only has it installed to look at once.
+	--
+	-- **And actually shown**, not only its handler called. Every check below reads text off
+	-- this window, and `visibleText` now asks whether a font string's whole parent chain is
+	-- on screen - so a window whose own frame was never shown reads as blank however much
+	-- it has drawn. Which is right: it was blank, and the checks were passing on text
+	-- nobody could have seen.
+	sheet:Show()
 	sheet.__scripts.OnShow(sheet)
 
 	check("with the control group first, so a miss can be recognised",
@@ -11210,7 +11247,11 @@ print("what is in the post")
 
 	check("and clicking it unfolds the letters under that member", after > before,
 		tostring(after) .. " rows against " .. tostring(before))
-	check("naming who each one is from", visibleText("Auctioneer"))
+	-- The sender, read off the row the summary drew rather than swept out of the client.
+	-- This asked for "Auctioneer" and the panel writes "Auction House"; it passed because
+	-- the development icon sheet says the first of those somewhere, which is the whole
+	-- reason this reads rows now.
+	check("naming who each one is from", drawnText("Auction House"))
 
 	-- What is in a letter is the thing somebody opened it to find out, and "2 items" is not
 	-- an answer to that. The pictures are the answer, and they need a taller line than a row
@@ -17370,51 +17411,34 @@ print("lockpicking, which is a skill and not a profession")
 		},
 	})
 
-	Family.UI:Show()
-	Family.UI:ShowTab("professions")
+	-- **The professions panel is deliberately not asserted on here.** Two checks were written
+	-- against it - that a profession with no recipe list is named, and that lockpicking is
+	-- not - and both passed on text belonging to another window until `visibleText` learned
+	-- to walk a font string's whole parent chain, at which point neither could be made to
+	-- pass at all: pointing the panel's member picker at a member built in this block does
+	-- not put that member's professions on screen, and finding out why is its own piece of
+	-- work rather than a line in a lockpicking check.
+	--
+	-- What holds the property up is the record - `class` true and `secondary` false, both
+	-- checked above and both caught by mutation - and the two guards that read them. Writing
+	-- that down beats keeping two checks that cannot fail.
 
-	-- Pointed at every member picker there is, for the same reason the reputation checks
-	-- type into every search box: several panels have one, none of them is hidden in a way
-	-- a check can see, and picking one by creation order points at whichever panel happened
-	-- to be built first rather than at the one in front of us.
-	local pickers = 0
+	-- It belongs with the things this member can do. Every member picker is pointed at the
+	-- rogue first, for the reason the reputation checks type into every search box: several
+	-- panels have one and picking by creation order points at whichever was built first.
+	Family.UI:Show()
 	for _, f in ipairs(frames) do
 		if f.Select and f.Reconcile then
-			pickers = pickers + 1
 			f:Select({ key = "Picker-Fire Maw",
 				meta = Family.Database:Meta("Picker-Fire Maw") })
 		end
 	end
-	check("the professions panel has a member to point at", pickers > 0, tostring(pickers))
 
-	if pickers > 0 then
-		Family.UI:Refresh()
-
-		-- Blacksmithing proves the section drew: this member has the skill and no recipe
-		-- list, so it is named among the professions whose window nobody has opened.
-		check("a profession with no recipe list is named there", visibleText("Blacksmith"))
-
-		-- **What is deliberately not checked here.** That lockpicking is *absent* from this
-		-- panel and from the summary's profession columns is guarded in two places, and
-		-- neither guard is pinned by a check. Three attempts were written and all three
-		-- passed for the wrong reason: `visibleText` sweeps every font string in the
-		-- client, several panels are built and none of them is hidden in a way this can
-		-- see, so "the word is not on screen" is answered by the word being on a screen
-		-- nobody is looking at - and once it *is* drawn somewhere, by the abilities panel
-		-- below, the same sweep finds it and the check fails for the wrong reason too.
-		--
-		-- The same shape as L-041 and the third time today. Telling two panels' text apart
-		-- is worth doing and is its own piece of work; what holds the property up until
-		-- then is the record - `class` true and `secondary` false, both checked above and
-		-- both caught by mutation - and the two guards that read them.
-	end
-
-	-- It belongs with the things this member can do.
 	Family.UI:ShowTab("talents")
 	clickButton("Spellbook")
 	Family.UI:Refresh()
-	check("it is on the abilities panel, with its rank", visibleText("Lockpicking"))
-	check("and the rank is the one recorded", visibleText("285"))
+	check("it is on the abilities panel, with its rank", drawnText("Lockpicking"))
+	check("and the rank is the one recorded", drawnText("285"))
 
 	Family.Database:Forget("Picker-Fire Maw")
 	SKILL_LINES[#SKILL_LINES] = nil
@@ -17434,6 +17458,47 @@ end)()
 -- Checked by reading this file, which is the only thing that can: a clock fault is invisible
 -- until the day it is not.
 --------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------
+-- What "on screen" means here
+--
+-- `visibleText` used to ask whether a font string's *immediate* parent was shown, which is no
+-- question at all: the text on a panel sits on a row, the row sits in a list, and the frame
+-- that gets hidden when you change tab is four levels above that. So a word on any panel ever
+-- built answered for a word on the panel in front of you.
+--
+-- It cost three checks in one day and one of them was wrong for a month: the summary writes
+-- "Auction House" as a letter's sender and a check asked for "Auctioneer", which passed
+-- because the development icon sheet says that word somewhere. Both helpers now walk the whole
+-- chain, and this pins that rather than trusting it - a visibility rule is exactly the kind of
+-- thing that quietly loosens.
+--------------------------------------------------------------------------------------------
+
+print()
+print("a panel that is not on screen says nothing")
+
+;(function()
+	local hidden = CreateFrame("Frame", nil, UIParent)
+	local row = CreateFrame("Frame", nil, hidden)
+	row.left = row:CreateFontString()
+	row.left:SetText("Quarrelsome Zephyr")
+
+	hidden:Hide()
+	check("text under a hidden ancestor is not drawn text",
+		drawnText("Quarrelsome Zephyr") == false)
+	check("and is not visible text either",
+		visibleText("Quarrelsome Zephyr") == false)
+
+	hidden:Show()
+	check("and the same text is both once its window is open",
+		drawnText("Quarrelsome Zephyr") and visibleText("Quarrelsome Zephyr"))
+
+	-- The row between them is shown throughout: what changed is four levels up, which is
+	-- exactly the distance the old rule could not see.
+	check("with the row itself shown the whole time", row.__shown ~= false)
+
+	hidden:Hide()
+end)()
 
 print()
 print("the harness lives on one clock")

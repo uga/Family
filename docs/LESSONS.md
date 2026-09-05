@@ -1539,6 +1539,12 @@ what the client said rather than what it was asked.
 
 ## L-041 — The check moved to another panel, and went on passing
 
+**Closed 2026-09-05.** The debt this lesson names is paid: `visibleText` and the new `drawnText`
+both walk a font string's whole parent chain, `onScreen` is the one rule, and the rule itself is
+pinned by a check that draws text under a hidden ancestor and requires both helpers to say no.
+What the sharpening immediately found is at the bottom of this entry.
+
+
 The summary grew a class filter. The character panel already had one, and a check written for
 the character panel's had been finding it like this:
 
@@ -1717,3 +1723,39 @@ harness red, because the run was chained as `harness | grep … && git commit` -
 succeeded, having found the failure line. That is the second time in one day that a gate was
 reported green by something that had only reported *finding text*. A verification step whose
 exit code comes from a pipeline says whether the pipeline ran, not whether the gate passed.
+
+---
+
+## L-046 — The visibility rule that could not see four levels
+
+`visibleText` asked whether a font string's **immediate** parent was shown. That is no question
+at all. Text on a panel sits on a row, the row sits in a list, the list sits in a scroll frame,
+and the frame that gets hidden when you change tab is four levels above that - so a word drawn
+on any panel ever built answered for a word on the panel in front of you.
+
+It cost three checks in one day (L-041, the reputation filter box, and lockpicking, where three
+were written and all three had to be deleted), and it had been wrong for longer than that:
+
+    check("naming who each one is from", visibleText("Auctioneer"))
+
+The summary writes a letter's sender as **"Auction House"**. It has never written "Auctioneer".
+That check passed because the development icon sheet - a window the harness loads and never
+shows - contains the word somewhere. A check that names the wrong thing and passes on an
+unrelated window is worse than one that fails: it reports that a feature works.
+
+**What was done.** `onScreen(f)` walks the chain and is the single rule; `visibleText` uses it;
+and `drawnText(needle)` is new, reading a panel's own rows - `cells` on the summary, `left`,
+`middle`, `right` elsewhere - for checks that are about a panel rather than about the screen.
+Sharpening the rule broke five checks: three were reading the icon sheet because the harness
+never actually showed it, one was the wrong-word one above, and one was mine from the day
+before, which turned out never to have tested what it claimed and was deleted with a note
+saying so.
+
+**And the rule is now pinned.** A check builds a row under a hidden ancestor, requires both
+helpers to say the text is not there, shows the ancestor, and requires both to say it is - with
+the row itself shown throughout, because the row was never the problem. Three mutations against
+it go red: either helper skipping the chain, and `onScreen` looking only at the parent.
+
+**The shape.** A helper that answers "is this on screen" is load-bearing for every check written
+on top of it, and it is the one place where a wrong answer is silent in both directions. It
+deserves a check of its own from the day it is written, and this one had none for a year.
