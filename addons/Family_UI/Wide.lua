@@ -662,8 +662,12 @@ local function build(frame)
 
             nextButton(L["Update now"], BUTTON_FAR, function()
                 local ok, count = Family.Wide:ExchangeWith(entry.id, "asked for")
+                -- "Could not: none of their six characters are online" reads as a sentence
+                -- with its verb missing, and it was one. What could not be done is the
+                -- update this button offers, and the reason that follows is a clause of its
+                -- own - so the two need joining rather than running together.
                 Family:Print(ok and L["Sent %d member(s) and asked for theirs."]
-                    or L["Could not: %s"], count)
+                    or L["Could not update: %s"], count)
                 frame:Refresh()
             end)
 

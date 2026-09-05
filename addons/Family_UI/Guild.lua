@@ -188,7 +188,9 @@ local function build(frame)
 		if ok then
 			Family:Print(L["Asked the guild. Whoever is online and running Family answers."])
 		else
-			Family:Print(L["|cffffaa00Could not: %s|r"], tostring(why))
+			-- Named after what the button does, the way the line above it is: this one
+			-- asks the guild, so this is what it could not do.
+			Family:Print(L["|cffffaa00Could not ask the guild: %s|r"], tostring(why))
 		end
 		frame:Refresh()
 	end)

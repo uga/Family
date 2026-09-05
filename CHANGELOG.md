@@ -91,6 +91,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Two messages that were missing a word.** *Update now* on a linked family, and the guild's
+  own update button, both answered a failure with "Could not:" and then the reason - a sentence
+  with its verb missing. They say what could not be done now.
+
 - **A linked family being offline no longer fills your chat.** Finding somebody online in a
   linked family of six means writing to each of them in turn, and the game answers every failed
   one with *No player named X is currently playing*. Those are the game's lines rather than
