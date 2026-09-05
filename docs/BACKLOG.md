@@ -876,3 +876,88 @@ One thing in it is not obvious and is checked on its own: **our own rows survive
 characters - the panel's own counting already treats the two apart for that reason. A filter
 asking `RunsFamily` alone would hide the player's own row from a list of the people running
 Family, which is the one row they can be certain about.
+
+---
+
+## 15. What is left to level: weapon skills, lockpicking, and a Skills set
+
+**Received:** 2026-09-05, from Alberto.
+
+**Asked:** lockpicking is read and shown on Abilities & Talents because it is an ability rather
+than a profession, and that is right — but the reason for reading it is a question that is
+bigger than lockpicking: *what have I still got to level on this character?* Across a family
+that is four kinds of thing:
+
+- **professions** — tracked, and the answer is already on *Overview / Professions*
+- **weapon skills**, Unarmed included — not recorded
+- **lockpicking**, rogues only — recorded
+- **poisons**, rogues only — recorded, filed with the professions, which is what it behaves like
+
+So: read the weapon skills too, and put those plus lockpicking on a Summary column set of their
+own, **Skills**.
+
+**Read 2026-09-05, and the recording half is nearly free.** `Scanners/Professions.lua` already
+walks *every* skill line the client has — `GetNumSkillLines` and `GetSkillLineInfo`, from index
+1 — and throws the weapon skills away on purpose: the comment at line 170 says what separates
+them is that a profession can be given up and Swords cannot. So there is no new call to make and
+no new window to open. What is missing is an identity to file them under: `tools/skill-lines.py`
+takes category **11** (primary professions) and **7** (lockpicking, by id), and the weapon skills
+are in neither. Which category they are in is a question for the SkillLine table on wago, not for
+the client.
+
+**Whether Mists has them at all is unmeasured** and is the same question lockpicking turned out
+to have — weapon skills were taken out of the game in Cataclysm, so the 5.5.4 table probably
+carries none, and the generator needs no rule for that (a build whose table has no line
+contributes no name). Worth confirming from the table rather than remembered, exactly as
+skill line 633 was.
+
+**The space problem is real and here is the number.** The set buttons share one row:
+`CHOOSER_WIDTH` 740 less `FACTION_ROOM` 76, divided by however many sets there are, less 2. With
+the seven that exist that is **92 pixels each**, and `SET_BUTTON_MINIMUM` is **88** — so the row
+is four pixels from its own floor. An eighth set makes it **81**, and `Summary.lua` prints a
+complaint at the player when that happens, which it was built to do precisely so this could not
+be discovered in a screenshot.
+
+So an eighth set cannot simply be added. Three ways out, none of them chosen yet:
+
+- **Two rows of set buttons.** The most room, and it costs a row of the table.
+- **Fold Skills into an existing set.** *Professions* is the natural neighbour and is already the
+  answer to the same question for professions; the cost is that its narrowing picker is about
+  professions and would have to mean something else there.
+- **Shorter labels.** Refused before, on 2026-09-04, and for a reason that has not changed: we
+  would have to know the abbreviation for every category in every language.
+
+---
+
+## 16. Where each character logged out
+
+**Received:** 2026-09-05, from Alberto.
+
+**Asked:** a *Where* column on Miscellaneous saying where each character was when they logged
+out — zone and subzone, in the reader's own language. Possibly more useful than the Hearthstone
+column beside it.
+
+**Read 2026-09-05, and almost all of this is already built.** The hearthstone column solved the
+identical problem last month and left the machinery behind:
+
+- `Names:Area(id, recorded)` turns an area id into the reader's own language, and it is
+  **measured on all three clients** rather than assumed — Era, Burning Crusade and Mists each
+  answer in their own language and agree character-for-character with the table wago serves
+  (`Names.lua` line 172 says so, and L-018 is why it was measured).
+- `Names:AreaFor(word)` finds the id behind a word the client has just said, which is the only
+  way there is: `GetBindLocation` returns a word and nothing returns its id.
+- `meta.hearth` and `meta.hearthID` are stored as **word and id together**, and both already
+  cross a Wide Family link in the `character` category.
+
+So the shape is settled by precedent: record the word *and* the id, show the id through
+`Names:Area` with the word as the fallback for a place this client has never heard of.
+
+**The one thing that needs care is when.** `Names:AreaFor` counts ids upward to 20,000, and the
+comment on it says outright that this is affordable *because a hearthstone moves rarely*. A zone
+changes every time somebody walks anywhere, so the same lookup on every zone change would be a
+different proposition entirely. Recording at **logout** — once a session — puts it back in the
+class the ceiling was chosen for.
+
+**Unmeasured, and it is one probe:** whether `GetZoneText` and `GetSubZoneText` still answer
+during `PLAYER_LOGOUT`, on each build. If they do not, the answer is to keep the current zone
+updated on `ZONE_CHANGED_NEW_AREA` and store the id only at logout.
