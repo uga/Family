@@ -258,6 +258,40 @@ function Names:AreaFor(word)
 	return nil
 end
 
+-- A quest's name, in the words of whoever is reading rather than whoever recorded it.
+--
+-- The same shape as `Names:Area` and for the same reason (L-020): a title is one language, and a
+-- family plays across clients - so a sibling's quest list read in French on an English panel,
+-- while the tooltip on the same row read in English because that one goes through the id.
+--
+-- Two routes, and neither is assumed. `C_QuestLog.GetTitleForQuestID` is the direct one where a
+-- build has it; `GetQuestLink` is the one every build has, and the title is the part of the link
+-- inside the brackets. Each is tried and the answer read back, which is what the scanner already
+-- does with this call to find an id in the first place.
+--
+-- **What is not settled is whether either answers for a quest that is not in the player's own
+-- log**, which is the case this exists for. The one measurement there is came from a quest that
+-- was in it. So the recorded word is the fallback, this costs nothing where the client will not
+-- answer, and the panel reads exactly as it did before rather than worse.
+function Names:Quest(id, recorded)
+    if type(id) == "number" then
+        local api = _G.C_QuestLog
+        if api and api.GetTitleForQuestID then
+            local name = Family:TryCall(api.GetTitleForQuestID, id)
+            if type(name) == "string" and name ~= "" then return name end
+        end
+
+        local link = Family:TryCall(GetQuestLink, id)
+        if type(link) == "string" then
+            local name = link:match("%[(.-)%]")
+            if type(name) == "string" and name ~= "" then return name end
+        end
+    end
+
+    if type(recorded) == "string" and recorded ~= "" then return recorded end
+    return nil
+end
+
 function Names:CachedItem(id)
 	if not id then return nil end
 	local name = cache[id] or getItemName(id)

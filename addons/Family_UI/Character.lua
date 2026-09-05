@@ -1301,7 +1301,12 @@ local function build(frame)
 
 							if not row then
 								row = { id = id, questID = quest.id,
-									title = quest.title, level = quest.level,
+									-- Named by this reader's client where it will,
+									-- the way the zone above it is. The row is
+									-- keyed by the id either way, so this changes
+									-- what it is called and never what it is.
+									title = Family.Names:Quest(quest.id, quest.title),
+									level = quest.level,
 									category = zoneOf(quest.category), people = {} }
 								byQuest[id] = row
 								order[#order + 1] = row
@@ -1317,7 +1322,8 @@ local function build(frame)
 							-- the level and zone come from whoever's record had them.
 							row.level = row.level or quest.level
 							row.category = row.category or zoneOf(quest.category)
-							row.title = row.title or quest.title
+							row.title = row.title
+								or Family.Names:Quest(quest.id, quest.title)
 						end
 					end
 				end

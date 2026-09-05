@@ -1075,6 +1075,22 @@ on every scan for ever - which is the expensive half and the half nobody would n
 That store is inside `AreaFor` and not beside any one caller, so the hearthstone and the logout
 zone got it without being touched.
 
-**Still open: the title.** A quest has an id and `GetQuestLink` names it in the reader's language,
-so `Names:Quest(id, recorded)` is the same shape as `Names:Area`. Until then a shared quest's
-*name* still reads in the language it was recorded in - the zone above it no longer does.
+**The title is done too, the same day.** `Names:Quest(id, recorded)` is the same shape as
+`Names:Area`: two routes tried and the answer read back - `C_QuestLog.GetTitleForQuestID` where a
+build has it, then `GetQuestLink`, whose title is the part inside the brackets - and the recorded
+word as the fallback. Both views use it.
+
+**One thing about it is not settled, and it decides how much this is worth**: whether either call
+answers for a quest that is **not in the player's own log**, which is the case it exists for. The
+only measurement there is came from a quest that was in it. The fallback means this costs nothing
+and reads exactly as before where the client will not answer, so it was worth building either
+way - but if the answer is no, a sibling's quest keeps their word and only a quest you share is
+translated.
+
+    /run local id = 9794 print(C_QuestLog and C_QuestLog.GetTitleForQuestID
+        and C_QuestLog.GetTitleForQuestID(id) or "no direct call",
+        tostring(GetQuestLink(id)))
+
+Run it with a quest id you are **not** on - 9794 is *No Time for Curiosity*, which was in a log
+on 2026-09-05 and can be turned in since. A name back means this reaches a sibling's quests; nil
+means it reaches only the ones you share.

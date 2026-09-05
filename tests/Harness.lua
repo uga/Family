@@ -15183,6 +15183,99 @@ print("one zone, however many languages recorded it")
 end)()
 
 print()
+print("a quest called what this client calls it")
+
+-- The other half of the language question, and the half the zone work left behind: the heading
+-- read in the reader's language and the quest under it still read in whoever recorded it. A row
+-- half translated looks like a fault rather than a limit.
+;(function()
+	local heldLink, heldLog = _G.GetQuestLink, _G.C_QuestLog
+	local heldWide = FamilyDB.wide
+
+	-- A client that speaks French and will name a quest it is not on. Stood up rather than
+	-- relied on: the harness's own stub answers only for quests in the log, which is the one
+	-- thing that was ever measured.
+	_G.GetQuestLink = function(id)
+		if id == 9001 then
+			return "|cffffff00|Hquest:9001:61|h[Les Longues-Barbes]|h|r"
+		end
+	end
+	_G.C_QuestLog = nil
+
+	check("a quest is named by the client from its id",
+		Family.Names:Quest(9001, "The Longbeards") == "Les Longues-Barbes",
+		tostring(Family.Names:Quest(9001, "The Longbeards")))
+
+	check("and one it will not name falls back to what was recorded",
+		Family.Names:Quest(4242, "The Longbeards") == "The Longbeards")
+
+	check("with nothing recorded either, it answers nothing rather than a guess",
+		Family.Names:Quest(4242, nil) == nil)
+
+	-- The direct route where a build has it, tried before the link. Both are read back
+	-- rather than assumed, which is what the scanner already does with this call.
+	_G.C_QuestLog = { GetTitleForQuestID = function(id)
+		if id == 9001 then return "Direkt benannt" end
+	end }
+	check("a build that names a quest outright is asked first",
+		Family.Names:Quest(9001, "The Longbeards") == "Direkt benannt",
+		tostring(Family.Names:Quest(9001, "The Longbeards")))
+	_G.C_QuestLog = nil
+
+	-- And on the panel, for a sibling - which is the case all of this is for.
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["namefam"] = { name = "Speaker-Thunderstrike", grants = {}, siblings = {},
+			members = {
+				["Speaker-Thunderstrike"] = {
+					meta = { name = "Speaker", realm = "Thunderstrike",
+						classFile = "MAGE", level = 70, faction = "Alliance" },
+					payload = { quests = { seen = time(), entries = {
+						{ title = "The Longbeards", level = 61, id = 9001,
+							category = "Hellfire Peninsula" },
+					} } },
+					seen = time(),
+				},
+			} } },
+	}
+	Family.Wide:SetSibling("namefam", "Speaker-Thunderstrike", true)
+
+	local key = Family.Wide:BorrowedKey("namefam", "Speaker-Thunderstrike")
+	local lines = Family.UI:QuestLines(key, Family.UI:Meta(key), nil)
+
+	local said = ""
+	for _, line in ipairs(lines or {}) do
+		said = said .. " " .. tostring(line.middle)
+	end
+
+	check("a sibling's quest page names it as this client does",
+		said:find("Les Longues-Barbes", 1, true) ~= nil, said)
+	check("and not as their client wrote it",
+		said:find("The Longbeards", 1, true) == nil, said)
+
+	-- **And the whole-family view**, which is a different function and was not covered: the
+	-- mutation that made it keep the recorded title failed nothing at all. That view groups by
+	-- the quest id, so what changes here is only what the row is called - but a row called by
+	-- one client's word in a list built for another is the fault this exists to remove.
+	do
+		Family.UI:Show()
+		Family.UI:ShowTab("character")
+		clickButton("Quests")
+		if not drawnText("Les Longues-Barbes") then clickButton("Whole family") end
+		Family.UI:Refresh()
+
+		check("the whole-family view names it as this client does",
+			drawnText("Les Longues-Barbes"))
+		check("and not as the record has it", drawnText("The Longbeards") == false)
+	end
+
+	Family.Wide:SetSibling("namefam", "Speaker-Thunderstrike", false)
+	FamilyDB.wide = heldWide
+	_G.GetQuestLink, _G.C_QuestLog = heldLink, heldLog
+	Family.UI:Refresh()
+end)()
+
+print()
 print("the deploy script warns before it mirrors a source with no libraries")
 ;(function()
 	local f = io.open(ROOT .. "/tools/Deploy.bat")

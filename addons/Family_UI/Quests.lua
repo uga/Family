@@ -276,9 +276,15 @@ function UI:QuestLines(key, meta, matches)
 					end
 				end
 
+				-- The title as this reader's client says it, out of the id recorded beside
+				-- it. The zone above it has read this way since the same afternoon, and a
+				-- row whose heading was translated and whose name was not would be half a
+				-- fix that looked like a fault.
+				local named = Family.Names:Quest(quest.id, quest.title)
+
 				rows[#rows + 1] = {
 					left = left,
-					middle = colour .. (quest.title or "?") .. "|r",
+					middle = colour .. (named or "?") .. "|r",
 					right = right,
 					questID = quest.id,
 					questLevel = quest.level,

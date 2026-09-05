@@ -168,6 +168,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A shared character's quests are named as your own game names them.** A linked family playing
+  in another language sent their quest titles and zone headings in that language, so their quest
+  page read in French on an English client - while the tooltip on the same row read in English.
+  Both now use your own words where your game will give them.
+
 - **A shared character's quests are filed under the zone as you call it.** With a linked family
   playing in another language, one zone appeared twice on the whole-family quest page - once
   under its English name and once under theirs - with its quests split between them. It is one
