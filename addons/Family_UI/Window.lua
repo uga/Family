@@ -884,8 +884,25 @@ end
 -- A member named somewhere that is not about them alone: a search result, a tooltip, a
 -- broker line. Two things can need saying, and only when they need saying.
 --
--- The realm, when two of the listed names are the same - Family keeps two characters called
--- Eccebombo apart everywhere else and a single line has no column to do it in.
+-- **The realm, whenever the character is not on the realm you are playing on.**
+--
+-- Character names are unique per realm and not per realm group, and that is the whole of the
+-- reason. One account with alts on two realms of one group is enough to produce two Eccebombos
+-- who can mail each other, behave in every in-game way as though they shared a realm, and are
+-- two different characters - so Wide Family is not needed for the ambiguity and neither is a
+-- second account.
+--
+-- Not "when the account spans realms", which is what this asked for a day: that put the realm
+-- on every name including the ones you are standing next to, which is a third of a tooltip
+-- line spent saying where you already are. The realm you are on is the one that needs no
+-- saying.
+--
+-- Panels that group by realm are the exception and need no code here: the summary draws a
+-- heading per realm and does not use this at all. What does use it is the item tooltip, the
+-- possessions search and the recipe search - three lists with no column to say it in.
+--
+-- Two of the listed names being the same still carries it too, because two characters of one
+-- name on one realm cannot happen and two on two realms is exactly what this is for.
 --
 -- The side, when it is not the player's own. Their bank is a different bank and their auction
 -- house is a different auction house, so what can be done about a thing depends on it
@@ -893,7 +910,10 @@ end
 function UI:NameOf(entry, clashes)
 	local label = entry.name or entry.key or "?"
 
-	if clashes and entry.realm then
+	local here = Family:TryCall(GetRealmName)
+	local elsewhere = entry.realm and here and entry.realm ~= here
+
+	if (clashes or elsewhere) and entry.realm then
 		label = string.format("%s |cff888888(@%s)|r", label, entry.realm)
 	end
 
@@ -905,54 +925,16 @@ function UI:NameOf(entry, clashes)
 	return label
 end
 
--- Whether this account is spread over more than one realm.
---
--- Read rather than remembered, on every call. It is a walk over meta and nothing else - the
--- same walk the summary does to draw itself, which costs the same at forty members as at four
--- - and a cached answer would need invalidating on every scan, every share and every removal
--- for a saving nobody can measure on a hover.
---
--- Our own members only. A sibling's line already carries the family it belongs to, which is
--- the thing that says *not somewhere you can walk to*; whether they are also on another realm
--- does not change what the reader can do about it.
-function UI:AcrossRealms()
-	local seen, realms = {}, 0
-
-	for _, entry in pairs(Family.Database:Members()) do
-		local realm = entry.meta and entry.meta.realm
-		if realm and not seen[realm] then
-			seen[realm] = true
-			realms = realms + 1
-			if realms > 1 then return true end
-		end
-	end
-
-	return false
-end
-
--- The same for a list: who carries their realm.
---
--- Two rules, and the second one was asked for from play. A name said twice in one list has
--- always carried it, because a line reading "Eccebombo" twice with different numbers cannot be
--- acted on. That is not enough for somebody whose characters are spread about: an item held by
--- one character called Tossica is unambiguous and still does not say which realm to log into,
--- and a tooltip that leaves that out is a trip to the wrong auction house.
---
--- **So the realm goes on every name once the account has more than one realm in it**, and on
--- none of them while it has one. A player with everything on Fire Maw is told "Fire Maw" on
--- every line of every tooltip, which is a third of the width spent saying the only thing it
--- could have said - that was the whole argument for showing it only on a clash, and it holds
--- exactly as long as there is one realm to be on.
+-- The same for a list: which names are said more than once, so that those carry their realm
+-- whatever realm they are on. `NameOf` adds it to anybody who is not on this realm anyway.
 function UI:NamesOf(entries)
 	local counts = {}
 	for _, entry in ipairs(entries) do
 		counts[entry.name or entry.key] = (counts[entry.name or entry.key] or 0) + 1
 	end
 
-	local spread = UI:AcrossRealms()
-
 	for _, entry in ipairs(entries) do
-		entry.label = UI:NameOf(entry, spread or counts[entry.name or entry.key] > 1)
+		entry.label = UI:NameOf(entry, counts[entry.name or entry.key] > 1)
 	end
 
 	return entries

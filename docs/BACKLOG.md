@@ -307,13 +307,12 @@ every member and every sibling and groups their reputations by faction id. What 
 drawing: rows become faction-plus-people rather than faction-plus-best, and the panel grows a
 drill-down of the kind the professions search already has (`UI.__openCrafters`).
 
-**One thing to settle rather than assume.** The realm rule as asked is *different from the one
-Family uses now*: today a name carries its realm when the **account** spans more than one realm
-(`UI:AcrossRealms`, decided 2026-09-04), and what is asked here is when the alt's realm differs
-from **the logged-in character's**. On a single-realm account the two agree. On an account
-spread about they do not: today every name carries a realm, and the rule as asked would leave
-the ones on your own realm bare. Worth one sentence from Alberto before building, because
-changing it changes tooltips and search results too.
+**The realm rule was settled 2026-09-05 and is no longer a question here.** A name carries its
+realm whenever the character is not on the realm being played, because names are unique per
+realm and not per realm group - one account with alts on two realms of a group already has two
+characters who can mail each other and are not the same person. Panels that segment by realm,
+like the overview, are the exception and say it in their headings instead. Built the same day;
+`docs/DECISIONS.md` carries it.
 
 **Received:** 2026-09-05, from Alberto.
 

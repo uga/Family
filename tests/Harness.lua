@@ -3910,11 +3910,11 @@ end
 check("two members of the same name are told apart by their realm", sameName >= 20,
 	tostring(sameName))
 
--- And so is everybody else here, because this account has members on two realms. It used to
--- be the other way - a unique name was left alone - and that was right until somebody with
--- alts spread about pointed out that "Tossica has one" is unambiguous and still does not say
--- which realm to log into. Asked for from play.
-check("and so is everybody else, once the account is on more than one realm", otherName > 0,
+-- And nobody else here, because everybody else is on the realm being played. A character you
+-- are standing next to needs no realm on their name: names are unique per realm, so the one
+-- realm that never needs saying is your own. This spent a day as "any account with more than
+-- one realm puts it on every name", which put it on the ones you are standing next to as well.
+check("and the ones on the realm being played are left alone", otherName == 0,
 	tostring(otherName))
 
 Family.Database:Forget("Tester-Auberdine")
@@ -16605,43 +16605,30 @@ print()
 print("the realm on a name, and when it is worth the width")
 
 ;(function()
-	-- Built rather than assumed: by this point in the file every member on a second realm
-	-- has been forgotten by the checks that made them, and asking an account that has one
-	-- realm whether it has two is not the question this is about.
-	Family.Database:SetMeta("Faraway-Auberdine", { name = "Faraway", realm = "Auberdine",
-		level = 60, classFile = "MAGE", faction = "Alliance" })
+	local here = GetRealmName()
+	check("the harness knows which realm is being played", type(here) == "string")
 
-	check("this account is on more than one realm", Family.UI:AcrossRealms() == true)
+	local mine = { { name = "Solo", realm = here, key = "Solo-" .. tostring(here) } }
+	Family.UI:NamesOf(mine)
+	check("a character on the realm being played carries no realm",
+		mine[1].label:find("(@", 1, true) == nil, mine[1].label)
 
-	local spread = { { name = "Solo", realm = "Fire Maw", key = "Solo-Fire Maw" } }
-	Family.UI:NamesOf(spread)
-	check("so a name that clashes with nothing still says where it is",
-		spread[1].label:find("(@Fire Maw)", 1, true) ~= nil, spread[1].label)
+	local away = { { name = "Solo", realm = "Pyrewood Village", key = "Solo-Pyrewood" } }
+	Family.UI:NamesOf(away)
+	check("and one anywhere else carries it, alone in its list or not",
+		away[1].label:find("(@Pyrewood Village", 1, true) ~= nil, away[1].label)
 
-	-- The other way round, which is the half the width argument was always about.
-	local elsewhere = {}
-	for key, entry in pairs(Family.Database:Members()) do
-		local realm = entry.meta and entry.meta.realm
-		if realm ~= "Fire Maw" then elsewhere[#elsewhere + 1] = key end
-	end
-	for _, key in ipairs(elsewhere) do Family.Database:Forget(key) end
-
-	check("an account with one realm in it knows that", Family.UI:AcrossRealms() == false)
-
-	local single = { { name = "Solo", realm = "Fire Maw", key = "Solo-Fire Maw" } }
-	Family.UI:NamesOf(single)
-	check("and spends none of the width saying the only realm there is",
-		single[1].label:find("(@", 1, true) == nil, single[1].label)
-
-	-- Two of one name are still told apart, one realm in the account or forty.
+	-- Two of one name are told apart whichever realms they are on, including when one of
+	-- them is the realm being played: that one would otherwise be the bare name beside a
+	-- qualified one, which reads as though only the other needed explaining.
 	local twins = {
-		{ name = "Twin", realm = "Fire Maw", key = "Twin-Fire Maw" },
-		{ name = "Twin", realm = "Auberdine", key = "Twin-Auberdine" },
+		{ name = "Twin", realm = here, key = "Twin-here" },
+		{ name = "Twin", realm = "Pyrewood Village", key = "Twin-away" },
 	}
 	Family.UI:NamesOf(twins)
-	check("while two of the same name are told apart whatever the account looks like",
-		twins[1].label:find("(@Fire Maw)", 1, true) ~= nil
-			and twins[2].label:find("(@Auberdine)", 1, true) ~= nil,
+	check("two of one name are told apart even on the realm being played",
+		twins[1].label:find("(@", 1, true) ~= nil
+			and twins[2].label:find("(@Pyrewood Village", 1, true) ~= nil,
 		twins[1].label .. " / " .. twins[2].label)
 end)()
 

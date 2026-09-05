@@ -98,11 +98,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Changed
 
-- **Names say which realm they are on, once you have characters on more than one.** Item
-  tooltips, search results and the broker used to add the realm only where two of the listed
-  names were identical - which told you nothing when a single character called Tossica holds
-  the thing and you still have to work out which realm to log into. If everything you have is
-  on one realm nothing changes: there is only one answer and it is not worth the width.
+- **Names say which realm they are on, when it is not the realm you are playing on.** Item
+  tooltips and search results used to add the realm only where two of the listed names were
+  identical, which told you nothing when a single character called Tossica holds the thing and
+  you still have to work out where to log in. Character names are unique per realm, not per
+  realm group, so alts on two realms of one group can mail each other and still be two
+  different people. Nothing is added for the characters on the realm you are standing on, and
+  lists that are already grouped by realm say it in their headings as before.
 
 - **Family's minimap button now joins the button collectors.** Addons that gather minimap
   buttons into a bag or a bar could not pick Family's up, because it was built by hand rather
