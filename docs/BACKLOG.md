@@ -105,6 +105,13 @@ for now and moving them onto the widget is a refactor with its own run. Asked fo
 of their own, and neither has the realm, class or level filters. The Character panel has realm
 and class in that mode and no level range.
 
+**The Character panel's level range, asked for again from play 2026-09-05** with a screenshot of
+*Equipped gear* across twenty members: it has *Realm* and *Class* and a filter box, and no level
+boxes at all. It is the one panel that still builds its own bar instead of asking
+`UI:CreateMemberFilters` for one, and the widget has had the two boxes since slice one - so this
+is the migration above, not a fourth thing to build. Doing it any other way is the fifth copy
+this section exists to avoid.
+
 **And what a fifth copy would cost.** Two filter bars exist already - the summary's and the
 character panel's - and they were written separately. Three more would be five ideas of what a
 filter bar is. The shape this wants is the one `UI:CreateChoicePicker` already set: one widget,
@@ -376,8 +383,25 @@ by item and by character. The nearest precedent is the professions panel's sort 
 (`Family_UI/Professions.lua` `ORDERS`), which is a row of buttons and a note saying what the
 order means - not the summary's column headings, because this list has no headings.
 
-**Not started.** The three are one slice: they are all the same list, and doing the ordering
-without the naming would mean laying that column out twice.
+**And the professions search wants the same ordering**, asked 2026-09-05 in the same breath.
+That panel has a sort bar already - `ORDERS`, with a caption saying what each order means - and
+the whole-family search deliberately puts it away, leaving `Family/Recipes.lua`'s own order,
+which is by name. So the work there is not a new control but deciding which of the orders still
+mean something when the list is every member's recipes rather than one member's: difficulty and
+name do, a single member's skill does not.
+
+*The caption that was left behind when those buttons were hidden is fixed and is not part of
+this - 2026-09-05, `bc69b0b`.*
+
+**How many crafters a row can name is already settled and needs nothing.** Asked 2026-09-05:
+what happens when ten alts can make one recipe. Four are named with their skill, the rest
+become `+6`, and the row unfolds into one line each when clicked - `Family_UI/Professions.lua`
+around the `spare` count and `UI.__openCrafters`. Guild crafters get three by the same rule. The
+comment there says why: the line does not wrap, and eight names ran off the edge mid-name, which
+lost the count as well as the names.
+
+**Not started.** The possessions three are one slice: they are all the same list, and doing the
+ordering without the naming would mean laying that column out twice.
 
 ---
 
