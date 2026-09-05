@@ -512,6 +512,38 @@ Nine mutations, every one caught. The seventh caught a check of my own that was 
 fallback rather than on the resolution, because the fixture's realm was the realm the harness
 plays on; L-049.
 
+### A sibling's crafting cooldowns: the path works, the data is not arriving
+
+Reported from play 2026-09-05, with two screenshots: the summary's professions set lists a
+linked family's six characters, one of them an alchemist, and the crafting set lists only our
+own three.
+
+**Measured, and every step of the path is right.** `Family/Wide.lua` `offering` copies
+`craftCooldowns`, `cooldownItems` and `itemCooldowns` out of the meta for any member whose
+`professions` grant is on; `Wide:Siblings` passes a borrowed `meta` through untouched;
+`gatherSiblings` in `Family_UI/Summary.lua` applies the crafting set's `only` to that meta;
+and `Cooldowns:Crafting` reads `meta.craftCooldowns` with no ownership test in the way.
+
+**Nothing covered it, and that was the real gap.** There were checks that the field is sent and
+checks that our own cooldowns are drawn, and none that a *borrowed* one reaches the set that
+draws only members who have one. Written 2026-09-05: a link whose sibling carries a cooldown now
+has to appear on that set, and a mutation that stops gathering siblings or stops reading the
+field fails it.
+
+**So the remaining explanation is the sender.** The three fields were folded into the
+`professions` grant on 2026-09-04, and a linked family running a Family older than that sends
+`skills` and not the cooldowns - the same grant, fewer fields. Handed over as a probe rather
+than guessed at:
+
+    /run for _,m in ipairs(Family.Wide:Siblings()) do print(m.memberKey,
+        m.meta.craftCooldowns and #m.meta.craftCooldowns or "none",
+        m.meta.skills and "skills" or "no skills") end
+
+Skills present and cooldowns absent says it is their build. Both absent says the grant is not on
+for that member. Cooldowns present says the fault is somewhere this entry has not looked.
+
+---
+
 ### Three probes are out and unanswered
 
 Handed over 2026-09-04, needed before their entries can start:

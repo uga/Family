@@ -16661,6 +16661,56 @@ print("filtering the summary by name, class and level")
 end)()
 
 print()
+print("a sibling with a crafting cooldown, on the summary's crafting set")
+
+-- Reported from play 2026-09-05: the professions set lists a linked family's characters and the
+-- crafting set lists none of them, though one of them is an alchemist. Nothing covered this -
+-- the cooldowns travel in the professions grant and there were checks that they are *sent*, and
+-- none that a borrowed one reaches the set that only draws members who have one.
+;(function()
+	local held = FamilyDB.wide
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["cdfam"] = { name = "Brewer-Thunderstrike", grants = {}, siblings = {},
+			members = {
+				["Brewer-Thunderstrike"] = {
+					meta = { name = "Brewer", realm = "Thunderstrike",
+						classFile = "SHAMAN", level = 60, faction = "Alliance",
+						skills = { [171] = { rank = 300, maxRank = 300 } },
+						craftCooldowns = {
+							{ name = "Transmute: Arcanite", profession = 171,
+								readyAt = time() + 3600 },
+						} },
+					seen = time(),
+				},
+			} } },
+	}
+	Family.Wide:SetSibling("cdfam", "Brewer-Thunderstrike", true)
+
+	local borrowed
+	for _, member in ipairs(Family.Wide:Siblings()) do
+		if member.memberKey == "Brewer-Thunderstrike" then borrowed = member end
+	end
+	check("the sibling is there to be drawn", borrowed ~= nil)
+	check("and its cooldown arrived with it, which is what the grant carries",
+		borrowed and #Family.Cooldowns:Crafting(borrowed.meta) > 0,
+		borrowed and tostring(#Family.Cooldowns:Crafting(borrowed.meta)))
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	clickButton("Crafting")
+	Family.UI:Refresh()
+
+	check("and the crafting set draws them", visibleText("Brewer"))
+	check("under the family they belong to", visibleText("Brewer-Thunderstrike"))
+
+	clickButton("Overview")
+	Family.Wide:SetSibling("cdfam", "Brewer-Thunderstrike", false)
+	FamilyDB.wide = held
+	Family.UI:Refresh()
+end)()
+
+print()
 print("filtering the summary's professions by profession")
 
 -- "Who are the blacksmiths?" - asked from play 2026-09-05 of a summary showing twenty members
