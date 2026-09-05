@@ -823,6 +823,17 @@ local function showFor(frame)
 			return
 		end
 
+		-- Taken back before anything of ours is written on it.
+		--
+		-- A lane that asked the client for something it will not describe does not leave the
+		-- tooltip as it found it: lines added afterwards go nowhere. Reported from play the
+		-- hour the quest lane started asking in a form the client sometimes answers - a
+		-- single character's quest rows went from showing Family's own summary to showing
+		-- nothing at all, and that summary had been the whole tooltip on those rows since
+		-- they were written.
+		GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
+		Family:TryCall(GameTooltip.ClearLines, GameTooltip)
+
 		for _, line in ipairs(fallback) do
 			if line[2] then
 				GameTooltip:AddDoubleLine(line[1], line[2])

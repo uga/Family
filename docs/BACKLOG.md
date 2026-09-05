@@ -739,6 +739,31 @@ Written down 2026-09-05.
 
 ---
 
+### What a tooltip lane leaves behind when the client will not answer
+
+A single character's quest rows went from showing Family's own summary to showing nothing at
+all, the hour `SHOW.quest` started asking in a form the client sometimes answers. The repair is
+to take the tooltip back - `SetOwner` and `ClearLines` again - before the fallback lines are
+written, and it is shipped because the report is real.
+
+**What is not known is what actually happens**, and therefore no check pins it. The harness stub
+returns without writing for a link the client would ignore, and says nothing about the owner,
+because nobody has measured what `SetHyperlink` does to a tooltip when it declines. Modelling
+that on a guess is how a fixture becomes a wrong claim about the client, which is L-037 and
+which this same area has already cost once today.
+
+One line settles it:
+
+    /run local t=GameTooltip t:SetOwner(UIParent,"ANCHOR_CURSOR") t:ClearLines()
+        t:SetHyperlink("quest:999999:60")
+        print(t:NumLines(), t:IsShown(), t:GetOwner() ~= nil)
+
+Whatever that says goes into the stub, and the check follows from it.
+
+Written down 2026-09-05.
+
+---
+
 ### Three probes are out and unanswered
 
 Handed over 2026-09-04, needed before their entries can start:

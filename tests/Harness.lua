@@ -6234,6 +6234,23 @@ print("the character panel's filters, asked of the widget")
 		check("offering a realm only a linked family is on",
 			offered["Thunderstrike"] == true)
 
+		-- And the row adds up. The filter box was a fixed 200 pixels and the filter row that
+		-- replaced the member picker is twice the picker's width, so across the family the
+		-- box ran under the Whole family button - reported from play, on two sections at
+		-- once, because they share this row.
+		--
+		-- The panel's own inequality with the caption counted as nothing, so passing this is
+		-- necessary rather than sufficient: three widths that have to add up are three
+		-- chances to be wrong by hand, and the old fixed number fails it.
+		do
+			local box = _G.FamilyCharacterSearch
+			local switch = _G.FamilyGearWholeFamily
+			local room = (Family.UI.CONTENT_W or 740) - 14 - (switch:GetWidth() or 120)
+			local used = filters:Width() + 26 + (box:GetWidth() or 200)
+			check("and the filter box stops before the whole-family button starts",
+				used <= room, used .. " against " .. room)
+		end
+
 		local function cellsDrawn()
 			local drawn = 0
 			for _, f in ipairs(frames) do

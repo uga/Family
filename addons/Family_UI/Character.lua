@@ -117,6 +117,11 @@ local SECTION_STEP = SECTION_W + 2
 local SECTION_ICON = 14
 local SECTION_INSET = 19
 
+-- How wide the member picker is, and the least the filter box may be squeezed to before it
+-- has stopped being a box you can type in.
+local PICKER_W = 200
+local SEARCH_MIN = 90
+
 -- Whom the member button offers: ours, and everyone a linked family shares with us.
 local function membersKnown()
 	return UI:EveryMember()
@@ -246,7 +251,7 @@ local function build(frame)
 
 	search = CreateFrame("EditBox", "FamilyCharacterSearch", frame, "InputBoxTemplate")
 	search:SetPoint("LEFT", hint, "RIGHT", 10, 0)
-	search:SetSize(200, 20)
+	search:SetSize(PICKER_W, 20)
 	search:SetAutoFocus(false)
 	search:SetScript("OnTextChanged", function() frame:Refresh() end)
 	search:SetScript("OnEscapePressed", function(self)
@@ -771,6 +776,16 @@ local function build(frame)
 		else
 			hint:SetPoint("LEFT", picker, "RIGHT", 16, 0)
 		end
+
+		-- And the box takes the room that is actually left, which is not the same in the two
+		-- readings: across the family the filter row stands where the member picker does and
+		-- is twice its width, so a box of a fixed 200 ran under the Whole family button.
+		-- Reported from play, and the arithmetic is checked rather than eyeballed - three
+		-- widths that have to add up are three chances to be wrong by hand.
+		local before = (familyView and filters:Width() or PICKER_W) + 16
+			+ math.ceil(hint:GetStringWidth() or 30) + 10
+		local room = (UI.CONTENT_W or 740) - 4 - (wholeFamily:GetWidth() or 120) - 10
+		search:SetWidth(math.max(SEARCH_MIN, room - before))
 
 		------------------------------------------------------------------------------------
 		-- Everyone's gear at once (§4.3.1)

@@ -32,6 +32,10 @@ is a decision rather than an afternoon of archaeology.
   recipe's colour and the skill it needed are what one character sees, and across forty there
   is no single answer.
 
+- **The Character panel's filter box no longer runs under the Whole family button.** Across the
+  family the row of filters stands where the member picker does and is wider than it, so a box
+  of a fixed width overlapped the switch. It takes the room that is actually left now.
+
 - **Quest rows show the game's own description of the quest.** They always meant to, and asked
   the client for it in a form it ignores - so every quest row in Family has been showing its own
   short summary instead. The summary is still there for the quests the game will not describe.
