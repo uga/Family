@@ -1554,3 +1554,19 @@ The Mists cache holds `enUS` and `ruRU` only. That is deliberate and predates th
 generator skips the other three for that build because `GetProfessions` there hands back a skill
 line id directly, so nothing has to be looked up by name, and wago serves that build slowly
 enough to time out.
+
+### Transmutes share one cooldown
+
+The client puts every alchemy transmute on a single shared timer: doing one puts all of them
+away together. So an alchemist who knows five transmutes has five recipe records that all come
+back at the same moment, and Family groups them into one — which is why the crafting column is
+headed **Alchemy** and never the name of whatever was transmuted last.
+
+Confirmed from play 2026-09-05, and worth writing down because the code that produces that
+heading looks arbitrary without it: `Cooldowns:Crafting` names a group after its one recipe and
+after the profession where several share a timer, and for alchemy the second branch is the only
+one an established character ever takes.
+
+The first branch is not dead: mooncloth is one recipe with one timer, and so is an alchemist who
+has learned a single transmute so far. There the recipe's own name is the more useful heading,
+which is what it gets.

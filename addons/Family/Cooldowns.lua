@@ -244,6 +244,16 @@ function Cooldowns:Crafting(meta, key, callback)
 		local found = group(tostring(profession or "?") .. "\1" .. tostring(when or "ready"),
 			recipeName or named, profession)
 
+		-- One recipe on a timer is named; several sharing one are named by their
+		-- profession, because "Transmute: Arcanite" is a lie about the other four.
+		--
+		-- **For alchemy this is always the second case**, and it is a fact about the game
+		-- rather than about this code: the client puts every transmute on one shared
+		-- cooldown, so an alchemist who knows five has five entries arriving with the same
+		-- `readyAt`, one group, and the heading "Alchemy" whatever they last transmuted.
+		-- Confirmed from play. The first case is for the professions where exactly one
+		-- recipe has a timer at all - mooncloth, and an alchemist who has learned only one
+		-- transmute so far - and there the recipe's own name is the more useful heading.
 		found.count = found.count + 1
 		if found.count > 1 then found.label = named end
 
