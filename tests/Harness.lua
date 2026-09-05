@@ -376,6 +376,18 @@ end
 function frameMethods:SetHyperlink(link)
 	local kind, id = tostring(link):match("^(%a+):(%d+)")
 
+	-- A quest link needs its level as well as its id, and a bare "quest:84" describes
+	-- nothing at all.
+	--
+	-- Measured on Era and TBC 2026-09-05, after the question "could the quest rows have
+	-- tooltips" turned out to be "they were asking for one in a form the client ignores".
+	-- `quest:84` answered nought lines; `quest:84:20` answered three and drew the quest.
+	-- The stub said yes to both, which is why nothing here ever noticed - a fixture is a
+	-- claim about what the client does, and this one was wrong (L-037).
+	if kind == "quest" and not tostring(link):match("^quest:%d+:%d+") then
+		return
+	end
+
 	-- What was done to the item after it was bought. The stub used to stop at the id, so
 	-- an item string and a bare id looked identical here - which is exactly the difference
 	-- the gear tooltips turned out to be losing.
@@ -6366,6 +6378,18 @@ print("everybody's quests at once")
 
 	local quest = rowSaying(shared.title)
 	check("a quest four of them are on is one row", quest ~= nil)
+
+	-- The client's own description of it, which needs the id and the level together: a bare
+	-- "quest:84" describes nothing, measured on Era and TBC. These rows carried neither until
+	-- the question "could they have tooltips" was asked.
+	do
+		GameTooltip.__shownAs = nil
+		wipe(GameTooltip.__lines)
+		if quest and quest.__scripts.OnEnter then quest.__scripts.OnEnter(quest) end
+		check("and hovering it opens the quest's own tooltip",
+			GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "quest",
+			GameTooltip.__shownAs and GameTooltip.__shownAs.kind)
+	end
 
 	if quest then
 		check("with the one who is furthest along on its own line",

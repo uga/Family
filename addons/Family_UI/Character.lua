@@ -643,7 +643,11 @@ local function build(frame)
 
 		UI:AttachTooltip(r, function(self)
 			if self.itemID then return "item", self.itemID end
-			if self.questID then return "quest", self.questID end
+			-- Id and level together, because that is the form the client answers for.
+			if self.questID then
+				return "quest", self.questLevel
+					and (self.questID .. ":" .. self.questLevel) or self.questID
+			end
 			if self.achievementID then
 				return "achievement", self.achievementID, self.fallback
 			end
@@ -722,6 +726,7 @@ local function build(frame)
 			r.itemID, r.spellID, r.questID = nil, nil, nil
 			r.achievementID, r.fallback = nil, nil
 			r.currencyID = nil
+			r.questLevel = nil
 			r.questTitle, r.memberKey = nil, nil
 			r.highlight:Hide()
 			r.icon:SetTexture(nil)
@@ -1219,8 +1224,8 @@ local function build(frame)
 							local row = byQuest[id]
 
 							if not row then
-								row = { id = id, title = quest.title,
-									level = quest.level,
+								row = { id = id, questID = quest.id,
+									title = quest.title, level = quest.level,
 									category = quest.category, people = {} }
 								byQuest[id] = row
 								order[#order + 1] = row
@@ -1332,6 +1337,11 @@ local function build(frame)
 							or "")
 						r.middle:SetText(labelFor(person.entry))
 						r.right:SetText(progressOf(person))
+
+						-- The client's own description of the quest, which needs the id
+						-- and the level together. Where either is missing the lines below
+						-- are what the row says instead.
+						r.questID, r.questLevel = row.questID, row.level
 
 						r.fallback = {
 							{ row.title or "?" },
@@ -1656,7 +1666,7 @@ local function build(frame)
 				r.left:SetWidth(170)
 				r.middle:SetText(line.middle)
 				r.right:SetText(line.right)
-				r.questID = line.questID
+				r.questID, r.questLevel = line.questID, line.questLevel
 				r.questTitle = line.title
 				r.memberKey = member.key
 				r.highlight:SetShown(playing and (line.questID or line.title) and true

@@ -258,6 +258,7 @@ function UI:QuestLines(key, meta, matches)
 					middle = colour .. (quest.title or "?") .. "|r",
 					right = right,
 					questID = quest.id,
+					questLevel = quest.level,
 					title = quest.title,
 				}
 			end

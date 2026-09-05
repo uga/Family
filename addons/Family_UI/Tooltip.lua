@@ -674,8 +674,18 @@ local SHOW = {
 		end
 	end,
 
-	quest = function(id)
-		Family:TryCall(GameTooltip.SetHyperlink, GameTooltip, "quest:" .. id)
+	-- A quest link is its id **and its level**, and a bare "quest:84" describes nothing.
+	--
+	-- Measured on Era and TBC 2026-09-05: `quest:84` answered nought lines and `quest:84:20`
+	-- answered three and drew the quest. This asked for the first form since it was written,
+	-- so every quest row in Family has been falling silently through to its own lines - and
+	-- because the fallback is good, nobody had reason to report it.
+	--
+	-- The caller passes the two joined, because the level belongs to the row and not to this
+	-- table. Where a row has no level to give, what arrives is a bare id, the client says
+	-- nothing, and the fallback takes over exactly as it did before.
+	quest = function(spec)
+		Family:TryCall(GameTooltip.SetHyperlink, GameTooltip, "quest:" .. tostring(spec))
 	end,
 
 	-- Honor and arena points on the clients that keep no currency list have no id at all,

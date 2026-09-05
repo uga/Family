@@ -32,6 +32,10 @@ is a decision rather than an afternoon of archaeology.
   recipe's colour and the skill it needed are what one character sees, and across forty there
   is no single answer.
 
+- **Quest rows show the game's own description of the quest.** They always meant to, and asked
+  the client for it in a form it ignores - so every quest row in Family has been showing its own
+  short summary instead. The summary is still there for the quests the game will not describe.
+
 - **Everybody's quests at once.** The Quests section now has a *Whole family* switch like gear
   and reputations. It lists quests rather than characters: one line per quest, and under it
   whoever has it, furthest along first, each with their own progress. Three at a time, with the
