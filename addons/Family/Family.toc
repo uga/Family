@@ -55,6 +55,7 @@ Specialisations.lua
 MadeByItem.lua
 RecipeCooldowns.lua
 RecipeTeaches.lua
+QuestSorts.lua
 Capabilities.lua
 Codec.lua
 Comm.lua

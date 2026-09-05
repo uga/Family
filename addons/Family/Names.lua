@@ -354,6 +354,69 @@ function Names:LearnQuest(id, title)
 	if known then known[id] = title end
 end
 
+-- What this reader's client calls a quest category that is not a zone.
+--
+-- A quest log groups by heading and a heading is a word. Most are zones, and those have read in
+-- the reader's own language since the log started carrying a zone id per heading. The rest did
+-- not, and Alberto had one left in French in the middle of an English page: *Demoniste*, with
+-- *Cuisinier*, *Forgeron* and *Secourisme* behind it on other characters.
+--
+-- They come from `QuestSort`, which is a table of its own and is not the professions table -
+-- the French for Cooking is *Cuisine* and the heading says *Cuisinier*. 52 rows across the three
+-- builds, 10 KB with all five languages in it, which is the case the 876 KB of area names was
+-- not (L-020).
+--
+-- **By the word and not by an id**, because nothing records one: a reader is handed whatever the
+-- recording client wrote. So this asks which row holds that word, in any language, and hands back
+-- the same row's word in the reader's own - which also means it works on records written before
+-- any of this, with nothing new crossing a link.
+local sortByName
+
+function Names:QuestSort(word)
+	if type(word) ~= "string" or word == "" then return nil end
+
+	local sorts = Family.QuestSorts
+	if type(sorts) ~= "table" then return nil end
+
+	if not sortByName then
+		sortByName = {}
+		for id, entry in pairs(sorts) do
+			for _, words in pairs(entry) do
+				for _, name in ipairs(words) do
+					-- The lowest id wins, so two draws of one page agree where a
+					-- word somehow sits in two rows.
+					if not sortByName[name] or id < sortByName[name] then
+						sortByName[name] = id
+					end
+				end
+			end
+		end
+	end
+
+	local entry = sorts[sortByName[word]]
+	if not entry then return nil end
+
+	local words = entry[Family.locale] or entry.enUS
+	return words and words[1] or nil
+end
+
+-- A quest log heading, in the reader's own words: the zone where there is an id for one, the
+-- quest sort where the word names one, and the word as recorded where neither.
+--
+-- One function rather than one per panel. The two views of a quest log had a copy each, and this
+-- view has been the half nothing covered three times in three days - a shared answer is one place
+-- to fix and one place to check.
+function Names:Heading(word, areaID)
+	if type(word) ~= "string" or word == "" then return nil end
+
+	if areaID then
+		local named = self:Area(areaID, nil)
+		if named then return named end
+	end
+
+	return self:QuestSort(word) or word
+end
+
 -- A quest's name, in the words of whoever is reading rather than whoever recorded it.
 --
 -- The store first, because it is this client's own answer already in hand and costs nothing.

@@ -1300,7 +1300,7 @@ local function build(frame)
 						local function zoneOf(word)
 							if type(word) ~= "string" or word == "" then return nil end
 							local at = log and log.zones and log.zones[word]
-							return Family.Names:Area(at, word) or word
+							return Family.Names:Heading(word, at) or word
 						end
 
 						for _, quest in ipairs((log or {}).entries or {}) do

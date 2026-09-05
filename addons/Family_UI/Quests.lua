@@ -149,7 +149,7 @@ local function zoneName(log, word)
 	if type(word) ~= "string" or word == "" then return nil end
 
 	local id = log and log.zones and log.zones[word]
-	return Family.Names:Area(id, word) or word
+	return Family.Names:Heading(word, id) or word
 end
 
 local function byCategory(entries, log)

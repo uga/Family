@@ -1863,6 +1863,7 @@ for _, file in ipairs {
 	"SkillLines.lua", "Races.lua", "TalentSpells.lua", "ChargedItems.lua",
 	"WorldBuffs.lua", "Specialisations.lua", "MadeByItem.lua", "RecipeCooldowns.lua",
 	"RecipeTeaches.lua",
+	"QuestSorts.lua",
 	"Capabilities.lua", "Codec.lua",
 	"Comm.lua", "Database.lua", "Names.lua", "Index.lua",
 	"Recipes.lua", "Cooldowns.lua",
@@ -15793,6 +15794,108 @@ print("a quest called what this client calls it")
 	FamilyDB.wide, FamilyDB.quests = heldWide, heldQuests
 	_G.GetQuestLink, _G.C_QuestLog = heldLink, heldLog
 	Family.UI:Refresh()
+end)()
+
+print()
+print("a quest heading that is not a zone, in the reader's own words")
+
+-- The last word left untranslated on a page where everything else had crossed: *Demoniste*, in
+-- the middle of English zone headings, with *Cuisinier*, *Forgeron* and *Secourisme* behind it.
+--
+-- Not a zone, so no id and nothing to look one up by - and not the professions table either: the
+-- French for Cooking is *Cuisine* and the heading says *Cuisinier*. They are `QuestSort`, which
+-- is 52 rows and 10 KB with five languages in it.
+;(function()
+	check("a class heading is named as this client names it",
+		Family.Names:QuestSort("Démoniste") == "Warlock",
+		tostring(Family.Names:QuestSort("Démoniste")))
+
+	-- The one that says this is not the skill lines table wearing a different hat.
+	check("and a profession heading, which is not the profession's own name",
+		Family.Names:QuestSort("Cuisinier") == "Cooking",
+		tostring(Family.Names:QuestSort("Cuisinier")))
+
+	check("a word this table has never heard of answers nothing",
+		Family.Names:QuestSort("Elwynn Forest") == nil,
+		tostring(Family.Names:QuestSort("Elwynn Forest")))
+
+	-- And the one call both views ask, which is where the three parts are put in order.
+	do
+		local heldMap = _G.C_Map
+		_G.C_Map = { GetAreaInfo = function(id)
+			if id == 42 then return "Elwynn Forest" end
+		end }
+
+		check("a heading with a zone id behind it is named from the id",
+			Family.Names:Heading("Foret d'Elwynn", 42) == "Elwynn Forest",
+			tostring(Family.Names:Heading("Foret d'Elwynn", 42)))
+
+		check("one with no id is tried against the sorts",
+			Family.Names:Heading("Démoniste") == "Warlock",
+			tostring(Family.Names:Heading("Démoniste")))
+
+		-- A zone this client has never heard of has an id and no name for it. The word is
+		-- the answer, and reaching past it into the sorts would be worse than useless -
+		-- there is nothing in that table for a zone.
+		check("and a zone id this client cannot name falls back to the word",
+			Family.Names:Heading("Borean Tundra", 3537) == "Borean Tundra",
+			tostring(Family.Names:Heading("Borean Tundra", 3537)))
+
+		check("as does a word nothing at all knows",
+			Family.Names:Heading("Somewhere Made Up") == "Somewhere Made Up")
+
+		_G.C_Map = heldMap
+	end
+
+	-- And on the page, for a sibling - which is the case all of this is for.
+	do
+		local heldWide = FamilyDB.wide
+		FamilyDB.wide = {
+			enabled = true, id = "us", requests = {}, pendingOut = {},
+			links = { ["sortfam"] = { name = "Sorcier-Thunderstrike", grants = {},
+				siblings = {}, members = {
+					["Sorcier-Thunderstrike"] = {
+						meta = { name = "Sorcier", realm = "Thunderstrike",
+							classFile = "WARLOCK", level = 60,
+							faction = "Alliance" },
+						payload = { quests = { seen = time(), entries = {
+							{ title = "Le pacte", level = 60, id = 9500,
+								category = "Démoniste" },
+						} } },
+						seen = time(),
+					},
+				} } },
+		}
+		Family.Wide:SetSibling("sortfam", "Sorcier-Thunderstrike", true)
+
+		local key = Family.Wide:BorrowedKey("sortfam", "Sorcier-Thunderstrike")
+		local lines = Family.UI:QuestLines(key, Family.UI:Meta(key), nil)
+
+		local said = ""
+		for _, line in ipairs(lines or {}) do
+			said = said .. " " .. tostring(line.left)
+		end
+
+		check("a sibling's page files the quest under this client's word",
+			said:find("Warlock", 1, true) ~= nil, said)
+		check("and not under theirs", said:find("Démoniste", 1, true) == nil, said)
+
+		-- **And the whole-family view**, which is a second function and has been the half
+		-- nothing covered three times in three days. Both now ask one call, which is the
+		-- point of there being one.
+		Family.UI:Show()
+		Family.UI:ShowTab("character")
+		clickButton("Quests")
+		if not drawnText("Le pacte") then clickButton("Whole family") end
+		Family.UI:Refresh()
+
+		check("the family view files it there too", drawnText("Warlock"))
+		check("and not under the recorded word", drawnText("Démoniste") == false)
+
+		Family.Wide:SetSibling("sortfam", "Sorcier-Thunderstrike", false)
+		FamilyDB.wide = heldWide
+		Family.UI:Refresh()
+	end
 end)()
 
 print()

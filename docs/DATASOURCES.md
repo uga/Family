@@ -1812,3 +1812,35 @@ product and no spell; Mists answers with both - 8 smelting recipes with a spell 
 each - and Burning Crusade behaves as Mists does, confirmed from play the same day. All three
 builds would be about 130 KB to say something two of them already say.
 
+### Quest categories that are not zones — `QuestSort`, generated 2026-09-05
+
+The last word left untranslated on a page where everything else had crossed: *Démoniste*, sitting
+between *Un'Goro Crater* and *Sunken Temple* on an English client, with *Cuisinier*, *Forgeron*
+and *Secourisme* behind it on other characters.
+
+A quest log groups by heading and Family records the heading as a word. Most headings are zones,
+and the log has carried a zone id per heading since earlier the same day. The rest had nothing.
+
+**They are not the professions table wearing a different hat**, which is the thing to know before
+reaching for `SkillLines.lua`: the French for Cooking is *Cuisine* and the heading says
+*Cuisinier*. They come from `QuestSort`, which is its own table.
+
+| | |
+|---|---|
+| Rows | 36 on Era, 35 on Burning Crusade, 55 on Mists — **52** after merging and dropping the dead |
+| Per locale | under 1.1 KB of CSV |
+| Shipped | **10 KB** of Lua, all five languages |
+| Examples | 61 Warlock / Démoniste / Hexenmeister · 304 Cooking / Cuisinier · 101 Fishing / Pêcheur |
+
+Blizzard leaves retired rows in place named `REUSE - old wailing caverns`; those five are
+dropped, from the English, which is where the note is written.
+
+Every build's names go into one row per id rather than being kept apart, which is the opposite of
+what `RecipeTeaches` does and for a reason: **nothing records one of these**. A reader is handed
+whatever word the recording client wrote and asks which row holds it, so a sort renamed between
+builds wants both words finding the same row — which is exactly what a family playing across two
+clients needs. It also means this works on records written before it existed, with nothing new
+crossing a link.
+
+This is the case the 876 KB of area names was not (L-020): five languages, and it costs 10 KB.
+

@@ -29,6 +29,10 @@ is a decision rather than an afternoon of archaeology.
   quest there showed only the quest's own text; it now lists that character's objectives under it,
   the way the single-character page already did.
 
+- **Quest headings that are not places now read in your language too.** A warlock's quests were
+  filed under *Démoniste* on an English screen, and the cooking and blacksmithing headings the
+  same way. They read as your own game names them now, on records written before this as well.
+
 - **Quest names you can read.** Somebody else's quest list now reads in your own language, whoever
   recorded it - Family asks your game what each quest is called, the same way it already knows
   what to put in the tooltip, and remembers the answers so it only ever asks once.
