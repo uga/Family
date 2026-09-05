@@ -143,6 +143,12 @@ end
 local function build(frame)
 	local rows, cells, boxes = {}, {}, {}
 	local onlineOnly = true
+
+	-- Off, because a guild of a hundred with two Family users in it would otherwise open on
+	-- two rows and look broken. The ordinary state of a guild is that almost nobody runs it,
+	-- and the panel says so in its own status line; a filter that hid that by default would
+	-- be hiding the thing this panel is honest about.
+	local usersOnly = false
 	local opened                     -- which player's characters are showing, by bare name
 
 	local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
@@ -176,6 +182,20 @@ local function build(frame)
 	whoButton:SetPoint("TOPRIGHT", updateButton, "TOPLEFT", -6, 0)
 	whoButton:SetScript("OnClick", function()
 		onlineOnly = not onlineOnly
+		frame:Refresh()
+	end)
+
+	-- Only the people this panel can actually exchange anything with. Asked for from play
+	-- 2026-09-05: a large guild is a long list and most of it can never answer.
+	--
+	-- The panel already knew who they are - it draws a filled dot against each of them and
+	-- counts them in the status line - so this is a switch and not a new fact.
+	local usersButton = CreateFrame("Button", "FamilyGuildUsers", frame,
+		"UIPanelButtonTemplate")
+	usersButton:SetHeight(22)
+	usersButton:SetPoint("TOPRIGHT", whoButton, "TOPLEFT", -6, 0)
+	usersButton:SetScript("OnClick", function()
+		usersOnly = not usersOnly
 		frame:Refresh()
 	end)
 
@@ -346,6 +366,17 @@ local function build(frame)
 		whoButton:SetEnabled(not off)
 		whoButton:SetText(onlineOnly and L["Online only"] or L["Everyone"])
 		UI:FitButton(whoButton, 110)
+
+		usersButton:SetEnabled(not off)
+		usersButton:SetText(usersOnly and L["Family users"] or L["All guildmates"])
+		UI:FitButton(usersButton, 110)
+
+		-- The note stops where the buttons begin, and there are three of them now. Measured
+		-- off the buttons rather than left at the constant it was: that number was "two
+		-- buttons and the gaps", true of two English labels and of nothing else.
+		offNote:SetWidth(math.max(120, (UI.CONTENT_W or 740) - 24
+			- (updateButton:GetWidth() or 110) - (whoButton:GetWidth() or 110)
+			- (usersButton:GetWidth() or 110)))
 
 		local function nextRow(height)
 			used = used + 1
@@ -682,10 +713,20 @@ local function build(frame)
 		if ourselves then users = users + 1 end
 
 		for _, member in ipairs(everyone) do
-			if member.online or not onlineOnly then
+			local runs = Family.Guild:RunsFamily(guildKey, member.name)
+			local ours = Family.Guild:IsOurs(member.name)
+
+			-- **Ours count as users**, and that is not a nicety. `RunsFamily` answers on
+			-- what has been *heard* from somebody, and nothing is ever heard from our own
+			-- characters - the counting above already treats them apart for exactly that
+			-- reason. A filter that only asked `RunsFamily` would hide the player's own
+			-- rows from a list of the people running Family, which is the one row they can
+			-- be certain about.
+			local keep = (not usersOnly) or runs or ours
+
+			if keep and (member.online or not onlineOnly) then
 				shown = shown + 1
 
-				local runs = Family.Guild:RunsFamily(guildKey, member.name)
 				local characters = runs
 					and Family.Guild:CharactersOf(guildKey, member.name) or {}
 
@@ -709,7 +750,6 @@ local function build(frame)
 				r.middle:SetText(string.format("|cff888888%s   %s|r",
 					tostring(member.level), tostring(member.rank or "")))
 
-				local ours = Family.Guild:IsOurs(member.name)
 				if ours then
 					r.text:SetText(r.text:GetText() .. L["  |cff888888(you)|r"])
 				end

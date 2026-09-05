@@ -19,6 +19,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The guild panel can show only the guildmates who run Family.** A third button beside
+  *Online only*. It starts off, because in most guilds that list is very short and a panel that
+  opened on two rows would look broken rather than honest - and your own characters are always
+  on it.
+
 - **The summary's professions can be put in order of one profession's skill.** Choose a
   profession in the filter row and the column takes its name; clicking it then sorts the family
   by their rank in that profession rather than alphabetically by whatever they happen to hold.

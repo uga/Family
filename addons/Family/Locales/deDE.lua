@@ -574,6 +574,8 @@ Family.locales.deDE = {
 	-- Guild
 	["Guild"] = "Gilde",  -- 20
 	["unknown"] = "unbekannt",
+	["Family users"] = "Mit Family",
+	["All guildmates"] = "Alle Gildenmitglieder",
 	["Everyone"] = "Alle",
 	["Update now"] = "Erneuern",  -- 10
 	["  guild: %s"] = "  Gilde: %s",

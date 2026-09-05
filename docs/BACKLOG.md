@@ -851,7 +851,7 @@ Handed over 2026-09-04, needed before their entries can start:
 
 ---
 
-## 14. Guild share: a filter for the guildmates who run Family
+## 14. Guild share: a filter for the guildmates who run Family — DONE 2026-09-05
 
 **Received:** 2026-09-05, from Alberto.
 
@@ -862,3 +862,17 @@ with.
 **Today:** not measured. Whether the panel already knows which guildmates have answered is the
 first question and it is a read, not a guess - `Family/Guild.lua` records what has been heard
 from whom, and the panel may or may not have that in its hand where the rows are drawn.
+
+**Read 2026-09-05, and it does.** `Family_UI/Guild.lua` computes `RunsFamily` per row, right
+where it draws them - it is what fills the dot green and what the status line counts. So this
+was a switch and not a new fact.
+
+**Done the same day.** A third button beside *Online only*, off by default: a guild of a hundred
+with two users in it would otherwise open on two rows and look broken, and the ordinary state of
+a guild is exactly that, which this panel says out loud in its status line.
+
+One thing in it is not obvious and is checked on its own: **our own rows survive the filter.**
+`RunsFamily` answers on what has been *heard*, and nothing is ever heard from our own
+characters - the panel's own counting already treats the two apart for that reason. A filter
+asking `RunsFamily` alone would hide the player's own row from a list of the people running
+Family, which is the one row they can be certain about.

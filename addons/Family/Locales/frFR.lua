@@ -574,6 +574,8 @@ Family.locales.frFR = {
 	-- Guild
 	["Guild"] = "Guilde",  -- 20
 	["unknown"] = "inconnu",
+	["Family users"] = "Avec Family",
+	["All guildmates"] = "Toute la guilde",
 	["Everyone"] = "Tout le monde",
 	["Update now"] = "Actualiser",  -- 10
 	["  guild: %s"] = "  guilde : %s",

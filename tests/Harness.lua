@@ -9531,6 +9531,77 @@ print("guild share")
 	check("the roster can be shown in full as well as online only",
 		clickButton("Online only") and visibleText("offline"))
 
+	-- Only the guildmates this panel can exchange anything with (backlog entry 14).
+	--
+	-- Asked for from play: a large guild is a long list and most of it can never answer. The
+	-- panel already knew who they are - it draws a filled dot against each and counts them in
+	-- the status line - so this is a switch and not a new fact.
+	--
+	-- Who runs it is **stated here rather than inherited**. By this point in the file the
+	-- player is Faraway and nothing has been heard from anybody, which is a history this
+	-- block has no business depending on: the first draft asserted that Tester runs Family
+	-- because an earlier block had made that true, and it was not true any more.
+	do
+		local heldRuns = Family.Guild.RunsFamily
+		Family.Guild.RunsFamily = function(_, _, name) return name == "Tester" end
+
+		local function drawn()
+			local names = {}
+			for _, f in ipairs(frames) do
+				local text = type(f.text) == "table" and f.text.__text
+				if onScreen(f) and f.dot and type(text) == "string" then
+					names[#names + 1] = text
+				end
+			end
+			return table.concat(names, " | ")
+		end
+
+		local function names(needle)
+			return drawn():find(needle, 1, true) ~= nil
+		end
+
+		Family.UI:Refresh()
+		check("with the filter off, one who runs Family is on the roster",
+			names("Tester"), drawn())
+		check("and one who does not", names("Absent"), drawn())
+		check("and our own", names("Faraway"), drawn())
+
+		check("the panel offers a filter for the people running it",
+			_G.FamilyGuildUsers ~= nil)
+
+		if _G.FamilyGuildUsers then
+			fireClick(_G.FamilyGuildUsers)
+
+			check("switching it on drops the ones who cannot answer",
+				names("Absent") == false, drawn())
+			check("and keeps the ones who can", names("Tester"), drawn())
+
+			-- **Our own rows survive it**, and this is why the check exists rather than
+			-- being taken as read. `RunsFamily` answers on what has been *heard*, and
+			-- nothing is ever heard from our own characters - the panel's own counting
+			-- treats the two apart for exactly that reason. A filter that only asked
+			-- `RunsFamily` would hide the player's own row from a list of the people
+			-- running Family, which is the one row they can be certain about.
+			Family.Guild.RunsFamily = function() return false end
+			Family.UI:Refresh()
+
+			check("our own character is kept when nothing has been heard from anybody",
+				names("Faraway"), drawn())
+			check("while a guildmate nothing has been heard from is dropped",
+				names("Tester") == false, drawn())
+
+			-- Off again, because the switch is a toggle and this panel is measured below
+			-- by checks that expect the whole roster.
+			Family.Guild.RunsFamily = heldRuns
+			fireClick(_G.FamilyGuildUsers)
+			Family.UI:Refresh()
+			check("and switching it off puts everybody back", names("Absent"), drawn())
+		end
+
+		Family.Guild.RunsFamily = heldRuns
+		Family.UI:Refresh()
+	end
+
 	-- The diagnosis has to survive being asked in every state, because the state it will
 	-- actually be asked in is the broken one.
 	check("the diagnosis runs", pcall(Family.Guild.Diagnose, Family.Guild))
