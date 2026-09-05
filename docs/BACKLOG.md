@@ -393,7 +393,10 @@ That panel has a sort bar already - `ORDERS`, with a caption saying what each or
 the whole-family search deliberately puts it away, leaving `Family/Recipes.lua`'s own order,
 which is by name.
 
-**Measured 2026-09-05, and re-enabling that bar is not the answer.** All three of its orders read
+**Done 2026-09-05.** A second `FAMILY_ORDERS` on the same bar - by name, by profession, by how
+many of the family can make it - with both rows of buttons built once and shown by mode.
+
+**Why re-enabling the old bar was not the answer, measured 2026-09-05.** All three of its orders read
 fields the whole-family rows do not have: `Family/Recipes.lua` builds each row of that search as
 `name, id, profession, icon, spellID, itemID, members, listed` - no `difficulty`, no `minSkill`,
 no item level. Those are properties of a recipe *as one member sees it*, and across forty

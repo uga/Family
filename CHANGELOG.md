@@ -19,6 +19,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The professions search across the family can be put in an order of your own.** By name, by
+  profession, or by how many of the family can make each recipe. The sort bar stays where it
+  always was and offers these three instead of the three it offers for one character - a
+  recipe's colour and the skill it needed are what one character sees, and across forty there
+  is no single answer.
+
 - **The summary's professions can be narrowed to one profession.** *Who are the blacksmiths?* -
   open Professions on the summary and there is a picker beside the class and level filters
   offering the professions your family actually has. It works with the others rather than

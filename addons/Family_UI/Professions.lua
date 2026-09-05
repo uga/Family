@@ -126,6 +126,71 @@ local ORDERS = {
 	},
 }
 
+--------------------------------------------------------------------------------------------
+-- And the orders for the list that is about everybody
+--
+-- **None of the three above can be reused, and that was measured rather than assumed.**
+-- `Family/Recipes.lua` builds a whole-family row as name, id, profession, icon, spellID,
+-- itemID, members and listed. There is no difficulty on it, no skill needed and no item level,
+-- and there could not be: those are properties of a recipe *as one character sees it*, and
+-- across forty characters a recipe has forty of them. Simply showing the bar again would have
+-- offered three orders that sort on nothing.
+--
+-- So these three are about the family's answer instead. Each is total, for the reason the
+-- possessions search is: an order that stops at its first key leaves everything under it to
+-- `table.sort`'s own arrangement, which is not one, and the same search draws a different page
+-- twice.
+--------------------------------------------------------------------------------------------
+
+local function byRecipeName(a, b)
+	-- The name the reader sees, not the one the record was written under. A family holds
+	-- lists read on other people's clients, and sorting on what was recorded puts a page in
+	-- an order that is alphabetical in a language nobody at this keyboard is reading. The
+	-- `skill` order above already asks the same way.
+	local first = tostring(Family.Names:Recipe(a) or a.name or "")
+	local second = tostring(Family.Names:Recipe(b) or b.name or "")
+	if first ~= second then return first < second end
+	-- Two professions can hold a recipe of one name, and "who can make this" is a different
+	-- answer for each of them - which is why the search keys them apart in the first place.
+	return tostring(a.profession) < tostring(b.profession)
+end
+
+local FAMILY_ORDERS = {
+	{
+		id = "recipename",
+		label = L["Name"],
+		note = L["By name, which is the order the search itself comes back in."],
+		sort = byRecipeName,
+	},
+	{
+		id = "recipeprofession",
+		label = L["Profession"],
+		note = L["By profession, and inside each of them by name."],
+		-- By the word the reader sees and not by the key it is filed under. A profession
+		-- read on a French client is filed under "Couture" and one read here under its id,
+		-- and sorting on the key puts one profession in two places on the same page.
+		sort = function(a, b)
+			local first = tostring(Family:ProfessionName(a.profession) or a.profession)
+			local second = tostring(Family:ProfessionName(b.profession) or b.profession)
+			if first ~= second then return first < second end
+			return byRecipeName(a, b)
+		end,
+	},
+	{
+		id = "crafters",
+		label = L["How many"],
+		note = L["Most of the family first. A guild's crafters are counted separately."],
+		-- The family's own and not the guild's. A guild row is somebody else's answer to
+		-- the same question, drawn as its own group beside this one (§7.1), and adding the
+		-- two together would order the page by a number no line on it shows.
+		sort = function(a, b)
+			local first, second = #(a.members or {}), #(b.members or {})
+			if first ~= second then return first > second end
+			return byRecipeName(a, b)
+		end,
+	},
+}
+
 -- "287/375", or nothing at all. Not every profession has a rank: a death knight's
 -- runeforging is a window full of things they can make and no skill anywhere, and printing
 -- it as 0/0 would be inventing a fact rather than reporting one.
@@ -350,6 +415,7 @@ local function build(frame)
 	skillBar:SetHeight(24)
 
 	local order = ORDERS[1]
+	local familyOrder = FAMILY_ORDERS[1]
 
 	local sortBar = CreateFrame("Frame", nil, frame)
 	sortBar:SetPoint("TOPLEFT", skillBar, "BOTTOMLEFT", 0, -4)
@@ -360,18 +426,35 @@ local function build(frame)
 	sortLabel:SetPoint("LEFT", 2, 0)
 	sortLabel:SetText(L["|cffffd700Sort by|r"])
 
-	local sortButtons, sortRow = {}, {}
-	for _, entry in ipairs(ORDERS) do
-		local button = CreateFrame("Button", nil, sortBar, "UIPanelButtonTemplate")
-		button:SetHeight(20)
-		button:SetText(entry.label)
-		button:SetScript("OnClick", function()
-			order = entry
-			frame:Refresh()
-		end)
-		sortButtons[entry.id] = button
-		sortRow[#sortRow + 1] = button
+	-- Two rows of buttons on one bar, one shown at a time.
+	--
+	-- The orders above are about a recipe *as one member sees it* - its colour, the skill it
+	-- needed, the level of what it makes - and none of the three survives the whole-family
+	-- search: `Family/Recipes.lua` builds those rows without any of those fields, because
+	-- across forty members a recipe has forty difficulties. So the family list gets its own
+	-- three, and they are about the family's answer rather than one character's.
+	--
+	-- Built once each and shown by mode rather than relabelled on the way past: a button
+	-- whose label and handler are rewritten is a button whose old handler fires if anything
+	-- held a reference to it, and the two sets are choosing different variables.
+	local sortButtons, sortRow, familySortRow = {}, {}, {}
+
+	local function buildSortRow(list, into, choose)
+		for _, entry in ipairs(list) do
+			local button = CreateFrame("Button", nil, sortBar, "UIPanelButtonTemplate")
+			button:SetHeight(20)
+			button:SetText(entry.label)
+			button:SetScript("OnClick", function()
+				choose(entry)
+				frame:Refresh()
+			end)
+			sortButtons[entry.id] = button
+			into[#into + 1] = button
+		end
 	end
+
+	buildSortRow(ORDERS, sortRow, function(entry) order = entry end)
+	buildSortRow(FAMILY_ORDERS, familySortRow, function(entry) familyOrder = entry end)
 
 	-- Placed after the caption rather than at a fixed 60 pixels, and each button as wide as
 	-- its own label: "Skill needed" fits 110 pixels and "Compétence requise" does not, and a
@@ -395,9 +478,35 @@ local function build(frame)
 	sortNote:SetPoint("RIGHT", -8, 0)
 	sortNote:SetJustifyH("LEFT")
 
+	-- Which row of buttons is on the bar, laid out on each draw rather than once.
+	--
+	-- The two rows are different widths - three words against three other words, in whatever
+	-- language - and the caption starts after whichever is there. Anchored once to the wider
+	-- of them, it floats away from the narrower with nothing to say why.
+	local function layOutSort(present, away)
+		for _, button in ipairs(away) do button:Hide() end
+		for _, button in ipairs(present) do button:Show() end
+
+		local after = UI:LayOutRow(present, 110, 4, sortFrom, nil,
+			(UI.CONTENT_W or 740) - sortFrom - NOTE_ROOM)
+
+		sortNote:ClearAllPoints()
+		sortNote:SetPoint("LEFT", sortBar, "LEFT", after + 8, 0)
+		sortNote:SetPoint("RIGHT", -8, 0)
+	end
+
+	-- Which order is on, and which set of buttons says so.
+	local function markSort(list, chosen)
+		for _, entry in ipairs(list) do
+			UI:MarkSelected(sortButtons[entry.id], entry.id == chosen.id)
+		end
+		sortNote:SetText("|cff888888" .. chosen.note .. "|r")
+	end
+
 	-- Reachable, so that a check can ask whether the caption is still on the screen when the
-	-- controls it describes are not.
+	-- controls it describes are not, and which order the list is actually in.
 	UI.__professionsSortNote = sortNote
+	UI.__professionsSort = { bar = sortBar, note = sortNote, buttons = sortButtons }
 
 	local status = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	status:SetPoint("TOPLEFT", sortBar, "BOTTOMLEFT", 2, -4)
@@ -628,8 +737,13 @@ local function build(frame)
 
 		if wholeFamily then
 			picker:Hide()
-			sortBar:Hide()
-			sortNote:Hide()
+
+			-- The bar stays, carrying the other row of buttons. It used to go away here,
+			-- and the caption stayed behind it explaining an order the list was not in.
+			sortBar:Show()
+			sortNote:Show()
+			layOutSort(familySortRow, sortRow)
+			markSort(FAMILY_ORDERS, familyOrder)
 			skillBar:SetHeight(1)
 			setOmitted(nil)
 
@@ -664,6 +778,15 @@ local function build(frame)
 				end
 				found = kept
 			end
+
+			-- And in the order the player chose. After the narrowing, because one of the
+			-- three counts how many of the family can make each recipe and the answer to
+			-- that is how many of them are still on the row.
+			table.sort(found, (familyOrder or FAMILY_ORDERS[1]).sort)
+
+			-- What was drawn, in the order it was drawn in, so a check can read the page
+			-- rather than the pooled rows - which say what they were last given.
+			UI.__professionsFound = found
 
 			local used, y = 0, 0
 			list:SetWidth(UI:ListWidth(scroll))
@@ -1079,10 +1202,8 @@ local function build(frame)
 
 		table.sort(shown, order.sort)
 
-		for id, button in pairs(sortButtons) do
-			UI:MarkSelected(button, id == order.id)
-		end
-		sortNote:SetText("|cff888888" .. order.note .. "|r")
+		layOutSort(sortRow, familySortRow)
+		markSort(ORDERS, order)
 
 		local breakdown = {}
 		for key, entry in pairs(DIFFICULTY) do

@@ -1905,3 +1905,33 @@ the teardown that forgets its roster, so the two are read together. What actuall
 the next fixture failing for a reason that made no sense, which is the only reliable detector
 there has ever been for state leaking between checks - and a reason to distrust a first
 explanation that blames the code you just wrote.
+
+## L-051 — The fixture that erased what another check was reading
+
+Three new orders for the whole-family recipe search: by name, by profession, by how many of the
+family can make each one. Each needed a fixture that tells it apart from the other two, and the
+one that was there could not - the recipe with the most crafters was already first by name.
+
+So two members were added who knew the same recipe, to give it more crafters than anything else.
+
+**They also put an English name on it.** That recipe is recorded in French in this fixture -
+*Huile de sorcier*, resolving to *Wizard Oil* - and it is the only row where the name a record
+was written under and the name a reader sees are different words. It is therefore the only row
+that can show whether the sort asks `Names:Recipe` or reads the raw string. A second record of
+the same recipe replaced the French name with the English one, and the difference vanished.
+
+Nothing went red. The check still passed, against a page that no longer proved anything, and the
+mutation that reads the raw name went uncaught. So did a second one, for an unrelated reason
+found in the same pass: the two professions in the fixture sort the same way by their skill line
+id as by their word - 164 before 333, Blacksmithing before Enchanting - so sorting on the key and
+sorting on the word were the same page. A tailor at 197 fixed it: between them by id, after both
+by name.
+
+**The shape.** Adding to a fixture is editing every check that reads it. A record that makes one
+order measurable can flatten the distinction another order was being measured by, and the loss
+shows up as nothing at all - a green check over a page that has quietly become uninformative.
+
+**The check that now catches it.** Running the mutations again after every fixture change, not
+only after every code change. Both of these were found that way and could not have been found
+any other way: the code was right, the checks were green, and only a deliberate break said that
+two of them had stopped listening.

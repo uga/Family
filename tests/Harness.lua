@@ -5510,8 +5510,20 @@ if professionsEveryone then
 	local sortNote = Family.UI.__professionsSortNote
 	check("professions exposes the sort caption", sortNote ~= nil)
 	if sortNote then
-		check("and it is away while the search is across the family, with its buttons",
-			sortNote:IsShown() == false)
+		-- The bar stays across the family now, carrying its other row of buttons, so the
+		-- caption stays with it. What has to be true is that it is describing one of *those*
+		-- orders: it used to be left behind by buttons that had gone, reading "Hardest
+		-- first" over a list that comes back in name order.
+		check("and it is there together with the buttons it describes",
+			sortNote:IsShown() == true)
+		check("and it describes an order this list can actually be put in",
+			(sortNote:GetText() or ""):find(
+				Family.L["By name, which is the order the search itself comes back in."],
+				1, true) ~= nil,
+			tostring(sortNote:GetText()))
+		check("and never one that needs a field these rows do not carry",
+			(sortNote:GetText() or ""):find(Family.L["Hardest first. Within a colour, the "
+				.. "ones that took the most skill to learn."], 1, true) == nil)
 	end
 
 	-- The filter row is on a line of its own, and something below it made the room.
@@ -5544,8 +5556,112 @@ if professionsEveryone then
 			next(professionsFilters.frame.__anchoredBy or {}) ~= nil)
 	end
 
+	-- Three members added so that the three orders give three different pages.
+	--
+	-- Two smiths who know Silver Rod, which is second by name, so the recipe with the most
+	-- crafters is not the one that was already first. And a tailor, because the two
+	-- professions already here sort the same way by their skill line id as by their word -
+	-- 164 before 333, Blacksmithing before Enchanting - and tailoring is 197, which falls
+	-- between them by id and after both by name. Without that a sort on the raw key and a
+	-- sort on the word the reader sees are the same page.
+	--
+	-- The first attempt at this added enchanters who knew the same recipe, and it quietly
+	-- undid something else: the enchant is recorded in French in this fixture, and a second
+	-- record of it put the English name on the row - which is the one thing the name order
+	-- has to be read against. Two mutations went uncaught until that was noticed.
+	for _, who in ipairs { "Rodder", "Roddertwo" } do
+		Family.Database:SetMeta(who .. "-FireMaw", { name = who, realm = "Fire Maw",
+			level = 60, classFile = "WARRIOR",
+			skills = { [164] = { rank = 300, maxRank = 300 } } })
+		Family.Database:SetPayload(who .. "-FireMaw", { professions = { [164] = {
+			rank = 300, maxRank = 300, recipesSeen = time(),
+			recipes = { { name = "Silver Rod", spellID = 3339, itemID = 6338 } } } } })
+	end
+
+	Family.Database:SetMeta("Stitcher-FireMaw", { name = "Stitcher", realm = "Fire Maw",
+		level = 60, classFile = "MAGE",
+		skills = { [197] = { rank = 300, maxRank = 300 } } })
+	Family.Database:SetPayload("Stitcher-FireMaw", { professions = { [197] = {
+		rank = 300, maxRank = 300, recipesSeen = time(),
+		recipes = { { name = "Stitched Cloak", itemID = 6338 } } } } })
+
+	------------------------------------------------------------------------------------
+	-- And in an order the player chose
+	--
+	-- Three orders and a fixture for each that tells it apart from the other two. On "er"
+	-- the two professions happen to fall in the same order as the names, so that needle can
+	-- only show the crafter count; "st" is the pair where profession and name disagree. A
+	-- check run on one needle alone would have passed for all three orders and proved none,
+	-- which is also why the two enchanters above are there: without them the recipe with the
+	-- most crafters was already first by name.
+	------------------------------------------------------------------------------------
+
+	local sort = Family.UI.__professionsSort
+	check("professions offers the orders a family's list can be put in", sort ~= nil
+		and sort.buttons.recipename ~= nil and sort.buttons.recipeprofession ~= nil
+		and sort.buttons.crafters ~= nil)
+
+	if sort then
+		-- And puts away the ones that ask about a field these rows do not carry. A recipe's
+		-- colour is what one character sees; across forty there are forty answers, and
+		-- `Family/Recipes.lua` puts none of them on a whole-family row.
+		check("and puts away the ones that ask about one character's own view",
+			sort.buttons.difficulty:IsShown() == false
+				and sort.buttons.skill:IsShown() == false
+				and sort.buttons.itemlevel:IsShown() == false)
+
+		local function page()
+			local out = {}
+			for _, recipe in ipairs(Family.UI.__professionsFound or {}) do
+				out[#out + 1] = tostring(Family.Names:Recipe(recipe) or recipe.name)
+			end
+			return table.concat(out, " | ")
+		end
+
+		local function searchFor(needle)
+			_G.FamilyProfessionsSearch:SetText(needle)
+			Family.UI:Refresh()
+		end
+
+		local function choose(id)
+			sort.buttons[id].__scripts.OnClick(sort.buttons[id])
+		end
+
+		choose("recipename")
+		searchFor("er")
+		check("by name, which is the order the search itself answers in",
+			page() == "Runed Copper Breastplate | Silver Rod | Wizard Oil", page())
+
+		choose("crafters")
+		check("by how many of the family can make it, most first",
+			page() == "Silver Rod | Runed Copper Breastplate | Wizard Oil", page())
+
+		-- The pair the professions disagree with the names about, which is the only place
+		-- the profession order can be read at all.
+		searchFor("st")
+		choose("recipename")
+		check("by name again, on three the professions put another way",
+			page() == "Enchant Chest - Major Health | Runed Copper Breastplate | "
+				.. "Stitched Cloak", page())
+
+		choose("recipeprofession")
+		-- Blacksmithing, Enchanting, Tailoring - the words. By the skill line ids behind
+		-- them it would be 164, 197, 333, which puts the tailor in the middle: the one
+		-- fixture arrangement that tells the two apart.
+		check("and by profession, which is the word rather than the key behind it",
+			page() == "Runed Copper Breastplate | Enchant Chest - Major Health | "
+				.. "Stitched Cloak", page())
+
+		choose("recipename")
+	end
+
 	_G.FamilyProfessionsSearch:SetText("")
 	professionsEveryone.__scripts.OnClick(professionsEveryone)
+
+	for _, who in ipairs { "Rodder", "Roddertwo", "Stitcher" } do
+		Family.Database:Forget(who .. "-FireMaw")
+	end
+	Family.UI:Refresh()
 end
 
 -- The spellbook has moved in with the talents, and is sorted by name rather than left in
