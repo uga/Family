@@ -91,9 +91,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
-- **Three warnings at every login on Burning Crusade.** Family's key binding file was named in
-  its table of contents as well as being found by the game, so the game read it twice and
-  complained about the second reading. The binding worked either way; the complaints are gone.
+- **The key binding now has a section of its own, and stops complaining.** Family's binding sat
+  in *Other* under a row reading `HEADER_FAMILY`, because the file declared its section the way
+  an older client expected. It is under **Family** now. The same file was also named in the
+  table of contents as well as being found by the game, which made Burning Crusade print three
+  warnings at every login; those are gone too.
 
 - **Some of a letter's attachments were not recorded.** A mailbox does not keep a letter's
   attachments in its first slots, or in order - taking two out of a letter and leaving the rest

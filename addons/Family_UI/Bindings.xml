@@ -24,12 +24,18 @@
     written into this file would be English in every language and unreachable to the
     translators - which is the whole of the care this needed.
 
+    **The section is `Category`, and its value is the name of the global.** Not `header`
+    with a bare token: that shipped once, and the client made a pseudo-binding called
+    HEADER_FAMILY sitting in "Other" with an unbound key beside it, because it had no idea
+    what the attribute meant. Reported from play with a screenshot of it. WeakAuras writes
+    `Category="BINDING_HEADER_WEAKAURAS"` and that is the shape this follows.
+
     Guarded, and not out of habit: a binding fires on a key press, which can happen while
     the player is still zoning in and before Family_UI has finished loading. An error thrown
     from here is thrown at whatever the player was doing.
 -->
 <Bindings>
-    <Binding name="FAMILY_TOGGLE" header="FAMILY">
+    <Binding name="FAMILY_TOGGLE" Category="BINDING_HEADER_FAMILY">
         if Family and Family.UI then Family.UI:Toggle() end
     </Binding>
 </Bindings>

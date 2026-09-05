@@ -1788,3 +1788,24 @@ lists no `Bindings.xml` either.
 
 **The shape.** A gate written from an assumption is a gate that pins the assumption. That check
 was green for the whole life of the fault, and it was green *because* the fault was there.
+
+**And it happened twice in the same file on the same day.** With the warnings gone, the binding
+still did not appear under a heading of its own: the Key Bindings window showed a row called
+`HEADER_FAMILY` with an unbound key beside it, sitting in *Other*. The file said
+`header="FAMILY"`, which this client does not understand. The section is declared with
+`Category`, and its value is **the name of the global** the window looks up:
+
+    <Binding name="FAMILY_TOGGLE" Category="BINDING_HEADER_FAMILY">
+
+The check had read the `header` attribute and built `BINDING_HEADER_` .. it — a name the check
+invented rather than the one the client reads — so it confirmed a global that was set and a
+binding that was filed under nothing. Measured against WeakAuras' own `Bindings.xml` rather than
+remembered.
+
+**A third time, in the check itself.** Matching `Category="([%w_]+)"` loosely found
+`Category="BINDING_HEADER_WEAKAURAS"` inside this file's own comment - the example it cites -
+and reported that global as missing. That is the third pattern in one day to find the sentence
+explaining the token rather than the token: the clock gate matched its own prose, the race gate
+matched its own prose, and this one matched the example it was documenting. **A check that reads
+a file must anchor on that file's structure**, not on a word the documentation will also contain.
+

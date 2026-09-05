@@ -17168,9 +17168,23 @@ print("opening Family from the keyboard")
 	check("which is in the addon folder", xml ~= nil)
 
 	local name = xml and xml:match('<Binding%s+name="([%w_]+)"')
-	local header = xml and xml:match('header="([%w_]+)"')
-	check("declaring a binding and a heading for it", name ~= nil and header ~= nil,
-		tostring(name) .. " / " .. tostring(header))
+
+	-- **The name of a global, read as one.** The first version of this check took a `header`
+	-- attribute and built `BINDING_HEADER_` .. it, which is a name this file invented: the
+	-- client reads `Category` and looks up whatever global it names. Written from an
+	-- assumption, the check was green while the game put the binding in "Other" with a row
+	-- called HEADER_FAMILY beside an unbound key - the same shape as L-047, the same day.
+	-- Anchored on the element, not on the word. Matched loose, this found
+	-- `Category="BINDING_HEADER_WEAKAURAS"` inside this file's own comment - the example it
+	-- cites - and then reported that a global by that name was missing. Third time in a day
+	-- that a check greping for a token found the sentence explaining the token; a check that
+	-- reads a file has to anchor on that file's structure.
+	local category = xml and xml:match('<Binding%s[^>]-Category="([%w_]+)"')
+	check("declaring a binding and the global that names its section",
+		name ~= nil and category ~= nil,
+		tostring(name) .. " / " .. tostring(category))
+	check("and no `header` attribute, which this client does not understand",
+		xml ~= nil and xml:match('<Binding[^>]-%sheader="') == nil)
 
 	-- The window looks these two up by name. A rename on either side is silent: what the
 	-- player sees is the raw action name, which is also what an unlocalised binding looks
@@ -17180,9 +17194,10 @@ print("opening Family from the keyboard")
 			and _G["BINDING_NAME_" .. tostring(name)] ~= "",
 		tostring(_G["BINDING_NAME_" .. tostring(name)]))
 	check("and for the heading it sits under",
-		type(_G["BINDING_HEADER_" .. tostring(header)]) == "string"
-			and _G["BINDING_HEADER_" .. tostring(header)] ~= "",
-		tostring(_G["BINDING_HEADER_" .. tostring(header)]))
+		type(_G[tostring(category)]) == "string" and _G[tostring(category)] ~= "",
+		tostring(_G[tostring(category)]))
+	check("which is named BINDING_HEADER_something, as the client expects",
+		category ~= nil and category:find("^BINDING_HEADER_") ~= nil, tostring(category))
 
 	-- And a word, not the action name shown back at the player: BINDING_NAME_FAMILY_TOGGLE
 	-- reading "FAMILY_TOGGLE" is what a missing global looks like.
