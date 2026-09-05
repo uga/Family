@@ -16995,8 +16995,82 @@ print("an alias for a linked family")
 		check("and a guild bank on this realm is not made to carry the realm",
 			visibleText("|cff40c040Loch Modan Yachting Club|r"))
 
+		------------------------------------------------------------------------------
+		-- And in an order the player chose
+		--
+		-- The list was items in the search's order with each item's owners in the
+		-- index's, which is two nested loops imposing one answer. Driven through the
+		-- buttons rather than through the variable behind them, because a button is
+		-- what a player has - and read off what was drawn rather than off the rows,
+		-- which are pooled and say what they were last given.
+		------------------------------------------------------------------------------
+
+		local sort = Family.UI.__contentsSort
+		check("the possessions search offers an order", sort ~= nil
+			and sort.buttons.item ~= nil and sort.buttons.who ~= nil
+			and sort.buttons.many ~= nil)
+
+		if sort then
+			check("and its bar and its caption are both there while it is asked",
+				sort.bar:IsShown() == true and sort.note:IsShown() == true)
+
+			local function drawnAs(field)
+				local out = {}
+				for _, line in ipairs(Family.UI.__contentsLines or {}) do
+					out[#out + 1] = line[field]
+				end
+				return out
+			end
+
+			-- More than one line, or nothing below is measuring an order.
+			check("and there is more than one line to put in one",
+				#drawnAs("sortWho") > 1, tostring(#drawnAs("sortWho")))
+
+			-- By item first, which is what it opens on: one item name here, so what is
+            -- being read is the tiebreak under it - most first.
+			local counts = drawnAs("count")
+			local falling = true
+			for index = 2, #counts do
+				if counts[index] > counts[index - 1] then falling = false end
+			end
+			check("by item, whoever has most of it comes first", falling,
+				table.concat(counts, ", "))
+
+			sort.buttons.who.__scripts.OnClick(sort.buttons.who)
+
+			local names = drawnAs("sortWho")
+			local rising = true
+			for index = 2, #names do
+				if names[index] < names[index - 1] then rising = false end
+			end
+			check("and asking for character order gives one", rising,
+				table.concat(names, ", "))
+
+			-- A guild bank sorts among the names by the name it shows, not by the colour
+			-- code in front of it - which is what sorting the drawn label would do.
+			local found = false
+			for _, name in ipairs(names) do
+				if name == "Loch Modan Yachting Club" then found = true end
+			end
+			check("and a guild sorts by its name rather than by its colour code", found,
+				table.concat(names, ", "))
+
+			sort.buttons.item.__scripts.OnClick(sort.buttons.item)
+		end
+
 		_G.FamilyContentsSearch:SetText("")
 		contentsEveryoneAgain.__scripts.OnClick(contentsEveryoneAgain)
+
+		-- And both halves away again with the mode.
+		--
+		-- The check above says the caption is there when the buttons are, and on its own
+		-- that passes just as well for a caption that is *always* there - which is the
+		-- fault this panel's neighbour shipped: an order explained over a list that is not
+		-- in it. A rule with one direction checked is half a rule.
+		if sort then
+			check("and the bar and its caption both go with the mode",
+				sort.bar:IsShown() == false and sort.note:IsShown() == false)
+		end
 	end
 
 	FamilyDB.guilds["Loch Modan Yachting Club-Fire Maw"] = nil

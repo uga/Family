@@ -386,9 +386,15 @@ order means - not the summary's column headings, because this list has no headin
 **And the professions search wants the same ordering**, asked 2026-09-05 in the same breath.
 That panel has a sort bar already - `ORDERS`, with a caption saying what each order means - and
 the whole-family search deliberately puts it away, leaving `Family/Recipes.lua`'s own order,
-which is by name. So the work there is not a new control but deciding which of the orders still
-mean something when the list is every member's recipes rather than one member's: difficulty and
-name do, a single member's skill does not.
+which is by name.
+
+**Measured 2026-09-05, and re-enabling that bar is not the answer.** All three of its orders read
+fields the whole-family rows do not have: `Family/Recipes.lua` builds each row of that search as
+`name, id, profession, icon, spellID, itemID, members, listed` - no `difficulty`, no `minSkill`,
+no item level. Those are properties of a recipe *as one member sees it*, and across forty
+members a recipe has forty of them. So the work is a second set of orders that mean something
+about the family's answer rather than about one character's: by recipe name, by profession, and
+by how many of them can make it. Which is new strings and a second `ORDERS`, not a `Show()`.
 
 *The caption that was left behind when those buttons were hidden is fixed and is not part of
 this - 2026-09-05, `bc69b0b`.*
@@ -404,7 +410,11 @@ lost the count as well as the names.
 after the character's name, with forty pixels moved from the item column to pay for both and a
 gate that adds the three columns up out of the panel's source.
 
-**Left: the ordering**, on both panels. The possessions three are one slice: they are all the same list, and doing the
+**The ordering on possessions: done 2026-09-05.** By item, by character, or by how many, on a
+sort bar built like the professions panel's. Left: the same on professions, which needs its own
+set of orders for the reason above.
+
+The possessions three were one slice: they are all the same list, and doing the
 ordering without the naming would mean laying that column out twice.
 
 ---

@@ -326,6 +326,59 @@ end
 
 --------------------------------------------------------------------------------------------
 
+-- How much room the caption beside the sort buttons needs to be worth reading.
+local NOTE_ROOM = 210
+
+--------------------------------------------------------------------------------------------
+-- The order the whole-family search comes back in
+--
+-- **Only that search.** Against one member this panel draws bags, and a bag already has an
+-- order: the one the player put it in. Re-sorting somebody's backpack throws away the one
+-- thing a bag says that a list does not, which is the whole reason this panel stopped being a
+-- list of names.
+--
+-- Every line sorts on `sortWho`, which is a plain name, and never on what it shows: a label
+-- carries colour codes and a realm, so sorting on it sorts on a pipe character first.
+--
+-- Each order is total, so that two runs of the same search draw the same page. An order that
+-- stops at its first key leaves everything under it to `table.sort`'s own arrangement, which
+-- is not one.
+--------------------------------------------------------------------------------------------
+
+local function byItem(a, b)
+	if a.itemName ~= b.itemName then return a.itemName < b.itemName end
+	if a.count ~= b.count then return a.count > b.count end
+	return a.sortWho < b.sortWho
+end
+
+local ORDERS = {
+	{
+		id = "item",
+		label = L["Item"],
+		note = L["By item, and under each of them whoever has the most."],
+		sort = byItem,
+	},
+	{
+		id = "who",
+		label = L["Character"],
+		note = L["By character, and under each of them what they are carrying."],
+		sort = function(a, b)
+			if a.sortWho ~= b.sortWho then return a.sortWho < b.sortWho end
+			return byItem(a, b)
+		end,
+	},
+	{
+		id = "many",
+		label = L["How many"],
+		note = L["Most first, wherever in the family they happen to be."],
+		sort = function(a, b)
+			if a.count ~= b.count then return a.count > b.count end
+			if a.itemName ~= b.itemName then return a.itemName < b.itemName end
+			return a.sortWho < b.sortWho
+		end,
+	},
+}
+
 local function build(frame)
 	local blocks = {}          -- one drawn container each, reused between redraws
 	local search
@@ -384,6 +437,50 @@ local function build(frame)
 	-- Reachable, so that the harness can ask whether the row has an area and whether
 	-- anything below it made room, and so that a `/run` can ask the same in the game.
 	UI.__contentsFilters = memberFilters
+
+	-- The order, and the buttons that choose it. Built like the professions panel's, because
+	-- it is the same control answering the same question one panel over, and two ideas of a
+	-- sort bar is one more than this addon needs.
+	local order = ORDERS[1]
+
+	local sortBar = CreateFrame("Frame", nil, frame)
+	sortBar:SetHeight(22)
+
+	local sortLabel = sortBar:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	sortLabel:SetPoint("LEFT", 2, 0)
+	sortLabel:SetText(L["|cffffd700Sort by|r"])
+
+	local sortButtons, sortRow = {}, {}
+	for _, entry in ipairs(ORDERS) do
+		local button = CreateFrame("Button", nil, sortBar, "UIPanelButtonTemplate")
+		button:SetHeight(20)
+		button:SetText(entry.label)
+		button:SetScript("OnClick", function()
+			order = entry
+			frame:Refresh()
+		end)
+		sortButtons[entry.id] = button
+		sortRow[#sortRow + 1] = button
+	end
+
+	-- Placed after the caption and each button as wide as its own label, bounded by what the
+	-- note beside them needs to stay readable. A row free to grow as far as its labels like
+	-- is a row that pushes the note off the right-hand edge.
+	local sortFrom = math.ceil(sortLabel:GetStringWidth() or 56) + 10
+	local sortX = UI:LayOutRow(sortRow, 90, 4, sortFrom, nil,
+		(UI.CONTENT_W or 740) - sortFrom - NOTE_ROOM)
+
+	-- Parented to the panel rather than to the bar, because it is anchored across the bar's
+	-- right-hand end - and therefore shown and hidden by hand beside it. The professions panel
+	-- was caught leaving exactly this caption on screen after its buttons had gone.
+	local sortNote = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+	sortNote:SetPoint("LEFT", sortBar, "LEFT", sortX + 8, 0)
+	sortNote:SetPoint("RIGHT", -8, 0)
+	sortNote:SetJustifyH("LEFT")
+
+	-- The bar, its caption and its buttons, reachable together. A check drives the buttons
+	-- rather than the variable behind them, because a button is what a player has.
+	UI.__contentsSort = { bar = sortBar, note = sortNote, buttons = sortButtons }
 
 	local everyone = CreateFrame("Button", "FamilyContentsEveryone", frame, "UIPanelButtonTemplate")
 	everyone:SetSize(120, 22)
@@ -559,12 +656,24 @@ local function build(frame)
 		memberFilters.frame:SetPoint("TOPLEFT", picker, "BOTTOMLEFT", 2, -6)
 		memberFilters:SetShown(wholeFamily)
 
-		-- What comes next hangs off the row while the row is there. `scroll` hangs off
-		-- `status`, so moving this one moves the list with it.
+		-- The sort bar under the filters, and both only while the panel is about everybody.
+		sortBar:ClearAllPoints()
+		sortBar:SetPoint("TOPLEFT", memberFilters.frame, "BOTTOMLEFT", 0, -6)
+		sortBar:SetPoint("RIGHT", -8, 0)
+		sortBar:SetShown(wholeFamily)
+		sortNote:SetShown(wholeFamily)
+
+		for id, button in pairs(sortButtons) do
+			UI:MarkSelected(button, id == order.id)
+		end
+		sortNote:SetText("|cff888888" .. order.note .. "|r")
+
+		-- What comes next hangs off the bottom of that stack while it is there. `scroll`
+		-- hangs off `status`, so moving this one moves the list with it.
 		status:ClearAllPoints()
 		status:SetPoint("RIGHT", -8, 0)
 		if wholeFamily then
-			status:SetPoint("TOPLEFT", memberFilters.frame, "BOTTOMLEFT", 0, -6)
+			status:SetPoint("TOPLEFT", sortBar, "BOTTOMLEFT", 0, -6)
 		else
 			status:SetPoint("TOPLEFT", picker, "BOTTOMLEFT", 2, -6)
 		end
@@ -610,7 +719,15 @@ local function build(frame)
 			end
 
 			local matches = Family.Index:Search(needle)
-			local shown = 0
+
+			-- Gathered first and drawn afterwards.
+			--
+			-- The order is the player's to choose, and it cannot be chosen inside two nested
+			-- loops that impose one - which is what this was: items in the search's order,
+			-- and under each of them its owners in the index's. Everything a line needs is
+			-- worked out here, including the plain string it sorts on, which is never the one
+			-- it shows.
+			local lines = {}
 
 			for _, item in ipairs(matches) do
 				local owners, guilds = Family.Index:Owners(item.id)
@@ -631,41 +748,21 @@ local function build(frame)
 				UI:NamesOf(owners)
 
 				for _, owner in ipairs(owners) do
-					usedResults = usedResults + 1
-					local r = resultRow(usedResults)
-					r:SetPoint("TOPLEFT", 0, -y)
-					r:SetPoint("TOPRIGHT", 0, -y)
-					r:Show()
-					y = y + 20
-					shown = shown + 1
-
-					-- By id, and only by id. A search result is one line for an item that
-					-- several members may hold in several different suffixed forms, so
-					-- there is no one string that describes it - and a row reused from a
-					-- previous search would otherwise keep the last one it was given.
-					r.itemID, r.itemLink = item.id, nil
-					r.icon:SetTexture(Family:TryCall(GetItemIcon, item.id)
-						or "Interface\\Icons\\INV_Misc_QuestionMark")
-					r.text:SetText(string.format("%s |cffffd700%d|r", item.name,
-						owner.total))
-
 					-- Whose character it is, where it is not one of ours.
 					--
-					-- `Family/Index.lua` has put the family on every owner it returns since
-					-- linking was built, and the item tooltip has drawn it for as long -
-					-- this panel had the field and ignored it, so a linked family's
-					-- character was drawn exactly like one of your own. The tooltip's reason
-					-- is this one: a count against a name is read as *I can go and get
-					-- that*, and for somebody else's character that is not true. Same
-					-- string as the tooltip, so the two cannot come to word it differently.
-					local red, green, blue = UI:ClassColour(owner.classFile)
+					-- `Family/Index.lua` has put the family on every owner it returns
+					-- since linking was built, and the item tooltip has drawn it for as
+					-- long - this panel had the field and ignored it, so a linked
+					-- family's character was drawn exactly like one of your own. The
+					-- tooltip's reason is this one: a count against a name is read as *I
+					-- can go and get that*, and for somebody else's character that is not
+					-- true. Same string as the tooltip, so the two cannot come to word it
+					-- differently.
 					local who = owner.label or owner.name
 					if owner.familyName then
 						who = string.format(L["%s |cff9d9d9dof %s|r"], who,
 							tostring(owner.familyName))
 					end
-					r.who:SetText(who)
-					r.who:SetTextColor(red, green, blue)
 
 					local places = {}
 					if owner.bags > 0 then
@@ -678,33 +775,71 @@ local function build(frame)
 						places[#places + 1] = string.format(L["%d mail"], owner.mail)
 					end
 					if owner.auctions > 0 then
-						places[#places + 1] = string.format(L["%d auction"], owner.auctions)
+						places[#places + 1] = string.format(L["%d auction"],
+							owner.auctions)
 					end
-					r.where:SetText("|cff888888" .. table.concat(places, ", ") .. "|r")
+
+					local red, green, blue = UI:ClassColour(owner.classFile)
+
+					lines[#lines + 1] = {
+						item = item,
+						itemName = tostring(item.name or ""),
+						count = owner.total,
+						who = who,
+						sortWho = tostring(owner.name or owner.key or ""),
+						red = red, green = green, blue = blue,
+						where = "|cff888888" .. table.concat(places, ", ") .. "|r",
+					}
 				end
 
 				for _, guild in ipairs(guilds) do
-					usedResults = usedResults + 1
-					local r = resultRow(usedResults)
-					r:SetPoint("TOPLEFT", 0, -y)
-					r:SetPoint("TOPRIGHT", 0, -y)
-					r:Show()
-					y = y + 20
-					shown = shown + 1
+					-- A guild's key is its name and its realm joined with a hyphen, and
+					-- the realm comes off where it is the one being played. Sorted on the
+					-- same label without its colour, so a guild lands among the names
+					-- rather than among the pipe characters.
+					local label = UI:GuildLabel(guild.key)
 
-					-- By id, and only by id. A search result is one line for an item that
-					-- several members may hold in several different suffixed forms, so
-					-- there is no one string that describes it - and a row reused from a
-					-- previous search would otherwise keep the last one it was given.
-					r.itemID, r.itemLink = item.id, nil
-					r.icon:SetTexture(Family:TryCall(GetItemIcon, item.id)
-						or "Interface\\Icons\\INV_Misc_QuestionMark")
-					r.text:SetText(string.format("%s |cffffd700%d|r", item.name,
-						guild.count))
-					r.who:SetText("|cff40c040" .. UI:GuildLabel(guild.key) .. "|r")
-					r.who:SetTextColor(1, 1, 1)
-					r.where:SetText(L["|cff888888guild bank|r"])
+					lines[#lines + 1] = {
+						item = item,
+						itemName = tostring(item.name or ""),
+						count = guild.count,
+						who = "|cff40c040" .. label .. "|r",
+						sortWho = tostring(label),
+						red = 1, green = 1, blue = 1,
+						where = L["|cff888888guild bank|r"],
+					}
 				end
+			end
+
+			table.sort(lines, (order or ORDERS[1]).sort)
+
+			-- What was drawn, in the order it was drawn in. The rows themselves are pooled
+			-- and reused, so reading them back tells you what a row says and not what the
+			-- page said - and the order is the whole of what this is for.
+			UI.__contentsLines = lines
+
+			local shown = #lines
+
+			for _, line in ipairs(lines) do
+				usedResults = usedResults + 1
+				local r = resultRow(usedResults)
+				r:SetPoint("TOPLEFT", 0, -y)
+				r:SetPoint("TOPRIGHT", 0, -y)
+				r:Show()
+				y = y + 20
+
+				-- By id, and only by id. A search result is one line for an item that
+				-- several members may hold in several different suffixed forms, so there
+				-- is no one string that describes it - and a row reused from a previous
+				-- search would otherwise keep the last one it was given.
+				r.itemID, r.itemLink = line.item.id, nil
+				r.icon:SetTexture(Family:TryCall(GetItemIcon, line.item.id)
+					or "Interface\\Icons\\INV_Misc_QuestionMark")
+				r.text:SetText(string.format("%s |cffffd700%d|r", line.item.name,
+					line.count))
+				r.who:SetText(line.who)
+				r.who:SetTextColor(line.red, line.green, line.blue)
+				r.where:SetText(line.where)
 			end
 
 			-- Only what the client has named. An item nobody has looked at since the

@@ -19,6 +19,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The possessions search can be put in an order of your own.** Searching the whole family
+  there is now a *Sort by* row: by item, by character, or by how many. By character puts
+  everything one alt is carrying together, which is the question the list could not answer
+  before. A guild bank sorts among the names by its own.
+
 - **The professions and possessions searches can be narrowed to some of your characters.**
   Switch either panel to the whole family and there is a row of filters under the search box -
   realm, class, and a range of levels. A recipe nobody left can make, or an item nobody left
