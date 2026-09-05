@@ -492,6 +492,16 @@ end
 -- This reads payloads, unlike most things - there is no index of recipes and building one
 -- would be a copy of what is already stored. It is only ever done in answer to somebody
 -- typing, so the cost lands where it was asked for.
+--
+-- **Siblings too**, since 2026-09-05. This walked `Database:Members` alone, which has never
+-- heard of a borrowed key, so a linked family's characters could not appear in the search
+-- however much they had shared and however loudly the panel said *whole family*. Reported from
+-- play, and it is L-052's class for the fourth time - a reader that knows only our own records,
+-- answering a question about everybody, with nothing saying it had answered half.
+--
+-- Siblings and not everyone a link shares, which is the same population every other whole-family
+-- list uses: a sibling is the decision that somebody belongs in my lists beside my own (§6), and
+-- this is a list. `Family/Index.lua` already reaches for them the same way from this layer.
 function Recipes:Search(needle, limit)
 	if type(needle) ~= "string" or needle == "" then return {} end
 
@@ -500,9 +510,23 @@ function Recipes:Search(needle, limit)
 
 	local byName, order = {}, {}
 
+	-- Gathered first rather than looped over twice, because the body below is long and two
+	-- copies of it would be two answers to "who can make this" the day one of them is edited.
+	local searched = {}
 	for key, entry in pairs(Family.Database:Members()) do
-		local meta = entry.meta or {}
-		local payload = Family.Database:Payload(key)
+		searched[#searched + 1] = { key = key, meta = entry.meta or {},
+			payload = Family.Database:Payload(key) }
+	end
+	for _, sibling in ipairs(Family.Wide and Family.Wide:Siblings() or {}) do
+		-- Their payload is already a table - it arrived as one and only what we store is
+		-- compressed - so it is read straight rather than through the database, which has
+		-- never heard of the key it is filed under.
+		searched[#searched + 1] = { key = sibling.key, meta = sibling.meta or {},
+			payload = sibling.payload, familyName = sibling.familyName }
+	end
+
+	for _, who in ipairs(searched) do
+		local key, meta, payload = who.key, who.meta, who.payload
 
 		for profession, record in pairs((payload or {}).professions or {}) do
 			for _, recipe in ipairs(record.recipes or {}) do
@@ -601,6 +625,12 @@ function Recipes:Search(needle, limit)
 							classFile = meta.classFile,
 							realm = meta.realm,
 							faction = meta.faction,
+							-- Whose character it is, where it is not one of ours.
+							-- The same reason the possessions search carries it: a
+							-- name on a list of who can make something is read as
+							-- *somebody I can log in on*, and for a linked family's
+							-- character that is not true - they are somebody to ask.
+							familyName = who.familyName,
 							rank = (meta.skills or {})[profession]
 								and meta.skills[profession].rank or nil,
 							cooldown = cooldown,

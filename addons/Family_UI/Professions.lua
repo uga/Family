@@ -893,6 +893,17 @@ local function build(frame)
 						-- grey of the number is not what a `|r` returns to.
 						local shown = UI:ClassMarkup(who.classFile) .. who.label
 							.. "|r"
+
+						-- Whose character it is, in the same words the possessions
+						-- search and the item tooltip use, so the three cannot come
+						-- to word it differently. A name here is read as somebody
+						-- to log in on, and a linked family's character is somebody
+						-- to ask instead.
+						if who.familyName then
+							shown = string.format(L["%s |cff9d9d9dof %s|r"], shown,
+								tostring(who.familyName))
+						end
+
 						names[#names + 1] = who.rank
 							and string.format("%s |cff888888%d|r", shown, who.rank)
 							or shown
@@ -957,7 +968,7 @@ local function build(frame)
 
 					for _, who in ipairs(recipe.members) do
 						everybody[#everybody + 1] = { label = who.label or who.name,
-							classFile = who.classFile,
+							classFile = who.classFile, familyName = who.familyName,
 							rank = who.rank, cooldown = who.cooldown }
 					end
 
@@ -992,6 +1003,14 @@ local function build(frame)
 						local shown = tostring(who.label or "?")
 						if not who.guild then
 							shown = UI:ClassMarkup(who.classFile) .. shown .. "|r"
+						end
+
+						-- And whose, on the unfolded line as on the folded one. A
+						-- character that reads as ours in one and theirs in the
+						-- other is worse than one that reads as theirs in neither.
+						if who.familyName then
+							shown = string.format(L["%s |cff9d9d9dof %s|r"], shown,
+								tostring(who.familyName))
 						end
 
 						line.text:SetText(string.format("        %s%s", shown,

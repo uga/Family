@@ -17941,6 +17941,111 @@ print("a linked family's quests, end to end")
 end)()
 
 print()
+print("a linked family's recipes, in the whole-family search")
+
+-- Reported from play 2026-09-05 with a screenshot of Professions / Whole family: twelve
+-- bandages found and not one linked family's character among the people who can make them.
+--
+-- `Recipes:Search` walked `Database:Members` alone, which has never heard of a borrowed key -
+-- L-052's class for the fourth time. The data had been crossing the whole time: `professions`
+-- is a shared payload, and the summary draws those siblings' skills on the same screen.
+;(function()
+	local held = FamilyDB.wide
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["recfam"] = { name = "Baker-Thunderstrike", grants = {}, siblings = {},
+			members = {
+				["Baker-Thunderstrike"] = {
+					meta = { name = "Baker", realm = "Thunderstrike",
+						classFile = "MAGE", level = 60, faction = "Alliance",
+						skills = { [197] = { rank = 275, maxRank = 300 } } },
+					payload = { professions = {
+						[197] = { recipes = {
+							{ name = "Borrowed Mooncloth", spellID = 90001 },
+						} },
+					} },
+					seen = time(),
+				},
+			} } },
+	}
+	Family.Wide:SetSibling("recfam", "Baker-Thunderstrike", true)
+
+	-- Said out loud, because a check that only asserted the second would pass with the bug
+	-- back: the record really is unreachable the way this used to ask for it.
+	local key = Family.Wide:BorrowedKey("recfam", "Baker-Thunderstrike")
+	check("the database has never heard of their key, which is the trap",
+		Family.Database:Payload(key) == nil)
+
+	local found = Family.Recipes:Search("borrowed mooncloth")
+	check("the search finds the recipe they know", #found == 1, tostring(#found))
+
+	local who = found[1] and found[1].members and found[1].members[1]
+	check("with them named as somebody who can make it",
+		who and who.name == "Baker", who and tostring(who.name))
+	check("and their rank in that profession, which rode in on the same grant",
+		who and who.rank == 275, who and tostring(who.rank))
+	check("and whose character it is, because it is not one to log in on",
+		who and who.familyName == "Baker-Thunderstrike",
+		who and tostring(who.familyName))
+
+	-- And drawn, which is the half the report was actually about.
+	Family.UI:Show()
+	Family.UI:ShowTab("professions")
+
+	local box
+	for _, f in ipairs(frames) do
+		if f.__name == "FamilyProfessionsSearch" then box = f end
+	end
+	check("the professions search box is there to type into", box ~= nil)
+
+	if box then
+		-- The switch first and the typing after, which is the order the block further
+		-- down this file uses and the order that works: clicking it once the results are
+		-- up finds whichever panel's button is first in the pool rather than this one's.
+		clickButton("Whole family")
+
+		local function typeInto(text)
+			box:SetText(text)
+			if box.__scripts and box.__scripts.OnTextChanged then
+				box.__scripts.OnTextChanged(box)
+			end
+		end
+
+		typeInto("borrowed mooncloth")
+
+		-- The name the search itself settled on, not the one written in the fixture:
+		-- `Names:Recipe` prefers what this client calls a spell, so asking for the
+		-- recorded word would be checking the fixture rather than the panel.
+		local shownName = found[1] and found[1].name or "Borrowed Mooncloth"
+		check("the recipe is drawn", drawnText(shownName), shownName)
+
+		local note
+		for _, f in ipairs(frames) do
+			local text = type(f.text) == "table" and f.text.__text
+			if f.__shown ~= false and type(text) == "string"
+				and text:find(shownName, 1, true)
+				and type(f.note) == "table" then
+				note = f.note.__text
+			end
+		end
+
+		check("with the sibling named beside it", note
+			and note:find("Baker", 1, true) ~= nil, tostring(note))
+
+		-- The same string the possessions search and the item tooltip use, so the three
+		-- cannot come to word it differently.
+		check("and said to be theirs rather than ours", note
+			and note:find("Baker-Thunderstrike", 1, true) ~= nil, tostring(note))
+
+		typeInto("")
+	end
+
+	Family.Wide:SetSibling("recfam", "Baker-Thunderstrike", false)
+	FamilyDB.wide = held
+	Family.UI:Refresh()
+end)()
+
+print()
 print("a sibling with a crafting cooldown, on the summary's crafting set")
 
 -- Reported from play 2026-09-05: the professions set lists a linked family's characters and the

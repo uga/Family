@@ -153,6 +153,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A linked family's characters appear in the professions search.** Turning *Whole family* on
+  and searching for a recipe listed only your own characters, however much a linked family had
+  shared with you - and their skills were on the summary at the same time. They are named with
+  their rank now, and marked as theirs, because they are somebody to ask rather than somebody
+  to log in on.
+
 - **The character picker calls a linked family by the name you gave it.** It headed their
   characters with the character the link was made through - *shared by Grella-Thunderstrike* -
   while every other screen used the alias.
