@@ -216,6 +216,30 @@ end
 -- this will pay for the scan on more logouts than that one does. `C_Map.GetBestMapForUnit`
 -- would answer without a search and is worth probing if that ever shows.
 
+-- Which map the player is on, or nothing.
+local function mapNow()
+    local best = C_Map and C_Map.GetBestMapForUnit
+    local map = best and Family:TryCall(best, "player")
+    if type(map) == "number" then return map end
+    return nil
+end
+
+-- The last answer, and the zone it was the answer for. Kept because the call is dead by the time
+-- the logout handler runs, and paired with the word so a stale one can be told from a current one.
+local lastMap, lastMapZone
+
+local function noteMap()
+    local map = mapNow()
+    if not map then return end
+
+    local zone = Family:TryCall(GetZoneText)
+    if type(zone) ~= "string" or zone == "" then return end
+
+    lastMap, lastMapZone = map, zone
+end
+
+Identity.NoteMap = function() noteMap() end
+
 local function recordWhere()
     local key = Family:CurrentMember()
     if not key then return end
@@ -243,8 +267,21 @@ local function recordWhere()
     -- and `GetMapInfo` names it, with no search at all.
     --
     -- Which is the second reason to prefer it: the walk it replaces runs during `PLAYER_LOGOUT`.
-    local best = C_Map and C_Map.GetBestMapForUnit
-    local map = best and Family:TryCall(best, "player")
+    local map = mapNow()
+
+    -- **And it will not answer during `PLAYER_LOGOUT`.** Written as a live call first, deployed,
+    -- and the record read back: `Cité d'Ironforge  map nil  loc frFR`. Both zone calls still
+    -- answer there and this one does not - the map system is already gone by then - which is
+    -- exactly the shape of thing that cannot be probed from a `/run` and has to be read off what
+    -- was saved.
+    --
+    -- So it is kept while playing instead, and **only used if it belongs to the place being
+    -- recorded**. The zone word is remembered beside it for that: if the two disagree the player
+    -- moved after the last reading, and a map id from somewhere else is worse than none.
+    if type(map) ~= "number" and lastMapZone == zone then
+        map = lastMap
+    end
+
     if type(map) == "number" then
         fields.mapID = map
     end
@@ -269,6 +306,18 @@ Family:OnDatabaseReady("identity", function()
 	Family:RegisterEvent("PLAYER_LOGOUT", "identity.where", function()
 		recordWhere()
 	end)
+
+	-- Reading the map while there is still a map to read. Every event that moves the player
+	-- between places, because the one that matters is whichever fires last before they log out
+	-- - and the reading is two calls, so asking on all of them costs nothing worth counting.
+	for _, event in ipairs {
+		"PLAYER_ENTERING_WORLD",
+		"ZONE_CHANGED_NEW_AREA",
+		"ZONE_CHANGED",
+		"ZONE_CHANGED_INDOORS",
+	} do
+		Family:RegisterEvent(event, "identity.map", function() noteMap() end)
+	end
 
 	Family:RegisterEvent("PLAYER_ENTERING_WORLD", "identity", function()
 		Family:After(2, "identity", function()

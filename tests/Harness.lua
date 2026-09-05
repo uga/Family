@@ -14875,6 +14875,57 @@ print("where a character was when they logged out")
 			Family.Names:Where({ zone = "Somewhere" }) == "Somewhere",
 			tostring(Family.Names:Where({ zone = "Somewhere" })))
 
+		-- **The map call does not answer during PLAYER_LOGOUT.** Written as a live call
+		-- first, deployed, and the record read back off a real logout:
+		--
+		--     Cité d'Ironforge  map nil  loc frFR
+		--
+		-- Both zone calls still answer there and this one does not. It is the kind of thing
+		-- a `/run` cannot reach, because there is no frame left to print to - so it was read
+		-- off what was saved, and the fixture now says so.
+		do
+			local alive = true
+			_G.C_Map.GetBestMapForUnit = function(unit)
+				if alive and unit == "player" then return 1455 end
+			end
+
+			Family.Database:SetMeta(key, { mapID = Family.CLEAR })
+			_G.GetZoneText = function() return "City of Ironforge" end
+
+			-- Read while there is still a map to read.
+			fire("ZONE_CHANGED_NEW_AREA")
+
+			alive = false
+			asked = 0
+			fire("PLAYER_LOGOUT")
+
+			local late = Family.Database:Meta(key) or {}
+			check("a map the client will not name at logout is kept from while playing",
+				late.mapID == 1455, tostring(late.mapID))
+			check("and that still costs no area search", asked == 0,
+				tostring(asked) .. " ids asked about")
+
+			-- But only for the place it was read in. A player who moved after the last
+			-- reading would otherwise be filed under wherever they were before, which is
+			-- worse than having no id at all.
+			Family.Database:SetMeta(key, { mapID = Family.CLEAR })
+			_G.GetZoneText = function() return "Les Steppes Ardentes" end
+
+			asked = 0
+			fire("PLAYER_LOGOUT")
+
+			local moved = Family.Database:Meta(key) or {}
+			check("a map id read somewhere else is not used for here",
+				moved.mapID == nil, tostring(moved.mapID))
+			-- The area id instead, which is the path that was always there. Checked by
+			-- the id rather than by a search happening: `AreaFor` remembers what it found
+			-- earlier in this very block, so the right answer here costs no walk at all.
+			check("and the area id is what carries the place instead",
+				moved.zoneID == 2257, tostring(moved.zoneID))
+
+			alive = true
+		end
+
 		_G.C_Map = heldMap
 	end
 

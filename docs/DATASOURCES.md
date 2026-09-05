@@ -1733,11 +1733,28 @@ it usable: an id the reader's own client turns into the reader's own word, with 
 
 Two things this does **not** settle, both of which the code degrades safely around:
 
-- Whether `GetBestMapForUnit` answers **during `PLAYER_LOGOUT`**. `GetZoneText` and
-  `GetSubZoneText` were probed there and do; this cannot be printed from there. Where it answers
-  nothing, no map id is written and the record reads exactly as it did before.
 - Whether it exists on Burning Crusade and Mists. Guarded on the symbol being there, and the
   area-id walk is still the path where it is not.
+
+**And it does not answer during `PLAYER_LOGOUT`.** Measured the only way it can be, which is why
+it was shipped as a live call first: deploy, log out somewhere known, log back in, and read the
+record.
+
+    Cité d'Ironforge  map nil  loc frFR
+
+Milionario logged out in the Military Ward of Ironforge, French Era. `GetZoneText` and
+`GetSubZoneText` both still answered there - measured on 2026-09-05 and still true - and the map
+call did not. The map system is gone by then.
+
+There is no `/run` that reaches this: there is no frame left to print to. It has to be read off
+what was saved, which makes it the shape of thing that gets shipped, watched and corrected rather
+than probed first.
+
+So the map is read **while playing** - on `PLAYER_ENTERING_WORLD` and the three `ZONE_CHANGED`
+events - and the last answer is kept with the zone word it was the answer for. At logout the live
+call is tried first and the kept one is used only if its word matches the place being recorded: if
+the player moved after the last reading, a map id from somewhere else is worse than none, and the
+area id carries it instead.
 
 And note the wording changes with the source: `GetZoneText` says *Cité d'Ironforge* where the map
 is called *Ironforge*. That is why the recorded word wins for a reader whose own client speaks the

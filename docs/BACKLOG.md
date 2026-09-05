@@ -1164,9 +1164,18 @@ everything from the id would make a player's own characters read less precisely 
 `zoneLocale` is recorded and shared for that, and `Names:Where` is the one answer both the cell
 and the search box ask.
 
-**Two things are still unmeasured, and the code degrades to the old behaviour on both:** whether
-`GetBestMapForUnit` answers during `PLAYER_LOGOUT` - which can only be read back off a record
-after a real logout - and whether it exists on Burning Crusade and Mists.
+**And it does not answer during `PLAYER_LOGOUT`**, which is the one thing that was left open and
+is now measured - by shipping the live call, logging out in the Military Ward of Ironforge and
+reading the record back: `Cité d'Ironforge  map nil  loc frFR`. There is no `/run` that reaches
+that moment, because there is no frame left to print to.
+
+So the map is read while playing - `PLAYER_ENTERING_WORLD` and the three `ZONE_CHANGED` events -
+and the last answer is kept with the zone word it was the answer for. The logout handler tries the
+live call first and falls back to the kept one only where that word matches the place it is
+recording; where the player has moved since, the area id carries it as before.
+
+**Still unmeasured:** whether `GetBestMapForUnit` exists on Burning Crusade and Mists. Guarded on
+the symbol, and the area-id walk is the path where it is not.
 
 Records already written keep the word they have until that character is played again.
 
