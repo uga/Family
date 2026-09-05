@@ -563,6 +563,25 @@ looking for a box that does not exist.
 
 ---
 
+### The summary's own unfolds are folded by nobody the harness can see
+
+`UI:FoldEverything` runs every registered folder and the harness counts them, so a panel that
+never registered one is caught. What no check pins is that the summary's folder clears the right
+thing: `openMail` and `openBoon` are file locals in `Family_UI/Summary.lua`, and driving them
+means finding the mail figure on a drawn row and clicking it, which nothing in the harness does
+yet.
+
+The two that live on `UI` - the open faction and the open recipe - are pinned behaviourally. So
+the mechanism is proved and one of its three users is not.
+
+**Not to be closed with a check that reads the panel's source and calls it proof.** There is one
+of those in this file already, about this same unfold, and all it says is that a line of code
+exists.
+
+Written down 2026-09-05.
+
+---
+
 ### Three probes are out and unanswered
 
 Handed over 2026-09-04, needed before their entries can start:

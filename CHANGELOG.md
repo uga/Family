@@ -114,6 +114,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Something you unfolded folds itself away again.** A faction opened to see all its
+  characters, or a recipe opened to see everyone who can make it, used to stay open - so
+  closing the window and coming back found the page still unfolded, with nothing on screen to
+  say why. It closes when you put the window away, and when you click the tab, section or
+  profession you are already looking at, which is how you ask for the page back. The summary's
+  letters and banked buffs behave the same way now.
+
 - **The possessions search says whose character it is.** Searching across the whole family, a
   character belonging to a family you have linked was listed exactly like one of your own - so
   a count beside a name read as *I can go and get that* when you cannot. They now carry their
