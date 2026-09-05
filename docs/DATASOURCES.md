@@ -1652,6 +1652,12 @@ normally shown.
   a twenty-thousand-id walk for each new subzone word and most of them coming back empty, is not
   a trade worth making - so this line stays as recorded, and now it stays that way for a measured
   reason rather than an asserted one.
+- **A quest's objective lines.** Each is stored as the words of the client that read the log,
+  because an objective has no id of any kind on these builds. The way out would have been to
+  store only *done* per index and let the reader's own client supply the labels - and that is
+  measured shut: `GetQuestObjectiveInfo(4289, 1, false)` answers **nil** on Classic Era for a
+  quest the player is not on (2026-09-05). Whether the call is absent or merely silent makes no
+  difference here; either way there are no labels to be had.
 - **A quest's title**, and
 - **the zone heading a quest is filed under**, both in the `quests` payload, both drawn as
   recorded by `UI:QuestLines`.

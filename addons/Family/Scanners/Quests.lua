@@ -178,6 +178,13 @@ local function progressOf(index, questID)
 	-- the quest being turned in - so unlike a profession (L-015) there is nothing to file it
 	-- under but its own text. A log read on a French client reads in French afterwards, and
 	-- that is a property of the data rather than a fault to be fixed later.
+	--
+	-- **The way out was looked for and is shut.** Storing only `done` per index and letting the
+	-- reader's own client supply the labels would have translated these the way the quest's
+	-- title and its zone heading are now translated. Measured on Classic Era 2026-09-05, from a
+	-- character not on the quest: `GetQuestObjectiveInfo(4289, 1, false)` answers **nil**. So a
+	-- tooltip reads half in the reader's language - the quest's own text, which the client
+	-- draws - and half in the recorder's, which is these lines. Seen in play and not a fault.
 	local lines = {}
 
 	local function keep(text, finished)
