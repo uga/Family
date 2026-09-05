@@ -354,11 +354,12 @@ end
 -- **Asked of the client rather than assumed.** `GLOBAL_MOUSE_DOWN` fires for a click anywhere,
 -- which is exactly the question being asked, and registering an event a build has never heard
 -- of is an error rather than a no - so it is registered inside a `pcall` and the answer read
--- back. Confirmed present on Burning Crusade 2026-09-05.
+-- back. Probed 2026-09-05 on all three: Era, Burning Crusade and Mists all have it.
 --
--- Where it is not there, the window's own clicks still release the box. That is less than was
--- asked for and it is not nothing: it covers every click inside Family, which is where a
--- player who has just typed a filter is most likely to click next.
+-- The `pcall` stays anyway. It is not a hedge about these builds, it is what makes the code
+-- survive a build nobody has run it on yet, and where the event is missing the window's own
+-- clicks still release the box - less than was asked for, and it covers every click inside
+-- Family, which is where a player who has just typed a filter is most likely to click next.
 --
 -- `HasFocus` and `IsMouseOver` are asked of the box rather than a note being kept of which one
 -- was focused. The client already knows both, and a second copy of "which box has the keyboard"
