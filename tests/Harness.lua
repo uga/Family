@@ -14801,6 +14801,91 @@ print("where a character was when they logged out")
 end)()
 
 print()
+print("the summary's filter bar is the shared one")
+
+-- The last panel building its own. Two had grown one each, separately, and this was the second
+-- of the two - so this buys no feature and stops the fifth idea of what a filter bar is.
+--
+-- The evidence a refactor wants is the checks that were already there passing unchanged, and
+-- they do: the level boxes keep their names, pointed at the widget's own. What is added here is
+-- what those cannot say - that the bar *is* the widget, and that it is the one without a realm
+-- picker.
+;(function()
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	clickButton(Family.L["Overview"])
+	Family.UI:Refresh()
+
+	local filters = Family.UI.__summaryFilters
+	check("the summary asks the widget for its filters", filters ~= nil
+		and type(filters.Passes) == "function" and type(filters.Reset) == "function")
+
+	if filters then
+		-- **And the one without a realm picker.** Not a preference: this row also carries a
+		-- search box, the set's own narrowing picker and the count of what is hidden, and a
+		-- picker 130 wide takes it past the 740 the row has.
+		check("without a realm picker, which this row has no width for",
+			filters.realmButton == nil)
+
+		-- The row still fits, which is the reason the picker was left out.
+		local hint = 34
+		local room = 740 - 4 - hint - 10 - 150 - 12 - filters:Width() - 12 - 150
+		check("so the row still has the width it needs", room >= 0, tostring(room))
+
+		-- And it filters. Driven through the widget's own controls, which is what a player
+		-- touches.
+		local classButton = filters.classButton
+		check("the class picker is the widget's", classButton ~= nil)
+
+		-- The two classes are put on the record rather than assumed to be there. A picker
+		-- offers only what the family actually has, and `Reconcile` drops a choice that is
+		-- no longer on offer - so a check that chooses a class this family happens not to
+		-- hold chooses nothing, and then everything passes and the check reads as a filter
+		-- that does not filter. That is what it did.
+		Family.Database:SetMeta("Filtered-Fire Maw", { name = "Filtered", realm = "Fire Maw",
+			classFile = "MAGE", level = 60, faction = "Alliance" })
+		Family.Database:SetMeta("Other-Fire Maw", { name = "Other", realm = "Fire Maw",
+			classFile = "ROGUE", level = 60, faction = "Alliance" })
+
+		local mage = { name = "Filtered", realm = "Fire Maw", classFile = "MAGE", level = 60 }
+		local rogue = { name = "Other", realm = "Fire Maw", classFile = "ROGUE", level = 60 }
+
+		check("with nothing chosen both pass",
+			filters:Passes(mage) and filters:Passes(rogue))
+
+		if classButton then
+			classButton:Choose("MAGE")
+			check("choosing a class keeps it", filters:Passes(mage))
+			check("and drops the others", filters:Passes(rogue) == false)
+			check("and the bar says it is narrowing", filters:Active())
+			classButton:Choose(Family.UI.ANY)
+		end
+
+		-- The level boxes kept their names, which is what lets every check written before
+		-- this drive the new bar without being touched.
+		check("the level boxes are still reachable by the names they had",
+			_G.FamilySummaryLevelMin == filters.minBox
+				and _G.FamilySummaryLevelMax == filters.maxBox)
+
+		filters:Reset()
+		check("resetting puts everybody back", filters:Active() == false)
+
+		Family.Database:Forget("Filtered-Fire Maw")
+		Family.Database:Forget("Other-Fire Maw")
+
+		-- **No second bar is built to measure this against**, and that is worth a line.
+		-- Standing one up - even parented to UIParent, where nothing shows it - turned a
+		-- check further down the file red: it opens the summary's class list by the words
+		-- on the button, and found the spare bar's instead. The same trap as a realm
+		-- picker created and hidden, arriving from the other side.
+		--
+		-- Nothing is lost by not measuring it. That the picker is absent is checked above,
+		-- and that the row fits is checked above that, which is the property the absence
+		-- exists for. The difference between the two widths is arithmetic.
+	end
+end)()
+
+print()
 print("the deploy script warns before it mirrors a source with no libraries")
 ;(function()
 	local f = io.open(ROOT .. "/tools/Deploy.bat")

@@ -36,7 +36,8 @@ local ROW_HEIGHT = 22
 -- something after the row - and the frame holding the row was given a height and never a
 -- width. A container with a height and no width has no area. The number is one number now and
 -- the frame is the first thing to use it.
-local ROW_WIDTH = 130 + 8 + 120 + 12 + 40 + 10 + 34 + 6 + 10 + 34
+local REALM_WIDTH = 130 + 8
+local ROW_WIDTH = REALM_WIDTH + 120 + 12 + 40 + 10 + 34 + 6 + 10 + 34
 
 --------------------------------------------------------------------------------------------
 
@@ -86,7 +87,17 @@ end
 -- `onChange` is called whenever any of them is touched, and is where the panel redraws.
 -- `population` is optional and answers which members the choices are drawn from; without one
 -- it is our own.
-function UI:CreateMemberFilters(parent, onChange, population)
+-- `realm` may be false, which leaves the realm picker out.
+--
+-- The summary is the caller that needs that, and it is not a preference: its filter row already
+-- carries a search box, a class picker, two level boxes, the set's own narrowing picker and the
+-- count of what is hidden, and adding a picker 130 wide to that takes it past the 740 the row
+-- has. Measured before this parameter was written rather than after the row overflowed.
+--
+-- It costs the summary nothing it had, either: that panel groups its rows under realm headings,
+-- so which realm a member is on is already on the screen.
+function UI:CreateMemberFilters(parent, onChange, population, realm)
+	local withRealm = realm ~= false
 	local filters = {}
 
 	local function held()
@@ -94,21 +105,30 @@ function UI:CreateMemberFilters(parent, onChange, population)
 	end
 
 	local frame = CreateFrame("Frame", nil, parent)
-	frame:SetSize(ROW_WIDTH, ROW_HEIGHT)
+	frame:SetSize(withRealm and ROW_WIDTH or (ROW_WIDTH - REALM_WIDTH), ROW_HEIGHT)
 	filters.frame = frame
 
 	local function changed()
 		if onChange then onChange() end
 	end
 
-	local realmButton = UI:CreateChoicePicker(frame, 130, L["Realm"], "all", function()
-		local list = {}
-		for _, realm in ipairs(realmsHeld(held())) do
-			list[#list + 1] = { value = realm, label = realm }
-		end
-		return list
-	end, changed)
-	realmButton:SetPoint("LEFT", 0, 0)
+	-- Not created at all where it is not wanted, rather than created and hidden.
+	--
+	-- A hidden picker is still a frame that answers to a click, and the harness proved it
+	-- immediately: a check that opens the character panel's realm list by the words on it
+	-- found the summary's invisible one first and drove that instead. A control nobody can
+	-- see is a control nobody should be able to reach.
+	local realmButton
+	if withRealm then
+		realmButton = UI:CreateChoicePicker(frame, 130, L["Realm"], "all", function()
+			local list = {}
+			for _, realm in ipairs(realmsHeld(held())) do
+				list[#list + 1] = { value = realm, label = realm }
+			end
+			return list
+		end, changed)
+		realmButton:SetPoint("LEFT", 0, 0)
+	end
 
 	-- Named as the client names them and coloured as the game colours them: eleven class
 	-- names in a list are read by colour long before they are read by name.
@@ -125,7 +145,13 @@ function UI:CreateMemberFilters(parent, onChange, population)
 		end
 		return list
 	end, changed)
-	classButton:SetPoint("LEFT", realmButton, "RIGHT", 8, 0)
+	-- Anchored to whatever is actually to its left. Anchoring to a hidden frame would leave
+	-- the row starting 138 pixels in from its own edge, which is a gap nothing is in.
+	if realmButton then
+		classButton:SetPoint("LEFT", realmButton, "RIGHT", 8, 0)
+	else
+		classButton:SetPoint("LEFT", 0, 0)
+	end
 
 	-- Two numbers rather than a list of brackets. Brackets would have to be right on three
 	-- clients whose ceilings are 60, 70 and 90, and a set built for one of them is wrong on
@@ -161,12 +187,14 @@ function UI:CreateMemberFilters(parent, onChange, population)
 	filters.minBox, filters.maxBox = minBox, maxBox
 
 	-- How wide the row of them is, so a caller can put something after them.
-	function filters:Width() return ROW_WIDTH end
+	function filters:Width()
+		return withRealm and ROW_WIDTH or (ROW_WIDTH - REALM_WIDTH)
+	end
 
 	function filters:SetShown(shown) frame:SetShown(shown and true or false) end
 
 	function filters:Reset()
-		if realmButton.Choose then realmButton:Choose(UI.ANY) end
+		if realmButton and realmButton.Choose then realmButton:Choose(UI.ANY) end
 		if classButton.Choose then classButton:Choose(UI.ANY) end
 		minBox:SetText("")
 		maxBox:SetText("")
@@ -184,7 +212,10 @@ function UI:CreateMemberFilters(parent, onChange, population)
 	function filters:Passes(meta)
 		if type(meta) ~= "table" then return false end
 
-		local realm = realmButton:Reconcile()
+		-- Reconciled even when it is not shown, because it is still a control and a value
+		-- left on it would go on narrowing invisibly. It answers nothing when hidden, which
+		-- is what the picker does with an empty list of choices.
+		local realm = realmButton and realmButton:Reconcile() or nil
 		local class = classButton:Reconcile()
 		local low, high = numberIn(minBox), numberIn(maxBox)
 
@@ -207,7 +238,8 @@ function UI:CreateMemberFilters(parent, onChange, population)
 	-- Whether any of them is actually narrowing anything, so a panel can say how much it is
 	-- hiding only when there is something to say.
 	function filters:Active()
-		return (realmButton:Reconcile() or classButton:Reconcile()
+		local realm = realmButton and realmButton:Reconcile() or nil
+		return (realm or classButton:Reconcile()
 			or numberIn(minBox) or numberIn(maxBox)) and true or false
 	end
 

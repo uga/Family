@@ -1833,7 +1833,6 @@ local function build(frame)
 	-- a box is a question being asked once, and a panel that opens tomorrow still showing
 	-- four of forty members, because of a word nobody remembers typing, is a panel that looks
 	-- broken.
-	local classFilter, levelMin, levelMax
 
 	local hint = filters:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	hint:SetPoint("LEFT", 4, 0)
@@ -1867,53 +1866,35 @@ local function build(frame)
 		return list
 	end
 
-	local classButton = UI:CreateChoicePicker(filters, 120, L["Class"], "all", function()
-		local names = _G.LOCALIZED_CLASS_NAMES_MALE
-		local list = {}
-		for _, classFile in ipairs(classesHeld()) do
-			local red, green, blue = UI:ClassColour(classFile)
-			list[#list + 1] = {
-				value = classFile,
-				label = (names and names[classFile]) or classFile,
-				r = red, g = green, b = blue,
-			}
-		end
-		return list
-	end, function()
-		frame:Refresh()
-	end)
-	classButton:SetPoint("LEFT", search, "RIGHT", 12, 0)
+	-- Class and level come from the shared widget, which is what every other panel that
+	-- narrows a list of characters uses. This panel and the character panel had grown one
+	-- each, separately, and this was the last of the two left.
+	--
+	-- **Without the realm picker**, and that is measured rather than preferred: this row also
+	-- carries a search box, the set's own narrowing picker and the count of what is hidden,
+	-- and a picker 130 wide takes it past the 740 the row has. It costs nothing either - the
+	-- rows are grouped under realm headings, so which realm a member is on is already there.
+	--
+	-- **The search box stays here**, which is the widget's own rule and not an omission: every
+	-- panel has one and no two of them search the same thing, so a box that meant four things
+	-- would need a parameter explaining which.
+	local memberFilters = UI:CreateMemberFilters(filters, function() frame:Refresh() end,
+		nil, false)
+	memberFilters.frame:SetPoint("LEFT", search, "RIGHT", 12, 0)
 
-	-- Two numbers rather than a list of brackets. Brackets would have to be right on three
-	-- clients whose ceilings are 60, 70 and 90, and a set of ranges built for one of them is
-	-- wrong on the other two - so the player says the range and no client has to be guessed
-	-- at.
-	local levelLabel = filters:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	levelLabel:SetPoint("LEFT", classButton, "RIGHT", 12, 0)
-	levelLabel:SetText(L["Level"])
+	-- The two names kept, because they were a surface: a macro or a check can reach these,
+	-- and the widget's own boxes have no names. Kept by pointing the old names at the new
+	-- boxes rather than by giving the widget a naming parameter it would carry for one
+	-- caller - and it means every check written against them drives the new bar unchanged,
+	-- which is the best evidence a refactor can produce.
+	_G.FamilySummaryLevelMin, _G.FamilySummaryLevelMax =
+		memberFilters.minBox, memberFilters.maxBox
 
-	local function levelBox(name, anchor, gap)
-		local box = CreateFrame("EditBox", name, filters, "InputBoxTemplate")
-		box:SetPoint("LEFT", anchor, "RIGHT", gap, 0)
-		box:SetSize(34, 20)
-		box:SetAutoFocus(false)
-		UI:ReleaseFocusOnClick(box)
-		box:SetNumeric(true)
-		box:SetMaxLetters(3)
-		box:SetJustifyH("CENTER")
-		box:SetScript("OnTextChanged", function() frame:Refresh() end)
-		box:SetScript("OnEscapePressed", function(self)
-			self:SetText("")
-			self:ClearFocus()
-		end)
-		return box
-	end
+	local minBox, maxBox = memberFilters.minBox, memberFilters.maxBox
 
-	local minBox = levelBox("FamilySummaryLevelMin", levelLabel, 10)
-	local dash = filters:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-	dash:SetPoint("LEFT", minBox, "RIGHT", 6, 0)
-	dash:SetText("-")
-	local maxBox = levelBox("FamilySummaryLevelMax", dash, 10)
+	-- Reachable, so a check can drive the bar a player drives rather than the variables
+	-- behind it - the same reason `UI.__summaryNarrow` is reachable.
+	UI.__summaryFilters = memberFilters
 
 	-- The narrowing a set brings with it, in one control that changes what it is asking.
 	--
@@ -1931,7 +1912,7 @@ local function build(frame)
 	end, function()
 		frame:Refresh()
 	end)
-	narrowButton:SetPoint("LEFT", maxBox, "RIGHT", 12, 0)
+	narrowButton:SetPoint("LEFT", memberFilters.frame, "RIGHT", 12, 0)
 	narrowButton:Hide()
 
 	-- Reachable, so a check can drive the control a player drives rather than the variable
@@ -1970,15 +1951,10 @@ local function build(frame)
 	-- What they are not is evidence of anything - if a check here goes red, the thing to fix
 	-- is whatever started writing records with a gap in them.
 	local function typedFilters(meta)
-		if classFilter and meta.classFile and meta.classFile ~= classFilter then
-			return false
-		end
-
-		local level = meta.level
-		if level then
-			if levelMin and level < levelMin then return false end
-			if levelMax and level > levelMax then return false end
-		end
+		-- Class and level are the widget's question and it keeps the §2.2 guard this used
+		-- to keep in its own words: a record with nothing recorded passes, because hiding
+		-- it would claim Family knows it does not match.
+		if not memberFilters:Passes(meta) then return false end
 
 		local needle = (search:GetText() or ""):lower()
 		if needle ~= "" then
@@ -2006,13 +1982,11 @@ local function build(frame)
 	end
 
 	function frame:Refresh()
-		levelMin, levelMax = numberIn(minBox), numberIn(maxBox)
-
-		-- Asked of the picker rather than remembered from the click, because Reconcile also
-		-- drops a choice the family no longer has. Filter to the one warlock, delete that
-		-- character, and a remembered value would leave the panel empty and the button still
-		-- saying Warlock - which is what the character panel already learned.
-		classFilter = classButton:Reconcile()
+		-- Nothing to read out of the filter bar here any more. The widget asks its own
+		-- pickers at the moment it is asked whether a member passes - through `Reconcile`,
+		-- which also drops a choice the family no longer has, so filtering to the one
+		-- warlock and then deleting that character cannot leave the panel empty with the
+		-- button still saying Warlock.
 
 		-- The narrowing picker takes on whatever the set on screen is asking, or goes away
 		-- where the set asks nothing. Reconciled after its provider has been pointed at the
@@ -2049,7 +2023,7 @@ local function build(frame)
 		-- Counted against what this *set* would show, not against the family: on Crafting,
 		-- where the set already narrows to members with a cooldown running, comparing with
 		-- forty would report a filter nobody set.
-		if (search:GetText() or "") ~= "" or classFilter or levelMin or levelMax then
+		if (search:GetText() or "") ~= "" or memberFilters:Active() then
 			local shown, all = 0, 0
 			for _, entry in pairs(Family.Database:Members()) do
 				local meta = entry.meta

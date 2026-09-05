@@ -173,7 +173,7 @@ owner's repainting would have worked on the bags it was measured over and nowher
 
 ---
 
-## 3. Filters and sorting on every panel that lists characters
+## 3. Filters and sorting on every panel that lists characters — DONE 2026-09-05
 
 **Asked:** filter by level range, class and character name everywhere; and per panel —
 overview by level, rested XP, money, last seen, free bags, free bank, bags/bank seen; activity
@@ -242,10 +242,24 @@ profession's rank and is **headed with its name**; with none chosen it is headed
 and orders by the word, which is the direction that stops the rule being written as *always sort
 by rank*.
 
-**What is left of this entry is one refactor**: the summary is the last panel building its own
-filter bar instead of asking `UI:CreateMemberFilters` for one. Nothing is missing from it - it
-has name, class and level already - so this buys no feature, only the fifth copy not existing.
-It has its own run.
+**The refactor is done, 2026-09-05, and entry 3 is closed with it.** The summary asks
+`UI:CreateMemberFilters` for its class picker and level boxes; its search box stays its own,
+which is the widget's own rule - every panel has one and no two of them search the same thing.
+
+It needed one thing added to the widget, and that was measured rather than preferred: **a bar
+without the realm picker.** The summary's row already carries a search box, the set's own
+narrowing picker and the count of what is hidden, and a picker 130 wide takes it past the 740
+the row has - the mutation that puts it back reports the row 36 pixels over. It costs the
+summary nothing it had: rows there are grouped under realm headings, so which realm a member is
+on is already on the screen.
+
+The picker is **not created** rather than created and hidden. A hidden control still answers to
+a click, and the harness proved it at once - a check that opens the character panel's realm list
+by the words on it found the summary's invisible one first.
+
+The level boxes keep the global names they had, pointed at the widget's own. That is what lets
+every check written before this drive the new bar untouched, which is the best evidence a
+refactor can produce.
 
 **Crafting filtered by cooldown and profession: done 2026-09-05**, and the two turned out to be
 one list rather than two controls. A timer several recipes share is headed by its profession -
