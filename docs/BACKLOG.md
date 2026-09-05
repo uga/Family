@@ -1029,3 +1029,31 @@ which makes the row and its own tooltip disagree on the same screen.
 **Not built.** Recorded here so the question is not asked a third time from memory, and because
 it is the same class as the subzone (entry 16) with the opposite answer: that one cannot be
 translated because no id exists, and this one can.
+
+---
+
+**Alberto's second question, 2026-09-05: does the whole-family view then show one quest as five,
+one per language?** Read rather than answered from memory, and the answer is three answers.
+
+**The grouping already knew.** `Family_UI/Character.lua` keys that view by `"id:" .. quest.id`
+and falls back to `"title:"` only where there is no id, and the comment above it was written for
+exactly this worry: *a title is a language: a family plays across clients, and the id is the same
+word in all of them.* So a quest whose record carries an id is one row however many languages it
+was recorded in.
+
+**But ids are two days old.** Nothing recorded before 2026-09-05 has one, and a log only gains
+them when it is re-read after that build. Until a character is played again its quests key by
+title, and those really do split by language.
+
+**And the zone headings split regardless.** The rows are grouped by `row.category`, which is a
+word with no id beside it, so *Hellfire Peninsula* and *Péninsule des Flammes infernales* are two
+headings holding one zone's quests. That is the same fault the row keys were fixed for, one level
+up, and it is what makes the category half of this entry worth doing rather than optional.
+
+**And the search matches the stored title**, so a quest can only be found by typing the language
+it happened to be recorded in - which is the question *who is on this quest* asked in a language
+the asker may not have.
+
+So the shape of the work is settled by this: the title wants `Names:Quest(id, recorded)`, and the
+category wants a **zone id recorded beside it at scan time**. The second is what actually fixes
+the view; the first fixes what it is called.
