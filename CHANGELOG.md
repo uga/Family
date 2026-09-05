@@ -86,6 +86,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Three warnings at every login on Burning Crusade.** Family's key binding file was named in
+  its table of contents as well as being found by the game, so the game read it twice and
+  complained about the second reading. The binding worked either way; the complaints are gone.
+
 - **Some of a letter's attachments were not recorded.** A mailbox does not keep a letter's
   attachments in its first slots, or in order - taking two out of a letter and leaving the rest
   puts gaps in it - and Family read only as many slots as the letter said it had things in. So

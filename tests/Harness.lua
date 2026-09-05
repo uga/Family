@@ -1706,7 +1706,8 @@ local UIPrivate = {}
 -- Named once, because a check below reads these same files and a second list would drift:
 -- a new panel would be loaded and quietly not examined, which is the shape of an omission
 -- nobody notices until it is in somebody's game.
-local UI_FILES = { "Window.lua", "MemberPicker.lua", "ChoicePicker.lua", "Tooltip.lua",
+local UI_FILES = { "Window.lua", "MemberPicker.lua", "ChoicePicker.lua", "MemberFilters.lua",
+	"Tooltip.lua",
 	"Summary.lua", "Talents.lua",
 	"Contents.lua", "Professions.lua", "Character.lua", "Quests.lua", "Wide.lua", "Guild.lua",
 	"Broker.lua", "Options.lua", "About.lua", "Slash.lua" }
@@ -7845,9 +7846,13 @@ print("the whole family's gear on one screen")
 ;(function()
 	-- A button's label lives on the button, not in a font string, so this asks the frames
 	-- rather than the text: visibleText would never find one and would never say why.
+	-- `onScreen` rather than the frame's own flag, for the reason L-046 gives: a button on a
+	-- panel that is not open still reports itself shown, so this answered for whichever
+	-- panel happened to have a control of that name. It went red the day the professions
+	-- panel grew a realm picker of its own, on a check about the character panel.
 	local function buttonSaying(label)
 		for _, f in ipairs(frames) do
-			if f.__shown == true and type(f.__text) == "string"
+			if onScreen(f) and type(f.__text) == "string"
 				and f.__text:find(label, 1, true) then
 				return true
 			end
@@ -17152,8 +17157,12 @@ print("opening Family from the keyboard")
 
 	local toc = slurp("addons/Family_UI/Family_UI.toc")
 	check("the .toc is where this check expects it", toc ~= nil)
-	check("and loads the bindings file",
-		toc ~= nil and toc:find("%f[%w]Bindings%.xml%f[^%w]") ~= nil)
+	-- **And does not list the bindings file.** The client finds it by name in the folder;
+	-- naming it here as well hands it to the ordinary UI XML loader, which has never heard
+	-- of a Binding element and says so on every login. Burning Crusade reported it, Classic
+	-- Era swallowed it, and it shipped because nothing here asked.
+	check("and does not list the bindings file, which the client finds by name",
+		toc ~= nil and toc:find("%f[%w]Bindings%.xml%f[^%w]") == nil)
 
 	local xml = slurp("addons/Family_UI/Bindings.xml")
 	check("which is in the addon folder", xml ~= nil)
@@ -17697,6 +17706,188 @@ print("the summary sorted by a column somebody chose")
 	Family.UI:SetSummarySort("overview", nil)
 	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
 	Family.UI:Refresh()
+end)()
+
+--------------------------------------------------------------------------------------------
+-- The harness loads what the game loads
+--
+-- This file keeps its own list of the addon's files, because it loads them by hand in an
+-- order it controls. The client reads a `.toc`. Nothing joined the two, so a file added to
+-- the addon was simply absent from every check here until somebody noticed - which is how a
+-- widget added on 2026-09-05 produced "attempt to call a nil value" from a panel that had
+-- worked perfectly in the game.
+--
+-- The other direction matters as much: a file left in this list after being removed from the
+-- `.toc` would be tested and never shipped.
+--------------------------------------------------------------------------------------------
+
+print()
+print("the harness loads the same files the client does")
+
+;(function()
+	local function slurp(path)
+		local handle = io.open(ROOT .. "/" .. path)
+		if not handle then return nil end
+		local text = handle:read("*a")
+		handle:close()
+		return text
+	end
+
+	local function listed(toc)
+		local text = slurp(toc) or ""
+		local files = {}
+		for line in text:gmatch("[^\r\n]+") do
+			local file = line:match("^%s*([%w_\\/]+%.lua)%s*$")
+			-- The libraries are fetched at package time and are absent from a clone, which
+			-- is deliberate and is checked elsewhere.
+			if file and not file:find("^Libs") then
+				files[file:gsub("\\", "/")] = true
+			end
+		end
+		return files
+	end
+
+	local function compare(name, toc, loaded)
+		local wanted = listed(toc)
+		check(name .. " lists files this check can read", next(wanted) ~= nil)
+
+		local missing, extra = {}, {}
+		local have = {}
+		for _, file in ipairs(loaded) do have[file] = true end
+
+		for file in pairs(wanted) do
+			if not have[file] then missing[#missing + 1] = file end
+		end
+		for file in pairs(have) do
+			if not wanted[file] then extra[#extra + 1] = file end
+		end
+
+		table.sort(missing)
+		table.sort(extra)
+
+		check("everything " .. name .. " loads is loaded here too", #missing == 0,
+			table.concat(missing, ", "))
+		check("and nothing is loaded here that " .. name .. " does not ship", #extra == 0,
+			table.concat(extra, ", "))
+	end
+
+	compare("Family_UI.toc", "addons/Family_UI/Family_UI.toc", UI_FILES)
+end)()
+
+--------------------------------------------------------------------------------------------
+-- One filter bar, used by every panel that narrows a list of characters
+--------------------------------------------------------------------------------------------
+
+print()
+print("narrowing a list of characters")
+
+;(function()
+	local realm = GetRealmName()
+
+	-- A member on a second realm, because the pickers offer only what the family has and
+	-- `Reconcile` drops a choice nobody is on - which is right, and which made the first
+	-- draft of these checks pass by filtering on nothing at all.
+	Family.Database:SetMeta("Awarrior-Pyrewood Village", { name = "Awarrior",
+		realm = "Pyrewood Village", classFile = "WARRIOR", level = 24,
+		faction = "Alliance" })
+
+	local filters = Family.UI:CreateMemberFilters(UIParent, function() end)
+	check("a panel can ask for a filter bar", type(filters) == "table")
+
+	local mage = { name = "Amage", realm = realm, classFile = "MAGE", level = 60 }
+	local warrior = { name = "Awarrior", realm = "Pyrewood Village",
+		classFile = "WARRIOR", level = 24 }
+	-- Everything about this one is unrecorded, which is the case §2.2 is about.
+	local unknown = { name = "Aunknown" }
+
+	check("with nothing chosen everybody passes",
+		filters:Passes(mage) and filters:Passes(warrior) and filters:Passes(unknown))
+	check("and it says it is not narrowing anything", filters:Active() == false)
+
+	filters.classButton:Choose("MAGE")
+	check("choosing a class keeps that class", filters:Passes(mage))
+	check("and drops the others", filters:Passes(warrior) == false)
+	check("while a record with no class recorded still passes", filters:Passes(unknown))
+	check("and the bar says it is narrowing now", filters:Active() == true)
+
+	filters.classButton:Choose(Family.UI.ANY)
+	filters.realmButton:Choose("Pyrewood Village")
+	check("choosing a realm keeps that realm", filters:Passes(warrior))
+	check("and drops the others", filters:Passes(mage) == false)
+	check("while a record with no realm recorded still passes", filters:Passes(unknown))
+
+	filters.realmButton:Choose(Family.UI.ANY)
+	filters.minBox:SetText("50")
+	filters.maxBox:SetText("70")
+	check("a level range keeps the members inside it", filters:Passes(mage))
+	check("and drops the ones outside", filters:Passes(warrior) == false)
+	check("while a record with no level recorded still passes", filters:Passes(unknown))
+
+	filters:Reset()
+	check("resetting puts everybody back",
+		filters:Passes(mage) and filters:Passes(warrior) and filters:Active() == false)
+
+	--------------------------------------------------------------------------------------
+	-- And the panel that now has one
+	--------------------------------------------------------------------------------------
+
+	Family.UI:Show()
+	Family.UI:ShowTab("professions")
+	check("the professions panel offers the whole family",
+		clickButton("Whole family"))
+
+	local professionSearch
+	for _, f in ipairs(frames) do
+		if f.__name == "FamilyProfessionsSearch" then professionSearch = f end
+	end
+	check("and has a box to search it with", professionSearch ~= nil)
+
+	if professionSearch then
+		local function typeInto(text)
+			professionSearch:SetText(text)
+			if professionSearch.__scripts and professionSearch.__scripts.OnTextChanged then
+				professionSearch.__scripts.OnTextChanged(professionSearch)
+			end
+		end
+
+		typeInto("silver rod")
+		check("a recipe somebody knows is found", drawnText("Silver Rod"))
+
+		-- A class nobody with that recipe has. The recipe row is left with nobody who
+		-- passes, and a row naming a recipe and nobody who can make it answers the
+		-- opposite of the question it was asked - so it goes entirely.
+		-- Chosen on every realm picker there is, for the reason the search boxes are typed
+		-- into every box of their name: more than one panel has one, none of them is hidden
+		-- in a way a check can see, and picking by creation order points at whichever panel
+		-- was built first rather than the one in front of us.
+		local pickers = 0
+		local function chooseRealm(value)
+			for _, f in ipairs(frames) do
+				if f.prefix == Family.L["Realm"] and f.Choices then
+					pickers = pickers + 1
+					f:Choose(value)
+				end
+			end
+			Family.UI:Refresh()
+		end
+
+		-- A realm that exists and that nobody with this recipe is on. A realm nobody is on
+		-- at all would be dropped by `Reconcile` and would filter nothing, which is right
+		-- and which the first draft of this check mistook for a fault.
+		chooseRealm("Pyrewood Village")
+		check("the whole-family reading has a realm filter on it", pickers > 0)
+		check("and filtering to a realm the finder is not on empties the results",
+			not drawnText("Silver Rod"))
+
+		chooseRealm(Family.UI.ANY)
+		check("while clearing it brings them back", drawnText("Silver Rod"))
+
+		typeInto("")
+		clickButton("Whole family")
+		Family.UI:Refresh()
+	end
+
+	Family.Database:Forget("Awarrior-Pyrewood Village")
 end)()
 
 print()

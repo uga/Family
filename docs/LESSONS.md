@@ -1759,3 +1759,32 @@ it go red: either helper skipping the chain, and `onScreen` looking only at the 
 **The shape.** A helper that answers "is this on screen" is load-bearing for every check written
 on top of it, and it is the one place where a wrong answer is silent in both directions. It
 deserves a check of its own from the day it is written, and this one had none for a year.
+
+---
+
+## L-047 — The file the client finds by name, listed twice
+
+Family's key binding shipped with `Bindings.xml` named in `Family_UI.toc`. On Burning Crusade
+every login printed three warnings:
+
+    Family_UI/Bindings.xml:25 Unrecognized XML: Binding
+    Family_UI/Bindings.xml:25 Unrecognized XML attribute: name
+    Family_UI/Bindings.xml:25 Unrecognized XML attribute: header
+
+The client finds `Bindings.xml` by its name in an addon's folder. Naming it in the `.toc` as
+well hands the same file to the ordinary UI XML loader, which knows Frame and Button and has
+never heard of a Binding - so it parses it, fails, and complains. The binding still worked,
+which is why nothing looked broken.
+
+**Classic Era loads the same mistake without a word.** That is the part worth keeping: it was
+tested on Era, it was silent there, and it shipped. Two clients, two parsers, one of them
+strict - and the strict one is the only one that would ever have said.
+
+**The check that now catches it** is the inverse of the one that was there. The harness had
+`check("and loads the bindings file", toc:find("Bindings.xml"))` - written on the assumption
+that a file the addon uses must be listed - and it now requires the opposite, with the reason
+beside it. Confirmed against a real addon rather than from memory: WeakAuras has bindings and
+lists no `Bindings.xml` either.
+
+**The shape.** A gate written from an assumption is a gate that pins the assumption. That check
+was green for the whole life of the fault, and it was green *because* the fault was there.

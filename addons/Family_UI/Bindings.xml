@@ -11,6 +11,13 @@
     file with this shape before any addon Lua has run, so there is no Lua equivalent to
     write instead.
 
+    **It is not listed in the .toc, and that is the point.** The client finds this file by
+    its name in the addon's folder. Naming it in the .toc as well hands it to the ordinary
+    UI XML loader, which knows Frame and Button and has never heard of Binding - and says
+    so: "Unrecognized XML: Binding" on every login. Reported from play on Burning Crusade;
+    Classic Era loads the same mistake without a word, which is why it shipped. WeakAuras
+    does the same thing and lists no Bindings.xml either.
+
     What the Key Bindings window *calls* these is not here: it looks up the globals
     BINDING_HEADER_FAMILY and BINDING_NAME_FAMILY_TOGGLE, which Slash.lua sets from the
     locale table, so the words are translated like every other sentence Family says. A name
