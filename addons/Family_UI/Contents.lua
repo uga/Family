@@ -329,6 +329,10 @@ end
 -- How much room the caption beside the sort buttons needs to be worth reading.
 local NOTE_ROOM = 210
 
+-- How tall the sort bar is when its caption fits on one line. It grows past this when the
+-- caption wraps, which is a thing that depends on the language and not on us.
+local SORT_ROW = 22
+
 --------------------------------------------------------------------------------------------
 -- The order the whole-family search comes back in
 --
@@ -444,7 +448,7 @@ local function build(frame)
 	local order = ORDERS[1]
 
 	local sortBar = CreateFrame("Frame", nil, frame)
-	sortBar:SetHeight(22)
+	sortBar:SetHeight(SORT_ROW)
 
 	local sortLabel = sortBar:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	sortLabel:SetPoint("LEFT", 2, 0)
@@ -473,9 +477,12 @@ local function build(frame)
 	-- Parented to the panel rather than to the bar, because it is anchored across the bar's
 	-- right-hand end - and therefore shown and hidden by hand beside it. The professions panel
 	-- was caught leaving exactly this caption on screen after its buttons had gone.
+	-- Given a width outright rather than anchored to both edges: the height it needs has to
+	-- be asked for, and a font string cannot say how tall it will be until it knows how wide
+	-- it may get.
 	local sortNote = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 	sortNote:SetPoint("LEFT", sortBar, "LEFT", sortX + 8, 0)
-	sortNote:SetPoint("RIGHT", -8, 0)
+	sortNote:SetWidth(math.max(60, (UI.CONTENT_W or 740) - sortX - 16))
 	sortNote:SetJustifyH("LEFT")
 
 	-- The bar, its caption and its buttons, reachable together. A check drives the buttons
@@ -667,6 +674,13 @@ local function build(frame)
 			UI:MarkSelected(button, id == order.id)
 		end
 		sortNote:SetText("|cff888888" .. order.note .. "|r")
+
+		-- And the bar grown to hold it. The caption is a child of the panel rather than of
+		-- the bar, so a second line is drawn below the bar - in the band `status` is
+		-- anchored in. Same rule as the professions panel, and for the same reason: a layout
+		-- that only works in the language it was written in is not a layout.
+		sortBar:SetHeight(math.max(SORT_ROW,
+			math.ceil(sortNote:GetStringHeight() or SORT_ROW) + 2))
 
 		-- What comes next hangs off the bottom of that stack while it is there. `scroll`
 		-- hangs off `status`, so moving this one moves the list with it.

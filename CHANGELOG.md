@@ -116,6 +116,10 @@ is a decision rather than an afternoon of archaeology.
   your own realm was drawn with its realm on the end and cut to fit, losing the end of the name
   as well. A guild on another realm still says which, exactly as a character does.
 
+- **A sort caption that runs onto two lines no longer sits on the line below it.** The row of
+  sort buttons grows to hold its caption instead of keeping a fixed height. English fits on one
+  line and never showed this; the longer translations of the same sentences do not.
+
 - **The professions panel no longer explains a sort order it is not using.** Searching the
   whole family put the sort buttons away and left their caption behind, so *Hardest first* sat
   over a list of recipes in alphabetical order. The caption goes with its buttons.

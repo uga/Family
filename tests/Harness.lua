@@ -5516,6 +5516,15 @@ if professionsEveryone then
 		-- first" over a list that comes back in name order.
 		check("and it is there together with the buttons it describes",
 			sortNote:IsShown() == true)
+		-- The caption is a child of the panel rather than of the bar, so a second line is
+		-- drawn *below* the bar - in the band the status line is anchored in. Whether it
+		-- wraps at all depends on the language, so the rule is that the bar is at least as
+		-- tall as the caption, not that the caption fits in a number.
+		check("and the bar is at least as tall as the caption it carries",
+			(Family.UI.__professionsSort.bar.__height or 0)
+				>= math.ceil(sortNote:GetStringHeight() or 0),
+			tostring(Family.UI.__professionsSort.bar.__height) .. " against "
+				.. tostring(sortNote:GetStringHeight()))
 		check("and it describes an order this list can actually be put in",
 			(sortNote:GetText() or ""):find(
 				Family.L["By name, which is the order the search itself comes back in."],
@@ -5651,6 +5660,22 @@ if professionsEveryone then
 		check("and by profession, which is the word rather than the key behind it",
 			page() == "Runed Copper Breastplate | Enchant Chest - Major Health | "
 				.. "Stitched Cloak", page())
+
+		-- And the bar holds whichever caption is on it, asked of all three for the reason
+		-- the possessions panel's is: only one of them wraps at these metrics, and which
+		-- one depends on the language.
+		local tallEnough, worst = true, ""
+		for _, id in ipairs { "recipename", "recipeprofession", "crafters" } do
+			choose(id)
+			local needed = math.ceil(sort.note:GetStringHeight() or 0)
+			if (sort.bar.__height or 0) < needed then
+				tallEnough = false
+				worst = id .. ": " .. tostring(sort.bar.__height)
+					.. " against " .. tostring(needed)
+			end
+		end
+		check("and the bar is at least as tall as whichever caption is on it",
+			tallEnough, worst)
 
 		choose("recipename")
 	end
@@ -17337,6 +17362,30 @@ print("an alias for a linked family")
 		if sort then
 			check("and its bar and its caption are both there while it is asked",
 				sort.bar:IsShown() == true and sort.note:IsShown() == true)
+
+			-- Same rule as the professions panel: the caption belongs to the panel, so a
+			-- second line lands under the bar where the status line lives, and the bar has
+			-- to grow to hold it.
+			-- Asked of every order rather than of whichever happens to be on.
+			--
+			-- Only one of these three captions wraps at this harness's metrics, and a check
+			-- looking at either of the other two cannot fail - which is what the first
+			-- version of this did. Which of them wraps also depends on the language, so
+			-- picking one by hand would be picking today's.
+			local tallEnough, worst = true, ""
+			for _, id in ipairs { "item", "who", "many" } do
+				sort.buttons[id].__scripts.OnClick(sort.buttons[id])
+				local needed = math.ceil(sort.note:GetStringHeight() or 0)
+				if (sort.bar.__height or 0) < needed then
+					tallEnough = false
+					worst = id .. ": " .. tostring(sort.bar.__height)
+						.. " against " .. tostring(needed)
+				end
+			end
+			sort.buttons.item.__scripts.OnClick(sort.buttons.item)
+
+			check("and the bar is at least as tall as whichever caption is on it",
+				tallEnough, worst)
 
 			local function drawnAs(field)
 				local out = {}

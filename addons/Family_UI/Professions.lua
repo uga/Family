@@ -24,6 +24,10 @@ local L = Family.L
 -- have to give way instead.
 local NOTE_ROOM = 210
 
+-- How tall the sort bar is when its caption fits on one line. It grows past this when the
+-- caption wraps, which depends on the language and not on us.
+local SORT_ROW = 22
+
 local ROW = 32
 
 -- What the "who can make it" column gets in a whole-family search. Two hundred and fifty left
@@ -420,7 +424,7 @@ local function build(frame)
 	local sortBar = CreateFrame("Frame", nil, frame)
 	sortBar:SetPoint("TOPLEFT", skillBar, "BOTTOMLEFT", 0, -4)
 	sortBar:SetPoint("RIGHT", -8, 0)
-	sortBar:SetHeight(22)
+	sortBar:SetHeight(SORT_ROW)
 
 	local sortLabel = sortBar:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	sortLabel:SetPoint("LEFT", 2, 0)
@@ -473,9 +477,12 @@ local function build(frame)
 	-- not there is worse than no caption, because it is read as a description of what is on
 	-- the screen. Reported from play, with a screenshot of it floating over thirteen recipes
 	-- in name order.
+	-- Given a width outright rather than anchored to both edges, because the height it needs
+	-- has to be *asked for* and a font string cannot be asked how tall it will be until it
+	-- knows how wide it is allowed to get.
 	local sortNote = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 	sortNote:SetPoint("LEFT", sortBar, "LEFT", sortX + 8, 0)
-	sortNote:SetPoint("RIGHT", -8, 0)
+	sortNote:SetWidth(math.max(60, (UI.CONTENT_W or 740) - sortX - 16))
 	sortNote:SetJustifyH("LEFT")
 
 	-- Which row of buttons is on the bar, laid out on each draw rather than once.
@@ -492,7 +499,7 @@ local function build(frame)
 
 		sortNote:ClearAllPoints()
 		sortNote:SetPoint("LEFT", sortBar, "LEFT", after + 8, 0)
-		sortNote:SetPoint("RIGHT", -8, 0)
+		sortNote:SetWidth(math.max(60, (UI.CONTENT_W or 740) - after - 16))
 	end
 
 	-- Which order is on, and which set of buttons says so.
@@ -501,6 +508,15 @@ local function build(frame)
 			UI:MarkSelected(sortButtons[entry.id], entry.id == chosen.id)
 		end
 		sortNote:SetText("|cff888888" .. chosen.note .. "|r")
+
+		-- And the bar grown to hold it, because the caption is a child of the panel rather
+		-- than of the bar and a second line is therefore drawn *below* the bar - in the band
+		-- where `status` is anchored. In English the two miss each other; the German for
+		-- "Most of the family first. A guild's crafters are counted separately." is longer,
+		-- and a layout that is only correct in one language is not correct. Seen on a
+		-- screenshot with the caption already wrapping.
+		sortBar:SetHeight(math.max(SORT_ROW,
+			math.ceil(sortNote:GetStringHeight() or SORT_ROW) + 2))
 	end
 
 	-- Reachable, so that a check can ask whether the caption is still on the screen when the
