@@ -383,10 +383,21 @@ local function build(frame)
 	local sortX = UI:LayOutRow(sortRow, 110, 4, sortFrom, nil,
 		(UI.CONTENT_W or 740) - sortFrom - NOTE_ROOM)
 
+	-- Parented to the panel rather than to the bar, because it is anchored across the bar's
+	-- right-hand end. Which means hiding the bar does *not* hide this, and for a while it did
+	-- not: the whole-family search put the bar away and left the note behind, describing a
+	-- hardest-first order over a list that is alphabetical. A caption for controls that are
+	-- not there is worse than no caption, because it is read as a description of what is on
+	-- the screen. Reported from play, with a screenshot of it floating over thirteen recipes
+	-- in name order.
 	local sortNote = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 	sortNote:SetPoint("LEFT", sortBar, "LEFT", sortX + 8, 0)
 	sortNote:SetPoint("RIGHT", -8, 0)
 	sortNote:SetJustifyH("LEFT")
+
+	-- Reachable, so that a check can ask whether the caption is still on the screen when the
+	-- controls it describes are not.
+	UI.__professionsSortNote = sortNote
 
 	local status = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	status:SetPoint("TOPLEFT", sortBar, "BOTTOMLEFT", 2, -4)
@@ -618,6 +629,7 @@ local function build(frame)
 		if wholeFamily then
 			picker:Hide()
 			sortBar:Hide()
+			sortNote:Hide()
 			skillBar:SetHeight(1)
 			setOmitted(nil)
 
@@ -855,6 +867,7 @@ local function build(frame)
 
 		picker:Show()
 		sortBar:Show()
+		sortNote:Show()
 		for _, entry in ipairs(rows) do entry.note:SetWidth(150) end
 
 		if not member then

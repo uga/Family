@@ -91,6 +91,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **The professions panel no longer explains a sort order it is not using.** Searching the
+  whole family put the sort buttons away and left their caption behind, so *Hardest first* sat
+  over a list of recipes in alphabetical order. The caption goes with its buttons.
+
 - **The filters on the professions and possessions searches are actually on the screen.** They
   were being switched on and drawn through the line of text under the search box, which runs
   the full width of the panel, so neither was visible and the panel looked as though the

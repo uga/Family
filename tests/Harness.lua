@@ -107,6 +107,11 @@ fontMeta.__index = function(_, key)
 	if key == "SetShown" then
 		return function(self, v) self.__visible = v and true or false end
 	end
+	-- And asked back. Show, Hide and SetShown were all recorded here and nothing could read
+	-- the answer, so a caption hidden with the controls it describes and a caption left
+	-- behind on the screen were the same answer to this file. Shown unless hidden, which is
+	-- what a region that nobody has touched is.
+	if key == "IsShown" then return function(self) return self.__visible ~= false end end
 	-- Which picture a texture was given. It went to the same noop everything unrecognised
 	-- did, so nothing here could see what anything was drawn as - and the possessions panel
 	-- drew the keyring as a helm for weeks with this file perfectly content.
@@ -5494,6 +5499,20 @@ if professionsEveryone then
 	-- identified one is the label.
 	check("with the profession it belongs to", visibleText("Blacksmithing"))
 	check("and everybody who can make it", visibleText("Tester"))
+
+	-- The caption for the sort buttons goes away with them.
+	--
+	-- It is parented to the panel rather than to the bar it describes, because it is anchored
+	-- across the bar's right-hand end - so putting the bar away left the caption behind,
+	-- reading "Hardest first" over a list that the whole-family search orders by name
+	-- (`Family/Recipes.lua` sorts `order` on the name). A caption with no controls under it
+	-- is read as a description of the list, which made it a wrong one. Reported from play.
+	local sortNote = Family.UI.__professionsSortNote
+	check("professions exposes the sort caption", sortNote ~= nil)
+	if sortNote then
+		check("and it is away while the search is across the family, with its buttons",
+			sortNote:IsShown() == false)
+	end
 
 	-- The filter row is on a line of its own, and something below it made the room.
 	--
