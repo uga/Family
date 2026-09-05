@@ -17527,6 +17527,15 @@ print("the summary sorted by a column somebody chose")
 			money = member.money })
 	end
 
+	-- One of them with a transmute running, because the crafting set builds its columns out
+	-- of the cooldowns the family actually has: with nobody waiting on anything it draws the
+	-- member column and nothing else, and a check about a column built at draw time would
+	-- have had no column to ask about.
+	Family.Database:SetMeta(roster[1].key, {
+		skills = { [171] = { rank = 300, maxRank = 300, name = "Alchemy" } },
+		craftCooldowns = { { profession = 171, readyAt = time() + 3600 } },
+	})
+
 	Family.UI:Show()
 	Family.UI:ShowTab("summary")
 	clickButton("Overview")
@@ -17601,9 +17610,85 @@ print("the summary sorted by a column somebody chose")
 	-- A column made of nothing sortable cannot be chosen, and asking is how a heading knows
 	-- whether to offer a button at all.
 	check("a column with no value behind it is not sortable",
-		Family.UI:SummarySortable("prof1") == false
-			or Family.UI:SummarySortable("prof1") == nil)
+		Family.UI:SummarySortable("") ~= true
+			and Family.UI:SummarySortable("no such column") ~= true)
 	check("and one that is, is", Family.UI:SummarySortable("money") == true)
+	check("the professions column is sortable, by the word it shows",
+		Family.UI:SummarySortable("prof1") == true)
+
+	-- The auction figures come out of the payload rather than out of meta, and they carry
+	-- the same distinction the cells do: read and holding none is a nought, never read is no
+	-- answer at all. Sorted as a nought, the member nobody has logged in on heads an
+	-- ascending column and reads as the one with nothing on the auction house.
+	--
+	-- Named to start with an A on purpose. Ties fall back to the panel's own order, which
+	-- ends in the name, so a member called Never would sort after Broke whether the absence
+	-- was honoured or not and the check would pass either way.
+	Family.Database:SetMeta("Aaa-" .. realm, { name = "Aaa", realm = realm, level = 60,
+		classFile = "MAGE", faction = "Alliance" })
+	Family.Database:SetMeta(roster[1].key, { auctionsSeen = time() })
+	Family.Database:SetMeta(roster[2].key, { auctionsSeen = time() })
+
+	Family.UI:SetSummarySort("overview", nil)
+	clickButton("Activity")
+	Family.UI:SetSummarySort("activity", "auctions")
+	Family.UI:Refresh()
+
+	local byAuction = order()
+	check("a member whose auction house was never read sorts last",
+		positionOf("Aaa", byAuction) > positionOf("Broke", byAuction),
+		table.concat(byAuction, ", "))
+
+	Family.UI:SetSummarySort("activity", nil)
+	Family.Database:Forget("Aaa-" .. realm)
+	clickButton("Overview")
+	Family.UI:Refresh()
+	check("the professions column is sortable, by the word it shows",
+		Family.UI:SummarySortable("prof1") == true)
+
+	-- The auction figures come out of the payload rather than out of meta, and they carry
+	-- the same distinction the cells do: read and holding none is a nought, never read is no
+	-- answer. Sorted as a nought, the member nobody has logged in on heads an ascending
+	-- column and reads as the one with nothing on the auction house.
+	Family.Database:SetMeta("Aaa-" .. realm, { name = "Aaa", realm = realm, level = 60,
+		classFile = "MAGE", faction = "Alliance" })
+	Family.Database:SetMeta(roster[1].key, { auctionsSeen = time() })
+	Family.Database:SetMeta(roster[2].key, { auctionsSeen = time() })
+
+	Family.UI:SetSummarySort("overview", nil)
+	clickButton("Activity")
+	Family.UI:SetSummarySort("activity", "auctions")
+	Family.UI:Refresh()
+
+	local byAuction = order()
+	check("a member whose auction house was never read sorts last",
+		positionOf("Aaa", byAuction) > positionOf("Broke", byAuction),
+		table.concat(byAuction, ", "))
+
+	Family.UI:SetSummarySort("activity", nil)
+	Family.Database:Forget("Aaa-" .. realm)
+	clickButton("Overview")
+	Family.UI:Refresh()
+
+	-- The ones built while the panel is drawn bring their own value with them, beside the
+	-- cell that draws them: a column that exists only at draw time would otherwise be the
+	-- one kind that cannot be ordered, and "who can make this soonest" is the question the
+	-- crafting set exists for.
+	clickButton("Crafting")
+	Family.UI:Refresh()
+
+	local built = 0
+	for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+		if type(column.key) == "string" and column.key:find("^cd:")
+			and Family.UI:SummarySortable(column.key) then
+			built = built + 1
+		end
+	end
+	check("a column built while the panel draws is sortable too", built > 0,
+		tostring(built))
+
+	clickButton("Overview")
+	Family.UI:Refresh()
 
 	-- Race and class sort by what the cell draws, which is this client's word for them.
 	check("race is sortable, by the word the reader sees",

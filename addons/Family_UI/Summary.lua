@@ -789,6 +789,44 @@ local SORT = {
 	guild     = function(meta) return meta.guild end,
 	hearth    = function(meta) return meta.hearth end,
 
+	-- The auction figures come out of the payload rather than out of meta, so they are
+	-- worked out by the same function that draws them. Never seen stays nil and sorts last:
+	-- a member whose auction house Family has never read has not got nothing on it.
+	auctions  = function(meta, key)
+		if not meta.auctionsSeen then return nil end
+		return (select(1, auctionTotals(meta, key))) or 0
+	end,
+	bids      = function(meta, key)
+		if not meta.auctionsSeen then return nil end
+		return (select(2, auctionTotals(meta, key))) or 0
+	end,
+	buyouts   = function(meta, key)
+		if not meta.auctionsSeen then return nil end
+		return (select(3, auctionTotals(meta, key))) or 0
+	end,
+
+	-- The professions columns, by the word they show. A member's primaries are drawn
+	-- alphabetically, so ordering by the first of them puts everybody with the same
+	-- profession together - which is the useful half of "sort by profession" and is
+	-- honestly what this column holds.
+	--
+	-- **Not** the other half of the original ask, which is *sorted by that profession's
+	-- skill*: that needs somebody to say which profession first, and the control to say it
+	-- with is the filter bar of slice three. A rank sorted here would be the rank of
+	-- whichever profession happened to come first alphabetically, which answers nobody.
+	prof1     = function(meta) return skillText(skillsOf(meta, false)[1]) end,
+	prof2     = function(meta) return skillText(skillsOf(meta, false)[2]) end,
+
+	-- How many world buffs are banked. Three answers as the cell has three: bags never read
+	-- is nil, a Chronoboon carried whose contents are unknown is nil too - both are "no
+	-- answer" rather than none - and everything else is a count.
+	boon      = function(meta)
+		if not meta.bagsSeen then return nil end
+		if meta.banked then return #meta.banked end
+		if meta.boons then return nil end
+		return 0
+	end,
+
 	-- Both of these are stored as an identity and drawn in the reader's language, so they
 	-- are ordered by **what the cell draws** rather than by the identity behind it: sorted
 	-- on `classFile` a German reader would get Magier under M-for-MAGE, and sorted on the
@@ -1139,6 +1177,22 @@ function craftingColumns()
 			end
 			return ""
 		end
+
+		-- Written beside the cell, because a column built at draw time would otherwise be
+		-- the one kind of column that cannot be ordered - and "who can make this soonest"
+		-- is the question this whole set exists to answer.
+		--
+		-- Ready is nought, so ascending reads as soonest first and the ones who can do it
+		-- now head the column. A member without that cooldown at all has no answer and
+		-- sorts last, which is not the same as being ready.
+		SORT[key] = function(meta)
+			for _, kind in ipairs(Family.Cooldowns:Crafting(meta)) do
+				if kind.label == label then
+					return kind.ready and 0 or (kind.readyAt or 0)
+				end
+			end
+			return nil
+		end
 	end
 
 	return columns
@@ -1170,6 +1224,14 @@ function currencyColumns()
 			local held = currencyOf(meta, currency.key)
 			if not held then return "|cff9d9d9d0|r" end
 			return counted(held.quantity)
+		end
+
+		-- The same distinction the cell makes, kept: never read is nil and sorts last,
+		-- and a member who has been read and holds none is a nought that sorts as one.
+		SORT[key] = function(meta)
+			if not meta.currenciesSeen then return nil end
+			local amount = currencyOf(meta, currency.key)
+			return amount and amount.quantity or 0
 		end
 
 		TOTAL[key] = function(members)
@@ -1760,6 +1822,13 @@ local function build(frame)
 		end
 
 		layOut(headerCells, columns)
+
+		-- What this set is actually drawing, kept where something else can read it. The set
+		-- id has been kept this way for the window since the star was built; the columns are
+		-- the other half of the same question, and half of them do not exist until the panel
+		-- is drawn - the crafting cooldowns and the currencies are built from what the
+		-- family turns out to have.
+		UI.__summaryColumns = columns
 
 		local chosen = UI:SummarySort(currentSet.id)
 

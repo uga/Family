@@ -20,7 +20,8 @@ is a decision rather than an afternoon of archaeology.
 ### Added
 
 - **The summary can be put in an order of your own.** Click a column heading to read the table
-  by it - money, rested experience, last seen, free bags, mail, when it expires, guild,
+  by it - money, rested experience, last seen, free bags, mail, when it expires, auctions and
+  what they are worth, banked world buffs, currencies, who can craft something soonest, guild,
   hearthstone, race, class - and click it again to turn it round. A third click gives the panel
   its own order back. Each set of columns remembers its own, and remembers it between sessions.
   A character something has never been read for goes last whichever way the column points,
