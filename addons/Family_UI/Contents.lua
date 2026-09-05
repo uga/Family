@@ -377,6 +377,10 @@ local function build(frame)
 	-- rather than as the switch between two ways of looking that it actually is.
 	local wholeFamily = false
 
+	-- The member filters, which only mean anything while the panel is about everybody.
+	local memberFilters = UI:CreateMemberFilters(frame, function() frame:Refresh() end)
+	memberFilters:SetShown(false)
+
 	local everyone = CreateFrame("Button", "FamilyContentsEveryone", frame, "UIPanelButtonTemplate")
 	everyone:SetSize(120, 22)
 	everyone:SetPoint("TOPRIGHT", -4, -2)
@@ -532,6 +536,10 @@ local function build(frame)
 	function frame:Refresh()
 		UI:MarkSelected(everyone, wholeFamily)
 
+		memberFilters.frame:ClearAllPoints()
+		memberFilters.frame:SetPoint("TOPLEFT", search, "BOTTOMLEFT", 0, -6)
+		memberFilters:SetShown(wholeFamily)
+
 		-- The box does two different jobs and the caption has to say which. Against one
 		-- member it dims what does not match, and everything stays on screen; across the
 		-- family it is the search itself, and nothing is on screen until it has something
@@ -577,6 +585,19 @@ local function build(frame)
 
 			for _, item in ipairs(matches) do
 				local owners, guilds = Family.Index:Owners(item.id)
+
+				-- Narrowed before the names are worked out, and not after: `NamesOf` adds a
+				-- realm to a name it sees twice, so filtering afterwards would leave a
+				-- realm on the survivor of a pair that is no longer a pair.
+				do
+					local kept = {}
+					for _, owner in ipairs(owners) do
+						if memberFilters:Passes(UI:Meta(owner.key) or owner) then
+							kept[#kept + 1] = owner
+						end
+					end
+					owners = kept
+				end
 
 				UI:NamesOf(owners)
 

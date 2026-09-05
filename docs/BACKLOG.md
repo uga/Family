@@ -99,8 +99,9 @@ ask calls per-panel: rested XP, money, last seen, free bags, free bank, bags and
 mail, expiry, mail seen, guild, hearthstone. One mechanism covers every set because the sets
 are data-driven. **Done 2026-09-05.**
 
-**Slice three — the filter bar on the panels that already show the whole family.** Asked for
-2026-09-05: Professions and Possessions each have a real *Whole family* switch and a search box
+**Slice three — the filter bar on the panels that already show the whole family. Done
+2026-09-05**, on Professions and Possessions; the summary and the character panel keep their own
+for now and moving them onto the widget is a refactor with its own run. Asked for 2026-09-05: Professions and Possessions each have a real *Whole family* switch and a search box
 of their own, and neither has the realm, class or level filters. The Character panel has realm
 and class in that mode and no level range.
 

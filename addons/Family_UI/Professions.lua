@@ -316,6 +316,14 @@ local function build(frame)
 	-- rather than as the switch between two ways of looking that it actually is.
 	local wholeFamily = false
 
+	-- The member filters, which only mean anything while the panel is about everybody: on
+	-- one member there is nothing to narrow. Built here and shown or hidden below.
+	local memberFilters = UI:CreateMemberFilters(frame, function() frame:Refresh() end)
+
+	-- Away until the panel is about everybody. A pooled row is put back by whatever draws
+	-- next; this is not pooled, so it starts hidden and Refresh decides from there.
+	memberFilters:SetShown(false)
+
 	local everyone = CreateFrame("Button", "FamilyProfessionsEveryone", frame, "UIPanelButtonTemplate")
 	everyone:SetSize(120, 22)
 	everyone:SetPoint("TOPRIGHT", -4, -2)
@@ -575,6 +583,10 @@ local function build(frame)
 
 	function frame:Refresh()
 		UI:MarkSelected(everyone, wholeFamily)
+
+		memberFilters.frame:ClearAllPoints()
+		memberFilters.frame:SetPoint("TOPLEFT", search, "BOTTOMLEFT", 0, -6)
+		memberFilters:SetShown(wholeFamily)
 		local member = picker:Reconcile()
 
 		for _, button in ipairs(skillButtons) do button:Hide() end
@@ -603,6 +615,28 @@ local function build(frame)
 			end
 
 			local found = Family.Recipes:Search(needle)
+
+			-- Narrowed here rather than inside the search, which is the data layer's and
+			-- knows nothing about a panel's pickers. A recipe left with nobody who passes
+			-- the filters is dropped whole: a row saying a recipe exists and naming no one
+			-- who can make it answers the opposite of the question it was asked.
+			do
+				local kept = {}
+				for _, recipe in ipairs(found) do
+					local members = {}
+					for _, who in ipairs(recipe.members or {}) do
+						local meta = UI:Meta(who.key)
+						if memberFilters:Passes(meta or who) then
+							members[#members + 1] = who
+						end
+					end
+
+					recipe.members = members
+					if #members > 0 then kept[#kept + 1] = recipe end
+				end
+				found = kept
+			end
+
 			local used, y = 0, 0
 			list:SetWidth(UI:ListWidth(scroll))
 

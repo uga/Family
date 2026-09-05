@@ -19,6 +19,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The professions and possessions searches can be narrowed to some of your characters.**
+  Switch either panel to the whole family and there is a row of filters under the search box -
+  realm, class, and a range of levels. A recipe nobody left can make, or an item nobody left
+  holds, drops out of the results entirely rather than sitting there naming no one.
+
 - **The summary can be put in an order of your own.** Click a column heading to read the table
   by it - money, rested experience, last seen, free bags, mail, when it expires, auctions and
   what they are worth, banked world buffs, currencies, who can craft something soonest, guild,
