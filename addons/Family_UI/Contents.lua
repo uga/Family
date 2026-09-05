@@ -501,6 +501,12 @@ local function build(frame)
 	everyone:SetScript("OnClick", function()
 		wholeFamily = not wholeFamily
 
+		-- Cleared with the switch, because a filter means a different thing either side
+		-- of it: a realm over one character keeps them or empties the panel, and over
+		-- forty it narrows. Asked for from play 2026-09-05.
+		search:SetText("")
+		if memberFilters and memberFilters.Reset then memberFilters:Reset() end
+
 		-- Straight into the box on the way in. Across the family this panel has nothing
 		-- to draw until something is typed, so the switch empties the screen and leaves
 		-- the one thing left to do sitting in an unfocused box at the top - which reads

@@ -413,6 +413,12 @@ local function build(frame)
 	everyone:SetScript("OnClick", function()
 		wholeFamily = not wholeFamily
 
+		-- Cleared with the switch, because a filter means a different thing either side
+		-- of it: a realm over one character keeps them or empties the panel, and over
+		-- forty it narrows. Asked for from play 2026-09-05.
+		search:SetText("")
+		if memberFilters and memberFilters.Reset then memberFilters:Reset() end
+
 		-- The same as the possessions panel, for the same reason: this mode draws nothing
 		-- until it is given something to look for, so the cursor goes where the answer has
 		-- to be typed.

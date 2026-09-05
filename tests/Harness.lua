@@ -14400,6 +14400,90 @@ print("a filter box gives the keyboard back when you click somewhere else")
 		#missing == 0, table.concat(missing, ", "))
 end)()
 print()
+print("the whole-family switch leaves its filters behind")
+
+-- Asked for from play 2026-09-05. A filter means a different thing either side of the switch:
+-- *Realm: Thunderstrike* over one character either keeps them or empties the panel, and over
+-- forty it is a real narrowing - so one carried across reads as the switch having lost half the
+-- family rather than as a filter still being on.
+;(function()
+	-- The button by its own global name, and the panel taken from it.
+	--
+	-- Three panels have a switch saying these words, none of them is hidden in a way a check
+	-- can see, and clicking by the words alone drove the character panel while measuring this
+	-- one - which passed *there is a switch* and failed every check after it. Walking up from
+	-- the search box was no better: two steps of `__parent` landed on something that holds all
+	-- three panels, so "this panel's realm picker" found three of them.
+	local everyone = _G.FamilyProfessionsEveryone
+	local box = _G.FamilyProfessionsSearch
+	check("the professions panel's own switch and box are reachable by name",
+		everyone ~= nil and box ~= nil)
+
+	if everyone and box then
+		local panel = everyone.__parent
+
+		local function ours(f)
+			local at = f
+			while type(at) == "table" do
+				if at == panel then return true end
+				at = type(at.__parent) == "table" and at.__parent or nil
+			end
+			return false
+		end
+
+		local function realmPickers()
+			local found = {}
+			for _, f in ipairs(frames) do
+				if f.prefix == Family.L["Realm"] and f.Choices and ours(f) then
+					found[#found + 1] = f
+				end
+			end
+			return found
+		end
+
+		local function typeInto(text)
+			box:SetText(text)
+			if box.__scripts.OnTextChanged then box.__scripts.OnTextChanged(box) end
+		end
+
+		typeInto("something typed")
+
+		local pickers = realmPickers()
+		check("this panel has one realm picker, not three", #pickers == 1,
+			tostring(#pickers))
+		for _, picker in ipairs(pickers) do picker:Choose("Fire Maw") end
+
+		check("something is typed and something is chosen",
+			box:GetText() ~= "" and pickers[1] and pickers[1]:Value() ~= nil,
+			box:GetText())
+
+		fireClick(everyone)
+		check("switching empties the search box", box:GetText() == "",
+			tostring(box:GetText()))
+
+		local chosen = 0
+		for _, picker in ipairs(realmPickers()) do
+			if picker:Value() ~= nil then chosen = chosen + 1 end
+		end
+		check("and puts the pickers back to everybody", chosen == 0,
+			tostring(chosen) .. " still narrowing")
+
+		-- Both ways, because the switch is a toggle and coming back is the half somebody
+		-- does without thinking about it.
+		typeInto("typed again")
+		fireClick(everyone)
+		check("and the same on the way back", box:GetText() == "",
+			tostring(box:GetText()))
+
+		-- Left as it was found: this panel is measured again further down the file, and a
+		-- block that hands the next one a panel with a word still in its box breaks checks
+		-- it has nothing to do with.
+		typeInto("")
+		Family.UI:Refresh()
+	end
+end)()
+
+print()
 print("the deploy script warns before it mirrors a source with no libraries")
 ;(function()
 	local f = io.open(ROOT .. "/tools/Deploy.bat")

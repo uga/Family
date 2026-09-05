@@ -247,6 +247,10 @@ local function build(frame)
 	-- is a switch on this panel and not a tab of its own.
 	local familyMode = false
 
+	-- Declared here rather than where it is built, because the whole-family button is made
+	-- before the filter bar is and has to be able to clear it.
+	local filters
+
 	-- What the family grid is filtered to, or nil for everything. Held as the value rather
 	-- than as an index into a list, because the list is whatever the family happens to have
 	-- and it changes underneath: an index would silently come to mean a different realm.
@@ -310,6 +314,15 @@ local function build(frame)
 	UI:FitButton(wholeFamily, 120)
 	wholeFamily:SetScript("OnClick", function()
 		familyMode = not familyMode
+
+		-- The filters go with the population they were narrowing. Asked for from play
+		-- 2026-09-05, and the reason is that they mean different things either side of the
+		-- switch: *Realm: Thunderstrike* over one character is a filter that either keeps
+		-- them or empties the panel, and over forty it is a real narrowing - so carrying
+		-- one across reads as the switch having lost half the family.
+		if search then search:SetText("") end
+		if filters then filters:Reset() end
+
 		frame:Refresh()
 	end)
 
@@ -368,7 +381,7 @@ local function build(frame)
 		return list
 	end
 
-	local filters = UI:CreateMemberFilters(frame, function() frame:Refresh() end, population)
+	filters = UI:CreateMemberFilters(frame, function() frame:Refresh() end, population)
 	filters.frame:SetPoint("TOPLEFT", 0, -2)
 	filters:SetShown(false)
 

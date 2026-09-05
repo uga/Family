@@ -153,6 +153,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Switching *Whole family* on or off clears that page's filters.** A realm, class or level
+  range typed for one character stayed on when the page changed to the whole family, and a
+  narrowing that meant one thing over one character means another over forty - so the page
+  looked as though it had lost people rather than as though a filter was still on.
+
 - **Typing in a filter box no longer keeps the keyboard.** After typing into one of Family's
   boxes, clicking anywhere else - including on the game world - left the keyboard in the box,
   so the arrow keys typed into it instead of turning your character and only Escape or closing
