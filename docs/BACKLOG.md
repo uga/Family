@@ -380,10 +380,22 @@ plus our own family. Then one refusal marks both absent, and messages queued for
 **is** online are abandoned with the one who is not.
 
 Asked by Alberto 2026-09-05, while checking whether the client's complaint carries a realm.
-Unmeasured on both sides: whether the client echoes `Name-Realm` in that message is a probe, and
-whether the collapse ever bites in practice needs a family that has the collision. The filter
-inherits the simplification rather than introducing it, and narrowing `nameKey` would touch
-every user of it - which is why this is written down rather than done in passing.
+
+**The filter is not the part that suffers, and saying it was got this backwards.** Hiding needs
+no attribution: two Rolandos produce two complaints, both of them caused by Family's own
+whispering, and hiding both is right whichever is which. What needs attribution is the listener
+that has been there since long before the filter - `CHAT_MSG_SYSTEM` in `Comm.lua` marks the
+name **absent** and abandons everything queued for it. A refusal about one Rolando drops the
+queue for the other, who may be online. That is the bug.
+
+So the probe is still worth running, but for the second thing rather than the first: if the
+client echoes `Name-Realm`, the refusal can be attributed and the fix is clean; if it answers
+with the bare name, then a refusal arriving while Family has whispered two characters of that
+name is genuinely undecidable, and §2.2 says the honest answer is to mark neither rather than
+both.
+
+Narrowing `nameKey` touches the queue, the absent list and `SameName`, which is why this is
+written down rather than done in passing.
 
 ### Three probes are out and unanswered
 
