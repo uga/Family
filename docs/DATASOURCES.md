@@ -1644,9 +1644,64 @@ normally shown.
   recorded by `UI:QuestLines`.
 
 The two quest cases are unlike the subzone in the one way that matters: a quest **does** have an
-id, recorded since 2026-09-05, and `GetQuestLink` names a quest from it in the reader's own
-language. So those are closeable in principle and the subzone is not. Nothing has been built for
-them, and this is written down so that the question is not asked a third time from memory.
+id, recorded since 2026-09-05. What that buys turned out to be less than it looked, and the
+measurement is in the next section.
 
 The rest of what crosses is proper nouns - a character's name, a realm, a guild - which are the
 same word in every language and are not a translation question at all.
+
+### A quest's title is not in the client's tables at all, measured 2026-09-05
+
+Alberto's question, on being told a sibling's quest cannot be named in the reader's language:
+*wago does not give us the titles from the id? and the current client does not?*
+
+Both halves asked rather than answered from memory.
+
+**wago has no quest names, on any of the three pinned builds.** `QuestV2` is served for all
+three and its columns are `ID,UniqueBitFlag` - an id and a flag, and no name in any locale:
+
+| Build | `QuestV2` | `Quest` | `QuestLine` | `QuestInfo` |
+|---|---|---|---|---|
+| Classic Era 1.15.9.69109 | 200, 47,880 bytes, `ID,UniqueBitFlag` | 404 *Table not found* | 404 | 200, **166 bytes**, `ID,InfoName_lang,Type,Modifiers,Profession` |
+| Burning Crusade 2.5.6.69110 | 200, 61,087 bytes, same columns | - | 404 | - |
+| Mists 5.5.4.69078 | 200, 187,805 bytes, same columns | - | 404 | - |
+
+`QuestInfo` is 166 bytes for the whole table: it names the *kinds* of quest - group, dungeon,
+raid - and not the quests. So there is no file to ship, which makes this a different answer from
+the hearthstone's. That one was a **trade** refused at 876 KB (L-020); this is not a trade at
+all.
+
+**And the live client answers only about a quest the server has described to it.** The first
+probe of `GetQuestLink` on a quest the character was not on printed *nothing at all* - the call
+raises rather than returning nothing, and the error landed before the `print`, which is why a
+one-line probe with two arguments said less than it looked like it would. `Family:TryCall` is
+what makes that a fallthrough in play rather than a broken panel.
+
+That is the whole of why quest titles are remembered rather than fetched: see the `Names:Quest`
+store in `addons/Family/Names.lua`, which writes down what this client was told, by id, per
+language. It covers what this account has read and cannot cover more.
+
+### `GetZoneText` does not answer with an area name, measured 2026-09-05
+
+Found from play: a character who logged out in Ironforge on an English client kept reading
+*City of Ironforge* on a French one, while the quest headings beside it translated correctly.
+
+`Names:AreaFor` had done its job. The word is simply **not in `AreaTable`**:
+
+- Era 1.15.9.69109 `AreaTable`, enUS: 1,212 rows, highest id **16,394** - which is the same
+  ceiling `Names.lua` measured against the live client, so the table and the client agree and
+  the grep is decisive. **No row contains the string "City of"**, in any position. Ironforge is
+  id 1537, named `Ironforge`; 809 is `Gates of Ironforge`.
+- The same table in frFR names 1537 `Ironforge` too - untranslated, exactly as `tools/areas.py`
+  predicted of Era's French - and 809 `Portes d'Ironforge`.
+- `UiMap` for the same build names Ironforge id **1455**, and also has no *City of*.
+- `Map` for the same build has no row mentioning Ironforge at all.
+
+Meanwhile `GetSubZoneText` in the same spot answered `Ironforge`, which **is** area 1537.
+
+So the two calls read different tables, and only the subzone's answer is an area name. Every
+other caller of `AreaFor` is safe - `GetBindLocation` returns an area name and a quest log's
+headings are area names, which is why the hearthstone and the quest categories both translate -
+and `GetZoneText` is the one source that is not. A word that is not in the table costs a full
+20,000-id walk and is then remembered as absent, so it is paid once and answers nothing for
+ever.

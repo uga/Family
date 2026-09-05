@@ -328,6 +328,13 @@ function Quests:ScanNow()
 			local questID = questIDAt(index, returns, entry.title)
 			local done, total, lines = progressOf(index, questID)
 
+			-- Written down as it is read, by id, in this client's language. It costs
+			-- nothing here - both halves are already in hand - and it is the only way a
+			-- sibling's record of the same quest can ever be named in the reader's own
+			-- words: the client will not describe a quest the server never gave it, and
+			-- no shipped table carries quest titles (Names.lua).
+			Family.Names:LearnQuest(questID, entry.title)
+
 			-- Filed under the title, which is what the panel has in its hand when it draws
 			-- the row, and which the game keeps unique within one log - it will not hand a
 			-- character the same quest twice. Never under the position in the list, which

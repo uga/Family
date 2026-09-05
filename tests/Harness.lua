@@ -15037,11 +15037,13 @@ print("the log writes down which zone each heading is")
 ;(function()
 	local key = Family:CurrentMember()
 	local heldMap, heldAreas = _G.C_Map, FamilyDB.areas
+	local heldQuests = FamilyDB.quests
 
 	_G.C_Map = { GetAreaInfo = function(id)
 		if id == 42 then return "Elwynn Forest" end
 	end }
 	FamilyDB.areas = {}
+	FamilyDB.quests = {}
 
 	Family.Quests:Scan()
 
@@ -15063,7 +15065,36 @@ print("the log writes down which zone each heading is")
 		log and log.zones and log.zones["Westfall"] == nil,
 		log and log.zones and tostring(log.zones["Westfall"]))
 
+	-- And the titles, by id, in this client's words. The client will not describe a quest the
+	-- server never gave it, so a sibling's quest can only ever be named out of what somebody
+	-- on this account has already read - which means the reading has to write it down.
+	local store = Family.Names:QuestStore()
+	check("the scan writes down what it read a quest was called", store ~= nil)
+
+	local named, missing = 0, nil
+	for _, quest in ipairs((log or {}).entries or {}) do
+		if quest.id then
+			if store and store[quest.id] == quest.title then
+				named = named + 1
+			else
+				missing = missing or (tostring(quest.id) .. " -> "
+					.. tostring(store and store[quest.id]))
+			end
+		end
+	end
+	check("every quest it found an id for is in the store under that id",
+		missing == nil, missing)
+	check("and there was at least one to write down", named > 0, tostring(named))
+
+	-- Per language, because this store is id to word. The areas store is word to id and a
+	-- second language only adds keys to it; this one would overwrite, and a player who
+	-- switched their client would read every quest in the language they left.
+	check("filed under the language this client is running",
+		FamilyDB.quests[Family.locale] == store,
+		tostring(Family.locale))
+
 	_G.C_Map, FamilyDB.areas = heldMap, heldAreas
+	FamilyDB.quests = heldQuests
 end)()
 
 print()
@@ -15190,7 +15221,8 @@ print("a quest called what this client calls it")
 -- half translated looks like a fault rather than a limit.
 ;(function()
 	local heldLink, heldLog = _G.GetQuestLink, _G.C_QuestLog
-	local heldWide = FamilyDB.wide
+	local heldWide, heldQuests = FamilyDB.wide, FamilyDB.quests
+	FamilyDB.quests = {}
 
 	-- A client that speaks French and will name a quest it is not on. Stood up rather than
 	-- relied on: the harness's own stub answers only for quests in the log, which is the one
@@ -15214,13 +15246,49 @@ print("a quest called what this client calls it")
 
 	-- The direct route where a build has it, tried before the link. Both are read back
 	-- rather than assumed, which is what the scanner already does with this call.
+	--
+	-- Asked with the store emptied, because the store now answers first and would otherwise
+	-- hide which of the two live routes ran.
+	FamilyDB.quests = {}
 	_G.C_QuestLog = { GetTitleForQuestID = function(id)
 		if id == 9001 then return "Direkt benannt" end
 	end }
 	check("a build that names a quest outright is asked first",
 		Family.Names:Quest(9001, "The Longbeards") == "Direkt benannt",
 		tostring(Family.Names:Quest(9001, "The Longbeards")))
+
+	-- And whatever answered is kept, so the next character to want it does not ask.
+	check("and what it said is written down",
+		(Family.Names:QuestStore() or {})[9001] == "Direkt benannt",
+		tostring((Family.Names:QuestStore() or {})[9001]))
+
 	_G.C_QuestLog = nil
+
+	-- The case the whole store exists for: a client that will say nothing at all about this
+	-- quest, because the server never described it to them. That is every sibling's quest,
+	-- and it is why no live route can be the answer on its own.
+	_G.GetQuestLink = function() end
+	check("a quest no live route will name is read out of the store",
+		Family.Names:Quest(9001, "The Longbeards") == "Direkt benannt",
+		tostring(Family.Names:Quest(9001, "The Longbeards")))
+
+	-- Somebody else's language is not an answer. A store written while the client ran French
+	-- must not be read back by the same client running English.
+	do
+		local held = Family.locale
+		Family.locale = "esES"
+		check("and not out of the language the client used to be running",
+			Family.Names:Quest(9001, "The Longbeards") == "The Longbeards",
+			tostring(Family.Names:Quest(9001, "The Longbeards")))
+		Family.locale = held
+	end
+
+	FamilyDB.quests = {}
+	_G.GetQuestLink = function(id)
+		if id == 9001 then
+			return "|cffffff00|Hquest:9001:61|h[Les Longues-Barbes]|h|r"
+		end
+	end
 
 	-- And on the panel, for a sibling - which is the case all of this is for.
 	FamilyDB.wide = {
@@ -15270,7 +15338,7 @@ print("a quest called what this client calls it")
 	end
 
 	Family.Wide:SetSibling("namefam", "Speaker-Thunderstrike", false)
-	FamilyDB.wide = heldWide
+	FamilyDB.wide, FamilyDB.quests = heldWide, heldQuests
 	_G.GetQuestLink, _G.C_QuestLog = heldLink, heldLog
 	Family.UI:Refresh()
 end)()

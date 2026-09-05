@@ -258,38 +258,98 @@ function Names:AreaFor(word)
 	return nil
 end
 
+-- What this account has been told a quest is called, in this reader's own language.
+--
+-- The client answers about a quest only once the server has described that quest to it, which
+-- in practice means one in this character's own log - and a sibling's quest is exactly the case
+-- that is not. There is nothing to fall back on either: wago serves QuestV2 for all three
+-- pinned builds with the columns `ID,UniqueBitFlag` and no name in it, in any locale, and
+-- neither `Quest` nor `QuestLine` is a table there at all (measured 2026-09-05). A quest's
+-- title is not in the client's tables, so there is no file anybody could ship - this is not the
+-- 876 KB trade `Names:Area` refused, it is no trade at all.
+--
+-- So it is remembered rather than fetched. Every quest any character on this account reads is
+-- written down by id in the words this client used, which is the arrangement `FamilyDB.areas`
+-- has and was Alberto's idea there: do the asking once and read the answer afterwards. A French
+-- player whose own alt has done *The Love Potion* then reads an English sibling's record of it
+-- as *Le philtre d'amour*, because their own game said so once.
+--
+-- **Kept per language, unlike the areas store.** That one is word to id, so a second language
+-- only adds keys. This one is id to word and a second language would overwrite - a player who
+-- switched their client would read every quest in the language they left.
+--
+-- It covers what this account has seen and no more. A quest nobody here has ever picked up
+-- stays in the recorded word, which is the honest limit rather than a gap.
+local function questStore()
+	if type(_G.FamilyDB) ~= "table" then return nil end
+	FamilyDB.quests = FamilyDB.quests or {}
+
+	local locale = Family.locale or "enUS"
+	local mine = FamilyDB.quests[locale]
+	if not mine then
+		mine = {}
+		FamilyDB.quests[locale] = mine
+	end
+	return mine
+end
+
+-- Reachable so a check can read what was written down rather than infer it.
+function Names:QuestStore() return questStore() end
+
+-- Written by the quest scanner, which holds the id and the title together for every row it
+-- reads, and by Names:Quest below whenever the client does answer.
+function Names:LearnQuest(id, title)
+	if type(id) ~= "number" or type(title) ~= "string" or title == "" then return end
+
+	local known = questStore()
+	if known then known[id] = title end
+end
+
 -- A quest's name, in the words of whoever is reading rather than whoever recorded it.
 --
--- The same shape as `Names:Area` and for the same reason (L-020): a title is one language, and a
--- family plays across clients - so a sibling's quest list read in French on an English panel,
--- while the tooltip on the same row read in English because that one goes through the id.
+-- The store first, because it is this client's own answer already in hand and costs nothing.
+-- Then the two live routes, neither assumed: `C_QuestLog.GetTitleForQuestID` where a build has
+-- it, then `GetQuestLink`, whose title is the part of the link inside the brackets. Whatever
+-- answers is written down, so the next character to want it does not ask.
 --
--- Two routes, and neither is assumed. `C_QuestLog.GetTitleForQuestID` is the direct one where a
--- build has it; `GetQuestLink` is the one every build has, and the title is the part of the link
--- inside the brackets. Each is tried and the answer read back, which is what the scanner already
--- does with this call to find an id in the first place.
---
--- **What is not settled is whether either answers for a quest that is not in the player's own
--- log**, which is the case this exists for. The one measurement there is came from a quest that
--- was in it. So the recorded word is the fallback, this costs nothing where the client will not
--- answer, and the panel reads exactly as it did before rather than worse.
+-- The recorded word last. That is what a quest nobody on this account has done reads as, and it
+-- is the same word the panel drew before any of this existed - so this costs nothing where it
+-- cannot help.
 function Names:Quest(id, recorded)
-    if type(id) == "number" then
-        local api = _G.C_QuestLog
-        if api and api.GetTitleForQuestID then
-            local name = Family:TryCall(api.GetTitleForQuestID, id)
-            if type(name) == "string" and name ~= "" then return name end
-        end
+	if type(id) == "number" then
+		local known = questStore()
+		if known then
+			local name = known[id]
+			if type(name) == "string" and name ~= "" then return name end
+		end
 
-        local link = Family:TryCall(GetQuestLink, id)
-        if type(link) == "string" then
-            local name = link:match("%[(.-)%]")
-            if type(name) == "string" and name ~= "" then return name end
-        end
-    end
+		local api = _G.C_QuestLog
+		if api and api.GetTitleForQuestID then
+			local name = Family:TryCall(api.GetTitleForQuestID, id)
+			if type(name) == "string" and name ~= "" then
+				self:LearnQuest(id, name)
+				return name
+			end
+		end
 
-    if type(recorded) == "string" and recorded ~= "" then return recorded end
-    return nil
+		-- `GetQuestLink` *raises* for a quest the client has no data for rather than
+		-- answering nothing - which is why the first probe of it printed nothing at all,
+		-- the error landing before the print. `TryCall` is what makes that a fallthrough
+		-- rather than a broken panel, and it is not memoised: a quest picked up later in
+		-- the session is one the client can suddenly name, and the store above is what
+		-- stops the asking being repeated for anything already answered.
+		local link = Family:TryCall(GetQuestLink, id)
+		if type(link) == "string" then
+			local name = link:match("%[(.-)%]")
+			if type(name) == "string" and name ~= "" then
+				self:LearnQuest(id, name)
+				return name
+			end
+		end
+	end
+
+	if type(recorded) == "string" and recorded ~= "" then return recorded end
+	return nil
 end
 
 function Names:CachedItem(id)

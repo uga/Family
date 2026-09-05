@@ -997,7 +997,7 @@ decides to live somewhere else, and a logout zone changes far more often.
 
 ---
 
-## 17. A shared character's quests read in the language they were recorded in
+## 17. A shared character's quests read in the language they were recorded in — DONE 2026-09-05
 
 **Received:** 2026-09-05, from Alberto, on being told it and asking whether I was sure.
 
@@ -1080,17 +1080,71 @@ zone got it without being touched.
 build has it, then `GetQuestLink`, whose title is the part inside the brackets - and the recorded
 word as the fallback. Both views use it.
 
-**One thing about it is not settled, and it decides how much this is worth**: whether either call
-answers for a quest that is **not in the player's own log**, which is the case it exists for. The
-only measurement there is came from a quest that was in it. The fallback means this costs nothing
-and reads exactly as before where the client will not answer, so it was worth building either
-way - but if the answer is no, a sibling's quest keeps their word and only a quest you share is
-translated.
+**And the answer to what was left open is no**, measured the same day. The probe printed *nothing
+at all*, which is itself the finding: `GetQuestLink` **raises** for a quest the client has no
+data for rather than returning nothing, so the error landed before the `print` and a one-line
+probe with two arguments said less than it looked like it would. `Family:TryCall` is what turns
+that into a fallthrough rather than a broken panel. So the live routes reach only quests the
+server has already described to this client - in practice, the ones in your own log.
 
-    /run local id = 9794 print(C_QuestLog and C_QuestLog.GetTitleForQuestID
-        and C_QuestLog.GetTitleForQuestID(id) or "no direct call",
-        tostring(GetQuestLink(id)))
+Alberto then asked the right follow-up: *does wago not give us the titles from the id? and does
+the current client not?* Both measured, in `DATASOURCES.md` under *A quest's title is not in the
+client's tables at all*. **wago cannot**: `QuestV2` is served for all three pinned builds with
+the columns `ID,UniqueBitFlag`, `Quest` and `QuestLine` are not tables there at all, and
+`QuestInfo` is 166 bytes naming the *kinds* of quest. There is no file to ship - which is a
+different answer from the hearthstone's, where 876 KB was a trade and this is no trade at all.
 
-Run it with a quest id you are **not** on - 9794 is *No Time for Curiosity*, which was in a log
-on 2026-09-05 and can be turned in since. A name back means this reaches a sibling's quests; nil
-means it reaches only the ones you share.
+**So the answers are remembered instead, which is Alberto's own method from the areas store.**
+Every quest any character on this account reads is written down by id in this client's words, by
+the scanner that already holds both halves, and `Names:Quest` reads that before it asks anything.
+A French player whose own alt has done *The Love Potion* then reads an English sibling's record
+of it in French. Kept **per language**, unlike the areas store: that one is word to id so a
+second language only adds keys, this one is id to word and would overwrite.
+
+It covers what this account has seen and it cannot cover more. A quest nobody here has picked up
+keeps the recorded word, and that is the floor rather than a gap - there is no source that would
+raise it.
+
+**Closed, 2026-09-05.**
+
+---
+
+## 18. `GetZoneText` answers with a word that is not an area name
+
+**Found from play, 2026-09-05.** A character who logged out in Ironforge on an English client
+kept reading *City of Ironforge* on a French one, while the quest headings beside it translated
+correctly. Alberto's probe of the record settled which half was wrong:
+
+    Eccebombo-PyrewoodVillage  City of Ironforge  Ironforge  id nil -> nil
+
+So `Names:AreaFor` walked all twenty thousand ids and found nothing, and then remembered the word
+as absent - correctly, because it is. The measurement is in `DATASOURCES.md` under *`GetZoneText`
+does not answer with an area name*: Era's `AreaTable` has **no row containing "City of"** at all,
+in any locale; Ironforge is area 1537, named `Ironforge` in both English and French; `UiMap`
+calls it 1455 and `Map` does not mention it. Meanwhile `GetSubZoneText` in the same spot answered
+`Ironforge`, which **is** area 1537 - so the two calls read different tables and only the
+subzone's answer is an area name.
+
+Every other caller of `AreaFor` is safe and that is why nothing else showed it: `GetBindLocation`
+returns an area name, and a quest log's headings are area names. `GetZoneText` is the one source
+that is not.
+
+**Not fixed yet, and the route wants one probe first.** The decision row for entry 16 already
+left this open in the other direction - *`C_Map.GetBestMapForUnit` would answer without a search*
+- and it now looks like the fix rather than an optimisation, because a UiMapID is an id the
+client will translate and needs no walk at all. `GetRealZoneText` is the other candidate and may
+simply be the area name. Both, in one line, standing in Ironforge:
+
+    /run local m = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+        local i = m and C_Map.GetMapInfo(m)
+        print("zone[" .. tostring(GetZoneText()) .. "] real[" .. tostring(GetRealZoneText())
+            .. "] sub[" .. tostring(GetSubZoneText()) .. "] map=" .. tostring(m)
+            .. " name[" .. tostring(i and i.name) .. "]")
+
+Two things the fix has to carry whichever route wins. A UiMapID is **not** an areaID, so it wants
+a field and a naming call of its own rather than being written into `zoneID` where `Names:Area`
+would look it up in the wrong table. And whatever is recorded has to answer **during
+`PLAYER_LOGOUT`**, which is measured for `GetZoneText` and `GetSubZoneText` and is not measured
+for the map API - if it does not, the value wants keeping during play and writing at logout.
+
+Records already written keep the word they have until that character is played again.
