@@ -388,11 +388,31 @@ that has been there since long before the filter - `CHAT_MSG_SYSTEM` in `Comm.lu
 name **absent** and abandons everything queued for it. A refusal about one Rolando drops the
 queue for the other, who may be online. That is the bug.
 
-So the probe is still worth running, but for the second thing rather than the first: if the
-client echoes `Name-Realm`, the refusal can be attributed and the fix is clean; if it answers
-with the bare name, then a refusal arriving while Family has whispered two characters of that
-name is genuinely undecidable, and §2.2 says the honest answer is to mark neither rather than
-both.
+**And they really can both be online.** A family - ours or a linked one - is a person's
+characters, not an account's, so nothing stops the two Rolandos being played from two accounts
+at the same moment. The first reading of this assumed the collapse only ever confused an
+offline character with an offline character; it does not. Three things follow from one refusal:
+
+- `Wide.lua:435` - `reachableName` skips any candidate `Comm:Absent` answers for, so for
+  `ABSENT_FOR` (60s, `Comm.lua:399`) the Rolando who is logged in is unreachable, and the
+  family is told nobody is online while somebody is sitting in front of that character.
+- `Wide.lua:641` - the absent listener attributes the refusal through `SameName`, so it lands
+  on **every** link holding any Rolando, and each of them moves on to its next name.
+- `Comm.lua:431` - `Present` collapses the same way in the other direction. Hearing from one
+  Rolando lets the queue skip its canary (`Comm.lua:207`) when writing to the other, who was
+  never heard from.
+
+**The probe no longer gates the design.** `whispered` already holds what Family addressed and
+when; keyed on the full target it also holds *which* Rolando, and the window is 15 seconds. So:
+one Rolando addressed inside the window means the refusal is attributable exactly, whatever
+form the client echoes back; two means it is genuinely undecidable and §2.2 says mark neither.
+Both branches fall out of the same structure, and the probe only widens the first one.
+
+Which makes the shape of the fix clear: **the collapse belongs to the filter and to nothing
+else.** Its comment at `Comm.lua:120` says it is keyed "the way every other name in this file
+is keyed" - that sameness is the fault. The filter should drop the realm on purpose, because
+it is matching a bare name the client chose; `absent`, `AbandonTo`, `reachableName` and
+`Present` should all carry the realm, because they are answering about a character.
 
 Narrowing `nameKey` touches the queue, the absent list and `SameName`, which is why this is
 written down rather than done in passing.
