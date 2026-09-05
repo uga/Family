@@ -576,6 +576,7 @@ Family.locales.ruRU = {
 	["unknown"] = "неизвестно",
 	["Family users"] = "С Family",
 	["All guildmates"] = "Вся гильдия",
+	["Where"] = "Где",
 	["Everyone"] = "Все",
 	["Update now"] = "Обновить",  -- 10
 	["  guild: %s"] = "  гильдия: %s",

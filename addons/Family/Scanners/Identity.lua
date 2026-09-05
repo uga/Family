@@ -188,8 +188,67 @@ local function recordPlayed(total, atLevel)
 end
 
 --------------------------------------------------------------------------------------------
+-- Where this character was when they stopped playing
+--
+-- Asked for as a column beside the hearthstone, and probably more useful than it: a hearthstone
+-- says where somebody chose to live and this says where they actually are.
+--
+-- **At logout, because that is when the answer is the one wanted.** Measured before it was
+-- built rather than assumed: `GetZoneText` and `GetSubZoneText` both still answer during
+-- `PLAYER_LOGOUT` - *Searing Gorge* and *Pyrox Flats* came back from a live client - and what
+-- is written then reaches the saved variables. Keeping it fresh on every zone change would have
+-- been the same record for far more work.
+--
+-- The zone is stored **as a word and as an id**, which is the hearthstone's own arrangement and
+-- for the hearthstone's own reason (L-020): the word is whatever language the client that wrote
+-- it was running, and a family is played across languages. `Names:Area` shows the id in the
+-- reader's own words and falls back to the recorded one for a place this client has never heard
+-- of.
+--
+-- A subzone gets no id, and cannot: `GetSubZoneText` answers with a word and there is nothing
+-- that turns one back into an id. So that half reads in the language it was recorded in, which
+-- is why the zone leads on the panel - the half that can be translated is the half that says
+-- where in the world this is.
+--
+-- **The id costs a scan and is looked for only when the word has changed**, exactly as the
+-- hearthstone's is. Worth saying that the guard is weaker here than there: a hearthstone moves
+-- when somebody decides to live somewhere else, and a logout zone changes far more often, so
+-- this will pay for the scan on more logouts than that one does. `C_Map.GetBestMapForUnit`
+-- would answer without a search and is worth probing if that ever shows.
+
+local function recordWhere()
+    local key = Family:CurrentMember()
+    if not key then return end
+
+    local zone = Family:TryCall(GetZoneText)
+    if type(zone) ~= "string" or zone == "" then return end
+
+    local sub = Family:TryCall(GetSubZoneText)
+    local fields = {
+        zone = zone,
+        -- Cleared rather than left alone when there is none: SetMeta merges, so the subzone
+        -- of the last place would otherwise sit under the name of this one.
+        subzone = (type(sub) == "string" and sub ~= "") and sub or Family.CLEAR,
+    }
+
+    local known = Family.Database:Meta(key)
+    if not (known and known.zoneID and known.zone == zone) then
+        fields.zoneID = Family.Names:AreaFor(zone) or Family.CLEAR
+    end
+
+    Family.Database:SetMeta(key, fields)
+end
+
+Family.Identity = Identity
+Identity.RecordWhere = function() recordWhere() end
+
+--------------------------------------------------------------------------------------------
 
 Family:OnDatabaseReady("identity", function()
+	Family:RegisterEvent("PLAYER_LOGOUT", "identity.where", function()
+		recordWhere()
+	end)
+
 	Family:RegisterEvent("PLAYER_ENTERING_WORLD", "identity", function()
 		Family:After(2, "identity", function()
 			Identity:Scan()

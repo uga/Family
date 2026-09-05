@@ -80,7 +80,11 @@ local CATEGORIES = {
     -- Nothing widens by itself. A category nobody has granted sends nothing, so every link
     -- that exists keeps sending exactly what it sent yesterday until these are ticked.
     { id = "character",   label = L["Character"],
-      meta = { "played", "rested", "xpMax", "guild", "guildless", "hearth", "hearthID" } },
+      meta = { "played", "rested", "xpMax", "guild", "guildless", "hearth", "hearthID",
+               -- Where they logged out, which belongs with the hearthstone rather than in a
+               -- category of its own: both answer "where is this character", and somebody who
+               -- will tell you one will tell you the other.
+               "zone", "subzone", "zoneID" } },
     { id = "currencies",  label = L["Currencies"],
       meta = { "currencies", "currenciesSeen" } },
     { id = "worldbuffs",  label = L["World buffs"], meta = { "boons", "banked" } },

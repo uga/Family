@@ -7478,16 +7478,22 @@ clickButton("Miscellaneous")
 do
 	local key = Family:CurrentMember()
 
-	-- The cell on this member's row, found by walking the row rather than by guessing at a
-	-- column position: the rows are pooled and a cell knows its own text and nothing else.
+	-- The cell on this member's row, found by asking which column the boon ended up in.
+	--
+	-- It was cell six - "member, guild, hearthstone, race, class, then this" - counted out by
+	-- hand in a comment, and a column inserted before it moved every one of those without the
+	-- comment noticing. `UI.__summaryColumns` is what the panel actually drew, so counting is
+	-- not needed at all: the member column leads and the set's own columns follow it.
 	local function boonCellOf(memberKey)
+		local at
+		for index, column in ipairs(Family.UI.__summaryColumns or {}) do
+			if column.key == "boon" then at = index end
+		end
+		if not at then return nil end
+
 		for _, f in ipairs(frames) do
 			if f.cells and f.__shown == true and f.memberKey == memberKey then
-				-- Sixth: member, guild, hearthstone, race, class, then this. Not the
-				-- last cell of the row - every row is built with enough cells for the
-				-- widest set there is, so the spares beyond a set's own columns are
-				-- blank and the last one is always empty.
-				local cell = f.cells[6]
+				local cell = f.cells[at]
 				if cell then return cell.__text end
 			end
 		end
@@ -14669,6 +14675,129 @@ print("the whole-family switch leaves its filters behind")
 		typeInto("")
 		Family.UI:Refresh()
 	end
+end)()
+
+print()
+print("where a character was when they logged out")
+
+-- Asked for as a column beside the hearthstone and probably more useful than it: a hearthstone
+-- says where somebody chose to live and this says where they actually are.
+--
+-- Measured before it was built rather than assumed: `GetZoneText` and `GetSubZoneText` both
+-- still answer during `PLAYER_LOGOUT` on a live client, and what is written then reaches the
+-- saved variables. That probe is what made this a logout handler rather than a zone watcher.
+;(function()
+	local key = Family:CurrentMember()
+
+	-- A client with a map, and with the zone calls the harness otherwise has none of. Stood
+	-- up rather than relied on, for the reason the hearthstone's own block gives: a harness
+	-- with no map API passes every one of these by doing nothing.
+	local heldMap, heldZone, heldSub = _G.C_Map, _G.GetZoneText, _G.GetSubZoneText
+	local asked = 0
+
+	_G.C_Map = { GetAreaInfo = function(id)
+		asked = asked + 1
+		local areas = { [1537] = "Forgefer", [2257] = "Les Steppes Ardentes" }
+		return areas[id]
+	end }
+
+	-- The client answers in its own language and its area table agrees with itself, which is
+	-- the whole point of the id: the first draft of this had the zone call saying *Searing
+	-- Gorge* while the area table knew only *Les Steppes Ardentes*, which is two languages
+	-- inside one client and cannot happen. The lookup correctly found nothing, and the
+	-- fixture was what was wrong.
+	--
+	-- The recorded-in-another-language case is the one the panel is checked on below, where
+	-- an English word is stored beside the id and this client draws the French one.
+	_G.GetZoneText = function() return "Les Steppes Ardentes" end
+	_G.GetSubZoneText = function() return "Pyrox Flats" end
+
+	Family.Database:SetMeta(key, { zone = Family.CLEAR, subzone = Family.CLEAR,
+		zoneID = Family.CLEAR })
+
+	fire("PLAYER_LOGOUT")
+
+	local meta = Family.Database:Meta(key) or {}
+	check("logging out records the zone", meta.zone == "Les Steppes Ardentes",
+		tostring(meta.zone))
+	check("and the subzone under it", meta.subzone == "Pyrox Flats", tostring(meta.subzone))
+
+	-- The id, so that a French reader is told the French name of an English recording. The
+	-- hearthstone's own reason, and the same machinery (L-020).
+	check("and the id behind the zone, which is what makes it translatable",
+		meta.zoneID == 2257, tostring(meta.zoneID))
+
+	-- The scan costs a walk of every area id, so it is paid only when the word has moved -
+	-- the rule the hearthstone already keeps. Logging out in the same place twice must not
+	-- pay it twice.
+	asked = 0
+	fire("PLAYER_LOGOUT")
+	check("logging out in the same place again costs no second search", asked == 0,
+		tostring(asked) .. " ids asked about")
+
+	-- And a new place pays it once.
+	_G.GetZoneText = function() return "Forgefer" end
+	_G.GetSubZoneText = function() return "" end
+	fire("PLAYER_LOGOUT")
+
+	meta = Family.Database:Meta(key) or {}
+	check("moving somewhere else finds the new id", meta.zoneID == 1537,
+		tostring(meta.zoneID))
+	check("and a place with no subzone clears the last one rather than keeping it",
+		meta.subzone == nil, tostring(meta.subzone))
+	check("which cost a search, since the word had changed", asked > 0,
+		tostring(asked) .. " ids asked about")
+
+	-- Drawn, and drawn through the id: the recorded word is English and the client is
+	-- answering in French, so a panel showing the recorded word would show the wrong one.
+	Family.Database:SetMeta(key, { zone = "Searing Gorge", subzone = "Pyrox Flats",
+		zoneID = 2257 })
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	clickButton(Family.L["Miscellaneous"])
+	Family.UI:Refresh()
+
+	local said
+	local at
+	for index, column in ipairs(Family.UI.__summaryColumns or {}) do
+		if column.key == "where" then at = index end
+	end
+	check("the miscellaneous set has a Where column", at ~= nil)
+
+	if at then
+		for _, f in ipairs(frames) do
+			if f.cells and f.__shown == true and f.memberKey == key then
+				said = f.cells[at] and f.cells[at].__text
+			end
+		end
+
+		check("it names the zone in the reader's own language, not the recorded one",
+			said and said:find("Les Steppes Ardentes", 1, true) ~= nil, tostring(said))
+		check("with the subzone under it, which has no id and stays as recorded",
+			said and said:find("Pyrox Flats", 1, true) ~= nil, tostring(said))
+		check("on a second line rather than run together",
+			said and said:find("\n", 1, true) ~= nil, tostring(said))
+
+		-- The column has to be allowed to use that second line, and the rows have to be
+		-- tall enough to show it. Both are per-set and both are set on every row, because
+		-- rows come from a pool and a cell that wrapped once would wrap under every set
+		-- after it.
+		local column = Family.UI.__summaryColumns[at]
+		check("the column asks for the second line", column.wrap == true)
+
+		local tall
+		for _, f in ipairs(frames) do
+			if f.cells and f.__shown == true and f.memberKey == key then
+				tall = f.__height
+			end
+		end
+		check("and the row is tall enough to hold it", (tall or 0) > 18, tostring(tall))
+	end
+
+	_G.C_Map, _G.GetZoneText, _G.GetSubZoneText = heldMap, heldZone, heldSub
+	clickButton(Family.L["Overview"])
+	Family.UI:Refresh()
 end)()
 
 print()

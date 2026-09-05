@@ -284,11 +284,27 @@ local SETS = {
 	},
 	{
 		id = "misc", label = L["Miscellaneous"],
+
+		-- Taller rows than every other set, because one column on it needs two lines.
+		--
+		-- A zone and a subzone do not fit on one: *Eastern Plaguelands* over *The Marris
+		-- Stead* is an ordinary pair and not a long one, and the German and French names are
+		-- longer again. Squeezing them onto a line means truncating the half that says which
+		-- continent you are on. So the set says how tall its rows are and the Where column
+		-- says it may wrap; nothing else on any set changes.
+		rowHeight = 30,
+
 		columns = {
-			{ key = "guild",  label = L["Guild"],       width = 160, justify = "LEFT" },
-			{ key = "hearth", label = L["Hearthstone"], width = 170, justify = "LEFT" },
-			{ key = "race",   label = L["Race"],        width = 100, justify = "LEFT" },
-			{ key = "class",  label = L["Class"],       width = 110, justify = "LEFT" },
+			-- Rewidened when Where arrived: the five below already used 580 of the 584 a
+			-- row has beside the member column, so the room came out of them rather than
+			-- off the edge. Guild gives the most because `UI:GuildLabel` stopped drawing
+			-- the realm on it, and the hearthstone because a bind location is a city name.
+			{ key = "guild",  label = L["Guild"],       width = 164, justify = "LEFT" },
+			{ key = "where",  label = L["Where"],       width = 130, justify = "LEFT",
+				wrap = true },
+			{ key = "hearth", label = L["Hearthstone"], width = 100, justify = "LEFT" },
+			{ key = "race",   label = L["Race"],        width = 70,  justify = "LEFT" },
+			{ key = "class",  label = L["Class"],       width = 80,  justify = "LEFT" },
 			-- World buffs banked in a Chronoboon, beside the other per-character facts
 			-- about a thing somebody is carrying. Forty pixels, which is what this set had
 			-- left of ROW_BUDGET and is more than a small number needs.
@@ -748,6 +764,31 @@ CELL.hearth = function(meta)
 	return Family.Names:Area(meta.hearthID, meta.hearth) or UNKNOWN
 end
 CELL.race = function(meta) return UI:RaceName(meta) end
+
+-- Where this character was when they last logged out, on two lines: the zone, and the subzone
+-- under it in grey.
+--
+-- Through `Names:Area` and not the recorded word, for the reason the hearthstone above goes
+-- through it: the word was written by whichever client read it, and a family is played across
+-- languages. The word is the fallback for a place this client has never heard of - a Northrend
+-- zone on an Era client - which is the honest answer rather than a wrong one.
+--
+-- **A subzone has no id.** `GetSubZoneText` answers with a word and there is nothing to look
+-- it up by, so that line is the word as recorded and reads in the language it was recorded in.
+-- That is a property of the data and is why the zone leads: the half that can be translated is
+-- the half that says where in the world this is.
+--
+-- §2.2: never seen is not nowhere. A character nobody has logged out on since this shipped has
+-- no answer here and says so.
+CELL.where = function(meta)
+	local zone = Family.Names:Area(meta.zoneID, meta.zone)
+	if not zone then return UNKNOWN end
+
+	local under = meta.subzone
+	if type(under) ~= "string" or under == "" or under == zone then return zone end
+
+	return zone .. "\n|cff888888" .. under .. "|r"
+end
 
 -- How many world buffs this character has banked, which is how many Supercharged Chronoboon
 -- Displacers are in their bags (Scanners/Bags.lua).
@@ -1575,6 +1616,13 @@ local function layOut(cells, columns)
 			cell:SetPoint("LEFT", x + 4, 0)
 			cell:SetWidth(width - 8)
 			cell:SetJustifyH(column.justify)
+
+			-- Whether this column's cell may run onto a second line.
+			--
+			-- Set on every row rather than once when the cell was made, because rows come
+			-- out of a pool: a cell that wrapped for one set would go on wrapping under
+			-- every set after it, which is the fault the width above is reset for.
+			cell:SetWordWrap(column.wrap and true or false)
 			cell:Show()
 			x = x + width
 		else
@@ -2199,7 +2247,7 @@ local function build(frame)
 		-- second copy of this that drifted from the first would be exactly the bug that
 		-- makes a sibling look like a different kind of thing (§6).
 		local function drawMember(member, isSibling)
-			local row = nextRow()
+			local row = nextRow(currentSet.rowHeight)
 			row.memberKey = member.key
 			row.memberName = member.meta.name or member.key
 			row.memberRealm = member.meta.realm

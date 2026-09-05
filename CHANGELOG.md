@@ -19,6 +19,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Miscellaneous says where each character logged out.** Zone on one line and subzone under it,
+  in your own language rather than in whichever one that character was played in - and shared
+  with a linked family alongside the hearthstone. Rows on that page are taller to hold it, and
+  the other columns gave up the width. A character has no answer here until they have been
+  played once since this update.
+
 - **The guild panel can show only the guildmates who run Family.** A third button beside
   *Online only*. It starts off, because in most guilds that list is very short and a panel that
   opened on two rows would look broken rather than honest - and your own characters are always

@@ -929,7 +929,7 @@ So an eighth set cannot simply be added. Three ways out, none of them chosen yet
 
 ---
 
-## 16. Where each character logged out
+## 16. Where each character logged out — DONE 2026-09-05
 
 **Received:** 2026-09-05, from Alberto.
 
@@ -958,6 +958,25 @@ changes every time somebody walks anywhere, so the same lookup on every zone cha
 different proposition entirely. Recording at **logout** — once a session — puts it back in the
 class the ceiling was chosen for.
 
-**Unmeasured, and it is one probe:** whether `GetZoneText` and `GetSubZoneText` still answer
-during `PLAYER_LOGOUT`, on each build. If they do not, the answer is to keep the current zone
-updated on `ZONE_CHANGED_NEW_AREA` and store the id only at logout.
+**Probed 2026-09-05: they both answer**, and what is written then reaches the saved variables -
+*Searing Gorge* and *Pyrox Flats* came back from a live client. So it is a logout handler and
+not a zone watcher, which is the same record for far less work.
+
+**Built the same day.** Word and id together as the hearthstone does it, shown through
+`Names:Area`, shared in the `character` category, and drawn on Miscellaneous.
+
+Two things about it were decided by measurement rather than taste:
+
+- **The row had no room.** The five Miscellaneous columns already used 580 of the 584 a row has
+  beside the member column, so the width came out of them - Guild gives the most because
+  `UI:GuildLabel` stopped drawing the realm on it. The check that every cell fits its column is
+  what settled the numbers; two passes of it moved Guild back up and the hearthstone down.
+- **Zone and subzone do not fit on one line**, said from play and true of far longer names than
+  the example. So the set declares a taller row and the column declares that it may wrap. Both
+  are per-set and both are applied on every row, because rows come from a pool and a cell that
+  wrapped once would go on wrapping under every set after it.
+
+**Left open:** the id costs a walk of every area id and is paid when the zone word has changed.
+That guard is the hearthstone's, and it is weaker here - a hearthstone moves when somebody
+decides to live somewhere else, and a logout zone changes far more often.
+`C_Map.GetBestMapForUnit` would answer without a search and is worth probing if it ever shows.

@@ -576,6 +576,7 @@ Family.locales.esES = {
 	["unknown"] = "desconocido",
 	["Family users"] = "Con Family",
 	["All guildmates"] = "Toda la hermandad",
+	["Where"] = "Dónde",
 	["Everyone"] = "Todos",
 	["Update now"] = "Actualizar",  -- 10
 	["  guild: %s"] = "  hermandad: %s",
