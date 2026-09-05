@@ -146,12 +146,15 @@ That one did nothing: this owner does not go through `OnEnter`.
 
 1. A forced `SetHyperlink` to a *different* item repaints with the pointer held still, and is
    then put back.
-2. Hooking `OnTooltipSetItem` and hovering without moving, the hook does not fire again - and it
-   does fire when the pointer moves to another item, so the measurement is a real nothing rather
-   than a hook that never ran.
+2. Hooking `OnTooltipSetItem` and holding still over **a bag item**, the hook fires over and
+   over: that owner repaints on its own, every frame or close to it.
 
-   So the tooltip is not being repainted on a timer. What put our change back was the owner
-   reacting to the item having changed.
+   The first reading of this said the opposite, and it was wrong because the pointer was not
+   over a bag item at all. Corrected the same hour, and the correction changes the explanation
+   rather than the answer: what put our forced change back was not the owner *reacting* to
+   anything, it was simply its next repaint arriving. Which also means how often a tooltip
+   repaints is a fact about whoever owns it, not about the client - so a design that leans on
+   it would work over Bagnon's bags and not over a frame that paints once.
 3. Re-setting **the same** item on `MODIFIER_STATE_CHANGED` repaints and *stays*:
 
         /run local g,f=GameTooltip,CreateFrame("Frame")
@@ -161,8 +164,12 @@ That one did nothing: this owner does not go through `OnEnter`.
 **So the shape is: never replace what the tooltip is showing - ask it to show the same thing
 again, and let Family's existing `OnTooltipSetItem` hook decide which reading to add.** The
 owner has nothing to correct because nothing it cares about changed, and Family does not have to
-own a frame it did not create. The client was willing all along; what would have failed is the
-version that fought for the item.
+own a frame it did not create.
+
+And it is the right shape whichever kind of owner is underneath. Where the owner repaints on its
+own the hook would run anyway and the re-set merely coincides with one of its repaints; where it
+paints once, the re-set is the only thing that makes the reading change at all. Leaning on the
+owner's repainting would have worked on the bags it was measured over and nowhere else.
 
 ---
 
