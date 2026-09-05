@@ -102,6 +102,30 @@ next probe is to do it and look:
 With the mouse held still over a bag item. If the tooltip changes to Linen Cloth without the
 pointer moving, the modifier can do the same thing.
 
+**That probe was wrong and errored, 2026-09-05.** Two faults, both mine, and the second is the
+interesting one.
+
+`GetOwner()` came back nil - *Usage: GameTooltip:SetOwner(region)* - because typing `/run` puts
+the cursor in the chat box and the mouse is no longer over anything, so there is no owner left
+to re-use. And `|Hitem:2589|h` does not survive the chat box: the error's own `msg` shows the
+bar doubled to `||`, because a typed pipe is escaped. `SetHyperlink("item:2589")` needs no bars
+at all.
+
+Underneath both: **this cannot be measured from a command line**, because the gesture being
+measured is *hold the mouse still and press a key*, and reaching a command line means moving
+it. So it has to be armed first and triggered after:
+
+    /run local f=CreateFrame("Frame") f:RegisterEvent("MODIFIER_STATE_CHANGED")
+        f:SetScript("OnEvent",function(_,_,k,d) local o=GameTooltip:GetOwner()
+        if d==1 and o then GameTooltip:SetOwner(o,"ANCHOR_RIGHT")
+        GameTooltip:SetHyperlink("item:2589") GameTooltip:Show()
+        print("redrawn onto",o:GetName()) end end)
+        print("armed: hover an item, then press ctrl")
+
+Then hover a bag item and press CTRL without moving. Repainting to Linen Cloth with the pointer
+still is the answer this entry needs; a flicker, a close, or nothing at all is the other answer
+and means the feature has to be designed around the client rather than with it.
+
 ---
 
 ## 3. Filters and sorting on every panel that lists characters
