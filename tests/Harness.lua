@@ -12961,8 +12961,13 @@ print("the login line about crafting cooldowns")
 	-- when the counting was fixed; this holds it from the notice's, which is where naming
 	-- the cooldowns could have let one in through the back door.
 	do
+		-- A Super Snapper beside the shaker: it has a cooldown, it makes something, and
+		-- it is not a crafting cooldown - what it makes is a reagent in nothing. It is
+		-- here so that the filter has something to exclude rather than being a line
+		-- nothing tests.
 		Family.Database:SetMeta("Weaver-Fire Maw", {
-			itemCooldowns = { { id = 15846 } }, cooldownItems = { [15846] = 165 } })
+			itemCooldowns = { { id = 15846 }, { id = 9328 } },
+			cooldownItems = { [15846] = 165, [9328] = 202 } })
 
 		local withItem = Family.UI:CooldownNotice()
 		local line
@@ -12975,15 +12980,48 @@ print("the login line about crafting cooldowns")
 		check("their craft is named", line and line:find("Transmute 1", 1, true) ~= nil,
 			tostring(line))
 
-		-- Named by the profession that makes it, because the client here has never been
-		-- told what item 15846 is called - which is the ordinary case at login for an
-		-- alt's bag, and the reason this does not simply print the placeholder.
-		check("and the item beside it, by the profession that makes it where the client "
-			.. "cannot name it",
-			line and line:find(Family:ProfessionName(165), 1, true) ~= nil,
-			tostring(line))
-		check("rather than by a number nobody can read",
-			line and line:find("15846", 1, true) == nil, tostring(line))
+		-- Until the client has been told what item 15846 is, all this line can honestly
+		-- say is the id. It does not invent a profession to stand in for the name: in a
+		-- list where a shared timer is already named after its profession, that word
+		-- would have meant two different things a column apart.
+		check("and the item beside it, by the only name the client has given so far",
+			line and line:find("15846", 1, true) ~= nil, tostring(line))
+
+		-- Which is why it is asked for early. An item's name is a fact about this
+		-- session and not about the account - an alt's shaker is in that alt's bags -
+		-- so the first ask gets a placeholder and a promise. The notice speaks eight
+		-- seconds in and asks two seconds in, and that gap is the whole mechanism.
+		do
+			local asked = {}
+			local held = C_Item.RequestLoadItemDataByID
+			C_Item.RequestLoadItemDataByID = function(id) asked[id] = true end
+
+			local count = Family.UI:WarmCooldownNames()
+			check("the names are asked for before the line is written", asked[15846] == true,
+				tostring(count) .. " asked")
+			check("and only about the items this notice could ever name",
+				asked[9328] == nil, tostring(count) .. " asked")
+
+			C_Item.RequestLoadItemDataByID = held
+		end
+
+		-- And when the answer lands, the line says the thing's name.
+		do
+			ITEM_NAMES[15846] = "Salt Shaker"
+			fire("GET_ITEM_INFO_RECEIVED", 15846, true)
+
+			local answered = Family.UI:CooldownNotice()
+			local said
+			for index = 2, #(answered or {}) do
+				if answered[index]:find("Weaver", 1, true) then said = answered[index] end
+			end
+			check("and once the client answers, it is named rather than numbered",
+				said and said:find("Salt Shaker", 1, true) ~= nil, tostring(said))
+			check("with the number gone from the line", said
+				and said:find("15846", 1, true) == nil, tostring(said))
+
+			ITEM_NAMES[15846] = nil
+		end
 
 		Family.Database:SetMeta("Weaver-Fire Maw", {
 			itemCooldowns = Family.CLEAR, cooldownItems = Family.CLEAR })

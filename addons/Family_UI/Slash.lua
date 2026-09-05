@@ -700,26 +700,15 @@ function UI:CooldownNotice()
 			local named = {}
 			for _, group in ipairs(Family.Cooldowns:Crafting(meta)) do
 				if group.ready then
-					local label = tostring(group.label)
-
-					-- The panel can afford a placeholder because it asks the
-					-- client again and redraws when the answer arrives. A line
-					-- printed once cannot, and at login an alt's item is often
-					-- not in the cache at all - it is in that alt's bags, not in
-					-- the bags of whoever is being played. `Names:Item` says
-					-- outright whether it knew, and where it did not the
-					-- profession that makes the thing is the true fact left:
-					-- *Cooking* is worth having and *Item #15846* is not.
-					if group.kind == "item" and group.item then
-						local name, known = Family.Names:Item(group.item)
-						if known then
-							label = name
-						elseif group.profession then
-							label = Family:ProfessionName(group.profession)
-						end
-					end
-
-					named[#named + 1] = label
+					-- Whatever `Crafting` called it, and nothing worked out
+					-- again here. An earlier draft filled an unresolved item
+					-- name with the profession that makes the item, and it was
+					-- wrong twice over: it printed a fact this line had not
+					-- read, and in a list where a shared timer is *already*
+					-- named after a profession the same word would have meant
+					-- two different things a column apart. `WarmCooldownNames`
+					-- below is the answer instead - ask early, print late.
+					named[#named + 1] = tostring(group.label)
 				end
 			end
 
@@ -736,8 +725,60 @@ function UI:CooldownNotice()
 	return lines
 end
 
+-- Ask the client for the item names this notice is about to need.
+--
+-- An item's name is not a fact about the account, it is a fact about this **session**: the
+-- client answers for what it has loaded, and an alt's salt shaker is in that alt's bags and
+-- not in the bags of whoever is being played. So the first thing to ask for it gets a
+-- placeholder and a promise, which is what `Names:Item` is built around - it requests the item
+-- and calls back when the answer lands.
+--
+-- A panel can live with that: it draws a placeholder and redraws. A line printed once cannot,
+-- and it must not invent something to print instead. What it can do is ask sooner than it
+-- speaks, which costs nothing and needs no fallback: the request goes out early and the answer
+-- is there by the time the line is written.
+--
+-- Crafts need none of this. A recipe carries the words it was scanned with, and a shared
+-- timer is named after its profession, which is a table this addon ships.
+function UI:WarmCooldownNames()
+	local asked = 0
+
+	-- Read straight off the records, through neither `Cooldowns:Ready` nor
+	-- `Cooldowns:Crafting`. Both of those answer a different question and ask the client for
+	-- these names as a side effect of grouping - so the first two versions of this were
+	-- untestable: emptying the loop entirely changed nothing a check could see, because the
+	-- call that fetched the members had already done the asking. A warm-up that cannot be
+	-- told apart from the thing it is warming is not one.
+	--
+	-- Every member with a crafting item rather than only those with one ready, because that
+	-- is what is cheap to know here without grouping, and asking about a handful of ids the
+	-- client then caches costs nothing.
+	for key, member in pairs(Family.Database:Members()) do
+		if key ~= Family:CurrentMember() then
+			for _, entry in ipairs((member.meta or {}).itemCooldowns or {}) do
+				-- The same filter the panel and the notice inherit, asked here rather
+				-- than restated: a Chronoboon is not one of these and there is no
+				-- reason to ask the client about it.
+				if entry.id and Family.Cooldowns:IsCraftingItem(entry.id) then
+					Family.Names:Item(entry.id)
+					asked = asked + 1
+				end
+			end
+		end
+	end
+
+	return asked
+end
+
 Family:OnDatabaseReady("cooldowns.notice", function()
 	Family:RegisterEvent("PLAYER_ENTERING_WORLD", "cooldowns.notice", function()
+		-- Well before the line is written, and not on the same beat: the whole point is
+		-- to leave the client time to answer.
+		Family:After(2, "cooldowns.warm", function()
+			if FamilyDB.cooldownNotice == false then return end
+			UI:WarmCooldownNames()
+		end)
+
 		Family:After(8, "cooldowns.notice", function()
 			if FamilyDB.cooldownNotice == false then return end
 

@@ -160,7 +160,8 @@ is a decision rather than an afternoon of archaeology.
   character's realm where they are not on the one you are playing, and marks a character on
   the other side. Salt shakers and the other crafting items are announced now too, beside the
   transmutes and the mooncloth - the Crafting table has always shown them and the line never
-  did.
+  did. Their names are asked of the game a few seconds before the line is written, so an item
+  that belongs to a character you are not playing is named rather than numbered.
 
 - **The login notice counted recipes instead of cooldowns.** An alchemist who has learned three
   transmutes has one cooldown, not three - the game puts every transmute on the same timer - and
