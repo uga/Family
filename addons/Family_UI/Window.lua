@@ -925,6 +925,37 @@ function UI:NameOf(entry, clashes)
 	return label
 end
 
+-- A guild's key, as something to put on a line.
+--
+-- The key is the guild's name and its realm joined with a hyphen - `Family/Guild.lua` `Key` -
+-- and it is ours alone; it never crosses the wire. Drawn raw it carries a realm that the
+-- settled rule says a reader on that realm should not be shown, and it is long with it: a guild
+-- called *Loch Modan Yachting Club* on the realm being played came out as *Loch Modan Yachting
+-- Club-...* in a column 160 pixels wide, which loses the end of the name as well as the realm.
+--
+-- The realm comes off by **matching a realm we can name**, never by cutting at a hyphen. A
+-- guild's name may contain one, and nothing here says a realm may not, so the only safe cut is
+-- against the realm being played. A guild anywhere else keeps its whole key - which is the same
+-- answer `NameOf` gives a character, and for the same reason.
+function UI:GuildLabel(key)
+	if type(key) ~= "string" then return key end
+
+	local here = Family:TryCall(GetRealmName)
+	if type(here) ~= "string" or here == "" then return key end
+
+	-- As written and with the spaces taken out, because the key is built from `GetRealmName`
+	-- and a realm written "Fire Maw" is addressed "FireMaw". `Family/Guild.lua` was caught by
+	-- that difference already and says so beside its own key.
+	for _, realm in ipairs({ here, (here:gsub("%s+", "")) }) do
+		local tail = "-" .. realm
+		if #key > #tail and key:sub(-#tail) == tail then
+			return key:sub(1, #key - #tail)
+		end
+	end
+
+	return key
+end
+
 -- The same for a list: which names are said more than once, so that those carry their realm
 -- whatever realm they are on. `NameOf` adds it to anybody who is not on this realm anyway.
 function UI:NamesOf(entries)

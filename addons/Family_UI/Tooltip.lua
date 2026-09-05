@@ -110,7 +110,7 @@ local function possessionLines(tooltip, itemID)
 	end
 
 	for _, guild in ipairs(guilds) do
-		lines[#lines + 1] = { "|cff40c040" .. guild.key .. "|r",
+		lines[#lines + 1] = { "|cff40c040" .. UI:GuildLabel(guild.key) .. "|r",
 			string.format(L["%d guild bank"], guild.count),
 			nil, nil, nil, 0.8, 0.8, 0.8 }
 	end

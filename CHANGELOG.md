@@ -91,6 +91,15 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **The possessions search says whose character it is.** Searching across the whole family, a
+  character belonging to a family you have linked was listed exactly like one of your own - so
+  a count beside a name read as *I can go and get that* when you cannot. They now carry their
+  family, the way the item tooltip has always shown it.
+
+- **A guild bank stops carrying a realm you are standing on.** *Loch Modan Yachting Club* on
+  your own realm was drawn with its realm on the end and cut to fit, losing the end of the name
+  as well. A guild on another realm still says which, exactly as a character does.
+
 - **The professions panel no longer explains a sort order it is not using.** Searching the
   whole family put the sort buttons away and left their caption behind, so *Hardest first* sat
   over a list of recipes in alphabetical order. The caption goes with its buttons.

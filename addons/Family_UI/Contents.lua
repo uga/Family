@@ -478,14 +478,20 @@ local function build(frame)
 		r.icon:SetSize(18, 18)
 		r.icon:SetPoint("LEFT", 4, 0)
 
+		-- Three columns sharing one row, and the numbers are a share rather than three
+		-- independent decisions: the item, who has it, and where it is. Forty pixels moved
+		-- from the item to the owner on 2026-09-05, because the owner column now has to
+		-- hold a linked family's name after the character's, and because a guild's name was
+		-- being cut in it. The item names that pay for it are the long ones - a recipe's
+		-- full title - and they lose their tail rather than a name losing whose it is.
 		r.text = r:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		r.text:SetPoint("LEFT", 26, 0)
-		r.text:SetWidth(260)
+		r.text:SetWidth(220)
 		r.text:SetJustifyH("LEFT")
 
 		r.who = r:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-		r.who:SetPoint("LEFT", 290, 0)
-		r.who:SetWidth(160)
+		r.who:SetPoint("LEFT", 254, 0)
+		r.who:SetWidth(200)
 		r.who:SetJustifyH("LEFT")
 
 		r.where = r:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
@@ -643,8 +649,22 @@ local function build(frame)
 					r.text:SetText(string.format("%s |cffffd700%d|r", item.name,
 						owner.total))
 
+					-- Whose character it is, where it is not one of ours.
+					--
+					-- `Family/Index.lua` has put the family on every owner it returns since
+					-- linking was built, and the item tooltip has drawn it for as long -
+					-- this panel had the field and ignored it, so a linked family's
+					-- character was drawn exactly like one of your own. The tooltip's reason
+					-- is this one: a count against a name is read as *I can go and get
+					-- that*, and for somebody else's character that is not true. Same
+					-- string as the tooltip, so the two cannot come to word it differently.
 					local red, green, blue = UI:ClassColour(owner.classFile)
-					r.who:SetText(owner.label or owner.name)
+					local who = owner.label or owner.name
+					if owner.familyName then
+						who = string.format(L["%s |cff9d9d9dof %s|r"], who,
+							tostring(owner.familyName))
+					end
+					r.who:SetText(who)
 					r.who:SetTextColor(red, green, blue)
 
 					local places = {}
@@ -681,7 +701,7 @@ local function build(frame)
 						or "Interface\\Icons\\INV_Misc_QuestionMark")
 					r.text:SetText(string.format("%s |cffffd700%d|r", item.name,
 						guild.count))
-					r.who:SetText("|cff40c040" .. guild.key .. "|r")
+					r.who:SetText("|cff40c040" .. UI:GuildLabel(guild.key) .. "|r")
 					r.who:SetTextColor(1, 1, 1)
 					r.where:SetText(L["|cff888888guild bank|r"])
 				end

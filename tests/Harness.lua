@@ -16962,6 +16962,66 @@ print("an alias for a linked family")
 	check("and an item tooltip says the alias too", onTooltip == "Zia Pina",
 		tostring(onTooltip))
 
+	-- And the possessions panel, which had the field and drew the bare name anyway. A count
+	-- against a name is read as "I can go and get that", and for somebody else's character
+	-- that is not true - which is the reason the tooltip has said whose it is all along.
+	--
+	-- The whole label in one string, realm and all, because that is what a reader sees on the
+	-- line: the two halves found separately could be two different rows.
+	-- A guild bank on the realm being played, holding the same cloth, so that the panel has a
+	-- guild row to draw at all. Long on purpose: the report was a name cut in the middle by a
+	-- realm the reader is already standing on. Without one of these here, putting the raw key
+	-- back in the panel failed nothing - the check for it was measuring an empty list.
+	FamilyDB.guilds = FamilyDB.guilds or {}
+	FamilyDB.guilds["Loch Modan Yachting Club-Fire Maw"] = {
+		tabs = { { slots = { { id = 2589, count = 12 } } } },
+	}
+	Family.Index:Invalidate()
+
+	Family.UI:ShowTab("contents")
+	local contentsEveryoneAgain = _G.FamilyContentsEveryone
+	check("the possessions panel is there to ask", contentsEveryoneAgain ~= nil)
+
+	if contentsEveryoneAgain then
+		contentsEveryoneAgain.__scripts.OnClick(contentsEveryoneAgain)
+		_G.FamilyContentsSearch:SetText("Linen")
+		Family.UI:Refresh()
+
+		check("the possessions search says whose character it is",
+			visibleText("Soulsock |cff888888(@PyrewoodVillage)|r |cff9d9d9dof Zia Pina|r"))
+
+		-- The whole label with its colour closed, so that a realm left on the end of it
+		-- would put a character between the name and the "|r" and fail this.
+		check("and a guild bank on this realm is not made to carry the realm",
+			visibleText("|cff40c040Loch Modan Yachting Club|r"))
+
+		_G.FamilyContentsSearch:SetText("")
+		contentsEveryoneAgain.__scripts.OnClick(contentsEveryoneAgain)
+	end
+
+	FamilyDB.guilds["Loch Modan Yachting Club-Fire Maw"] = nil
+	Family.Index:Invalidate()
+
+	-- A guild's key is its name and its realm joined with a hyphen, and it was drawn raw into
+	-- a column 160 pixels wide - so "Loch Modan Yachting Club" on the realm being played came
+	-- out cut, losing the end of the name to a realm the reader is on. Reported from play.
+	--
+	-- The realm comes off by matching a realm we can name and never by cutting at a hyphen,
+	-- which is what the fourth of these is about: a guild may have one in its name.
+	check("a guild on the realm being played does not carry it",
+		Family.UI:GuildLabel("Loch Modan Yachting Club-Fire Maw")
+			== "Loch Modan Yachting Club",
+		tostring(Family.UI:GuildLabel("Loch Modan Yachting Club-Fire Maw")))
+	check("written either way, because a key is built from GetRealmName and a whisper is not",
+		Family.UI:GuildLabel("Loch Modan Yachting Club-FireMaw")
+			== "Loch Modan Yachting Club")
+	check("and a guild anywhere else keeps its realm, as a character does",
+		Family.UI:GuildLabel("Loch Modan Yachting Club-Thunderstrike")
+			== "Loch Modan Yachting Club-Thunderstrike")
+	check("and a hyphen in the guild's own name survives",
+		Family.UI:GuildLabel("Half-Life-Fire Maw") == "Half-Life",
+		tostring(Family.UI:GuildLabel("Half-Life-Fire Maw")))
+
 	-- **Never sent.** It is our name for their family and not theirs, and the check is on
 	-- what actually leaves rather than on a comment saying it does not.
 	local offering = Family.Wide:Offering(link)
@@ -17005,6 +17065,48 @@ print("what a linked family may be granted")
 		local text = handle:read("*a")
 		handle:close()
 		return text
+	end
+
+	------------------------------------------------------------------------------------
+	-- The possessions search's three columns, added up
+	--
+	-- Item, who has it, where it is - three font strings on one row, and the room they get
+	-- is four numbers written in four places. Forty pixels moved from the first to the
+	-- second on 2026-09-05 so that a linked family's name could follow a character's and a
+	-- guild's name would stop being cut, and moving a number in a row of numbers that have
+	-- to add up is exactly how a column comes to be drawn over the one beside it.
+	--
+	-- Read out of the panel's own source, the way the consent grid's are below, because the
+	-- alternative is a check that agrees with a constant copied into this file - which
+	-- agrees with itself and with nothing else.
+	------------------------------------------------------------------------------------
+
+	local contents = slurp("addons/Family_UI/Contents.lua")
+	check("the possessions panel is where this check expects it", contents ~= nil)
+
+	local textAt = tonumber((contents or ""):match('r%.text:SetPoint%("LEFT", (%d+), 0%)'))
+	local textWide = tonumber((contents or ""):match("r%.text:SetWidth%((%d+)%)"))
+	local whoAt = tonumber((contents or ""):match('r%.who:SetPoint%("LEFT", (%d+), 0%)'))
+	local whoWide = tonumber((contents or ""):match("r%.who:SetWidth%((%d+)%)"))
+	local whereAt = tonumber((contents or ""):match('r%.where:SetPoint%("RIGHT", %-(%d+), 0%)'))
+	local whereWide = tonumber((contents or ""):match("r%.where:SetWidth%((%d+)%)"))
+
+	check("and still lays its result row out in the six numbers this adds up",
+		textAt and textWide and whoAt and whoWide and whereAt and whereWide)
+
+	if textAt and textWide and whoAt and whoWide and whereAt and whereWide then
+		local room = (Family.UI.CONTENT_W or 0) - (Family.UI.SCROLLBAR_W or 0)
+
+		check("the item column stops before the owner column starts",
+			textAt + textWide <= whoAt,
+			(textAt + textWide) .. " against " .. whoAt)
+
+		-- The rightmost is anchored to the right-hand edge, so where it starts depends on
+		-- how wide the list is - which is the panel's content less its scroll bar.
+		local whereFrom = room - whereAt - whereWide
+		check("and the owner column stops before the where column starts",
+			room > 0 and whoAt + whoWide <= whereFrom,
+			(whoAt + whoWide) .. " against " .. whereFrom .. " in " .. room)
 	end
 
 	local source = slurp("addons/Family_UI/Wide.lua")

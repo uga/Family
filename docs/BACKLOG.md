@@ -400,7 +400,11 @@ around the `spare` count and `UI.__openCrafters`. Guild crafters get three by th
 comment there says why: the line does not wrap, and eight names ran off the edge mid-name, which
 lost the count as well as the names.
 
-**Not started.** The possessions three are one slice: they are all the same list, and doing the
+**Whose it is, and how long a name may be: done 2026-09-05.** `UI:GuildLabel` and the family
+after the character's name, with forty pixels moved from the item column to pay for both and a
+gate that adds the three columns up out of the panel's source.
+
+**Left: the ordering**, on both panels. The possessions three are one slice: they are all the same list, and doing the
 ordering without the naming would mean laying that column out twice.
 
 ---
