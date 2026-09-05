@@ -153,6 +153,15 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Character names are coloured by class where the whole family is listed.** The reputations
+  and quests pages and the professions search used to draw every name in one gold, which for a
+  family of twenty is a list you have to read rather than glance at.
+
+- **A name's realm no longer disappears when you hover it.** On the whole-family reputations and
+  quests pages the row said *Eccebombo (@Soulseeker)* and the tooltip beside it said only
+  *Eccebombo*, so the one thing telling two characters of one name apart went missing exactly
+  when you asked for more detail.
+
 - **A quest's tooltip now shows that character's progress through it.** Hovering a quest said
   *You are on this quest* and listed every requirement unmarked, whoever the row belonged to -
   the game describes a quest as it stands for the character you are playing, and on this panel

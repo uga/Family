@@ -19359,7 +19359,17 @@ print("the family's reputations, as factions rather than as members")
 	-- Matched through the client's own sentence rather than the English word in it: this
 	-- addon is read in five languages and a needle typed in one of them finds nothing in
 	-- the other four.
-	local moreSaid = string.format(Family.L["|cff888888and %d more|r"], 1)
+	-- Counted out of the fixture rather than written here. It said 1, and adding a fifth
+	-- member to that faction turned this check red for a reason that had nothing to do with
+	-- what it is about - a number in a check that the fixture decides belongs to the fixture.
+	local onThorium = 0
+	for _, member in ipairs(ours) do
+		for _, entry in ipairs(member.reps) do
+			if entry.id == 59 then onThorium = onThorium + 1 end
+		end
+	end
+
+	local moreSaid = string.format(Family.L["|cff888888and %d more|r"], onThorium - 3)
 
 	-- By what it carries rather than by where it sits, for the reason the fold-back row
 	-- below carries: a row taken from a growing pool is last in `frames` the first time it
@@ -19510,6 +19520,114 @@ print("the family's reputations, as factions rather than as members")
 	clickButton("Whole family")
 	Family.UI:Refresh()
 	for _, member in ipairs(ours) do Family.Database:Forget(member.key) end
+end)()
+
+print()
+print("a member's name, drawn the same way wherever this panel says it")
+
+-- Two things asked for from play 2026-09-05 off one screenshot of the whole family's
+-- reputations, and they turn out to be one thing.
+--
+-- **Colour the names by class.** Twenty names in one gold is a list nobody can pick a member
+-- out of, and the summary has coloured its own for as long as it has had rows.
+--
+-- **The tooltip drops the realm.** The row said *Eccebombo (@Soulseeker)* and the tooltip
+-- beside it said *Eccebombo*, because the row asked `UI:NameOf` and the fallback built
+-- `held.name` by hand. L-052's shape: two readers of one fact, one right, and the wrong one
+-- silent because a bare name looks like an answer.
+--
+-- A fixture of its own rather than more members in the block above. Rows come out of a pool
+-- that grows, and one extra person in a faction that block counts makes the panel draw a row
+-- it has never drawn - which is appended to `frames` rather than sitting with the rows it was
+-- drawn beside, so the walk that reads a faction's block steps straight past it. Measured
+-- twice: it turned *clicking that shows them* red while the panel drew the name perfectly.
+-- Everything here finds its row by what the row says, never by walking a block.
+;(function()
+	-- White where no class was recorded, which is what makes the colour a reading of the
+	-- record rather than a decoration. Checked before anything is drawn, because a panel
+	-- that used the default everywhere would look exactly like one that used the class.
+	local mage = Family.UI:ClassMarkup("MAGE")
+	local none = Family.UI:ClassMarkup(nil)
+	check("a class Family knows has a colour of its own", mage ~= none, mage)
+	check("and one it does not is left white", none == "|cffffffff", none)
+
+	local roster = {
+		{ key = "Tinta-Fire Maw", name = "Tinta", realm = "Fire Maw", classFile = "MAGE" },
+		-- Somewhere else, so the name has a realm to carry and the tooltip has something
+		-- to lose.
+		{ key = "Faraway-Thunderstrike", name = "Faraway", realm = "Thunderstrike",
+			classFile = "MAGE" },
+	}
+
+	for _, member in ipairs(roster) do
+		Family.Database:SetMeta(member.key, { name = member.name, realm = member.realm,
+			level = 60, classFile = member.classFile, faction = "Alliance" })
+		Family.Database:SetPayload(member.key, { reputations = {
+			{ id = 909, name = "Colour Guard", category = "Other", standing = 5,
+				value = 100, maximum = 1000 },
+		} })
+	end
+
+	Family.UI:Show()
+	Family.UI:ShowTab("character")
+	clickButton("Reputations")
+	Family.UI:Refresh()
+
+	local function rowNaming(needle)
+		for _, f in ipairs(frames) do
+			local middle = type(f.middle) == "table" and f.middle.__text
+			if f.__shown ~= false and type(middle) == "string"
+				and middle:find(needle, 1, true) then
+				return f
+			end
+		end
+	end
+
+	-- The whole family switch is a toggle and the block above leaves it wherever it left
+	-- it, so it is driven until the panel is showing what this block is about. A check that
+	-- depends on the order this file happens to run in goes red one day for the wrong
+	-- reason - the block above says so about itself, in the same words.
+	if not rowNaming("Faraway") then
+		clickButton("Whole family")
+		Family.UI:Refresh()
+	end
+
+	local here, away = rowNaming("Tinta"), rowNaming("Faraway")
+	check("both of them are drawn on the faction", here ~= nil and away ~= nil)
+
+	check("a name is painted in its class's colour",
+		here and here.middle.__text:find(mage, 1, true) ~= nil,
+		here and here.middle.__text)
+
+	-- The settled realm rule, which the row already kept.
+	check("and a character on another realm carries it",
+		away and away.middle.__text:find("Thunderstrike", 1, true) ~= nil,
+		away and away.middle.__text)
+	check("while one on the realm being played does not",
+		here and here.middle.__text:find("Fire Maw", 1, true) == nil,
+		here and here.middle.__text)
+
+	-- The half that was wrong. The client describes no faction row, so what a hover shows
+	-- is the row's own lines - and those were being built from the bare name.
+	if away then
+		GameTooltip.__shownAs = nil
+		wipe(GameTooltip.__lines)
+		away.__scripts.OnEnter(away)
+
+		local said = ""
+		for _, line in ipairs(GameTooltip.__lines) do
+			said = said .. " " .. tostring(line[1]) .. " " .. tostring(line[2])
+		end
+
+		check("hovering the row says who it is about", said:find("Faraway", 1, true) ~= nil,
+			said)
+		check("with the realm the row itself carries, which it used to drop",
+			said:find("Thunderstrike", 1, true) ~= nil, said)
+		check("and the faction it is about", said:find("Colour Guard", 1, true) ~= nil, said)
+	end
+
+	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
+	Family.UI:Refresh()
 end)()
 
 --------------------------------------------------------------------------------------------
@@ -20249,6 +20367,34 @@ print("narrowing a list of characters")
 
 		typeInto("silver rod")
 		check("a recipe somebody knows is found", drawnText("Silver Rod"))
+
+		-- The crafter's name in the colour of their class, asked for from play
+		-- 2026-09-05 of a search fifteen recipes long whose every name was one gold.
+		-- `Recipes.lua` has carried `classFile` on these entries since they were
+		-- written and nothing had ever read it.
+		--
+		-- The expected colour is worked out from the record rather than written here,
+		-- so this says *their class's colour* and not *this particular blue*.
+		do
+			local wanted = Family.UI:ClassMarkup(
+				(Family.Database:Meta(Family:CurrentMember()) or {}).classFile)
+
+			local note
+			for _, f in ipairs(frames) do
+				local text = type(f.text) == "table" and f.text.__text
+				if f.__shown ~= false and type(text) == "string"
+					and text:find("Silver Rod", 1, true)
+					and type(f.note) == "table" then
+					note = f.note.__text
+				end
+			end
+
+			check("with whoever can make it named beside it", note ~= nil
+				and note ~= "", tostring(note))
+			check("in the colour of their class",
+				note and note:find(wanted, 1, true) ~= nil,
+				tostring(note))
+		end
 
 		-- A class nobody with that recipe has. The recipe row is left with nobody who
 		-- passes, and a row naming a recipe and nobody who can make it answers the

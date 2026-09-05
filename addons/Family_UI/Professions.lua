@@ -884,9 +884,18 @@ local function build(frame)
 				local names, spare = {}, 0
 				for _, who in ipairs(UI:NamesOf(recipe.members)) do
 					if #names < 4 then
+						-- The class's colour, asked for from play 2026-09-05 of a
+						-- search fifteen recipes long whose every name was one
+						-- gold. `Recipes.lua` has carried `classFile` on these
+						-- entries since they were written; nothing had read it.
+						--
+						-- Closed before the rank rather than around it, so the
+						-- grey of the number is not what a `|r` returns to.
+						local shown = UI:ClassMarkup(who.classFile) .. who.label
+							.. "|r"
 						names[#names + 1] = who.rank
-							and string.format("%s |cff888888%d|r", who.label, who.rank)
-							or who.label
+							and string.format("%s |cff888888%d|r", shown, who.rank)
+							or shown
 					else
 						spare = spare + 1
 					end
@@ -948,6 +957,7 @@ local function build(frame)
 
 					for _, who in ipairs(recipe.members) do
 						everybody[#everybody + 1] = { label = who.label or who.name,
+							classFile = who.classFile,
 							rank = who.rank, cooldown = who.cooldown }
 					end
 
@@ -974,8 +984,17 @@ local function build(frame)
 						line.icon:SetTexture(nil)
 
 						line.text:SetWidth(UI:ListWidth(scroll) - NOTE_WIDTH - 10 - ROW)
-						line.text:SetText(string.format("        %s%s",
-							tostring(who.label or "?"),
+						-- Ours by their class, the guild's left as they were: a
+						-- guildmate arrives with no class recorded, and colouring
+						-- them by a class nobody knows would paint every one of
+						-- them white - which reads as a claim rather than as the
+						-- absence of one.
+						local shown = tostring(who.label or "?")
+						if not who.guild then
+							shown = UI:ClassMarkup(who.classFile) .. shown .. "|r"
+						end
+
+						line.text:SetText(string.format("        %s%s", shown,
 							who.rank and string.format(" |cff888888%d|r", who.rank) or ""))
 
 						-- A cooldown displaces whatever this column would have said,

@@ -22,6 +22,33 @@ local L = Family.L
 
 local ROW = 16
 
+-- A member's name, as every list on this panel says it.
+--
+-- The realm where they are not on the one being played and the side where it is not ours, both
+-- from `UI:NameOf`; the family where the character is somebody else's; and the colour of their
+-- class, asked for from play 2026-09-05 of a reputations list twenty names long in one gold.
+--
+-- **One function because there were two**, byte for byte - one in the reputations section and
+-- one in the quests section - and because the fallback lines beside them were a third idea of
+-- the same thing. Those built `held.name` by hand, so hovering a character whose name carries a
+-- realm produced a tooltip that had dropped it: the row said *Eccebombo (@Soulseeker)* and the
+-- tooltip said *Eccebombo*. Reported from play the same day, and it is L-052's shape rather
+-- than a typo - two readers of one fact, only one of them right, and the wrong one silent.
+--
+-- The colours nest. `NameOf` writes its realm and side in grey and closes them, and a `|r`
+-- returns to the colour that was open rather than to nothing, so the name either side of them
+-- stays its class's.
+local function personLabel(entry)
+	local meta = entry.meta or {}
+	local who = UI:ClassMarkup(meta.classFile) .. UI:NameOf(meta) .. "|r"
+
+	if entry.familyName then
+		who = string.format(L["%s |cff9d9d9dof %s|r"], who, tostring(entry.familyName))
+	end
+
+	return who
+end
+
 -- The character sheet, in the arrangement the game uses: a column down each side and the
 -- weapons along the bottom. Drawn that way rather than as a list because that is where
 -- everybody already knows to look for their boots, and because an empty slot in the right
@@ -1119,15 +1146,6 @@ local function build(frame)
 
 			-- Whose name goes on a line: the realm where they are not on ours, and the
 			-- family where they are not ours, exactly as every other panel says it.
-			local function labelFor(entry)
-				local who = UI:NameOf(entry.meta or {})
-				if entry.familyName then
-					who = string.format(L["%s |cff9d9d9dof %s|r"], who,
-						tostring(entry.familyName))
-				end
-				return who
-			end
-
 			for _, group in ipairs(categories) do
 				local heading = nextRow()
 				heading.left:SetText("|cff88bbff" .. group .. "|r")
@@ -1165,8 +1183,6 @@ local function build(frame)
 
 					for index = 1, limit do
 						local person = row.people[index]
-						local held = person.entry.meta or {}
-
 						local r = nextRow()
 						r.memberKey = person.entry.key
 						r.left:SetWidth(220)
@@ -1176,7 +1192,7 @@ local function build(frame)
 						-- again on every line it would read as a different faction each
 						-- time, which is what a column of repeated words does.
 						r.left:SetText(index == 1 and ("  " .. (row.name or "?")) or "")
-						r.middle:SetText(labelFor(person.entry))
+						r.middle:SetText(personLabel(person.entry))
 
 						local progress = person.maximum and person.maximum > 0
 							and string.format(" |cff888888%d / %d|r", person.value or 0,
@@ -1187,7 +1203,7 @@ local function build(frame)
 						r.fallback = {
 							{ row.name or "?" },
 							{ group },
-							{ held.name or person.entry.key or "?",
+							{ personLabel(person.entry),
 								standingLabel(person.standing) },
 						}
 
@@ -1293,15 +1309,6 @@ local function build(frame)
 
 			table.sort(categories)
 
-			local function labelFor(entry)
-				local who = UI:NameOf(entry.meta or {})
-				if entry.familyName then
-					who = string.format(L["%s |cff9d9d9dof %s|r"], who,
-						tostring(entry.familyName))
-				end
-				return who
-			end
-
 			-- How far one of them is, in the words the per-member reading uses.
 			local function progressOf(person)
 				if not person.objectives or person.objectives <= 0 then return "" end
@@ -1347,8 +1354,6 @@ local function build(frame)
 
 					for index = 1, limit do
 						local person = row.people[index]
-						local held = person.entry.meta or {}
-
 						local r = nextRow()
 						r.memberKey = person.entry.key
 						r.left:SetWidth(220)
@@ -1360,7 +1365,7 @@ local function build(frame)
 							and string.format("  %s |cff888888%s|r", row.title or "?",
 								row.level and tostring(row.level) or "")
 							or "")
-						r.middle:SetText(labelFor(person.entry))
+						r.middle:SetText(personLabel(person.entry))
 						r.right:SetText(progressOf(person))
 
 						-- The client's own description of the quest, which needs the id
@@ -1371,7 +1376,7 @@ local function build(frame)
 						r.fallback = {
 							{ row.title or "?" },
 							{ group },
-							{ held.name or person.entry.key or "?" },
+							{ personLabel(person.entry) },
 						}
 
 						if foldable and index == 1 then

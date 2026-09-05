@@ -1230,6 +1230,21 @@ function UI:ClassColour(classFile)
 	return 1, 1, 1
 end
 
+-- The same colour as an escape code, for the places that build a **line of text** rather than
+-- set a font string's colour.
+--
+-- Both are needed and neither replaces the other: a cell that is one name takes r, g, b, and a
+-- line that is a name with a rank and a family after it has to carry its colours inside the
+-- string. What must not happen is a panel doing the second by hand from `RAID_CLASS_COLORS`,
+-- which is how two panels come to disagree about which purple a warlock is.
+--
+-- White for a class nobody recorded, which is what `ClassColour` answers and is deliberate: an
+-- unrecorded class is not a colour, and inventing one would say something the record does not.
+function UI:ClassMarkup(classFile)
+	local red, green, blue = self:ClassColour(classFile)
+	return string.format("|cff%02x%02x%02x", red * 255, green * 255, blue * 255)
+end
+
 -- The two sides, and the third that is not one
 --
 -- A member whose side was never recorded still has to go somewhere, and it must not be into
