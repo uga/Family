@@ -32,6 +32,11 @@ is a decision rather than an afternoon of archaeology.
   recipe's colour and the skill it needed are what one character sees, and across forty there
   is no single answer.
 
+- **The Character panel has a level range like everywhere else.** Switch it to the whole family
+  and the row of filters is realm, class and a range of levels - the same row the summary and
+  the professions and possessions searches carry. It offers the realms and classes your linked
+  families are on as well as your own, because this panel draws their characters beside yours.
+
 - **The summary's professions can be narrowed to one profession.** *Who are the blacksmiths?* -
   open Professions on the summary and there is a picker beside the class and level filters
   offering the professions your family actually has. It works with the others rather than

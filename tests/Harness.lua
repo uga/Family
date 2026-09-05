@@ -6097,6 +6097,117 @@ if characterSearch then
 		tostring(characterSearch:GetText()))
 end
 
+-- Placed before the second build below, and that is the whole reason it is here rather than
+-- beside the other whole-family checks at the end of this file.
+--
+-- This panel is registered twice - once more with Mists in force - and both builds claim the
+-- same global names and the same `UI.__characterFilters`. So the handle is the second panel's
+-- while the one on screen is the first, and a check written down there drove one and measured
+-- the other. L-041, which this file already carries, in the one place where it costs an hour.
+print()
+print("the character panel's filters, asked of the widget")
+
+-- Asked for twice from play: this panel had a realm picker and a class picker of its own and
+-- no level range at all. The widget has had all three since the summary's slice, so the answer
+-- was a migration rather than a fourth hand-written filter bar.
+--
+-- The sibling here is on another realm on purpose. The widget offers our own members by
+-- default, and this panel draws siblings beside them - so a realm only a linked family is on
+-- has to be offered here, and a check whose sibling shares our realm cannot tell the two
+-- populations apart.
+;(function()
+	local held = FamilyDB.wide
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["farfam"] = { name = "Faraway-Thunderstrike", grants = {}, siblings = {},
+			members = {
+				["Faraway-Thunderstrike"] = {
+					meta = { name = "Faraway", realm = "Thunderstrike",
+						classFile = "PRIEST", level = 70, faction = "Alliance" },
+					payload = { equipment = { itemLevel = 100, counted = 17 } },
+					seen = time(),
+				},
+			} } },
+	}
+	Family.Wide:SetSibling("farfam", "Faraway-Thunderstrike", true)
+
+	Family.UI:Show()
+	Family.UI:ShowTab("character")
+	clickButton("Equipped gear")
+
+	local filters = Family.UI.__characterFilters
+	check("the character panel asks the widget for its filters", filters ~= nil)
+
+	if filters then
+		-- Driven until the panel is in the mode this is about rather than clicked once and
+		-- hoped over: the switch is a toggle and something earlier may have left it on.
+		-- By its own name, not by its label. Three panels carry a button saying "Whole
+		-- family" and `clickButton` takes the first clickable one it finds, which is how a
+		-- first version of this clicked another panel's switch and then measured this one.
+		local switch = _G.FamilyGearWholeFamily
+		check("the panel's own whole-family switch is reachable", switch ~= nil)
+
+		if switch and not filters.frame:IsShown() then
+			switch.__scripts.OnClick(switch)
+		end
+		Family.UI:Refresh()
+
+		check("and shows them while the panel is about everybody",
+			filters.frame:IsShown() == true)
+		check("with the level range this panel never had",
+			filters.minBox ~= nil and filters.maxBox ~= nil)
+
+		local offered = {}
+		for _, choice in ipairs(filters.realmButton:Choices()) do
+			offered[tostring(choice.value)] = true
+		end
+		check("offering a realm only a linked family is on",
+			offered["Thunderstrike"] == true)
+
+		local function cellsDrawn()
+			local drawn = 0
+			for _, f in ipairs(frames) do
+				if f.__shown == true and rawget(f, "level") and rawget(f, "border") then
+					drawn = drawn + 1
+				end
+			end
+			return drawn
+		end
+
+		local everybody = cellsDrawn()
+		check("with somebody's gear to draw", everybody > 0, tostring(everybody))
+
+		local function typeInto(box, text)
+			box:SetText(text)
+			if box.__scripts and box.__scripts.OnTextChanged then
+				box.__scripts.OnTextChanged(box)
+			end
+		end
+
+		-- Ours are sixty and the visitor is seventy, so a floor of sixty-five takes ours
+		-- off the grid and leaves theirs.
+		typeInto(filters.minBox, "65")
+		Family.UI:Refresh()
+		local above = cellsDrawn()
+		check("and a level range narrows what is drawn", above < everybody,
+			above .. " of " .. everybody)
+		check("without emptying it, because somebody is above the floor", above > 0,
+			tostring(above))
+
+		typeInto(filters.minBox, "")
+		Family.UI:Refresh()
+		check("and emptying it brings them back", cellsDrawn() == everybody,
+			cellsDrawn() .. " of " .. everybody)
+
+		if switch then switch.__scripts.OnClick(switch) end
+	end
+
+	Family.Wide:SetSibling("farfam", "Faraway-Thunderstrike", false)
+	FamilyDB.wide = held
+	Family.UI:Refresh()
+end)()
+
+
 -- ...and drawing that section at all takes a client that has them. Which sections exist is
 -- settled when the panel is built, so the panel is loaded a second time with Mists in force.
 -- The double registration is deliberate and confined to here; without it the achievements
@@ -15584,10 +15695,17 @@ print("the translations")
 			"Auctions", "Mail", "Character", "Quests", "Currencies" } do
 			list[#list + 1] = "addons/Family/Scanners/" .. name .. ".lua"
 		end
-		for _, name in ipairs { "Window", "MemberPicker", "ChoicePicker", "Tooltip", "Summary",
-			"Talents", "Contents", "Professions", "Character", "Quests", "Wide", "Guild",
-			"Broker", "Options", "About", "Slash" } do
-			list[#list + 1] = "addons/Family_UI/" .. name .. ".lua"
+		-- Taken from the list this file already loads the panels with, rather than
+		-- written out a second time.
+		--
+		-- It *was* written out a second time, and it drifted: `MemberFilters.lua` was added
+		-- to one and not the other, so every string that widget asks for was invisible to
+		-- this scan. Nothing was untranslated by luck - all three of its captions are asked
+		-- for elsewhere too - and the hole showed itself the day the character panel stopped
+		-- asking for one of them and the scan called it unused. A hand-written list beside a
+		-- hand-written list is L-047's shape, and the answer is the same: one list.
+		for _, name in ipairs(UI_FILES) do
+			list[#list + 1] = "addons/Family_UI/" .. name
 		end
 		for _, path in ipairs(list) do
 			local text = slurp(path)

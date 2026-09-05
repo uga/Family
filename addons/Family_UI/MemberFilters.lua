@@ -40,9 +40,24 @@ local ROW_WIDTH = 130 + 8 + 120 + 12 + 40 + 10 + 34 + 6 + 10 + 34
 
 --------------------------------------------------------------------------------------------
 
-local function realmsHeld()
-	local seen, list = {}, {}
+-- Whose realms and classes are on offer.
+--
+-- Our own members by default, which is what every caller wanted until the character panel
+-- asked: that one draws siblings beside our own, so its filters have to offer a realm only a
+-- linked family is on and a class only they have. Offering the wrong population is a filter
+-- that cannot reach half the rows it is drawn above, and the panel would look broken rather
+-- than narrow.
+local function ourMembers()
+	local list = {}
 	for _, entry in pairs(Family.Database:Members()) do
+		list[#list + 1] = entry
+	end
+	return list
+end
+
+local function realmsHeld(entries)
+	local seen, list = {}, {}
+	for _, entry in ipairs(entries) do
 		local realm = entry.meta and entry.meta.realm
 		if realm and not seen[realm] then
 			seen[realm] = true
@@ -53,9 +68,9 @@ local function realmsHeld()
 	return list
 end
 
-local function classesHeld()
+local function classesHeld(entries)
 	local seen, list = {}, {}
-	for _, entry in pairs(Family.Database:Members()) do
+	for _, entry in ipairs(entries) do
 		local classFile = entry.meta and entry.meta.classFile
 		if classFile and not seen[classFile] then
 			seen[classFile] = true
@@ -69,8 +84,14 @@ end
 --------------------------------------------------------------------------------------------
 
 -- `onChange` is called whenever any of them is touched, and is where the panel redraws.
-function UI:CreateMemberFilters(parent, onChange)
+-- `population` is optional and answers which members the choices are drawn from; without one
+-- it is our own.
+function UI:CreateMemberFilters(parent, onChange, population)
 	local filters = {}
+
+	local function held()
+		return (population and population()) or ourMembers()
+	end
 
 	local frame = CreateFrame("Frame", nil, parent)
 	frame:SetSize(ROW_WIDTH, ROW_HEIGHT)
@@ -82,7 +103,7 @@ function UI:CreateMemberFilters(parent, onChange)
 
 	local realmButton = UI:CreateChoicePicker(frame, 130, L["Realm"], "all", function()
 		local list = {}
-		for _, realm in ipairs(realmsHeld()) do
+		for _, realm in ipairs(realmsHeld(held())) do
 			list[#list + 1] = { value = realm, label = realm }
 		end
 		return list
@@ -94,7 +115,7 @@ function UI:CreateMemberFilters(parent, onChange)
 	local classButton = UI:CreateChoicePicker(frame, 120, L["Class"], "all", function()
 		local names = _G.LOCALIZED_CLASS_NAMES_MALE
 		local list = {}
-		for _, classFile in ipairs(classesHeld()) do
+		for _, classFile in ipairs(classesHeld(held())) do
 			local red, green, blue = UI:ClassColour(classFile)
 			list[#list + 1] = {
 				value = classFile,

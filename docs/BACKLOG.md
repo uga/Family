@@ -113,6 +113,10 @@ for now and moving them onto the widget is a refactor with its own run. Asked fo
 of their own, and neither has the realm, class or level filters. The Character panel has realm
 and class in that mode and no level range.
 
+**Done 2026-09-05.** The character panel asks the widget for its bar, and the widget grew an
+optional `population` so it can offer the realms and classes of the siblings this panel draws
+beside our own. Which leaves the summary as the last panel with a filter bar of its own.
+
 **The Character panel's level range, asked for again from play 2026-09-05** with a screenshot of
 *Equipped gear* across twenty members: it has *Realm* and *Class* and a filter box, and no level
 boxes at all. It is the one panel that still builds its own bar instead of asking

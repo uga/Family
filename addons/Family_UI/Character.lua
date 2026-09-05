@@ -217,7 +217,6 @@ local function build(frame)
 	-- What the family grid is filtered to, or nil for everything. Held as the value rather
 	-- than as an index into a list, because the list is whatever the family happens to have
 	-- and it changes underneath: an index would silently come to mean a different realm.
-	local realmFilter, classFilter
 
 	-- Declared before the picker, which clears it. Written the other way round the closure
 	-- captures a global that never gets set, and choosing a member errors on a nil.
@@ -313,39 +312,34 @@ local function build(frame)
 	-- and a button's label has no width, so the first realm called "Pyrewood Village" wrote
 	-- itself straight through the side of it. Both are fixed in ChoicePicker.lua, and fixed
 	-- for whatever asks next rather than here.
-	local realmButton = UI:CreateChoicePicker(frame, 150, L["Realm"], "all", function()
-		local realms = choicesIn(gearRoster())
+	-- Realm, class and a level range, from the widget rather than from a fourth hand-written
+	-- copy of the same idea.
+	--
+	-- This panel had two pickers of its own and no level boxes at all - asked for twice from
+	-- play, the second time with a screenshot of equipped gear across twenty members. The
+	-- widget has had all three since the summary's slice, so this is a migration and not a
+	-- fourth thing to build; building it here again is the fifth idea of what a filter bar is
+	-- that `UI:CreateChoicePicker` exists to prevent.
+	--
+	-- Told which members to offer, because the default is ours alone and this panel draws
+	-- siblings beside them: a realm only a linked family is on has to be filterable here, and
+	-- the widget cannot know that from where it stands.
+	local function population()
 		local list = {}
-		for _, realm in ipairs(realms) do
-			list[#list + 1] = { value = realm, label = realm }
+		for _, group in ipairs(gearRoster()) do
+			for _, entry in ipairs(group.members) do
+				list[#list + 1] = entry
+			end
 		end
 		return list
-	end, function(value)
-		realmFilter = value
-		frame:Refresh()
-	end)
-	realmButton:SetPoint("TOPLEFT", 0, -2)
+	end
 
-	-- Named as the client names them, and coloured as the game colours them: eleven class
-	-- names in a list are read by colour long before they are read by name.
-	local classButton = UI:CreateChoicePicker(frame, 150, L["Class"], "all", function()
-		local _, classes = choicesIn(gearRoster())
-		local names = _G.LOCALIZED_CLASS_NAMES_MALE
-		local list = {}
-		for _, classFile in ipairs(classes) do
-			local red, green, blue = UI:ClassColour(classFile)
-			list[#list + 1] = {
-				value = classFile,
-				label = (names and names[classFile]) or classFile,
-				r = red, g = green, b = blue,
-			}
-		end
-		return list
-	end, function(value)
-		classFilter = value
-		frame:Refresh()
-	end)
-	classButton:SetPoint("LEFT", realmButton, "RIGHT", 6, 0)
+	local filters = UI:CreateMemberFilters(frame, function() frame:Refresh() end, population)
+	filters.frame:SetPoint("TOPLEFT", 0, -2)
+	filters:SetShown(false)
+
+	-- Reachable, so a check can drive the controls a player drives.
+	UI.__characterFilters = filters
 
 	local function matches(text)
 		local needle = (search:GetText() or ""):lower()
@@ -746,8 +740,7 @@ local function build(frame)
 
 		wholeFamily:SetShown(FAMILY_SECTIONS[section] and true or false)
 		UI:MarkSelected(wholeFamily, familyView)
-		realmButton:SetShown(familyView)
-		classButton:SetShown(familyView)
+		filters:SetShown(familyView)
 		-- Nothing for it to choose when the panel is about everybody, and its space is
 		-- exactly where the two filters go.
 		picker:SetShown(not familyView)
@@ -757,7 +750,7 @@ local function build(frame)
 		-- family reading is underneath the two filters that replaced it.
 		hint:ClearAllPoints()
 		if familyView then
-			hint:SetPoint("LEFT", classButton, "RIGHT", 16, 0)
+			hint:SetPoint("LEFT", filters.frame, "RIGHT", 16, 0)
 		else
 			hint:SetPoint("LEFT", picker, "RIGHT", 16, 0)
 		end
@@ -775,21 +768,16 @@ local function build(frame)
 
 			local classNames = _G.LOCALIZED_CLASS_NAMES_MALE
 
-			-- A realm stops existing the moment its last member is removed, and a filter
-			-- still pointing at one would leave this panel empty with nothing on screen
-			-- saying why. The pickers put themselves back to "all" rather than to a value
-			-- nobody can see any more.
-			realmFilter = realmButton:Reconcile()
-			classFilter = classButton:Reconcile()
-
 			-- Wide enough for a full row of slots even when the panel is not, so the last
 			-- weapon is reachable by scrolling rather than simply absent.
 			local rowWidth = 4 + GRID + 8 + (#FAMILY_ORDER * (GRID + GRID_GAP))
 			list:SetWidth(math.max(UI:ListWidth(scroll), rowWidth))
 
+			-- The widget reconciles as it answers, so a realm that stops existing the
+			-- moment its last member is removed puts the picker back to "all" rather than
+			-- leaving this panel empty with nothing on screen saying why.
 			local function passes(entry)
-				if realmFilter and entry.meta.realm ~= realmFilter then return false end
-				if classFilter and entry.meta.classFile ~= classFilter then return false end
+				if not filters:Passes(entry.meta) then return false end
 				return matches(entry.meta.name or entry.key)
 			end
 
@@ -1026,8 +1014,7 @@ local function build(frame)
 			for _, group in ipairs(gearRoster()) do
 				for _, entry in ipairs(group.members) do
 					local meta = entry.meta or {}
-					if (not realmFilter or meta.realm == realmFilter)
-						and (not classFilter or meta.classFile == classFilter) then
+					if filters:Passes(meta) then
 						local reps = (UI:Payload(entry.key) or {}).reputations
 						if reps and #reps > 0 then people = people + 1 end
 
