@@ -341,6 +341,56 @@ function UI:TabRing(boxes)
 	end
 end
 
+--------------------------------------------------------------------------------------------
+-- Giving the keyboard back
+--
+-- An `EditBox` that has been clicked into keeps the keyboard until something takes it away,
+-- and clicking elsewhere - including on the world - does not. That is the client's behaviour
+-- and not a fault in it, but the consequence belongs to whoever put the box on the screen:
+-- with a filter box still focused, the arrow keys type into it instead of turning the
+-- character, and the only ways out were Escape and closing the window. Reported from play
+-- 2026-09-05, from Possessions in whole-family mode.
+--
+-- **Asked of the client rather than assumed.** `GLOBAL_MOUSE_DOWN` fires for a click anywhere,
+-- which is exactly the question being asked, and registering an event a build has never heard
+-- of is an error rather than a no - so it is registered inside a `pcall` and the answer read
+-- back. Confirmed present on Burning Crusade 2026-09-05.
+--
+-- Where it is not there, the window's own clicks still release the box. That is less than was
+-- asked for and it is not nothing: it covers every click inside Family, which is where a
+-- player who has just typed a filter is most likely to click next.
+--
+-- `HasFocus` and `IsMouseOver` are asked of the box rather than a note being kept of which one
+-- was focused. The client already knows both, and a second copy of "which box has the keyboard"
+-- is a second thing to get wrong when a panel is rebuilt under it.
+local watchedBoxes = {}
+
+local function releaseBoxes()
+	for _, box in ipairs(watchedBoxes) do
+		if box.HasFocus and box:HasFocus()
+			and not (box.IsMouseOver and box:IsMouseOver()) then
+			box:ClearFocus()
+		end
+	end
+end
+
+UI.__releaseBoxes = releaseBoxes
+
+local focusWatcher = CreateFrame("Frame")
+UI.__focusWatcher = focusWatcher
+UI.__globalMouse = pcall(focusWatcher.RegisterEvent, focusWatcher, "GLOBAL_MOUSE_DOWN")
+if UI.__globalMouse then focusWatcher:SetScript("OnEvent", releaseBoxes) end
+
+window:HookScript("OnMouseDown", releaseBoxes)
+
+-- Every box that should give the keyboard back. Called where the box is made, beside the
+-- `SetAutoFocus(false)` that says it is a box somebody types into on purpose.
+function UI:ReleaseFocusOnClick(box)
+	if not box then return box end
+	watchedBoxes[#watchedBoxes + 1] = box
+	return box
+end
+
 function UI:FitButton(button, minimum)
 	if not button then return end
 	local text = button.GetFontString and button:GetFontString()

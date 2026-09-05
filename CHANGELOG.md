@@ -153,6 +153,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Typing in a filter box no longer keeps the keyboard.** After typing into one of Family's
+  boxes, clicking anywhere else - including on the game world - left the keyboard in the box,
+  so the arrow keys typed into it instead of turning your character and only Escape or closing
+  the window got it back. A click outside the box now gives it back.
+
 - **The number beside a category heading is no longer under *Standing*.** On the reputations
   and quests pages a heading like *Alliance* showed how many factions were under it, in the
   column that everywhere else says how far along you are - so it read as a standing. It sits

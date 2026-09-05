@@ -520,6 +520,11 @@ function frameMethods:ClearFocus()
 end
 function frameMethods:HasFocus() return self.__focus == true end
 
+-- Where the pointer is, which the client knows and this did not. A box gives the keyboard back
+-- on a click that lands somewhere else, so "somewhere else" has to be sayable here or the rule
+-- can only be checked in the direction that needs no pointer at all.
+function frameMethods:IsMouseOver() return self.__mouseOver == true end
+
 function frameMethods:GetItem() return self.__itemName, self.__itemLink end
 -- What a tooltip says about the spell it is describing. The older clients answer here and the
 -- newer ones hand the id to a post-call instead, and both routes have to be exercised: the
@@ -14316,6 +14321,84 @@ end)()
 -- file so the warning cannot quietly go away, the same way release.yml is read above.
 --------------------------------------------------------------------------------------------
 
+
+print()
+print("a filter box gives the keyboard back when you click somewhere else")
+
+-- Reported from play 2026-09-05: typing into a filter box on Possessions and then clicking
+-- anywhere - the world included - left the keyboard in the box, so the arrow keys typed into
+-- it instead of turning the character. Escape and closing the window were the only ways out.
+--
+-- That is the client's behaviour rather than a fault in it: an EditBox keeps focus until
+-- something takes it. Taking it belongs to whoever put the box on the screen.
+;(function()
+	check("the client was asked whether it fires on any click, and said yes",
+		Family.UI.__globalMouse == true, tostring(Family.UI.__globalMouse))
+
+	Family.UI:Show()
+	Family.UI:ShowTab("possessions")
+
+	local box = _G.FamilyContentsSearch or _G.FamilySummarySearch
+	check("there is a box to type into", box ~= nil)
+
+	if box then
+		box:SetFocus()
+		check("clicking into it takes the keyboard", box:HasFocus() == true)
+
+		-- The pointer is elsewhere, which is the case the report is about.
+		box.__mouseOver = false
+		fire("GLOBAL_MOUSE_DOWN")
+		check("and a click anywhere else gives it back", box:HasFocus() == false)
+
+		-- The other direction, and it is not a formality: a rule that cleared on every
+		-- click would take the keyboard out of the box the moment somebody clicked into
+		-- it, which is worse than the fault being fixed.
+		box:SetFocus()
+		box.__mouseOver = true
+		fire("GLOBAL_MOUSE_DOWN")
+		check("while a click on the box itself leaves it alone", box:HasFocus() == true)
+
+		-- And the route for a client that has no such event. Less than was asked for -
+		-- it cannot hear a click on the world - and it covers every click inside Family,
+		-- which is where somebody who has just typed a filter clicks next.
+		box.__mouseOver = false
+		local window = _G.FamilyWindow
+		check("the window is there to be clicked", window ~= nil)
+		if window and window.__scripts.OnMouseDown then
+			window.__scripts.OnMouseDown(window)
+		end
+		check("clicking the window itself gives the keyboard back too",
+			box:HasFocus() == false)
+
+		box.__mouseOver = nil
+	end
+
+	-- The convention, read out of the sources: a box somebody types into on purpose says
+	-- `SetAutoFocus(false)`, and every one of those must also ask to be released. This is a
+	-- rule about the tree rather than about a run, and it is the only thing that stops the
+	-- next panel's box being the one that keeps the keyboard.
+	local missing = {}
+	for _, file in ipairs(UI_FILES) do
+		local f = io.open(ROOT .. "/addons/Family_UI/" .. file)
+		if f then
+			local text = f:read("*a")
+			f:close()
+
+			local declared, released = 0, 0
+			for _ in text:gmatch("SetAutoFocus%(false%)") do declared = declared + 1 end
+			for _ in text:gmatch("ReleaseFocusOnClick%(") do released = released + 1 end
+
+			-- Window.lua declares the helper and no box of its own.
+			if file ~= "Window.lua" and released < declared then
+				missing[#missing + 1] = string.format("%s (%d of %d)", file, released,
+					declared)
+			end
+		end
+	end
+
+	check("every box somebody types into asks for the keyboard to be released",
+		#missing == 0, table.concat(missing, ", "))
+end)()
 print()
 print("the deploy script warns before it mirrors a source with no libraries")
 ;(function()

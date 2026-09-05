@@ -193,6 +193,7 @@ local function build(frame)
     local ask = CreateFrame("EditBox", "FamilyWideAsk", frame, "InputBoxTemplate")
     ask:SetSize(180, 20)
     ask:SetAutoFocus(false)
+    UI:ReleaseFocusOnClick(ask)
 
     local askButton = CreateFrame("Button", "FamilyWideAskButton", frame,
         "UIPanelButtonTemplate")
@@ -718,6 +719,7 @@ local function build(frame)
                 aliasBox:SetPoint("LEFT", aliasRow, "LEFT", 90, 0)
                 aliasBox:SetSize(180, 20)
                 aliasBox:SetAutoFocus(false)
+                UI:ReleaseFocusOnClick(aliasBox)
                 aliasBox:SetMaxLetters(24)
                 aliasBox:SetText(Family.Wide:Alias(entry.id) or "")
 
