@@ -144,6 +144,7 @@ local KNOWN = {
 	StartMoving = 1, StopMovingOrSizing = 1, SetClampedToScreen = 1,
 	SetFrameStrata = 1, SetToplevel = 1, Raise = 1,
 	Show = 1, Hide = 1, IsShown = 1, IsVisible = 1, SetShown = 1, SetAlpha = 1,
+	SetOwner = 1, GetOwner = 1,
 	GetNormalTexture = 1, SetTexCoord = 1,
 	SetScript = 1, GetScript = 1,
 	RegisterEvent = 1, UnregisterEvent = 1,
@@ -373,6 +374,28 @@ function frameMethods:SetSpellByID(id)
 	table.insert(self.__lines, { "Spell " .. tostring(id) })
 end
 
+-- What a tooltip is left as when the client will not describe what it was handed.
+--
+-- Measured 2026-09-05 on Era and TBC, because it had been guessed at once already and a guess
+-- modelled here is a wrong claim about the client (L-037):
+--
+--     /run local t=GameTooltip t:SetOwner(UIParent,"ANCHOR_CURSOR") t:ClearLines()
+--         t:SetHyperlink("quest:999999:60")
+--         print(t:NumLines(), t:IsShown(), t:GetOwner() ~= nil)
+--
+--     0  false  false
+--
+-- So it is not merely silent: it **hides the tooltip and drops the owner**. Anything written
+-- afterwards goes nowhere, which is exactly what the quest rows did the day they started
+-- asking - and this is what makes the fallback's own SetOwner checkable rather than a
+-- precaution nobody can measure.
+local function declined(tooltip)
+	wipe(tooltip.__lines)
+	tooltip.__shownAs = nil
+	tooltip.__shown = false
+	tooltip.__owner = nil
+end
+
 function frameMethods:SetHyperlink(link)
 	local kind, id = tostring(link):match("^(%a+):(%d+)")
 
@@ -385,7 +408,7 @@ function frameMethods:SetHyperlink(link)
 	-- The stub said yes to both, which is why nothing here ever noticed - a fixture is a
 	-- claim about what the client does, and this one was wrong (L-037).
 	if kind == "quest" and not tostring(link):match("^quest:%d+:%d+") then
-		return
+		return declined(self)
 	end
 
 	-- What was done to the item after it was bought. The stub used to stop at the id, so
@@ -395,7 +418,7 @@ function frameMethods:SetHyperlink(link)
 	if not TOOLTIP_KNOWS[kind] then
 		-- A link type this client does not know says nothing, which is exactly the case
 		-- the fallback lines exist for.
-		return
+		return declined(self)
 	end
 	wipe(self.__lines)
 	self.__shownAs = { kind = kind, id = tonumber(id), enchant = enchant }
@@ -474,6 +497,9 @@ function frameMethods:SetParent(parent) self.__parent = parent end
 -- Focus, modelled rather than shrugged off. A panel that redraws a box the player is halfway
 -- through typing into takes the number out from under them, and a no-op HasFocus would have
 -- said that never happens.
+function frameMethods:SetOwner(owner) self.__owner = owner end
+function frameMethods:GetOwner() return self.__owner end
+
 function frameMethods:SetFocus() self.__focus = true end
 function frameMethods:ClearFocus() self.__focus = false end
 function frameMethods:HasFocus() return self.__focus == true end
@@ -6406,6 +6432,34 @@ print("everybody's quests at once")
 		check("and hovering it opens the quest's own tooltip",
 			GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "quest",
 			GameTooltip.__shownAs and GameTooltip.__shownAs.kind)
+	end
+
+	-- And a row whose quest the client will not describe still says what Family knows.
+	--
+	-- Not merely silent: a declined link hides the tooltip and drops the owner, measured on
+	-- Era and TBC. So the fallback has to take the tooltip back before it writes, or its
+	-- lines go nowhere - which is what the quest rows did on a single character the day this
+	-- lane started asking. Reported from play, and the stub now models the refusal so that
+	-- the repair can be measured rather than trusted.
+	do
+		-- A row with no level to give, which is the case the client declines: the id alone
+		-- is a link it will not describe. Taking the *id* away instead would have left a
+		-- well-formed link and measured nothing, which the first version of this did.
+		local held = quest and quest.questLevel
+		if quest then quest.questLevel = nil end
+
+		GameTooltip.__shownAs = nil
+		GameTooltip.__owner = nil
+		wipe(GameTooltip.__lines)
+		if quest and quest.__scripts.OnEnter then quest.__scripts.OnEnter(quest) end
+
+		check("a quest the client will not describe falls back to what Family knows",
+			#GameTooltip.__lines > 0, tostring(#GameTooltip.__lines))
+		check("and those lines are drawn on the row they belong to",
+			GameTooltip.__owner == quest,
+			tostring(GameTooltip.__owner))
+
+		if quest then quest.questLevel = held end
 	end
 
 	if quest then

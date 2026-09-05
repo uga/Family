@@ -739,28 +739,26 @@ Written down 2026-09-05.
 
 ---
 
-### What a tooltip lane leaves behind when the client will not answer
+### What a tooltip lane leaves behind when the client will not answer — ANSWERED 2026-09-05
 
-A single character's quest rows went from showing Family's own summary to showing nothing at
-all, the hour `SHOW.quest` started asking in a form the client sometimes answers. The repair is
-to take the tooltip back - `SetOwner` and `ClearLines` again - before the fallback lines are
-written, and it is shipped because the report is real.
-
-**What is not known is what actually happens**, and therefore no check pins it. The harness stub
-returns without writing for a link the client would ignore, and says nothing about the owner,
-because nobody has measured what `SetHyperlink` does to a tooltip when it declines. Modelling
-that on a guess is how a fixture becomes a wrong claim about the client, which is L-037 and
-which this same area has already cost once today.
-
-One line settles it:
+Measured rather than guessed, after the guess had already been made once:
 
     /run local t=GameTooltip t:SetOwner(UIParent,"ANCHOR_CURSOR") t:ClearLines()
         t:SetHyperlink("quest:999999:60")
         print(t:NumLines(), t:IsShown(), t:GetOwner() ~= nil)
 
-Whatever that says goes into the stub, and the check follows from it.
+    0  false  false
 
-Written down 2026-09-05.
+So a declined link is not merely silent: it **hides the tooltip and drops the owner**, and
+anything written afterwards goes nowhere. The stub models that now, which is what makes the
+fallback's own `SetOwner` checkable instead of a precaution nobody could measure.
+
+**And measuring it found the real fault, which was not the owner at all.** The quest branch of
+the character panel's tooltip resolver handed over the id and **not the row's fallback lines**,
+so a quest the client will not describe had nothing to fall back to and the tooltip was hidden.
+That had been true since the branch was written; it only became visible when the lane started
+asking in a form the client sometimes answers, because before that it never answered for
+anything and every quest row was equally blank.
 
 ---
 

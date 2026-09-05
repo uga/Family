@@ -648,10 +648,14 @@ local function build(frame)
 
 		UI:AttachTooltip(r, function(self)
 			if self.itemID then return "item", self.itemID end
-			-- Id and level together, because that is the form the client answers for.
+			-- Id and level together, because that is the form the client answers for - and
+			-- the row's own lines behind it, because it will not answer for a quest that is
+			-- not in the player's log. Handing over the id without the fallback is what
+			-- made a declined quest show nothing at all rather than what Family knows.
 			if self.questID then
 				return "quest", self.questLevel
-					and (self.questID .. ":" .. self.questLevel) or self.questID
+					and (self.questID .. ":" .. self.questLevel) or self.questID,
+					self.fallback
 			end
 			if self.achievementID then
 				return "achievement", self.achievementID, self.fallback
@@ -1682,6 +1686,13 @@ local function build(frame)
 				r.middle:SetText(line.middle)
 				r.right:SetText(line.right)
 				r.questID, r.questLevel = line.questID, line.questLevel
+
+				-- What to say when the client will not: it describes only the quests in
+				-- the player's own log, so every row about anybody else falls here.
+				r.fallback = {
+					{ line.title or "?" },
+					{ (line.right ~= "" and line.right) or nil },
+				}
 				r.questTitle = line.title
 				r.memberKey = member.key
 				r.highlight:SetShown(playing and (line.questID or line.title) and true
