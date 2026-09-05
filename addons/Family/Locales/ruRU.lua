@@ -577,6 +577,7 @@ Family.locales.ruRU = {
 	["Family users"] = "С Family",
 	["All guildmates"] = "Вся гильдия",
 	["Where"] = "Где",
+	["|cff888888Where somebody logged out, zone over subzone. The filter box finds a place as well as a name, so typing one answers *who have I got there*. A character has no answer until they have been played once.|r"] = "|cff888888Где кто вышел из игры, зона над подзоной. Поле фильтра находит место так же, как и имя, поэтому ввод места отвечает на вопрос *кто у меня там*. У персонажа нет ответа, пока им не сыграли хотя бы раз.|r",
 	["Everyone"] = "Все",
 	["Update now"] = "Обновить",  -- 10
 	["  guild: %s"] = "  гильдия: %s",

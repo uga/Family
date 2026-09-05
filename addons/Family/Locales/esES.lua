@@ -577,6 +577,7 @@ Family.locales.esES = {
 	["Family users"] = "Con Family",
 	["All guildmates"] = "Toda la hermandad",
 	["Where"] = "Dónde",
+	["|cff888888Where somebody logged out, zone over subzone. The filter box finds a place as well as a name, so typing one answers *who have I got there*. A character has no answer until they have been played once.|r"] = "|cff888888Dónde cerró sesión cada uno, la zona sobre la subzona. La casilla de filtro encuentra un lugar además de un nombre, así que escribir uno responde a *a quién tengo allí*. Un personaje no tiene respuesta hasta que se ha jugado una vez.|r",
 	["Everyone"] = "Todos",
 	["Update now"] = "Actualizar",  -- 10
 	["  guild: %s"] = "  hermandad: %s",

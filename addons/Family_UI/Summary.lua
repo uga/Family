@@ -285,6 +285,27 @@ local SETS = {
 	{
 		id = "misc", label = L["Miscellaneous"],
 
+		-- **What its search box looks in besides the member's name.**
+		--
+		-- Asked for from play 2026-09-05: *who have I got in that place?* The box on this row
+		-- searches member names, which is what it searches on every other set, and a second
+		-- box was not an option - the row already carries this one, the class picker, two
+		-- level boxes, the set's narrowing picker and the count of what is hidden.
+		--
+		-- So a set may say what else its box matches, the way a set may say what it narrows
+		-- by. Which keeps one control asking one question - *find me this* - and lets the set
+		-- on screen decide what "this" may be found in.
+		--
+		-- Matched against **what the panel drew**, not against what was recorded. The zone is
+		-- shown in the reader's own language out of its id, so a reader looking at *Les
+		-- Steppes Ardentes* must be able to type that - the English word a sibling's client
+		-- wrote is not on their screen anywhere. The recorded word is searched as well, which
+		-- costs nothing and finds a place this client has never heard of.
+		searches = function(meta)
+			local zone = Family.Names:Area(meta.zoneID, meta.zone)
+			return table.concat({ zone or "", meta.zone or "", meta.subzone or "" }, " ")
+		end,
+
 		-- Taller rows than every other set, because one column on it needs two lines.
 		--
 		-- A zone and a subzone do not fit on one: *Eastern Plaguelands* over *The Marris
@@ -1959,7 +1980,16 @@ local function build(frame)
 		local needle = (search:GetText() or ""):lower()
 		if needle ~= "" then
 			local name = (meta.name or ""):lower()
-			if not name:find(needle, 1, true) then return false end
+			local found = name:find(needle, 1, true) ~= nil
+
+			-- And whatever else the set on screen says its box looks in.
+			if not found and currentSet.searches then
+				local more = currentSet.searches(meta)
+				found = type(more) == "string"
+					and more:lower():find(needle, 1, true) ~= nil
+			end
+
+			if not found then return false end
 		end
 
 		return true
@@ -2655,6 +2685,16 @@ local function build(frame)
 			note:SetText(L["|cff888888Free and total slots leave out quivers, soul bags and "
 				.. "the like: their slots are not room for anything else. Possessions "
 				.. "shows them all the same.|r"])
+		elseif currentSet.id == "misc" then
+			-- Said here rather than beside the box. A set that widened what its search
+			-- finds and did not say so is a feature nobody meets: somebody types a name,
+			-- it works, and they never learn they could have typed a place. The caption
+			-- by the box was tried first and the row has no width for a longer one - the
+			-- note is where this panel explains its sets anyway.
+			note:SetText(L["|cff888888Where somebody logged out, zone over subzone. The "
+				.. "filter box finds a place as well as a name, so typing one answers "
+				.. "*who have I got there*. A character has no answer until they have "
+				.. "been played once.|r"])
 		elseif currentSet.id == "crafting" then
 			note:SetText(string.format(L["|cff888888Crafting cooldowns only - transmutes, "
 				.. "mooncloth, salt shakers. Only the members who have one are listed. "

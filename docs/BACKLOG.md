@@ -994,3 +994,38 @@ Two things about it were decided by measurement rather than taste:
 That guard is the hearthstone's, and it is weaker here - a hearthstone moves when somebody
 decides to live somewhere else, and a logout zone changes far more often.
 `C_Map.GetBestMapForUnit` would answer without a search and is worth probing if it ever shows.
+
+---
+
+## 17. A shared character's quests read in the language they were recorded in
+
+**Received:** 2026-09-05, from Alberto, on being told it and asking whether I was sure.
+
+**I was, and it is worth having verified rather than asserted.** Four reads, all in the same
+session:
+
+- `Family/Wide.lua:64` — the `quests` payload crosses a link.
+- `Family/Scanners/Quests.lua` — each entry carries `title` and `category` as **words**, beside
+  the quest `id` recorded since 2026-09-05.
+- `Family_UI/Quests.lua` lines 143, 232 and 265 — the panel draws `quest.title` and the category
+  exactly as recorded.
+- `Family/Names.lua` has `Item`, `Spell`, `Recipe` and `Area`, and **no `Quest`**. There is
+  nothing that could translate one.
+
+So an English client shows a French sibling's quest list in French, title and zone heading both.
+And the tooltip on that same row is in English, because that one goes through the quest id -
+which makes the row and its own tooltip disagree on the same screen.
+
+**The title is closeable and the category is harder.**
+
+- A quest **has an id**, and `GetQuestLink(questID)` answers with a link carrying the title in
+  the reader's own language. The scanner already makes that call - it is how the id is found in
+  the first place - so a `Names:Quest(id, recorded)` is the same shape as `Names:Area` and would
+  fall back to the word for a quest this client has never heard of.
+- The **category is a zone name** and has no id stored beside it. `Names:AreaFor` could find one,
+  but it walks every area id, and a quest log has one category per zone - so it would want doing
+  once at scan time and storing, not at draw time.
+
+**Not built.** Recorded here so the question is not asked a third time from memory, and because
+it is the same class as the subzone (entry 16) with the opposite answer: that one cannot be
+translated because no id exists, and this one can.

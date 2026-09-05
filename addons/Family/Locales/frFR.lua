@@ -577,6 +577,7 @@ Family.locales.frFR = {
 	["Family users"] = "Avec Family",
 	["All guildmates"] = "Toute la guilde",
 	["Where"] = "Où",
+	["|cff888888Where somebody logged out, zone over subzone. The filter box finds a place as well as a name, so typing one answers *who have I got there*. A character has no answer until they have been played once.|r"] = "|cff888888Où chacun s'est déconnecté, la zone au-dessus de la sous-zone. La case de filtre trouve un lieu aussi bien qu'un nom, donc en taper un répond à *qui ai-je là-bas*. Un personnage n'a pas de réponse tant qu'il n'a pas été joué une fois.|r",
 	["Everyone"] = "Tout le monde",
 	["Update now"] = "Actualiser",  -- 10
 	["  guild: %s"] = "  guilde : %s",

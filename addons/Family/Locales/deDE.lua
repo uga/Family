@@ -577,6 +577,7 @@ Family.locales.deDE = {
 	["Family users"] = "Mit Family",
 	["All guildmates"] = "Alle Gildenmitglieder",
 	["Where"] = "Wo",
+	["|cff888888Where somebody logged out, zone over subzone. The filter box finds a place as well as a name, so typing one answers *who have I got there*. A character has no answer until they have been played once.|r"] = "|cff888888Wo sich jemand ausgeloggt hat, Gebiet über Untergebiet. Das Filterfeld findet einen Ort ebenso wie einen Namen, also beantwortet die Eingabe eines Ortes *wen habe ich dort*. Ein Charakter hat hier keine Antwort, bis er einmal gespielt wurde.|r",
 	["Everyone"] = "Alle",
 	["Update now"] = "Erneuern",  -- 10
 	["  guild: %s"] = "  Gilde: %s",

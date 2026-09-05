@@ -14795,6 +14795,75 @@ print("where a character was when they logged out")
 		check("and the row is tall enough to hold it", (tall or 0) > 18, tostring(tall))
 	end
 
+	-- **And it can be searched for**, which is what makes the column answer a question rather
+	-- than only report one. Asked for from play 2026-09-05 as *who have I got in that place?*
+	--
+	-- The box on this row searches member names, as it does on every set, and the row has no
+	-- width for a second one - so the set says what else its box looks in, the way a set says
+	-- what it narrows by. One control, one question, and the set on screen decides what the
+	-- answer may be found in.
+	do
+		local box = _G.FamilySummarySearch
+		check("the summary's search box is there to type into", box ~= nil)
+
+		local function typeInto(text)
+			box:SetText(text)
+			if box.__scripts.OnTextChanged then box.__scripts.OnTextChanged(box) end
+		end
+
+		local function drawing(name)
+			for _, f in ipairs(frames) do
+				local cell = f.cells and f.cells[1]
+				if onScreen(f) and f.memberKey and cell
+					and type(cell.__text) == "string"
+					and cell.__text:find(name, 1, true) then
+					return true
+				end
+			end
+			return false
+		end
+
+		if box then
+			local mine = Family.Database:Meta(key) or {}
+			local myName = mine.name or key
+
+			typeInto("")
+			check("with nothing typed the member is drawn", drawing(myName))
+
+			-- **The word the reader sees**, not the one that was recorded. This member's
+			-- record says *Searing Gorge* and the panel draws *Les Steppes Ardentes*,
+			-- because the id is what names it - so the place a player can type is the
+			-- French one, and a box matching only the record would find nothing.
+			typeInto("steppes")
+			check("typing the place as it is drawn finds them", drawing(myName))
+
+			-- The recorded word is searched as well. It costs nothing and it is the only
+			-- thing there is for a place this client has never heard of.
+			typeInto("searing")
+			check("and typing it as it was recorded finds them too", drawing(myName))
+
+			-- The subzone, which is the half with no id and reads as recorded either way.
+			typeInto("pyrox")
+			check("the subzone is searched as well as the zone", drawing(myName))
+
+			typeInto("nowhere at all")
+			check("and a place nobody is in finds nobody", drawing(myName) == false)
+
+			-- On a set that says nothing about places, the same word finds nobody: the
+			-- widening belongs to the set and not to the box.
+			typeInto("")
+			clickButton(Family.L["Overview"])
+			Family.UI:Refresh()
+			typeInto("steppes")
+			check("while on a set that does not search places it finds nobody",
+				drawing(myName) == false)
+
+			typeInto("")
+			clickButton(Family.L["Miscellaneous"])
+			Family.UI:Refresh()
+		end
+	end
+
 	-- **And it crosses a Wide Family link**, which is where this would otherwise have been
 	-- shared and never read - the class of fault L-052 is about, met four times already. The
 	-- three fields are in the `character` category; nothing said so from the far side.
