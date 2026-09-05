@@ -394,6 +394,37 @@ local function declined(tooltip)
 	tooltip.__shownAs = nil
 	tooltip.__shown = false
 	tooltip.__owner = nil
+
+	-- And the regions with them. The game exposes each line as a font string named after the
+	-- tooltip, and that is how Family reads one - so a stub that emptied `__lines` and left
+	-- the regions alone would answer the next reader with the last block's tooltip. Which it
+	-- did, the day `Names:Quest` started reading a title off line one: a quest came back
+	-- called *Lesser Mana Oil*, out of a guild bank read four thousand lines earlier.
+	for index = 1, 12 do
+		_G[(tooltip.__name or "?") .. "TextLeft" .. index] = nil
+	end
+end
+
+-- Which quests this pretend client has anything to say about, and what it calls each.
+--
+-- It used to describe every quest id it was handed, and that was a claim about the client
+-- rather than a convenience: `quest:999999:60` answers nought lines, measured above. It began
+-- to matter on 2026-09-05, when `Names:Quest` started reading a **title** out of line one - a
+-- fixture that names every made-up id would have every quest row in the harness renamed after
+-- a quest that does not exist.
+--
+-- So a block that wants the client to describe a quest says which, and what it says.
+--
+-- A global rather than a local, because the main chunk is at Lua's limit of two hundred of
+-- those and this file has met that ceiling before.
+questTitles = {}
+
+function knowQuest(id, title)
+	questTitles[tonumber(id)] = title
+end
+
+function forgetQuests()
+	questTitles = {}
 end
 
 function frameMethods:SetHyperlink(link)
@@ -407,8 +438,28 @@ function frameMethods:SetHyperlink(link)
 	-- `quest:84` answered nought lines; `quest:84:20` answered three and drew the quest.
 	-- The stub said yes to both, which is why nothing here ever noticed - a fixture is a
 	-- claim about what the client does, and this one was wrong (L-037).
-	if kind == "quest" and not tostring(link):match("^quest:%d+:%d+") then
-		return declined(self)
+	if kind == "quest" then
+		if not tostring(link):match("^quest:%d+:%d+") then return declined(self) end
+
+		-- What this client can say about the quest. Its own log always, because a quest
+		-- the player is on is one the server has certainly described to them; anything
+		-- else only where a block has said so.
+		local title = questTitles[tonumber(id)]
+		if not title then
+			local own = _G.GetQuestLink and _G.GetQuestLink(tonumber(id))
+			title = type(own) == "string" and own:match("%[(.-)%]") or nil
+		end
+		if not title then return declined(self) end
+
+		wipe(self.__lines)
+		self.__shownAs = { kind = "quest", id = tonumber(id) }
+		table.insert(self.__lines, { title })
+
+		for index = 1, 12 do
+			_G[(self.__name or "?") .. "TextLeft" .. index] =
+				(index == 1) and { GetText = function() return title end } or nil
+		end
+		return
 	end
 
 	-- What was done to the item after it was bought. The stub used to stop at the id, so
@@ -6682,6 +6733,11 @@ print("everybody's quests at once")
 		end
 		return nil
 	end
+
+	-- This client has the quest too, and calls it what the record calls it - which is the
+	-- ordinary case, and leaves the rows findable by the word the fixture used.
+	knowQuest(5001, shared.title)
+	Family.UI:Refresh()
 
 	local quest = rowSaying(shared.title)
 	check("a quest four of them are on is one row", quest ~= nil)
@@ -15283,7 +15339,60 @@ print("a quest called what this client calls it")
 		Family.locale = held
 	end
 
+	-- **And the route that reaches a quest nobody here has ever had.**
+	--
+	-- Alberto found it in a screenshot of Family's own tooltip: a level 5 character hovering
+	-- a sibling's level 58 quest, and the client describing it in French. So the two calls
+	-- above are not the client's only answer, and the conclusion drawn from them failing was
+	-- wrong (L-057). The tooltip is asked with the id and the level together, because a bare
+	-- `quest:84` describes nothing, and the title is the first line.
 	FamilyDB.quests = {}
+	_G.GetQuestLink = function() end
+	knowQuest(9003, "Les tablettes perdues de Mosh'aru")
+
+	check("a quest no other route will name is read off the client's own tooltip",
+		Family.Names:Quest(9003, "The Lost Tablets of Mosh'aru", 58)
+			== "Les tablettes perdues de Mosh'aru",
+		tostring(Family.Names:Quest(9003, "The Lost Tablets of Mosh'aru", 58)))
+
+	check("and that answer is written down like any other",
+		(Family.Names:QuestStore() or {})[9003] == "Les tablettes perdues de Mosh'aru",
+		tostring((Family.Names:QuestStore() or {})[9003]))
+
+	-- The level is half the question. A row that has none cannot ask it, and asking anyway
+	-- would be asking in the form measured to answer nothing.
+	FamilyDB.quests = {}
+	check("a row with no level to give does not ask, and keeps the recorded word",
+		Family.Names:Quest(9003, "The Lost Tablets of Mosh'aru")
+			== "The Lost Tablets of Mosh'aru",
+		tostring(Family.Names:Quest(9003, "The Lost Tablets of Mosh'aru")))
+
+	-- And a quest this client has nothing to say about either - which is what a made-up id
+	-- looks like to a real client, measured as nought lines.
+	check("a quest the client will not describe at all keeps the recorded word",
+		Family.Names:Quest(9004, "Nobody's Errand", 58) == "Nobody's Errand",
+		tostring(Family.Names:Quest(9004, "Nobody's Errand", 58)))
+
+	-- And the guard that makes the line above safe, at the level it lives on.
+	--
+	-- A declined link is measured to answer nought lines and to hide the tooltip. What is
+	-- **not** measured is whether the client wipes the font strings while it does, and those
+	-- are what a tooltip is read through - so a reader that trusted the regions would hand
+	-- back whatever was last written on that tooltip by anybody. It is the count that says
+	-- there is nothing there, not the region being empty.
+	do
+		_G.FamilyScanTooltipTextLeft1 =
+			{ GetText = function() return "somebody else's tooltip" end }
+
+		check("a tooltip that wrote no lines is not read out of the regions left behind",
+			Family:ScanTooltipLine(function() end, 1) == nil,
+			tostring(Family:ScanTooltipLine(function() end, 1)))
+
+		_G.FamilyScanTooltipTextLeft1 = nil
+	end
+
+	FamilyDB.quests = {}
+	forgetQuests()
 	_G.GetQuestLink = function(id)
 		if id == 9001 then
 			return "|cffffff00|Hquest:9001:61|h[Les Longues-Barbes]|h|r"
@@ -15301,11 +15410,17 @@ print("a quest called what this client calls it")
 					payload = { quests = { seen = time(), entries = {
 						{ title = "The Longbeards", level = 61, id = 9001,
 							category = "Hellfire Peninsula" },
+						-- The one only the tooltip can name: this client's
+						-- `GetQuestLink` says nothing about it, which is the
+						-- ordinary state of a sibling's quest.
+						{ title = "The Lost Tablets of Mosh'aru", level = 58,
+							id = 9003, category = "Hellfire Peninsula" },
 					} } },
 					seen = time(),
 				},
 			} } },
 	}
+	knowQuest(9003, "Les tablettes perdues de Mosh'aru")
 	Family.Wide:SetSibling("namefam", "Speaker-Thunderstrike", true)
 
 	local key = Family.Wide:BorrowedKey("namefam", "Speaker-Thunderstrike")
@@ -15321,11 +15436,25 @@ print("a quest called what this client calls it")
 	check("and not as their client wrote it",
 		said:find("The Longbeards", 1, true) == nil, said)
 
+	-- The row the client will only describe through its tooltip, drawn. The level has to
+	-- reach that call from the row, and the mutation that stops passing it lands here.
+	check("and a quest only the tooltip will name is named too",
+		said:find("Les tablettes perdues de Mosh'aru", 1, true) ~= nil, said)
+	check("nor that one as their client wrote it",
+		said:find("The Lost Tablets", 1, true) == nil, said)
+
 	-- **And the whole-family view**, which is a different function and was not covered: the
 	-- mutation that made it keep the recorded title failed nothing at all. That view groups by
 	-- the quest id, so what changes here is only what the row is called - but a row called by
 	-- one client's word in a list built for another is the fault this exists to remove.
 	do
+		-- Emptied first, or this proves nothing: the page above has already asked and
+		-- written the answers down, and a store hit needs no level and no tooltip. The
+		-- mutation that stops this view passing the level failed nothing at all until
+		-- the store was cleared - the same shape as the one that caught nothing here
+		-- when the view was first covered.
+		FamilyDB.quests = {}
+
 		Family.UI:Show()
 		Family.UI:ShowTab("character")
 		clickButton("Quests")
@@ -15335,9 +15464,15 @@ print("a quest called what this client calls it")
 		check("the whole-family view names it as this client does",
 			drawnText("Les Longues-Barbes"))
 		check("and not as the record has it", drawnText("The Longbeards") == false)
+
+		check("and there too a quest only the tooltip will name",
+			drawnText("Les tablettes perdues de Mosh'aru"))
+		check("and not as the record has that one",
+			drawnText("The Lost Tablets of Mosh'aru") == false)
 	end
 
 	Family.Wide:SetSibling("namefam", "Speaker-Thunderstrike", false)
+	forgetQuests()
 	FamilyDB.wide, FamilyDB.quests = heldWide, heldQuests
 	_G.GetQuestLink, _G.C_QuestLog = heldLink, heldLog
 	Family.UI:Refresh()

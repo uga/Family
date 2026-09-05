@@ -2120,3 +2120,48 @@ the keyboard, and asserts the swap still happens. Four mutations, and the first 
 one of them: putting the event back, leaving the watcher running after the pointer goes, and
 arriving on a row with the key already held were all invisible until three more checks were
 written for them. A mutation that "does nothing" is a check that is not there.
+
+---
+
+## L-057 — Two calls said no, and the answer was already on screen
+
+`Names:Quest` was built to name a sibling's quest from its id. Two routes were tried and both
+were read back: `C_QuestLog.GetTitleForQuestID` and `GetQuestLink`. On a live client neither
+answered for a quest the player was not on, and the probe that asked printed **nothing at all** -
+because `GetQuestLink` raises for a quest with no data rather than returning nothing, so the
+error landed before the `print` and a one-line probe with two arguments said less than it looked
+like it would.
+
+Then wago was checked, properly and usefully: `QuestV2` on all three pinned builds carries
+`ID,UniqueBitFlag` and no name, `Quest` and `QuestLine` are not tables at all. There is no file
+to ship.
+
+**From that I concluded the client cannot name a quest it has never been given, and wrote it into
+`DATASOURCES.md`, `DECISIONS.md` and a commit message.** It is wrong, and Family's own code had
+been disproving it on screen for a day: `Tooltip.lua` asks the client with
+`SetHyperlink("quest:<id>:<level>")`, and Alberto sent a screenshot of a **level 5 character
+reading a level 58 sibling's quest, in French, title and objectives** - a quest that character
+can never have had.
+
+The mistake is not "I missed an API". It is that **two calls failing was treated as the client
+failing**, when the two share one precondition - the quest being in the player's own log - and a
+third route in the same repository does not. Two negatives from one family of calls are one
+negative.
+
+What makes it worse and more useful: the disproof was not in a manual. It was in a screenshot of
+Family, taken by the person I was telling it could not be done, in the same conversation.
+
+**The check that now catches it.** The harness's tooltip stub used to describe every quest id it
+was handed. That was a claim about the client - `quest:999999:60` answers nought lines, already
+measured in this file's own comment - and it was a convenient one until a title started being
+read out of line one. It now describes only quests in the player's own log fixture and ones a
+block has registered with `knowQuest`, so a check about a sibling's quest is a check about a
+quest this client would have to be asked for. The route is covered end to end on both views, and
+the mutation that removes it fails four checks.
+
+**And a second thing this cost.** A tooltip is read through font strings named after it, and the
+stub kept `__lines` and those regions in step for some setters and not others - so a quest came
+back called *Lesser Mana Oil*, out of a guild bank read four thousand lines earlier. The stub now
+publishes and clears them together, and `Family:ScanTooltipLine` trusts the line **count** rather
+than the region, with a check that stands up a stale region to prove it.
+

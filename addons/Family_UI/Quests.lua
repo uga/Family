@@ -280,7 +280,7 @@ function UI:QuestLines(key, meta, matches)
 				-- it. The zone above it has read this way since the same afternoon, and a
 				-- row whose heading was translated and whose name was not would be half a
 				-- fix that looked like a fault.
-				local named = Family.Names:Quest(quest.id, quest.title)
+				local named = Family.Names:Quest(quest.id, quest.title, quest.level)
 
 				rows[#rows + 1] = {
 					left = left,

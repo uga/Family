@@ -315,7 +315,7 @@ end
 -- The recorded word last. That is what a quest nobody on this account has done reads as, and it
 -- is the same word the panel drew before any of this existed - so this costs nothing where it
 -- cannot help.
-function Names:Quest(id, recorded)
+function Names:Quest(id, recorded, level)
 	if type(id) == "number" then
 		local known = questStore()
 		if known then
@@ -344,6 +344,34 @@ function Names:Quest(id, recorded)
 			if type(name) == "string" and name ~= "" then
 				self:LearnQuest(id, name)
 				return name
+			end
+		end
+
+		-- And the route that reaches a quest nobody on this account has ever had.
+		--
+		-- Alberto found it in a screenshot of Family's own tooltip: a level 5 character
+		-- hovering a level 58 quest belonging to a sibling, and the client describing it
+		-- **in French**, title and objectives, for a quest that character can never have
+		-- seen. So the two calls above are not the client's only answer - they are the two
+		-- that need the quest to be in the player's own log - and the conclusion drawn from
+		-- them failing was wrong (L-057).
+		--
+		-- `Tooltip.lua` already asks this way and measured the form: a bare `quest:84`
+		-- answers nought lines and `quest:84:20` answers three, so **the level is part of
+		-- the question** and a row without one cannot ask it. The title is the first line.
+		--
+		-- Read off the scanning tooltip rather than the one on screen, because this is
+		-- wanted while a panel is being drawn and the visible tooltip belongs to whatever
+		-- the pointer is over.
+		if type(level) == "number" then
+			local said = Family:ScanTooltipLine(function(tip)
+				Family:TryCall(tip.SetHyperlink, tip,
+					"quest:" .. id .. ":" .. level)
+			end, 1)
+
+			if type(said) == "string" and said ~= "" then
+				self:LearnQuest(id, said)
+				return said
 			end
 		end
 	end

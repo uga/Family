@@ -1671,15 +1671,28 @@ raid - and not the quests. So there is no file to ship, which makes this a diffe
 the hearthstone's. That one was a **trade** refused at 876 KB (L-020); this is not a trade at
 all.
 
-**And the live client answers only about a quest the server has described to it.** The first
-probe of `GetQuestLink` on a quest the character was not on printed *nothing at all* - the call
-raises rather than returning nothing, and the error landed before the `print`, which is why a
-one-line probe with two arguments said less than it looked like it would. `Family:TryCall` is
-what makes that a fallthrough in play rather than a broken panel.
+**`C_QuestLog.GetTitleForQuestID` and `GetQuestLink` answer only about a quest in the player's own
+log.** The first probe of `GetQuestLink` on a quest the character was not on printed *nothing at
+all* - the call raises rather than returning nothing, and the error landed before the `print`,
+which is why a one-line probe with two arguments said less than it looked like it would.
+`Family:TryCall` is what makes that a fallthrough in play rather than a broken panel.
 
-That is the whole of why quest titles are remembered rather than fetched: see the `Names:Quest`
-store in `addons/Family/Names.lua`, which writes down what this client was told, by id, per
-language. It covers what this account has read and cannot cover more.
+**But the client will still describe the quest, and that was written here as a flat "it cannot"
+for half an hour.** `GameTooltip:SetHyperlink("quest:<id>:<level>")` describes a quest the
+character has never had, **in the reader's own language**. Alberto's screenshot is the
+measurement: a level 5 French character hovering a sibling's level 58 quest, and the client
+drawing *Les tablettes perdues de Mosh'aru* with its objectives under it. `Tooltip.lua` had been
+asking that way since the day before, so Family's own screen was disproving the claim while it
+was being made (L-057).
+
+The form matters and is measured in `Tooltip.lua`: a bare `quest:84` answers **nought lines** and
+`quest:84:20` answers three. So **the level is part of the question**, and a row with no level
+recorded cannot ask it. The title is the first line.
+
+So the two failing calls are not "the client cannot" - they are two calls that share one
+precondition. `Names:Quest` now asks the tooltip as its third route, and every answer any route
+gives is written down by id per language, because the tooltip is the expensive one and a store
+turns it into one question per quest for the life of the account.
 
 ### `GetZoneText` does not answer with an area name, measured 2026-09-05
 

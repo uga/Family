@@ -19,11 +19,9 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
-- **Quest names you can read.** Family now remembers what your own game called each quest it has
-  seen, and uses that when it shows you somebody else's list - so a quest one of your characters
-  has done reads in your language even when the character who is on it plays in another. A quest
-  nobody on your account has ever picked up still reads in the words it was recorded in: the game
-  will not name a quest it has never given you, and there is no list of them to look it up in.
+- **Quest names you can read.** Somebody else's quest list now reads in your own language, whoever
+  recorded it - Family asks your game what each quest is called, the same way it already knows
+  what to put in the tooltip, and remembers the answers so it only ever asks once.
 
 - **Miscellaneous says where each character logged out.** Zone on one line and subzone under it,
   in your own language rather than in whichever one that character was played in - and shared

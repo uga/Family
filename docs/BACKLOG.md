@@ -1101,9 +1101,21 @@ A French player whose own alt has done *The Love Potion* then reads an English s
 of it in French. Kept **per language**, unlike the areas store: that one is word to id so a
 second language only adds keys, this one is id to word and would overwrite.
 
-It covers what this account has seen and it cannot cover more. A quest nobody here has picked up
-keeps the recorded word, and that is the floor rather than a gap - there is no source that would
-raise it.
+**And the floor was lower than it needed to be, which Alberto found the same hour.** A screenshot
+of Family's own tooltip: a level 5 character hovering a sibling's level 58 quest, and the client
+describing it **in French**. So *the client cannot name a quest it was never given* was wrong,
+and the disproof had been on screen since `Tooltip.lua` started asking with
+`SetHyperlink("quest:<id>:<level>")` the day before. Two calls failing had been read as the
+client failing, when both need the quest to be in the player's own log and the tooltip does not
+(L-057).
+
+So the tooltip is the third route, after the store and the two direct calls, and the **level** is
+half the question - a bare `quest:84` answers nought lines. Both panels pass `quest.level`
+through. The store still earns its place and is what makes this affordable: one tooltip per quest
+for the life of the account, rather than one per row per draw.
+
+Now it covers every quest the client will describe, which is every real quest - not only what
+this account has read.
 
 **Closed, 2026-09-05.**
 

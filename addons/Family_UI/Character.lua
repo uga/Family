@@ -1305,7 +1305,8 @@ local function build(frame)
 									-- the way the zone above it is. The row is
 									-- keyed by the id either way, so this changes
 									-- what it is called and never what it is.
-									title = Family.Names:Quest(quest.id, quest.title),
+									title = Family.Names:Quest(quest.id,
+										quest.title, quest.level),
 									level = quest.level,
 									category = zoneOf(quest.category), people = {} }
 								byQuest[id] = row
@@ -1323,7 +1324,7 @@ local function build(frame)
 							row.level = row.level or quest.level
 							row.category = row.category or zoneOf(quest.category)
 							row.title = row.title
-								or Family.Names:Quest(quest.id, quest.title)
+								or Family.Names:Quest(quest.id, quest.title, quest.level)
 						end
 					end
 				end

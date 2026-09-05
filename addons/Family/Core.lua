@@ -197,6 +197,38 @@ local function scanTooltip()
 	return scanner
 end
 
+-- One line of what the client would say about a thing, or nothing.
+--
+-- The aiming is the caller's, the way `chargesShown` below takes its setter from the caller and
+-- for a weaker version of the same reason: which setter is right depends on what is being asked
+-- about, and this file has no business guessing.
+--
+-- Nothing is an ordinary answer rather than a fault. A client that will not describe the thing
+-- builds no lines, and a client without that setter at all says the same.
+function Family:ScanTooltipLine(aim, index)
+	if type(aim) ~= "function" then return nil end
+
+	local tip = scanTooltip()
+	if not tip then return nil end
+
+	Family:TryCall(tip.SetOwner, tip, _G.UIParent, "ANCHOR_NONE")
+	Family:TryCall(tip.ClearLines, tip)
+	aim(tip)
+
+	index = index or 1
+
+	-- Bracketed, because TryCall hands back whatever the client returned and tonumber's
+	-- second argument is a base (L-031).
+	local lines = tonumber((Family:TryCall(tip.NumLines, tip))) or 0
+	if lines < index then return nil end
+
+	local region = _G[SCAN_TOOLTIP .. "TextLeft" .. index]
+	local text = region and Family:TryCall(region.GetText, region)
+	if type(text) == "string" and text ~= "" then return text end
+
+	return nil
+end
+
 -- "%d Charges", turned into something to match against, out of the client's own format string.
 --
 -- Never the English. `ITEM_SPELL_CHARGES` is `%d |4Charge:Charges;` on an English client and
