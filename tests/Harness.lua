@@ -14795,6 +14795,80 @@ print("where a character was when they logged out")
 		check("and the row is tall enough to hold it", (tall or 0) > 18, tostring(tall))
 	end
 
+	-- **And it crosses a Wide Family link**, which is where this would otherwise have been
+	-- shared and never read - the class of fault L-052 is about, met four times already. The
+	-- three fields are in the `character` category; nothing said so from the far side.
+	--
+	-- It is also where the translation earns its keep: the sibling's record was written by a
+	-- client running another language, and this reader's client names the zone in theirs. The
+	-- subzone cannot be, and the check says that out loud rather than leaving it to be noticed.
+	do
+		local heldWide = FamilyDB.wide
+		FamilyDB.wide = {
+			enabled = true, id = "us", requests = {}, pendingOut = {},
+			links = { ["zonefam"] = { name = "Wanderer-Thunderstrike", grants = {},
+				siblings = {},
+				members = {
+					["Wanderer-Thunderstrike"] = {
+						meta = { name = "Wanderer", realm = "Thunderstrike",
+							classFile = "MAGE", level = 60, faction = "Alliance",
+							-- Recorded on an English client: the word says one thing
+							-- and the id says the same thing in every language.
+							zone = "Searing Gorge", zoneID = 2257,
+							subzone = "Pyrox Flats" },
+						seen = time(),
+					},
+				} } },
+		}
+		Family.Wide:SetSibling("zonefam", "Wanderer-Thunderstrike", true)
+		Family.UI:Refresh()
+
+		local borrowed = Family.Wide:BorrowedKey("zonefam", "Wanderer-Thunderstrike")
+		local theirs
+		for _, f in ipairs(frames) do
+			if f.cells and f.__shown == true and f.memberKey == borrowed then
+				theirs = f.cells[at] and f.cells[at].__text
+			end
+		end
+
+		check("a linked family's character brings where they logged out with them",
+			theirs ~= nil and theirs ~= "", tostring(theirs))
+		check("with the zone in this reader's language and not the one it was recorded in",
+			theirs and theirs:find("Les Steppes Ardentes", 1, true) ~= nil,
+			tostring(theirs))
+		check("and the subzone as they recorded it, because there is no id to translate it "
+			.. "from", theirs and theirs:find("Pyrox Flats", 1, true) ~= nil,
+			tostring(theirs))
+
+		Family.Wide:SetSibling("zonefam", "Wanderer-Thunderstrike", false)
+		FamilyDB.wide = heldWide
+	end
+
+	-- **And that it is sent**, which the block above does not prove and looked as though it
+	-- did. That one hands the sibling its record directly, so it measures how a *received*
+	-- one is drawn; whether the three fields are in the `character` category is a different
+	-- question, and the mutation that took them out of it failed nothing at all.
+	do
+		local heldWide = FamilyDB.wide
+		FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
+			links = { ["outfam"] = { name = "Nosy-Thunderstrike",
+				grants = { [key] = { character = true } }, siblings = {}, members = {} } } }
+
+		local offered = Family.Wide:Offering(FamilyDB.wide.links["outfam"])
+		local sent = offered and offered[key]
+
+		check("a member whose character facts are granted is offered at all", sent ~= nil
+			and sent.meta ~= nil)
+		check("and where they logged out goes with them",
+			sent and sent.meta and sent.meta.zone ~= nil, tostring(sent and sent.meta
+				and sent.meta.zone))
+		check("the subzone too", sent and sent.meta and sent.meta.subzone ~= nil)
+		check("and the id, which is the whole of what makes the zone translatable",
+			sent and sent.meta and sent.meta.zoneID ~= nil)
+
+		FamilyDB.wide = heldWide
+	end
+
 	_G.C_Map, _G.GetZoneText, _G.GetSubZoneText = heldMap, heldZone, heldSub
 	clickButton(Family.L["Overview"])
 	Family.UI:Refresh()

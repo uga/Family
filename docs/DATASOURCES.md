@@ -1621,3 +1621,32 @@ profession's recipe list, which is only readable while its window is open.
 Backlog entry 10 spent its first probe on `GetSpellTabInfo` and found four tabs, all of them the
 character's own - *Demonology* is the warlock's talent tree and not the demon's book. This is the
 right door.
+
+### What crosses a Wide Family link as a word, and cannot be translated
+
+Read 2026-09-05, after Alberto asked whether a subzone is the only shared thing a reader sees in
+somebody else's language. It is not, and the difference between the cases is worth having
+written down.
+
+Nearly everything Family shares carries an **identity** beside the word, and the reader's own
+client turns the identity into the reader's own language. A hearthstone has `hearthID`, a race
+has `raceFile` and `raceID`, a profession is a skill line id, a recipe carries a spell id and an
+item id, and a logout zone has `zoneID`. In every one of those the word is a fallback for a
+client that has never heard of the id - a Northrend area on an Era client - and not the thing
+normally shown.
+
+**Three shared things are words with no identity behind them:**
+
+- **A subzone.** `GetSubZoneText` answers with a word and there is nothing that turns one back
+  into an id. This one is not a gap that can be closed later; there is nothing to close it with.
+- **A quest's title**, and
+- **the zone heading a quest is filed under**, both in the `quests` payload, both drawn as
+  recorded by `UI:QuestLines`.
+
+The two quest cases are unlike the subzone in the one way that matters: a quest **does** have an
+id, recorded since 2026-09-05, and `GetQuestLink` names a quest from it in the reader's own
+language. So those are closeable in principle and the subzone is not. Nothing has been built for
+them, and this is written down so that the question is not asked a third time from memory.
+
+The rest of what crosses is proper nouns - a character's name, a realm, a guild - which are the
+same word in every language and are not a translation question at all.
