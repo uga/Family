@@ -512,7 +512,7 @@ Nine mutations, every one caught. The seventh caught a check of my own that was 
 fallback rather than on the resolution, because the fixture's realm was the realm the harness
 plays on; L-049.
 
-### A sibling's crafting cooldowns: the path works, the data is not arriving
+### A sibling's crafting cooldowns: the path works, the data was not arriving — ANSWERED 2026-09-05
 
 Reported from play 2026-09-05, with two screenshots: the summary's professions set lists a
 linked family's six characters, one of them an alchemist, and the crafting set lists only our
@@ -541,6 +541,17 @@ than guessed at:
 
 Skills present and cooldowns absent says it is their build. Both absent says the grant is not on
 for that member. Cooldowns present says the fault is somewhere this entry has not looked.
+
+**Answered the same day.** All six siblings came back `none skills` - the grant is on and the
+fields are not in it. So it is the sender's build, and there is nothing to fix here.
+
+**One thing worth saying out loud, because Alberto's own reading of it was that the other family
+had not granted the cooldowns.** There is nothing for them to grant. The three fields live inside
+the `professions` category, which is why `skills` arrive from the same consent - the note at
+`Family/Wide.lua` line 52 says a link that granted Professions starts sending them at the next
+exchange without being asked again. The other side has to **update Family**, not tick anything.
+That distinction is the difference between a message that fixes it and one that sends somebody
+looking for a box that does not exist.
 
 ---
 
