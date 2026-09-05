@@ -223,7 +223,8 @@ filter bar is. The shape this wants is the one `UI:CreateChoicePicker` already s
 built once, used by every panel that lists characters. That extraction is the work; the filters
 themselves are a line each afterwards.
 
-**Slice four — a whole-family mode for Quests.** It has none today. The parallel is the
+**Slice four — a whole-family mode for Quests. Done 2026-09-05.** A quest and the people on it,
+three at a time, built the way the reputations view is. It had none today. The parallel is the
 professions panel's family mode, which searches recipes across everybody: here it is *which
 members have this quest*, and the filters follow from that.
 

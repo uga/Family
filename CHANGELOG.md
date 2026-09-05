@@ -32,6 +32,11 @@ is a decision rather than an afternoon of archaeology.
   recipe's colour and the skill it needed are what one character sees, and across forty there
   is no single answer.
 
+- **Everybody's quests at once.** The Quests section now has a *Whole family* switch like gear
+  and reputations. It lists quests rather than characters: one line per quest, and under it
+  whoever has it, furthest along first, each with their own progress. Three at a time, with the
+  rest a click away. So *who else is on this* is one look instead of forty.
+
 - **A recipe row reads both ways.** Family's recipe rows show what the recipe makes; hold CTRL
   with the pointer on one and it shows the recipe itself, without moving the mouse. The row
   says the key is there. Where a recipe makes no item - every enchant - nothing is offered,

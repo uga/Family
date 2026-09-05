@@ -122,10 +122,11 @@ local function membersKnown()
 	return UI:EveryMember()
 end
 
--- The faction whose people are all showing, if any. On the panel rather than on a row, because
--- rows are pooled and a row would carry it into whatever is drawn next.
+-- The faction, and the quest, whose people are all showing. On the panel rather than on a row,
+-- because rows are pooled and a row would carry it into whatever is drawn next.
 UI:OnFold("character", function()
 	UI.__openFaction = nil
+	UI.__openQuest = nil
 end)
 
 -- How many of a faction's people are shown before the rest are folded away, and how much room
@@ -429,11 +430,15 @@ local function build(frame)
 	-- their columns are called when they are showing it. Gear draws a character sheet and
 	-- keeps its three blanks; reputations become a list of factions rather than of members,
 	-- so all three headings change.
-	local FAMILY_SECTIONS = { ["Equipped gear"] = true, Reputations = true }
+	local FAMILY_SECTIONS = { ["Equipped gear"] = true, Reputations = true, Quests = true }
 	local FAMILY_HEADINGS = {
 		-- Faction, then who, then how far they got. It was faction / furthest / held by,
 		-- which is the shape of a single winner rather than of a list of people.
 		Reputations = { L["Faction"], L["Character"], L["Standing"] },
+		-- The quest, then who has it, then how far they are. Per member it is level /
+		-- quest / progress, because there the quest is the answer; across the family the
+		-- quest is the question and the names are the answer.
+		Quests = { L["Quest"], L["Character"], L["Progress"] },
 	}
 
 	local headerRow = CreateFrame("Frame", nil, frame)
@@ -610,6 +615,13 @@ local function build(frame)
 				return
 			end
 
+			if self.expandQuest then
+				UI.__openQuest = (UI.__openQuest ~= self.expandQuest)
+					and self.expandQuest or nil
+				frame:Refresh()
+				return
+			end
+
 			if self.questID or self.questTitle then
 				if UI:OpenQuest(self.memberKey, self.questID, self.questTitle) then
 					UI:StepAside()
@@ -706,7 +718,7 @@ local function build(frame)
 			-- And the right one, for the same reason: the family reputations section
 			-- widens it to hold a standing and a score together.
 			r.right:SetWidth(140)
-			r.expandFaction = nil
+			r.expandFaction, r.expandQuest = nil, nil
 			r.itemID, r.spellID, r.questID = nil, nil, nil
 			r.achievementID, r.fallback = nil, nil
 			r.currencyID = nil
@@ -1172,6 +1184,182 @@ local function build(frame)
 
 			return finish(string.format(L["|cffffd700%d|r of %d factions   |cff888888|||r"
 				.. "   %d with reputations recorded"], shown, #order, people))
+		end
+
+		------------------------------------------------------------------------------------
+		-- Everybody's quests at once
+		--
+		-- The per-member reading below answers "what is this character doing"; this answers
+		-- "who is on this one", which is the question a family asks - a group quest wants
+		-- somebody else at the same step, and a quest three of them are stuck on is worth
+		-- knowing before a fourth starts it.
+		--
+		-- Keyed by the quest's id where the client gave one, and by its title where it did
+		-- not. Two rows for one quest is the fault §2.1 exists to prevent, and a title is a
+		-- language: a family plays across clients, and the id is the same word in all of
+		-- them.
+		------------------------------------------------------------------------------------
+
+		if section == "Quests" and familyView then
+			local byQuest, order = {}, {}
+			local people = 0
+
+			for _, group in ipairs(gearRoster()) do
+				for _, entry in ipairs(group.members) do
+					local meta = entry.meta or {}
+					if filters:Passes(meta) then
+						local log = (UI:Payload(entry.key) or {}).quests
+						if log and log.entries and #log.entries > 0 then
+							people = people + 1
+						end
+
+						for _, quest in ipairs((log or {}).entries or {}) do
+							local id = quest.id and ("id:" .. quest.id)
+								or ("title:" .. tostring(quest.title))
+							local row = byQuest[id]
+
+							if not row then
+								row = { id = id, title = quest.title,
+									level = quest.level,
+									category = quest.category, people = {} }
+								byQuest[id] = row
+								order[#order + 1] = row
+							end
+
+							row.people[#row.people + 1] = {
+								entry = entry,
+								done = quest.done or 0,
+								objectives = quest.objectives,
+							}
+
+							-- A quest only some of them have is still that quest, and
+							-- the level and zone come from whoever's record had them.
+							row.level = row.level or quest.level
+							row.category = row.category or quest.category
+							row.title = row.title or quest.title
+						end
+					end
+				end
+			end
+
+			local byCategory, categories, shown = {}, {}, 0
+			for _, row in ipairs(order) do
+				if matches(row.title) or matches(row.category) then
+					local group = row.category or L["Elsewhere"]
+					if not byCategory[group] then
+						byCategory[group] = {}
+						categories[#categories + 1] = group
+					end
+					table.insert(byCategory[group], row)
+					shown = shown + 1
+				end
+			end
+
+			if shown == 0 then
+				return finish(#order == 0
+					and L["|cff9d9d9dNo quest has been recorded for anybody yet.|r"]
+					or L["|cffffaa00Nothing matches those filters.|r"])
+			end
+
+			table.sort(categories)
+
+			local function labelFor(entry)
+				local who = UI:NameOf(entry.meta or {})
+				if entry.familyName then
+					who = string.format(L["%s |cff9d9d9dof %s|r"], who,
+						tostring(entry.familyName))
+				end
+				return who
+			end
+
+			-- How far one of them is, in the words the per-member reading uses.
+			local function progressOf(person)
+				if not person.objectives or person.objectives <= 0 then return "" end
+				if person.done >= person.objectives then
+					return L["|cff40bf40ready to hand in|r"]
+				end
+				return string.format("|cff888888%d / %d|r", person.done,
+					person.objectives)
+			end
+
+			for _, group in ipairs(categories) do
+				local heading = nextRow()
+				heading.left:SetText("|cff88bbff" .. group .. "|r")
+				heading.left:SetWidth(220)
+				heading.right:SetText("|cff888888" .. #byCategory[group] .. "|r")
+
+				-- Hardest first inside a zone, then by name, which is the order the
+				-- per-member reading already uses for the same rows.
+				table.sort(byCategory[group], function(a, b)
+					local levelA, levelB = a.level or 0, b.level or 0
+					if levelA ~= levelB then return levelA > levelB end
+					return tostring(a.title) < tostring(b.title)
+				end)
+
+				for _, row in ipairs(byCategory[group]) do
+					-- Whoever is furthest along first, then by name. Total, so that two
+					-- draws of one page agree: an order that stops at its keys leaves
+					-- the rest to `table.sort`'s own arrangement.
+					table.sort(row.people, function(a, b)
+						local left = (a.objectives or 0) > 0
+							and (a.done / a.objectives) or 0
+						local right = (b.objectives or 0) > 0
+							and (b.done / b.objectives) or 0
+						if left ~= right then return left > right end
+						return tostring((a.entry.meta or {}).name)
+							< tostring((b.entry.meta or {}).name)
+					end)
+
+					local open = UI.__openQuest == row.id
+					local limit = open and #row.people
+						or math.min(FACTION_PEOPLE, #row.people)
+					local foldable = #row.people > FACTION_PEOPLE
+
+					for index = 1, limit do
+						local person = row.people[index]
+						local held = person.entry.meta or {}
+
+						local r = nextRow()
+						r.memberKey = person.entry.key
+						r.left:SetWidth(220)
+						r.right:SetWidth(FACTION_RIGHT)
+
+						-- The quest is written once, against its first member. Said on
+						-- every line it would read as a different quest each time.
+						r.left:SetText(index == 1
+							and string.format("  %s |cff888888%s|r", row.title or "?",
+								row.level and tostring(row.level) or "")
+							or "")
+						r.middle:SetText(labelFor(person.entry))
+						r.right:SetText(progressOf(person))
+
+						r.fallback = {
+							{ row.title or "?" },
+							{ group },
+							{ held.name or person.entry.key or "?" },
+						}
+
+						if foldable and index == 1 then
+							r.expandQuest = row.id
+							r.highlight:Show()
+						end
+					end
+
+					if foldable then
+						local r = nextRow()
+						r.left:SetWidth(220)
+						r.right:SetWidth(FACTION_RIGHT)
+						r.middle:SetText(open and L["|cff888888fewer|r"]
+							or string.format(L["|cff888888and %d more|r"],
+								#row.people - limit))
+						r.expandQuest = row.id
+						r.highlight:Show()
+					end
+				end
+			end
+
+			return finish(string.format(L["|cffffd700%d|r of %d quests   |cff888888|||r"
+				.. "   %d with quests recorded"], shown, #order, people))
 		end
 
 		if not member then

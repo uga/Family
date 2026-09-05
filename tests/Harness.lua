@@ -6266,6 +6266,159 @@ print("the character panel's filters, asked of the widget")
 end)()
 
 
+print()
+print("everybody's quests at once")
+
+-- The last named slice of backlog entry 3. The per-member reading answers "what is this
+-- character doing"; this answers "who is on this one", which is the question a family asks - a
+-- group quest wants somebody else at the same step, and a quest three of them are stuck on is
+-- worth knowing before a fourth starts it.
+--
+-- Before the second panel build below, for the reason the block above is: both builds claim the
+-- same globals, and a check written after them drives one panel and measures the other.
+;(function()
+	local shared = { title = "The Shared Errand", level = 40, id = 5001,
+		objectives = 5, category = "Desolace" }
+
+	local roster = {
+		{ key = "Qone-FireMaw", name = "Qone", done = 5 },
+		{ key = "Qtwo-FireMaw", name = "Qtwo", done = 3 },
+		{ key = "Qthree-FireMaw", name = "Qthree", done = 2 },
+		{ key = "Qfour-FireMaw", name = "Qfour", done = 1 },
+	}
+
+	for _, member in ipairs(roster) do
+		Family.Database:SetMeta(member.key, { name = member.name, realm = "Fire Maw",
+			level = 60, classFile = "MAGE", faction = "Alliance" })
+		Family.Database:SetPayload(member.key, { quests = { seen = time(), entries = {
+			{ title = shared.title, level = shared.level, id = shared.id,
+				objectives = shared.objectives, done = member.done,
+				category = shared.category },
+		} } })
+	end
+
+	Family.UI:Show()
+	Family.UI:ShowTab("character")
+	check("the quests section can be opened", clickButton("Quests"))
+
+	local switch = _G.FamilyGearWholeFamily
+	local filters = Family.UI.__characterFilters
+	if switch and filters and not filters.frame:IsShown() then
+		switch.__scripts.OnClick(switch)
+	end
+	Family.UI:Refresh()
+
+	check("and it has a whole-family reading of its own",
+		filters and filters.frame:IsShown() == true)
+
+	local function rowSaying(needle)
+		for _, f in ipairs(frames) do
+			local left = type(f.left) == "table" and f.left.__text
+			if f.__shown ~= false and type(left) == "string"
+				and left:find(needle, 1, true) then
+				return f
+			end
+		end
+		return nil
+	end
+
+	-- The lines under a quest, walked from its own row. Anything that is not one of this
+	-- panel's rows is stepped over rather than read as the end of the block.
+	local function under(head, needle)
+		local at
+		for index, f in ipairs(frames) do
+			if f == head then
+				at = index
+				break
+			end
+		end
+		if not at then return nil end
+
+		for index = at + 1, #frames do
+			local f = frames[index]
+			if type(f.left) == "table" and type(f.middle) == "table"
+				and type(f.right) == "table" then
+				local left = f.left.__text
+				if f.__shown == false or type(left) ~= "string" or left ~= "" then
+					break
+				end
+				local middle = f.middle.__text
+				if type(middle) == "string" and middle:find(needle, 1, true) then
+					return f
+				end
+			end
+		end
+		return nil
+	end
+
+	-- The row that folds a quest out or back, found by the quest it carries. A row from a
+	-- growing pool is last in `frames` the first time it is made, so walking to it misses it.
+	local function foldRow(needle)
+		for _, f in ipairs(frames) do
+			local middle = type(f.middle) == "table" and f.middle.__text
+			if f.__shown ~= false and f.expandQuest == "id:5001"
+				and type(middle) == "string" and middle:find(needle, 1, true) then
+				return f
+			end
+		end
+		return nil
+	end
+
+	local quest = rowSaying(shared.title)
+	check("a quest four of them are on is one row", quest ~= nil)
+
+	if quest then
+		check("with the one who is furthest along on its own line",
+			(quest.middle.__text or ""):find("Qone", 1, true) ~= nil,
+			quest.middle.__text)
+		check("and said to be ready, because they are",
+			(quest.right.__text or ""):find(Family.L["|cff40bf40ready to hand in|r"],
+				1, true) ~= nil, quest.right.__text)
+
+		check("and the next of them under it", under(quest, "Qtwo") ~= nil)
+		check("with their own progress rather than the family's best",
+			under(quest, "Qtwo")
+				and (under(quest, "Qtwo").right.__text or ""):find("3 / 5", 1, true) ~= nil,
+			under(quest, "Qtwo") and under(quest, "Qtwo").right.__text)
+
+		check("only three of them at once", under(quest, "Qfour") == nil)
+
+		local more = foldRow(string.format(Family.L["|cff888888and %d more|r"], 1))
+		check("and the rest offered rather than dropped", more ~= nil)
+
+		if more then
+			more.__scripts.OnClick(more)
+			quest = rowSaying(shared.title)
+			check("clicking that shows them",
+				quest and under(quest, "Qfour") ~= nil)
+
+			local fewer = foldRow(Family.L["|cff888888fewer|r"])
+			if fewer then fewer.__scripts.OnClick(fewer) end
+		end
+
+		-- And the filters act on the people, in this reading too.
+		if filters then
+			filters.maxBox:SetText("30")
+			if filters.maxBox.__scripts and filters.maxBox.__scripts.OnTextChanged then
+				filters.maxBox.__scripts.OnTextChanged(filters.maxBox)
+			end
+			Family.UI:Refresh()
+			check("a level range narrows who is listed under a quest",
+				rowSaying(shared.title) == nil)
+
+			filters.maxBox:SetText("")
+			if filters.maxBox.__scripts and filters.maxBox.__scripts.OnTextChanged then
+				filters.maxBox.__scripts.OnTextChanged(filters.maxBox)
+			end
+			Family.UI:Refresh()
+		end
+	end
+
+	if switch then switch.__scripts.OnClick(switch) end
+	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
+	Family.UI:Refresh()
+end)()
+
 -- ...and drawing that section at all takes a client that has them. Which sections exist is
 -- settled when the panel is built, so the panel is loaded a second time with Mists in force.
 -- The double registration is deliberate and confined to here; without it the achievements
@@ -18151,8 +18304,9 @@ print("the family's reputations, as factions rather than as members")
 	-- taken from the pool in the order they are drawn, so walking forward is walking down
 	-- the page.
 	local function blockUnder(head)
+		local page = frames
 		local out, at = {}, nil
-		for index, f in ipairs(frames) do
+		for index, f in ipairs(page) do
 			if f == head then
 				at = index
 				break
@@ -18160,11 +18314,18 @@ print("the family's reputations, as factions rather than as members")
 		end
 		if not at then return out end
 
-		for index = at + 1, #frames do
-			local f = frames[index]
-			local left = type(f.left) == "table" and f.left.__text
-			if f.__shown == false or type(left) ~= "string" or left ~= "" then break end
-			out[#out + 1] = f
+		-- Anything that is not one of this panel's rows is stepped over rather than read as
+		-- the end of the block: other panels put frames in between.
+		for index = at + 1, #page do
+			local f = page[index]
+			if type(f.left) == "table" and type(f.middle) == "table"
+				and type(f.right) == "table" then
+				local left = f.left.__text
+				if f.__shown == false or type(left) ~= "string" or left ~= "" then
+					break
+				end
+				out[#out + 1] = f
+			end
 		end
 		return out
 	end
@@ -18206,7 +18367,18 @@ print("the family's reputations, as factions rather than as members")
 	-- addon is read in five languages and a needle typed in one of them finds nothing in
 	-- the other four.
 	local moreSaid = string.format(Family.L["|cff888888and %d more|r"], 1)
-	local more = thorium[1] and saidUnder(thorium[1], moreSaid)
+
+	-- By what it carries rather than by where it sits, for the reason the fold-back row
+	-- below carries: a row taken from a growing pool is last in `frames` the first time it
+	-- is made, not beside the rows it was drawn with.
+	local more
+	for _, f in ipairs(frames) do
+		local middle = type(f.middle) == "table" and f.middle.__text
+		if f.__shown ~= false and f.expandFaction == "id:59"
+			and type(middle) == "string" and middle:find(moreSaid, 1, true) then
+			more = f
+		end
+	end
 	check("and the rest are offered rather than dropped", more ~= nil,
 		more and more.middle.__text)
 
@@ -18217,8 +18389,22 @@ print("the family's reputations, as factions rather than as members")
 		check("clicking that shows them",
 			thorium[1] and saidUnder(thorium[1], "Repfour") ~= nil)
 
-		local fewer = thorium[1]
-			and saidUnder(thorium[1], Family.L["|cff888888fewer|r"])
+		-- Found by what it carries, not by where it sits.
+		--
+		-- Rows come from a pool that grows, so the row that folds a faction back is a row
+		-- that was *just made* the first time a page needs it - and a new row is last in
+		-- `frames`, not next to the ones it was drawn beside. Walking to it found three of
+		-- four lines and called the fourth missing. It knows which faction it belongs to,
+		-- so ask it.
+		local fewer
+		for _, f in ipairs(frames) do
+			local middle = type(f.middle) == "table" and f.middle.__text
+			if f.__shown ~= false and f.expandFaction == "id:59"
+				and type(middle) == "string"
+				and middle:find(Family.L["|cff888888fewer|r"], 1, true) then
+				fewer = f
+			end
+		end
 		check("and offers to fold them away again", fewer ~= nil)
 
 		if fewer then

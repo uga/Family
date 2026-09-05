@@ -489,6 +489,11 @@ belonging to a linked family appear here too, marked as theirs. The breakdown ca
 to a single total for a quieter tooltip. Item identifier and item level are available and
 off by default.
 
+**Everybody's quests at once.** The Quests section has a whole-family reading, like gear and
+reputations: one line per quest with the characters who have it under it, furthest along first,
+each with their own progress. Three at a time, with the rest a click away. The filter box acts
+on quest names and zones; the realm, class and level filters act on the characters.
+
 **A recipe row reads both ways.** A recipe is two things — the spell that makes something and
 the item it makes — and Family's own recipe rows show what it makes. Holding **CTRL** with the
 pointer on the row shows the recipe instead, and letting go puts it back, without moving the
