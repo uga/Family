@@ -489,6 +489,10 @@ belonging to a linked family appear here too, marked as theirs. The breakdown ca
 to a single total for a quieter tooltip. Item identifier and item level are available and
 off by default.
 
+**TAB walks the filter boxes.** On any panel with more than one box on its filter row, TAB moves
+the cursor to the next and Shift-TAB to the previous, round rather than stopping at the end. A
+box that is not on the screen is stepped over.
+
 **Everybody's quests at once.** The Quests section has a whole-family reading, like gear and
 reputations: one line per quest with the characters who have it under it, furthest along first,
 each with their own progress. Three at a time, with the rest a click away. The filter box acts

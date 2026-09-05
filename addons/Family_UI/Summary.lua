@@ -1790,6 +1790,9 @@ local function build(frame)
 	counter:SetPoint("RIGHT", -4, 0)
 	counter:SetJustifyH("RIGHT")
 
+	-- TAB from one box to the next, in the order they sit on the row.
+	UI:TabRing({ search, minBox, maxBox })
+
 	local function numberIn(box)
 		local typed = tonumber(box:GetText())
 		return typed and typed > 0 and typed or nil

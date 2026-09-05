@@ -526,6 +526,9 @@ local function build(frame)
 			math.ceil(sortNote:GetStringHeight() or SORT_ROW) + 2))
 	end
 
+	-- TAB from the search box down into the level range, in the order they sit on the panel.
+	UI:TabRing({ search, memberFilters.minBox, memberFilters.maxBox })
+
 	-- Reachable, so that a check can ask whether the caption is still on the screen when the
 	-- controls it describes are not, and which order the list is actually in.
 	UI.__professionsSortNote = sortNote

@@ -485,6 +485,9 @@ local function build(frame)
 	sortNote:SetWidth(math.max(60, (UI.CONTENT_W or 740) - sortX - 16))
 	sortNote:SetJustifyH("LEFT")
 
+	-- TAB from the search box down into the level range, in the order they sit on the panel.
+	UI:TabRing({ search, memberFilters.minBox, memberFilters.maxBox })
+
 	-- The bar, its caption and its buttons, reachable together. A check drives the buttons
 	-- rather than the variable behind them, because a button is what a player has.
 	UI.__contentsSort = { bar = sortBar, note = sortNote, buttons = sortButtons }

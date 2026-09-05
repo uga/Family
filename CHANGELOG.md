@@ -40,6 +40,11 @@ is a decision rather than an afternoon of archaeology.
   the client for it in a form it ignores - so every quest row in Family has been showing its own
   short summary instead. The summary is still there for the quests the game will not describe.
 
+- **TAB moves between the filter boxes.** On the summary, possessions, professions and the
+  character panel, TAB takes the cursor to the next box on the filter row and Shift-TAB to the
+  previous one, round rather than stopping at the end. Boxes that are not on the screen are
+  stepped over.
+
 - **Everybody's quests at once.** The Quests section now has a *Whole family* switch like gear
   and reputations. It lists quests rather than characters: one line per quest, and under it
   whoever has it, furthest along first, each with their own progress. Three at a time, with the

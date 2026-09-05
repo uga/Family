@@ -304,6 +304,43 @@ end
 -- One button, on its own, wide enough for what it says. The rows above are the interesting
 -- case; this is for the buttons that are anchored individually and have nothing to share
 -- their line with.
+-- TAB from one filter box to the next, and Shift-TAB back.
+--
+-- Within one panel, which is the whole of what it means: the boxes on a screen are the ones
+-- somebody is filling in, and a ring that jumped to another panel's box would be jumping to a
+-- box nobody can see.
+--
+-- Skipped where a box is not on the screen, at the moment the key is pressed rather than when
+-- the ring is built: the filter row comes and goes with the whole-family switch, so a ring
+-- fixed at build time sends the cursor to a box that is not there half the time.
+--
+-- Wrapping, because a ring that stops at the end makes the last box a dead end and the only way
+-- back the mouse - which is the thing this exists to save.
+function UI:TabRing(boxes)
+	local function step(from, by)
+		local at
+		for index, box in ipairs(boxes) do
+			if box == from then at = index end
+		end
+		if not at then return end
+
+		for count = 1, #boxes do
+			local index = ((at - 1 + by * count) % #boxes) + 1
+			local box = boxes[index]
+			if box and box.IsVisible and box:IsVisible() then
+				box:SetFocus()
+				return
+			end
+		end
+	end
+
+	for _, box in ipairs(boxes) do
+		box:SetScript("OnTabPressed", function(self)
+			step(self, IsShiftKeyDown and IsShiftKeyDown() and -1 or 1)
+		end)
+	end
+end
+
 function UI:FitButton(button, minimum)
 	if not button then return end
 	local text = button.GetFontString and button:GetFontString()

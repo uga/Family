@@ -347,6 +347,11 @@ local function build(frame)
 	-- Reachable, so a check can drive the controls a player drives.
 	UI.__characterFilters = filters
 
+	-- TAB from one box to the next, in the order they sit on the row: the level range comes
+	-- before the filter box on this panel, because the filters stand where the member picker
+	-- does and the box follows them.
+	UI:TabRing({ filters.minBox, filters.maxBox, search })
+
 	local function matches(text)
 		local needle = (search:GetText() or ""):lower()
 		if needle == "" then return true end

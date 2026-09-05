@@ -500,8 +500,24 @@ function frameMethods:SetParent(parent) self.__parent = parent end
 function frameMethods:SetOwner(owner) self.__owner = owner end
 function frameMethods:GetOwner() return self.__owner end
 
-function frameMethods:SetFocus() self.__focus = true end
-function frameMethods:ClearFocus() self.__focus = false end
+-- One box at a time, which is what the client means by focus and what this did not model.
+--
+-- `SetFocus` set a flag and took it from nobody, so every box the cursor had ever been in
+-- answered yes to `HasFocus` - and three mutations of the tab ring passed against that,
+-- because a check asking whether the *right* box has focus is answered by any of them.
+-- Kept on the method table rather than in a local of its own: this file is already near Lua's
+-- limit of two hundred locals in one function, and one more turned the whole harness into a
+-- compile error rather than a failing check.
+function frameMethods:SetFocus()
+	local held = frameMethods.__focused
+	if held and held ~= self then held.__focus = false end
+	frameMethods.__focused = self
+	self.__focus = true
+end
+function frameMethods:ClearFocus()
+	if frameMethods.__focused == self then frameMethods.__focused = nil end
+	self.__focus = false
+end
 function frameMethods:HasFocus() return self.__focus == true end
 
 function frameMethods:GetItem() return self.__itemName, self.__itemLink end
@@ -6260,6 +6276,37 @@ print("the character panel's filters, asked of the widget")
 		check("offering a realm only a linked family is on",
 			offered["Thunderstrike"] == true)
 
+		-- TAB walks the boxes on this row, and Shift-TAB walks back.
+		--
+		-- Within the panel, which is the whole of what it means - a ring that jumped to
+		-- another panel's box would be jumping to a box nobody can see. Asked for from play,
+		-- because filling in a level range and then reaching for the mouse to type a name is
+		-- three gestures where the keyboard offers one.
+		do
+			local box = _G.FamilyCharacterSearch
+			filters.minBox:SetFocus()
+
+			SHIFT_DOWN = false
+			filters.minBox.__scripts.OnTabPressed(filters.minBox)
+			check("tab moves to the next box on the row",
+				filters.maxBox:HasFocus() == true)
+
+			filters.maxBox.__scripts.OnTabPressed(filters.maxBox)
+			check("and on to the one after it", box:HasFocus() == true)
+
+			-- Round, because a ring that stops at the end makes the last box a dead end and
+			-- the only way back the mouse, which is the thing this saves.
+			box.__scripts.OnTabPressed(box)
+			check("and round to the first again", filters.minBox:HasFocus() == true)
+
+			SHIFT_DOWN = true
+			filters.minBox.__scripts.OnTabPressed(filters.minBox)
+			check("and shift-tab walks the other way", box:HasFocus() == true)
+			SHIFT_DOWN = false
+
+			box:ClearFocus()
+		end
+
 		-- And the row adds up. The filter box was a fixed 200 pixels and the filter row that
 		-- replaced the member picker is twice the picker's width, so across the family the
 		-- box ran under the Whole family button - reported from play, on two sections at
@@ -6313,6 +6360,19 @@ print("the character panel's filters, asked of the widget")
 			cellsDrawn() .. " of " .. everybody)
 
 		if switch then switch.__scripts.OnClick(switch) end
+		Family.UI:Refresh()
+
+		-- And a box that is not on the screen is stepped over rather than focused.
+		--
+		-- Out of the whole-family reading the level range is away, so the ring is the filter
+		-- box alone and tab leaves the cursor where it is. Asked at the moment the key is
+		-- pressed and not when the ring was built, because that row comes and goes.
+		local box = _G.FamilyCharacterSearch
+		box:SetFocus()
+		box.__scripts.OnTabPressed(box)
+		check("a box that is not on the screen is not tabbed to",
+			box:HasFocus() == true and filters.minBox:HasFocus() == false)
+		box:ClearFocus()
 	end
 
 	Family.Wide:SetSibling("farfam", "Faraway-Thunderstrike", false)
