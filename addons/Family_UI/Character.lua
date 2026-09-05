@@ -1694,10 +1694,16 @@ local function build(frame)
 
 				-- What to say when the client will not: it describes only the quests in
 				-- the player's own log, so every row about anybody else falls here.
-				r.fallback = {
-					{ line.title or "?" },
-					{ (line.right ~= "" and line.right) or nil },
-				}
+				--
+				-- Quests only. A zone's heading is a row in this list too and has no quest
+				-- behind it, and giving it a fallback made hovering a zone name answer with
+				-- a lone "?" - a row saying nothing is a row that should show nothing.
+				if line.title then
+					r.fallback = {
+						{ line.title },
+						{ (line.right ~= "" and line.right) or nil },
+					}
+				end
 				r.questTitle = line.title
 				r.memberKey = member.key
 				r.highlight:SetShown(playing and (line.questID or line.title) and true
