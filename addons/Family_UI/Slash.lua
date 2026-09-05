@@ -675,14 +675,42 @@ function UI:CooldownNotice()
 			-- everything else.
 			lines = lines or { L["crafting cooldowns ready:"] }
 
-			local shown = UI:NameOf(Family.Database:Meta(member.key) or {})
+			local meta = Family.Database:Meta(member.key) or {}
+			local shown = UI:NameOf(meta)
 
-			-- The number only where there is more than one, because "(1)" after a
-			-- name is a figure that answers a question nobody asked. It counts
-			-- timers and not recipes - three transmutes are one thing to go and do.
+			-- **What is ready, named.** A name and a number said which character to
+			-- log into and never what for, so somebody with two trades had to go and
+			-- look. Asked for from play 2026-09-05.
+			--
+			-- The same grouping the Crafting panel draws, so the words match what
+			-- that table says: a timer several recipes share is named after its
+			-- profession - *Alchemy*, always, the client putting every transmute on
+			-- one - and a profession with a single timed recipe after the recipe.
+			--
+			-- **Crafts only**, and that is decided rather than incidental: the same
+			-- call carries the crafting items, and a ready item is drawn on the panel
+			-- and deliberately never announced here. `DECISIONS.md` 2026-09-01 says
+			-- why - a panel is a table somebody opened, a login line is a claim pushed
+			-- at them, and "ready" for an item means only that nobody has looked in
+			-- the bag.
+			--
+			-- Asked with no key and no callback, like the panel's own `only`: a name
+			-- the client has not cached falls back to the word that was recorded, and
+			-- a callback here would reprint the notice rather than redraw a table.
+			local named = {}
+			for _, group in ipairs(Family.Cooldowns:Crafting(meta)) do
+				if group.kind == "craft" and group.ready then
+					named[#named + 1] = tostring(group.label)
+				end
+			end
+
+			-- No count beside them. The names *are* the count and say more than it
+			-- did, and "(2)" in front of two names is the same fact twice. All of
+			-- them however many, which is the rule the mail notice settled: this is
+			-- one line per character already, and a profession's name is short.
 			lines[#lines + 1] = string.format("  |cff40bf40%s|r", shown)
-				.. (member.count > 1 and string.format(" |cff888888(%d)|r",
-					member.count) or "")
+				.. (#named > 0 and string.format("  |cff888888%s|r",
+					table.concat(named, ", ")) or "")
 		end
 	end
 

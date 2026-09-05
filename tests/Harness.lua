@@ -3018,6 +3018,7 @@ check("a second scan does not double the log",
 	#Family.Database:Payload(key).quests.entries == 3,
 	tostring(#Family.Database:Payload(key).quests.entries))
 
+
 print()
 print("equipment, reputations and the spellbook")
 advance(7)
@@ -12858,6 +12859,16 @@ print("the login line about crafting cooldowns")
 			cooldowns[index] = { name = "Transmute " .. index, profession = 170 + index,
 				readyAt = came }
 		end
+
+		-- One that has **not** come back, on whoever has several. The notice says what is
+		-- ready and not what exists, and without a running timer beside a ready one in the
+		-- fixture the mutation that names every craft passes: everything in it was ready,
+		-- so "ready" and "craft" picked out the same list. The same shape as L-054, one
+		-- rung along.
+		if member.count > 1 then
+			cooldowns[#cooldowns + 1] = { name = "Still Brewing", profession = 185,
+				readyAt = time() + 7200 }
+		end
 		Family.Database:SetMeta(member.key, { name = member.name, realm = member.realm,
 			classFile = "SHAMAN", level = 60, faction = "Alliance",
 			craftCooldowns = cooldowns })
@@ -12890,17 +12901,29 @@ print("the login line about crafting cooldowns")
 	local _, brewerLines = lineFor("Brewer")
 	check("named once and not on several lines", brewerLines == 1, tostring(brewerLines))
 
-	-- The count, and the reason it is only sometimes there: "(1)" after a name answers a
-	-- question nobody asked.
-	check("a character with several timers ready says how many",
-		brewer and brewer:find("(3)", 1, true) ~= nil, tostring(brewer))
+	-- **What is ready, and not how much of it.** A name and a number said which character
+	-- to log into and never what for. The names are the count and say more than it did, so
+	-- there is no number beside them - and a check that a number is *absent* is what stops
+	-- the two creeping back together.
+	check("a character with several timers ready names each of them",
+		brewer and brewer:find("Transmute 1", 1, true)
+			and brewer:find("Transmute 3", 1, true), tostring(brewer))
 
 	local weaver = lineFor("Weaver")
+	check("and one with a single timer names its one thing",
+		weaver and weaver:find("Transmute 1", 1, true) ~= nil, tostring(weaver))
+
 	-- Matched on a number in brackets rather than on a bracket, because `UI:NameOf` puts
 	-- the other side's initial in brackets too and the first draft of this check read that
 	-- as a count. The looser version failed for the right reason on the wrong evidence.
-	check("and one with a single timer carries no number",
-		weaver and weaver:find("%(%d+%)") == nil, tostring(weaver))
+	check("with no count beside the names, which would be the same fact twice",
+		brewer and brewer:find("%(%d+%)") == nil, tostring(brewer))
+
+	-- What is ready, not what exists. A timer still running is on the Crafting panel with
+	-- the time left beside it, and has no business in a line whose whole claim is that
+	-- something is waiting for you now.
+	check("and a timer still running is not named as though it were ready",
+		brewer and brewer:find("Still Brewing", 1, true) == nil, tostring(brewer))
 
 	-- And that marker is a rule rather than an accident of the fixture: a character on the
 	-- other side keeps a different bank, mailbox and auction house, so what can be done
@@ -12916,6 +12939,32 @@ print("the login line about crafting cooldowns")
 		faraway and faraway:find("Thunderstrike", 1, true) ~= nil, tostring(faraway))
 	check("and one on the realm being played does not",
 		weaver and weaver:find("Fire Maw", 1, true) == nil, tostring(weaver))
+
+	-- A ready crafting **item** is drawn on the Crafting panel and is deliberately never
+	-- announced here - `DECISIONS.md` 2026-09-01. That was pinned from `Cooldowns`' side
+	-- when the counting was fixed; this holds it from the notice's, which is where naming
+	-- the cooldowns could have let one in through the back door.
+	do
+		Family.Database:SetMeta("Weaver-Fire Maw", {
+			itemCooldowns = { { id = 15846 } }, cooldownItems = { [15846] = 165 } })
+
+		local withItem = Family.UI:CooldownNotice()
+		local line
+		for index = 2, #(withItem or {}) do
+			if withItem[index]:find("Weaver", 1, true) then line = withItem[index] end
+		end
+
+		check("a character with a ready crafting item beside a craft is still named",
+			line ~= nil, tostring(line))
+		check("their craft is named", line and line:find("Transmute 1", 1, true) ~= nil,
+			tostring(line))
+		check("and the item is not, which is the split that notice keeps",
+			line and line:find("Salt", 1, true) == nil
+				and line:find("15846", 1, true) == nil, tostring(line))
+
+		Family.Database:SetMeta("Weaver-Fire Maw", {
+			itemCooldowns = Family.CLEAR, cooldownItems = Family.CLEAR })
+	end
 
 	-- The heading is the translated one, not a sentence built here.
 	check("with a heading a translator can reach",
