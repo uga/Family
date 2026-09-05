@@ -369,6 +369,22 @@ check that had been wrong for longer than a day - the summary writes a letter's 
 *Auction House* and the check asked for *Auctioneer*, passing on the development icon sheet -
 and three that were reading a window the harness never showed. L-046.
 
+### Two characters of one name on two realms are one character to `Comm`
+
+`nameKey` strips the realm, so `Rolando-Thunderstrike` and `Rolando-Fire Maw` are the same key
+everywhere in `Family/Comm.lua`: `SameName`, the absent list, the queue's abandonment, and now
+the filter that swallows the client's *no player named* complaint.
+
+A linked family spanning two realms can hold two characters of one name, and so can a link
+plus our own family. Then one refusal marks both absent, and messages queued for the one who
+**is** online are abandoned with the one who is not.
+
+Asked by Alberto 2026-09-05, while checking whether the client's complaint carries a realm.
+Unmeasured on both sides: whether the client echoes `Name-Realm` in that message is a probe, and
+whether the collapse ever bites in practice needs a family that has the collision. The filter
+inherits the simplification rather than introducing it, and narrowing `nameKey` would touch
+every user of it - which is why this is written down rather than done in passing.
+
 ### Three probes are out and unanswered
 
 Handed over 2026-09-04, needed before their entries can start:
@@ -376,3 +392,5 @@ Handed over 2026-09-04, needed before their entries can start:
 - **Entry 9** — whether the client will name a hunter's stabled pets while the stable is shut.
 - **Entry 10** — whether the warlock demon-ability tab exists without the demon summoned.
 - **Entry 2** — whether a tooltip can be redrawn while a modifier is held.
+- **The complaint above** — whether the client's *no player named* message carries the realm
+  when the whisper was addressed with one.
