@@ -60,7 +60,7 @@ local skillsOf, skillText
 -- Built further down, where the cells they have to register alongside are. Declared here
 -- because the sets below are written first and would otherwise capture a global that never
 -- arrives.
-local currencyColumns, craftingColumns, craftingKinds
+local currencyColumns, craftingColumns, craftingKinds, professionColumns
 
 -- A profession as one thing, however it was filed.
 --
@@ -197,6 +197,15 @@ local SETS = {
 			{ key = "prof2",  label = "",               width = 194, justify = "LEFT" },
 			{ key = "",       label = "",               width = 194, justify = "LEFT" },
 		},
+
+		-- The heading says **which** profession once one has been chosen.
+		--
+		-- Clicking it then orders the table by that profession's rank rather than by the
+		-- word in the cell, and a column still headed *Professions* would be sorting by a
+		-- number with nothing on the screen saying so. That is the fault the category count
+		-- under *Standing* was, met a second time in a week: a column whose heading no
+		-- longer describes what it is ordered by.
+		build = function() return professionColumns() end,
 		-- Everything that is not a primary, three to a line, in whatever order the
 		-- member has them. A member with none gets no extra line at all.
 		extra = function(meta)
@@ -906,11 +915,33 @@ local SORT = {
 	-- profession together - which is the useful half of "sort by profession" and is
 	-- honestly what this column holds.
 	--
-	-- **Not** the other half of the original ask, which is *sorted by that profession's
-	-- skill*: that needs somebody to say which profession first, and the control to say it
-	-- with is the filter bar of slice three. A rank sorted here would be the rank of
+	-- **And the other half of the original ask, once somebody has said which profession.**
+	--
+	-- This said it needed a control to name one with and that slice three would bring it;
+	-- slice three brought the narrowing picker, and this is the two joined. With a
+	-- profession chosen the column orders by *that* profession's rank; with none chosen it
+	-- orders by the word in the cell, because a rank sorted then would be the rank of
 	-- whichever profession happened to come first alphabetically, which answers nobody.
-	prof1     = function(meta) return skillText(skillsOf(meta, false)[1]) end,
+	--
+	-- Walked rather than looked up, for the reason `narrow.passes` walks: a record written
+	-- before professions were keyed by identity is filed under a word, and `professionID`
+	-- is what makes the two one choice.
+	--
+	-- Nil where the member does not have it - not nought. A member without the profession
+	-- sorts last rather than sorting as a beginner, and the `only` on this set does not
+	-- hide them, so the difference is visible.
+	prof1     = function(meta)
+		local wanted = UI.__summaryNarrow and UI.__summaryNarrow:Value()
+		if wanted ~= nil then
+			for id, skill in pairs((meta or {}).skills or {}) do
+				if not skill.class and professionID(id) == wanted then
+					return skill.rank or 0
+				end
+			end
+			return nil
+		end
+		return skillText(skillsOf(meta, false)[1])
+	end,
 	prof2     = function(meta) return skillText(skillsOf(meta, false)[2]) end,
 
 	-- How many world buffs are banked. Three answers as the cell has three: bags never read
@@ -1244,6 +1275,28 @@ end
 
 -- How many were left out, so the panel can say so rather than quietly showing four of nine.
 local craftingOmitted = 0
+
+-- The professions set's columns, which are fixed except for what the first one is called.
+--
+-- A set's columns are read on every draw, so this is where "what is this column ordered by"
+-- can be said out loud. Headed *Professions* while the picker is offering everybody, and headed
+-- with the profession once one is chosen - because clicking it then sorts by that profession's
+-- rank, and a heading that still said *Professions* would be a column ordered by a number with
+-- nothing on the screen admitting it.
+--
+-- The widths are here rather than read back off the set, because a table read from itself is a
+-- table that cannot be changed in one place: the three add up to the row and are meant to.
+function professionColumns()
+	local wanted = UI.__summaryNarrow and UI.__summaryNarrow:Value()
+
+	return {
+		{ key = "prof1", width = 194, justify = "LEFT",
+			label = wanted ~= nil and Family:ProfessionName(wanted)
+				or L["Professions"] },
+		{ key = "prof2", label = "", width = 194, justify = "LEFT" },
+		{ key = "",      label = "", width = 194, justify = "LEFT" },
+	}
+end
 
 function craftingColumns()
 	local kinds = craftingKinds()

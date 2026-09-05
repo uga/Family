@@ -18439,6 +18439,19 @@ print("filtering the summary's professions by profession")
 	check("the professions column set can be opened", clickSet(Family.L["Professions"]))
 	Family.UI:Refresh()
 
+	-- Before anything is chosen, and this is the half that stops the other half being
+	-- written as "always sort by rank": with no profession named, a rank would be the rank
+	-- of whichever came first alphabetically, so the column is headed and ordered by the
+	-- word in it.
+	do
+		local heading
+		for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+			if column.key == "prof1" then heading = column.label end
+		end
+		check("with no profession chosen the column is headed for all of them",
+			heading == Family.L["Professions"], tostring(heading))
+	end
+
 	local function showing()
 		local seen = {}
 		for _, f in ipairs(frames) do
@@ -18492,6 +18505,71 @@ print("filtering the summary's professions by profession")
 			byProfession["Oldsmith-Fire Maw"] ~= nil)
 		check("and drops whoever does not have it",
 			byProfession["Stitcher-Fire Maw"] == nil)
+
+		----------------------------------------------------------------------------
+		-- And the rank of *that* profession, which is the rest of the original ask
+		--
+		-- The file said for a week what this needed: somebody to say which profession
+		-- first, because a rank sorted with none chosen would be the rank of whichever
+		-- came first alphabetically. The picker above is that somebody, and this is the
+		-- two joined.
+		----------------------------------------------------------------------------
+
+		local heading
+		for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+			if column.key == "prof1" then heading = column.label end
+		end
+		check("the column says which profession it is now about",
+			heading == Family:ProfessionName(164), tostring(heading))
+
+		-- Read off the anchors rather than out of the pool: rows are handed out in an
+		-- order that is not the order they are drawn in.
+		local function order()
+			local seen = {}
+			for _, f in ipairs(frames) do
+				if onScreen(f) and type(f.memberKey) == "string" and f.__points then
+					local point = f.__points.TOPLEFT
+					seen[#seen + 1] = { key = f.memberKey,
+						y = type(point) == "table" and point.y or 0 }
+				end
+			end
+			table.sort(seen, function(a, b) return (a.y or 0) > (b.y or 0) end)
+
+			local keys = {}
+			for _, row in ipairs(seen) do keys[#keys + 1] = row.key end
+			return keys
+		end
+
+		local function positionOf(key, list)
+			for index, at in ipairs(list) do
+				if at == key then return index end
+			end
+		end
+
+		Family.UI:SetSummarySort("professions", "prof1")
+		Family.UI:Refresh()
+
+		local up = order()
+		check("ordering by it puts the lower rank first",
+			positionOf("Oldsmith-Fire Maw", up) < positionOf("Smithy-Fire Maw", up),
+			table.concat(up, ", "))
+
+		-- The record filed under the word sorts with the one filed under the id, because
+		-- `professionID` makes them one profession here as it does in the picker. Filed
+		-- apart, the 150 would have had no rank at all and sorted last.
+		check("with the record filed under the word ordered by its rank, not left out",
+			positionOf("Oldsmith-Fire Maw", up) ~= nil, table.concat(up, ", "))
+
+		Family.UI:SetSummarySort("professions", "prof1")
+		Family.UI:Refresh()
+
+		local down = order()
+		check("and clicking again turns it round",
+			positionOf("Smithy-Fire Maw", down) < positionOf("Oldsmith-Fire Maw", down),
+			table.concat(down, ", "))
+
+		Family.UI:SetSummarySort("professions", "prof1")
+		Family.UI:Refresh()
 
 		-- Composed with the rest of the bar rather than replacing it: "which of my level 60
 		-- blacksmiths" is one question with both halves on one row.

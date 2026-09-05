@@ -19,6 +19,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The summary's professions can be put in order of one profession's skill.** Choose a
+  profession in the filter row and the column takes its name; clicking it then sorts the family
+  by their rank in that profession rather than alphabetically by whatever they happen to hold.
+
 - **The crafting columns can be narrowed to one cooldown.** The filter row on that set now
   offers the cooldowns the family is actually waiting on - *Alchemy*, *Mooncloth*, *Salt
   Shaker* - and choosing one leaves the members waiting on it and takes the other columns off

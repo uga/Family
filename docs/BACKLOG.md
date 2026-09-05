@@ -233,9 +233,19 @@ it was asked: it needs no whole-family reading and therefore no filters. Which i
 answer - a talent tree is one character's arrangement of points and means nothing averaged over
 forty, and the spellbook half is already reachable per member.
 
-**Still open under the original ask and not covered above:** professions sorted by that
-profession's skill. That is an order on a column set rather than on a member, which is a
-different mechanism again.
+**Professions sorted by that profession's skill: done 2026-09-05**, and it needed nothing new -
+only the two halves joined. `Summary.lua` had been carrying the reason it could not be built:
+sorting a rank with no profession named would sort the rank of whichever came first
+alphabetically, *which answers nobody*, and the control to name one with was slice three's. Slice
+three brought the narrowing picker. So with a profession chosen the column orders by that
+profession's rank and is **headed with its name**; with none chosen it is headed *Professions*
+and orders by the word, which is the direction that stops the rule being written as *always sort
+by rank*.
+
+**What is left of this entry is one refactor**: the summary is the last panel building its own
+filter bar instead of asking `UI:CreateMemberFilters` for one. Nothing is missing from it - it
+has name, class and level already - so this buys no feature, only the fifth copy not existing.
+It has its own run.
 
 **Crafting filtered by cooldown and profession: done 2026-09-05**, and the two turned out to be
 one list rather than two controls. A timer several recipes share is headed by its profession -
