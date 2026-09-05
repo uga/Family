@@ -1157,7 +1157,16 @@ function Wide:BorrowedMembers()
                 payload = entry.payload,
                 seen = entry.seen,
                 family = familyID,
-                familyName = link.name,
+                -- What the family is **called**, which is the alias where one was set.
+                -- `Siblings` above has answered this way since the alias was built and this
+                -- did not, so a character picker offering somebody else's members headed
+                -- them "shared by Smith-PyrewoodVillage" while every other screen said
+                -- "Zia Pina". Reported from play 2026-09-05.
+                --
+                -- The raw name is still reachable through the link, and the places that
+                -- want it - the panel that says who Family actually whispers - go and get
+                -- it rather than being handed it here.
+                familyName = Wide:Called(link),
                 exchanged = link.lastExchange,
                 sibling = self:IsSibling(familyID, memberKey),
                 -- What they are sharing about this one, so the panel can show it back.

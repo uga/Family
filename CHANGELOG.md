@@ -153,6 +153,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **The character picker calls a linked family by the name you gave it.** It headed their
+  characters with the character the link was made through - *shared by Grella-Thunderstrike* -
+  while every other screen used the alias.
+
 - **Character names are coloured by class where the whole family is listed.** The reputations
   and quests pages and the professions search used to draw every name in one gold, which for a
   family of twenty is a list you have to read rather than glance at.

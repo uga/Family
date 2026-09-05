@@ -18741,6 +18741,34 @@ print("an alias for a linked family")
 	end
 	check("a sibling is filed under the alias", named == "Zia Pina", tostring(named))
 
+	-- And so is a borrowed member, which is a different list and was answering differently.
+	--
+	-- `Siblings` are the ones ticked into our own lists; `BorrowedMembers` is everybody a
+	-- link shares, which is what the character picker offers - and it handed out `link.name`
+	-- raw. So the picker headed a group "shared by Smith-PyrewoodVillage" while every other
+	-- screen in the addon called that family Zia Pina. Reported from play 2026-09-05, and it
+	-- is this file's own recurring shape: two functions answering one question, one of them
+	-- right, and nothing asking the second.
+	local borrowed
+	for _, member in ipairs(Family.Wide:BorrowedMembers()) do
+		if member.key == "Soulsock-PyrewoodVillage" then borrowed = member.familyName end
+	end
+	check("and so is a borrowed member, which is the list the picker offers",
+		borrowed == "Zia Pina", tostring(borrowed))
+
+	-- Read through the picker's own gatherer rather than through the list under it, because
+	-- that is where the heading is actually built and it is the thing that was wrong.
+	local heading
+	for _, member in ipairs(Family.UI:EveryMember()) do
+		if member.key == Family.Wide:BorrowedKey("fam-alias", "Soulsock-PyrewoodVillage") then
+			heading = member.group
+		end
+	end
+	check("so the picker heads their group with what the family is called",
+		heading and heading:find("Zia Pina", 1, true) ~= nil, tostring(heading))
+	check("and not with the character the link was made through",
+		heading and heading:find("Smith-PyrewoodVillage", 1, true) == nil, tostring(heading))
+
 	-- And the tooltip, which reads its own way round: the index looks the link up from a
 	-- borrowed key rather than being handed one. Left unchecked, a mutation putting the raw
 	-- name back here went unnoticed while every other check stayed green.
