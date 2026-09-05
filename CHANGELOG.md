@@ -19,6 +19,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **CTRL now swaps a recipe's tooltip on Classic Era too.** Holding CTRL over a recipe has always
+  shown what it costs to make instead of what it makes - but on Era the records had no way to name
+  the recipe behind an item, so nothing happened and nothing said why. It works now for anything
+  learned from a pattern, plans or a formula, and the grey line at the bottom of the tooltip tells
+  you which rows offer it.
+
 - **Quest tooltips in the whole-family view now say how that character is doing.** Hovering a
   quest there showed only the quest's own text; it now lists that character's objectives under it,
   the way the single-character page already did.

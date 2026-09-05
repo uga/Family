@@ -193,6 +193,54 @@ function Recipes:Makes(itemID)
 	return here and here[itemID] or nil
 end
 
+-- Which spell makes this item, which is the join above read backwards.
+--
+-- `RecipeMakes` is keyed by the **recipe item** - the pattern in somebody's bags - and a Classic
+-- Era trade skill record carries the **product** and no spell at all (DATASOURCES §2, measured:
+-- 150 leatherworking, 67 cooking and 12 first aid recipes, an item id on every one and a spell id
+-- on none). So a professions row on that client knows what a recipe makes and not what makes it,
+-- and the two readings CTRL is meant to swap between are one reading. Reported from play
+-- 2026-09-05 as *CTRL on Professions is broken*: it was not, there was nothing to swap to.
+--
+-- Composed rather than shipped as a third table. Pattern to product is already here and so is
+-- pattern to spell, so inverting the first and following the second costs one walk of a table
+-- Family already loads, the first time anybody asks. Per expansion, because a client only has
+-- one.
+--
+-- It answers for a recipe somebody was taught by an item and not for one a trainer taught, which
+-- has no pattern and so no row in either table. That is why the hint line is decided per row: it
+-- appears where the swap is really there and stays away where it is not.
+--
+-- Where two patterns make the same thing the lower id wins, so two draws of one page agree.
+local madeBy = {}
+
+function Recipes:MadeBy(itemID)
+	if not itemID then return nil end
+
+	local expansion = Family.Capabilities and Family.Capabilities.expansion
+	if not expansion then return nil end
+
+	local known = madeBy[expansion]
+	if not known then
+		known = {}
+		madeBy[expansion] = known
+
+		local makes = (Family.RecipeMakes or {})[expansion] or {}
+		local teaches = (Family.RecipeTeaches or {})[expansion] or {}
+		local from = {}
+
+		for pattern, product in pairs(makes) do
+			local spell = teaches[pattern]
+			if spell and (from[product] == nil or pattern < from[product]) then
+				from[product] = pattern
+				known[product] = spell
+			end
+		end
+	end
+
+	return known[itemID]
+end
+
 -- Whether this item is the one that teaches that recipe.
 --
 -- The character before the match has to be something other than a letter or a digit, so that

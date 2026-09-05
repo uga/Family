@@ -5675,6 +5675,63 @@ do
 			1, true) ~= nil, said)
 end
 
+-- **And a row that has only the item**, which on Classic Era is every trade skill row there is:
+-- that client's records carry an item id on every recipe and a spell id on none (DATASOURCES §2).
+-- So the swap had nothing to swap to on that whole client, said nothing about it, and was
+-- reported from play 2026-09-05 as broken when it was doing exactly what it was told.
+--
+-- The join Family already ships answers it: pattern 2881 teaches spell 2667 and makes item 2864,
+-- so the product names the spell that makes it.
+do
+	check("the shipped join says which spell makes an item",
+		Family.Recipes:MadeBy(2864) == 2667, tostring(Family.Recipes:MadeBy(2864)))
+	check("and says nothing about an item nothing makes",
+		Family.Recipes:MadeBy(999999) == nil,
+		tostring(Family.Recipes:MadeBy(999999)))
+
+	local row
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and f.spellID == 2667 then row = f end
+	end
+	check("the recipe row is there to strip", row ~= nil and row.itemID ~= nil,
+		row and tostring(row.itemID))
+
+	if row then
+		-- Era's shape, made out of this row: the item and no spell at all.
+		local held = row.spellID
+		row.spellID = nil
+
+		_G.IsControlKeyDown = function() return false end
+		GameTooltip.__shownAs = nil
+		wipe(GameTooltip.__lines)
+		row.__scripts.OnEnter(row)
+		check("a row with only the item still opens on what it makes",
+			GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "item",
+			GameTooltip.__shownAs and GameTooltip.__shownAs.kind)
+
+		local said = ""
+		for _, line in ipairs(GameTooltip.__lines) do
+			said = said .. " " .. tostring(line[1])
+		end
+		check("and now says the key is there to press, which it could not before",
+			said:find(Family.L["|cff888888CTRL swaps the recipe and what it makes|r"],
+				1, true) ~= nil, said)
+
+		_G.IsControlKeyDown = function() return true end
+		GameTooltip.__shownAs = nil
+		row.__scripts.OnEnter(row)
+		check("and with the key held it gives the recipe the join found",
+			GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "spell"
+				and GameTooltip.__shownAs.id == 2667,
+			GameTooltip.__shownAs and (tostring(GameTooltip.__shownAs.kind) .. " "
+				.. tostring(GameTooltip.__shownAs.id)))
+
+		_G.IsControlKeyDown = function() return false end
+		row.spellID = held
+		row.__scripts.OnLeave(row)
+	end
+end
+
 -- The whole point, and the thing three probes were spent on: pressing the key with the pointer
 -- held still repaints. Family does not reach into the tooltip to do it - it asks the row the
 -- pointer is on to draw its own tooltip again, and the row decides what the key now means.

@@ -690,7 +690,17 @@ local function build(frame)
 		-- Where only one of the two is known the modifier does nothing and says nothing:
 		-- offering a swap that swaps to the same tooltip is worse than not offering it.
 		UI:AttachTooltip(r, function(self)
-			local both = self.spellID and self.itemID
+			-- The spell where the record has one, and where it does not, the one the
+			-- shipped join says makes this item.
+			--
+			-- A Classic Era trade skill record carries the item and no spell at all
+			-- (DATASOURCES §2), so on that whole client the swap had nothing to swap to
+			-- and said nothing about it - reported from play as broken when it was doing
+			-- exactly what it was told. The record is left alone; this is only what to
+			-- describe.
+			local spellID = self.spellID or Family.Recipes:MadeBy(self.itemID)
+
+			local both = spellID and self.itemID
 			local hint = both and L["|cff888888CTRL swaps the recipe and what it makes|r"]
 				or nil
 			local recipe = IsControlKeyDown and IsControlKeyDown()
@@ -698,7 +708,7 @@ local function build(frame)
 			if self.itemID and not (both and recipe) then
 				return "item", self.itemID, self.fallback, hint
 			end
-			if self.spellID then return "spell", self.spellID, self.fallback, hint end
+			if spellID then return "spell", spellID, self.fallback, hint end
 			if self.fallback then return nil, nil, self.fallback end
 			return nil
 		end)
