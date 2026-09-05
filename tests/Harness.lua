@@ -14345,6 +14345,31 @@ print("the deploy script warns before it mirrors a source with no libraries")
 		address == nil,
 		address and ("it has " .. address .. " in it - the committed copy is the template, and "
 			.. "the machine's own paths belong on the machine") or nil)
+
+	-- And no person. The Google Drive destination added 2026-09-05 is the line most likely to
+	-- arrive carrying one - Drive for Desktop is usually reached through somebody's home
+	-- folder - and a name in a public repository is the same kind of thing as the LAN address
+	-- above. The template uses the default mount point, which names nobody.
+	--
+	-- The first thing this caught was the comment beside that line, which spelled the home
+	-- path out as an example. A guard that reads the whole file reads the prose too, and the
+	-- example was not worth keeping once it was the only thing tripping it.
+	check("nor anybody's user folder",
+		bat:lower():find("\\users\\", 1, true) == nil,
+		"a Drive or install path under C:\\Users names the person who runs it")
+
+	-- The drive copy has a guard of its own, and it is not optional.
+	--
+	-- `:deploy` refuses anything that does not end in Interface\AddOns before it points /MIR
+	-- at it, and that refusal is the whole reason that route exists. The drive is not a client
+	-- and its folder is not called that, so it needed a second route - and a second route with
+	-- no guard would be a mirroring delete aimed wherever a placeholder happened to point.
+	check("Deploy.bat has a route for the drive copy",
+		bat:match("\n:todrive\n") ~= nil,
+		"the drive copy must not go through :deploy, whose guard is about clients")
+	check("and it refuses a folder that is not an Addons folder",
+		bat:match('if /i not "%%TAIL%%"=="\\Addons"') ~= nil,
+		"/MIR deletes what it does not recognise, so the destination is checked first")
 end)()
 
 --------------------------------------------------------------------------------------------

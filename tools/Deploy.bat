@@ -19,6 +19,7 @@ rem          Deploy.bat /era         only Classic Era      (combine with /test o
 rem          Deploy.bat /anni        only Anniversary
 rem          Deploy.bat /mists       only Mists of Pandaria
 rem          Deploy.bat /icons       also copy the icon contact sheet (tools\)
+rem          Deploy.bat /nodrive     skip the Google Drive copy
 rem          Deploy.bat "folder"     use that folder as the source instead
 rem ---------------------------------------------------------------------------------------
 
@@ -48,7 +49,7 @@ set "SRC=%~dp0..\addons"
 for %%A in (%*) do (
 	if /i not "%%~A"=="/test" if /i not "%%~A"=="/y" if /i not "%%~A"=="/era" (
 		if /i not "%%~A"=="/anni" if /i not "%%~A"=="/mists" (
-			if /i not "%%~A"=="/icons" set "SRC=%%~A"
+			if /i not "%%~A"=="/icons" if /i not "%%~A"=="/nodrive" set "SRC=%%~A"
 		)
 	)
 )
@@ -74,17 +75,32 @@ set "DEST_ERA=%WOW%\_classic_era_\Interface\AddOns"
 set "DEST_ANNI=%WOW%\_anniversary_\Interface\AddOns"
 set "DEST_MISTS=D:\World of Warcraft\_classic_\Interface\AddOns"
 
+rem And a copy into Google Drive, which is not a client and is not a release - it is the same
+rem two folders, somewhere they outlive the machine. Asked for 2026-09-05.
+rem
+rem A placeholder like the three above, and it has to stay one for a reason of its own: a Drive
+rem path very often runs through somebody's home folder, and a person's name is the same kind of
+rem thing as the LAN address this file used to carry into a public repository. "G:\My Drive" is
+rem where Drive for Desktop mounts by default and names nobody. Set the real one on the machine.
+rem
+rem It ends in Addons because that is the shape the game uses, so what lands there can be copied
+rem straight into a client. The two folders go inside it as Addons\Family and Addons\Family_UI,
+rem which is an Interface\AddOns folder with the Interface part left off.
+set "DEST_DRIVE=G:\My Drive\Addons"
+
 set "DRYRUN="
 set "NOASK="
 set "ONLY="
 set "ICONS="
+set "NODRIVE="
 for %%A in (%*) do (
-	if /i "%%~A"=="/test"  set "DRYRUN=1"
-	if /i "%%~A"=="/y"     set "NOASK=1"
-	if /i "%%~A"=="/era"   set "ONLY=ERA"
-	if /i "%%~A"=="/anni"  set "ONLY=ANNI"
-	if /i "%%~A"=="/mists" set "ONLY=MISTS"
-	if /i "%%~A"=="/icons" set "ICONS=1"
+	if /i "%%~A"=="/test"    set "DRYRUN=1"
+	if /i "%%~A"=="/y"       set "NOASK=1"
+	if /i "%%~A"=="/era"     set "ONLY=ERA"
+	if /i "%%~A"=="/anni"    set "ONLY=ANNI"
+	if /i "%%~A"=="/mists"   set "ONLY=MISTS"
+	if /i "%%~A"=="/icons"   set "ICONS=1"
+	if /i "%%~A"=="/nodrive" set "NODRIVE=1"
 )
 
 if defined ICONS if not exist "%SRC_TOOLS%\%ADDON_TOOL%\%ADDON_TOOL%.toc" (
@@ -107,6 +123,7 @@ echo   addons : %ADDON_1%, %ADDON_2%
 if defined LIBS echo   libs   : LibStub, LibSerialize, LibDeflate
 if defined ICONS echo   also   : %ADDON_TOOL% ^(development tool, not part of a release^)
 if defined ONLY echo   only   : %ONLY%
+if not defined NODRIVE if exist "%DEST_DRIVE%\" echo   drive  : %DEST_DRIVE%
 if defined DRYRUN echo.& echo   TEST RUN - nothing will be written.
 echo.
 
@@ -150,6 +167,10 @@ if not defined ONLY (
 	if "%ONLY%"=="MISTS" call :check "%DEST_MISTS%" "Mists of Pandaria"
 )
 
+rem Outside the ONLY block on purpose: /era and the rest pick a *client*, and the drive is not
+rem one. Asking for one client and silently losing the off-machine copy would be a surprise.
+if not defined NODRIVE call :check "%DEST_DRIVE%" "Google Drive"
+
 if %FOUND% EQU 0 (
 	echo  ERROR : no AddOns folder found, so there is nothing to update.
 	goto :failed
@@ -182,6 +203,8 @@ if not defined ONLY (
 	if "%ONLY%"=="ANNI"  call :deploy "%DEST_ANNI%"  "Anniversary"
 	if "%ONLY%"=="MISTS" call :deploy "%DEST_MISTS%" "Mists of Pandaria"
 )
+
+if not defined NODRIVE call :todrive "%DEST_DRIVE%" "Google Drive"
 
 echo.
 if %ERRORS% GTR 0 (
@@ -227,6 +250,34 @@ if "%DEST:~-1%"=="\" set "DEST=%DEST:~0,-1%"
 set "TAIL=%DEST:~-16%"
 if /i not "%TAIL%"=="Interface\AddOns" (
 	echo    REFUSED : "%DEST%" does not end in Interface\AddOns.
+	set /a ERRORS+=1
+	exit /b 0
+)
+
+echo  --- %~2 ---
+call :copyone "%SRC%" "%ADDON_1%"
+call :copyone "%SRC%" "%ADDON_2%"
+if defined ICONS call :copyone "%SRC_TOOLS%" "%ADDON_TOOL%"
+exit /b 0
+
+rem --- and the same two into Google Drive ------------------------------------------------------
+
+rem A route of its own rather than another :deploy, because :deploy's guard is the whole point
+rem of :deploy: it refuses anything that does not end in Interface\AddOns before it points /MIR
+rem at it. The drive is not a client and its folder is not called that, so it needs a guard of
+rem its own rather than a hole in that one.
+rem
+rem What /MIR is aimed at is the same here as everywhere: "%DEST%\Family", never "%DEST%".
+rem Whatever else is in the Addons folder is not touched, and could not be - the copy never
+rem looks above the two folders it is named after.
+:todrive
+set "DEST=%~1"
+if not exist "%DEST%\" exit /b 0
+
+if "%DEST:~-1%"=="\" set "DEST=%DEST:~0,-1%"
+set "TAIL=%DEST:~-7%"
+if /i not "%TAIL%"=="\Addons" (
+	echo    REFUSED : "%DEST%" does not end in \Addons.
 	set /a ERRORS+=1
 	exit /b 0
 )

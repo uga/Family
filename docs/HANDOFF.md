@@ -251,7 +251,11 @@ than look. Cheap to fix the next time somebody has all three clients open.
    from scratch for Family's two folders. What it carries over is the three real game paths,
    which are the only part that was ever specific to this machine. It names the two folders
    explicitly instead of matching a pattern, and refuses to point a mirroring copy at
-   anything that does not end in `Interface\AddOns`.
+   anything that does not end in `Interface\AddOns`. Since 2026-09-05 it also writes the same
+   two folders into a Google Drive folder ending in `Addons`, on a route of its own with a
+   guard of its own — a client's guard is about clients, and a second route without one would
+   be a mirroring delete aimed wherever a placeholder happened to point. `/nodrive` skips it,
+   and the committed path is a placeholder like the other three.
 4. **Where the generators write.** Their `--out` defaults must be repointed once
    `addons/Family/` has a data folder and it is named.
 5. **The presentation pass, deliberately deferred.** Decided 2026-08-08: the panels are
