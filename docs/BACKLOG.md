@@ -140,8 +140,29 @@ Next, and the last thing this entry needs before it can be built:
         f:RegisterEvent("MODIFIER_STATE_CHANGED") f:SetScript("OnEvent",function()
         local o=g:GetOwner() local s=o and o:GetScript("OnEnter") if s then s(o) end end)
 
-A repaint that *stays* means the feature works cooperatively. Nothing happening means that
-owner does not go through `OnEnter`, and the way in has to be found somewhere else.
+That one did nothing: this owner does not go through `OnEnter`.
+
+**Answered 2026-09-05, and the entry is unblocked.** Three things were measured, in this order:
+
+1. A forced `SetHyperlink` to a *different* item repaints with the pointer held still, and is
+   then put back.
+2. Hooking `OnTooltipSetItem` and hovering without moving, the hook does not fire again - and it
+   does fire when the pointer moves to another item, so the measurement is a real nothing rather
+   than a hook that never ran.
+
+   So the tooltip is not being repainted on a timer. What put our change back was the owner
+   reacting to the item having changed.
+3. Re-setting **the same** item on `MODIFIER_STATE_CHANGED` repaints and *stays*:
+
+        /run local g,f=GameTooltip,CreateFrame("Frame")
+            f:RegisterEvent("MODIFIER_STATE_CHANGED") f:SetScript("OnEvent",function()
+            local _,l=g:GetItem() if l then g:SetHyperlink(l) end end)
+
+**So the shape is: never replace what the tooltip is showing - ask it to show the same thing
+again, and let Family's existing `OnTooltipSetItem` hook decide which reading to add.** The
+owner has nothing to correct because nothing it cares about changed, and Family does not have to
+own a frame it did not create. The client was willing all along; what would have failed is the
+version that fought for the item.
 
 ---
 
