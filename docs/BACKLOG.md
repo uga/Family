@@ -122,9 +122,26 @@ it. So it has to be armed first and triggered after:
         print("redrawn onto",o:GetName()) end end)
         print("armed: hover an item, then press ctrl")
 
-Then hover a bag item and press CTRL without moving. Repainting to Linen Cloth with the pointer
-still is the answer this entry needs; a flicker, a close, or nothing at all is the other answer
-and means the feature has to be designed around the client rather than with it.
+Then hover a bag item and press CTRL without moving.
+
+**Answered 2026-09-05: it repaints, and then the owner paints over it.** Linen Cloth appeared
+for a moment and the original came straight back. So the client is willing - a tooltip *can* be
+redrawn with the pointer held still, which was the whole unknown - and what undoes it is the
+frame that owns the tooltip setting it again on its own account.
+
+Which settles the shape of the feature rather than blocking it: **Family must not set the
+tooltip itself, it must make the owner set it** and let its existing `OnTooltipSetItem` hook add
+the second reading during that repaint. Fighting the owner is a fight Family loses every time,
+and on somebody else's bag addon it is not even Family's frame to fight over.
+
+Next, and the last thing this entry needs before it can be built:
+
+    /run local g,f=GameTooltip,CreateFrame("Frame")
+        f:RegisterEvent("MODIFIER_STATE_CHANGED") f:SetScript("OnEvent",function()
+        local o=g:GetOwner() local s=o and o:GetScript("OnEnter") if s then s(o) end end)
+
+A repaint that *stays* means the feature works cooperatively. Nothing happening means that
+owner does not go through `OnEnter`, and the way in has to be found somewhere else.
 
 ---
 
