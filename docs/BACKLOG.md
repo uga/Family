@@ -344,6 +344,43 @@ like the overview, are the exception and say it in their headings instead. Built
 
 ---
 
+## 13. The possessions search across the family: whose, how long, and in what order
+
+**Received:** 2026-09-05, from Alberto, with a screenshot of *Possessions / Whole family*
+searching `cloth` - twenty lines, the filter row working, and three things wrong with the list
+under it.
+
+**Whose it is.** A character belonging to a linked family is drawn with its bare name, exactly
+like one of ours. The data is already there and already labelled: `Family/Index.lua:227` puts
+`familyName = Wide:Called(link)` on every owner it returns, and the item tooltip already draws
+it - `Family_UI/Tooltip.lua:105` reads *Rolando |cff9d9d9dof Faraway|r* through the string
+`L["%s |cff9d9d9dof %s|r"]`. The panel is the one place that has the field and ignores it. It is
+the same reason the tooltip gives: a count against a name is read as *I can go and get that*,
+and for somebody else's character that is not true.
+
+**How long a name may be.** The guild bank row shows it: `Loch Modan Yachting Club-...` is cut,
+because `Family_UI/Contents.lua:684` writes the raw guild key - which is `Name-Realm` - into a
+font string 160 pixels wide with `NoWrap` on it. Adding *of Faraway* to the character rows makes
+the same column worse.
+
+Two things are worth separating here. The realm on a guild key is the settled realm rule not
+being applied: a guild on the realm being played should not be carrying its realm at all, and
+dropping it wins back most of the width for nothing. What is left after that is a genuine
+sharing problem between three columns - item name, who, where - and the room they get is three
+constants, `260`, `160` and `220`, in `Contents.lua`.
+
+**In what order.** There is none to choose. `Index:Owners` sorts owners by how many they hold
+and then by name, inside an item order that comes from the search - so the list is by item, and
+a family wanting *what does Gulliver have* has to read down the page for the name. Asked for:
+by item and by character. The nearest precedent is the professions panel's sort bar
+(`Family_UI/Professions.lua` `ORDERS`), which is a row of buttons and a note saying what the
+order means - not the summary's column headings, because this list has no headings.
+
+**Not started.** The three are one slice: they are all the same list, and doing the ordering
+without the naming would mean laying that column out twice.
+
+---
+
 ## Owed to ourselves, not asked for
 
 This page is for requests, and these are not — they are debts this session took on knowingly.
