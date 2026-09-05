@@ -20,6 +20,12 @@ local L = Family.L
 
 -- Twice the height a list row needs, because the icon is the useful part: a recipe is
 -- recognised by its picture long before its name is read.
+-- The recipe whose crafters are all showing, if any. On the panel rather than on a row,
+-- because rows are pooled and a row would carry it into whatever is drawn next.
+UI:OnFold("professions", function()
+	UI.__openCrafters = nil
+end)
+
 -- The least the caption beside the sort buttons may be squeezed to before the buttons
 -- have to give way instead.
 local NOTE_ROOM = 210
@@ -349,6 +355,7 @@ local function build(frame)
 
 	local picker = UI:CreateMemberPicker(frame, 200, membersWithSkills, function()
 		chosen = nil
+		UI:FoldEverything()
 		if search then search:SetText("") end
 		frame:Refresh()
 	end)
@@ -1188,6 +1195,10 @@ local function build(frame)
 				-- A recipe name typed for one profession means nothing in the next,
 				-- and an empty list reads as missing data rather than as a filter.
 				search:SetText("")
+				-- And whatever was unfolded, folded - including when this is the
+				-- profession already chosen, which is how somebody asks for the page
+				-- back. Asked for from play; `Window.lua` carries the rule.
+				UI:FoldEverything()
 				frame:Refresh()
 			end)
 			button:Show()

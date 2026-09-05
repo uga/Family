@@ -341,6 +341,13 @@ local openMail
 -- other: they are different questions about the same character and both fit on the screen.
 local openBoon
 
+-- Both of them put away with everything else. They close on a second click of the same row,
+-- which is what a drill-down does everywhere in Family - and they were surviving the window
+-- closing, which is the half that was reported about the factions and is the same fault here.
+UI:OnFold("summary", function()
+	openMail, openBoon = nil, nil
+end)
+
 local function columnsOf(set)
 	local columns = { MEMBER_COLUMN }
 	for _, column in ipairs(set.build and set.build() or set.columns) do

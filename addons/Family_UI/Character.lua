@@ -129,6 +129,12 @@ end
 -- Ours, strictly - not the list the member button offers. The two were the same call for a
 -- while and this grid was the loser: a shared member landed in the group that has no heading,
 -- which is the one place on this screen where whose somebody is cannot be seen at all.
+-- The faction whose people are all showing, if any. On the panel rather than on a row, because
+-- rows are pooled and a row would carry it into whatever is drawn next.
+UI:OnFold("character", function()
+	UI.__openFaction = nil
+end)
+
 -- How many of a faction's people are shown before the rest are folded away, and how much room
 -- their standing needs beside them. Three, because the ask was three and because a faction a
 -- family of forty has all met is forty lines nobody scrolls past.
@@ -218,6 +224,7 @@ local function build(frame)
 	local search
 
 	local picker = UI:CreateMemberPicker(frame, 200, membersKnown, function()
+		UI:FoldEverything()
 		if search then search:SetText("") end
 		frame:Refresh()
 	end)
@@ -388,6 +395,10 @@ local function build(frame)
 				-- and a list that comes up empty because of a box you have stopped
 				-- looking at reads as missing data.
 				search:SetText("")
+				-- And whatever was unfolded, folded: this is a different page, and
+				-- clicking the section you are already on is how somebody asks for
+				-- the page back. `Window.lua` carries the rule.
+				UI:FoldEverything()
 				frame:Refresh()
 			end)
 			sectionButtons[name] = button

@@ -553,6 +553,8 @@ function UI:RefreshStars()
 end
 
 function UI:ShowTab(id)
+	UI:FoldEverything()
+
 	for _, tab in ipairs(tabs) do
 		local selected = tab.id == id
 
@@ -686,9 +688,61 @@ end
 --
 -- MemberPicker has had the call to close it since it was written and nothing ever made it;
 -- adding a second popup with the same hazard is a good moment to notice.
+-- What a panel has unfolded, folded away again.
+--
+-- A faction with more people than a block shows, or a recipe more of the family can make than
+-- a line will hold, opens where it is clicked and stays open. That is right while the window is
+-- in front of you and wrong the moment it is not: reported from play, a faction opened once was
+-- still open on the next opening of the window, so a page that had been read as "these three
+-- and sixteen more" came back as twenty rows for no reason the reader could see.
+--
+-- **An unfold is a way of looking at the page in front of you, not a setting.** Family does
+-- remember settings - the summary's sort, the strata, the warning period - and it deliberately
+-- does not remember filters between sessions for this same reason. This is the same rule one
+-- step smaller.
+--
+-- So it is folded by everything that decides *which page* is in front of you, and by that
+-- whether or not the choice changes: putting the window away, picking a tab, picking a section,
+-- picking a member, picking a profession. Clicking the profession you are already on is how
+-- somebody asks for the page back, which is the second half of what was reported - the first
+-- half was the window.
+--
+-- Registered by each panel rather than listed here, because two of the four live as file
+-- locals in the panel that draws them and this file has no business reaching into those. One
+-- entry per panel, by name, so registering twice replaces rather than accumulates - the shape
+-- `Comm:OnAbsent` already uses for the same reason.
+--
+-- Isolated, so that one panel's fold cannot stop the others': this runs while the window is
+-- being put away, and a throw there would leave the rest unfolded with nothing said.
+local folders = {}
+
+function UI:OnFold(name, fn)
+	folders[name] = fn
+end
+
+-- Answers how many folded and how many threw, so that a panel which never registered can be
+-- told from one that registered and failed. Both are silent faults otherwise: the page simply
+-- comes back with something still open and nothing says which panel forgot.
+function UI:FoldEverything()
+	local folded, failed = 0, 0
+
+	for name, fold in pairs(folders) do
+		local ok, problem = pcall(fold)
+		if ok then
+			folded = folded + 1
+		else
+			failed = failed + 1
+			Family:Debug("ui: %s could not fold - %s", tostring(name), tostring(problem))
+		end
+	end
+
+	return folded, failed
+end
+
 window:HookScript("OnHide", function()
 	if UI.CloseMemberPickers then UI:CloseMemberPickers() end
 	if UI.CloseChoicePickers then UI:CloseChoicePickers() end
+	UI:FoldEverything()
 end)
 
 --------------------------------------------------------------------------------------------

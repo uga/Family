@@ -17955,6 +17955,56 @@ print("the family's reputations, as factions rather than as members")
 		end
 	end
 
+	-- And folded away by the window closing.
+	--
+	-- An unfold is a way of looking at the page in front of you, not a setting. Reported from
+	-- play: a faction opened once was still open the next time the window was opened, so a
+	-- page read as "these three and sixteen more" came back as twenty rows with nothing on
+	-- screen to say why. The professions search had the same field and the same fault.
+	do
+		local wasOpen = thorium[1] and saidUnder(thorium[1], moreSaid)
+		if wasOpen then wasOpen.__scripts.OnClick(wasOpen) end
+		check("a faction can be left open", Family.UI.__openFaction ~= nil,
+			tostring(Family.UI.__openFaction))
+
+		Family.UI.__openCrafters = "something the professions panel had open"
+
+		Family.UI:Hide()
+		check("and the window being put away folds it back",
+			Family.UI.__openFaction == nil, tostring(Family.UI.__openFaction))
+		check("and does the same for the professions search, which had the same field",
+			Family.UI.__openCrafters == nil, tostring(Family.UI.__openCrafters))
+
+		-- Every panel that draws an unfold registers one, and none of them threw.
+		--
+		-- Three today: this one, the professions search, and the summary's letters and
+		-- boon. A panel that never registered and one that registered and failed both end
+		-- the same way - the page comes back with something still open and nothing says
+		-- which - so the two are counted apart.
+		--
+		-- **What this does not pin** is that each folder clears the right thing. The two
+		-- above do that for their own; the summary's holds file locals this file cannot
+		-- reach, and driving its letters open would mean finding the figure that opens
+		-- them. Owed, and written down rather than papered over with a check that reads
+		-- the panel's source and calls it proof.
+		local folded, failed = Family.UI:FoldEverything()
+		check("every panel with something to fold has registered a way to fold it",
+			folded >= 3, tostring(folded))
+		check("and none of them threw on the way", failed == 0, tostring(failed))
+
+		Family.UI:Show()
+
+		-- And choosing again folds too, whether or not the choice changes: clicking the
+		-- tab, section or profession you are already on is how somebody asks for the page
+		-- back. Asked for from play, after the window half was reported.
+		Family.UI.__openFaction = "id:59"
+		Family.UI:ShowTab("character")
+		check("and asking for the page you are already on folds it as well",
+			Family.UI.__openFaction == nil, tostring(Family.UI.__openFaction))
+
+		Family.UI:Refresh()
+	end
+
 	-- A faction only one of them has ever met is still that faction, and needs no fold.
 	local zandalar = rowSaying("Zandalar Tribe")
 	check("a faction only one member has is listed too", #zandalar == 1, tostring(#zandalar))
