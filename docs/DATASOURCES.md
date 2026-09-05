@@ -1570,3 +1570,54 @@ one an established character ever takes.
 The first branch is not dead: mooncloth is one recipe with one timer, and so is an alchemist who
 has learned a single transmute so far. There the recipe's own name is the more useful heading,
 which is what it gets.
+
+### A hunter's stable, and a warlock's demon, measured on Era and Burning Crusade 2026-09-05
+
+Two questions were asked of the client because the answers decide whether backlog entries 9 and
+10 can be built at all. Both came back clearly, and both came back with something in them that
+nobody would have guessed.
+
+**The stable answers with the door shut, and slot 0 repeats slot 1.**
+
+    /run for i=0,4 do local icon,name,level,family = GetStablePetInfo(i)
+        print(i, tostring(name), tostring(level), tostring(family)) end
+
+    TBC   0 Ranghesante 70 Ravager   1 Ranghesante 70 Ravager   2 nil
+          3 Pallazza 60 Owl          4 nil
+    Era   0 Spòstati 60 Gorille      1 Spòstati 60 Gorille      2 Palla 60 Chouette
+          3 Alberto 60 Loup          4 nil
+
+So the names, levels and families are all there without the stable being open, which was the
+question. Three things follow that are not obvious:
+
+- **Index 0 and index 1 are the same pet**, on both clients, with the same name, level and
+  family. Anything that walks 0 to 4 and lists what it finds reports one pet twice. Which of the
+  two indices *means* the current pet is not settled by this measurement and does not need to be:
+  the pets are what is wanted, so the list is de-duplicated rather than indexed.
+- **A nil slot is a gap and not the end.** TBC answers for 0, 1 and 3 with 2 empty, so a walk
+  that stops at the first empty slot loses Pallazza. This was measured on 2026-09-04 as well and
+  is the reason the earlier probe was run at all.
+- **`GetNumStablePets` does not exist** on either client, measured 2026-09-04. The count comes
+  from walking, which is why the two points above matter.
+
+There is **no id anywhere in this answer** - icon, name, level and family, and nothing else. A
+pet is therefore the one thing in Family that can only be stored under its name, and the name is
+the player's own word in the language of no client at all. §2.1 is not being set aside; there is
+nothing to set it aside for.
+
+**The demon's book exists only while the demon is out.**
+
+    /run local n, texture = HasPetSpells() print(tostring(n), tostring(texture))
+
+    with a demon summoned    4  DEMON
+    with none                nil nil
+
+Identical on Era and Burning Crusade. So a warlock's per-demon abilities cannot be read on
+demand at all: they can only be recorded at the moment that demon is summoned, and a record of
+all of them is something Family accumulates over time rather than reads in one go. That is a
+constraint on the feature rather than an obstacle to it, and it is the same shape as a
+profession's recipe list, which is only readable while its window is open.
+
+Backlog entry 10 spent its first probe on `GetSpellTabInfo` and found four tabs, all of them the
+character's own - *Demonology* is the warlock's talent tree and not the demon's book. This is the
+right door.

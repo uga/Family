@@ -423,6 +423,21 @@ still owed, and it is one line:
 Reading the wrong return and reporting it as a name would have been the whole entry built on a
 number.
 
+**Answered 2026-09-05, and the entry is unblocked.** The names, levels and families all come back
+with the stable shut - see *A hunter's stable, and a warlock's demon* in
+[`DATASOURCES.md`](DATASOURCES.md) for the readings on both clients. Two things in the answer
+shape whatever is built:
+
+- **Index 0 and index 1 are the same pet.** A walk from 0 to 4 lists one pet twice, on both
+  clients. The list has to be de-duplicated.
+- **There is no id in the answer at all** - icon, name, level, family. A pet is the one thing
+  Family would store under a name, and the name is the player's own word rather than the game's,
+  so §2.1 has nothing to be applied to here rather than being set aside.
+
+What is still not measured is the **abilities** half of this entry, which is the other question:
+a hunter's pet spells are read the way a warlock's are, and entry 10 has just established that
+that only answers while the creature is out.
+
 ---
 
 ## 10. Warlocks: the per-demon abilities known
@@ -457,6 +472,18 @@ probe answered for the stable. Owed, and it is:
 
 Run it once with a demon summoned and once without, because the difference between the two
 answers is the whole entry.
+
+**Answered 2026-09-05, and the difference is the whole entry.** Identical on Era and Burning
+Crusade: `4  DEMON` with a demon summoned, and `nil  nil` with none.
+
+So the demon's book cannot be read on demand. Family can only record a demon's abilities at the
+moment that demon is out, and a record of all of them is something it accumulates over time
+rather than reads in one go - the same shape as a profession's recipe list, which is only
+readable while its window is open, and which Family already handles that way.
+
+That is a constraint rather than an obstacle, and it decides the design: the scanner watches for
+a pet being summoned rather than being asked. It also settles what the panel may say about a
+warlock whose imp has never been out - **nothing**, and §2.2 says nothing rather than none.
 
 ---
 
@@ -802,13 +829,20 @@ anything and every quest row was equally blank.
 
 ---
 
-### Three probes are out and unanswered
+### Three probes are out — all three answered 2026-09-05
 
 Handed over 2026-09-04, needed before their entries can start:
 
-- **Entry 9** — whether the client will name a hunter's stabled pets while the stable is shut.
-- **Entry 10** — whether the warlock demon-ability tab exists without the demon summoned.
-- **Entry 2** — whether a tooltip can be redrawn while a modifier is held.
+- ~~**Entry 9** — whether the client will name a hunter's stabled pets while the stable is
+  shut.~~ **Answered 2026-09-05: yes**, with names, levels and families, and with slot 0
+  repeating slot 1.
+- ~~**Entry 10** — whether the warlock demon-ability tab exists without the demon summoned.~~
+  **Answered 2026-09-05: no.** `HasPetSpells()` is `nil` with no demon out and `4, DEMON` with
+  one, on both clients.
+- ~~**Entry 2** — whether a tooltip can be redrawn while a modifier is held.~~ **Answered
+  2026-09-05: yes**, and the entry shipped. What the answer left out cost a day afterwards: the
+  *event* it was built on does not arrive while a search box has the keyboard, so the swap was
+  dead on every whole-family reading. L-056.
 - ~~**The complaint above** — whether the client's *no player named* message carries the realm
   when the whisper was addressed with one.~~ **No longer gates anything, 2026-09-05.** The
   refusal is attributed from what Family addressed inside the window instead: one character of
