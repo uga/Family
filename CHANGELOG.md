@@ -19,6 +19,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Quest tooltips in the whole-family view now say how that character is doing.** Hovering a
+  quest there showed only the quest's own text; it now lists that character's objectives under it,
+  the way the single-character page already did.
+
 - **Quest names you can read.** Somebody else's quest list now reads in your own language, whoever
   recorded it - Family asks your game what each quest is called, the same way it already knows
   what to put in the tooltip, and remembers the answers so it only ever asks once.

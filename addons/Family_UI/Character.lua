@@ -1278,7 +1278,16 @@ local function build(frame)
 				for _, entry in ipairs(group.members) do
 					local meta = entry.meta or {}
 					if filters:Passes(meta) then
-						local log = (UI:Payload(entry.key) or {}).quests
+						local payload = UI:Payload(entry.key) or {}
+						local log = payload.quests
+
+						-- What each of their quests is actually asking of them, filed
+						-- under the title it was recorded with. Never shared, by
+						-- design, so a sibling has none and their rows carry nothing -
+						-- which is the right answer for a linked family rather than a
+						-- gap.
+						local objectives = payload.questObjectives or {}
+
 						if log and log.entries and #log.entries > 0 then
 							people = people + 1
 						end
@@ -1317,6 +1326,11 @@ local function build(frame)
 								entry = entry,
 								done = quest.done or 0,
 								objectives = quest.objectives,
+								-- Kept under the recorded title, because that is
+								-- the key they were filed under - not the name
+								-- this client draws the row with.
+								lines = quest.title and objectives[quest.title]
+									or nil,
 							}
 
 							-- A quest only some of them have is still that quest, and
@@ -1430,6 +1444,32 @@ local function build(frame)
 							{ group },
 							{ personLabel(person.entry) },
 						}
+
+						-- This person's own objectives, under whatever the client
+						-- said. Reported missing from play 2026-09-05: the
+						-- per-member page has had them since they were written and
+						-- this view never did, so hovering the same quest gave
+						-- different answers depending on which way it was being
+						-- read.
+						--
+						-- The client describes a quest as it stands for **whoever
+						-- is being played**, which is the wrong character on every
+						-- row here - so its answer is kept and this is added to it.
+						-- Named, because without a name under *You are on this
+						-- quest* the reader has two claims about two characters and
+						-- nothing saying which is which.
+						if person.lines then
+							local said = { { " " },
+								{ personLabel(person.entry) } }
+							for _, objective in ipairs(person.lines) do
+								said[#said + 1] = {
+									(objective.done and "|cff40bf40"
+										or "|cffffffff")
+										.. objective.text .. "|r",
+								}
+							end
+							r.progress = said
+						end
 
 						if foldable and index == 1 then
 							r.expandQuest = row.id

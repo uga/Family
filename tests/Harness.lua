@@ -6906,6 +6906,55 @@ print("a quest row's own objectives, under the client's description of the quest
 		check("and the character it belongs to named, because the client named the player",
 			said:find(tostring(Family.UI:Meta(key).name or key), 1, true) ~= nil, said)
 	end
+
+	-- **And the whole-family reading of the same quest**, which is a second row builder and
+	-- had none of this. Reported from play 2026-09-05: the tooltip there showed the client's
+	-- description and stopped, so hovering one quest gave two different answers depending on
+	-- which way the panel was being read.
+	do
+		clickButton("Whole family")
+		Family.UI:Refresh()
+
+		-- Found by whose row it is, and **not** by whether it carries objectives: a
+		-- predicate that looked for those would turn every mutation into "the row is not
+		-- drawn" and never reach the checks about what is on it.
+		local shared
+		for _, f in ipairs(frames) do
+			if f.__shown ~= false and f.questID == 84 and f.memberKey == key then
+				shared = f
+			end
+		end
+		check("the family view draws that quest too", shared ~= nil)
+		check("and the row carries this character's objectives",
+			shared ~= nil and shared.progress ~= nil,
+			shared and tostring(shared.progress))
+
+		if shared then
+			GameTooltip.__shownAs = nil
+			wipe(GameTooltip.__lines)
+			shared.__scripts.OnEnter(shared)
+
+			check("hovering it opens the quest's own tooltip there as well",
+				GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "quest",
+				GameTooltip.__shownAs and GameTooltip.__shownAs.kind)
+
+			local said = ""
+			for _, line in ipairs(GameTooltip.__lines) do
+				said = said .. " " .. tostring(line[1]) .. " " .. tostring(line[2])
+			end
+
+			check("with that character's own objectives under it",
+				said:find("Red Linen Goods 1: 1/1", 1, true) ~= nil, said)
+			check("every one of them there too",
+				said:find("Red Linen Goods 2: 1/1", 1, true) ~= nil, said)
+			check("and whose they are, which matters more here than anywhere",
+				said:find(tostring(Family.UI:Meta(key).name or key), 1, true) ~= nil,
+				said)
+		end
+
+		clickButton("Whole family")
+		Family.UI:Refresh()
+	end
 end)()
 
 -- ...and drawing that section at all takes a client that has them. Which sections exist is
