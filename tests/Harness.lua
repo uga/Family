@@ -17806,11 +17806,20 @@ print("the family's reputations, as factions rather than as members")
 			rep(576, "Timbermaw Hold", "Other", 4, 500, 1000),
 		} },
 		{ key = "Reptwo-Fire Maw", name = "Reptwo", reps = {
-			-- The same faction, further along: this member must take the row rather than
-			-- adding a second one.
+			-- The same faction, further along: this member heads the faction's block
+			-- rather than adding a second block for it.
 			rep(59, "Thorium Brotherhood", "Steamwheedle", 7, 200, 1000),
 			-- And one nobody else has, which must still be listed.
 			rep(270, "Zandalar Tribe", "Other", 3, 10, 1000),
+		} },
+		-- Two more with the same faction, so that it has more people than a block shows
+		-- and the fold has something to fold. Three is the cut, so four is the smallest
+		-- fixture that can tell "shows everybody" from "shows three and says so".
+		{ key = "Repthree-Fire Maw", name = "Repthree", reps = {
+			rep(59, "Thorium Brotherhood", "Steamwheedle", 4, 300, 1000),
+		} },
+		{ key = "Repfour-Fire Maw", name = "Repfour", reps = {
+			rep(59, "Thorium Brotherhood", "Steamwheedle", 3, 400, 1000),
 		} },
 	}
 
@@ -17855,30 +17864,102 @@ print("the family's reputations, as factions rather than as members")
 		Family.UI:Refresh()
 	end
 
+	-- A faction and its people, which is what this section became on 2026-09-05. It used to
+	-- keep whoever had got furthest and say how many there were, and the question actually
+	-- asked of it is *which of my characters*, because the next thing done with the answer
+	-- is to go and log in on one of them.
+	-- The rows **of one faction**, and not any row anywhere that says a name.
+	--
+	-- The first version of these asked whether some row on the panel mentioned "Repone",
+	-- and Repone heads another faction two blocks down - so a mutation that drew only the
+	-- furthest of each faction's people still passed. The block is the faction's own line
+	-- and the lines under it, which are the ones with nothing in the left column; rows are
+	-- taken from the pool in the order they are drawn, so walking forward is walking down
+	-- the page.
+	local function blockUnder(head)
+		local out, at = {}, nil
+		for index, f in ipairs(frames) do
+			if f == head then
+				at = index
+				break
+			end
+		end
+		if not at then return out end
+
+		for index = at + 1, #frames do
+			local f = frames[index]
+			local left = type(f.left) == "table" and f.left.__text
+			if f.__shown == false or type(left) ~= "string" or left ~= "" then break end
+			out[#out + 1] = f
+		end
+		return out
+	end
+
+	local function saidUnder(head, needle)
+		for _, f in ipairs(blockUnder(head)) do
+			local middle = type(f.middle) == "table" and f.middle.__text
+			if type(middle) == "string" and middle:find(needle, 1, true) then return f end
+		end
+		return nil
+	end
+
 	local thorium = rowSaying("Thorium Brotherhood")
-	check("a faction two members have is one row, not two", #thorium == 1,
-		tostring(#thorium))
+	check("a faction is named once however many of its people are under it",
+		#thorium == 1, tostring(#thorium))
 
-	local right = thorium[1] and thorium[1].right and thorium[1].right.__text or ""
-	check("named after the member who has got furthest",
-		right:find("Reptwo", 1, true) ~= nil, right)
-	check("and not after the one who has not", right:find("Repone", 1, true) == nil, right)
-	check("saying how many of them have it at all", right:find("(2)", 1, true) ~= nil, right)
+	-- Furthest at the top, which is the one fact the old shape did keep.
+	local head = thorium[1] and thorium[1].middle and thorium[1].middle.__text or ""
+	check("with the one who has got furthest on its own line",
+		head:find("Reptwo", 1, true) ~= nil, head)
 
-	-- The standing shown is the furthest, which is a different fact from who is named: a
-	-- rule that took the right member's name and the first standing seen would pass the
-	-- check above and put "Friendly" beside somebody who is Exalted.
-	local middle = thorium[1] and thorium[1].middle and thorium[1].middle.__text or ""
-	check("with the furthest standing beside them, not the first one seen",
-		middle:find(standingWord(7), 1, true) ~= nil
-			and middle:find(standingWord(5), 1, true) == nil, middle)
+	-- And the others under it. This is the change: the second name was deliberately absent
+	-- before, because the panel kept a winner rather than a list.
+	local behind = thorium[1] and saidUnder(thorium[1], "Repone")
+	check("and everybody else who has met it listed under that", behind ~= nil)
+	check("each with their own standing rather than the family's best",
+		behind and (behind.right.__text or ""):find(standingWord(5), 1, true) ~= nil,
+		behind and behind.right.__text)
+	check("while the one at the top keeps theirs",
+		thorium[1] and (thorium[1].right.__text or ""):find(standingWord(7), 1, true) ~= nil,
+		thorium[1] and thorium[1].right.__text)
 
-	-- A faction only one of them has ever met is still that faction.
+	-- Three, and then a way to see the rest. A faction a family of forty has all met is
+	-- forty lines nobody scrolls past.
+	check("only three of them are shown at once",
+		thorium[1] and saidUnder(thorium[1], "Repfour") == nil)
+
+	-- Matched through the client's own sentence rather than the English word in it: this
+	-- addon is read in five languages and a needle typed in one of them finds nothing in
+	-- the other four.
+	local moreSaid = string.format(Family.L["|cff888888and %d more|r"], 1)
+	local more = thorium[1] and saidUnder(thorium[1], moreSaid)
+	check("and the rest are offered rather than dropped", more ~= nil,
+		more and more.middle.__text)
+
+	if more then
+		more.__scripts.OnClick(more)
+
+		thorium = rowSaying("Thorium Brotherhood")
+		check("clicking that shows them",
+			thorium[1] and saidUnder(thorium[1], "Repfour") ~= nil)
+
+		local fewer = thorium[1]
+			and saidUnder(thorium[1], Family.L["|cff888888fewer|r"])
+		check("and offers to fold them away again", fewer ~= nil)
+
+		if fewer then
+			fewer.__scripts.OnClick(fewer)
+			thorium = rowSaying("Thorium Brotherhood")
+			check("which puts it back to three",
+				thorium[1] and saidUnder(thorium[1], "Repfour") == nil)
+		end
+	end
+
+	-- A faction only one of them has ever met is still that faction, and needs no fold.
 	local zandalar = rowSaying("Zandalar Tribe")
 	check("a faction only one member has is listed too", #zandalar == 1, tostring(#zandalar))
-	check("without a count, because one is not worth saying",
-		zandalar[1] and (zandalar[1].right.__text or ""):find("(1)", 1, true) == nil,
-		zandalar[1] and zandalar[1].right.__text)
+	check("with nothing offered to unfold, because there is nothing behind it",
+		zandalar[1] and zandalar[1].expandFaction == nil)
 
 	-- The filter box, and **not** the one the global happens to hold.
 	--

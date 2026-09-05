@@ -317,7 +317,7 @@ why the character being played is named and why *already gone* is not *expiring 
 
 ---
 
-## 12. The whole-family reputations view, as it was actually asked for
+## 12. The whole-family reputations view, as it was actually asked for — DONE 2026-09-05
 
 **Supersedes the shape built for entry 8.** What shipped lists one row per faction showing how
 far the family has got and who got there. What was asked for is a faction and *its people*.
@@ -353,6 +353,14 @@ like the overview, are the exception and say it in their headings instead. Built
 `docs/DECISIONS.md` carries it.
 
 **Received:** 2026-09-05, from Alberto.
+
+**Built the same day.** One thing in the ask was read rather than asked about, and it is worth
+saying which: the bullets say both that the filter box acts on faction names and that *the
+realm, class and name filters* act on the list of alts. This panel has one box, and the first
+bullet says outright what it is for - so the box narrows factions, realm and class narrow alts,
+and the member-name filter is the one this panel does not have yet. It arrives with the
+migration onto `UI:CreateMemberFilters` in entry 3, which is where a fourth copy of a filter bar
+stops being built.
 
 ---
 

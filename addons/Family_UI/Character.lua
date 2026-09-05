@@ -129,6 +129,12 @@ end
 -- Ours, strictly - not the list the member button offers. The two were the same call for a
 -- while and this grid was the loser: a shared member landed in the group that has no heading,
 -- which is the one place on this screen where whose somebody is cannot be seen at all.
+-- How many of a faction's people are shown before the rest are folded away, and how much room
+-- their standing needs beside them. Three, because the ask was three and because a faction a
+-- family of forty has all met is forty lines nobody scrolls past.
+local FACTION_PEOPLE = 3
+local FACTION_RIGHT = 200
+
 local function gearRoster()
 	local groups = { { name = nil, members = UI:OurMembers() } }
 
@@ -420,7 +426,9 @@ local function build(frame)
 	-- so all three headings change.
 	local FAMILY_SECTIONS = { ["Equipped gear"] = true, Reputations = true }
 	local FAMILY_HEADINGS = {
-		Reputations = { L["Faction"], L["Furthest"], L["Held by"] },
+		-- Faction, then who, then how far they got. It was faction / furthest / held by,
+		-- which is the shape of a single winner rather than of a list of people.
+		Reputations = { L["Faction"], L["Character"], L["Standing"] },
 	}
 
 	local headerRow = CreateFrame("Frame", nil, frame)
@@ -586,6 +594,17 @@ local function build(frame)
 		-- to open it from for some time: no row in this panel carries an item. That click
 		-- lives on the gear buttons themselves, where it can still happen.
 		r:SetScript("OnClick", function(self)
+			-- A faction with more people than fit, opened and closed again. The same
+			-- unfolding the professions search does for a recipe more of the family can
+			-- make than a line will hold, and kept on the panel rather than in the row so
+			-- that a pooled row cannot carry it into whatever is drawn next.
+			if self.expandFaction then
+				UI.__openFaction = (UI.__openFaction ~= self.expandFaction)
+					and self.expandFaction or nil
+				frame:Refresh()
+				return
+			end
+
 			if self.questID or self.questTitle then
 				if UI:OpenQuest(self.memberKey, self.questID, self.questTitle) then
 					UI:StepAside()
@@ -679,6 +698,10 @@ local function build(frame)
 			-- Put back to the width it was built with. The reputations section widens it
 			-- for its category names, and without this every later section inherited that.
 			r.left:SetWidth(170)
+			-- And the right one, for the same reason: the family reputations section
+			-- widens it to hold a standing and a score together.
+			r.right:SetWidth(140)
+			r.expandFaction = nil
 			r.itemID, r.spellID, r.questID = nil, nil, nil
 			r.achievementID, r.fallback = nil, nil
 			r.currencyID = nil
@@ -1003,25 +1026,25 @@ local function build(frame)
 							local row = byFaction[id]
 
 							if not row then
-								row = { name = faction.name, category = faction.category,
-									standing = faction.standing, value = faction.value,
-									maximum = faction.maximum, holder = entry, count = 0 }
+								row = { id = id, name = faction.name,
+									category = faction.category, people = {} }
 								byFaction[id] = row
 								order[#order + 1] = row
 							end
 
-							row.count = row.count + 1
-
-							-- Furthest wins, and within one standing the one with the most
-							-- of the bar filled. A name is never the tie-break: two people
-							-- at the same point is a tie the panel has no business
-							-- inventing an order for, so the first one seen keeps it.
-							if faction.standing > row.standing
-								or (faction.standing == row.standing
-									and (faction.value or 0) > (row.value or 0)) then
-								row.standing, row.value = faction.standing, faction.value
-								row.maximum, row.holder = faction.maximum, entry
-							end
+							-- Everybody who has met it, not the furthest of them.
+							--
+							-- The first version of this panel kept one holder per faction
+							-- and showed how far the family had got. That answers "has
+							-- anybody done it" and Alberto asked for the other question:
+							-- a faction and *its people*, because the next thing you do
+							-- with the answer is go and log in on one of them.
+							row.people[#row.people + 1] = {
+								entry = entry,
+								standing = faction.standing,
+								value = faction.value,
+								maximum = faction.maximum,
+							}
 
 							-- A faction only some of them have met is still that faction.
 							-- Its category comes from whoever had one, because a record
@@ -1054,6 +1077,17 @@ local function build(frame)
 
 			table.sort(categories)
 
+			-- Whose name goes on a line: the realm where they are not on ours, and the
+			-- family where they are not ours, exactly as every other panel says it.
+			local function labelFor(entry)
+				local who = UI:NameOf(entry.meta or {})
+				if entry.familyName then
+					who = string.format(L["%s |cff9d9d9dof %s|r"], who,
+						tostring(entry.familyName))
+				end
+				return who
+			end
+
 			for _, group in ipairs(categories) do
 				local heading = nextRow()
 				heading.left:SetText("|cff88bbff" .. group .. "|r")
@@ -1061,35 +1095,80 @@ local function build(frame)
 				heading.right:SetText("|cff888888" .. #byCategory[group] .. "|r")
 
 				table.sort(byCategory[group], function(a, b)
-					if a.standing ~= b.standing then return a.standing > b.standing end
 					return (a.name or "") < (b.name or "")
 				end)
 
 				for _, row in ipairs(byCategory[group]) do
-					local held = row.holder and row.holder.meta or {}
-					local who = held.name or row.holder and row.holder.key or "?"
-					if row.holder and row.holder.familyName then
-						who = string.format(L["%s |cff9d9d9dof %s|r"], who,
-							tostring(row.holder.familyName))
+					-- Furthest first, and a name to settle the rest.
+					--
+					-- The single-holder version said outright that a name is never the
+					-- tie-break, because two people at the same point is a tie the panel
+					-- has no business inventing an order for. That was right about
+					-- *picking a winner* and is wrong about drawing a list: an order that
+					-- stops at its keys leaves the rest to `table.sort`'s own
+					-- arrangement, and two draws of one page then disagree.
+					table.sort(row.people, function(a, b)
+						if a.standing ~= b.standing then
+							return a.standing > b.standing
+						end
+						if (a.value or 0) ~= (b.value or 0) then
+							return (a.value or 0) > (b.value or 0)
+						end
+						return tostring((a.entry.meta or {}).name)
+							< tostring((b.entry.meta or {}).name)
+					end)
+
+					local open = UI.__openFaction == row.id
+					local limit = open and #row.people
+						or math.min(FACTION_PEOPLE, #row.people)
+					local foldable = #row.people > FACTION_PEOPLE
+
+					for index = 1, limit do
+						local person = row.people[index]
+						local held = person.entry.meta or {}
+
+						local r = nextRow()
+						r.memberKey = person.entry.key
+						r.left:SetWidth(220)
+						r.right:SetWidth(FACTION_RIGHT)
+
+						-- The faction is written once, against its first person. Said
+						-- again on every line it would read as a different faction each
+						-- time, which is what a column of repeated words does.
+						r.left:SetText(index == 1 and ("  " .. (row.name or "?")) or "")
+						r.middle:SetText(labelFor(person.entry))
+
+						local progress = person.maximum and person.maximum > 0
+							and string.format(" |cff888888%d / %d|r", person.value or 0,
+								person.maximum) or ""
+						r.right:SetText((STANDING_COLOUR[person.standing] or "|cffdddddd")
+							.. standingLabel(person.standing) .. "|r" .. progress)
+
+						r.fallback = {
+							{ row.name or "?" },
+							{ group },
+							{ held.name or person.entry.key or "?",
+								standingLabel(person.standing) },
+						}
+
+						-- The faction's own line opens and closes the rest of it, which
+						-- is where a click about the whole faction belongs.
+						if foldable and index == 1 then
+							r.expandFaction = row.id
+							r.highlight:Show()
+						end
 					end
 
-					local r = nextRow()
-					r.memberKey = row.holder and row.holder.key or nil
-					r.fallback = {
-						{ row.name or "?" },
-						{ group },
-						{ standingLabel(row.standing),
-							row.maximum and row.maximum > 0
-								and string.format("%d / %d", row.value, row.maximum) or "" },
-					}
-
-					r.left:SetText("  " .. (row.name or "?"))
-					r.left:SetWidth(220)
-					r.middle:SetText((STANDING_COLOUR[row.standing] or "|cffdddddd")
-						.. standingLabel(row.standing) .. "|r")
-					r.right:SetText(row.count > 1
-						and string.format("%s |cff888888(%d)|r", who, row.count)
-						or who)
+					if foldable then
+						local r = nextRow()
+						r.left:SetWidth(220)
+						r.right:SetWidth(FACTION_RIGHT)
+						r.middle:SetText(open and L["|cff888888fewer|r"]
+							or string.format(L["|cff888888and %d more|r"],
+								#row.people - limit))
+						r.expandFaction = row.id
+						r.highlight:Show()
+					end
 				end
 			end
 

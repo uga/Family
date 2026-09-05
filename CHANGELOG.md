@@ -19,6 +19,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The whole family's reputations list a faction and the characters who have met it.** It used
+  to name only whoever had got furthest with each one. Now every character who has a standing
+  with a faction is under it, furthest first, each with their own standing and score - so *who
+  can buy that pattern* is a list of names to log in on rather than one name and a count. Three
+  are shown at a time; where there are more, the line under them says how many and clicking the
+  faction opens the rest.
+
 - **The professions search across the family can be put in an order of your own.** By name, by
   profession, or by how many of the family can make each recipe. The sort bar stays where it
   always was and offers these three instead of the three it offers for one character - a
