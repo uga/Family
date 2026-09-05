@@ -378,7 +378,12 @@ local function makersOwned(itemID)
 	for _, maker in ipairs(makers) do
 		for _, owner in ipairs(Family.Index:Owners(maker.item)) do
 			if not seen[owner.key] then
-				local meta = Family.Database:Meta(owner.key) or {}
+				-- Through `UI:Meta`, because `Index:Owners` answers with borrowed keys as
+				-- well as our own. Asked of the database, a linked family's character came
+				-- back with no professions at all and was dropped by the rank test below -
+				-- which reads exactly like the deliberate case a line down, where somebody
+				-- whose profession has never been read is left out.
+				local meta = UI:Meta(owner.key) or {}
 
 				-- **Owning it is not using it.** A Salt Shaker asks 250 leatherworking of
 				-- whoever picks it up, so a character can hold one and be no use at all -

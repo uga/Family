@@ -163,8 +163,18 @@ end
 --
 -- A row is { left, middle, right, questID }, which is the shape the character panel's rows
 -- already have - the same three columns that carry a piece of equipment or a reputation.
+-- `UI:Payload` and never `Family.Database:Payload`.
+--
+-- A borrowed member's key begins with "@" and the database has never heard of it, so asking
+-- the database directly answers nothing for a linked family's character - and §2.2 then turns
+-- that nothing into *Nothing recorded for this member*, which is a sentence about our storage
+-- said about somebody else's. `UI:Payload` knows both kinds of key and is why it exists.
+--
+-- Found on 2026-09-05 by going to check whether quest sharing works end to end. The `quests`
+-- grant has been crossing the wire since it was written and nothing on this side could read
+-- it, which is exactly the gap that check was written to look for.
 function UI:QuestLines(key, meta, matches)
-	local payload = Family.Database:Payload(key)
+	local payload = UI:Payload(key)
 	local log = payload and payload.quests
 
 	-- §2.2: a member whose log has never been read says so, and is not drawn as a member

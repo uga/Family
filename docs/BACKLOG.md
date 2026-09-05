@@ -42,7 +42,7 @@ self-contained, **1** as a check that may turn into a small fix, and **2** after
 
 ---
 
-## 1. Wide Family: quest sharing, verified end to end
+## 1. Wide Family: quest sharing, verified end to end — DONE 2026-09-05
 
 **Asked:** check that quest sharing works across a Wide Family link.
 
@@ -52,6 +52,14 @@ whether a linked family's quests are *shown* anywhere, and whether a sibling's q
 reaches the panels that display quests.
 
 **Shape:** a check, not a feature. If the data crosses and nothing draws it, that is the gap.
+
+**And that is exactly what it was.** The data crossed and nothing drew it: `UI:QuestLines` asked
+`Family.Database:Payload`, which has never heard of a borrowed key, so a shared character's
+Quests section said *Nothing recorded for this member* with the log in memory. Asking whether it
+was a class found two more - the summary's letter unfold and the tooltip's maker block - and all
+three failed into a sentence Family says on purpose, which is why none had been reported. L-052.
+
+Two of the three are now drawn end to end in the harness. The third is below.
 
 ---
 
@@ -563,16 +571,19 @@ looking for a box that does not exist.
 
 ---
 
-### The summary's own unfolds are folded by nobody the harness can see
+### Two things about the summary's letter unfold that no check reaches
 
-`UI:FoldEverything` runs every registered folder and the harness counts them, so a panel that
-never registered one is caught. What no check pins is that the summary's folder clears the right
-thing: `openMail` and `openBoon` are file locals in `Family_UI/Summary.lua`, and driving them
-means finding the mail figure on a drawn row and clicking it, which nothing in the harness does
-yet.
+**The fold.** `UI:FoldEverything` runs every registered folder and the harness counts them, so a
+panel that never registered one is caught - but nothing pins that the summary's folder clears
+the right thing, because `openMail` and `openBoon` are file locals in `Family_UI/Summary.lua`.
 
-The two that live on `UI` - the open faction and the open recipe - are pinned behaviourally. So
-the mechanism is proved and one of its three users is not.
+**And the read.** The same unfold was asking `Family.Database:Payload` for a member whose key may
+be borrowed, so a sibling's letters drew none (L-052). That is fixed, and the mutation putting it
+back fails nothing.
+
+Both want the same thing: a check that finds the mail figure on a drawn row and clicks it.
+Nothing in the harness does that yet, and until it does these two are covered by reading rather
+than by measuring.
 
 **Not to be closed with a check that reads the panel's source and calls it proof.** There is one
 of those in this file already, about this same unfold, and all it says is that a line of code

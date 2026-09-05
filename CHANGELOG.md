@@ -114,6 +114,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A linked family's quests, letters and crafters are actually readable.** Opening a shared
+  character's Quests said *Nothing recorded for this member* however much they had shared;
+  unfolding their letters on the summary drew none; and on an item's tooltip they were left out
+  of who can make one. Three panels were asking Family's own storage for records that belong to
+  somebody else's family, and getting the honest answer to the wrong question.
+
 - **Something you unfolded folds itself away again.** A faction opened to see all its
   characters, or a recipe opened to see everyone who can make it, used to stay open - so
   closing the window and coming back found the page still unfolded, with nothing on screen to

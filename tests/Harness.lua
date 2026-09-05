@@ -3301,6 +3301,43 @@ do
 	check("nor is one whose professions have never been read",
 		textOf():find("Unread", 1, true) == nil, textOf())
 
+	-- And a linked family's character who owns one and can use it.
+	--
+	-- `Index:Owners` answers with borrowed keys as well as our own, and this block asked
+	-- `Family.Database:Meta` about every one of them - which the database has never heard of
+	-- for a borrowed key, so a sibling came back with no professions and was dropped by the
+	-- rank test. That reads exactly like the deliberate case two checks up, where somebody
+	-- whose profession has never been read is left out on purpose: a right answer for the
+	-- wrong reason, and the one shape of fault this file exists to refuse.
+	do
+		local held = FamilyDB.wide
+		FamilyDB.wide = {
+			enabled = true, id = "us", requests = {}, pendingOut = {},
+			links = { ["saltfam"] = { name = "Brine-Thunderstrike", grants = {},
+				siblings = {},
+				members = {
+					["Brine-Thunderstrike"] = {
+						meta = { name = "Brine", realm = "Thunderstrike",
+							classFile = "SHAMAN", level = 60, faction = "Alliance",
+							skills = { [165] = { rank = 300, maxRank = 300 } } },
+						payload = { bags = {
+							{ slots = { { id = 15846, count = 1 } } } } },
+						seen = time(),
+					},
+				} } },
+		}
+		Family.Wide:SetSibling("saltfam", "Brine-Thunderstrike", true)
+		Family.Index:Invalidate()
+
+		tooltipFor(15409)
+		check("a linked family's owner who can use it is named too",
+			textOf():find("Brine", 1, true) ~= nil, textOf())
+
+		Family.Wide:SetSibling("saltfam", "Brine-Thunderstrike", false)
+		FamilyDB.wide = held
+		Family.Index:Invalidate()
+	end
+
 	Family.Database:Forget("Novice-FireMaw")
 	Family.Database:Forget("Unread-FireMaw")
 
@@ -16683,6 +16720,67 @@ print("filtering the summary by name, class and level")
 	typeInto(search, "")
 	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
 	Family.UI:Refresh()
+end)()
+
+print()
+print("a linked family's quests, end to end")
+
+-- Entry 1 of the backlog, and it was written as a check rather than a feature: the `quests`
+-- grant has carried the payload and the count since it was written, and what nothing had ever
+-- confirmed was that anything on this side draws them.
+--
+-- Nothing did. `UI:QuestLines` asked `Family.Database:Payload`, and a borrowed member's key
+-- begins with "@" - which the database has never heard of - so a linked family's character
+-- came back as *Nothing recorded for this member*: a sentence about our own storage, said
+-- about somebody else's records, with the data sitting in memory the whole time.
+;(function()
+	local held = FamilyDB.wide
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["qfam"] = { name = "Questy-Thunderstrike", grants = {}, siblings = {},
+			members = {
+				["Questy-Thunderstrike"] = {
+					meta = { name = "Questy", realm = "Thunderstrike",
+						classFile = "ROGUE", level = 60, faction = "Alliance",
+						questCount = 1, questMax = 25 },
+					payload = { quests = { seen = time(), entries = {
+						{ title = "Borrowed Errand", level = 58, id = 9001,
+							objectives = 3, done = 3, category = "Silithus" },
+					} } },
+					seen = time(),
+				},
+			} } },
+	}
+	Family.Wide:SetSibling("qfam", "Questy-Thunderstrike", true)
+
+	local key = Family.Wide:BorrowedKey("qfam", "Questy-Thunderstrike")
+
+	-- The two halves of the fault, said out loud: the panel's reader finds it and the
+	-- database's does not. A check that only asserted the first would pass with the bug
+	-- back, because `UI:Payload` was always right - it was simply not the one being called.
+	check("a sibling's payload is there when asked the way a panel asks",
+		(Family.UI:Payload(key) or {}).quests ~= nil)
+	check("and absent when asked of the database, which is the whole trap",
+		Family.Database:Payload(key) == nil)
+
+	local lines, message = Family.UI:QuestLines(key, Family.UI:Meta(key), nil)
+	check("a linked family's quest log draws rows", lines ~= nil and #lines > 0,
+		tostring(message))
+
+	local said = ""
+	for _, line in ipairs(lines or {}) do
+		said = said .. " " .. tostring(line.left) .. " " .. tostring(line.middle)
+	end
+	check("naming the quest that was shared",
+		said:find("Borrowed Errand", 1, true) ~= nil, said)
+	check("and the zone it is in", said:find("Silithus", 1, true) ~= nil, said)
+
+	-- The count comes from the meta, which crosses in the same grant.
+	check("and the cap it was shared with",
+		type(message) == "string" and message:find("25", 1, true) ~= nil, tostring(message))
+
+	Family.Wide:SetSibling("qfam", "Questy-Thunderstrike", false)
+	FamilyDB.wide = held
 end)()
 
 print()

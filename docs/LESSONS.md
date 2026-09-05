@@ -1935,3 +1935,38 @@ shows up as nothing at all - a green check over a page that has quietly become u
 only after every code change. Both of these were found that way and could not have been found
 any other way: the code was right, the checks were green, and only a deliberate break said that
 two of them had stopped listening.
+
+## L-052 — The reader that knows one kind of key, and the right-looking answer
+
+`UI:Payload` and `UI:Meta` exist for one reason: a borrowed member's key begins with `@`, and
+`Family.Database` has never heard of it. Their comment says so, and says that a panel handed a
+key should never have to learn whose the member was.
+
+Three panels asked the database directly anyway.
+
+- `UI:QuestLines` - so a linked family's character opened on the Quests section said *Nothing
+  recorded for this member*, with the quests in memory the whole time.
+- the summary's letter unfold - so clicking a sibling's mail figure drew no letters.
+- the tooltip's maker block - so a sibling who owns a Salt Shaker and has the leatherworking to
+  use it was dropped.
+
+**None of the three was ever reported, and the reason is the shape of the failure.** Every one of
+them fails into a sentence Family says on purpose: *not recorded*, *nothing here*, *left out
+because their profession has never been read*. §2.2 asks Family to say "not seen" rather than
+"empty", and a "not seen" produced by asking the wrong storage is word for word the "not seen"
+produced by asking the right one. A wrong answer that looks like the careful answer is the one
+nobody comes to complain about.
+
+The quest one was found by working through a backlog entry that had been written as *a check,
+not a feature* - check that the data crosses **and that something draws it**. The other two were
+found by asking whether the first was a class, which took one grep.
+
+**The shape.** Where two readers exist and one is a superset, every call site is a decision, and
+the wrong one is silent by construction. The grep is `Family.Database:` inside `addons/Family_UI/`
+and every hit has to be a deliberate one - five are, in `Slash.lua`, where the diagnostics are
+about our own storage on purpose.
+
+**The check that now catches it.** A borrowed key drawn end to end in each place: a sibling's
+quest log rendering rows, and a sibling named in an item's maker block. Both mutations - putting
+`Family.Database` back - fail. The summary's letter unfold has no such check yet and is written
+down as owed rather than left to look covered.

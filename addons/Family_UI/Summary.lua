@@ -2186,7 +2186,10 @@ local function build(frame)
 			-- listing it would be Family showing something that is not there any more -
 			-- which is the opposite of what §2.2 asks of every other screen.
 			if openMail == member.key and showsMail then
-				local payload = Family.Database:Payload(member.key) or {}
+				-- Through `UI:Payload`: a sibling's row carries a borrowed key, which the
+				-- database has never heard of, so unfolding their letters drew none and
+				-- said nothing about why.
+				local payload = UI:Payload(member.key) or {}
 				local letters = Family.Mail:Live(payload.mail)
 
 				for _, letter in ipairs(letters) do
