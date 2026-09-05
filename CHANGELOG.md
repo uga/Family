@@ -91,6 +91,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A linked family being offline no longer fills your chat.** Finding somebody online in a
+  linked family of six means writing to each of them in turn, and the game answers every failed
+  one with *No player named X is currently playing*. Those are the game's lines rather than
+  Family's, which is why switching Family's own reporting off never quietened them. They are
+  taken off the screen now - only the ones answering Family's own writing, only for a few
+  seconds after it, and never a reply to a whisper you sent yourself.
+
 - **The key binding now has a section of its own, and stops complaining.** Family's binding sat
   in *Other* under a row reading `HEADER_FAMILY`, because the file declared its section the way
   an older client expected. It is under **Family** now. The same file was also named in the

@@ -17905,6 +17905,50 @@ print("narrowing a list of characters")
 	Family.Database:Forget("Awarrior-Pyrewood Village")
 end)()
 
+--------------------------------------------------------------------------------------------
+-- The client complaining about Family's own whispers
+--
+-- Walking a linked family of six to find one online produces six lines of "No player named X
+-- is currently playing". They are the client's, not Family's, which is why switching Family's
+-- reporting off left every one of them on the screen - the complaint that produced this.
+--------------------------------------------------------------------------------------------
+
+print()
+print("the client's complaints about whispers Family sent")
+
+;(function()
+	local swallow = Family.Comm.__swallowNotFound
+	check("the filter is there to be asked", type(swallow) == "function")
+	if type(swallow) ~= "function" then return end
+
+	local function complaint(name)
+		return _G.ERR_CHAT_PLAYER_NOT_FOUND_S:format(name)
+	end
+
+	-- Nobody has been whispered yet, so nothing of this is ours.
+	check("a complaint about somebody Family never wrote to is left alone",
+		swallow(nil, "CHAT_MSG_SYSTEM", complaint("Astranger")) == false)
+
+	-- What a probe looks like: Family whispers, the client answers.
+	Family.Comm:Send("hello", "x", "WHISPER", "Absentee", false)
+	check("a complaint about one Family has just written to is taken off the screen",
+		swallow(nil, "CHAT_MSG_SYSTEM", complaint("Absentee")) == true)
+
+	-- The same name, the player's own whisper, long after ours.
+	local wasTime = time
+	time = function() return wasTime() + 600 end
+	check("and the same complaint later is left alone, because it is not ours",
+		swallow(nil, "CHAT_MSG_SYSTEM", complaint("Absentee")) == false)
+	time = wasTime
+
+	-- Anything else the client says goes straight through. A filter that swallows more than
+	-- it was written for is worse than the noise it was written for.
+	check("and nothing else the client says is touched",
+		swallow(nil, "CHAT_MSG_SYSTEM", "Your loot: a thing") == false)
+	check("nor a message that is not a string at all",
+		swallow(nil, "CHAT_MSG_SYSTEM", nil) == false)
+end)()
+
 print()
 if failures == 0 then
 	print("all checks passed")

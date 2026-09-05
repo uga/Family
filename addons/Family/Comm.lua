@@ -101,6 +101,21 @@ local function noteAnswer(key)
     Comm.stats.lastAnswer = key
 end
 
+-- Who Family has just whispered, and when.
+--
+-- Kept so that the client's complaint about them can be taken off the screen. Walking a linked
+-- family of six to find one online produces six lines of *No player named X is currently
+-- playing* - the client's own, not Family's, which is why switching Family's reporting off did
+-- nothing to them. Reported from play.
+--
+-- The raw name as it was addressed; normalised where it is read, because `nameKey` is defined
+-- further down and moving it here would put a helper above the reason for it.
+local whispered = {}
+
+-- How long a complaint can arrive after the whisper that caused it and still be ours. Short,
+-- because the one thing this must not swallow is the answer to a whisper the *player* sent.
+local NOT_FOUND_WINDOW = 15
+
 -- The client's own call, wherever it lives. It moved into C_ChatInfo partway through these
 -- clients' lives and the older global is still there on the older ones.
 local function sendRaw(text, channel, target)
@@ -116,6 +131,10 @@ local function sendRaw(text, channel, target)
     -- returns nil both when a call throws and when it returns nil. Those are different
     -- diagnoses - one is a client that refused and one is a client that has no opinion - and
     -- telling them apart is the entire reason this is being recorded.
+    if channel == "WHISPER" and type(target) == "string" then
+        whispered[target:lower()] = time()
+    end
+
     local ok, answer = pcall(call, PREFIX, text, channel, target)
     if not ok then
         noteAnswer("threw")
@@ -413,6 +432,41 @@ function Comm:Present(target)
     -- canary when writing back to somebody who has just spoken.
     present[key] = now()
 end
+
+-- The client complaining about a whisper Family sent, taken off the screen.
+--
+-- **Only about names Family itself has just addressed**, and only for a few seconds after. A
+-- player who whispers an absent character still gets told; what goes is the client answering
+-- Family's own probing, which the player never asked for and cannot act on - and which arrives
+-- six times over while Family walks a linked family looking for somebody online.
+--
+-- Not gated on Family's reporting switch, because these are not Family's sentences: switching
+-- that off already silences the one line Family writes and left these six untouched, which is
+-- exactly the complaint. They go to the narration instead, so the working is still there for
+-- anybody who turns it on.
+--
+-- The message is matched through the client's own format string, never an English one.
+local function swallowNotFound(_, _, text)
+    if type(text) ~= "string" then return false end
+
+    local pattern = patternFor(_G.ERR_CHAT_PLAYER_NOT_FOUND_S)
+    if not pattern then return false end
+
+    local name = text:match(pattern)
+    if not name then return false end
+
+    local at = whispered[name:lower()]
+    if not at or (time() - at) > NOT_FOUND_WINDOW then return false end
+
+    Family:Debug("comm: the client says %s is not playing, and we asked", name)
+    return true
+end
+
+if type(_G.ChatFrame_AddMessageEventFilter) == "function" then
+    _G.ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", swallowNotFound)
+end
+
+Comm.__swallowNotFound = swallowNotFound
 
 Family:RegisterEvent("CHAT_MSG_SYSTEM", "comm.absent", function(_, text)
     local pattern = patternFor(_G.ERR_CHAT_PLAYER_NOT_FOUND_S)
