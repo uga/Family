@@ -1930,7 +1930,7 @@ local function build(frame)
 	-- value is asked of `Reconcile` rather than remembered: a set with no narrowing offers an
 	-- empty list, and Reconcile drops a choice that is no longer on offer. So switching from
 	-- Professions to Crafting puts it back to *all* without anything having to remember to.
-	local narrowButton = UI:CreateChoicePicker(filters, 150, "", "all", function()
+	local narrowButton = UI:CreateChoicePicker(filters, 150, "", nil, function()
 		local narrow = currentSet and currentSet.narrow
 		return narrow and narrow.choices() or {}
 	end, function()

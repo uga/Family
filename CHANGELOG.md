@@ -29,6 +29,14 @@ is a decision rather than an afternoon of archaeology.
   quest there showed only the quest's own text; it now lists that character's objectives under it,
   the way the single-character page already did.
 
+- **Riding counts as a profession.** It sits on your skill sheet beside cooking and fishing and
+  Family did not know it existed; it now appears with the others, at whatever rank you have. On
+  Classic Era the game names it after your mount - *Ram Riding*, *Raptor Riding* - and that is
+  what you will see.
+
+- **The filter buttons say "all" in your own language.** They read *all* on every non-English
+  client, in the middle of a bar that was otherwise translated.
+
 - **Quest headings that are not places now read in your language too.** A warlock's quests were
   filed under *Démoniste* on an English screen, and the cooking and blacksmithing headings the
   same way. They read as your own game names them now, on records written before this as well.

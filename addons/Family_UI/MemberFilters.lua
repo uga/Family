@@ -120,7 +120,7 @@ function UI:CreateMemberFilters(parent, onChange, population, realm)
 	-- see is a control nobody should be able to reach.
 	local realmButton
 	if withRealm then
-		realmButton = UI:CreateChoicePicker(frame, 130, L["Realm"], "all", function()
+		realmButton = UI:CreateChoicePicker(frame, 130, L["Realm"], nil, function()
 			local list = {}
 			for _, realm in ipairs(realmsHeld(held())) do
 				list[#list + 1] = { value = realm, label = realm }
@@ -132,7 +132,7 @@ function UI:CreateMemberFilters(parent, onChange, population, realm)
 
 	-- Named as the client names them and coloured as the game colours them: eleven class
 	-- names in a list are read by colour long before they are read by name.
-	local classButton = UI:CreateChoicePicker(frame, 120, L["Class"], "all", function()
+	local classButton = UI:CreateChoicePicker(frame, 120, L["Class"], nil, function()
 		local names = _G.LOCALIZED_CLASS_NAMES_MALE
 		local list = {}
 		for _, classFile in ipairs(classesHeld(held())) do

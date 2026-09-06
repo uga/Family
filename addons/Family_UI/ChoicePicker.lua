@@ -141,7 +141,15 @@ function UI:CreateChoicePicker(parent, width, prefix, anyLabel, provider, onChoo
 	picker:SetSize(width or 150, 22)
 
 	picker.prefix = prefix
-	picker.anyLabel = anyLabel or "all"
+	-- Localised, and it had not been: every picker in Family read *Classe: all* on a French
+	-- client, in the middle of a bar whose every other word was French. Reported from play
+	-- 2026-09-06.
+	--
+	-- **And the callers now pass nothing**, which is the point. Three of them named the word
+	-- themselves, so the same fix had to be made in four places and any future caller could
+	-- undo it in a fifth. One default, translated here, is one place to get right and one
+	-- place a check can reach.
+	picker.anyLabel = anyLabel or L["all"]
 	picker.provider = provider
 	picker.onChoose = onChoose
 	picker.value = ANY

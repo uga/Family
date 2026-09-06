@@ -44,6 +44,50 @@ Family.SkillLines = {
 			ruRU = { "Первая помощь" },
 		},
 	},
+	[148] = {
+		key = "Horse Riding",
+		primary = false,
+		names = {
+			enUS = { "Horse Riding" },
+			deDE = { "Pferdreiten" },
+			frFR = { "Equitation" },
+			esES = { "Montar caballos" },
+			ruRU = { "Езда на лошадях", "Верховая езда: конь" },
+		},
+	},
+	[149] = {
+		key = "Wolf Riding",
+		primary = false,
+		names = {
+			enUS = { "Wolf Riding" },
+			deDE = { "Wolfreiten" },
+			frFR = { "Monte de loup" },
+			esES = { "Montar lobos" },
+			ruRU = { "Езда на волках", "Верховая езда: волк" },
+		},
+	},
+	[150] = {
+		key = "Tiger Riding",
+		primary = false,
+		names = {
+			enUS = { "Tiger Riding" },
+			deDE = { "Tigerreiten" },
+			frFR = { "Monte de tigre" },
+			esES = { "Montar tigres" },
+			ruRU = { "Езда на тиграх", "Верховая езда: тигр" },
+		},
+	},
+	[152] = {
+		key = "Ram Riding",
+		primary = false,
+		names = {
+			enUS = { "Ram Riding" },
+			deDE = { "Widderreiten" },
+			frFR = { "Monte de bélier" },
+			esES = { "Montar carneros" },
+			ruRU = { "Езда на баранах", "Верховая езда: баран" },
+		},
+	},
 	[164] = {
 		key = "Blacksmithing",
 		primary = true,
@@ -165,6 +209,39 @@ Family.SkillLines = {
 			ruRU = { "Снятие шкур", "Cнятие шкур" },
 		},
 	},
+	[533] = {
+		key = "Raptor Riding",
+		primary = false,
+		names = {
+			enUS = { "Raptor Riding" },
+			deDE = { "Raptorreiten" },
+			frFR = { "Monte de raptor" },
+			esES = { "Montar raptor" },
+			ruRU = { "Езда на рапторах", "Верховая езда: ящер" },
+		},
+	},
+	[553] = {
+		key = "Mechanostrider Piloting",
+		primary = false,
+		names = {
+			enUS = { "Mechanostrider Piloting" },
+			deDE = { "Roboschreiterlenken" },
+			frFR = { "Pilotage de mécanotrotteur" },
+			esES = { "Montar mecazancudos" },
+			ruRU = { "Вождение механострауса", "Езда на механодолгоноге" },
+		},
+	},
+	[554] = {
+		key = "Undead Horsemanship",
+		primary = false,
+		names = {
+			enUS = { "Undead Horsemanship" },
+			deDE = { "Untoten-Reitkunst" },
+			frFR = { "Monte de cheval squelette" },
+			esES = { "Equitación para no-muertos" },
+			ruRU = { "Верховая езда нежити" },
+		},
+	},
 	[633] = {
 		key = "Lockpicking",
 		primary = false,
@@ -177,6 +254,17 @@ Family.SkillLines = {
 			ruRU = { "Вскрытие замков" },
 		},
 	},
+	[713] = {
+		key = "Kodo Riding",
+		primary = false,
+		names = {
+			enUS = { "Kodo Riding" },
+			deDE = { "Kodoreiten" },
+			frFR = { "Monte de kodo" },
+			esES = { "Montar kodos" },
+			ruRU = { "Езда на кодо", "Верховая езда: кодо" },
+		},
+	},
 	[755] = {
 		key = "Jewelcrafting",
 		primary = true,
@@ -186,6 +274,17 @@ Family.SkillLines = {
 			frFR = { "Joaillerie" },
 			esES = { "Joyería" },
 			ruRU = { "Ювелирное дело" },
+		},
+	},
+	[762] = {
+		key = "Riding",
+		primary = false,
+		names = {
+			enUS = { "Riding" },
+			deDE = { "Reiten" },
+			frFR = { "Monte" },
+			esES = { "Equitación" },
+			ruRU = { "Верховая езда" },
 		},
 	},
 	[773] = {

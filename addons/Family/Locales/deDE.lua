@@ -405,6 +405,7 @@ Family.locales.deDE = {
 	["Level"] = "Stufe",  -- 7
 	["Quest"] = "Quest",
 	["Realm"] = "Realm",  -- 21
+	["all"] = "alle",
 	["filter"] = "filtern",
 	["Faction"] = "Fraktion",  -- 26
 	["Category"] = "Kategorie",  -- 26

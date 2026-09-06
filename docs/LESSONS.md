@@ -2081,6 +2081,15 @@ turns this from an hour lost into a line of output.
 
 ---
 
+**Twice more on 2026-09-06, and neither was the same slip.** The helper takes the file to back
+up as an argument and the edit as another, and they are not checked against each other: a run
+naming `tools/skill-lines.py` while the script edited `addons/Family/SkillLines.lua` left the
+generated file mutated and restored the wrong one. And a cut made by byte offset - from
+`\t[152] = {` to the next `\t},` - landed inside the nested `names = {` block, because `\t\t},`
+contains `\t},`; the file no longer parsed, the harness died at load, and *caught nothing* was
+the result. Both were read as surviving mutations for a minute. A mutation that produces no
+failures is a claim about the checks and has to be shown to have applied first.
+
 ## L-056 — The event a focused edit box eats
 
 Family swaps a recipe row's tooltip between the item and the recipe while CTRL is held, with the

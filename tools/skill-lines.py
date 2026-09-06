@@ -38,6 +38,19 @@ LOCALES = ["enUS", "deDE", "frFR", "esES", "ruRU"]
 PRIMARY_CATEGORY = "11"
 SECONDARY_IDS = {129, 185, 356, 794}
 
+# And riding, which is in that same mixed category and was left out of it until Alberto noticed
+# it missing from the panel - it is on the character's skill sheet beside Cooking and Fishing,
+# it has a rank and a maximum, and it is the one skill in there a player spends gold on.
+#
+# Era has one line per mount type and no general one: a dwarf reads "Ram Riding" and a troll
+# "Raptor Riding", so all of them are carried and a character has exactly one. Burning Crusade
+# adds 762 "Riding" and keeps the old rows beside it, so that is carried too and whichever the
+# client answers with is the one that gets recorded.
+#
+# Like lockpicking, these teach nothing: there is no recipe list behind a riding skill, and the
+# panel already draws such a profession as a rank without one.
+RIDING_IDS = {148, 149, 150, 152, 533, 553, 554, 713, 762}
+
 # Lockpicking, which is neither. It sits in category 7 with the class skills, it has a rank and
 # a maximum like a profession, and it teaches nothing - a shape this table did not hold before.
 #
@@ -104,7 +117,8 @@ def build_table():
                 skill_id = int(row["ID"])
                 is_primary = row["CategoryID"] == PRIMARY_CATEGORY
                 is_class = skill_id in CLASS_IDS
-                if not is_primary and skill_id not in SECONDARY_IDS and not is_class:
+                if (not is_primary and skill_id not in SECONDARY_IDS
+                        and skill_id not in RIDING_IDS and not is_class):
                     continue
 
                 name = row["DisplayName_lang"].strip()

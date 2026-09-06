@@ -405,6 +405,7 @@ Family.locales.frFR = {
 	["Level"] = "Niveau",  -- 7
 	["Quest"] = "Quête",
 	["Realm"] = "Royaume",  -- 21
+	["all"] = "tout",
 	["filter"] = "filtrer",
 	["Faction"] = "Faction",  -- 26
 	["Category"] = "Catégorie",  -- 26

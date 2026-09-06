@@ -1439,6 +1439,11 @@ SKILL_LINES = {
 	-- exactly what happened in the game, and left every secondary invisible for ever.
 	{ name = "Cooking", rank = 300, maxRank = 300, abandonable = false },
 	{ name = "First Aid", rank = 225, maxRank = 300, abandonable = false },
+	-- Riding, which sits on the skill sheet beside those two and was missing from the panel
+	-- until 2026-09-06. Era names it per mount rather than generally - a dwarf reads "Ram
+	-- Riding" where a troll reads "Raptor Riding" - so nothing can be recognised by the word
+	-- "Riding", and the table is what tells the client's answer apart from a racial.
+	{ name = "Ram Riding", rank = 150, maxRank = 300, abandonable = false },
 	-- A gathering profession: a real skill with a real rank and no window anywhere, so no
 	-- recipe list will ever exist for it however many times it is scanned.
 	{ name = "Herbalism", rank = 150, maxRank = 300, abandonable = true },
@@ -2423,6 +2428,47 @@ if skills then
 		skills[SKILL.firstAid] and tostring(skills[SKILL.firstAid].rank))
 	check("blacksmithing is not", skills[SKILL.blacksmithing]
 		and skills[SKILL.blacksmithing].secondary == false)
+
+	-- **Riding**, which was missing from the panel entirely until 2026-09-06 and is on the
+	-- character's skill sheet beside cooking and first aid. Nothing could recognise it: it
+	-- cannot be unlearned, so the abandonable test loses it exactly as it loses cooking, and
+	-- it was not in the shipped skill line table for the identity test to find.
+	--
+	-- Era names it per mount rather than generally - a dwarf reads *Ram Riding* where a troll
+	-- reads *Raptor Riding* and a French client reads *Monte de belier* - so matching on the
+	-- word "Riding" would be wrong in every language and most races. The table is what tells
+	-- it apart from the racials sitting in the same category beside it.
+	check("riding is a profession too, and filed by its own id",
+		skills[152] ~= nil and skills["Ram Riding"] == nil,
+		skills[152] and "filed by name" or "not recorded at all")
+	check("with the rank the client gave it",
+		skills[152] and skills[152].rank == 150, skills[152] and tostring(skills[152].rank))
+	check("and marked secondary, because it cannot be unlearned either",
+		skills[152] and skills[152].secondary == true,
+		skills[152] and tostring(skills[152].secondary))
+
+	-- **The word every picker shows when nothing is chosen**, which read *all* on a French
+	-- client in the middle of a bar whose every other word was French. Reported from play
+	-- 2026-09-06. Checked on the default rather than only at the call sites: the call sites
+	-- pass it now, and a default left in English is the same fault waiting for the next
+	-- caller to forget.
+	--
+	-- Asked with the client speaking French, or it proves nothing: on an English one the
+	-- translated word and the English literal are the same string, and the mutation that puts
+	-- the literal back passes.
+	do
+		local was = Family.locale
+		Family.locale = "frFR"
+
+		local picker = Family.UI:CreateChoicePicker(UIParent, 100, "Test", nil,
+			function() return {} end, function() end)
+		check("a picker with no label of its own uses a translated one",
+			picker and picker.anyLabel == "tout",
+			picker and tostring(picker.anyLabel))
+		if picker then picker:Hide() end
+
+		Family.locale = was
+	end
 	check("a weapon skill is not mistaken for a profession", skills.Swords == nil)
 	check("nor is a language", skills.Common == nil)
 end
@@ -5496,8 +5542,10 @@ check("a window opened and found empty says so",
 	visibleText("Tailoring opened, and listed nothing"))
 check("and names the likeliest reason beside it",
 	visibleText("another addon filtering or replacing that window"))
-check("and one never opened says that instead", visibleText("Herbalism never opened"))
-
+-- Two of them now, and named together: riding has no window either, and joins herbalism in the
+-- line that says which professions the list left out.
+check("and one never opened says that instead",
+	visibleText("Herbalism, Ram Riding never opened"))
 testerSkills.Tailoring = nil
 Family.Database:Payload(key).professions.Tailoring = nil
 
