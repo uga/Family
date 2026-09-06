@@ -2183,7 +2183,7 @@ should have one sentence wherever it is asked.
 *The "How many" order groups nothing, deliberately: "most first, wherever in the family they
 happen to be" has no block to head, so every line there says all three things.*
 
-Fifteen checks, nine mutations, all reddening - and two of the nine only after the check they were
+Sixteen checks, nine mutations, all reddening - and two of the nine only after the check they were
 aimed at was rewritten. The first grouped the key and the column under one literal, so a mutation
 of the key silently turned the column off and reddened the wrong thing; the second tried to prove
 the id in the order by looking for a block holding two items, which cannot happen because blocks
