@@ -1583,3 +1583,48 @@ would fix, and it is worth exactly the sessions after the first.
 **And this is L-026 biting a second time**: reasoning about a data source without opening
 `DATASOURCES.md`, which the routing table says beats everything on data. It cost Alberto a
 command he did not need to type.
+
+---
+
+## 26. The warm-up asks for names the reader's own language makes unnecessary
+
+**Found 2026-09-06**, from Alberto asking why recipe *names* are still stored at all when the
+plan had always been to keep ids and look names up. The answer to his question is that both are
+kept and the ids are the identity - `DECISIONS.md` 2026-08-28 says a recipe is named from its
+spell id at display and the recorded word is only the fallback, with a second row adding that it
+falls back to the item's name before it falls back to the word. But reading the code to answer
+him turned up something else.
+
+**`Names:Recipe` has a fast path before either id.** Its first branch:
+
+    if locale and locale == Family.locale and recipe.name ~= "" then return recipe.name end
+
+`locale` there is `record.locale`, written by the scanner as `entry.locale = Family.locale`. So
+**a profession record written in the reader's own language is drawn from the recorded word and
+neither id is touched at all** - no spell lookup, no item lookup, no request, no waiting. For a
+player who reads their own family on the client they scanned it with, that is every recipe.
+
+**The warm-up does not know that.** It queues `recipe.itemID` for every recipe of every member
+regardless of `record.locale`:
+
+    for _, record in pairs(payload.professions or {}) do
+        for _, recipe in ipairs(record.recipes or {}) do
+            if recipe.itemID then warmPending[#warmPending + 1] = recipe.itemID end
+
+So for a single-language player the entire walk may be asking the client for names that nothing
+will ever read.
+
+**Which would also explain the freeze that started all of this**, and this is the part to
+confirm before acting. Alberto's `/family recipes` on 2026-09-06 came back with recipe names in
+**French** and item names in **English** - *Bandage épais en étoffe runique* against *Heavy
+Runecloth Bandage*. `Names:CachedItem` asks the live client first, so English item names mean an
+English client, and French recipe names mean records scanned on a French one. That is precisely
+the case where the fast path does **not** fire and every item name is genuinely needed.
+
+**So the premise is one question, not a probe:** is he reading French records on an English
+client? If yes, the freeze he reported is the mismatched-language case working as designed, most
+users never pay it, and the fix is one condition in the warm-up. If no, the fast path is not
+firing when it should and that is a different and worse fault.
+
+**Not built, deliberately.** L-026 bit twice in one day by reasoning ahead of a measurement, and
+the measurement here is a single answer from the person who has the client.
