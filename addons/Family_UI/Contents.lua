@@ -410,9 +410,16 @@ local ORDERS = {
 	},
 }
 
--- How many lines of a block are drawn before the rest fold away. Five, which is what the item
--- tooltip shows about the same items: a panel should not hide what a tooltip already says.
-local BLOCK_LINES = 5
+-- How many lines of a block are drawn before the rest fold away.
+--
+-- **Three, which is the reputations list's own number** - `FACTION_PEOPLE` in `Character.lua` -
+-- because that list is the model this shape was asked for by, and a reader who has learnt the
+-- fold on one page should meet the same fold on the other. Written as five first, on the
+-- reasoning that the item tooltip names five holders and a panel should not hide what a tooltip
+-- already says; reported the same day with a screenshot of four holders and five holders both
+-- refusing to fold, which is Alberto's call and the better one - the precedent that matters is
+-- the panel he pointed at, not the tooltip.
+local BLOCK_LINES = 3
 
 -- The block whose lines are all showing, if any. On the panel rather than on a row, because
 -- rows are pooled and a row would carry it into whatever is drawn next.

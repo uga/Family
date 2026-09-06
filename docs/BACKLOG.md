@@ -2168,8 +2168,14 @@ drawing never caught up with them.
 value that made the run is written on its first line only. The columns keep their meanings
 whichever order is on - item, then who, then how many and where - so grouping only stops a column
 repeating itself, rather than swapping what the columns hold. Five holders are drawn and the rest
-fold behind *and %d more*, which is the reputations list's own mechanism and the tooltip's own
-number: a panel should not hide what a tooltip already says.
+fold behind *and %d more*, which is the reputations list's own mechanism.
+
+**Three, and it was written as five first.** The reasoning for five was that the item tooltip
+names five holders and a panel should not hide what a tooltip already says. Reported the same day
+with a screenshot of a four-holder block and a five-holder block both refusing to fold: *it fails
+to implement the "and n more" system above 3 item holders.* Three is `FACTION_PEOPLE` in
+`Character.lua`, which is the list this shape was asked for by - the precedent that matters is the
+panel he pointed at, not a tooltip that answers about one item at a time.
 
 **Grouped on the key and never on the word**, because two characters of one name on two realms are
 two characters (§2.1) and two items can share a name. The item's id joins its name in the order
@@ -2183,7 +2189,7 @@ should have one sentence wherever it is asked.
 *The "How many" order groups nothing, deliberately: "most first, wherever in the family they
 happen to be" has no block to head, so every line there says all three things.*
 
-Sixteen checks, nine mutations, all reddening - and two of the nine only after the check they were
+Sixteen checks, eleven mutations, all reddening - and two of the nine only after the check they were
 aimed at was rewritten. The first grouped the key and the column under one literal, so a mutation
 of the key silently turned the column off and reddened the wrong thing; the second tried to prove
 the id in the order by looking for a block holding two items, which cannot happen because blocks

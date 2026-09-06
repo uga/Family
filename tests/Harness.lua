@@ -22843,6 +22843,23 @@ print("an alias for a linked family")
 		_G.FamilyContentsSearch:SetText("Linen")
 		Family.UI:Refresh()
 
+		-- Opened first, because a block shows three holders and folds the rest - and both
+		-- of these read a label off the screen rather than off the model, deliberately, so
+		-- a line that is real and folded away is a line they cannot see. Rescanned rather
+		-- than indexed: which row carries the fold moves with the cap.
+		local function toggleFold()
+			for index = 1, (Family.UI.__contentsShown or 0) do
+				local r = Family.UI.__contentsRows[index]
+				if r.expandBlock then
+					r.__scripts.OnClick(r)
+					return true
+				end
+			end
+			return false
+		end
+
+		toggleFold()
+
 		check("the possessions search says whose character it is",
 			visibleText("Soulsock |cff888888(@PyrewoodVillage)|r |cff9d9d9dof Zia Pina|r"))
 
@@ -22850,6 +22867,9 @@ print("an alias for a linked family")
 		-- would put a character between the name and the "|r" and fail this.
 		check("and a guild bank on this realm is not made to carry the realm",
 			visibleText("|cff40c040Loch Modan Yachting Club|r"))
+
+		-- And folded away again, so that what follows meets the page as a player does.
+		toggleFold()
 
 		------------------------------------------------------------------------------
 		-- And in an order the player chose
@@ -23034,7 +23054,7 @@ print("an alias for a linked family")
 			check("an item is named once and not on every line it holds",
 				itemSaid == 1, tostring(itemSaid) .. " of " .. tostring(firstBlock))
 			check("and the lines under it are the holders, most first",
-				firstBlock == 6, tostring(firstBlock))
+				firstBlock == 4, tostring(firstBlock))
 
 			-- The icon belongs to the name and goes where it goes.
 			check("the icon is drawn beside the name and not on the lines under it",
@@ -23042,17 +23062,17 @@ print("an alias for a linked family")
 				tostring((drawn[2] or {}).icon))
 
 			-- **And the rest fold.** Nine hold it and five fit.
-			local foldRow = drawn[6] or {}
+			local foldRow = drawn[4] or {}
 			check("a block longer than fits ends in a line offering the rest",
-				foldRow.fold ~= nil and foldRow.who:find("4", 1, true) ~= nil,
+				foldRow.fold ~= nil and foldRow.who:find("6", 1, true) ~= nil,
 				tostring(foldRow.who))
 
 			check("which says nothing about an item, so it offers no tooltip",
-				Family.UI.__contentsRows[6].itemID == nil,
-				tostring(Family.UI.__contentsRows[6].itemID))
+				Family.UI.__contentsRows[4].itemID == nil,
+				tostring(Family.UI.__contentsRows[4].itemID))
 
 			-- Clicking it opens the block, and clicking it again closes it.
-			Family.UI.__contentsRows[6].__scripts.OnClick(Family.UI.__contentsRows[6])
+			Family.UI.__contentsRows[4].__scripts.OnClick(Family.UI.__contentsRows[4])
 			local opened = page()
 			local openedBlock = 0
 			for _, row in ipairs(opened) do
@@ -23069,7 +23089,7 @@ print("an alias for a linked family")
 				if row.item == "Ingot of Proof Mark II" then break end
 				closedBlock = closedBlock + 1
 			end
-			check("and clicking it again folds them away", closedBlock == 6,
+			check("and clicking it again folds them away", closedBlock == 4,
 				tostring(closedBlock))
 
 			-- Asked again now that row six has been a holder's line and been handed
@@ -23077,8 +23097,8 @@ print("an alias for a linked family")
 			-- about an item this line says nothing about. Asked before the block was
 			-- ever opened it could only ever see a row that had never held one.
 			check("and it is still about no item after being a holder's line and back",
-				Family.UI.__contentsRows[6].itemID == nil,
-				tostring(Family.UI.__contentsRows[6].itemID))
+				Family.UI.__contentsRows[4].itemID == nil,
+				tostring(Family.UI.__contentsRows[4].itemID))
 
 			-- **A block is about one item and not one word.** Two ids under one name
 			-- have to stay in two blocks: a heading names the item the lines under it

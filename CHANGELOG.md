@@ -26,7 +26,7 @@ is a decision rather than an afternoon of archaeology.
   holders under it, most first, and how many they have leads the right-hand column in front of
   where they are: **209 (62 bags, 147 bank)**, the same sentence the item's own tooltip writes.
   Sorting by character does the same the other way round - the character once, with what they are
-  carrying beside them. More than five holders fold behind a line you can click, as on the
+  carrying beside them. More than three holders fold behind a line you can click, as on the
   reputations list.
 
 - **Logging in is quick again however many characters you have.** Family used to read every
