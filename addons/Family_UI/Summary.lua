@@ -2651,13 +2651,11 @@ local function build(frame)
 		-- new set, or it would be dropping a choice against the old set's list.
 		local narrow = currentSet and currentSet.narrow
 
-		-- A caption that can change without the set changing, which is new: the professions
-		-- set draws two lists and this picker belongs to whichever is showing. So it is
-		-- asked rather than read, and a set whose caption never moves answers with the same
-		-- string every time it is asked.
-		local caption = narrow and narrow.label or ""
-		if type(caption) == "function" then caption = caption() end
-		narrowButton.prefix = caption
+		-- Handed over as it stands, word or question. The professions set's caption is a
+		-- function because that set draws two lists behind one switch, and the picker asks
+		-- it when it draws - `ChoicePicker:Prefix`. Resolving it here is what this line did
+		-- for one commit, and a caller that resolves is a caller that can stop.
+		narrowButton.prefix = narrow and narrow.label or ""
 		narrowButton:SetShown(narrow ~= nil)
 		narrowButton:Reconcile()
 

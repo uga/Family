@@ -24100,14 +24100,24 @@ print("narrowing that panel by one skill, on both of its lists")
 	Family.UI:Refresh()
 
 	-- **Now the other list.**
+	-- Asked of the control rather than of the field behind it. The caption this set hands
+	-- over is a function - two lists, one switch - and the widget is what resolves it, so a
+	-- check reading `prefix` would be reading the question rather than the answer.
 	check("the caption asks about professions while the trades are showing",
-		narrow.prefix == Family.L["Profession"], tostring(narrow.prefix))
+		narrow:Prefix() == Family.L["Profession"], tostring(narrow:Prefix()))
+
+	-- And the whole way through to the text on the button, once, so that a caption resolved
+	-- correctly and then not drawn cannot pass. `string.format` is where an unresolved one
+	-- lands, and it raises there rather than answering wrongly.
+	check("and reaches the button as a word rather than as the question",
+		narrow.__text == Family.L["Profession"] .. ": " .. Family.L["all"],
+		tostring(narrow.__text))
 
 	fireClick(switch)
 	Family.UI:Refresh()
 
 	check("and about weapons once the panel has been switched to them",
-		narrow.prefix == Family.L["Weapon"], tostring(narrow.prefix))
+		narrow:Prefix() == Family.L["Weapon"], tostring(narrow:Prefix()))
 
 	local weapons = offered()
 	check("the picker offers the weapons the family has",
@@ -24183,7 +24193,7 @@ print("narrowing that panel by one skill, on both of its lists")
 	check("so both members are drawn again", showing()[rogue] ~= nil
 		and showing()[smith] ~= nil)
 	check("under a caption that is asking about professions again",
-		narrow.prefix == Family.L["Profession"], tostring(narrow.prefix))
+		narrow:Prefix() == Family.L["Profession"], tostring(narrow:Prefix()))
 
 	Family.Database:Forget(rogue)
 	Family.Database:Forget(smith)

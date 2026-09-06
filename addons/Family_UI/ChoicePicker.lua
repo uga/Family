@@ -166,9 +166,28 @@ function UI:CreateChoicePicker(parent, width, prefix, anyLabel, provider, onChoo
 		if label.SetWordWrap then label:SetWordWrap(false) end
 	end
 
+	-- **A caption that may be a word or a question.**
+	--
+	-- Most callers have one word and hand it over. The summary's professions set draws two
+	-- lists behind one switch and its caption is whichever of them is on screen, so it hands
+	-- a function and this asks it at the moment the control is drawn - the same shape
+	-- `provider` above already has, and for the same reason: what this control is asking
+	-- about a set is not always fixed when the set is chosen.
+	--
+	-- **Resolved here rather than by the caller**, which is where it was for one commit. A
+	-- caller that resolves is a caller that can forget to, and forgetting hands a function
+	-- to `string.format` - which raises, mid-draw, the first time that panel is opened. One
+	-- place to get right and one place a check can reach, which is the argument `anyLabel`
+	-- above settled for the same widget.
+	function picker:Prefix()
+		local caption = self.prefix
+		if type(caption) == "function" then caption = caption(self) end
+		return tostring(caption or "")
+	end
+
 	-- The full text, for the ones the button had to cut short.
 	UI:AttachTooltip(picker, function(self)
-		return nil, nil, { { self.prefix, self:Label() } }
+		return nil, nil, { { self:Prefix(), self:Label() } }
 	end)
 
 	function picker:Choices()
@@ -197,8 +216,20 @@ function UI:CreateChoicePicker(parent, width, prefix, anyLabel, provider, onChoo
 		return tostring(self.value)
 	end
 
+	-- **Neither half can raise here**, which is what `tostring` is doing on a pair of things
+	-- that are already meant to be strings.
+	--
+	-- `string.format` refuses anything that is not one, and this is the single line every
+	-- picker in Family draws itself through - so a caption or a label that arrives as
+	-- something else does not make a control look wrong, it throws mid-draw and takes the
+	-- whole panel with it. That is what a caption left unresolved did: the window opened on
+	-- an error and nothing else on it could be read. A picker captioned with nonsense is a
+	-- fault somebody reports; a window that will not open is a fault that hides every other
+	-- one behind it. It is also the difference between a mutation the harness reddens and a
+	-- mutation that stops the harness where it stands.
 	function picker:Redraw()
-		self:SetText(string.format("%s: %s", self.prefix, self:Label()))
+		self:SetText(string.format("%s: %s", tostring(self:Prefix()),
+			tostring(self:Label())))
 	end
 
 	function picker:Choose(value)
