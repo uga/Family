@@ -349,6 +349,26 @@ local GROUPS = {
 	},
 
 	{
+		title = "Unarmed - a bare hand, no gauntlet",
+		note = "Every one of these is in Era's own interface manifest, so a flat cell here is a "
+			.. "surprise rather than the usual answer: what is being judged is what they look "
+			.. "like, not whether they exist. The last is the gauntleted fist already turned "
+			.. "down, kept as the thing to read the others against.",
+		icons = {
+			{ 136101, "spell_nature_strength - a bare arm" },
+			{ 132318, "ability_smash" },
+			{ 132277, "ability_racial_bloodrage" },
+			{ 135726, "racial_orc_berserkerstrength" },
+			{ 132155, "ability_gouge - a bare hand" },
+			{ 135928, "spell_holy_layonhands - an open hand" },
+			{ 236248, "Ability_Paladin_BlessedHands" },
+			{ 236314, "Ability_Warrior_StrengthOfArms" },
+			{ 132343, "ability_warrior_disarm" },
+			{ 132350, "ability_warrior_punishingblow - the gauntlet, turned down" },
+		},
+	},
+
+	{
 		title = "The minimap tracking set",
 		note = "Flat monochrome symbols on transparency. They read better at 18 pixels than "
 			.. "icon art does, and they are the most likely to differ between clients.",

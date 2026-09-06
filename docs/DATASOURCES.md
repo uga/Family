@@ -2009,9 +2009,42 @@ named by Era itself and are the control: they must render there.
     135966 First Aid  132164 Riding      134071 Jewelcrafting
     237171 Inscription 441139 Archaeology
 
+**Chosen from the sheet on a live Era client, 2026-09-06.** Every file id below rendered there,
+which answers the question the sheet was built for: an Era client still ships the art Mists names,
+so the professions need nothing chosen by hand.
+
+    136241 Blacksmithing   136247 Leatherworking  136240 Alchemy      136246 Herbalism
+    134708 Mining          136249 Tailoring       136244 Enchanting   136245 Fishing
+    134366 Skinning        133971 Cooking         135966 First Aid    132164 Riding
+    134071 Jewelcrafting   237171 Inscription     136243 Engineering
+
+Engineering takes 136243 deliberately - the generic - because nothing better exists for it.
+
+The weapon skills are paths rather than ids and were chosen the same way:
+
+    INV_Sword_04 Swords            INV_Sword_27 Two-Handed Swords
+    INV_Axe_01 Axes                INV_Axe_09 Two-Handed Axes
+    INV_Mace_01 Maces              INV_Hammer_16 Two-Handed Maces
+    INV_Weapon_ShortBlade_05 Daggers   INV_Staff_08 Staves
+    INV_Spear_06 Polearms          INV_Gauntlets_04 Fist Weapons
+    INV_Weapon_Bow_07 Bows         INV_Weapon_Crossbow_01 Crossbows
+    INV_Weapon_Rifle_01 Guns       INV_Wand_01 Wands
+    INV_ThrowingKnife_02 Thrown    INV_Shield_06 Defense
+
 **Engineering has none anywhere**: it answers 136243 on Mists, which is the same generic every
 weapon skill answers. So engineering and the eighteen weapon skills have to be *chosen*, and a
 chosen icon is exactly what cannot be verified from inside the client - `GetTexture` echoes back
 whatever it was handed. They go through `tools/FamilyIconSheet/` and a screenshot, which is what
 that tool is for.
+
+### The client's own list of interface files, measured 2026-09-06
+
+`ManifestInterfaceData` is served for Classic Era: `ID, FilePath, FileName`, 2.2 MB, and **6,507
+of its rows are icons**. So *does this client have that art* is answerable from a table after all,
+and only *what does it look like* needs the sheet and an eye.
+
+That is worth knowing before the next icon is picked by name from memory: `ability_warrior_punishingblow`
+is 132350 and is present on Era, so when it was turned down for Unarmed it was turned down for
+looking wrong - a gauntleted fist where a bare one was asked for - and not for being missing. The
+two failures are indistinguishable inside the client and are not indistinguishable here.
 
