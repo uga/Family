@@ -375,6 +375,11 @@ the results say **who**. *Who has the mageweave. Who can make this belt. Who kno
 enchant.* Two letters minimum, because a one-letter search across a family of forty is not a
 search.
 
+On Possessions the answers come out grouped: the item once, then whoever has some of it
+underneath, most first, with how many and where they are keeping it. Sort by character instead
+and it is the same list the other way up. More than three holders and the rest fold behind a
+line you can click.
+
 Only items the client has named can be matched. An item nobody has looked at since the last
 patch has no name yet, and Family says so rather than letting a search quietly answer for less
 than it searched.
@@ -394,15 +399,24 @@ Family records **the moment a cooldown comes ready**, never the time remaining. 
 whole trick: time remaining goes stale the second the client shuts, and a moment does not. A
 cooldown recorded three days ago is still right today.
 
-**Summary / Crafting** is where you look at all of them at once: one column per kind of
-cooldown anybody in the family has, green when it is available and grey with the time when it
-is not. Grey rather than red — everywhere else in Family red means something is wrong or about
-to be lost, and a transmute you used two hours ago is neither.
+**Summary / Crafting** is where you look at all of them at once: a line for each kind of
+cooldown, with everybody who has it underneath — the ones who can do it now first, then whoever
+comes back soonest. Green when it is available and grey with the time when it is not. Grey
+rather than red — everywhere else in Family red means something is wrong or about to be lost,
+and a transmute you used two hours ago is neither.
 
-Thirty alchemy transmutes share one timer, so they are one column called *Alchemy* rather than
-thirty. Family works that out by watching: recipes of one profession that come back at the same
-moment are on the same timer, which is what sharing a cooldown is. A cooldown nothing shares
-keeps its own recipe's name.
+Beside the cooldown's name is **how many of your characters can do it right now**, so a list
+that has folded away its fourth and fifth crafter still tells you how many are waiting for you.
+More than three and the rest fold behind a line you can click, the same as the reputations list;
+clicking the cooldown's own name opens and closes it too.
+
+Thirty alchemy transmutes share one timer, so they are one line called *Alchemy* rather than
+thirty. **Family asks the game which cooldowns are shared** rather than working it out by
+watching — the client's own tables distinguish a recipe's own timer from one a whole category
+shares, which is what players mean by *all the transmutes share one cooldown*. It differs by
+expansion: alchemy on Classic Era, alchemy and enchanting on the Burning Crusade, enchanting on
+Mists, where Void Sphere and Prismatic Sphere are two names for one timer. A cooldown nothing
+shares keeps its own recipe's name.
 
 A **salt shaker** is in there too, under leatherworking. The cooldown is on the item, and
 nothing in the game says which profession it answers to — but Family records what each recipe
