@@ -19,6 +19,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Lockpicking sits with a rogue's other skills.** It was on the abilities page; it is now on the
+  summary's Professions set, beside cooking and first aid, where the rest of what a character has
+  already is.
+
 - **The Professions filter no longer offers riding.** *Ram Riding* and *Mechanostrider Piloting*
   were sitting in the list between Leatherworking and Mining. Riding still shows on the rows.
 

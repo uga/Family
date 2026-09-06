@@ -373,39 +373,23 @@ local function build(frame)
 		if section == "Spellbook" then
 			spec:Hide()
 
-			-- Skills that are abilities rather than professions, above the book.
+			-- Lockpicking used to be drawn here, above the book.
 			--
-			-- Lockpicking is the one these builds have: a rank and a maximum, taught by no
-			-- window, making nothing, and gone from the game entirely after Cataclysm - so
-			-- Mists members simply have none and this list is empty for them. It was drawn
-			-- among the professions on the summary for an hour, beside cooking and fishing,
-			-- until Alberto pointed out that it is technically an ability. It is one, and
-			-- the comment below already says what this section is for: the things this
-			-- member can do.
+			-- It is technically an ability - a rank and a maximum, taught by no window,
+			-- making nothing - and that is why it was moved off the summary's professions
+			-- list and onto this page. Alberto has asked for it back, 2026-09-06, now that
+			-- those rows are a picture and a rank: a rogue reading their own line wants it
+			-- beside the rest of what they have rather than on a second page. Two places
+			-- would be worse than either, so this one gives it up.
 			--
-			-- Above the book rather than inside it, because the book is grouped by school
-			-- and a skill has none - and putting it in a school would be inventing one.
-			local ranked = {}
-			for id, skill in pairs(member.meta.skills or {}) do
-				if skill.class then
-					ranked[#ranked + 1] = { id = id, skill = skill,
-						name = Family:ProfessionName(id, skill.name) }
-				end
-			end
-			table.sort(ranked, function(a, b) return a.name < b.name end)
-
-			for _, entry in ipairs(ranked) do
-				local r = nextRow()
-				r.left:SetText(entry.name)
-				r.right:SetText(string.format("|cffffd700%d|r/%d",
-					entry.skill.rank or 0, entry.skill.maxRank or 0))
-			end
+			-- Nothing replaces it here. The section below is the spellbook, which is what
+			-- this page was always for.
 
 			local book = payload.spells
 			if not book or #book == 0 then
-				-- Having drawn something, saying nothing was recorded would be a fresh
-				-- claim contradicted by what is on the screen above it.
-				if #ranked > 0 then return finish() end
+				-- Nothing is drawn above this any more, so there is nothing for the
+				-- sentence to contradict: the guard that used to check whether a class
+				-- skill had been listed went with the list itself.
 				return finish(L["|cffffaa00Nothing recorded for this member.|r"])
 			end
 

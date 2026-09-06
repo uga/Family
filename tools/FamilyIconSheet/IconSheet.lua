@@ -370,6 +370,38 @@ local GROUPS = {
 	},
 
 	{
+		title = "Lockpicking - a key, since nothing is named for a lockpick",
+		note = "Nothing in Era's manifest has \"lockpick\" in its name. Alberto's is the key "
+			.. "the dwarves in Blackrock Depths drop, so these are the fifteen the client "
+			.. "ships. All confirmed present: what is being judged is which one.",
+		icons = {
+			{ 134235, "inv_misc_key_01" }, { 134236, "inv_misc_key_02" },
+			{ 134237, "inv_misc_key_03" }, { 134238, "inv_misc_key_04" },
+			{ 134239, "inv_misc_key_05" }, { 134240, "inv_misc_key_06" },
+			{ 134241, "inv_misc_key_07" }, { 134242, "inv_misc_key_08" },
+			{ 134243, "inv_misc_key_09" }, { 134244, "inv_misc_key_10" },
+			{ 134245, "inv_misc_key_11" }, { 134246, "inv_misc_key_12" },
+		},
+	},
+
+	{
+		title = "Poisons",
+		note = "One of these is named for the thing outright. Confirmed present, so the "
+			.. "question is which looks like the one in the game.",
+		icons = {
+			{ 132273, "ability_poisons - named for it" },
+			{ 134711, "inv_poison_mindnumbing" },
+			{ 132103, "ability_creature_poison_01" },
+			{ 132104, "ability_creature_poison_02" },
+			{ 132105, "ability_creature_poison_03" },
+			{ 132106, "ability_creature_poison_04" },
+			{ 132107, "ability_creature_poison_05" },
+			{ 132108, "ability_creature_poison_06" },
+			{ 136067, "spell_nature_nullifypoison" },
+		},
+	},
+
+	{
 		title = "The minimap tracking set",
 		note = "Flat monochrome symbols on transparency. They read better at 18 pixels than "
 			.. "icon art does, and they are the most likely to differ between clients.",

@@ -22407,11 +22407,25 @@ print("lockpicking, which is a skill and not a profession")
 		end
 	end
 
+	-- **On the summary now, among the skills that member has.** It was moved to the abilities
+	-- page because it is technically an ability, and Alberto asked for it back on 2026-09-06
+	-- once those rows became a picture and a rank: a rogue reading their own line wants it
+	-- beside the rest of what they have rather than on a second page.
+	--
+	-- Still the word rather than a picture, because the shipped table has none for it - the one
+	-- line left without. When one is chosen this check wants the markup instead.
+	Family.UI:ShowTab("summary")
+	clickLastButton(Family.L["Professions"])
+	Family.UI:Refresh()
+	check("it is on the summary, among the skills that member has",
+		drawnText("Lockpicking"))
+	check("and the rank is the one recorded", drawnText("285"))
+
+	-- And gone from the page it used to be on. Two places would be worse than either.
 	Family.UI:ShowTab("talents")
 	clickButton("Spellbook")
 	Family.UI:Refresh()
-	check("it is on the abilities panel, with its rank", drawnText("Lockpicking"))
-	check("and the rank is the one recorded", drawnText("285"))
+	check("and no longer on the abilities page", drawnText("Lockpicking") == false)
 
 	Family.Database:Forget("Picker-Fire Maw")
 	SKILL_LINES[#SKILL_LINES] = nil
