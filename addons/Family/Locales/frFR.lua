@@ -516,6 +516,7 @@ Family.locales.frFR = {
 	["Possessions"] = "Possessions",  -- 20
 	["Professions"] = "Métiers",  -- 14
 	["Secondary Skills"] = "Compétences secondaires",
+	["Weapon"] = "Arme",
 	["Weapon Skills"] = "Compétences d'armes",
 	["Reputations"] = "Réputations",  -- 15
 	["no such link"] = "aucun lien de ce genre",

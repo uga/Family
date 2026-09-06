@@ -516,6 +516,7 @@ Family.locales.ruRU = {
 	["Possessions"] = "Имущество",  -- 20
 	["Professions"] = "Профессии",  -- 14
 	["Secondary Skills"] = "Вторичные навыки",
+	["Weapon"] = "Оружие",
 	["Weapon Skills"] = "Владение оружием",
 	["Reputations"] = "Репутация",  -- 15
 	["no such link"] = "такой связи нет",

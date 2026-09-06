@@ -516,6 +516,7 @@ Family.locales.deDE = {
 	["Possessions"] = "Besitz",  -- 20
 	["Professions"] = "Berufe",  -- 14
 	["Secondary Skills"] = "Sekundäre Fertigkeiten",
+	["Weapon"] = "Waffe",
 	["Weapon Skills"] = "Waffenfertigkeiten",
 	["Reputations"] = "Ruf",  -- 15
 	["no such link"] = "keine solche Verbindung",

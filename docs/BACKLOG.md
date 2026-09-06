@@ -899,7 +899,7 @@ Family, which is the one row they can be certain about.
 
 ---
 
-## 15. What is left to level: weapon skills, lockpicking, and a Skills set
+## 15. What is left to level: weapon skills, lockpicking, and a Skills set — DONE 2026-09-06
 
 **Received:** 2026-09-05, from Alberto.
 
@@ -946,6 +946,33 @@ So an eighth set cannot simply be added. Three ways out, none of them chosen yet
   professions and would have to mean something else there.
 - **Shorter labels.** Refused before, on 2026-09-04, and for a reason that has not changed: we
   would have to know the abbreviation for every category in every language.
+
+**The second of those three was taken on 2026-09-06 and this entry was not told.** The switch on
+the professions set's filter row *is* "fold Skills into an existing set": the scanner records the
+weapon skills, `Summary.lua`'s `weaponsOf` draws them, and pressing the switch puts the panel on
+them. Lockpicking came back among the secondaries in the same week. So by the time this entry was
+opened, the recording half and most of the showing half were built, and what stood between them and
+the ask was the cost that option was predicted to have — written down here before it was paid.
+
+**The predicted cost was real.** *"Its narrowing picker is about professions and would have to mean
+something else there"* — it did not mean something else, it went on meaning professions: the
+control beside the switch was captioned *Profession* over a table of weapon skills, offering trades
+as a way to narrow a list of weapons. **Built 2026-09-06:** the picker follows the view. Its
+caption, the choices it offers and the filter behind it are all the list on screen, the first
+weapon column takes the chosen weapon's name as its heading, and clicking that heading orders the
+family by that weapon's rank — which is what *what have I still got to level* was a question about
+and what no panel could do until now.
+
+**And the eighth set button is not wanted any more.** A *Skills* set would hold the weapon skills
+and lockpicking, and this panel draws both. The 81-pixel arithmetic above still stands and is still
+the reason a set cannot simply be added; nothing needs it.
+
+**Two faults came out of the same measurement**, one shape twice. `narrow.passes` and `SORT.prof1`
+both tested `not skill.class` — true of the list they were written against, and false from the day
+lockpicking joined the secondaries. The picker offered *Lockpicking* and matched nobody with it, so
+choosing it hid every rogue and said so in a count underneath; ordering by it answered nil for
+every row, which reads as a heading that does not sort. Both fixed the same day, and the mutations
+that put either back redden a check.
 
 ---
 

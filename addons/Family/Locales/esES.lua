@@ -516,6 +516,7 @@ Family.locales.esES = {
 	["Possessions"] = "Posesiones",  -- 20
 	["Professions"] = "Profesiones",  -- 14
 	["Secondary Skills"] = "Habilidades secundarias",
+	["Weapon"] = "Arma",
 	["Weapon Skills"] = "Habilidades con armas",
 	["Reputations"] = "Reputación",  -- 15
 	["no such link"] = "no existe ese vínculo",

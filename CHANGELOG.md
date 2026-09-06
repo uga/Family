@@ -19,6 +19,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Ask the professions panel about one weapon skill.** Switch it to Weapon Skills and the filter
+  beside it now offers weapons instead of professions - pick Swords and the panel comes down to
+  whoever has them, headed by the weapon's name, and clicking that heading puts the family in
+  order of who is furthest behind on it. It asked about professions over a table of weapon skills
+  before, which narrowed one list by the other.
+
 - **A linked family's recipes are learnt at login too**, instead of being paid for the first time
   you open their profession. Sharing with a family who play in another language is exactly where
   the names have to be looked up, and it was the one case the login pass did not cover.
@@ -290,6 +296,10 @@ is a decision rather than an afternoon of archaeology.
   around them had one. They now carry the same mark as the minimap button.
 
 ### Fixed
+
+- **Choosing Lockpicking on the professions filter no longer empties the panel.** It was offered in
+  the list and matched nobody, so picking it left every rogue hidden and a note underneath saying
+  how many. Ordering the panel by it did nothing for the same reason; both work now.
 
 - **A profession somebody unlearns is dropped from the record, recipes and all.** It stopped being
   shown a version ago; now it stops being stored and stops being sent to a linked family. A

@@ -227,27 +227,43 @@ local SETS = {
 		-- id, so both are one choice, and `Family:ProfessionName` puts the reader's own
 		-- language on the label.
 		narrow = {
-			label = L["Profession"],
+			-- **Asked on every draw rather than fixed when the set was chosen**, because
+			-- this set draws two lists and the picker belongs to whichever one is on
+			-- screen. Captioned *Profession* over a table of weapon skills it was
+			-- narrowing one list by the other, which is two questions stapled together:
+			-- nobody wants the weapon skills of their blacksmiths.
+			label = function()
+				return showingWeapons() and L["Weapon"] or L["Profession"]
+			end,
 
 			-- Only what the family actually has, which is the rule every picker in Family
 			-- follows: offering blacksmithing to a family with no blacksmith is offering a
-			-- way to show nothing.
+			-- way to show nothing. And now: offering Daggers to a family whose rows are
+			-- all trades.
+			--
+			-- Riding used to be filtered out here. It is out of `skillsOf` itself now -
+			-- off the whole set rather than off this one control - so there is nothing
+			-- left to filter: *show me everybody who can ride* is not a question anybody
+			-- asks, and neither is what their Ram Riding rank is.
 			choices = function()
 				local seen, list = {}, {}
-				for _, entry in pairs(Family.Database:Members()) do
-					for _, secondary in ipairs({ false, true }) do
-						for _, held in ipairs(skillsOf(entry.meta or {}, secondary)) do
-							local id = professionID(held.id)
 
-							-- Riding used to be filtered out here. It is out of
-							-- `skillsOf` itself now - off the whole set rather
-							-- than off this one control - so there is nothing
-							-- left to filter: *show me everybody who can ride* is
-							-- not a question anybody asks, and neither is what
-							-- their Ram Riding rank is.
-							if id ~= nil and not seen[id] then
-								seen[id] = true
-								list[#list + 1] = { value = id, label = held.name }
+				local function offer(held)
+					local id = professionID(held.id)
+					if id ~= nil and not seen[id] then
+						seen[id] = true
+						list[#list + 1] = { value = id, label = held.name }
+					end
+				end
+
+				for _, entry in pairs(Family.Database:Members()) do
+					local meta = entry.meta or {}
+					if showingWeapons() then
+						for _, held in ipairs(weaponsOf(meta)) do offer(held) end
+					else
+						for _, secondary in ipairs({ false, true }) do
+							for _, held in ipairs(skillsOf(meta, secondary)) do
+								offer(held)
 							end
 						end
 					end
@@ -258,9 +274,22 @@ local SETS = {
 
 			-- Walked rather than looked up, because the key a record is filed under is not
 			-- always the key the picker offers: one of them may be a word.
+			--
+			-- **Against the same list the choices came from**, which is the fault this
+			-- carried until 2026-09-06. It said `not skill.class`, which was true of the
+			-- list it was written for and stopped being true the day lockpicking was let
+			-- back in among the secondaries above: the picker offered *Lockpicking* and
+			-- this rejected the only records that are one, so choosing it emptied the
+			-- panel and said thirty-nine members were hidden. A picker whose two halves
+			-- read different lists can fail in no other way, so both halves now ask the
+			-- question the view is asking and nothing else.
 			passes = function(meta, wanted)
+				local weapons = showingWeapons()
 				for id, skill in pairs((meta or {}).skills or {}) do
-					if not skill.class and professionID(id) == wanted then return true end
+					if (skill.weapon or false) == weapons
+						and professionID(id) == wanted then
+						return true
+					end
 				end
 				return false
 			end,
@@ -1330,7 +1359,12 @@ local SORT = {
 		local wanted = UI.__summaryNarrow and UI.__summaryNarrow:Value()
 		if wanted ~= nil then
 			for id, skill in pairs((meta or {}).skills or {}) do
-				if not skill.class and professionID(id) == wanted then
+				-- Not a weapon, and that is the whole test. It read `not skill.class`
+				-- and had the same fault `narrow.passes` had, one screen away: with
+				-- *Lockpicking* chosen the rows were the right rows and the order was
+				-- nil for every one of them, so clicking the heading did nothing and
+				-- looked like a column that simply does not sort.
+				if not skill.weapon and professionID(id) == wanted then
 					return skill.rank or 0
 				end
 			end
@@ -1344,6 +1378,38 @@ local SORT = {
 	prof2     = function(meta)
 		local second = skillsOf(meta, false)[2]
 		return second and second.name
+	end,
+
+	-- **The weapons column, by the same rule and only the first of them.**
+	--
+	-- With a weapon chosen this orders by that weapon's rank, which is the whole of what
+	-- entry 15 asked for: *what have I still got to level* is a question about a number, and
+	-- until now the panel could show that number on forty rows and not put them in order.
+	--
+	-- Only the first, because these columns are a queue and not positions - the second cell
+	-- holds a warrior's Axes and a mage's nothing, so ordering by it would order the page by
+	-- a different skill on every row. The other six carry no heading for the same reason and
+	-- so cannot be clicked at all.
+	--
+	-- With none chosen it is the **word** in the first cell, matching prof1 above: a rank
+	-- sorted then would be the rank of whichever weapon happened to come first
+	-- alphabetically, which answers nobody.
+	--
+	-- Nil where the member has never held it - not nought. Somebody who has never drawn a
+	-- sword is not a beginner swordsman, and this set does not hide them, so the difference
+	-- has to stay visible.
+	wep1      = function(meta)
+		local wanted = UI.__summaryNarrow and UI.__summaryNarrow:Value()
+		if wanted ~= nil then
+			for id, skill in pairs((meta or {}).skills or {}) do
+				if skill.weapon and professionID(id) == wanted then
+					return skill.rank or 0
+				end
+			end
+			return nil
+		end
+		local first = weaponsOf(meta)[1]
+		return first and first.name
 	end,
 
 	-- How many world buffs are banked. Three answers as the cell has three: bags never read
@@ -1695,15 +1761,23 @@ function professionColumns()
 	-- a warrior with fifteen weapon skills and a mage with two have nothing to line up, and
 	-- reserving a column for Two-Handed Axes across the whole family would be fifteen mostly
 	-- empty columns.
+	local wanted = UI.__summaryNarrow and UI.__summaryNarrow:Value()
+
 	if showingWeapons() then
 		for index = 1, SKILL_COLUMNS do
+			-- The heading says **which** weapon once one has been chosen, for the reason
+			-- the professions heading below says which profession: clicking it orders the
+			-- table by that weapon's rank, and a column still headed *Weapon Skills*
+			-- would be sorting by a number with nothing on screen saying which one.
 			columns[index] = { key = "wep" .. index, width = SKILL_WIDTH,
-				justify = "LEFT", label = index == 1 and L["Weapon Skills"] or "" }
+				justify = "LEFT",
+				label = index == 1
+					and (wanted ~= nil and Family:ProfessionName(wanted)
+						or L["Weapon Skills"])
+					or "" }
 		end
 		return columns
 	end
-
-	local wanted = UI.__summaryNarrow and UI.__summaryNarrow:Value()
 
 	columns[1] = { key = "prof1", width = SKILL_WIDTH, justify = "LEFT",
 		label = wanted ~= nil and Family:ProfessionName(wanted) or L["Professions"] }
@@ -2576,7 +2650,14 @@ local function build(frame)
 		-- where the set asks nothing. Reconciled after its provider has been pointed at the
 		-- new set, or it would be dropping a choice against the old set's list.
 		local narrow = currentSet and currentSet.narrow
-		narrowButton.prefix = narrow and narrow.label or ""
+
+		-- A caption that can change without the set changing, which is new: the professions
+		-- set draws two lists and this picker belongs to whichever is showing. So it is
+		-- asked rather than read, and a set whose caption never moves answers with the same
+		-- string every time it is asked.
+		local caption = narrow and narrow.label or ""
+		if type(caption) == "function" then caption = caption() end
+		narrowButton.prefix = caption
 		narrowButton:SetShown(narrow ~= nil)
 		narrowButton:Reconcile()
 

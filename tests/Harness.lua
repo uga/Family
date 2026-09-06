@@ -21040,21 +21040,23 @@ print("filtering the summary's professions by profession")
 		check("the column says which profession it is now about",
 			heading == Family:ProfessionName(164), tostring(heading))
 
-		-- Read off the anchors rather than out of the pool: rows are handed out in an
-		-- order that is not the order they are drawn in.
+		-- **The order rows are handed out in, which is the order they are drawn in.**
+		--
+		-- This read the anchors until 2026-09-06 and was reading nothing: the harness
+		-- records `__points[point] = true`, a boolean, so every row answered y nought and
+		-- the sort below was handed a comparison false in both directions. Lua 5.1's sort
+		-- is not stable, so what came back was the rows shuffled. With two members it
+		-- happened to keep them in the order the pool held, which is the order the panel
+		-- drew them in - so these checks were right by accident. A four-row version of the
+		-- same idea, written for the weapon columns further down, came back with a rank of
+		-- 250 behind one of 300 and sent me looking for a fault in the panel.
 		local function order()
-			local seen = {}
+			local keys = {}
 			for _, f in ipairs(frames) do
-				if onScreen(f) and type(f.memberKey) == "string" and f.__points then
-					local point = f.__points.TOPLEFT
-					seen[#seen + 1] = { key = f.memberKey,
-						y = type(point) == "table" and point.y or 0 }
+				if onScreen(f) and type(f.memberKey) == "string" then
+					keys[#keys + 1] = f.memberKey
 				end
 			end
-			table.sort(seen, function(a, b) return (a.y or 0) > (b.y or 0) end)
-
-			local keys = {}
-			for _, row in ipairs(seen) do keys[#keys + 1] = row.key end
 			return keys
 		end
 
@@ -23934,6 +23936,259 @@ print("how a professions row is laid out")
 	end
 
 	Family.Database:Forget(key)
+	Family.UI:Refresh()
+end)()
+
+print()
+print("narrowing that panel by one skill, on both of its lists")
+
+-- **The picker belongs to the list on screen, and both of its halves have to agree.**
+--
+-- Two faults, one shape. The picker offered *Lockpicking* - it is on the rows, because a class
+-- skill reads exactly like a profession from here - and `narrow.passes` said `not skill.class`,
+-- so choosing it dropped every member and the panel said thirty-nine were hidden. And the
+-- caption said *Profession* over a table of weapon skills, narrowing one list by the other.
+--
+-- Nothing here could have been caught by the checks above: they drive the picker while the
+-- trades are showing and choose a profession that is one, which is the case both halves agree
+-- about.
+;(function()
+	local rogue, smith, novice = "Sneak-FireMaw", "Anvil-FireMaw", "Fumble-FireMaw"
+	local middling = "Wrench-FireMaw"
+
+	-- A rogue with a trade, a class skill and two weapons at different ranks, and a smith
+	-- with the same trade and one of the same weapons. Two members, because a filter checked
+	-- against one member is a filter checked against nothing: it goes green whether it keeps
+	-- the right row or keeps every row.
+	Family.Database:SetMeta(rogue, {
+		name = "Sneak", realm = "Fire Maw", classFile = "ROGUE", faction = "Alliance",
+		level = 60,
+		skills = {
+			[164] = { name = "Blacksmithing", rank = 287, maxRank = 375, secondary = false },
+			[633] = { name = "Lockpicking",   rank = 240, maxRank = 300, class = true },
+			[43]  = { name = "Swords",        rank = 100, maxRank = 300, weapon = true },
+			[44]  = { name = "Axes",          rank = 300, maxRank = 300, weapon = true },
+		},
+	})
+	Family.Database:SetMeta(smith, {
+		name = "Anvil", realm = "Fire Maw", classFile = "WARRIOR", faction = "Alliance",
+		level = 60,
+		skills = {
+			[164] = { name = "Blacksmithing", rank = 375, maxRank = 375, secondary = false },
+			[43]  = { name = "Swords",        rank = 250, maxRank = 300, weapon = true },
+		},
+	})
+
+	-- A second rogue, so that the class skill has two ranks to be put in order of. One
+	-- member cannot tell an ordering that reads the rank from one that reads nothing.
+	Family.Database:SetMeta(novice, {
+		name = "Fumble", realm = "Fire Maw", classFile = "ROGUE", faction = "Alliance",
+		level = 60,
+		skills = {
+			[633] = { name = "Lockpicking", rank = 90,  maxRank = 300, class = true },
+			[43]  = { name = "Swords",      rank = 300, maxRank = 300, weapon = true },
+		},
+	})
+
+	-- A third lockpicker, between the other two. Two members cannot check an ordering in
+	-- both directions: every member here is level 60, so the panel's own order is the
+	-- alphabet, and with two of them one direction is always that same order whatever ranks
+	-- they hold. Fumble 90, Wrench 150, Sneak 240 against Fumble, Sneak, Wrench - and
+	-- neither way round is the alphabet.
+	Family.Database:SetMeta(middling, {
+		name = "Wrench", realm = "Fire Maw", classFile = "ROGUE", faction = "Alliance",
+		level = 60,
+		skills = {
+			[633] = { name = "Lockpicking", rank = 150, maxRank = 300, class = true },
+		},
+	})
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	fireClick(Family.UI.__summarySets.professions)
+	Family.UI:Refresh()
+
+	local narrow = Family.UI.__summarySkillSwitch and Family.UI.__summaryNarrow
+	local switch = Family.UI.__summarySkillSwitch
+
+	local function showing()
+		local seen = {}
+		for _, f in ipairs(frames) do
+			if f.__shown ~= false and f.memberKey then seen[f.memberKey] = true end
+		end
+		return seen
+	end
+
+	local function offered()
+		local said = {}
+		for _, choice in ipairs(narrow and narrow:Choices() or {}) do
+			said[tostring(choice.label)] = true
+		end
+		return said
+	end
+
+	local function headingOf(key)
+		for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+			if column.key == key then return tostring(column.label) end
+		end
+		return ""
+	end
+
+	-- **The order rows are handed out in, which is the order they are drawn in.**
+	--
+	-- The panel walks its members and takes the next row off the pool for each, so a row's
+	-- position in `frames` is its position down the page. It is read that way here rather
+	-- than off the anchors, which is what the first draft did and what the sort checks
+	-- earlier in this file still do: those read `__points.TOPLEFT` expecting an offset, and
+	-- this harness records `__points[point] = true` - a boolean - so every row came back at
+	-- y nought and `table.sort` was handed a comparison that is false both ways. Lua 5.1's
+	-- sort is a quicksort and is not stable, so it returned the four rows shuffled: a member
+	-- at rank 250 came out behind one at 300 and the panel had ordered them correctly all
+	-- along. Two members can hide that and four cannot.
+	local function order()
+		local keys = {}
+		for _, f in ipairs(frames) do
+			if onScreen(f) and type(f.memberKey) == "string" then
+				keys[#keys + 1] = f.memberKey
+			end
+		end
+		return keys
+	end
+
+	local function positionOf(key)
+		for index, at in ipairs(order()) do
+			if at == key then return index end
+		end
+	end
+
+	check("both members are on the panel before anything is chosen",
+		showing()[rogue] ~= nil and showing()[smith] ~= nil)
+
+	-- **The class skill.** Offered by one half of the picker since lockpicking was let back
+	-- in among the secondaries, and refused by the other half until 2026-09-06.
+	check("the picker offers a class skill that has a rank",
+		offered()[Family:ProfessionName(633)] == true,
+		tostring(Family:ProfessionName(633)))
+
+	narrow:Choose(633)
+	Family.UI:Refresh()
+	check("and choosing it keeps the member who has it",
+		showing()[rogue] ~= nil, "the rogue was dropped by his own lockpicking")
+	check("and drops the member who does not", showing()[smith] == nil)
+	check("with the column headed by the skill that was chosen",
+		headingOf("prof1") == Family:ProfessionName(633), headingOf("prof1"))
+
+	-- **And ordered by that skill's rank**, which had the same fault one screen away: the
+	-- rows were the right rows and the order was nil for every one of them, so clicking the
+	-- heading did nothing and read as a column that simply does not sort.
+	Family.UI:SetSummarySort("professions", "prof1")
+	Family.UI:Refresh()
+	check("and ordering by it puts the lower rank first",
+		positionOf(novice) < positionOf(middling)
+			and positionOf(middling) < positionOf(rogue),
+		table.concat(order(), ", "))
+
+	Family.UI:SetSummarySort("professions", "prof1")
+	Family.UI:Refresh()
+	check("and turns round the other way",
+		positionOf(rogue) < positionOf(middling)
+			and positionOf(middling) < positionOf(novice),
+		table.concat(order(), ", "))
+
+	Family.UI:SetSummarySort("professions", nil)
+	narrow:Choose(nil)
+	Family.UI:Refresh()
+
+	-- **Now the other list.**
+	check("the caption asks about professions while the trades are showing",
+		narrow.prefix == Family.L["Profession"], tostring(narrow.prefix))
+
+	fireClick(switch)
+	Family.UI:Refresh()
+
+	check("and about weapons once the panel has been switched to them",
+		narrow.prefix == Family.L["Weapon"], tostring(narrow.prefix))
+
+	local weapons = offered()
+	check("the picker offers the weapons the family has",
+		weapons[Family:ProfessionName(43)] and weapons[Family:ProfessionName(44)],
+		tostring(Family:ProfessionName(43)))
+	check("and stops offering the trades, which are not what is on screen",
+		weapons[Family:ProfessionName(164)] ~= true
+			and weapons[Family:ProfessionName(633)] ~= true)
+
+	narrow:Choose(43)
+	Family.UI:Refresh()
+	check("choosing a weapon keeps everybody who has it",
+		showing()[rogue] ~= nil and showing()[smith] ~= nil
+			and showing()[novice] ~= nil)
+	check("with the first column headed by that weapon",
+		headingOf("wep1") == Family:ProfessionName(43), headingOf("wep1"))
+
+	-- **The whole of what entry 15 asked for.** *What have I still got to level* is a
+	-- question about a number, and until this the panel could draw that number on forty rows
+	-- and not put them in order.
+	--
+	-- Driven the way a player drives it - the heading, then the rows as they were laid out -
+	-- rather than by calling the comparison. Two members at two ranks and both directions
+	-- checked, because an ordering that answered the same for both, or one that ignored the
+	-- rank and took the name, would pass a one-member check and a one-direction one.
+	-- **Three of them, at ranks that agree with the panel's own order in neither direction.**
+	--
+	-- Every member here is level 60, so with nothing chosen the panel draws them
+	-- alphabetically - Anvil, Fumble, Sneak. With two members one of the two directions is
+	-- always that same order, whatever ranks they are given, so a check on that direction
+	-- goes green with no sorting in the file at all: the mutation that takes `wep1` out of
+	-- SORT reddened one of the pair and not the other, twice, until this was three.
+	--
+	-- Anvil 250, Fumble 300, Sneak 100. Up is Sneak, Anvil, Fumble and down is Fumble,
+	-- Anvil, Sneak, and neither is the alphabet.
+	Family.UI:SetSummarySort("professions", "wep1")
+	Family.UI:Refresh()
+	check("and the panel can be put in order of that weapon's rank, lowest first",
+		positionOf(rogue) < positionOf(smith)
+			and positionOf(smith) < positionOf(novice),
+		table.concat(order(), ", "))
+
+	Family.UI:SetSummarySort("professions", "wep1")
+	Family.UI:Refresh()
+	check("and turned round",
+		positionOf(novice) < positionOf(smith)
+			and positionOf(smith) < positionOf(rogue),
+		table.concat(order(), ", "))
+
+	Family.UI:SetSummarySort("professions", nil)
+	Family.UI:Refresh()
+
+	narrow:Choose(44)
+	Family.UI:Refresh()
+	check("a weapon only one of them has drops the others",
+		showing()[rogue] ~= nil and showing()[smith] == nil
+			and showing()[novice] == nil)
+
+	-- Only the first of the seven. They are a queue and not positions - the second cell holds
+	-- a warrior's axes and a mage's nothing - so a heading on any of the others would order
+	-- the page by a different skill on every row.
+	check("and only the first of the weapon columns can be ordered at all",
+		Family.UI:SummarySortable("wep1") == true
+			and Family.UI:SummarySortable("wep2") ~= true)
+
+	-- Coming back to the trades takes the weapon choice with it: a weapon is not on the list
+	-- the trades offer, and Reconcile drops a value that is no longer on offer rather than
+	-- leaving the panel filtered by something no control on it can name.
+	fireClick(switch)
+	Family.UI:Refresh()
+	check("and switching back to the trades drops the weapon that was chosen",
+		narrow:Value() == nil, tostring(narrow:Value()))
+	check("so both members are drawn again", showing()[rogue] ~= nil
+		and showing()[smith] ~= nil)
+	check("under a caption that is asking about professions again",
+		narrow.prefix == Family.L["Profession"], tostring(narrow.prefix))
+
+	Family.Database:Forget(rogue)
+	Family.Database:Forget(smith)
+	Family.Database:Forget(novice)
+	Family.Database:Forget(middling)
 	Family.UI:Refresh()
 end)()
 
