@@ -1351,11 +1351,32 @@ dump is not a concern.
 
 **Built 2026-09-06.** `FamilyDB.itemNames[locale] = { at = <build>, names = { [id] = word } }`.
 
-**The ceiling was decided rather than deferred: there is none**, and the reason is that the
-store is bounded by what the family holds - its recipes and its bags - and not by how long
-Family has been running. A player with forty alts fills it and it stops. The shipped recipe
-tables carry 1,406 products on Era, so the realistic size is a few thousand short strings per
-language. `FamilyDB.quests` is the same shape and has no ceiling either.
+**The ceiling was decided rather than deferred: there is none.** `FamilyDB.quests` is the same
+shape and has none either.
+
+**Measured properly on 2026-09-06**, after Alberto asked what happens to a user of his with
+**210 characters** - three full realms at seventy each. The reasoning first written here said
+the store is bounded by the family and that "forty alts fill it and it stops", which reached the
+right conclusion by the wrong argument, and quoted the wrong table with it: 1,406 is
+`RecipeMadeBy`, the products Family can name a maker for, where the warm-up asks about whatever
+a scanned recipe *makes*.
+
+**The store is keyed by item id, so it does not scale with characters at all.** Two hundred and
+ten alts and four converge on the same ids: blacksmithing's recipes are the same recipes whoever
+knows them. What bounds it is the game's own item table, not the account's:
+
+| | ids | at 36 bytes a line |
+|---|---|---|
+| every item any recipe in any of the three builds makes | 2,647 | **98 KB** per language |
+| every item in the whole Era client | 24,442 | 907 KB per language |
+
+The first row is the real ceiling for the recipe half and it is reached only by a family that
+knows every recipe in the game. The second is unreachable - it would need every item in the
+client to have passed through a panel. Bags and bank add ids on top of the first row and overlap
+heavily, since forty characters carry the same consumables.
+
+So the answer for 210 characters is that this store costs them what it costs anybody: **under
+a hundred kilobytes per language in practice.**
 
 **And it refreshes, which Alberto asked for while it was being written**: *il fatto di conoscere
 la traduzione non ci deve impedire di accorgerci che dobbiamo rinfrescare il dato perché è
@@ -1460,3 +1481,39 @@ says what is actually recorded.
 **Set aside by Alberto on 2026-09-06**, the same day it was written: *lasciamo stare le Way di
 Mists*. Left here rather than deleted because the measurement in it is the expensive part and
 would otherwise be made twice.
+
+---
+
+## 25. The login warm-up walks every character, however many there are
+
+**Found 2026-09-06**, answering Alberto's question about a user with **210 characters** - three
+realms at seventy each. It is not the item name store that suffers; it is the walk that fills
+it, and this was true before that store existed.
+
+**Measured, in `addons/Family_UI/Slash.lua`:**
+
+- `UI:WarmRecipeNames` decodes **one member's payload per call**, deliberately, because
+  decoding thirty at once is its own stall.
+- The timer that drives it fires **once a second** until the queue is empty.
+
+So the walk takes **one second per character**: about four seconds for a small family, and
+**three and a half minutes for 210** - at every login.
+
+**And it decodes them all whether or not there is anything to learn.** The decode happens before
+the ids inside it can be looked at, so on the second session - when the names store already
+holds every answer - 210 payloads are decoded to discover that nothing needs asking.
+
+**They are also all held.** `Database:Payload` caches into `decoded[key]` and nothing ever
+evicts it (`addons/Family/Database.lua:167`), so a warm-up that has walked the whole family has
+every member's decoded payload in memory for the rest of the session. That is by design for a
+family of forty; for 210 it is a number nobody has measured, and this session did not measure it
+either - Lua's memory is not something this harness can weigh.
+
+**What closing it would take.** Skipping the decode needs a way to tell, without decoding, that
+a member has nothing new: the encoded payload is on disk as a string, so its length or a hash of
+it is a candidate fingerprint - remembered per member beside the names store and cleared when
+that store is cleared. That is a design, not a line, and it is worth doing only if the walk is
+actually hurting somebody.
+
+**Not built.** Written down because 210 is a real account, and because the item name store made
+the second session's decoding provably pointless rather than merely unexamined.
