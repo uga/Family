@@ -297,6 +297,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Clicking `Sibling` ticks or clears that whole column**, the way clicking a category's name
+  already does on the grid above it. It was the one column on Wide Family that did not offer the
+  gesture, and it is the one that is yours to decide rather than theirs. Nothing is sent: which of
+  their members you keep in your own summary has never left your machine.
+
 - **A linked family's block on the summary says which realm it is on.** It carried the family's
   name and nothing else, at the same indent as a realm heading - so a family with characters on two
   realms produced two blocks that read as two realms of the same name, and neither said which realm

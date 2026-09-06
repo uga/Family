@@ -412,6 +412,19 @@ local function build(frame)
             if r.columns then
                 for _, heading in ipairs(r.columns) do heading:Hide() end
             end
+            -- And the Sibling column's own heading, which lives on the same kind of row and
+            -- was added later. A row that is no longer that one must not still be offering a
+            -- click that ticks somebody else's members.
+            --
+            -- **No check proves this line**, and it is here on the strength of the one above
+            -- it rather than on evidence of its own. Two cases are covered - the heading goes
+            -- when the family is closed, and when a request pushes the panel about - and in
+            -- both of them the row itself is hidden, so the heading goes with it whether this
+            -- line runs or not. The case this is for is the row being handed out again for
+            -- something else, and no fixture built for it made the pool do that. Removing it
+            -- reddens nothing, which is said here rather than left for somebody to discover
+            -- by mutating it.
+            if r.siblingHeading then r.siblingHeading:Hide() end
             -- Nothing to click until somebody says otherwise, so it neither highlights under
             -- the cursor nor takes a click meant for what is drawn over it. Most rows here
             -- are headings and explanations, which have been offering a highlight that led
@@ -860,6 +873,72 @@ local function build(frame)
                         return L["|cff9d9d9dWhether they share this. Their decision, "
                             .. "taken on their own panel.|r"]
                     end)
+
+                    -- **The Sibling label ticks its own column**, the way every category
+                    -- heading on the grid above does. Asked for from play 2026-09-06 in
+                    -- those words: it is the same gesture, on the one column that did not
+                    -- offer it.
+                    --
+                    -- A button laid over the label rather than the label turned into one.
+                    -- That row carries "Sibling  Member" as a single translated sentence,
+                    -- and splitting it would orphan four translations to buy nothing: the
+                    -- two words share ninety-two pixels and are already cut short to fit,
+                    -- so moving them apart makes the row worse rather than better. What
+                    -- that costs is a click on the word *Member* doing the same thing,
+                    -- which labels no column of its own and so has nothing else to mean.
+                    --
+                    -- **Nothing is sent**, which is why a whole column at once is safe here
+                    -- and is a thing to think about on the grid above (backlog 31).
+                    -- `SetSibling` writes a flag and tells the database; the sentence over
+                    -- this row already says as much - they have shared these members
+                    -- already, and which of them we keep is our own business.
+                    local siblingHeading = theirLabels.siblingHeading
+                    if not siblingHeading then
+                        siblingHeading = CreateFrame("Button", nil, theirLabels)
+                        siblingHeading:SetHeight(ROW - 4)
+                        siblingHeading:SetHighlightTexture(
+                            "Interface\\Buttons\\ButtonHilight-Square")
+                        -- In front of the row it sits on, for the reason every other
+                        -- clickable thing in this list is.
+                        siblingHeading:SetFrameLevel(list:GetFrameLevel() + 3)
+                        theirLabels.siblingHeading = siblingHeading
+                    end
+
+                    -- Reachable, so a check can press the control a player presses rather
+                    -- than the handler behind it - the same reason the summary's set
+                    -- buttons and its narrowing picker are reachable.
+                    UI.__wideSiblingHeading = siblingHeading
+
+                    siblingHeading:ClearAllPoints()
+                    siblingHeading:SetPoint("LEFT", 4, 0)
+                    siblingHeading:SetWidth(NAME_WIDTH - 4 - COLUMN_GAP)
+
+                    UI:AttachTooltip(siblingHeading, function()
+                        return nil, nil, { { string.format(#theirs == 1
+                            and L["|cff9d9d9dClick to tick or clear this column for all "
+                                .. "%d member.|r"]
+                            or L["|cff9d9d9dClick to tick or clear this column for all "
+                                .. "%d members.|r"], #theirs) } }
+                    end)
+
+                    siblingHeading:SetScript("OnClick", function()
+                        -- All on clears; anything else sets, which is the rule the grid
+                        -- above settled and is the one a reader has already learnt here.
+                        local allOn = true
+                        for _, member in ipairs(theirs) do
+                            if not member.sibling then allOn = false end
+                        end
+
+                        for _, member in ipairs(theirs) do
+                            Family.Wide:SetSibling(member.family, member.key, not allOn)
+                        end
+
+                        frame:Refresh()
+                        -- The summary is the screen this changes, the same as one box.
+                        if UI.UpdateBroker then UI:UpdateBroker() end
+                    end)
+                    siblingHeading:EnableMouse(true)
+                    siblingHeading:Show()
 
                     for _, group in ipairs(byRealm(theirs)) do
                         local realmRow = nextRow()

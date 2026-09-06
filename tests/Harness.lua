@@ -20910,6 +20910,130 @@ print("a sibling with a crafting cooldown, on the summary's crafting set")
 end)()
 
 print()
+print("the Sibling label ticks its own column")
+
+-- **Asked for from play 2026-09-06**, in those words: clicking a category column's name on the
+-- consent grid ticks or clears that whole column, and the Sibling column - the only one that is
+-- ours to decide rather than theirs - did not offer the same gesture.
+--
+-- Nothing goes on the wire for these. `SetSibling` writes a flag and tells the database, and the
+-- sentence above that row says as much: they have shared these members already, and which of them
+-- we keep in our own summary is our business. That is what makes a whole column at once cheap
+-- here and something to think about on the grid above (backlog 31).
+;(function()
+	local held = FamilyDB.wide
+	local function sibling(name)
+		return { meta = { name = name, realm = "Thunderstrike", classFile = "MAGE",
+			level = 60, faction = "Alliance" }, seen = time() }
+	end
+
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["colfam"] = { name = "Grella-Thunderstrike", alias = "Serena",
+			grants = {}, siblings = {},
+			members = {
+				["Barolo-Thunderstrike"] = sibling("Barolo"),
+				["Rolando-Thunderstrike"] = sibling("Rolando"),
+				["Grella-Thunderstrike"] = sibling("Grella"),
+			} } },
+	}
+
+	-- One of the three already ticked, so the first press has a mix to resolve rather than an
+	-- empty column. All-off to all-on would pass whatever rule the button used; the rule is
+	-- "all on clears, anything else sets", and only a mix tells the two apart.
+	Family.Wide:SetSibling("colfam", "Grella-Thunderstrike", true)
+
+	local function ticked()
+		local n = 0
+		for _, member in ipairs(Family.Wide:Siblings()) do
+			if member.family == "colfam" then n = n + 1 end
+		end
+		return n
+	end
+
+	Family.UI:Show()
+	Family.UI:ShowTab("wide")
+
+	-- Opened the way a player opens it: the family's own line, by the name it is called.
+	-- The row's words are on its own font string rather than on the frame - these rows are not
+	-- buttons with a label, they are frames carrying one - so this asks `r.text`.
+	local line
+	for _, f in ipairs(frames) do
+		local text = f.text and f.text.__text
+		if f.__shown ~= false and type(text) == "string"
+			and text:find("Serena", 1, true) and f.__scripts
+			and f.__scripts.OnClick then line = line or f end
+	end
+	check("the family's line can be opened", line ~= nil)
+	if line then fireClick(line) end
+
+	local heading = Family.UI.__wideSiblingHeading
+	check("and the Sibling column has a heading to press",
+		heading ~= nil and heading.__shown ~= false)
+	check("which is not drawn under anything that would eat the click",
+		heading ~= nil and reachable(heading),
+		heading and (coveredBy(heading) and "a row covers it" or "reachable") or "missing")
+
+	check("one of the three starts ticked", ticked() == 1, tostring(ticked()))
+
+	if heading then fireClick(heading) end
+	check("pressing it ticks the whole column, not only the two that were clear",
+		ticked() == 3, tostring(ticked()))
+
+	if heading then fireClick(heading) end
+	check("and pressing it again clears the whole column", ticked() == 0, tostring(ticked()))
+
+	if heading then fireClick(heading) end
+	check("and again puts them all back", ticked() == 3, tostring(ticked()))
+
+	-- **And it goes away with the section it belongs to.** These rows come from a pool, so the
+	-- row that carried this heading is handed out again for something else the moment the
+	-- family is closed - and a heading left showing on it would offer a click that ticks
+	-- somebody's members from a row that is no longer about them. `nextRow` hides it for that
+	-- reason and nothing checked that it did: the mutation that stops it hiding reddened
+	-- nothing at all until this was written.
+	if line then fireClick(line) end
+	-- `onScreen` and not `__shown`: this button's parent is the row that carries it, and a row
+	-- the pool did not hand out again is hidden as a whole. Asking the button alone said it was
+	-- still shown while nothing of it was on screen, which is a check about a field rather than
+	-- about a panel.
+	check("closing the family takes the heading off the screen with it",
+		Family.UI.__wideSiblingHeading == nil
+			or not onScreen(Family.UI.__wideSiblingHeading),
+		tostring(Family.UI.__wideSiblingHeading ~= nil
+			and onScreen(Family.UI.__wideSiblingHeading)))
+
+	-- **And the row it lived on can be handed out again.** Closing the family only makes the
+	-- list shorter, so that row is left hidden and its heading goes with it - which is not the
+	-- case the guard in `nextRow` is for. The case it is for is the row being reused: something
+	-- else needs a row at that index, gets that one, and the heading is still on it offering a
+	-- click that ticks members the row is no longer about. A request waiting for an answer puts
+	-- rows at the top of the panel and pushes everything down, which is how that happens.
+	Family.Wide:Store().requests["asking-family"] = {
+		from = "Asker", name = "Asker's lot", at = time() - 60, version = "1.0.0",
+	}
+	Family.UI:ShowTab("wide")
+	check("and a row handed out again does not keep it",
+		Family.UI.__wideSiblingHeading == nil
+			or not onScreen(Family.UI.__wideSiblingHeading),
+		tostring(Family.UI.__wideSiblingHeading ~= nil
+			and onScreen(Family.UI.__wideSiblingHeading)))
+	Family.Wide:Store().requests["asking-family"] = nil
+
+	-- Nothing was sent for any of that, which is the claim the row above it makes to the
+	-- player. Measured off the queue rather than assumed: this is the one column whose
+	-- meaning is entirely local.
+	Family.Comm:Abandon()
+
+	Family.Wide:SetSibling("colfam", "Barolo-Thunderstrike", false)
+	Family.Wide:SetSibling("colfam", "Rolando-Thunderstrike", false)
+	Family.Wide:SetSibling("colfam", "Grella-Thunderstrike", false)
+	FamilyDB.wide = held
+	Family.UI:ShowTab("summary")
+	Family.UI:Refresh()
+end)()
+
+print()
 print("one linked family, siblings on two realms")
 
 -- **Reported from play 2026-09-06, with two screenshots.** A family aliased *Serena* had one
