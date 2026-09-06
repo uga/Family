@@ -13,38 +13,27 @@ other half turns out to need a measurement before a line of code is worth writin
 
 Received 2026-09-04, from users.
 
-## The order, agreed 2026-09-04
+## The order, as it stands 2026-09-06
 
-**Honor last, in a build of its own.** It is the only entry that needs research, then a model,
-then code, and its research turned up three systems sharing a word — so it would hold everything
-else behind it for no reason. Everything else ships first, then a release, then honor.
+**2.0.0 was cut on 2026-09-06 with 9, 10 and 5 deferred**, which is Alberto's decision and a
+reversal of the paragraph this replaces. That one said *1.5.0 is cut when the rest of this list is
+done and not before, however full `Unreleased` looks*. What changed is what went into the list
+after it was written: two days of entries 14 to 38, most of them functions Family did not have,
+several of them reported from play and fixed the same hour. Holding all of that behind hunter
+pets, warlock demons and honor would be holding a release for the sake of a sentence.
 
-**"The other seven" as first written is now nine**: entries 9 and 10 arrived on the same day and
-belong in the same batch. Restated on 2026-09-04 after a release was proposed early and Alberto
-held the order to what it says: 1.5.0 is cut when the rest of this list is done and not before,
-however full `Unreleased` looks.
+So: **9** (hunter pets), **10** (warlock demons) and **5** (honor, still in a build of its own,
+still the only entry needing research before a model before code) are the next batch, and they
+are what 2.1.0 is for.
 
-Done so far in this batch: **1**, **2**, **3**, **4**, **6**, **7**, **8**, **11**, **12** and
-**13**. Left before the release: **9**, **10**, then **5** in a build of its own.
+**The number is 2.0.0 and not 1.5.0**, by `RELEASING.md`'s own table: major goes up for *a revamp,
+or a function Family did not have before*, and minor is for fixes. The Unreleased section this cut
+is almost entirely the former.
 
-*Corrected 2026-09-06.* This paragraph said **1**, **2**, the rest of **3**, **9** and **10** were
-left, three days after all of 1, 2 and 3 had been finished and marked so in their own entries. It
-was read as the list of what to do next and cost a session's opening on entry 13, which was
-already built. A summary of entries that lives above the entries goes stale the turn one of them
-is finished; this one is now a pointer to the headings and not a second copy of them.
-
-Two things that order should not hide:
-
-- **Entry 2 also has a client question in it** — whether a tooltip can be redrawn while a
-  modifier is held — and it is small but it is a probe, not a guess. It is not in honor's class
-  and it is not nothing.
-- **Entry 4 is done**, and it never entered this order: it was decided on 2026-09-04 and built
-  the same turn, because the answer turned out not to need a library adopted at all.
-
-Suggested sequence for the seven, and the reason is dependency rather than size: **3 then 8**
-(the family-wide reputation view is a panel that wants the filtering from entry 3, so doing 3
-first leaves 8 mostly done), with **6 and 7** available whenever a session wants something
-self-contained, **1** as a check that may turn into a small fix, and **2** after its probe.
+*This heading is a pointer to the entries and never a second copy of their state.* The version
+before it listed what was done and what was left, went stale the turn an entry was finished, and
+cost a session's opening on entry 13 - which was already built. L-058. Read the headings below;
+they carry their own DONE dates.
 
 ---
 
