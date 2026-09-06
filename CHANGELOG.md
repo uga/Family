@@ -19,6 +19,9 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The Professions filter no longer offers riding.** *Ram Riding* and *Mechanostrider Piloting*
+  were sitting in the list between Leatherworking and Mining. Riding still shows on the rows.
+
 - **The Professions overview is drawn as pictures.** Each trade shows its own icon and its rank
   instead of its name and its rank, so a character's whole set of skills fits where two used to and
   the page can be taken in at a glance. Hover a row to read the names, under the game's own three

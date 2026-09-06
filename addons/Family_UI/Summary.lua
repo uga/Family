@@ -159,6 +159,16 @@ local SETS = {
 					for _, secondary in ipairs({ false, true }) do
 						for _, held in ipairs(skillsOf(entry.meta or {}, secondary)) do
 							local id = professionID(held.id)
+
+							-- Riding is not a profession to narrow by. It is on
+							-- the rows because it is a skill somebody has, and
+							-- *show me everybody who can ride* is not a question
+							-- anybody asks - reported from play, with the picker
+							-- offering *Ram Riding* and *Mechanostrider Piloting*
+							-- between Leatherworking and Mining.
+							local line = Family.SkillLines[id or 0]
+							if line and line.riding then id = nil end
+
 							if id ~= nil and not seen[id] then
 								seen[id] = true
 								list[#list + 1] = { value = id, label = held.name }

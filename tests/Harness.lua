@@ -23044,6 +23044,40 @@ print("the client that answers about professions and about skills both")
 end)()
 
 print()
+print("what the professions picker offers")
+
+;(function()
+-- **Riding is not something to narrow the table by.** It is on the rows because it is a
+-- skill somebody has, but *show me everybody who can ride* is not a question anybody asks -
+-- and the picker was offering *Ram Riding* and *Mechanostrider Piloting* in the middle of
+-- the professions, reported from play with a screenshot.
+do
+	-- Built when the panel is, so it has to have been shown once.
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	clickLastButton(Family.L["Professions"])
+	Family.UI:Refresh()
+
+	local picker = Family.UI.__summaryNarrow
+	check("the professions set has something to narrow by",
+		picker ~= nil and picker.provider ~= nil)
+
+	if picker and picker.provider then
+		local offered = {}
+		for _, choice in ipairs(picker.provider() or {}) do
+			offered[#offered + 1] = choice.label
+		end
+		table.sort(offered)
+		local said = table.concat(offered, ", ")
+
+		check("a profession is offered", said:find("Blacksmithing", 1, true) ~= nil,
+			said)
+		check("and riding is not", said:find("Riding", 1, true) == nil, said)
+	end
+end
+end)()
+
+print()
 if failures == 0 then
 	print("all checks passed")
 else

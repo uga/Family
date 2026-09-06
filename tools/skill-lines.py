@@ -200,6 +200,9 @@ def build_table():
 
         if skill_id in RIDING_IDS:
             entry["icon"] = RIDING_ICON
+            # Said out loud rather than inferred from the picture, because a reader needs to
+            # tell riding from a profession and two lines sharing an icon is not an identity.
+            entry["riding"] = True
         elif skill_id in CHOSEN_ICONS:
             entry["icon"] = CHOSEN_ICONS[skill_id]
 
@@ -305,6 +308,8 @@ def emit(professions, out_path):
             add('\t\tclass = true,')
         if entry.get("weapon"):
             add('\t\tweapon = true,')
+        if entry.get("riding"):
+            add('\t\triding = true,')
         icon = entry.get("icon")
         if icon is not None:
             add('\t\ticon = %s,'
