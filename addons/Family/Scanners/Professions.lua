@@ -632,6 +632,19 @@ function Professions:ScanNow(includeRecipes)
 	local payload = Family.Database:Payload(key) or {}
 	local stored = payload.professions or {}
 
+	-- **Which of these came off the skill sheet**, captured here because in twenty lines it
+	-- will no longer be knowable: the recipe read below adds a profession the sheet did not
+	-- have - rogue poisons, a death knight's runeforging - straight into `skills`, and from
+	-- then on the two kinds are indistinguishable.
+	--
+	-- It is what makes the pruning further down safe. A profession that has never been on a
+	-- sheet cannot be missed from one, so its absence says nothing and it is never dropped;
+	-- one that has been on a sheet and is not now has been unlearnt. Without this the first
+	-- version of that prune deleted a window-only profession at the next scan that did not
+	-- have its window open, which the harness caught within the minute.
+	local fromSheet = {}
+	for name in pairs(skills) do fromSheet[name] = true end
+
 	-- Recipes only when a window is actually open, and only for the one profession it is
 	-- open on. Everything else keeps whatever it last saw.
 	--
@@ -738,6 +751,45 @@ function Professions:ScanNow(includeRecipes)
 		if type(key) == "string" and Family:SkillLineFor(key) then stored[key] = nil end
 	end
 
+	-- **And a profession this character no longer has at all.**
+	--
+	-- Asked for by Alberto 2026-09-06, after asking what an unlearn does. The panels had
+	-- already stopped showing one - `meta.skills` is built from the fresh sheet alone, and
+	-- `Recipes.lua` refuses a list whose skill has gone - but the list itself stayed on disk
+	-- for ever and went on crossing the wire to a linked family, which reads it and then
+	-- throws it away. This is what stops it being sent at all.
+	--
+	-- **Here and not in the recipe reader**, which is the whole of why it could not be done
+	-- before: that reader is told about one window and nothing about the others, so a scan
+	-- that pruned to what it had just read would delete a member's alchemy because they
+	-- opened the forge. `ReadRanks` above reads the entire sheet, which is what makes this
+	-- sayable at all - the same asymmetry that lets `meta.skills` be replaced wholesale.
+	--
+	-- **Only where the sheet was actually read.** An empty `everything` is a client that
+	-- could not be asked, not a character who has unlearnt everything, and a recipe list is
+	-- not rebuildable: getting one back needs that window reopened on that character. §2.2
+	-- is the whole guard, and it is the difference between this and a data loss.
+	--
+	-- **And only a profession the sheet has ever carried**, which is `onSheet` above and is
+	-- the half the first version got wrong. A death knight's runeforging is a window full of
+	-- things to make and no skill anywhere; rogue poisons are the same shape. Both are
+	-- injected into `skills` from what their window said, precisely because no sheet will
+	-- ever list them - so at the next scan with that window shut they are missing, and a rule
+	-- that read absence as an unlearn would delete them. Something that has never been on a
+	-- sheet cannot be missed from one.
+	--
+	-- A rule rather than a list of exceptions, which is what it has to be: a list naming
+	-- runeforging is wrong the first time a class or an expansion brings a second.
+	if next(everything) then
+		for key, entry in pairs(stored) do
+			if entry.onSheet and skills[key] == nil then
+				Family:Debug("professions: dropping %s, no longer on the sheet",
+					tostring(entry.name or key))
+				stored[key] = nil
+			end
+		end
+	end
+
 	for id, skill in pairs(skills) do
 		local entry = stored[id] or {}
 		entry.rank = skill.rank
@@ -746,6 +798,10 @@ function Professions:ScanNow(includeRecipes)
 		entry.secondary = skill.secondary
 		entry.class = skill.class
 		entry.name = skill.name
+		-- Set once and never unset: this says the sheet has carried it, not that today's
+		-- sheet does. A record written before this existed carries nothing, and is left
+		-- alone until a scan sees it on a sheet and marks it - which is the safe way round.
+		entry.onSheet = entry.onSheet or fromSheet[skill.name] or nil
 		stored[id] = entry
 	end
 

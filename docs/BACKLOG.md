@@ -1803,9 +1803,9 @@ The scan refuses to file anything when the sheet comes back empty (`if not next(
 not includeRecipes then return end`), which is what stops a client that cannot read skills from
 wiping them.
 
-**So the login pass already closes the display half. Pruning the payload would buy bytes and
-nothing a reader can see** - the recipes stay on disk and a link goes on sending them, and that
-is all that is left of it. Everything that reads skills loses the profession with it:
+**So the login pass already closed the display half. Pruning the payload bought bytes and
+nothing a reader can see** - the recipes stayed on disk and a link went on sending them - and
+Alberto asked for it anyway on 2026-09-06, so it is built. See *the prune, as built* below. Everything that reads skills loses the profession with it:
 
 - the summary's professions cells, which are built from `skillsOf(meta, …)`
 - the professions panel, whose loop is `for id, skill in pairs(skills)` and looks the recipe
@@ -1913,3 +1913,34 @@ the wire. It stops being shown because the same category carries `skills` in met
 runs `stillHeld` against their borrowed copy. The guild *stops sending*; a link *goes on sending*
 and the reader *stops believing*. Both end in the reference disappearing; only one of them stops
 spending bytes on it.
+---
+
+## 30. The prune, as built — DONE 2026-09-06
+
+**Where.** In `Scanners/Professions.lua`, beside the older prune that drops a profession's
+name-shaped key once it has an id - the two read as one idea: drop what no longer belongs. It is
+in the scan that reads the **whole** skill sheet, never in the recipe reader, which is told about
+one window and nothing about the others.
+
+**The rule.** A stored profession is dropped when the sheet was read at all, the profession is
+absent from it, and `onSheet` says the sheet has carried it before.
+
+**`onSheet` is the half the first version got wrong**, and the harness caught it inside a minute.
+A profession can reach the record from its **window** rather than from the sheet: a death
+knight's runeforging is *a window full of things they can make and no skill anywhere*, and the
+scan injects such a thing into its own skill list from what the window reported, precisely
+because no sheet will ever list it. At the next scan with that window shut it is missing - and
+the first rule read that as an unlearn and deleted it. Something that has never been on a sheet
+cannot be missed from one.
+
+The mark is set once and never unset, which is not decoration: a scan whose sheet could not be
+read at all, with that profession's own window open, would otherwise clear it - and one bad read
+would disable the rule for that profession for ever.
+
+**Six mutations, and the first pass was worth less than it looked.** Three of them killed the
+harness rather than reddening a check - a pruned record made a fixture two thousand lines away
+index a nil - which reads as an infrastructure fault rather than as a finding, the same lesson as
+the loop that once hung the run. That fixture now says what went wrong. And two checks were
+weak: the §2.2 guard passed with the guard removed, because a scan with no recipes gives up long
+before reaching it, so it is exercised with a window open now; and the remembered mark was pinned
+by nothing until the bad-read case above was written down as a check.

@@ -19203,6 +19203,13 @@ end)()
 					end
 				end
 			end
+			-- Named rather than indexed blind. A mutation that pruned this record made
+			-- the next line throw, which reads as an infrastructure fault rather than as
+			-- the finding it is - the same lesson as the loop that hung the harness
+			-- instead of reddening a check.
+			check("the miner's row is still on the record to be marked", stale ~= nil)
+			if not stale then return end
+
 			stale.hasCooldown = true
 			stale.watched = nil
 
@@ -24210,6 +24217,130 @@ print("item names remembered between sessions")
 	ITEM_NAMES[KNOWN], ITEM_NAMES[RENAMED] = nil, nil
 	FamilyDB.itemNames = nil
 	Family.locale = held
+end)()
+
+print()
+print("a profession that is no longer on the skill sheet")
+
+-- **Unlearning one takes its recipe list with it.**
+--
+-- The panels stopped showing an unlearnt profession as soon as the readers were made to ask
+-- whether the skill was still there. The list itself stayed on disk for ever and went on
+-- crossing to a linked family, which reads it and throws it away - so Alberto asked for it to
+-- stop being sent at all. Built 2026-09-06 in the one place that can say it: the scan that
+-- reads the **whole** sheet, not the one that reads a single window.
+;(function()
+	local key = Family:CurrentMember()
+	local heldSkills = SKILL_LINES
+	local heldOpen, heldName = TRADE_SKILL_OPEN, TRADE_SKILL_NAME
+
+	local function stored()
+		return (Family.Database:Payload(key) or {}).professions or {}
+	end
+	local function held(line)
+		return stored()[line] ~= nil
+	end
+
+	local BLACKSMITHING = Family:SkillLineFor("Blacksmithing")
+	local HERBALISM = Family:SkillLineFor("Herbalism")
+	check("the two the fixture uses have ids", BLACKSMITHING and HERBALISM)
+
+	-- A sheet with both on it, so both are marked as having been carried by one.
+	SKILL_LINES = {
+		{ name = "Trade Skills", header = true, expanded = true },
+		{ name = "Blacksmithing", rank = 287, maxRank = 375, abandonable = true },
+		{ name = "Herbalism", rank = 150, maxRank = 300, abandonable = true },
+	}
+	TRADE_SKILL_OPEN = false
+	Family.Professions:Scan(false)
+	check("a profession on the sheet is recorded", held(BLACKSMITHING) and held(HERBALISM))
+
+	-- **Gone from the sheet is gone from the record**, recipes and all - which is what an
+	-- unlearn looks like from here, whether Family heard the event or is only finding out at
+	-- the next login.
+	SKILL_LINES = {
+		{ name = "Trade Skills", header = true, expanded = true },
+		{ name = "Blacksmithing", rank = 287, maxRank = 375, abandonable = true },
+	}
+	Family.Professions:Scan(false)
+	check("and one that has left the sheet is dropped from it", not held(HERBALISM))
+	check("while the one still on it is untouched", held(BLACKSMITHING))
+
+	-- **A sheet that could not be read is not an empty sheet** (§2.2). A recipe list is not
+	-- rebuildable - getting one back needs that window reopened on that character - so this
+	-- guard is the difference between a prune and a data loss.
+	--
+	-- **With a window open**, which is the only path that reaches the prune at all on an
+	-- unreadable sheet: a scan with no recipes to read gives up before it long before this,
+	-- so a check that scanned without one passed whether the guard was there or not.
+	SKILL_LINES = { { name = "Trade Skills", header = true, expanded = true } }
+	TRADE_SKILL_OPEN = true
+	TRADE_SKILL_NAME = "Alchemy"
+	Family.Professions:Scan(true)
+	check("a scan that reads no skills at all drops nothing", held(BLACKSMITHING))
+	TRADE_SKILL_OPEN = false
+
+	-- **And a profession no sheet ever carried is never dropped.** A death knight's
+	-- runeforging is a window full of things to make and no skill anywhere; rogue poisons are
+	-- the same shape. Both arrive through their window and are injected into the scan's own
+	-- list, so at the next scan with that window shut they are missing from the sheet - and a
+	-- rule that read that as an unlearn would delete them. The first version of this did.
+	SKILL_LINES = {
+		{ name = "Trade Skills", header = true, expanded = true },
+		{ name = "Blacksmithing", rank = 287, maxRank = 375, abandonable = true },
+	}
+	TRADE_SKILL_OPEN = true
+	TRADE_SKILL_NAME = "Runeforging"
+	Family.Professions:Scan(true)
+
+	local windowOnly
+	for line, record in pairs(stored()) do
+		if record.name == "Runeforging" then windowOnly = line end
+	end
+	check("a profession that arrived through its window alone is recorded", windowOnly ~= nil,
+		tostring(windowOnly))
+
+	TRADE_SKILL_OPEN = false
+	Family.Professions:Scan(false)
+	check("and is still there once its window is shut", windowOnly ~= nil
+		and stored()[windowOnly] ~= nil)
+	check("and the sheet's own profession is still there beside it", held(BLACKSMITHING))
+
+	-- **And the mark is remembered rather than recomputed**, which is what the `or` in front
+	-- of it is for and is otherwise a guard nothing pins.
+	--
+	-- The case: a scan where the sheet cannot be read at all and that profession's own window
+	-- is open. Its entry is written from the window, and a mark recomputed from the sheet
+	-- would be cleared - so the profession would be unprunable from then on, and one bad read
+	-- would disable the rule for it permanently. Kept, it survives.
+	SKILL_LINES = {
+		{ name = "Trade Skills", header = true, expanded = true },
+		{ name = "Blacksmithing", rank = 287, maxRank = 375, abandonable = true },
+	}
+	TRADE_SKILL_OPEN = false
+	Family.Professions:Scan(false)
+	check("blacksmithing is on the record before the bad read", held(BLACKSMITHING))
+
+	SKILL_LINES = { { name = "Trade Skills", header = true, expanded = true } }
+	TRADE_SKILL_OPEN = true
+	TRADE_SKILL_NAME = "Blacksmithing"
+	Family.Professions:Scan(true)
+	check("and survives a scan whose sheet could not be read", held(BLACKSMITHING))
+
+	-- Now the sheet reads again and does not have it. It has to be dropped, which it can
+	-- only be if the mark outlived the bad read above.
+	SKILL_LINES = {
+		{ name = "Trade Skills", header = true, expanded = true },
+		{ name = "Herbalism", rank = 150, maxRank = 300, abandonable = true },
+	}
+	TRADE_SKILL_OPEN = false
+	Family.Professions:Scan(false)
+	check("and is still prunable afterwards, so one bad read did not disable the rule",
+		not held(BLACKSMITHING))
+
+	SKILL_LINES = heldSkills
+	TRADE_SKILL_OPEN, TRADE_SKILL_NAME = heldOpen, heldName
+	Family.Professions:Scan(false)
 end)()
 
 print()

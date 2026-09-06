@@ -291,6 +291,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A profession somebody unlearns is dropped from the record, recipes and all.** It stopped being
+  shown a version ago; now it stops being stored and stops being sent to a linked family. A
+  profession that has never been on the skill sheet at all - a death knight's runeforging - is kept,
+  and nothing is dropped on a login where the skill sheet could not be read.
+
 - **A profession somebody unlearns stops being an answer to "who can make this".** Family kept the
   recipe list after the skill was gone, so an item's tooltip and the family recipe search went on
   naming a character who could no longer make it - and with no rank beside them, which is how a
