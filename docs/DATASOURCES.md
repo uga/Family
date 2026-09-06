@@ -928,16 +928,16 @@ row are the same in every column that exists:
 **It is on the item.** `ItemSparse.RequiredAbility` is the spell a character must already know
 before the item will teach them anything, and that is the whole relation:
 
-| build | gated recipe items | specialisations |
-|---|---|---|
-| Classic Era | 149 | 10 |
-| Burning Crusade | 89 | 13 |
-| Mists | 23 | 14 |
+| build | gated recipe items |
+|---|---|
+| Classic Era | 149 |
+| Burning Crusade | 89 |
+| Mists | 23 |
 
-The union is **239 items across 14 specialisations and 5 professions**, and it agrees with what
-players know: Era has Blacksmithing, Leatherworking and Engineering; Burning Crusade adds the
-three Tailoring branches; on Mists only Gnomish and Goblin Engineer still gate anything, the
-rest having been removed from the game.
+The union is **239 items across 5 professions**, and it agrees with what players know: Era has
+Blacksmithing, Leatherworking and Engineering; Burning Crusade adds the three Tailoring
+branches; on Mists only Gnomish and Goblin Engineer still gate anything, the rest having been
+removed from the game.
 
 **`RequiredAbility` is not only specialisations, and this is the trap.** It carries riding
 skills - 514 mount items on Mists alone - and battle pet training. So an ability counts only if
@@ -964,10 +964,50 @@ therefore no row. That is the right shape for a tooltip - there is nothing to ho
 a real gap for any other question, so nothing here should be read as a complete list of what a
 branch can make.
 
-**The other half is asked of the client, not of a table.** Which branches a character took is
-`IsSpellKnown(20219)` and its like: a passive spell they either have or have not, answered in
-any language. Recorded as ids, with a stamp saying the question was put at all - a client with
-no `IsSpellKnown` records neither, so *nobody asked* stays distinct from *took no branch*.
+#### Naming every branch, including the ones that gate nothing, measured 2026-09-06
+
+The route above finds a branch only where some *item* requires it, which was exactly right
+while the only question was "can this character learn this recipe". It is not enough to answer
+"which branch did they take": **two of Burning Crusade's three alchemy masteries gate no item
+at all** - Transmutation Master 28672 and Elixir Master 28677 teach through a trainer - so they
+were missing from the table for as long as it existed.
+
+A second route now runs beside it and the two are merged. A branch is a `SkillLineAbility` row
+under a primary profession that is **all** of:
+
+| clause | what it excludes |
+|---|---|
+| `MinSkillLineRank` 1, `AcquireMethod` 0, `TrivialSkillLineRankHigh` 0, `TradeSkillCategoryID` 0, `NumSkillUps` 1 | every recipe |
+| outside the `SupercedesSpell` chain, in either direction | Apprentice through Artisan - **9785 Artisan Blacksmithing looks exactly like a branch without this** |
+| carries `SpellEffect.Effect` 47, *grants a trade skill* | Prospecting 31252, Herb Gathering 2366/2369/2371, and two others: abilities a profession **grants** rather than branches it **offers** |
+
+Each clause was measured rather than reasoned about. With the supercedes test and without
+effect 47, Era answers 15 where it should answer 10; with effect 47 and without the supercedes
+test it answers 35. With both:
+
+| build | branches |
+|---|---|
+| Classic Era | 10 |
+| Burning Crusade | 16 |
+| Mists | 5 |
+
+**Mists' five are engineering's two and alchemy's three**, which is the right answer for a
+build where the smithing, leatherworking and tailoring branches were taken out of the game -
+and it is the one thing here nobody had to be told, because the sieve found it.
+
+The union is **16 branches across 5 professions**, and no name for any of them is shipped.
+
+**Which branches a character took is read out of the spellbook, not asked for.** The book is
+already walked by `Scanners/Character.lua` and stored as ids; the branches are the entries the
+shipped table recognises. `IsSpellKnown` would answer it in one call each and is a client call
+nothing in Family has ever made on three builds, which is a worse trade than sieving a list
+already in hand. §2.2 falls out of the book itself: **no book, no answer** - a spellbook that
+cannot be read leaves the old record alone, and one that can be read and holds no branch clears
+it, because a character who never chose is not a character nobody looked at.
+
+They are written to **meta and not the payload** the book lives in. The summary reads meta and
+nothing else, which is what lets it cost the same for forty members as for four, and a list of
+branches is three numbers where a spellbook is a thousand.
 
 ### The same name calls on Era, measured 2026-08-30
 

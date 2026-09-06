@@ -23355,6 +23355,165 @@ print("how a professions row is laid out")
 end)()
 
 print()
+print("the branch a profession was taken down")
+
+-- **Specialisations.** Blacksmiths choose armour or weapons, leatherworkers one of three
+-- hides, engineers gnomish or goblin - and on Burning Crusade tailors and alchemists choose
+-- too. Asked for from play 2026-09-06: the fact was already in the record, because the branch
+-- is a spell and the spellbook has been stored since the beginning; nothing named it.
+;(function()
+	local key = Family:CurrentMember()
+
+	-- The client's own words for them, so the checks below read what a player reads. Every
+	-- other spell in this file still falls through to "Spell <id>".
+	SPELL_NAMES[9787] = "Weaponsmith"
+	SPELL_NAMES[17040] = "Master Axesmith"
+	SPELL_NAMES[10656] = "Dragonscale Leatherworking"
+
+	-- A blacksmith who took the weapon branch and then the axes under it, with one ordinary
+	-- spell either side so that the sieve has something to refuse.
+	local heldTabs, heldInfo = GetSpellTabInfo, GetSpellBookItemInfo
+	-- The later branch first, so that the sort is doing something: the book hands them back
+	-- in the order the client filed them, which is not the order a record should be written in.
+	local BOOK = { 100, 17040, 9787, 6603 }
+	GetSpellTabInfo = function(tab)
+		if tab == 1 then return "General", "", 0, #BOOK end
+		return nil
+	end
+	GetSpellBookItemInfo = function(position) return "SPELL", BOOK[position] end
+
+	local read = Family.Character:ReadSpecialisations(Family.Character:ReadSpells())
+	check("the branches are picked out of the spellbook", read ~= nil and #read == 2,
+		read and #read or "none")
+	check("by id, and in a fixed order so an unchanged character writes an unchanged record",
+		read and read[1] == 9787 and read[2] == 17040,
+		read and (tostring(read[1]) .. " " .. tostring(read[2])) or "none")
+
+	-- And it is the shipped table doing the choosing, not a guess about which ids look like
+	-- branches: 6603 is Attack and 100 is Charge.
+	check("and an ordinary spell in the same book is not one of them",
+		read and #read == 2)
+
+	-- **The table has to hold the branches that gate nothing.** Two of Burning Crusade's
+	-- three alchemy masteries teach through a trainer and gate no item at all, so the
+	-- generator's original route - walk the items and see what they require - could not see
+	-- them, and they were missing for as long as this file existed. Named by id here because
+	-- an off-by-one in the sieve that rebuilt it would otherwise be silent.
+	do
+		local alchemy = 0
+		for spell, line in pairs(Family.Specialisations) do
+			if line == 171 then alchemy = alchemy + 1 end
+			-- And nothing that is merely a rank. 9785 is Artisan Blacksmithing, which
+			-- grants a trade skill at rank one exactly as a branch does and is caught
+			-- only by the supercedes chain.
+			local _ = spell
+		end
+		check("alchemy has all three of its masteries, not only the one that gates an item",
+			alchemy == 3, tostring(alchemy))
+		check("and a profession rank is not mistaken for a branch",
+			Family.Specialisations[9785] == nil and Family.Specialisations[2018] == nil)
+		check("while the branches that do gate recipes are still there",
+			Family.Specialisations[9787] == 164 and Family.Specialisations[10656] == 165
+				and Family.Specialisations[20219] == 202)
+	end
+
+	-- End to end: the scan writes it where the summary can reach it, which is meta rather
+	-- than the payload the book itself lives in.
+	Family.Character:Scan()
+	local held = Family.Database:Meta(key).specialisations
+	check("a scan writes them onto the member's record", held ~= nil and #held == 2,
+		held and #held or "nothing")
+
+	-- **A character who never chose is not a character nobody looked at.** The book was read
+	-- and held no branch, so the old answer has to go rather than stand for ever.
+	BOOK = { 100, 6603 }
+	Family.Character:Scan()
+	check("and a scan that finds none takes the old answer away",
+		Family.Database:Meta(key).specialisations == nil,
+		tostring(Family.Database:Meta(key).specialisations))
+
+	-- And §2.2 the other way: no book at all is no answer, not an empty one.
+	Family.Database:SetMeta(key, { specialisations = { 9787 } })
+	GetSpellTabInfo = function() return nil end
+	Family.Character:Scan()
+	check("while a spellbook that cannot be read leaves what was known alone",
+		(Family.Database:Meta(key).specialisations or {})[1] == 9787,
+		tostring((Family.Database:Meta(key).specialisations or {})[1]))
+
+	GetSpellTabInfo, GetSpellBookItemInfo = heldTabs, heldInfo
+
+	-- **On the tooltip, under the profession they belong to.** Asked for indented rather than
+	-- as a fourth heading: a Weaponsmith who is also a Master Axesmith has said two things
+	-- about smithing, not learnt two more trades.
+	local who = "Branchy-FireMaw"
+	Family.Database:SetMeta(who, {
+		name = "Branchy", realm = "Fire Maw", classFile = "WARRIOR", faction = "Alliance",
+		level = 60,
+		specialisations = { 9787, 10656, 17040 },
+		skills = {
+			[164] = { name = "Blacksmithing", rank = 300, maxRank = 300, secondary = false },
+			[185] = { name = "Cooking", rank = 300, maxRank = 300, secondary = true },
+		},
+	})
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	fireClick(Family.UI.__summarySets.professions)
+	Family.UI:Refresh()
+
+	local row
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and f.memberKey == who and f.cells
+			and (f.cells[1].__text or "") ~= ""
+		then
+			row = row or f
+		end
+	end
+	check("the member with branches has a line", row ~= nil)
+
+	if row then
+		GameTooltip.__shownAs = nil
+		wipe(GameTooltip.__lines)
+		row.__scripts.OnEnter(row)
+
+		local said, order = "", {}
+		for _, line in ipairs(GameTooltip.__lines) do
+			said = said .. "\n" .. tostring(line[1]) .. " " .. tostring(line[2])
+			order[#order + 1] = tostring(line[1])
+		end
+
+		check("the tooltip names the branch it took", said:find("Weaponsmith", 1, true),
+			said)
+		check("and the second one under it too", said:find("Master Axesmith", 1, true), said)
+
+		-- **A branch belonging to a profession this member does not have is not theirs.**
+		-- 10656 is leatherworking's, and it is in the record on purpose: a member who
+		-- unlearnt a trade keeps the spell nowhere but here, and it must not float up
+		-- under whatever profession happens to be listed.
+		check("but not one belonging to a profession they no longer have",
+			said:find("Dragonscale", 1, true) == nil, said)
+
+		-- Indented one step further than the profession, and immediately under it.
+		local at, deeper
+		for index, text in ipairs(order) do
+			if text:find("Blacksmithing", 1, true) then at = index end
+			if text:find("Weaponsmith", 1, true) then deeper = index end
+		end
+		check("the branch sits directly under its profession",
+			at and deeper and deeper == at + 1, tostring(at) .. " -> " .. tostring(deeper))
+		check("and is stepped in further than it is",
+			at and deeper and #(order[deeper]:match("^%s*") or "")
+				> #(order[at]:match("^%s*") or ""),
+			"%q vs %q" and (order[at] or "") .. " | " .. (order[deeper] or ""))
+
+		row.__scripts.OnLeave(row)
+	end
+
+	Family.Database:Forget(who)
+	Family.UI:Refresh()
+end)()
+
+print()
 if failures == 0 then
 	print("all checks passed")
 else

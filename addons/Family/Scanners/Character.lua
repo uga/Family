@@ -189,6 +189,35 @@ end
 -- The spellbook
 --------------------------------------------------------------------------------------------
 
+-- Which branches of a profession this character took, out of the spellbook already read.
+--
+-- **Read here rather than asked for.** `IsSpellKnown` would answer this in one call each, and
+-- it is a call nothing in Family has ever made on three clients - where the book is already
+-- open in front of us and the shipped table says which of its spells are branches. A
+-- specialisation is a spell a character has or has not, so §2.2 is satisfied by the book
+-- itself: no book, no answer.
+--
+-- Ids alone, the way the spellbook is stored and for the reason written beside `Names:Spell` -
+-- the client answers about any spell id straight away, in the reader's own language, without
+-- having to load anything first.
+--
+-- Sorted, so that two scans of an unchanged character write an identical list and the record
+-- does not churn. `pairs` over a set would not.
+function Character:ReadSpecialisations(book)
+	local known = Family.Specialisations or {}
+	local found = {}
+
+	for _, school in ipairs(book or {}) do
+		for _, spellID in ipairs(school.spells or {}) do
+			if known[spellID] then found[#found + 1] = spellID end
+		end
+	end
+
+	if #found == 0 then return nil end
+	table.sort(found)
+	return found
+end
+
 function Character:ReadSpells()
 	local tabs = Family:TryCall(GetNumSpellTabs) or 0
 	if tabs == 0 then return nil end
@@ -341,6 +370,8 @@ function Character:ScanNow()
 	local book = self:ReadSpells()
 	if book then payload.spells = book end
 
+	local branches = book and self:ReadSpecialisations(book) or nil
+
 	local achievements = self:ReadAchievements()
 	if achievements then payload.achievements = achievements end
 
@@ -352,6 +383,14 @@ function Character:ScanNow()
 	Family.Mounts:Recompute(key)
 
 	Family.Database:SetMeta(key, {
+		-- **Meta and not the payload**, though it is read out of the payload's own
+		-- spellbook. The summary reads meta and nothing else - that is what lets it cost the
+		-- same for forty members as for four - and a branch is three numbers where a
+		-- spellbook is a thousand. `Family.CLEAR` rather than nil when the book was read and
+		-- held none: a character who never chose is a different fact from a character
+		-- nobody has looked at, and leaving the old value would say Weaponsmith for ever
+		-- about somebody who has since unlearnt the trade.
+		specialisations = book and (branches or Family.CLEAR) or nil,
 		itemLevel = average or Family.CLEAR,
 		reputationCount = factions and #factions or nil,
 		achievementPoints = achievements and achievements.points or nil,

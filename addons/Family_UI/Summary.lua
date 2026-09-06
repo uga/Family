@@ -1854,6 +1854,27 @@ local function makeRow(parent)
 				lines[#lines + 1] = { "  " .. entry.name,
 					rank and maxRank and (rank .. "/" .. maxRank)
 						or (rank and tostring(rank)) or nil }
+
+				-- **The branches this character took**, under the profession they belong
+				-- to and stepped in one further, which is what says they belong to it -
+				-- a blacksmith who is a Weaponsmith and a Master Axesmith reads as two
+				-- facts about smithing rather than as two more professions. No picture:
+				-- a branch has no icon of its own worth the name, and one borrowed from
+				-- its profession would draw the same image twice down the column.
+				--
+				-- Named by the reader's client from the spell id, not by what the
+				-- scanning client called it. The comment beside `Names:Spell` is the
+				-- warrant: the client answers for any spell id straight away, for any
+				-- class, without having to load anything first - which is why nothing
+				-- here ships a list of branch names in five languages.
+				for _, spellID in ipairs(meta.specialisations or {}) do
+					if Family.Specialisations[spellID] == professionID(entry.id) then
+						local name = Family.Names:Spell(spellID)
+						if name then
+							lines[#lines + 1] = { "      |cffffd700" .. name .. "|r" }
+						end
+					end
+				end
 			end
 		end
 

@@ -19,6 +19,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **A character's profession branches are named at last.** Hover a member on the Professions set
+  and each trade lists the specialisations that character took under it - Weaponsmith, Dragonscale
+  Leatherworking, Goblin Engineer - indented beneath the profession they belong to. The fact was in
+  the record all along, because a branch is a spell and Family has stored the spellbook since the
+  beginning; nothing had ever named it. Alchemy's Transmutation and Elixir masteries are included,
+  which the old data could not see because they lock no recipe behind them.
+
 - **Poisons and lockpicking have their own pictures**, like every other skill on that set - and
   poisons is now recorded by identity rather than by name, so a rogue read on one client and looked
   at on another is the same rogue.
