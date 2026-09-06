@@ -21197,6 +21197,77 @@ print("a realm heading on the Wide Family panel is not cut short")
 end)()
 
 print()
+print("what the guild grid is allowed to offer")
+
+-- **Reported from play 2026-09-06**, with two screenshots: a level 5 character offering to share
+-- *Daggers 1/25* and *Unarmed 1/25*, and a level 70 offering *Riding*, *Lockpicking*, *Poisons*,
+-- *Defense* and eight weapon skills.
+--
+-- Guild share asks one question - who can make this - so a profession that makes nothing has no
+-- answer to give. The rule was a hand-written list of five ids and its own comment named the cost:
+-- *a profession a future client adds is included until somebody puts it here.* Three changes in
+-- one week did exactly that. `Family:ProfessionMakes` comes out of the client's own tables and
+-- carries the general rule now; the list carries only the exceptions to it.
+;(function()
+	local function shared(id) return Family.Guild:Shareable(id) end
+
+	-- The trades, which are the whole point of the panel.
+	check("a trade with a recipe list is offered",
+		shared(164) and shared(165) and shared(197) and shared(171),
+		"blacksmithing, leatherworking, tailoring, alchemy")
+	-- Mining is the one that needed deciding and is in: it gathers, but it also smelts.
+	check("and mining, because smelting is a real request", shared(186))
+
+	-- **Every weapon skill**, which is what was reported. Asked of all eighteen rather than of
+	-- the two on the screenshot: a rule written against a list of examples passes for the
+	-- examples.
+	local weapons, offeredWeapon = 0, nil
+	for id, entry in pairs(Family.SkillLines) do
+		if entry.weapon then
+			weapons = weapons + 1
+			if shared(id) then offeredWeapon = entry.key end
+		end
+	end
+	check("the table knows about the weapon skills at all", weapons >= 18, tostring(weapons))
+	check("and not one of them is offered to a guild", offeredWeapon == nil,
+		tostring(offeredWeapon))
+
+	-- Every riding line, for the same reason: there are nine of them and a rule matching on the
+	-- word "Riding" would miss Mechanostrider Piloting and Undead Horsemanship.
+	local ridings, offeredRiding = 0, nil
+	for id, entry in pairs(Family.SkillLines) do
+		if entry.riding then
+			ridings = ridings + 1
+			if shared(id) then offeredRiding = entry.key end
+		end
+	end
+	check("the table knows about the riding skills at all", ridings >= 9, tostring(ridings))
+	check("and none of those either", offeredRiding == nil, tostring(offeredRiding))
+
+	check("lockpicking is not offered", not shared(633))
+	check("nor defense", not shared(95))
+
+	-- **Poisons is the exception and is worth its own check.** It has a craft window and a
+	-- recipe list, so the generated table says it makes something and says so correctly - the
+	-- general rule lets it through and only the decision keeps it out. A rule that relied on
+	-- `ProfessionMakes` alone would have shipped this one still ticked.
+	check("poisons makes something, so the general rule alone would offer it",
+		Family:ProfessionMakes(40) == true)
+	check("and it is kept out by decision rather than by that rule", not shared(40))
+
+	-- The ones that were already excluded, still excluded.
+	check("and the gatherers and first aid are unchanged",
+		not shared(182) and not shared(356) and not shared(393) and not shared(129)
+			and not shared(794),
+		"herbalism, fishing, skinning, first aid, archaeology")
+
+	-- A word rather than an id cannot cross at all (§2.1), which is unchanged and is what still
+	-- refuses a death knight's runeforging.
+	check("and anything filed under a word is refused as before",
+		not shared("Blacksmithing") and not shared(nil))
+end)()
+
+print()
 print("a fingerprint is about the data, not about the table")
 
 -- **The property the whole saving rests on.** A mark that changes when nothing has is a mark

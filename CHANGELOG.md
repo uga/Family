@@ -302,6 +302,12 @@ is a decision rather than an afternoon of archaeology.
   narrow because it has tick boxes beside it - a realm heading has nothing beside it at all. Both
   grids are fixed, what you share and what they share.
 
+- **Guild share stops offering things no guildmate could ask you for.** Weapon skills, riding,
+  lockpicking, defense and poisons had all appeared as tick boxes on the Guild page - a level 5
+  character was offering to share *Daggers 1/25*. Guild share answers one question, who can make
+  this, so only professions with something to make are offered now. Anything already ticked for one
+  of them stops being sent.
+
 - **A long guild name no longer runs over the edge of its column.** *Loch Modan Yachting Club* was
   being drawn past the end of the Guild column on Miscellaneous; it is shortened now, with the whole
   name on the row's tooltip beside where that character is - the same as the Where and Hearthstone

@@ -205,18 +205,35 @@ end
 -- **Mining is not here**, and that is the one that needed deciding: it gathers, but it also
 -- smelts, and "can you smelt these bars" is a real request.
 --
--- Poisons and Runeforging need no entry. Neither has a skill line id at all, so §2.1 has
--- refused them since the wire was written - a profession filed under a word cannot cross.
+-- **This list said Poisons needed no entry because it had no skill line id, and that stopped
+-- being true on 2026-09-06** - poisons was given its identity that morning so that a rogue read
+-- on one client is the same rogue on another. Runeforging still has none.
+--
+-- The cost stated at the end of this comment came due the same week, three times over, and is
+-- why the rule below is no longer this list alone: weapon skills started being recorded,
+-- poisons got an id, and every riding line already had one - so a guild grid that had never
+-- heard of any of them offered tick boxes for Swords, Unarmed, Defense, Riding, Lockpicking and
+-- Poisons. Reported from play with two screenshots, one of a level 5 character offering to
+-- share Daggers 1/25.
 --
 -- An exclusion rather than a list of what is allowed, which is the shorter statement of the
 -- decision and lets each entry carry its reason. The cost of that choice is stated rather than
--- hidden: a profession a future client adds is included until somebody puts it here.
+-- hidden: a profession a future client adds is included until somebody puts it here - which is
+-- exactly what happened, and why `ProfessionMakes` now carries the general rule and this list
+-- carries only the exceptions to it.
 local MAKES_NOTHING = {
 	[129] = true,   -- First Aid
 	[182] = true,   -- Herbalism
 	[356] = true,   -- Fishing
 	[393] = true,   -- Skinning
 	[794] = true,   -- Archaeology
+
+	-- **Poisons makes things and is still not shared**, which is why it is here rather than
+	-- covered by the rule below: it has a craft window and a recipe list, so the generated
+	-- table says it makes something, and it says so correctly. It is excluded by decision, the
+	-- way First Aid is - a rogue's poisons are a rogue's own business and nobody has ever asked
+	-- a guildmate for one. Alberto, 2026-09-06.
+	[40]  = true,   -- Poisons
 }
 
 -- Whether guild share has anything to say about this profession at all.
@@ -226,7 +243,21 @@ local MAKES_NOTHING = {
 -- that lies, and a count that includes it is a number that does not match the panel.
 function Guild:Shareable(skillLine)
 	if type(skillLine) ~= "number" then return false end
-	return not MAKES_NOTHING[skillLine]
+	if MAKES_NOTHING[skillLine] then return false end
+
+	-- **And the general rule, which the list above cannot keep up with.**
+	--
+	-- `Family:ProfessionMakes` comes out of the client's own tables - a skill line makes
+	-- something if any spell it grants creates an item - so it already answers no for every
+	-- weapon skill, every riding line, lockpicking, herbalism, fishing and skinning, and it
+	-- goes on answering for whatever a future client adds without anybody remembering to come
+	-- here. A hand-written exclusion list is a promise to keep noticing, and this week proved
+	-- that promise is not kept: three separate changes gave ids to things nobody had thought
+	-- about, and all three appeared as tick boxes on the guild grid.
+	--
+	-- Guild share asks one question - *who can make this* - so a profession that makes nothing
+	-- has no answer to give, whatever anybody remembered to write down.
+	return Family:ProfessionMakes(skillLine)
 end
 
 -- Whether one of our characters offers one of its professions to one guild.
