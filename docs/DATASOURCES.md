@@ -2013,6 +2013,11 @@ named by Era itself and are the control: they must render there.
 which answers the question the sheet was built for: an Era client still ships the art Mists names,
 so the professions need nothing chosen by hand.
 
+Two more of the sheet's rows are worth keeping for what they proved. **135997 Kodo Riding rendered**
+- it is one of the three Era names itself, so the control held and a flat cell really would have
+meant a miss. **441139 Archaeology did not** - the only id on the sheet that failed, and the only
+one above four hundred thousand, which is later art an Era client has no reason to ship.
+
     136241 Blacksmithing   136247 Leatherworking  136240 Alchemy      136246 Herbalism
     134708 Mining          136249 Tailoring       136244 Enchanting   136245 Fishing
     134366 Skinning        133971 Cooking         135966 First Aid    132164 Riding
@@ -2030,6 +2035,7 @@ The weapon skills are paths rather than ids and were chosen the same way:
     INV_Weapon_Bow_07 Bows         INV_Weapon_Crossbow_01 Crossbows
     INV_Weapon_Rifle_01 Guns       INV_Wand_01 Wands
     INV_ThrowingKnife_02 Thrown    INV_Shield_06 Defense
+    Ability_DualWield Dual Wield
 
 **Unarmed is 132298**, `Ability_Rogue_KidneyShot` - a bare hand striking, which is what was asked
 for after the gauntleted fist was turned down. Alberto found it in another addon's picker rather
