@@ -1866,11 +1866,12 @@ for _, file in ipairs {
 	-- What each client calls each profession and each race, and which spell each talent
 	-- is, generated from the client's own tables.
 	"SkillLines.lua", "Races.lua", "TalentSpells.lua", "ChargedItems.lua",
+	"MountSpeeds.lua",
 	"WorldBuffs.lua", "Specialisations.lua", "MadeByItem.lua", "RecipeCooldowns.lua",
 	"RecipeTeaches.lua",
 	"QuestSorts.lua",
 	"Capabilities.lua", "Codec.lua",
-	"Comm.lua", "Database.lua", "Names.lua", "Index.lua",
+	"Comm.lua", "Database.lua", "Names.lua", "Mounts.lua", "Index.lua",
 	"Recipes.lua", "Cooldowns.lua",
 	"Scanners/Bags.lua", "Scanners/Talents.lua", "Scanners/Professions.lua",
 	"Scanners/Bank.lua", "Scanners/Identity.lua",
@@ -3283,6 +3284,7 @@ local book = Family.Database:Payload(key).spells
 check("the spellbook is recorded by school", book ~= nil and #book == 2)
 check("spells are kept as ids, never names", book and book[1].spells[1] == 501,
 	book and tostring(book[1].spells[1]))
+
 
 print()
 print("auctions")
@@ -15943,6 +15945,122 @@ print("a quest heading that is not a zone, in the reader's own words")
 		Family.Wide:SetSibling("sortfam", "Sorcier-Thunderstrike", false)
 		FamilyDB.wide = heldWide
 		Family.UI:Refresh()
+	end
+end)()
+
+print()
+print("how fast a character can get about")
+
+-- Asked for from play as *has this alt got a mount, and is it the fast one*. Both halves were
+-- already recorded and neither could be read: the spellbook is a list of spell ids and the bags
+-- a list of item ids, and nothing said which of them was a horse.
+--
+-- **Keyed on the mount and never on the riding skill**, which Classic Era is what makes obvious:
+-- there the skill is a permission whose value is always 300, one character can hold several of
+-- them, and a paladin's or a warlock's mount teaches no riding skill at all.
+;(function()
+	check("the generated table is loaded at all",
+		type(Family.MountSpeeds) == "table" and type(Family.MountItems) == "table")
+
+	-- 5784 is a warlock's felsteed and 13819 a paladin's warhorse: class spells, both 60%, and
+	-- neither attached to a riding skill. They are the case the whole shape was chosen for.
+	check("a class mount is a mount", Family.MountSpeeds[5784] == 60
+		and Family.MountSpeeds[13819] == 60,
+		tostring(Family.MountSpeeds[5784]) .. " " .. tostring(Family.MountSpeeds[13819]))
+
+	check("a spell in the book is read",
+		Family.Mounts:Fastest({ spells = { { spells = { 501, 5784 } } } }) == 60,
+		tostring(Family.Mounts:Fastest({ spells = { { spells = { 501, 5784 } } } })))
+
+	-- 823 casts a 60% mount and 1044 a 100% one, both carried rather than learned - which is
+	-- what a mount is on Classic Era.
+	check("an item in a bag is read too",
+		Family.Mounts:Fastest({ bags = { [0] = { slots = { [1] = { id = 1044 } } } } }) == 100)
+
+	check("and the fastest of what is there wins, whichever kind it is",
+		Family.Mounts:Fastest({ spells = { { spells = { 5784 } } },
+			bags = { [0] = { slots = { [1] = { id = 1044 } } } } }) == 100)
+
+	-- §2.2: nothing, and not nought. A record with neither read says so, and the panel is what
+	-- turns that into a dash rather than into *on foot*.
+	check("a record with neither answers nothing rather than nought",
+		Family.Mounts:Fastest({ spells = {}, bags = {} }) == nil)
+	check("and so does one that is not a record at all",
+		Family.Mounts:Fastest(nil) == nil)
+
+	-- **And the scanners write it down**, which is the half a hand-built payload cannot show.
+	do
+		local held, heldFree = BAGS[2].items, BAGS[2].free
+		BAGS[2].items = { [1] = { 1044, 1 } }
+		BAGS[2].free = 15
+
+		Family.Bags:Scan()
+		check("scanning the bags leaves the answer in the record",
+			Family.Database:Meta(key).mount == 100,
+			tostring(Family.Database:Meta(key).mount))
+
+		-- Recomputed and not accumulated. A mount sold is a mount gone, and a number kept
+		-- against whatever was there before would go on claiming it for ever.
+		BAGS[2].items, BAGS[2].free = held, heldFree
+		Family.Bags:Scan()
+		check("and selling it takes the answer away again",
+			Family.Database:Meta(key).mount == nil,
+			tostring(Family.Database:Meta(key).mount))
+	end
+
+	-- **And it crosses a link**, which is the reason it is one number worked out at the scan
+	-- rather than a walk of the panel: a sibling shares neither bags nor spellbook, so a panel
+	-- that worked it out itself would have nothing to say about anybody else's family.
+	do
+		local heldWide = FamilyDB.wide
+		Family.Database:SetMeta(key, { mount = 100 })
+
+		FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
+			links = { ["mountfam"] = { name = "Rider-Thunderstrike",
+				grants = { [key] = { character = true } }, siblings = {}, members = {} } } }
+
+		local offered = Family.Wide:Offering(FamilyDB.wide.links["mountfam"])
+		check("how fast somebody travels goes with the rest of what they are",
+			offered and offered[key] and offered[key].meta
+				and offered[key].meta.mount == 100,
+			offered and offered[key] and offered[key].meta
+				and tostring(offered[key].meta.mount))
+
+		FamilyDB.wide = heldWide
+	end
+
+	-- And drawn, on the set where the rest of *how far along is this character* lives.
+	do
+		Family.UI:Show()
+		Family.UI:ShowTab("summary")
+		clickButton(Family.L["Overview"])
+		Family.UI:Refresh()
+
+		local at
+		for index, column in ipairs(Family.UI.__summaryColumns or {}) do
+			if column.key == "mount" then at = index end
+		end
+		check("the overview set has a Mount column", at ~= nil)
+
+		local said
+		for _, f in ipairs(frames) do
+			if f.cells and f.__shown == true and f.memberKey == key then
+				said = f.cells[at] and f.cells[at].__text
+			end
+		end
+		check("and it says how fast, as a percentage", said == "100%", tostring(said))
+
+		-- §2.2 again, at the place a reader meets it: never looked is not on foot.
+		Family.Database:SetMeta(key, { mount = Family.CLEAR, bagsSeen = Family.CLEAR })
+		Family.UI:Refresh()
+
+		for _, f in ipairs(frames) do
+			if f.cells and f.__shown == true and f.memberKey == key then
+				said = f.cells[at] and f.cells[at].__text
+			end
+		end
+		check("a character whose bags were never read says so rather than nothing",
+			said == Family.UI.UNKNOWN, tostring(said))
 	end
 end)()
 

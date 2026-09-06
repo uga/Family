@@ -355,6 +355,11 @@ function Bags:Scan()
 	payload.bags = bags
 	Family.Database:SetPayload(key, payload)
 
+	-- How fast this character can travel, worked out from what was just written. Both
+	-- scanners that can change the answer call it, so whichever ran last leaves it right -
+	-- and it is a number rather than a spellbook, which is what lets a sibling have one.
+	Family.Mounts:Recompute(key)
+
 	Family:Debug("scanned bags: %d/%d free, %d special slots", generalFree, generalSlots,
 		specialSlots)
 end

@@ -468,6 +468,7 @@ Family.locales.deDE = {
 	-- Wide Family
 	["Mail"] = "Post",  -- 10
 	["Money"] = "Geld",  -- 22
+	["Mount"] = "Reittier",
 	["why a recipe is in the wrong language: /family recipes"] = "warum ein Rezept in der falschen Sprache steht: /family recipes",
 	["|cffffd700Recipes|r held for %s"] = "|cffffd700Rezepte|r für %s",
 	["  %s: %d recipe(s), %d with a spell id, %d with an item id"] = "  %s: %d Rezept(e), %d mit Zauber-ID, %d mit Gegenstands-ID",

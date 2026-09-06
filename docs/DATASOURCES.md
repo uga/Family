@@ -1844,3 +1844,43 @@ crossing a link.
 
 This is the case the 876 KB of area names was not (L-020): five languages, and it costs 10 KB.
 
+### How fast a mount goes, generated 2026-09-06
+
+Asked for from play as *has this alt got a mount, and is it the fast one*. Family already recorded
+both halves and could read neither: the spellbook is a list of spell ids and the bags a list of
+item ids, and nothing said which of them was a horse.
+
+**Read from `SpellEffect`**, effect 6 (apply aura) with aura 32 (mounted speed), the percentage in
+`EffectBasePoints`, and the item that casts each from `ItemEffect`.
+
+| | |
+|---|---|
+| Mounts named | **307** across the three builds |
+| Carried as an item | **261** |
+| Size | **10.5 KB** (`MountSpeeds.lua`) |
+| Speeds | 60% and 100% carry almost all of it; 150, 185, 200 and 300 exist |
+
+**The builds do not store the percentage the same way**, and that is the whole reason they looked
+as though they disagreed about seven mounts: Era and Burning Crusade keep 59 for +60%, Mists keeps
+60. Applied per build, they agree exactly - one spell out of 307 still differs and the faster
+reading wins, so a mount is never reported slower than it is.
+
+**Anything under 50% is dropped.** Those are not mounts: the values that fall out are 0, 1, 10,
+15, 20, 25 and 40, other things wearing the same aura. No mount has ever been slower than 60%.
+
+**Keyed on the mount and never on the riding skill**, which Classic Era makes obvious. Alberto's
+description of that build, confirmed against `SkillRaceClassInfo`: the riding skill is a
+*permission* whose value is always 300 once held; a character can hold several of them, which is
+what lets a human exalted with Darnassus buy a tiger; and a paladin's or a warlock's mount is a
+class spell that teaches no riding skill at all. A column reading the skill would print *cannot
+ride* over a paladin on a horse. From Burning Crusade the skill becomes the ladder - skill line
+762 has four rungs chained by `SupercedesSpell`, at ranks 75 and 150 and then the two flying ones
+- but the mount is still the evidence, so one key answers on every build with no branch in it.
+
+The client's own table says the same about Era's shape: every riding line there has **two rows in
+`SkillRaceClassInfo`**, one `SkillTierID` for the race that owns the mount and another for
+everybody else. Cooking, fishing and first aid have one.
+
+**What it cannot see** is a permission whose mount was destroyed - backlog entry 19, named and
+deferred the day it was built.
+

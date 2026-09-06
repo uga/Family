@@ -468,6 +468,7 @@ Family.locales.ruRU = {
 	-- Wide Family
 	["Mail"] = "Почта",  -- 10
 	["Money"] = "Деньги",  -- 22
+	["Mount"] = "Транспорт",
 	["why a recipe is in the wrong language: /family recipes"] = "почему рецепт не на том языке: /family recipes",
 	["|cffffd700Recipes|r held for %s"] = "|cffffd700Рецепты|r для %s",
 	["  %s: %d recipe(s), %d with a spell id, %d with an item id"] = "  %s: рецептов %d, с ID заклинания %d, с ID предмета %d",

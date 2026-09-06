@@ -56,11 +56,13 @@ MadeByItem.lua
 RecipeCooldowns.lua
 RecipeTeaches.lua
 QuestSorts.lua
+MountSpeeds.lua
 Capabilities.lua
 Codec.lua
 Comm.lua
 Database.lua
 Names.lua
+Mounts.lua
 Index.lua
 Recipes.lua
 Cooldowns.lua

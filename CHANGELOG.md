@@ -29,6 +29,11 @@ is a decision rather than an afternoon of archaeology.
   quest there showed only the quest's own text; it now lists that character's objectives under it,
   the way the single-character page already did.
 
+- **A Mount column on the Overview.** How fast each character can get about - 60%, 100%, or faster
+  - worked out from the mount they own rather than from the riding skill, so a paladin or a warlock
+  on a class mount counts, and so does a character carrying one they bought. It is shared with a
+  linked family alongside the rest of what a character is.
+
 - **Riding counts as a profession.** It sits on your skill sheet beside cooking and fishing and
   Family did not know it existed; it now appears with the others, at whatever rank you have. On
   Classic Era the game names it after your mount - *Ram Riding*, *Raptor Riding* - and that is

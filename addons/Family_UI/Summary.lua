@@ -80,9 +80,15 @@ local SETS = {
 			{ key = "level",  label = L["Level"],     width = 50,  justify = "RIGHT" },
 			{ key = "ilvl",   label = L["Item lvl"],  width = 70,  justify = "RIGHT" },
 			{ key = "xp",     label = L["Rest XP"],   width = 90,  justify = "RIGHT" },
-			{ key = "money",  label = L["Money"],     width = 145, justify = "RIGHT" },
+			{ key = "money",  label = L["Money"],     width = 124, justify = "RIGHT" },
 			{ key = "played", label = L["Played"],    width = 85,  justify = "RIGHT" },
 			{ key = "seen",   label = L["Last seen"], width = 95,  justify = "RIGHT" },
+			-- How fast this character gets about. Forty-nine pixels were spare and are
+			-- not enough for the word: *Reittier* is eight letters and *Transport* is
+			-- nine in Russian, and the check that a heading fits said so in both. The
+			-- other twenty-one come from Money, which was the widest column here and
+			-- had the most to give.
+			{ key = "mount",  label = L["Mount"],     width = 70,  justify = "RIGHT" },
 		},
 	},
 	{
@@ -833,6 +839,24 @@ CELL.boon = function(meta)
 	if not meta.bagsSeen then return UNKNOWN end
 	if meta.banked then return tostring(#meta.banked) end
 	if meta.boons then return UNKNOWN end
+	return ""
+end
+
+-- The fastest this character can travel, as a percentage over running.
+--
+-- **Keyed on the mount and never on the riding skill.** On Classic Era that skill is a permission
+-- whose value is always 300, one character can hold several of them, and a paladin's or warlock's
+-- mount is a class spell that teaches no riding skill at all - so a column reading the skill would
+-- say *cannot ride* over a paladin on a horse. From Burning Crusade the skill is the ladder, but
+-- the mount is still the evidence, so this answers on every build with no branch in it.
+--
+-- §2.2, and the two answers are told apart by whether anything was read: a character whose bags
+-- have never been looked at has no answer here, and a blank would say *on foot* about somebody
+-- nobody has asked. `bagsSeen` is what the mount would have been found in on Era, and it is set by
+-- the same scan that recomputes this.
+CELL.mount = function(meta)
+	if meta.mount then return string.format("%d%%", meta.mount) end
+	if not meta.bagsSeen then return UNKNOWN end
 	return ""
 end
 

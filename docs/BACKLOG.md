@@ -1198,3 +1198,29 @@ a field and a naming call of its own rather than being written into `zoneID` whe
 would look it up in the wrong table. And whatever is recorded has to answer **during
 `PLAYER_LOGOUT`**, which is measured for `GetZoneText` and `GetSubZoneText` and is not measured
 for the map API - if it does not, the value wants keeping during play and writing at logout.
+
+---
+
+## 19. A mount destroyed is not a permission lost
+
+**Named by Alberto on 2026-09-06, while the shape of the mount column was being chosen, and
+deferred by him in the same sentence.**
+
+The column answers *how fast can this character travel* by looking at what they can summon - the
+mount spells they know and the mount items they carry. That is the right key, and the reasons are
+in `addons/Family/Mounts.lua`: on Classic Era the riding skill is a permission whose value is
+always 300, one character can hold several of them, and a paladin's or a warlock's mount teaches
+no riding skill at all.
+
+**But owning the mount is evidence of the permission, and losing it is not evidence of losing the
+permission.** A character who earned tiger riding, bought a tiger and then destroyed it by mistake
+may still buy another, and Family will say they are on foot.
+
+Closing it means reading the riding skills as well and saying two things instead of one - *may
+ride: tiger, ram* beside *travels at: on foot*. The skills are already scanned since 2026-09-06,
+so the data is there; what is missing is the decision about how to draw two facts in one column's
+width, which is the same question the icon overview is about.
+
+**Not built.** Written down so the limit is a decision with a date rather than something nobody
+noticed.
+
