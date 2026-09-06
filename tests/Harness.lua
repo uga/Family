@@ -21612,6 +21612,61 @@ print("the Sibling label ticks its own column")
 			and onScreen(Family.UI.__wideSiblingHeading)))
 	Family.Wide:Store().requests["asking-family"] = nil
 
+	-- **The reuse that actually happens**, which none of the obvious ones is.
+	--
+	-- Closing the family shortens the list and a request lengthens it from the top; taking their
+	-- members away shortens it too, because their side is drawn last and the row falls off the
+	-- end. In every one of those the row that carried the heading ends up hidden, so the guard
+	-- in `nextRow` never had to do anything and removing it reddened nothing.
+	--
+	-- What reuses it is **our own** grid growing. Ours is drawn before theirs, so members of
+	-- ours push their labels row further down - and the row object that used to be their labels
+	-- is handed out again, higher up, as one of our member rows: drawn, visible, and carrying a
+	-- button that would tick a column of somebody else's members.
+	--
+	-- **The heading has to be caught before the redraw**, which is the second thing this took.
+	-- `UI.__wideSiblingHeading` is reassigned every draw, and after the redraw it names the
+	-- *new* heading on the row their labels moved to. The one worth asking about is the old
+	-- object, on the row that was handed to something else.
+	-- Found again rather than reused: `line` was the family's row on the *first* draw, and that
+	-- row object has been handed out several times since - clicking it now would fire whatever
+	-- script the last section to use it left behind, which is the same pooling this whole check
+	-- is about.
+	local reopen
+	for _, f in ipairs(frames) do
+		local text = f.text and f.text.__text
+		if f.__shown ~= false and type(text) == "string"
+			and text:find("Serena", 1, true) and f.__scripts
+			and f.__scripts.OnClick then reopen = reopen or f end
+	end
+	if reopen then fireClick(reopen) end
+
+	local stale = Family.UI.__wideSiblingHeading
+	local staleRow = stale and stale.__parent
+	check("the family is open again, with a heading to leave behind",
+		stale ~= nil and onScreen(stale))
+
+	local ourExtras = {}
+	for index = 1, 6 do
+		local memberKey = "Filler" .. index .. "-Fire Maw"
+		ourExtras[#ourExtras + 1] = memberKey
+		Family.Database:SetMeta(memberKey, { name = "Filler" .. index, realm = "Fire Maw",
+			classFile = "ROGUE", level = 60, faction = "Alliance", seen = time() })
+	end
+	Family.UI:ShowTab("wide")
+
+	check("the row that carried it has been handed to something else",
+		staleRow ~= nil and staleRow.__shown == true
+			and tostring(staleRow.text and staleRow.text.__text):find("Sibling", 1, true)
+				== nil,
+		tostring(staleRow and staleRow.text and staleRow.text.__text))
+	check("and it is not still offering a click from that row",
+		stale == nil or not onScreen(stale),
+		tostring(stale ~= nil and onScreen(stale)))
+
+	for _, memberKey in ipairs(ourExtras) do Family.Database:Forget(memberKey) end
+	Family.UI:ShowTab("wide")
+
 	-- Nothing was sent for any of that, which is the claim the row above it makes to the
 	-- player. Measured off the queue rather than assumed: this is the one column whose
 	-- meaning is entirely local.

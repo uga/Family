@@ -416,14 +416,14 @@ local function build(frame)
             -- was added later. A row that is no longer that one must not still be offering a
             -- click that ticks somebody else's members.
             --
-            -- **No check proves this line**, and it is here on the strength of the one above
-            -- it rather than on evidence of its own. Two cases are covered - the heading goes
-            -- when the family is closed, and when a request pushes the panel about - and in
-            -- both of them the row itself is hidden, so the heading goes with it whether this
-            -- line runs or not. The case this is for is the row being handed out again for
-            -- something else, and no fixture built for it made the pool do that. Removing it
-            -- reddens nothing, which is said here rather than left for somebody to discover
-            -- by mutating it.
+            -- This said "no check proves this line" for a day, and now one does. Three
+            -- fixtures had to be got wrong first, and all three failed the same way: closing
+            -- the family, taking their members away, and pushing the panel down with a
+            -- request all leave the row *hidden*, and a hidden row takes its heading with it
+            -- whatever this line does. What reuses the row while it is **shown** is our own
+            -- grid growing - ours is drawn before theirs, so members of ours push their
+            -- labels row down the panel and the row object it used to have is handed out
+            -- higher up as one of our member rows.
             if r.siblingHeading then r.siblingHeading:Hide() end
             -- Nothing to click until somebody says otherwise, so it neither highlights under
             -- the cursor nor takes a click meant for what is drawn over it. Most rows here
