@@ -13087,11 +13087,21 @@ print()
 print("professions on the summary")
 
 ;(function()
+	-- **Filed under the word**, which is what a record written before that profession had an
+	-- identity looks like, and there are records like this in the wild.
+	--
+	-- "Zzz Crafting" is a skill line no shipped table has heard of, which is the only way left
+	-- to reach the shortening below now that everything real carries a picture: a cell that
+	-- draws an icon has one glyph in front of the numbers, and there is nothing to shorten.
 	Family.Database:SetMeta("Longname-FireMaw", {
 		name = "Longname", realm = "Fire Maw", level = 70, faction = "Horde",
 		skills = {
 			Leatherworking = { rank = 360, maxRank = 375, recipesSeen = time() },
 			Mining = { rank = 375, maxRank = 375, recipesSeen = time() },
+			["Zzz Crafting Of Very Long Name"] = { rank = 22, maxRank = 300,
+				secondary = true, recipesSeen = time() },
+			["Qqq"] = { rank = 5, maxRank = 300, secondary = true,
+				recipesSeen = time() },
 		},
 	})
 
@@ -13124,19 +13134,42 @@ print("professions on the summary")
 	end
 
 	check("a long profession keeps both of its numbers", shown ~= nil, tostring(shown))
-	check("and gives up the end of its name instead",
-		shown ~= nil and shown:find("Leatherwor", 1, true) ~= nil, tostring(shown))
 
-	-- A short one is not touched at all.
-	local mining
+	-- **And a record filed under the word still gets its picture.** Reported from play with
+	-- two rogues on screen together: one drew the poison bottle and the other drew "Poisons
+	-- 4..." clipped in a cell too narrow for a word, because poisons had gained an identity
+	-- that morning and the second rogue had not been scanned since. The panel looked the
+	-- profession up by whatever key the record happened to carry; it turns the word back into
+	-- the id first now. 136247 is leatherworking's.
+	check("and a record filed under the word is drawn with its picture all the same",
+		shown ~= nil and shown:find("|T136247:", 1, true) ~= nil, tostring(shown))
+
+	-- A skill no table has heard of has no picture, and that is where the shortening still
+	-- lives: the numbers survive and the name gives up its end.
+	local long
 	for _, f in ipairs(fontStrings) do
-		if type(f.__text) == "string" and f.__text:find("Mining", 1, true)
+		if type(f.__text) == "string" and f.__text:find("Zzz", 1, true)
 			and f.__visible ~= false then
-			mining = f.__text
+			long = f.__text
 		end
 	end
-	check("a short one is left exactly as it was",
-		mining ~= nil and mining:find("Mining |", 1, true) ~= nil, tostring(mining))
+	check("a skill with no picture keeps both of its numbers",
+		long ~= nil and long:find("22", 1, true) and long:find("/300", 1, true),
+		tostring(long))
+	check("and gives up the end of its name instead",
+		long ~= nil and long:find("-", 1, true) ~= nil
+			and long:find("Very Long Name", 1, true) == nil, tostring(long))
+
+	-- A short one is not touched at all.
+	local short
+	for _, f in ipairs(fontStrings) do
+		if type(f.__text) == "string" and f.__text:find("Qqq", 1, true)
+			and f.__visible ~= false then
+			short = f.__text
+		end
+	end
+	check("a short name is left exactly as it was",
+		short ~= nil and short:find("Qqq |", 1, true) ~= nil, tostring(short))
 
 	Family.Database:Forget("Longname-FireMaw")
 end)()
@@ -23300,6 +23333,24 @@ print("how a professions row is laid out")
 
 		check("and the switch now offers the trades back",
 			switch.__text == Family.L["Professions"], tostring(switch.__text))
+
+		-- **It owns the right-hand end of the row rather than trailing the picker.** Laid
+		-- after everything else it was drawn through the side of the window - reported from
+		-- play with a screenshot, in English, which is not even the long language - and
+		-- anchored there it moves every time anything before it grows. This is the same
+		-- decision the faction buttons took on the row above.
+		check("the switch is anchored to the end of the filter row rather than trailing it",
+			switch.__points and switch.__points.RIGHT == true
+				and switch.__points.LEFT ~= true)
+		check("and nothing before it is what holds it there",
+			next(switch.__anchoredTo or {}) == nil)
+
+		-- The count of how much a filter is hiding used to sit at that same edge. Left
+		-- there it would be written over the top of the switch, and a figure nobody can
+		-- read is worse than no figure - so it moves out from under it while the switch is
+		-- on screen, and takes the edge back when it is not.
+		check("and the count of what a filter hides is moved out from under it",
+			next(switch.__anchoredBy or {}) ~= nil)
 
 		-- Reading another set and coming back opens on the trades again. A panel that
 		-- remembered the detour would open showing something nobody asked it for.

@@ -112,6 +112,38 @@ local function showingWeapons()
 	return skillView() == "weapons"
 end
 
+-- **Whether the filter row has run out of pixels.**
+--
+-- That row has no scroll bar, no layout pass and no wrapping: a control that outgrows it is
+-- drawn straight through the side of the window, which is exactly what the professions switch
+-- did the day it was added - in English, which is not even the long language. Nothing in the
+-- harness can catch it, for the reason written beside the set buttons above: the font is
+-- proportional and measured text there is a flat rate per character, so the real client is the
+-- only thing that knows. So the real client says it, the way that row already does.
+--
+-- Asked of the two controls themselves rather than of a sum of constants. A sum would have to
+-- be kept in step with every width on the row and would be wrong the first time one moved;
+-- `GetRight` and `GetLeft` are the drawn truth, and they answer nil before a frame has been
+-- laid out, which is a reason to say nothing rather than a reason to guess.
+--
+-- Once a session. This runs on every draw, and a warning printed forty times is a warning
+-- nobody reads.
+--
+-- Hung on UI rather than kept as a local, and the flag with it. The function that draws this
+-- panel is at Lua's ceiling of sixty upvalues and one more file-scope local is what tips it
+-- over - the same wall the harness meets at two hundred locals, met from the other side.
+function UI:WarnIfFilterRowIsFull(last, switch)
+	if self.__saidTheFilterRowIsFull or not switch:IsShown() then return end
+
+	local ends = last.GetRight and last:GetRight()
+	local starts = switch.GetLeft and switch:GetLeft()
+	if type(ends) ~= "number" or type(starts) ~= "number" or ends <= starts then return end
+
+	self.__saidTheFilterRowIsFull = true
+	Family:Print(L["|cffffaa00the summary's filter row is %d pixels short - the labels are "
+		.. "longer than the room in this language|r"], math.ceil(ends - starts))
+end
+
 local SKILL_COLUMNS = 7
 local SKILL_WIDTH = 83
 
@@ -658,8 +690,17 @@ end
 -- Nothing where the table has none, and that is one line - lockpicking, which this panel never
 -- draws. The word is the fallback, so a skill line newer than the shipped table reads as it always
 -- did rather than as a blank.
+-- **Through `professionID`, not straight into the table.** The key a skill is filed under is
+-- not always an id: a record written before that profession had an identity is filed under the
+-- word the scanning client happened to use, which is L-015 in one line - and `SkillLineFor`
+-- turns the word back into the id so that the two are one key.
+--
+-- Reported from play 2026-09-06 with two rogues side by side: one showed the poison bottle and
+-- the other showed "Poisons 4..." clipped in a cell too narrow for a word, because poisons only
+-- gained an identity that morning and the second rogue had not been scanned since. A record
+-- Family already holds must not have to be re-read for the panel to draw it.
 local function picture(id)
-	local entry = id and Family.SkillLines and Family.SkillLines[id]
+	local entry = id and Family.SkillLines and Family.SkillLines[professionID(id)]
 	local icon = entry and entry.icon
 	if not icon then return nil end
 	return "|T" .. tostring(icon) .. ":14:14:0:0:64:64:5:59:5:59|t"
@@ -2177,7 +2218,12 @@ local function build(frame)
 	-- Named, like the search on the character panel, so a macro or a check can reach it.
 	local search = CreateFrame("EditBox", "FamilySummarySearch", filters, "InputBoxTemplate")
 	search:SetPoint("LEFT", hint, "RIGHT", 10, 0)
-	search:SetSize(150, 20)
+	-- A hundred and twenty rather than a hundred and fifty. The row ran out of pixels when
+	-- the professions switch joined it - the last button was drawn through the side of the
+	-- window, reported from play with a screenshot - and this is the widest thing on the row
+	-- with the least to lose: what is typed here is a member's name or a profession's, and
+	-- 120 pixels still shows about eighteen letters of either.
+	search:SetSize(120, 20)
 	search:SetAutoFocus(false)
 	UI:ReleaseFocusOnClick(search)
 	search:SetScript("OnTextChanged", function() frame:Refresh() end)
@@ -2272,9 +2318,15 @@ local function build(frame)
 		weapons     = L["Weapon Skills"],
 	}
 
+	--
+	-- **Anchored to the right-hand end of the row rather than trailing the picker**, which is
+	-- the same decision the faction buttons took on the row above and for the same reason
+	-- written there: a control laid after everything else moves every time anything before it
+	-- grows, and this one had already been pushed through the side of the window in a
+	-- language that is not even the long one. Now nothing before it can move it.
 	local viewButton = CreateFrame("Button", nil, filters, "UIPanelButtonTemplate")
 	viewButton:SetHeight(20)
-	viewButton:SetPoint("LEFT", narrowButton, "RIGHT", 12, 0)
+	viewButton:SetPoint("RIGHT", -4, 0)
 
 	do
 		local label = viewButton:GetFontString()
@@ -2313,8 +2365,21 @@ local function build(frame)
 	-- removes thirty rows and says nothing is indistinguishable from a panel that has lost
 	-- them, which is the complaint every filter without a count eventually produces.
 	local counter = filters:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	counter:SetPoint("RIGHT", -4, 0)
 	counter:SetJustifyH("RIGHT")
+
+	-- To the left of the switch where there is one, and at the edge where there is not. Left
+	-- at the edge it would have been written over the top of the switch, and a count nobody
+	-- can read is worse than no count: it is the same figure the panel prints to say how much
+	-- it is hiding.
+	local function placeCounter()
+		counter:ClearAllPoints()
+		if viewButton:IsShown() then
+			counter:SetPoint("RIGHT", viewButton, "LEFT", -8, 0)
+		else
+			counter:SetPoint("RIGHT", -4, 0)
+		end
+	end
+	placeCounter()
 
 	-- TAB from one box to the next, in the order they sit on the row.
 	UI:TabRing({ search, minBox, maxBox })
@@ -2407,6 +2472,8 @@ local function build(frame)
 			UI.__summarySkillView = nil
 			viewButton:Hide()
 		end
+		placeCounter()
+		UI:WarnIfFilterRowIsFull(narrowButton, viewButton)
 
 		local columns = columnsOf(currentSet)
 

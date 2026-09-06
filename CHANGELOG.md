@@ -263,6 +263,16 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A profession recorded before Family knew its identity now draws its picture too.** Two rogues
+  side by side showed one poison bottle and one clipped word: the second had not been scanned
+  since poisons gained an identity, and the panel was looking the picture up under whatever key
+  the record happened to carry. Nothing needs re-scanning.
+
+- **The Professions switch no longer runs off the edge of the window.** It holds the right-hand
+  end of the filter row now, where nothing before it can push it, and the search box gave up
+  thirty pixels to make room. Family says so in the chat frame if a language ever runs that row
+  out of pixels again.
+
 - **A shared character's quests are named as your own game names them.** A linked family playing
   in another language sent their quest titles and zone headings in that language, so their quest
   page read in French on an English client - while the tooltip on the same row read in English.
