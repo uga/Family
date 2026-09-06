@@ -681,7 +681,13 @@ function Professions:ScanNow(includeRecipes)
 				-- player looking for their professions would find a thing that is not
 				-- one.
 				skill.class = entry.class or nil
+				-- And weapon skills, which are the game's own third bucket: its windows
+				-- say Professions, Secondary Skills and Weapon Skills. A sword cannot be
+				-- unlearned any more than cooking can, so the test below would call it a
+				-- secondary and file it beside first aid.
+				skill.weapon = entry.weapon or nil
 				skill.secondary = not entry.primary and not entry.class
+					and not entry.weapon
 			end
 
 			out[id or name] = skill
@@ -784,6 +790,10 @@ function Professions:ScanNow(includeRecipes)
 			-- `not secondary and not class`, so a missing key answers the same as false
 			-- and only the one that is one carries it.
 			class = skill.class,
+			-- Nor a profession of any kind: a weapon skill, which the game keeps in a
+			-- list of its own. Carried the same way and for the same reason - only the
+			-- ones that are one say so.
+			weapon = skill.weapon,
 			-- What this client called it, for the professions the table has no id for.
 			name = skill.name,
 			-- When that profession's recipes were last read. Small enough for meta, and

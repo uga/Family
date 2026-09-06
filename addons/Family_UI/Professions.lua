@@ -1156,7 +1156,12 @@ local function build(frame)
 			-- was never opened, which is a claim about a window that does not exist. This
 			-- panel is about what a member can make; the rank is on the summary, where the
 			-- question is *who has it*.
-			if skill.class then
+			--
+			-- And a weapon skill is not a profession at all. The game's own windows keep
+			-- three lists - Professions, Secondary Skills and Weapon Skills - and swords
+			-- are in the third; this panel is the first two. Without this line every
+			-- character would announce eighteen weapons as professions never opened.
+			if skill.class or skill.weapon then
 				-- nothing here, on purpose
 			elseif record and record.recipes and #record.recipes > 0 then
 				ordered[#ordered + 1] = { name = name, id = id, skill = skill }

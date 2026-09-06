@@ -2439,6 +2439,18 @@ if skills then
 	-- reads *Raptor Riding* and a French client reads *Monte de belier* - so matching on the
 	-- word "Riding" would be wrong in every language and most races. The table is what tells
 	-- it apart from the racials sitting in the same category beside it.
+	-- **Weapon skills are the game's own third bucket.** Its windows keep three lists -
+	-- Professions, Secondary Skills, Weapon Skills - and a sword cannot be unlearned any more
+	-- than cooking can, so the test that identifies a primary would have filed one beside the
+	-- other. The shipped table says which of the three each skill is in.
+	check("a weapon skill is scanned, and filed by its own id", skills[43] ~= nil,
+		skills[43] and "yes" or "not recorded at all")
+	check("and marked as a weapon", skills[43] and skills[43].weapon == true,
+		skills[43] and tostring(skills[43].weapon))
+	check("and not as a secondary profession, which is where the old test put it",
+		skills[43] and skills[43].secondary == false,
+		skills[43] and tostring(skills[43].secondary))
+
 	check("riding is a profession too, and filed by its own id",
 		skills[152] ~= nil and skills["Ram Riding"] == nil,
 		skills[152] and "filed by name" or "not recorded at all")
@@ -5547,7 +5559,10 @@ check("and names the likeliest reason beside it",
 -- Two of them now, and named together: riding has no window either, and joins herbalism in the
 -- line that says which professions the list left out.
 check("and one never opened says that instead",
-	visibleText("Herbalism, Ram Riding never opened"))
+	visibleText("Cooking, First Aid, Herbalism, Ram Riding never opened"),
+	(function() for _, f in ipairs(fontStrings) do local t = f.__text
+		if type(t) == "string" and t:find("never opened", 1, true) then return t end end
+		return "no such line" end)())
 testerSkills.Tailoring = nil
 Family.Database:Payload(key).professions.Tailoring = nil
 

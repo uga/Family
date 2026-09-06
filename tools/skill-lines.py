@@ -51,6 +51,12 @@ SECONDARY_IDS = {129, 185, 356, 794}
 # panel already draws such a profession as a rank without one.
 RIDING_IDS = {148, 149, 150, 152, 533, 553, 554, 713, 762}
 
+# And the weapon skills, which are category 6 and are the game's own third bucket: its windows say
+# Professions, Secondary Skills and Weapon Skills, and calling a sword a secondary profession would
+# file it beside cooking. Taken wholesale, because unlike category 9 that one holds nothing else -
+# eighteen rows on Era, all of them weapons or the two that go with them, Defense and Dual Wield.
+WEAPON_CATEGORY = "6"
+
 # Lockpicking, which is neither. It sits in category 7 with the class skills, it has a rank and
 # a maximum like a profession, and it teaches nothing - a shape this table did not hold before.
 #
@@ -117,7 +123,8 @@ def build_table():
                 skill_id = int(row["ID"])
                 is_primary = row["CategoryID"] == PRIMARY_CATEGORY
                 is_class = skill_id in CLASS_IDS
-                if (not is_primary and skill_id not in SECONDARY_IDS
+                is_weapon = row["CategoryID"] == WEAPON_CATEGORY
+                if (not is_primary and not is_weapon and skill_id not in SECONDARY_IDS
                         and skill_id not in RIDING_IDS and not is_class):
                     continue
 
@@ -127,7 +134,7 @@ def build_table():
 
                 entry = professions.setdefault(skill_id,
                                                {"names": {}, "primary": is_primary,
-                                                "class": is_class})
+                                                "class": is_class, "weapon": is_weapon})
                 seen = entry["names"].setdefault(locale, [])
                 if name not in seen:
                     if seen:
@@ -223,9 +230,11 @@ def emit(professions, out_path):
     add('-- got that wrong every time and failed silently for the players who could not be')
     add('-- asked to check it.')
     add('--')
-    add('-- Primary or secondary comes from the table too, which settles a question the scanner')
-    add('-- had been answering by asking whether a skill can be unlearned and then patching up')
-    add('-- the three that cannot.')
+    add('-- Which of the three the game itself puts a skill in comes from the table too, which')
+    add('-- settles a question the scanner had been answering by asking whether a skill can be')
+    add('-- unlearned and then patching up the ones that cannot. The windows say Professions,')
+    add('-- Secondary Skills and Weapon Skills, and a sword cannot be unlearned any more than')
+    add('-- cooking can - so that test alone would file one beside the other.')
     add('')
     add('local _, Family = ...')
     add('')
@@ -241,6 +250,8 @@ def emit(professions, out_path):
         # lines would be fifteen lines saying nothing.
         if entry.get("class"):
             add('\t\tclass = true,')
+        if entry.get("weapon"):
+            add('\t\tweapon = true,')
         add('\t\tnames = {')
         for locale in LOCALES:
             names = entry["names"].get(locale) or []

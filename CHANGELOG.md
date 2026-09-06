@@ -34,6 +34,10 @@ is a decision rather than an afternoon of archaeology.
   on a class mount counts, and so does a character carrying one they bought. It is shared with a
   linked family alongside the rest of what a character is.
 
+- **Weapon skills are recorded.** Swords, daggers, unarmed and the rest, at whatever rank each
+  character has them. They are kept apart from professions, the way the game's own windows keep
+  them apart, so the professions list is still a list of professions.
+
 - **Riding counts as a profession.** It sits on your skill sheet beside cooking and fishing and
   Family did not know it existed; it now appears with the others, at whatever rank you have. On
   Classic Era the game names it after your mount - *Ram Riding*, *Raptor Riding* - and that is

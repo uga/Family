@@ -26,13 +26,111 @@
 -- got that wrong every time and failed silently for the players who could not be
 -- asked to check it.
 --
--- Primary or secondary comes from the table too, which settles a question the scanner
--- had been answering by asking whether a skill can be unlearned and then patching up
--- the three that cannot.
+-- Which of the three the game itself puts a skill in comes from the table too, which
+-- settles a question the scanner had been answering by asking whether a skill can be
+-- unlearned and then patching up the ones that cannot. The windows say Professions,
+-- Secondary Skills and Weapon Skills, and a sword cannot be unlearned any more than
+-- cooking can - so that test alone would file one beside the other.
 
 local _, Family = ...
 
 Family.SkillLines = {
+	[43] = {
+		key = "Swords",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Swords" },
+			deDE = { "Schwerter" },
+			frFR = { "Epées" },
+			esES = { "Espadas" },
+			ruRU = { "Мечи" },
+		},
+	},
+	[44] = {
+		key = "Axes",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Axes" },
+			deDE = { "Äxte" },
+			frFR = { "Haches" },
+			esES = { "Hachas" },
+			ruRU = { "Топоры" },
+		},
+	},
+	[45] = {
+		key = "Bows",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Bows" },
+			deDE = { "Bogen", "Bögen" },
+			frFR = { "Arcs" },
+			esES = { "Arcos" },
+			ruRU = { "Луки" },
+		},
+	},
+	[46] = {
+		key = "Guns",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Guns" },
+			deDE = { "Schusswaffen" },
+			frFR = { "Armes à feu" },
+			esES = { "Armas de fuego" },
+			ruRU = { "Огнестрельное оружие", "Ружья" },
+		},
+	},
+	[54] = {
+		key = "Maces",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Maces" },
+			deDE = { "Streitkolben" },
+			frFR = { "Masse" },
+			esES = { "Mazas" },
+			ruRU = { "Дробящее оружие" },
+		},
+	},
+	[55] = {
+		key = "Two-Handed Swords",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Two-Handed Swords" },
+			deDE = { "Zweihandschwerter" },
+			frFR = { "Epées à deux mains" },
+			esES = { "Espadas de dos manos" },
+			ruRU = { "Двуручные мечи" },
+		},
+	},
+	[95] = {
+		key = "Defense",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Defense" },
+			deDE = { "Verteidigung" },
+			frFR = { "Défense" },
+			esES = { "Defensa" },
+			ruRU = { "Защита" },
+		},
+	},
+	[118] = {
+		key = "Dual Wield",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Dual Wield" },
+			deDE = { "Beidhändigkeit" },
+			frFR = { "Ambidextrie" },
+			esES = { "Empuñadura dual", "Doble empuñadura" },
+			ruRU = { "Бой двумя руками", "Бой двумя оружиями" },
+		},
+	},
 	[129] = {
 		key = "First Aid",
 		primary = false,
@@ -42,6 +140,18 @@ Family.SkillLines = {
 			frFR = { "Secourisme" },
 			esES = { "Primeros auxilios" },
 			ruRU = { "Первая помощь" },
+		},
+	},
+	[136] = {
+		key = "Staves",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Staves" },
+			deDE = { "Stäbe" },
+			frFR = { "Bâtons" },
+			esES = { "Bastones" },
+			ruRU = { "Посохи" },
 		},
 	},
 	[148] = {
@@ -88,6 +198,30 @@ Family.SkillLines = {
 			ruRU = { "Езда на баранах", "Верховая езда: баран" },
 		},
 	},
+	[160] = {
+		key = "Two-Handed Maces",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Two-Handed Maces" },
+			deDE = { "Zweihandstreitkolben" },
+			frFR = { "Masses à deux mains" },
+			esES = { "Mazas de dos manos" },
+			ruRU = { "Двуручное дробящее оружие", "Двуручное ударное оружие" },
+		},
+	},
+	[162] = {
+		key = "Unarmed",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Unarmed" },
+			deDE = { "Unbewaffnet" },
+			frFR = { "Mains nues" },
+			esES = { "Sin armas" },
+			ruRU = { "Рукопашный бой" },
+		},
+	},
 	[164] = {
 		key = "Blacksmithing",
 		primary = true,
@@ -119,6 +253,42 @@ Family.SkillLines = {
 			frFR = { "Alchimie" },
 			esES = { "Alquimia" },
 			ruRU = { "Алхимия" },
+		},
+	},
+	[172] = {
+		key = "Two-Handed Axes",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Two-Handed Axes" },
+			deDE = { "Zweihandäxte" },
+			frFR = { "Haches à deux mains" },
+			esES = { "Hachas de dos manos" },
+			ruRU = { "Двуручные топоры" },
+		},
+	},
+	[173] = {
+		key = "Daggers",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Daggers" },
+			deDE = { "Dolche" },
+			frFR = { "Dagues" },
+			esES = { "Dagas" },
+			ruRU = { "Кинжалы" },
+		},
+	},
+	[176] = {
+		key = "Thrown",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Thrown" },
+			deDE = { "Wurfwaffen" },
+			frFR = { "Armes de jet" },
+			esES = { "Armas arrojadizas" },
+			ruRU = { "Метательное оружие" },
 		},
 	},
 	[182] = {
@@ -176,6 +346,42 @@ Family.SkillLines = {
 			ruRU = { "Инженерное дело" },
 		},
 	},
+	[226] = {
+		key = "Crossbows",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Crossbows" },
+			deDE = { "Armbrüste" },
+			frFR = { "Arbalètes" },
+			esES = { "Ballestas" },
+			ruRU = { "Арбалеты" },
+		},
+	},
+	[228] = {
+		key = "Wands",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Wands" },
+			deDE = { "Zauberstäbe" },
+			frFR = { "Baguettes" },
+			esES = { "Varitas" },
+			ruRU = { "Жезлы" },
+		},
+	},
+	[229] = {
+		key = "Polearms",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Polearms" },
+			deDE = { "Stangenwaffen" },
+			frFR = { "Armes d'hast" },
+			esES = { "Armas de asta" },
+			ruRU = { "Древковое оружие" },
+		},
+	},
 	[333] = {
 		key = "Enchanting",
 		primary = true,
@@ -207,6 +413,18 @@ Family.SkillLines = {
 			frFR = { "Dépeçage" },
 			esES = { "Desollar" },
 			ruRU = { "Снятие шкур", "Cнятие шкур" },
+		},
+	},
+	[473] = {
+		key = "Fist Weapons",
+		primary = false,
+		weapon = true,
+		names = {
+			enUS = { "Fist Weapons" },
+			deDE = { "Faustwaffen" },
+			frFR = { "Armes de pugilat" },
+			esES = { "Armas de puño" },
+			ruRU = { "Кистевое оружие" },
 		},
 	},
 	[533] = {
