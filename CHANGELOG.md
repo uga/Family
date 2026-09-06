@@ -302,6 +302,13 @@ is a decision rather than an afternoon of archaeology.
   narrow because it has tick boxes beside it - a realm heading has nothing beside it at all. Both
   grids are fixed, what you share and what they share.
 
+- **A linked family is sent what has changed, not everything again.** Every exchange used to carry
+  each shared character's whole record - bags, equipment, professions, mail, the lot - and that
+  happens every time either of you logs in, and again on every sharing change. Now only the
+  characters whose records have actually moved are sent, and a sharing change no longer asks them
+  to send their entire side back in reply. **Update now** still sends everything, because that is
+  the button you press when something looks wrong.
+
 - **Sharing decisions wait three seconds for you to finish before they are sent.** Every tick of a
   box used to package and send everything you share with that family, immediately - so working down
   a column of categories sent the whole lot once per column, and the other side watched the marks

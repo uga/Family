@@ -2015,7 +2015,7 @@ before reaching it, so it is exercised with a window open now; and the remembere
 by nothing until the bad-read case above was written down as a check.
 ---
 
-## 31. Every grant re-sends everything, and the wire is 2 KB a second — HALF DONE 2026-09-06
+## 31. Every grant re-sends everything, and the wire is 2 KB a second — DONE 2026-09-06
 
 **Reported by Alberto on 2026-09-06**, from linking with the family aliased *Serena* the day
 before: she ticked her columns quickly, and on his side the marks took *"a good minute or two"* to
@@ -2058,9 +2058,18 @@ offering rather than the flag that changed, so the *first* time a family grants 
 it is still every record on the wire at 2 KB a second. That is the shape below, and it is now a
 question of how big one exchange is rather than how many there are.
 
-**Not built.** The shape is a message that carries the grants alone when only grants changed,
-leaving the data to the exchange that follows — which is a protocol addition and has to be
-readable by a Family that has never heard of it, so it is not a five-minute change. Two things to
-decide before any of it: whether a grant change should send at all before the player has finished
-clicking, and whether the promise that a *withdrawal* is prompt (the reason `grantsChanged` does
-not wait, written at `Wide.lua`) can be kept by sending the grants without the payload.
+**And built the same day, once the premise above was measured and found wrong.** This entry said
+the fix was "a protocol addition and has to be readable by a Family that has never heard of it".
+It is not. `onData` **merges** `members` and forgets on `offering` — it has done since it was
+written — so a partial `members` is already correct on every client in existence. Nothing new goes
+on the wire; what changed is how much of the old thing does.
+
+Each side now keeps a mark per member in the link, on disk, and carries only the members whose
+records have moved since it last sent them. The `offering` list is still sent whole, always: it is
+a list of keys, it costs nothing, and it is what keeps *unchanged* and *withdrawn* two different
+sentences. A grant settling also stops sending `want`, so a decision about our own flags no longer
+makes the other side reply with their entire offering.
+
+*Update now* sends everything, because that is the button somebody presses when a thing looks
+wrong. A link made or remade forgets its marks rather than forcing a full send, which says the
+true thing: we do not know what they hold.

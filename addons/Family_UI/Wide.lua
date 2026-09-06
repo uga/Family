@@ -675,7 +675,12 @@ local function build(frame)
             end)
 
             nextButton(L["Update now"], BUTTON_FAR, function()
-                local ok, count = Family.Wide:ExchangeWith(entry.id, "asked for")
+                -- **Everything**, whether or not this side thinks they already have it.
+                -- This is the button somebody presses when something looks wrong, and one
+                -- that answered "nothing has changed" would be no use to them. Every other
+                -- exchange sends what has changed since the last one (backlog 31).
+                local ok, count = Family.Wide:ExchangeWith(entry.id, "asked for",
+                    { full = true })
                 -- "Could not: none of their six characters are online" reads as a sentence
                 -- with its verb missing, and it was one. What could not be done is the
                 -- update this button offers, and the reason that follows is a clause of its

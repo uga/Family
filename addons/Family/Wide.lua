@@ -570,23 +570,101 @@ end
 -- An exchange is two halves that do not depend on each other: what we send is decided by our
 -- grants, what we receive is decided by theirs. Asking is therefore also offering, and one
 -- round trip carries both directions - §6 asks for exactly that.
-function Wide:ExchangeWith(familyID, why)
+-- **What of the offering is worth putting on the wire this time.**
+--
+-- The receiving side merges `members` and forgets on `offering` - `onData` above does exactly
+-- that, and has since it was written - so a partial `members` is already correct on every
+-- client that exists, including ones far older than this. Nothing new goes on the wire here:
+-- what changes is how much of the old thing does.
+--
+-- Backlog 31. Every exchange used to carry every granted member's whole record: their bags,
+-- equipment, professions, quests, mail, auctions, reputations, money, currencies. That happens
+-- on every login of either side, on every grant, and on every Update now - and almost none of
+-- it has changed since the last time. `Comm` moves two kilobytes a second by design.
+--
+-- The marks live in the link and therefore on disk, which is the point: a login is the case
+-- this is for, and a table rebuilt each session would resend everything once a day per client.
+--
+-- **A mark that cannot be worked out means send**, which is the §2.2 shape pointed at our own
+-- bookkeeping: not knowing whether a record changed is not knowing, and the cheap answer to
+-- not knowing is the honest one.
+local function worthSending(link, members, full)
+    link.sent = link.sent or {}
+
+    local marks, sending, held = {}, {}, 0
+
+    for memberKey, entry in pairs(members) do
+        local mark = Family.Codec:Fingerprint(entry)
+        marks[memberKey] = mark
+
+        if full or mark == nil or link.sent[memberKey] ~= mark then
+            sending[memberKey] = entry
+        else
+            held = held + 1
+        end
+    end
+
+    return sending, marks, held
+end
+
+-- `full` sends everything whether or not it has changed; `ask` sends the second half of the
+-- exchange, the request for theirs.
+--
+-- **Asking is on by default and sending everything is not**, which is the way round it took two
+-- goes to get right. Logins are where this costs: both sides exchange on every hello, and a
+-- default of *send everything* would have left the largest and most frequent case exactly as
+-- expensive as before. The marks exist so that catching up and resending are different things.
+--
+-- `full` is for the *Update now* button, and only that: it is what somebody presses when a
+-- thing looks wrong, and a button that answers "nothing has changed" is no use to them. A link
+-- being made or remade is covered instead by forgetting the marks, which is a truer statement
+-- of the same idea - we do not know what they hold, rather than we insist on resending.
+--
+-- The one caller that wants neither is a grant settling: that is us telling them a decision we
+-- took, and asking for their whole offering because one of our own flags moved was the other
+-- half of the waste this is about.
+function Wide:ExchangeWith(familyID, why, options)
     if not self:Enabled() then return false, L["Wide Family is not switched on"] end
 
     local link = self:Links()[familyID]
     if not link then return false, L["no such link"] end
 
+    local full = options ~= nil and options.full == true
+    local ask = (options == nil) or options.ask ~= false
+
     local members, count = self:Offering(link)
+    local sending, marks, held = worthSending(link, members, full)
 
     local ok, problem = send(link, "data", envelope({
-        members = members,
+        members = sending,
         -- Which members we are *not* offering matters as much as which we are: it is how
         -- the other side knows to forget one that was withdrawn, rather than keeping a
         -- stale copy for ever because nothing arrived to replace it.
+        --
+        -- **Always the whole list**, never only the ones being sent. It is a list of keys and
+        -- costs nothing, and it is what makes holding a member back safe: everything named
+        -- here and not carried above is *unchanged*, which is a different sentence from
+        -- *withdrawn* and has to stay one.
         offering = self:GrantedKeys(link),
     }), true)
 
     if not ok then return false, problem end
+
+    -- Remembered only once the client has taken it. `send` says whether it was queued, which
+    -- is not the same as delivered - so a transfer that dies half way leaves this side
+    -- believing they have something they do not. That is what `onWant` answering in full is
+    -- for: any exchange the other side starts refills them, and both sides start one at every
+    -- login.
+    for memberKey, mark in pairs(marks) do
+        if sending[memberKey] and mark then link.sent[memberKey] = mark end
+    end
+
+    -- And nothing remembered about somebody we no longer offer. Left in, a member granted,
+    -- withdrawn and granted again would match a mark from before the withdrawal and never be
+    -- sent - the other side dropped them on the `offering` list and would never get them back.
+    for memberKey in pairs(link.sent) do
+        if members[memberKey] == nil then link.sent[memberKey] = nil end
+    end
 
     -- Bulk, although it is one line long.
     --
@@ -595,11 +673,12 @@ function Wide:ExchangeWith(familyID, why)
     -- message until the character has proved they are there. Sent eagerly, it went out
     -- beside the canary and cost a second refusal from the client for somebody who was not
     -- online - which is the whole of what the canary is for.
-    send(link, "want", envelope({}), true)
+    if ask then send(link, "want", envelope({}), true) end
 
     link.lastAsked = time()
-    Family:Debug("wide: exchanged with %s (%d members offered, %s)",
-        tostring(Wide:Called(link)), count, tostring(why or "on request"))
+    Family:Debug("wide: exchanged with %s (%d offered, %d sent, %d unchanged, %s)",
+        tostring(Wide:Called(link)), count, count - held, held,
+        tostring(why or "on request"))
 
     return true, count
 end
@@ -812,6 +891,12 @@ local function dropPendingFor(link)
     return dropped
 end
 
+-- Everything again, next time. A link that has just been made, or remade, is a side that may
+-- hold nothing of ours at all - and the marks are a claim about what they already have.
+local function forgetWhatTheyHold(link)
+    if type(link) == "table" then link.sent = nil end
+end
+
 local function onLinked(_, text, sender)
     local body = Family.Codec:FromWire(text)
     if type(body) ~= "table" or type(body.family) ~= "string" then return end
@@ -845,6 +930,13 @@ local function onLinked(_, text, sender)
         members = {},
         auto = true,
     }
+
+    -- **A link being made or remade means they may hold nothing of ours**, whatever this side
+    -- last believed about them. The marks `ExchangeWith` keeps are a claim about their disk,
+    -- and this is the moment that claim stops being safe to make - somebody who reinstalled and
+    -- linked again would otherwise be told, correctly and uselessly, that nothing has changed.
+    forgetWhatTheyHold(wide.links[body.family])
+
     noteHeard(wide.links[body.family], sender)
     wide.links[body.family].version = body.version
 
@@ -1091,8 +1183,12 @@ Wide.GRANT_SETTLE = 3
 local function grantsChanged(self, familyID)
     Family.Database:Changed("wide")
 
+    -- Only what changed, and no request for theirs. This is us telling them a decision we
+    -- took; their records are their business and we heard about them the last time either
+    -- side said hello. Asking for a whole offering because one of our own flags moved was
+    -- the other half of what made ticking a column expensive (backlog 31).
     Family:After(self.GRANT_SETTLE or 0, "wide.grants." .. tostring(familyID), function()
-        self:ExchangeWith(familyID, "a grant changed")
+        self:ExchangeWith(familyID, "a grant changed", { full = false, ask = false })
     end)
 end
 

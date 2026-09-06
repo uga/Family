@@ -21065,6 +21065,195 @@ print("a realm heading on the Wide Family panel is not cut short")
 end)()
 
 print()
+print("a fingerprint is about the data, not about the table")
+
+-- **The property the whole saving rests on.** A mark that changes when nothing has is a mark
+-- that never matches, and the exchange below would quietly go on sending everything for ever
+-- while every check about it still passed. `pairs` has no order, and the thing being marked is
+-- built fresh every time, so the walk sorts its keys rather than trusting the layout.
+;(function()
+	local function build(order)
+		local out = {}
+		for _, key in ipairs(order) do out[key] = key .. "-value" end
+		return out
+	end
+
+	-- The same content, put in from opposite ends. Enough keys that they cannot all live in a
+	-- table's array part, which is the part that does have an order.
+	local names = { "alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel",
+		"india", "juliet", "kilo", "lima" }
+	local backwards = {}
+	for index = #names, 1, -1 do backwards[#backwards + 1] = names[index] end
+
+	check("the same data laid out two ways marks the same",
+		Family.Codec:Fingerprint(build(names)) == Family.Codec:Fingerprint(build(backwards)),
+		Family.Codec:Fingerprint(build(names)) .. " against "
+			.. Family.Codec:Fingerprint(build(backwards)))
+
+	-- Nested, because a member's record is tables inside tables and the walk recurses.
+	check("and so does the same data nested two ways",
+		Family.Codec:Fingerprint({ meta = build(names), payload = build(backwards) })
+			== Family.Codec:Fingerprint({ payload = build(names), meta = build(backwards) }),
+		"nested")
+
+	-- And it still notices a change, which is the other half: a mark that never changes would
+	-- pass everything above and hold every record back for ever.
+	local one = build(names)
+	local two = build(names)
+	two.echo = "something else"
+	check("while a single field moving changes it",
+		Family.Codec:Fingerprint(one) ~= Family.Codec:Fingerprint(two))
+
+	-- Including a field appearing or going away, not only one whose value moved.
+	local three = build(names)
+	three.mike = "new"
+	check("and so does a field arriving",
+		Family.Codec:Fingerprint(one) ~= Family.Codec:Fingerprint(three))
+
+	local four = build(names)
+	four.alpha = nil
+	check("and one leaving", Family.Codec:Fingerprint(one) ~= Family.Codec:Fingerprint(four))
+
+	-- Types are part of it: 1 and "1" are different data and must not share a mark.
+	check("and a number is not its own spelling",
+		Family.Codec:Fingerprint({ a = 1 }) ~= Family.Codec:Fingerprint({ a = "1" }))
+end)()
+
+print()
+print("an exchange carries what changed, not everything again")
+
+-- **Backlog 31's other half.** Every exchange used to send every granted member's whole record -
+-- bags, equipment, professions, quests, mail, auctions, reputations, money - and that happens on
+-- every login of either side, every grant, and every Update now. Almost none of it has changed
+-- since last time, and `Comm` moves two kilobytes a second by design.
+--
+-- No protocol changed: `onData` merges `members` and forgets on `offering`, and has since it was
+-- written, so a partial `members` is already right on every client that exists. What is new is
+-- only how much of the old thing goes.
+;(function()
+	local held = FamilyDB.wide
+	local key = "Shared-Fire Maw"
+
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["thrifty"] = { name = "Thrifty lot", grants = {}, siblings = {},
+			members = {} } },
+	}
+	local link = Family.Wide:Links()["thrifty"]
+
+	-- A member of ours with something granted, so there is a payload to hold back or resend.
+	--
+	-- **With a `seen` stamp**, which every member Family has actually read has and which this
+	-- fixture wanted twice before it got one. `offering` sets `out.seen = meta.seen or time()`,
+	-- so a member nobody has ever looked at genuinely is a different record on every exchange
+	-- and is right to be resent - the mark is not wrong there, the record is.
+	Family.Database:SetMeta(key, { name = "Shared", realm = "Fire Maw", classFile = "PRIEST",
+		level = 60, faction = "Alliance", money = 1234, seen = time() - 60 })
+	Family.Wide:Grant("thrifty", key, "possessions", true)
+
+	-- What one exchange actually put on the wire, read off the envelope rather than counted:
+	-- the question is which members were carried, and a count of messages cannot answer it.
+	local carried
+	local realSend = Family.Comm.Send
+	-- Answering true, because `ExchangeWith` gives up when the send reports a failure and does
+	-- not record what it believes the other side now holds - which is right, and which made the
+	-- first draft of this block check nothing at all: every mark stayed nil, so every exchange
+	-- looked like the first one.
+	Family.Comm.Send = function(_, kind, text)
+		if kind == "data" then
+			local body = Family.Codec:FromWire(text)
+			carried = {}
+			for memberKey in pairs((body or {}).members or {}) do
+				carried[memberKey] = true
+			end
+			carried.__offering = {}
+			for _, memberKey in ipairs((body or {}).offering or {}) do
+				carried.__offering[memberKey] = true
+			end
+		end
+		return true
+	end
+
+	carried = nil
+	Family.Wide:ExchangeWith("thrifty", "first time")
+	check("the first exchange carries the member", carried and carried[key] == true,
+		tostring(carried and carried[key]))
+
+	carried = nil
+	Family.Wide:ExchangeWith("thrifty", "nothing has changed")
+	check("and a second one, with nothing changed, does not carry them again",
+		carried ~= nil and carried[key] == nil, tostring(carried and carried[key]))
+
+	-- **But still names them as offered**, which is what makes holding them back safe: the far
+	-- side forgets anybody missing from that list, so "unchanged" and "withdrawn" have to stay
+	-- two different sentences. Left out of both, a member would be deleted over there.
+	check("while still saying they are offered, so nobody is forgotten",
+		carried ~= nil and carried.__offering[key] == true,
+		tostring(carried and carried.__offering[key]))
+
+	-- **Something the grant actually carries changes**, and they go again.
+	--
+	-- The first draft moved their money, and the check failed - rightly. Money is a category of
+	-- its own and a possessions grant does not carry it, so nothing about what this side offers
+	-- had changed and holding them back was the correct answer. Levelling up is in `IDENTITY`,
+	-- which travels with every grant there is.
+	Family.Database:SetMeta(key, { level = 61 })
+	carried = nil
+	Family.Wide:ExchangeWith("thrifty", "something moved")
+	check("a member whose record has changed is carried again",
+		carried and carried[key] == true, tostring(carried and carried[key]))
+
+	-- And asked for in full, whatever the marks say. Update now is the button somebody presses
+	-- when a thing looks wrong, and a button that answers "nothing has changed" is no use.
+	carried = nil
+	Family.Wide:ExchangeWith("thrifty", "asked for", { full = true })
+	check("and everything goes when the exchange is asked to send everything",
+		carried and carried[key] == true, tostring(carried and carried[key]))
+
+	-- A withdrawal, then the same grant back: the far side dropped them on the offering list, so
+	-- a mark left over from before would hold them back for ever.
+	Family.Wide:Grant("thrifty", key, "possessions", false)
+	Family.Wide:ExchangeWith("thrifty", "withdrawn")
+	Family.Wide:Grant("thrifty", key, "possessions", true)
+	carried = nil
+	Family.Wide:ExchangeWith("thrifty", "granted again")
+	check("a member withdrawn and granted again is sent, not held back by a stale mark",
+		carried and carried[key] == true, tostring(carried and carried[key]))
+
+	-- And a fresh link knows nothing about what they hold.
+	Family.Wide:Links()["thrifty"].sent = nil
+	carried = nil
+	Family.Wide:ExchangeWith("thrifty", "as if new")
+	check("a link with no marks sends everything", carried and carried[key] == true,
+		tostring(carried and carried[key]))
+
+	-- **And a grant settling does not ask them for theirs.**
+	--
+	-- An exchange is two halves - here is ours, now send yours - and that is right for a hello
+	-- or for Update now, where both sides are catching up. A grant is us telling them a decision
+	-- we took about our own flags, and answering it with their entire offering was the other
+	-- half of what made ticking a column expensive. Counted by kind, because the difference is a
+	-- message that goes or does not.
+	local asked = 0
+	Family.Comm.Send = function(_, kind)
+		if kind == "want" then asked = asked + 1 end
+		return true
+	end
+
+	Family.Wide:ExchangeWith("thrifty", "a hello")
+	check("an ordinary exchange asks them for theirs", asked == 1, tostring(asked))
+
+	asked = 0
+	Family.Wide:ExchangeWith("thrifty", "a grant changed", { full = false, ask = false })
+	check("and a grant settling does not, because it is telling rather than asking",
+		asked == 0, tostring(asked))
+
+	Family.Comm.Send = realSend
+	Family.Database:Forget(key)
+	FamilyDB.wide = held
+end)()
+
+print()
 print("two links settle apart from each other")
 
 -- **Why the settle's key carries the family id.** `Family:After` replaces a pending call under

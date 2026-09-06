@@ -109,6 +109,66 @@ function Codec:CanTalk()
     return (LibSerialize and LibDeflate) and true or false
 end
 
+-- A short mark that changes when the thing does, and does not otherwise.
+--
+-- For deciding whether something is worth sending again, and for nothing else. It is never sent:
+-- each side works one out about its own data and compares it only against what it itself last
+-- sent.
+--
+-- **Its own walk, with the keys sorted**, and that is the whole reason this is not three lines
+-- over `LibSerialize:Serialize`. That library writes a table by walking `pairs`, and `pairs` has
+-- no order: the thing being fingerprinted here is built fresh on every exchange, so two runs
+-- over identical data can lay the keys out differently and produce two different strings. A mark
+-- that changes when nothing has is a mark that never matches, and the saving it was written for
+-- would quietly never happen. Written the first way and caught by its own check.
+--
+-- A number, folded over the keys and the leaves. A collision means one member's record is not
+-- sent when it should have been, which the far side repairs by asking; paying for a real digest
+-- of every member on every exchange to make that rarer is the wrong trade.
+local FINGERPRINT_DEPTH = 12
+
+local function fold(sum, text)
+    for index = 1, #text do
+        sum = (sum * 31 + text:byte(index)) % 4294967291
+    end
+    return sum
+end
+
+local function mark(sum, value, depth)
+    local kind = type(value)
+
+    if kind == "table" then
+        if depth > FINGERPRINT_DEPTH then return fold(sum, "deep") end
+
+        -- Sorted, so that the answer is about the data and not about how the table happens to
+        -- be laid out. Keys of two types cannot be compared, so the type goes into the sort
+        -- as well as into the fold.
+        local keys = {}
+        for key in pairs(value) do
+            keys[#keys + 1] = key
+        end
+        table.sort(keys, function(a, b)
+            local left, right = type(a), type(b)
+            if left ~= right then return left < right end
+            if left == "number" then return a < b end
+            return tostring(a) < tostring(b)
+        end)
+
+        sum = fold(sum, "{")
+        for _, key in ipairs(keys) do
+            sum = fold(sum, type(key) .. ":" .. tostring(key) .. "=")
+            sum = mark(sum, value[key], depth + 1)
+        end
+        return fold(sum, "}")
+    end
+
+    return fold(sum, kind .. ":" .. tostring(value))
+end
+
+function Codec:Fingerprint(data)
+    return tostring(mark(0, data, 0))
+end
+
 function Codec:ToWire(data)
     if not self:CanTalk() then
         return nil, "the serialisation libraries are not loaded"
