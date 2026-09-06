@@ -16085,6 +16085,87 @@ end)()
 
 
 print()
+print("the recipe names, asked for before anybody clicks")
+
+-- Reported from play: on a cold client, opening Professions froze the game for about ten seconds
+-- and then drew normally, once per character with a long list. The panel is not what is slow -
+-- timed in the game, the whole draw is 34 ms - and what follows it is the client fetching three
+-- hundred items it has never seen. So the work cannot be made smaller, only moved off the click.
+;(function()
+	local asked = {}
+	local held = Family.Names.Item
+	Family.Names.Item = function(self, id, ...)
+		asked[#asked + 1] = id
+		return held(self, id, ...)
+	end
+
+	local heldCached = Family.Names.CachedItem
+	Family.Names.CachedItem = function() return nil end
+
+	Family.UI:ForgetRecipeWarmUp()
+
+	-- One member per call, so the decoding is spread as well as the asking. A run that took
+	-- the lot would stall exactly where the click used to.
+	-- Given its own recipes rather than borrowing whatever the run has left lying about: by
+	-- this point in the file no member has any, so the block would have been measuring nothing.
+	local key = Family:CurrentMember()
+	local payload = Family.Database:Payload(key) or {}
+	local heldProfessions = payload.professions
+
+	payload.professions = { [164] = { recipesSeen = time(), recipes = {
+		{ spellID = 2661, itemID = 2864 }, { spellID = 3115, itemID = 3486 },
+		{ spellID = 3116, itemID = 3487 }, { spellID = 3117, itemID = 3488 },
+		{ spellID = 3118, itemID = 3489 }, { spellID = 3119, itemID = 3490 },
+	} } }
+	Family.Database:SetPayload(key, payload)
+	Family.UI:ForgetRecipeWarmUp()
+
+	local first, done = Family.UI:WarmRecipeNames(3)
+	check("the warm-up asks for a few names and no more", first == 3, tostring(first))
+	check("and does not claim to be finished while there is a queue", done == false,
+		tostring(done))
+
+	-- Called again it carries on from where it stopped rather than starting over.
+	local before = #asked
+	Family.UI:WarmRecipeNames(3)
+	check("calling it again asks for more", #asked > before, tostring(#asked))
+
+	-- And it reaches the end and says so, rather than ticking for ever over an empty queue.
+	local rounds = 0
+	repeat
+		local _, finished = Family.UI:WarmRecipeNames(50)
+		rounds = rounds + 1
+		done = finished
+	until done or rounds > 200
+	check("and it finishes", done == true, tostring(rounds) .. " rounds")
+
+	-- **A name the client already knows is not work.** Counting one would let a warm client
+	-- report a full budget every call while asking for nothing, and the timer would go on
+	-- running until the queue emptied by arithmetic rather than by answers.
+	Family.Names.CachedItem = function() return "already known" end
+	Family.UI:ForgetRecipeWarmUp()
+
+	-- Guarded, like the loop above it. A mutation that stops the warm-up ever saying it has
+	-- finished should turn a check red, and the first version of this hung the harness instead
+	-- - which reads as an infrastructure fault rather than as the finding it is.
+	local none, safety = 0, 0
+	repeat
+		local got, finished = Family.UI:WarmRecipeNames(50)
+		none = none + got
+		done = finished
+		safety = safety + 1
+	until done or safety > 200
+	check("and a warm client still reaches the end", done == true, tostring(safety))
+	check("a client that already knows the names asks for nothing at all", none == 0,
+		tostring(none))
+
+	Family.Names.Item, Family.Names.CachedItem = held, heldCached
+	payload.professions = heldProfessions
+	Family.Database:SetPayload(key, payload)
+	Family.UI:ForgetRecipeWarmUp()
+end)()
+
+print()
 print("how fast a character can get about")
 
 -- Asked for from play as *has this alt got a mount, and is it the fast one*. Both halves were

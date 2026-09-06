@@ -770,6 +770,109 @@ function UI:WarmCooldownNames()
 	return asked
 end
 
+-- Ask the client about the recipe items before somebody opens a profession.
+--
+-- Reported from play: on a client started cold, opening Professions froze the game for about ten
+-- seconds and then drew normally, once per character with a long recipe list and never again.
+--
+-- **The panel is not what is slow.** Timed in the game with `debugprofilestart`, the whole draw is
+-- **34 ms**. What follows it is the client fetching three hundred items it has not been told about
+-- this session.
+--
+-- *This session* and not ever: the first note here said the client keeps them on disk, which
+-- Alberto refused on the evidence - a full restart pays the cost again, so whatever the client
+-- keeps, it does not keep that. Nothing here measured it and nothing here needed to; the claim was
+-- asserted and is withdrawn.
+--
+-- So the work cannot be made smaller from here, only moved. This asks for the same ids a few at a
+-- time, from the moment the player logs in, so that by the time anybody clicks the answers are
+-- already there.
+--
+-- Spread twice over, because both halves cost. One member's record is decoded per call - decoding
+-- thirty at once is its own stall - and at most `budget` unnamed ids are asked for per call. An id
+-- the client has already named is skipped without being counted, so a warm client finishes the
+-- whole queue in a few calls rather than pretending to work.
+--
+-- **A notice was considered and is not possible.** Nothing can be drawn while the client is
+-- blocked, so a line saying *reading* would appear after the freeze it was meant to explain.
+local warmQueue, warmAt, warmPending
+
+function UI:WarmRecipeNames(budget)
+	budget = budget or 40
+
+	if not warmQueue then
+		warmQueue, warmAt, warmPending = {}, 1, {}
+		for key in pairs(Family.Database:Members()) do
+			warmQueue[#warmQueue + 1] = key
+		end
+		-- Sorted, so two runs of this walk the members in the same order and a check can
+		-- say where it got to - and then the character being played is moved to the front,
+		-- because they are the one somebody is about to open. Alphabetical order would
+		-- otherwise spend the first half-minute on members nobody is looking at.
+		table.sort(warmQueue)
+
+		local playing = Family:CurrentMember()
+		for index, key in ipairs(warmQueue) do
+			if key == playing then
+				table.remove(warmQueue, index)
+				table.insert(warmQueue, 1, key)
+				break
+			end
+		end
+	end
+
+	-- One member's payload per call. `Database:Payload` decodes and then caches for the
+	-- session, so this is the decode being spread rather than a second one being paid.
+	if #warmPending == 0 and warmAt <= #warmQueue then
+		local payload = Family.Database:Payload(warmQueue[warmAt]) or {}
+		warmAt = warmAt + 1
+
+		for _, record in pairs(payload.professions or {}) do
+			for _, recipe in ipairs(record.recipes or {}) do
+				if recipe.itemID then
+					warmPending[#warmPending + 1] = recipe.itemID
+				end
+			end
+		end
+	end
+
+	local asked = 0
+	while #warmPending > 0 and asked < budget do
+		local id = table.remove(warmPending)
+		-- Already named costs nothing and is not work: counting it would let a warm
+		-- client report a full budget while asking for nothing.
+		if not Family.Names:CachedItem(id) then
+			Family.Names:Item(id)
+			asked = asked + 1
+		end
+	end
+
+	return asked, #warmPending == 0 and warmAt > #warmQueue
+end
+
+-- Reachable so a check can start it over rather than depend on whatever the run before left.
+function UI:ForgetRecipeWarmUp()
+	warmQueue, warmAt, warmPending = nil, nil, nil
+end
+
+Family:OnDatabaseReady("recipes.warm", function()
+	Family:RegisterEvent("PLAYER_ENTERING_WORLD", "recipes.warm", function()
+		UI:ForgetRecipeWarmUp()
+
+		-- Every second until the queue is empty, and then it stops. A timer that went on
+		-- ticking over a finished queue would be a heartbeat nobody asked for.
+		local function step()
+			local _, done = UI:WarmRecipeNames()
+			if done then return end
+			Family:After(1, "recipes.warm", step)
+		end
+
+		-- Late enough that the client has finished its own arrival. The cooldown warm-up
+		-- next door starts at two seconds and this is the heavier of the two.
+		Family:After(6, "recipes.warm", step)
+	end)
+end)
+
 Family:OnDatabaseReady("cooldowns.notice", function()
 	Family:RegisterEvent("PLAYER_ENTERING_WORLD", "cooldowns.notice", function()
 		-- Well before the line is written, and not on the same beat: the whole point is
