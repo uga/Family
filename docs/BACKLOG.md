@@ -1944,6 +1944,12 @@ has a death knight to look with.
 client's sheet actually said, so it is right about poisons whichever of us was right about them,
 and it will be right about runeforging without anybody having to settle it first.
 
+**And they cannot be unlearned anyway**, which Alberto pointed out and which closes the worry
+underneath the question: a skill that can never leave the sheet can never be read as having left
+it, so the prune cannot reach lockpicking or poisons however the marking works out. Burning
+Crusade is the same as Era - he checked. See *What the skill sheet actually holds* in
+[`DATASOURCES.md`](DATASOURCES.md).
+
 The mark is set once and never unset, which is not decoration: a scan whose sheet could not be
 read at all, with that profession's own window open, would otherwise clear it - and one bad read
 would disable the rule for that profession for ever.

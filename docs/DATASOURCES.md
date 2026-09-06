@@ -1046,6 +1046,36 @@ and neither would the spellbook. The spells that grant them (124694, 125584, 125
 by `SpellEffect` 118) are the trainer's, and whether any of them stays in a character's book is
 unmeasured. See backlog 24.
 
+### What the skill sheet actually holds, measured 2026-09-06
+
+From two screenshots of the character sheet's *Skills* tab, an Era rogue and a Burning Crusade
+rogue, and they are the same shape. One list, three headings, and **the scanner reads all three**:
+
+| heading | on it |
+|---|---|
+| Class Skills | Assassination, Combat, **Lockpicking**, **Poisons**, Subtlety |
+| Professions | Leatherworking, Skinning, Engineering, Mining … |
+| Secondary Skills | Cooking, First Aid |
+
+**So lockpicking and poisons come off the sheet like anything else.** The scanner said otherwise
+in a comment for weeks - *a profession the skill list does not carry: rogue poisons* - and it was
+wrong; the branch it justifies has never fired for them.
+
+**And they cannot be unlearned**, which is Alberto's own note and is the part that matters for
+pruning: a skill that cannot leave the sheet can never be read as having left it, so the prune in
+`Scanners/Professions.lua` can never reach them however the marking works out.
+
+**The three talent trees are on that list too, and are not professions**, which is visible in the
+same screenshot: *Assassination*, *Combat* and *Subtlety* appear under Class Skills with **no
+rank and no maximum**. `readSkillList` requires `maxRank > 1` before calling anything a
+profession, so they reach `everything` - the widest set, used only to tell "the sheet was read"
+from "the sheet could not be read" - and never reach `skills`. Without that one test a rogue's
+professions column would lead with *Assassination*.
+
+**Burning Crusade is the same as Era here.** Mists is unmeasured, and the one case still resting
+on a comment rather than a screenshot is a death knight's runeforging - *a window full of things
+they can make and no skill anywhere*.
+
 ### Which professions make nothing, measured 2026-09-06
 
 The professions panel used to file herbalism, skinning, fishing and a rogue's lockpicking under
