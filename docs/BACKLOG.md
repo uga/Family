@@ -2477,3 +2477,8 @@ of the ready-count check was measuring five running alchemists and asking why no
 
 Eight checks, six mutations, all reddening. Six existing checks moved from columns to blocks.
 
+**Confirmed in play 2026-09-06** - *love it.* Four timers as four blocks: Salt Shaker with Rolando
+of Serena ready above Ocio at 1d 11h, then Alchemy, Brilliant Glass and Enchanting each with their
+one crafter, every block carrying its *1 ready*. Two of the four crafters are a linked family's
+and are named as such on their own line, which is the half the grid's headings used to carry.
+
