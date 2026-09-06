@@ -1249,6 +1249,27 @@ was added to the table the same day, so it is a lookup against the five rows abo
 build. What is missing is a reason to do it now - nobody in this family is on Mists - and a way to
 check it against a live client of that build.
 
+**And there is no such thing as a 310% mount**, which is Alberto's question asked the other way
+round. `MountTypeXCapability` settles it: a mount has a *type*, and the type is what holds the
+ladder.
+
+| Mount type | Mounts of it | Riding rungs it has |
+|---|---|---|
+| 230 (ground) | 291 | 75, 150 — **and no more** |
+| 248 (flying) | 208 | 75, 150, 225, 300, 375 |
+| 263 (special) | 16 | 75 … 375, with extra rows |
+
+So a flying mount serves every rung: bought at Expert it flies at 150%, and the **same** mount
+flies at 310% the day Master Riding is learned. Nothing is gated by being too fast for its owner,
+and nothing has to be bought again. The mirror is true too and is the part worth remembering: a
+ground mount tops out at Journeyman's 100% however high the riding skill goes, because its type has
+no rung above 150.
+
+**Which makes the fix two lookups and not one.** The rank alone is not enough - a character with
+Master Riding and none but ground mounts flies at nothing - so it wants the mount's type as well.
+`Mount.db2` carries `MountTypeID` against `SourceSpellID`, 526 rows on that build, so the shipped
+table would gain a type per spell and the rank would do the rest.
+
 **Not built.** Written down because it is a *known* wrong answer rather than an unknown one, which
 is the difference between a limit and a bug nobody has met yet.
 

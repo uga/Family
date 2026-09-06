@@ -1915,6 +1915,19 @@ to the aura that applies the speed.
 | 300 Artisan | 86460 | +100% | **+280%** |
 | 375 Master | 86461 | +100% | **+310%** |
 
+And the mount's **type** is what says which of those rungs apply to it - `MountTypeXCapability`,
+measured on the same build:
+
+| Mount type | Mounts of it | Riding rungs |
+|---|---|---|
+| 230 ground | 291 | 75, 150 only |
+| 248 flying | 208 | 75, 150, 225, 300, 375 |
+
+So there is no such thing as a *310% mount*: a flyer bought at Expert flies at 150% and the same
+flyer flies at 310% once Master Riding is learned, with nothing bought again and nothing gated by
+being too fast for its owner. And a ground mount stops at Journeyman's 100% however high the skill
+goes, because its type has no rung above 150.
+
 So from Cataclysm onward the mount carries no speed of its own and the skill carries all of it.
 **Which means the reading in `Mounts.lua` is right for Era and Burning Crusade and wrong for
 Mists**, where it should be `skills[762].rank` against the table above. Written down rather than
