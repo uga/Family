@@ -1169,27 +1169,26 @@ local function build(frame)
 			-- fixes. Reported from play 2026-09-06, from a screenshot of that line.
 			if skill.weapon or Family:IsRidingSkill(id) then
 				-- nothing here, on purpose
-			elseif skill.class and skill.rank
-				and not (record and record.recipes and #record.recipes > 0) then
-				-- **Lockpicking**, which is the one thing a rogue has that this panel
-				-- can neither list nor honestly call missing. Asked for on the same
-				-- screenshot: it was silent here, and silence reads as *Family does
-				-- not know about it* rather than as *there is nothing to show*.
-				--
-				-- Said in its own words rather than dropped into "never opened". It
-				-- has a rank and it makes nothing, so there is no window that could
-				-- have been opened, and a bucket that says otherwise is wrong about
-				-- the client rather than about the record.
-				--
-				-- Guarded on the rank, which is what separates it from a death
-				-- knight's runeforging: that is a window full of things to make and
-				-- no skill anywhere, so it belongs in the list below and not here.
-				-- And guarded on having no recipes, so that a class skill Family has
-				-- actually read a window for is listed as the profession it behaves
-				-- like rather than explained away.
-				hasNoWindow[#hasNoWindow + 1] = name
 			elseif record and record.recipes and #record.recipes > 0 then
 				ordered[#ordered + 1] = { name = name, id = id, skill = skill }
+			elseif skill.rank and not Family:ProfessionMakes(id) then
+				-- **The ones with nothing to open.** Herbalism, skinning, fishing
+				-- and a rogue's lockpicking have a rank and a maximum and no window
+				-- anywhere, so both buckets below are wrong about them: they were
+				-- never opened because there is nothing to open, and saying *never
+				-- opened* is a claim about the client rather than about the record.
+				--
+				-- Alberto asked for lockpicking to be said here and then pointed out
+				-- that herbalism and skinning are the same case, which they are - so
+				-- this is asked of the shipped table rather than of `skill.class`.
+				-- **Mining is deliberately not one of them**: its window is
+				-- Smelting's, and the table says so because Smelting's recipes are
+				-- filed under Mining.
+				--
+				-- Guarded on the rank, which is what separates these from a death
+				-- knight's runeforging - a window full of things to make and no
+				-- skill anywhere, which belongs in the list proper.
+				hasNoWindow[#hasNoWindow + 1] = name
 			elseif record and record.recipes then
 				listedNothing[#listedNothing + 1] = name
 			else
@@ -1212,7 +1211,7 @@ local function build(frame)
 		-- First, because it is the only one of the three that is not a gap. The other two
 		-- say what Family has failed to read; this one says what there is nothing to read.
 		if #hasNoWindow > 0 then
-			left[#left + 1] = string.format(L["%s has a rank and no window to list"],
+			left[#left + 1] = string.format(L["%s: nothing to make, so nothing to list"],
 				table.concat(hasNoWindow, ", "))
 		end
 		if #listedNothing > 0 then

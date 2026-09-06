@@ -1046,6 +1046,39 @@ and neither would the spellbook. The spells that grant them (124694, 125584, 125
 by `SpellEffect` 118) are the trainer's, and whether any of them stays in a character's book is
 unmeasured. See backlog 24.
 
+### Which professions make nothing, measured 2026-09-06
+
+The professions panel used to file herbalism, skinning, fishing and a rogue's lockpicking under
+*never opened*, which is a claim about a client rather than about a record: there is no window
+to open. Alberto asked for lockpicking to be said properly and then pointed out that herbalism
+and skinning are the same case.
+
+**Counting rows under a skill line does not separate them.** On Era, `SkillLineAbility` gives
+Herbalism 8, Skinning 4, Fishing 5 and Mining 22 - a threshold nobody could defend.
+
+**Counting rows whose spell creates an item does**, `SpellEffect.Effect` 24:
+
+| build | Blacksmithing | Cooking | Mining | Herbalism | Skinning | Fishing | Lockpicking |
+|---|---|---|---|---|---|---|---|
+| Classic Era | 315 | 89 | 13 | 0 | 0 | 0 | 0 |
+| Burning Crusade | 385 | 116 | 21 | 0 | 0 | 0 | 0 |
+| Mists | 829 | 240 | 32 | 0 | 0 | 0 | — |
+
+**With one clause that is not optional: the spell must belong to exactly one skill line.** A
+recipe belongs to one profession; a spell filed under two is something else wearing a recipe's
+clothes. Without it Mists gives Herbalism and Skinning one maker each - the same spell, 110955,
+sitting under both - and the rule turns back into a threshold.
+
+**Mining is not a gathering profession by this test and that is correct.** Its window is
+Smelting's, and Smelting's recipes are filed under Mining, so the table answers *makes things*
+without anybody having to name it. A rule written from the sound of the words - "gathering
+professions" - would have swept it up.
+
+The flag is emitted as `makes = false` and only where it is false, so **a skill line newer than
+the shipped table is treated as an ordinary profession** and lands in the buckets that describe
+what Family did or did not read, rather than being explained away as having nothing to show.
+Thirty-one lines carry it: every weapon, every riding line, and those four.
+
 ### The same name calls on Era, measured 2026-08-30
 
 `/family guild names` on Classic Era, realm Pyrewood Village, in a 773-member guild:

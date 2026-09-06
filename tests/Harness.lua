@@ -5632,7 +5632,7 @@ check("a window opened and found empty says so",
 check("and names the likeliest reason beside it",
 	visibleText("another addon filtering or replacing that window"))
 check("and one never opened says that instead",
-	visibleText("Cooking, First Aid, Herbalism never opened"),
+	visibleText("Cooking, First Aid never opened"),
 	(function() for _, f in ipairs(fontStrings) do local t = f.__text
 		if type(t) == "string" and t:find("never opened", 1, true) then return t end end
 		return "no such line" end)())
@@ -5645,19 +5645,36 @@ check("and one never opened says that instead",
 check("while riding is not named on this panel at all",
 	not visibleText("Ram Riding"))
 
--- **And lockpicking is**, in its own words. It was silent here, and silence reads as *Family
--- does not know about it* rather than as *there is nothing to show*. It cannot go in the
--- bucket above: there is no window that could have been opened.
+-- **Herbalism is not one of them either.** It has a rank and a maximum and no window anywhere,
+-- so "never opened" was as wrong about it as it was about riding - the window it names does not
+-- exist. Alberto asked for lockpicking to be said here and then pointed out that herbalism and
+-- skinning are the same case, which the client's own tables agree with: they have no recipe
+-- that creates anything, where blacksmithing has three hundred.
+check("a profession with nothing to make says so instead of blaming a window",
+	visibleText("Herbalism: nothing to make, so nothing to list"),
+	(function() for _, f in ipairs(fontStrings) do local t = f.__text
+		if type(t) == "string" and t:find("Not listed", 1, true) then return t end end
+		return "no such line" end)())
+
+-- **And mining is deliberately not one of them**: its window is Smelting's, and the shipped
+-- table knows because Smelting's recipes are filed under Mining. A rule that swept up every
+-- gathering profession by the sound of its name would have taken this one with it.
+check("while mining, whose window is Smelting's, is not swept up with them",
+	Family:ProfessionMakes(186) == true)
+check("and a skill line this table has never heard of is treated as an ordinary profession",
+	Family:ProfessionMakes(999999) == true)
+
+-- **And lockpicking joins them**, which is what was asked for. It was silent here, and silence
+-- reads as *Family does not know about it* rather than as *there is nothing to show*.
 testerSkills[633] = { name = "Lockpicking", rank = 275, maxRank = 300, class = true }
 Family.UI:ShowProfessionFor(key, "Blacksmithing")
-check("a class skill with a rank says it has no window, rather than saying nothing",
-	visibleText("Lockpicking has a rank and no window to list"),
+check("a rogue's lockpicking is named there too",
+	visibleText("Herbalism, Lockpicking: nothing to make, so nothing to list"),
 	(function() for _, f in ipairs(fontStrings) do local t = f.__text
 		if type(t) == "string" and t:find("Not listed", 1, true) then return t end end
 		return "no such line" end)())
 check("and is not counted among the windows nobody has opened",
-	not visibleText("Lockpicking never opened")
-		and not visibleText("Lockpicking, ") and not visibleText(", Lockpicking"))
+	not visibleText("Lockpicking never opened"))
 testerSkills[633] = nil
 
 Family.UI:ShowProfessionFor(key, "Blacksmithing")

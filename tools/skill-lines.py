@@ -139,6 +139,52 @@ def fetch():
                 open(target, "wb").write(response.read())
 
 
+# **Which skill lines actually make something.**
+#
+# Borrowed from the recipe generator's cache, which already holds both tables at all three
+# builds: the same files from the same server, and asking a server given away for nothing to
+# send them twice is not a good way to use it.
+MAKERS_BORROW = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".recipe-teaches-cache")
+
+# SpellEffect 24 is "create an item". A profession with a window has hundreds of these and one
+# without has none - Herbalism, Skinning, Fishing, Lockpicking and every riding line come out at
+# nought on all three builds, and Mining comes out at 13, 21 and 32, which is Smelting and is
+# right: Mining's window is Smelting's window.
+CREATES_ITEM = "24"
+
+
+def makers():
+    """The skill lines that have at least one recipe of their own, over all three builds."""
+    found = set()
+
+    for build in BUILDS.values():
+        effects = os.path.join(MAKERS_BORROW, "SpellEffect-%s.csv" % build)
+        abilities = os.path.join(MAKERS_BORROW, "SkillLineAbility-%s.csv" % build)
+        if not (os.path.exists(effects) and os.path.exists(abilities)):
+            return None
+
+        creates = set()
+        with open(effects, encoding="utf-8") as handle:
+            for row in csv.DictReader(handle):
+                if row.get("Effect") == CREATES_ITEM and row.get("SpellID"):
+                    creates.add(int(row["SpellID"]))
+
+        # **Owned by exactly one skill line.** A recipe belongs to one profession; a spell
+        # filed under two is something else wearing a recipe's clothes. Without this clause
+        # Mists gives Herbalism and Skinning one maker each - the same spell, 110955, sitting
+        # under both - and the whole rule turns into a threshold nobody can defend.
+        owners = {}
+        with open(abilities, encoding="utf-8") as handle:
+            for row in csv.DictReader(handle):
+                owners.setdefault(int(row["Spell"]), set()).add(int(row["SkillLine"]))
+
+        for spell, lines in owners.items():
+            if spell in creates and len(lines) == 1:
+                found.add(next(iter(lines)))
+
+    return found
+
+
 def rows_of(build, locale):
     target = path_for(build, locale)
     if not os.path.exists(target):
@@ -212,6 +258,17 @@ def build_table():
         elif skill_id in CHOSEN_ICONS:
             entry["icon"] = CHOSEN_ICONS[skill_id]
 
+    # **Which of them make nothing**, said only about the ones that make nothing: absent means
+    # "makes things", so a skill line from a client newer than this table is treated as an
+    # ordinary profession rather than explained away.
+    made = makers()
+    if made is None:
+        complaints.append("no recipe cache to read: nothing marked as making nothing")
+    else:
+        for skill_id, entry in professions.items():
+            if skill_id not in made:
+                entry["makes"] = False
+
     return professions, complaints, report
 
 
@@ -272,6 +329,23 @@ function Family:IsRidingSkill(id)
 	if type(id) == "string" then id = Family.SkillLineByName[id] or id end
 	local entry = id and Family.SkillLines[id]
 	return (entry and entry.riding) == true
+end
+
+-- Whether this skill has anything to make at all.
+--
+-- Herbalism, skinning, fishing and lockpicking have a rank and a maximum and no window
+-- anywhere: nothing about them can be opened, and the professions panel used to file them
+-- under *never opened*, which is a claim about a client rather than about a record. Mining is
+-- not one of them - its window is Smelting's - and the table says so rather than a list here.
+--
+-- **Yes for anything this table has never heard of**, which is the safe way round: a skill line
+-- newer than this file is treated as an ordinary profession and lands in the buckets that
+-- describe what Family did or did not read, rather than being explained away as having nothing
+-- to show.
+function Family:ProfessionMakes(id)
+	if type(id) == "string" then id = Family.SkillLineByName[id] or id end
+	local entry = id and Family.SkillLines[id]
+	return not (entry and entry.makes == false)
 end
 """
 
@@ -335,6 +409,10 @@ def emit(professions, out_path):
             add('\t\tweapon = true,')
         if entry.get("riding"):
             add('\t\triding = true,')
+        # And this one only where it is false, for the same reason the other way round:
+        # absent means it makes things, which is what almost every line does.
+        if entry.get("makes") is False:
+            add('\t\tmakes = false,')
         icon = entry.get("icon")
         if icon is not None:
             add('\t\ticon = %s,'

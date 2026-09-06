@@ -273,9 +273,11 @@ is a decision rather than an afternoon of archaeology.
   the grey line under the profession buttons, listed among the windows Family has never seen -
   and there is no such window. It is off that page entirely now, as it already is on the summary.
 
-- **A rogue's lockpicking is acknowledged on the Professions page.** It was silent there, which
-  reads as Family not knowing about it; the grey line now says it has a rank and no window to
-  list, which is the truth about it.
+- **The Professions page stops blaming a window that does not exist.** Herbalism, skinning,
+  fishing and a rogue's lockpicking were listed among the windows Family has never opened, and
+  there is nothing to open: they make nothing. The grey line says that about them now, and says
+  it about lockpicking at all, which it never used to mention. Mining is not one of them - its
+  window is Smelting's.
 
 - **A profession recorded before Family knew its identity now draws its picture too.** Two rogues
   side by side showed one poison bottle and one clipped word: the second had not been scanned

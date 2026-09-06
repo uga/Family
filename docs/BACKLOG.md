@@ -1397,7 +1397,7 @@ of what an earlier session had written into a test fixture from memory.
 
 ---
 
-## 24. Mists' six cooking ways
+## 24. Mists' six cooking ways — SET ASIDE 2026-09-06
 
 **Named 2026-09-06**, inside Alberto's icon list for entry 23: on Mists every branch of every
 trade was removed except alchemy's, and cooking gained six of its own - Way of the Grill, Oven,
@@ -1432,3 +1432,7 @@ so replacing the trade's picture with the branch's is unambiguous. A cook can le
 ways, so there is nothing to replace cooking's picture with. Six extra cells, or a picture that
 stands for "several", or leave cooking alone - undecided, and not decidable before the probe
 says what is actually recorded.
+
+**Set aside by Alberto on 2026-09-06**, the same day it was written: *lasciamo stare le Way di
+Mists*. Left here rather than deleted because the measurement in it is the expensive part and
+would otherwise be made twice.
