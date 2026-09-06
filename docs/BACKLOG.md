@@ -2177,6 +2177,14 @@ to implement the "and n more" system above 3 item holders.* Three is `FACTION_PE
 `Character.lua`, which is the list this shape was asked for by - the precedent that matters is the
 panel he pointed at, not a tooltip that answers about one item at a time.
 
+**And the block's own first line opens and closes it**, which is the other half of the same
+comparison and arrived the moment the fold started working: *on the Reputations panel, collapsing
+an expanded list happens both by clicking on fewer OR by clicking on the first element of the
+list.* The first line and the fold line, and nothing between them - a holder's own line collapsing
+the block under it would be a surprise, and lighting every line of a block says every line does
+something. That last part was proved by nothing until a check was written for it: the mutation
+that hands the click to every line of the block passed everything.
+
 **Grouped on the key and never on the word**, because two characters of one name on two realms are
 two characters (§2.1) and two items can share a name. The item's id joins its name in the order
 for the same reason: without it, two items sharing a word interleave by how many are held and each
@@ -2189,7 +2197,7 @@ should have one sentence wherever it is asked.
 *The "How many" order groups nothing, deliberately: "most first, wherever in the family they
 happen to be" has no block to head, so every line there says all three things.*
 
-Sixteen checks, eleven mutations, all reddening - and two of the nine only after the check they were
+Twenty-one checks, fourteen mutations, all reddening - and three only after the check they were
 aimed at was rewritten. The first grouped the key and the column under one literal, so a mutation
 of the key silently turned the column off and reddened the wrong thing; the second tried to prove
 the id in the order by looking for a block holding two items, which cannot happen because blocks

@@ -27,7 +27,7 @@ is a decision rather than an afternoon of archaeology.
   where they are: **209 (62 bags, 147 bank)**, the same sentence the item's own tooltip writes.
   Sorting by character does the same the other way round - the character once, with what they are
   carrying beside them. More than three holders fold behind a line you can click, as on the
-  reputations list.
+  reputations list - and, as there, the item's own first line opens and closes them too.
 
 - **Logging in is quick again however many characters you have.** Family used to read every
   character's record once a second after login to learn what their recipes are called - four
