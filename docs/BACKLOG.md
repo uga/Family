@@ -1395,6 +1395,14 @@ of what an earlier session had written into a test fixture from memory.
 
 **Mists' cooking ways are not in this** and are entry 24.
 
+**Confirmed in play 2026-09-06**, on Alberto's own client, and this is the part no harness
+could have given: the sixteen file ids are pictures, and a picture cannot be probed - the client
+hands back whatever path it was given, so a wrong id and a right one are the same answer from
+inside. What was checked is that the branch cell draws the branch, that riding is gone from the
+professions page's grey line, and that mining is not swept in with the gatherers. The mapping
+being right rather than merely consistent - **17040 Master Hammersmith, 17041 Master Axesmith** -
+rests on that look, not on the generator.
+
 ---
 
 ## 24. Mists' six cooking ways — SET ASIDE 2026-09-06
