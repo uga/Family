@@ -2467,9 +2467,9 @@ if skills then
 	do
 		local missing = {}
 		for id, entry in pairs(Family.SkillLines) do
-			-- Lockpicking is the one skill this panel never draws: it is a class ability
-			-- and lives on the abilities page, so it is the one allowed to have none.
-			if not entry.icon and not entry.class then
+			-- Nothing is allowed to have none any more. Lockpicking was the last, and it
+			-- got a key on 2026-09-06 when it moved onto this set.
+			if not entry.icon then
 				missing[#missing + 1] = tostring(id) .. " " .. tostring(entry.key)
 			end
 		end
@@ -2487,6 +2487,15 @@ if skills then
 			Family.SkillLines[43] and Family.SkillLines[43].icon
 				== "Interface\\Icons\\INV_Sword_04",
 			Family.SkillLines[43] and tostring(Family.SkillLines[43].icon))
+		-- The two that were still words on the panel until Alberto found them in the game
+		-- and read their ids back. Poisons is `trade_brewpoison`, named for the thing;
+		-- lockpicking is a key, because nothing in the manifest is named for a lockpick.
+		check("poisons and lockpicking have theirs too",
+			Family.SkillLines[40] and Family.SkillLines[40].icon == 136242
+				and Family.SkillLines[633] and Family.SkillLines[633].icon == 134237,
+			tostring(Family.SkillLines[40] and Family.SkillLines[40].icon) .. " "
+				.. tostring(Family.SkillLines[633] and Family.SkillLines[633].icon))
+
 		check("and unarmed is the bare hand, not the gauntlet",
 			Family.SkillLines[162] and Family.SkillLines[162].icon == 132298,
 			Family.SkillLines[162] and tostring(Family.SkillLines[162].icon))
@@ -2739,8 +2748,14 @@ GetCraftName = function() return "Poisons" end
 GetCraftDisplaySkillLine = function() return "Poisons", 210, 300 end
 Family.Professions:Scan(true)
 
-local poisons = Family.Database:Payload(key).professions["Poisons"]
-check("a craft window with a skill line of its own is a profession", poisons ~= nil)
+-- **Filed under 40 and not under the word.** Poisons went into the shipped skill line table on
+-- 2026-09-06, so it has an identity like every other trade and no longer depends on which language
+-- the client that read it was set to - which is L-015's fix reaching the last thing that had
+-- escaped it. The word is what the window hands back; the id is what it is filed as.
+local poisons = Family.Database:Payload(key).professions[40]
+check("a craft window with a skill line of its own is a profession", poisons ~= nil,
+	Family.Database:Payload(key).professions["Poisons"] and "still filed under the word"
+		or "not recorded at all")
 check("and its rank is taken from the window, the only place it is stated",
 	poisons and poisons.rank == 210, poisons and tostring(poisons.rank))
 check("with its recipes", poisons and poisons.recipes and #poisons.recipes == 2,
@@ -22412,13 +22427,13 @@ print("lockpicking, which is a skill and not a profession")
 	-- once those rows became a picture and a rank: a rogue reading their own line wants it
 	-- beside the rest of what they have rather than on a second page.
 	--
-	-- Still the word rather than a picture, because the shipped table has none for it - the one
-	-- line left without. When one is chosen this check wants the markup instead.
+	-- Drawn as its picture like everything else on that set: a key, chosen off the icon sheet,
+	-- because nothing in the client's manifest is named for a lockpick.
 	Family.UI:ShowTab("summary")
 	clickLastButton(Family.L["Professions"])
 	Family.UI:Refresh()
 	check("it is on the summary, among the skills that member has",
-		drawnText("Lockpicking"))
+		drawnText("|T134237:14"), "the key it was given on 2026-09-06")
 	check("and the rank is the one recorded", drawnText("285"))
 
 	-- And gone from the page it used to be on. Two places would be worse than either.

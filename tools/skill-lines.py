@@ -36,7 +36,11 @@ LOCALES = ["enUS", "deDE", "frFR", "esES", "ruRU"]
 # "secondary skills" and is a mixed bag - racials, riding, swimming - so the four professions
 # in it are named by id rather than taken wholesale.
 PRIMARY_CATEGORY = "11"
-SECONDARY_IDS = {129, 185, 356, 794}
+SECONDARY_IDS = {129, 185, 356, 794, 40}
+# 40 is Poisons, which is category 7 with the class skills and not category 9 at all - but a rogue
+# makes things with it through a window of its own, so it belongs with cooking and first aid rather
+# than with lockpicking. Carried here so that it has an identity and a picture instead of being
+# filed under whatever word the client that read it was set to.
 
 # And riding, which is in that same mixed category and was left out of it until Alberto noticed
 # it missing from the panel - it is on the character's skill sheet beside Cooking and Fishing,
@@ -92,6 +96,8 @@ CHOSEN_ICONS = {
     95:  "Interface\\Icons\\INV_Shield_06",             # Defense
     118: "Interface\\Icons\\Ability_DualWield",         # Dual Wield
     202: 136243,                                        # Engineering - nothing better exists
+    633: 134237,                                        # Lockpicking - inv_misc_key_03
+    40:  136242,                                        # Poisons - trade_brewpoison
 }
 
 # Riding is one idea however many animals it is named after, so every riding line takes the picture

@@ -35,6 +35,18 @@
 local _, Family = ...
 
 Family.SkillLines = {
+	[40] = {
+		key = "Poisons",
+		primary = false,
+		icon = 136242,
+		names = {
+			enUS = { "Poisons" },
+			deDE = { "Gifte" },
+			frFR = { "Poisons" },
+			esES = { "Venenos" },
+			ruRU = { "Яды" },
+		},
+	},
 	[43] = {
 		key = "Swords",
 		primary = false,
@@ -508,6 +520,7 @@ Family.SkillLines = {
 		key = "Lockpicking",
 		primary = false,
 		class = true,
+		icon = 134237,
 		names = {
 			enUS = { "Lockpicking" },
 			deDE = { "Schlossknacken" },

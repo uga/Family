@@ -2037,6 +2037,15 @@ The weapon skills are paths rather than ids and were chosen the same way:
     INV_ThrowingKnife_02 Thrown    INV_Shield_06 Defense
     Ability_DualWield Dual Wield
 
+**Lockpicking is 134237** (`inv_misc_key_03`) and **Poisons is 136242** (`trade_brewpoison`), both
+found by Alberto in the game and read back by id rather than recognised from a picture. Nothing in
+Era's manifest has *lockpick* in its name, so a key is the answer there; `trade_brewpoison` is named
+for the thing outright and is better than any of the nine candidates that went on the sheet for it.
+
+Both are **skill line category 7**, with the class skills - Poisons is 40 and Lockpicking is 633 -
+which is why neither was in the shipped table before and why poisons was filed under whatever word
+the client that read it was set to.
+
 **Unarmed is 132298**, `Ability_Rogue_KidneyShot` - a bare hand striking, which is what was asked
 for after the gauntleted fist was turned down. Alberto found it in another addon's picker rather
 than on the sheet, and it was identified without guessing: reading his ItemRack sets gave three

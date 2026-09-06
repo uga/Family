@@ -19,6 +19,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Poisons and lockpicking have their own pictures**, like every other skill on that set - and
+  poisons is now recorded by identity rather than by name, so a rogue read on one client and looked
+  at on another is the same rogue.
+
 - **Lockpicking sits with a rogue's other skills.** It was on the abilities page; it is now on the
   summary's Professions set, beside cooking and first aid, where the rest of what a character has
   already is.
