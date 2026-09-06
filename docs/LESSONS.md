@@ -2188,3 +2188,33 @@ back called *Lesser Mana Oil*, out of a guild bank read four thousand lines earl
 publishes and clears them together, and `Family:ScanTooltipLine` trusts the line **count** rather
 than the region, with a check that stands up a stale region to prove it.
 
+
+---
+
+## L-058 — The summary of a list, read instead of the list
+
+`docs/BACKLOG.md` opens with a paragraph agreed on 2026-09-04 saying which entries were done and
+which were left. Asked what to build next, I read that paragraph and recommended entry 13, twice
+in one session — once at the end of one turn and again at the start of the next.
+
+Entry 13 was finished on 2026-09-05, on all three of its parts, and says so four times in its own
+body. `Contents.lua:786` draws a linked family's name after a character's, `Contents.lua:358`
+carries the three orders, `Professions.lua:168` carries the second set for the whole-family
+recipe search, and the harness presses all three possessions buttons at `Harness.lua:21816` and
+adds the panel's three column widths up out of its own source at `21976`. Nothing was left.
+
+The paragraph had gone stale the moment entries 1, 2 and 3 were finished and marked in their own
+headings — three days before it was read. It was never wrong when written; it was a **second copy
+of state that has one home**, and the copy above the entries is the one a session reaches first.
+
+This is the project's own routing rule failing on a file the rule does not name. CLAUDE.md says to
+read by section rather than summarise from memory, and I did read the file — the wrong twelve
+lines of it. **A heading is state; a paragraph about the headings is a cache, and this repository
+has no way to invalidate one.**
+
+**The check that now catches it.** Not a harness check — a document cannot be given one that is
+worth its weight. The paragraph now points at the headings instead of restating them, and carries
+the correction inline saying what it cost, so the next session that reads it first is told to go
+on to the headings. Entry 13's heading now carries its `— DONE` marker like every other finished
+entry, which is the field that was actually missing: had it been there, the wrong recommendation
+would have died on the `grep '^## '` that follows.

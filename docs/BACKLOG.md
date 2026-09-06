@@ -24,8 +24,14 @@ belong in the same batch. Restated on 2026-09-04 after a release was proposed ea
 held the order to what it says: 1.5.0 is cut when the rest of this list is done and not before,
 however full `Unreleased` looks.
 
-Done so far in this batch: **4**, **6**, **7**, **8**, **11**, and slice one of **3**. Left
-before the release: **1**, **2**, the rest of **3**, **9**, **10**.
+Done so far in this batch: **1**, **2**, **3**, **4**, **6**, **7**, **8**, **11**, **12** and
+**13**. Left before the release: **9**, **10**, then **5** in a build of its own.
+
+*Corrected 2026-09-06.* This paragraph said **1**, **2**, the rest of **3**, **9** and **10** were
+left, three days after all of 1, 2 and 3 had been finished and marked so in their own entries. It
+was read as the list of what to do next and cost a session's opening on entry 13, which was
+already built. A summary of entries that lives above the entries goes stale the turn one of them
+is finished; this one is now a pointer to the headings and not a second copy of them.
 
 Two things that order should not hide:
 
@@ -582,7 +588,7 @@ stops being built.
 
 ---
 
-## 13. The possessions search across the family: whose, how long, and in what order
+## 13. The possessions search across the family: whose, how long, and in what order — DONE 2026-09-05
 
 **Received:** 2026-09-05, from Alberto, with a screenshot of *Possessions / Whole family*
 searching `cloth` - twenty lines, the filter row working, and three things wrong with the list
