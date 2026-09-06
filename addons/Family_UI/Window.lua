@@ -1113,6 +1113,35 @@ function UI:NamesOf(entries)
 	return entries
 end
 
+-- How many of something a member holds, and where they are: "209 (62 bags, 147 bank)".
+--
+-- The total leads and is the only part in gold, because it is the answer to the question being
+-- asked - the breakdown says where to go and get them, which is the next question and not the
+-- first one. A member with them in one place only still reads "20 (20 bank)": a column where
+-- some rows carry a total and some do not is harder to read than a repetitive one.
+--
+-- **Here rather than in the tooltip that first wrote it**, because the possessions search now
+-- says the same thing in its right-hand column and the two must not come to word it
+-- differently. That is the same reason the search takes its *of Faraway* from the tooltip's
+-- string: one question, one sentence, wherever it is asked.
+--
+-- Each place is a whole phrase rather than a number with a word stuck after it: where the
+-- number goes inside the phrase is a fact about the language, not about the bag.
+function UI:HeldWhere(owner)
+	local parts = {}
+	if (owner.bags or 0) > 0 then parts[#parts + 1] = string.format(L["%d bags"], owner.bags) end
+	if (owner.bank or 0) > 0 then parts[#parts + 1] = string.format(L["%d bank"], owner.bank) end
+	if (owner.mail or 0) > 0 then parts[#parts + 1] = string.format(L["%d mail"], owner.mail) end
+	if (owner.auctions or 0) > 0 then
+		parts[#parts + 1] = string.format(L["%d auction"], owner.auctions)
+	end
+
+	local where = table.concat(parts, ", ")
+	if where == "" then return "" end
+
+	return string.format("|cffffd700%d|r |cffb0b0b0(%s)|r", owner.total or 0, where)
+end
+
 --------------------------------------------------------------------------------------------
 -- Reading a member, ours or somebody else's
 --

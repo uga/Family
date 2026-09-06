@@ -19,6 +19,16 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The whole-family possessions search reads as a list again.** Searching for an item used to
+  draw its name once for every character who had some, with that character's count against the
+  name - so five holders of a bronze bar gave you five lines all beginning *Bronze Bar 209*, and
+  the number looked like part of what the thing is called. The item is now written once with its
+  holders under it, most first, and how many they have leads the right-hand column in front of
+  where they are: **209 (62 bags, 147 bank)**, the same sentence the item's own tooltip writes.
+  Sorting by character does the same the other way round - the character once, with what they are
+  carrying beside them. More than five holders fold behind a line you can click, as on the
+  reputations list.
+
 - **Logging in is quick again however many characters you have.** Family used to read every
   character's record once a second after login to learn what their recipes are called - four
   seconds for a small family, and several minutes for somebody with two or three hundred

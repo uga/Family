@@ -22936,6 +22936,217 @@ print("an alias for a linked family")
 				table.concat(names, ", "))
 
 			sort.buttons.item.__scripts.OnClick(sort.buttons.item)
+
+			------------------------------------------------------------------
+			-- One item, written once, with everybody who has it under it
+			--
+			-- Reported from play 2026-09-06 with a screenshot: the list read
+			-- "Bronze Bar 209" five times over, and the number against the name
+			-- was taken for part of what the thing is called. Two things were
+			-- asked for and both are here - the count moved to the right-hand
+			-- column in front of where they are, exactly as the item tooltip
+			-- writes it, and the item drawn once with its holders under it, the
+			-- way the whole-family reputations list is drawn.
+			------------------------------------------------------------------
+
+			ITEM_NAMES[774001] = "Ingot of Proof"
+			ITEM_NAMES[774002] = "Ingot of Proof Mark II"
+			-- A second id under a name another item already has, which the game does
+			-- all the time. A block is cut on the id and ordered on the name, so two
+			-- of these have to stay in two blocks rather than interleaving by count.
+			ITEM_NAMES[774003] = "Ingot of Proof Mark II"
+
+			local holders = {}
+			for index = 1, 7 do
+				local who = string.format("Holder%02d-FireMaw", index)
+				holders[#holders + 1] = who
+				Family.Database:SetMeta(who, { name = "Holder" .. index,
+					realm = "Fire Maw", level = 60, classFile = "MAGE",
+					faction = "Alliance" })
+				Family.Database:SetPayload(who, { bags = {
+					{ slots = { { id = 774001, count = index * 10 },
+						{ id = 774002, count = index } } },
+				} })
+			end
+
+			-- Two characters of one name on two realms, which is two characters
+			-- (§2.1). Grouping on the word rather than on the key would draw
+			-- them as one block and hand one of them the other's items.
+			for _, realm in ipairs { "FireMaw", "Thunderstrike" } do
+				local who = "Doppio-" .. realm
+				holders[#holders + 1] = who
+				Family.Database:SetMeta(who, { name = "Doppio", realm = realm,
+					level = 60, classFile = "MAGE", faction = "Alliance" })
+				-- Counts that fall inside the other item's range on purpose: sorted
+				-- by name and then by how many, these interleave with it unless the
+				-- id is part of the order.
+				Family.Database:SetPayload(who, { bags = {
+					{ slots = { { id = 774001, count = 3 },
+						{ id = 774003, count = realm == "FireMaw" and 6 or 3 } } },
+				} })
+			end
+
+			Family.Index:Invalidate()
+			_G.FamilyContentsSearch:SetText("Ingot of Proof")
+			Family.UI:Refresh()
+
+			-- What the page says, cell by cell, in the order it was drawn.
+			local function page()
+				local out = {}
+				for index = 1, (Family.UI.__contentsShown or 0) do
+					local r = Family.UI.__contentsRows[index]
+					out[#out + 1] = { item = r.text:GetText() or "",
+						who = r.who:GetText() or "",
+						where = r.where:GetText() or "",
+						fold = r.expandBlock,
+						icon = r.icon.__texture }
+				end
+				return out
+			end
+
+			local drawn = page()
+
+			check("the search draws something to read", #drawn > 0, tostring(#drawn))
+
+			-- **The count is out of the item's name.** The item cell used to read
+			-- "Ingot of Proof |cffffd70070|r", which is the report.
+			local nameCarriesCount = false
+			for _, row in ipairs(drawn) do
+				if row.item:find("%d") then nameCarriesCount = true end
+			end
+			check("no line puts a count against the item's name", not nameCarriesCount,
+				(drawn[1] or {}).item or "")
+
+			-- **And it leads the right-hand column**, in front of where they are,
+			-- which is the sentence the item tooltip has always written.
+			check("the right-hand column leads with how many and then where",
+				(drawn[1] or {}).where == "|cffffd70070|r |cffb0b0b0(70 bags)|r",
+				(drawn[1] or {}).where or "")
+
+			-- **The item is written once.** Five of its holders fit and the rest
+			-- fold, so the block is five lines and a sixth to open it.
+			local firstBlock, itemSaid = 0, 0
+			for _, row in ipairs(drawn) do
+				if row.item == "Ingot of Proof Mark II" then break end
+				firstBlock = firstBlock + 1
+				if row.item == "Ingot of Proof" then itemSaid = itemSaid + 1 end
+			end
+			check("an item is named once and not on every line it holds",
+				itemSaid == 1, tostring(itemSaid) .. " of " .. tostring(firstBlock))
+			check("and the lines under it are the holders, most first",
+				firstBlock == 6, tostring(firstBlock))
+
+			-- The icon belongs to the name and goes where it goes.
+			check("the icon is drawn beside the name and not on the lines under it",
+				(drawn[1] or {}).icon ~= nil and (drawn[2] or {}).icon == nil,
+				tostring((drawn[2] or {}).icon))
+
+			-- **And the rest fold.** Nine hold it and five fit.
+			local foldRow = drawn[6] or {}
+			check("a block longer than fits ends in a line offering the rest",
+				foldRow.fold ~= nil and foldRow.who:find("4", 1, true) ~= nil,
+				tostring(foldRow.who))
+
+			check("which says nothing about an item, so it offers no tooltip",
+				Family.UI.__contentsRows[6].itemID == nil,
+				tostring(Family.UI.__contentsRows[6].itemID))
+
+			-- Clicking it opens the block, and clicking it again closes it.
+			Family.UI.__contentsRows[6].__scripts.OnClick(Family.UI.__contentsRows[6])
+			local opened = page()
+			local openedBlock = 0
+			for _, row in ipairs(opened) do
+				if row.item == "Ingot of Proof Mark II" then break end
+				openedBlock = openedBlock + 1
+			end
+			check("clicking it shows everybody who has that item",
+				openedBlock == 10, tostring(openedBlock))
+
+			Family.UI.__contentsRows[10].__scripts.OnClick(Family.UI.__contentsRows[10])
+			local closed = page()
+			local closedBlock = 0
+			for _, row in ipairs(closed) do
+				if row.item == "Ingot of Proof Mark II" then break end
+				closedBlock = closedBlock + 1
+			end
+			check("and clicking it again folds them away", closedBlock == 6,
+				tostring(closedBlock))
+
+			-- Asked again now that row six has been a holder's line and been handed
+			-- back: a pooled row that kept the item it last carried offers a tooltip
+			-- about an item this line says nothing about. Asked before the block was
+			-- ever opened it could only ever see a row that had never held one.
+			check("and it is still about no item after being a holder's line and back",
+				Family.UI.__contentsRows[6].itemID == nil,
+				tostring(Family.UI.__contentsRows[6].itemID))
+
+			-- **A block is about one item and not one word.** Two ids under one name
+			-- have to stay in two blocks: a heading names the item the lines under it
+			-- are about, and a block holding two of them says something untrue about
+			-- every line but the first.
+			sort.buttons.item.__scripts.OnClick(sort.buttons.item)
+			do
+				-- Counted rather than looked for. A block is cut on the id, so no block
+				-- can ever hold two items and checking that proves nothing; what the id
+				-- in the order buys is that one item is **one** block. Without it the two
+				-- ids sharing this name interleave by how many are held, and each of them
+				-- comes out as four or five blocks under the same heading.
+				local headed = {}
+				for index = 1, (Family.UI.__contentsShown or 0) do
+					local r = Family.UI.__contentsRows[index]
+					if not r.expandBlock and (r.text:GetText() or "") ~= "" then
+						headed[r.itemID] = (headed[r.itemID] or 0) + 1
+					end
+				end
+				check("an item is headed once on the page, whatever else shares its name",
+					headed[774002] == 1 and headed[774003] == 1,
+					tostring(headed[774002]) .. " and " .. tostring(headed[774003]))
+			end
+
+			-- **By character, the character is the one written once**, and the
+			-- items are what changes down the block. The columns keep their
+			-- meanings either way round.
+			sort.buttons.who.__scripts.OnClick(sort.buttons.who)
+			local byWho = page()
+
+			local said, itemsNamed = {}, 0
+			for _, row in ipairs(byWho) do
+				if row.who ~= "" then said[#said + 1] = row.who end
+				if row.item ~= "" then itemsNamed = itemsNamed + 1 end
+			end
+			for i, row in ipairs(byWho) do print("        ROW", i, "["..row.item.."]", "["..row.who.."]") end
+			check("by character, a character is named once", #said == #holders,
+				tostring(#said) .. " of " .. tostring(#holders))
+			check("and every line under them still names its own item",
+				itemsNamed == #byWho, tostring(itemsNamed) .. " of "
+					.. tostring(#byWho))
+
+			-- Two of one name on two realms are two blocks, not one.
+			local doppio = 0
+			for _, name in ipairs(said) do
+				if name:find("Doppio", 1, true) then doppio = doppio + 1 end
+			end
+			check("and two characters of one name on two realms are two of them",
+				doppio == 2, tostring(doppio))
+
+			-- **And the order that is about neither says all three on every line**,
+			-- because "most first, wherever in the family they happen to be" has
+			-- no block to head.
+			sort.buttons.many.__scripts.OnClick(sort.buttons.many)
+			local byMany = page()
+			local blanks = 0
+			for _, row in ipairs(byMany) do
+				if row.item == "" or row.who == "" then blanks = blanks + 1 end
+			end
+			check("the order that groups nothing writes every line in full",
+				blanks == 0, tostring(blanks) .. " of " .. tostring(#byMany))
+
+			for _, who in ipairs(holders) do Family.Database:Forget(who) end
+			ITEM_NAMES[774001], ITEM_NAMES[774002] = nil, nil
+			Family.Index:Invalidate()
+			sort.buttons.item.__scripts.OnClick(sort.buttons.item)
+			_G.FamilyContentsSearch:SetText("Linen")
+			Family.UI:Refresh()
 		end
 
 		_G.FamilyContentsSearch:SetText("")

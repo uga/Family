@@ -349,18 +349,40 @@ local SORT_ROW = 22
 -- is not one.
 --------------------------------------------------------------------------------------------
 
+-- The item id after its name, so that two different items sharing a word stay in two blocks
+-- rather than interleaving. Grouping below cuts the sorted list into runs that share a key,
+-- and a run can only be cut where the sort has already put the group together.
 local function byItem(a, b)
 	if a.itemName ~= b.itemName then return a.itemName < b.itemName end
+	if a.itemKey ~= b.itemKey then return a.itemKey < b.itemKey end
 	if a.count ~= b.count then return a.count > b.count end
 	return a.sortWho < b.sortWho
 end
 
+-- **What each order writes once instead of on every line**, which is the shape asked for from
+-- play 2026-09-06 and is the shape the notes under these buttons had been promising since they
+-- were written: *by item, and under each of them whoever has the most* describes a block with a
+-- heading, and the list under it was drawn flat, repeating the item on every line.
+--
+-- The columns keep their meanings whichever order is chosen - item, then who, then how many and
+-- where - and grouping only stops a column repeating a value it has already said. Swapping what
+-- the columns hold per order would be a second reading of a panel that has no headings to
+-- explain itself with.
+--
+-- **Grouped on the key and never on the word.** Two characters of one name on two realms are
+-- two characters (§2.1), and two items can share a name; grouping on what is drawn would put
+-- either pair in one block.
 local ORDERS = {
 	{
 		id = "item",
 		label = L["Item"],
 		note = L["By item, and under each of them whoever has the most."],
 		sort = byItem,
+		-- **The key and the column, said separately**, because they are two different
+		-- facts and writing them as one literal made them a coupling nothing checked: the
+		-- key is what a run is cut on and the column is what stops repeating itself, and a
+		-- mutation that changed one silently turned the other off.
+		group = { key = "itemKey", column = "item" },
 	},
 	{
 		id = "who",
@@ -368,8 +390,10 @@ local ORDERS = {
 		note = L["By character, and under each of them what they are carrying."],
 		sort = function(a, b)
 			if a.sortWho ~= b.sortWho then return a.sortWho < b.sortWho end
+			if a.whoKey ~= b.whoKey then return a.whoKey < b.whoKey end
 			return byItem(a, b)
 		end,
+		group = { key = "whoKey", column = "who" },
 	},
 	{
 		id = "many",
@@ -380,8 +404,21 @@ local ORDERS = {
 			if a.itemName ~= b.itemName then return a.itemName < b.itemName end
 			return a.sortWho < b.sortWho
 		end,
+		-- Nothing. This order is deliberately not about item or character - "most first,
+		-- wherever in the family they happen to be" - so there is no block to head, and
+		-- every line says all three things.
 	},
 }
+
+-- How many lines of a block are drawn before the rest fold away. Five, which is what the item
+-- tooltip shows about the same items: a panel should not hide what a tooltip already says.
+local BLOCK_LINES = 5
+
+-- The block whose lines are all showing, if any. On the panel rather than on a row, because
+-- rows are pooled and a row would carry it into whatever is drawn next.
+UI:OnFold("contents", function()
+	UI.__openContents = nil
+end)
 
 local function build(frame)
 	local blocks = {}          -- one drawn container each, reused between redraws
@@ -614,6 +651,25 @@ local function build(frame)
 		r.where:SetJustifyH("RIGHT")
 
 		UI:NoWrap(r.text, r.who, r.where)
+
+		-- Lit on hover, and only on the rows a click will actually do something to - which
+		-- here is the last line of a block that has more lines than fit. In the HIGHLIGHT
+		-- layer rather than on an OnEnter script, because AttachTooltip below owns OnEnter
+		-- and a second one would simply replace it. The same arrangement the reputations
+		-- list uses for the same fold.
+		r.highlight = r:CreateTexture(nil, "HIGHLIGHT")
+		r.highlight:SetAllPoints()
+		r.highlight:SetColorTexture(1, 1, 1, 0.10)
+		r.highlight:Hide()
+
+		r:RegisterForClicks("LeftButtonUp")
+		r:SetScript("OnClick", function(self)
+			if not self.expandBlock then return end
+			UI.__openContents = (UI.__openContents ~= self.expandBlock)
+				and self.expandBlock or nil
+			frame:Refresh()
+		end)
+
 		UI:AttachTooltip(r, function(self)
 			if self.itemLink then return "itemlink", self.itemLink end
 			return "item", self.itemID
@@ -788,31 +844,24 @@ local function build(frame)
 							tostring(owner.familyName))
 					end
 
-					local places = {}
-					if owner.bags > 0 then
-						places[#places + 1] = string.format(L["%d bags"], owner.bags)
-					end
-					if owner.bank > 0 then
-						places[#places + 1] = string.format(L["%d bank"], owner.bank)
-					end
-					if owner.mail > 0 then
-						places[#places + 1] = string.format(L["%d mail"], owner.mail)
-					end
-					if owner.auctions > 0 then
-						places[#places + 1] = string.format(L["%d auction"],
-							owner.auctions)
-					end
-
 					local red, green, blue = UI:ClassColour(owner.classFile)
 
 					lines[#lines + 1] = {
 						item = item,
 						itemName = tostring(item.name or ""),
+						itemKey = tostring(item.id),
 						count = owner.total,
 						who = who,
 						sortWho = tostring(owner.name or owner.key or ""),
+						whoKey = tostring(owner.key or owner.name or ""),
 						red = red, green = green, blue = blue,
-						where = "|cff888888" .. table.concat(places, ", ") .. "|r",
+						-- **How many, then where.** The count used to sit against the
+						-- item's name - *Bronze Bar 209* - where it reads as part of
+						-- what the thing is called; reported from play 2026-09-06 in
+						-- those words. It is the same sentence the item tooltip has
+						-- always written, from the same call, so the two cannot come to
+						-- disagree.
+						where = UI:HeldWhere(owner),
 					}
 				end
 
@@ -826,11 +875,17 @@ local function build(frame)
 					lines[#lines + 1] = {
 						item = item,
 						itemName = tostring(item.name or ""),
+						itemKey = tostring(item.id),
 						count = guild.count,
 						who = "|cff40c040" .. label .. "|r",
 						sortWho = tostring(label),
+						whoKey = tostring(guild.key or label),
 						red = 1, green = 1, blue = 1,
-						where = L["|cff888888guild bank|r"],
+						-- A guild bank has no breakdown to give - it is one place -
+						-- so the count leads and the place follows it, rather than
+						-- the place going in brackets after a total it repeats.
+						where = string.format("|cffffd700%d|r %s", guild.count,
+							L["|cff888888guild bank|r"]),
 					}
 				end
 			end
@@ -844,27 +899,100 @@ local function build(frame)
 
 			local shown = #lines
 
-			for _, line in ipairs(lines) do
-				usedResults = usedResults + 1
-				local r = resultRow(usedResults)
-				r:SetPoint("TOPLEFT", 0, -y)
-				r:SetPoint("TOPRIGHT", 0, -y)
-				r:Show()
-				y = y + 20
+			-- **Drawn in blocks**, so that a column never repeats what it has already said.
+			--
+			-- The sorted list is cut into runs sharing the order's group key - the same item,
+			-- or the same character - and the value that made the run is written on the run's
+			-- first line only. The other columns say something new on every line, so they are
+			-- written on every line.
+			--
+			-- The icon belongs to the item's name and goes wherever that goes: on the first
+			-- line of an item's block, and on every line of a character's, where each line is
+			-- a different thing.
+			local grouping = (order or ORDERS[1]).group
+			local groupOn = grouping and grouping.key or nil
+			local groupColumn = grouping and grouping.column or nil
+			local at = 1
 
-				-- By id, and only by id. A search result is one line for an item that
-				-- several members may hold in several different suffixed forms, so there
-				-- is no one string that describes it - and a row reused from a previous
-				-- search would otherwise keep the last one it was given.
-				r.itemID, r.itemLink = line.item.id, nil
-				r.icon:SetTexture(Family:TryCall(GetItemIcon, line.item.id)
-					or "Interface\\Icons\\INV_Misc_QuestionMark")
-				r.text:SetText(string.format("%s |cffffd700%d|r", line.item.name,
-					line.count))
-				r.who:SetText(line.who)
-				r.who:SetTextColor(line.red, line.green, line.blue)
-				r.where:SetText(line.where)
+			while at <= #lines do
+				-- Where there is no grouping, every line is its own block of one and says
+				-- all three things - which is what the "How many" order wants.
+				local key = groupOn and lines[at][groupOn] or nil
+				local last = at
+				if key then
+					while last < #lines and lines[last + 1][groupOn] == key do
+						last = last + 1
+					end
+				end
+
+				local held = last - at + 1
+				-- The block's identity carries the order it was grouped by, so that an
+				-- item left open and then re-sorted by character does not reopen some
+				-- character whose key happens to read the same.
+				local block = key and (tostring(groupColumn) .. "\1" .. key) or nil
+				local open = block ~= nil and UI.__openContents == block
+				local foldable = block ~= nil and held > BLOCK_LINES
+				local limit = (foldable and not open) and BLOCK_LINES or held
+
+				for offset = 0, limit - 1 do
+					local line = lines[at + offset]
+					usedResults = usedResults + 1
+					local r = resultRow(usedResults)
+					r:SetPoint("TOPLEFT", 0, -y)
+					r:SetPoint("TOPRIGHT", 0, -y)
+					r:Show()
+					y = y + 20
+
+					-- By id, and only by id. A search result is one line for an item
+					-- that several members may hold in several different suffixed
+					-- forms, so there is no one string that describes it - and a row
+					-- reused from a previous search would otherwise keep the last one
+					-- it was given.
+					r.itemID, r.itemLink = line.item.id, nil
+					r.expandBlock = nil
+					r.highlight:Hide()
+
+					local heading = groupColumn ~= "item" or offset == 0
+					r.icon:SetTexture(heading
+						and (Family:TryCall(GetItemIcon, line.item.id)
+							or "Interface\\Icons\\INV_Misc_QuestionMark")
+						or nil)
+					r.text:SetText(heading and line.item.name or "")
+
+					r.who:SetText((groupColumn ~= "who" or offset == 0) and line.who or "")
+					r.who:SetTextColor(line.red, line.green, line.blue)
+					r.where:SetText(line.where)
+				end
+
+				if foldable then
+					usedResults = usedResults + 1
+					local r = resultRow(usedResults)
+					r:SetPoint("TOPLEFT", 0, -y)
+					r:SetPoint("TOPRIGHT", 0, -y)
+					r:Show()
+					y = y + 20
+
+					-- Nothing about an item, so nothing to put a tooltip on: this line
+					-- is about the block, and a pooled row would otherwise still be
+					-- answering for whatever it last held.
+					r.itemID, r.itemLink = nil, nil
+					r.icon:SetTexture(nil)
+					r.text:SetText("")
+					r.where:SetText("")
+					r.who:SetText(open and L["|cff888888fewer|r"]
+						or string.format(L["|cff888888and %d more|r"], held - limit))
+					r.who:SetTextColor(1, 1, 1)
+					r.expandBlock = block
+					r.highlight:Show()
+				end
+
+				at = last + 1
 			end
+
+			-- The rows as they were actually drawn, and how many of them. `__contentsLines`
+			-- above is the model; this is the page, and the difference between the two is
+			-- the whole of what blocking and folding do.
+			UI.__contentsRows, UI.__contentsShown = resultRows, usedResults
 
 			-- Only what the client has named. An item nobody has looked at since the
 			-- last patch has no name to match against yet, and saying so is better than

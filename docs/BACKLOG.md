@@ -2137,3 +2137,56 @@ makes the other side reply with their entire offering.
 *Update now* sends everything, because that is the button somebody presses when a thing looks
 wrong. A link made or remade forgets its marks rather than forcing a full send, which says the
 true thing: we do not know what they hold.
+
+---
+
+## 32. The possessions search repeated the item on every line, and put the count in its name — DONE 2026-09-06
+
+**Reported 2026-09-06** from play, with a screenshot of *Possessions / Whole family* searching
+`bronze`, in two parts.
+
+**The number read as part of the name.** The item column drew `Bronze Bar 209`, and that 209 is
+not a fact about the item - it is how many *that line's* character holds. Alberto: *it took me a
+sec to understand what the numbers after the item meant.* He named the fix himself and named the
+precedent for it: put the total at the head of the right-hand column, in front of the breakdown,
+`209 (62 bags, 147 bank)` - *exactly as it happens on the tooltip after all*.
+
+**And the item was written five times for five holders.** *Why didn't we adopt a consolidated
+left column model, like the format used for Whole Fam Reputations search? On the left column
+Bronze Bar only once, on the central column the list of all having some, and on the right the
+quantities each. Chars having the product should be listed from the one owning the highest amount
+down.*
+
+**Why it was not, read rather than recalled.** Entry 13 above is where these rows got their
+present shape, and it never considered the question: the panel began as a set of bags, the
+whole-family search was bolted on as a flat list, and the ordering slice added a sort bar over
+that flat list without touching how it was drawn. The order captions have been describing blocks
+since the day they were written - *by item, and under each of them whoever has the most* - and the
+drawing never caught up with them.
+
+**Built the same day.** The sorted list is cut into runs sharing the order's group key, and the
+value that made the run is written on its first line only. The columns keep their meanings
+whichever order is on - item, then who, then how many and where - so grouping only stops a column
+repeating itself, rather than swapping what the columns hold. Five holders are drawn and the rest
+fold behind *and %d more*, which is the reputations list's own mechanism and the tooltip's own
+number: a panel should not hide what a tooltip already says.
+
+**Grouped on the key and never on the word**, because two characters of one name on two realms are
+two characters (§2.1) and two items can share a name. The item's id joins its name in the order
+for the same reason: without it, two items sharing a word interleave by how many are held and each
+comes out as four or five blocks under one heading.
+
+**And the sentence in the right-hand column is now the tooltip's own**, moved to `UI:HeldWhere` in
+`Window.lua` and called by both. The panel had its own copy of the same four phrases; one question
+should have one sentence wherever it is asked.
+
+*The "How many" order groups nothing, deliberately: "most first, wherever in the family they
+happen to be" has no block to head, so every line there says all three things.*
+
+Fifteen checks, nine mutations, all reddening - and two of the nine only after the check they were
+aimed at was rewritten. The first grouped the key and the column under one literal, so a mutation
+of the key silently turned the column off and reddened the wrong thing; the second tried to prove
+the id in the order by looking for a block holding two items, which cannot happen because blocks
+are cut on the id - what the id buys is that one item is **one** block, and counting headings is
+what says so.
+

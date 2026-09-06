@@ -31,26 +31,11 @@ end
 
 -- How many, and where they are: "37 (17 bags, 20 bank)".
 --
--- The total leads and is the only part in gold, because it is the answer to the question
--- being asked - the breakdown says where to go and get them, which is the next question and
--- not the first one. A member with them in one place only still reads "20 (20 bank)", since
--- a column where some rows have a total and some do not is harder to read than a repetitive
--- one.
+-- Moved to `UI:HeldWhere` in Window.lua when the possessions search started saying the same
+-- thing in its right-hand column, which is where the reasoning behind the wording now lives.
+-- Kept as a name here because this file asks for it in three places.
 local function placesOf(owner)
-	local parts = {}
-	-- Each place is a whole phrase rather than a number with a word stuck after it: where
-	-- the number goes inside the phrase is a fact about the language, not about the bag.
-	if owner.bags > 0 then parts[#parts + 1] = string.format(L["%d bags"], owner.bags) end
-	if owner.bank > 0 then parts[#parts + 1] = string.format(L["%d bank"], owner.bank) end
-	if owner.mail > 0 then parts[#parts + 1] = string.format(L["%d mail"], owner.mail) end
-	if owner.auctions > 0 then
-		parts[#parts + 1] = string.format(L["%d auction"], owner.auctions)
-	end
-
-	local where = table.concat(parts, ", ")
-	if where == "" then return "" end
-
-	return string.format("|cffffd700%d|r |cffb0b0b0(%s)|r", owner.total, where)
+	return UI:HeldWhere(owner)
 end
 
 -- Names to show for a list of members, with the realm added to the ones that need it.
