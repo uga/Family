@@ -2460,6 +2460,47 @@ if skills then
 		skills[152] and skills[152].secondary == true,
 		skills[152] and tostring(skills[152].secondary))
 
+	-- **A picture for every skill this panel can draw.** The professions overview is to be read
+	-- at a glance rather than word by word, which needs one per row - and where the client's own
+	-- table has none, the choice went through the icon sheet and a screenshot rather than through
+	-- confidence, because a texture cannot be probed.
+	do
+		local missing = {}
+		for id, entry in pairs(Family.SkillLines) do
+			-- Lockpicking is the one skill this panel never draws: it is a class ability
+			-- and lives on the abilities page, so it is the one allowed to have none.
+			if not entry.icon and not entry.class then
+				missing[#missing + 1] = tostring(id) .. " " .. tostring(entry.key)
+			end
+		end
+		table.sort(missing)
+		check("every skill line the professions panel can draw has a picture",
+			#missing == 0, table.concat(missing, ", "))
+
+		-- Two shapes, and both are real: a file id where a build named one, a path where it
+		-- had to be chosen. Nothing may carry a generic, which is what an unchecked reading
+		-- of Era's own table would have given seven professions out of nine.
+		check("a profession takes the file id the game gives it",
+			Family.SkillLines[164] and Family.SkillLines[164].icon == 136241,
+			Family.SkillLines[164] and tostring(Family.SkillLines[164].icon))
+		check("and a weapon takes the path that was chosen for it",
+			Family.SkillLines[43] and Family.SkillLines[43].icon
+				== "Interface\\Icons\\INV_Sword_04",
+			Family.SkillLines[43] and tostring(Family.SkillLines[43].icon))
+		check("and unarmed is the bare hand, not the gauntlet",
+			Family.SkillLines[162] and Family.SkillLines[162].icon == 132298,
+			Family.SkillLines[162] and tostring(Family.SkillLines[162].icon))
+
+		local generic = {}
+		for id, entry in pairs(Family.SkillLines) do
+			if entry.icon == 136235 then
+				generic[#generic + 1] = tostring(id)
+			end
+		end
+		check("and nothing is left holding the picture Era gives everything",
+			#generic == 0, table.concat(generic, ", "))
+	end
+
 	-- **The word every picker shows when nothing is chosen**, which read *all* on a French
 	-- client in the middle of a bar whose every other word was French. Reported from play
 	-- 2026-09-06. Checked on the default rather than only at the call sites: the call sites

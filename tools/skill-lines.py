@@ -57,6 +57,48 @@ RIDING_IDS = {148, 149, 150, 152, 533, 553, 554, 713, 762}
 # eighteen rows on Era, all of them weapons or the two that go with them, Defense and Dual Wield.
 WEAPON_CATEGORY = "6"
 
+# The picture each one gets, and where it comes from.
+#
+# `SkillLine.SpellIconFileID` answers for most professions on Mists and for almost none on Era: that
+# build names three of its nine primaries and hands back 136235 - a generic - for the rest, and
+# every weapon skill on every build answers a generic too (136235 on Era, 136243 on Mists). So the
+# file id is taken from the newest build that gives a real one, and the generics are refused.
+GENERIC_ICONS = {136235, 136243}
+
+# ...and what is left has to be chosen, which is the one kind of fact this project cannot check
+# from inside the client: a path that does not exist draws nothing and GetTexture hands back
+# whatever it was given, so a typo and a good path are the same answer. Every one of these was drawn
+# on a live Era client through tools/FamilyIconSheet and looked at - see DATASOURCES.md.
+#
+# Unarmed is 132298, a bare hand striking. The gauntleted fist was turned down for being gauntleted.
+# Engineering keeps the generic on purpose: no build has anything better for it.
+CHOSEN_ICONS = {
+    43:  "Interface\\Icons\\INV_Sword_04",              # Swords
+    55:  "Interface\\Icons\\INV_Sword_27",              # Two-Handed Swords
+    44:  "Interface\\Icons\\INV_Axe_01",                # Axes
+    172: "Interface\\Icons\\INV_Axe_09",                # Two-Handed Axes
+    54:  "Interface\\Icons\\INV_Mace_01",               # Maces
+    160: "Interface\\Icons\\INV_Hammer_16",             # Two-Handed Maces
+    173: "Interface\\Icons\\INV_Weapon_ShortBlade_05",  # Daggers
+    136: "Interface\\Icons\\INV_Staff_08",              # Staves
+    229: "Interface\\Icons\\INV_Spear_06",              # Polearms
+    473: "Interface\\Icons\\INV_Gauntlets_04",          # Fist Weapons
+    162: 132298,                                        # Unarmed - a bare hand
+    45:  "Interface\\Icons\\INV_Weapon_Bow_07",         # Bows
+    226: "Interface\\Icons\\INV_Weapon_Crossbow_01",    # Crossbows
+    46:  "Interface\\Icons\\INV_Weapon_Rifle_01",       # Guns
+    228: "Interface\\Icons\\INV_Wand_01",               # Wands
+    176: "Interface\\Icons\\INV_ThrowingKnife_02",      # Thrown
+    95:  "Interface\\Icons\\INV_Shield_06",             # Defense
+    118: "Interface\\Icons\\Ability_DualWield",         # Dual Wield
+    202: 136243,                                        # Engineering - nothing better exists
+}
+
+# Riding is one idea however many animals it is named after, so every riding line takes the picture
+# the modern build gives the single Riding skill. A kodo among seven generic saddles would read as a
+# distinction that is not there.
+RIDING_ICON = 132164
+
 # Lockpicking, which is neither. It sits in category 7 with the class skills, it has a rank and
 # a maximum like a profession, and it teaches nothing - a shape this table did not hold before.
 #
@@ -135,6 +177,12 @@ def build_table():
                 entry = professions.setdefault(skill_id,
                                                {"names": {}, "primary": is_primary,
                                                 "class": is_class, "weapon": is_weapon})
+
+                # The newest build that names a real one wins, and BUILDS is read oldest first,
+                # so a later build simply overwrites an earlier answer.
+                icon = int(row.get("SpellIconFileID") or 0)
+                if icon and icon not in GENERIC_ICONS:
+                    entry["icon"] = icon
                 seen = entry["names"].setdefault(locale, [])
                 if name not in seen:
                     if seen:
@@ -149,6 +197,11 @@ def build_table():
     for skill_id, entry in professions.items():
         english = entry["names"].get("enUS") or []
         entry["key"] = english[0] if english else str(skill_id)
+
+        if skill_id in RIDING_IDS:
+            entry["icon"] = RIDING_ICON
+        elif skill_id in CHOSEN_ICONS:
+            entry["icon"] = CHOSEN_ICONS[skill_id]
 
     return professions, complaints, report
 
@@ -252,6 +305,10 @@ def emit(professions, out_path):
             add('\t\tclass = true,')
         if entry.get("weapon"):
             add('\t\tweapon = true,')
+        icon = entry.get("icon")
+        if icon is not None:
+            add('\t\ticon = %s,'
+                % (icon if isinstance(icon, int) else lua_string(icon)))
         add('\t\tnames = {')
         for locale in LOCALES:
             names = entry["names"].get(locale) or []
