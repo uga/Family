@@ -1846,6 +1846,20 @@ shipped table knows, and which that sheet does not have**: runeforging resolves 
 kept, and anything the table has never heard of is kept for the same reason `stillHeld` keeps it.
 Guarded, as above, on the sheet being non-empty.
 
+**No exception list is needed for that, and one would be worse.** Alberto proposed naming
+runeforging outright - *aggiungiamo l'eccezione e storia finita*. Checked: `Runeforging` is in
+neither `SkillLines.lua` nor the generator's inputs, so `SkillLineFor` answers nothing for it and
+the rule above already keeps it, without it being named. A hand list of one is a list that is
+wrong the first time a class or an expansion adds a second.
+
+**And the second half of his proposal needs nothing at all.** He asked that professions *without*
+recipes - herbalism was his example - also be forgotten, or an unlearnt one would go on being
+listed under Overview and in the professions page's grey line. Read rather than assumed:
+`meta.skills` is built at `Scanners/Professions.lua:818` from the freshly read sheet alone, with
+nothing carried over from what was there before, so an unlearnt herbalism leaves it at the next
+scan and both of those screens lose it with it. Nothing accumulates on that side; only the
+payload does, and only for professions that have a window to accumulate from.
+
 The unpruned payload is wrong for two readers that walk it **without asking whether the member
 still has the skill**:
 
