@@ -2013,3 +2013,39 @@ the loop that once hung the run. That fixture now says what went wrong. And two 
 weak: the §2.2 guard passed with the guard removed, because a scan with no recipes gives up long
 before reaching it, so it is exercised with a window open now; and the remembered mark was pinned
 by nothing until the bad-read case above was written down as a check.
+---
+
+## 31. Every grant re-sends everything, and the wire is 2 KB a second
+
+**Reported by Alberto on 2026-09-06**, from linking with the family aliased *Serena* the day
+before: she ticked her columns quickly, and on his side the marks took *"a good minute or two"* to
+appear, arriving in bursts — one, then another, then ten at once, then a pause.
+
+**Measured 2026-09-06, and it is exactly what the code does.**
+
+- `Comm.lua` drains its queue at `PER_TICK = 2` every `TICK = 0.2` — **ten messages a second** —
+  and `CHUNK = 200` bytes fit in each. So the wire is **2 KB a second**, deliberately: the comment
+  there says ten a second is the rate the community's throttling library settled on and it is not
+  worth being cleverer.
+- `Wide:Grant` calls `grantsChanged`, which calls `ExchangeWith` — **one whole exchange per
+  checkbox**. `Wide:GrantMany` exists so that a column is one exchange instead of eleven, and its
+  comment says why.
+- But **an exchange sends the data, not the decision**. `ExchangeWith` sends `self:Offering(link)`,
+  which is `offering()` for every granted member — their bags, equipment, professions, quests,
+  mail, auctions, reputations, money, currencies. What actually changed when a box is ticked is
+  one flag.
+
+So thirteen category columns are thirteen full transfers of everything granted so far, each one
+larger than the last. At 2 KB a second a 20 KB offering is ten seconds on its own.
+
+**And the burstiness is the reassembly, not the network.** `Comm.lua` completes a transfer only
+when the last chunk lands — `if entry.have == entry.total then complete(...)` — so nothing appears
+while a payload trickles in at ten messages a second, and then the whole of it appears at once.
+One tick, a pause, ten in a flash: that is a small payload, then a large one arriving whole.
+
+**Not built.** The shape is a message that carries the grants alone when only grants changed,
+leaving the data to the exchange that follows — which is a protocol addition and has to be
+readable by a Family that has never heard of it, so it is not a five-minute change. Two things to
+decide before any of it: whether a grant change should send at all before the player has finished
+clicking, and whether the promise that a *withdrawal* is prompt (the reason `grantsChanged` does
+not wait, written at `Wide.lua`) can be kept by sending the grants without the payload.
