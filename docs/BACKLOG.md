@@ -2358,3 +2358,40 @@ the same member. They now use professions whose timers are their own, and say wh
 Five checks, four mutations, all reddening - one of them on the generator, regenerated from the
 cache to prove the lane comes out of the data and not out of the Lua.
 
+---
+
+## 36. The login notice tells you about everybody but yourself — DONE 2026-09-06
+
+**Reported 2026-09-06** with a screenshot of the login line reading *crafting cooldowns ready:* and
+naming Uga alone, while Eccebombo - the character being reloaded on - had one ready too.
+
+**Working as written.** `UI:CooldownNotice` skipped `Family:CurrentMember()`, with a comment
+saying a transmute you can cast is already on your own action bar.
+
+**And the rule was wrong, which is Alberto's call**: *when you log in, it makes a lot of sense to
+be notified that YOU, first of all, have something to do.* The one character you can act on
+without logging out is the one most worth naming, and a notice that lists everybody except the
+person reading it is a notice that has to be explained rather than read.
+
+**Two places, not one.** `WarmCooldownNames` had the same exclusion for the same reason - it asks
+the client for the item names this line is about to print, and an item's name is a fact about the
+session rather than about the account. Left alone, your own salt shaker would have been announced
+as *Item #15846*.
+
+*The check for that half counts what the warm-up covers rather than watching for a request going
+out.* The first version watched, and went green for the wrong reason: that item's name had been
+learned by an earlier block in the same file and was still in the session cache, so `Names:Item`
+answered without asking the client anything.
+
+Two checks changed, one added, two mutations, both reddening.
+
+---
+
+### The two Malachias were the point — ANSWERED 2026-09-06, nothing to build
+
+A probe listing every sibling came back with **Malachia** twice, one with a crafting cooldown and
+one without, which looked like a duplicate record. It is not: *Serena has 2 Malachia - we made a
+second one on another realm with the same name as the first one precisely as a test.* The summary
+draws them under **Serena Spineshatter (1)** and **Serena Thunderstrike (6)**, two realm groups,
+which is §2.1 doing its job. Written down because the same shape will look like a bug again.
+

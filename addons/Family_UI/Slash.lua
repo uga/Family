@@ -675,62 +675,70 @@ end
 function UI:CooldownNotice()
 	local lines = nil
 
+	-- **Including the character being played**, which reverses the rule this line was written
+	-- with. That rule said a transmute you can cast is already on your own action bar - true,
+	-- and it answers a question nobody asked. Alberto's, 2026-09-06, after reloading on an
+	-- alchemist with a cooldown ready and being told about somebody else instead: *when you
+	-- log in, it makes a lot of sense to be notified that YOU, first of all, have something to
+	-- do.* The one character you can act on without logging out is the one most worth naming.
+	--
+	-- `WarmCooldownNames` below had the same exclusion and lost it in the same breath: it asks
+	-- the client for the item names this line is about to print, and leaving your own out
+	-- would have printed your own salt shaker as a number.
 	for _, member in ipairs(Family.Cooldowns:Ready()) do
-		if member.key ~= Family:CurrentMember() then
-			-- "Crafting cooldowns" in full, every time, because the thing people
-			-- assume next is that Family also watches raid lockouts and heroic
-			-- resets. It does not. Those are specified (§3, §4.7) and not built,
-			-- which is a different statement from "cannot be done" and should not be
-			-- allowed to sound like it - a character can read its own lockouts
-			-- perfectly well while it is being played, which is how Family learns
-			-- everything else.
-			lines = lines or { L["crafting cooldowns ready:"] }
+		-- "Crafting cooldowns" in full, every time, because the thing people
+		-- assume next is that Family also watches raid lockouts and heroic
+		-- resets. It does not. Those are specified (§3, §4.7) and not built,
+		-- which is a different statement from "cannot be done" and should not be
+		-- allowed to sound like it - a character can read its own lockouts
+		-- perfectly well while it is being played, which is how Family learns
+		-- everything else.
+		lines = lines or { L["crafting cooldowns ready:"] }
 
-			local meta = Family.Database:Meta(member.key) or {}
-			local shown = UI:NameOf(meta)
+		local meta = Family.Database:Meta(member.key) or {}
+		local shown = UI:NameOf(meta)
 
-			-- **What is ready, named.** A name and a number said which character to
-			-- log into and never what for, so somebody with two trades had to go and
-			-- look. Asked for from play 2026-09-05.
-			--
-			-- The same grouping the Crafting panel draws, so the words match what
-			-- that table says: a timer several recipes share is named after its
-			-- profession - *Alchemy*, always, the client putting every transmute on
-			-- one - and a profession with a single timed recipe after the recipe.
-			--
-			-- **Crafting items too**, which reverses 2026-09-01. Family's own help
-			-- text for `/family cooldowns` has always said this feature is about
-			-- "transmutes, mooncloth, salt shakers", and the shaker is an item - so
-			-- the login line was leaving out a thing the addon tells the player it
-			-- watches. What `Crafting` carries here is already filtered by
-			-- `IsCraftingItem`, so a Chronoboon does not come with it.
-			--
-			-- Asked with no key and no callback, like the panel's own `only`: a name
-			-- the client has not cached falls back to the word that was recorded, and
-			-- a callback here would reprint the notice rather than redraw a table.
-			local named = {}
-			for _, group in ipairs(Family.Cooldowns:Crafting(meta)) do
-				if group.ready then
-					-- Whatever `Crafting` called it, and nothing worked out
-					-- again here. An earlier draft filled an unresolved item
-					-- name with the profession that makes the item, and it was
-					-- wrong twice over: it printed a fact this line had not
-					-- read, and in a list where a shared timer is *already*
-					-- named after a profession the same word would have meant
-					-- two different things a column apart. `WarmCooldownNames`
-					-- below is the answer instead - ask early, print late.
-					named[#named + 1] = tostring(group.label)
-				end
+		-- **What is ready, named.** A name and a number said which character to
+		-- log into and never what for, so somebody with two trades had to go and
+		-- look. Asked for from play 2026-09-05.
+		--
+		-- The same grouping the Crafting panel draws, so the words match what
+		-- that table says: a timer several recipes share is named after its
+		-- profession - *Alchemy*, always, the client putting every transmute on
+		-- one - and a profession with a single timed recipe after the recipe.
+		--
+		-- **Crafting items too**, which reverses 2026-09-01. Family's own help
+		-- text for `/family cooldowns` has always said this feature is about
+		-- "transmutes, mooncloth, salt shakers", and the shaker is an item - so
+		-- the login line was leaving out a thing the addon tells the player it
+		-- watches. What `Crafting` carries here is already filtered by
+		-- `IsCraftingItem`, so a Chronoboon does not come with it.
+		--
+		-- Asked with no key and no callback, like the panel's own `only`: a name
+		-- the client has not cached falls back to the word that was recorded, and
+		-- a callback here would reprint the notice rather than redraw a table.
+		local named = {}
+		for _, group in ipairs(Family.Cooldowns:Crafting(meta)) do
+			if group.ready then
+				-- Whatever `Crafting` called it, and nothing worked out
+				-- again here. An earlier draft filled an unresolved item
+				-- name with the profession that makes the item, and it was
+				-- wrong twice over: it printed a fact this line had not
+				-- read, and in a list where a shared timer is *already*
+				-- named after a profession the same word would have meant
+				-- two different things a column apart. `WarmCooldownNames`
+				-- below is the answer instead - ask early, print late.
+				named[#named + 1] = tostring(group.label)
 			end
-
-			-- No count beside them. The names *are* the count and say more than it
-			-- did, and "(2)" in front of two names is the same fact twice. All of
-			-- them however many, which is the rule the mail notice settled: this is
-			-- one line per character already, and a profession's name is short.
-			lines[#lines + 1] = string.format("  |cff40bf40%s|r", shown)
-				.. (#named > 0 and string.format("  |cff888888%s|r",
-					table.concat(named, ", ")) or "")
 		end
+
+		-- No count beside them. The names *are* the count and say more than it
+		-- did, and "(2)" in front of two names is the same fact twice. All of
+		-- them however many, which is the rule the mail notice settled: this is
+		-- one line per character already, and a profession's name is short.
+		lines[#lines + 1] = string.format("  |cff40bf40%s|r", shown)
+			.. (#named > 0 and string.format("  |cff888888%s|r",
+				table.concat(named, ", ")) or "")
 	end
 
 	return lines
@@ -764,16 +772,14 @@ function UI:WarmCooldownNames()
 	-- Every member with a crafting item rather than only those with one ready, because that
 	-- is what is cheap to know here without grouping, and asking about a handful of ids the
 	-- client then caches costs nothing.
-	for key, member in pairs(Family.Database:Members()) do
-		if key ~= Family:CurrentMember() then
-			for _, entry in ipairs((member.meta or {}).itemCooldowns or {}) do
-				-- The same filter the panel and the notice inherit, asked here rather
-				-- than restated: a Chronoboon is not one of these and there is no
-				-- reason to ask the client about it.
-				if entry.id and Family.Cooldowns:IsCraftingItem(entry.id) then
-					Family.Names:Item(entry.id)
-					asked = asked + 1
-				end
+	for _, member in pairs(Family.Database:Members()) do
+		for _, entry in ipairs((member.meta or {}).itemCooldowns or {}) do
+			-- The same filter the panel and the notice inherit, asked here rather
+			-- than restated: a Chronoboon is not one of these and there is no
+			-- reason to ask the client about it.
+			if entry.id and Family.Cooldowns:IsCraftingItem(entry.id) then
+				Family.Names:Item(entry.id)
+				asked = asked + 1
 			end
 		end
 	end

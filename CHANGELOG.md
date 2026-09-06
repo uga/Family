@@ -19,6 +19,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The login notice tells you about your own character too.** It listed every alt with a crafting
+  cooldown ready except the one you had just logged in on - which is the one you can do something
+  about without logging out again.
+
 - **A shared crafting timer is named after its profession, not after one recipe on it.** All of
   an alchemist's transmutes sit on one cooldown, so a column headed *Transmute: Fire to Earth* was
   telling you about a timer that covers every transmute they know - and Family only headed it that

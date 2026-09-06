@@ -14166,11 +14166,14 @@ print("the login line about crafting cooldowns")
 	check("with a heading a translator can reach",
 		lines and lines[1] == Family.L["crafting cooldowns ready:"], tostring(lines[1]))
 
-	-- The character being played is left out, and says why in the file: a transmute you can
-	-- cast is already on your own action bar.
+	-- **The character being played is on the list**, which reverses the rule this block used
+	-- to hold. That rule said a transmute you can cast is already on your own action bar;
+	-- Alberto reversed it 2026-09-06 after reloading on an alchemist whose cooldown was ready
+	-- and being told about somebody else instead - the one character you can act on without
+	-- logging out is the one most worth naming.
 	local mine = Family:CurrentMember()
 	Family.Database:SetMeta(mine, { craftCooldowns = {
-		{ name = "Transmute: Arcanite", profession = 171, readyAt = came },
+		{ name = "Bolt of Imbued Netherweave", profession = 197, readyAt = came },
 	} })
 	local withMine = Family.UI:CooldownNotice()
 	local named = false
@@ -14179,7 +14182,35 @@ print("the login line about crafting cooldowns")
 			named = true
 		end
 	end
-	check("and the character being played is not on the list at all", named == false)
+	check("and the character being played is on the list too", named == true,
+		tostring(withMine and #withMine))
+
+	-- **And the warm-up follows it**, which is a coupling rather than a second change: that
+	-- pass asks the client for the item names this line is about to print, and it skipped the
+	-- played character for the same reason the line did. Left as it was, your own salt shaker
+	-- would have been announced as a number.
+	do
+		-- Counted rather than watched for a request going out. This item's name was
+		-- learned by an earlier block and is still in the session's cache, so `Names:Item`
+		-- answers without asking the client anything - and a check on the request would
+		-- have gone green the day somebody reordered this file rather than the day the
+		-- warm-up broke.
+		Family.Database:SetMeta(mine, {
+			itemCooldowns = Family.CLEAR, cooldownItems = Family.CLEAR })
+		local without = Family.UI:WarmCooldownNames()
+
+		Family.Database:SetMeta(mine, {
+			itemCooldowns = { { id = 15846, readyAt = came } },
+			cooldownItems = { [15846] = 165 } })
+		local with = Family.UI:WarmCooldownNames()
+
+		check("the warm-up covers your own crafting item as well",
+			with == without + 1, tostring(without) .. " then " .. tostring(with))
+
+		Family.Database:SetMeta(mine, {
+			itemCooldowns = Family.CLEAR, cooldownItems = Family.CLEAR })
+	end
+
 	Family.Database:SetMeta(mine, { craftCooldowns = Family.CLEAR })
 
 	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
