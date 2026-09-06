@@ -2015,7 +2015,7 @@ before reaching it, so it is exercised with a window open now; and the remembere
 by nothing until the bad-read case above was written down as a check.
 ---
 
-## 31. Every grant re-sends everything, and the wire is 2 KB a second
+## 31. Every grant re-sends everything, and the wire is 2 KB a second — HALF DONE 2026-09-06
 
 **Reported by Alberto on 2026-09-06**, from linking with the family aliased *Serena* the day
 before: she ticked her columns quickly, and on his side the marks took *"a good minute or two"* to
@@ -2042,6 +2042,21 @@ larger than the last. At 2 KB a second a 20 KB offering is ten seconds on its ow
 when the last chunk lands — `if entry.have == entry.total then complete(...)` — so nothing appears
 while a payload trickles in at ten messages a second, and then the whole of it appears at once.
 One tick, a pause, ten in a flash: that is a small payload, then a large one arriving whole.
+
+**The waiting half is built, 2026-09-06.** Alberto's decision, and it made the entry below mostly
+unnecessary: knowing a friend is mid-click is something he can live without, and not packaging
+anything while they are still clicking is worth a three-second wait. So `grantsChanged` defers
+through `Family:After`, which restarts its delay under the same key rather than queueing - a
+debounce that was already in the codebase. Fourteen columns are one transfer now instead of
+fourteen, and no protocol changed, so nothing an older Family has to ignore.
+
+The second question answered itself: the withdrawal promise survives, because it still goes with
+nobody pressing Update. Three seconds later is still a promise.
+
+**What is left, and it is smaller than it was.** The transfer that does go still carries the whole
+offering rather than the flag that changed, so the *first* time a family grants a lot of members
+it is still every record on the wire at 2 KB a second. That is the shape below, and it is now a
+question of how big one exchange is rather than how many there are.
 
 **Not built.** The shape is a message that carries the grants alone when only grants changed,
 leaving the data to the exchange that follows — which is a protocol addition and has to be

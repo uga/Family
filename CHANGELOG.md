@@ -297,6 +297,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Sharing decisions wait three seconds for you to finish before they are sent.** Every tick of a
+  box used to package and send everything you share with that family, immediately - so working down
+  a column of categories sent the whole lot once per column, and the other side watched the marks
+  arrive in bursts over a minute or two while all but the last transfer was already out of date.
+  Family now waits until you stop clicking. Nothing waits on a button: taking something back still
+  reaches them without anyone pressing Update.
+
 - **Clicking `Sibling` ticks or clears that whole column**, the way clicking a category's name
   already does on the grid above it. It was the one column on Wide Family that did not offer the
   gesture, and it is the one that is yours to decide rather than theirs. Nothing is sent: which of

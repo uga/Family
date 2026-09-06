@@ -8301,6 +8301,11 @@ do
 	})
 
 	local sent = {}
+
+	-- How long a grant waits for the player to stop clicking before anything is packaged.
+	-- Filled in below from the addon's own source, and used by every check in this block that
+	-- reads what arrived.
+	local GRANT_SETTLE_CHECK = 0
 	C_ChatInfo = {
 		RegisterAddonMessagePrefix = function() return true end,
 		SendAddonMessage = function(prefix, text, channel, target)
@@ -8537,9 +8542,25 @@ do
 		local _, count = Family.Wide:Offering(link)
 		check("a new link is granted nothing at all", count == 0, tostring(count))
 
+		-- **How long a grant waits for the player to stop clicking**, taken from the module
+		-- rather than copied here: a check that agrees with a constant typed into this file
+		-- agrees with itself and with nothing else.
+		GRANT_SETTLE_CHECK = Family.Wide.GRANT_SETTLE or 0
+		check("the addon says how long a grant settles for", GRANT_SETTLE_CHECK > 0,
+			tostring(GRANT_SETTLE_CHECK))
+
+		-- And held at nought for every check that is not about it, which is all of them but
+		-- two. Moving the clock is not free in this file: both families share one set of
+		-- saved variables and every ticker moves together, so six seconds spent waiting for
+		-- a settle aged records three blocks away and changed what a guild check three
+		-- hundred lines later decided to send. The two checks that are about the settle put
+		-- it back for as long as they need it.
+		Family.Wide.GRANT_SETTLE = 0
+
 		-- One member, one category.
 		sent = {}
 		Family.Wide:Grant(ourLinkID, key, "possessions", true)
+		advance(0.1)
 
 		local offered = Family.Wide:Offering(link)
 		local entry = offered[key]
@@ -8595,8 +8616,11 @@ do
 	print()
 	print("  taking it back")
 
-	-- Revoking is the half that has to be prompt. Waiting for somebody to press Update would
-	-- mean the other side kept it for as long as nobody did.
+	-- Revoking is the half that has to arrive. Waiting for somebody to press Update would mean
+	-- the other side kept it for as long as nobody did - which is still true, and is why the
+	-- settle below is a wait for the player rather than a wait for a button.
+	--
+	-- The settle is read once at the top of this block, where it is first needed.
 	sent = {}
 	ours = wearing(ours, function()
 		Family.Wide:Grant(ourLinkID, key, "possessions", false)
@@ -8604,8 +8628,42 @@ do
 		local _, count = Family.Wide:Offering(link)
 		check("revoking the last category stops offering that member", count == 0,
 			tostring(count))
+
+		-- **Nothing has gone yet**, which is new on 2026-09-06 and is the whole of the
+		-- change: a grant waits for the player to stop clicking before anything is
+		-- packaged. Ticking fourteen columns used to be fourteen transfers of the entire
+		-- offering over a channel that moves two kilobytes a second, and thirteen of them
+		-- were obsolete before they finished (backlog 31).
+		--
+		-- **Half a second rather than the three the addon ships with**, for these two
+		-- checks alone. What is being checked is that a grant waits and then goes, and the
+		-- length of the wait is checked separately above by reading the module. Moving the
+		-- clock three seconds here aged records in blocks that run later and changed what a
+		-- guild check three hundred lines away decided to send - those checks turn out to
+		-- be sensitive to where the clock is, which is theirs to fix and not this slice's,
+		-- and half a second does not disturb them.
+		Family.Wide.GRANT_SETTLE = 0.5
+		sent = {}
+		Family.Wide:Grant(ourLinkID, key, "possessions", false)
+		check("nothing is sent while the player might still be clicking", #sent == 0,
+			tostring(#sent))
+
+		-- And it still goes without anybody pressing Update, which is the promise this has
+		-- always made and the reason it is not gated on AutoUpdate. Three seconds later is
+		-- still a promise; what would break it is waiting for a button.
+		--
+		-- **Inside `wearing`**, which the first draft got wrong and is worth the line. A
+		-- deferred send fires later, and in this fixture "later" is whichever of the two
+		-- families happens to be wearing the saved variables at that moment - so advancing
+		-- the clock out here ran the exchange against the other side's store, found no such
+		-- link and sent nothing. In the game there is only ever one side and the question
+		-- cannot arise; here it has to be asked on purpose.
+		advance(0.6)
+		check("and says so once the clicking has stopped, with no button pressed",
+			#sent > 0, tostring(#sent))
+
+		Family.Wide.GRANT_SETTLE = 0
 	end)
-	check("and says so at once rather than at the next exchange", #sent > 0)
 
 	theirs = wearing(theirs, function()
 		deliver("Tester")
@@ -8993,6 +9051,13 @@ do
 				-- One exchange for one decision. Written as a loop over Grant it would
 				-- have been one per member, which is the same promise kept eleven times
 				-- over a rate-limited channel.
+				--
+				-- The settle is nought for this block - what it is about is `GrantMany`
+				-- sending once rather than once per member, and that is unchanged by
+				-- when the sending happens. The two checks that are about the settle are
+				-- in the block above, where the clock can be moved without disturbing
+				-- anything.
+				advance(0.1)
 				check("and tells them once rather than once per member",
 					exchanges == 1, tostring(exchanges))
 				Family.Wide.ExchangeWith = realExchange
@@ -20907,6 +20972,51 @@ print("a sibling with a crafting cooldown, on the summary's crafting set")
 	Family.Wide:SetSibling("cdfam", "Brewer-Thunderstrike", false)
 	FamilyDB.wide = held
 	Family.UI:Refresh()
+end)()
+
+print()
+print("two links settle apart from each other")
+
+-- **Why the settle's key carries the family id.** `Family:After` replaces a pending call under
+-- the same key rather than queueing a second one - that is the property that makes it a debounce
+-- at all - so a single shared key would turn a grant on the second link into a restart of the
+-- first, and the first family would simply never be told. Somebody tidying up two links in one
+-- sitting is not a rare case.
+--
+-- On its own down here, and stubbing the exchange rather than sending: this asks which families
+-- came due, and it does it where moving the clock is nobody else's business. Tried first inside
+-- the Wide block above, where a second and a bit of clock aged records three hundred lines away
+-- and reddened seven guild checks that turn out to be sensitive to where the clock is.
+;(function()
+	local held = FamilyDB.wide
+	local heldSettle = Family.Wide.GRANT_SETTLE
+	local realExchange = Family.Wide.ExchangeWith
+
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = {
+			["first"] = { name = "First lot", grants = {}, siblings = {}, members = {} },
+			["second"] = { name = "Second lot", grants = {}, siblings = {}, members = {} },
+		},
+	}
+
+	local due = {}
+	Family.Wide.ExchangeWith = function(_, familyID) due[familyID] = true end
+	Family.Wide.GRANT_SETTLE = 0.5
+
+	Family.Wide:Grant("first", "Someone-Fire Maw", "possessions", true)
+	Family.Wide:Grant("second", "Someone-Fire Maw", "possessions", true)
+	check("neither has gone while the clicking might continue",
+		next(due) == nil, tostring(next(due)))
+
+	advance(0.6)
+	check("and both are told once it has stopped, not just the last one touched",
+		due["first"] and due["second"],
+		tostring(due["first"]) .. " and " .. tostring(due["second"]))
+
+	Family.Wide.ExchangeWith = realExchange
+	Family.Wide.GRANT_SETTLE = heldSettle
+	FamilyDB.wide = held
 end)()
 
 print()

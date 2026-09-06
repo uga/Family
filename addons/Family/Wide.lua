@@ -1050,18 +1050,50 @@ local function setGrant(link, memberKey, categoryID, on)
     if not next(link.grants[memberKey]) then link.grants[memberKey] = nil end
 end
 
--- Telling them, once, whatever was just decided.
+-- How long to wait for the player to stop clicking before sending anything.
 --
--- At once rather than at the next exchange. Taking a grant away is the half of this that has
--- to be prompt: waiting until somebody happens to press Update would mean the other side kept
--- it for as long as nobody did.
+-- Not a smoothing of the traffic - a removal of it. An exchange carries the *offering*, every
+-- granted member's whole record, and a grant change alters one flag: the fourteen exchanges
+-- somebody ticking fourteen columns used to cause were fourteen transfers of everything, and
+-- thirteen of them were obsolete before they finished. `Comm` moves two hundred bytes ten
+-- times a second by design, so those thirteen were minutes of wire.
 --
--- Deliberately not gated on AutoUpdate. That switch is about being left alone by a
--- convenience; this message is the other player's, and a promise that waits for somebody to
--- press a button is not a promise.
+-- Three seconds because that is the number Alberto gave when the behaviour was described to
+-- him: long enough that a person working down a column never sends twice, short enough that
+-- somebody who ticks one box and sits back does not wonder whether it took.
+-- On the module rather than a file-local, so that it can be read - and, in the harness, held at
+-- nought for the several hundred checks that are about something else. Moving the clock is not
+-- free there: two families share one set of saved variables and every ticker in the file moves
+-- together, so six seconds spent waiting for a settle aged records three blocks away and changed
+-- what a guild check three hundred lines later sent. Nothing in the addon ever writes it.
+Wide.GRANT_SETTLE = 3
+-- Telling them whatever was just decided, once the deciding has stopped.
+--
+-- **Still without anybody pressing a button**, which is the promise this has always made and
+-- the reason it is not gated on AutoUpdate: that switch is about being left alone by a
+-- convenience, and this message is the other player's. Taking a grant away is the half that
+-- has to arrive - waiting until somebody happens to press Update would mean the other side
+-- kept it for as long as nobody did.
+--
+-- What changed on 2026-09-06 is *at once* becoming *when you stop*. Alberto reported a linked
+-- family ticking their columns and the marks taking a minute or two to appear on his side, in
+-- bursts, and the measurement is backlog 31: every one of those clicks sent the whole offering
+-- again. A promise that arrives three seconds later is still a promise; fourteen promises
+-- queued behind each other are worse than one, because the last of them is the only one that
+-- was ever true and it arrives last.
+--
+-- `Family:After` restarts its delay when called again under the same key rather than queueing
+-- a second run, which is exactly what is wanted and is why the key carries the family id: two
+-- links being edited in one sitting are two settlements, not one that keeps being put off.
+--
+-- The database is told at once regardless. That is our own disk and costs nothing, and it is
+-- what makes the tick survive a reload whether or not the exchange has gone yet.
 local function grantsChanged(self, familyID)
-    self:ExchangeWith(familyID, "a grant changed")
     Family.Database:Changed("wide")
+
+    Family:After(self.GRANT_SETTLE or 0, "wide.grants." .. tostring(familyID), function()
+        self:ExchangeWith(familyID, "a grant changed")
+    end)
 end
 
 function Wide:Grant(familyID, memberKey, categoryID, on)
