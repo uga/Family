@@ -955,6 +955,11 @@ function Professions:ScanNow(includeRecipes)
 		craftCooldowns = next(cooldowns) and cooldowns or Family.CLEAR,
 		cooldownItems = next(cooldownItems) and cooldownItems or Family.CLEAR,
 	})
+
+	-- The riding rank is what decides how fast a character travels on the builds that keep a
+	-- mount journal, and this scan is the one that writes it. Without this the answer is a scan
+	-- behind: right after somebody buys Master Riding it would still say what Artisan says.
+	Family.Mounts:Recompute(key)
 end
 
 --------------------------------------------------------------------------------------------

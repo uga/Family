@@ -78,6 +78,53 @@ function Mounts:Fastest(payload)
 	return best, flying
 end
 
+-- The same question on a client that keeps a mount journal, where the answer comes apart
+-- differently.
+--
+-- From Cataclysm the mount stopped carrying its speed and the riding skill started carrying all of
+-- it: `MountCapability` maps a required rank to the aura that applies the number, so Master Riding
+-- upgrades every mount already owned and there is no such thing as a 310% mount. The mount's
+-- **type** is what says which rungs it can use - a ground mount stops at Journeyman's 100% however
+-- high the skill goes, because its type has no rung above 150.
+--
+-- So this reads two things and multiplies them: the rank says *how fast*, and the journal says
+-- *whether there is anything to be that fast on*, and whether any of it flies.
+--
+-- **Usable and not merely collected.** Measured on a live Mists paladin by counting how many rows
+-- carry each field: field 11 is true for seven - what the account owns - and field 5 for three,
+-- which is what this character can ride. The four in between are flyers the account has and a
+-- rank-150 paladin cannot, so field 5 already takes the riding skill into account and is the only
+-- one that answers per character.
+function Mounts:FromJournal(rank)
+	local journal = _G.C_MountJournal
+	if not (journal and journal.GetMountIDs and journal.GetMountInfoByID) then return nil end
+
+	local ladder = Family.RidingLadder
+	local rung = type(ladder) == "table" and ladder[rank or 0] or nil
+	if not rung then return nil end
+
+	local ids = Family:TryCall(journal.GetMountIDs)
+	if type(ids) ~= "table" then return nil end
+
+	local flies = Family.MountFlies or {}
+	local any, wings = false, false
+
+	for _, id in ipairs(ids) do
+		local _, spell, _, _, usable = Family:TryCall(journal.GetMountInfoByID, id)
+		if usable then
+			any = true
+			if spell and flies[spell] then wings = true end
+		end
+	end
+
+	-- Nothing usable is not slowness, it is having no mount - and §2.2 says that is an answer
+	-- rather than a nought. The caller falls through to the other reading, which on this build
+	-- will find nothing either, and the panel says so.
+	if not any then return nil end
+
+	return rung[1], (wings and rung[2]) or nil
+end
+
 -- Worked out where the record is, and written down as one number.
 --
 -- Recomputed rather than accumulated: a mount sold is a mount gone, and a `max` kept against what
@@ -93,7 +140,14 @@ function Mounts:Recompute(key)
 	local payload = Family.Database:Payload(key)
 	if not payload then return end
 
-	local ground, flying = self:Fastest(payload)
+	-- The journal first, where there is one: on those builds the mount holds no speed and this
+	-- is the only reading that is right. 762 is the riding skill line every build that has a
+	-- journal uses - an id, and the same number in every language.
+	local meta = Family.Database:Meta(key)
+	local riding = meta and meta.skills and meta.skills[762]
+
+	local ground, flying = self:FromJournal(riding and riding.rank)
+	if not ground then ground, flying = self:Fastest(payload) end
 	Family.Database:SetMeta(key, {
 		mount = ground or Family.CLEAR,
 		mountFly = flying or Family.CLEAR,

@@ -16023,6 +16023,75 @@ print("how fast a character can get about")
 	check("there is no flying in vanilla at all",
 		Family.MountFlight[458] == nil and Family.MountFlight[579] == nil)
 
+	-- **And the client that keeps a mount journal, where the answer comes apart differently.**
+	--
+	-- From Cataclysm the mount holds no speed and the riding skill holds all of it, so the rank
+	-- says how fast and the journal says whether there is anything to be that fast on. Measured
+	-- from a live Mists client: `GetMountInfoByID` hands back the summoning spell second and
+	-- *usable by this character* fifth - counted rather than remembered, field 11 being true for
+	-- seven mounts the account owns and field 5 for the three a rank-150 paladin can ride.
+	do
+		local held = _G.C_MountJournal
+		local heldSkills = Family.Database:Meta(key).skills
+
+		-- A ground mount and a flyer, both usable, and a flyer the account has and this
+		-- character cannot ride.
+		local JOURNAL = {
+			[1] = { "Brown Horse", 458, true },
+			[2] = { "Some Gryphon", 28828, true },
+			[3] = { "Another Gryphon", 28828, false },
+		}
+		_G.C_MountJournal = {
+			GetMountIDs = function() return { 1, 2, 3 } end,
+			GetMountInfoByID = function(id)
+				local row = JOURNAL[id]
+				if not row then return nil end
+				return row[1], row[2], "icon", false, row[3], 0, false, true, 1,
+					false, true, id, false
+			end,
+		}
+
+		Family.Database:SetMeta(key, { skills = { [762] = { rank = 225 } } })
+		Family.Mounts:Recompute(key)
+
+		local meta = Family.Database:Meta(key)
+		check("Expert riding with a flyer to use is a hundred on the ground and a hundred and fifty in the air",
+			meta.mount == 100 and meta.mountFly == 150,
+			tostring(meta.mount) .. " " .. tostring(meta.mountFly))
+
+		-- **Master Riding upgrades the mounts already owned**, which is what Alberto asked and
+		-- what `MountCapability` answers: the mount never held the number.
+		Family.Database:SetMeta(key, { skills = { [762] = { rank = 375 } } })
+		Family.Mounts:Recompute(key)
+		meta = Family.Database:Meta(key)
+		check("and the same mounts fly at three hundred and ten once Master Riding is learnt",
+			meta.mount == 100 and meta.mountFly == 310,
+			tostring(meta.mount) .. " " .. tostring(meta.mountFly))
+
+		-- And the mirror, which is the half that catches people out: a ground mount stops at
+		-- Journeyman's hundred however high the skill goes, because its type has no rung above.
+		JOURNAL[2][3], JOURNAL[3][3] = false, false
+		Family.Mounts:Recompute(key)
+		meta = Family.Database:Meta(key)
+		check("but nothing but a ground mount flies at nothing, whatever the rank says",
+			meta.mount == 100 and meta.mountFly == nil,
+			tostring(meta.mount) .. " " .. tostring(meta.mountFly))
+
+		-- Collected is not usable. The third row is a flyer the account owns and this
+		-- character cannot ride, and reading that one would say they fly.
+		JOURNAL[2][3] = false
+		JOURNAL[3][3] = false
+		JOURNAL[1][3] = false
+		Family.Mounts:Recompute(key)
+		check("and a character with nothing they can ride has no answer rather than a nought",
+			Family.Database:Meta(key).mount == nil,
+			tostring(Family.Database:Meta(key).mount))
+
+		_G.C_MountJournal = held
+		Family.Database:SetMeta(key, { skills = heldSkills })
+		Family.Bags:Scan()
+	end
+
 	-- §2.2: nothing, and not nought. A record with neither read says so, and the panel is what
 	-- turns that into a dash rather than into *on foot*.
 	check("a record with neither answers nothing rather than nought",
@@ -22673,6 +22742,42 @@ print("the client that answers about professions and about skills both")
 
 	check("and they come back on a client that still shows them",
 		(Family.Database:Meta(key).skills or {})[43] ~= nil)
+
+	-- **And the scan leaves how fast they travel right**, which on this build depends on the
+	-- rank it has just written. Without that the answer is a scan behind: right after somebody
+	-- buys Master Riding it would still say what Artisan says.
+	do
+		local heldJournal = _G.C_MountJournal
+		_G.C_MountJournal = {
+			GetMountIDs = function() return { 1 } end,
+			GetMountInfoByID = function()
+				return "Some Gryphon", 28828, "icon", false, true, 0, false, true, 1,
+					false, true, 1, false
+			end,
+		}
+		-- A Mists client has one Riding line and none of Era's per-mount ones.
+		SKILL_LINES[#SKILL_LINES + 1] =
+			{ name = "Riding", rank = 300, maxRank = 300, abandonable = false }
+
+		_G.GetProfessions = function() return 1, nil, nil, nil, 5, 6 end
+		_G.GetProfessionInfo = function(index)
+			local slot = SLOTS[index]
+			if not slot then return nil end
+			return slot.name, "prof-icon", slot.rank, slot.maxRank, 0, 0, slot.line, 0
+		end
+		Family.Professions:Scan(true)
+
+		local meta = Family.Database:Meta(key)
+		check("the professions scan works out how fast they get about, from the rank it wrote",
+			meta.mount == 100 and meta.mountFly == 280,
+			tostring(meta.mount) .. " " .. tostring(meta.mountFly))
+
+		SKILL_LINES[#SKILL_LINES] = nil
+		_G.C_MountJournal = heldJournal
+		_G.GetProfessions, _G.GetProfessionInfo = nil, nil
+		Family.Professions:Scan(true)
+		Family.Bags:Scan()
+	end
 
 	Family.Database:SetMeta(key, { skills = heldSkills })
 end)()

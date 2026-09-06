@@ -29,6 +29,11 @@ is a decision rather than an afternoon of archaeology.
   quest there showed only the quest's own text; it now lists that character's objectives under it,
   the way the single-character page already did.
 
+- **The Mount column is right on Mists of Pandaria too.** There the game gives the speed to your
+  riding skill rather than to the mount, so buying Master Riding makes every mount you already own
+  faster - and Family now reads it that way, from your riding rank and what your mount journal lets
+  that character ride.
+
 - **The Mount column says whether a character can fly.** Two figures, always: what they do on the
   ground and what they do in the air - *100%/60%* for somebody with a gryphon, *100%/-* for somebody
   without one. Flying at 60% beats running at 100% often enough that one number was the wrong
