@@ -1543,3 +1543,48 @@ is why the original notice was refused. It is drawn either side of it, for as lo
 it: three and a half minutes of decoding at every login is still three and a half minutes, and
 it is still provably pointless from the second session on. What the notice removes is the
 *mystery*, which is what was actually hurting.
+
+### What the walk actually costs, read out of the code 2026-09-06
+
+Alberto asked whether thirty blacksmiths make Family walk three hundred recipes thirty times.
+Read rather than recalled, and the answer is in two halves.
+
+**The asking does not repeat.** `Slash.lua` checks `Names:CachedItem(id)` per id and skips a
+known one **without spending the budget** - the comment beside it says why, and the session cache
+and the disk store both answer. So the number of questions put to the client is bounded by the
+**distinct** item ids across the whole family. Twenty blacksmiths cost what one costs, plus
+whatever the twentieth knows that the first did not.
+
+**The walking does repeat.** The queue advances one member per call and the timer fires once a
+second, so a member contributing nothing still costs a second and a payload decode. Ten
+characters is ten seconds; two hundred and ten is three and a half minutes, for the same
+questions. That is the half the fingerprint above would fix, and it is the whole of the
+difference between his ten-alt user and his 210-alt one.
+
+### And a third thing neither of us had looked at
+
+**Most recipes are never named from their item at all.** `Names:Recipe` tries `recipe.spellID`
+first through `Names:Spell`, which the client answers for any spell id straight away, with no
+loading and no waiting - that property is written down beside `Names:Spell` and is why the
+spellbook is stored as ids. The item id is the *fallback*, used only where a recipe has no spell
+or where the client will not name the one it has.
+
+**But the warm-up asks about every `recipe.itemID` it can find**, spell or no spell. If most
+recipes carry a spellID then most of that asking is for names nothing will ever read - and the
+walk could be cut to the recipes that have no spell, which would shrink both halves at once.
+
+**Unmeasured, and it is one line in the game rather than a guess here**, because how many
+recipes carry a spellID is a property of what the client handed the scanner, not of any table:
+
+    /run local n,s,o,d=0,0,0,{} for k in pairs(Family.Database:Members()) do
+        local p=Family.Database:Payload(k) or {}
+        for _,r in pairs(p.professions or {}) do for _,x in ipairs(r.recipes or {}) do
+        n=n+1 if x.spellID then s=s+1 end
+        if x.itemID and not x.spellID then o=o+1 end
+        if x.itemID then d[x.itemID]=true end end end end
+        local u=0 for _ in pairs(d) do u=u+1 end
+        print("recipes",n,"with a spell",s,"item but no spell",o,"distinct items",u)
+
+`n` against `u` is the duplication Alberto asked about; `o` is how much of the walk is actually
+needed. **Run it on a small account**: it decodes every payload, which on a 210-character one is
+the stall this entry is about.
