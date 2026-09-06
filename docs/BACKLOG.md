@@ -1246,8 +1246,19 @@ that mount's own aura says rather than at 310%.
 
 The fix is small and the data is already scanned: skill line 762's rank is recorded since riding
 was added to the table the same day, so it is a lookup against the five rows above, chosen by
-build. What is missing is a reason to do it now - nobody in this family is on Mists - and a way to
-check it against a live client of that build.
+build.
+
+**The first version of this entry gave a bad reason for not doing it** - *nobody in this family is
+on Mists* - which confused Alberto's own characters with the people the addon is released to. Mists
+is a shipped build and the harness has covered it since long before this: it puts that build in
+force twice and reloads the panel under it, and one block runs against all three. Corrected here
+rather than quietly, because a wrong reason for not doing something is worse than no reason.
+
+**What is genuinely missing is one measurement, and the harness cannot supply it**: whether a live
+Mists client still lists *Riding* among `GetSkillLineInfo`'s rows, and at what rank. The harness's
+skill list is a fixture written by hand, so asking it that question would be asking my own guess -
+which is the shape of L-037 and L-053 both, and the shape of three separate faults in the week this
+was written.
 
 **And there is no such thing as a 310% mount**, which is Alberto's question asked the other way
 round. `MountTypeXCapability` settles it: a mount has a *type*, and the type is what holds the
