@@ -1378,6 +1378,10 @@ heavily, since forty characters carry the same consumables.
 So the answer for 210 characters is that this store costs them what it costs anybody: **under
 a hundred kilobytes per language in practice.**
 
+**Confirmed in play 2026-09-06**, which is the only place it could be: on the first login after
+the deploy, opening Professions was slow the way it always was; on the second it opened at once.
+That is the whole claim - the client's cache does not survive a relog and this one does.
+
 **And it refreshes, which Alberto asked for while it was being written**: *il fatto di conoscere
 la traduzione non ci deve impedire di accorgerci che dobbiamo rinfrescare il dato perché è
 cambiato dall'origine.* He was right that the first draft could not. The client is asked before

@@ -1970,12 +1970,24 @@ local function makeRow(parent)
 			-- §2.2 all the way down. A member nobody has logged out on since this
 			-- shipped has no answer, and the tooltip says nothing rather than
 			-- inventing one - which is what the cell's dash means too.
+			--
+			-- **The subzone goes on the zone's own line, not a line of its own.**
+			-- A tooltip line here is a label and a value, and a value with no label
+			-- put *Where* and *Hearthstone* one row above the things they name -
+			-- two labels down the left and three values down the right, which reads
+			-- as an off-by-one rather than as a subzone. Reported from play with a
+			-- screenshot the same evening this shipped.
+			--
+			-- The cell keeps the zone over the subzone, because there it has two
+			-- lines and no labels to line up with; this has one line and two
+			-- columns. Same two facts, arranged for the shape they are drawn in.
 			if zone then
 				lines[#lines + 1] = { " " }
-				lines[#lines + 1] = { L["Where"], zone }
+				local place = zone
 				if type(under) == "string" and under ~= "" and under ~= zone then
-					lines[#lines + 1] = { "", "|cff888888" .. under .. "|r" }
+					place = place .. "  |cff888888" .. under .. "|r"
 				end
+				lines[#lines + 1] = { L["Where"], place }
 			end
 
 			local hearth = Family.Names:Area(meta.hearthID, meta.hearth)

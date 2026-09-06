@@ -15418,8 +15418,21 @@ print("where a character was when they logged out")
 
 			check("hovering it gives the zone in full, past where the cell stops",
 				told:find("Les Steppes Ardentes", 1, true) ~= nil, told)
-			check("and the subzone under it", told:find("Pyrox Flats", 1, true) ~= nil,
+			-- **On the zone's own line, not a line of its own.** A tooltip line here is
+			-- a label and a value, and a value with no label stood *Where* and
+			-- *Hearthstone* one row above the things they name. Checked by pairing:
+			-- whatever line carries the zone must carry the subzone too.
+			local wherever
+			for _, line in ipairs(GameTooltip.__lines) do
+				if tostring(line[2]):find("Les Steppes", 1, true) then wherever = line end
+			end
+			check("and the subzone on that same line rather than an unlabelled one",
+				wherever ~= nil
+					and tostring(wherever[2]):find("Pyrox Flats", 1, true) ~= nil,
 				told)
+			check("with the label beside it and not above it",
+				wherever ~= nil and wherever[1] == Family.L["Where"],
+				tostring(wherever and wherever[1]))
 			check("and the hearthstone, which the cell also clips",
 				told:find(Family.L["Hearthstone"], 1, true) ~= nil, told)
 			misc.__scripts.OnLeave(misc)
