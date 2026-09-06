@@ -855,7 +855,14 @@ end
 -- nobody has asked. `bagsSeen` is what the mount would have been found in on Era, and it is set by
 -- the same scan that recomputes this.
 CELL.mount = function(meta)
-	if meta.mount then return string.format("%d%%", meta.mount) end
+	-- Both numbers, because flying is a second speed on the same mount and not a faster one: a
+	-- gryphon is +60% on the ground and +60% in the air, so the larger of the two would call it
+	-- an ordinary mount and never say this character can fly. Reported from play for that.
+	if meta.mount or meta.mountFly then
+		local ground = meta.mount and string.format("%d%%", meta.mount) or "-"
+		if not meta.mountFly then return ground end
+		return ground .. " / " .. string.format("%d%%", meta.mountFly)
+	end
 	if not meta.bagsSeen then return UNKNOWN end
 	return ""
 end

@@ -15996,6 +15996,32 @@ print("how fast a character can get about")
 		Family.Mounts:Fastest({ spells = { { spells = { 5784 } } },
 			bags = { [0] = { slots = { [1] = { id = 1044 } } } } }) == 100)
 
+	-- **Flying is a second speed on the same mount, not a faster one.** An Ebon Gryphon is +60%
+	-- on the ground and +60% in the air; an epic flyer is +100% and +280%. A reader that took
+	-- the larger of the two would call the gryphon an ordinary mount and never say its owner can
+	-- fly - which is how this was reported from play on 2026-09-06, as a character with a gryphon
+	-- and an epic ground mount showing 100% and nothing else.
+	check("the gryphon is sixty on the ground and sixty in the air",
+		Family.MountSpeeds[32239] == 60 and Family.MountFlight[32239] == 60,
+		tostring(Family.MountSpeeds[32239]) .. " " .. tostring(Family.MountFlight[32239]))
+
+	do
+		local ground, air = Family.Mounts:Fastest({ spells = { { spells = { 31700 } } } })
+		check("an epic flyer answers with both numbers", ground == 100 and air == 280,
+			tostring(ground) .. " " .. tostring(air))
+	end
+
+	do
+		local ground, air = Family.Mounts:Fastest({ spells = { { spells = { 32239 } } },
+			bags = { [0] = { slots = { [1] = { id = 1044 } } } } })
+		check("and each is the best of its own kind, not of the pair",
+			ground == 100 and air == 60, tostring(ground) .. " " .. tostring(air))
+	end
+
+	-- Nothing flies on Classic Era, and the generated table says so rather than being trusted to.
+	check("there is no flying in vanilla at all",
+		Family.MountFlight[458] == nil and Family.MountFlight[579] == nil)
+
 	-- §2.2: nothing, and not nought. A record with neither read says so, and the panel is what
 	-- turns that into a dash rather than into *on foot*.
 	check("a record with neither answers nothing rather than nought",
@@ -16028,7 +16054,7 @@ print("how fast a character can get about")
 	-- that worked it out itself would have nothing to say about anybody else's family.
 	do
 		local heldWide = FamilyDB.wide
-		Family.Database:SetMeta(key, { mount = 100 })
+		Family.Database:SetMeta(key, { mount = 100, mountFly = 280 })
 
 		FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
 			links = { ["mountfam"] = { name = "Rider-Thunderstrike",
@@ -16040,7 +16066,15 @@ print("how fast a character can get about")
 				and offered[key].meta.mount == 100,
 			offered and offered[key] and offered[key].meta
 				and tostring(offered[key].meta.mount))
+		-- Both numbers, or a sibling who can fly reads as somebody who cannot.
+		check("and whether they can fly goes with it",
+			offered and offered[key] and offered[key].meta
+				and offered[key].meta.mountFly == 280,
+			offered and offered[key] and offered[key].meta
+				and tostring(offered[key].meta.mountFly))
 
+		-- Put back, or the draw below meets a flyer where it is checking the plain case.
+		Family.Database:SetMeta(key, { mountFly = Family.CLEAR })
 		FamilyDB.wide = heldWide
 	end
 
@@ -16064,6 +16098,21 @@ print("how fast a character can get about")
 			end
 		end
 		check("and it says how fast, as a percentage", said == "100%", tostring(said))
+
+		-- And both, where there are both - which is the shape that has to fit the column.
+		Family.Database:SetMeta(key, { mount = 100, mountFly = 280 })
+		Family.UI:Refresh()
+
+		for _, f in ipairs(frames) do
+			if f.cells and f.__shown == true and f.memberKey == key then
+				said = f.cells[at] and f.cells[at].__text
+			end
+		end
+		check("a character who can fly says so beside how fast they run",
+			said == "100% / 280%", tostring(said))
+
+		Family.Database:SetMeta(key, { mountFly = Family.CLEAR })
+		Family.UI:Refresh()
 
 		-- §2.2 again, at the place a reader meets it: never looked is not on foot.
 		Family.Database:SetMeta(key, { mount = Family.CLEAR, bagsSeen = Family.CLEAR })

@@ -328,6 +328,78 @@ Family.MountSpeeds = {
 	[1291813] = 61,
 }
 
+-- summoning spell -> how much faster than running, in the air
+--
+-- A second number on the same spell rather than a faster mount: an Ebon Gryphon is +60%
+-- on the ground and +60% in the air, and an epic flyer is +100% and +280%. Reading only
+-- the first made a character with a gryphon and an epic ground mount report 100% and say
+-- nothing about flying - reported from play.
+--
+-- Empty on Classic Era, which is right: there is no flying in vanilla.
+--
+-- **A druid's flight forms are not in here**, and cannot be: on Burning Crusade the form
+-- carries aura 201 (enable flight) and a shapeshift, with the speed nowhere in the spell.
+Family.MountFlight = {
+	[3363] = 310,
+	[31700] = 280,
+	[32235] = 60,
+	[32239] = 60,
+	[32240] = 60,
+	[32242] = 280,
+	[32243] = 60,
+	[32244] = 60,
+	[32245] = 60,
+	[32246] = 280,
+	[32289] = 280,
+	[32290] = 280,
+	[32292] = 280,
+	[32295] = 280,
+	[32296] = 280,
+	[32297] = 280,
+	[32345] = 310,
+	[37015] = 310,
+	[39798] = 280,
+	[39800] = 280,
+	[39801] = 280,
+	[39802] = 280,
+	[39803] = 280,
+	[39949] = 280,
+	[40192] = 310,
+	[40212] = 280,
+	[41513] = 280,
+	[41514] = 280,
+	[41515] = 280,
+	[41516] = 280,
+	[41517] = 280,
+	[41518] = 280,
+	[42667] = 60,
+	[42668] = 280,
+	[43927] = 280,
+	[44151] = 280,
+	[44153] = 60,
+	[44317] = 310,
+	[44655] = 280,
+	[44744] = 310,
+	[44824] = 60,
+	[44825] = 280,
+	[44827] = 310,
+	[46197] = 60,
+	[46199] = 280,
+	[48023] = 280,
+	[49193] = 310,
+	[49851] = 500,
+	[51617] = 60,
+	[64681] = 150,
+	[64761] = 150,
+	[86459] = 150,
+	[86460] = 280,
+	[86461] = 310,
+	[389128] = 280,
+	[1227904] = 310,
+	[1266866] = 61,
+	[1291813] = 61,
+}
+
 -- the item that casts one -> that spell
 --
 -- Which is what a mount is in the bags on Classic Era, where it is carried rather than

@@ -51,6 +51,16 @@ BUILDS = {
 APPLY_AURA = 6
 MOUNTED_SPEED = 32
 
+# Flying is a second number on the same spell, not a faster mount. An Ebon Gryphon carries aura 32
+# at +60% for the ground and aura 207 at +60% for the air, and an epic flyer carries 100 and 280.
+# Reading only the first is what made a character with a gryphon and an epic ground mount report
+# 100% and say nothing about being able to fly at all - reported from play 2026-09-06.
+#
+# Measured: Era has none of these at all, which is right - there is no flying in vanilla. Burning
+# Crusade has 49, at 60%, 280% and **310%**, that last being the rare ones. Mists adds 150% and
+# 500%.
+FLIGHT_SPEED = 207
+
 # Era and Burning Crusade store one less than the percentage; Mists stores the percentage.
 BUMP = {"Classic Era": 1, "Burning Crusade Anniversary": 1, "Mists of Pandaria Classic": 0}
 
@@ -99,20 +109,27 @@ def read(table, build):
 
 
 def build():
-    speeds, items, dropped = {}, {}, 0
+    speeds, flight, items, dropped = {}, {}, {}, 0
 
     for game, build_id in BUILDS.items():
-        here = {}
+        here, air = {}, {}
         for row in read("SpellEffect", build_id):
             if int(row.get("Effect") or 0) != APPLY_AURA:
                 continue
-            if int(row.get("EffectAura") or 0) != MOUNTED_SPEED:
+
+            aura = int(row.get("EffectAura") or 0)
+            if aura != MOUNTED_SPEED and aura != FLIGHT_SPEED:
                 continue
 
             spell = int(row["SpellID"])
             percent = int(row.get("EffectBasePoints") or 0) + BUMP[game]
-            if percent > here.get(spell, 0):
-                here[spell] = percent
+            into = here if aura == MOUNTED_SPEED else air
+            if percent > into.get(spell, 0):
+                into[spell] = percent
+
+        for spell, percent in air.items():
+            if percent >= SLOWEST_MOUNT and percent > flight.get(spell, 0):
+                flight[spell] = percent
 
         kept = 0
         for spell, percent in here.items():
@@ -131,7 +148,7 @@ def build():
         for row in read("ItemEffect", build_id):
             spell = int(row.get("SpellID") or 0)
             item = int(row.get("ParentItemID") or 0)
-            if item and spell in speeds:
+            if item and (spell in speeds or spell in flight):
                 items[item] = spell
 
     if not speeds:
@@ -166,6 +183,24 @@ def build():
     lines += ["}", ""]
 
     lines += [
+        "-- summoning spell -> how much faster than running, in the air",
+        "--",
+        "-- A second number on the same spell rather than a faster mount: an Ebon Gryphon is +60%",
+        "-- on the ground and +60% in the air, and an epic flyer is +100% and +280%. Reading only",
+        "-- the first made a character with a gryphon and an epic ground mount report 100% and say",
+        "-- nothing about flying - reported from play.",
+        "--",
+        "-- Empty on Classic Era, which is right: there is no flying in vanilla.",
+        "--",
+        "-- **A druid's flight forms are not in here**, and cannot be: on Burning Crusade the form",
+        "-- carries aura 201 (enable flight) and a shapeshift, with the speed nowhere in the spell.",
+        "Family.MountFlight = {",
+    ]
+    for spell in sorted(flight):
+        lines.append("\t[%d] = %d," % (spell, flight[spell]))
+    lines += ["}", ""]
+
+    lines += [
         "-- the item that casts one -> that spell",
         "--",
         "-- Which is what a mount is in the bags on Classic Era, where it is carried rather than",
@@ -181,6 +216,7 @@ def build():
 
     print("\n  %d mounts, %d of them carried as an item, %d speed auras dropped as not mounts"
           % (len(speeds), len(items), dropped))
+    print("  %d of them fly" % len(flight))
 
 
 if __name__ == "__main__":

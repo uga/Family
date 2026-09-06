@@ -33,7 +33,12 @@ local _, Family = ...
 local Mounts = {}
 Family.Mounts = Mounts
 
--- The fastest thing this record can summon, as a percentage over running, or nothing.
+-- The fastest thing this record can summon: on the ground, and in the air. Either may be nothing.
+--
+-- **Two numbers and not one.** Flying is a second speed on the same spell rather than a faster
+-- mount - an Ebon Gryphon is +60% on the ground and +60% in the air, an epic flyer +100% and
+-- +280% - so a reader that took the larger of the two would call a gryphon a hundred per cent
+-- mount and never say the character can fly. Reported from play 2026-09-06 for exactly that.
 --
 -- Nothing is an honest answer and is not nought: a character whose spellbook and bags have never
 -- been read has no answer here, and a nought would say *on foot* about somebody nobody has looked
@@ -44,14 +49,20 @@ function Mounts:Fastest(payload)
 	local speeds = Family.MountSpeeds
 	if type(speeds) ~= "table" then return nil end
 
-	local best
+	local air = Family.MountFlight or {}
+	local best, flying
+
+	local function consider(id)
+		if not id then return end
+		local speed = speeds[id]
+		if speed and (not best or speed > best) then best = speed end
+		local wings = air[id]
+		if wings and (not flying or wings > flying) then flying = wings end
+	end
 
 	-- Learned. Paladins and warlocks on every build, and everybody from Burning Crusade on.
 	for _, school in ipairs(payload.spells or {}) do
-		for _, id in ipairs(school.spells or {}) do
-			local speed = speeds[id]
-			if speed and (not best or speed > best) then best = speed end
-		end
+		for _, id in ipairs(school.spells or {}) do consider(id) end
 	end
 
 	-- Carried, which is what a mount is on Classic Era: an item in a bag rather than a spell.
@@ -59,13 +70,12 @@ function Mounts:Fastest(payload)
 	if type(items) == "table" then
 		for _, bag in pairs(payload.bags or {}) do
 			for _, slot in pairs((type(bag) == "table" and bag.slots) or {}) do
-				local speed = slot.id and speeds[items[slot.id] or 0]
-				if speed and (not best or speed > best) then best = speed end
+				consider(slot.id and items[slot.id])
 			end
 		end
 	end
 
-	return best
+	return best, flying
 end
 
 -- Worked out where the record is, and written down as one number.
@@ -83,5 +93,9 @@ function Mounts:Recompute(key)
 	local payload = Family.Database:Payload(key)
 	if not payload then return end
 
-	Family.Database:SetMeta(key, { mount = self:Fastest(payload) or Family.CLEAR })
+	local ground, flying = self:Fastest(payload)
+	Family.Database:SetMeta(key, {
+		mount = ground or Family.CLEAR,
+		mountFly = flying or Family.CLEAR,
+	})
 end

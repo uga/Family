@@ -86,7 +86,7 @@ local CATEGORIES = {
                -- will tell you one will tell you the other.
                "zone", "subzone", "zoneID", "mapID", "zoneLocale",
                -- And how fast they get there, which is the same question one step on.
-               "mount" } },
+               "mount", "mountFly" } },
     { id = "currencies",  label = L["Currencies"],
       meta = { "currencies", "currenciesSeen" } },
     { id = "worldbuffs",  label = L["World buffs"], meta = { "boons", "banked" } },

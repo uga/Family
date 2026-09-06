@@ -1881,6 +1881,24 @@ The client's own table says the same about Era's shape: every riding line there 
 `SkillRaceClassInfo`**, one `SkillTierID` for the race that owns the mount and another for
 everybody else. Cooking, fishing and first aid have one.
 
+**Flying is a second number on the same spell**, not a faster mount, and reading only the first is
+what a report from play caught the same day: a character with an Ebon Gryphon and an epic ground
+mount showed *100%* and said nothing about being able to fly. Aura **207** carries it.
+
+| Build | Flying spells | Speeds |
+|---|---|---|
+| Classic Era | **0** | none - there is no flying in vanilla |
+| Burning Crusade | 49 | 60% (11), **280%** (28), **310%** (8) |
+| Mists | 12 | 150%, 280%, 310%, 500% |
+
+Ebon Gryphon is spell 32239 and measures **+60% on the ground and +60% in the air** - the Expert
+tier, which matches a riding skill of 225. The 310% rows are the rare Burning Crusade mounts.
+
+**A druid's flight forms are not in this and cannot be.** Spells 33943 and 40120 on Burning
+Crusade carry aura 36 (shapeshift), aura 77 and aura **201 (enable flight)**, and no speed
+anywhere in the spell - it belongs to the form. Alberto gives them as 150% at level 68 and 280% at
+70; that is knowledge from play rather than from a table, and nothing here uses it yet.
+
 **What it cannot see** is a permission whose mount was destroyed - backlog entry 19, named and
 deferred the day it was built.
 

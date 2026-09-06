@@ -29,6 +29,10 @@ is a decision rather than an afternoon of archaeology.
   quest there showed only the quest's own text; it now lists that character's objectives under it,
   the way the single-character page already did.
 
+- **The Mount column says whether a character can fly.** Flying is a second speed rather than a
+  faster mount, so a gryphon now reads as *100% / 60%* - what you do on the ground, and what you do
+  in the air - instead of hiding the wings behind the larger number.
+
 - **A Mount column on the Overview.** How fast each character can get about - 60%, 100%, or faster
   - worked out from the mount they own rather than from the riding skill, so a paladin or a warlock
   on a class mount counts, and so does a character carrying one they bought. It is shared with a
