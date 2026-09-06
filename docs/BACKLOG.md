@@ -1234,7 +1234,7 @@ for the map API - if it does not, the value wants keeping during play and writin
 
 ---
 
-## 19. A mount destroyed is not a permission lost
+## 19. A mount destroyed is not a permission lost — DONE 2026-09-06
 
 **Named by Alberto on 2026-09-06, while the shape of the mount column was being chosen, and
 deferred by him in the same sentence.**
@@ -1254,8 +1254,22 @@ ride: tiger, ram* beside *travels at: on foot*. The skills are already scanned s
 so the data is there; what is missing is the decision about how to draw two facts in one column's
 width, which is the same question the icon overview is about.
 
-**Not built.** Written down so the limit is a decision with a date rather than something nobody
-noticed.
+**Built 2026-09-06.** The tooltip, not a column - the width was the whole obstacle and the
+professions and misc rows had already settled where a fact goes when its cell has no room for it.
+Hovering a member on Overview gives the speed and the riding skills they hold, so *earned tiger
+riding, destroyed the tiger* is now distinguishable from *never learnt to ride*.
+
+**Two things measured while building it that the entry above had slightly wrong.** The panel does
+not say *on foot* for that character: `CELL.mount` returns an empty string, which says nothing,
+which is honest as far as it goes. And the rank cannot be shown beside the permission the way the
+entry's *may ride: tiger, ram* sketch implies a number might be - on Era every riding line sits at
+300 and means nothing, and where the skill is the ladder the cell already reports what the rank
+buys. `RidingLadder[300]` is 100%/280%, a rung from a game those Era numbers are not being read on.
+
+**And a third answer the entry did not have**: a member whose bags have never been read. That is
+neither a mount nor an empty stable, and the tooltip repeats the cell's dash rather than deciding
+which of the two it is (§2.2). The first cut let it fall through and be reported as an empty
+stable, and the check written for it is what said so.
 
 ---
 

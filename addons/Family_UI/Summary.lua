@@ -108,6 +108,37 @@ local function skillView()
 	return UI.__summarySkillView or SKILL_VIEWS[1]
 end
 
+-- **What this character is allowed to ride**, which is not the same fact as what they can ride.
+--
+-- On Classic Era the riding skill is a permission and not a ladder: its value is always 300 once
+-- you have it, one character can hold several - a human exalted with Darnassus buys tiger riding
+-- and then a tiger - and a paladin's or a warlock's mount teaches none at all. So the mount column
+-- is keyed on the mount, which is the evidence, and `Mounts.lua` says at length why.
+--
+-- The gap that leaves is backlog 19, named by Alberto the day that column was shaped and deferred
+-- in the same sentence: **owning the mount is evidence of the permission and losing it is not
+-- evidence of losing the permission.** Somebody who earned tiger riding, bought a tiger and then
+-- destroyed it may still buy another, and the column has nothing to say about them.
+--
+-- No rank, deliberately. On Era every one of these sits at 300 and the number means nothing; on
+-- the builds where the skill *is* the ladder the mount cell is already reporting what that rank
+-- buys, in per cent, which is the useful form of it. `RidingLadder[300]` is 100%/280% - a rung
+-- from a game these Era skills are not being read on - so printing a rank here would put a Mists
+-- meaning on an Era number.
+--
+-- The same order the professions tooltip uses, by the reader's own word rather than by the key:
+-- these are recorded in whatever language the client that read them was set to.
+local function ridingOf(meta)
+	local found = {}
+	for id, skill in pairs((meta or {}).skills or {}) do
+		if Family:IsRidingSkill(id) then
+			found[#found + 1] = Family:ProfessionName(id, skill.name)
+		end
+	end
+	table.sort(found)
+	return found
+end
+
 -- **Whether this game has weapon skills at all.**
 --
 -- Cataclysm removed them, so a Mists client has no Weapon Skills heading on any sheet and no
@@ -2098,6 +2129,47 @@ local function makeRow(parent)
 			return nil, nil, lines
 		end
 
+		-- **How fast they travel, and what they are allowed to ride**, which are two facts and
+		-- were one. Backlog 19, deferred on 2026-09-06 because the answer needed a second
+		-- column and the Overview set had no width to give one - so it goes where the other
+		-- two sets already put what a cell has no room for.
+		if self.__riding then
+			local meta = UI:Meta(self.__riding)
+			if not meta then return nil end
+
+			local lines = { { UI:NameOf(meta) } }
+
+			local allowed = ridingOf(meta)
+			local speed = CELL.mount(meta)
+
+			-- **Three answers and not two**, which is what the first cut of this got wrong
+			-- and its own check caught: the cell's dash fell through to the empty stable.
+			--
+			-- Whatever the cell says, this says - a number, or the dash that means nobody
+			-- has looked (§2.2). Only where the cell says *nothing at all* does this add
+			-- anything, and then only if there is a permission behind the blank: that is
+			-- the empty stable, and it is the case this whole entry is about.
+			--
+			-- The order is the whole guard, and an explicit branch for the dash was written
+			-- here first and then taken out: it hid a dash the cell beside it is showing,
+			-- and no mutation could kill it because nothing about it was worth checking.
+			local says
+			if speed ~= "" then
+				says = speed
+			elseif #allowed > 0 then
+				says = "|cff9d9d9d" .. L["nothing to ride"] .. "|r"
+			end
+
+			if says or #allowed > 0 then lines[#lines + 1] = { " " } end
+			if says then lines[#lines + 1] = { L["Mount"], says } end
+			if #allowed > 0 then
+				lines[#lines + 1] = { L["May ride"], table.concat(allowed, ", ") }
+			end
+
+			if #lines == 1 then return nil end
+			return nil, nil, lines
+		end
+
 		local meta = self.__skills and UI:Meta(self.__skills)
 		if not meta then return nil end
 
@@ -2973,6 +3045,7 @@ local function build(frame)
 
 			row.__skills = nil
 			row.__places = nil
+			row.__riding = nil
 
 			for index, column in ipairs(columns) do
 				-- Called rather than folded into an and/or, because a cell returns
@@ -3173,6 +3246,9 @@ local function build(frame)
 
 			-- And the same for the two clipped columns next door.
 			if currentSet.id == "misc" then row.__places = member.key end
+
+			-- And the mount column's other half, which has no column of its own.
+			if currentSet.id == "overview" then row.__riding = member.key end
 
 			-- The lines below, on the same grid, with the member column left empty:
 			-- the name has been said and saying it again would make two members of

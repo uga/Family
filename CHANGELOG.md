@@ -297,6 +297,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **The Overview row says what a character is allowed to ride, not only what they can.** Hover a
+  member and the tooltip gives their speed and the riding skills they hold. It matters when the two
+  disagree: somebody who earned tiger riding and then sold or destroyed the tiger had a blank in the
+  Mount column and no way to tell that from never having learnt to ride at all. A character whose
+  bags have never been read still shows a dash there, because that is a different blank again.
+
 - **Mists no longer offers a Weapon Skills page it has nothing to put on.** That version of the
   game has no weapon skills, so the button that switched to them is gone there and the caption
   under the table stops mentioning it. Era and Burning Crusade are unchanged.

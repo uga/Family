@@ -23995,6 +23995,141 @@ print("how a professions row is laid out")
 end)()
 
 print()
+print("what a character may ride, beside what they can")
+
+-- **Backlog 19**, named by Alberto on 2026-09-06 while the mount column was being shaped and
+-- deferred by him in the same sentence. That column is keyed on the mount and `Mounts.lua` says
+-- at length why: on Era the riding skill is a permission always worth 300, one character can hold
+-- several, and a paladin's mount teaches none at all - so a column keyed on the skill would print
+-- *cannot ride* over a paladin on a horse.
+--
+-- What it cannot see is the other direction: **owning the mount is evidence of the permission and
+-- losing it is not evidence of losing the permission.** Somebody who earned tiger riding, bought a
+-- tiger and destroyed it may still buy another. What stood in the way was width - the Overview set
+-- adds up to the row's budget and has no second column to give - so the two facts go where the
+-- professions and misc rows already put what a cell has no room for.
+;(function()
+	local mounted, allowed, neither = "Rides-FireMaw", "Grounded-FireMaw", "Nobody-FireMaw"
+	local unread = "Unread-FireMaw"
+
+	local function meta(name, extra)
+		local out = { name = name, realm = "Fire Maw", classFile = "WARRIOR",
+			faction = "Alliance", level = 60, bagsSeen = time() }
+		for key, value in pairs(extra) do out[key] = value end
+		return out
+	end
+
+	-- One with a tiger, one who earned tiger riding and has nothing to summon, and one nobody
+	-- has read. Three, because two of them would let a tooltip that says the same thing about
+	-- everybody pass: the whole point is that these three are different answers.
+	Family.Database:SetMeta(mounted, meta("Rides", {
+		mount = 100,
+		skills = { [762] = { name = "Riding", rank = 150, maxRank = 300, secondary = true } },
+	}))
+	Family.Database:SetMeta(allowed, meta("Grounded", {
+		skills = {
+			[152] = { name = "Ram Riding", rank = 300, maxRank = 300, secondary = true },
+			[150] = { name = "Tiger Riding", rank = 300, maxRank = 300, secondary = true },
+			-- Not a riding skill, and it must not appear on this line.
+			[185] = { name = "Cooking", rank = 300, maxRank = 300, secondary = true },
+		},
+	}))
+	Family.Database:SetMeta(neither, meta("Nobody", {}))
+
+	-- **And one whose bags have never been read**, which is a different blank again: the cell
+	-- answers with a dash meaning *nobody has looked*, and the tooltip must not turn that into
+	-- *nothing to ride*. §2.2, and the mutation that drops the guard reddens nothing without a
+	-- member on this side of it - every other fixture here has been read.
+	local unseen = meta("Unread", {
+		skills = { [152] = { name = "Ram Riding", rank = 300, maxRank = 300,
+			secondary = true } },
+	})
+	unseen.bagsSeen = nil
+	Family.Database:SetMeta(unread, unseen)
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	fireClick(Family.UI.__summarySets.overview)
+	Family.UI:Refresh()
+
+	local function told(key)
+		local row
+		for _, f in ipairs(frames) do
+			if onScreen(f) and f.memberKey == key and f.__scripts
+				and f.__scripts.OnEnter then row = row or f end
+		end
+		if not row then return nil end
+		GameTooltip.__shownAs = nil
+		wipe(GameTooltip.__lines)
+		row.__scripts.OnEnter(row)
+		local said = {}
+		for _, line in ipairs(GameTooltip.__lines) do
+			said[#said + 1] = tostring(line[1]) .. " | " .. tostring(line[2])
+		end
+		row.__scripts.OnLeave(row)
+		return table.concat(said, " / ")
+	end
+
+	local one = told(mounted)
+	check("the overview row says how fast a character travels", one ~= nil
+		and one:find(Family.L["Mount"], 1, true) ~= nil and one:find("100", 1, true) ~= nil,
+		tostring(one))
+	check("and what they are allowed to ride", one ~= nil
+		and one:find(Family.L["May ride"], 1, true) ~= nil
+		and one:find(Family:ProfessionName(762), 1, true) ~= nil, tostring(one))
+
+	-- **The case the entry is about.** The cell is blank for this member and honestly so; the
+	-- tooltip is where there is room to say which of the two blanks it is.
+	local two = told(allowed)
+	check("a character allowed to ride with nothing to ride says so rather than nothing",
+		two ~= nil and two:find(Family.L["nothing to ride"], 1, true) ~= nil, tostring(two))
+	check("and names every permission they hold, not just one",
+		two ~= nil and two:find(Family:ProfessionName(152), 1, true) ~= nil
+			and two:find(Family:ProfessionName(150), 1, true) ~= nil, tostring(two))
+	check("and nothing that is not a riding skill",
+		two ~= nil and two:find(Family:ProfessionName(185), 1, true) == nil, tostring(two))
+
+	-- §2.2: a member nobody has read gets no tooltip at all rather than one saying they walk.
+	local three = told(neither)
+	check("and a member nobody has read is not reported as being on foot",
+		three == nil or (three:find(Family.L["May ride"], 1, true) == nil
+			and three:find(Family.L["nothing to ride"], 1, true) == nil), tostring(three))
+
+	-- The other blank: read as far as the permission, never read as far as the bags. What the
+	-- cell says there is *nobody has looked*, and that must not be reported as an empty stable.
+	local four = told(unread)
+	check("a member whose bags have never been read is not said to have nothing to ride",
+		four ~= nil and four:find(Family.L["nothing to ride"], 1, true) == nil, tostring(four))
+	check("and their permission is named all the same, because that much has been read",
+		four ~= nil and four:find(Family:ProfessionName(152), 1, true) ~= nil, tostring(four))
+	-- **And the line says what the cell says**, read off the drawn cell rather than worked out
+	-- again here. The tooltip's job on this half is to repeat the column, not to have a second
+	-- opinion about it: a dash means nobody has looked, in both places or in neither.
+	-- `__summaryColumns` carries the member column at index one, so a row's cells line up with
+	-- it one to one. Found by key rather than counted: the Overview set has been rearranged
+	-- twice this month and a hard-coded eight would have gone on passing while reading Played.
+	local mountAt
+	for index, column in ipairs(Family.UI.__summaryColumns or {}) do
+		if column.key == "mount" then mountAt = index end
+	end
+	local drawn = ""
+	for _, f in ipairs(frames) do
+		if onScreen(f) and f.memberKey == unread and f.cells and mountAt then
+			drawn = tostring(f.cells[mountAt] and f.cells[mountAt].__text or "")
+		end
+	end
+	check("and the mount line says exactly what the cell beside it says",
+		drawn ~= "" and four ~= nil and four:find(drawn, 1, true) ~= nil,
+		tostring(drawn) .. " against " .. tostring(four))
+
+	Family.Database:Forget(mounted)
+	Family.Database:Forget(allowed)
+	Family.Database:Forget(neither)
+	Family.Database:Forget(unread)
+	Family.UI:Refresh()
+end)()
+
+print()
 print("a game with no weapon skills is not offered a weapon skills page")
 
 -- **Cataclysm removed weapon skills**, so on Mists that switch offers a page that is empty for
