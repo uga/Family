@@ -3410,8 +3410,24 @@ local function build(frame)
 					label:SetWidth(math.max(list:GetWidth() - 8, 1))
 					if label.SetWordWrap then label:SetWordWrap(false) end
 
-					setCell(sub, 1, string.format("%s  |cff888888(%d)|r",
-						group.name, #group.members), 0.78, 0.68, 0.95)
+					-- **Indented like the side heading above it, and naming the realm.**
+					--
+					-- This was flush with the realm's own name and was the only group
+					-- heading on the panel drawn at its parent's level - the side heading
+					-- twenty lines up has carried three spaces since it was written. A
+					-- family with siblings on two realms therefore drew two headings that
+					-- read as two realms called *Serena*, and nothing on screen said which
+					-- realm either of them was on. Reported from play 2026-09-06 with two
+					-- screenshots, one scrolled to where the realm heading had gone off the
+					-- top - which is the case the indent alone would not have answered.
+					--
+					-- So the realm is said here too, in grey, the way the row tooltip puts
+					-- a subzone after its zone: two facts on one line, the second plainly
+					-- secondary. It repeats the heading above while both are on screen and
+					-- earns its place the moment they are not. No new string - a realm is a
+					-- name and the space between them is punctuation.
+					setCell(sub, 1, string.format("   %s  |cff9d9d9d%s|r  |cff888888(%d)|r",
+						group.name, realm, #group.members), 0.78, 0.68, 0.95)
 
 					for _, member in ipairs(group.members) do
 						drawMember(member, true)

@@ -297,6 +297,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A linked family's block on the summary says which realm it is on.** It carried the family's
+  name and nothing else, at the same indent as a realm heading - so a family with characters on two
+  realms produced two blocks that read as two realms of the same name, and neither said which realm
+  it was. The block now sits a level in, where the Alliance and Horde headings are, with the realm
+  in grey beside the family's name. Reported from play.
+
 - **The Overview row says what a character is allowed to ride, not only what they can.** Hover a
   member and the tooltip gives their speed and the riding skills they hold. It matters when the two
   disagree: somebody who earned tiger riding and then sold or destroyed the tiger had a blank in the

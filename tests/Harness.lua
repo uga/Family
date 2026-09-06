@@ -9092,8 +9092,20 @@ do
 			check("whose members line up with our own",
 				siblingRow and ourRow and indentOf(siblingRow) == indentOf(ourRow),
 				siblingRow and (indentOf(siblingRow) .. " against " .. indentOf(ourRow)))
-			check("and whose name lines up with the realm's", indentOf(familyRow) == 0,
-				tostring(indentOf(familyRow)))
+			-- **And whose name sits where the side heading sits, not where the realm's
+			-- does.** This asked for nought until 2026-09-06, on the reasoning quoted
+			-- above - and that reasoning is about the member rows, which is why they are
+			-- still checked against our own on the line before this one. A family heading
+			-- flush with the realm heading is not §6 being honoured, it is a sub-group
+			-- drawn at its parent's level: a linked family with siblings on two realms
+			-- gave two headings that read as two realms of the same name, with nothing
+			-- saying which realm either was on. Reported from play with two screenshots.
+			--
+			-- Three, because that is what the side heading twenty lines above it in
+			-- Summary.lua has carried since it was written, and a family group and a
+			-- faction group are the same kind of thing: a division inside one realm.
+			check("and whose name sits a level in, where the side headings are",
+				indentOf(familyRow) == 3, tostring(indentOf(familyRow)))
 
 			-- Held apart from the last of our own members rather than running on from it
 			-- as though it were one more of them.
@@ -20893,6 +20905,78 @@ print("a sibling with a crafting cooldown, on the summary's crafting set")
 
 	clickButton("Overview")
 	Family.Wide:SetSibling("cdfam", "Brewer-Thunderstrike", false)
+	FamilyDB.wide = held
+	Family.UI:Refresh()
+end)()
+
+print()
+print("one linked family, siblings on two realms")
+
+-- **Reported from play 2026-09-06, with two screenshots.** A family aliased *Serena* had one
+-- sibling on Spineshatter and six on Thunderstrike, and the summary drew two headings both
+-- reading *Serena* at the realm headings' own indent - so they read as two realms of that name,
+-- and nothing on either of them said which realm it was. The second screenshot was scrolled to
+-- where the realm heading had gone off the top, which is the case an indent alone cannot answer.
+--
+-- The Wide Family panel had it right all along and is what the report compared against: it groups
+-- the same seven by realm and names each one.
+;(function()
+	local held = FamilyDB.wide
+	local function sibling(name, realm)
+		return { meta = { name = name, realm = realm, classFile = "MAGE", level = 60,
+			faction = "Alliance" }, seen = time() }
+	end
+
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["twofam"] = { name = "Grella-Thunderstrike", alias = "Serena",
+			grants = {}, siblings = {},
+			members = {
+				["Malachia-Spineshatter"] = sibling("Malachia", "Spineshatter"),
+				["Barolo-Thunderstrike"] = sibling("Barolo", "Thunderstrike"),
+			} } },
+	}
+	Family.Wide:SetSibling("twofam", "Malachia-Spineshatter", true)
+	Family.Wide:SetSibling("twofam", "Barolo-Thunderstrike", true)
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	clickButton("Overview")
+	Family.UI:Refresh()
+
+	-- Every heading row: no member key, and a first cell with words in it.
+	local headings = {}
+	for _, f in ipairs(frames) do
+		if onScreen(f) and not f.memberKey and f.cells then
+			local text = type(f.cells[1].__text) == "string" and f.cells[1].__text or ""
+			if text ~= "" then headings[#headings + 1] = text end
+		end
+	end
+	local said = table.concat(headings, " / ")
+
+	check("both realms the family has siblings on are drawn",
+		said:find("Spineshatter", 1, true) ~= nil
+			and said:find("Thunderstrike", 1, true) ~= nil, said)
+
+	-- **The two facts on one line**, which is what survives the realm heading scrolling away.
+	-- Counted rather than found once: with the family name alone on both, a check that looked
+	-- for one heading naming a realm would pass on the realm's own heading.
+	local named = {}
+	for _, text in ipairs(headings) do
+		local plain = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+		if plain:find("Serena", 1, true) then named[#named + 1] = plain end
+	end
+	check("the family has a heading on each of them, not one shared", #named == 2,
+		tostring(#named) .. ": " .. table.concat(named, " / "))
+	check("and each names the realm it is on", #named == 2
+		and ((named[1]:find("Spineshatter", 1, true) ~= nil
+				and named[2]:find("Thunderstrike", 1, true) ~= nil)
+			or (named[1]:find("Thunderstrike", 1, true) ~= nil
+				and named[2]:find("Spineshatter", 1, true) ~= nil)),
+		table.concat(named, " / "))
+
+	Family.Wide:SetSibling("twofam", "Malachia-Spineshatter", false)
+	Family.Wide:SetSibling("twofam", "Barolo-Thunderstrike", false)
 	FamilyDB.wide = held
 	Family.UI:Refresh()
 end)()
