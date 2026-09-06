@@ -910,6 +910,20 @@ spellID", and never opened `DATASOURCES.md`.** The routing table says DATASOURCE
 everything on data. A working document's summary of what crosses the wire *is* a claim about
 data, and it was written before the measurement existed.
 
+**It bit again on 2026-09-06**, in the same section of the same document. Asked how much a
+210-character account pays for the login warm-up, I read the warm-up, read `Names:Recipe`, saw
+that it prefers `recipe.spellID`, and concluded that most of the walk asks for item names nothing
+will ever read - a finding worth a backlog entry and a probe. `DATASOURCES.md` §2 says
+`GetTradeSkillRecipeLink` returns nothing at all on Era and every recipe there has an item and no
+spell, with the counts, off the very character Alberto then ran the probe on. The three numbers
+came back identical to the ones already printed in that section.
+
+Reading the *code* is not reading the *measurement*. `Names:Recipe` prefers the spell id, and
+that is true of the code and says nothing about whether the id is ever there - which is a
+property of what a client hands back, and the only place that lives is DATASOURCES. **The tell
+was there: I was reasoning about what a client returns.** That is the shape of question the
+routing table sends to that file, and no amount of reading the addon answers it.
+
 **What now catches it:** four checks over a list with item ids and no spells — that it crosses
 at all, that the item rides with it, that the fingerprint moves when only an item does, and
 that a row with neither id never reaches disk. And a fifth on the search, because two item-only

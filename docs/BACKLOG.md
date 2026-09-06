@@ -1561,25 +1561,25 @@ characters is ten seconds; two hundred and ten is three and a half minutes, for 
 questions. That is the half the fingerprint above would fix, and it is the whole of the
 difference between his ten-alt user and his 210-alt one.
 
-### And a third thing neither of us had looked at
+### The third thing was already answered, and answered the other way
 
-**Most recipes are never named from their item at all.** `Names:Recipe` tries `recipe.spellID`
-first through `Names:Spell`, which the client answers for any spell id straight away, with no
-loading and no waiting - that property is written down beside `Names:Spell` and is why the
-spellbook is stored as ids. The item id is the *fallback*, used only where a recipe has no spell
-or where the client will not name the one it has.
+I claimed most recipes are named from their spell and that the walk therefore asks for item
+names nothing will read. **It is the opposite, and it was measured and written down in February
+of this work** - `DATASOURCES.md` §2, *Recipe links, measured rather than assumed*:
+`GetTradeSkillRecipeLink` returns **nothing at all** on Classic Era, so every recipe there has an
+item id and no spell.
 
-**But the warm-up asks about every `recipe.itemID` it can find**, spell or no spell. If most
-recipes carry a spellID then most of that asking is for names nothing will ever read - and the
-walk could be cut to the recipes that have no spell, which would shrink both halves at once.
+Alberto ran `/family recipes` and it came back with the same three numbers that section already
+quotes, off the same character: **150 leatherworking, 67 cooking, 12 first aid, an item id on
+every one and a spell id on none.**
 
-**Unmeasured, and it needs no probe writing: `/family recipes` already prints it.** That command
-exists to answer "why is this recipe in the wrong language" and reports, per profession on the
-character being played, `N recipe(s), N with a spell id, N with an item id` - and then three rows
-in full showing whether the spell actually resolves to a name. A long profession answering *300
-recipes, 300 with a spell id* is the whole finding: the walk is asking for three hundred item
-names that nothing will read.
+So there is nothing to trim. Every recipe on Era needs its item name, the walk's asking is real
+work, and with the names store it is real work done **once ever** rather than once a session.
 
-A first draft of this entry invented a `/run` one-liner for it. It was too long to type, it
-decoded every payload - the stall this entry is about - and it duplicated a command already in
-the addon.
+**What is left is only the walking**, one second and one payload decode per character whether or
+not that character contributes anything - which is what the fingerprint at the top of this entry
+would fix, and it is worth exactly the sessions after the first.
+
+**And this is L-026 biting a second time**: reasoning about a data source without opening
+`DATASOURCES.md`, which the routing table says beats everything on data. It cost Alberto a
+command he did not need to type.
