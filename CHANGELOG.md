@@ -17,6 +17,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 2.0.0 — 2026-09-06
+
 ### Added
 
 - **The Crafting page is a list of cooldowns now, not a grid of them.** Each timer gets a line of

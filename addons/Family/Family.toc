@@ -3,7 +3,7 @@
 ## Notes: Records what each of your characters owns and knows, and shows it to you from any of them.
 ## IconTexture: Interface\AddOns\Family_UI\Textures\Family.tga
 ## Author: Alberto Pittaluga
-## Version: 1.4.3
+## Version: 2.0.0
 ## X-License: GPL-3.0-or-later
 ## X-Website: https://github.com/uga/Family
 ## SavedVariables: FamilyDB
