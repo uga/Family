@@ -1703,3 +1703,59 @@ record, not about whose it is.
   id overwrites rather than appends. The pending *queue* is a list and can hold an id twice, but
   the second one is skipped at the moment of asking, without spending the budget - which is what
   the check for a warm client asking for nothing already pins.
+---
+
+## 28. Shipping the item names instead of learning them — measured, not built
+
+**Asked out of curiosity 2026-09-06**: why not ship a table of every translation and skip the
+learning entirely? Measured rather than guessed, so that nobody has to derive it twice.
+
+**What it would have to hold.** Only the items a recipe makes - the rest of an item's name is
+wanted by bags and mail, which this would not help. Counted from `SkillLineAbility` against
+`SpellEffect` 24, one owner per spell:
+
+| build | recipes that make something | distinct items made |
+|---|---|---|
+| Classic Era | 1,468 | **1,462** |
+| Burning Crusade | 2,036 | 2,025 |
+| Mists | 4,851 | 4,807 |
+| union | | **5,244** |
+
+**What it would weigh.** The per-language cost is measured off `SkillLines.lua`, which Family
+already ships in five: German x1.13 of English, French x1.10, Spanish x1.19, **Russian x3.35** -
+two bytes a letter in UTF-8 - for a mean of x1.55. The mean English item name is 20.6 bytes.
+
+| | rows | file |
+|---|---|---|
+| Era only, one language | 1,462 | **69 KB** |
+| Era only, five languages | 7,310 | **343 KB** |
+| all three builds, five languages | 26,220 | **1.2 MB** |
+
+Against an addon that is 1.6 MB and 752 KB today, whose largest single file is
+`RecipeTeaches.lua` at 228 KB. The full version would be **the biggest thing in the addon by a
+factor of five**, and four fifths of it would be languages the reader is not using, loaded into
+memory at every login for everybody.
+
+**What it would buy.** It removes the walk for recipes entirely - not merely the asking, the
+whole thing - because there would be nothing to ask the client for.
+
+**What it would cost beyond the bytes.**
+
+- **It duplicates data the client already has**, correctly, in the reader's own language, for
+  free. Family's whole shape is asking the client rather than carrying a copy: §2.1 stores ids
+  and looks names up for exactly this reason.
+- **It goes stale in a way the store does not.** `FamilyDB.itemNames` carries the build it was
+  written at and empties itself when the client changes. A shipped table has no such escape: a
+  patch renames an item and the addon says the old name until somebody regenerates and releases.
+- **It helps recipes and nothing else.** Bags, bank, mail and the possessions search want item
+  names too, and a recipe table answers none of them.
+- **It is the wrong side of a standing decision.** *No item library, and no catalogue of where
+  items come from* - `DECISIONS.md` 2026-08-09 - is about advising rather than about naming, so
+  this is adjacent to it rather than forbidden by it. Said plainly rather than stretched.
+
+**And the cost it removes is already one-off.** Since the names store, the walk is paid once
+ever rather than once a session, and only for lists in a language that is not the reader's. A
+1.2 MB shipped table would buy back a wait that now happens once, on a first login, with a line
+on screen explaining it.
+
+**Not built, and the recommendation is not to.** Written down so the numbers exist.
