@@ -6517,10 +6517,38 @@ SlashCmdList["FAMILY"]("bank")
 check("/family bank reports what is recorded for every member",
 	#DEFAULT_CHAT_FRAME.messages > before)
 
+-- Read in one language and looked at in another, which is the case the whole line is about -
+-- and with both the same, a line that printed the record's locale twice would look right.
+do
+	local mine = Family.Database:Payload(Family:CurrentMember()) or {}
+	for _, record in pairs(mine.professions or {}) do record.locale = "frFR" end
+end
+
 before = #DEFAULT_CHAT_FRAME.messages
 SlashCmdList["FAMILY"]("recipes")
 check("/family recipes reports what each recipe has to be named by",
 	#DEFAULT_CHAT_FRAME.messages > before)
+
+-- **And which language each list was read in, beside the reader's own.**
+--
+-- Asked by Alberto on 2026-09-06 in the plainest possible form - *e come faccio a sapere se
+-- sto leggendo record francesi?* - and he was right that he could not. The answer was in this
+-- command's own output all along and only by inference, from which of the printed words happen
+-- to look French. It decides more than the display: a record whose locale is the reader's is
+-- drawn from the recorded word with neither id touched.
+do
+	local said
+	for index = before + 1, #DEFAULT_CHAT_FRAME.messages do
+		local line = DEFAULT_CHAT_FRAME.messages[index]
+		if type(line) == "string" and line:find("with a spell id", 1, true) then
+			said = line
+		end
+	end
+	check("and says which language each list was read in", said ~= nil
+		and said:find("frFR", 1, true) ~= nil, tostring(said))
+	check("and which one the reader is reading in, since one without the other answers half",
+		said ~= nil and said:find(Family.locale, 1, true) ~= nil, tostring(said))
+end
 
 -- Whether the client can name a place from its id decides whether the hearthstone column can
 -- ever be translated: the tables that would do it out of a file measure 876 KB (L-020), so
@@ -16313,6 +16341,61 @@ print("the recipe names, asked for before anybody clicks")
 	} } }
 	Family.Database:SetPayload(key, payload)
 	Family.UI:ForgetRecipeWarmUp()
+
+	-- **A list already in the reader's language is not warmed at all.**
+	--
+	-- `Names:Recipe` returns the recorded word without touching either id when
+	-- `record.locale` is the reader's, and the professions panel passes that locale - so
+	-- every name asked for here would be a name nothing will read. For anybody who plays in
+	-- one language that is the whole walk, which is the difference between a first login
+	-- that stalls and one that does not.
+	do
+		payload.professions[164].locale = Family.locale
+		Family.Database:SetPayload(key, payload)
+		Family.UI:ForgetRecipeWarmUp()
+
+		local sameLanguage, rounds = 0, 0
+		repeat
+			local got, finished = Family.UI:WarmRecipeNames(50)
+			sameLanguage = sameLanguage + got
+			rounds = rounds + 1
+		until finished or rounds > 200
+		check("a list read in the reader's own language is not warmed at all",
+			sameLanguage == 0, tostring(sameLanguage) .. " asked")
+
+		-- And one read in another language still is, because there the panel does need
+		-- the item name and would pay for it on the click instead.
+		payload.professions[164].locale = "frFR"
+		Family.Database:SetPayload(key, payload)
+		Family.UI:ForgetRecipeWarmUp()
+
+		local other = 0
+		rounds = 0
+		repeat
+			local got, finished = Family.UI:WarmRecipeNames(50)
+			other = other + got
+			rounds = rounds + 1
+		until finished or rounds > 200
+		check("while one read in another language still is", other > 0, tostring(other))
+
+		-- A record written before that field existed cannot use the fast path either, so
+		-- it is warmed like any other. Nil is not a match.
+		payload.professions[164].locale = nil
+		Family.Database:SetPayload(key, payload)
+		Family.UI:ForgetRecipeWarmUp()
+
+		local unknown = 0
+		rounds = 0
+		repeat
+			local got, finished = Family.UI:WarmRecipeNames(50)
+			unknown = unknown + got
+			rounds = rounds + 1
+		until finished or rounds > 200
+		check("and a record that never said which language it was read in is warmed too",
+			unknown > 0, tostring(unknown))
+
+		Family.UI:ForgetRecipeWarmUp()
+	end
 
 	local first, done = Family.UI:WarmRecipeNames(3)
 	check("the warm-up asks for a few names and no more", first == 3, tostring(first))

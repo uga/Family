@@ -19,6 +19,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The first login is quick again if you play in one language.** Family was asking the game what
+  every recorded recipe is called, even for the lists it had read on your own client in your own
+  language - where it already has the name and needs nothing. It now asks only about the lists
+  read in some other language. `/family recipes` says which those are, per profession.
+
 - **Family says when it is still learning what your recipes are called.** On the first login after
   installing or after a game patch it reads every recorded recipe's name once, and until that
   finishes the Professions window can pause when you open it. It now says so - on that window

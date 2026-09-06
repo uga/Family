@@ -1586,7 +1586,7 @@ command he did not need to type.
 
 ---
 
-## 26. The warm-up asks for names the reader's own language makes unnecessary
+## 26. The warm-up asks for names the reader's own language makes unnecessary — DONE 2026-09-06
 
 **Found 2026-09-06**, from Alberto asking why recipe *names* are still stored at all when the
 plan had always been to keep ids and look names up. The answer to his question is that both are
@@ -1626,5 +1626,27 @@ client? If yes, the freeze he reported is the mismatched-language case working a
 users never pay it, and the fix is one condition in the warm-up. If no, the fast path is not
 firing when it should and that is a different and worse fault.
 
-**Not built, deliberately.** L-026 bit twice in one day by reasoning ahead of a measurement, and
-the measurement here is a single answer from the person who has the client.
+**Confirmed by Alberto the same evening**, and the question was a bad one as asked - *e come
+faccio a sapere se sto leggendo record francesi?* He could not, and his own observation says why:
+*visto il lavoro ottimo che abbiamo fatto, ora non vedo nemmeno più quali sono, perché Family me
+le traduce al volo.* The answer he could give was better than the one asked for: he has been
+switching an Era client between English and French for days, so some of his lists are French and
+some are not.
+
+**So `/family recipes` now says it outright** - per profession, the language the list was read in
+beside the language the reader is in. That command exists to answer "why is this recipe in the
+wrong language" and was leaving its most useful fact to be inferred from which of the printed
+words happen to look French.
+
+**And the warm-up skips a record whose locale is the reader's.** Every call site that can
+*request* an item name was read before the change, not after: `Professions.lua` passes
+`record.locale` and short-circuits; `Cooldowns.lua` passes nil on purpose - a Mooncloth recorded
+in French was headed *Etoffe lunaire* on an English panel - but it asks about cooldown recipes,
+which are a handful and have a warm-up of their own; every other call site names a recipe with
+no callback and so cannot ask the client for anything.
+
+A record with no locale is warmed like any other, because the fast path cannot use one either.
+
+**What this does not fix** is the walking - one second and one payload decode per character
+whether or not that character contributes anything. That is entry 25's fingerprint and is
+untouched.

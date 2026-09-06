@@ -69,8 +69,19 @@ add("recipes", L["why a recipe is in the wrong language: /family recipes"], func
 			if recipe.itemID then items = items + 1 end
 		end
 
-		Family:Print(L["  %s: %d recipe(s), %d with a spell id, %d with an item id"],
-			tostring(Family:ProfessionName(id, record.name)), #recipes, spells, items)
+		-- **And which language it was read in**, which is the question this command exists
+		-- to answer and the one thing it was leaving to be inferred from which words look
+		-- French. It decides more than the display: a record whose locale is the reader's
+		-- is drawn from the recorded word with neither id touched, so a family read on the
+		-- client it was scanned with never waits for an item name at all.
+		--
+		-- Said beside the reader's own, because "frFR" alone answers half the question.
+		-- Nothing where the record predates the field, which is honest rather than tidy:
+		-- a record with no locale is exactly one the fast path cannot use.
+		Family:Print(L["  %s: %d recipe(s), %d with a spell id, %d with an item id, "
+			.. "read in %s and you are reading in %s"],
+			tostring(Family:ProfessionName(id, record.name)), #recipes, spells, items,
+			tostring(record.locale or "?"), tostring(Family.locale))
 
 		-- Three of them in full, because a count says how many are missing an id and not
 		-- what the client says about the ones that have one.
@@ -849,9 +860,35 @@ function UI:WarmRecipeNames(budget)
 		warmAt = warmAt + 1
 
 		for _, record in pairs(payload.professions or {}) do
-			for _, recipe in ipairs(record.recipes or {}) do
-				if recipe.itemID then
-					warmPending[#warmPending + 1] = recipe.itemID
+			-- **A list read in the reader's own language needs none of this.**
+			--
+			-- `Names:Recipe` has a fast path before either id: where `record.locale` is
+			-- the reader's, it returns the recorded word and touches neither the spell
+			-- nor the item. The professions panel passes that locale, so for a family
+			-- scanned on the client it is being read on, every name asked for here is a
+			-- name nothing will ever read.
+			--
+			-- Which makes this the difference between a first login that stalls and one
+			-- that does not, for everybody who plays in one language. Alberto pays it
+			-- because he has been switching an Era client between English and French for
+			-- days, so some of his lists are French and some are not - and he cannot tell
+			-- which any more, because Family translates them on the way to the screen.
+			--
+			-- **Only the two calls that can request are what matters**, and both were
+			-- read before this was written: `Professions.lua` passes `record.locale` and
+			-- short-circuits, and `Cooldowns.lua` passes nil deliberately - a Mooncloth
+			-- recorded in French was headed *Etoffe lunaire* on an English panel - but it
+			-- asks about cooldown recipes, which are a handful and have a warm-up of
+			-- their own. Everything else names a recipe without a callback and so cannot
+			-- ask the client for anything.
+			--
+			-- Nil is not a match. A record written before that field existed cannot use
+			-- the fast path either, so it is warmed like any other.
+			if record.locale ~= Family.locale then
+				for _, recipe in ipairs(record.recipes or {}) do
+					if recipe.itemID then
+						warmPending[#warmPending + 1] = recipe.itemID
+					end
 				end
 			end
 		end
