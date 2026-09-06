@@ -1544,6 +1544,21 @@ it: three and a half minutes of decoding at every login is still three and a hal
 it is still provably pointless from the second session on. What the notice removes is the
 *mystery*, which is what was actually hurting.
 
+**Confirmed quiet in play 2026-09-06.** Alberto's own thirty-member family now warms in silence -
+*la passeggiata è muta, già da un paio di deploy* - which is the names store and the language
+skip working together: nothing is asked, so a notice that only fires on real work never appears.
+
+**That lowers this entry rather than closing it.** What is left is the walking alone: a second
+and a payload decode per character, buying nothing, on every login after the first. Invisible at
+thirty and three and a half minutes at two hundred and ten. Worth building when somebody says
+their login is slow, and not before.
+
+**And the reading that would make that a false negative, written down so it is not forgotten:**
+the notice is also silent for a family of 25 or fewer, and silent when the walk finds no work at
+all - so a quiet walk proves the walk found nothing, not that the notice works. His family is
+thirty and `/family recipes` still shows two of Deiana's lists in French, so there was work to
+find and the store had already found it.
+
 ### What the walk actually costs, read out of the code 2026-09-06
 
 Alberto asked whether thirty blacksmiths make Family walk three hundred recipes thirty times.
