@@ -7691,10 +7691,89 @@ end)()
 
 Family.UI:ShowTab("summary")
 clickLastButton("Professions")
-check("a member's secondary skills are drawn on a line of their own",
-	visibleText("Cooking") and visibleText("Blacksmithing"))
+-- **Pictures rather than words**, which is what lets a member's whole trade fit on one line.
+-- Asked for from play: five lines a character was too many to take in at a glance.
+--
+-- The words are gone from the cells and every one of them has to be recoverable, so the checks
+-- below ask for all three - the picture is drawn, the numbers survive, and the names are on the
+-- tooltip and in the search box.
+check("a profession is drawn as its picture",
+	visibleText("|T136241:14") and visibleText("|T133971:14"),
+	"blacksmithing and cooking, by file id")
+check("and the word it replaces is gone from the cells",
+	not visibleText("Blacksmithing") and not visibleText("Cooking"))
 check("and the primaries have room for an uncapped rank",
 	visibleText("287") and visibleText("/375"))
+
+-- **The names, on the row.** Not on a strip over the cells: the harness refuses anything drawn
+-- on top of something clickable, and a row takes a right-click to remove a member.
+do
+	-- The member's own row, and not one of the lines under it: both carry the names, and a
+	-- check that took whichever came first would pass with the member's row forgetting them.
+	local row
+	for _, f in ipairs(frames) do
+		if f.__shown == true and f.__skills == key and f.memberKey == key
+			and f.cells and f.cells[1] and (f.cells[1].__text or "") ~= ""
+		then
+			row = row or f
+		end
+	end
+	check("a professions row carries whose skills it is showing", row ~= nil)
+
+	if row then
+		GameTooltip.__shownAs = nil
+		wipe(GameTooltip.__lines)
+		row.__scripts.OnEnter(row)
+
+		local said = ""
+		for _, line in ipairs(GameTooltip.__lines) do
+			said = said .. " " .. tostring(line[1]) .. " " .. tostring(line[2])
+		end
+
+		check("hovering it names the professions the pictures stand for",
+			said:find("Blacksmithing", 1, true) and said:find("Cooking", 1, true), said)
+		check("with the rank beside each", said:find("287/375", 1, true) ~= nil, said)
+
+		-- The game's own three lists, which is the arrangement its own windows use and the
+		-- one the scanner now records: a sword is not a secondary profession.
+		check("under the game's own three headings",
+			said:find(Family.L["Professions"], 1, true)
+				and said:find(Family.L["Secondary Skills"], 1, true)
+				and said:find(Family.L["Weapon Skills"], 1, true), said)
+		-- A sword cannot be unlearned, so the test that identifies a secondary said yes
+		-- about it and it sat under *Professions* - which on a character with two trades
+		-- and a sword pushed a trade off the row. Found by a mutation printing the tooltip
+		-- it was meant to be emptying.
+		local weapons = said:find(Family.L["Weapon Skills"], 1, true)
+		local professions = said:find(Family.L["Professions"], 1, true)
+		check("and a weapon is under the third heading, after both the others",
+			weapons and professions and said:find("Swords", 1, true) > weapons, said)
+
+		-- And the highlight the row had before the tooltip took its scripts.
+		check("and the row still lights up under the pointer",
+			row.highlight.__shown ~= false)
+		row.__scripts.OnLeave(row)
+	end
+end
+
+-- **And the box still finds a profession by its word**, which matters more here than anywhere
+-- else on the summary: a picture cannot be typed.
+do
+	local box = _G.FamilySummarySearch
+	if box then
+		box:SetText("Blacksmith")
+		if box.__scripts.OnTextChanged then box.__scripts.OnTextChanged(box) end
+
+		local found = false
+		for _, f in ipairs(frames) do
+			if onScreen(f) and f.memberKey == key then found = true end
+		end
+		check("typing a profession's name still finds who has it", found)
+
+		box:SetText("")
+		if box.__scripts.OnTextChanged then box.__scripts.OnTextChanged(box) end
+	end
+end
 
 -- Clicking a profession opens it, on that member, in the panel that is about professions.
 -- The cursor decides which one: the answer should be the profession that was clicked rather

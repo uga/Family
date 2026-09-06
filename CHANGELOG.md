@@ -19,6 +19,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The Professions overview is drawn as pictures.** Each trade shows its own icon and its rank
+  instead of its name and its rank, so a character's whole set of skills fits where two used to and
+  the page can be taken in at a glance. Hover a row to read the names, under the game's own three
+  headings - professions, secondary skills, weapon skills - with every rank beside it. The search
+  box still finds a profession by typing its name.
+
 - **CTRL now swaps a recipe's tooltip on Classic Era too.** Holding CTRL over a recipe has always
   shown what it costs to make instead of what it makes - but on Era the records had no way to name
   the recipe behind an item, so nothing happened and nothing said why. It works now on every

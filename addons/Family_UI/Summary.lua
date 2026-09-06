@@ -204,6 +204,21 @@ local SETS = {
 			{ key = "",       label = "",               width = 194, justify = "LEFT" },
 		},
 
+		-- The words are still what somebody types, even once the cells stop showing them.
+		-- Every skill this member has, in the reader's own language, so *cuisine* finds the
+		-- cooks on a French client and *cooking* finds them on an English one - which
+		-- matters more here than on any other set, because the picture cannot be typed.
+		searches = function(meta)
+			local words = {}
+			for _, entry in ipairs(skillsOf(meta, false)) do
+				words[#words + 1] = entry.name
+			end
+			for _, entry in ipairs(skillsOf(meta, true)) do
+				words[#words + 1] = entry.name
+			end
+			return table.concat(words, " ")
+		end,
+
 		-- The heading says **which** profession once one has been chosen.
 		--
 		-- Clicking it then orders the table by that profession's rank rather than by the
@@ -470,7 +485,30 @@ function skillsOf(meta, secondary)
 		-- ability. A rogue would have had three secondary professions, one of which cannot
 		-- be trained, abandoned or chosen. It is on the abilities panel instead, where an
 		-- ability goes.
-		if not skill.class and (skill.secondary or false) == secondary then
+		-- **And a weapon is in neither**, for the reason the class skill above is in
+		-- neither: the game keeps three lists and this function answers the first two. A
+		-- sword cannot be unlearned, so it carries `secondary = false` and fell in among the
+		-- primaries - which put *Swords 300/300* under the heading *Professions* and, on a
+		-- character with two trades and a sword, pushed one of the trades off the row
+		-- entirely. Found by a mutation printing the tooltip it was meant to be emptying.
+		if not skill.class and not skill.weapon
+			and (skill.secondary or false) == secondary
+		then
+			found[#found + 1] = {
+				name = Family:ProfessionName(id, skill.name), id = id, skill = skill,
+			}
+		end
+	end
+	table.sort(found, function(a, b) return a.name < b.name end)
+	return found
+end
+
+-- The third of the game's own lists. `skillsOf` answers the first two and deliberately keeps
+-- weapons out of both, so this is where they are asked for.
+local function weaponsOf(meta)
+	local found = {}
+	for id, skill in pairs(meta.skills or {}) do
+		if skill.weapon then
 			found[#found + 1] = {
 				name = Family:ProfessionName(id, skill.name), id = id, skill = skill,
 			}
@@ -517,11 +555,26 @@ local function fitted(name, tail)
 	return name:sub(1, room - 1) .. "-"
 end
 
+-- The picture this skill line carries, ready to sit in a font string, or nothing.
+--
+-- A file id where a build named one and a path where it had to be chosen; `SetText` markup takes
+-- either. Fourteen pixels in an eighteen-pixel row, which leaves the number room to breathe.
+--
+-- Nothing where the table has none, and that is one line - lockpicking, which this panel never
+-- draws. The word is the fallback, so a skill line newer than the shipped table reads as it always
+-- did rather than as a blank.
+local function picture(id)
+	local entry = id and Family.SkillLines and Family.SkillLines[id]
+	local icon = entry and entry.icon
+	if not icon then return nil end
+	return "|T" .. tostring(icon) .. ":14:14:0:0:64:64:5:59:5:59|t"
+end
+
 function skillText(entry)
 	if not entry then return nil end
 
 	local seen = entry.skill.recipesSeen
-	local name = entry.name
+	local name = picture(entry.id) or entry.name
 	local stale = not seen or (time() - seen) > STALE
 
 	-- Not every profession has a rank. A death knight's runeforging is a window full of
@@ -537,16 +590,21 @@ function skillText(entry)
 		return stale and ("|cff9d9d9d" .. text .. "|r") or text
 	end
 
-	if not (rank and maxRank) then return drawn(fitted(name, "")) end
+	-- `fitted` shortens a word against the numbers that follow it. A picture is one glyph
+	-- whatever it is made of, and trimming its markup would leave a cell of broken syntax.
+	local drew = picture(entry.id) ~= nil
+	local function head(tail) return drew and name or fitted(name, tail) end
+
+	if not (rank and maxRank) then return drawn(head("")) end
 
 	-- Amber at the ceiling, because that is the one worth noticing at a glance.
 	if rank >= maxRank then
 		local tail = " " .. tostring(rank)
-		return string.format("%s |cffffaa00%d|r", drawn(fitted(name, tail)), rank)
+		return string.format("%s |cffffaa00%d|r", drawn(head(tail)), rank)
 	end
 
 	local tail = string.format(" %d/%d", rank, maxRank)
-	return string.format("%s |cffffd700%d|r/%d", drawn(fitted(name, tail)), rank, maxRank)
+	return string.format("%s |cffffd700%d|r/%d", drawn(head(tail)), rank, maxRank)
 end
 
 -- "3d 4h", or "4h 20m" - the two largest units that matter and no more.
@@ -1054,9 +1112,15 @@ local SORT = {
 			end
 			return nil
 		end
-		return skillText(skillsOf(meta, false)[1])
+		-- The **name**, and not what the cell draws. The cell draws a picture now, and
+		-- ordering a table by texture markup would sort by file id spelt in decimal.
+		local first = skillsOf(meta, false)[1]
+		return first and first.name
 	end,
-	prof2     = function(meta) return skillText(skillsOf(meta, false)[2]) end,
+	prof2     = function(meta)
+		local second = skillsOf(meta, false)[2]
+		return second and second.name
+	end,
 
 	-- How many world buffs are banked. Three answers as the cell has three: bags never read
 	-- is nil, a Chronoboon carried whose contents are unknown is nil too - both are "no
@@ -1632,8 +1696,48 @@ local function makeRow(parent)
 	row.highlight:SetColorTexture(1, 1, 1, 0.06)
 	row.highlight:Hide()
 
-	row:SetScript("OnEnter", function(self) self.highlight:Show() end)
-	row:SetScript("OnLeave", function(self) self.highlight:Hide() end)
+	-- The names behind the pictures.
+	--
+	-- Those cells draw a picture and a number now, which is what lets a member's whole trade
+	-- fit on one line - and a picture nobody recognises is decoration, so the words have to be
+	-- somewhere. **On the row itself and not on a strip over the cells**: the harness refuses
+	-- anything drawn on top of something clickable and is right to, since a row takes a
+	-- right-click to remove a member and a strip across three columns would eat it. Which is
+	-- also why one tooltip answers for the whole row rather than one per cell - the question is
+	-- *what can this character do*, not *what is this one picture*.
+	--
+	-- Silent on every other set, because `__skills` is only set on this one.
+	UI:AttachTooltip(row, function(self)
+		local meta = self.__skills and UI:Meta(self.__skills)
+		if not meta then return nil end
+
+		local lines = { { UI:NameOf(meta) } }
+
+		local function add(entries, heading)
+			if #entries == 0 then return end
+			lines[#lines + 1] = { " " }
+			lines[#lines + 1] = { heading }
+			for _, entry in ipairs(entries) do
+				local rank, maxRank = entry.skill.rank, entry.skill.maxRank
+				lines[#lines + 1] = { "  " .. entry.name,
+					rank and maxRank and (rank .. "/" .. maxRank)
+						or (rank and tostring(rank)) or nil }
+			end
+		end
+
+		-- The game's own three lists, in the game's own order. A sword is not a secondary
+		-- profession however much the old test used to say so.
+		add(skillsOf(meta, false), L["Professions"])
+		add(skillsOf(meta, true), L["Secondary Skills"])
+		add(weaponsOf(meta), L["Weapon Skills"])
+
+		return nil, nil, lines
+	end)
+
+	-- Hooked rather than set, because `AttachTooltip` owns those two scripts now and setting
+	-- them here would replace it without a word.
+	row:HookScript("OnEnter", function(self) self.highlight:Show() end)
+	row:HookScript("OnLeave", function(self) self.highlight:Hide() end)
 
 	-- Left opens whatever the cell under the cursor is about; right removes the member.
 	-- Right for the destructive one, because it should not be what an ordinary click
@@ -2321,6 +2425,8 @@ local function build(frame)
 			row.boonHit:Hide()
 			row.boonHit:SetScript("OnClick", nil)
 
+			row.__skills = nil
+
 			for index, column in ipairs(columns) do
 				-- Called rather than folded into an and/or, because a cell returns
 				-- its colour alongside its text and that would keep only the text.
@@ -2513,6 +2619,11 @@ local function build(frame)
 				end
 			end
 
+			-- And the names, which the cells no longer show. One area over all three
+			-- profession columns, because what a reader wants is this character's trade
+			-- rather than the one picture their pointer happens to be on.
+			if currentSet.id == "professions" then row.__skills = member.key end
+
 			-- The lines below, on the same grid, with the member column left empty:
 			-- the name has been said and saying it again would make two members of
 			-- one. A member with nothing to put there gets no extra line.
@@ -2540,6 +2651,10 @@ local function build(frame)
 					end
 					extra.professions = names
 					extra.opens = openProfession
+
+					-- The same names on the same terms: a reader hovering the second
+					-- line is asking what a reader hovering the first is asking.
+					extra.__skills = member.key
 				end
 
 				drawn = drawn + #line
