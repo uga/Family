@@ -16216,7 +16216,7 @@ print("how fast a character can get about")
 			end
 		end
 		check("a character who can fly says so beside how fast they run",
-			said == "100%/280%", tostring(said))
+			said == "100/280%", tostring(said))
 
 		Family.Database:SetMeta(key, { mountFly = Family.CLEAR })
 		Family.UI:Refresh()

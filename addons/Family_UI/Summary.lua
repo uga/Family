@@ -80,7 +80,7 @@ local SETS = {
 			{ key = "level",  label = L["Level"],     width = 50,  justify = "RIGHT" },
 			{ key = "ilvl",   label = L["Item lvl"],  width = 70,  justify = "RIGHT" },
 			{ key = "xp",     label = L["Rest XP"],   width = 90,  justify = "RIGHT" },
-			{ key = "money",  label = L["Money"],     width = 124, justify = "RIGHT" },
+			{ key = "money",  label = L["Money"],     width = 106, justify = "RIGHT" },
 			{ key = "played", label = L["Played"],    width = 85,  justify = "RIGHT" },
 			{ key = "seen",   label = L["Last seen"], width = 95,  justify = "RIGHT" },
 			-- How fast this character gets about. Forty-nine pixels were spare and are
@@ -88,7 +88,7 @@ local SETS = {
 			-- nine in Russian, and the check that a heading fits said so in both. The
 			-- other twenty-one come from Money, which was the widest column here and
 			-- had the most to give.
-			{ key = "mount",  label = L["Mount"],     width = 70,  justify = "RIGHT" },
+			{ key = "mount",  label = L["Mount"],     width = 88,  justify = "RIGHT" },
 		},
 	},
 	{
@@ -864,9 +864,13 @@ CELL.mount = function(meta)
 		-- running at 100%, so *which of the two this character has* is the fact, and a cell
 		-- that showed one number would answer a question nobody asked. `100%/-` says as much
 		-- as `100%/60%` does.
-		local ground = meta.mount and string.format("%d%%", meta.mount) or "-"
-		local air = meta.mountFly and string.format("%d%%", meta.mountFly) or "-"
-		return ground .. "/" .. air
+		-- One per cent sign for the pair, because the cell has to survive a narrow window:
+		-- `UI:FitColumns` shrinks every column when the panel is smaller than their sum, and
+		-- this one carries the most text of any on the set. `100%/150%` came back from play
+		-- cut off at `100%/1`.
+		local ground = meta.mount and tostring(meta.mount) or "-"
+		if not meta.mountFly then return ground .. "%/-" end
+		return ground .. "/" .. meta.mountFly .. "%"
 	end
 	if not meta.bagsSeen then return UNKNOWN end
 	return ""

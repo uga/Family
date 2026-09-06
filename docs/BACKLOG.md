@@ -1292,3 +1292,26 @@ Both halves of his question are checks now: the same mounts read *100%/150%* at 
 *100%/310%* at Master, and a character with nothing but a ground mount flies at nothing however
 high the rank goes.
 
+---
+
+## 21. The check that every cell fits its column never draws a narrow window
+
+**Found from play 2026-09-06**, an hour after the Mount column shipped: a druid's `100%/150%` came
+back cut off at `100%/1`, and the check that exists to catch exactly that had passed.
+
+It passed honestly. It draws the panel at its full width, measures each cell against the width its
+column *declares*, and nine characters at the harness's 6.5 pixels each is 58 against a column of
+70. What it never does is draw the panel **narrower than the sum of its columns**, which is when
+`UI:FitColumns` shrinks every one of them - and the cell that suffers is whichever carries the most
+text, which was this one.
+
+So the check measures the layout as designed and not the layout as squeezed, and every set on the
+summary has the same blind spot.
+
+**What closing it would take**: a second pass of the same loop with the window set narrow enough to
+force the shrinking, and a rule for what "fits" means then - a column that has given up room is
+allowed to clip its heading, so the test cannot simply be *nothing is wider than its column*.
+
+Worked round for now by making the cell shorter - one per cent sign for the pair rather than two -
+and by giving the column eighteen more pixels out of Money. That is a smaller cell, not a check.
+
