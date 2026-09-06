@@ -19,6 +19,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **A linked family's recipes are learnt at login too**, instead of being paid for the first time
+  you open their profession. Sharing with a family who play in another language is exactly where
+  the names have to be looked up, and it was the one case the login pass did not cover.
+
 - **The first login is quick again if you play in one language.** Family was asking the game what
   every recorded recipe is called, even for the lists it had read on your own client in your own
   language - where it already has the name and needs nothing. It now asks only about the lists

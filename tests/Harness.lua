@@ -16397,6 +16397,92 @@ print("the recipe names, asked for before anybody clicks")
 		Family.UI:ForgetRecipeWarmUp()
 	end
 
+	-- **And a borrowed family's lists are warmed too**, which is where a language mismatch
+	-- is not a coincidence but the point: you link with a French family because they are
+	-- French. Left out until 2026-09-06, and it was the one case the warm-up was built for
+	-- and did not cover - `Database:Members` is ours only, so a sibling's list was paying
+	-- at the click, which is the stall this exists to move off the click.
+	do
+		local link
+		for _, one in pairs(Family.Wide:Links()) do link = link or one end
+
+		if link then
+			-- Named, so the store genuinely learns something. Without this the check
+			-- below compares nil against nil and passes whatever happens to the store.
+			ITEM_NAMES[772001] = "Mage Robe"
+			ITEM_NAMES[772002] = "Mage Hat"
+
+			link.members = link.members or {}
+			link.members["Etranger-FireMaw"] = {
+				meta = { name = "Etranger", realm = "Fire Maw", classFile = "MAGE",
+					level = 60 },
+				payload = { professions = { [197] = { locale = "frFR", recipes = {
+					{ name = "Robe de mage", itemID = 772001 },
+					{ name = "Chapeau de mage", itemID = 772002 },
+				} } } },
+				granted = { "professions" },
+				seen = time(),
+			}
+
+			Family.UI:ForgetRecipeWarmUp()
+			local theirs, rounds = 0, 0
+			repeat
+				local got, finished = Family.UI:WarmRecipeNames(50)
+				theirs = theirs + got
+				rounds = rounds + 1
+			until finished or rounds > 400
+			check("a linked family's recipe names are warmed as well as our own",
+				theirs > 0, tostring(theirs) .. " asked")
+
+			-- Named by the id that only they have, so this cannot pass on our own
+			-- member's names happening to be asked for in the same run.
+			local sawTheirs = false
+			for _, id in ipairs(asked) do
+				if id == 772001 or id == 772002 then sawTheirs = true end
+			end
+			check("and it is their items that were asked about, not ours", sawTheirs)
+
+			-- And a shared list already in the reader's own language is skipped, the same
+			-- way ours is: the rule is about the record, not about whose it is.
+			link.members["Etranger-FireMaw"].payload.professions[197].locale = Family.locale
+			Family.UI:ForgetRecipeWarmUp()
+			for index = #asked, 1, -1 do asked[index] = nil end
+
+			local same, rounds2 = 0, 0
+			repeat
+				local got, finished = Family.UI:WarmRecipeNames(50)
+				same = same + got
+				rounds2 = rounds2 + 1
+			until finished or rounds2 > 400
+			local sawAgain = false
+			for _, id in ipairs(asked) do
+				if id == 772001 or id == 772002 then sawAgain = true end
+			end
+			check("while a shared list already in the reader's language is left alone too",
+				not sawAgain)
+
+			-- **And what was learnt outlives the friendship.** The store is keyed by
+			-- item id and by the reader's own language, and is not filed under whoever
+			-- happened to mention an item - so unlinking a family, or forgetting every
+			-- one of their characters, takes none of it away. The next French family
+			-- Alberto links with finds the answers already there. Nothing outside
+			-- `Names.lua` touches that table, which is what makes this true rather than
+			-- merely likely.
+			local kept = Family.Names:ItemStore()[772001]
+			check("their lists teach the store a name", kept == "Mage Robe", tostring(kept))
+
+			link.members["Etranger-FireMaw"] = nil
+			Family.Database:Changed("wide")
+			check("and what they taught it outlives them",
+				Family.Names:ItemStore()[772001] == "Mage Robe",
+				tostring(Family.Names:ItemStore()[772001]))
+
+			ITEM_NAMES[772001], ITEM_NAMES[772002] = nil, nil
+
+			Family.UI:ForgetRecipeWarmUp()
+		end
+	end
+
 	local first, done = Family.UI:WarmRecipeNames(3)
 	check("the warm-up asks for a few names and no more", first == 3, tostring(first))
 	check("and does not claim to be finished while there is a queue", done == false,
@@ -16479,8 +16565,11 @@ print("the recipe names, asked for before anybody clicks")
 	-- adds thirty and the file has already made others, so a literal would be a check on
 	-- how many fixtures happen to be alive rather than on what the notice says.
 	do
+		-- Ours **and everyone a linked family shares with us**, because the walk covers
+		-- both now: a sibling's list is exactly where a language mismatch is the point.
 		local members = 0
 		for _ in pairs(Family.Database:Members()) do members = members + 1 end
+		for _ in ipairs(Family.Wide:BorrowedMembers()) do members = members + 1 end
 		check("and told how many characters it is reading",
 			heard() and heard():find(tostring(members), 1, true) ~= nil,
 			tostring(members) .. " in " .. tostring(heard()))

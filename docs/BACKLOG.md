@@ -1652,7 +1652,7 @@ whether or not that character contributes anything. That is entry 25's fingerpri
 untouched.
 ---
 
-## 27. The warm-up covers our own family and not the one we borrowed
+## 27. The warm-up covers our own family and not the one we borrowed — DONE 2026-09-06
 
 **Asked 2026-09-06 as a school case**, and answered by reading rather than by reasoning: a user
 with 200 English alts, always English, links with a French family of 100 and shares his own back.
@@ -1686,5 +1686,20 @@ French.
 the click. The notice now explains the wait either way, and the names store means it is paid
 once ever rather than once a session.
 
-**Not built.** It is a decision about how far consent to *hold* somebody's data extends into
-work done at login on their behalf, which is Alberto's to take.
+**Built the same evening**, Alberto's call. `Wide:BorrowedMembers()` joins the queue and the
+walk reads through `UI:Payload` rather than `Database:Payload`, which knows only ours (L-052).
+The language rule applies to a borrowed list exactly as to one of ours: the rule is about the
+record, not about whose it is.
+
+**Two things Alberto observed about the store while it was being written, both true:**
+
+- **What a borrowed list teaches outlives the friendship.** The store is keyed by item id and
+  by the *reader's* language, and is filed under nobody: unlinking a family, or forgetting every
+  character in it, takes none of it away. The next French family found already answers most of
+  what it needs. Nothing outside `Names.lua` touches that table, which is what makes this true
+  rather than merely likely - and there is now a check that unlinks a family and looks.
+- **Nothing is stored twice.** `FamilyDB.itemNames[locale][itemID]` is a map: meeting *Blue
+  Dragonscale Breastplate* on thirty characters writes one entry, and a second write to the same
+  id overwrites rather than appends. The pending *queue* is a list and can hold an id twice, but
+  the second one is skipped at the moment of asking, without spending the budget - which is what
+  the check for a warm client asking for nothing already pins.

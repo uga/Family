@@ -837,6 +837,30 @@ function UI:WarmRecipeNames(budget)
 		for key in pairs(Family.Database:Members()) do
 			warmQueue[#warmQueue + 1] = key
 		end
+
+		-- **And everyone a linked family shares with us**, which is where a language
+		-- mismatch is not a coincidence but the point: you link with a French family
+		-- because they are French, so every one of their lists falls through the fast
+		-- path and wants an item name.
+		--
+		-- Left out until 2026-09-06 and it was the one case the warm-up was built for and
+		-- did not cover: `Database:Members` is ours only, borrowed members live under
+		-- `FamilyDB.wide`, and a sibling's list was paying at the click - the stall this
+		-- exists to move off the click.
+		--
+		-- **Cheaper to walk than our own**, which is why this costs less than it looks. A
+		-- borrowed payload arrived over the wire as a table and was never encoded, so
+		-- there is no decoding to spread, and the decoding is the whole reason our own
+		-- are taken one per call.
+		--
+		-- Everyone shared and not only the siblings, for the reason written beside
+		-- `UI:EveryMember`: a sibling is a decision about the summary, and every shared
+		-- member is reachable on the panels whether or not they are one.
+		for _, member in ipairs(Family.Wide:BorrowedMembers()) do
+			if member.borrowedKey then
+				warmQueue[#warmQueue + 1] = member.borrowedKey
+			end
+		end
 		-- Sorted, so two runs of this walk the members in the same order and a check can
 		-- say where it got to - and then the character being played is moved to the front,
 		-- because they are the one somebody is about to open. Alphabetical order would
@@ -856,7 +880,10 @@ function UI:WarmRecipeNames(budget)
 	-- One member's payload per call. `Database:Payload` decodes and then caches for the
 	-- session, so this is the decode being spread rather than a second one being paid.
 	if #warmPending == 0 and warmAt <= #warmQueue then
-		local payload = Family.Database:Payload(warmQueue[warmAt]) or {}
+		-- Through the window's reader rather than the database's, because half this queue
+		-- is borrowed now and `Database:Payload` knows only ours (L-052). For our own keys
+		-- it is the same call underneath.
+		local payload = UI:Payload(warmQueue[warmAt]) or {}
 		warmAt = warmAt + 1
 
 		for _, record in pairs(payload.professions or {}) do
