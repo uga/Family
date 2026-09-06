@@ -13564,6 +13564,47 @@ print("crafting cooldowns")
 		byLabel["Bolt of Imbued Netherweave"]
 			and byLabel["Bolt of Imbued Netherweave"].ready == true)
 
+	-- **And one transmute recorded is still the transmute timer.**
+	--
+	-- Reported from play 2026-09-06: a linked family's alchemist had a column headed
+	-- *Transmute: Fir...*, because Family had only ever recorded one of her transmutes and
+	-- the grouping infers sharing from several of them carrying the same moment. That
+	-- inference is sound while they count down and is no evidence at all once they are
+	-- ready, when every recipe looks like every other - so the client's own tables are asked
+	-- instead. `CategoryRecoveryTime` is the shared timer and it is in the generated table.
+	do
+		Family.Database:SetMeta("Lonely-FireMaw", { name = "Lonely", realm = "Fire Maw",
+			craftCooldowns = {
+				{ name = "Transmute: Fire to Earth", profession = 171 },
+			} })
+		local one = Family.Cooldowns:Crafting(Family.Database:Meta("Lonely-FireMaw"))
+		check("one transmute recorded is still headed by the profession",
+			one[1] and one[1].label == "Alchemy", one[1] and tostring(one[1].label))
+		check("and it is the only entry, not one per recipe", #one == 1, tostring(#one))
+		Family.Database:Forget("Lonely-FireMaw")
+	end
+
+	-- Which is asked of the generated table rather than decided here, and answered per
+	-- expansion. The counterpart is two lines above: Tailoring's mooncloth is a timer of its
+	-- own and keeps the recipe's name however few of them are recorded.
+	check("the shared timers are read from the client's own tables",
+		Family.Cooldowns:SharesTimer(171) == true
+			and Family.Cooldowns:SharesTimer(197) == false,
+		tostring(Family.Cooldowns:SharesTimer(171)) .. " "
+			.. tostring(Family.Cooldowns:SharesTimer(197)))
+	check("and by the word as well as by the id, for a record written without one",
+		Family.Cooldowns:SharesTimer("Alchemy") == true)
+
+	-- **Per expansion, and that is not a nicety.** Enchanting's Void Sphere and Prismatic
+	-- Sphere are two names for one timer on the builds that have them, and Era has neither -
+	-- so a rule hand-written about alchemy would have been wrong about the pair Alberto
+	-- actually has on screen.
+	check("a profession that shares a timer on one build and not another says so",
+		(Family.RecipeCooldowns[5] or {}).shared
+			and Family.RecipeCooldowns[5].shared[333] == true
+			and ((Family.RecipeCooldowns[1] or {}).shared or {})[333] == nil,
+		tostring(((Family.RecipeCooldowns[1] or {}).shared or {})[333]))
+
 	-- The salt shaker case: an item's cooldown, attributed to the profession that makes it.
 	local shaker
 	for _, kind in ipairs(kinds) do
@@ -13960,7 +14001,13 @@ print("the login line about crafting cooldowns")
 		for index = 1, member.count do
 			-- Each on a timer of its own, so the count is the number of timers. Three
 			-- sharing one would be one thing to do, which is what the block above holds.
-			cooldowns[index] = { name = "Transmute " .. index, profession = 170 + index,
+			-- Professions whose timers are their own. This used to be `170 + index`,
+			-- which made the first of them Alchemy - and Alchemy's transmutes share one
+			-- timer, so that entry is now headed by the profession rather than by the
+			-- recipe and these checks were reading the new rule instead of their own.
+			-- Blacksmithing, Leatherworking and Tailoring share nothing on any build.
+			cooldowns[index] = { name = "Transmute " .. index,
+				profession = ({ 164, 165, 197 })[index] or (300 + index),
 				readyAt = came }
 		end
 

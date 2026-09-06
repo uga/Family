@@ -2317,3 +2317,44 @@ summary. The note was still what made this quick.
 
 Four checks, one mutation, reddening both column checks.
 
+---
+
+## 35. A shared timer headed by whichever recipe Family happened to watch — DONE 2026-09-06
+
+**Reported 2026-09-06**, from the Crafting set: *Alchemy cooldowns should all be tagged "Alchemy".
+Or do they?* A column headed `Transmute: Fir...` over a linked family's alchemist.
+
+**They did not, and the rule was deliberate.** `Cooldowns:Crafting` groups a member's timed
+recipes by profession and by the moment they come back, then heads a group of one with the
+recipe's name and a group of several with the profession's - *"Transmute: Arcanite is a lie about
+the other four"*. Malachia had exactly one transmute recorded, so she got its name.
+
+**The count is a proxy for "these share a timer", and it fails precisely where it matters.**
+Recipes of one profession carrying the same `readyAt` really are on one timer - that is what
+sharing *is* - but once they are ready there is no `readyAt` to compare, and every ready recipe
+looks like every other. So the inference works for an alchemist caught mid-transmute and not for
+one whose timer has come back, which is the moment somebody reads this panel.
+
+**Answered from the client's own tables instead**, which turned out to be already measured and
+already written down: `SpellCooldowns` distinguishes `RecoveryTime` from `CategoryRecoveryTime`,
+and `DATASOURCES.md` has said since 2026-09-01 that the second *is* the distinction players
+describe as all the transmutes sharing one cooldown. The generator collapsed the two with a
+`max()`; it now keeps which one answered and emits a `shared` lane of skill lines.
+
+**And that beats the hand-written table this entry was going to be.** Alberto chose *teach Family
+that alchemy's transmutes share one timer* out of three options, and the sourced version covers a
+case the hand-written one would have got wrong on his own screen: Enchanting's Void Sphere and
+Prismatic Sphere are one timer on the Burning Crusade and on Mists, and neither exists on Era. So
+`Prismatic Sphere` becomes `Enchanting` there, correctly - it was a lie about Void Sphere - while
+Jewelcrafting's Brilliant Glass keeps its own name, because its timer really is its own.
+
+*Counting still decides for anything the table has never heard of, which is what watching was
+always for.*
+
+Two fixtures had to change and both were reading the old rule by accident: the login notice's used
+`profession = 170 + index`, which made its first timer Alchemy, and the Salt Shaker block sat on
+the same member. They now use professions whose timers are their own, and say why.
+
+Five checks, four mutations, all reddening - one of them on the generator, regenerated from the
+cache to prove the lane comes out of the data and not out of the Lua.
+

@@ -757,6 +757,25 @@ anything would say they had a cooldown at all.
 `CategoryRecoveryTime` is the shared timer and `RecoveryTime` the recipe's own, which is the
 same distinction players describe as *all the transmutes share one cooldown*.
 
+**And that distinction is carried through into the table, since 2026-09-06**, as a third lane
+`shared` listing the skill lines whose timed recipes sit on a category timer. Family used to
+infer it by watching - recipes of one profession carrying the same `readyAt` are on one timer -
+which is sound while they count down and is no evidence at all once they are ready, when every
+ready recipe looks like every other. So an alchemist Family had recorded one transmute of had
+that transmute's name put over a column covering all of them.
+
+| build | professions sharing a timer |
+|---|---|
+| Classic Era | Alchemy |
+| Burning Crusade | Alchemy, Enchanting |
+| Mists | Enchanting |
+
+Per skill line rather than per recipe, which is the granularity the panel groups at. And per
+expansion like the rest of the table, which is what makes it worth reading rather than writing
+by hand: Enchanting's Void Sphere and Prismatic Sphere are two names for one timer on the builds
+that have them and neither exists on Era, so a rule written about alchemy alone would have been
+wrong about the pair actually on screen.
+
 **Per expansion, and this is not a nicety.** The same spell differs on every build, and on the
 newest usually has none at all:
 

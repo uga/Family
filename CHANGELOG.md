@@ -19,6 +19,15 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **A shared crafting timer is named after its profession, not after one recipe on it.** All of
+  an alchemist's transmutes sit on one cooldown, so a column headed *Transmute: Fire to Earth* was
+  telling you about a timer that covers every transmute they know - and Family only headed it that
+  way when it happened to have recorded a single one of them. It now asks the game which
+  professions share a timer instead of working it out from what it has watched, so the column
+  reads **Alchemy** from the first transmute onward. Enchanting's Void Sphere and Prismatic Sphere
+  are one timer too, on the clients that have them, and now say so; Jewelcrafting's Brilliant
+  Glass keeps its own name, because its cooldown really is its own.
+
 - **A linked family's cooldowns and currencies get their own columns.** On the summary's Crafting
   and Currencies sets, a character shared with you was listed but had nothing on their row unless
   somebody in your own family happened to hold the same thing - so a friend's alchemist showed up

@@ -22,6 +22,12 @@ on Classic Era, 20 on Burning Crusade and one second on Mists. A union would tel
 alchemist they have a two-day cooldown that does not exist. So the table is keyed by expansion
 and read through `Family.Capabilities.expansion`, exactly as `TalentSpells.lua` is.
 
+**And a third lane, `shared`.** `SpellCooldowns` distinguishes `RecoveryTime`, the recipe's own
+timer, from `CategoryRecoveryTime`, one shared across a category - which is exactly what players
+mean by *all the transmutes share one cooldown*. The lane lists the skill lines that have one, so
+a panel can head that column with the profession rather than with whichever recipe it happens to
+have watched.
+
 **Keyed twice, by spell and by what the recipe makes.** A recipe on Classic Era often has no
 spell id at all - measured on a French client, all 111 alchemy recipes came back with an item
 id and no spell - so a table keyed only by spell would miss precisely the case this exists for.
@@ -159,7 +165,15 @@ def build():
                 if made:
                     creates.setdefault(int(row["SpellID"]), made)
 
-        bySpell, byItem = {}, {}
+        # Which professions' timed recipes share one timer, which is what
+        # `CategoryRecoveryTime` means and is the distinction players describe as *all the
+        # transmutes share one cooldown*. Recorded per skill line rather than per recipe
+        # because that is the granularity the panel groups at: a column heads a profession's
+        # timer, and naming it after one of the recipes on it says something untrue about the
+        # rest. Family used to infer this by watching - recipes of one profession carrying the
+        # same readyAt are on one timer - which is sound while they are counting down and
+        # says nothing at all once they are ready.
+        bySpell, byItem, sharedLines = {}, {}, set()
         for row in read("SpellCooldowns", build_id):
             spell = int(row.get("SpellID") or 0)
             if spell not in taught:
@@ -169,20 +183,29 @@ def build():
             if not made:
                 continue
 
-            longest = max(int(row.get("RecoveryTime") or 0),
-                          int(row.get("CategoryRecoveryTime") or 0))
+            own = int(row.get("RecoveryTime") or 0)
+            category = int(row.get("CategoryRecoveryTime") or 0)
+            longest = max(own, category)
             if longest < FLOOR_MS:
                 continue
 
             seconds = longest // 1000
             bySpell[spell] = max(bySpell.get(spell, 0), seconds)
 
+            # The same floor the recipe itself had to clear. A category timer of one second
+            # is the shape Mists leaves behind where it removed a transmute, and it should
+            # no more mark a profession as sharing than it marks the recipe as timed.
+            if category >= FLOOR_MS:
+                for line in taught[spell]:
+                    sharedLines.add(line)
+
             for line in taught[spell]:
                 byItem.setdefault(made, {})[line] = max(
                     byItem.get(made, {}).get(line, 0), seconds)
 
-        print("  %-30s %3d recipes with a cooldown, %3d of them by what they make"
-              % (game, len(bySpell), len(byItem)))
+        print("  %-30s %3d recipes with a cooldown, %3d of them by what they make, "
+              "%d profession(s) sharing one"
+              % (game, len(bySpell), len(byItem), len(sharedLines)))
         total += len(bySpell)
 
         lines.append("\t[%d] = {" % xpac)
@@ -195,6 +218,10 @@ def build():
             byLine = byItem[made]
             inside = ", ".join("[%d] = %d" % (line, byLine[line]) for line in sorted(byLine))
             lines.append("\t\t\t[%d] = { %s }," % (made, inside))
+        lines.append("\t\t},")
+        lines.append("\t\tshared = {")
+        for line in sorted(sharedLines):
+            lines.append("\t\t\t[%d] = true," % line)
         lines.append("\t\t},")
         lines.append("\t},")
 

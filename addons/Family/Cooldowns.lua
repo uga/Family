@@ -159,6 +159,35 @@ function Cooldowns:Known(spellID, itemID, profession)
 	return nil
 end
 
+-- Whether this profession's timed recipes share one timer between them.
+--
+-- `SpellCooldowns` distinguishes `RecoveryTime`, a recipe's own, from `CategoryRecoveryTime`,
+-- one shared across a category - which is exactly what players mean by *all the transmutes
+-- share one cooldown* (DATASOURCES §"Which recipes have a cooldown"). `RecipeCooldowns.lua`
+-- carries the answer per expansion, because the categories differ: Alchemy on Era and on the
+-- Burning Crusade, Enchanting on the Burning Crusade and on Mists, where Void Sphere and
+-- Prismatic Sphere are two names for one timer.
+--
+-- **Why this is asked at all**, and it is the whole of the fix below: `Crafting` used to infer
+-- sharing by watching, from recipes of one profession carrying the same `readyAt`. That is
+-- sound while they are counting down and says nothing whatever once they are ready - so an
+-- alchemist Family had only ever seen one transmute of had that transmute's name put over a
+-- column covering every transmute she has. Reported from play 2026-09-06.
+--
+-- Per profession rather than per recipe, which is the granularity the panel groups at: a column
+-- heads a profession's timer. Where a profession has both kinds - one shared category and one
+-- recipe with a timer of its own - this says shared, and the heading is then broader than that
+-- one recipe needed rather than wrong about it.
+function Cooldowns:SharesTimer(profession)
+	local line = type(profession) == "number" and profession
+		or Family:SkillLineFor(profession)
+	if not line then return false end
+
+	local expansion = Family.Capabilities and Family.Capabilities.expansion
+	local here = expansion and (Family.RecipeCooldowns or {})[expansion]
+	return (here and here.shared and here.shared[line]) == true
+end
+
 -- How many of a member's cooldowns have come ready, and when the next one will.
 --
 -- **Timers, not recipes**, and every kind of them. Thirty alchemy transmutes share one cooldown, and the rule that
@@ -279,15 +308,26 @@ function Cooldowns:Crafting(meta, key, callback)
 		-- One recipe on a timer is named; several sharing one are named by their
 		-- profession, because "Transmute: Arcanite" is a lie about the other four.
 		--
-		-- **For alchemy this is always the second case**, and it is a fact about the game
-		-- rather than about this code: the client puts every transmute on one shared
-		-- cooldown, so an alchemist who knows five has five entries arriving with the same
-		-- `readyAt`, one group, and the heading "Alchemy" whatever they last transmuted.
-		-- Confirmed from play. The first case is for the professions where exactly one
-		-- recipe has a timer at all - mooncloth, and an alchemist who has learned only one
-		-- transmute so far - and there the recipe's own name is the more useful heading.
+		-- **And the client's own tables are asked rather than watched for**, which is the
+		-- half that was missing. Counting entries infers sharing from several of one
+		-- profession carrying the same `readyAt` - true while they are counting down, and
+		-- no evidence at all once they are ready, since every ready recipe looks like every
+		-- other. So an alchemist Family had only ever recorded one transmute of got that
+		-- transmute's name over a column covering all of them, which is the very lie the
+		-- paragraph above refuses. Reported from play 2026-09-06 off a linked family's
+		-- alchemist, whose column read *Transmute: Fir...*.
+		--
+		-- `SharesTimer` answers from `CategoryRecoveryTime`, per expansion, so it is right
+		-- on the first recipe as well as the fifth - and it covers Enchanting's spheres on
+		-- the builds where those share a category, which no hand-written rule about alchemy
+		-- would have.
+		--
+		-- The count still decides for everything the table has never heard of, which is
+		-- what watching was always for.
 		found.count = found.count + 1
-		if found.count > 1 then found.label = named end
+		if named and (found.count > 1 or self:SharesTimer(profession)) then
+			found.label = named
+		end
 
 		if when then
 			found.ready = false
