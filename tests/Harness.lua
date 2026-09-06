@@ -16202,9 +16202,34 @@ print("how fast a character can get about")
 				said = f.cells[at] and f.cells[at].__text
 			end
 		end
-		check("and it says how fast, as a percentage", said == "100%/-", tostring(said))
-		-- The dash is the point rather than tidiness: it says outright that this character
-		-- cannot fly, where a bare number leaves the reader to wonder whether anybody asked.
+		-- **No dash on a client whose game has no flying.** Era is that client, and a dash
+		-- there promises something the game never offered - reported from play 2026-09-06
+		-- looking at a page of `60%/-`. Read off `Capabilities`, whose answer for this comes
+		-- from the client's own tables: Era has no spell at all carrying the mounted flight
+		-- aura, and Burning Crusade has forty-nine.
+		check("and it says how fast, with no dash where nothing flies",
+			said == "100%" and Family.Capabilities:Has("flying") == false, tostring(said))
+
+		-- And the dash is back where flying is a thing to have and this character has not got
+		-- it, which is the whole of what it is for.
+		do
+			local held = GetBuildInfo
+			GetBuildInfo = function() return "2.5.6", "69110", "Aug 2026", 20506 end
+			Family.Capabilities:Detect()
+			Family.UI:Refresh()
+
+			for _, f in ipairs(frames) do
+				if f.cells and f.__shown == true and f.memberKey == key then
+					said = f.cells[at] and f.cells[at].__text
+				end
+			end
+			check("but a client that can fly says so with a dash",
+				said == "100%/-", tostring(said))
+
+			GetBuildInfo = held
+			Family.Capabilities:Detect()
+			Family.UI:Refresh()
+		end
 
 		-- And both, where there are both - which is the shape that has to fit the column.
 		Family.Database:SetMeta(key, { mount = 100, mountFly = 280 })

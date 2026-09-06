@@ -869,7 +869,16 @@ CELL.mount = function(meta)
 		-- this one carries the most text of any on the set. `100%/150%` came back from play
 		-- cut off at `100%/1`.
 		local ground = meta.mount and tostring(meta.mount) or "-"
-		if not meta.mountFly then return ground .. "%/-" end
+
+		-- The dash means *could have wings and has none*. Where the game has no flying at all
+		-- it means nothing and reads as a promise Era never made, so it goes - and it goes on
+		-- the game's own answer rather than on a build number. A sibling recorded on a client
+		-- that does fly still shows both, because their record carries the number.
+		if not meta.mountFly then
+			if Family.Capabilities:Has("flying") then return ground .. "%/-" end
+			return ground .. "%"
+		end
+
 		return ground .. "/" .. meta.mountFly .. "%"
 	end
 	if not meta.bagsSeen then return UNKNOWN end

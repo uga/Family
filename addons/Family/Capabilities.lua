@@ -93,6 +93,14 @@ local EXPECTED = {
 	keyring      = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false },
 	ammoBags     = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false },
 	transmogrify = { [VANILLA] = false, [TBC] = false, [MISTS] = true  },
+
+	-- Whether a character can leave the ground at all. Not an API question and not researched
+	-- from anywhere but the client's own tables: `SpellEffect` on Classic Era has **no spell**
+	-- carrying aura 207, mounted flight speed, and Burning Crusade has 49 of them. So the mount
+	-- column says `100%/-` where flying is a thing somebody might have and does not, and plain
+	-- `100%` where the game has no such thing to have - a dash promising something Era never
+	-- offers is worse than saying nothing.
+	flying       = { [VANILLA] = false, [TBC] = true,  [MISTS] = true  },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.

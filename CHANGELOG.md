@@ -37,6 +37,10 @@ is a decision rather than an afternoon of archaeology.
   faster - and Family now reads it that way, from your riding rank and what your mount journal lets
   that character ride.
 
+- **On Classic Era the Mount column stops promising flight.** Nothing flies in that game, so the
+  dash that means *no flying mount* was saying nothing at all; there it now shows the ground speed
+  by itself.
+
 - **The Mount column says whether a character can fly.** Two figures, always: what they do on the
   ground and what they do in the air - *100%/60%* for somebody with a gryphon, *100%/-* for somebody
   without one. Flying at 60% beats running at 100% often enough that one number was the wrong
