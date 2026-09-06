@@ -88,9 +88,28 @@ fontMeta.__index = function(_, key)
 		return function(self)
 			local text = tostring(self.__text or "")
 			text = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+
+			-- **A picture is not its markup.** `|T136241:14:14:0:0:64:64:5:59:5:59|t` is
+			-- thirty-six characters and draws fourteen pixels, so counting characters
+			-- made every cell holding an icon measure four times what the game gives it.
+			-- That was harmless while the professions set had columns wide enough to
+			-- hide it, and became the reason the cell-fits-its-column check could not be
+			-- pointed at the one set that most needed it.
+			--
+			-- The game reads the height and then the width out of the markup, and a
+			-- picture given only a height is square. So does this.
+			local pixels = 0
+			text = text:gsub("|T(.-)|t", function(inside)
+				local fields = {}
+				for field in inside:gmatch("[^:]+") do fields[#fields + 1] = field end
+				local height = tonumber(fields[2]) or 0
+				pixels = pixels + (tonumber(fields[3]) or height)
+				return ""
+			end)
+
 			local n = 0
 			for _ in text:gmatch("[^\128-\191]") do n = n + 1 end
-			return n * 6.5
+			return n * 6.5 + pixels
 		end
 	end
 	-- Greying a texture is how the game says "you do not have this", and the talent grid
@@ -23104,6 +23123,171 @@ do
 		check("and riding is not", said:find("Riding", 1, true) == nil, said)
 	end
 end
+end)()
+
+print()
+print("how a professions row is laid out")
+
+-- **One line a member, and riding off the panel altogether.**
+--
+-- Both asked for from play on 2026-09-06, from a screenshot of eight members: three columns of
+-- 194 pixels holding an icon and a number, with a hand's width of nothing between them, and a
+-- horse sitting in the middle of everybody's trades. Riding belongs to the Overview, where the
+-- mount cell says 100%/150% instead of 231/300.
+;(function()
+	local key = "Rider-FireMaw"
+
+	-- A member with one of everything the panel sorts into places: two primaries, three
+	-- secondaries, a riding skill that must not appear at all, and a weapon that must appear
+	-- on a line of its own underneath.
+	Family.Database:SetMeta(key, {
+		name = "Rider", realm = "Fire Maw", classFile = "ROGUE", faction = "Alliance",
+		level = 60,
+		skills = {
+			[164] = { name = "Blacksmithing", rank = 287, maxRank = 375, secondary = false },
+			[182] = { name = "Herbalism",     rank = 150, maxRank = 300, secondary = false },
+			[185] = { name = "Cooking",       rank = 300, maxRank = 300, secondary = true },
+			[129] = { name = "First Aid",     rank = 225, maxRank = 300, secondary = true },
+			[356] = { name = "Fishing",       rank = 225, maxRank = 300, secondary = true },
+			[152] = { name = "Ram Riding",    rank = 150, maxRank = 300, secondary = true },
+			[43]  = { name = "Swords",        rank = 300, maxRank = 300, secondary = false,
+				weapon = true },
+		},
+	})
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	clickLastButton(Family.L["Professions"])
+	Family.UI:Refresh()
+
+	-- The member's own line, not one of the ones under it. Both carry the key, so a search
+	-- that took whichever came first would pass while reading the wrong row.
+	local first, second
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and f.memberKey == key and f.cells then
+			if (f.cells[1].__text or "") ~= "" then
+				first = first or f
+			elseif first then
+				second = second or f
+			end
+		end
+	end
+
+	check("a member has a line on the professions panel", first ~= nil)
+
+	-- **Seven columns, and they fit.** ROW_BUDGET less MEMBER_COLUMN.width is 584 and
+	-- MAX_BUILT_COLUMNS is 7, so seven is both what the row holds and the most a built set
+	-- may ask for. Measured off the row that was actually drawn rather than off the column
+	-- list, because the list is a local in Summary.lua and because what a reader sees is the
+	-- row: `FitColumns` can hand a column less than it asked for and that is still the truth
+	-- about the panel.
+	if first then
+		local width, count = 0, 0
+		for index = 2, #first.cells do
+			local cell = first.cells[index]
+			local room = cell.__width or 0
+			-- Shown, not merely sized. A cell past the end of the set is hidden and keeps
+			-- whatever width the last set gave it, so counting widths alone counts the
+			-- previous panel's columns as well as this one's.
+			if cell.__visible ~= false and room > 0 then
+				count = count + 1
+				width = width + room
+			end
+		end
+		check("a professions row is seven columns wide", count == 7, tostring(count))
+		check("and they fit beside the member's name",
+			(first.cells[1].__width or 0) + width <= 714,
+			tostring((first.cells[1].__width or 0) + width))
+	end
+
+	if first then
+		local said = {}
+		for index = 2, 8 do said[index - 1] = tostring(first.cells[index].__text or "") end
+
+		-- Blacksmithing and Herbalism in the first two cells, then the three secondaries -
+		-- five of the seven filled, where the old layout put two here and three below.
+		local filled = 0
+		for _, text in ipairs(said) do if text ~= "" then filled = filled + 1 end end
+		check("its primaries and its secondaries are all on that one line", filled == 5,
+			table.concat(said, " | "))
+
+		-- Blacksmithing's picture in the first cell and cooking's in a later one: the two
+		-- kinds are in fixed places rather than in a queue, so everybody's secondaries
+		-- begin in the same column.
+		check("the primaries take the first two cells",
+			said[1]:find("|T136241:", 1, true) ~= nil, table.concat(said, " | "))
+		check("and the secondaries the ones after them",
+			said[3] ~= "" and said[4] ~= "" and said[5] ~= "",
+			table.concat(said, " | "))
+		check("with nothing left in the last two", said[6] == "" and said[7] == "",
+			table.concat(said, " | "))
+
+		-- **Riding is nowhere on it.** 132164 is the ram's picture; it is on the Overview's
+		-- mount cell's business and not on this panel's.
+		local whole = table.concat(said, " ")
+		check("and riding is not drawn on the line at all",
+			whole:find("|T132164:", 1, true) == nil, whole)
+
+		-- Which profession each cell is about, so a click can open it. Cell one is the
+		-- member's name, so the fourth cell is the third column - the first secondary.
+		check("each cell says which profession it would open",
+			first.professions and first.professions[2] == "Blacksmithing"
+				and first.professions[4] == "Cooking",
+			tostring(first.professions and first.professions[4]))
+
+		-- And the tooltip, which is where the words went when the cells became pictures.
+		GameTooltip.__shownAs = nil
+		wipe(GameTooltip.__lines)
+		first.__scripts.OnEnter(first)
+		local told = ""
+		for _, line in ipairs(GameTooltip.__lines) do
+			told = told .. " " .. tostring(line[1]) .. " " .. tostring(line[2])
+		end
+		check("the tooltip names them", told:find("Blacksmithing", 1, true)
+			and told:find("Fishing", 1, true), told)
+		check("and does not name riding either, for the same reason",
+			told:find("Ram Riding", 1, true) == nil, told)
+		first.__scripts.OnLeave(first)
+	end
+
+	-- **The weapon skills, which until now this panel drew nowhere.** They were recorded on
+	-- 2026-09-06 and the only place they appeared was the row's tooltip, which is a place
+	-- you have to already suspect they are in order to find them.
+	check("a weapon skill is drawn on the line below", second ~= nil)
+	if second then
+		local shown = ""
+		for index = 2, 8 do shown = shown .. tostring(second.cells[index].__text or "") end
+		check("as its own picture", shown:find("INV_Sword_04", 1, true) ~= nil, shown)
+		check("and it opens nothing, because there is no window behind a sword",
+			second.professions == nil and second.opens == nil)
+	end
+
+	-- The search box is the other half of "the name must stay recoverable", and riding is
+	-- out of that too: it is out of `skillsOf`, which is what the whole set is built from.
+	local box = _G.FamilySummarySearch
+	if box then
+		box:SetText("Ram Riding")
+		if box.__scripts.OnTextChanged then box.__scripts.OnTextChanged(box) end
+		local found = false
+		for _, f in ipairs(frames) do
+			if onScreen(f) and f.memberKey == key then found = true end
+		end
+		check("and typing a riding skill finds nobody on this panel", not found)
+
+		box:SetText("Fishing")
+		if box.__scripts.OnTextChanged then box.__scripts.OnTextChanged(box) end
+		found = false
+		for _, f in ipairs(frames) do
+			if onScreen(f) and f.memberKey == key then found = true end
+		end
+		check("while a secondary profession still does", found)
+
+		box:SetText("")
+		if box.__scripts.OnTextChanged then box.__scripts.OnTextChanged(box) end
+	end
+
+	Family.Database:Forget(key)
+	Family.UI:Refresh()
 end)()
 
 print()

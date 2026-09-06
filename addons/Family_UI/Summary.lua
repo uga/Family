@@ -55,7 +55,7 @@ local MEMBER_COLUMN = { key = "name", label = L["Member"], width = 130, justify 
 -- Declared before the sets, which use them, and defined below with everything else that
 -- turns a record into a piece of text. Written the other way round, the professions set
 -- captured a global that never got set and the panel died the first time it was drawn.
-local skillsOf, skillText
+local skillsOf, skillText, weaponsOf
 
 -- Built further down, where the cells they have to register alongside are. Declared here
 -- because the sets below are written first and would otherwise capture a global that never
@@ -72,6 +72,33 @@ local function professionID(id)
 	if type(id) == "string" then return Family:SkillLineFor(id) or id end
 	return id
 end
+
+-- **Seven columns of eighty-three, counted rather than chosen.**
+--
+-- It was three of 194, and 194 was the width of "Leatherworking 360/375" - a measurement of
+-- something these cells stopped holding when they became a picture and a number. Three columns
+-- of it left a member's trades spread across the whole panel with a hand's width of nothing
+-- between them, and pushed everything but the two primaries onto lines below.
+--
+-- The arithmetic: a row has ROW_BUDGET pixels, the member's name takes MEMBER_COLUMN.width of
+-- them, and MAX_BUILT_COLUMNS is the most a built set may ask for - so 714 - 130 = 584 to
+-- divide, and seven is both what fits and the ceiling. 7 x 83 = 581, three pixels under.
+-- An icon is fourteen and the widest thing that follows it is "287/375", so 83 is room and
+-- not a squeeze.
+--
+-- **The columns are positions, not a queue.** The first two are the primaries and the rest are
+-- the secondaries, so a member with one trade leaves the second cell empty rather than sliding
+-- their cooking into it. That is what makes the grid readable down the page instead of across
+-- one line: everybody's secondaries begin in the same column. It is also what keeps `prof2`
+-- honest - it is the column the sort orders by second primary, and a cell that sometimes held
+-- a secondary would be a column ordered by something it is not showing.
+local SKILL_COLUMNS = 7
+local SKILL_WIDTH = 83
+
+-- How many of the seven are left for secondaries once the two primaries have theirs. Five,
+-- which covers cooking, first aid, fishing and two class skills; anything past it goes onto a
+-- line below, the way it always did.
+local SECONDARY_CELLS = SKILL_COLUMNS - 2
 
 local SETS = {
 	{
@@ -160,15 +187,12 @@ local SETS = {
 						for _, held in ipairs(skillsOf(entry.meta or {}, secondary)) do
 							local id = professionID(held.id)
 
-							-- Riding is not a profession to narrow by. It is on
-							-- the rows because it is a skill somebody has, and
-							-- *show me everybody who can ride* is not a question
-							-- anybody asks - reported from play, with the picker
-							-- offering *Ram Riding* and *Mechanostrider Piloting*
-							-- between Leatherworking and Mining.
-							local line = Family.SkillLines[id or 0]
-							if line and line.riding then id = nil end
-
+							-- Riding used to be filtered out here. It is out of
+							-- `skillsOf` itself now - off the whole set rather
+							-- than off this one control - so there is nothing
+							-- left to filter: *show me everybody who can ride* is
+							-- not a question anybody asks, and neither is what
+							-- their Ram Riding rank is.
 							if id ~= nil and not seen[id] then
 								seen[id] = true
 								list[#list + 1] = { value = id, label = held.name }
@@ -190,29 +214,10 @@ local SETS = {
 			end,
 		},
 
-		columns = {
-			-- Four columns, and as many lines per member as it takes. Professions do
-			-- not fit on one line - five side by side cut "Leatherworking 289/300"
-			-- off in the middle of a number - and two lines on two different grids
-			-- were worse than one crowded line: nothing under anything.
-			--
-			-- So it is one grid. The primaries take the first line and everything
-			-- else takes the ones below, in the same columns, so a member's
-			-- professions line up with each other and with everybody else's.
-			--
-			-- Three columns rather than four, and wider. There are only ever two
-			-- primaries, so the fourth column stood empty on every member's first
-			-- line while "Leatherworking 360/375" was being cut in half in the
-			-- first - width spent where there was nothing to put it and withheld
-			-- where there was.
-			-- Headed once, and not "Primary". The two primaries are on a member's first
-			-- line and everything else is on the second, so a column headed Primary is
-			-- telling the truth about half of what is under it - which is worse than
-			-- saying nothing, because the note below already explains the arrangement.
-			{ key = "prof1",  label = L["Professions"], width = 194, justify = "LEFT" },
-			{ key = "prof2",  label = "",               width = 194, justify = "LEFT" },
-			{ key = "",       label = "",               width = 194, justify = "LEFT" },
-		},
+		-- Built rather than declared, like the currencies and the cooldowns, because the
+		-- first column is headed with whichever profession the picker has been set to.
+		-- `professionColumns` below is the list, and the arithmetic behind its widths.
+		columns = {},
 
 		-- The words are still what somebody types, even once the cells stop showing them.
 		-- Every skill this member has, in the reader's own language, so *cuisine* finds the
@@ -237,18 +242,40 @@ local SETS = {
 		-- under *Standing* was, met a second time in a week: a column whose heading no
 		-- longer describes what it is ordered by.
 		build = function() return professionColumns() end,
-		-- Everything that is not a primary, three to a line, in whatever order the
-		-- member has them. A member with none gets no extra line at all.
+		-- What the first line could not take, on the same grid under it.
+		--
+		-- Two things end up here now, in this order. First any secondary past the five the
+		-- first line holds - rare, and it was the whole of this function before. Then the
+		-- **weapon skills**, which had nowhere on this panel at all: the scanner has recorded
+		-- them since 2026-09-06 and the only place they appeared was the row's tooltip, which
+		-- is a place you have to already suspect they are to find them.
+		--
+		-- A line at a time rather than one flat list, because the two are different lists and
+		-- a swordsman's swords must not slide up into the gap beside somebody's fishing. Seven
+		-- to a line, which is the whole row.
+		--
+		-- Each line carries the names of what it drew, on `names`, so a click can say which
+		-- one it landed on without the caller working it out a second time from a list it
+		-- would have to slice the same way. Only professions get them: a weapon opens no
+		-- window, and offering to open one would be offering something that does not exist.
 		extra = function(meta)
-			local lines, line = {}, nil
+			local lines = {}
 
-			for index, entry in ipairs(skillsOf(meta, true)) do
-				if (index - 1) % 3 == 0 then
-					line = {}
-					lines[#lines + 1] = line
+			local function spread(entries, from, named)
+				local line
+				for index = from, #entries do
+					local at = (index - from) % SKILL_COLUMNS
+					if at == 0 then
+						line = { names = named and {} or nil }
+						lines[#lines + 1] = line
+					end
+					line[at + 1] = skillText(entries[index])
+					if named then line.names[at + 1] = entries[index].name end
 				end
-				line[#line + 1] = skillText(entry)
 			end
+
+			spread(skillsOf(meta, true), SECONDARY_CELLS + 1, true)
+			spread(weaponsOf(meta), 1, false)
 
 			return lines
 		end,
@@ -483,6 +510,16 @@ end
 local UNKNOWN = UI.UNKNOWN
 local NOT_SEEN = L["|cff9d9d9dnot seen|r"]
 
+-- Whether a skill line is one of the game's many names for riding.
+--
+-- By the shipped table and never by the word: Era names it per mount, so a dwarf reads *Ram
+-- Riding* where a troll reads *Raptor Riding* and a French client reads *Monte de belier*.
+-- The key a record is filed under may itself be a word, which is what `professionID` is for.
+local function riding(id)
+	local line = Family.SkillLines and Family.SkillLines[professionID(id) or 0]
+	return (line and line.riding) == true
+end
+
 function skillsOf(meta, secondary)
 	local found = {}
 	-- Filed by skill line id; shown in the language of whoever is reading, which is not
@@ -504,7 +541,19 @@ function skillsOf(meta, secondary)
 		-- primaries - which put *Swords 300/300* under the heading *Professions* and, on a
 		-- character with two trades and a sword, pushed one of the trades off the row
 		-- entirely. Found by a mutation printing the tooltip it was meant to be emptying.
-		local mine = not skill.weapon
+		--
+		-- **And riding is in neither.** It is a real skill with a real rank and it was
+		-- being drawn here because of that, three cells of horse into a panel about what
+		-- a character can make. What a reader wants to know about riding is *how fast*,
+		-- and that is a cell on the Overview - `mount`, which reads the ladder and the
+		-- journal and answers 100%/150% rather than 231/300. Two places saying it, one of
+		-- them badly, is worse than one saying it well. Asked for from play 2026-09-06,
+		-- from a screenshot of eight members with a horse in the middle of their trades.
+		--
+		-- This is where it goes out, rather than in the picker where the first half of the
+		-- same ask was answered: everything on this set is built from this function, so
+		-- taking it out here takes it out of the cells, the tooltip and the search box too.
+		local mine = not skill.weapon and not riding(id)
 			and ((skill.secondary or skill.class or false) and true or false) == secondary
 		if mine then
 			found[#found + 1] = {
@@ -518,7 +567,7 @@ end
 
 -- The third of the game's own lists. `skillsOf` answers the first two and deliberately keeps
 -- weapons out of both, so this is where they are asked for.
-local function weaponsOf(meta)
+function weaponsOf(meta)
 	local found = {}
 	for id, skill in pairs(meta.skills or {}) do
 		if skill.weapon then
@@ -841,6 +890,18 @@ end
 
 CELL.prof1 = function(meta) return skillText(skillsOf(meta, false)[1]) or UNKNOWN end
 CELL.prof2 = function(meta) return skillText(skillsOf(meta, false)[2]) or UNKNOWN end
+
+-- The secondaries, in the five cells left of the seven.
+--
+-- Blank rather than a dash where there is none. A missing primary is worth a mark - two is how
+-- many everybody gets and an empty one says this character has spent only one - but nobody is
+-- owed five secondaries, and a row ending in three dashes would be Family reporting an absence
+-- that is not one. §2.2 is about what was never seen; this is about what does not exist.
+for index = 1, SECONDARY_CELLS do
+	CELL["sec" .. index] = function(meta)
+		return skillText(skillsOf(meta, true)[index])
+	end
+end
 
 -- A name, blank for somebody the client said is in no guild, and a dash for everybody else.
 --
@@ -1475,18 +1536,22 @@ local craftingOmitted = 0
 -- rank, and a heading that still said *Professions* would be a column ordered by a number with
 -- nothing on the screen admitting it.
 --
--- The widths are here rather than read back off the set, because a table read from itself is a
--- table that cannot be changed in one place: the three add up to the row and are meant to.
 function professionColumns()
 	local wanted = UI.__summaryNarrow and UI.__summaryNarrow:Value()
 
-	return {
-		{ key = "prof1", width = 194, justify = "LEFT",
+	local columns = {
+		{ key = "prof1", width = SKILL_WIDTH, justify = "LEFT",
 			label = wanted ~= nil and Family:ProfessionName(wanted)
 				or L["Professions"] },
-		{ key = "prof2", label = "", width = 194, justify = "LEFT" },
-		{ key = "",      label = "", width = 194, justify = "LEFT" },
+		{ key = "prof2", label = "", width = SKILL_WIDTH, justify = "LEFT" },
 	}
+
+	for index = 1, SECONDARY_CELLS do
+		columns[#columns + 1] = { key = "sec" .. index, label = "",
+			width = SKILL_WIDTH, justify = "LEFT" }
+	end
+
+	return columns
 end
 
 function craftingColumns()
@@ -2333,6 +2398,16 @@ local function build(frame)
 			local primaries = skillsOf(meta, false)
 			names[2] = primaries[1] and primaries[1].name or nil
 			names[3] = primaries[2] and primaries[2].name or nil
+
+			-- And the secondaries beside them, which have been on this line rather
+			-- than the one below it since the cells narrowed. Cell one is the member's
+			-- name, so a column's cell is one further along than the column.
+			local secondaries = skillsOf(meta, true)
+			for index = 1, SECONDARY_CELLS do
+				local entry = secondaries[index]
+				names[index + 3] = entry and entry.name or nil
+			end
+
 			return names
 		end
 
@@ -2356,6 +2431,10 @@ local function build(frame)
 			-- that had been on screen before it.
 			row.memberKey, row.memberName, row.memberRealm = nil, nil, nil
 			row.borrowed = nil
+			-- And what its cells were about. A line of weapon skills opens nothing, and a
+			-- row that kept the previous one's professions would be a sword offering to
+			-- open a forge if `opens` were ever set again above it.
+			row.professions = nil
 			layOut(row.cells, columns)
 			for index = 1, MAX_CELLS do setCell(row, index, "") end
 
@@ -2640,9 +2719,6 @@ local function build(frame)
 			-- The lines below, on the same grid, with the member column left empty:
 			-- the name has been said and saying it again would make two members of
 			-- one. A member with nothing to put there gets no extra line.
-			local secondaries = skillsOf(member.meta, true)
-			local drawn = 0
-
 			for _, line in ipairs(currentSet.extra and currentSet.extra(member.meta,
 				member.key) or {}) do
 				local extra = nextRow()
@@ -2655,22 +2731,29 @@ local function build(frame)
 					setCell(extra, index + 1, text)
 				end
 
-				-- The same click, for the same reason: these are professions too.
 				if currentSet.id == "professions" then
-					local names = {}
-					for index = 1, #line do
-						local entry = secondaries[drawn + index]
-						names[index + 1] = entry and entry.name or nil
+					-- The same click, for the same reason: these are professions
+					-- too - where the line says they are. A line of weapon skills
+					-- carries no names and opens nothing, because there is no
+					-- window behind a sword to open.
+					--
+					-- Taken from the line rather than counted out here. This used
+					-- to re-slice the member's secondaries by how many cells had
+					-- been drawn so far, which was the same arithmetic in a second
+					-- place and only right while there was one kind of extra line.
+					if line.names then
+						local names = {}
+						for index, name in pairs(line.names) do
+							names[index + 1] = name
+						end
+						extra.professions = names
+						extra.opens = openProfession
 					end
-					extra.professions = names
-					extra.opens = openProfession
 
 					-- The same names on the same terms: a reader hovering the second
 					-- line is asking what a reader hovering the first is asking.
 					extra.__skills = member.key
 				end
-
-				drawn = drawn + #line
 			end
 		end
 
@@ -2856,11 +2939,11 @@ local function build(frame)
 		-- they are left out of every figure here - and the panel that shows what is actually
 		-- in them does not leave them out, which would be a different mistake.
 		if currentSet.id == "professions" then
-			note:SetText(L["|cff888888Primary professions on the first line of each member, "
-				.. "everything else on the second. A profession in grey has recipes "
-				.. "Family has not seen for a week, or has never seen: ranks are always "
-				.. "current, recipe lists are only as new as the last time that window "
-				.. "was open.|r"])
+			note:SetText(L["|cff888888Every skill on one line per member: the two primary "
+				.. "professions first, then the secondary ones. Weapon skills go on the "
+				.. "line below. A profession in grey has recipes Family has not seen for "
+				.. "a week, or has never seen: ranks are always current, recipe lists are "
+				.. "only as new as the last time that window was open.|r"])
 		elseif currentSet.id == "bags" then
 			note:SetText(L["|cff888888Free and total slots leave out quivers, soul bags and "
 				.. "the like: their slots are not room for anything else. Possessions "

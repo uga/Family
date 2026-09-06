@@ -27,8 +27,14 @@ is a decision rather than an afternoon of archaeology.
   summary's Professions set, beside cooking and first aid, where the rest of what a character has
   already is.
 
-- **The Professions filter no longer offers riding.** *Ram Riding* and *Mechanostrider Piloting*
-  were sitting in the list between Leatherworking and Mining. Riding still shows on the rows.
+- **Every skill a character has now fits on one line.** The Professions set was three wide columns
+  holding an icon and a number, with the primaries on one line and everything else on another; it is
+  seven narrow ones, primaries first and the secondary skills beside them. **Weapon skills are drawn
+  under it**, on their own line - until now they were recorded and shown nowhere but the tooltip.
+
+- **Riding is off the Professions page.** It was in the filter and in the rows, three cells of horse
+  in the middle of everybody's trades. What is worth knowing about riding is how fast a character
+  gets about, and the Overview says that already.
 
 - **The Professions overview is drawn as pictures.** Each trade shows its own icon and its rank
   instead of its name and its rank, so a character's whole set of skills fits where two used to and
