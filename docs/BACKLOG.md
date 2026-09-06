@@ -1781,9 +1781,16 @@ on screen explaining it.
 **Asked 2026-09-06**: what happens when an alt unlearns a profession? Read rather than reasoned,
 and the two halves of the record answer differently.
 
-**Meta forgets it, at the next scan of that character.** `Scanners/Professions.lua` writes
-`skills = summary` and `Database:SetMeta` replaces a field rather than merging into it, so the
-whole skills table is the new one. Everything that reads skills loses the profession with it:
+**Meta forgets it within a second, on the character it happened to.** Unlearning changes the
+skill sheet, so the client fires `SKILL_LINES_CHANGED`; the scanner has been listening for that
+since the beginning and books a scan one second later. `ReadRanks` reads the **whole** sheet,
+`Scanners/Professions.lua` writes `skills = summary`, and `Database:SetMeta` replaces a field
+rather than merging into it - so the whole skills table is the new one.
+
+**Only on that character, and that is the whole of the limit.** A scan reads the client, and the
+client is one character. Family cannot learn anything about an alt nobody is playing, so an
+unlearn on Deiana is known the moment it happens and an unlearn on Eccebombo is unknown until
+somebody logs in on them. That is true of every fact Family holds and is not special to this. Everything that reads skills loses the profession with it:
 
 - the summary's professions cells, which are built from `skillsOf(meta, …)`
 - the professions panel, whose loop is `for id, skill in pairs(skills)` and looks the recipe
