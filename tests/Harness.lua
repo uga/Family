@@ -23100,6 +23100,62 @@ print("an alias for a linked family")
 				Family.UI.__contentsRows[4].itemID == nil,
 				tostring(Family.UI.__contentsRows[4].itemID))
 
+			-- **And the block's own first line does the same**, which is what the
+			-- reputations list does with a faction's first person and what was asked
+			-- for on that comparison: reaching back up to the line that heads a block
+			-- is shorter than hunting for *fewer* underneath it.
+			do
+				local head = Family.UI.__contentsRows[1]
+				check("the line that heads a foldable block offers the click too",
+					head.expandBlock ~= nil and head.highlight:IsShown() == true,
+					tostring(head.expandBlock))
+
+				-- The first line and the fold, and nothing between them. A holder's own
+				-- line collapsing the block under it would be a surprise, and lighting
+				-- every line of a block says every line does something.
+				local middle, lit = nil, nil
+				for index = 2, 3 do
+					local r = Family.UI.__contentsRows[index]
+					if r.expandBlock then middle = r.expandBlock end
+					if r.highlight:IsShown() then lit = index end
+				end
+				check("while the holders' own lines under it offer nothing",
+					middle == nil and lit == nil,
+					tostring(middle) .. " " .. tostring(lit))
+
+				head.__scripts.OnClick(head)
+				local wide = 0
+				for _, row in ipairs(page()) do
+					if row.item == "Ingot of Proof Mark II" then break end
+					wide = wide + 1
+				end
+				check("and clicking it opens the block", wide == 10, tostring(wide))
+
+				-- The same row, which is still the block's first line while it is open.
+				Family.UI.__contentsRows[1].__scripts.OnClick(
+					Family.UI.__contentsRows[1])
+				local narrow = 0
+				for _, row in ipairs(page()) do
+					if row.item == "Ingot of Proof Mark II" then break end
+					narrow = narrow + 1
+				end
+				check("and clicking it again closes it", narrow == 4, tostring(narrow))
+
+				-- And a block with nothing to fold lights nothing, because a lit line
+				-- that clicks nowhere promises something.
+				local quiet, lit = nil, nil
+				for index = 1, (Family.UI.__contentsShown or 0) do
+					local r = Family.UI.__contentsRows[index]
+					if quiet == nil and (r.text:GetText() or "") ~= ""
+						and r.itemID == 774003 then
+						quiet, lit = r.expandBlock, r.highlight:IsShown()
+					end
+				end
+				check("while a block short enough to fit offers no click at all",
+					quiet == nil and lit == false, tostring(quiet) .. " "
+						.. tostring(lit))
+			end
+
 			-- **A block is about one item and not one word.** Two ids under one name
 			-- have to stay in two blocks: a heading names the item the lines under it
 			-- are about, and a block holding two of them says something untrue about
@@ -23111,10 +23167,13 @@ print("an alias for a linked family")
 				-- in the order buys is that one item is **one** block. Without it the two
 				-- ids sharing this name interleave by how many are held, and each of them
 				-- comes out as four or five blocks under the same heading.
+				-- Told apart by the item rather than by the click: the line that heads
+				-- a foldable block carries one now, so "has no expandBlock" stopped
+				-- meaning "is not the fold row" and this counted no headings at all.
 				local headed = {}
 				for index = 1, (Family.UI.__contentsShown or 0) do
 					local r = Family.UI.__contentsRows[index]
-					if not r.expandBlock and (r.text:GetText() or "") ~= "" then
+					if r.itemID and (r.text:GetText() or "") ~= "" then
 						headed[r.itemID] = (headed[r.itemID] or 0) + 1
 					end
 				end

@@ -969,6 +969,20 @@ local function build(frame)
 					r.who:SetText((groupColumn ~= "who" or offset == 0) and line.who or "")
 					r.who:SetTextColor(line.red, line.green, line.blue)
 					r.where:SetText(line.where)
+
+					-- **The block's own first line opens and closes it too**, which is
+					-- where a click about the whole block belongs and is what the
+					-- reputations list does with a faction's first person. Asked for
+					-- from play 2026-09-06 on exactly that comparison: closing an open
+					-- block by reaching back up to the line that heads it is shorter
+					-- than hunting for *fewer* at the bottom of it.
+					--
+					-- Only where there is something to fold. Lighting a line that
+					-- clicks nowhere promises something.
+					if foldable and offset == 0 then
+						r.expandBlock = block
+						r.highlight:Show()
+					end
 				end
 
 				if foldable then
