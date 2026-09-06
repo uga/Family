@@ -7285,12 +7285,71 @@ print("a quest row's own objectives, under the client's description of the quest
 		check("every one of them, not the first",
 			said:find("Red Linen Goods 2: 1/1", 1, true) ~= nil, said)
 
-		-- Whose progress it is, said out loud. The client writes *You are on this quest*
-		-- above these lines, which is a claim about the player; without a name under it
-		-- the reader has two statements about two different characters and nothing
-		-- saying which is which.
-		check("and the character it belongs to named, because the client named the player",
-			said:find(tostring(Family.UI:Meta(key).name or key), 1, true) ~= nil, said)
+		-- Whose progress it is, said out loud - **except here, where it is your own.**
+		--
+		-- The client writes *You are on this quest* above these lines, which is a claim
+		-- about the player; on anybody else's page a name under it is what stops the
+		-- reader having two statements about two different characters and nothing saying
+		-- which is which. On the page about the character being played the two claims are
+		-- the same claim, and the name reads as though something needed disambiguating.
+		-- Reported from play 2026-09-06.
+		check("and no name over them on your own page, the client having named you already",
+			said:find(tostring(Family.UI:Meta(key).name or key), 1, true) == nil, said)
+
+		-- And it is there on anybody else's, which is the half the name exists for. Driven
+		-- by moving who is being played rather than by building a second member: the branch
+		-- turns on exactly that comparison, and a second fixture would be checking that two
+		-- members can be made rather than that the tooltip tells them apart.
+		do
+			-- The panel follows whoever is being played unless somebody has picked by
+			-- hand, so moving the played character alone would move the page with it and
+			-- the branch would never be reached. The member is chosen through the picker
+			-- - which is what `chosen` is for - and then the played character is moved
+			-- out from under it.
+			local picker
+			for _, f in ipairs(frames) do
+				if f.__shown ~= false and type(f.Select) == "function"
+					and type(f.Members) == "function" and onScreen(f) then
+					picker = f
+				end
+			end
+			check("the character panel has a member picker to choose with", picker ~= nil)
+
+			local mine
+			for _, member in ipairs(picker and picker:Members() or {}) do
+				if member.key == key then mine = member end
+			end
+
+			local heldCurrent = Family.CurrentMember
+			if picker and mine then picker:Select(mine) end
+			Family.CurrentMember = function() return "Nobody-Nowhere" end
+			Family.UI:Refresh()
+
+            local other
+			for _, f in ipairs(frames) do
+				if f.__shown ~= false and f.questID == 84 then other = f end
+			end
+
+			wipe(GameTooltip.__lines)
+			if other then other.__scripts.OnEnter(other) end
+
+			local elsewhere = ""
+			for _, line in ipairs(GameTooltip.__lines) do
+				elsewhere = elsewhere .. " " .. tostring(line[1])
+					.. " " .. tostring(line[2])
+			end
+
+			check("while a page about somebody else still names whose progress it is",
+				elsewhere:find(tostring(Family.UI:Meta(key).name or key), 1, true) ~= nil,
+				elsewhere)
+			check("and carries the objectives either way",
+				elsewhere:find("Red Linen Goods 1: 1/1", 1, true) ~= nil, elsewhere)
+
+			Family.CurrentMember = heldCurrent
+			-- Put back, so that nothing after this reads a panel pinned to one member.
+			if picker then picker.chosen = false end
+			Family.UI:Refresh()
+		end
 	end
 
 	-- **And the whole-family reading of the same quest**, which is a second row builder and

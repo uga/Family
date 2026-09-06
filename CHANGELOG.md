@@ -19,6 +19,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **A quest's own progress no longer has your name over it on your own page.** Hovering a quest on
+  the character you are playing showed the game's *You are on this quest*, then your name, then
+  your objectives - a heading that told you nothing you did not already know. It is still there on
+  every other character's page, where it says whose the numbers underneath actually are.
+
 - **The login notice tells you about your own character too.** It listed every alt with a crafting
   cooldown ready except the one you had just logged in on - which is the one you can do something
   about without logging out again.

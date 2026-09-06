@@ -1813,8 +1813,22 @@ local function build(frame)
 				-- the client writes above these lines, and without a name underneath it the
 				-- reader has two claims about two different characters and nothing saying
 				-- which is which.
+				--
+				-- **Except on the character being played, where the two claims are one.**
+				-- Reported from play 2026-09-06: hovering a quest on the character you are
+				-- on gave *You are on this quest* and then that character's own name over
+				-- their own objectives, which disambiguates nothing and reads as though
+				-- something needed disambiguating. The objectives themselves stay whoever
+				-- the row is about - the client's half is the quest's description and its
+				-- requirement list and carries no progress figures at all, so without these
+				-- lines the tooltip loses the numbers entirely.
+				--
+				-- The whole-family view keeps its name on every row, deliberately: there
+				-- each row is a different character and the name is what tells them apart,
+				-- so dropping it from one row would make that row the ambiguous one.
 				if line.progress then
-					local said = { { " " }, { UI:NameOf(member.meta) } }
+					local said = playing and { { " " } }
+						or { { " " }, { UI:NameOf(member.meta) } }
 					for _, objective in ipairs(line.progress) do
 						said[#said + 1] = {
 							(objective.done and "|cff40bf40" or "|cffffffff")

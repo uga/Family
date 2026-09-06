@@ -2395,3 +2395,34 @@ second one on another realm with the same name as the first one precisely as a t
 draws them under **Serena Spineshatter (1)** and **Serena Thunderstrike (6)**, two realm groups,
 which is §2.1 doing its job. Written down because the same shape will look like a bug again.
 
+---
+
+## 37. Your own name over your own objectives — DONE 2026-09-06
+
+**Reported 2026-09-06** with a screenshot of Nervina's Quests page: *why has the tooltip the
+"mixed" progress presentation, typical of when we have an original in another language which we
+are translating on the fly?*
+
+**It is not a translation fallback and never was**, which is the first half of the answer. The
+line Family asks the client for is `SetHyperlink("quest:2603:55")`, which draws the quest's
+description and its requirement list and **carries no progress figures at all** - that is why the
+client's half reads `- 1 x Extinguish the Brazier of Pain` with no numbers. The `1/1`, `0/1`
+underneath come only from Family's record, and they appear in every language, for every member.
+
+**What was wrong is the name over them.** The client writes *You are on this quest* above that
+block whenever the player has the quest, so on any other member's page the name says whose the
+numbers underneath actually are - two claims about two different characters, and nothing else
+telling them apart. On the page about the character being played the two claims are the same
+claim, and a name there reads as though something needed disambiguating.
+
+So the name is dropped on that one page and kept everywhere else. **The whole-family view keeps
+its name on every row**, deliberately: there each row is a different character and the name is
+what tells them apart, so dropping it from one row would make that row the ambiguous one.
+
+*The check for the other half had to move who is being played.* The panel follows the played
+character unless somebody has picked by hand, so stubbing that alone moved the page with it and
+the branch was never reached. The member is chosen through the picker - which is what `chosen` is
+for - and the played character is then moved out from under it.
+
+Two checks changed, three added, two mutations, both reddening.
+
