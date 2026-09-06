@@ -325,6 +325,39 @@ local function stillHeld(meta, profession)
 	return false
 end
 
+-- Everybody a question about the family may be answered from: our own members, then the siblings
+-- a linked family has shared with us.
+--
+-- **One gatherer, because three readers in this file were asking the same question and two of
+-- them were answering it for half the family.** `Search` gained its siblings on 2026-09-05 and
+-- the comment beside it says why - `Database:Members` has never heard of a borrowed key. The
+-- other two, `KnowersOf` and `Crafters`, kept walking the database alone, so a tooltip listed a
+-- sibling's recipes nowhere while the panel one click away listed them correctly. Reported from
+-- play 2026-09-06 with two screenshots, and it is L-052's class again: a reader that knows only
+-- our own records answering a question about everybody, with nothing saying it had answered half.
+--
+-- Siblings and not everyone a link shares, which is the population every other whole-family list
+-- uses: a sibling is the decision that somebody belongs in my lists beside my own (§6).
+--
+-- A sibling's payload is already a table - it arrived as one and only what we store is
+-- compressed - so it is read straight rather than through the database, which has never heard of
+-- the key it is filed under.
+local function everybody()
+	local searched = {}
+
+	for key, entry in pairs(Family.Database:Members()) do
+		searched[#searched + 1] = { key = key, meta = entry.meta or {},
+			payload = Family.Database:Payload(key) }
+	end
+
+	for _, sibling in ipairs(Family.Wide and Family.Wide:Siblings() or {}) do
+		searched[#searched + 1] = { key = sibling.key, meta = sibling.meta or {},
+			payload = sibling.payload, familyName = sibling.familyName }
+	end
+
+	return searched
+end
+
 function Recipes:KnowersOf(spellID, itemID, itemName)
 	-- Where the caller has only the item, the client's tables often know which spell it
 	-- teaches - and an id settles it where a name cannot.
@@ -358,9 +391,8 @@ function Recipes:KnowersOf(spellID, itemID, itemName)
 		return (new_.rank or 0) > (old_.rank or 0)
 	end
 
-	for key, entry in pairs(Family.Database:Members()) do
-		local meta = entry.meta or {}
-		local payload = Family.Database:Payload(key)
+	for _, who in ipairs(everybody()) do
+		local key, meta, payload = who.key, who.meta, who.payload
 
 		for profession, record in pairs((payload or {}).professions or {}) do
 			-- Skipped where they have unlearnt it: the list stays on the record and the
@@ -405,6 +437,11 @@ function Recipes:KnowersOf(spellID, itemID, itemName)
 						rank = (meta.skills or {})[profession]
 							and meta.skills[profession].rank or nil,
 						cooldown = cooldown,
+						-- Whose character it is, where it is not one of ours. The
+						-- reason is the one the item tooltip gives: a name against a
+						-- count reads as *I can go and get that*, and for somebody
+						-- else's character that is not true.
+						familyName = who.familyName,
 					}
 
 					if better(candidate, best[key]) then best[key] = candidate end
@@ -613,20 +650,9 @@ function Recipes:Search(needle, limit)
 
 	-- Gathered first rather than looped over twice, because the body below is long and two
 	-- copies of it would be two answers to "who can make this" the day one of them is edited.
-	local searched = {}
-	for key, entry in pairs(Family.Database:Members()) do
-		searched[#searched + 1] = { key = key, meta = entry.meta or {},
-			payload = Family.Database:Payload(key) }
-	end
-	for _, sibling in ipairs(Family.Wide and Family.Wide:Siblings() or {}) do
-		-- Their payload is already a table - it arrived as one and only what we store is
-		-- compressed - so it is read straight rather than through the database, which has
-		-- never heard of the key it is filed under.
-		searched[#searched + 1] = { key = sibling.key, meta = sibling.meta or {},
-			payload = sibling.payload, familyName = sibling.familyName }
-	end
-
-	for _, who in ipairs(searched) do
+	-- Which is exactly what happened to the two readers above this one, so the gathering now
+	-- lives in one place for all three.
+	for _, who in ipairs(everybody()) do
 		local key, meta, payload = who.key, who.meta, who.payload
 
 		for profession, record in pairs((payload or {}).professions or {}) do
@@ -806,12 +832,12 @@ function Recipes:Crafters(profession, itemName, required, minLevel, itemID)
 	-- was opened in English - which it could not do while both sides were words.
 	local wanted = Family:SkillLineFor(profession) or profession
 
-	for key, entry in pairs(Family.Database:Members()) do
-		local meta = entry.meta or {}
+	for _, member in ipairs(everybody()) do
+		local key, meta = member.key, member.meta
 		local skill = (meta.skills or {})[wanted]
 
 		if skill then
-			local payload = Family.Database:Payload(key)
+			local payload = member.payload
 			local record = payload and payload.professions
 				and payload.professions[wanted]
 			local recipes = record and record.recipes
@@ -895,6 +921,9 @@ function Recipes:Crafters(profession, itemName, required, minLevel, itemID)
 				-- What they would have had to take. Carried as the spell's id; the word for
 				-- it is the client's to supply, in the language of whoever is reading.
 				needs = needs,
+				-- Whose character it is, where it is not one of ours. Same field and
+				-- same reason as `KnowersOf` above and the item tooltip beside it.
+				familyName = member.familyName,
 			}
 		end
 	end

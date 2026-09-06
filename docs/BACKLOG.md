@@ -2237,3 +2237,42 @@ not even before the window lost focus, because a fault inside an `OnUpdate` is s
 `scriptErrors` is off, which is the default. A probe that does not announce itself cannot be told
 from a probe that found nothing.*
 
+---
+
+## 33. A sibling who can make it is on the panel and not on the tooltip — DONE 2026-09-06
+
+**Reported 2026-09-06** with two screenshots of Professions / Whole family. The row for *Dry Pork
+Ribs* read `Eccebombo 359, Rolando of Serena 125   guild Rolando`; the tooltip for the same recipe
+said *Can make it 2*, naming Eccebombo and the guild's Rolando and not the Wide Family one.
+*Same for another profession. Same also for professions not shared via guild* - so it was not the
+guild half crowding anybody out.
+
+**And the possessions half of that same tooltip was right the whole time**, which Alberto pointed
+out and which is the useful half of the report: *tooltips do regularly show siblings' possessions,
+only the "can make" list is lacking.* One tooltip, two sources - `Family/Index.lua`, which has
+answered for borrowed keys since linking was built, and `Family/Recipes.lua`, which had not.
+
+**The cause.** `Recipes:KnowersOf` and `Recipes:Crafters` both walked `Database:Members()`, which
+has never heard of a borrowed key. `Recipes:Search` in the same file was fixed on 2026-09-05 for
+exactly this, with a comment naming L-052 - so the file had one reader answering for everybody
+and two answering for half, and nothing said so.
+
+**Fixed with one gatherer rather than three.** `everybody()` returns our own members and then the
+siblings a link has shared, and all three readers call it. The 2026-09-05 fix put its gathering
+inline beside a comment about the body below being too long to have two copies of; the gathering
+was the part that needed one copy. `familyName` rides on the result the same way it already did
+out of `Search`, and the tooltip says *Baker of Baker-Thunderstrike* through one `whose()` helper
+that the possessions block now shares - it had been spelling the same sentence out itself.
+
+**The grep in L-052 was the wrong grep**, and that is the lesson this adds: it looked for
+`Family.Database:` inside `addons/Family_UI/`, and all three of these are in `addons/Family/`.
+The rule is not about which addon a reader lives in - it is that any reader answering about *the
+family* has to be asked which family it means.
+
+*Not swept further, deliberately.* `Database:Members()` has thirty-odd call sites and most are
+right: scanners, the broker asking about the character being played, guild sharing, which is about
+our own characters by definition. `Family/Cooldowns.lua:334` is the one that looks worth a reading
+on the same grounds, and it is written here rather than changed on a hunch.
+
+Nine checks, four mutations, all reddening.
+

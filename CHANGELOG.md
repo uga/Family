@@ -19,6 +19,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **A linked family's characters appear in "Can make it" again.** Hovering a recipe listed who in
+  your own family and your guild could make it, and quietly left out the characters a linked
+  family shares with you - even though the professions panel one click away had them, and even
+  though the same tooltip's possessions list has always shown them. They are back, named with the
+  family they belong to, on a recipe's tooltip and on a pattern's.
+
 - **The whole-family possessions search reads as a list again.** Searching for an item used to
   draw its name once for every character who had some, with that character's count against the
   name - so five holders of a bronze bar gave you five lines all beginning *Bronze Bar 209*, and

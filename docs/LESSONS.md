@@ -1985,6 +1985,33 @@ quest log rendering rows, and a sibling named in an item's maker block. Both mut
 `Family.Database` back - fail. The summary's letter unfold has no such check yet and is written
 down as owed rather than left to look covered.
 
+### It came back twice more, in the file that had already been fixed once — 2026-09-06
+
+`Recipes:Search` gained its siblings on 2026-09-05, reported from play, with a comment beside it
+naming this lesson. The same file has two other readers of the same data - `KnowersOf`, which
+answers a recipe's own tooltip, and `Crafters`, which answers a pattern's - and both went on
+walking `Database:Members` alone. Alberto reported it 2026-09-06 with two screenshots: the
+professions panel listing *Rolando of Serena* among the people who can make a recipe, and the
+tooltip for that same recipe, one hover away, not listing him.
+
+**So the grep in the paragraph above was the wrong grep.** It was `Family.Database:` inside
+`addons/Family_UI/`, and all three of these live in `addons/Family/`. The rule is not about which
+addon: it is that **any reader answering a question about "the family" must be asked which family
+it means**, wherever it lives. `Family/Index.lua` had been answering for everybody all along,
+which is why the possessions half of the very same tooltip was correct and the crafters half was
+not - one tooltip, two sources, one of them half-blind.
+
+**And fixing one of three was what let the other two survive a report.** The 2026-09-05 fix put
+the gathering inline in `Search`, next to a comment explaining that the body below was too long to
+have two copies of. The gathering itself was the thing that needed one copy. It is now a single
+`everybody()` that all three call, so the next reader added to that file gets the whole family by
+default rather than by remembering.
+
+**The checks that now catch it.** A sibling who knows a recipe, asked of `KnowersOf` and of
+`Crafters` and read off the drawn tooltip line, named with the family they belong to. Four
+mutations fail: emptying the gatherer, and putting `Database:Members` back in each of the two
+readers, and dropping the family from the name.
+
 ## L-053 — The stub that agreed with the mistake
 
 Family's quest scanner asked for a quest's id two ways: `C_QuestLog.GetQuestIDForLogIndex`, and

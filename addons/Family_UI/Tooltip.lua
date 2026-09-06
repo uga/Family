@@ -38,6 +38,16 @@ local function placesOf(owner)
 	return UI:HeldWhere(owner)
 end
 
+-- Whose character it is, where it is not one of ours.
+--
+-- Three blocks on this tooltip say it and they all say it the same way, which is the point: a
+-- count or a rank against a bare name reads as *I can go and get that*, and for somebody else's
+-- character it is not true. Said here once rather than three times.
+local function whose(who)
+    if not who.familyName then return who.label end
+    return string.format(L["%s |cff9d9d9dof %s|r"], who.label, tostring(who.familyName))
+end
+
 -- Names to show for a list of members, with the realm added to the ones that need it.
 --
 -- Two characters on two realms can share a name, and Family keeps them apart everywhere else
@@ -87,11 +97,7 @@ local function possessionLines(tooltip, itemID)
 		-- A sibling's name carries their family. The count means something different for
 		-- them - it is not in a bag you can walk to - and a line that read the same as
 		-- your own would be inviting a trip to the wrong bank.
-		local label = owner.familyName
-			and string.format(L["%s |cff9d9d9dof %s|r"], owner.label,
-				tostring(owner.familyName))
-			or owner.label
-		lines[#lines + 1] = { label, placesOf(owner), r, g, b, 0.8, 0.8, 0.8 }
+		lines[#lines + 1] = { whose(owner), placesOf(owner), r, g, b, 0.8, 0.8, 0.8 }
 	end
 
 	for _, guild in ipairs(guilds) do
@@ -188,7 +194,7 @@ local function crafterLines(tooltip, itemID)
 		local r, g, b = classColour(who.classFile)
 
 		lines[#lines + 1] = {
-			string.format("%s |cff888888%s|r", who.label, tostring(who.rank or "?")),
+			string.format("%s |cff888888%s|r", whose(who), tostring(who.rank or "?")),
 			STATE[who.state](who, required, minLevel),
 			r, g, b, 1, 1, 1,
 		}
@@ -289,7 +295,7 @@ local function makerLines(ours, theirs)
 		local who = labelled(ours)[index]
 		local r, g, b = classColour(who.classFile)
 		lines[#lines + 1] = {
-			who.label,
+			whose(who),
 			readyText(who.cooldown)
 				or string.format("|cff888888%s|r", tostring(who.rank or "?")),
 			r, g, b, 1, 1, 1,

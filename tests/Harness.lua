@@ -21191,6 +21191,84 @@ print("a linked family's recipes, in the whole-family search")
 		who and who.familyName == "Baker-Thunderstrike",
 		who and tostring(who.familyName))
 
+	-- **And the tooltips, which is the same trap two readers further along.**
+	--
+	-- Reported from play 2026-09-06 with two screenshots: the professions panel listed
+	-- *Rolando of Serena* among the people who can make a recipe and the tooltip for the very
+	-- same recipe did not - and it was not the guild half getting in the way, because it
+	-- happened for professions nobody shared through a guild at all. `KnowersOf` and
+	-- `Crafters` both walked `Database:Members` alone, exactly as `Search` did before the
+	-- block above was written, so the file had one reader fixed and two not.
+	do
+		local knowers = Family.Recipes:KnowersOf(90001)
+		local borrowed
+		for _, who in ipairs(knowers) do
+			if who.name == "Baker" then borrowed = who end
+		end
+		check("the recipe's own tooltip knows a sibling can make it",
+			borrowed ~= nil, tostring(#knowers) .. " knowers")
+		check("and says whose character it is", borrowed
+			and borrowed.familyName == "Baker-Thunderstrike",
+			borrowed and tostring(borrowed.familyName))
+		check("and carries the rank that came with the grant",
+			borrowed and borrowed.rank == 275, borrowed and tostring(borrowed.rank))
+
+		-- The other reader, which answers the larger question a pattern's tooltip asks -
+		-- who has the profession at all, and how each of them stands with this recipe.
+		--
+		-- Asked with the word this client uses for the spell rather than the one written
+		-- into the fixture. `Crafters` compares the name off the item under the cursor
+		-- against the name it works out for each recorded recipe, and both of those come
+		-- from the client - so a check that passed the recorded word would be comparing
+		-- two things the addon never compares, and would report "can learn it" for
+		-- somebody who already knows it.
+		local asClientSaysIt = Family.Names:Recipe({ name = "Borrowed Mooncloth",
+			spellID = 90001 })
+		local crafters = Family.Recipes:Crafters("Tailoring", asClientSaysIt)
+		local alsoBorrowed
+		for _, who in ipairs(crafters) do
+			if who.name == "Baker" then alsoBorrowed = who end
+		end
+		check("and so does the one that answers for a pattern",
+			alsoBorrowed ~= nil, tostring(#crafters) .. " crafters")
+		check("with the same answer about whose it is", alsoBorrowed
+			and alsoBorrowed.familyName == "Baker-Thunderstrike",
+			alsoBorrowed and tostring(alsoBorrowed.familyName))
+		check("and knowing that they already know it", alsoBorrowed
+			and alsoBorrowed.state == "knows",
+			alsoBorrowed and tostring(alsoBorrowed.state))
+	end
+
+	-- And on the tooltip as it is actually written, because a field on a table is not a
+	-- line on a screen - the block that draws these had its own idea of the name.
+	do
+		wipe(GameTooltip.__lines)
+		GameTooltip.__itemName = "Borrowed Mooncloth"
+		GameTooltip.__itemLink = "|Hitem:90501|h"
+		if GameTooltip.__scripts.OnTooltipCleared then
+			GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+		end
+		if GameTooltip.__scripts.OnTooltipSetSpell then
+			GameTooltip.__spellID = 90001
+			GameTooltip.__scripts.OnTooltipSetSpell(GameTooltip)
+		end
+
+		local heading, named = false, nil
+		for _, line in ipairs(GameTooltip.__lines) do
+			if type(line[1]) == "string" and line[1]:find("Can make it", 1, true) then
+				heading = true
+			elseif heading and type(line[1]) == "string"
+				and line[1]:find("Baker", 1, true) then
+				named = line[1]
+			end
+		end
+		check("the block is drawn on the recipe's own tooltip", heading,
+			tostring(#GameTooltip.__lines) .. " lines")
+		check("with the sibling on it, named with the family they belong to",
+			named ~= nil and named:find("Baker-Thunderstrike", 1, true) ~= nil,
+			tostring(named))
+	end
+
 	-- And drawn, which is the half the report was actually about.
 	Family.UI:Show()
 	Family.UI:ShowTab("professions")
