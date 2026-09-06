@@ -1790,7 +1790,22 @@ rather than merging into it - so the whole skills table is the new one.
 **Only on that character, and that is the whole of the limit.** A scan reads the client, and the
 client is one character. Family cannot learn anything about an alt nobody is playing, so an
 unlearn on Deiana is known the moment it happens and an unlearn on Eccebombo is unknown until
-somebody logs in on them. That is true of every fact Family holds and is not special to this. Everything that reads skills loses the profession with it:
+somebody logs in on them. That is true of every fact Family holds and is not special to this.
+
+**And the event is not the only chance, which answers the case where Family was switched off for
+it.** `PLAYER_ENTERING_WORLD` books the same scan four seconds after every login, and that scan
+reads the whole sheet and replaces `meta.skills` with it. So a profession unlearnt on a machine
+without Family - or during a lag that swallowed the event, or on a client that never fired it -
+is noticed the next time somebody logs in on that character. Alberto proposed exactly this check
+on 2026-09-06; it is already there, and the readers now gate on the thing it writes.
+
+The scan refuses to file anything when the sheet comes back empty (`if not next(everything) and
+not includeRecipes then return end`), which is what stops a client that cannot read skills from
+wiping them.
+
+**So the login pass already closes the display half. Pruning the payload would buy bytes and
+nothing a reader can see** - the recipes stay on disk and a link goes on sending them, and that
+is all that is left of it. Everything that reads skills loses the profession with it:
 
 - the summary's professions cells, which are built from `skillsOf(meta, …)`
 - the professions panel, whose loop is `for id, skill in pairs(skills)` and looks the recipe
@@ -1817,9 +1832,19 @@ is told about one profession and nothing at all about the others.
 
 **Which also says how it *could* be pruned**, if it ever needs to be: not by the recipe reader,
 which has no basis, but at the moment `ReadRanks` hands back a full skill sheet - drop payload
-entries for professions that sheet does not have. It would have to be guarded on the read being
-trustworthy, because pruning on a skill list that came back short would destroy recipe lists that
-nothing can rebuild. The scan already refuses to file anything when `ReadRanks` returns nothing.
+entries for professions that sheet does not have.
+
+**And there is a mine in that, found by reading rather than by trying it.** Some professions are
+in the payload and in **no skill sheet at all**. A death knight's runeforging is *a window full
+of things they can make and no skill anywhere*; the recipe scan says so itself and injects such a
+profession into `skills` from what the window reported, precisely because the sheet will not. A
+prune that trusted the sheet would delete every death knight's runeforging list at every login,
+and a recipe list is not rebuildable - it needs that window reopened on that character.
+
+So the rule would have to be **prune only a profession whose key resolves to a skill line the
+shipped table knows, and which that sheet does not have**: runeforging resolves to nothing and is
+kept, and anything the table has never heard of is kept for the same reason `stillHeld` keeps it.
+Guarded, as above, on the sheet being non-empty.
 
 The unpruned payload is wrong for two readers that walk it **without asking whether the member
 still has the skill**:
