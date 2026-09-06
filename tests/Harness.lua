@@ -22466,10 +22466,19 @@ print("filtering the summary's crafting by which cooldown")
 		return seen
 	end
 
+	-- What the page says down its left-hand column, which is where a timer's name lives now
+	-- that this set is a block per timer rather than a column per timer. Read off the drawn
+	-- rows rather than off `__summaryColumns`, which for this set is three fixed headings.
 	local function headings()
 		local said = {}
-		for _, column in ipairs(Family.UI.__summaryColumns or {}) do
-			said[#said + 1] = tostring(column.label)
+		for _, f in ipairs(frames) do
+			if f.__shown ~= false and type(f.cells) == "table" and onScreen(f) then
+				local cell = f.cells[1]
+				local text = type(cell) == "table" and cell.__text
+				if type(text) == "string" and text ~= "" then
+					said[#said + 1] = text
+				end
+			end
 		end
 		return said
 	end
@@ -22526,10 +22535,9 @@ print("filtering the summary's crafting by which cooldown")
 	check("and drops whoever is waiting on a different one",
 		byCooldown["Alchy-Fire Maw"] == nil and byCooldown["Tanner-Fire Maw"] == nil)
 
-	-- The half that makes this worth having on this set rather than on any other. A panel
-	-- that hides columns for want of room and then offers a filter that leaves them all up
-	-- has answered the easy half of the question.
-	check("and the columns come down to the one that was chosen", heads("Mooncloth"))
+	-- The half that makes this worth having on this set rather than on any other: choosing
+	-- one timer takes the other blocks away rather than merely emptying them.
+	check("and the blocks come down to the one that was chosen", heads("Mooncloth"))
 	check("with the others gone rather than merely unpopulated",
 		heads(alchemy) == false and heads("Salt Shaker") == false,
 		table.concat(headings(), ", "))
@@ -22562,8 +22570,8 @@ print("filtering the summary's crafting by which cooldown")
 	typeLevel("")
 
 	-- Leaving the set and coming back starts from everybody, because Reconcile drops a value
-	-- the new set does not offer - and the columns have to come back with it, or the panel
-	-- would keep the one column a choice nobody can see any more had cut it to.
+	-- the new set does not offer - and the blocks have to come back with it, or the panel
+	-- would keep the one block a choice nobody can see any more had cut it to.
 	clickSet(Family.L["Overview"])
 	Family.UI:Refresh()
 	check("a set that narrows nothing takes the picker away", narrow:IsShown() == false)
@@ -22572,8 +22580,147 @@ print("filtering the summary's crafting by which cooldown")
 	Family.UI:Refresh()
 	local back = showing()
 	check("and coming back finds everybody again", back["Alchy-Fire Maw"] ~= nil)
-	check("with the columns it had cut back on the panel", heads(alchemy),
+	check("with the blocks it had cut back on the panel", heads(alchemy),
 		table.concat(headings(), ", "))
+
+	------------------------------------------------------------------------------------
+	-- Turned on its side: a block per timer, not a column per timer
+	--
+	-- Asked for from play 2026-09-06 and the argument is not about pixels. A column per
+	-- timer put every kind of cooldown in the family into competition for four widths, and
+	-- the Burning Crusade's three tailoring cloths are three separate timers - so a family
+	-- with a Spellcloth tailor, a Mooncloth tailor and a Shadoweave tailor has three real
+	-- answers competing for room. Turned on its side there is no limit: a timer is a block
+	-- and a block is as many rows as it has crafters.
+	------------------------------------------------------------------------------------
+
+	do
+		Family.UI.__summaryNarrow:Choose(Family.UI.ANY)
+		clickSet(Family.L["Crafting"])
+		Family.UI:Refresh()
+
+		-- What each drawn row says, in the order it was drawn.
+		local function page()
+			local out = {}
+			for _, f in ipairs(frames) do
+				if f.__shown ~= false and type(f.cells) == "table" and onScreen(f) then
+					local one = type(f.cells[1]) == "table" and f.cells[1].__text or ""
+					local two = type(f.cells[2]) == "table" and f.cells[2].__text or ""
+					local three = type(f.cells[3]) == "table" and f.cells[3].__text or ""
+					if one ~= "" or two ~= "" or three ~= "" then
+						out[#out + 1] = { one = one, two = two, three = three,
+							row = f }
+					end
+				end
+			end
+			return out
+		end
+
+		-- **A timer is written once and its crafters are under it.** Five alchemists so
+		-- that the fold has something to fold: three fit and the rest do not.
+		local crowd = {}
+		for index = 1, 5 do
+			local who = string.format("Brewer%d-Fire Maw", index)
+			crowd[#crowd + 1] = who
+			Family.Database:SetMeta(who, { name = "Brewer" .. index, realm = "Fire Maw",
+				classFile = "SHAMAN", level = 60, faction = "Alliance",
+				-- Two ready and three still running, so "how many are ready" is not the
+				-- same number as "how many are here". Written as a branch rather than as
+				-- `index <= 2 and nil or when`, which is the Lua and/or trap: `true and
+				-- nil` is nil, so that expression is `when` for every one of them and the
+				-- first draft of this check measured five running alchemists.
+				craftCooldowns = { index <= 2
+					and { name = "Transmute: Arcanite", profession = 171 }
+					or { name = "Transmute: Arcanite", profession = 171,
+						readyAt = time() + 1800 * index } } })
+		end
+		Family.UI:Refresh()
+
+		local drawn = page()
+		local said, at = 0, nil
+		for index, row in ipairs(drawn) do
+			if row.one:find(alchemy, 1, true) then
+				said = said + 1
+				at = at or index
+			end
+		end
+		check("a timer is named once however many crafters it has", said == 1,
+			tostring(said))
+
+		-- Three of them and then a line offering the rest, which is the reputations list's
+		-- fold and the possessions search's, at the same three.
+		local block = 0
+		for index = at or 1, #drawn do
+			if index > (at or 1) and drawn[index].one ~= "" then break end
+			block = block + 1
+		end
+		check("three of its crafters are drawn and the rest fold",
+			block == 4, tostring(block))
+
+		local foldRow = drawn[(at or 1) + 3]
+		check("the fold says how many are left", foldRow
+			and foldRow.two:find("3", 1, true) ~= nil, foldRow and foldRow.two)
+
+		-- **And how many can be done now, on the timer's own line**, which is what a fold
+		-- otherwise hides: three names showing and no way to tell whether the fourth was
+		-- ready or four days out. Asked for from play in those words.
+		check("the timer's line says how many of them are ready",
+			drawn[at] and drawn[at].one:find("2 ready", 1, true) ~= nil,
+			drawn[at] and drawn[at].one)
+
+		-- And says nothing where none of them are: "0 ready" is a row saying nothing.
+		local none = nil
+		for _, row in ipairs(drawn) do
+			if row.one:find("Mooncloth", 1, true) then none = row end
+		end
+		check("and says nothing on a timer nobody can use yet",
+			none and none.one:find("ready", 1, true) == nil, none and none.one)
+
+		-- The block's own first line opens and closes it, as on the other two panels.
+		if drawn[at] then drawn[at].row.__scripts.OnClick(drawn[at].row, "LeftButton") end
+		local opened = page()
+		local wide = 0
+		for index = at or 1, #opened do
+			if index > (at or 1) and opened[index].one ~= "" then break end
+			wide = wide + 1
+		end
+		-- Six crafters and the line that folds them, which stays as *fewer* while it is
+		-- open: it is the same row, saying the other half of what it does.
+		check("clicking the timer's line shows every crafter it has", wide == 7,
+			tostring(wide))
+
+		-- **Ready first, then whoever comes back soonest**, which is the order somebody
+		-- reading this page is deciding in. Asked for from play in those words, and read
+		-- off the open block where every crafter is on screen.
+		do
+			local order, seenRunning = {}, nil
+			local straight = true
+			for index = (at or 1), (at or 1) + 5 do
+				local row = opened[index]
+				if row then
+					local isReady = row.three:find("ready", 1, true) ~= nil
+					order[#order + 1] = isReady and "ready" or row.three
+					if isReady and seenRunning then straight = false end
+					if not isReady then seenRunning = true end
+				end
+			end
+			check("the ready ones come first, then the ones coming back soonest",
+				straight, table.concat(order, ", "))
+		end
+
+		if opened[at] then opened[at].row.__scripts.OnClick(opened[at].row, "LeftButton") end
+		local closed = page()
+		local narrowAgain = 0
+		for index = at or 1, #closed do
+			if index > (at or 1) and closed[index].one ~= "" then break end
+			narrowAgain = narrowAgain + 1
+		end
+		check("and clicking it again folds them away", narrowAgain == 4,
+			tostring(narrowAgain))
+
+		for _, who in ipairs(crowd) do Family.Database:Forget(who) end
+		Family.UI:Refresh()
+	end
 
 	clickSet(Family.L["Overview"])
 	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
@@ -24827,12 +24974,15 @@ print("the summary sorted by a column somebody chose")
 	-- cell that draws them: a column that exists only at draw time would otherwise be the
 	-- one kind that cannot be ordered, and "who can make this soonest" is the question the
 	-- crafting set exists for.
-	clickButton("Crafting")
+	-- Asked of Currencies rather than of Crafting, which is no longer built out of columns
+	-- at all: it is a block per timer now, and the thing that has to stay sortable is a
+	-- column whose key was invented while the panel drew. Currencies still is one.
+	clickButton("Currencies")
 	Family.UI:Refresh()
 
 	local built = 0
 	for _, column in ipairs(Family.UI.__summaryColumns or {}) do
-		if type(column.key) == "string" and column.key:find("^cd:")
+		if type(column.key) == "string" and column.key:find("^cur:")
 			and Family.UI:SummarySortable(column.key) then
 			built = built + 1
 		end
@@ -24905,11 +25055,19 @@ print("a linked family's columns on the summary")
 	clickButton("Crafting")
 	Family.UI:Refresh()
 
+	-- A block now rather than a column, which is the same claim about the same fault: the
+	-- timer has to reach the page at all when the only member who has it was lent to us.
 	local made = false
-	for _, column in ipairs(Family.UI.__summaryColumns or {}) do
-		if column.key == "cd:" .. tostring(label) then made = true end
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and type(f.cells) == "table" and onScreen(f) then
+			local cell = f.cells[1]
+			local text = type(cell) == "table" and cell.__text
+			if type(text) == "string" and text:find(tostring(label), 1, true) then
+				made = true
+			end
+		end
 	end
-	check("a cooldown only a linked family has still gets a column",
+	check("a cooldown only a linked family has still gets a block of its own",
 		made, tostring(label))
 
 	-- `__summaryColumns` is the list *after* the room limit has been applied - the set says

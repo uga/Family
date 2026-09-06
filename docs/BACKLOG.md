@@ -2426,3 +2426,54 @@ for - and the played character is then moved out from under it.
 
 Two checks changed, three added, two mutations, both reddening.
 
+---
+
+## 38. The Crafting set, turned on its side — DONE 2026-09-06
+
+**Asked for 2026-09-06**, out of a question about whether a fifth column would fit. It would not:
+`floor((714 - 130) / 120)` is **four**, and the fifth was dropped with a line saying so.
+
+**And the answer was not more room.** Alberto's: *if really the different cloths are separate CDs
+then we need to treat them as separate columns, as one might have many alts, of which n
+Spellcloth tailors, m Mooncloth tailors, k Shadoweave tailors. All this tells us to transpose the
+matrix.* The Burning Crusade's three tailoring cloths are three separate timers - measured out of
+the cached `SpellCooldowns`, where tailoring's three carry `RecoveryTime` and not the category
+timer alchemy's and enchanting's do - so a family really can hold three of them at once, and any
+design where real answers compete for four slots is wrong at the root rather than short of pixels.
+
+**So: a block per timer.** The timer on the left written once, its crafters underneath, and *ready*
+or the time left on the right. Three crafters and then *and %d more*, which is the reputations
+list's fold and the possessions search's - three panels, one fold, and a reader who learns it once.
+The block's own first line opens and closes it, as on both of those.
+
+**Crafters are ordered by readiness**, ready first and then whoever comes back soonest, which is
+the order somebody deciding who to log into is reading in. Asked for in those words.
+
+**And the timer's own line says how many of them are ready**, in the same green the right-hand
+column says it in. Asked for from play once the fold existed, and the reason is the fold: three
+names showing and no way to tell whether the fourth was ready or four days out. Only where there
+is at least one - *0 ready* is a row saying nothing.
+
+**What it cost elsewhere, all of it written down rather than worked around:**
+
+- `columnsOf` gained a `whole` flag. Every other set is a row per member, so the member column is
+  put in front of whatever the set builds; this one is a row per *crafter of one timer*, so it
+  brings its own first column.
+- The row's click handler refused anything without a member key, which made the fold line inert.
+  Left-click now uses `opens` whether or not there is a member; removing one still needs it.
+- **A sibling had been named by the realm and family headings the grid was drawn under**, and
+  those go with the grid. The line names them itself now, in the string every other panel uses.
+- The caption lost its *blank means Family has not seen that member's* clause, which was true of
+  a grid and is not true of a list where every row carries a value, and its *N more not shown*
+  clause, which counted columns that no longer compete. New string in five languages; the old one
+  removed from four.
+- **Lua's sixty-upvalue ceiling, for the third time in this file.** The draw went over it twice
+  while this was being written. `openCrafting` and the fold cap live on `UI`, and the clipping the
+  label needs is reached through `UI:Shortened` rather than as a seventh new local.
+
+*And one fixture fault worth keeping: `readyAt = index <= 2 and nil or when` is the Lua and/or
+trap - `true and nil` is nil, so that expression is `when` for every member, and the first draft
+of the ready-count check was measuring five running alchemists and asking why none were ready.*
+
+Eight checks, six mutations, all reddening. Six existing checks moved from columns to blocks.
+

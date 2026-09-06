@@ -452,6 +452,10 @@ local SETS = {
 		id = "crafting", label = L["Crafting"],
 		columns = {},
 		build = function() return craftingColumns() end,
+		-- This set brings its own first column, because it is a row per crafter of one timer
+		-- rather than a row per member: the timer is the thing written once on the left and
+		-- the member is what changes down the block.
+		whole = true,
 		-- Only the members who have one. Everybody else is a blank row on a panel whose
 		-- every column is about waiting for something.
 		-- Counted, not named: this only asks *whether* there are any, and asking the client
@@ -633,11 +637,26 @@ local openBoon
 -- Both of them put away with everything else. They close on a second click of the same row,
 -- which is what a drill-down does everywhere in Family - and they were surviving the window
 -- closing, which is the half that was reported about the factions and is the same fault here.
+-- Which cooldown's crafters are all showing, if any. On the panel rather than on a row, because
+-- rows are pooled and a row would carry it into whatever is drawn next - and on `UI` rather than
+-- as a local because this file is at Lua's ceiling of sixty upvalues per function and the draw
+-- below went over it the moment one more local was reachable from there. Third time in this
+-- file's life; the same answer each time.
+UI.__openCrafting = nil
+
 UI:OnFold("summary", function()
 	openMail, openBoon = nil, nil
+	UI.__openCrafting = nil
 end)
 
+-- **A set that is drawn the other way up brings its own first column.** Every other set is a
+-- row per member, so the member's name is the column they all share and it is put there once
+-- rather than seven times. The Crafting set is a row per *crafter of one timer*, where the
+-- first column is the timer and the member is the second - so it says so and is handed back
+-- exactly what it asked for.
 local function columnsOf(set)
+	if set.whole then return set.build and set.build() or set.columns end
+
 	local columns = { MEMBER_COLUMN }
 	for _, column in ipairs(set.build and set.build() or set.columns) do
 		columns[#columns + 1] = column
@@ -1718,6 +1737,12 @@ local function shortened(name, limit)
 	return name:sub(1, limit - 1) .. "..."
 end
 
+-- The same clipping, reachable from the draw. Not a convenience: this file sits on Lua's ceiling
+-- of sixty upvalues per function, and the draw below goes over it the moment one more file-level
+-- local is named inside it - so what the draw needs is reached through `UI`, which it already
+-- has, rather than added to the list it closes over.
+function UI:Shortened(name, limit) return shortened(name, limit) end
+
 local function currencyOf(meta, key)
 	for _, currency in ipairs(meta.currencies or {}) do
 		if currency.key == key then return currency end
@@ -1840,9 +1865,6 @@ function craftingKinds()
 	return order
 end
 
--- How many were left out, so the panel can say so rather than quietly showing four of nine.
-local craftingOmitted = 0
-
 -- The professions set's columns, which are fixed except for what the first one is called.
 --
 -- A set's columns are read on every draw, so this is where "what is this column ordered by"
@@ -1890,72 +1912,30 @@ function professionColumns()
 	return columns
 end
 
+-- How many crafters of one timer are drawn before the rest fold away. Three, which is
+-- `FACTION_PEOPLE` on the reputations list and `BLOCK_LINES` on the possessions search: three
+-- panels, one fold, and a reader who has learnt it once.
+UI.CRAFTING_PEOPLE = 3
+
+-- **This set is drawn the other way up, and the columns say so.**
+--
+-- It was a column per timer and a row per member, which put every kind of cooldown in the
+-- family into competition for four column widths - `floor((714 - 130) / 120)` - and dropped the
+-- rest with a line saying so. Asked for from play 2026-09-06, and the argument is not about
+-- pixels: the Burning Crusade's three tailoring cloths are three separate timers, so a family
+-- with a Spellcloth tailor, a Mooncloth tailor and a Shadoweave tailor has three things that
+-- are each a real answer, and any design where those compete for slots is wrong at the root
+-- rather than short of room. Turned on its side there is no limit at all - a timer is a block
+-- and a block is as many rows as it has crafters.
+--
+-- The same shape as the whole-family reputations list and the possessions search: the thing on
+-- the left written once, whoever it is about under it, and what there is to say on the right.
 function craftingColumns()
-	local kinds = craftingKinds()
-	local columns = {}
-
-	-- The chosen cooldown takes the columns with it, which is why this set is worth a
-	-- narrowing at all: it is the one set that admits to hiding columns for want of room -
-	-- `craftingOmitted`, said out loud under the table - and choosing one is how somebody
-	-- reaches the ones it hid. Narrowing only the rows would have left the same four columns
-	-- on screen and answered nothing.
-	--
-	-- Matched against the list rather than trusted. The picker is shared with every set that
-	-- has a narrowing, and a value belonging to another set's question - a skill line id,
-	-- say - matches no cooldown's name; keeping it would leave the panel with no columns at
-	-- all rather than with all of them.
-	local wanted = UI.__summaryNarrow and UI.__summaryNarrow:Value()
-	if wanted ~= nil then
-		local chosen = {}
-		for _, kind in ipairs(kinds) do
-			if kind.label == wanted then chosen[#chosen + 1] = kind end
-		end
-		if #chosen > 0 then kinds = chosen end
-	end
-
-	local room = math.floor((ROW_BUDGET - MEMBER_COLUMN.width) / CRAFTING_WIDTH)
-	local limit = math.min(room, MAX_BUILT_COLUMNS, #kinds)
-	craftingOmitted = #kinds - limit
-
-	for index = 1, limit do
-		local label = kinds[index].label
-		local key = "cd:" .. label
-
-		columns[index] = { key = key, label = shortened(label, 15),
-			width = CRAFTING_WIDTH, justify = "RIGHT" }
-
-		CELL[key] = function(meta)
-			for _, kind in ipairs(Family.Cooldowns:Crafting(meta, "summary.crafting",
-				function() UI:Refresh() end)) do
-				if kind.label == label then
-					if kind.ready then
-						return L["|cff40bf40ready|r"]
-					end
-					return string.format("|cff9d9d9d%s|r",
-						duration(kind.readyAt - time()) or L["soon"])
-				end
-			end
-			return ""
-		end
-
-		-- Written beside the cell, because a column built at draw time would otherwise be
-		-- the one kind of column that cannot be ordered - and "who can make this soonest"
-		-- is the question this whole set exists to answer.
-		--
-		-- Ready is nought, so ascending reads as soonest first and the ones who can do it
-		-- now head the column. A member without that cooldown at all has no answer and
-		-- sorts last, which is not the same as being ready.
-		SORT[key] = function(meta)
-			for _, kind in ipairs(Family.Cooldowns:Crafting(meta)) do
-				if kind.label == label then
-					return kind.ready and 0 or (kind.readyAt or 0)
-				end
-			end
-			return nil
-		end
-	end
-
-	return columns
+	return {
+		{ key = "cdtimer", label = L["Cooldown"], width = 220, justify = "LEFT" },
+		{ key = "cdwho", label = L["Member"], width = 200, justify = "LEFT" },
+		{ key = "cdwhen", label = L["Ready"], width = 294, justify = "RIGHT" },
+	}
 end
 
 function currencyColumns()
@@ -2287,6 +2267,14 @@ local function makeRow(parent)
 	-- reaches.
 	row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	row:SetScript("OnClick", function(self, button)
+		-- A row that opens something needs no member: the Crafting set's fold line is about
+		-- a timer rather than about anybody, and the guard that used to sit here meant a
+		-- click on it went nowhere. Removing a member still needs one.
+		if button ~= "RightButton" then
+			if self.opens then self.opens(self) end
+			return
+		end
+
 		if not self.memberKey then return end
 
 		if button == "RightButton" then
@@ -3351,6 +3339,146 @@ local function build(frame)
 			end
 		end
 
+		-- **The Crafting set is a row per crafter of one timer**, so the walk over realms and
+		-- members below has nothing to do for it. Emptying `realms` is what says that: the
+		-- loop and the totals underneath it both key off that list, and both are about a table
+		-- of members - a grand total of money under a list of transmutes would be an answer to
+		-- a question this set is not asking.
+		if currentSet.id == "crafting" then
+			local groups, order = {}, {}
+
+			-- The narrowing picks one timer, and here that means one block rather than one
+			-- column: the rows it hides are hidden by `gather` already, and this is what
+			-- keeps the other timers of a member who has several from coming with them.
+			local wanted = UI.__summaryNarrow and UI.__summaryNarrow:Value()
+
+			local function add(member, isSibling, familyName)
+				for _, kind in ipairs(Family.Cooldowns:Crafting(member.meta,
+					"summary.crafting", function() UI:Refresh() end)) do
+					if wanted == nil or kind.label == wanted then
+						local found = groups[kind.label]
+						if not found then
+							found = { label = kind.label, people = {}, ready = 0 }
+							groups[kind.label] = found
+							order[#order + 1] = found
+						end
+						found.people[#found.people + 1] = {
+							member = member, kind = kind, borrowed = isSibling,
+							familyName = familyName }
+						if kind.ready then found.ready = (found.ready or 0) + 1 end
+					end
+				end
+			end
+
+			for _, realm in ipairs(realms) do
+				for _, member in ipairs(byRealm[realm]) do add(member, false) end
+			end
+			for _, here in pairs(siblings) do
+				for _, group in ipairs(here.order or {}) do
+					for _, member in ipairs(group.members or {}) do
+						add(member, true, group.name)
+					end
+				end
+			end
+
+			-- Most crafters first, so the timer the family really uses takes the top of the
+			-- page, and the label to settle the rest: an order that stops at its first key
+			-- leaves everything under it to `table.sort`'s own arrangement, which is not one.
+			table.sort(order, function(a, b)
+				if #a.people ~= #b.people then return #a.people > #b.people end
+				return tostring(a.label) < tostring(b.label)
+			end)
+
+			for _, group in ipairs(order) do
+				-- Ready first, because that is what anybody opened this for, then soonest
+				-- back, then by name.
+				table.sort(group.people, function(a, b)
+					local left = a.kind.ready and 0 or 1
+					local right = b.kind.ready and 0 or 1
+					if left ~= right then return left < right end
+					if left == 1 and (a.kind.readyAt or 0) ~= (b.kind.readyAt or 0) then
+						return (a.kind.readyAt or 0) < (b.kind.readyAt or 0)
+					end
+					return tostring(a.member.meta.name or a.member.key)
+						< tostring(b.member.meta.name or b.member.key)
+				end)
+
+				local open = UI.__openCrafting == group.label
+				local foldable = #group.people > (UI.CRAFTING_PEOPLE or 3)
+				local limit = (foldable and not open) and (UI.CRAFTING_PEOPLE or 3)
+					or #group.people
+
+				local function toggle()
+					UI.__openCrafting = (UI.__openCrafting ~= group.label)
+						and group.label or nil
+					UI:Refresh()
+				end
+
+				for index = 1, limit do
+					local person = group.people[index]
+					local row = nextRow(currentSet.rowHeight)
+
+					row.memberKey = person.member.key
+					row.memberName = person.member.meta.name or person.member.key
+					row.memberRealm = person.member.meta.realm
+					row.borrowed = person.borrowed and true or false
+
+					-- The timer is written once, against its first crafter. Said on every
+					-- line it would read as a different timer each time, which is what a
+					-- column of repeated words does.
+					--
+					-- **And how many of them can do it now**, which is the whole point of
+					-- opening this page and was invisible the moment a block folded:
+					-- three names showing and no way to tell whether the fourth was ready
+					-- or four days out. Asked for from play 2026-09-06. Only where there
+					-- is at least one - "0 ready" is a row saying nothing - and in the
+					-- same green the right-hand column says it in, because it is the same
+					-- claim counted.
+					--
+					-- Clipped, like a heading was when this was a column: a recipe's full
+					-- name is wider than the room a row can give it, and a name running
+					-- into the next column is worse than one that says it was cut.
+					setCell(row, 1, index == 1
+						and ("  " .. UI:Shortened(tostring(group.label), 18)
+							.. (group.ready > 0
+								and ("  " .. string.format(L["|cff40bf40%d ready|r"],
+									group.ready))
+								or ""))
+						or "", 0.6, 0.8, 1)
+					-- Whose character it is, where it is not one of ours. The realm and
+					-- family headings this set used to be drawn under are gone with the
+					-- grid, and they were what said it - so it is said on the line, in
+					-- the string every other panel says it with. A rank or a *ready*
+					-- against a bare name reads as *I can go and do that*, and for
+					-- somebody else's character it is not true.
+					local who, red, green, blue =
+						CELL.name(person.member.meta, person.member.key)
+					if person.familyName then
+						who = string.format(L["%s |cff9d9d9dof %s|r"], who,
+							tostring(person.familyName))
+					end
+					setCell(row, 2, who, red, green, blue)
+					setCell(row, 3, person.kind.ready and L["|cff40bf40ready|r"]
+						or string.format("|cff9d9d9d%s|r",
+							duration((person.kind.readyAt or 0) - time()) or L["soon"]))
+
+					-- The block's own first line opens and closes it, as the reputations
+					-- list and the possessions search both do.
+					if foldable and index == 1 then row.opens = toggle end
+				end
+
+				if foldable then
+					local row = nextRow(currentSet.rowHeight)
+					setCell(row, 2, open and L["|cff888888fewer|r"]
+						or string.format(L["|cff888888and %d more|r"],
+							#group.people - limit))
+					row.opens = toggle
+				end
+			end
+
+			realms = {}
+		end
+
 		for _, realm in ipairs(realms) do
 			local heading = nextRow()
 			for index = 1, MAX_CELLS do setCell(heading, index, "") end
@@ -3583,14 +3711,9 @@ local function build(frame)
 				.. "*who have I got there*. A character has no answer until they have "
 				.. "been played once.|r"])
 		elseif currentSet.id == "crafting" then
-			note:SetText(string.format(L["|cff888888Crafting cooldowns only - transmutes, "
-				.. "mooncloth, salt shakers. Only the members who have one are listed. "
-				.. "Blank means Family has not seen that member's, which is not the same "
-				.. "as nought.%s|r"],
-				craftingOmitted > 0
-					and string.format(L[" |cffffaa00%d more not shown - there is only so "
-						.. "much room in a row.|r|cff888888"], craftingOmitted)
-					or ""))
+			note:SetText(L["|cff888888Crafting cooldowns only - transmutes, mooncloth, "
+				.. "salt shakers. One line per timer, with whoever has it underneath and "
+				.. "when theirs comes back.|r"])
 		elseif currentSet.id == "currencies" then
 			-- The columns are whatever the family holds most of, so the panel has to say
 			-- that: five columns out of twelve currencies is not the same claim as five

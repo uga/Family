@@ -19,6 +19,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **The Crafting page is a list of cooldowns now, not a grid of them.** Each timer gets a line of
+  its own with everybody who has it underneath - readiest first - and how many of them can do it
+  right now beside the name. It used to be one column per cooldown and one row per character,
+  which meant the page could only ever show four kinds of cooldown however many your family had,
+  and quietly dropped the rest. There is no limit now.
+
 - **A quest's own progress no longer has your name over it on your own page.** Hovering a quest on
   the character you are playing showed the game's *You are on this quest*, then your name, then
   your objectives - a heading that told you nothing you did not already know. It is still there on
