@@ -1573,18 +1573,13 @@ or where the client will not name the one it has.
 recipes carry a spellID then most of that asking is for names nothing will ever read - and the
 walk could be cut to the recipes that have no spell, which would shrink both halves at once.
 
-**Unmeasured, and it is one line in the game rather than a guess here**, because how many
-recipes carry a spellID is a property of what the client handed the scanner, not of any table:
+**Unmeasured, and it needs no probe writing: `/family recipes` already prints it.** That command
+exists to answer "why is this recipe in the wrong language" and reports, per profession on the
+character being played, `N recipe(s), N with a spell id, N with an item id` - and then three rows
+in full showing whether the spell actually resolves to a name. A long profession answering *300
+recipes, 300 with a spell id* is the whole finding: the walk is asking for three hundred item
+names that nothing will read.
 
-    /run local n,s,o,d=0,0,0,{} for k in pairs(Family.Database:Members()) do
-        local p=Family.Database:Payload(k) or {}
-        for _,r in pairs(p.professions or {}) do for _,x in ipairs(r.recipes or {}) do
-        n=n+1 if x.spellID then s=s+1 end
-        if x.itemID and not x.spellID then o=o+1 end
-        if x.itemID then d[x.itemID]=true end end end end
-        local u=0 for _ in pairs(d) do u=u+1 end
-        print("recipes",n,"with a spell",s,"item but no spell",o,"distinct items",u)
-
-`n` against `u` is the duplication Alberto asked about; `o` is how much of the walk is actually
-needed. **Run it on a small account**: it decodes every payload, which on a 210-character one is
-the stall this entry is about.
+A first draft of this entry invented a `/run` one-liner for it. It was too long to type, it
+decoded every payload - the stall this entry is about - and it duplicated a command already in
+the addon.
