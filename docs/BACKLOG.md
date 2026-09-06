@@ -2276,3 +2276,8 @@ on the same grounds, and it is written here rather than changed on a hunch.
 
 Nine checks, four mutations, all reddening.
 
+**Confirmed in play 2026-09-06.** *Herb Baked Egg* on Eccebombo's cooking list now reads *Can make
+it 4* - Eccebombo at 359, Rolando of Serena at 125, Spazzacamino of Serena at 9, and the guild's
+Rolando - so both siblings arrive and both are named with the family they belong to, which is the
+half that stops a rank against a name reading as somebody to log into.
+
