@@ -297,6 +297,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Realm names on the Wide Family panel are no longer cut short.** `Thunderstrike...` and
+  `Spineshatter ...` had been squeezed into the width a member's name gets, and a member's name is
+  narrow because it has tick boxes beside it - a realm heading has nothing beside it at all. Both
+  grids are fixed, what you share and what they share.
+
 - **Sharing decisions wait three seconds for you to finish before they are sent.** Every tick of a
   box used to package and send everything you share with that family, immediately - so working down
   a column of categories sent the whole lot once per column, and the other side watched the marks

@@ -801,7 +801,16 @@ local function build(frame)
                 for _, group in ipairs(byRealm(everyMember)) do
                     local realmRow = nextRow()
                     realmRow.text:SetText(realmHeading(group))
-                    realmRow.text:SetWidth(NAME_WIDTH - 8)
+                    -- **The row's width, not the name column's.**
+                    --
+                    -- A realm heading names the whole section under it and has nothing to
+                    -- its right: the tick boxes belong to the member rows, and a realm row
+                    -- carries none. Bounded to the name column it was cut at ninety-two
+                    -- pixels, so *Thunderstrike* came out as *Thunderstrike...* and
+                    -- *Spineshatter* lost its faction as well - reported from play
+                    -- 2026-09-06 with a screenshot of both. The member names below keep the
+                    -- narrow column, because they do have boxes beside them.
+                    realmRow.text:SetWidth(math.max(list:GetWidth() - 8, 1))
 
                     for _, member in ipairs(group.members) do
                         local memberRow = nextRow()
@@ -948,7 +957,10 @@ local function build(frame)
                         -- made it look like one of them.
                         realmRow.text:ClearAllPoints()
                         realmRow.text:SetPoint("LEFT", 4, 0)
-                        realmRow.text:SetWidth(NAME_WIDTH - 4 - COLUMN_GAP)
+                        -- And the width for the same reason as the one above: this row is
+                        -- a heading over a section, not a cell in the name column, and it
+                        -- has nothing to its right to run into.
+                        realmRow.text:SetWidth(math.max(list:GetWidth() - 8, 1))
                         realmRow.text:SetText(realmHeading(group))
 
                         for _, member in ipairs(group.members) do

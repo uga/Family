@@ -20975,6 +20975,96 @@ print("a sibling with a crafting cooldown, on the summary's crafting set")
 end)()
 
 print()
+print("a realm heading on the Wide Family panel is not cut short")
+
+-- **Reported from play 2026-09-06**, in a screenshot of the sharing grid: the realm headings read
+-- *Spineshatter ...* and *Thunderstrike...*. They were bounded to the name column - ninety-two
+-- pixels, which is what a member's name gets because a member has tick boxes beside it - and a
+-- realm heading has nothing to its right at all. The tick boxes are on the member rows.
+--
+-- The same panel's `Sibling  Member` label is the other half of that ninety-two pixels and stays
+-- cut, on purpose: that one does label the columns beside it.
+;(function()
+	local held = FamilyDB.wide
+	local realm = "Thunderstrike"
+
+	-- **A member of ours on a long realm**, because this panel draws two grids and they had
+	-- two different widths in the file. Every member the fixture already has is on Fire Maw,
+	-- which is short enough to fit the old bound - so a check that only read the borrowed side
+	-- passed while our own side was still cutting, and the mutation that put the old number
+	-- back on it reddened nothing.
+	local ourLong = "Farflung-Blackrockspiredepths"
+	Family.Database:SetMeta(ourLong, { name = "Farflung", realm = "Blackrock Spire Depths",
+		classFile = "WARLOCK", level = 60, faction = "Alliance" })
+
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["widefam"] = { name = "Grella-" .. realm, alias = "Serena",
+			grants = {}, siblings = {},
+			members = {
+				["Barolo-" .. realm] = { meta = { name = "Barolo", realm = realm,
+					classFile = "MAGE", level = 60, faction = "Alliance" },
+					seen = time() },
+			} } },
+	}
+
+	Family.UI:Show()
+	Family.UI:ShowTab("wide")
+
+	local line
+	for _, f in ipairs(frames) do
+		local text = f.text and f.text.__text
+		if f.__shown ~= false and type(text) == "string"
+			and text:find("Serena", 1, true) and f.__scripts
+			and f.__scripts.OnClick then line = line or f end
+	end
+	if line then fireClick(line) end
+
+	-- Every drawn realm heading on the panel, by the colour this one file gives them, and not
+	-- only the borrowed side's: both grids draw them and they were two separate widths in the
+	-- file, so both are asked rather than whichever is found first.
+	local headings, sides = {}, { ours = false, theirs = false }
+	for _, f in ipairs(fontStrings) do
+		if onScreen(f) and type(f.__text) == "string"
+			and f.__text:find("|cff8888ff", 1, true) then
+			headings[#headings + 1] = f
+			if f.__text:find(realm, 1, true) then sides.theirs = true end
+			if f.__text:find("Blackrock Spire Depths", 1, true) then sides.ours = true end
+		end
+	end
+	check("the realm is drawn as a heading on both grids", sides.ours and sides.theirs,
+		tostring(sides.ours) .. " ours, " .. tostring(sides.theirs) .. " theirs")
+
+	-- Measured rather than compared against a constant: what has to hold is the text, and the
+	-- number that used to be here was the name column's, which is a different question.
+	local measure = CreateFrame("Frame"):CreateFontString()
+	local cut
+	for _, heading in ipairs(headings) do
+		measure:SetText(heading.__text)
+		if (heading.__width or 0) < (measure:GetStringWidth() or 0) then
+			cut = tostring(heading.__text) .. " in " .. tostring(heading.__width)
+				.. " for " .. tostring(measure:GetStringWidth())
+		end
+	end
+	check("and every one of them is wide enough for the words in it", cut == nil,
+		tostring(cut))
+
+	-- And it is the row that bounds them, not nothing: a heading left at its natural width runs
+	-- off the side of the panel the moment a realm name is long, which is the fault the member
+	-- names were bounded for in the first place.
+	local loose
+	for _, heading in ipairs(headings) do
+		if (heading.__width or 0) <= 0 then loose = true end
+	end
+	check("and bounded rather than left to run off the panel", not loose)
+
+	Family.Database:Forget(ourLong)
+	FamilyDB.wide = held
+	Family.UI:ShowTab("summary")
+	Family.UI:Refresh()
+end)()
+
+print()
 print("two links settle apart from each other")
 
 -- **Why the settle's key carries the family id.** `Family:After` replaces a pending call under
