@@ -254,6 +254,25 @@ function Family:SkillLineFor(name)
 	if type(name) ~= "string" then return nil end
 	return Family.SkillLineByName[name]
 end
+
+-- Whether a skill line is one of the game's many names for riding.
+--
+-- By this table and never by the word: Era has one line per animal, so a dwarf reads *Ram
+-- Riding* where a troll reads *Raptor Riding* and a French client reads *Monte de belier* -
+-- matching on "Riding" would be wrong in every language and most races.
+--
+-- Two panels ask, which is why it is here rather than a local in one of them. Riding is a real
+-- skill with a real rank and it belongs on neither: the summary's professions set answers *what
+-- can this character make* and the professions panel answers *what have they got a window for*,
+-- and riding is not an answer to either. How fast somebody travels is the Overview's mount cell.
+--
+-- Takes whatever key a record is filed under, because a record written before that profession
+-- had an identity is filed under a word.
+function Family:IsRidingSkill(id)
+	if type(id) == "string" then id = Family.SkillLineByName[id] or id end
+	local entry = id and Family.SkillLines[id]
+	return (entry and entry.riding) == true
+end
 """
 
 

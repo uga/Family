@@ -5631,13 +5631,36 @@ check("a window opened and found empty says so",
 	visibleText("Tailoring opened, and listed nothing"))
 check("and names the likeliest reason beside it",
 	visibleText("another addon filtering or replacing that window"))
--- Two of them now, and named together: riding has no window either, and joins herbalism in the
--- line that says which professions the list left out.
 check("and one never opened says that instead",
-	visibleText("Cooking, First Aid, Herbalism, Ram Riding never opened"),
+	visibleText("Cooking, First Aid, Herbalism never opened"),
 	(function() for _, f in ipairs(fontStrings) do local t = f.__text
 		if type(t) == "string" and t:find("never opened", 1, true) then return t end end
 		return "no such line" end)())
+
+-- **Riding is named nowhere on this panel.** It has a rank and a maximum and no window
+-- anywhere, so it fell in beside herbalism and announced that *Ram Riding* had never been
+-- opened - a claim about a window that does not exist. Reported from play 2026-09-06 from a
+-- screenshot of that line, and it is the same argument that had already taken riding off the
+-- summary's professions set.
+check("while riding is not named on this panel at all",
+	not visibleText("Ram Riding"))
+
+-- **And lockpicking is**, in its own words. It was silent here, and silence reads as *Family
+-- does not know about it* rather than as *there is nothing to show*. It cannot go in the
+-- bucket above: there is no window that could have been opened.
+testerSkills[633] = { name = "Lockpicking", rank = 275, maxRank = 300, class = true }
+Family.UI:ShowProfessionFor(key, "Blacksmithing")
+check("a class skill with a rank says it has no window, rather than saying nothing",
+	visibleText("Lockpicking has a rank and no window to list"),
+	(function() for _, f in ipairs(fontStrings) do local t = f.__text
+		if type(t) == "string" and t:find("Not listed", 1, true) then return t end end
+		return "no such line" end)())
+check("and is not counted among the windows nobody has opened",
+	not visibleText("Lockpicking never opened")
+		and not visibleText("Lockpicking, ") and not visibleText(", Lockpicking"))
+testerSkills[633] = nil
+
+Family.UI:ShowProfessionFor(key, "Blacksmithing")
 testerSkills.Tailoring = nil
 Family.Database:Payload(key).professions.Tailoring = nil
 

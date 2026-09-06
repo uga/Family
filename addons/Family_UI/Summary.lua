@@ -575,16 +575,6 @@ end
 local UNKNOWN = UI.UNKNOWN
 local NOT_SEEN = L["|cff9d9d9dnot seen|r"]
 
--- Whether a skill line is one of the game's many names for riding.
---
--- By the shipped table and never by the word: Era names it per mount, so a dwarf reads *Ram
--- Riding* where a troll reads *Raptor Riding* and a French client reads *Monte de belier*.
--- The key a record is filed under may itself be a word, which is what `professionID` is for.
-local function riding(id)
-	local line = Family.SkillLines and Family.SkillLines[professionID(id) or 0]
-	return (line and line.riding) == true
-end
-
 -- The picture a member's own branch draws, in place of the trade's.
 --
 -- Asked for 2026-09-06: an Axesmith should show the axe rather than the anvil every other smith
@@ -645,7 +635,7 @@ function skillsOf(meta, secondary)
 		-- This is where it goes out, rather than in the picker where the first half of the
 		-- same ask was answered: everything on this set is built from this function, so
 		-- taking it out here takes it out of the cells, the tooltip and the search box too.
-		local mine = not skill.weapon and not riding(id)
+		local mine = not skill.weapon and not Family:IsRidingSkill(id)
 			and ((skill.secondary or skill.class or false) and true or false) == secondary
 		if mine then
 			found[#found + 1] = {

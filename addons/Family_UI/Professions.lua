@@ -1138,6 +1138,7 @@ local function build(frame)
 		-- window - and reading the second as the first is what sent somebody looking for a
 		-- fault in Family for an evening.
 		local ordered, listedNothing, notOpened = {}, {}, {}
+		local hasNoWindow = {}
 
 		-- There used to be a third thing that could be true of a profession here: recorded
 		-- under another language's word, and so unmatchable. Professions are keyed by
@@ -1161,8 +1162,32 @@ local function build(frame)
 			-- three lists - Professions, Secondary Skills and Weapon Skills - and swords
 			-- are in the third; this panel is the first two. Without this line every
 			-- character would announce eighteen weapons as professions never opened.
-			if skill.class or skill.weapon then
+			-- **And riding is not a profession either.** It has a rank and a maximum
+			-- and no window anywhere, so it fell into the bucket below and announced
+			-- that *Ram Riding* had never been opened - a claim about a window that
+			-- does not exist, which is the same fault the class-skill line above
+			-- fixes. Reported from play 2026-09-06, from a screenshot of that line.
+			if skill.weapon or Family:IsRidingSkill(id) then
 				-- nothing here, on purpose
+			elseif skill.class and skill.rank
+				and not (record and record.recipes and #record.recipes > 0) then
+				-- **Lockpicking**, which is the one thing a rogue has that this panel
+				-- can neither list nor honestly call missing. Asked for on the same
+				-- screenshot: it was silent here, and silence reads as *Family does
+				-- not know about it* rather than as *there is nothing to show*.
+				--
+				-- Said in its own words rather than dropped into "never opened". It
+				-- has a rank and it makes nothing, so there is no window that could
+				-- have been opened, and a bucket that says otherwise is wrong about
+				-- the client rather than about the record.
+				--
+				-- Guarded on the rank, which is what separates it from a death
+				-- knight's runeforging: that is a window full of things to make and
+				-- no skill anywhere, so it belongs in the list below and not here.
+				-- And guarded on having no recipes, so that a class skill Family has
+				-- actually read a window for is listed as the profession it behaves
+				-- like rather than explained away.
+				hasNoWindow[#hasNoWindow + 1] = name
 			elseif record and record.recipes and #record.recipes > 0 then
 				ordered[#ordered + 1] = { name = name, id = id, skill = skill }
 			elseif record and record.recipes then
@@ -1181,8 +1206,15 @@ local function build(frame)
 		end)
 		table.sort(listedNothing)
 		table.sort(notOpened)
+		table.sort(hasNoWindow)
 
 		local left = {}
+		-- First, because it is the only one of the three that is not a gap. The other two
+		-- say what Family has failed to read; this one says what there is nothing to read.
+		if #hasNoWindow > 0 then
+			left[#left + 1] = string.format(L["%s has a rank and no window to list"],
+				table.concat(hasNoWindow, ", "))
+		end
 		if #listedNothing > 0 then
 			left[#left + 1] = string.format(L["%s opened, and listed nothing"],
 				table.concat(listedNothing, ", "))

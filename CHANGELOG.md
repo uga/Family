@@ -269,6 +269,14 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **The Professions page stops calling riding a profession nobody opened.** *Ram Riding* was in
+  the grey line under the profession buttons, listed among the windows Family has never seen -
+  and there is no such window. It is off that page entirely now, as it already is on the summary.
+
+- **A rogue's lockpicking is acknowledged on the Professions page.** It was silent there, which
+  reads as Family not knowing about it; the grey line now says it has a rank and no window to
+  list, which is the truth about it.
+
 - **A profession recorded before Family knew its identity now draws its picture too.** Two rogues
   side by side showed one poison bottle and one clipped word: the second had not been scanned
   since poisons gained an identity, and the panel was looking the picture up under whatever key
