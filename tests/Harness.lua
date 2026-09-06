@@ -23418,7 +23418,7 @@ print("the branch a profession was taken down")
 	-- The client's own words for them, so the checks below read what a player reads. Every
 	-- other spell in this file still falls through to "Spell <id>".
 	SPELL_NAMES[9787] = "Weaponsmith"
-	SPELL_NAMES[17040] = "Master Axesmith"
+	SPELL_NAMES[17041] = "Master Axesmith"
 	SPELL_NAMES[10656] = "Dragonscale Leatherworking"
 
 	-- A blacksmith who took the weapon branch and then the axes under it, with one ordinary
@@ -23426,7 +23426,7 @@ print("the branch a profession was taken down")
 	local heldTabs, heldInfo = GetSpellTabInfo, GetSpellBookItemInfo
 	-- The later branch first, so that the sort is doing something: the book hands them back
 	-- in the order the client filed them, which is not the order a record should be written in.
-	local BOOK = { 100, 17040, 9787, 6603 }
+	local BOOK = { 100, 17041, 9787, 6603 }
 	GetSpellTabInfo = function(tab)
 		if tab == 1 then return "General", "", 0, #BOOK end
 		return nil
@@ -23437,7 +23437,7 @@ print("the branch a profession was taken down")
 	check("the branches are picked out of the spellbook", read ~= nil and #read == 2,
 		read and #read or "none")
 	check("by id, and in a fixed order so an unchanged character writes an unchanged record",
-		read and read[1] == 9787 and read[2] == 17040,
+		read and read[1] == 9787 and read[2] == 17041,
 		read and (tostring(read[1]) .. " " .. tostring(read[2])) or "none")
 
 	-- And it is the shipped table doing the choosing, not a guess about which ids look like
@@ -23500,7 +23500,7 @@ print("the branch a profession was taken down")
 	Family.Database:SetMeta(who, {
 		name = "Branchy", realm = "Fire Maw", classFile = "WARRIOR", faction = "Alliance",
 		level = 60,
-		specialisations = { 9787, 10656, 17040 },
+		specialisations = { 9787, 10656, 17041 },
 		skills = {
 			[164] = { name = "Blacksmithing", rank = 300, maxRank = 300, secondary = false },
 			[185] = { name = "Cooking", rank = 300, maxRank = 300, secondary = true },
@@ -23521,6 +23521,30 @@ print("the branch a profession was taken down")
 		end
 	end
 	check("the member with branches has a line", row ~= nil)
+
+	-- **The branch's own picture, in place of the trade's.** Asked for 2026-09-06: an Axesmith
+	-- should show the axe rather than the anvil every other smith in the family is showing.
+	if row then
+		local cell = tostring(row.cells[2].__text or "")
+		check("the smithing cell draws the branch's picture, not the trade's",
+			cell:find("|T132396:", 1, true) ~= nil, cell)
+		check("and not the trade's own", cell:find("|T136241:", 1, true) == nil, cell)
+
+		-- **The deeper branch covers the shallower.** This member is a Weaponsmith and a
+		-- Master Axesmith, which every Axesmith necessarily is, and 135326 is Weaponsmith's
+		-- picture. Drawing that one would be showing the step they have already left.
+		check("and the deeper branch covers the one it grew out of",
+			cell:find("|T135326:", 1, true) == nil, cell)
+
+		-- A profession with no branch is untouched: 133971 is cooking's.
+		local cooking
+		for index = 2, 8 do
+			local text = tostring(row.cells[index].__text or "")
+			if text:find("|T133971:", 1, true) then cooking = text end
+		end
+		check("while a profession with no branch keeps its own picture", cooking ~= nil,
+			tostring(row.cells[4].__text))
+	end
 
 	if row then
 		GameTooltip.__shownAs = nil

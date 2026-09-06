@@ -1009,6 +1009,43 @@ They are written to **meta and not the payload** the book lives in. The summary 
 nothing else, which is what lets it cost the same for forty members as for four, and a list of
 branches is three numbers where a spellbook is a thousand.
 
+#### Which branch is which, measured 2026-09-06
+
+Alberto supplied the sixteen icon file ids from his own three clients, by name. Attaching them
+to spell ids needed the names, and **the names cannot be inferred from anything already cached**:
+`SkillLine` and `SkillLineAbility` carry no spell name, and the items a branch gates say the
+opposite of the truth - 17041 gates *The Planar Edge*, *Black Planar Edge* and *Wicked Edge of
+the Planes*, which read as an axesmith's work and are the swordsmith's.
+
+So `SpellName` was fetched from wago at build 2.5.6.69110, which carries all sixteen:
+
+| | | | |
+|---|---|---|---|
+| 9787 Weaponsmith | 9788 Armorsmith | 17039 Master Swordsmith | **17040 Master Hammersmith** |
+| **17041 Master Axesmith** | 10656 Dragonscale | 10658 Elemental | 10660 Tribal |
+| 20219 Gnomish Engineer | 20222 Goblin Engineer | 26797 Spellfire | 26798 Mooncloth |
+| 26801 Shadoweave | 28672 Transmutation Master | 28675 Potion Master | 28677 Elixir Master |
+
+**17040 and 17041 are the wrong way round from the obvious guess**, which is the whole reason
+this was measured rather than typed: an earlier session had written *Master Axesmith* against
+17040 in a test fixture, from memory, and it was wrong.
+
+Every one of Alberto's sixteen labels matched exactly one of these; the only differences are
+cosmetic (*Potion Mastery* for `Potion Master`, *Goblin engineering* for `Goblin Engineer`), and
+none of them is ambiguous between two branches. The ids live in `tools/specialisations.py`, hand
+data in a generated file, which is the arrangement `tools/skill-lines.py` already has and is
+here for the same reason: a texture cannot be probed, so the only honest source is somebody
+looking at one.
+
+`SpellName` is not a build dependency of the tool. It was fetched to establish the mapping once
+and the mapping is now written down; re-running the generator does not read it.
+
+**What is not covered.** Mists' six cooking ways are **child skill lines** - 975 to 980, parent
+185, category 9 - and not spells taught under a profession, so the sieve above does not see them
+and neither would the spellbook. The spells that grant them (124694, 125584, 125586-125589,
+by `SpellEffect` 118) are the trainer's, and whether any of them stays in a character's book is
+unmeasured. See backlog 24.
+
 ### The same name calls on Era, measured 2026-08-30
 
 `/family guild names` on Classic Era, realm Pyrewood Village, in a 773-member guild:

@@ -1355,7 +1355,7 @@ addon has.
 
 ---
 
-## 23. A specialisation's own picture, in place of its profession's
+## 23. A specialisation's own picture, in place of its profession's — DONE 2026-09-06
 
 **Received 2026-09-06, from Alberto, immediately after the branches reached the tooltip.**
 
@@ -1383,4 +1383,52 @@ announced it:
   being the branch taken second. Not decided; it is his call and it changes what the list needs
   to contain.
 
-**Not built, deliberately, at his instruction.**
+**Built 2026-09-06**, once the icons arrived. Both questions were answered by him: the list
+made the icon sheet unnecessary, and the deeper branch covers the shallower - a Master Axesmith
+draws the axe rather than the Weaponsmith they necessarily also are.
+
+**What his list did not settle, and he said so himself:** the names in it were labels for icon
+codes, not the game's names for the spells. Those came from wago's `SpellName` - see *Which
+branch is which* in [`DATASOURCES.md`](DATASOURCES.md) - and it mattered: **17040 is Master
+Hammersmith and 17041 is Master Axesmith**, the opposite of the obvious guess and the opposite
+of what an earlier session had written into a test fixture from memory.
+
+**Mists' cooking ways are not in this** and are entry 24.
+
+---
+
+## 24. Mists' six cooking ways
+
+**Named 2026-09-06**, inside Alberto's icon list for entry 23: on Mists every branch of every
+trade was removed except alchemy's, and cooking gained six of its own - Way of the Grill, Oven,
+Steamer, Pot, Wok and Brew, with icons 629054 to 629059.
+
+**They are a different mechanism from every other branch**, which is why they are here rather
+than in entry 23. Measured in the cached tables at build 5.5.4.69078:
+
+- They are **child skill lines**: `SkillLine` 975 to 980, `ParentSkillLineID` 185, category 9.
+  They are the only rows on any of the three builds with a parent that is not a cooking rank.
+- They are **not spells taught under a profession**. The only `SpellEffect` 47 rows under
+  cooking are the Apprentice-to-Zen-Master chain, so the sieve that finds every other branch
+  cannot see these and neither can the spellbook the others are read from.
+- The spells that grant them exist - 124694, 125584, 125586, 125587, 125588 and 125589, by
+  `SpellEffect` 118 naming 975 to 980 - but a skill-granting spell is normally the trainer's
+  and is not kept in the book afterwards.
+
+**So the first thing needed is a probe, not code**, and it is one line on a Mists cook:
+
+    /run for i=1,GetNumSkillLines() do local n,h,_,r,_,_,m=GetSkillLineInfo(i)
+        if not h then print(i,n,r,m) end end
+    /run for _,s in ipairs({124694,125584,125586,125587,125588,125589}) do
+        print(s, IsSpellKnown and IsSpellKnown(s), (GetSpellInfo(s))) end
+
+If the ways come back from the **skill list** with a rank, they need no new mechanism at all:
+`Scanners/Professions.lua` already walks every skill line, and what is missing is only their
+names and pictures in the shipped table - `tools/skill-lines.py` takes category 11 and five
+named ids, and 975 to 980 are in neither.
+
+**And then a question about what a cell should show.** Every other branch is one per profession,
+so replacing the trade's picture with the branch's is unambiguous. A cook can learn **all six**
+ways, so there is nothing to replace cooking's picture with. Six extra cells, or a picture that
+stands for "several", or leave cooking alone - undecided, and not decidable before the probe
+says what is actually recorded.

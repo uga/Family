@@ -585,6 +585,33 @@ local function riding(id)
 	return (line and line.riding) == true
 end
 
+-- The picture a member's own branch draws, in place of the trade's.
+--
+-- Asked for 2026-09-06: an Axesmith should show the axe rather than the anvil every other smith
+-- in the family is showing. The whole point of this panel is to be read down the column at a
+-- glance, and one member's row saying something the others do not is exactly what a glance is
+-- for.
+--
+-- **The deeper branch covers the shallower**, which is Alberto's call and only ever arises for
+-- blacksmiths: Weaponsmith comes first and one of the three masteries is taken under it, so a
+-- Master Axesmith who is necessarily also a Weaponsmith draws the axe. Depth is a number rather
+-- than a set so that a third level, if one is ever added, needs no new rule here.
+--
+-- Two branches of the same depth on one profession cannot happen in any build Family ships
+-- against - nobody is both a Weaponsmith and an Armorsmith - and if one ever could, the lower
+-- spell id wins, because `meta.specialisations` is written sorted. Deterministic rather than
+-- correct, which is the honest description of a case that does not exist.
+local function branchPicture(meta, line)
+	local best, deepest
+	for _, spellID in ipairs(meta.specialisations or {}) do
+		if Family.Specialisations[spellID] == line then
+			local deep = Family.SpecialisationDepth[spellID] or 1
+			if not deepest or deep > deepest then best, deepest = spellID, deep end
+		end
+	end
+	return best and Family.SpecialisationIcons[best] or nil
+end
+
 function skillsOf(meta, secondary)
 	local found = {}
 	-- Filed by skill line id; shown in the language of whoever is reading, which is not
@@ -623,6 +650,9 @@ function skillsOf(meta, secondary)
 		if mine then
 			found[#found + 1] = {
 				name = Family:ProfessionName(id, skill.name), id = id, skill = skill,
+				-- Nothing where this member took no branch, and then the cell falls
+				-- back to the trade's own picture the way it always did.
+				icon = branchPicture(meta, professionID(id)),
 			}
 		end
 	end
@@ -699,9 +729,15 @@ end
 -- the other showed "Poisons 4..." clipped in a cell too narrow for a word, because poisons only
 -- gained an identity that morning and the second rogue had not been scanned since. A record
 -- Family already holds must not have to be re-read for the panel to draw it.
-local function picture(id)
-	local entry = id and Family.SkillLines and Family.SkillLines[professionID(id)]
-	local icon = entry and entry.icon
+-- `chosen` is a member's own branch picture and wins where there is one, which is the whole of
+-- how a specialisation reaches the cell: the shipped skill line table has one image per trade
+-- and no room for a per-character one, so the choice is made at draw time and handed in here.
+local function picture(id, chosen)
+	local icon = chosen
+	if not icon then
+		local entry = id and Family.SkillLines and Family.SkillLines[professionID(id)]
+		icon = entry and entry.icon
+	end
 	if not icon then return nil end
 	return "|T" .. tostring(icon) .. ":14:14:0:0:64:64:5:59:5:59|t"
 end
@@ -710,7 +746,7 @@ function skillText(entry)
 	if not entry then return nil end
 
 	local seen = entry.skill.recipesSeen
-	local name = picture(entry.id) or entry.name
+	local name = picture(entry.id, entry.icon) or entry.name
 	local stale = not seen or (time() - seen) > STALE
 
 	-- Not every profession has a rank. A death knight's runeforging is a window full of
@@ -728,7 +764,7 @@ function skillText(entry)
 
 	-- `fitted` shortens a word against the numbers that follow it. A picture is one glyph
 	-- whatever it is made of, and trimming its markup would leave a cell of broken syntax.
-	local drew = picture(entry.id) ~= nil
+	local drew = picture(entry.id, entry.icon) ~= nil
 	local function head(tail) return drew and name or fitted(name, tail) end
 
 	if not (rank and maxRank) then return drawn(head("")) end

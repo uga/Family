@@ -65,6 +65,54 @@ TABLES = ["ItemSparse", "SkillLine", "SkillLineAbility", "SpellEffect"]
 # what the rest of the sieve below is for.
 GRANTS_TRADE_SKILL = "47"
 
+# **The picture each branch draws**, given by Alberto from his own three clients on 2026-09-06
+# and keyed here by spell id rather than by name.
+#
+# Hand data in a generated file, which is the same arrangement `tools/skill-lines.py` has for
+# the professions and is here for the same reason: a texture cannot be probed - the client hands
+# back whatever path it was given - so the only honest source is somebody looking at one. What a
+# table *can* answer is which id carries which name, and it was asked, because the names and the
+# ids do not line up the way anybody would guess: **17040 is Master Hammersmith and 17041 is
+# Master Axesmith**, and the items they gate say the opposite - 17041 gates *The Planar Edge*.
+# The mapping below is wago's `SpellName` at build 2.5.6.69110, not a reading of item names and
+# not a memory.
+#
+# A branch with no picture here simply keeps its profession's, which is what the panel drew
+# before any of this - so a build that adds one is a missing icon rather than a broken cell.
+ICONS = {
+    9787: 135326,   # Weaponsmith
+    9788: 132739,   # Armorsmith
+    17039: 135351,  # Master Swordsmith
+    17040: 133060,  # Master Hammersmith
+    17041: 132396,  # Master Axesmith
+    10656: 134305,  # Dragonscale Leatherworking
+    10658: 135830,  # Elemental Leatherworking
+    10660: 136069,  # Tribal Leatherworking
+    20219: 132996,  # Gnomish Engineer
+    20222: 135826,  # Goblin Engineer
+    26797: 135880,  # Spellfire Tailoring
+    26798: 132895,  # Mooncloth Tailoring
+    26801: 132888,  # Shadoweave Tailoring
+    28672: 136050,  # Transmutation Master
+    28675: 134756,  # Potion Master
+    28677: 134734,  # Elixir Master
+}
+
+# **How deep a branch is**, for the one profession that has two levels of them: a blacksmith
+# takes Weaponsmith first and may then take one of the three masteries under it. Alberto asked
+# for the deeper one to cover the shallower, so the cell draws the axe rather than the sword-
+# and-hammer of the branch it grew out of.
+#
+# A hand list of three, and it is a hand list because nothing in the client's tables says so.
+# `SupercedesSpell` is empty on all five - it chains Apprentice to Artisan and nothing else -
+# and `SkillLineAbility` gives the masteries and Weaponsmith identical rows in every column.
+# Anything absent is depth 1, so this stays three entries however many branches are added.
+DEPTH = {
+    17039: 2,  # Master Swordsmith
+    17040: 2,  # Master Hammersmith
+    17041: 2,  # Master Axesmith
+}
+
 
 def path_for(table, build):
     return os.path.join(CACHE, "%s-%s.csv" % (table, build))
@@ -211,6 +259,21 @@ def build():
     ]
     for ability in sorted(taught_by):
         lines.append("\t[%d] = %d," % (ability, taught_by[ability]))
+    # Emitted for every branch the sieve found rather than for every icon named, so an icon for
+    # a spell that is not a branch is a mistake this refuses to carry into the addon.
+    lines += ["}", "", "-- specialisation spell -> the picture it draws in place of its "
+              + "profession's", "Family.SpecialisationIcons = {"]
+    for ability in sorted(taught_by):
+        if ability in ICONS:
+            lines.append("\t[%d] = %d," % (ability, ICONS[ability]))
+
+    lines += ["}", "",
+              "-- specialisation spell -> how deep a branch it is; absent means the first level",
+              "Family.SpecialisationDepth = {"]
+    for ability in sorted(taught_by):
+        if ability in DEPTH:
+            lines.append("\t[%d] = %d," % (ability, DEPTH[ability]))
+
     lines += ["}", "", "-- recipe item -> the specialisation it needs", "Family.RecipeNeeds = {"]
     for item in sorted(gates):
         lines.append("\t[%d] = %d," % (item, gates[item]))
@@ -218,6 +281,13 @@ def build():
 
     with open(OUT, "w", encoding="utf-8") as handle:
         handle.write("\n".join(lines))
+
+    # Said out loud rather than left to be noticed: a branch drawn with its profession's picture
+    # is not wrong, but it is not what was asked for either.
+    without = [a for a in sorted(taught_by) if a not in ICONS]
+    if without:
+        print("\n  %d branches with no picture of their own: %s"
+              % (len(without), ", ".join(str(a) for a in without)))
 
     print("\n  %d gated items, %d specialisations across %d professions"
           % (len(gates), len(taught_by), len(set(taught_by.values()))))

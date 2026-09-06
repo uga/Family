@@ -19,6 +19,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **A specialised character shows their branch's own picture.** An Axesmith's blacksmithing cell
+  draws the axe rather than the anvil every other smith in the family is showing, a Goblin
+  Engineer draws the goblin's head, a Mooncloth tailor the moon. Where a smith has gone deeper -
+  Master Axesmith under Weaponsmith - the deeper one is what shows. A character who took no branch
+  is unchanged.
+
 - **A character's profession branches are named at last.** Hover a member on the Professions set
   and each trade lists the specialisations that character took under it - Weaponsmith, Dragonscale
   Leatherworking, Goblin Engineer - indented beneath the profession they belong to. The fact was in

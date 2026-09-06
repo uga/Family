@@ -30,6 +30,33 @@ Family.Specialisations = {
 	[28677] = 171,
 }
 
+-- specialisation spell -> the picture it draws in place of its profession's
+Family.SpecialisationIcons = {
+	[9787] = 135326,
+	[9788] = 132739,
+	[10656] = 134305,
+	[10658] = 135830,
+	[10660] = 136069,
+	[17039] = 135351,
+	[17040] = 133060,
+	[17041] = 132396,
+	[20219] = 132996,
+	[20222] = 135826,
+	[26797] = 135880,
+	[26798] = 132895,
+	[26801] = 132888,
+	[28672] = 136050,
+	[28675] = 134756,
+	[28677] = 134734,
+}
+
+-- specialisation spell -> how deep a branch it is; absent means the first level
+Family.SpecialisationDepth = {
+	[17039] = 2,
+	[17040] = 2,
+	[17041] = 2,
+}
+
 -- recipe item -> the specialisation it needs
 Family.RecipeNeeds = {
 	[11610] = 9787,
