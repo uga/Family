@@ -2190,3 +2190,36 @@ the id in the order by looking for a block holding two items, which cannot happe
 are cut on the id - what the id buys is that one item is **one** block, and counting headings is
 what says so.
 
+---
+
+### CTRL stops swapping a recipe row after the window loses focus — ANSWERED 2026-09-06, nothing to build
+
+**Reported 2026-09-06** from play: *sometimes the CTRL trick stops working, but I'll be damned if
+I can understand what makes that happen.* Alberto found the conditions himself, which is the whole
+of why this took one probe instead of five: WoW windowed on one screen, something clicked on a
+second screen, then back over a recipe row **without clicking**. Tooltips still appear and CTRL
+does nothing. Clicking anywhere in the Family window wakes it. Clicking another application on the
+*same* screen never breaks it - because getting back to WoW from there means clicking WoW.
+
+**The measurement.** A probe recording one sample a second, the first letter `IsControlKeyDown()`
+and the second whether the modifier watcher was shown:
+
+`17 .. .. .. .W .W .W .W .W .W .W .W .. .. .W .. .. C.`
+
+Seventeen samples in seventeen seconds, so the client runs scripts perfectly well unfocused - the
+watcher is not asleep and `OnUpdate` is not throttled. The eight consecutive `.W` are the seconds
+he held CTRL on a row: **awake, on a row, and the client saying no key was down.** The final `C.`
+is the same probe seeing CTRL the instant the window had focus back.
+
+**So the key never reaches the game.** `IsControlKeyDown` is the only source there is, and it
+answers about what the client was given. Nothing in Family can read a key the client never
+received, and nothing can work around it either: even if the window could be asked whether it has
+focus, that would not say whether a key is being held.
+
+*Two things worth keeping from this. The swap lives in exactly one place -
+`Family_UI/Professions.lua:706`, the recipe rows - and my first instruction said "hover a quest or
+item row", which was wrong and Alberto corrected it. And the first probe printed nothing at all,
+not even before the window lost focus, because a fault inside an `OnUpdate` is silent while
+`scriptErrors` is off, which is the default. A probe that does not announce itself cannot be told
+from a probe that found nothing.*
+

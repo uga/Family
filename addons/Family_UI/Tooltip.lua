@@ -923,6 +923,26 @@ end
 -- Only while the pointer is on one of our rows. A frame runs `OnUpdate` when it is shown, so
 -- being hidden the rest of the time is the whole of the cost control - there is no timer to
 -- cancel and nothing to remember to stop.
+--
+-- **What this cannot do, measured 2026-09-06 rather than reasoned about.** Reported from play as
+-- *sometimes the CTRL trick stops working*, with the conditions found by Alberto himself: WoW
+-- windowed on one screen, something else clicked on a second screen, then the pointer moved back
+-- over a recipe row without clicking. Tooltips still appear; CTRL does nothing. Clicking anywhere
+-- in the Family window wakes it, and clicking another application on the *same* screen never
+-- breaks it - because getting back to WoW from that screen means clicking WoW.
+--
+-- A probe recorded one sample a second: `.. .. .. .W .W .W .W .W .W .W .W .. .. .W .. .. C.`,
+-- where the first letter is `IsControlKeyDown()` and the second is whether this frame was shown.
+-- Seventeen samples in seventeen seconds, so the client goes on running scripts perfectly well
+-- while it has no focus. Eight consecutive `.W` are the seconds he was holding CTRL on a row:
+-- **the watcher was awake and the client said no key was down.** The last sample, `C.`, is the
+-- same probe seeing CTRL the instant the window had focus again.
+--
+-- So the key never reaches the game, and there is nothing here to repair: `IsControlKeyDown` is
+-- the only source there is, and a key the client was never given cannot be read from it. Nor can
+-- it be worked around - knowing the window is unfocused, if it could be known, still would not
+-- say whether a key is being held. Written down here so that the next session to meet this
+-- measures nothing twice.
 modifiers:SetScript("OnUpdate", function()
 	local ctrl, shift, alt = modifierState()
 	if ctrl == lastCtrl and shift == lastShift and alt == lastAlt then return end
