@@ -1650,3 +1650,41 @@ A record with no locale is warmed like any other, because the fast path cannot u
 **What this does not fix** is the walking - one second and one payload decode per character
 whether or not that character contributes anything. That is entry 25's fingerprint and is
 untouched.
+---
+
+## 27. The warm-up covers our own family and not the one we borrowed
+
+**Asked 2026-09-06 as a school case**, and answered by reading rather than by reasoning: a user
+with 200 English alts, always English, links with a French family of 100 and shares his own back.
+
+**During the first sync: nothing.** `Wide.lua` names nothing - it contains no call into `Names`
+at all. What crosses is the payload, already a table, and the `professions` category carries the
+whole record including its `locale`, so a borrowed list arrives knowing which language it was
+read in. No client is asked anything.
+
+**The first time Professions is opened on a French sibling: the freeze is back.** The warm-up
+walks `Family.Database:Members()`, which is `FamilyDB.members` - **ours only**. Borrowed members
+live under `FamilyDB.wide` and are reached through `UI:Payload`, which the panel uses and the
+warm-up does not. So a sibling's list is never warmed, its locale is `frFR` against a reader in
+`enUS`, `Names:Recipe` falls through to the item id, and every name is asked for at the moment
+of the click - which is precisely the stall the warm-up was built to move off the click.
+
+**After a logoff: it does not happen twice.** Whatever was learnt went into
+`FamilyDB.itemNames[enUS]` and is read back at the next session, so the second opening is
+immediate. The store does not care whose character taught it a name.
+
+**And it is symmetrical.** The French friend receives 200 English lists and pays the same on his
+side, in reverse.
+
+**What would close it.** Put borrowed members in the warm queue. They are unusually cheap to
+walk - a borrowed payload was never encoded, so there is no decode to spread, which is the whole
+of what makes our own members cost a second each. And they are exactly the case where a locale
+mismatch is not a coincidence but the point: you link with a French family *because* they are
+French.
+
+**The cost to weigh:** a hundred more members in the queue at a second each, against a freeze at
+the click. The notice now explains the wait either way, and the names store means it is paid
+once ever rather than once a session.
+
+**Not built.** It is a decision about how far consent to *hold* somebody's data extends into
+work done at login on their behalf, which is Alberto's to take.
