@@ -57,6 +57,10 @@ local MEMBER_COLUMN = { key = "name", label = L["Member"], width = 130, justify 
 -- captured a global that never got set and the panel died the first time it was drawn.
 local skillsOf, skillText, weaponsOf
 
+-- Declared here because the guild cell is written above it and would otherwise capture a global
+-- that never arrives - the same reason the three above are declared here.
+local clipped
+
 -- Built further down, where the cells they have to register alongside are. Declared here
 -- because the sets below are written first and would otherwise capture a global that never
 -- arrives.
@@ -1102,8 +1106,24 @@ end
 -- separates them is `guildless`, which the identity scan writes only where the client answered
 -- outright; where it would not say, both stay a dash, which is the honest answer to a question
 -- nobody got a reply to.
+-- And the guild's, for the same reason and on the same set.
+--
+-- **That set has no slack at all**: its six columns and the member column add up to exactly the
+-- row's budget, so a heading needing one pixel more than the column it sits over makes
+-- `UI:FitColumns` take the difference back from whatever is carrying the most text - which is
+-- this column, in every language. *Loch Modan Yachting Club* went over the edge of it, and the
+-- check that exists to catch that had a cutoff which excluded any column wider than 130 pixels
+-- from ever being measured, so this one was never looked at (backlog 21).
+--
+-- Twenty, against the eighteen the two place columns use, because this column is the widest on
+-- the set and a guild name is a name: recognisable from its first letters, and said in full on
+-- the row's tooltip beside where that character is.
+local GUILD_CHARACTERS = 20
+
 CELL.guild = function(meta)
-	if meta.guild then return meta.guild end
+	if meta.guild then return clipped(meta.guild, GUILD_CHARACTERS) end
+	-- Empty rather than a dash: a member the client said is in no guild is not a member nobody
+	-- has read, and §2.2 is about the second of those.
 	if meta.guildless then return "" end
 	return UNKNOWN
 end
@@ -1150,13 +1170,12 @@ CELL.race = function(meta) return UI:RaceName(meta) end
 -- pattern below counts the bytes that begin a character, which is what the harness's own width
 -- stub counts and what a font string draws.
 local WHERE_CHARACTERS = 18
-
 -- The three dots are part of the limit and not an extra beyond it. Cutting at the limit and
 -- then adding them made the answer three characters longer than the room it was cut to fit -
 -- caught by the check that counts the drawn line rather than by reading this.
 local ELLIPSIS = "..."
 
-local function clipped(text, limit)
+function clipped(text, limit)
 	if type(text) ~= "string" then return text end
 
 	local room = limit - #ELLIPSIS
@@ -2122,6 +2141,21 @@ local function makeRow(parent)
 			if hearth then
 				if not zone then lines[#lines + 1] = { " " } end
 				lines[#lines + 1] = { L["Hearthstone"], hearth }
+			end
+
+			-- **And the guild, in full**, which joined these two the moment its cell
+			-- started clipping. That set has no slack - its columns add up to exactly the
+			-- row's budget - so this is the column that gives when a heading in any
+			-- language needs a pixel more than it declares, and a guild is a name: the
+			-- cell keeps the first of it and this keeps all of it.
+			--
+			-- Only where it is actually cut. A name that fits is on the row already, and
+			-- saying it twice is a tooltip repeating the screen back at the reader.
+			local guild = meta.guild
+			if type(guild) == "string" and guild ~= ""
+				and clipped(guild, GUILD_CHARACTERS) ~= guild then
+				if not zone and not hearth then lines[#lines + 1] = { " " } end
+				lines[#lines + 1] = { L["Guild"], guild }
 			end
 
 			-- Nothing worth a tooltip: the name alone is what the row already says.

@@ -7862,6 +7862,10 @@ end
 	check("the members these sets are measured against are on screen",
 		visibleText("Busy") and visibleText("Soon") and visibleText("Later"))
 
+	-- Something to measure text with that is not one of the panel's own font strings, so
+	-- that measuring never changes what is on screen.
+	local measureColumns = CreateFrame("Frame"):CreateFontString()
+
 	-- The tab strip carries some of these words too, so it is the last button with the
 	-- label that is wanted - the same trap the professions check above walked into.
 	for _, label in ipairs { "Overview", "Bags", "Activity", "Professions", "Currencies",
@@ -7891,6 +7895,72 @@ end
 		end
 		check("every cell of the " .. label:lower() .. " set fits its column in " .. locale,
 			#over == 0, table.concat(over, " | "))
+
+		------------------------------------------------------------------------------
+		-- And the same set with that language's **headings**, which is the case the
+		-- loop above cannot reach and backlog 21 is about.
+		--
+		-- A heading is captured when the file loads and never re-read, in the game as
+		-- well as here - changing language means a reload - so switching the locale
+		-- above changes what the cells say and leaves the headings in English. That
+		-- matters because a heading is a column's *floor*: `UI:FitColumns` widens any
+		-- column too narrow for its own heading, and where the total then passes the
+		-- row's budget it takes the difference back from whatever has slack. The
+		-- column that suffers is whichever carries the most text.
+		--
+		-- Which is exactly how a druid's `100%/150%` reached a player as `100%/1` an
+		-- hour after the Mount column shipped, with this check green: the overview set
+		-- adds up to the budget exactly, so any heading needing a pixel more than its
+		-- column declares squeezes every other column on the row.
+		--
+		-- The rule for what "fits" means once columns have been squeezed turns out to
+		-- be the same rule: `shrinkToFit` never takes a column below its own heading,
+		-- so a heading always fits and it is the cells that give. The one exception is
+		-- a set that cannot be fitted at all, and that one the panel complains about
+		-- at load - which is why the budget below is read from what was drawn rather
+		-- than asserted.
+		------------------------------------------------------------------------------
+		do
+			local drawn = Family.UI.__summaryColumns or {}
+			local budget, columns = 0, {}
+			for index, column in ipairs(drawn) do
+				budget = budget + (column.drawWidth or column.width or 0)
+				-- The heading this column would have on a client running in this
+				-- language, asked of the same table the cells are asked of.
+				columns[index] = { label = Family.L[column.label or ""],
+					width = column.width }
+			end
+
+			if budget > 0 then
+				Family.UI:FitColumns(columns, budget, measureColumns)
+
+				local squeezed = {}
+				for _, f in ipairs(frames) do
+					if onScreen(f) and type(f.memberKey) == "string" and f.cells then
+						for index, cell in ipairs(f.cells) do
+							local room = columns[index]
+								and columns[index].drawWidth
+							local text = cell.__visible ~= false
+								and type(cell.__text) == "string" and cell.__text
+							if room and text and text ~= "" then
+								measureColumns:SetText(text)
+								local wide = measureColumns:GetStringWidth() or 0
+								if wide > room then
+									squeezed[#squeezed + 1] = string.format(
+										"%q %d > %d", text, math.ceil(wide),
+										math.ceil(room))
+								end
+							end
+						end
+					end
+				end
+
+				check("and still fits once " .. locale
+					.. "'s own headings have squeezed the " .. label:lower()
+					.. " columns", #squeezed == 0,
+					table.concat(squeezed, " | "))
+			end
+		end
 		end
 	end
 
@@ -15651,6 +15721,68 @@ print("where a character was when they logged out")
 			check("and the hearthstone, which the cell also clips",
 				told:find(Family.L["Hearthstone"], 1, true) ~= nil, told)
 			misc.__scripts.OnLeave(misc)
+		end
+
+		-- **And the guild, which joined those two when its own cell started clipping.**
+		--
+		-- That column is the widest on the set and the set has no slack at all - its columns
+		-- and the member's name add up to exactly the row's budget - so it is the one that
+		-- gives when a heading in any language needs a pixel more than its column declares.
+		-- *Loch Modan Yachting Club* ran over the edge of it in English, and the check that
+		-- exists to catch that never measured this column at all: it skipped anything wider
+		-- than 130 pixels as a caption. Backlog 21.
+		do
+			Family.Database:SetMeta(key, { guild = "Loch Modan Yachting Club" })
+			Family.UI:Refresh()
+
+			local row, cell
+			for _, f in ipairs(frames) do
+				if f.cells and f.__shown == true and f.memberKey == key then row = f end
+			end
+			for index, column in ipairs(Family.UI.__summaryColumns or {}) do
+				if column.key == "guild" then cell = row and row.cells[index] end
+			end
+
+			check("a long guild name is clipped in its cell",
+				cell and type(cell.__text) == "string"
+					and cell.__text:find("Loch Modan Yachting Club", 1, true) == nil
+					and cell.__text:find("Loch Modan", 1, true) ~= nil,
+				tostring(cell and cell.__text))
+
+			if row then
+				GameTooltip.__shownAs = nil
+				wipe(GameTooltip.__lines)
+				row.__scripts.OnEnter(row)
+				local guildTold = ""
+				for _, line in ipairs(GameTooltip.__lines) do
+					guildTold = guildTold .. " " .. tostring(line[1])
+						.. " " .. tostring(line[2])
+				end
+				check("and said in full on the row's tooltip",
+					guildTold:find("Loch Modan Yachting Club", 1, true) ~= nil,
+					guildTold)
+				row.__scripts.OnLeave(row)
+			end
+
+			-- And a guild whose name fits is not repeated there: a tooltip saying back
+			-- what the row already says is noise, and every row on this set has one.
+			Family.Database:SetMeta(key, { guild = "Small Guild" })
+			Family.UI:Refresh()
+			for _, f in ipairs(frames) do
+				if f.cells and f.__shown == true and f.memberKey == key then row = f end
+			end
+			if row then
+				GameTooltip.__shownAs = nil
+				wipe(GameTooltip.__lines)
+				row.__scripts.OnEnter(row)
+				local short = ""
+				for _, line in ipairs(GameTooltip.__lines) do
+					short = short .. " " .. tostring(line[1]) .. " " .. tostring(line[2])
+				end
+				check("while one that fits is not said twice",
+					short:find("Small Guild", 1, true) == nil, short)
+				row.__scripts.OnLeave(row)
+			end
 		end
 
 		-- **The subzone is clipped too, and it is the half that reported this.** *Eastvale

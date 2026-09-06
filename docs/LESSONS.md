@@ -2261,3 +2261,43 @@ that said a build test was the honest test beside code that did not do one. The 
 `GetBuildInfo`, calls `Capabilities:Detect()` again and asks each build separately: Era keeps its
 weapon ranks with that call answering, Mists drops them, and a capability that says nothing keeps
 them. Four mutations, all reddening.
+
+---
+
+## L-060 — The cutoff that excluded the columns most likely to overflow
+
+The check that every cell fits its column filtered the font strings it measured with
+`f.__width > 0 and f.__width <= 130`, and the comment beside it said why: *anything wider than the
+widest column is a caption or a note, and those are meant to wrap onto a second line rather than
+fit on one.*
+
+The premise was wrong the day it was written. The Miscellaneous set's guild column is **164**
+pixels wide, and the possessions panel's are 260, 160 and 220. So the filter did not exclude
+captions — it excluded **every column wider than 130**, which is to say the columns carrying the
+longest text, which are the ones a squeeze reaches first.
+
+*Loch Modan Yachting Club* was running over the edge of that guild column in English, in a shipped
+build, while the check that exists to catch exactly that was green.
+
+**And the second blind spot was the one backlog 21 was actually opened for.** The check draws the
+panel and measures each cell against the width its column *declares*, and never against the width
+it is *given*. `UI:FitColumns` widens any column too narrow for its own heading and takes the
+difference back from whatever is carrying the most text — so a heading needing one pixel more than
+its column shrinks a different column entirely. The Miscellaneous set's columns add up to exactly
+the row's budget, so that happens in every language, including the one the widths were chosen in.
+
+Entry 21 described this as *the check never draws the panel narrower than the sum of its columns*,
+which reads as though a narrow window were the trigger. It is not: the window is a fixed width and
+never changes. The trigger is a heading, and the entry had been carrying a slightly wrong story
+about its own bug since the day it was written.
+
+**The check that now catches both.** A second pass per set and per language, which takes the
+columns as drawn, replaces each heading with the one that language would actually use — `Family.L`
+resolves through `Family.locale` at lookup, so it can be asked — re-runs `UI:FitColumns` against
+the row's real budget, and measures every cell of every member row against the width it came back
+with. No cutoff: the cells of a member row are all genuine columns, so there is nothing to filter
+out and no heuristic to be wrong about. The rule for "fits" turned out not to need the exception
+the entry expected either, because `shrinkToFit` never takes a column below its own heading — a
+heading always fits, and it is the cells that give.
+
+Three mutations on the fix and one on the finding, all reddening.

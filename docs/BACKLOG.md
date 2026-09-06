@@ -1341,7 +1341,7 @@ high the rank goes.
 
 ---
 
-## 21. The check that every cell fits its column never draws a narrow window
+## 21. The check that every cell fits its column never draws a narrow window — DONE 2026-09-06
 
 **Found from play 2026-09-06**, an hour after the Mount column shipped: a druid's `100%/150%` came
 back cut off at `100%/1`, and the check that exists to catch exactly that had passed.
@@ -1359,8 +1359,31 @@ summary has the same blind spot.
 force the shrinking, and a rule for what "fits" means then - a column that has given up room is
 allowed to clip its heading, so the test cannot simply be *nothing is wider than its column*.
 
-Worked round for now by making the cell shorter - one per cent sign for the pair rather than two -
-and by giving the column eighteen more pixels out of Money. That is a smaller cell, not a check.
+Worked round at the time by making the cell shorter - one per cent sign for the pair rather than
+two - and by giving the column eighteen more pixels out of Money. That is a smaller cell, not a
+check.
+
+**Built 2026-09-06, and the entry above has its own bug slightly wrong.** "Never draws the panel
+narrower than the sum of its columns" reads as though a narrow window were the trigger. The window
+is a fixed width and never changes. What shrinks a column is a **heading**: `UI:FitColumns` widens
+any column too narrow for its own heading and takes the difference back from whatever is carrying
+the most text. The Miscellaneous set's columns add up to exactly the row's budget, so that happens
+in every language, including the one the widths were chosen in.
+
+So the second pass does not narrow anything. Per set and per language it takes the columns as
+drawn, asks `Family.L` for the heading that language would really use - it resolves through
+`Family.locale` at lookup, so it can be asked without reloading - re-fits against the row's real
+budget, and measures every cell of every member row against the width that came back.
+
+**The rule this entry expected to be hard was not needed.** `shrinkToFit` never takes a column
+below its own heading, so a heading always fits and it is only ever cells that give. "Every cell
+fits its drawn width" is the whole rule.
+
+**And it found a second blind spot immediately**, one this entry never suspected: the old check
+filtered to `__width <= 130` to skip captions, and in doing so skipped every *column* wider than
+130 - the ones carrying the most text. The guild column is 164, and *Loch Modan Yachting Club* was
+running over the edge of it in a shipped build, in English. That cell is clipped now like the two
+beside it, with the whole name on the row's tooltip and only where it is actually cut. L-060.
 
 ---
 

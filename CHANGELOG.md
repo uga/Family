@@ -302,6 +302,11 @@ is a decision rather than an afternoon of archaeology.
   narrow because it has tick boxes beside it - a realm heading has nothing beside it at all. Both
   grids are fixed, what you share and what they share.
 
+- **A long guild name no longer runs over the edge of its column.** *Loch Modan Yachting Club* was
+  being drawn past the end of the Guild column on Miscellaneous; it is shortened now, with the whole
+  name on the row's tooltip beside where that character is - the same as the Where and Hearthstone
+  columns next to it.
+
 - **A linked family is sent what has changed, not everything again.** Every exchange used to carry
   each shared character's whole record - bags, equipment, professions, mail, the lot - and that
   happens every time either of you logs in, and again on every sharing change. Now only the
