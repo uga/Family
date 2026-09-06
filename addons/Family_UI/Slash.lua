@@ -795,7 +795,28 @@ end
 --
 -- **A notice was considered and is not possible.** Nothing can be drawn while the client is
 -- blocked, so a line saying *reading* would appear after the freeze it was meant to explain.
-local warmQueue, warmAt, warmPending
+-- **And this time it is said out loud**, which is a reversal of the line above and of the
+-- decision that goes with it.
+--
+-- That refusal was right about the case it was about: a panel that blocks the client for ten
+-- seconds cannot draw anything, so a notice would have appeared after the freeze it existed to
+-- explain. This is the other case. The walk below runs in the background with the client
+-- perfectly responsive, so a line printed while it works is a line somebody actually reads -
+-- and Alberto asked for one on behalf of a user with 210 characters, for whom the walk is three
+-- and a half minutes rather than four seconds.
+--
+-- **A line in the chat frame rather than a popup**, which is what he suggested. Family's two
+-- popups both ask a question and wait for an answer; one that only informs is a modal to
+-- dismiss, arriving during login, which is the worst moment there is. And this is not urgent -
+-- nothing is broken, something is merely slower than it will be tomorrow.
+--
+-- Only where the walk is long enough to notice and there is real work in it. A family of four
+-- finishes in four seconds and would be told about it for nothing, and a family of any size
+-- whose names are already on disk asks for nothing at all - which is why this stops appearing
+-- by itself after the first session rather than needing a switch.
+local ANNOUNCE_AFTER = 25
+
+local warmQueue, warmAt, warmPending, warmSaid
 
 function UI:WarmRecipeNames(budget)
 	budget = budget or 40
@@ -847,12 +868,39 @@ function UI:WarmRecipeNames(budget)
 		end
 	end
 
+	-- Said on the first call that actually asks for something, so it arrives at the start of
+	-- the wait rather than in the middle of it - and once, because a line repeated every
+	-- second for three minutes is not a notice, it is a fault.
+	if asked > 0 and not warmSaid and #warmQueue > ANNOUNCE_AFTER then
+		warmSaid = true
+		Family:Print(L["|cff888888reading what %d characters' recipes are called. The "
+			.. "professions page will be slow until that finishes, and quick from the "
+			.. "next time you log in.|r"], #warmQueue)
+	end
+
 	return asked, #warmPending == 0 and warmAt > #warmQueue
+end
+
+-- How many characters the walk has left, or nothing once it has finished.
+--
+-- **Asked by the professions panel**, which is where the waiting is actually felt. Alberto
+-- corrected the first version of this notice on exactly that point: the wait he means is not
+-- the login, it is the hourglass the first time that window is opened, and a line in the chat
+-- frame is not where somebody staring at an hourglass is looking. So the panel says it too,
+-- for as long as it is true.
+--
+-- Nothing before the walk has started, which is the same answer as finished and is the right
+-- one: there is nothing to warn about until there is something to warn about.
+function UI:RecipeWarmUpLeft()
+	if not warmQueue then return nil end
+	local left = #warmQueue - warmAt + 1
+	if left <= 0 and #warmPending == 0 then return nil end
+	return math.max(left, 0), warmSaid == true
 end
 
 -- Reachable so a check can start it over rather than depend on whatever the run before left.
 function UI:ForgetRecipeWarmUp()
-	warmQueue, warmAt, warmPending = nil, nil, nil
+	warmQueue, warmAt, warmPending, warmSaid = nil, nil, nil, nil
 end
 
 Family:OnDatabaseReady("recipes.warm", function()

@@ -1519,5 +1519,27 @@ it is a candidate fingerprint - remembered per member beside the names store and
 that store is cleared. That is a design, not a line, and it is worth doing only if the walk is
 actually hurting somebody.
 
-**Not built.** Written down because 210 is a real account, and because the item name store made
-the second session's decoding provably pointless rather than merely unexamined.
+**Not built, and Alberto proposed a different answer on 2026-09-06**: rather than making the
+walk cheaper, say that it is happening. *Potrebbe bastare un warning in occasione della prima
+lettura.*
+
+**Built as two lines, not a popup.** Family's two popups both ask a question and wait for an
+answer; one that only informs is a modal to dismiss, arriving during login, which is the worst
+moment there is - and nothing is broken, something is merely slower than it will be tomorrow.
+So: one line in the chat frame when the walk starts and has real work and the family is longer
+than 25, and one on the professions window itself for as long as the walk is unfinished.
+
+**The second is the one that matters, and it took a correction to find that out.** The first
+version said it only in the chat frame, on the reasoning that the wait is at login. Alberto
+corrected that: the wait he means is the hourglass **the first time the professions window is
+opened**, when the walk has not yet reached that member and their window pays for it. A line in
+the chat frame is not where somebody staring at an hourglass is looking.
+
+**It still cannot be drawn during the wait**, and that limit is unchanged - nothing can, which
+is why the original notice was refused. It is drawn either side of it, for as long as
+`UI:RecipeWarmUpLeft()` says there is walking left.
+
+**The fingerprint design above is still not built**, and the notice does not remove the case for
+it: three and a half minutes of decoding at every login is still three and a half minutes, and
+it is still provably pointless from the second session on. What the notice removes is the
+*mystery*, which is what was actually hurting.

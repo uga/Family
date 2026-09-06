@@ -19,6 +19,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Family says when it is still learning what your recipes are called.** On the first login after
+  installing or after a game patch it reads every recorded recipe's name once, and until that
+  finishes the Professions window can pause when you open it. It now says so - on that window
+  while it lasts, and once in the chat frame for a large family - instead of leaving you with an
+  hourglass and no explanation. It says nothing at all from the second login on, because by then
+  there is nothing to read.
+
 - **Family remembers what things are called between sessions.** Item names were asked of the client
   from scratch at every login - the client's own cache does not survive a relog - so the first
   minute of every session was spent learning the same few thousand names again. They are written

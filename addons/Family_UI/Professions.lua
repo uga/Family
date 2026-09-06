@@ -1237,6 +1237,26 @@ local function build(frame)
 				.. "again with those switched off."]
 		end
 
+		-- **And a word about why this window is slow the first time**, above whatever else
+		-- the line is saying.
+		--
+		-- Family walks the family once after login, asking the client what every recorded
+		-- recipe is called, and until that walk reaches a member their window is the thing
+		-- that pays for it - which is the hourglass Alberto reported, on the first login
+		-- after a patch and on no other. Said here rather than only in the chat frame
+		-- because this is where somebody is waiting and looking.
+		--
+		-- It cannot be drawn *during* the wait - nothing can, that is what a blocked client
+		-- means, and it is why the first version of this notice was refused. It is drawn
+		-- for as long as the walk is unfinished, which is the window either side of it.
+		local left = UI:RecipeWarmUpLeft()
+		if left and left > 0 then
+			local warning = string.format(L["|cffffaa00Still reading what %d characters' "
+				.. "recipes are called - this window may pause the first time you open "
+				.. "it. It will not after that.|r"], left)
+			omitted = omitted and (warning .. "  " .. omitted) or warning
+		end
+
 		setOmitted(omitted)
 
 		if #ordered == 0 then

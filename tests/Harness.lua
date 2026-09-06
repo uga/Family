@@ -16353,6 +16353,122 @@ print("the recipe names, asked for before anybody clicks")
 	check("a client that already knows the names asks for nothing at all", none == 0,
 		tostring(none))
 
+	-- **And a family big enough to notice is told it is happening.**
+	--
+	-- Asked for by Alberto on behalf of a user with 210 characters, for whom this walk is
+	-- three and a half minutes rather than four seconds. It reverses the refusal written
+	-- beside the warm-up, and the reversal is sound because the case is different: that one
+	-- was about a client blocked solid, where nothing can be drawn at all, and this one runs
+	-- in the background with the game perfectly playable.
+	Family.Names.CachedItem = heldCached
+	Family.Names.CachedItem = function() return nil end
+
+	local crowd = {}
+	for index = 1, 30 do
+		local who = string.format("Crowd%02d-FireMaw", index)
+		crowd[#crowd + 1] = who
+		Family.Database:SetMeta(who, { name = "Crowd" .. index, realm = "Fire Maw",
+			level = 60, classFile = "WARRIOR", faction = "Alliance" })
+	end
+
+	local function heard()
+		for _, message in ipairs(DEFAULT_CHAT_FRAME.messages) do
+			if message:find("recipes are called", 1, true) then return message end
+		end
+		return nil
+	end
+
+	wipe(DEFAULT_CHAT_FRAME.messages)
+	Family.UI:ForgetRecipeWarmUp()
+
+	-- Two at a time, not twenty. The member with recipes has six of them, so a budget bigger
+	-- than that asks for everything on one call - and then a notice printed on *every* call
+	-- that asks for something would still only be printed once, which is how the mutation
+	-- that removes "say it only the first time" came to be caught by nothing.
+	local rounds2 = 0
+	repeat
+		local _, finished = Family.UI:WarmRecipeNames(2)
+		rounds2 = rounds2 + 1
+	until finished or rounds2 > 400
+	check("a family long enough to walk is told the walk is happening", heard() ~= nil,
+		tostring(#DEFAULT_CHAT_FRAME.messages) .. " lines")
+	-- The number in it is the family, counted rather than written down here: this block
+	-- adds thirty and the file has already made others, so a literal would be a check on
+	-- how many fixtures happen to be alive rather than on what the notice says.
+	do
+		local members = 0
+		for _ in pairs(Family.Database:Members()) do members = members + 1 end
+		check("and told how many characters it is reading",
+			heard() and heard():find(tostring(members), 1, true) ~= nil,
+			tostring(members) .. " in " .. tostring(heard()))
+	end
+
+	-- Once. A line printed every second for three and a half minutes is not a notice.
+	do
+		local times = 0
+		for _, message in ipairs(DEFAULT_CHAT_FRAME.messages) do
+			if message:find("recipes are called", 1, true) then times = times + 1 end
+		end
+		check("and told once, not on every tick of it", times == 1, tostring(times))
+	end
+
+	-- **And a family whose names are already known is told nothing**, which is why this
+	-- stops appearing by itself after the first session rather than needing a switch.
+	Family.Names.CachedItem = function() return "already known" end
+	wipe(DEFAULT_CHAT_FRAME.messages)
+	Family.UI:ForgetRecipeWarmUp()
+
+	local rounds3 = 0
+	repeat
+		local _, finished = Family.UI:WarmRecipeNames(20)
+		rounds3 = rounds3 + 1
+	until finished or rounds3 > 400
+	check("while a family with nothing to ask for is told nothing", heard() == nil,
+		tostring(heard()))
+
+	for _, who in ipairs(crowd) do Family.Database:Forget(who) end
+
+	-- And a small family is not told either: four seconds is not worth a sentence.
+	Family.Names.CachedItem = function() return nil end
+	wipe(DEFAULT_CHAT_FRAME.messages)
+	Family.UI:ForgetRecipeWarmUp()
+
+	local rounds4 = 0
+	repeat
+		local _, finished = Family.UI:WarmRecipeNames(20)
+		rounds4 = rounds4 + 1
+	until finished or rounds4 > 400
+	check("and a family short enough not to notice is left alone", heard() == nil,
+		tostring(heard()))
+
+	-- **And the professions window says it too, which is where the waiting is felt.**
+	--
+	-- Alberto corrected the first version on exactly this: the wait he means is not the
+	-- login, it is the hourglass the first time that window is opened, and a line in the
+	-- chat frame is not where somebody staring at an hourglass is looking.
+	Family.UI:ForgetRecipeWarmUp()
+	Family.UI:WarmRecipeNames(1)
+	check("the walk can say how far it has to go", (Family.UI:RecipeWarmUpLeft() or 0) > 0,
+		tostring(Family.UI:RecipeWarmUpLeft()))
+
+	Family.UI:ShowTab("professions")
+	Family.UI:ShowProfessionFor(key, nil)
+	check("and the professions window says so while it is still walking",
+		visibleText("this window may pause the first time you open it"))
+
+	-- And stops the moment it is finished, rather than warning about a wait that is over.
+	local rounds5 = 0
+	repeat
+		local _, finished = Family.UI:WarmRecipeNames(200)
+		rounds5 = rounds5 + 1
+	until finished or rounds5 > 400
+	check("the walk stops saying how far it has to go once it has finished",
+		Family.UI:RecipeWarmUpLeft() == nil, tostring(Family.UI:RecipeWarmUpLeft()))
+
+	Family.UI:ShowProfessionFor(key, nil)
+	check("and the window stops warning about a wait that is over",
+		not visibleText("this window may pause the first time you open it"))
+
 	Family.Names.Item, Family.Names.CachedItem = held, heldCached
 	payload.professions = heldProfessions
 	Family.Database:SetPayload(key, payload)
