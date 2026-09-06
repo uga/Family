@@ -23250,16 +23250,68 @@ print("how a professions row is laid out")
 		first.__scripts.OnLeave(first)
 	end
 
-	-- **The weapon skills, which until now this panel drew nowhere.** They were recorded on
-	-- 2026-09-06 and the only place they appeared was the row's tooltip, which is a place
-	-- you have to already suspect they are in order to find them.
-	check("a weapon skill is drawn on the line below", second ~= nil)
-	if second then
-		local shown = ""
-		for index = 2, 8 do shown = shown .. tostring(second.cells[index].__text or "") end
-		check("as its own picture", shown:find("INV_Sword_04", 1, true) ~= nil, shown)
-		check("and it opens nothing, because there is no window behind a sword",
-			second.professions == nil and second.opens == nil)
+	-- Nothing under it. Five skills fit on the line, so there is no second line to draw -
+	-- and the weapon this member has is not on one either, because the panel is showing
+	-- the trades.
+	check("and nothing is drawn under it while the trades are showing", second == nil,
+		second and tostring(second.cells[2].__text) or "nothing")
+
+	-- **The switch**, asked for from play the moment the one-line version was seen: seven
+	-- columns of trade and then two more lines of weapon skills under every warrior is a
+	-- page nobody can take in.
+	local switch = Family.UI.__summarySkillSwitch
+	check("the professions panel has a switch on its filter row",
+		switch ~= nil and switch.__shown ~= false)
+
+	if switch then
+		-- It says what pressing it does, which is the other list.
+		check("which offers the list that is not showing",
+			switch.__text == Family.L["Weapon Skills"], tostring(switch.__text))
+
+		fireClick(switch)
+		Family.UI:Refresh()
+
+		local weapons
+		for _, f in ipairs(frames) do
+			if f.__shown ~= false and f.memberKey == key and f.cells
+				and (f.cells[1].__text or "") ~= ""
+			then
+				weapons = weapons or f
+			end
+		end
+		check("pressing it draws the weapon skills", weapons ~= nil)
+
+		if weapons then
+			local shown = ""
+			for index = 2, 8 do
+				shown = shown .. tostring(weapons.cells[index].__text or "")
+			end
+			-- **Which until now this panel drew nowhere.** They have been recorded
+			-- since this morning and the only place they appeared was the row's
+			-- tooltip, which is a place you have to already suspect they are in order
+			-- to find them.
+			check("as its own picture, in the first column", shown:find("INV_Sword_04",
+				1, true) ~= nil, shown)
+			check("and the trades are gone while they are showing",
+				shown:find("|T136241:", 1, true) == nil, shown)
+			check("and the row opens nothing, because there is no window behind a sword",
+				weapons.professions == nil and weapons.opens == nil)
+		end
+
+		check("and the switch now offers the trades back",
+			switch.__text == Family.L["Professions"], tostring(switch.__text))
+
+		-- Reading another set and coming back opens on the trades again. A panel that
+		-- remembered the detour would open showing something nobody asked it for.
+		fireClick(Family.UI.__summarySets.bags)
+		Family.UI:Refresh()
+		check("the switch goes away with the panel that owns it",
+			switch.__shown == false)
+
+		fireClick(Family.UI.__summarySets.professions)
+		Family.UI:Refresh()
+		check("and coming back opens on the professions again",
+			switch.__text == Family.L["Weapon Skills"], tostring(switch.__text))
 	end
 
 	-- The search box is the other half of "the name must stay recoverable", and riding is
@@ -23281,6 +23333,18 @@ print("how a professions row is laid out")
 			if onScreen(f) and f.memberKey == key then found = true end
 		end
 		check("while a secondary profession still does", found)
+
+		-- **And a weapon, with the trades on screen.** The box answers *who has this*;
+		-- refusing to answer it because a toggle is the other way would be the panel
+		-- keeping a secret it has no reason to keep. A mutation that emptied the weapons
+		-- out of `searches` was caught by nothing until this was written.
+		box:SetText("Swords")
+		if box.__scripts.OnTextChanged then box.__scripts.OnTextChanged(box) end
+		found = false
+		for _, f in ipairs(frames) do
+			if onScreen(f) and f.memberKey == key then found = true end
+		end
+		check("and a weapon skill is found even while the trades are showing", found)
 
 		box:SetText("")
 		if box.__scripts.OnTextChanged then box.__scripts.OnTextChanged(box) end

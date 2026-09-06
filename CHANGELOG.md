@@ -27,10 +27,13 @@ is a decision rather than an afternoon of archaeology.
   summary's Professions set, beside cooking and first aid, where the rest of what a character has
   already is.
 
-- **Every skill a character has now fits on one line.** The Professions set was three wide columns
-  holding an icon and a number, with the primaries on one line and everything else on another; it is
-  seven narrow ones, primaries first and the secondary skills beside them. **Weapon skills are drawn
-  under it**, on their own line - until now they were recorded and shown nowhere but the tooltip.
+- **Every profession a character has now fits on one line.** The Professions set was three wide
+  columns holding an icon and a number, with the primaries on one line and everything else on
+  another; it is seven narrow ones, the primaries first and the secondary skills beside them.
+
+- **Weapon skills can be seen at last**, on a button beside the Professions filter that switches the
+  panel between the two lists. They were recorded and shown nowhere. The panel opens on the
+  professions and goes back to them when you leave it; the search box finds a weapon either way.
 
 - **Riding is off the Professions page.** It was in the filter and in the rows, three cells of horse
   in the middle of everybody's trades. What is worth knowing about riding is how fast a character

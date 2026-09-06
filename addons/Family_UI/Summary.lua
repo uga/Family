@@ -92,6 +92,26 @@ end
 -- one line: everybody's secondaries begin in the same column. It is also what keeps `prof2`
 -- honest - it is the column the sort orders by second primary, and a cell that sometimes held
 -- a secondary would be a column ordered by something it is not showing.
+-- **Which of the two lists the professions set is showing.**
+--
+-- One panel and two answers, because both together were too much: seven columns filled with
+-- trades and then two more lines of weapon skills under every warrior is a page nobody can
+-- take in, which was the complaint the icons were meant to answer in the first place. Asked
+-- for from play 2026-09-06, from a screenshot of the crowded version.
+--
+-- Not remembered between sessions, on purpose and by the rule the filter row already follows:
+-- a preference is remembered and a question asked once is not. *What can this family make* is
+-- what this panel is for, and it opens on that every time; weapons are the detour.
+local SKILL_VIEWS = { "professions", "weapons" }
+
+local function skillView()
+	return UI.__summarySkillView or SKILL_VIEWS[1]
+end
+
+local function showingWeapons()
+	return skillView() == "weapons"
+end
+
 local SKILL_COLUMNS = 7
 local SKILL_WIDTH = 83
 
@@ -225,10 +245,17 @@ local SETS = {
 		-- matters more here than on any other set, because the picture cannot be typed.
 		searches = function(meta)
 			local words = {}
+			-- Both lists, whichever one is on screen. The box answers *who has this*,
+			-- and somebody typing "swords" while the trades are showing has asked a
+			-- question Family can answer - refusing it because of which way a toggle is
+			-- set would be the panel keeping a secret it has no reason to keep.
 			for _, entry in ipairs(skillsOf(meta, false)) do
 				words[#words + 1] = entry.name
 			end
 			for _, entry in ipairs(skillsOf(meta, true)) do
+				words[#words + 1] = entry.name
+			end
+			for _, entry in ipairs(weaponsOf(meta)) do
 				words[#words + 1] = entry.name
 			end
 			return table.concat(words, " ")
@@ -274,8 +301,14 @@ local SETS = {
 				end
 			end
 
-			spread(skillsOf(meta, true), SECONDARY_CELLS + 1, true)
-			spread(weaponsOf(meta), 1, false)
+			-- One list at a time, because the panel now shows one at a time. Showing
+			-- both was what made it unreadable: seven columns of trade and then two more
+			-- lines of weapon skills under every warrior.
+			if showingWeapons() then
+				spread(weaponsOf(meta), SKILL_COLUMNS + 1, false)
+			else
+				spread(skillsOf(meta, true), SECONDARY_CELLS + 1, true)
+			end
 
 			return lines
 		end,
@@ -900,6 +933,14 @@ CELL.prof2 = function(meta) return skillText(skillsOf(meta, false)[2]) or UNKNOW
 for index = 1, SECONDARY_CELLS do
 	CELL["sec" .. index] = function(meta)
 		return skillText(skillsOf(meta, true)[index])
+	end
+end
+
+-- And the weapons, when the panel has been switched to them. A queue rather than positions:
+-- the whole row is theirs, so the first one starts in the first column whoever the member is.
+for index = 1, SKILL_COLUMNS do
+	CELL["wep" .. index] = function(meta)
+		return skillText(weaponsOf(meta)[index])
 	end
 end
 
@@ -1537,14 +1578,27 @@ local craftingOmitted = 0
 -- nothing on the screen admitting it.
 --
 function professionColumns()
+	local columns = {}
+
+	-- **Weapons are a queue and not positions**, which is the opposite of the professions
+	-- below and for the opposite reason. There are two primaries and everybody has the same
+	-- three or four secondaries, so those line up down the page and are worth a fixed place;
+	-- a warrior with fifteen weapon skills and a mage with two have nothing to line up, and
+	-- reserving a column for Two-Handed Axes across the whole family would be fifteen mostly
+	-- empty columns.
+	if showingWeapons() then
+		for index = 1, SKILL_COLUMNS do
+			columns[index] = { key = "wep" .. index, width = SKILL_WIDTH,
+				justify = "LEFT", label = index == 1 and L["Weapon Skills"] or "" }
+		end
+		return columns
+	end
+
 	local wanted = UI.__summaryNarrow and UI.__summaryNarrow:Value()
 
-	local columns = {
-		{ key = "prof1", width = SKILL_WIDTH, justify = "LEFT",
-			label = wanted ~= nil and Family:ProfessionName(wanted)
-				or L["Professions"] },
-		{ key = "prof2", label = "", width = SKILL_WIDTH, justify = "LEFT" },
-	}
+	columns[1] = { key = "prof1", width = SKILL_WIDTH, justify = "LEFT",
+		label = wanted ~= nil and Family:ProfessionName(wanted) or L["Professions"] }
+	columns[2] = { key = "prof2", label = "", width = SKILL_WIDTH, justify = "LEFT" }
 
 	for index = 1, SECONDARY_CELLS do
 		columns[#columns + 1] = { key = "sec" .. index, label = "",
@@ -2006,6 +2060,12 @@ local function build(frame)
 		setRow[#setRow + 1] = button
 	end
 
+	-- Reachable by set id, for the reason the pickers below are: a check should press the
+	-- button a player presses. Found by text, the last one wins - and the summary's own
+	-- column headings are buttons carrying the same words, made after these, so "click the
+	-- last thing that says Professions" quietly meant the heading rather than the set.
+	UI.__summarySets = setButtons
+
 	-- Each as wide as its own label, no narrower than the share the English design gave it,
 	-- and the whole row held to the pixels there are. Where a language needs more than the
 	-- row has, the room comes off whichever buttons have the most to spare - the same rule
@@ -2174,6 +2234,60 @@ local function build(frame)
 	-- behind it.
 	UI.__summaryNarrow = narrowButton
 
+	-- **The professions panel's own switch**, and the only control on this bar that changes
+	-- what is drawn rather than which members are drawn.
+	--
+	-- A button that steps rather than a picker that opens a list, which is the one case
+	-- ChoicePicker.lua's own note allows: stepping is fine for two and became unusable at
+	-- eleven. Two is what this has, and a list would be two clicks to change a thing that
+	-- somebody switching back and forth wants to change in one.
+	--
+	-- Sized once to the wider of its two labels rather than to whichever is showing. A
+	-- button's own label has no width and will not clip itself - the fault that produced
+	-- ChoicePicker in the first place - and a control that changed width as it was pressed
+	-- would shove the counter beside it about on every click.
+	local SKILL_VIEW_LABEL = {
+		professions = L["Professions"],
+		weapons     = L["Weapon Skills"],
+	}
+
+	local viewButton = CreateFrame("Button", nil, filters, "UIPanelButtonTemplate")
+	viewButton:SetHeight(20)
+	viewButton:SetPoint("LEFT", narrowButton, "RIGHT", 12, 0)
+
+	do
+		local label = viewButton:GetFontString()
+		local widest = 0
+		if label then
+			if label.SetWordWrap then label:SetWordWrap(false) end
+			for _, view in ipairs(SKILL_VIEWS) do
+				label:SetText(SKILL_VIEW_LABEL[view])
+				widest = math.max(widest, label:GetStringWidth() or 0)
+			end
+		end
+		viewButton:SetWidth(math.ceil(widest) + 20)
+	end
+
+	-- What it will show next, not what it is showing: a button says what pressing it does.
+	-- The label alone would be ambiguous - "Professions" on a panel headed Professions reads
+	-- as a heading rather than as a choice - so the tooltip says which of the two is on.
+	UI:AttachTooltip(viewButton, function()
+		return nil, nil, {
+			{ L["Professions"], showingWeapons() and L["|cff9d9d9dhidden|r"]
+				or L["|cff40bf40shown|r"] },
+			{ L["Weapon Skills"], showingWeapons() and L["|cff40bf40shown|r"]
+				or L["|cff9d9d9dhidden|r"] },
+		}
+	end)
+
+	viewButton:SetScript("OnClick", function()
+		UI.__summarySkillView = showingWeapons() and SKILL_VIEWS[1] or SKILL_VIEWS[2]
+		frame:Refresh()
+	end)
+	viewButton:Hide()
+
+	UI.__summarySkillSwitch = viewButton
+
 	-- How much is being hidden, at the right-hand end of the same row. A filter that quietly
 	-- removes thirty rows and says nothing is indistinguishable from a panel that has lost
 	-- them, which is the complaint every filter without a count eventually produces.
@@ -2259,6 +2373,19 @@ local function build(frame)
 		narrowButton.prefix = narrow and narrow.label or ""
 		narrowButton:SetShown(narrow ~= nil)
 		narrowButton:Reconcile()
+
+		-- One panel owns this switch, so it goes away with that panel - and the view goes
+		-- back to the trades with it. Leaving it on "weapons" while somebody reads three
+		-- other sets and comes back would be a panel that opens showing something nobody
+		-- asked it for and no control on screen to explain why.
+		if currentSet and currentSet.id == "professions" then
+			viewButton:SetText(SKILL_VIEW_LABEL[showingWeapons() and SKILL_VIEWS[1]
+				or SKILL_VIEWS[2]])
+			viewButton:Show()
+		else
+			UI.__summarySkillView = nil
+			viewButton:Hide()
+		end
 
 		local columns = columnsOf(currentSet)
 
@@ -2394,6 +2521,11 @@ local function build(frame)
 		-- The profession each cell of a member's first line is showing, by cell number, so
 		-- a click can say which one it landed on.
 		local function professionsIn(meta)
+			-- Nothing to open while the weapons are showing: there is no window behind a
+			-- sword, and a click that opened the forge because a forge was in that column
+			-- a moment ago would be the panel answering the wrong question.
+			if showingWeapons() then return nil end
+
 			local names = {}
 			local primaries = skillsOf(meta, false)
 			names[2] = primaries[1] and primaries[1].name or nil
@@ -2585,7 +2717,7 @@ local function build(frame)
 			-- whichever happens to come first.
 			if currentSet.id == "professions" then
 				row.professions = professionsIn(member.meta)
-				row.opens = openProfession
+				row.opens = row.professions and openProfession or nil
 			end
 
 			-- The letters themselves, when somebody has clicked the figure that counts them.
@@ -2938,12 +3070,17 @@ local function build(frame)
 		-- bag or an enchanting bag has slots and none of them are room for anything else, so
 		-- they are left out of every figure here - and the panel that shows what is actually
 		-- in them does not leave them out, which would be a different mistake.
-		if currentSet.id == "professions" then
-			note:SetText(L["|cff888888Every skill on one line per member: the two primary "
-				.. "professions first, then the secondary ones. Weapon skills go on the "
-				.. "line below. A profession in grey has recipes Family has not seen for "
-				.. "a week, or has never seen: ranks are always current, recipe lists are "
-				.. "only as new as the last time that window was open.|r"])
+		if currentSet.id == "professions" and showingWeapons() then
+			note:SetText(L["|cff888888Every weapon this character has been trained in, and "
+				.. "how far each has been practised. The button above switches back to "
+				.. "the professions.|r"])
+		elseif currentSet.id == "professions" then
+			note:SetText(L["|cff888888Every profession on one line per member: the two "
+				.. "primary ones first, then the secondary skills. The button above "
+				.. "switches to the weapon skills instead. A profession in grey has "
+				.. "recipes Family has not seen for a week, or has never seen: ranks are "
+				.. "always current, recipe lists are only as new as the last time that "
+				.. "window was open.|r"])
 		elseif currentSet.id == "bags" then
 			note:SetText(L["|cff888888Free and total slots leave out quivers, soul bags and "
 				.. "the like: their slots are not room for anything else. Possessions "
