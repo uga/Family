@@ -1950,6 +1950,11 @@ it, so the prune cannot reach lockpicking or poisons however the marking works o
 Crusade is the same as Era - he checked. See *What the skill sheet actually holds* in
 [`DATASOURCES.md`](DATASOURCES.md).
 
+**And runeforging is confirmed**, from his own Mists death knight: Mists has no skill sheet at
+all, its *Professions* page does not list runeforging, and the spellbook carries it as a passive
+present in every branch. So the window branch this whole rule was written around has a real
+client, and `onSheet` keeps runeforging safe without anybody naming it.
+
 The mark is set once and never unset, which is not decoration: a scan whose sheet could not be
 read at all, with that profession's own window open, would otherwise clear it - and one bad read
 would disable the rule for that profession for ever.

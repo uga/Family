@@ -1065,16 +1065,36 @@ wrong; the branch it justifies has never fired for them.
 pruning: a skill that cannot leave the sheet can never be read as having left it, so the prune in
 `Scanners/Professions.lua` can never reach them however the marking works out.
 
-**The three talent trees are on that list too, and are not professions**, which is visible in the
-same screenshot: *Assassination*, *Combat* and *Subtlety* appear under Class Skills with **no
-rank and no maximum**. `readSkillList` requires `maxRank > 1` before calling anything a
+**Every class's talent branches are on that list too, and are not professions.** Visible in the
+same screenshot: *Assassination*, *Combat* and *Subtlety* under Class Skills with **no rank and
+no maximum** - and Alberto's note is that it is every class, a mage's Frost, Fire and Arcane
+sitting there the same way. `readSkillList` requires `maxRank > 1` before calling anything a
 profession, so they reach `everything` - the widest set, used only to tell "the sheet was read"
 from "the sheet could not be read" - and never reach `skills`. Without that one test a rogue's
 professions column would lead with *Assassination*.
 
-**Burning Crusade is the same as Era here.** Mists is unmeasured, and the one case still resting
-on a comment rather than a screenshot is a death knight's runeforging - *a window full of things
-they can make and no skill anywhere*.
+**Burning Crusade is the same as Era here.**
+
+### Mists has no skill sheet at all, measured 2026-09-06
+
+Two screenshots from Alberto's own death knight, and the shape is not the one above.
+
+**There is no Skills tab.** There is *Spellbook & Abilities*, with a **Professions** page: the
+learnt ones with a rank and a bar - *Inscription, Apprentice 1/75*, *First Aid, Artisan 270/300* -
+a *Second Profession* slot, and the unlearnt ones described rather than ranked (*visit a trainer
+to learn archaeology*). That is what `GetProfessions` answers, and `ReadRanks` merges the modern
+call's answers into `everything` as well as into `skills`, so the two guards that lean on
+`everything` work there exactly as they do on a sheet.
+
+**Runeforging is not on that page.** It is in the **spellbook**, as a passive spell, present in
+every branch - so a death knight acquires it whatever specialisation they take. Alberto sent the
+tooltip: *allows the Death Knight to emblazon their weapon with runes*.
+
+**Which confirms the case the scanner's window branch exists for**, and it was the last one still
+resting on a comment. Runeforging is a window full of things to make and a skill on no list any
+client keeps, so it reaches Family only through its own window and never through `GetProfessions`.
+It is therefore never marked `onSheet` and the pruning in `Scanners/Professions.lua` can never
+reach it - not by an exception naming it, but because nothing ever told Family a sheet had it.
 
 ### Which professions make nothing, measured 2026-09-06
 
