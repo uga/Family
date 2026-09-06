@@ -1793,9 +1793,29 @@ whole skills table is the new one. Everything that reads skills loses the profes
   path is safe.
 
 **The payload remembers it for ever.** The recipe scan begins `local stored = payload.professions
-or {}` and only ever assigns into it; nothing prunes. That is right for its own purpose - a
-window opened once should not be forgotten because it was not open today - and wrong for two
-readers that walk the payload **without asking whether the member still has the skill**:
+or {}` and only ever assigns into it; nothing prunes.
+
+**Why it cannot prune, which is worth stating rather than asserting.** The two halves of that
+scan see different amounts of the world:
+
+- `ReadRanks` reads the **whole skill sheet** in one go. It knows every profession the character
+  has, so replacing `meta.skills` wholesale is a claim it is entitled to make.
+- `ReadRecipes` reads **one window, the one that happens to be open** - the comment above it says
+  so: *recipes only when a window is actually open, and only for the one profession it is open
+  on. Everything else keeps whatever it last saw.*
+
+So a scan that pruned the payload to what it just read would delete a member's alchemy list
+because they opened the forge. That is §2.2 exactly: not-seen is not empty, and the recipe reader
+is told about one profession and nothing at all about the others.
+
+**Which also says how it *could* be pruned**, if it ever needs to be: not by the recipe reader,
+which has no basis, but at the moment `ReadRanks` hands back a full skill sheet - drop payload
+entries for professions that sheet does not have. It would have to be guarded on the read being
+trustworthy, because pruning on a skill list that came back short would destroy recipe lists that
+nothing can rebuild. The scan already refuses to file anything when `ReadRanks` returns nothing.
+
+The unpruned payload is wrong for two readers that walk it **without asking whether the member
+still has the skill**:
 
 - `Recipes.lua:328`, the crafters block: *who can make this*, on an item's tooltip
 - `Recipes.lua:592`, the whole-family recipe search
