@@ -1315,3 +1315,72 @@ allowed to clip its heading, so the test cannot simply be *nothing is wider than
 Worked round for now by making the cell shorter - one per cent sign for the pair rather than two -
 and by giving the column eighteen more pixels out of Money. That is a smaller cell, not a check.
 
+---
+
+## 22. The item names are asked for again every session, and never written down
+
+**Agreed with Alberto on 2026-09-06, in design, and then not written down anywhere — which is
+the reason this entry exists at all.** It has been carried in a conversation since, and a
+conversation is not a file.
+
+**Today.** Nothing on disk holds an item's name. Family persists two other name stores and
+neither covers items:
+
+- `FamilyDB.areas`, word to id, one store for every language — `Names.lua:277`. A second
+  language only adds keys, so it needs no per-locale split.
+- `FamilyDB.quests[locale][id]`, id to word, split by language *because* it is that way round —
+  `Names.lua:334`, with the reason written beside it: a player who switched clients would
+  otherwise read every quest in the language they left.
+
+An item name is the same shape as a quest title — id to word — and has no store at all.
+`UI:WarmRecipeNames(budget)` (`Slash.lua:800`) asks the client for a few ids per call from
+login, which is what stopped the Professions panel freezing a cold client for ten seconds. It
+warms **the client's own cache**, from nothing, every session.
+
+**And the client's cache does not survive a relog.** Recorded here because the session that
+built the warm-up claimed it did and was wrong: Alberto refused the claim from play — *la cache
+sta su disco, ma evidentemente la cancelli ogni volta! Altrimenti perché uscendo dal gioco e
+rientrando se la ricostruisce?* The warm-up runs from scratch at every login, which is exactly
+the work this entry would stop repeating.
+
+**The shape agreed.** `FamilyDB.itemNames[locale][itemID]`, written whenever the client answers.
+Read back **only for the current locale**, and checked **item by item** rather than by trusting
+the whole store: a player who switches language keeps the other languages inert on disk instead
+of losing them. Alberto's judgement on the cost, in his words: the disk taken by a multilingual
+dump is not a concern.
+
+**Not built.** What is left is the store, the read-back, and a decision about a ceiling — a
+family that has scanned everything holds thousands of ids, and `FamilyDB` is the only disk an
+addon has.
+
+---
+
+## 23. A specialisation's own picture, in place of its profession's
+
+**Received 2026-09-06, from Alberto, immediately after the branches reached the tooltip.**
+
+**Asked:** where a character has taken a branch, the cell on *Professions* should draw the
+branch's picture rather than the trade's — an Axesmith shows the Axesmith icon, not the generic
+blacksmithing one. Alberto is compiling the icons for the three clients himself and asked that
+nothing be built until that list arrives.
+
+**Today.** `Family.Specialisations` holds 16 branch spells across 5 professions
+(`addons/Family/Specialisations.lua`, generated), and a character's own are on
+`meta.specialisations` since 2026-09-06. The cell's picture comes from
+`Family.SkillLines[professionID(id)].icon` — one picture per skill line, with no room in that
+table for a per-character one, so the branch's image would have to be chosen at draw time.
+
+**Two things to settle before the list is worth acting on**, both raised with him the moment he
+announced it:
+
+- **The client may already answer.** `GetSpellInfo(spellID)` returns an icon as well as a name,
+  and `Names:Spell` already receives it and drops it. If those sixteen icons are real rather
+  than generic, the whole list is a screenshot of `tools/FamilyIconSheet` per client instead of
+  a hand-compiled table — which is how the skill line pictures were settled, and for the same
+  reason: a texture cannot be probed, but the sheet can be looked at.
+- **A profession can carry two branches.** A blacksmith may be a Weaponsmith *and* a Master
+  Axesmith, and both are recorded. Proposed: the more specific wins — Axesmith over Weaponsmith,
+  being the branch taken second. Not decided; it is his call and it changes what the list needs
+  to contain.
+
+**Not built, deliberately, at his instruction.**
