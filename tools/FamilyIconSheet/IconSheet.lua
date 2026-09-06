@@ -290,6 +290,65 @@ local GROUPS = {
 	},
 
 	{
+		title = "Professions, by the file id Mists gives them",
+		note = "Not guesses: these come out of SkillLine.SpellIconFileID on Mists, where every "
+			.. "profession has its own. Era has real ones for only three of them and answers "
+			.. "136235 - the generic - for the rest, so the question is whether an Era client "
+			.. "still has these files. Blacksmithing and Leatherworking are the control: Era "
+			.. "names those two itself, so they must render.",
+		icons = {
+			{ 136241, "Blacksmithing - Era has this one too" },
+			{ 136247, "Leatherworking - and this one" },
+			{ 136240, "Alchemy" },
+			{ 136246, "Herbalism" },
+			{ 134708, "Mining" },
+			{ 136249, "Tailoring" },
+			{ 136244, "Enchanting" },
+			{ 136245, "Fishing" },
+			{ 134366, "Skinning" },
+			{ 133971, "Cooking" },
+			{ 135966, "First Aid" },
+			{ 132164, "Riding" },
+			{ 135997, "Kodo Riding - Era names this one as well" },
+			{ 134071, "Jewelcrafting - not on Era at all" },
+			{ 237171, "Inscription - not on Era at all" },
+			{ 441139, "Archaeology - not on Era at all" },
+			{ 136235, "the generic Era answers for everything else" },
+			{ 136243, "the generic Mists answers for every weapon" },
+		},
+	},
+
+	{
+		title = "Weapon skills, and engineering - chosen, not found",
+		note = "No build has an icon for these. Every weapon skill answers 136243 on Mists and "
+			.. "136235 on Era, both generic, and engineering answers 136243 as well. So these "
+			.. "are proposals and the sheet is what turns them into facts: whatever is flat is "
+			.. "a path this client does not have.",
+		icons = {
+			{ "Interface\\Icons\\Trade_Engineering", "Engineering" },
+			{ "Interface\\Icons\\INV_Misc_Wrench_01", "Engineering, second try" },
+			{ "Interface\\Icons\\INV_Sword_04", "Swords" },
+			{ "Interface\\Icons\\INV_Sword_27", "Two-Handed Swords" },
+			{ "Interface\\Icons\\INV_Axe_01", "Axes" },
+			{ "Interface\\Icons\\INV_Axe_09", "Two-Handed Axes" },
+			{ "Interface\\Icons\\INV_Mace_01", "Maces" },
+			{ "Interface\\Icons\\INV_Hammer_16", "Two-Handed Maces" },
+			{ "Interface\\Icons\\INV_Weapon_ShortBlade_05", "Daggers" },
+			{ "Interface\\Icons\\INV_Staff_08", "Staves" },
+			{ "Interface\\Icons\\INV_Spear_06", "Polearms" },
+			{ "Interface\\Icons\\INV_Gauntlets_04", "Fist Weapons" },
+			{ "Interface\\Icons\\Ability_Warrior_PunishingBlow", "Unarmed" },
+			{ "Interface\\Icons\\INV_Weapon_Bow_07", "Bows" },
+			{ "Interface\\Icons\\INV_Weapon_Crossbow_01", "Crossbows" },
+			{ "Interface\\Icons\\INV_Weapon_Rifle_01", "Guns" },
+			{ "Interface\\Icons\\INV_Wand_01", "Wands" },
+			{ "Interface\\Icons\\INV_ThrowingKnife_02", "Thrown" },
+			{ "Interface\\Icons\\INV_Shield_06", "Defense" },
+			{ "Interface\\Icons\\Ability_DualWield", "Dual Wield" },
+		},
+	},
+
+	{
 		title = "The minimap tracking set",
 		note = "Flat monochrome symbols on transparency. They read better at 18 pixels than "
 			.. "icon art does, and they are the most likely to differ between clients.",
@@ -337,6 +396,10 @@ local function paint(texture, r, g, b, a)
 end
 
 local function shortName(path)
+	-- A file id rather than a path. `SetTexture` takes either, and the tables the professions
+	-- come out of give numbers - so the sheet has to draw one without pretending it is a
+	-- string. There is nothing to shorten; the number is the name.
+	if type(path) == "number" then return "#" .. tostring(path) end
 	return (path:match("([^\\]+)$")) or path
 end
 
@@ -782,7 +845,12 @@ local function printChosen()
 					print(string.format("  %s-- %s|r", GREY, group.title))
 					printedHeading = true
 				end
-				print(string.format("  %s\"%s\",|r", GOLD, entry[1]:gsub("\\", "\\\\")))
+				if type(entry[1]) == "number" then
+					print(string.format("  %s%d,|r", GOLD, entry[1]))
+				else
+					print(string.format("  %s\"%s\",|r", GOLD,
+						entry[1]:gsub("\\", "\\\\")))
+				end
 				any = true
 			end
 		end

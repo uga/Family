@@ -1988,3 +1988,30 @@ The journal is account-wide but filters to the character who opens it: a druid d
 paladin's class mounts. (The window's own *Total Mounts 5* matches neither count; what it totals
 has not been established.)
 
+### Which skills the client has a picture for, measured 2026-09-06
+
+Asked because the professions overview is to be drawn as icons rather than words. `SkillLine`
+carries `SpellIconFileID`, and what it carries is not the same on the three builds.
+
+| | Era 1.15.9 | Mists 5.5.4 |
+|---|---|---|
+| Primary professions | **3 of 9** have their own; the rest answer 136235 | 10 of 11 have their own |
+| Weapon skills | all 18 answer 136235 | all 17 answer 136243 |
+
+So on Era the column is a placeholder for seven professions out of nine - taking it at face value
+would draw the same picture for alchemy, tailoring, mining, herbalism, enchanting, fishing and
+skinning. **Mists names them all**, and a file id is the same number on every client, so those are
+the numbers to try. Blacksmithing (136241), Leatherworking (136247) and Kodo Riding (135997) are
+named by Era itself and are the control: they must render there.
+
+    136240 Alchemy    136246 Herbalism   134708 Mining      136249 Tailoring
+    136244 Enchanting 136245 Fishing     134366 Skinning    133971 Cooking
+    135966 First Aid  132164 Riding      134071 Jewelcrafting
+    237171 Inscription 441139 Archaeology
+
+**Engineering has none anywhere**: it answers 136243 on Mists, which is the same generic every
+weapon skill answers. So engineering and the eighteen weapon skills have to be *chosen*, and a
+chosen icon is exactly what cannot be verified from inside the client - `GetTexture` echoes back
+whatever it was handed. They go through `tools/FamilyIconSheet/` and a screenshot, which is what
+that tool is for.
+
