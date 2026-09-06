@@ -19,6 +19,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Family remembers what things are called between sessions.** Item names were asked of the client
+  from scratch at every login - the client's own cache does not survive a relog - so the first
+  minute of every session was spent learning the same few thousand names again. They are written
+  down now, in each language separately, and a client running a new game build throws its own
+  language's list away and learns it once more, so a name Blizzard changes is not remembered wrong.
+
 - **A specialised character shows their branch's own picture.** An Axesmith's blacksmithing cell
   draws the axe rather than the anvil every other smith in the family is showing, a Goblin
   Engineer draws the goblin's head, a Mooncloth tailor the moon. Where a smith has gone deeper -

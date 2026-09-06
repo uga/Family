@@ -23629,6 +23629,105 @@ print("the branch a profession was taken down")
 end)()
 
 print()
+print("item names remembered between sessions")
+
+-- **The login warm-up used to start from nothing every time.**
+--
+-- Opening the professions panel on a cold client froze the game for about ten seconds while it
+-- asked for three hundred item names; the warm-up spread that over the first minute instead,
+-- and it did it again at every login, because the client's own item cache does not survive a
+-- relog - Alberto refused the claim that it does, from play, on the evidence that it rebuilds
+-- itself. This is the half that stops it being the same minute every session.
+;(function()
+	local held = Family.locale
+	local heldBuild = GetBuildInfo
+
+	-- Ids nothing else in this file has touched, so the session cache behind Names cannot be
+	-- answering for them.
+	local KNOWN, RENAMED, ONLY_ON_DISK = 771001, 771002, 771003
+
+	-- A fourth, asked of `CachedItem` and of nothing else. The check below it used to reuse
+	-- ONLY_ON_DISK, which `Names:Item` had already pulled into the session cache a line
+	-- earlier - so it passed whether or not `CachedItem` ever looked at the disk, and the
+	-- mutation that stopped it looking caught nothing.
+	local WARM_ONLY = 771005
+
+	Family.locale = "enUS"
+	FamilyDB.itemNames = nil
+
+	ITEM_NAMES[KNOWN] = "Thorium Widget"
+	check("a name the client gives is written down",
+		Family.Names:Item(KNOWN) == "Thorium Widget"
+			and (Family.Names:ItemStore() or {})[KNOWN] == "Thorium Widget",
+		tostring((Family.Names:ItemStore() or {})[KNOWN]))
+
+	-- **Read back without asking.** The client says nothing about this one, which is the
+	-- state every item is in on a client that has just started.
+	Family.Names:ItemStore()[ONLY_ON_DISK] = "Copper Widget"
+	check("and one the client will not answer for is read back off the disk",
+		Family.Names:Item(ONLY_ON_DISK) == "Copper Widget")
+	Family.Names:ItemStore()[WARM_ONLY] = "Iron Widget"
+	check("and counts as known, so the warm-up does not ask for it again",
+		Family.Names:CachedItem(WARM_ONLY) == "Iron Widget",
+		tostring(Family.Names:CachedItem(WARM_ONLY)))
+
+	-- **The disk is the fallback, never the authority.** Knowing an answer must not stop
+	-- Family noticing that the answer changed at the source.
+	Family.Names:ItemStore()[RENAMED] = "Old Name"
+	ITEM_NAMES[RENAMED] = "New Name"
+	check("where both answer, the client wins",
+		Family.Names:Item(RENAMED) == "New Name")
+	check("and the disk is corrected rather than left disagreeing",
+		Family.Names:ItemStore()[RENAMED] == "New Name",
+		tostring(Family.Names:ItemStore()[RENAMED]))
+
+	-- **Each language its own, and the others left alone.** This store is id to word, the way
+	-- the quest titles are and unlike the areas, so one table would have a player who switched
+	-- clients reading every item in the language they left.
+	Family.locale = "frFR"
+	check("another language does not see the first one's words",
+		Family.Names:ItemStore()[ONLY_ON_DISK] == nil)
+	Family.Names:ItemStore()[ONLY_ON_DISK] = "Bidule en cuivre"
+
+	Family.locale = "enUS"
+	check("and the first language still has its own",
+		Family.Names:ItemStore()[ONLY_ON_DISK] == "Copper Widget")
+
+	-- **A patch empties it.** Item names live in the client's own data files, so they change
+	-- when the client changes and at no other moment - and half a store that cannot say which
+	-- half is worse than none, because the session after a patch then costs exactly what every
+	-- session costs today.
+	GetBuildInfo = function() return "1.15.10", "70000", "Sep 2026", 11507 end
+	check("a client at a build this store has never seen empties it",
+		Family.Names:ItemStore()[ONLY_ON_DISK] == nil)
+	check("and only the language being played, not the others",
+		FamilyDB.itemNames.frFR and FamilyDB.itemNames.frFR.names
+			and FamilyDB.itemNames.frFR.names[ONLY_ON_DISK] == "Bidule en cuivre",
+		tostring(FamilyDB.itemNames.frFR and FamilyDB.itemNames.frFR.at))
+
+	GetBuildInfo = heldBuild
+	check("and going back to the old build does not resurrect what was emptied",
+		Family.Names:ItemStore()[ONLY_ON_DISK] == nil)
+
+	-- A client that will not say what it is cannot be checked against what was written, so
+	-- nothing is read from the disk and nothing is written to it.
+	GetBuildInfo = function() return nil end
+	check("a client that will not name its build is not trusted with the store",
+		Family.Names:ItemStore() == nil)
+	check("and a name learned then is not written anywhere on disk",
+		(function()
+			Family.Names:LearnItem(771004, "Nowhere")
+			GetBuildInfo = heldBuild
+			return (Family.Names:ItemStore() or {})[771004] == nil
+		end)())
+
+	GetBuildInfo = heldBuild
+	ITEM_NAMES[KNOWN], ITEM_NAMES[RENAMED] = nil, nil
+	FamilyDB.itemNames = nil
+	Family.locale = held
+end)()
+
+print()
 if failures == 0 then
 	print("all checks passed")
 else

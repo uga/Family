@@ -26,8 +26,78 @@ local _, Family = ...
 local Names = {}
 Family.Names = Names
 
-local cache = {}      -- itemID -> name, for this session only. Never written to disk.
+local cache = {}      -- itemID -> name, for this session. Backed by the store below.
 local waiting = {}    -- itemID -> { [key] = callback }
+
+-- **What this account has already been told an item is called**, kept on disk between sessions.
+--
+-- The client's own item cache does not survive a relog. That was claimed here once and it was
+-- wrong: Alberto refused it from play - *la cache sta su disco, ma evidentemente la cancelli
+-- ogni volta! Altrimenti perche uscendo dal gioco e rientrando se la ricostruisce?* - and the
+-- login warm-up that spreads the asking over the first minute has been starting from nothing
+-- every session since. This is the half that stops it being the same minute every time.
+--
+-- **Kept per language, like the quest titles and unlike the areas.** The areas store is word to
+-- id, so a second language only adds keys; this one is id to word, and a single store would
+-- have a player who switched clients reading every item in the language they left. So each
+-- language has its own table, the other languages stay on disk untouched rather than being
+-- thrown away, and the check is per item rather than a stamp on the whole store - which is the
+-- shape Alberto arrived at when he thought it through out loud.
+--
+-- **No ceiling, deliberately.** It is bounded by what this family holds - its recipes and its
+-- bags - and not by how long Family has been running: a player with forty alts fills it and
+-- then it stops. The shipped recipe tables are 1,406 products on Era, so the realistic size is
+-- a few thousand short strings per language, which Alberto has judged against the disk it
+-- costs. `FamilyDB.quests` is the same shape and has none either.
+--
+-- **And knowing an answer must never stop us noticing it changed.** A cache that only ever
+-- adds is not a cache, it is a fossil: the client is asked first and overwrites whatever is
+-- here, but that only corrects the items the client happens to have loaded - and the whole
+-- point of this store is that on a cold client it has loaded almost none. So the store carries
+-- the build it was written at, and a build it does not recognise empties it.
+--
+-- The build is the right trigger rather than a timer, because item names live in the client's
+-- own data files: they change when the client changes and at no other moment. And it empties
+-- rather than marking each entry suspect, because half a store that cannot say which half is
+-- worse than none - the session after a patch then costs what every session costs today, which
+-- is the thing this is replacing.
+local function clientBuild()
+	local version, build = Family:TryCall(GetBuildInfo)
+	if type(version) ~= "string" or version == "" then return nil end
+	return version .. "." .. tostring(build or "?")
+end
+
+local function itemStore()
+	if type(_G.FamilyDB) ~= "table" then return nil end
+
+	-- No build, no trust. A client that will not say what it is cannot be checked against
+	-- what was written down, and showing a name from an unknown build is exactly the fossil
+	-- above.
+	local at = clientBuild()
+	if not at then return nil end
+
+	FamilyDB.itemNames = FamilyDB.itemNames or {}
+
+	local locale = Family.locale or "enUS"
+	local mine = FamilyDB.itemNames[locale]
+	if not mine or mine.at ~= at then
+		-- Only this language. The other languages keep what they have and are emptied on
+		-- the first session somebody plays in them, which is when their build is checked.
+		mine = { at = at, names = {} }
+		FamilyDB.itemNames[locale] = mine
+	end
+	return mine.names
+end
+
+-- Reachable so a check can read what was written down rather than infer it from timing.
+function Names:ItemStore() return itemStore() end
+
+local function storedItem(id)
+	local known = itemStore()
+	local name = known and known[id]
+	if type(name) == "string" and name ~= "" then return name end
+	return nil
+end
 
 local function getItemName(id)
 	if C_Item and C_Item.GetItemInfo then
@@ -47,6 +117,19 @@ end
 
 -- The placeholder. Deliberately not "Unknown": the id is a fact, and it is enough to look
 -- the thing up, which "Unknown" is not.
+-- One place where a name that came from the client is remembered, so that the three callers
+-- that receive one cannot each decide differently about the disk.
+--
+-- Only what the client said. A name read back off the disk is already there, and a placeholder
+-- is not a name at all.
+function Names:LearnItem(id, name)
+	if not id or type(name) ~= "string" or name == "" then return end
+	cache[id] = name
+
+	local known = itemStore()
+	if known then known[id] = name end
+end
+
 function Names:Placeholder(id)
 	return "|cff9d9d9dItem #" .. tostring(id) .. "|r"
 end
@@ -61,8 +144,22 @@ function Names:Item(id, key, callback)
 
 	local name = cache[id] or getItemName(id)
 	if name then
-		cache[id] = name
+		self:LearnItem(id, name)
 		return name, true
+	end
+
+	-- **What the client said last time.** Asked after the client rather than before it, so an
+	-- item the game has renamed corrects itself the first session somebody looks at it - the
+	-- disk is the fallback, never the authority.
+	--
+	-- And no request is sent behind it. Sending one would ask the client for everything this
+	-- store exists to stop asking for, which is the whole of the ten-second freeze this is
+	-- about. What a caller gets is the name, which is what this function promises; anything
+	-- that needs the item's icon or its quality asks the client itself.
+	local remembered = storedItem(id)
+	if remembered then
+		cache[id] = remembered
+		return remembered, true
 	end
 
 	if callback then
@@ -492,11 +589,23 @@ function Names:Quest(id, recorded, level)
 	return nil
 end
 
+-- Whether this item is already named, without asking the client to load anything.
+--
+-- The login warm-up uses this to skip what it does not need to ask for, so reading the disk
+-- here is what turns the second session's warm-up into nothing: the queue drains without a
+-- single request.
 function Names:CachedItem(id)
 	if not id then return nil end
+
 	local name = cache[id] or getItemName(id)
-	if name then cache[id] = name end
-	return name
+	if name then
+		self:LearnItem(id, name)
+		return name
+	end
+
+	local remembered = storedItem(id)
+	if remembered then cache[id] = remembered end
+	return remembered
 end
 
 Family:RegisterEvent("GET_ITEM_INFO_RECEIVED", "names", function(_, id, success)
@@ -511,7 +620,7 @@ Family:RegisterEvent("GET_ITEM_INFO_RECEIVED", "names", function(_, id, success)
 
 	local name = getItemName(id)
 	if not name then return end
-	cache[id] = name
+	Names:LearnItem(id, name)
 
 	local callbacks = waiting[id]
 	if not callbacks then return end

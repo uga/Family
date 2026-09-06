@@ -1317,7 +1317,7 @@ and by giving the column eighteen more pixels out of Money. That is a smaller ce
 
 ---
 
-## 22. The item names are asked for again every session, and never written down
+## 22. The item names are asked for again every session, and never written down — DONE 2026-09-06
 
 **Agreed with Alberto on 2026-09-06, in design, and then not written down anywhere — which is
 the reason this entry exists at all.** It has been carried in a conversation since, and a
@@ -1349,9 +1349,25 @@ the whole store: a player who switches language keeps the other languages inert 
 of losing them. Alberto's judgement on the cost, in his words: the disk taken by a multilingual
 dump is not a concern.
 
-**Not built.** What is left is the store, the read-back, and a decision about a ceiling — a
-family that has scanned everything holds thousands of ids, and `FamilyDB` is the only disk an
-addon has.
+**Built 2026-09-06.** `FamilyDB.itemNames[locale] = { at = <build>, names = { [id] = word } }`.
+
+**The ceiling was decided rather than deferred: there is none**, and the reason is that the
+store is bounded by what the family holds - its recipes and its bags - and not by how long
+Family has been running. A player with forty alts fills it and it stops. The shipped recipe
+tables carry 1,406 products on Era, so the realistic size is a few thousand short strings per
+language. `FamilyDB.quests` is the same shape and has no ceiling either.
+
+**And it refreshes, which Alberto asked for while it was being written**: *il fatto di conoscere
+la traduzione non ci deve impedire di accorgerci che dobbiamo rinfrescare il dato perché è
+cambiato dall'origine.* He was right that the first draft could not. The client is asked before
+the disk and overwrites it, but that only corrects items the client has loaded - and on a cold
+client it has loaded almost none, which is the whole reason this store exists. So the store
+carries the build it was written at and **a build it does not recognise empties it**, for the
+language being played and no other. The build is the trigger rather than a timer because item
+names live in the client's own data files: they change when the client changes and at no other
+moment. It empties rather than marking each entry suspect because half a store that cannot say
+which half is worse than none - the session after a patch then costs exactly what every session
+costs today, which is the thing being replaced.
 
 ---
 
