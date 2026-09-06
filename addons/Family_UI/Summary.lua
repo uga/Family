@@ -108,8 +108,31 @@ local function skillView()
 	return UI.__summarySkillView or SKILL_VIEWS[1]
 end
 
+-- **Whether this game has weapon skills at all.**
+--
+-- Cataclysm removed them, so a Mists client has no Weapon Skills heading on any sheet and no
+-- rank behind one. The switch below offers a page that would be empty for every member on such
+-- a client - except one whose record was written on an older build and who has not been logged
+-- in since, which is exactly the screenshot that sent this session looking for a bug in the
+-- reading. A control that draws a blank page and a stale row is worse than no control.
+--
+-- Asked of `Capabilities`, which is where facts about the game live, and never of a symbol -
+-- `GetProfessions` answers on Era and that mistake has already been made once this week
+-- (L-059). Silence keeps the switch, on the same rule the scanner uses: a capability that has
+-- not answered is not a client saying no.
+-- Hung on UI rather than kept as a file-scope local, and not for tidiness: the function that
+-- draws this panel is at Lua's ceiling of sixty upvalues, and one more local is what tips it
+-- over. `UI:WarnIfFilterRowIsFull` is here for the same reason and says so.
+function UI:HasWeaponSkills()
+	local can = Family.Capabilities and Family.Capabilities.can
+	return can == nil or can.weaponSkills ~= false
+end
+
+-- Gated here rather than only where the switch is drawn, so that everything built out of this
+-- - the columns, the cells, the extra lines, the picker and the caption - answers one question
+-- in one place. A view nothing on screen can reach is still a view a stale flag can select.
 local function showingWeapons()
-	return skillView() == "weapons"
+	return skillView() == "weapons" and UI:HasWeaponSkills()
 end
 
 -- **Whether the filter row has run out of pixels.**
@@ -2663,10 +2686,22 @@ local function build(frame)
 		-- back to the trades with it. Leaving it on "weapons" while somebody reads three
 		-- other sets and comes back would be a panel that opens showing something nobody
 		-- asked it for and no control on screen to explain why.
+		-- **Two mechanisms with one job each**, which is worth the extra branch.
+		--
+		-- Leaving this set forgets the detour - that is what the clear is for, and it is why
+		-- reading three other sets and coming back opens on the trades. Staying on this set
+		-- on a game with no weapon skills is a different thing: nothing is being left, so
+		-- nothing is forgotten, and what makes the page show trades is `showingWeapons`
+		-- refusing the view. Folded together, either one covered for the other and neither
+		-- could be shown to be doing anything.
 		if currentSet and currentSet.id == "professions" then
-			viewButton:SetText(SKILL_VIEW_LABEL[showingWeapons() and SKILL_VIEWS[1]
-				or SKILL_VIEWS[2]])
-			viewButton:Show()
+			if UI:HasWeaponSkills() then
+				viewButton:SetText(SKILL_VIEW_LABEL[showingWeapons() and SKILL_VIEWS[1]
+					or SKILL_VIEWS[2]])
+				viewButton:Show()
+			else
+				viewButton:Hide()
+			end
 		else
 			UI.__summarySkillView = nil
 			viewButton:Hide()
@@ -3365,13 +3400,22 @@ local function build(frame)
 			note:SetText(L["|cff888888Every weapon this character has been trained in, and "
 				.. "how far each has been practised. The button above switches back to "
 				.. "the professions.|r"])
-		elseif currentSet.id == "professions" then
+		elseif currentSet.id == "professions" and UI:HasWeaponSkills() then
 			note:SetText(L["|cff888888Every profession on one line per member: the two "
 				.. "primary ones first, then the secondary skills. The button above "
 				.. "switches to the weapon skills instead. A profession in grey has "
 				.. "recipes Family has not seen for a week, or has never seen: ranks are "
 				.. "always current, recipe lists are only as new as the last time that "
 				.. "window was open.|r"])
+		elseif currentSet.id == "professions" then
+			-- The same sentence without the button, on a game that has no weapon skills to
+			-- switch to. A caption naming a control that is not on screen is worse than a
+			-- shorter caption: it sends somebody looking for something that is not there.
+			note:SetText(L["|cff888888Every profession on one line per member: the two "
+				.. "primary ones first, then the secondary skills. A profession in grey "
+				.. "has recipes Family has not seen for a week, or has never seen: ranks "
+				.. "are always current, recipe lists are only as new as the last time "
+				.. "that window was open.|r"])
 		elseif currentSet.id == "bags" then
 			note:SetText(L["|cff888888Free and total slots leave out quivers, soul bags and "
 				.. "the like: their slots are not room for anything else. Possessions "

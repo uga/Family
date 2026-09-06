@@ -297,6 +297,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Mists no longer offers a Weapon Skills page it has nothing to put on.** That version of the
+  game has no weapon skills, so the button that switched to them is gone there and the caption
+  under the table stops mentioning it. Era and Burning Crusade are unchanged.
+
 - **Weapon skills are recorded again on Era and Burning Crusade.** They had stopped: the check that
   decides whether this version of the game still has weapon skills was asking the wrong question,
   and answered "no" on the two versions that do. A character's weapons come back the next time you

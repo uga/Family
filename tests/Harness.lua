@@ -23995,6 +23995,124 @@ print("how a professions row is laid out")
 end)()
 
 print()
+print("a game with no weapon skills is not offered a weapon skills page")
+
+-- **Cataclysm removed weapon skills**, so on Mists that switch offers a page that is empty for
+-- every member - except one whose record was written on an older build and who has not been
+-- logged in since, which is exactly the screenshot that started this. `e143046` stopped them
+-- being recorded there; this stops them being offered.
+--
+-- Asked of `Capabilities` and never of a symbol, because `GetProfessions` answers on Era and
+-- that mistake has already been made once this week (L-059).
+;(function()
+	local key = "Padan-FireMaw"
+	Family.Database:SetMeta(key, {
+		name = "Padan", realm = "Fire Maw", classFile = "WARRIOR", faction = "Alliance",
+		level = 60,
+		skills = {
+			[164] = { name = "Blacksmithing", rank = 287, maxRank = 375, secondary = false },
+			-- A record written before that realm was Mists, which is how one survives at
+			-- all: the scan rewrites this wholesale and would not put it back.
+			[43]  = { name = "Swords", rank = 300, maxRank = 300, weapon = true },
+		},
+	})
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	fireClick(Family.UI.__summarySets.professions)
+	Family.UI:Refresh()
+
+	local switch = Family.UI.__summarySkillSwitch
+	check("the switch is there on a game that has weapon skills",
+		switch ~= nil and switch.__shown ~= false)
+
+	-- Left on the weapons, so that hiding the control is not the only thing being checked: a
+	-- view no control can reach is still a view a flag can select, and the columns, the cells
+	-- and the caption are all built from that flag rather than from the button.
+	fireClick(switch)
+	Family.UI:Refresh()
+	check("and it can be switched to them", Family.UI.__summarySkillView == "weapons")
+
+	local heldBuild = GetBuildInfo
+	GetBuildInfo = function() return "5.5.4", "69078", "Aug 2026", 50504 end
+	Family.Capabilities:Detect()
+	Family.UI:Refresh()
+
+	check("on a game that has none the switch is gone", switch.__shown == false)
+
+	-- And the panel is back on the trades rather than left on a page nothing can leave.
+	local row
+	for _, f in ipairs(frames) do
+		if onScreen(f) and f.memberKey == key and f.cells
+			and (f.cells[1].__text or "") ~= "" then row = row or f end
+	end
+	check("and the page under it is the trades again", row ~= nil
+		and tostring(row.cells[2].__text or ""):find("|T136241:", 1, true) ~= nil,
+		row and tostring(row.cells[2].__text) or "no row")
+
+	-- The caption stops naming a button that is not on screen. Read off the note as drawn -
+	-- captions are font strings, which this harness keeps in a list of their own - so a string
+	-- added to the locale files and never reached could not pass this.
+	local function caption()
+		for _, f in ipairs(fontStrings) do
+			if type(f.__text) == "string"
+				and f.__text:find("Every profession on one line", 1, true) then
+				return f.__text
+			end
+		end
+		return ""
+	end
+
+	local said = caption()
+	check("and the caption says nothing about a button", said ~= ""
+		and said:find("button", 1, true) == nil, said)
+
+	-- **Burning Crusade has them too**, and it is a third build rather than "not Mists": this
+	-- is a table with three columns and a check that drove two of them would leave the middle
+	-- one to a reading of the table rather than to a run of the code.
+	--
+	-- Started from the trades, because that is where a session on this client starts. The leg
+	-- above left the view flag on "weapons" on purpose - Mists does not clear it, it refuses
+	-- it - and carrying that into this leg would be checking the caption of a page no player
+	-- arriving here would be looking at.
+	Family.UI.__summarySkillView = nil
+	GetBuildInfo = function() return "2.5.6", "69110", "Aug 2026", 20506 end
+	Family.Capabilities:Detect()
+	Family.UI:Refresh()
+	check("Burning Crusade has weapon skills and keeps its switch",
+		Family.Capabilities.can.weaponSkills == true and switch.__shown ~= false,
+		tostring(Family.Capabilities.can.weaponSkills))
+	check("and its caption names the button again",
+		caption():find("button", 1, true) ~= nil, caption())
+
+	GetBuildInfo = heldBuild
+	Family.Capabilities:Detect()
+	Family.UI:Refresh()
+	check("and the switch is there on Era as well",
+		Family.Capabilities.can.weaponSkills == true and switch.__shown ~= false,
+		tostring(Family.Capabilities.can.weaponSkills))
+
+	-- **And a capability that has said nothing keeps it**, the same rule the scanner follows
+	-- two files away: not knowing whether this game has weapon skills is not a client saying
+	-- no, and hiding a control on silence would hide it on any client loaded in an order
+	-- `Detect` has not caught up with. Written because the mutation that turns that test round
+	-- reddened nothing at all - every other fixture here has a detected client.
+	do
+		local held = Family.Capabilities.can
+		Family.Capabilities.can = {}
+		Family.UI:Refresh()
+		check("a capability that says nothing about weapon skills keeps the switch",
+			switch.__shown ~= false, "hidden on a client that had not been asked yet")
+		Family.Capabilities.can = held
+		Family.UI:Refresh()
+	end
+
+	Family.UI.__summarySkillView = nil
+	Family.Database:Forget(key)
+	Family.UI:Refresh()
+end)()
+
+print()
 print("narrowing that panel by one skill, on both of its lists")
 
 -- **The picker belongs to the list on screen, and both of its halves have to agree.**
