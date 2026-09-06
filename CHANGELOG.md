@@ -291,6 +291,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A profession somebody unlearns stops being an answer to "who can make this".** Family kept the
+  recipe list after the skill was gone, so an item's tooltip and the family recipe search went on
+  naming a character who could no longer make it - and with no rank beside them, which is how a
+  character Family has never read appears. Guildmates and linked families stop seeing it too.
+
 - **A character's location no longer pushes their row out of line.** A long subzone under a long
   zone wrapped onto a third line on Miscellaneous and left that member half a row out of step with
   everybody else. Both halves are cut to fit now, and **hovering the row gives the whole of where

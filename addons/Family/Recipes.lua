@@ -288,6 +288,43 @@ end
 -- subtype to be recognised by and no skill line written on it, so the route that answers for
 -- a crafted object cannot answer for it at all - and the panel two inches away was listing
 -- the very people the tooltip left out.
+-- **Whether this member still has the profession a stored recipe list is filed under.**
+--
+-- The two walks below read the payload, and the payload is never pruned: `Scanners/Professions`
+-- begins each scan from what is already stored and only ever assigns into it, which is right for
+-- its own purpose - a window opened once should not be forgotten because it was not open today -
+-- and wrong here. Meta is the half that forgets: `skills` is replaced wholesale at every scan,
+-- so an unlearned profession leaves it and its recipe list stays. Without this, Family goes on
+-- answering *who can make this* with somebody who cannot, on the two screens whose whole job is
+-- that question. Asked by Alberto 2026-09-06.
+--
+-- **Word or id, either side.** A record written before professions had identities is filed under
+-- a word, and so are that member's skills, and the two need not agree - one may have been
+-- re-scanned and the other not. Both are resolved through `SkillLineFor` before comparing, which
+-- is what `Guild.lua` does with the same problem.
+--
+-- **Yes wherever the question cannot be put** (§2.2). A member with no skills recorded at all is
+-- one nobody has read, not one who has unlearnt everything; and a key no shipped table knows is
+-- one this cannot judge either way. Refusing on either would take a working answer away from
+-- somebody because Family was not told something, which is the opposite of the fault being
+-- fixed.
+local function stillHeld(meta, profession)
+	local skills = (meta or {}).skills
+	if not skills then return true end
+	if skills[profession] ~= nil then return true end
+
+	local wanted = type(profession) == "number" and profession
+		or Family:SkillLineFor(profession)
+	if not wanted then return true end
+
+	for id in pairs(skills) do
+		local held = type(id) == "number" and id or Family:SkillLineFor(id)
+		if held == wanted then return true end
+	end
+
+	return false
+end
+
 function Recipes:KnowersOf(spellID, itemID, itemName)
 	-- Where the caller has only the item, the client's tables often know which spell it
 	-- teaches - and an id settles it where a name cannot.
@@ -326,7 +363,10 @@ function Recipes:KnowersOf(spellID, itemID, itemName)
 		local payload = Family.Database:Payload(key)
 
 		for profession, record in pairs((payload or {}).professions or {}) do
-			for _, recipe in ipairs(record.recipes or {}) do
+			-- Skipped where they have unlearnt it: the list stays on the record and the
+			-- skill does not, and saying they can still make it is the one thing this
+			-- block must not do.
+			for _, recipe in ipairs(stillHeld(meta, profession) and record.recipes or {}) do
 				-- Either identifier, and the name only where neither is present -
 				-- which on Classic Era is most of enchanting. The name is this
 				-- client's word for the recipe against this client's word for the
@@ -590,7 +630,10 @@ function Recipes:Search(needle, limit)
 		local key, meta, payload = who.key, who.meta, who.payload
 
 		for profession, record in pairs((payload or {}).professions or {}) do
-			for _, recipe in ipairs(record.recipes or {}) do
+			-- The same skip as the crafters block above, and for the same reason: a
+			-- search that finds a recipe under somebody who has unlearnt the profession
+			-- is answering the question wrongly rather than generously.
+			for _, recipe in ipairs(stillHeld(meta, profession) and record.recipes or {}) do
 				-- The name this client uses, falling back to the one recorded. Both are
 				-- searched: a family holds lists read on other people's clients, and
 				-- somebody typing their own language should not find fewer of them.

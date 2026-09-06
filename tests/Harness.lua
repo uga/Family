@@ -3742,6 +3742,116 @@ do
 	check("with neither on a timer, the higher rank is the line kept",
 		plain and plain.rank == 290, tostring(plain and plain.rank))
 
+	-- **A profession they have unlearnt is not one they can still make things with.**
+	--
+	-- Meta forgets a profession at the next scan - `skills` is replaced rather than merged -
+	-- and the payload never does: the recipe scan begins from what is already stored and only
+	-- ever assigns into it. So the list outlives the skill, and this block and the search were
+	-- both answering *who can make this* with somebody who cannot. Asked by Alberto 2026-09-06.
+	do
+		local key = "Forgot-FireMaw"
+		local function makers()
+			local found
+			for _, who in ipairs(Family.Recipes:KnowersOf(nil, 6037, "Truesilver Bar")) do
+				if who.key == key then found = who end
+			end
+			return found
+		end
+
+		Family.Database:SetMeta(key, { name = "Forgot", realm = "Fire Maw", level = 60,
+			skills = { [171] = { rank = 300 } } })
+		Family.Database:SetPayload(key, { professions = {
+			[171] = { recipesSeen = time(), recipes = {
+				{ name = "Transmute Truesilver", itemID = 6037 } } },
+		} })
+		check("a character with the trade is offered as a maker", makers() ~= nil)
+
+		-- The scan that finds it gone writes the whole skills table anew, which is what
+		-- `SetMeta` does with a field, so this is what an unlearn actually looks like.
+		Family.Database:SetMeta(key, { skills = { [185] = { rank = 300 } } })
+		check("and one who has unlearnt it is not", makers() == nil,
+			tostring(makers() and makers().rank))
+
+		-- **The search too, which reads the same payload by the same route.**
+		-- A search result is one row per recipe with the members who know it under it,
+		-- not one row per member - so this looks inside `members` rather than at the row.
+		local function searched()
+			for _, row in ipairs(Family.Recipes:Search("transmute truesilver") or {}) do
+				for _, who in ipairs(row.members or {}) do
+					if who.key == key then return who end
+				end
+			end
+			return nil
+		end
+		check("and the whole-family search does not find it under them either",
+			searched() == nil)
+
+		Family.Database:SetMeta(key, { skills = { [171] = { rank = 300 } } })
+		check("while giving the trade back brings them back", makers() ~= nil
+			and searched() ~= nil)
+
+		-- **Word against id, which is the trap in this.** A record written before
+		-- professions had identities is filed under a word, and that member's skills may
+		-- have been re-scanned into ids since - or the other way about. Resolving one side
+		-- and not the other would prune a working answer from somebody's search, which is
+		-- worse than the fault being fixed.
+		-- Each of these two crosses the resolution in one direction only, and both are
+		-- needed: with the same kind of key on both sides the first branch answers and the
+		-- lookup below it is never reached, which is how the first draft of these passed
+		-- while the resolution was mutated away.
+		--
+		-- The list under a word, the skill under its id, and they are the same profession.
+		-- Resolving only the payload side keeps this; the one below it is what fails then.
+		Family.Database:SetPayload(key, { professions = {
+			Alchemy = { recipesSeen = time(), recipes = {
+				{ name = "Transmute Truesilver", itemID = 6037 } } },
+		} })
+		Family.Database:SetMeta(key, { skills = { [171] = { rank = 300 } } })
+		check("a list filed under a word is kept where the skill is filed under its id",
+			makers() ~= nil)
+
+		-- And the other way about: the list under an id, the skill under a word. This one
+		-- can only be answered by resolving the **skills** side, which is the half a
+		-- careless fix leaves out.
+		Family.Database:SetPayload(key, { professions = {
+			[171] = { recipesSeen = time(), recipes = {
+				{ name = "Transmute Truesilver", itemID = 6037 } } },
+		} })
+		Family.Database:SetMeta(key, { skills = Family.CLEAR })
+		Family.Database:SetMeta(key, { skills = { Alchemy = { rank = 300 } } })
+		check("and a list filed under an id is kept where the skill is filed under a word",
+			makers() ~= nil)
+
+		-- **And the word really is resolved rather than merely tolerated.** The list is
+		-- under the word for alchemy and the only skill held is cooking, so a version that
+		-- gave up on words and kept everything it could not resolve would pass the two
+		-- above and fail here.
+		Family.Database:SetPayload(key, { professions = {
+			Alchemy = { recipesSeen = time(), recipes = {
+				{ name = "Transmute Truesilver", itemID = 6037 } } },
+		} })
+		Family.Database:SetMeta(key, { skills = Family.CLEAR })
+		Family.Database:SetMeta(key, { skills = { [185] = { rank = 300 } } })
+		check("while a word that resolves to a trade they do not have is pruned",
+			makers() == nil, tostring(makers() and makers().rank))
+
+		-- **And §2.2 in both directions.** A member nobody has read has no skills at all,
+		-- which is not a claim that they have unlearnt everything.
+		Family.Database:SetMeta(key, { skills = Family.CLEAR })
+		check("a member whose skills were never read keeps their lists", makers() ~= nil)
+
+		-- A key no shipped table knows cannot be judged either way, so it is kept.
+		Family.Database:SetMeta(key, { skills = { ["Zzz Crafting"] = { rank = 1 } } })
+		Family.Database:SetPayload(key, { professions = {
+			["Qqq Crafting"] = { recipesSeen = time(), recipes = {
+				{ name = "Transmute Truesilver", itemID = 6037 } } },
+		} })
+		check("and a profession no table can name is kept rather than guessed at",
+			makers() ~= nil)
+
+		Family.Database:Forget(key)
+	end
+
 	Family.Database:Forget("Plainly-FireMaw")
 	Family.Database:Forget("Twofold-FireMaw")
 

@@ -1776,7 +1776,7 @@ on screen explaining it.
 **Not built, and the recommendation is not to.** Written down so the numbers exist.
 ---
 
-## 29. An unlearned profession is forgotten by the panels and remembered by the search
+## 29. An unlearned profession is forgotten by the panels and remembered by the search — DONE 2026-09-06
 
 **Asked 2026-09-06**: what happens when an alt unlearns a profession? Read rather than reasoned,
 and the two halves of the record answer differently.
@@ -1817,6 +1817,33 @@ before professions had ids is filed under a word, so the test has to resolve it 
 old record would be pruned from the search for having the wrong kind of key, which is a worse
 fault than the one being fixed.
 
-**Not built.** One question and it is a small slice; written down first because "Family says this
-character can make something they cannot" is a correctness claim and belongs on the record either
-way.
+**Built 2026-09-06.** `stillHeld(meta, profession)` in `Recipes.lua`, and both walks pass their
+recipe list through it. Both sides of the key are resolved through `SkillLineFor` before
+comparing, and the answer is **yes wherever the question cannot be put** (§2.2): a member with no
+skills recorded is one nobody has read rather than one who has unlearnt everything, and a key no
+shipped table knows cannot be judged either way.
+
+**Six mutations, and two of them caught nothing at first.** The two word-against-id checks had the
+same kind of key on both sides, so the first branch answered and the resolution below it was
+never reached - they passed with it mutated away. Rewritten to cross it in one direction each,
+plus a third where the word resolves to a trade the member does *not* have, which is what pins
+that the word is resolved rather than merely tolerated.
+
+### What this reaches, and what it does not
+
+**Ours, on our own screens.** `KnowersOf` and `Crafters` - the two that feed an item tooltip's
+*can be made by* - walk `Database:Members()` and nothing else, so they are about our own family.
+`Search` walks ours **and our siblings**, which is the population every whole-family list uses.
+
+**The guild stops being told.** The share grid is built from `meta.skills` (`Guild.lua:815`), so
+an unlearned profession stops being offered; the next announcement carries a character entry
+without it, the receiver replaces that entry wholesale, and the walk right after drops any recipe
+list held for a profession no longer offered - *a withdrawn profession must stop being answerable
+the moment its owner says so*, which is already written there.
+
+**A linked family is a different mechanism with the same outcome.** What crosses is the whole
+`professions` payload, and the payload is never pruned - so the stale list **does** still cross
+the wire. It stops being shown because the same category carries `skills` in meta, and the reader
+runs `stillHeld` against their borrowed copy. The guild *stops sending*; a link *goes on sending*
+and the reader *stops believing*. Both end in the reference disappearing; only one of them stops
+spending bytes on it.
