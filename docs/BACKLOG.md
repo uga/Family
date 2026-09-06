@@ -2482,3 +2482,9 @@ of Serena ready above Ocio at 1d 11h, then Alchemy, Brilliant Glass and Enchanti
 one crafter, every block carrying its *1 ready*. Two of the four crafters are a linked family's
 and are named as such on their own line, which is the half the grid's headings used to carry.
 
+**And on Classic Era the same day**, on a family of thirty: Alchemy with three crafters all ready
+and its *3 ready* beside it, then Salt Shaker with two and Mooncloth with one, both of those
+carrying no count at all because none of theirs are back yet - which is the *0 ready is a row
+saying nothing* rule, proved by a mutation and now seen. Alchemy's three fit without folding,
+three being the cap rather than the trigger.
+
