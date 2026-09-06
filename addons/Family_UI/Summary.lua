@@ -859,9 +859,14 @@ CELL.mount = function(meta)
 	-- gryphon is +60% on the ground and +60% in the air, so the larger of the two would call it
 	-- an ordinary mount and never say this character can fly. Reported from play for that.
 	if meta.mount or meta.mountFly then
+		-- **Both halves always, and a dash for the one that is missing.** Asked for that way
+		-- from play, and the reason is not symmetry: flying at 60% is usually better than
+		-- running at 100%, so *which of the two this character has* is the fact, and a cell
+		-- that showed one number would answer a question nobody asked. `100%/-` says as much
+		-- as `100%/60%` does.
 		local ground = meta.mount and string.format("%d%%", meta.mount) or "-"
-		if not meta.mountFly then return ground end
-		return ground .. " / " .. string.format("%d%%", meta.mountFly)
+		local air = meta.mountFly and string.format("%d%%", meta.mountFly) or "-"
+		return ground .. "/" .. air
 	end
 	if not meta.bagsSeen then return UNKNOWN end
 	return ""

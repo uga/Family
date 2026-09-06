@@ -16097,7 +16097,9 @@ print("how fast a character can get about")
 				said = f.cells[at] and f.cells[at].__text
 			end
 		end
-		check("and it says how fast, as a percentage", said == "100%", tostring(said))
+		check("and it says how fast, as a percentage", said == "100%/-", tostring(said))
+		-- The dash is the point rather than tidiness: it says outright that this character
+		-- cannot fly, where a bare number leaves the reader to wonder whether anybody asked.
 
 		-- And both, where there are both - which is the shape that has to fit the column.
 		Family.Database:SetMeta(key, { mount = 100, mountFly = 280 })
@@ -16109,7 +16111,7 @@ print("how fast a character can get about")
 			end
 		end
 		check("a character who can fly says so beside how fast they run",
-			said == "100% / 280%", tostring(said))
+			said == "100%/280%", tostring(said))
 
 		Family.Database:SetMeta(key, { mountFly = Family.CLEAR })
 		Family.UI:Refresh()

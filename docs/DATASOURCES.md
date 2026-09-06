@@ -1894,10 +1894,36 @@ mount showed *100%* and said nothing about being able to fly. Aura **207** carri
 Ebon Gryphon is spell 32239 and measures **+60% on the ground and +60% in the air** - the Expert
 tier, which matches a riding skill of 225. The 310% rows are the rare Burning Crusade mounts.
 
-**A druid's flight forms are not in this and cannot be.** Spells 33943 and 40120 on Burning
-Crusade carry aura 36 (shapeshift), aura 77 and aura **201 (enable flight)**, and no speed
-anywhere in the spell - it belongs to the form. Alberto gives them as 150% at level 68 and 280% at
-70; that is knowledge from play rather than from a table, and nothing here uses it yet.
+**A druid's flight forms are not in this**, and the tables looked at so far do not have the number
+either. Spells 33943 and 40120 on Burning Crusade carry aura 36 (shapeshift), aura 77 and aura
+**201 (enable flight)**, with no speed in the spell; `SpellShapeshiftForm` has the two forms - 29
+*Flight Form* and 27 *Flight Form, Epic* - with `MountTypeID` 0 and no speed column at all. The
+number is in the spell's own description text, which Alberto's tooltip shows as **60%** on Burning
+Crusade. That is a per-locale string and not an id, so nothing here reads it.
+
+### On Mists the riding skill sets the speed, not the mount, measured 2026-09-06
+
+Alberto asked whether Master Riding on Mists upgrades the mounts you already own or needs new ones.
+**It upgrades them**, and `MountCapability` says so outright: each row maps a required riding skill
+to the aura that applies the speed.
+
+| Riding skill | Aura spell | Ground | Air |
+|---|---|---|---|
+| 75 Apprentice | 86457 | +60% | — |
+| 150 Journeyman | 86458 | +100% | — |
+| 225 Expert | 86459 | +100% | **+150%** |
+| 300 Artisan | 86460 | +100% | **+280%** |
+| 375 Master | 86461 | +100% | **+310%** |
+
+So from Cataclysm onward the mount carries no speed of its own and the skill carries all of it.
+**Which means the reading in `Mounts.lua` is right for Era and Burning Crusade and wrong for
+Mists**, where it should be `skills[762].rank` against the table above. Written down rather than
+fixed, because no member of this family is on that build yet - but it is a known wrong answer and
+not an unknown one.
+
+It also explains where 150% came from twice over: Expert is 150% flight from Cataclysm on, and the
+druid's Flight Form follows the same ladder there while it is a flat 60% on Burning Crusade. Both
+of Alberto's numbers were right, for different builds.
 
 **What it cannot see** is a permission whose mount was destroyed - backlog entry 19, named and
 deferred the day it was built.

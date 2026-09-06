@@ -1224,3 +1224,31 @@ width, which is the same question the icon overview is about.
 **Not built.** Written down so the limit is a decision with a date rather than something nobody
 noticed.
 
+---
+
+## 20. On Mists the riding skill sets the speed, and Family reads the mount
+
+**Measured 2026-09-06**, from Alberto's question about whether Master Riding upgrades the mounts
+you already own. It does, and `MountCapability` is why: on that build each row maps a required
+riding skill to the aura that applies the speed, so the mount carries none of it.
+
+| Riding skill | Ground | Air |
+|---|---|---|
+| 75 Apprentice | +60% | — |
+| 150 Journeyman | +100% | — |
+| 225 Expert | +100% | +150% |
+| 300 Artisan | +100% | +280% |
+| 375 Master | +100% | **+310%** |
+
+`Mounts:Fastest` reads the mount, which is right on Classic Era and Burning Crusade and **wrong on
+Mists**: a character there with Master Riding and an old 100% mount would be reported at whatever
+that mount's own aura says rather than at 310%.
+
+The fix is small and the data is already scanned: skill line 762's rank is recorded since riding
+was added to the table the same day, so it is a lookup against the five rows above, chosen by
+build. What is missing is a reason to do it now - nobody in this family is on Mists - and a way to
+check it against a live client of that build.
+
+**Not built.** Written down because it is a *known* wrong answer rather than an unknown one, which
+is the difference between a limit and a bug nobody has met yet.
+
