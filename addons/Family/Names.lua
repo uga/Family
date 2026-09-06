@@ -67,7 +67,7 @@ local function clientBuild()
 	return version .. "." .. tostring(build or "?")
 end
 
-local function itemStore()
+local function itemRecord()
 	if type(_G.FamilyDB) ~= "table" then return nil end
 
 	-- No build, no trust. A client that will not say what it is cannot be checked against
@@ -86,11 +86,45 @@ local function itemStore()
 		mine = { at = at, names = {} }
 		FamilyDB.itemNames[locale] = mine
 	end
-	return mine.names
+	return mine
+end
+
+local function itemStore()
+	local mine = itemRecord()
+	return mine and mine.names or nil
 end
 
 -- Reachable so a check can read what was written down rather than infer it from timing.
 function Names:ItemStore() return itemStore() end
+
+-- Which version of a member's record the login walk has already read all the way through.
+--
+-- The walk decodes one member per call and the timer fires once a second, so a family of 210
+-- costs three and a half minutes of login - and from the second session on it buys nothing,
+-- because the store above already holds every answer. This is how it is told: a short mark of
+-- the record as it sits on disk, written down when that record has been read through and every
+-- name in it is known, so the next walk can step past the member without decoding it.
+--
+-- **Kept beside the names and not beside the members**, which is what makes it self-correcting.
+-- A mark says "everything this record asks for is in *this* store"; when the store is emptied -
+-- a new client build, or the first session in a language - the record holding it is replaced
+-- whole and the marks go with it. Nothing has to remember to clear them.
+--
+-- Made on first use rather than written into the shape above, so a store already on somebody's
+-- disk is read without being rewritten.
+function Names:ItemWalk(key)
+	local mine = itemRecord()
+	local walked = mine and mine.walked
+	return walked and walked[key] or nil
+end
+
+function Names:LearnItemWalk(key, mark)
+	if key == nil then return end
+	local mine = itemRecord()
+	if not mine then return end
+	mine.walked = mine.walked or {}
+	mine.walked[key] = mark
+end
 
 local function storedItem(id)
 	local known = itemStore()

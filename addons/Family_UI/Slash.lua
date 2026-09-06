@@ -827,7 +827,38 @@ end
 -- by itself after the first session rather than needing a switch.
 local ANNOUNCE_AFTER = 25
 
+-- How many members the walk may step past on one call, once it can tell they have nothing new.
+-- Twenty, because a mark costs about a millisecond to make and a tick that decodes one member
+-- costs considerably more than twenty of them - so this is a smaller piece of work than the one
+-- it replaces, whatever the family size. A module field rather than a local so a check can hold
+-- it low and watch the cap work.
+UI.WARM_SKIPS = 20
+
 local warmQueue, warmAt, warmPending, warmSaid
+
+-- What the walk is in the middle of reading: whose record it picked up, the mark that record
+-- had at the time, and whether any name it asked for failed to arrive. One table rather than
+-- three locals because this file is close to Lua's ceiling of sixty upvalues per function and
+-- has been over it twice.
+local walking = {}
+
+local function rememberWalk()
+	-- **Written down only where every name answered.** A member whose ids are all known is one
+	-- the next walk can step past. One with a name the client would not give is not: the mark
+	-- is left unwritten so the walk comes back for it next login, which is the only occasion
+	-- that id is ever asked for again.
+	--
+	-- Which makes the second session the one that pays. On a cold client nothing is named yet,
+	-- so nothing is marked and the walk costs what it always cost; the names land on disk
+	-- during that session, the second walk finds them cached and marks as it goes, and the
+	-- third login and every one after it steps past the whole family. Two logins to warm, and
+	-- then it is free - rather than one login to warm and a wrong answer whenever the client
+	-- was slow.
+	if walking.key and walking.mark and not walking.missed then
+		Family.Names:LearnItemWalk(walking.key, walking.mark)
+	end
+	walking.key, walking.mark, walking.missed = nil, nil, nil
+end
 
 function UI:WarmRecipeNames(budget)
 	budget = budget or 40
@@ -877,13 +908,53 @@ function UI:WarmRecipeNames(budget)
 		end
 	end
 
+	-- **Step past everyone whose record has not changed since the walk last read it through.**
+	--
+	-- This is what the entry was measured for. One second and one payload decode per character
+	-- at every login, whether or not that character has anything left to ask about: invisible
+	-- at thirty, and three and a half minutes at 210 - spent proving that there is nothing to
+	-- do. `Database:PayloadMark` answers that question without decoding anything, and what the
+	-- last walk marked is on disk beside the names it learned.
+	--
+	-- **Several per call rather than one**, because the reason members are taken one at a time
+	-- is the decode, and a skip has none: a mark is a fold over the ends of a string the client
+	-- already holds. Stepping past them one a second would leave the cost exactly where it
+	-- was. Capped all the same, so that no family size can be a stall.
+	--
+	-- **A borrowed member is never skipped**, because they have no mark. Their payload arrived
+	-- over the wire as a table and was never encoded, so there is no decode to save - the same
+	-- reason they were cheap enough to add to this queue in the first place.
+	local skipped, capped = 0, false
+	while #warmPending == 0 and warmAt <= #warmQueue do
+		if skipped >= (self.WARM_SKIPS or 20) then
+			-- Stopped by the cap and not by a member worth reading, so this call ends
+			-- here. Reading the next one anyway would decode a record the mark has
+			-- already said there is nothing to learn from - the one thing this exists
+			-- to stop - on every call that fills its cap.
+			capped = true
+			break
+		end
+
+		local key = warmQueue[warmAt]
+		local mark = Family.Database:PayloadMark(key)
+		if mark == nil or Family.Names:ItemWalk(key) ~= mark then break end
+		warmAt = warmAt + 1
+		skipped = skipped + 1
+	end
+
 	-- One member's payload per call. `Database:Payload` decodes and then caches for the
 	-- session, so this is the decode being spread rather than a second one being paid.
-	if #warmPending == 0 and warmAt <= #warmQueue then
+	if not capped and #warmPending == 0 and warmAt <= #warmQueue then
+		-- The mark is read before the record, and it is the record as it sits on disk now.
+		-- Taken afterwards it could be a mark for a scan that landed while this call was
+		-- running, and the walk would write down that it had read something it had not.
+		local key = warmQueue[warmAt]
+		walking.key, walking.mark, walking.missed = key, Family.Database:PayloadMark(key), false
+
 		-- Through the window's reader rather than the database's, because half this queue
 		-- is borrowed now and `Database:Payload` knows only ours (L-052). For our own keys
 		-- it is the same call underneath.
-		local payload = UI:Payload(warmQueue[warmAt]) or {}
+		local payload = UI:Payload(key) or {}
 		warmAt = warmAt + 1
 
 		for _, record in pairs(payload.professions or {}) do
@@ -927,10 +998,14 @@ function UI:WarmRecipeNames(budget)
 		-- Already named costs nothing and is not work: counting it would let a warm
 		-- client report a full budget while asking for nothing.
 		if not Family.Names:CachedItem(id) then
-			Family.Names:Item(id)
+			local _, known = Family.Names:Item(id)
+			if not known then walking.missed = true end
 			asked = asked + 1
 		end
 	end
+
+	-- Emptied, so whoever it belonged to has been read all the way through.
+	if #warmPending == 0 then rememberWalk() end
 
 	-- Said on the first call that actually asks for something, so it arrives at the start of
 	-- the wait rather than in the middle of it - and once, because a line repeated every
@@ -965,6 +1040,7 @@ end
 -- Reachable so a check can start it over rather than depend on whatever the run before left.
 function UI:ForgetRecipeWarmUp()
 	warmQueue, warmAt, warmPending, warmSaid = nil, nil, nil, nil
+	walking.key, walking.mark, walking.missed = nil, nil, nil
 end
 
 Family:OnDatabaseReady("recipes.warm", function()

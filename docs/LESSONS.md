@@ -2301,3 +2301,31 @@ the entry expected either, because `shrinkToFit` never takes a column below its 
 heading always fits, and it is the cells that give.
 
 Three mutations on the fix and one on the finding, all reddening.
+
+## L-061 — A fingerprint that samples is a different fingerprint
+
+The login walk needed to tell, without decoding, whether a member's record had changed since it
+last read it. The first `Database:PayloadMark` folded the record's length and its first and last
+256 bytes, and the comment beside it argued the trade in measured numbers: folding a 30 KB record
+costs 1.0 ms in lua5.1 on this machine and folding 512 bytes costs 0.017 ms, so the ends looked
+like sixty times the saving for the same answer.
+
+They are not the same answer. A record that changes in the middle without changing length reads
+as unchanged — and the commonest such change is the one this very walk turns on. A member's
+`locale` is four bytes: `enUS` and `frFR` are the same length, in the middle of the record, and
+the harness flips one deliberately three checks earlier. Three checks went red at once, all of
+them about work the walk should have found and did not.
+
+The measurement was right and the reasoning from it was wrong: a cheaper hash is not a hash of
+the same thing, and "these are deflate streams, a change shifts everything after it" is a
+statement about what is *likely*, dressed as a statement about what is *true*. The consequence
+would have been silent — a member's recipe names quietly stop being fetched before the click —
+which is exactly the shape of thing a check has to catch, because nobody reports it.
+
+**What now catches it.** `a record that changed only in the middle, at the same length, is read
+again` — a member's record written twice with `frFR` and then `deDE`, walked either side, and the
+member counted as read. Mutating the fold back to the length alone reddens it.
+
+The whole record is folded now, and the number that made the shortcut tempting pays for the cap
+instead: twenty marks a call is 20 ms, on a tick that used to decode a whole member.
+

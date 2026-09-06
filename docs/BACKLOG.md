@@ -1558,7 +1558,7 @@ would otherwise be made twice.
 
 ---
 
-## 25. The login warm-up walks every character, however many there are
+## 25. The login warm-up walks every character, however many there are — DONE 2026-09-06
 
 **Found 2026-09-06**, answering Alberto's question about a user with **210 characters** - three
 realms at seventy each. It is not the item name store that suffers; it is the walk that fills
@@ -1670,6 +1670,47 @@ would fix, and it is worth exactly the sessions after the first.
 command he did not need to type.
 
 ---
+
+### Built 2026-09-06, and it is the fingerprint the top of this entry designed
+
+Alberto asked for it before the release, in those words: *we do need a way to significantly
+optimise "login burden" for people with 100 - 200 - 300 alts.*
+
+**What the walk does now.** Before it picks a member up it asks `Database:PayloadMark` for a
+short mark of that member's record *as it sits on disk*, which costs a fold over a string and no
+decode at all. If the mark matches what the last walk wrote down, the member is stepped past. Up
+to `UI.WARM_SKIPS` of them per call - twenty - and a call that fills its cap ends there rather
+than reading a twenty-first record it has already been told is empty.
+
+**Measured in the harness**: twelve members cost **13 ticks** on a cold walk and **2** once
+settled. The arithmetic that follows from the cap is that a settled family of 300 costs
+`ceil(300 / 20)` ticks and a few more for members with no record at all - about sixteen seconds
+against five minutes.
+
+**A mark is written only where every name answered.** A member with an id the client would not
+name is left unmarked, so the next walk comes back for it - the walk is the only thing that ever
+asks. That makes the *second* session the one that pays on a truly cold client: the first learns
+the names and marks nobody, the second finds them all on disk and marks as it goes, and every
+login after that steps past the family. Two logins to warm, and then free.
+
+**The marks live inside the item-name store** - `FamilyDB.itemNames[locale].walked` - and not
+beside the members. A mark says *everything this record asks for is in this store*, so when the
+store is emptied, which is a new client build or the first session in a language, the record
+holding it is replaced whole and the marks go with it. Nothing has to remember to clear them.
+
+**Only where the record is a string.** Stored plain - the fallback with no compression libraries
+- the payload *is* the table and `Codec:Decode` hands it straight back, so there is no decode to
+skip and folding it would cost more than the walk. No mark means the member is read as before,
+which is also what happens to a linked family's members: theirs arrived over the wire as a table
+and were never encoded.
+
+**And the shortcut that was tried first is written down in L-061.** The mark folded only the
+length and the first and last 256 bytes, which is sixty times cheaper - 0.017 ms against 1.0 ms
+for a 30 KB record - and wrong: a member's language is four bytes in the middle, `enUS` and
+`frFR` are the same length, and the harness flips one. Three existing checks went red. The whole
+record is folded now and the number that made the shortcut tempting pays for the cap instead.
+
+Ten checks, eight mutations, all reddening.
 
 ## 26. The warm-up asks for names the reader's own language makes unnecessary — DONE 2026-09-06
 

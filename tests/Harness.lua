@@ -16850,6 +16850,11 @@ print("the recipe names, asked for before anybody clicks")
 	-- in the background with the game perfectly playable.
 	Family.Names.CachedItem = heldCached
 	Family.Names.CachedItem = function() return nil end
+	-- **And the marks go with the names.** A cold client is one whose store is empty, and the
+	-- walk's record of who it has already read through lives inside that store: emptying one
+	-- without the other would leave it stepping past members whose names it has just forgotten,
+	-- and every check below about work being found would pass or fail for the wrong reason.
+	FamilyDB.itemNames = nil
 
 	local crowd = {}
 	for index = 1, 30 do
@@ -16921,6 +16926,7 @@ print("the recipe names, asked for before anybody clicks")
 
 	-- And a small family is not told either: four seconds is not worth a sentence.
 	Family.Names.CachedItem = function() return nil end
+	FamilyDB.itemNames = nil
 	wipe(DEFAULT_CHAT_FRAME.messages)
 	Family.UI:ForgetRecipeWarmUp()
 
@@ -16963,6 +16969,192 @@ print("the recipe names, asked for before anybody clicks")
 	Family.Names.Item, Family.Names.CachedItem = held, heldCached
 	payload.professions = heldProfessions
 	Family.Database:SetPayload(key, payload)
+	Family.UI:ForgetRecipeWarmUp()
+end)()
+
+print()
+print("the walk steps past a character it has already read")
+
+-- **Backlog 25, the half that was measured and left.** The walk decodes one member per call and
+-- the timer fires once a second, so a family of 210 spends three and a half minutes of every
+-- login discovering that there is nothing to ask about - and Alberto asked for this before the
+-- release on behalf of users with one, two and three hundred characters.
+--
+-- A member's record is marked when it has been read all the way through and every name in it
+-- answered; the next walk compares the mark against the record as it sits on disk, without
+-- decoding it, and steps past. The marks live inside the item-name store, so emptying that -
+-- which is what a new client build does - empties them too.
+;(function()
+	local names = {}
+	for index = 1, 3 do
+		local id = 773000 + index
+		names[index] = id
+		ITEM_NAMES[id] = "Warm Thing " .. index
+	end
+
+	local function listed(itemIDs)
+		local recipes = {}
+		for _, id in ipairs(itemIDs) do recipes[#recipes + 1] = { itemID = id } end
+		-- Read in a language that is not this reader's, or the walk skips the record on
+		-- the fast path and this block would be measuring that instead.
+		return { professions = { [164] = { recipesSeen = time(), locale = "frFR",
+			recipes = recipes } } }
+	end
+
+	local folk = {}
+	for index = 1, 8 do
+		local who = string.format("Walked%02d-FireMaw", index)
+		folk[index] = who
+		Family.Database:SetMeta(who, { name = "Walked" .. index, realm = "Fire Maw",
+			level = 60, classFile = "MAGE", faction = "Alliance" })
+		Family.Database:SetPayload(who, listed(names))
+	end
+
+	-- What the walk actually reads. Counting `UI:Payload` rather than timing anything: the
+	-- decode is the cost, and a member never handed to it is a member never decoded.
+	local read = {}
+	local heldPayload = Family.UI.Payload
+	Family.UI.Payload = function(self, key)
+		read[#read + 1] = key
+		return heldPayload(self, key)
+	end
+
+	local function readCount(list)
+		local seen = 0
+		for _, key in ipairs(read) do
+			for _, who in ipairs(list) do
+				if key == who then seen = seen + 1 end
+			end
+		end
+		return seen
+	end
+
+	local function walk()
+		local rounds = 0
+		repeat
+			local _, finished = Family.UI:WarmRecipeNames(50)
+			rounds = rounds + 1
+		until finished or rounds > 900
+		return rounds
+	end
+
+	-- A cold client: no names on disk, and therefore no marks either.
+	FamilyDB.itemNames = nil
+	Family.UI:ForgetRecipeWarmUp()
+	local firstRounds = walk()
+	check("a cold walk reads every character's record", readCount(folk) == #folk,
+		tostring(readCount(folk)) .. " of " .. tostring(#folk))
+
+	-- The first walk asked for the names and this client answered at once, so every one of
+	-- them is marked and the next walk has nothing to read. A client that answers later
+	-- marks nobody on the first walk and everybody on the second, which is the case the
+	-- "would not give" check below is about - two logins to warm rather than one, and then
+	-- free.
+	read = {}
+	Family.UI:ForgetRecipeWarmUp()
+	local settledRounds = walk()
+	check("and the walk after it reads none of them", readCount(folk) == 0,
+		tostring(readCount(folk)) .. " read")
+	check("so a family that has not changed costs a fraction of the ticks it used to",
+		settledRounds < firstRounds,
+		tostring(settledRounds) .. " ticks against " .. tostring(firstRounds))
+
+	-- **A record that changed is read again**, which is the whole safety of the thing: the
+	-- mark is of the bytes on disk, so a scan since the last walk is a different mark.
+	Family.Database:SetPayload(folk[1], listed { names[1], names[2] })
+	read = {}
+	Family.UI:ForgetRecipeWarmUp()
+	walk()
+	check("a character whose record changed is read again", readCount { folk[1] } == 1,
+		tostring(readCount { folk[1] }))
+	check("and the ones beside it are still stepped past", readCount(folk) == 1,
+		tostring(readCount(folk)))
+
+	-- **And a change the mark could miss.** The first version of this folded only the length
+	-- and the first and last 256 bytes, which is sixty times cheaper and wrong: a member's
+	-- language is four bytes in the middle of the record, and flipping it left the mark
+	-- identical. Three checks in the block above went red, and this is the one that says why.
+	do
+		local flipped = listed { names[1], names[2] }
+		flipped.professions[164].locale = "frFR"
+		Family.Database:SetPayload(folk[3], flipped)
+		Family.UI:ForgetRecipeWarmUp()
+		walk()
+
+		flipped.professions[164].locale = "deDE"
+		Family.Database:SetPayload(folk[3], flipped)
+		read = {}
+		Family.UI:ForgetRecipeWarmUp()
+		walk()
+		check("a record that changed only in the middle, at the same length, is read again",
+			readCount { folk[3] } == 1, tostring(readCount { folk[3] }))
+	end
+
+	-- **A name the client would not give leaves the member unmarked.** Marking them would be
+	-- the last time that id was ever asked for: the walk is the only thing that asks.
+	Family.Database:SetPayload(folk[2], listed { 773999 })
+	Family.UI:ForgetRecipeWarmUp()
+	walk()
+	read = {}
+	Family.UI:ForgetRecipeWarmUp()
+	walk()
+	check("a character whose name the client would not give is read again next time",
+		readCount { folk[2] } == 1, tostring(readCount { folk[2] }))
+
+	-- **The cap.** Everybody is marked by now except the two above, so this measures the
+	-- stepping alone: held at two, a call steps past two and stops rather than reading a
+	-- third record it has already been told there is nothing in.
+	Family.Database:SetPayload(folk[1], listed(names))
+	Family.Database:SetPayload(folk[2], listed(names))
+	Family.Database:SetPayload(folk[3], listed(names))
+	Family.UI:ForgetRecipeWarmUp()
+	walk()
+	Family.UI:ForgetRecipeWarmUp()
+	walk()
+
+	do
+		local heldSkips = Family.UI.WARM_SKIPS
+		Family.UI.WARM_SKIPS = 2
+
+		Family.UI:ForgetRecipeWarmUp()
+		Family.UI:WarmRecipeNames(50)
+		local afterOne = Family.UI:RecipeWarmUpLeft()
+
+		-- Counted over the second call alone. The first member of the queue is whoever
+		-- sorts first across every fixture in this file, and one with meta and no payload
+		-- at all has no mark to match - it is read like any other, which is right and is
+		-- not what this is measuring.
+		read = {}
+		Family.UI:WarmRecipeNames(50)
+		local afterTwo = Family.UI:RecipeWarmUpLeft()
+
+		check("the cap steps past exactly what it is set to",
+			afterOne and afterTwo and (afterOne - afterTwo) == 2,
+			tostring(afterOne) .. " then " .. tostring(afterTwo))
+		check("and reads nothing on a call that filled it", #read == 0, tostring(#read))
+
+		Family.UI.WARM_SKIPS = heldSkips
+	end
+
+	-- **A new client build empties the names, and the marks go with them.** They live inside
+	-- the store rather than beside it precisely so that nothing has to remember this.
+	do
+		local heldBuild = GetBuildInfo
+		GetBuildInfo = function() return "1.16.0", "70000", "Sep 2026", 11600 end
+
+		read = {}
+		Family.UI:ForgetRecipeWarmUp()
+		walk()
+		check("a client at a build the store has never seen reads every record again",
+			readCount(folk) == #folk, tostring(readCount(folk)))
+
+		GetBuildInfo = heldBuild
+	end
+
+	Family.UI.Payload = heldPayload
+	for index = 1, 3 do ITEM_NAMES[773000 + index] = nil end
+	for _, who in ipairs(folk) do Family.Database:Forget(who) end
+	FamilyDB.itemNames = nil
 	Family.UI:ForgetRecipeWarmUp()
 end)()
 

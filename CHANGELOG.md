@@ -19,6 +19,14 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **Logging in is quick again however many characters you have.** Family used to read every
+  character's record once a second after login to learn what their recipes are called - four
+  seconds for a small family, and several minutes for somebody with two or three hundred
+  characters, at every login, almost all of it spent discovering there was nothing new to learn.
+  It now recognises a character whose record has not changed since it last read it and moves
+  straight past, twenty at a time. A character who has been played since is read as before, and
+  so is one whose names the game would not give.
+
 - **Ask the professions panel about one weapon skill.** Switch it to Weapon Skills and the filter
   beside it now offers weapons instead of professions - pick Swords and the panel comes down to
   whoever has them, headed by the weapon's name, and clicking that heading puts the family in

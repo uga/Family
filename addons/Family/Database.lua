@@ -179,6 +179,42 @@ function Database:Payload(key)
 	return data
 end
 
+-- A short mark of the record as it sits on disk, made without decoding it.
+--
+-- For the login walk, and for nothing else: it decodes one member per call for the whole family
+-- and, from the second session on, does it to discover that there is nothing to ask about.
+-- Comparing this against what was written down beside the names store tells it that in the time
+-- it takes to fold a string.
+--
+-- **Only where the record is a string**, which is the compressed path and the one that has a
+-- decode worth skipping. Stored plain - the fallback when the compression libraries are not
+-- loaded - the payload *is* the table, `Codec:Decode` hands it straight back, and folding it
+-- would cost more than the walk this is saving. No mark means the walk reads the member as it
+-- always did.
+--
+-- **Every byte, and the first version of this read only the ends.** Folding a 30 KB record
+-- costs 1.0 ms in lua5.1 on the machine this was written on and folding its first and last 256
+-- bytes costs 0.017 ms, so the ends looked like sixty times the walk for the same answer. They
+-- are not the same answer: a record whose length does not change and whose ends do not change
+-- reads as unchanged, and a member's language is exactly that - `enUS` and `frFR` are both four
+-- bytes, in the middle. The harness flips one and three checks went red, which is what the
+-- shortcut costs when it is wrong: a member's recipe names stop being fetched before the click.
+--
+-- So the whole record is folded, and the number that made the shortcut tempting pays for the
+-- cap instead. At 1.0 ms a record, twenty of them is 20 ms on a tick that today decodes a whole
+-- member - which is far more than 20 ms - so the cap is less work than the walk already does on
+-- every tick, and a family of any size is spread rather than folded at once.
+function Database:PayloadMark(key)
+	local entry = record(key, false)
+	if not entry or type(entry.payload) ~= "string" then return nil end
+
+	-- The codec and the length go in as well as the bytes. The same data written by two
+	-- codecs is two different strings, and a mark that did not say which would match across
+	-- a change of codec that rewrote every record.
+	return string.format("%s:%d:%s", tostring(entry.codec), #entry.payload,
+		Family.Codec:Fingerprint(entry.payload))
+end
+
 function Database:SetPayload(key, data)
 	local entry = record(key, true)
 	if not entry then return end
