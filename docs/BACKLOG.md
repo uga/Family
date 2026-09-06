@@ -1774,3 +1774,49 @@ ever rather than once a session, and only for lists in a language that is not th
 on screen explaining it.
 
 **Not built, and the recommendation is not to.** Written down so the numbers exist.
+---
+
+## 29. An unlearned profession is forgotten by the panels and remembered by the search
+
+**Asked 2026-09-06**: what happens when an alt unlearns a profession? Read rather than reasoned,
+and the two halves of the record answer differently.
+
+**Meta forgets it, at the next scan of that character.** `Scanners/Professions.lua` writes
+`skills = summary` and `Database:SetMeta` replaces a field rather than merging into it, so the
+whole skills table is the new one. Everything that reads skills loses the profession with it:
+
+- the summary's professions cells, which are built from `skillsOf(meta, …)`
+- the professions panel, whose loop is `for id, skill in pairs(skills)` and looks the recipe
+  record up by that id rather than the other way round
+- **the guild share grid**, which walks `meta.skills` at `Guild.lua:815` - so an unlearned
+  profession stops being offered and nothing about it crosses to a guildmate. The outward-facing
+  path is safe.
+
+**The payload remembers it for ever.** The recipe scan begins `local stored = payload.professions
+or {}` and only ever assigns into it; nothing prunes. That is right for its own purpose - a
+window opened once should not be forgotten because it was not open today - and wrong for two
+readers that walk the payload **without asking whether the member still has the skill**:
+
+- `Recipes.lua:328`, the crafters block: *who can make this*, on an item's tooltip
+- `Recipes.lua:592`, the whole-family recipe search
+
+So Family goes on saying a character can make things they can no longer make, on the two screens
+whose whole job is answering that question.
+
+**With one tell, and it is not a good one.** The rank in that block is read from meta -
+`rank = (meta.skills or {})[profession] and meta.skills[profession].rank` - so an unlearned
+profession lists the member with **no rank at all**, which is exactly how a member whose rank was
+never read appears. The two cases are indistinguishable on screen.
+
+**It never corrects itself**, short of re-learning the profession or forgetting the member.
+
+**What closing it would take.** Both walks already have `meta` in hand; each needs to skip a
+profession the member's skills no longer hold. The one subtlety is the key: a record written
+before professions had ids is filed under a word, so the test has to resolve it the way
+`Guild.lua:820` already does - `type(id) == "number" and id or Family:SkillLineFor(id)` - or an
+old record would be pruned from the search for having the wrong kind of key, which is a worse
+fault than the one being fixed.
+
+**Not built.** One question and it is a small slice; written down first because "Family says this
+character can make something they cannot" is a correctness claim and belongs on the record either
+way.
