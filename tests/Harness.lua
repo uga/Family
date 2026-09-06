@@ -24715,6 +24715,88 @@ print("the summary sorted by a column somebody chose")
 	Family.UI:Refresh()
 end)()
 
+print()
+print("a linked family's columns on the summary")
+
+-- Reported from play 2026-09-06 with a screenshot of the Crafting set: Malachia, an alchemist a
+-- linked family shares, sat in the grid with her transmute ready and every cell on her row blank.
+--
+-- The row test and the column builder disagreed about who the family is. `only` is asked of each
+-- member's meta and sees a sibling perfectly well, so she was listed; `craftingKinds` walked
+-- `Database:Members()` alone, so no column was ever made for a cooldown only she has - and a
+-- blank cell on this set means *never seen*, which is a different sentence from *there is no
+-- column for this*. L-052's class, and the third time in one day.
+;(function()
+	local held = FamilyDB.wide
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["cdfam"] = { name = "Brewer-Thunderstrike", grants = {}, siblings = {},
+			members = {
+				["Brewer-Thunderstrike"] = {
+					meta = { name = "Brewer", realm = "Thunderstrike",
+						classFile = "MAGE", level = 60, faction = "Alliance",
+						skills = { [171] = { rank = 300, maxRank = 300 } },
+						-- Ready: no moment to come back at.
+						craftCooldowns = { { spellID = 90002, profession = 171,
+							name = "Borrowed Transmute" } },
+						currencies = { { key = "borrowed-token",
+							name = "Borrowed Token", quantity = 7 } } },
+					payload = {},
+					seen = time(),
+				},
+			} } },
+	}
+	Family.Wide:SetSibling("cdfam", "Brewer-Thunderstrike", true)
+
+	local meta
+	for _, member in ipairs(Family.Wide:Siblings()) do
+		if member.key == Family.Wide:BorrowedKey("cdfam", "Brewer-Thunderstrike") then
+			meta = member.meta
+		end
+	end
+
+	-- Said out loud, because everything below is about a column and would pass for the wrong
+	-- reason if the cooldown had never crossed at all.
+	local kinds = meta and Family.Cooldowns:Crafting(meta) or {}
+	check("the sibling's cooldown is there to make a column for", #kinds == 1,
+		tostring(#kinds))
+
+	local label = kinds[1] and kinds[1].label
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	clickButton("Crafting")
+	Family.UI:Refresh()
+
+	local made = false
+	for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+		if column.key == "cd:" .. tostring(label) then made = true end
+	end
+	check("a cooldown only a linked family has still gets a column",
+		made, tostring(label))
+
+	-- `__summaryColumns` is the list *after* the room limit has been applied - the set says
+	-- out loud how many it left out - so a column being in it is a column the grid draws
+	-- from, which is the thing the report was about. Not read off the screen: by this point
+	-- in the file the window is not shown, and a check that asked would be measuring that.
+
+	-- The same fault one function above, which nobody has reported and which is the same
+	-- line of code: a currency only a sibling holds had no column either.
+	clickButton("Currencies")
+	Family.UI:Refresh()
+
+	local currency = false
+	for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+		if column.key == "cur:borrowed-token" then currency = true end
+	end
+	check("and so does a currency only they hold", currency)
+
+	clickButton("Overview")
+	Family.Wide:SetSibling("cdfam", "Brewer-Thunderstrike", false)
+	FamilyDB.wide = held
+	Family.UI:Refresh()
+end)()
+
 --------------------------------------------------------------------------------------------
 -- The harness loads what the game loads
 --

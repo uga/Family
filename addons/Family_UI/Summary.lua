@@ -1726,11 +1726,38 @@ local function currencyOf(meta, key)
 end
 
 -- Every currency anybody has been seen holding, and what the family has of each.
+-- Every member a column has to be able to answer for: our own, then the siblings a link shares.
+--
+-- **Columns are built from what the family holds and the rows below include siblings**, so a
+-- column only a sibling can fill has to exist or their row is blank - and a blank cell here is
+-- Family saying *never seen*, which is a different sentence from *there is no column for this*.
+-- Reported from play 2026-09-06: an alchemist shared by a linked family sat on the Crafting set
+-- with her transmute ready and nothing on her row, because no column was ever made for it.
+-- L-052's class again, and the third time in one day.
+--
+-- **Not the totals.** `gather` above deliberately leaves siblings out of the money and the bag
+-- slots, because that line says what *this* family has and adding somebody else's would produce
+-- a figure describing nobody. What a column is ordered by is a different question - the two
+-- readers below order columns by how much of a thing is held or how many hold it, and the answer
+-- should count everybody who will be drawn under them.
+local function everyMeta()
+	local metas = {}
+
+	for _, entry in pairs(Family.Database:Members()) do
+		if entry.meta then metas[#metas + 1] = entry.meta end
+	end
+
+	for _, member in ipairs(Family.Wide and Family.Wide:Siblings() or {}) do
+		if member.meta then metas[#metas + 1] = member.meta end
+	end
+
+	return metas
+end
+
 local function currenciesHeld()
 	local byKey, order = {}, {}
 
-	for _, entry in pairs(Family.Database:Members()) do
-		local meta = entry.meta or {}
+	for _, meta in ipairs(everyMeta()) do
 		if factionShown(meta.faction) then
 			for _, currency in ipairs(meta.currencies or {}) do
 				-- Records written before the scanner insisted on a key are already on
@@ -1788,8 +1815,7 @@ local CRAFTING_WIDTH = 120
 function craftingKinds()
 	local byLabel, order = {}, {}
 
-	for _, entry in pairs(Family.Database:Members()) do
-		local meta = entry.meta or {}
+	for _, meta in ipairs(everyMeta()) do
 		if factionShown(meta.faction) then
 			for _, kind in ipairs(Family.Cooldowns:Crafting(meta, "summary.crafting",
 				function() UI:Refresh() end)) do

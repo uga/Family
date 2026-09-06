@@ -2281,3 +2281,39 @@ it 4* - Eccebombo at 359, Rolando of Serena at 125, Spazzacamino of Serena at 9,
 Rolando - so both siblings arrive and both are named with the family they belong to, which is the
 half that stops a rank against a name reading as somebody to log into.
 
+---
+
+## 34. A sibling's crafting cooldown has a row and no column — DONE 2026-09-06
+
+**Reported 2026-09-06**, hours after entry 33 and the same class again: *Malachia is an alchemist,
+but does not show ready for the transmute (it is, indeed!).* A screenshot of Summary / Crafting
+with Malachia listed under **Serena Thunderstrike (2)** and every cell on her row blank, while
+Rolando one line above her showed a salt shaker ready.
+
+**Both halves of the set were right on their own.** The set narrows itself with
+`only = function(meta) return #Family.Cooldowns:Crafting(meta) > 0 end`, which is asked of each
+member's meta and sees a sibling perfectly well - so she was listed, which is the panel saying she
+has one. `craftingKinds` walked `Database:Members()`, so no column was ever built for a cooldown
+only she has. The cell function and the sort beside it were fine: both take a meta.
+
+**And a blank cell here already means something else.** The caption under this set says *blank
+means Family has not seen that member's, which is not the same as nought* - so a member with a row
+and no column is drawn exactly like a member nobody has watched. Third time in one day that a
+half-blind reader produced the careful answer's own words.
+
+**The neighbour had it too, unreported.** `currenciesHeld` is the same line of code one function
+up: a currency only a sibling holds had no column either. Both now read one `everyMeta()` -
+our own members, then the siblings a link shares.
+
+**Not the totals.** `gather` deliberately leaves siblings out of the money and bag-slot figures,
+because that line says what *this* family has. What a column is ordered by is a different question:
+both readers order columns by how many hold a thing, and that should count everybody drawn under
+them.
+
+*And this is the entry 33 note coming due.* That entry wrote down `Family/Cooldowns.lua:334` as
+worth a reading on these grounds. It was the wrong line - `Cooldowns:Ready()`, the login message,
+which is about our own characters by design - and the right one was three functions away in the
+summary. The note was still what made this quick.
+
+Four checks, one mutation, reddening both column checks.
+

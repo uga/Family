@@ -19,6 +19,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **A linked family's cooldowns and currencies get their own columns.** On the summary's Crafting
+  and Currencies sets, a character shared with you was listed but had nothing on their row unless
+  somebody in your own family happened to hold the same thing - so a friend's alchemist showed up
+  with her transmute ready and an empty line. The columns are now built from everybody the grid
+  draws.
+
 - **A linked family's characters appear in "Can make it" again.** Hovering a recipe listed who in
   your own family and your guild could make it, and quietly left out the characters a linked
   family shares with you - even though the professions panel one click away had them, and even

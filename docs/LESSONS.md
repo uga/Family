@@ -2012,6 +2012,27 @@ default rather than by remembering.
 mutations fail: emptying the gatherer, and putting `Database:Members` back in each of the two
 readers, and dropping the family from the name.
 
+### And a third shape the same day: the row test and the column builder disagreeing
+
+Reported hours later, from the summary's Crafting set: an alchemist a linked family shares sat in
+the grid with her transmute ready and every cell on her row blank.
+
+**Both halves were right on their own.** The set's `only` test is asked of each member's meta and
+sees a sibling perfectly well, so she was listed. `craftingKinds` walked `Database:Members()`, so
+no column was ever built for a cooldown only she has. A member with a row and no column is drawn
+exactly like a member Family has never seen hold one - and this set says so in its own caption,
+*blank means Family has not seen that member's* - so the wrong answer arrived wearing the right
+answer's words for the third time.
+
+**The shape to look for is now two questions rather than one.** Wherever a panel decides *who is
+listed* and *what columns exist* in two places, both have to be asked about the same family. The
+neighbouring `currenciesHeld` had the identical line and the identical hole, unreported: a
+currency only a sibling holds had no column either. Both now read one `everyMeta()`.
+
+*Not the totals.* `gather` deliberately leaves siblings out of the money and bag-slot figures,
+because that line describes this family. What a column is *ordered* by is a different question and
+counts everybody who will be drawn under it.
+
 ## L-053 — The stub that agreed with the mistake
 
 Family's quest scanner asked for a quest's id two ways: `C_QuestLog.GetQuestIDForLogIndex`, and
