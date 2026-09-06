@@ -29,6 +29,9 @@ is a decision rather than an afternoon of archaeology.
   quest there showed only the quest's own text; it now lists that character's objectives under it,
   the way the single-character page already did.
 
+- **A druid's flight form counts as flying.** It is a spell rather than a mount, so it was not in
+  the mount journal and a druid with no flying mount was being told they could not fly.
+
 - **The Mount column is right on Mists of Pandaria too.** There the game gives the speed to your
   riding skill rather than to the mount, so buying Master Riding makes every mount you already own
   faster - and Family now reads it that way, from your riding rank and what your mount journal lets

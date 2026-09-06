@@ -16077,6 +16077,41 @@ print("how fast a character can get about")
 			meta.mount == 100 and meta.mountFly == nil,
 			tostring(meta.mount) .. " " .. tostring(meta.mountFly))
 
+		-- **A druid, whose wings are not in the journal at all.** Reported from play by one
+		-- who knows Swift Flight Form and owns no flying mount: the journal alone said he
+		-- could not fly. 40120 is that form, and it carries aura 201 like every other thing
+		-- that lifts a character off the ground.
+		do
+			local heldPayload = Family.Database:Payload(key)
+			local payload = heldPayload or {}
+			local heldSpells = payload.spells
+			payload.spells = { { name = "Balance", spells = { 40120 } } }
+			Family.Database:SetPayload(key, payload)
+
+			Family.Database:SetMeta(key, { skills = { [762] = { rank = 225 } } })
+			Family.Mounts:Recompute(key)
+
+			local meta = Family.Database:Meta(key)
+			check("a druid who knows a flight form flies, with no flying mount at all",
+				meta.mount == 100 and meta.mountFly == 150,
+				tostring(meta.mount) .. " " .. tostring(meta.mountFly))
+
+			-- And a form is something to ride in its own right. With nothing usable in the
+			-- journal at all, a reading that let the form set the wings but not the fact
+			-- that there is anything to fly on would answer nothing.
+			local wasUsable = JOURNAL[1][3]
+			JOURNAL[1][3], JOURNAL[2][3], JOURNAL[3][3] = false, false, false
+			Family.Mounts:Recompute(key)
+			meta = Family.Database:Meta(key)
+			check("and it is something to ride even with an empty journal",
+				meta.mount == 100 and meta.mountFly == 150,
+				tostring(meta.mount) .. " " .. tostring(meta.mountFly))
+			JOURNAL[1][3], JOURNAL[2][3], JOURNAL[3][3] = wasUsable, true, false
+
+			payload.spells = heldSpells
+			Family.Database:SetPayload(key, payload)
+		end
+
 		-- Collected is not usable. The third row is a flyer the account owns and this
 		-- character cannot ride, and reading that one would say they fly.
 		JOURNAL[2][3] = false

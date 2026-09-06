@@ -1977,6 +1977,13 @@ true for 7** (the account has them) and **field 5 is true for 3** (this characte
 The four in between are flyers the account owns and a rank-150 paladin cannot ride, so field 5
 already takes the riding skill into account - it is the one that answers per character.
 
+**A druid's wings are not in the journal**, which a druid who knows Swift Flight Form and owns no
+flying mount showed straight away. A flight form is a spell, and what the forms carry is aura
+**201, enable-flight** - 115 spells on Mists, both forms among them. On that build the rung
+supplies the number the form itself does not, so the two together answer where neither could
+alone. It counts as something to ride as well as something to fly with: a druid with a form and no
+mount can still get about.
+
 The journal is account-wide but filters to the character who opens it: a druid does not see a
 paladin's class mounts. (The window's own *Total Mounts 5* matches neither count; what it totals
 has not been established.)

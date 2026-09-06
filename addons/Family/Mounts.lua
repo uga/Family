@@ -95,7 +95,7 @@ end
 -- which is what this character can ride. The four in between are flyers the account has and a
 -- rank-150 paladin cannot, so field 5 already takes the riding skill into account and is the only
 -- one that answers per character.
-function Mounts:FromJournal(rank)
+function Mounts:FromJournal(rank, payload)
 	local journal = _G.C_MountJournal
 	if not (journal and journal.GetMountIDs and journal.GetMountInfoByID) then return nil end
 
@@ -114,6 +114,24 @@ function Mounts:FromJournal(rank)
 		if usable then
 			any = true
 			if spell and flies[spell] then wings = true end
+		end
+	end
+
+	-- **And a druid, whose wings are not in the journal at all.** A flight form is a spell in
+	-- the book, so a reading that asked the journal alone said a druid could not fly - reported
+	-- from play by one who knows Swift Flight Form and owns no flying mount. What the forms
+	-- carry is aura 201, enable-flight, and the rung above supplies the number the form does
+	-- not. It counts as something to ride, too: a druid with a form and no mount can still get
+	-- about.
+	local lifts = Family.FlightSpells
+	if type(lifts) == "table" then
+		for _, school in ipairs((payload or {}).spells or {}) do
+			for _, id in ipairs(school.spells or {}) do
+				if lifts[id] then
+					any, wings = true, true
+					break
+				end
+			end
 		end
 	end
 
@@ -146,7 +164,7 @@ function Mounts:Recompute(key)
 	local meta = Family.Database:Meta(key)
 	local riding = meta and meta.skills and meta.skills[762]
 
-	local ground, flying = self:FromJournal(riding and riding.rank)
+	local ground, flying = self:FromJournal(riding and riding.rank, payload)
 	if not ground then ground, flying = self:Fastest(payload) end
 	Family.Database:SetMeta(key, {
 		mount = ground or Family.CLEAR,

@@ -92,6 +92,11 @@ LADDER_BUILDS = {"Mists of Pandaria Classic"}
 
 MOUNTED_SPEED_AURA = 32
 
+# A druid's flight form is not a mount and is not in the journal, so a reading that asked the
+# journal alone said a druid could not fly. What the forms do carry is aura 201, enable-flight -
+# 115 spells on Mists, both forms among them - and the rung supplies the number the form does not.
+ENABLE_FLIGHT = 201
+
 
 def ladder_of(build_id, effects):
     """The five rungs, and which mount types can use the flying ones."""
@@ -138,7 +143,16 @@ def ladder_of(build_id, effects):
         if spell and row.get("MountTypeID") in flying_types:
             flies[spell] = True
 
-    return {rank: (g, a) for rank, (_, g, a) in ladder.items()}, flies
+    # And anything at all that lets a character leave the ground, which is how a druid's form
+    # is found: it is a spell in the book rather than a row in the journal.
+    wings = {}
+    for spell, kinds in effects.items():
+        for kind, _ in kinds:
+            if kind == ENABLE_FLIGHT:
+                wings[spell] = True
+                break
+
+    return {rank: (g, a) for rank, (_, g, a) in ladder.items()}, flies, wings
 
 
 def path_for(table, build):
@@ -172,7 +186,7 @@ def read(table, build):
 
 def build():
     speeds, flight, items, dropped = {}, {}, {}, 0
-    ladder, flies = {}, {}
+    ladder, flies, wings = {}, {}, {}
 
     for game, build_id in BUILDS.items():
         here, air = {}, {}
@@ -202,7 +216,7 @@ def build():
                 effects.setdefault(int(row["SpellID"]), []).append(
                     (int(row.get("EffectAura") or 0),
                      int(row.get("EffectBasePoints") or 0)))
-            ladder, flies = ladder_of(build_id, effects)
+            ladder, flies, wings = ladder_of(build_id, effects)
 
         kept = 0
         for spell, percent in here.items():
@@ -315,6 +329,18 @@ def build():
             lines.append("\t[%d] = true," % spell)
         lines += ["}", ""]
 
+        lines += [
+            "-- spell -> knowing it is enough to leave the ground",
+            "--",
+            "-- A druid's flight form is not a mount and is not in the journal, so a reading that",
+            "-- asked the journal alone said a druid could not fly. The forms carry aura 201,",
+            "-- enable-flight, and the rung supplies the number the form itself does not.",
+            "Family.FlightSpells = {",
+        ]
+        for spell in sorted(wings):
+            lines.append("\t[%d] = true," % spell)
+        lines += ["}", ""]
+
     with open(OUT, "w", encoding="utf-8") as handle:
         handle.write("\n".join(lines))
 
@@ -322,7 +348,8 @@ def build():
           % (len(speeds), len(items), dropped))
     print("  %d of them fly" % len(flight))
     if ladder:
-        print("  %d riding rungs, %d mounts whose type can fly" % (len(ladder), len(flies)))
+        print("  %d riding rungs, %d mounts whose type can fly, %d spells that lift"
+              % (len(ladder), len(flies), len(wings)))
 
 
 if __name__ == "__main__":
