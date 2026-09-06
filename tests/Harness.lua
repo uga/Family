@@ -23606,17 +23606,72 @@ print("the client that answers about professions and about skills both")
 		skills[152] ~= nil and skills[152].rank == 150,
 		skills[152] and tostring(skills[152].rank) or "not recorded at all")
 
-	-- **And weapon ranks are dropped there**, which is the one place a build test is the honest
-	-- test. Cataclysm took weapon skills out: no Skills tab on the character sheet, and the
-	-- spellbook shows a passive naming which weapons a class may hold and no number anywhere. The
-	-- API still hands ranks back and they govern nothing, so recording them would be inventing.
-	check("weapon ranks are not, because that build stopped having them",
-		skills[43] == nil, skills[43] and tostring(skills[43].rank))
+	-- **And the weapon ranks survive**, on this build, with that call answering.
+	--
+	-- This check used to say the opposite and was the bug. Weapon ranks were dropped wherever
+	-- the modern profession call answered - written as though answering were the same thing as
+	-- being Mists - and `GetProfessions` is present and answering on Classic Era, which is one
+	-- of the two builds where weapon skills are real. The harness agreed with it because the
+	-- fixture stubs that call and never moves the build, so "the modern call answers" and "this
+	-- is Mists" were the same condition here and are not the same condition in the game.
+	--
+	-- `GetProfessions` was measured on a live Classic Era client 2026-09-06 and answers there,
+	-- which is what makes this a real case rather than a hypothetical one. L-059.
+	check("weapon ranks survive a client that answers the modern way but still has them",
+		skills[43] ~= nil and skills[43].rank == 300,
+		skills[43] and tostring(skills[43].rank) or "dropped")
+
+	-- **And are dropped where the game stopped having them**, which is a fact about the
+	-- expansion and is asked of `Capabilities` rather than of a symbol. Cataclysm took weapon
+	-- skills out: Mists has no skill sheet at all, and Alberto confirmed from play the same day
+	-- that its weapon skills carry no rank. The API still hands numbers back, they govern
+	-- nothing and are shown nowhere, so recording them would be inventing a fact.
+	--
+	-- Driven by moving the build and asking Capabilities again, which is what a different
+	-- client actually is. Setting `Capabilities.expansion` alone would leave `can` behind.
+	do
+		local heldBuild = GetBuildInfo
+		GetBuildInfo = function() return "5.5.4", "69078", "Aug 2026", 50504 end
+		Family.Capabilities:Detect()
+		check("and that build is read as one that has no weapon skills",
+			Family.Capabilities.can.weaponSkills == false,
+			tostring(Family.Capabilities.can.weaponSkills))
+
+		Family.Professions:Scan(true)
+		check("so weapon ranks are dropped there",
+			(Family.Database:Meta(key).skills or {})[43] == nil,
+			tostring(((Family.Database:Meta(key).skills or {})[43] or {}).rank))
+
+		GetBuildInfo = heldBuild
+		Family.Capabilities:Detect()
+		check("and this build is read as one that has them",
+			Family.Capabilities.can.weaponSkills == true,
+			tostring(Family.Capabilities.can.weaponSkills))
+	end
+
+	-- **And a capability that has not answered keeps them**, which is §2.2 pointed at this
+	-- decision: not knowing whether this game has weapon skills is not a reason to throw away
+	-- ranks that are sitting on the sheet being read. The scanner runs before `Detect` on a
+	-- client that loads it in the other order, and the difference between "no" and "nothing
+	-- said" is a character's whole weapons row.
+	--
+	-- Written because the mutation that turns the test into `not (can and can.weaponSkills)` -
+	-- which reads the same in English and answers differently on silence - reddened nothing at
+	-- all: every fixture here has a detected client.
+	do
+		local held = Family.Capabilities.can
+		Family.Capabilities.can = {}
+		Family.Professions:Scan(true)
+		check("a capability that says nothing about weapon skills keeps them",
+			(Family.Database:Meta(key).skills or {})[43] ~= nil,
+			"dropped on a client that had not been asked yet")
+		Family.Capabilities.can = held
+	end
 
 	_G.GetProfessions, _G.GetProfessionInfo = nil, nil
 	Family.Professions:Scan(true)
 
-	check("and they come back on a client that still shows them",
+	check("and they are still there with the modern call gone as well",
 		(Family.Database:Meta(key).skills or {})[43] ~= nil)
 
 	-- **And the scan leaves how fast they travel right**, which on this build depends on the

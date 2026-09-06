@@ -101,6 +101,26 @@ local EXPECTED = {
 	-- `100%` where the game has no such thing to have - a dash promising something Era never
 	-- offers is worse than saying nothing.
 	flying       = { [VANILLA] = false, [TBC] = true,  [MISTS] = true  },
+
+	-- Whether weapon skills are a thing this game has. Cataclysm took them out: on Era and
+	-- Burning Crusade the skill sheet has a *Weapon Skills* heading with a rank and a maximum
+	-- under it, and on Mists there is no skill sheet at all - the character pane is
+	-- *Spellbook & Abilities*, and what it says about weapons is a passive naming which ones
+	-- a class may hold, with no number anywhere.
+	--
+	-- **This is the entry this whole file exists for, and the scanner was deciding it the
+	-- other way until 2026-09-06**: it asked whether the client carried `GetProfessions` and
+	-- dropped weapon ranks where it did. `GetProfessions` is present and answering on Classic
+	-- Era - measured on a live client that day, `type` function and a slot index back - and
+	-- Era is one of the two builds where weapon skills are real. So every Era and Burning
+	-- Crusade character scanned after that test shipped lost the lot.
+	--
+	-- **Found while chasing something else**, and worth saying so: the screenshot that started
+	-- it was a Mists client, where dropping them was already the right answer, and the fault
+	-- it looked like was not this one. The API still hands ranks back on Mists (`Axes 166/245`
+	-- on a paladin) and they govern nothing and are shown nowhere, which is why the answer
+	-- there is no.
+	weaponSkills = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.
@@ -111,6 +131,10 @@ local CONFIRMED = {
 	guildBank    = {                   [TBC] = true, [MISTS] = true },
 	keyring      = { [VANILLA] = true, [TBC] = true                 },
 	glyphs       = {                                 [MISTS] = true },
+	-- 2026-09-06, from Alberto: the skill sheet photographed on Era and on Burning Crusade
+	-- with its three headings and a Weapon Skills rank under the last of them, and Mists
+	-- opened on a death knight to find no skill sheet at all.
+	weaponSkills = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
 }
 
 --------------------------------------------------------------------------------------------

@@ -297,6 +297,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Weapon skills are recorded again on Era and Burning Crusade.** They had stopped: the check that
+  decides whether this version of the game still has weapon skills was asking the wrong question,
+  and answered "no" on the two versions that do. A character's weapons come back the next time you
+  log in on them. Mists is unchanged - it has no weapon skills, and the numbers the game still
+  reports there govern nothing.
+
 - **Choosing Lockpicking on the professions filter no longer empties the panel.** It was offered in
   the list and matched nobody, so picking it left every rogue hidden and a note underneath saying
   how many. Ordering the panel by it did nothing for the same reason; both work now.

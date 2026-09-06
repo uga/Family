@@ -2218,3 +2218,46 @@ the correction inline saying what it cost, so the next session that reads it fir
 on to the headings. Entry 13's heading now carries its `— DONE` marker like every other finished
 entry, which is the field that was actually missing: had it been there, the wrong recommendation
 would have died on the `grep '^## '` that follows.
+
+---
+
+## L-059 — A symbol asked instead of a fact, and a cause proposed before the client was known
+
+Two mistakes on one screenshot, and they are worth keeping apart because only one of them is in
+the code.
+
+**The one in the code.** `Scanners/Professions.lua` decided whether to keep weapon-skill ranks
+with `readSkillList(modern ~= nil)` — drop them wherever the modern profession call answers. That
+was written for Mists, where Cataclysm had removed weapon skills, and it reads as a build test
+without being one. `GetProfessions` was measured on a live Classic Era client on 2026-09-06 and
+answers there: `type` is `function` and it hands back a slot index. Era and Burning Crusade are
+the two builds where weapon skills are real, so every character scanned on either of them after
+that test shipped lost every weapon rank they had.
+
+`Capabilities.lua` exists to stop exactly this, and says so in its own comment: *"The client
+carrying the call is a fact about the build, not about the game."* The scanner was two files away
+from the answer and asked a symbol instead. It now asks `Capabilities.can.weaponSkills`, which is
+an expansion fact with a confirmed marker; a capability that has not answered keeps the ranks,
+because not knowing is not a reason to throw away numbers that are on the sheet being read.
+
+**The one in the session, which cost more.** The screenshot showed three characters, one with his
+weapon skills and two without. I read that as Family dropping them and went looking for the line
+that did — and found one, and it was genuinely wrong, which made it feel like the answer. It was
+not: **that client was Mists**, where dropping them is correct. The one character who had them had
+simply not been logged in since the record was last written, and the numbers on him are figures
+the server still carries from when that realm was Burning Crusade and then Cataclysm, which the
+Mists game disregards. Alberto is the one who said so.
+
+I never asked which client the screenshot came from. Three probes went out — what is stored, what
+the sheet says, whether `GetProfessions` exists — and every one of them was a question about
+mechanism. The first question should have been *which game is this*, because every answer the
+other three could give means something different on each of the three builds, and `/family hearth`
+prints it in one line.
+
+**The check that now catches the code half.** The harness fixture stubbed `GetProfessions` and
+never moved the build, so "the modern call answers" and "this is Mists" were one condition here
+and are two conditions in the game — and the check written over it asserted the bug, in a comment
+that said a build test was the honest test beside code that did not do one. The block now moves
+`GetBuildInfo`, calls `Capabilities:Detect()` again and asks each build separately: Era keeps its
+weapon ranks with that call answering, Mists drops them, and a capability that says nothing keeps
+them. Four mutations, all reddening.

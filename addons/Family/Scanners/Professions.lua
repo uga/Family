@@ -230,7 +230,23 @@ end
 -- kept: its number is not shown either, but it is what decides how fast that character flies.
 function Professions:ReadRanks()
 	local modern = readModernProfessions()
-	local skills, everything = readSkillList(modern ~= nil)
+
+	-- **Whether this game has weapon skills at all**, which is a fact about the game and not
+	-- about the client, and is therefore `Capabilities`'s question rather than this file's.
+	--
+	-- It was `modern ~= nil` - drop them wherever the modern profession call answers - and
+	-- that is precisely the reasoning `Capabilities.lua` was written to stop. `GetProfessions`
+	-- is present and answering on Classic Era - measured on a live client 2026-09-06 - and Era
+	-- is one of the two builds where weapon skills are real, so every character scanned there
+	-- lost the lot. L-059, which is also about how this was found: chasing a screenshot of a
+	-- Mists client, where dropping them was already right and the fault was something else.
+	--
+	-- An unanswered capability keeps them. Not knowing whether this game has weapon skills is
+	-- not a reason to throw away ranks that are sitting on the sheet being read.
+	local can = Family.Capabilities and Family.Capabilities.can
+	local dropWeapons = can ~= nil and can.weaponSkills == false
+
+	local skills, everything = readSkillList(dropWeapons)
 
 	-- The modern call wins where the two overlap: it hands back the skill line id and the
 	-- client's own picture, and the list has neither.
