@@ -1933,6 +1933,17 @@ because no sheet will ever list it. At the next scan with that window shut it is
 the first rule read that as an unlearn and deleted it. Something that has never been on a sheet
 cannot be missed from one.
 
+**Rogue poisons were named as a second example of that, in this file and in the scanner, and it
+was wrong.** Alberto sent the Skills tab of an Era rogue on 2026-09-06: *Class Skills* -
+Assassination, Combat, **Lockpicking**, **Poisons**, Subtlety - sits on the same list as
+*Professions* and *Secondary Skills*, and that list is what the scanner reads. So poisons comes
+off the sheet like anything else. Whether runeforging is the same on Mists is unconfirmed and he
+has a death knight to look with.
+
+**The rule did not care, and that is the property worth keeping.** `onSheet` records what a
+client's sheet actually said, so it is right about poisons whichever of us was right about them,
+and it will be right about runeforging without anybody having to settle it first.
+
 The mark is set once and never unset, which is not decoration: a scan whose sheet could not be
 read at all, with that profession's own window open, would otherwise clear it - and one bad read
 would disable the rule for that profession for ever.

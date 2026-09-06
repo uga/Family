@@ -634,8 +634,8 @@ function Professions:ScanNow(includeRecipes)
 
 	-- **Which of these came off the skill sheet**, captured here because in twenty lines it
 	-- will no longer be knowable: the recipe read below adds a profession the sheet did not
-	-- have - rogue poisons, a death knight's runeforging - straight into `skills`, and from
-	-- then on the two kinds are indistinguishable.
+	-- have - a death knight's runeforging - straight into `skills`, and from then on the two
+	-- kinds are indistinguishable.
 	--
 	-- It is what makes the pruning further down safe. A profession that has never been on a
 	-- sheet cannot be missed from one, so its absence says nothing and it is never dropped;
@@ -686,10 +686,19 @@ function Professions:ScanNow(includeRecipes)
 			-- that this is a profession, and skinning has no recipes to show for it.
 			seenProfessions()[recipeName] = true
 
-			-- A profession the skill list does not carry: rogue poisons, and a death
-			-- knight's runeforging. Recorded from whatever the window itself said,
-			-- which for runeforging is nothing at all - so it is kept with no rank
-			-- rather than invented at nought out of nought.
+			-- A profession the skill list does not carry: a death knight's
+			-- runeforging. Recorded from whatever the window itself said, which for
+			-- runeforging is nothing at all - so it is kept with no rank rather than
+			-- invented at nought out of nought.
+			--
+			-- **Rogue poisons used to be named here and it was wrong.** Alberto sent
+			-- the Skills tab of an Era rogue on 2026-09-06: Lockpicking and Poisons
+			-- are both on it, under *Class Skills*, beside Professions and Secondary
+			-- Skills - which is the same list this scanner reads. So they come off the
+			-- sheet like anything else and this branch never fires for them. Whether
+			-- runeforging is the same on Mists is unconfirmed; nothing below depends
+			-- on the answer, because what is recorded is what that client's sheet
+			-- actually said rather than what this comment believes.
 			if not skills[recipeName] then
 				skills[recipeName] = {
 					rank = line and tonumber(line.rank) or nil,
@@ -772,11 +781,15 @@ function Professions:ScanNow(includeRecipes)
 	--
 	-- **And only a profession the sheet has ever carried**, which is `onSheet` above and is
 	-- the half the first version got wrong. A death knight's runeforging is a window full of
-	-- things to make and no skill anywhere; rogue poisons are the same shape. Both are
-	-- injected into `skills` from what their window said, precisely because no sheet will
-	-- ever list them - so at the next scan with that window shut they are missing, and a rule
-	-- that read absence as an unlearn would delete them. Something that has never been on a
-	-- sheet cannot be missed from one.
+	-- things to make and no skill anywhere: it is injected into `skills` from what its window
+	-- said, precisely because no sheet lists it - so at the next scan with that window shut it
+	-- is missing, and a rule that read absence as an unlearn would delete it. Something that
+	-- has never been on a sheet cannot be missed from one.
+	--
+	-- **And `onSheet` is measured rather than believed**, which is the point of it being a
+	-- mark and not a list. This comment named rogue poisons as a second example and was wrong
+	-- about it - they are on an Era rogue's sheet, under *Class Skills* - and the rule did not
+	-- care, because it records what that client's sheet actually said.
 	--
 	-- A rule rather than a list of exceptions, which is what it has to be: a list naming
 	-- runeforging is wrong the first time a class or an expansion brings a second.
