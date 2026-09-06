@@ -39,6 +39,11 @@ is a decision rather than an afternoon of archaeology.
   on a class mount counts, and so does a character carrying one they bought. It is shared with a
   linked family alongside the rest of what a character is.
 
+- **Mists characters keep their riding skill.** On that game Family was reading one list where
+  there are two, so anybody with a profession lost their riding skill and every weapon skill
+  without a word. Weapon skills stay absent there on purpose - that game took them out, and the
+  numbers the client still holds mean nothing.
+
 - **Weapon skills are recorded.** Swords, daggers, unarmed and the rest, at whatever rank each
   character has them. They are kept apart from professions, the way the game's own windows keep
   them apart, so the professions list is still a list of professions.

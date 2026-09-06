@@ -1941,3 +1941,43 @@ of Alberto's numbers were right, for different builds.
 **What it cannot see** is a permission whose mount was destroyed - backlog entry 19, named and
 deferred the day it was built.
 
+### Mists has the old skill list as well as the new call, measured 2026-09-06
+
+The comment over Family's modern professions reader said *Mists does not have the skill list at
+all*. It has it. `GetNumSkillLines` and `GetSkillLineInfo` answered on a live Mists client with
+fifteen rows, riding and every weapon among them:
+
+    Riding 225/225   Daggers 290/290   Defense 290/290   Polearms 1/290   Unarmed 290/290
+
+`GetProfessions` answers for **six slots and only six** - two primaries, archaeology, fishing,
+cooking, first aid - so a reader that takes it and stops loses everything else. That is what a
+Mists paladin showed: five skills recorded, no riding, no weapons. A Mists druid on the same
+client kept both, **by accident** - he has no professions at all, the modern call answered
+nothing, and the old path ran as the fallback.
+
+**But weapon ranks on that build are not a fact any more.** Cataclysm took weapon skills out of
+the game: there is no Skills tab on the character sheet, and the spellbook carries a single
+passive naming which weapons a class may hold, with no number anywhere. The API still hands back
+`Axes 166/245`; it governs nothing and is shown nowhere. **Riding is the opposite and is kept** -
+its number is not shown either, but it is what decides how fast that character flies.
+
+### The mount journal on Mists, measured 2026-09-06
+
+`C_MountJournal` answers there: `GetNumDisplayedMounts` 258, `GetMountIDs` 520 entries. A row from
+`GetMountInfoByID` reads
+
+    Brown Horse         458    132261  false  false  0  false  true  1  false  false  6   false
+    Striped Nightsaber  10793  132225  false  true   0  false  true  1  false  true   34  false
+    Summon Charger      23214  132226  false  true   0  false  true  1  false  true   84  false
+
+The **second** return is the summoning spell, which is the key `MountSpeeds` and `MountFlight` are
+already written in - 458, 10793 and 23214 are all in them. Two fields separate an owned mount from
+the rest, and counting how many rows carry each on that paladin says what they are: **field 11 is
+true for 7** (the account has them) and **field 5 is true for 3** (this character can use them).
+The four in between are flyers the account owns and a rank-150 paladin cannot ride, so field 5
+already takes the riding skill into account - it is the one that answers per character.
+
+The journal is account-wide but filters to the character who opens it: a druid does not see a
+paladin's class mounts. (The window's own *Total Mounts 5* matches neither count; what it totals
+has not been established.)
+

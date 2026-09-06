@@ -142,22 +142,9 @@ local function readModernProfessions()
 	return skills
 end
 
--- Two lists, and the difference between them matters.
---
---   skills     the professions, which is what the panels show.
---   everything every skill line the member has, professions or not.
---
--- The second exists because a trade window has to be checked against something before its
--- contents are believed - the Craft frame is shared with a hunter's pet training - and
--- checking it against the professions is what deadlocked the secondaries.
-function Professions:ReadRanks()
-	local modern = readModernProfessions()
-	if modern then
-		local everything = {}
-		for name in pairs(modern) do everything[name] = true end
-		return modern, everything
-	end
-
+-- Everything the old skill list will say. `dropWeapons` is set on the builds where the game has
+-- stopped showing weapon ranks - see `ReadRanks` below.
+local function readSkillList(dropWeapons)
 	local skills, everything = {}, {}
 
 	local wasCollapsed = collapsedHeaders()
@@ -194,6 +181,10 @@ function Professions:ReadRanks()
 
 		if name and not isHeader then everything[name] = true end
 
+		if dropWeapons and identified and identified.weapon then
+			isProfession = false
+		end
+
 		if name and not isHeader and isProfession then
 			skills[name] = {
 				rank = tonumber(rank) or 0,
@@ -207,6 +198,49 @@ function Professions:ReadRanks()
 	end
 
 	restore(wasCollapsed)
+	return skills, everything
+end
+
+-- Two lists, and the difference between them matters.
+--
+--   skills     the professions, which is what the panels show.
+--   everything every skill line the member has, professions or not.
+--
+-- The second exists because a trade window has to be checked against something before its
+-- contents are believed - the Craft frame is shared with a hunter's pet training - and
+-- checking it against the professions is what deadlocked the secondaries.
+--
+-- **Both lists, where the client has both**, which it does on Mists and where this used to
+-- return the modern one and stop. That call answers for six slots and only six - two primaries,
+-- archaeology, fishing, cooking, first aid - so a Mists paladin lost his riding skill and every
+-- weapon, and a Mists druid kept them **by accident**: he has no professions at all, the modern
+-- call answered nothing, and the old path ran as the fallback. Measured from play 2026-09-06 on
+-- one of each.
+--
+-- The comment that used to sit over the modern reader said *Mists does not have the skill list at
+-- all*. It has it: `GetNumSkillLines` answered with fifteen rows on that client, riding and
+-- weapons among them. That was a guess written as a fact, and it hid this for as long as it stood.
+--
+-- **Weapon ranks are dropped where the modern call answers**, and that is the one place a build
+-- test is the honest test rather than a shortcut. Cataclysm took weapon skills out of the game:
+-- there is no Skills tab on the character sheet any more, and the spellbook shows one passive
+-- saying which weapons a paladin may hold and no number anywhere. The API still hands ranks back -
+-- `Axes 166/245` on a Mists paladin - and they govern nothing and are shown nowhere, so recording
+-- them would be inventing a fact rather than reporting one. Riding is the opposite case and is
+-- kept: its number is not shown either, but it is what decides how fast that character flies.
+function Professions:ReadRanks()
+	local modern = readModernProfessions()
+	local skills, everything = readSkillList(modern ~= nil)
+
+	-- The modern call wins where the two overlap: it hands back the skill line id and the
+	-- client's own picture, and the list has neither.
+	if modern then
+		for name, skill in pairs(modern) do
+			skills[name] = skill
+			everything[name] = true
+		end
+	end
+
 	return skills, everything
 end
 

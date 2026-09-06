@@ -15963,6 +15963,7 @@ print("a quest heading that is not a zone, in the reader's own words")
 	end
 end)()
 
+
 print()
 print("how fast a character can get about")
 
@@ -16129,6 +16130,7 @@ print("how fast a character can get about")
 			said == Family.UI.UNKNOWN, tostring(said))
 	end
 end)()
+
 
 print()
 print("the deploy script warns before it mirrors a source with no libraries")
@@ -22613,6 +22615,66 @@ print("the client's complaints about whispers Family sent")
 		swallow(nil, "CHAT_MSG_SYSTEM", "Your loot: a thing") == false)
 	check("nor a message that is not a string at all",
 		swallow(nil, "CHAT_MSG_SYSTEM", nil) == false)
+end)()
+
+print()
+print("the client that answers about professions and about skills both")
+
+-- Mists has its own call for professions, and `ReadRanks` used to take it and stop. That call
+-- answers for six slots and only six - two primaries, archaeology, fishing, cooking, first aid -
+-- so on that build a character lost their riding skill and every weapon skill.
+--
+-- **It went unseen because nothing here had ever stubbed that call**, so every check in this file
+-- ran the old skill-list path and the modern one was shipped untested. Reported from play
+-- 2026-09-06 by a Mists paladin with five recorded skills and no riding, beside a Mists druid who
+-- had riding and weapons and only because he has no professions at all: the modern call answered
+-- nothing for him and the old path ran as the fallback.
+--
+-- The comment over that reader said *Mists does not have the skill list at all*. It has it -
+-- `GetNumSkillLines` answered with fifteen rows on that client - and the guess written as a fact
+-- is what hid this.
+;(function()
+	local key = Family:CurrentMember()
+	local heldSkills = Family.Database:Meta(key).skills
+
+	-- The six slots, by position, as that call hands them over.
+	local SLOTS = {
+		[1] = { name = "Blacksmithing", rank = 525, maxRank = 600, line = 164 },
+		[5] = { name = "Cooking", rank = 250, maxRank = 300, line = 185 },
+		[6] = { name = "First Aid", rank = 213, maxRank = 225, line = 129 },
+	}
+	_G.GetProfessions = function() return 1, nil, nil, nil, 5, 6 end
+	_G.GetProfessionInfo = function(index)
+		local slot = SLOTS[index]
+		if not slot then return nil end
+		return slot.name, "prof-icon", slot.rank, slot.maxRank, 0, 0, slot.line, 0
+	end
+
+	Family.Professions:Scan(true)
+	local skills = Family.Database:Meta(key).skills or {}
+
+	check("the modern call's professions are recorded", skills[164] ~= nil
+		and skills[164].rank == 525, skills[164] and tostring(skills[164].rank))
+	-- **The skill list is read as well**, which is the repair. Riding has a rank on that build and
+	-- it is the rank that decides how fast a character flies, so losing it loses the answer.
+	check("riding survives a client that also answers the modern way",
+		skills[152] ~= nil and skills[152].rank == 150,
+		skills[152] and tostring(skills[152].rank) or "not recorded at all")
+
+	-- **And weapon ranks are dropped there**, which is the one place a build test is the honest
+	-- test. Cataclysm took weapon skills out: no Skills tab on the character sheet, and the
+	-- spellbook shows a passive naming which weapons a class may hold and no number anywhere. The
+	-- API still hands ranks back and they govern nothing, so recording them would be inventing.
+	check("weapon ranks are not, because that build stopped having them",
+		skills[43] == nil, skills[43] and tostring(skills[43].rank))
+
+	_G.GetProfessions, _G.GetProfessionInfo = nil, nil
+	Family.Professions:Scan(true)
+
+	check("and they come back on a client that still shows them",
+		(Family.Database:Meta(key).skills or {})[43] ~= nil)
+
+	Family.Database:SetMeta(key, { skills = heldSkills })
 end)()
 
 print()
