@@ -1050,14 +1050,56 @@ CELL.race = function(meta) return UI:RaceName(meta) end
 --
 -- §2.2: never seen is not nowhere. A character nobody has logged out on since this shipped has
 -- no answer here and says so.
+-- **Two lines and never three.** Reported from play 2026-09-06 with a screenshot: *Eastvale
+-- Logging Camp* under *Elwynn Forest* wrapped onto a third line and pushed that member half a
+-- row out of step with everybody else. The column is 130 pixels and the set it is on adds up to
+-- exactly the row's budget, so there is nothing to widen it with - the two halves are clipped
+-- instead, and the whole of both is on the row's tooltip.
+--
+-- Counted rather than measured, and the argument is the one written beside `CELL_CHARACTERS`:
+-- `GetStringWidth` answers for a font string that already has its text, and this decides what
+-- the text should be. A count is approximate and always errs the same way, which is why it errs
+-- short - eighteen characters is comfortably inside 130 pixels in every language, and losing a
+-- word to the tooltip is better than losing a row's alignment.
+--
+-- **By characters and not by bytes.** `#name` is bytes, and a Russian zone name is two bytes a
+-- letter, so cutting on a byte would halve a character and hand the client broken UTF-8. The
+-- pattern below counts the bytes that begin a character, which is what the harness's own width
+-- stub counts and what a font string draws.
+local WHERE_CHARACTERS = 18
+
+-- The three dots are part of the limit and not an extra beyond it. Cutting at the limit and
+-- then adding them made the answer three characters longer than the room it was cut to fit -
+-- caught by the check that counts the drawn line rather than by reading this.
+local ELLIPSIS = "..."
+
+local function clipped(text, limit)
+	if type(text) ~= "string" then return text end
+
+	local room = limit - #ELLIPSIS
+	local kept, count = nil, 0
+	for position = 1, #text do
+		if text:byte(position) < 128 or text:byte(position) >= 192 then
+			count = count + 1
+			if count == room + 1 then kept = position - 1 end
+		end
+	end
+
+	if count <= limit or not kept then return text end
+	return text:sub(1, kept) .. ELLIPSIS
+end
+
 CELL.where = function(meta)
 	local zone = Family.Names:Where(meta)
 	if not zone then return UNKNOWN end
 
 	local under = meta.subzone
-	if type(under) ~= "string" or under == "" or under == zone then return zone end
+	if type(under) ~= "string" or under == "" or under == zone then
+		return clipped(zone, WHERE_CHARACTERS)
+	end
 
-	return zone .. "\n|cff888888" .. under .. "|r"
+	return clipped(zone, WHERE_CHARACTERS)
+		.. "\n|cff888888" .. clipped(under, WHERE_CHARACTERS) .. "|r"
 end
 
 -- How many world buffs this character has banked, which is how many Supercharged Chronoboon
@@ -1905,8 +1947,48 @@ local function makeRow(parent)
 	-- also why one tooltip answers for the whole row rather than one per cell - the question is
 	-- *what can this character do*, not *what is this one picture*.
 	--
-	-- Silent on every other set, because `__skills` is only set on this one.
+	-- Silent on every set that sets neither `__skills` nor `__places`.
 	UI:AttachTooltip(row, function(self)
+		-- **Where they logged out and where their hearthstone is, in full.**
+		--
+		-- Both cells clip: the Where column is 130 pixels, the Hearthstone column is 100,
+		-- and the set they are on adds up to exactly the row's budget - so there is nothing
+		-- to widen either with, and *Coldridge Va...* is what a reader gets. Reported from
+		-- play 2026-09-06 together with the third line the Where cell was growing.
+		--
+		-- One tooltip for the row rather than one per cell, which is the same argument the
+		-- professions set settled: the question is *where is this character*, not *what is
+		-- this one word*.
+		if self.__places then
+			local meta = UI:Meta(self.__places)
+			if not meta then return nil end
+
+			local lines = { { UI:NameOf(meta) } }
+			local zone = Family.Names:Where(meta)
+			local under = meta.subzone
+
+			-- §2.2 all the way down. A member nobody has logged out on since this
+			-- shipped has no answer, and the tooltip says nothing rather than
+			-- inventing one - which is what the cell's dash means too.
+			if zone then
+				lines[#lines + 1] = { " " }
+				lines[#lines + 1] = { L["Where"], zone }
+				if type(under) == "string" and under ~= "" and under ~= zone then
+					lines[#lines + 1] = { "", "|cff888888" .. under .. "|r" }
+				end
+			end
+
+			local hearth = Family.Names:Area(meta.hearthID, meta.hearth)
+			if hearth then
+				if not zone then lines[#lines + 1] = { " " } end
+				lines[#lines + 1] = { L["Hearthstone"], hearth }
+			end
+
+			-- Nothing worth a tooltip: the name alone is what the row already says.
+			if #lines == 1 then return nil end
+			return nil, nil, lines
+		end
+
 		local meta = self.__skills and UI:Meta(self.__skills)
 		if not meta then return nil end
 
@@ -2764,6 +2846,7 @@ local function build(frame)
 			row.boonHit:SetScript("OnClick", nil)
 
 			row.__skills = nil
+			row.__places = nil
 
 			for index, column in ipairs(columns) do
 				-- Called rather than folded into an and/or, because a cell returns
@@ -2961,6 +3044,9 @@ local function build(frame)
 			-- profession columns, because what a reader wants is this character's trade
 			-- rather than the one picture their pointer happens to be on.
 			if currentSet.id == "professions" then row.__skills = member.key end
+
+			-- And the same for the two clipped columns next door.
+			if currentSet.id == "misc" then row.__places = member.key end
 
 			-- The lines below, on the same grid, with the member column left empty:
 			-- the name has been said and saying it again would make two members of

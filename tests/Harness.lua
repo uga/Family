@@ -15366,12 +15366,85 @@ print("where a character was when they logged out")
 			end
 		end
 
+		-- **The prefix, because the cell clips.** Twenty characters does not fit 130
+		-- pixels - *Eastvale Logging Camp* is twenty-one and was reported wrapping onto a
+		-- third line - so the cell holds what fits and the row's tooltip holds the rest.
+		-- "Les Steppes" is still French and is still not "Burning Steppes", which is what
+		-- this check is about.
 		check("it names the zone in the reader's own language, not the recorded one",
-			said and said:find("Les Steppes Ardentes", 1, true) ~= nil, tostring(said))
+			said and said:find("Les Steppes", 1, true) ~= nil
+				and said:find("Burning Steppes", 1, true) == nil, tostring(said))
 		check("with the subzone under it, which has no id and stays as recorded",
 			said and said:find("Pyrox Flats", 1, true) ~= nil, tostring(said))
 		check("on a second line rather than run together",
 			said and said:find("\n", 1, true) ~= nil, tostring(said))
+
+		-- **Two lines and never three.** Reported from play with a screenshot: a subzone
+		-- longer than the column wrapped, and that member's row stood half a line out of
+		-- step with every other. Counted here the way the cell counts, which is the only
+		-- measure either end has.
+		do
+			local worst = 0
+			for line in (said .. "\n"):gmatch("([^\n]*)\n") do
+				local letters = 0
+				for _ in line:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+					:gmatch("[^\128-\191]") do letters = letters + 1 end
+				worst = math.max(worst, letters)
+			end
+			check("and neither line is long enough to wrap onto a third", worst <= 18,
+				tostring(worst) .. " in " .. tostring(said))
+		end
+
+		-- **And the whole of it is on the row's tooltip**, which is where the clipped ends
+		-- go: the column is 130 pixels, the hearthstone beside it is 100, and the set adds
+		-- up to exactly the row's budget so neither can be widened.
+		local misc
+		for _, f in ipairs(frames) do
+			if f.__shown == true and f.memberKey == key and f.__places == key then
+				misc = misc or f
+			end
+		end
+		check("the miscellaneous row carries whose places it is showing", misc ~= nil)
+
+		if misc then
+			GameTooltip.__shownAs = nil
+			wipe(GameTooltip.__lines)
+			misc.__scripts.OnEnter(misc)
+
+			local told = ""
+			for _, line in ipairs(GameTooltip.__lines) do
+				told = told .. " " .. tostring(line[1]) .. " " .. tostring(line[2])
+			end
+
+			check("hovering it gives the zone in full, past where the cell stops",
+				told:find("Les Steppes Ardentes", 1, true) ~= nil, told)
+			check("and the subzone under it", told:find("Pyrox Flats", 1, true) ~= nil,
+				told)
+			check("and the hearthstone, which the cell also clips",
+				told:find(Family.L["Hearthstone"], 1, true) ~= nil, told)
+			misc.__scripts.OnLeave(misc)
+		end
+
+		-- **The subzone is clipped too, and it is the half that reported this.** *Eastvale
+		-- Logging Camp* is twenty-one characters under a thirteen-character zone, and it
+		-- was the long one that wrapped. Checked with a long subzone of its own, because
+		-- the fixture above has an eleven-character one and a mutation that stopped
+		-- clipping subzones altogether was caught by nothing.
+		Family.Database:SetMeta(key, { subzone = "Eastvale Logging Camp" })
+		Family.UI:Refresh()
+
+		local long
+		for _, f in ipairs(frames) do
+			if f.cells and f.__shown == true and f.memberKey == key then
+				long = f.cells[at] and f.cells[at].__text
+			end
+		end
+		check("a long subzone is clipped as well as a long zone",
+			long and long:find("Eastvale Logging Camp", 1, true) == nil
+				and long:find("Eastvale", 1, true) ~= nil, tostring(long))
+
+		Family.Database:SetMeta(key, { subzone = "Pyrox Flats" })
+		Family.UI:Refresh()
 
 		-- The column has to be allowed to use that second line, and the rows have to be
 		-- tall enough to show it. Both are per-set and both are set on every row, because
@@ -15556,7 +15629,8 @@ print("where a character was when they logged out")
 		check("a linked family's character brings where they logged out with them",
 			theirs ~= nil and theirs ~= "", tostring(theirs))
 		check("with the zone in this reader's language and not the one it was recorded in",
-			theirs and theirs:find("Les Steppes Ardentes", 1, true) ~= nil,
+			theirs and theirs:find("Les Steppes", 1, true) ~= nil
+				and theirs:find("Burning Steppes", 1, true) == nil,
 			tostring(theirs))
 		check("and the subzone as they recorded it, because there is no id to translate it "
 			.. "from", theirs and theirs:find("Pyrox Flats", 1, true) ~= nil,

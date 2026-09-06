@@ -275,6 +275,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A character's location no longer pushes their row out of line.** A long subzone under a long
+  zone wrapped onto a third line on Miscellaneous and left that member half a row out of step with
+  everybody else. Both halves are cut to fit now, and **hovering the row gives the whole of where
+  they logged out and where their hearthstone is** - which the Hearthstone column has always been
+  too narrow to say in full.
+
 - **The Professions page stops calling riding a profession nobody opened.** *Ram Riding* was in
   the grey line under the profession buttons, listed among the windows Family has never seen -
   and there is no such window. It is off that page entirely now, as it already is on the summary.
