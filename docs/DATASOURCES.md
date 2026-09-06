@@ -2031,6 +2031,12 @@ The weapon skills are paths rather than ids and were chosen the same way:
     INV_Weapon_Rifle_01 Guns       INV_Wand_01 Wands
     INV_ThrowingKnife_02 Thrown    INV_Shield_06 Defense
 
+**Unarmed is 132298**, `Ability_Rogue_KidneyShot` - a bare hand striking, which is what was asked
+for after the gauntleted fist was turned down. Alberto found it in another addon's picker rather
+than on the sheet, and it was identified without guessing: reading his ItemRack sets gave three
+file ids, and the manifest named them a helmet, some food and this. **Present on all three builds**,
+checked in each one's own manifest rather than assumed from the first.
+
 **Engineering has none anywhere**: it answers 136243 on Mists, which is the same generic every
 weapon skill answers. So engineering and the eighteen weapon skills have to be *chosen*, and a
 chosen icon is exactly what cannot be verified from inside the client - `GetTexture` echoes back

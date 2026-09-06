@@ -364,6 +364,7 @@ local GROUPS = {
 			{ 236248, "Ability_Paladin_BlessedHands" },
 			{ 236314, "Ability_Warrior_StrengthOfArms" },
 			{ 132343, "ability_warrior_disarm" },
+			{ 132298, "ability_rogue_kidneyshot - CHOSEN, a bare hand striking" },
 			{ 132350, "ability_warrior_punishingblow - the gauntlet, turned down" },
 		},
 	},
