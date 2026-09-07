@@ -2512,6 +2512,51 @@ tip.SetSpellBookItem = function(self, index, kind)
 	self.__spellID = row and row[3] or nil
 end
 
+-- Mists puts the pet's own bar in the pet's book: seven of a cat's fifteen rows are Assist,
+-- Attack, Stay and the rest, which are buttons rather than anything the pet has learned. The
+-- client tells them apart without being asked in any language - a command has no spell id
+-- where Claw has 16827 and Growl 2649 - and the two obvious alternatives are guesses: the
+-- rank word is "Pet Command" in English only, and the PETACTION number is a bar position.
+do
+	local MIXED = {
+		{ "Assist", "Pet Stance" },
+		{ "Attack", "Pet Command" },
+		{ "Claw", "", 16827 },
+		{ "Growl", "", 2649 },
+		{ "Stay", "Pet Stance" },
+	}
+
+	HasPetSpells = function() return #MIXED, "PET" end
+	GetSpellBookItemName = function(index, kind)
+		local row = kind == "pet" and MIXED[index]
+		if not row then return nil end
+		return row[1], row[2]
+	end
+	tip.SetSpellBookItem = function(self, index, kind)
+		local row = kind == "pet" and MIXED[index]
+		self.__spellName = row and row[3] and row[1] or nil
+		self.__spellID = row and row[3] or nil
+	end
+
+	local mixed = Family.Pets:ReadAbilities()
+	check("a pet bar's commands are not recorded as things the pet has learned",
+		#(mixed or {}) == 2, mixed and tostring(#mixed))
+	check("and the abilities standing beside them are",
+		abilityNamed(mixed, "Claw") ~= nil and abilityNamed(mixed, "Growl") ~= nil)
+
+	HasPetSpells = function() return #BOOK, "PET" end
+	GetSpellBookItemName = function(index, kind)
+		local row = kind == "pet" and BOOK[index]
+		if not row then return nil end
+		return row[1], row[2]
+	end
+	tip.SetSpellBookItem = function(self, index, kind)
+		local row = kind == "pet" and BOOK[index]
+		self.__spellName = row and row[1] or nil
+		self.__spellID = row and row[3] or nil
+	end
+end
+
 UnitCreatureFamily = function(unit)
 	if unit ~= "pet" then return nil end
 	return "Gorilla", 9

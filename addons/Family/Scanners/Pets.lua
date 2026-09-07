@@ -130,7 +130,7 @@ function Pets:ReadAbilities()
 	count = tonumber(count)
 	if not count or count < 1 then return nil, nil end
 
-	local found = {}
+	local found, identified = {}, 0
 
 	for index = 1, count do
 		-- Two returns: the name and the rank as a word - *Rank 2*, or *Passive* for one
@@ -142,6 +142,8 @@ function Pets:ReadAbilities()
 			Family:TryCall(tip.SetSpellBookItem, tip, index, "pet")
 		end)
 
+		if id then identified = identified + 1 end
+
 		if id or (type(name) == "string" and name ~= "") then
 			found[#found + 1] = {
 				id = id,
@@ -149,6 +151,28 @@ function Pets:ReadAbilities()
 				rank = type(rank) == "string" and rank ~= "" and rank or nil,
 			}
 		end
+	end
+
+	-- Mists puts the pet's own bar in the pet's book: seven of a cat's fifteen rows are
+	-- Assist, Attack, Defensive, Follow, Move To, Passive and Stay, which are buttons rather
+	-- than anything the pet has learned. Era and Burning Crusade hold none of them.
+	--
+	-- The client says which is which without being asked in any language: a command has no
+	-- spell id - `Attack` answers nothing where `Claw` answers 16827 and `Growl` 2649 - so
+	-- *has an id* is the filter. The two obvious alternatives are both guesses: the rank word
+	-- is *Pet Command* in English and something else everywhere, and the `PETACTION` number
+	-- is a bar position nothing may be filed under.
+	--
+	-- Only where the client identified something, though. A book where **nothing** came back
+	-- with an id is a client whose tooltip will not describe a pet book at all, and there the
+	-- words are all there is - dropping them would turn a whole hunter's page blank rather
+	-- than leaving it a language behind.
+	if identified > 0 then
+		local abilities = {}
+		for _, entry in ipairs(found) do
+			if entry.id then abilities[#abilities + 1] = entry end
+		end
+		found = abilities
 	end
 
 	if #found == 0 then return nil, kind end

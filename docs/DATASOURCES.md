@@ -2120,6 +2120,29 @@ is written through it:
         t:ClearLines() pcall(t.SetPetAction,t,i)
         local n,d=t:GetSpell() print("a",i,tostring(n),tostring(d)) end
 
+**Both answered, 2026-09-07, and together they settle the whole thing.**
+
+    b 2  nil    nil       a 1  Growl 2649                a 6  nil nil
+    b 4  Claw   16827     a 2  Claw 16827                a 7  nil nil
+    b 9  Growl  2649      a 3  Dash 61684                a 8  nil nil
+                          a 4  Heart of the Phoenix 55709   a 9  nil nil
+                          a 5  Rabid 53401               a 10 nil nil
+
+- **The book door is open on Mists too.** It was slot 1 being *Assist* that answered nothing,
+  not the door being shut. So the tooltip aimed at a book slot is the one lane on all three
+  clients, which is what `Scanners/Pets.lua` reads through.
+- **A command has no spell id and an ability has one.** *Attack* at book slot 2 answers nothing
+  where *Claw* answers 16827 and *Growl* 2649. That is the filter, said by the client in its own
+  terms: no English, and nothing filed under a `PETACTION`. A book where **nothing** came back
+  identified is a different case and keeps its words - that is a client whose tooltip will not
+  describe a pet book at all, and dropping every row there would blank a hunter's page rather
+  than leave it a language behind.
+- **The bar is not a substitute for the book**, and this is why it is not used even on the build
+  where it answers first. The bar holds five: Growl, Claw, Dash, Heart of the Phoenix, Rabid.
+  The book holds eight once the commands are filtered - those five and *Avoidance*, *Combat
+  Experience* and *Spiked Collar*, which are passives and are on no bar. Reading the bar would
+  have quietly lost three real abilities per pet and looked entirely correct doing it.
+
 ### What crosses a Wide Family link as a word, and cannot be translated
 
 Read 2026-09-05, after Alberto asked whether a subzone is the only shared thing a reader sees in
