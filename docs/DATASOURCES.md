@@ -2182,6 +2182,16 @@ window - so the two readers agree about what an ability is.
 The tooltip is asked **only where both links said nothing**, so an enchanting row keeps the id it
 already had and nothing about the professions changes.
 
+**The window prices what the creature that is out can learn, and nothing else.** Reported from
+play with the window open beside Family's own page: a cat is shown a cost against every rank of
+Claw and none at all against Bite, Gore, Charge or Growl - the abilities of families it does not
+belong to - and `GetCraftInfo` answers nought for exactly those rows. So a blank cost is the
+client's own answer about this creature rather than a gap in the reading, and it moves when a
+different creature is summoned.
+
+Those same rows are the ones the client will not build a tooltip for, which is how they came to
+carry the wrong id: see L-063.
+
 **Burning Crusade closes the set, and disagrees with itself in a useful way.**
 
     /run local t=GameTooltip t:SetOwner(UIParent,"ANCHOR_NONE")

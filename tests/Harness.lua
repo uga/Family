@@ -2471,10 +2471,18 @@ end
 -- Made if it is not made yet, so the fixture has something to hang the setter on.
 Family:ScanTooltipSpell(function() end)
 local tip = _G.FamilyScanTooltip
+
+-- A setter that knows the thing writes a line and one that does not writes nothing, which is
+-- how the game's own tooltip behaves - and is the whole of the fault reported from play: a
+-- tooltip keeps the last spell it was handed, so a row the client will not describe answers
+-- about the row before it, and the answer looks entirely right.
+local function describe(self, name, id)
+	self.__spellName, self.__spellID = name, id
+	if name then self.__lines[#self.__lines + 1] = name end
+end
 tip.SetSpellBookItem = function(self, index, kind)
 	local row = kind == "pet" and BOOK[index]
-	self.__spellName = row and row[1] or nil
-	self.__spellID = row and row[3] or nil
+	describe(self, row and row[1] or nil, row and row[3] or nil)
 end
 
 local abilities = Family.Pets:ReadAbilities()
@@ -2500,16 +2508,20 @@ check("with the word the book printed kept beside it, for a build that knows no 
 
 -- A client that will not describe the slot is an ordinary answer, not a fault: the word is
 -- what there is, and nothing is filed under an id that was never given.
-tip.SetSpellBookItem = function(self) self.__spellName, self.__spellID = nil, nil end
+-- Deliberately leaves whatever the tooltip last held in place, because that is the client
+-- being described: one that will not fill a pet book tooltip at all.
+tip.SetSpellBookItem = function() end
 local wordsOnly = Family.Pets:ReadAbilities()
 check("an ability the tooltip will not describe keeps its word and invents no id",
 	#(wordsOnly or {}) == 3 and (abilityNamed(wordsOnly, "Growl") or {}).id == nil,
 	wordsOnly and tostring(#wordsOnly))
+check("and the spell it was still holding from the row before is not taken for this one's",
+	(abilityNamed(wordsOnly, "Arcane Resistance") or {}).id == nil,
+	tostring((abilityNamed(wordsOnly, "Arcane Resistance") or {}).id))
 
 tip.SetSpellBookItem = function(self, index, kind)
 	local row = kind == "pet" and BOOK[index]
-	self.__spellName = row and row[1] or nil
-	self.__spellID = row and row[3] or nil
+	describe(self, row and row[1] or nil, row and row[3] or nil)
 end
 
 -- Mists puts the pet's own bar in the pet's book: seven of a cat's fifteen rows are Assist,
@@ -2532,10 +2544,14 @@ do
 		if not row then return nil end
 		return row[1], row[2]
 	end
+	-- A command's tooltip **is** built - the client describes what the button does - and
+	-- carries no spell. So it is a different case from a tooltip that was never filled, and
+	-- the two must not be told apart by the same test.
 	tip.SetSpellBookItem = function(self, index, kind)
 		local row = kind == "pet" and MIXED[index]
 		self.__spellName = row and row[3] and row[1] or nil
 		self.__spellID = row and row[3] or nil
+		if row then self.__lines[#self.__lines + 1] = row[1] end
 	end
 
 	local mixed = Family.Pets:ReadAbilities()
@@ -2551,9 +2567,8 @@ do
 		return row[1], row[2]
 	end
 	tip.SetSpellBookItem = function(self, index, kind)
-		local row = kind == "pet" and BOOK[index]
-		self.__spellName = row and row[1] or nil
-		self.__spellID = row and row[3] or nil
+		describe(self, BOOK[index] and BOOK[index][1] or nil,
+			BOOK[index] and BOOK[index][3] or nil)
 	end
 end
 
@@ -3059,11 +3074,28 @@ local realCraftInfo, realNumCrafts = GetCraftInfo, GetNumCrafts
 local realCraftIcon, realRecipeLink, realItemLink =
 	GetCraftIcon, GetCraftRecipeLink, GetCraftItemLink
 do
+	-- The last two rows are the fault reported from play, 2026-09-07.
+	--
+	-- A hunter's Beast Training window lists every rank the hunter can teach, and shows a
+	-- cost only for the ones the creature currently out can actually learn - a cat sees a
+	-- cost against Claw and none against Bite. The rows with no cost are the ones the client
+	-- will not describe either, and a tooltip that was not filled still answers about the row
+	-- before it. So three ranks of Bite arrived carrying one rank's id, and the panel put the
+	-- same tooltip on all three while showing three different ranks beside them.
 	local TAUGHT = {
 		{ "Arcane Resistance", "Rank 3", 45, 40, 24500 },
 		{ "Arcane Resistance", "Rank 4", 90, 50, 24501 },
 		{ "Growl", "Rank 1", 0, 0, 2649 },
+		{ "Bite", "Rank 8", 0, 0, nil },
+		{ "Bite", "Rank 9", 0, 0, 17259 },
 	}
+
+	-- What rank the client says a spell is, which is the second reading the id is held
+	-- against. 17259 is Bite Rank 6, offered here against a row that says Rank 9.
+	local RANK_OF = { [24500] = "Rank 3", [24501] = "Rank 4", [2649] = "Rank 1",
+		[17259] = "Rank 6" }
+	local realSubtext = GetSpellSubtext
+	GetSpellSubtext = function(id) return RANK_OF[id] end
 
 	GetNumCrafts = function() return #TAUGHT end
 	GetCraftInfo = function(index)
@@ -3076,10 +3108,13 @@ do
 	GetCraftItemLink = function() return nil end
 
 	local tip = _G.FamilyScanTooltip
+	-- A row with no id is one the client refuses to describe: no line is written, and
+	-- whatever the tooltip was last handed is deliberately left in place.
 	tip.SetCraftSpell = function(self, index)
 		local row = TAUGHT[index]
-		self.__spellName = row and row[1] or nil
-		self.__spellID = row and row[5] or nil
+		if not (row and row[5]) then return end
+		self.__spellName, self.__spellID = row[1], row[5]
+		self.__lines[#self.__lines + 1] = row[1]
 	end
 
 	Family.Professions:Scan(true)
@@ -3104,7 +3139,18 @@ do
 		(rows[1] or {}).spellID == 24500 and (rows[3] or {}).spellID == 2649,
 		tostring((rows[1] or {}).spellID))
 
+	-- The reported fault, from both ends. A row the client will not describe must not take
+	-- the id of the row before it, and an id whose rank is not this row's rank is not this
+	-- row's id however it arrived - the client says both, and the two have to agree.
+	check("a row the client will not describe takes no id from the row before it",
+		(rows[4] or {}).spellID == nil, tostring((rows[4] or {}).spellID))
+	check("and an id whose rank is not the row's rank is refused",
+		(rows[5] or {}).spellID == nil, tostring((rows[5] or {}).spellID))
+	check("while the rank the window stated is kept either way",
+		(rows[4] or {}).rank == "Rank 8" and (rows[5] or {}).rank == "Rank 9")
+
 	tip.SetCraftSpell = nil
+	GetSpellSubtext = realSubtext
 end
 
 GetCraftInfo, GetNumCrafts = realCraftInfo, realNumCrafts

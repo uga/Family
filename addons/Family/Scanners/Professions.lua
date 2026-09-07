@@ -566,9 +566,26 @@ local function readCraftRecipes()
 			-- Only where the links said nothing, so a profession that already has an id
 			-- keeps the one it has and this changes nothing for enchanting.
 			if not recipe.spellID then
-				recipe.spellID = Family:ScanTooltipSpell(function(tip)
+				local id = Family:ScanTooltipSpell(function(tip)
 					Family:TryCall(tip.SetCraftSpell, tip, index)
 				end)
+
+				-- And the id is made to agree with the row before it is kept.
+				--
+				-- The client says what rank a spell is, in its own words, so the row's
+				-- own rank is something the answer can be held against: an id whose rank
+				-- is not this row's rank is not this row's id, whatever it came back
+				-- from. Two readings of the same client have to agree, which is a
+				-- stronger thing to ask than that one of them answered.
+				if id and recipe.rank then
+					local subText = Family:TryCall(GetSpellSubtext, id)
+					if type(subText) == "string" and subText ~= ""
+						and subText ~= recipe.rank then
+						id = nil
+					end
+				end
+
+				recipe.spellID = id
 			end
 
 			local cooldown = Family:TryCall(GetCraftCooldown, index)

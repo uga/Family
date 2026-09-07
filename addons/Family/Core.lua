@@ -250,9 +250,20 @@ function Family:ScanTooltipSpell(aim)
 	Family:TryCall(tip.ClearLines, tip)
 	aim(tip)
 
-	-- Two returns on the clients that answer here at all, and a client that will not
-	-- describe the thing builds no lines and answers neither. Nothing is an ordinary
-	-- answer: the caller keeps the word it already has and files nothing under an id.
+	-- **Whether the aim did anything, asked before what it says.**
+	--
+	-- A tooltip remembers the last spell it was given. `ClearLines` empties the text and
+	-- does not forget that, so a row the client refuses to describe leaves `GetSpell`
+	-- answering about the row before it - which is not a nil to be handled but a wrong
+	-- answer that looks entirely right. Reported from play: a hunter's Beast Training list
+	-- where every rank the pet could not learn carried the tooltip of the last rank it
+	-- could, and the ids the client hands over are one per rank and were never the fault.
+	--
+	-- An aim that built no lines built nothing. Nothing is an ordinary answer here: the
+	-- caller keeps the word it already has and files nothing under an id.
+	local lines = tonumber((Family:TryCall(tip.NumLines, tip))) or 0
+	if lines < 1 then return nil end
+
 	local name, id = Family:TryCall(tip.GetSpell, tip)
 
 	id = tonumber(id)

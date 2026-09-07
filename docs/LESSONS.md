@@ -2400,3 +2400,35 @@ before calling `fn`**, and never let a guard be the only thing standing between 
 function and a printed nil. The section *The pet book is the creature's, and the creature has an
 id* in `DATASOURCES.md` carries both probes, the guarded one and the one that replaced it, so the
 next reader sees the difference rather than being told about it.
+
+## L-063 — A tooltip that was not filled still answers about the row before it
+
+`Family:ScanTooltipSpell` was written the day the pet book turned out to have no id of its own:
+aim the scanning tooltip at a book slot, ask `GetSpell()`, keep what comes back. It was measured
+on three clients and it worked on all three, and the check that proved it stubbed a tooltip that
+answered nothing for a slot it did not know.
+
+A real tooltip does not answer nothing. It answers **the last thing it was handed**. `ClearLines`
+empties the text and does not forget the spell, so a row the client refuses to describe comes
+back carrying the previous row's id - and there is no nil anywhere for a reader to notice.
+
+It reached play. A hunter's Beast Training window lists every rank the hunter can teach and
+prices only the ones the creature currently out can learn - a cat sees a cost against Claw and
+none against Bite - and the unpriced rows are exactly the ones the client will not describe. So
+three ranks of Bite were recorded with one rank's id, and the panel drew *Rank 6*, *Rank 8* and
+*Rank 9* beside three tooltips that all said Rank 6. Reported with a screenshot; the ids the
+client hands over are one per rank and were never the fault.
+
+The stub is the part worth keeping in mind. It modelled *a setter that fails* as *a setter that
+returns nothing*, which is the shape a nil-check catches - and the shape the game does not have.
+The harness's tooltip already knew better a few lines above: its own comment says a setter that
+knows the thing writes a line and one that does not writes nothing at all. The pet fixtures were
+written without using that, so they tested the reader against a client that does not exist.
+
+**What now catches it.** Two checks, from both ends: `a row the client will not describe takes no
+id from the row before it` and `the spell it was still holding from the row before is not taken
+for this one's`, both with a fixture that leaves the previous row in place rather than clearing
+it. `Family:ScanTooltipSpell` asks `NumLines()` before it asks `GetSpell()`, and an aim that
+built no lines built nothing. Beside it, the craft reader holds the id against a second reading:
+the client says what rank a spell is, so an id whose rank is not the row's rank is refused
+however it arrived.
