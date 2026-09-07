@@ -1876,21 +1876,53 @@ calling it a name; this is the same mistake wearing a bigger number.
 A passive answers *Passive* in the same slot, so the second value is a word and not a number, and
 both words are localised.
 
-**One question is still open, and it decides the shape of the record.** The same probe asked for
-`GetSpellBookItemLink(i, "pet")` and printed *nil* on every line - but it guarded the call with
-`and`, so a function that does not exist and a function that answers nothing print the same word.
-Until that is told apart, whether a pet ability has an id at all is unmeasured. Owed, once per
-client, with any creature out:
+**That question was asked and half-answered the same day.** Run with a creature out on each
+client:
 
     /run print(type(GetSpellBookItemLink), type(GetSpellLink))
         local a,b,c = GetSpellBookItemInfo(1,"pet") print(a,b,c)
         print(GetSpellLink and GetSpellLink((GetSpellBookItemName(1,"pet"))))
 
-If a link comes back it carries `spell:<id>` and a pet ability is stored by id, with the rank
-from the name call beside it. If it does not, a pet ability is stored the way a recipe list is -
-the name as read, with the language it was read in - and §2.1 has nothing here to be applied to,
-which is the same answer the stable gave for the pet's own name. Either way the creature is
-filed under its family id, and a demon under its creature id, because those were measured above.
+    Era   nil  function   PETACTION 16801713 nil
+    TBC   nil  function   PETACTION 16801716 nil   [Arcane Resistance]
+
+Three things came back, and they do not all point the same way:
+
+- **`GetSpellBookItemLink` does not exist on either client** - `type` is *nil*, not *function*.
+  So the pet book has no link door at all, and the *nil* the previous probe printed was the
+  guard rather than an answer. There is no id to be had from the book itself.
+- **`GetSpellBookItemInfo(i, "pet")` answers `PETACTION` and then that number**, with nothing
+  in the third return. The first value names what the second one is: a pet **action**, which is
+  the bar rather than the spell. And the number moved again for the same ability at a different
+  rank - Arcane Resistance is 16801713 where the Era pet knows Rank 2 and 16801716 where the TBC
+  pet knows Rank 3 - which is the third independent reading saying it carries the rank.
+- **`GetSpellLink` exists on both, and only Burning Crusade resolves a pet ability by name.**
+  TBC answered `[Arcane Resistance]`; Era answered nothing for the same name on the same kind of
+  probe. Why the two builds differ is not measured and is not guessed here.
+
+**One line is still owed, and it is the last one.** The chat window shows a link's text and not
+its `spell:<id>`, so the id TBC may be holding has not actually been read yet, and Era's *nothing*
+has to be asked a second way before it counts as *no id anywhere*. Run once per client, any
+creature out:
+
+    /run local n = GetSpellBookItemName(1,"pet") local l = GetSpellLink(n)
+        local _,_,_,_,_,_,id = GetSpellInfo(n)
+        print(n, l and (l:gsub("|","||")) or "no link", tostring(id))
+
+The `gsub` doubles the pipes so the raw link prints instead of rendering, and `GetSpellInfo`'s
+seventh return is asked separately because a name that will not make a link may still make an id.
+
+The shape of the record follows from whether **both** clients answer:
+
+- **Both give an id** - a pet ability is stored by id, with the rank from the name call beside it.
+- **Only one does** - it is stored by name and the language it was read in anyway, because a
+  record whose identity depends on which build wrote it cannot cross a Wide Family link, and
+  §6 says a linked family's data is never merged into ours to paper over the difference.
+- **Neither does** - the same, and §2.1 has nothing here to be applied to rather than being set
+  aside, which is the answer the stable already gave for the pet's own name.
+
+Either way the creature is filed under its family id, and a demon under its creature id, because
+those were measured above and neither depends on this.
 
 ### What crosses a Wide Family link as a word, and cannot be translated
 

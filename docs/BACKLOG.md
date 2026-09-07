@@ -456,6 +456,14 @@ stored by id or by name-plus-language. The readings, the numbers and the owed pr
 [`DATASOURCES.md`](DATASOURCES.md); the number the pet book prints beside each ability is **not**
 a spell id and nothing may be filed under it.
 
+**Asked again the same day: the pet book has no link door.** `GetSpellBookItemLink` does not
+exist on either client, and `GetSpellBookItemInfo(i, "pet")` names its own second return -
+`PETACTION`, a bar action rather than a spell, and one that moved again with the rank. What is
+left is whether a pet ability's **name** can be turned into an id from outside the book:
+Burning Crusade makes a link from it and Era does not, which is one line short of deciding
+whether the record is kept by id or by name-plus-language. That line is in
+[`DATASOURCES.md`](DATASOURCES.md) with the readings.
+
 ---
 
 ## 10. Warlocks: the per-demon abilities known
