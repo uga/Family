@@ -68,6 +68,28 @@ is not known until the window is next opened, and Family says *no cooldown seen*
 That last one is the principle the whole addon is built on. If a number looks wrong, the first
 question is nearly always *when did Family last see it* — and the answer is on screen.
 
+**And a new version only knows what it has been able to watch since.** Family reads a character
+when that character is played, so anything a version learns to record for the first time is
+blank on every alt until each of them logs in once. Nothing is lost by waiting and nothing has
+to be repaired: the empty cells say *not seen*, and they fill themselves the next time you play
+that character. There is no rescan command and there is deliberately nothing to press.
+
+The same is true one step further out. A character a linked family shares with you fills in when
+**they** log in on the new version, not when you do, because their client is what watches them.
+
+> **Upgrading to 2.0.0.** Three things are recorded for the first time in this version and so
+> want a login on each character: **where that character logged out**, **what they still have to
+> do on each quest**, and **riding among their skills** — which is what the Mount column and the
+> *May ride* line on the Overview tooltip are drawn from.
+>
+> Two more were being recorded already and were being recorded wrongly. **Weapon skills on
+> Classic Era and the Burning Crusade** were dropped by the scanner on exactly the two games that
+> have them, so their ranks arrive at the next login; on Mists there are none to arrive. And a
+> profession list recorded before Family wrote down **which language it was read in** cannot use
+> the shortcut that keeps the first login quick, so a fresh read of that character settles it.
+>
+> Everything else in 2.0.0 draws what was already there and needs nothing.
+
 ---
 
 ## 2. Opening Family
