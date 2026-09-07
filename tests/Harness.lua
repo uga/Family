@@ -3097,6 +3097,29 @@ do
 	local realSubtext = GetSpellSubtext
 	GetSpellSubtext = function(id) return RANK_OF[id] end
 
+	-- The window is a spell the character casts, so the client will say which one from the
+	-- name it is showing: GetSpellInfo("Beast Training") answers 5149 on Era, measured
+	-- 2026-09-07. Asked with a name here and with an id everywhere else, which is what the
+	-- one call does in the game.
+	local realSpellInfo = GetSpellInfo
+	GetSpellInfo = function(what)
+		if type(what) == "string" then
+			if what ~= "Beast Training" then return nil end
+			return what, nil, "icon", 0, 0, 0, 5149
+		end
+		return realSpellInfo(what)
+	end
+
+	-- What a hunter played half in French looks like before this is fixed: the same list a
+	-- second time, under the word the window was titled in the other language.
+	do
+		local payload = Family.Database:Payload(key) or {}
+		payload.crafts = payload.crafts or {}
+		payload.crafts["Dressage des betes"] =
+			{ entries = { { name = "Armure naturelle" } }, seen = time() }
+		Family.Database:SetPayload(key, payload)
+	end
+
 	GetNumCrafts = function() return #TAUGHT end
 	GetCraftInfo = function(index)
 		local row = TAUGHT[index]
@@ -3119,8 +3142,23 @@ do
 
 	Family.Professions:Scan(true)
 
-	local taught = ((Family.Database:Payload(key) or {}).crafts or {})["Beast Training"]
+	local crafts = (Family.Database:Payload(key) or {}).crafts or {}
+	local taught = crafts[5149]
 	local rows = taught and taught.entries or {}
+
+	-- Filed under the window's own id, because a key that is a word is a key that changes
+	-- with the language the client was set to when it was read.
+	check("a craft window that is not a profession is filed under its own spell id",
+		taught ~= nil, "keys: " .. (function()
+			local out = {}
+			for k in pairs(crafts) do out[#out + 1] = tostring(k) end
+			return table.concat(out, ", ")
+		end)())
+	check("with the word it was titled kept beside it, to be drawn",
+		(taught or {}).name == "Beast Training", tostring((taught or {}).name))
+	-- Reported from play: seventy-eight abilities twice, once under each language's word.
+	check("and the same list under another language's word is gone",
+		crafts["Dressage des betes"] == nil and crafts["Beast Training"] == nil)
 
 	check("a craft row keeps the rank the window draws under its name",
 		(rows[1] or {}).rank == "Rank 3" and (rows[2] or {}).rank == "Rank 4",
@@ -3151,6 +3189,7 @@ do
 
 	tip.SetCraftSpell = nil
 	GetSpellSubtext = realSubtext
+	GetSpellInfo = realSpellInfo
 end
 
 GetCraftInfo, GetNumCrafts = realCraftInfo, realNumCrafts

@@ -752,10 +752,41 @@ function Professions:ScanNow(includeRecipes)
 			-- is filed as abilities rather than thrown away. The spellbook is where it
 			-- belongs and where it is shown: it is not a profession, it has no rank, and
 			-- it does not change with a specialisation.
-			payload.crafts = payload.crafts or {}
-			payload.crafts[recipeName] = { entries = recipes, seen = time() }
+			-- **Under the window's own spell id, never under its name.**
+			--
+			-- This was filed under the word the window happens to be titled, which is a
+			-- word in whatever language the client was set to when it was read - so a
+			-- hunter played half in French and half in English ended up with the same
+			-- seventy-eight abilities twice, once under *Beast Training* and once under
+			-- *Dressage des betes*, and the panel drew both. Reported from play with a
+			-- screenshot of exactly that.
+			--
+			-- The window is a spell the character casts, so it has an id like everything
+			-- else, and the client will say which from the name it is showing right now:
+			-- `GetSpellInfo("Beast Training")` answers 5149 on Era, measured 2026-09-07.
+			-- The word is kept beside it to be drawn, in the language it was read in,
+			-- which is what a heading is for.
+			local craftID = select(7, Family:TryCall(GetSpellInfo, recipeName))
+			craftID = tonumber(craftID)
 
-			Family:Debug("%s is not a profession - filed as abilities", recipeName)
+			payload.crafts = payload.crafts or {}
+
+			-- Anything still filed under a word is the old shape, and it is dropped the
+			-- moment a window files itself under an id. That is this same list in another
+			-- language, or another window that will file itself the next time it is
+			-- opened - nothing is lost that opening a window does not bring back, and
+			-- leaving them would leave the duplicate on screen for ever.
+			if craftID then
+				for stored in pairs(payload.crafts) do
+					if type(stored) ~= "number" then payload.crafts[stored] = nil end
+				end
+			end
+
+			payload.crafts[craftID or recipeName] =
+				{ name = recipeName, entries = recipes, seen = time() }
+
+			Family:Debug("%s is not a profession - filed as abilities under %s",
+				recipeName, tostring(craftID or recipeName))
 			recipeName, recipes = nil, nil
 		end
 

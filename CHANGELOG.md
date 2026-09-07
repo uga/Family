@@ -27,6 +27,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A character played in two languages no longer has two copies of the same ability list.** A
+  hunter who played some of the time on a French client and some of the time on an English one saw
+  Beast Training twice on the Abilities & Talents page, once in each language. There is one list
+  now, and it is drawn in the language it was last read in. The duplicate disappears the first
+  time the window is opened again.
+
 - **A hunter's Beast Training list says which rank each line is, what it costs and what the pet
   has to be.** It used to be five rows all called *Arcane Resistance* with nothing to tell them
   apart and no tooltip on any of them. Hovering one now shows the game's own description of it,

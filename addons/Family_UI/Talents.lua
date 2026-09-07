@@ -402,7 +402,11 @@ local function build(frame)
 			-- as a school of its own below the ones the spellbook has - it has no rank,
 			-- it is not a profession, and it does not change with a specialisation.
 			local extra = {}
-			for name, record in pairs(payload.crafts or {}) do
+			-- Keyed by the window's own spell id since 2026-09-07, and by its name before
+			-- that. The word to draw is the one recorded beside the entries; the key is
+			-- what stops the same list appearing twice in two languages.
+			for stored, record in pairs(payload.crafts or {}) do
+				local name = record.name or tostring(stored)
 				local spells = {}
 				for _, entry in ipairs(record.entries or {}) do
 					spells[#spells + 1] = {

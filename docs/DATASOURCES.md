@@ -2192,6 +2192,18 @@ different creature is summoned.
 Those same rows are the ones the client will not build a tooltip for, which is how they came to
 carry the wrong id: see L-063.
 
+**And the window itself has an id, measured 2026-09-07 with Beast Training open on Era:**
+
+    /run local a,b,c,d,e,f,id=GetSpellInfo(GetCraftName()) print(GetCraftName(), tostring(id))
+
+    Beast Training   5149
+
+`GetCraftName` answers with the word the window is titled in whatever language the client is set
+to - *Dressage des betes* on a French one - and the client will turn that word into the id of the
+spell that opens it, because the window **is** a spell the character casts. So a craft window that
+is not a profession is filed under 5149 rather than under either word, and the word is kept beside
+the entries to be drawn as the heading.
+
 **Burning Crusade closes the set, and disagrees with itself in a useful way.**
 
     /run local t=GameTooltip t:SetOwner(UIParent,"ANCHOR_NONE")
