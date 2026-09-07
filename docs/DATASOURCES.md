@@ -1971,6 +1971,48 @@ abilities read on Era becoming comparable with abilities read anywhere else - an
 generated table per locale. It is worth revisiting only if a Wide Family panel actually wants to
 line two hunters' pets up side by side; until then the name and its language are what crosses.
 
+**The reader's side, measured 2026-09-07 with no creature out at all:**
+
+    /run print(GetSpellInfo(27350))
+
+    TBC   Arcane Resistance   nil   136096   0   0   100   27350
+    Era   (nothing)
+
+Two readings, and both matter.
+
+- **A spell id needs no pet, no walk and no cache.** TBC named 27350 with the stable shut, which
+  is `Names:Spell` behaving exactly as its comment says it does - the client answers about any
+  spell id straight away, which is why the spellbook is stored as ids alone. So the login walk
+  has nothing to do here in either direction: it exists because an **item** must be loaded before
+  it can be named, and a spell must not.
+- **The id is the rank's, and it is that build's.** Era does not know 27350 at all - it is the
+  Burning Crusade rank of Arcane Resistance and Era has its own - so an id read on one build is
+  not a word the other build can say. Anything generated for this has to be generated per build,
+  the way the recipe cooldowns already are.
+
+Note also that `GetSpellInfo` answered the **rank as nil** for the id, where the pet book answered
+*Rank 3* for the name. So an id names the ability and not the rank, and a rank that is to reach a
+reader in the reader's own language is a separate question from this one - the digit is in the
+word the book printed and `tools/game-words.py` is where the game's own word for *Rank* would come
+from.
+
+**What Alberto is asking of this, stated plainly: a thing stored in language 1 must be read in
+language 2 by a language-2 client.** Against that requirement the three shapes stand like this:
+carrying the id where the client gives one satisfies it on Burning Crusade and not on Era; a
+generated per-locale table satisfies it everywhere and costs a table per locale per build; and the
+name alone satisfies it nowhere. Before either is built there is one more door to try, because it
+would make the id available on Era at the moment of writing and cost nothing at all - the tooltip,
+which is a different reader of the same book:
+
+    /run local t = GameTooltip t:SetOwner(UIParent,"ANCHOR_NONE")
+        print(type(t.SetSpellBookItem), type(t.GetSpell))
+        if t.SetSpellBookItem then t:SetSpellBookItem(1,"pet") end
+        if t.GetSpell then print(t:GetSpell()) end
+
+The types are printed first and separately, per L-062. If `GetSpell` answers with an id for a pet
+book slot on Era, the whole question closes: the writer records the id its own client gave it, on
+every build, and the reader's client says it in the reader's language with no table anywhere.
+
 ### What crosses a Wide Family link as a word, and cannot be translated
 
 Read 2026-09-05, after Alberto asked whether a subzone is the only shared thing a reader sees in
