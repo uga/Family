@@ -299,6 +299,7 @@ Family.locales.ruRU = {
 	["Tree %d"] = "Ветвь %d",
 	["Spell #%s"] = "Заклинание №%s",
 	["Spellbook"] = "Книга закл.",
+	["Training Points"] = "Очки обучения",
 	["Pets"] = "Питомцы",
 	["%d abilities across %d creatures"] = "%d способностей у %d питомцев",
 	["In the stable, never summoned - nothing recorded"] = "В стойле, ни разу не призван - ничего не записано",

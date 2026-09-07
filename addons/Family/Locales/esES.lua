@@ -299,6 +299,7 @@ Family.locales.esES = {
 	["Tree %d"] = "Árbol %d",
 	["Spell #%s"] = "Hechizo n.º %s",
 	["Spellbook"] = "Libro hech.",
+	["Training Points"] = "Puntos de entrenamiento",
 	["Pets"] = "Mascotas",
 	["%d abilities across %d creatures"] = "%d habilidades en %d mascotas",
 	["In the stable, never summoned - nothing recorded"] = "En el establo, nunca invocada - nada registrado",

@@ -503,7 +503,8 @@ local function readCraftRecipes()
 	local recipes = {}
 
 	for index = 1, count do
-		local craftName, _, craftType, numAvailable = Family:TryCall(GetCraftInfo, index)
+		local craftName, subText, craftType, numAvailable, _, points, needsLevel =
+			Family:TryCall(GetCraftInfo, index)
 
 		if craftName and craftType and craftType ~= "header" then
 			local recipe = {
@@ -525,6 +526,50 @@ local function readCraftRecipes()
 				or idFromLink(craftLink, "enchant", "spell")
 			recipe.itemID = idFromLink(craftLink, "item")
 			recipe.icon = Family:TryCall(GetCraftIcon, index)
+
+			-- The line the window draws under the name, which this used to throw away.
+			--
+			-- On Beast Training it is the rank, and it is the difference between a list of
+			-- things a hunter can teach and five rows all called Arcane Resistance.
+			-- Measured on Burning Crusade with the window open: the second return is
+			-- *Rank 3*, *Rank 4*, *Rank 5*, in the reader's own language, and it is empty
+			-- on the craft windows that have no such line. Kept only when the client put
+			-- something there, so a window with none costs nothing.
+			if type(subText) == "string" and subText ~= "" then recipe.rank = subText end
+
+			-- What it costs to teach, and what the pet has to be to learn it. Two more
+			-- returns of the same call, thrown away with the rank until now, and on Beast
+			-- Training they are the two numbers that decide whether a row is something
+			-- this hunter can act on today.
+			--
+			-- The readings say which is which without anything having to be assumed about
+			-- the order: for Arcane Resistance ranks 3, 4 and 5 the second number is 40,
+			-- 50 and 60 - a level ladder - while the first is 45, 90 and 105.
+			--
+			-- Nought is not stored. A window with no such cost answers nought for every
+			-- row, and a column of noughts is a claim rather than an absence (§2.2).
+			points = tonumber(points)
+			needsLevel = tonumber(needsLevel)
+			if points and points > 0 then recipe.trainingPoints = points end
+			if needsLevel and needsLevel > 0 then recipe.petLevel = needsLevel end
+
+			-- A third reader, for the rows where neither link carried an id.
+			--
+			-- A pet ability makes no item and answers neither link call, so every Beast
+			-- Training row was recorded with no id at all - which is a row with no tooltip
+			-- and nothing the reader's own client can name. The Craft frame has the same
+			-- door the pet book turned out to have: a tooltip aimed at the row answers
+			-- with the spell. Measured on Burning Crusade - row 2 answers Arcane Resistance
+			-- 24501 and row 3 answers 27052, which is the rank above the 24500 the pet's
+			-- own book gives for the rank it holds.
+			--
+			-- Only where the links said nothing, so a profession that already has an id
+			-- keeps the one it has and this changes nothing for enchanting.
+			if not recipe.spellID then
+				recipe.spellID = Family:ScanTooltipSpell(function(tip)
+					Family:TryCall(tip.SetCraftSpell, tip, index)
+				end)
+			end
 
 			local cooldown = Family:TryCall(GetCraftCooldown, index)
 			if cooldown and cooldown > 0 then

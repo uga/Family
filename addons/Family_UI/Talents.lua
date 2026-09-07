@@ -409,6 +409,9 @@ local function build(frame)
 						name = entry.name,
 						icon = entry.icon,
 						spellID = entry.spellID,
+						rank = entry.rank,
+						trainingPoints = entry.trainingPoints,
+						petLevel = entry.petLevel,
 					}
 				end
 				if #spells > 0 then
@@ -483,17 +486,43 @@ local function build(frame)
 					end
 				end
 			end
-			-- Below the spellbook proper, because that is what it is: an appendix. Each
-			-- entry is a name and a picture and no rank, because that is all there is.
+			-- Below the spellbook proper, because that is what it is: an appendix.
+			--
+			-- It used to be a name and a picture and nothing else, and on Beast Training
+			-- that read as five rows all called Arcane Resistance with no way to tell them
+			-- apart and no tooltip on any of them. The window says more than that and the
+			-- scanner was throwing it away: the rank under the name, what it costs to
+			-- teach, and the level the pet has to be. Reported from play, 2026-09-07.
+			local levelWord = Family:GameWord("LEVEL", "Level")
+			local pointsWord = Family:GameWord("TRAINING_POINTS", L["Training Points"])
+
 			for _, school in ipairs(extra) do
 				local keep = {}
 				for _, taught in ipairs(school.taught) do
-					if matches(taught.name) or matches(school.name) then
-						keep[#keep + 1] = taught
+					-- The reader's own client where there is an id to ask it about,
+					-- which there now is: a pet ability makes no item and answers no
+					-- link, so the id comes off a tooltip aimed at the row.
+					local said, icon = Family.Names:Spell(taught.spellID)
+					local name = said or taught.name
+
+					if name and (matches(name) or matches(school.name)) then
+						keep[#keep + 1] = {
+							name = name,
+							icon = icon or taught.icon,
+							spellID = taught.spellID,
+							rank = taught.rank or "",
+							trainingPoints = taught.trainingPoints,
+							petLevel = taught.petLevel,
+						}
 					end
 				end
 
-				table.sort(keep, function(a, b) return (a.name or "") < (b.name or "") end)
+				table.sort(keep, function(a, b)
+					if a.name ~= b.name then return a.name < b.name end
+					local rankA, rankB = rankOrder(a.rank), rankOrder(b.rank)
+					if rankA ~= rankB then return rankA < rankB end
+					return a.rank < b.rank
+				end)
 
 				if #keep > 0 then
 					local heading = nextRow()
@@ -502,9 +531,24 @@ local function build(frame)
 
 					for _, taught in ipairs(keep) do
 						local r = nextRow()
-						r.middle:SetText(taught.name or "?")
+
+						-- What the pet has to be, on the left, where it lines up into a
+						-- column of its own: it is the reason a row cannot be taught yet.
+						r.left:SetText(taught.petLevel
+							and string.format("|cff888888%s %d|r", levelWord,
+								taught.petLevel)
+							or "")
+
+						local cost = taught.trainingPoints
+							and string.format(" |cff888888(%d %s)|r",
+								taught.trainingPoints, pointsWord)
+							or ""
+						r.middle:SetText(taught.name .. cost)
+
 						r.spellID = taught.spellID
 						if taught.icon then r.icon:SetTexture(taught.icon) end
+						r.right:SetText(taught.rank ~= ""
+							and ("|cff888888" .. taught.rank .. "|r") or "")
 					end
 				end
 			end

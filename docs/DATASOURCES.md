@@ -2143,6 +2143,45 @@ is written through it:
   Experience* and *Spiked Collar*, which are passives and are on no bar. Reading the bar would
   have quietly lost three real abilities per pet and looked entirely correct doing it.
 
+### The Craft window says three things about a row that were being thrown away, measured 2026-09-07
+
+Reported from play: a hunter's Beast Training list on the spellbook page drew five rows all
+called *Arcane Resistance*, with no rank and no tooltip on any of them. All three of the missing
+pieces were in the window. Asked with Beast Training open on Burning Crusade:
+
+    /run print(GetNumCrafts(), type(GameTooltip.SetCraftSpell))
+        for i=1,4 do print(i, GetCraftInfo(i)) end
+
+    81  function
+    1 Arcane Resistance  Rank 3  none  0  nil  45  40
+    2 Arcane Resistance  Rank 4  none  0  nil  90  50
+    3 Arcane Resistance  Rank 5  none  0  nil  105 60
+    4 Avoidance          Rank 1  none  0  nil  15  30
+
+- **The second return is the rank**, in the reader's own language, and it is what the window
+  draws under the name. `Scanners/Professions.lua` was discarding it with a `_`.
+- **The two numbers at the end are a cost and a level**, and the readings say which is which
+  without anything being assumed about the call's argument order: for ranks 3, 4 and 5 the second
+  number is 40, 50 and 60 - a ladder - while the first is 45, 90, 105.
+
+And the row's id comes from a third reader, because a pet ability makes no item and answers
+neither `GetCraftRecipeLink` nor `GetCraftItemLink`:
+
+    /run local t=GameTooltip t:SetOwner(UIParent,"ANCHOR_NONE") for _,i in ipairs{2,3} do
+        t:ClearLines() print(pcall(t.SetCraftSpell,t,i))
+        local n,d=t:GetSpell() print(i,tostring(n),tostring(d),t:NumLines()) end
+
+    2  Arcane Resistance  24501
+    3  Arcane Resistance  27052
+
+`GameTooltip:SetCraftSpell` exists and answers, which is the same door the pet's own book turned
+out to have. The ids continue the series the book gives for the rank the pet already holds -
+24500 for Rank 3 out of the book, 24501 for Rank 4 and 27052 for Rank 5 out of the trainer's
+window - so the two readers agree about what an ability is.
+
+The tooltip is asked **only where both links said nothing**, so an enchanting row keeps the id it
+already had and nothing about the professions changes.
+
 **Burning Crusade closes the set, and disagrees with itself in a useful way.**
 
     /run local t=GameTooltip t:SetOwner(UIParent,"ANCHOR_NONE")

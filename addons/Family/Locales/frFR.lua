@@ -299,6 +299,7 @@ Family.locales.frFR = {
 	["Tree %d"] = "Arbre %d",
 	["Spell #%s"] = "Sort n°%s",
 	["Spellbook"] = "Grimoire",
+	["Training Points"] = "Points d'entraînement",
 	["Pets"] = "Familiers",
 	["%d abilities across %d creatures"] = "%d capacités sur %d familiers",
 	["In the stable, never summoned - nothing recorded"] = "À l'écurie, jamais invoqué - rien d'enregistré",

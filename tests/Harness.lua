@@ -2993,6 +2993,7 @@ end
 local beastCraftName = GetCraftName
 GetCraftName = function() return "Beast Training" end
 GetCraftDisplaySkillLine = function() return nil end
+
 Family.Professions:Scan(true)
 
 check("a craft window that is not a profession is not recorded as one",
@@ -3003,6 +3004,7 @@ check("but what it teaches is kept, as abilities",
 check("with everything that was in it",
 	Family.Database:Payload(key).crafts
 		and #Family.Database:Payload(key).crafts["Beast Training"].entries == 2)
+
 
 GetCraftName = beastCraftName
 GetCraftDisplaySkillLine = nil
@@ -3035,6 +3037,80 @@ check("a craft window with no skill line and no skill is still refused",
 
 GetCraftName = savedCraftName
 GetCraftDisplaySkillLine = nil
+
+-- The window as a live Burning Crusade client answered it, 2026-09-07, with a hunter's Beast
+-- Training open:
+--
+--     1 Arcane Resistance  Rank 3  none  0  nil  45  40
+--     2 Arcane Resistance  Rank 4  none  0  nil  90  50
+--
+-- The rank is the second return, and the two numbers at the end are what it costs to teach and
+-- what the pet has to be - the ladder 40, 50, 60 against 45, 90, 105 is what says which is
+-- which. All three were thrown away until this was reported from play: five rows all called
+-- Arcane Resistance, no way to tell them apart, and no tooltip on any of them.
+--
+-- A pet ability makes no item and answers neither link call, so its id comes off a tooltip
+-- aimed at the row - the same door the pet's own book turned out to have.
+local beastName, beastLine = GetCraftName, GetCraftDisplaySkillLine
+GetCraftName = function() return "Beast Training" end
+GetCraftDisplaySkillLine = function() return nil end
+
+local realCraftInfo, realNumCrafts = GetCraftInfo, GetNumCrafts
+local realCraftIcon, realRecipeLink, realItemLink =
+	GetCraftIcon, GetCraftRecipeLink, GetCraftItemLink
+do
+	local TAUGHT = {
+		{ "Arcane Resistance", "Rank 3", 45, 40, 24500 },
+		{ "Arcane Resistance", "Rank 4", 90, 50, 24501 },
+		{ "Growl", "Rank 1", 0, 0, 2649 },
+	}
+
+	GetNumCrafts = function() return #TAUGHT end
+	GetCraftInfo = function(index)
+		local row = TAUGHT[index]
+		if not row then return nil end
+		return row[1], row[2], "none", 0, nil, row[3], row[4]
+	end
+	GetCraftIcon = function() return nil end
+	GetCraftRecipeLink = function() return nil end
+	GetCraftItemLink = function() return nil end
+
+	local tip = _G.FamilyScanTooltip
+	tip.SetCraftSpell = function(self, index)
+		local row = TAUGHT[index]
+		self.__spellName = row and row[1] or nil
+		self.__spellID = row and row[5] or nil
+	end
+
+	Family.Professions:Scan(true)
+
+	local taught = ((Family.Database:Payload(key) or {}).crafts or {})["Beast Training"]
+	local rows = taught and taught.entries or {}
+
+	check("a craft row keeps the rank the window draws under its name",
+		(rows[1] or {}).rank == "Rank 3" and (rows[2] or {}).rank == "Rank 4",
+		tostring((rows[1] or {}).rank))
+	check("and what it costs to teach, and what the pet has to be",
+		(rows[2] or {}).trainingPoints == 90 and (rows[2] or {}).petLevel == 50,
+		tostring((rows[2] or {}).trainingPoints) .. "/"
+			.. tostring((rows[2] or {}).petLevel))
+	-- A window with no such cost answers nought for every row, and a column of noughts is a
+	-- claim rather than an absence.
+	check("with nought recorded as nothing rather than as a cost of none",
+		(rows[3] or {}).trainingPoints == nil and (rows[3] or {}).petLevel == nil)
+	-- The whole reason there were no tooltips: a pet ability answers neither link call, so
+	-- without this door every row is recorded with no id and the reader can name none of them.
+	check("and an id off the tooltip where neither link carried one",
+		(rows[1] or {}).spellID == 24500 and (rows[3] or {}).spellID == 2649,
+		tostring((rows[1] or {}).spellID))
+
+	tip.SetCraftSpell = nil
+end
+
+GetCraftInfo, GetNumCrafts = realCraftInfo, realNumCrafts
+GetCraftIcon, GetCraftRecipeLink, GetCraftItemLink =
+	realCraftIcon, realRecipeLink, realItemLink
+GetCraftName, GetCraftDisplaySkillLine = beastName, beastLine
 
 -- Runeforging: a trade skill window full of things a death knight can make, with no skill
 -- line and no rank anywhere. The trade skill frame is not shared with anything that is not a
@@ -6708,6 +6784,19 @@ check("the spellbook is sorted rather than left in the client's order",
 		< (frameShowing("Zul'Gurub Ritual") or 0),
 	tostring(frameShowing("Apprentice Riding")) .. " vs "
 		.. tostring(frameShowing("Zul'Gurub Ritual")))
+
+-- The appendix under the spellbook, which is where a hunter's Beast Training is drawn.
+--
+-- Reported from play: five rows all called Arcane Resistance, no rank on any of them and no
+-- tooltip on any of them. All three were in the window and the scanner was throwing them away.
+check("a taught ability is drawn with the rank the window gave it", visibleText("Rank 4"))
+check("and with what it costs to teach",
+	visibleText("90 " .. Family.L["Training Points"]))
+check("and with the level the pet has to be",
+	visibleText(Family:GameWord("LEVEL", "Level") .. " 50"))
+-- The id is the whole reason there is anything to hover: without one the row is a word.
+check("and is named by the reader's own client, out of the id",
+	visibleText("Spell 24501"))
 
 -- The creatures a character keeps, which the scanner above recorded against this member.
 --

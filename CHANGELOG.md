@@ -25,6 +25,14 @@ is a decision rather than an afternoon of archaeology.
   and a pet nobody has summoned yet is listed by name with nothing claimed about it, under *In the
   stable*, rather than shown with an empty list of abilities.
 
+### Fixed
+
+- **A hunter's Beast Training list says which rank each line is, what it costs and what the pet
+  has to be.** It used to be five rows all called *Arcane Resistance* with nothing to tell them
+  apart and no tooltip on any of them. Hovering one now shows the game's own description of it,
+  as everything else on that page already did. Reopen the window once on each hunter and the list
+  fills itself in.
+
 ## 2.0.0 — 2026-09-06
 
 ### Added

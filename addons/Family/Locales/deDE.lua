@@ -299,6 +299,7 @@ Family.locales.deDE = {
 	["Tree %d"] = "Baum %d",
 	["Spell #%s"] = "Zauber #%s",
 	["Spellbook"] = "Zauberbuch",
+	["Training Points"] = "Ausbildungspunkte",
 	["Pets"] = "Begleiter",
 	["%d abilities across %d creatures"] = "%d Fähigkeiten bei %d Begleitern",
 	["In the stable, never summoned - nothing recorded"] = "Im Stall, nie gerufen - nichts aufgezeichnet",
