@@ -489,6 +489,11 @@ One thing is deliberately left: **nothing about pets crosses a Wide Family link.
 shares only payload keys named in a category, and adding `pets` to Talents would widen a consent
 already granted without asking. A category of its own is a §6 decision and Alberto's to take.
 
+**Asked and answered 2026-09-08: they stay out for now.** So a sibling's hunter shows no
+creatures at all, which is *not seen* rather than *none*, and the day this is wanted it is one
+category in `Wide.lua` plus its label - nobody has granted it, so it changes nothing until it is
+ticked.
+
 ---
 
 ## 10. Warlocks: the per-demon abilities known
