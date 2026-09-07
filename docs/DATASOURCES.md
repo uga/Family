@@ -2092,6 +2092,34 @@ once: whether the tooltip door that gives the id on Era and Burning Crusade exis
 all - nothing above says it does - and whether a command comes back without one, which would make
 *has an id* the filter, in the client's own terms rather than in English.
 
+**And the doors are the other way round on Mists.** Measured the same day, with a pet out:
+
+    SetSpellBookItem(1, "pet")   true   nil    nil    2 lines
+    SetPetAction(1)              true   Growl  2649   4 lines
+
+On Era the book answered with an id and the **bar** answered nothing; on Mists the bar answered
+`Growl, 2649` and the book slot answered nothing. Two readings, opposite ways round, and neither
+build's door can be assumed to be the other's.
+
+The book slot asked there was **slot 1, which is *Assist*** - a stance, not an ability - so that
+nil is two possible facts at once: the book door may not work on Mists, or it may work and have
+nothing to say about a bar command. Which of the two it is decides whether *has an id* can be the
+filter that keeps the seven commands out of a Mists record, so it is asked directly, on a slot
+that holds a real ability:
+
+    /run local t=GameTooltip t:SetOwner(UIParent,"ANCHOR_NONE") for _,i in ipairs{2,4,9} do
+        t:ClearLines() pcall(t.SetSpellBookItem,t,i,"pet")
+        local n,d=t:GetSpell() print("b",i,tostring(n),tostring(d)) end
+
+Slot 2 is *Attack*, a command; 4 is *Claw* and 9 is *Growl*. And the bar, whose own indexing is
+not the book's - Growl is book slot 9 and bar slot 1 - because if the book door is shut on Mists
+then the bar is the only lane there is and what it is indexed by has to be known before anything
+is written through it:
+
+    /run local t=GameTooltip t:SetOwner(UIParent,"ANCHOR_NONE") for i=1,10 do
+        t:ClearLines() pcall(t.SetPetAction,t,i)
+        local n,d=t:GetSpell() print("a",i,tostring(n),tostring(d)) end
+
 ### What crosses a Wide Family link as a word, and cannot be translated
 
 Read 2026-09-05, after Alberto asked whether a subzone is the only shared thing a reader sees in
