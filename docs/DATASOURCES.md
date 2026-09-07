@@ -2143,6 +2143,25 @@ is written through it:
   Experience* and *Spiked Collar*, which are passives and are on no bar. Reading the bar would
   have quietly lost three real abilities per pet and looked entirely correct doing it.
 
+**Burning Crusade closes the set, and disagrees with itself in a useful way.**
+
+    /run local t=GameTooltip t:SetOwner(UIParent,"ANCHOR_NONE")
+        pcall(t.SetSpellBookItem,t,1,"pet")
+        local n,d=t:GetSpell() print(tostring(n),tostring(d))
+
+    TBC   Arcane Resistance   24500
+
+So the door is open on all three clients, which is the last thing `Scanners/Pets.lua` was
+resting on and had not been shown.
+
+And the number is **not** the 27350 the same client handed back for `GetSpellInfo("Arcane
+Resistance")` earlier the same day. Both name the same ability; only one of them was asked about
+the slot the pet actually holds. That is the caution written beside 27350 when it arrived -
+*a name is shared by every rank, and nothing says this is the pet's rank rather than the first
+one the client found* - turning out to have been worth writing: the name lookup lands on some
+rank, and the tooltip reads the one in the book. Nothing was ever filed under 27350, so nothing
+has to be undone; what it settles is that the tooltip is not merely *a* door but the *right* one.
+
 ### What crosses a Wide Family link as a word, and cannot be translated
 
 Read 2026-09-05, after Alberto asked whether a subzone is the only shared thing a reader sees in
