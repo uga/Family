@@ -443,9 +443,18 @@ shape whatever is built:
   Family would store under a name, and the name is the player's own word rather than the game's,
   so §2.1 has nothing to be applied to here rather than being set aside.
 
-What is still not measured is the **abilities** half of this entry, which is the other question:
-a hunter's pet spells are read the way a warlock's are, and entry 10 has just established that
-that only answers while the creature is out.
+**The abilities half was probed 2026-09-07, and it is nearly answered.** A hunter's book is the
+**pet's** rather than the hunter's - the trainable ranks sit beside abilities that belong to the
+family alone, Thunderstomp on a gorilla, Claw and Screech on an owl, Bite and Gore on a ravager -
+so the abilities are recorded per pet. `UnitCreatureFamily` answers with the family name *and* a
+number, the same number on both clients for the same family, which is the id this entry was told
+it did not have; it answers only for the creature that is out, so a stabled pet reaches its family
+id the first time it is summoned. What is still owed is one line telling apart a missing
+`GetSpellBookItemLink` from one that answers nothing, because that decides whether an ability is
+stored by id or by name-plus-language. The readings, the numbers and the owed probe are in
+*The pet book is the creature's, and the creature has an id* in
+[`DATASOURCES.md`](DATASOURCES.md); the number the pet book prints beside each ability is **not**
+a spell id and nothing may be filed under it.
 
 ---
 
@@ -493,6 +502,13 @@ readable while its window is open, and which Family already handles that way.
 That is a constraint rather than an obstacle, and it decides the design: the scanner watches for
 a pet being summoned rather than being asked. It also settles what the panel may say about a
 warlock whose imp has never been out - **nothing**, and §2.2 says nothing rather than none.
+
+**Probed again 2026-09-07: each demon's book is genuinely its own.** Succubus and Imp share not
+one line on Era, Voidwalker and Imp share not one line on Burning Crusade, and a demon's creature
+id sits in `UnitGUID("pet")` - the Imp is 416 on both clients - so a demon is filed under an
+identifier rather than a word. What its **abilities** are filed under is the one thing still owed,
+and it is the same open question as entry 9's: see *The pet book is the creature's, and the
+creature has an id* in [`DATASOURCES.md`](DATASOURCES.md).
 
 ---
 

@@ -1801,6 +1801,97 @@ Backlog entry 10 spent its first probe on `GetSpellTabInfo` and found four tabs,
 character's own - *Demonology* is the warlock's talent tree and not the demon's book. This is the
 right door.
 
+### The pet book is the creature's, and the creature has an id, measured on Era and Burning Crusade 2026-09-07
+
+The previous section settled *when* a pet's book can be read. These two probes settle *what is
+in it* and *what the thing holding it can be filed under*, which is what backlog entry 9's
+abilities half and entry 10 both need before a single byte is stored.
+
+    /run local n,t=HasPetSpells() print(n,t,UnitCreatureFamily("pet"))
+        for i=1,(n or 0) do local nm=GetSpellBookItemName(i,"pet")
+        local _,id=GetSpellBookItemInfo(i,"pet") print(i,nm,id) end
+
+    /run print(UnitCreatureFamily("pet")) for i=1,3 do local n,r=GetSpellBookItemName(i,"pet")
+        print(i,n,tostring(r),tostring(GetSpellBookItemLink and GetSpellBookItemLink(i,"pet"))) end
+
+Run on a hunter and on a warlock, on both clients, with each of two creatures out:
+
+| Client | Creature | `HasPetSpells` | `UnitCreatureFamily` | creature id in `UnitGUID("pet")` |
+|---|---|---|---|---|
+| Era | Gorilla | 9 PET | Gorilla **9** | 6516 |
+| Era | Owl | 10 PET | Owl **26** | 7456 |
+| Era | Succubus | 4 DEMON | Succubus **17** | 1863 |
+| Era | Imp | 4 DEMON | Imp **23** | 416 |
+| TBC | Ravager | 12 PET | Ravager **31** | 16934 |
+| TBC | Owl | 11 PET | Owl **26** | 1997 |
+| TBC | Voidwalker | 4 DEMON | Voidwalker **16** | 1860 |
+| TBC | Imp | 4 DEMON | Imp **23** | 416 |
+
+**Each creature's book is its own.** Succubus and Imp share not one line; Voidwalker and Imp
+share not one line. That is entry 10's premise measured rather than assumed. A hunter's book is
+the **pet's** and not the character's in the same way: the trainable ranks (Arcane, Fire, Frost,
+Nature and Shadow Resistance, Great Stamina, Natural Armor, Growl) sit beside abilities that
+belong to the family and to no other - Thunderstomp on the gorilla, Claw and Screech on the owl,
+Bite, Gore and Dash on the ravager. So the abilities half of entry 9 is recorded **per pet**,
+not per hunter.
+
+**`UnitCreatureFamily` answers with two values, and the second is a number.** The family name is
+the reader's own word - the Era stable in the section above says *Gorille*, *Chouette*, *Loup* -
+but the number beside it is the same on both clients for the same family: Owl is 26 on Era and on
+TBC, Imp is 23 on Era and on TBC. That is the language-free identity §2.1 asks for, and it is the
+creature's family rather than the creature. It only answers for the creature that is **out**: the
+stable's fourth return is the localised family name and no number, so a stabled pet is matched to
+a family id only once that pet has been summoned at least once.
+
+**The GUID carries a creature id** in its sixth field, and for a demon it is the whole answer:
+the Imp is 416 on both clients, the Voidwalker 1860, the Succubus 1863 - one creature, one id, no
+language in it. For a hunter's pet it identifies the **tamed creature** and not the family: the
+owl is 7456 on Era and 1997 on TBC because they are two different NPCs of family 26.
+
+**The number printed beside each ability is not a spell id, and nothing may be filed under it.**
+It is `select(2, GetSpellBookItemInfo(i, "pet"))`, and the readings say what it is not:
+
+- The values are three orders of magnitude above the spell id range on these builds -
+  Growl 3238017609, Arcane Resistance 16801713, Lesser Invisibility 2164268734.
+- It moves with the **rank**. *Natural Armor* is 16801846 on the gorilla, 16801845 on the Era
+  owl and 16801771 on the TBC ravager's neighbour; *Fire Shield* is 2164272635 on the Era imp
+  and 2164272634 on the TBC imp, and the second probe shows why - the Era imp knows Fire Shield
+  **Rank 5** and the TBC imp **Rank 4**.
+- It is stable where the ability and the rank are: Growl is 3238017609 wherever it appears, and
+  Firebolt 3238014450 on both imps.
+
+Whatever the number encodes - the pet bar's own ordering and flags is the shape it has, and that
+is a guess and stays one - it is not an identity that survives a build, and a record filed under
+it would be a record filed under a rank. Entry 9 already lost one probe to reading the icon and
+calling it a name; this is the same mistake wearing a bigger number.
+
+**What names an ability, then, is a name and a rank, both in the reader's language.**
+`GetSpellBookItemName(i, "pet")` answers with two values, and the second is the rank as printed:
+
+    Era  hunter, Owl       1 Arcane Resistance  Rank 2    2 Claw   Rank 8   3 Fire Resistance Rank 2
+    Era  warlock, Imp      1 Blood Pact  Rank 5   2 Fire Shield Rank 5   3 Firebolt Rank 6
+    TBC  hunter, Ravager   1 Arcane Resistance  Rank 3    2 Avoidance  Passive   3 Bite Rank 9
+    TBC  warlock, Imp      1 Blood Pact  Rank 5   2 Fire Shield Rank 4   3 Firebolt Rank 6
+
+A passive answers *Passive* in the same slot, so the second value is a word and not a number, and
+both words are localised.
+
+**One question is still open, and it decides the shape of the record.** The same probe asked for
+`GetSpellBookItemLink(i, "pet")` and printed *nil* on every line - but it guarded the call with
+`and`, so a function that does not exist and a function that answers nothing print the same word.
+Until that is told apart, whether a pet ability has an id at all is unmeasured. Owed, once per
+client, with any creature out:
+
+    /run print(type(GetSpellBookItemLink), type(GetSpellLink))
+        local a,b,c = GetSpellBookItemInfo(1,"pet") print(a,b,c)
+        print(GetSpellLink and GetSpellLink((GetSpellBookItemName(1,"pet"))))
+
+If a link comes back it carries `spell:<id>` and a pet ability is stored by id, with the rank
+from the name call beside it. If it does not, a pet ability is stored the way a recipe list is -
+the name as read, with the language it was read in - and §2.1 has nothing here to be applied to,
+which is the same answer the stable gave for the pet's own name. Either way the creature is
+filed under its family id, and a demon under its creature id, because those were measured above.
+
 ### What crosses a Wide Family link as a word, and cannot be translated
 
 Read 2026-09-05, after Alberto asked whether a subzone is the only shared thing a reader sees in
