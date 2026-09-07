@@ -2050,6 +2050,48 @@ Two things this hands to whoever builds it:
   panel question, and the digit inside the word plus `tools/game-words.py` is the way to draw it
   translated if the answer is yes.
 
+**Mists is a third shape, measured 2026-09-07, and it puts something else in the book.**
+
+    15 PET Cat 2
+    1 Assist 100663299        2 Attack 117440514      3 Avoidance 16842436
+    4 Claw 3238019515         5 Combat Experience     6 Dash
+    7 Defensive 100663297     8 Follow 117440513      9 Growl 3238005337
+    10 Heart of the Phoenix   11 Move To 117440516    12 Passive 100663296
+    13 Rabid                  14 Spiked Collar        15 Stay 117440512
+
+    Cat Beast Pet-0-4468-1-18-42718-0100B7435A
+    nil function   PETACTION 100663299 nil
+
+What agrees with the older clients: `HasPetSpells` answers a count and `PET`, the family number
+is there beside the word (Cat is 2), the GUID's sixth field is the creature (42718),
+`GetSpellBookItemLink` does not exist, and `GetSpellBookItemInfo` names its own second return
+`PETACTION`.
+
+What does not, and it matters to anything that reads this book:
+
+- **The pet's commands and stances are in the book.** *Assist*, *Attack*, *Defensive*, *Follow*,
+  *Move To*, *Passive* and *Stay* are seven of the fifteen rows, and none of them is something a
+  pet has learned - they are the buttons on the pet bar. The Era and Burning Crusade books
+  measured above hold none of them. So a reader that records what the book holds records seven
+  commands per pet on Mists and calls them abilities.
+- **The second value of the name call is not a rank there.** It answers *Pet Stance* for Assist
+  and *Pet Command* for Attack, where Era answers *Rank 2* - and *Passive* for Avoidance, which
+  the older clients answer too. Mists has no ability ranks at all.
+
+**One line is owed before this can be filtered honestly**, because the obvious filters are both
+guesses: the rank word is the reader's language, and the `PETACTION` number is a bar position
+nothing may be filed under. What is worth measuring instead is whether a command has a **spell id**
+at all. Run on Mists with a pet out:
+
+    /run local t=GameTooltip t:SetOwner(UIParent,"ANCHOR_NONE") for _,i in ipairs{1,2,4,9} do
+        t:ClearLines() pcall(t.SetSpellBookItem,t,i,"pet")
+        local n,id=t:GetSpell() print(i,tostring(n),tostring(id)) end
+
+Slots 1 and 2 are a stance and a command, 4 and 9 are real abilities. It answers two questions at
+once: whether the tooltip door that gives the id on Era and Burning Crusade exists on Mists at
+all - nothing above says it does - and whether a command comes back without one, which would make
+*has an id* the filter, in the client's own terms rather than in English.
+
 ### What crosses a Wide Family link as a word, and cannot be translated
 
 Read 2026-09-05, after Alberto asked whether a subzone is the only shared thing a reader sees in
