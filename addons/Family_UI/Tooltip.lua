@@ -816,7 +816,18 @@ local function showFor(frame)
 	if not resolve then return end
 
 	local kind, id, fallback, hint, extra = resolve(frame)
-	if not kind and not fallback then return end
+
+	-- A row with nothing to say **takes the tooltip down** rather than leaving it alone.
+	--
+	-- Leaving it alone leaves whatever the last row put there, which is a tooltip about
+	-- another row sitting beside this one and looking exactly like this row's own. The
+	-- pointer leaving a row hides it, so this only shows itself where one row's tooltip is
+	-- still up as another is entered - and the cost of hiding something already hidden is
+	-- nothing. It is the on-screen twin of the fault L-063 records inside the scanner.
+	if not kind and not fallback then
+		GameTooltip:Hide()
+		return
+	end
 
 	GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
 	Family:TryCall(GameTooltip.ClearLines, GameTooltip)

@@ -6930,6 +6930,41 @@ check("and with the level the pet has to be",
 check("and is named by the reader's own client, out of the id",
 	visibleText("Spell 24501"))
 
+-- A row with nothing to say must take the tooltip down rather than leave the last row's up.
+--
+-- On this page the two sit next to each other: a taught ability the client described has an id
+-- and a tooltip, and the one beside it that the window would not describe has neither. Leaving
+-- the tooltip alone leaves the first row's tooltip standing beside the second, which reads as
+-- the second row's own - reported from play as three ranks of Bite all describing rank one.
+do
+	local withSpell, without
+	for _, f in ipairs(frames) do
+		if f.__shown == true and f.__scripts.OnEnter and f.middle and f.right then
+			if f.spellID and not withSpell then withSpell = f end
+			if not f.spellID and withSpell and not without
+				and (f.middle.__text or "") ~= "" then
+				without = f
+			end
+		end
+	end
+
+	check("the page has a row that carries a spell and one that carries none",
+		withSpell ~= nil and without ~= nil)
+
+	if withSpell and without then
+		GameTooltip.__shownAs = nil
+		withSpell.__scripts.OnEnter(withSpell)
+		check("the one that carries a spell opens the game's own description of it",
+			GameTooltip.__shownAs ~= nil and GameTooltip.__shownAs.kind == "spell",
+			GameTooltip.__shownAs and tostring(GameTooltip.__shownAs.kind))
+
+		GameTooltip:Show()
+		without.__scripts.OnEnter(without)
+		check("and the one that carries none takes it down rather than leaving it standing",
+			GameTooltip:IsShown() == false)
+	end
+end
+
 -- The creatures a character keeps, which the scanner above recorded against this member.
 --
 -- Two ids are drawn here on purpose. One the client will describe, which is what the whole
