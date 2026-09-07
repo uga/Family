@@ -672,10 +672,20 @@ local function build(frame)
 					-- What this creature still has to spend, in the same green the
 					-- crafting page uses for a cooldown that is ready: both answer
 					-- *there is something you could do with this right now*.
+					--
+					-- **And in red when it is negative**, which is a real state and not
+					-- an error: a pet that has just been tamed owes points, and works
+					-- its way up to nought and past it as it becomes loyal. Drawn
+					-- because it is the answer to *why will this pet not learn
+					-- anything*, which nothing else on the page gives. Reported from
+					-- play, 2026-09-07. Nought is drawn as nothing: there is neither
+					-- something to spend nor something to wait for.
 					local free = creature.trainingTotal
 						and (creature.trainingTotal - (creature.trainingSpent or 0))
-					heading.right:SetText(free and free > 0
-						and string.format("|cff40bf40%d %s|r", free, pointsWord) or "")
+					heading.right:SetText(free and free ~= 0
+						and string.format("|cff%s%d %s|r",
+							free > 0 and "40bf40" or "ff5555", free, pointsWord)
+						or "")
 
 					for _, ability in ipairs(keep) do
 						local r = nextRow()

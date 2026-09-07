@@ -3108,14 +3108,21 @@ do
 		{ "Arcane Resistance", "Rank 3", 45, 40, 24500 },
 		{ "Arcane Resistance", "Rank 4", 90, 50, 24501 },
 		{ "Growl", "Rank 1", 0, 0, 2649 },
-		{ "Bite", "Rank 8", 0, 0, nil },
+		-- The two shapes a wrong id arrives in, one for each reading that can refuse it.
+		-- Rank 8 is handed the id of the row before it, which names another ability
+		-- altogether and whose rank this client will not state - so only the name can
+		-- refuse it. Rank 9 is handed an id that names the right ability and states the
+		-- wrong rank, which only the rank can refuse.
+		{ "Bite", "Rank 8", 0, 0, 24500 },
 		{ "Bite", "Rank 9", 0, 0, 17259 },
 	}
 
 	-- What rank the client says a spell is, which is the second reading the id is held
 	-- against. 17259 is Bite Rank 6, offered here against a row that says Rank 9.
-	local RANK_OF = { [24500] = "Rank 3", [24501] = "Rank 4", [2649] = "Rank 1",
-		[17259] = "Rank 6" }
+	-- 24500 is deliberately absent: `GetSpellSubtext` answers for some pet ability ids and
+	-- not others - six of eight rows came back nil on a live Burning Crusade record - so the
+	-- rank lane has to be one that says nothing here.
+	local RANK_OF = { [24501] = "Rank 4", [2649] = "Rank 1", [17259] = "Rank 6" }
 	local realSubtext = GetSpellSubtext
 	GetSpellSubtext = function(id) return RANK_OF[id] end
 
@@ -3123,12 +3130,19 @@ do
 	-- name it is showing: GetSpellInfo("Beast Training") answers 5149 on Era, measured
 	-- 2026-09-07. Asked with a name here and with an id everywhere else, which is what the
 	-- one call does in the game.
+	--
+	-- And it names an id with the ability's own name, which is the reading an id is held
+	-- against before it is kept: `GetSpellSubtext` answers for some pet ability ids and not
+	-- others, so the name is the only one of the two that always says something.
+	local NAME_OF = { [24500] = "Arcane Resistance", [24501] = "Arcane Resistance",
+		[2649] = "Growl", [17259] = "Bite" }
 	local realSpellInfo = GetSpellInfo
 	GetSpellInfo = function(what)
 		if type(what) == "string" then
 			if what ~= "Beast Training" then return nil end
 			return what, nil, "icon", 0, 0, 0, 5149
 		end
+		if NAME_OF[what] then return NAME_OF[what], nil, "icon", 0, 0, 0, what end
 		return realSpellInfo(what)
 	end
 
@@ -3202,9 +3216,9 @@ do
 	-- The reported fault, from both ends. A row the client will not describe must not take
 	-- the id of the row before it, and an id whose rank is not this row's rank is not this
 	-- row's id however it arrived - the client says both, and the two have to agree.
-	check("a row the client will not describe takes no id from the row before it",
+	check("an id that names another ability is refused, whatever the rank call says",
 		(rows[4] or {}).spellID == nil, tostring((rows[4] or {}).spellID))
-	check("and an id whose rank is not the row's rank is refused",
+	check("and an id that names this one and states another rank is refused too",
 		(rows[5] or {}).spellID == nil, tostring((rows[5] or {}).spellID))
 	check("while the rank the window stated is kept either way",
 		(rows[4] or {}).rank == "Rank 8" and (rows[5] or {}).rank == "Rank 9")
@@ -7005,6 +7019,14 @@ do
 			{ id = 900001, name = "Thunderstomp", rank = "Rank 4" }
 	end
 
+	-- A pet that has just been tamed owes training points and works its way up to nought as
+	-- it becomes loyal, so the difference is negative and is a real state rather than a
+	-- fault: it is the answer to why this creature will not learn anything.
+	local other = pets.known and pets.known["p:26:Palla"]
+	if other then
+		other.trainingTotal, other.trainingSpent = 100, 140
+	end
+
 	-- A pet the stable names and nobody has summoned: there is no book to read for it, and
 	-- §2.2 says nothing rather than an empty list of abilities.
 	pets.stable = {
@@ -7032,6 +7054,14 @@ check("and a pet nobody has summoned is named with nothing claimed about it",
 check("what a creature still has to spend is drawn, and it is what is left",
 	visibleText("77 " .. Family.L["Training Points"])
 		and not visibleText("350 " .. Family.L["Training Points"]))
+check("in the green that means there is something to do with it",
+	visibleText("|cff40bf4077 " .. Family.L["Training Points"]))
+-- A freshly tamed pet owes points and climbs to nought as it becomes loyal. Drawn, because it
+-- is the answer to why the pet will not learn anything - and not in the green that means the
+-- opposite.
+check("and a creature that owes points says so, in a colour that is not that green",
+	visibleText("|cffff5555-40 " .. Family.L["Training Points"])
+		and not visibleText("|cff40bf40-40"))
 
 -- Each section runs entirely different code, and one that throws takes the panel with it,
 -- so all four are visited rather than only the one that happens to open first.

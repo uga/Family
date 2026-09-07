@@ -577,15 +577,7 @@ local function readCraftRecipes()
 				-- is not this row's rank is not this row's id, whatever it came back
 				-- from. Two readings of the same client have to agree, which is a
 				-- stronger thing to ask than that one of them answered.
-				if id and recipe.rank then
-					local subText = Family:TryCall(GetSpellSubtext, id)
-					if type(subText) == "string" and subText ~= ""
-						and subText ~= recipe.rank then
-						id = nil
-					end
-				end
-
-				recipe.spellID = id
+				recipe.spellID = Professions:AgreesWithRow(id, recipe) and id or nil
 			end
 
 			local cooldown = Family:TryCall(GetCraftCooldown, index)
@@ -697,6 +689,39 @@ local function craftRowKey(entry)
 	return entry.name .. "\30" .. tostring(entry.rank)
 end
 
+-- **Whether an id the client handed over is really this row's.**
+--
+-- Two readings of the same client, and the row is only believed when what answers agrees.
+--
+-- The **name** is the one that always answers: `GetSpellInfo` gives it for any id, in the same
+-- language the window wrote the row in, so an id that names a different ability is not this
+-- row's however it arrived - which is what a tooltip that was handed the row before this one
+-- hands back.
+--
+-- The **rank** is asked as well and is not relied on. `GetSpellSubtext` answers for some pet
+-- ability ids and not others - measured on a Burning Crusade record where six of eight rows
+-- came back nil and two answered *Rank 3* - so a nil there is no evidence either way, and only
+-- a rank that answers *and* disagrees refuses the id.
+function Professions:AgreesWithRow(id, row)
+	if not id then return false end
+	if type(row) ~= "table" then return false end
+
+	local named = Family:TryCall(GetSpellInfo, id)
+	if type(named) == "string" and named ~= "" and type(row.name) == "string"
+		and named ~= row.name then
+		return false
+	end
+
+	if row.rank then
+		local subText = Family:TryCall(GetSpellSubtext, id)
+		if type(subText) == "string" and subText ~= "" and subText ~= row.rank then
+			return false
+		end
+	end
+
+	return true
+end
+
 -- What is kept from an earlier reading of the same window.
 --
 -- Only the three the window withholds when the creature that is out cannot learn the row: the
@@ -717,12 +742,8 @@ function Professions:MergeCrafts(before, now)
 			-- the tooltip was made to prove itself can hold one rank's id on another
 			-- rank's row (L-063). The client says what rank a spell is; an id that
 			-- disagrees with the row it is on does not come forward.
-			if not entry.spellID and kept.spellID then
-				local subText = Family:TryCall(GetSpellSubtext, kept.spellID)
-				if type(subText) ~= "string" or subText == ""
-					or subText == entry.rank then
-					entry.spellID = kept.spellID
-				end
+			if not entry.spellID and self:AgreesWithRow(kept.spellID, entry) then
+				entry.spellID = kept.spellID
 			end
 
 			if not entry.trainingPoints then entry.trainingPoints = kept.trainingPoints end
