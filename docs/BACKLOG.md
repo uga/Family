@@ -464,6 +464,18 @@ Burning Crusade makes a link from it and Era does not, which is one line short o
 whether the record is kept by id or by name-plus-language. That line is in
 [`DATASOURCES.md`](DATASOURCES.md) with the readings.
 
+**Answered 2026-09-07, and both entries are unblocked.** `GetSpellInfo(<ability name>)` hands
+Burning Crusade a spell id — 27350 for Arcane Resistance — and hands Era nothing for the same
+ability out of the same kind of book. The client that says less decides the shape: an ability is
+stored as **the name and the rank word the book printed, with the locale it was read in**, the
+same shape a recipe list already has, and TBC's id is read and not used because an identity that
+exists on one build and not the other cannot cross a Wide Family link. The **creature** keeps its
+ids — the family id from `UnitCreatureFamily`, and for a demon the creature id in its GUID.
+
+So what is left in this entry is no longer a question, it is the build: a scanner that reads the
+pet book while a creature is out, a record per pet rather than per hunter, and a panel that says
+nothing rather than *none* about a pet never summoned.
+
 ---
 
 ## 10. Warlocks: the per-demon abilities known

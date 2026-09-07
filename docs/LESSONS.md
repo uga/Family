@@ -2377,3 +2377,26 @@ member counted as read. Mutating the fold back to the length alone reddens it.
 The whole record is folded now, and the number that made the shortcut tempting pays for the cap
 instead: twenty marks a call is 20 ms, on a tick that used to decode a whole member.
 
+
+## L-062 — A probe that guards a call cannot tell a missing function from a nil answer
+
+The pet book was asked for a link with `print(GetSpellBookItemLink and GetSpellBookItemLink(i,
+"pet"))`. The guard was there so the line could not error on a client that lacks the call, which
+is the right instinct and the wrong line: `nil and f()` is nil, and `f()` returning nil is nil.
+Both print the same word. Every reading came back *nil* and none of them said which nil it was.
+
+That cost a full probe cycle across two clients — Alberto ran it on Era and on Burning Crusade,
+pasted four blocks of output, and the answer in them was *unknown*. The next probe printed
+`type(GetSpellBookItemLink)` and the call vanished: it does not exist on either build, so the
+nils had never been answers at all.
+
+The general shape is that a probe writes down what it *learned*, and a guarded call learns
+nothing when it is false — the guard swallows the difference between "there is no such door" and
+"the door opened onto nothing", which are the two answers a capability probe exists to separate.
+
+**What now catches it.** Nothing in the harness can: this is a rule about writing probes, not
+about code. It is written into the probe habit instead — **print `type(fn)` on its own line
+before calling `fn`**, and never let a guard be the only thing standing between a missing
+function and a printed nil. The section *The pet book is the creature's, and the creature has an
+id* in `DATASOURCES.md` carries both probes, the guarded one and the one that replaced it, so the
+next reader sees the difference rather than being told about it.

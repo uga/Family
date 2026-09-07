@@ -1939,17 +1939,37 @@ If the fourth value matches the second, the name lookup lands on the rank the pe
 and an ability is one id. If it does not, the id is the ability and the rank stays the word the
 book printed.
 
-The shape of the record follows from whether **both** clients answer:
+**Era answered, and it answered with nothing.**
 
-- **Both give an id** - a pet ability is stored by id, with the rank from the name call beside it.
-- **Only one does** - it is stored by name and the language it was read in anyway, because a
-  record whose identity depends on which build wrote it cannot cross a Wide Family link, and
-  §6 says a linked family's data is never merged into ours to paper over the difference.
-- **Neither does** - the same, and §2.1 has nothing here to be applied to rather than being set
-  aside, which is the answer the stable already gave for the pet's own name.
+    Era   Arcane Resistance      nil
 
-Either way the creature is filed under its family id, and a demon under its creature id, because
-those were measured above and neither depends on this.
+The middle value came back empty rather than the words *no link* the probe prints for a nil, so
+Era's `GetSpellLink` most likely answers with an empty string rather than with nothing at all -
+a detail, and not the one that decides anything. **The id is nil.** The same call that hands
+Burning Crusade 27350 for Arcane Resistance hands Era nothing, for the same ability, read out of
+the same kind of book, on the same probe.
+
+**That settles the shape of the record, and the client that says less decides it:**
+
+- A pet or demon **ability** is stored as the **name and the rank word the book printed, with the
+  locale it was read in** - the shape a profession's recipe list already uses, and for the same
+  reason.
+- The **creature** is stored under the family id from `UnitCreatureFamily`, and a demon
+  additionally under the creature id in its GUID. Those are ids and they are used as ids.
+- §2.1 is not being set aside at the ability level: there is nothing to set it aside for on Era,
+  and half an identity is worse than none. A record filed by id where the writer ran Burning
+  Crusade and by name where they ran Era could not be compared with itself, which is exactly what
+  a Wide Family link asks of it - and §6 forbids merging a linked family's data to hide the seam.
+  TBC's 27350 is therefore **read and not used**.
+- The rank question the previous probe raised - whether a name lookup lands on the rank the pet
+  actually knows - never has to be answered, because nothing is filed under that id.
+
+There is a door left, and it is not opened here: `wago.tools` holds the spell tables for every
+build, so a generated table mapping a pet ability's name **in each locale** to its id is possible
+the same way `tools/recipe-cooldowns.py` and the mount tables are. It would buy one thing only -
+abilities read on Era becoming comparable with abilities read anywhere else - and it costs a
+generated table per locale. It is worth revisiting only if a Wide Family panel actually wants to
+line two hunters' pets up side by side; until then the name and its language are what crosses.
 
 ### What crosses a Wide Family link as a word, and cannot be translated
 
