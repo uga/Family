@@ -2589,7 +2589,28 @@ UnitGUID = function(unit)
 	return realGUID and realGUID(unit) or nil
 end
 
+-- Two returns, and a Burning Crusade pet with seventy-seven free answered 350 273 while the
+-- window said 77: the first is the total, the second is spent, and what is left is the
+-- difference. Measured 2026-09-07, because 300 300 - the first pet asked - says nothing about
+-- which is which.
+local realTrainingPoints = GetPetTrainingPoints
+GetPetTrainingPoints = function() return 350, 273 end
+
 local out = Family.Pets:ReadOut()
+check("what the creature has left to spend is read from the pair the client answers",
+	(out or {}).trainingTotal == 350 and (out or {}).trainingSpent == 273,
+	out and (tostring(out.trainingTotal) .. "/" .. tostring(out.trainingSpent)))
+
+-- Mists has no training points at all, and a nought there is a claim about a system that build
+-- does not have rather than a pet with none left.
+GetPetTrainingPoints = function() return 0, 0 end
+local noPoints = Family.Pets:ReadOut()
+check("and a client with no training points at all records none rather than nought",
+	(noPoints or {}).trainingTotal == nil and (noPoints or {}).trainingSpent == nil,
+	tostring((noPoints or {}).trainingTotal))
+
+GetPetTrainingPoints = function() return 350, 273 end
+out = Family.Pets:ReadOut()
 -- The family number is the same on every client for the same family, which the word beside
 -- it is not: this is the identity §2.1 asks for and the word is what gets drawn.
 check("the creature that is out is read with its family id", (out or {}).familyID == 9,
@@ -2667,6 +2688,7 @@ check("a demon is filed under its family alone",
 check("and a pet is not, so two owls with different names are two records",
 	Family.Pets:KeyFor("PET", 26, "Palla") ~= Family.Pets:KeyFor("PET", 26, "Pallazza"))
 
+GetPetTrainingPoints = realTrainingPoints
 GetStablePetInfo, HasPetSpells = realStable, realHasPet
 GetSpellBookItemName = realBookName
 UnitCreatureFamily, UnitName = realFamily, realUnitName
@@ -7004,6 +7026,12 @@ check("the creature that carries them is named", visibleText("Spostati"))
 check("and a pet nobody has summoned is named with nothing claimed about it",
 	visibleText("Alberto")
 		and visibleText(Family.L["In the stable, never summoned - nothing recorded"]))
+-- Seventy-seven of three hundred and fifty left, drawn as what is left rather than as either
+-- of the two numbers the client answers with - which is the only one of the three a player
+-- could act on.
+check("what a creature still has to spend is drawn, and it is what is left",
+	visibleText("77 " .. Family.L["Training Points"])
+		and not visibleText("350 " .. Family.L["Training Points"]))
 
 -- Each section runs entirely different code, and one that throws takes the panel with it,
 -- so all four are visited rather than only the one that happens to open first.

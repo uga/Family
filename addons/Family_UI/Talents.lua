@@ -617,6 +617,7 @@ local function build(frame)
 			-- The game's own word, because the game has already decided what a level is
 			-- called in the language this is being read in.
 			local levelWord = Family:GameWord("LEVEL", "Level")
+			local pointsWord = Family:GameWord("TRAINING_POINTS", L["Training Points"])
 
 			local function describe(creature)
 				local parts = {}
@@ -667,7 +668,14 @@ local function build(frame)
 					heading.left:SetText(string.format("|cff88bbff%s|r |cff888888(%d)|r",
 						creature.name or creature.family or "?", #keep))
 					heading.middle:SetText("|cff888888" .. describe(creature) .. "|r")
-					heading.right:SetText("")
+
+					-- What this creature still has to spend, in the same green the
+					-- crafting page uses for a cooldown that is ready: both answer
+					-- *there is something you could do with this right now*.
+					local free = creature.trainingTotal
+						and (creature.trainingTotal - (creature.trainingSpent or 0))
+					heading.right:SetText(free and free > 0
+						and string.format("|cff40bf40%d %s|r", free, pointsWord) or "")
 
 					for _, ability in ipairs(keep) do
 						local r = nextRow()

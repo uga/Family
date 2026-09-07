@@ -2182,6 +2182,14 @@ window - so the two readers agree about what an ability is.
 The tooltip is asked **only where both links said nothing**, so an enchanting row keeps the id it
 already had and nothing about the professions changes.
 
+**What the creature has left to spend, measured 2026-09-07.** `GetPetTrainingPoints` exists and
+answers two numbers, and which is which needed a second pet to settle: the first asked answered
+**300 300**, which is symmetric and says nothing. A Burning Crusade pet with seventy-seven points
+free answered **350 273**, and its window said 77. So the first is the **total**, the second is
+**spent**, and what is left is the difference - which is the only one of the three a player can
+act on, and the one Family draws. Mists has no training points at all; a nought there is a claim
+about a system that build does not have rather than a pet with none left, so nothing is recorded.
+
 **The window prices what the creature that is out can learn, and nothing else.** Reported from
 play with the window open beside Family's own page: a cat is shown a cost against every rank of
 Claw and none at all against Bite, Gore, Charge or Growl - the abilities of families it does not

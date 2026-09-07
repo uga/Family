@@ -199,6 +199,21 @@ function Pets:ReadOut()
 	local family, familyID = Family:TryCall(UnitCreatureFamily, "pet")
 	local name = Family:TryCall(UnitName, "pet")
 
+	-- What this creature has to spend, which is the one number on the trainer's window that
+	-- is about the pet rather than about a row on it.
+	--
+	-- Two returns, and which is which was settled by a reading rather than by the order they
+	-- are documented in: a Burning Crusade pet with seventy-seven points free answered
+	-- **350 273**, and the window said 77. So the first is the total, the second is spent,
+	-- and the free ones are the difference (measured 2026-09-07).
+	--
+	-- Nothing is recorded where there is nothing to spend against: Mists has no training
+	-- points at all, and a nought there is a claim about a system that build does not have
+	-- rather than a pet with none left (§2.2).
+	local total, spent = Family:TryCall(GetPetTrainingPoints)
+	total, spent = tonumber(total), tonumber(spent)
+	if not total or total <= 0 then total, spent = nil, nil end
+
 	local key = self:KeyFor(kind, tonumber(familyID), name)
 	if not key then return nil end
 
@@ -210,6 +225,8 @@ function Pets:ReadOut()
 		familyID = tonumber(familyID),
 		family = type(family) == "string" and family ~= "" and family or nil,
 		creature = creatureFrom((Family:TryCall(UnitGUID, "pet"))),
+		trainingTotal = total,
+		trainingSpent = total and (spent or 0) or nil,
 		abilities = abilities,
 		seen = time(),
 	}

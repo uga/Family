@@ -27,6 +27,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Each pet says how many training points it still has to spend**, on its own row in Pets, in
+  green when there are any. It is what is left, not what the pet started with — the number you
+  would go to a trainer about.
+
 - **Beast Training remembers what it has seen, instead of forgetting it at the next pet.** The
   window only prices and describes the abilities the pet you have out can actually learn — a cat
   sees a cost against Claw and nothing against Bite — so opening it with a different pet used to
