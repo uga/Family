@@ -3187,6 +3187,53 @@ do
 	check("while the rank the window stated is kept either way",
 		(rows[4] or {}).rank == "Rank 8" and (rows[5] or {}).rank == "Rank 9")
 
+	-- **A second reading with another creature out.**
+	--
+	-- The window prices and describes only what the pet currently summoned can learn, so the
+	-- same window read with a cat out and with a wolf out answers about different rows. The
+	-- record is the union of the readings: a cost seen once is not unlearnt by a reading that
+	-- did not mention it, and neither is an id.
+	-- Rank 3 is the one this reading withholds and Rank 4 the one it prices, which is the
+	-- other way round from the reading before it. Two ranks of one ability, each learnt from
+	-- a different reading, is what says the rows are told apart by their rank and not only by
+	-- their name.
+	local WITH_A_CAT = {
+		{ "Arcane Resistance", "Rank 3", 0, 0, nil },
+		{ "Arcane Resistance", "Rank 4", 90, 50, 24501 },
+		{ "Growl", "Rank 1", 0, 0, 2649 },
+		{ "Bite", "Rank 8", 0, 0, nil },
+		{ "Bite", "Rank 9", 0, 0, nil },
+	}
+	GetCraftInfo = function(index)
+		local row = WITH_A_CAT[index]
+		if not row then return nil end
+		return row[1], row[2], "none", 0, nil, row[3], row[4]
+	end
+	tip.SetCraftSpell = function(self, index)
+		local row = WITH_A_CAT[index]
+		if not (row and row[5]) then return end
+		self.__spellName, self.__spellID = row[1], row[5]
+		self.__lines[#self.__lines + 1] = row[1]
+	end
+
+	Family.Professions:Scan(true)
+
+	rows = (((Family.Database:Payload(key) or {}).crafts or {})[5149] or {}).entries or {}
+
+	check("a reading with another creature out does not unlearn what the first one saw",
+		(rows[1] or {}).trainingPoints == 45 and (rows[1] or {}).petLevel == 40,
+		tostring((rows[1] or {}).trainingPoints))
+	check("nor the id that came with it",
+		(rows[1] or {}).spellID == 24500, tostring((rows[1] or {}).spellID))
+	-- And what it kept is this rank's, not the rank next to it: the row above was priced by
+	-- this reading and the row it is being compared against was priced by the one before.
+	check("and what is kept is the row's own, not the one beside it with the same name",
+		(rows[2] or {}).trainingPoints == 90 and (rows[2] or {}).spellID == 24501,
+		tostring((rows[2] or {}).trainingPoints))
+	-- And the rows that were never described stay undescribed rather than inheriting.
+	check("and a row neither reading could describe still carries no id",
+		(rows[4] or {}).spellID == nil and (rows[5] or {}).spellID == nil)
+
 	tip.SetCraftSpell = nil
 	GetSpellSubtext = realSubtext
 	GetSpellInfo = realSpellInfo

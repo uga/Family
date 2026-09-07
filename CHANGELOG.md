@@ -27,6 +27,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Beast Training remembers what it has seen, instead of forgetting it at the next pet.** The
+  window only prices and describes the abilities the pet you have out can actually learn — a cat
+  sees a cost against Claw and nothing against Bite — so opening it with a different pet used to
+  wipe what the last one had shown. What has been read once is kept now, and each visit fills in
+  what the last one could not see.
+
 - **A character played in two languages no longer has two copies of the same ability list.** A
   hunter who played some of the time on a French client and some of the time on an English one saw
   Beast Training twice on the Abilities & Talents page, once in each language. There is one list

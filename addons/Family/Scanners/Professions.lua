@@ -688,6 +688,51 @@ function Professions:IsScanning()
 	return scanning
 end
 
+-- One row of a craft window, told from another by what the window itself says about it: the
+-- ability and the rank, which are two words in the same language from the same reading. The id
+-- would be better and is exactly what half of these rows have not got - which is the reason
+-- this merge exists at all.
+local function craftRowKey(entry)
+	if type(entry) ~= "table" or type(entry.name) ~= "string" then return nil end
+	return entry.name .. "\30" .. tostring(entry.rank)
+end
+
+-- What is kept from an earlier reading of the same window.
+--
+-- Only the three the window withholds when the creature that is out cannot learn the row: the
+-- spell id, the cost, and the level. Everything else is this reading's.
+function Professions:MergeCrafts(before, now)
+	if type(before) ~= "table" or type(now) ~= "table" then return now end
+
+	local held = {}
+	for _, entry in ipairs(before) do
+		local key = craftRowKey(entry)
+		if key then held[key] = entry end
+	end
+
+	for _, entry in ipairs(now) do
+		local kept = held[craftRowKey(entry)]
+		if kept then
+			-- The id is re-checked rather than trusted, because a record written before
+			-- the tooltip was made to prove itself can hold one rank's id on another
+			-- rank's row (L-063). The client says what rank a spell is; an id that
+			-- disagrees with the row it is on does not come forward.
+			if not entry.spellID and kept.spellID then
+				local subText = Family:TryCall(GetSpellSubtext, kept.spellID)
+				if type(subText) ~= "string" or subText == ""
+					or subText == entry.rank then
+					entry.spellID = kept.spellID
+				end
+			end
+
+			if not entry.trainingPoints then entry.trainingPoints = kept.trainingPoints end
+			if not entry.petLevel then entry.petLevel = kept.petLevel end
+		end
+	end
+
+	return now
+end
+
 function Professions:Scan(includeRecipes)
 	if scanning then return end
 	scanning = true
@@ -768,6 +813,21 @@ function Professions:ScanNow(includeRecipes)
 			-- which is what a heading is for.
 			local craftID = select(7, Family:TryCall(GetSpellInfo, recipeName))
 			craftID = tonumber(craftID)
+
+			-- **What was read before is kept, and a new read fills its gaps.**
+			--
+			-- The window answers about the creature that is out. A hunter with a cat open
+			-- sees a cost against every rank of Claw and nothing at all against Bite - and
+			-- the rows the client will not price are the rows it will not describe either,
+			-- so they arrive with no cost and no id. Replacing the record each time meant
+			-- the cat's reading wiped what the wolf's reading had learnt, for ever, every
+			-- time the window was opened. Reported from play, 2026-09-07.
+			--
+			-- What a rank costs does not depend on which pet is out; whether the window
+			-- says so does. So the union of every reading is truer than the last one, and
+			-- this is the shape a pet's own book already has.
+			local before = (payload.crafts or {})[craftID or recipeName]
+			recipes = Professions:MergeCrafts(before and before.entries, recipes)
 
 			payload.crafts = payload.crafts or {}
 
