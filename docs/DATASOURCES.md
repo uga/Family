@@ -2013,6 +2013,43 @@ The types are printed first and separately, per L-062. If `GetSpell` answers wit
 book slot on Era, the whole question closes: the writer records the id its own client gave it, on
 every build, and the reader's client says it in the reader's language with no table anywhere.
 
+**The door opened. Era, with the pet out:**
+
+    /run local t=GameTooltip t:SetOwner(UIParent,"ANCHOR_NONE")
+        print(pcall(t.SetSpellBookItem,t,1,"pet"))
+        local n,i=t:GetSpell() print(tostring(n),tostring(i),t:NumLines())
+
+    book   true false    Arcane Resistance   24497   2
+    bar    true false    nil                 nil     2
+
+- **`GameTooltip:GetSpell()` hands back a spell id for a pet book slot on Era** - 24497 for the
+  Arcane Resistance the book calls *Rank 2*. The client had the id all along; the spell book's own
+  calls are simply the wrong readers to ask for it.
+- **The pet bar is not the same door.** `SetPetAction(1)` builds a two-line tooltip and answers
+  `nil, nil` - it draws the ability and exposes no spell. So the book, always, and never the bar.
+- Both calls survived; the `false` beside each `true` is the setter's own return value, not a
+  failure. The probe was run with `pcall` precisely so those two could not be confused, which is
+  the same lesson as the guarded call in L-062 wearing a different hat.
+
+**So an ability is recorded by id on every build, and the requirement is met.** The writer asks
+its own client through a tooltip and stores what it gets; the reader turns that id into the
+reader's own language with `Names:Spell`, straight away, no summon and no walk. The word the book
+printed is kept **beside** the id rather than instead of it - which is the recipe pattern
+exactly - because a build does not always know another build's ids: Era printed nothing for TBC's
+27350, and in that case the word is what is drawn, the same fallback every shared id already has.
+
+Two things this hands to whoever builds it:
+
+- It must go through `Family:ScanTooltipLine`'s tooltip - `FamilyScanTooltip` in
+  `addons/Family/Core.lua`, made once and never shown - and never through `GameTooltip`, which
+  belongs to the player and is on screen. The existing helper returns a **line of text**; reading
+  a spell wants a sibling that aims the same tooltip and answers `tip:GetSpell()` instead.
+- The rank is still the book's word. The id is the rank's - Era's Rank 2 is 24497 and TBC's Rank 3
+  is 27350 - so a reader who is shown the ability's name from the id and the rank from the word is
+  being shown one translated half and one untranslated one. Whether the rank is drawn at all is a
+  panel question, and the digit inside the word plus `tools/game-words.py` is the way to draw it
+  translated if the answer is yes.
+
 ### What crosses a Wide Family link as a word, and cannot be translated
 
 Read 2026-09-05, after Alberto asked whether a subzone is the only shared thing a reader sees in

@@ -472,9 +472,16 @@ same shape a recipe list already has, and TBC's id is read and not used because 
 exists on one build and not the other cannot cross a Wide Family link. The **creature** keeps its
 ids — the family id from `UnitCreatureFamily`, and for a demon the creature id in its GUID.
 
+**And then the id turned up, later the same day.** A scanning tooltip aimed at a pet book slot
+answers `GetSpell()` with a spell id on **Era** as well - 24497 for the ability the book calls
+Arcane Resistance Rank 2 - so the shape above is superseded before anything was written under it:
+an ability is stored **by id**, on every build, with the book's word kept beside it as the
+fallback a build that does not know another build's ids falls back to. No generated table, and no
+login walk: a spell needs neither.
+
 So what is left in this entry is no longer a question, it is the build: a scanner that reads the
-pet book while a creature is out, a record per pet rather than per hunter, and a panel that says
-nothing rather than *none* about a pet never summoned.
+pet book through `FamilyScanTooltip` while a creature is out, a record per pet rather than per
+hunter, and a panel that says nothing rather than *none* about a pet never summoned.
 
 ---
 
