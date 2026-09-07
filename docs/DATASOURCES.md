@@ -1912,6 +1912,33 @@ creature out:
 The `gsub` doubles the pipes so the raw link prints instead of rendering, and `GetSpellInfo`'s
 seventh return is asked separately because a name that will not make a link may still make an id.
 
+**Burning Crusade answered, and it answered with an id.**
+
+    TBC   Arcane Resistance   [Arcane Resistance]   27350
+
+So `GetSpellInfo(<pet ability name>)` hands back a spell id on that build even though the book
+itself has no link door. Two things are still not known and neither is a detail:
+
+- **Era has not been run.** Its `GetSpellLink` said nothing for the same name, and whether its
+  `GetSpellInfo` says nothing either is the whole difference between *stored by id* and *stored
+  by name and language*.
+- **Whether the id is the pet's rank or some other one.** The lookup was by **name**, and a name
+  is shared by every rank of an ability - the TBC pet knows Arcane Resistance **Rank 3** and
+  nothing in this reading says 27350 is that rank rather than the first one the client found.
+  An id that names the ability but not the rank is still worth having; an id assumed to carry a
+  rank it does not would put a Rank 1 in a record that read a Rank 3.
+
+One line settles both, run on **each** client with any creature out:
+
+    /run local n,r = GetSpellBookItemName(1,"pet")
+        local _,_,_,_,_,_,id = GetSpellInfo(n)
+        local r2 if id then local _,rr = GetSpellInfo(id) r2 = rr end
+        print(n, r, tostring(id), tostring(r2))
+
+If the fourth value matches the second, the name lookup lands on the rank the pet actually knows
+and an ability is one id. If it does not, the id is the ability and the rank stays the word the
+book printed.
+
 The shape of the record follows from whether **both** clients answer:
 
 - **Both give an id** - a pet ability is stored by id, with the rank from the name call beside it.
