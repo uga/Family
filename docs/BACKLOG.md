@@ -479,9 +479,15 @@ an ability is stored **by id**, on every build, with the book's word kept beside
 fallback a build that does not know another build's ids falls back to. No generated table, and no
 login walk: a spell needs neither.
 
-So what is left in this entry is no longer a question, it is the build: a scanner that reads the
-pet book through `FamilyScanTooltip` while a creature is out, a record per pet rather than per
-hunter, and a panel that says nothing rather than *none* about a pet never summoned.
+**BUILT 2026-09-07.** `Family/Scanners/Pets.lua` reads the stable and, while a creature is out,
+its book — by id, through the scanning tooltip, with the word the book printed kept beside each
+id. The record accumulates one summon at a time and is drawn as a third section on Abilities &
+Talents beside the talents and the spellbook. A pet the stable names and nobody has summoned is
+listed under *In the stable* with nothing claimed about it.
+
+One thing is deliberately left: **nothing about pets crosses a Wide Family link.** `Wide.lua`
+shares only payload keys named in a category, and adding `pets` to Talents would widen a consent
+already granted without asking. A category of its own is a §6 decision and Alberto's to take.
 
 ---
 

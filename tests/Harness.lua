@@ -1897,6 +1897,7 @@ for _, file in ipairs {
 	"Scanners/Auctions.lua", "Scanners/Mail.lua", "Scanners/Character.lua",
 	"Scanners/Quests.lua",
 	"Scanners/Currencies.lua",
+	"Scanners/Pets.lua",
 	"Wide.lua",
 	"Guild.lua",
 } do
@@ -2409,6 +2410,207 @@ check("a client that answers nothing leaves what was recorded alone",
 
 GetHonorCurrency = function() return 12340 end
 GetArenaCurrency = function() return 875 end
+end
+
+print()
+print("pets")
+
+-- The creatures a character keeps, which is the one thing these clients file under something
+-- other than the character. Every fixture below is shaped like a reading in DATASOURCES
+-- rather than invented: the stable repeats slot 0 at slot 1 and leaves a hole at slot 2, the
+-- pet book answers a name and a rank word and no id at all, and the id comes from a tooltip
+-- aimed at the same slot - which is the only reader on Era that has one.
+do
+local realStable, realHasPet = GetStablePetInfo, HasPetSpells
+local realBookName = GetSpellBookItemName
+local realFamily, realUnitName = UnitCreatureFamily, UnitName
+local realLevel, realGUID = UnitLevel, UnitGUID
+
+local STABLE = {
+	[0] = { 132189, "Spostati", 60, "Gorilla" },
+	[1] = { 132189, "Spostati", 60, "Gorilla" },
+	[3] = { 132203, "Palla", 60, "Owl" },
+}
+
+GetStablePetInfo = function(slot)
+	local row = STABLE[slot]
+	if not row then return nil end
+	return row[1], row[2], row[3], row[4]
+end
+
+local stable = Family.Pets:ReadStable()
+check("the stable is read with its door shut", stable ~= nil and #stable == 2,
+	stable and tostring(#stable))
+check("slot 0 and slot 1 are one pet rather than two",
+	stable and stable[1] and stable[1].name == "Spostati"
+		and (stable[2] or {}).name ~= "Spostati",
+	stable and stable[1] and stable[1].name)
+-- Measured on Burning Crusade: slots 0, 1 and 3 answer and slot 2 does not. A walk that
+-- stopped at the first empty slot would lose the pet that is past it.
+check("and an empty slot is a gap rather than the end of the list",
+	(stable and stable[2] or {}).name == "Palla",
+	stable and stable[2] and stable[2].name)
+check("with the level and the family the client gave",
+	(stable and stable[1] or {}).level == 60
+		and (stable and stable[2] or {}).family == "Owl")
+
+-- The book, as the client answers it: a name, a rank as a **word**, and no id anywhere.
+local BOOK = {
+	{ "Growl", "Rank 6", 14921 },
+	{ "Arcane Resistance", "Rank 2", 24497 },
+	{ "Thunderstomp", "Rank 4", 26188 },
+}
+
+HasPetSpells = function() return #BOOK, "PET" end
+GetSpellBookItemName = function(index, kind)
+	local row = kind == "pet" and BOOK[index]
+	if not row then return nil end
+	return row[1], row[2]
+end
+
+-- Made if it is not made yet, so the fixture has something to hang the setter on.
+Family:ScanTooltipSpell(function() end)
+local tip = _G.FamilyScanTooltip
+tip.SetSpellBookItem = function(self, index, kind)
+	local row = kind == "pet" and BOOK[index]
+	self.__spellName = row and row[1] or nil
+	self.__spellID = row and row[3] or nil
+end
+
+local abilities = Family.Pets:ReadAbilities()
+check("a creature's book is read while that creature is out",
+	abilities ~= nil and #abilities == 3, abilities and tostring(#abilities))
+
+local function abilityNamed(list, name)
+	for _, entry in ipairs(list or {}) do
+		if entry.name == name then return entry end
+	end
+	return nil
+end
+
+-- The whole point of the tooltip door: the book itself will not give an id on Era, and an
+-- ability filed under a word is an ability a reader in another language cannot be told about.
+check("every ability is filed under the id the tooltip gave",
+	(abilityNamed(abilities, "Growl") or {}).id == 14921
+		and (abilityNamed(abilities, "Thunderstomp") or {}).id == 26188,
+	abilities and tostring((abilityNamed(abilities, "Growl") or {}).id))
+check("with the word the book printed kept beside it, for a build that knows no such id",
+	(abilityNamed(abilities, "Arcane Resistance") or {}).name == "Arcane Resistance"
+		and (abilityNamed(abilities, "Arcane Resistance") or {}).rank == "Rank 2")
+
+-- A client that will not describe the slot is an ordinary answer, not a fault: the word is
+-- what there is, and nothing is filed under an id that was never given.
+tip.SetSpellBookItem = function(self) self.__spellName, self.__spellID = nil, nil end
+local wordsOnly = Family.Pets:ReadAbilities()
+check("an ability the tooltip will not describe keeps its word and invents no id",
+	#(wordsOnly or {}) == 3 and (abilityNamed(wordsOnly, "Growl") or {}).id == nil,
+	wordsOnly and tostring(#wordsOnly))
+
+tip.SetSpellBookItem = function(self, index, kind)
+	local row = kind == "pet" and BOOK[index]
+	self.__spellName = row and row[1] or nil
+	self.__spellID = row and row[3] or nil
+end
+
+UnitCreatureFamily = function(unit)
+	if unit ~= "pet" then return nil end
+	return "Gorilla", 9
+end
+UnitName = function(unit)
+	if unit == "pet" then return "Spostati" end
+	return realUnitName and realUnitName(unit) or nil
+end
+UnitLevel = function(unit)
+	if unit == "pet" then return 60 end
+	return realLevel and realLevel(unit) or nil
+end
+UnitGUID = function(unit)
+	if unit == "pet" then return "Pet-0-5208-0-20-6516-01008A56D5" end
+	return realGUID and realGUID(unit) or nil
+end
+
+local out = Family.Pets:ReadOut()
+-- The family number is the same on every client for the same family, which the word beside
+-- it is not: this is the identity §2.1 asks for and the word is what gets drawn.
+check("the creature that is out is read with its family id", (out or {}).familyID == 9,
+	out and tostring(out.familyID))
+check("and with the creature id out of its GUID, which is the sixth field",
+	(out or {}).creature == 6516, out and tostring(out.creature))
+check("and is filed under a key carrying both the family and the name",
+	(out or {}).key == "p:9:Spostati", out and tostring(out.key))
+
+Family.Pets:Scan()
+local pets = (Family.Database:Payload(key) or {}).pets
+check("a scan records the creature against the member",
+	pets ~= nil and pets.known ~= nil and pets.known["p:9:Spostati"] ~= nil)
+check("and the stable beside it", #((pets or {}).stable or {}) == 2)
+
+-- The heart of it. A book can only be read while its creature is out, so a scan that replaced
+-- what it found would leave a hunter with whichever pet was summoned last and call the other
+-- three unknown (§2.2).
+UnitName = function(unit) if unit == "pet" then return "Palla" end return nil end
+UnitCreatureFamily = function(unit) if unit == "pet" then return "Owl", 26 end end
+UnitGUID = function(unit) if unit == "pet" then return "Pet-0-5208-0-20-7456-01008A56D6" end end
+Family.Pets:Scan()
+
+pets = (Family.Database:Payload(key) or {}).pets
+local known = 0
+for _ in pairs(pets.known or {}) do known = known + 1 end
+check("a second creature is added to the first rather than replacing it", known == 2,
+	tostring(known))
+check("and each keeps its own book", pets.known["p:26:Palla"] ~= nil
+	and #(pets.known["p:9:Spostati"].abilities or {}) == 3)
+
+-- Nothing out and no stable is every scan a mage ever runs, and it must not touch a record
+-- that took four summons to build.
+HasPetSpells = function() return nil, nil end
+GetStablePetInfo = function() return nil end
+
+-- Measured as *the record was not written*, not as *the record still has two in it*. Counting
+-- what is left passes for a scan that rewrites the same two entries back, which is exactly the
+-- churn this guard exists to avoid - and a rewrite is not free: it re-serialises the member and
+-- makes every reader think the record moved.
+local wrote = 0
+local realSetPayload = Family.Database.SetPayload
+Family.Database.SetPayload = function(this, ...)
+	wrote = wrote + 1
+	return realSetPayload(this, ...)
+end
+
+Family.Pets:Scan()
+Family.Database.SetPayload = realSetPayload
+
+known = 0
+for _ in pairs(((Family.Database:Payload(key) or {}).pets or {}).known or {}) do
+	known = known + 1
+end
+check("a scan with nothing summoned does not write at all", wrote == 0, tostring(wrote))
+check("and what was recorded is still there", known == 2, tostring(known))
+
+-- The stable is a whole answer every time it answers, so a pet released is gone from it -
+-- unlike the books, which accumulate.
+GetStablePetInfo = function(slot)
+	if slot ~= 1 then return nil end
+	return 132189, "Spostati", 60, "Gorilla"
+end
+HasPetSpells = function() return #BOOK, "PET" end
+Family.Pets:Scan()
+pets = (Family.Database:Payload(key) or {}).pets
+check("but the stable is replaced, because a released pet is gone from it",
+	#(pets.stable or {}) == 1, tostring(#(pets.stable or {})))
+
+-- A warlock's demon has no name of its own to tell two of them apart with, and does not need
+-- one: there is one Imp, and summoning it again is the same Imp.
+check("a demon is filed under its family alone",
+	Family.Pets:KeyFor("DEMON", 23, "Imp") == "d:23"
+		and Family.Pets:KeyFor("DEMON", 23, nil) == "d:23")
+check("and a pet is not, so two owls with different names are two records",
+	Family.Pets:KeyFor("PET", 26, "Palla") ~= Family.Pets:KeyFor("PET", 26, "Pallazza"))
+
+GetStablePetInfo, HasPetSpells = realStable, realHasPet
+GetSpellBookItemName = realBookName
+UnitCreatureFamily, UnitName = realFamily, realUnitName
+UnitLevel, UnitGUID = realLevel, realGUID
 end
 
 print()
@@ -6461,6 +6663,46 @@ check("the spellbook is sorted rather than left in the client's order",
 		< (frameShowing("Zul'Gurub Ritual") or 0),
 	tostring(frameShowing("Apprentice Riding")) .. " vs "
 		.. tostring(frameShowing("Zul'Gurub Ritual")))
+
+-- The creatures a character keeps, which the scanner above recorded against this member.
+--
+-- Two ids are drawn here on purpose. One the client will describe, which is what the whole
+-- tooltip door was for - the reader's own client says it in the reader's own language - and
+-- one above nine hundred thousand, which this stub answers nothing for, standing for the
+-- between-builds case where Era has never heard of Burning Crusade's rank. There the word the
+-- book printed is what is drawn, which is why it is stored beside the id and not instead of it.
+do
+	local who = Family:CurrentMember()
+	local payload = Family.Database:Payload(who) or {}
+	local pets = payload.pets or {}
+
+	local mine = pets.known and pets.known["p:9:Spostati"]
+	if mine then
+		mine.abilities[#mine.abilities + 1] =
+			{ id = 900001, name = "Thunderstomp", rank = "Rank 4" }
+	end
+
+	-- A pet the stable names and nobody has summoned: there is no book to read for it, and
+	-- §2.2 says nothing rather than an empty list of abilities.
+	pets.stable = {
+		{ name = "Spostati", level = 60, family = "Gorilla" },
+		{ name = "Alberto", level = 60, family = "Wolf" },
+	}
+
+	payload.pets = pets
+	Family.Database:SetPayload(who, payload)
+end
+
+Family.UI:Refresh()
+check("the pets section opens", clickButton("Pets"))
+check("an ability is drawn in the reader's own language, out of the id",
+	visibleText("Spell 14921"))
+check("and as the word the book printed where this client knows no such id",
+	visibleText("Thunderstomp"))
+check("the creature that carries them is named", visibleText("Spostati"))
+check("and a pet nobody has summoned is named with nothing claimed about it",
+	visibleText("Alberto")
+		and visibleText(Family.L["In the stable, never summoned - nothing recorded"]))
 
 -- Each section runs entirely different code, and one that throws takes the panel with it,
 -- so all four are visited rather than only the one that happens to open first.
@@ -18835,6 +19077,7 @@ print("a client's answer, handed straight to something that takes a second argum
 		"addons/Family/Scanners/Mail.lua", "addons/Family/Scanners/Currencies.lua",
 		"addons/Family/Scanners/Professions.lua", "addons/Family/Scanners/Identity.lua",
 		"addons/Family/Scanners/Bank.lua", "addons/Family/Scanners/Quests.lua",
+		"addons/Family/Scanners/Pets.lua",
 		"addons/Family_UI/Tooltip.lua", "addons/Family_UI/Slash.lua",
 		"addons/Family_UI/Guild.lua", "addons/Family_UI/Options.lua",
 	}
@@ -20071,7 +20314,7 @@ print("the translations")
 			list[#list + 1] = "addons/Family/" .. name .. ".lua"
 		end
 		for _, name in ipairs { "Bags", "Talents", "Professions", "Bank", "Identity",
-			"Auctions", "Mail", "Character", "Quests", "Currencies" } do
+			"Auctions", "Mail", "Character", "Quests", "Currencies", "Pets" } do
 			list[#list + 1] = "addons/Family/Scanners/" .. name .. ".lua"
 		end
 		-- Taken from the list this file already loads the panels with, rather than

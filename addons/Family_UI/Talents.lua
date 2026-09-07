@@ -26,7 +26,7 @@ local L = Family.L
 
 local ROW = 16
 
-local SECTIONS = { "Talents", "Spellbook" }
+local SECTIONS = { "Talents", "Spellbook", "Pets" }
 
 local function membersKnown()
 	return UI:EveryMember()
@@ -289,7 +289,10 @@ local function build(frame)
 
 		-- The spellbook is read by its pictures as much as by its words, so its rows are
 		-- twice the height and carry an icon to match - the same reason the gear list is.
-		local rowHeight = (section == "Spellbook") and (ROW * 2) or ROW
+		-- The two list sections draw a picture beside every row and need the room for it;
+		-- the talent trees draw their own grid and do not.
+		local rowHeight = (section == "Spellbook" or section == "Pets")
+			and (ROW * 2) or ROW
 
 		local function nextRow()
 			usedRows = usedRows + 1
@@ -504,6 +507,159 @@ local function build(frame)
 						if taught.icon then r.icon:SetTexture(taught.icon) end
 					end
 				end
+			end
+
+			return finish()
+		end
+
+		----------------------------------------------------------------------------------
+		-- Pets
+		--
+		-- The one thing these clients file under a creature rather than under a character.
+		-- It sits on this page because it answers the same question the two sections beside
+		-- it answer - what can this character do - and because a hunter reading their own
+		-- abilities is reading half of them here.
+		--
+		-- Two kinds of row, and the difference between them is the whole of §2.2. A creature
+		-- whose book has been read is drawn with its abilities under it. A pet the stable
+		-- named but that has never been summoned is drawn with **nothing** under it, because
+		-- a book can only be read while its creature is out and an empty list would be a
+		-- claim that this pet knows nothing.
+		----------------------------------------------------------------------------------
+
+		if section == "Pets" then
+			spec:Hide()
+
+			local record = payload.pets
+			if not record then
+				return finish(L["|cffffaa00Nothing recorded for this member.|r"])
+			end
+
+			local creatures = {}
+			for _, creature in pairs(record.known or {}) do
+				creatures[#creatures + 1] = creature
+			end
+
+			-- By what they are called, which is how a hunter thinks of them. A demon has
+			-- no name of its own and sorts under its family for the same reason.
+			table.sort(creatures, function(a, b)
+				local left = a.name or a.family or ""
+				local right = b.name or b.family or ""
+				if left ~= right then return left < right end
+				return tostring(a.key) < tostring(b.key)
+			end)
+
+			local read = {}
+			for _, creature in ipairs(creatures) do
+				if creature.name then read[creature.name] = true end
+			end
+
+			local waiting = {}
+			for _, pet in ipairs(record.stable or {}) do
+				if pet.name and not read[pet.name] then waiting[#waiting + 1] = pet end
+			end
+
+			local total = 0
+			for _, creature in ipairs(creatures) do
+				total = total + #(creature.abilities or {})
+			end
+			status:SetText(string.format(L["%d abilities across %d creatures"],
+				total, #creatures))
+
+			-- The game's own word, because the game has already decided what a level is
+			-- called in the language this is being read in.
+			local levelWord = Family:GameWord("LEVEL", "Level")
+
+			local function describe(creature)
+				local parts = {}
+				if creature.family then parts[#parts + 1] = creature.family end
+				if creature.level then
+					parts[#parts + 1] = levelWord .. " " .. creature.level
+				end
+				return table.concat(parts, ", ")
+			end
+
+			-- "Rank 10" belongs after "Rank 9", which comparing the words gets backwards.
+			local function rankOrder(text)
+				return tonumber(tostring(text):match("%d+") or "") or 0
+			end
+
+			for _, creature in ipairs(creatures) do
+				local keep = {}
+
+				for _, ability in ipairs(creature.abilities or {}) do
+					-- The id first, which the reader's own client says in the reader's
+					-- own language, and the word the book printed where this client
+					-- has never heard of that id - which is what happens between
+					-- builds, since Era does not hold Burning Crusade's ranks.
+					local said, icon = Family.Names:Spell(ability.id)
+					local name = said or ability.name
+
+					if name and (matches(name) or matches(creature.name)
+						or matches(creature.family)) then
+						keep[#keep + 1] = {
+							id = ability.id,
+							name = name,
+							known = said ~= nil,
+							icon = icon,
+							rank = ability.rank or "",
+						}
+					end
+				end
+
+				table.sort(keep, function(a, b)
+					if a.name ~= b.name then return a.name < b.name end
+					local rankA, rankB = rankOrder(a.rank), rankOrder(b.rank)
+					if rankA ~= rankB then return rankA < rankB end
+					return tostring(a.rank) < tostring(b.rank)
+				end)
+
+				if #keep > 0 then
+					local heading = nextRow()
+					heading.left:SetText(string.format("|cff88bbff%s|r |cff888888(%d)|r",
+						creature.name or creature.family or "?", #keep))
+					heading.middle:SetText("|cff888888" .. describe(creature) .. "|r")
+					heading.right:SetText("")
+
+					for _, ability in ipairs(keep) do
+						local r = nextRow()
+						r.left:SetText("")
+						r.middle:SetText(ability.known and ability.name
+							or ("|cff9d9d9d" .. ability.name .. "|r"))
+						r.spellID = ability.id
+						if ability.icon then r.icon:SetTexture(ability.icon) end
+						r.right:SetText(ability.rank ~= ""
+							and ("|cff888888" .. ability.rank .. "|r") or "")
+					end
+				end
+			end
+
+			-- Below the creatures that have been read, because that is where it belongs:
+			-- these are the ones there is nothing to say about yet.
+			local stabled = {}
+			for _, pet in ipairs(waiting) do
+				if matches(pet.name) or matches(pet.family) then
+					stabled[#stabled + 1] = pet
+				end
+			end
+
+			if #stabled > 0 then
+				local heading = nextRow()
+				heading.left:SetText("|cff88bbff"
+					.. L["In the stable, never summoned - nothing recorded"] .. "|r")
+				heading.middle:SetText("")
+				heading.right:SetText("")
+
+				for _, pet in ipairs(stabled) do
+					local r = nextRow()
+					r.left:SetText("")
+					r.middle:SetText("|cff9d9d9d" .. pet.name .. "|r")
+					r.right:SetText("|cff888888" .. describe(pet) .. "|r")
+				end
+			end
+
+			if #creatures == 0 and #stabled == 0 then
+				return finish(L["|cffffaa00Nothing recorded for this member.|r"])
 			end
 
 			return finish()

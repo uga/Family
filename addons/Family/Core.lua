@@ -229,6 +229,38 @@ function Family:ScanTooltipLine(aim, index)
 	return nil
 end
 
+-- Which spell the client thinks a tooltip is describing.
+--
+-- The sibling of the line reader above, and it exists because of one measurement: a pet's
+-- spell book will not hand over an id on Era by any of its own calls - there is no
+-- `GetSpellBookItemLink` on either of the older clients, and `GetSpellInfo` by name answers
+-- on Burning Crusade and not on Era - while a tooltip aimed at the same book slot answers
+-- `GetSpell()` with 24497. The id was there the whole time behind a different reader
+-- (DATASOURCES, *The pet book is the creature's, and the creature has an id*).
+--
+-- The name is handed back beside the id because the caller usually has a use for both and
+-- the tooltip has already been built by the time either is wanted.
+function Family:ScanTooltipSpell(aim)
+	if type(aim) ~= "function" then return nil end
+
+	local tip = scanTooltip()
+	if not tip then return nil end
+
+	Family:TryCall(tip.SetOwner, tip, _G.UIParent, "ANCHOR_NONE")
+	Family:TryCall(tip.ClearLines, tip)
+	aim(tip)
+
+	-- Two returns on the clients that answer here at all, and a client that will not
+	-- describe the thing builds no lines and answers neither. Nothing is an ordinary
+	-- answer: the caller keeps the word it already has and files nothing under an id.
+	local name, id = Family:TryCall(tip.GetSpell, tip)
+
+	id = tonumber(id)
+	if type(name) ~= "string" or name == "" then name = nil end
+
+	return id, name
+end
+
 -- "%d Charges", turned into something to match against, out of the client's own format string.
 --
 -- Never the English. `ITEM_SPELL_CHARGES` is `%d |4Charge:Charges;` on an English client and

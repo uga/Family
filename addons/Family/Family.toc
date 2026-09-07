@@ -76,5 +76,6 @@ Scanners\Mail.lua
 Scanners\Character.lua
 Scanners\Quests.lua
 Scanners\Currencies.lua
+Scanners\Pets.lua
 Wide.lua
 Guild.lua

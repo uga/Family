@@ -17,6 +17,14 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Added
+
+- **A Pets page, on Abilities & Talents.** Every pet in a hunter's stable and every demon a
+  warlock has summoned, each with what that creature can do. The game only says what a creature
+  knows while it is out, so the page fills in one summon at a time and keeps what it has seen —
+  and a pet nobody has summoned yet is listed by name with nothing claimed about it, under *In the
+  stable*, rather than shown with an empty list of abilities.
+
 ## 2.0.0 — 2026-09-06
 
 ### Added

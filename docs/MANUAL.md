@@ -49,16 +49,17 @@ something — a gear slot, a class, a reputation standing, a profession, a race 
 game's own word rather than one of its own, so it says what the rest of your interface says.
 Anything not yet translated appears in English rather than as a blank.
 
-**Three windows need opening once per character.** Bags, money, gear, skills, talents,
-currencies and quests are read without being asked. Three things are only visible to the game
-while their own window is open, so open each of these once on each character and Family has
-them from then on:
+**Four things need doing once per character.** Bags, money, gear, skills, talents,
+currencies and quests are read without being asked. These four are only visible to the game
+while something of theirs is open or out, so do each of them once on each character and Family
+has them from then on:
 
-| Open this | To record |
+| Do this | To record |
 |---|---|
-| your **bank**, at any bank | what is in it, and how many slots are free |
-| your **mailbox** | what is waiting, and when it expires |
-| each **profession** window | the recipes in it, and their difficulty |
+| open your **bank**, at any bank | what is in it, and how many slots are free |
+| open your **mailbox** | what is waiting, and when it expires |
+| open each **profession** window | the recipes in it, and their difficulty |
+| **summon** each pet or demon | what that creature can do |
 
 **Nothing is ever reported as empty when it was simply never seen.** A bank nobody has opened
 reads *not seen*, not *0 items*. A profession cooldown that started while the window was shut
@@ -216,8 +217,18 @@ tree says.
 - **Points spent** out of points available, and how many are left to spend.
 - **Glyphs**, on the clients that have them.
 - The **spellbook**, by school, and a hunter's Beast Training with it.
+- **Pets**, for a hunter's stable and a warlock's demons: every creature Family has seen, with
+  what each of them can do.
 
 Hovering anything shows the game's own description of it.
+
+**About Pets.** A hunter's four pets each know different things, and so does each of a warlock's
+demons — and the game will only say what a creature knows while that creature is out. So the page
+fills in one summon at a time, and it keeps what it has seen: a pet you summoned last month is
+still listed with its abilities today. A pet the stable names but that has never been out is
+listed too, under *In the stable*, with nothing claimed about what it can do, because nothing has
+been seen. The abilities themselves are named by your own client, in your own language, whoever
+recorded the creature.
 
 Talents are named by your own client, whoever recorded the character and whatever language
 they were playing in.
