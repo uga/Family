@@ -169,14 +169,27 @@ function Codec:Fingerprint(data)
     return tostring(mark(0, data, 0))
 end
 
-function Codec:ToWire(data)
+-- `level` is deflate's, and it is the caller's business because the trade is theirs.
+--
+-- Measured 2026-09-08 on a bundle of seventy shared characters: level 5 costs 577 ms to pack
+-- and 195 KB, level 1 costs 225 ms and 211 KB, level 9 costs 4.8 seconds and 174 KB. So the
+-- step from 1 to 5 buys eight per cent of the bytes for two and a half times the work, and 9
+-- is not a trade at all.
+--
+-- Five stays the default, because most of what crosses is small and packing it is not felt.
+-- The one caller that asks for something else is a Wide Family exchange, where the body can be
+-- hundreds of kilobytes and the client is a game: a fifth of a second matters there, and eight
+-- per cent more of a transfer that takes minutes anyway does not. Nothing about the reader
+-- changes - a deflate stream says how it was packed.
+function Codec:ToWire(data, level)
     if not self:CanTalk() then
         return nil, "the serialisation libraries are not loaded"
     end
 
     local ok, encoded = pcall(function()
         local serialized = LibSerialize:Serialize(data)
-        local compressed = LibDeflate:CompressDeflate(serialized, { level = 5 })
+        local compressed = LibDeflate:CompressDeflate(serialized,
+            { level = tonumber(level) or 5 })
         return LibDeflate:EncodeForPrint(compressed)
     end)
 

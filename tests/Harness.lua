@@ -18015,6 +18015,45 @@ print("the walk steps past a character it has already read")
 			readCount { folk[3] } == 1, tostring(readCount { folk[3] }))
 	end
 
+	-- **And the mark is folded once, however often it is asked for.**
+	--
+	-- Two callers ask now - the login walk and a Wide Family exchange - and the exchange asks
+	-- once per link. Fifteen links over two hundred and ten members is three thousand folds of
+	-- two hundred and ten records, in one second, at every login. The record cannot change
+	-- while nobody writes it, so neither can its mark.
+	do
+		-- Written first, so the count starts from a member whose mark is not already held:
+		-- the walk above asked for it, which is the whole point of the cache and would make
+		-- this check measure nothing.
+		Family.Database:SetPayload(folk[1], Family.Database:Payload(folk[1]) or {})
+
+		local folds = 0
+		local realRead = Family.Database.ReadPayloadMark
+		Family.Database.ReadPayloadMark = function(this, memberKey)
+			folds = folds + 1
+			return realRead(this, memberKey)
+		end
+
+		local first = Family.Database:PayloadMark(folk[1])
+		for _ = 1, 20 do Family.Database:PayloadMark(folk[1]) end
+		check("a member's mark is folded once however many times it is asked for",
+			folds == 1, tostring(folds) .. " folds")
+		check("and every answer is the same one", first ~= nil
+			and Family.Database:PayloadMark(folk[1]) == first)
+
+		-- And dropped the moment the record it describes is replaced, or the walk would step
+		-- past a member whose language had just changed - which is the fault L-061 records.
+		Family.Database:SetPayload(folk[1],
+			(Family.Database:Payload(folk[1]) or {}))
+		local after = Family.Database:PayloadMark(folk[1])
+		check("and folded again once the record is written", folds == 2,
+			tostring(folds) .. " folds")
+		check("and answers about what was written, not about what was there before",
+			after ~= nil)
+
+		Family.Database.ReadPayloadMark = realRead
+	end
+
 	-- **A name the client would not give leaves the member unmarked.** Marking them would be
 	-- the last time that id was ever asked for: the walk is the only thing that asks.
 	Family.Database:SetPayload(folk[2], listed { 773999 })
@@ -22759,6 +22798,92 @@ print("an exchange carries what changed, not everything again")
 	Family.Wide:ExchangeWith("thrifty", "a grant changed", { full = false, ask = false })
 	check("and a grant settling does not, because it is telling rather than asking",
 		asked == 0, tostring(asked))
+
+	-- **A family too big to pack in one frame goes out a dozen at a time.**
+	--
+	-- Measured with the addon's own libraries on two hundred and ten shared characters of the
+	-- heavier sort: 2.5 seconds to pack in one go on the machine this was written on, so
+	-- something like seven on a client - and it lands whenever the other family comes online,
+	-- which is in the middle of play rather than at a login. The wire is minutes either way.
+	--
+	-- What the protocol allows is what makes this possible: the far side merges `members` and
+	-- forgets on `offering`, so a partial `members` is already right on every client there is.
+	-- Every batch has to carry the whole offering list, and that is the check that would catch
+	-- somebody trimming it to what the batch happens to hold.
+	do
+		local many = {}
+		for index = 1, 30 do
+			local memberKey = "Crowd" .. index .. "-FireMaw"
+			many[#many + 1] = memberKey
+			Family.Database:SetMeta(memberKey, { name = "Crowd" .. index,
+				realm = "Fire Maw", classFile = "ROGUE", level = 60, faction = "Alliance",
+				seen = time() - 60 })
+			Family.Database:SetPayload(memberKey, { bags = { [0] = { size = 4, slots = {
+				{ id = 2589, count = index } } } } })
+			Family.Wide:Grant("thrifty", memberKey, "possessions", true)
+		end
+
+		-- Granting settles into an exchange of its own, and that exchange batches too. Let it
+		-- finish before measuring, or what is counted below is two exchanges interleaved.
+		for _ = 1, 8 do advance(1.1) end
+
+		local messages, arrived, everyOffering = 0, {}, true
+		Family.Comm.Send = function(_, kind, text)
+			if kind == "data" then
+				messages = messages + 1
+				local body = Family.Codec:FromWire(text) or {}
+				local carriedHere = 0
+				for memberKey in pairs(body.members or {}) do
+					arrived[memberKey] = true
+					carriedHere = carriedHere + 1
+				end
+				if carriedHere > 12 then everyOffering = false end
+				if #(body.offering or {}) < 30 then everyOffering = false end
+			end
+			return true
+		end
+
+		-- Asked in full, so what is measured is the batching and not which marks happened to
+		-- be stored by the exchange the grants set off.
+		Family.Wide:ExchangeWith("thrifty", "a crowd", { full = true })
+
+		local first = 0
+		for _ in pairs(arrived) do first = first + 1 end
+		check("a big exchange puts a dozen on the wire and no more", first <= 12,
+			tostring(first) .. " in the first message")
+		check("and knows how many it still has to send",
+			Family.Wide:Batching("thrifty") > 0,
+			tostring(Family.Wide:Batching("thrifty")))
+
+		-- One batch a second, until there are none left.
+		for _ = 1, 6 do advance(1.1) end
+
+		local total = 0
+		for _ in pairs(arrived) do total = total + 1 end
+		check("and the rest follow, until everybody granted has gone", total == 31,
+			tostring(total) .. " of 31")
+		check("in more than one message, which is the whole point", messages > 1,
+			tostring(messages) .. " messages")
+		check("every one of them naming the whole offering, so nobody is forgotten",
+			everyOffering)
+		check("and nothing is left waiting once they are all out",
+			Family.Wide:Batching("thrifty") == 0,
+			tostring(Family.Wide:Batching("thrifty")))
+
+		-- And each of them is marked as it goes, so the next exchange sends none of them.
+		arrived, messages = {}, 0
+		Family.Wide:ExchangeWith("thrifty", "and again with nothing changed")
+		local again = 0
+		for _ in pairs(arrived) do again = again + 1 end
+		check("a second exchange carries none of them again", again == 0,
+			tostring(again) .. " carried")
+
+		for _, memberKey in ipairs(many) do
+			Family.Wide:Grant("thrifty", memberKey, "possessions", false)
+			Family.Database:Forget(memberKey)
+		end
+		advance(0.2)
+	end
 
 	Family.Comm.Send = realSend
 	Family.Database:Forget(key)

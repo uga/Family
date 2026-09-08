@@ -1513,6 +1513,54 @@ spell ids saves a further sixth, because LibSerialize spends one byte on a small
 three on a large one. Item ids are left absolute: they travel in spell order and so are in no
 order of their own, and delta-encoding an unsorted run makes it bigger.
 
+### What a large family costs to share, measured 2026-09-08
+
+Asked because a player with two accounts reported the game pausing at every login with Wide
+Family on, and then because Alberto asked what the worst plausible case looks like: fifteen
+links of two hundred and ten characters each, half of them with a hundred bag slots, a hundred
+bank slots, a hundred and fifty letters and a profession of three hundred and fifty recipes.
+
+Sized with the addon's own LibSerialize and LibDeflate, against `Comm.lua`'s own rate - `CHUNK`
+200, `PER_TICK` 2, `TICK` 0.2, so **2,000 bytes a second, per client**. The members are made
+different from each other on purpose: made identical, deflate folds two hundred of them into
+almost nothing and the answer is a fiction. Times are lua5.1 on the machine this was written on;
+**a game client measured about three times slower** on the one comparison there is - a mark that
+costs 0.14 ms here was 0.8 ms there.
+
+| | on the wire | to pack, in one frame |
+|---|---:|---:|
+| one member of the heavy sort | 3.6 KB | |
+| a friend's 210, one bundle, level 5 | 750 KB — **6 min** | 2,461 ms (~7.4 s on a client) |
+| the same, 18 batches of 12 at level 1 | 1,074 KB — **9 min** | 122 ms (~0.4 s on a client) |
+| your 210 sent to each of fifteen links | 11 MB | **1.6 hours out of one client** |
+
+The last row is the ceiling and no amount of packing touches it: the same records go out once
+per link, and one client has one queue at 2 KB a second.
+
+**Deflate's level, on the same bundle of seventy ordinary members:**
+
+| level | to pack | bytes |
+|---:|---:|---:|
+| 1 | 225 ms | 211 KB |
+| 3 | 282 ms | 208 KB |
+| 5 | 577 ms | 195 KB |
+| 9 | 4,834 ms | 174 KB |
+
+**Batch size, on the same seventy:** batches of 12 cost 178 ms a frame and 27% more bytes than
+one bundle; of 8, 133 ms and 42%; of 5, 87 ms and 63%. Compression sees less at a time, so the
+smaller the batch the more it costs to carry.
+
+**Guild share is a different shape and is not near any of this.** Its announcement carries a
+profession's *count and fingerprint* rather than its recipes, so one answer about six alts is
+1.4 KB and a recipe list, asked for when somebody opens one, is 0.9 KB. In a guild of six
+hundred with a hundred and fifty online, answering every announcement costs 7 KB a minute
+against a budget of 117 - six per cent. It only becomes tight at the pathological end: a hundred
+and fifty players each switching character every two minutes is 75 announcements a minute, and
+if every one of them were new to us that is 107 KB a minute, or 91% of the budget. What makes it
+*not* tight in practice is the traffic control skipping an exchange with anybody whose data we
+already hold - though that skip is keyed on the sender's **character** name, so each of a
+player's six alts is a stranger the first time it announces.
+
 ### The game's own word for every game noun Family's text uses, `tools/game-words.py`
 
 Family writes sentences that name things in the game, and those nouns were translated by hand.

@@ -36,6 +36,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Sharing a large family no longer freezes the game while it packs.** Everything being sent
+  used to be prepared in one go, which on a family of two hundred characters stopped the client
+  for several seconds — and it happened not at a login but whenever the other person came online,
+  in the middle of play. It goes out a dozen characters at a time now. The transfer itself takes
+  a little longer in the background, which nobody watches, and the game keeps running while it
+  happens.
+
 - **And nothing is prepared at all for a family that is not online.** Logging in used to build
   every shared character's update before discovering there was nobody to send it to, which is the
   usual case if you play your two accounts one at a time.

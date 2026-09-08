@@ -465,7 +465,7 @@ local function nobodyThere(link, anyKnown)
     return L["nobody of theirs has ever been heard from"]
 end
 
-local function send(link, kind, table_, bulk)
+local function send(link, kind, table_, bulk, level)
     -- Not to anybody the client has just told us is not there. Only what was learned the
     -- hard way, a moment ago, and only for a minute: there is no way to ask whether a name is
     -- online, so the one thing worth acting on is the answer the server already gave.
@@ -473,7 +473,7 @@ local function send(link, kind, table_, bulk)
 
     if not target then return false, nobodyThere(link, anyKnown) end
 
-    local body, why = Family.Codec:ToWire(table_)
+    local body, why = Family.Codec:ToWire(table_, level)
     if not body then return false, why end
 
     -- Every payload says which family it came from and which schema wrote it. The second is
@@ -688,6 +688,134 @@ local function worthSending(link, full)
     return sending, marks, held, offered, count
 end
 
+--------------------------------------------------------------------------------------------
+-- Sending it a few at a time
+--
+-- **Because packing is one frame and the wire is minutes.**
+--
+-- An exchange used to serialise and compress every member being sent into one body. Measured
+-- 2026-09-08 with the addon's own libraries, on two hundred and ten shared characters of the
+-- heavier sort: 2.5 seconds to pack here, so something like seven on a client - and it lands
+-- not at a login but whenever the other family comes online, which is in the middle of play.
+-- The wire is not the problem and never was: `Comm` carries 2 KB a second by design, so that
+-- same bundle takes minutes to arrive however it was packed.
+--
+-- So it goes out a dozen at a time, one batch a second, and the client packs a dozen instead
+-- of two hundred. The cost is bytes: compression sees less at once, and the same records take
+-- about a quarter more room - 8 minutes on the wire instead of 6, in the background, against a
+-- freeze somebody feels. Measured both ways before choosing.
+--
+-- **Nothing about the protocol changes**, and that is why this is possible at all: the far side
+-- merges `members` and forgets on `offering`, so a partial `members` is already correct on
+-- every client that exists, including ones far older than this. Every batch carries the whole
+-- offering list, which is a list of keys and costs nothing.
+local BATCH = 12
+local BATCH_GAP = 1
+
+-- Deflate's cheapest setting for these bodies, and only for these. Measured beside the batch
+-- size: level 1 packs in 225 ms where level 5 takes 577, and costs eight per cent more bytes
+-- on a transfer that takes minutes either way. `Codec:ToWire` explains the trade in full.
+local BULK_LEVEL = 1
+
+-- One link's unfinished business, in memory only. A new exchange for the same link replaces
+-- it: what it had not sent has no mark stored, so the next exchange offers it again. Losing
+-- work here is safe; sending twice is safe; believing something was sent is not, which is why
+-- a mark is written as its own batch is queued rather than when the job is made.
+local batching = {}
+
+local function postBatch(link, familyID, sending, marks, keys, from)
+    local members = {}
+    local upTo = math.min(from + BATCH - 1, #keys)
+
+    for index = from, upTo do
+        members[keys[index]] = sending[keys[index]]
+    end
+
+    local ok, problem = send(link, "data", envelope({
+        members = members,
+        -- Which members we are *not* offering matters as much as which we are: it is how
+        -- the other side knows to forget one that was withdrawn, rather than keeping a
+        -- stale copy for ever because nothing arrived to replace it.
+        --
+        -- **Always the whole list**, never only the ones being sent. It is a list of keys and
+        -- costs nothing, and it is what makes holding a member back safe: everything named
+        -- here and not carried above is *unchanged*, which is a different sentence from
+        -- *withdrawn* and has to stay one.
+        offering = Wide:GrantedKeys(link),
+    }), true, BULK_LEVEL)
+
+    if not ok then return false, problem end
+
+    -- Remembered only once the client has taken it. `send` says whether it was queued, which
+    -- is not the same as delivered - so a transfer that dies half way leaves this side
+    -- believing they have something they do not. That is what `onWant` answering in full is
+    -- for: any exchange the other side starts refills them, and both sides start one at every
+    -- login.
+    for index = from, upTo do
+        local memberKey = keys[index]
+        if marks[memberKey] then link.sent[memberKey] = marks[memberKey] end
+    end
+
+    return true, upTo + 1
+end
+
+local function pumpBatches(familyID)
+    local job = batching[familyID]
+    if not job then return end
+
+    local ok, nextFrom = postBatch(job.link, familyID, job.sending, job.marks, job.keys,
+        job.from)
+
+    -- A refusal mid-way is the other side having gone offline, and it is not a fault to
+    -- report twice: the exchange it belongs to has already answered. What is left is dropped,
+    -- unmarked, and offered again by the next exchange.
+    if not ok then
+        batching[familyID] = nil
+        return
+    end
+
+    job.from = nextFrom
+    if job.from > #job.keys then
+        batching[familyID] = nil
+        return
+    end
+
+    Family:After(BATCH_GAP, "wide.batch." .. familyID, function() pumpBatches(familyID) end)
+end
+
+local function postMembers(link, familyID, sending, marks)
+    local keys = {}
+    for memberKey in pairs(sending) do keys[#keys + 1] = memberKey end
+    table.sort(keys)
+
+    -- Nothing to send is still something to say: the offering list is how the far side learns
+    -- that a member was withdrawn, and it goes whether or not anybody's record moved.
+    if #keys == 0 then
+        return postBatch(link, familyID, sending, marks, keys, 1)
+    end
+
+    local ok, nextFrom = postBatch(link, familyID, sending, marks, keys, 1)
+    if not ok then return false, nextFrom end
+
+    if nextFrom <= #keys then
+        batching[familyID] = { link = link, sending = sending, marks = marks, keys = keys,
+            from = nextFrom }
+        Family:After(BATCH_GAP, "wide.batch." .. familyID,
+            function() pumpBatches(familyID) end)
+    else
+        batching[familyID] = nil
+    end
+
+    return true
+end
+
+-- What is still to go out for a link, for the panel to say so and for the harness to watch.
+function Wide:Batching(familyID)
+    local job = batching[familyID]
+    if not job then return 0 end
+    return #job.keys - job.from + 1
+end
+
 -- `full` sends everything whether or not it has changed; `ask` sends the second half of the
 -- exchange, the request for theirs.
 --
@@ -725,29 +853,8 @@ function Wide:ExchangeWith(familyID, why, options)
 
     local sending, marks, held, offered, count = worthSending(link, full)
 
-    local ok, problem = send(link, "data", envelope({
-        members = sending,
-        -- Which members we are *not* offering matters as much as which we are: it is how
-        -- the other side knows to forget one that was withdrawn, rather than keeping a
-        -- stale copy for ever because nothing arrived to replace it.
-        --
-        -- **Always the whole list**, never only the ones being sent. It is a list of keys and
-        -- costs nothing, and it is what makes holding a member back safe: everything named
-        -- here and not carried above is *unchanged*, which is a different sentence from
-        -- *withdrawn* and has to stay one.
-        offering = self:GrantedKeys(link),
-    }), true)
-
+    local ok, problem = postMembers(link, familyID, sending, marks)
     if not ok then return false, problem end
-
-    -- Remembered only once the client has taken it. `send` says whether it was queued, which
-    -- is not the same as delivered - so a transfer that dies half way leaves this side
-    -- believing they have something they do not. That is what `onWant` answering in full is
-    -- for: any exchange the other side starts refills them, and both sides start one at every
-    -- login.
-    for memberKey, mark in pairs(marks) do
-        if sending[memberKey] and mark then link.sent[memberKey] = mark end
-    end
 
     -- And nothing remembered about somebody we no longer offer. Left in, a member granted,
     -- withdrawn and granted again would match a mark from before the withdrawal and never be

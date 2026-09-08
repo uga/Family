@@ -164,6 +164,19 @@ end
 -- for the session, keyed by member, and dropped when that member is written again.
 local decoded = {}
 
+-- And the mark of the same record, kept beside it for the same reason and dropped at the same
+-- moment. The mark is a fold of the stored string, so it cannot change while that string does
+-- not - and both callers ask for it far more often than the record changes.
+--
+-- **It is the multiplication that made this worth having.** A Wide Family exchange marks the
+-- members one link was granted, and a family with fifteen links marks the same member fifteen
+-- times in the same second: two hundred and ten members over fifteen links is three thousand
+-- one hundred and fifty folds at every login, of two hundred and ten different records. False
+-- means *asked and there is no mark to be had*, which is a different answer from *not asked*
+-- and is worth caching too: it is the answer for a record stored plain, and it would otherwise
+-- be recomputed as often as the rest.
+local marks = {}
+
 function Database:Payload(key)
 	if decoded[key] ~= nil then return decoded[key] end
 
@@ -206,6 +219,18 @@ end
 -- member - which is far more than 20 ms - so the cap is less work than the walk already does on
 -- every tick, and a family of any size is spread rather than folded at once.
 function Database:PayloadMark(key)
+	local held = marks[key]
+	if held ~= nil then
+		if held == false then return nil end
+		return held
+	end
+
+	local mark = self:ReadPayloadMark(key)
+	marks[key] = mark or false
+	return mark
+end
+
+function Database:ReadPayloadMark(key)
 	local entry = record(key, false)
 	if not entry then return nil end
 
@@ -231,6 +256,9 @@ function Database:SetPayload(key, data)
 	entry.codec = codec
 	entry.payload = encoded
 	decoded[key] = data
+	-- The mark is of the string that has just been replaced, so it goes with it. Dropped
+	-- rather than recomputed: whoever asks next will pay for it, and nobody may ask at all.
+	marks[key] = nil
 
 	-- Anything derived from what a member owns is now wrong for that member. Told here
 	-- rather than by each scanner, so a scanner added later cannot forget to say so.
@@ -243,6 +271,7 @@ function Database:Forget(key)
 	if not FamilyDB.members[key] then return false end
 	FamilyDB.members[key] = nil
 	decoded[key] = nil
+	marks[key] = nil
 	if Family.Index then Family.Index:Invalidate(key) end
 	Database:Changed(key)
 	return true
