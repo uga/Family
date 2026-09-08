@@ -557,6 +557,76 @@ add("ready", L["which crafting cooldowns have come back, and for whom"], functio
 	end
 end)
 
+-- What a Wide Family exchange costs, in milliseconds, on the client complaining about it.
+--
+-- Reported from play by somebody with two accounts and eighty characters between them: the game
+-- stops for a moment at every login while Wide Family is on. The shape of the answer is not a
+-- guess - an exchange builds every granted member's offering, which decodes that member's whole
+-- record, and then folds the built table byte by byte to see whether it has changed - but how
+-- much it costs depends on how many members and how big their records are, and only their client
+-- can say that.
+--
+-- So this measures the three things separately rather than reporting one number: what building
+-- the offering costs, what fingerprinting it costs, and what the cheap answer to the same
+-- question would cost - the mark of the record as it sits on disk, which the login walk already
+-- uses and which needs no decoding at all. Two of those are what a login pays today and the third
+-- is what it could pay instead.
+--
+-- Nothing is sent. The offering is built and thrown away, which is worth saying to anybody being
+-- asked to type a diagnostic into a game.
+add("widetime", L["how long a Wide Family exchange takes on this client"], function()
+	if not Family.Wide:Enabled() then
+		Family:Print(L["Wide Family is switched off, so there is nothing to time."])
+		return
+	end
+
+	-- `debugprofilestop` is the client's own millisecond clock and is what this wants; a
+	-- client without it is timed by the frame clock instead, which is coarser and still says
+	-- whether the answer is two milliseconds or two thousand.
+	local clock = _G.debugprofilestop
+	local function now()
+		if clock then return (Family:TryCall(clock)) or 0 end
+		return ((Family:TryCall(GetTime)) or 0) * 1000
+	end
+
+	local links = 0
+
+	for familyID, link in pairs(Family.Wide:Links()) do
+		links = links + 1
+
+		local at = now()
+		local members = Family.Wide:Offering(link)
+		local building = now() - at
+
+		local count, folding = 0, 0
+		at = now()
+		for _, entry in pairs(members) do
+			count = count + 1
+			Family.Codec:Fingerprint(entry)
+		end
+		folding = now() - at
+
+		at = now()
+		for memberKey in pairs(link.grants or {}) do
+			Family.Database:PayloadMark(memberKey)
+		end
+		local marking = now() - at
+
+		Family:Print(L["|cffffd700%s|r: %d members, building %d ms, fingerprinting %d ms, "
+			.. "marking %d ms"], Family.Wide:Called(link) or familyID, count,
+			building, folding, marking)
+	end
+
+	if links == 0 then
+		Family:Print(L["no links, so there is nothing to time."])
+		return
+	end
+
+	Family:Print(L["|cff888888Building and fingerprinting is what each exchange costs, and "
+		.. "there is one at every login. Marking is what the same question costs without "
+		.. "decoding anybody. Nothing was sent.|r"])
+end)
+
 -- Diagnostic rather than a feature. Working out which shape of the talent call a build wants
 -- has needed a round trip through a real client every single time, and this is what makes
 -- that one round trip instead of five.

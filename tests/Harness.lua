@@ -9292,6 +9292,60 @@ do
 		Family.Wide:Grant(ourLinkID, key, "possessions", true)
 		advance(0.1)
 
+		-- The diagnostic that answers the question this whole shape raises: what does an
+		-- exchange actually cost on the client complaining about it. Reported from play as
+		-- a freeze at every login on two accounts with eighty characters between them, and
+		-- unanswerable from here - only their client knows how many members and how big.
+		--
+		-- It is checked for saying something rather than for the numbers it says: the
+		-- timings are of this machine and would be a check about the machine.
+		do
+			local before = #DEFAULT_CHAT_FRAME.messages
+			local sentBefore = #sent
+
+			-- Counted rather than read off the line it prints: the line names all three
+			-- timings whatever it did, and a millisecond on this machine is nought.
+			local marked, folded = 0, 0
+			local realMark = Family.Database.PayloadMark
+			local realPrint = Family.Codec.Fingerprint
+			Family.Database.PayloadMark = function(this, memberKey)
+				marked = marked + 1
+				return realMark(this, memberKey)
+			end
+			-- Tables only. Marking folds the stored **string**, through this same call, so
+			-- counting every fold would count the cheap answer as though it were the
+			-- expensive one and the check would pass with the expensive one gone.
+			Family.Codec.Fingerprint = function(this, data)
+				if type(data) == "table" then folded = folded + 1 end
+				return realPrint(this, data)
+			end
+
+			local ok = pcall(SlashCmdList["FAMILY"], "widetime")
+
+			Family.Database.PayloadMark = realMark
+			Family.Codec.Fingerprint = realPrint
+			local said = ""
+			for index = before + 1, #DEFAULT_CHAT_FRAME.messages do
+				said = said .. " " .. DEFAULT_CHAT_FRAME.messages[index]
+			end
+
+			check("/family widetime reports what an exchange costs", ok
+				and said:find("members", 1, true) ~= nil, said)
+			-- The whole point of the third number: it is what the same question costs
+			-- without decoding anybody, which is what the fix would spend instead. Both
+			-- halves are asked for by the count of what was actually called, because the
+			-- printed line names all three whatever it measured.
+			check("and says what the cheap answer to the same question would cost",
+				said:find("marking", 1, true) ~= nil, said)
+			check("having actually folded each offering, which is what a login pays",
+				folded > 0, tostring(folded))
+			check("and actually marked each granted member, which is what it could pay",
+				marked > 0, tostring(marked))
+			-- Nothing goes out. Somebody is being asked to type this into their game.
+			check("and sends nothing while it measures", #sent == sentBefore,
+				tostring(#sent - sentBefore) .. " sent")
+		end
+
 		local offered = Family.Wide:Offering(link)
 		local entry = offered[key]
 		check("granting one member offers that member", entry ~= nil)

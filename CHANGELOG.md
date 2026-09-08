@@ -25,6 +25,10 @@ is a decision rather than an afternoon of archaeology.
   and a pet nobody has summoned yet is listed by name with nothing claimed about it, under *In the
   stable*, rather than shown with an empty list of abilities.
 
+- **`/family widetime`**, for anyone whose game pauses when Wide Family is switched on. It says
+  how many members each link shares and how long an exchange spends on them, which is the number
+  worth reporting. It measures and sends nothing.
+
 ### Fixed
 
 - **Each pet says how many training points it still has to spend**, on its own row in Pets, in

@@ -825,6 +825,12 @@ client translates. A recipe list read before you changed language may take a mom
 the first time the panel is opened, while the client loads the items it has not seen this
 session.
 
+**"The game stops for a moment when Wide Family is on."** Type `/family widetime`. It says, per
+link, how many members are shared, how long building and fingerprinting them takes, and what the
+same question would cost without decoding anybody. Building and fingerprinting is what an
+exchange costs and there is one at every login, so those two numbers are the ones to report. It
+measures and sends nothing.
+
 **Something errored.** Turn on *Narrate what the scanners are doing* in Options, reproduce it,
 and report the message together with the line at the bottom of the Options panel. It says
 which version, which client and which routes Family found, which is most of a diagnosis.
