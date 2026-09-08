@@ -450,22 +450,28 @@ local function characterCount(link)
     return #candidates(link)
 end
 
+-- Why there is nobody to whisper, said the same way wherever it is asked.
+--
+-- Two callers now: `send`, which finds out as it goes, and the exchange, which asks before it
+-- builds anything - so the sentence lives here rather than being written twice and drifting.
+local function nobodyThere(link, anyKnown)
+    if anyKnown then
+        local count = characterCount(link)
+        return string.format(count == 1
+            and L["none of %s's %d character is online"]
+            or L["none of %s's %d characters are online"],
+            tostring(Wide:Called(link)), count)
+    end
+    return L["nobody of theirs has ever been heard from"]
+end
+
 local function send(link, kind, table_, bulk)
     -- Not to anybody the client has just told us is not there. Only what was learned the
     -- hard way, a moment ago, and only for a minute: there is no way to ask whether a name is
     -- online, so the one thing worth acting on is the answer the server already gave.
     local target, anyKnown = reachableName(link)
 
-    if not target then
-        if anyKnown then
-            local count = characterCount(link)
-            return false, string.format(count == 1
-                and L["none of %s's %d character is online"]
-                or L["none of %s's %d characters are online"],
-                tostring(Wide:Called(link)), count)
-        end
-        return false, L["nobody of theirs has ever been heard from"]
-    end
+    if not target then return false, nobodyThere(link, anyKnown) end
 
     local body, why = Family.Codec:ToWire(table_)
     if not body then return false, why end
@@ -706,6 +712,16 @@ function Wide:ExchangeWith(familyID, why, options)
 
     local full = options ~= nil and options.full == true
     local ask = (options == nil) or options.ask ~= false
+
+    -- **Asked before anything is built.**
+    --
+    -- `send` asks this too and answers with the same sentence, but it asks after the offering
+    -- has been assembled - and assembling it is the expensive half. A family whose characters
+    -- the client has just refused is the commonest case there is for somebody who plays two
+    -- accounts one at a time: every login builds an offering for a whisper that has nowhere to
+    -- go. Nothing about the answer changes; only when it is discovered.
+    local target, anyKnown = reachableName(link)
+    if not target then return false, nobodyThere(link, anyKnown) end
 
     local sending, marks, held, offered, count = worthSending(link, full)
 

@@ -22563,6 +22563,44 @@ print("an exchange carries what changed, not everything again")
 	check("and everything goes when the exchange is asked to send everything",
 		carried and carried[key] == true, tostring(carried and carried[key]))
 
+	-- **And nothing at all is built when there is nobody to send it to.**
+	--
+	-- Somebody who plays two accounts one at a time has this on every login: the client refuses
+	-- the whisper because their other family is not online, and the offering that was assembled
+	-- for it is thrown away. The answer is the same sentence as before - only the moment it is
+	-- discovered has moved in front of the expensive half.
+	do
+		local link = Family.Wide:Links()["thrifty"]
+		local heldCharacters, heldMembers, heldName =
+			link.characters, link.members, link.name
+		link.characters, link.members, link.name = {}, {}, nil
+
+		local decodes, folds = 0, 0
+		local realPayload = Family.Database.Payload
+		local realPrint = Family.Codec.Fingerprint
+		Family.Database.Payload = function(this, memberKey)
+			decodes = decodes + 1
+			return realPayload(this, memberKey)
+		end
+		Family.Codec.Fingerprint = function(this, data)
+			if type(data) == "table" then folds = folds + 1 end
+			return realPrint(this, data)
+		end
+
+		local ok, why = Family.Wide:ExchangeWith("thrifty", "nobody home")
+
+		Family.Database.Payload = realPayload
+		Family.Codec.Fingerprint = realPrint
+
+		check("an exchange with nobody to send to says so", ok == false and why ~= nil,
+			tostring(why))
+		check("and builds nothing while finding that out",
+			decodes == 0 and folds == 0,
+			tostring(decodes) .. " decoded, " .. tostring(folds) .. " folded")
+
+		link.characters, link.members, link.name = heldCharacters, heldMembers, heldName
+	end
+
 	-- A withdrawal, then the same grant back: the far side dropped them on the offering list, so
 	-- a mark left over from before would hold them back for ever.
 	Family.Wide:Grant("thrifty", key, "possessions", false)

@@ -31,6 +31,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **And nothing is prepared at all for a family that is not online.** Logging in used to build
+  every shared character's update before discovering there was nobody to send it to, which is the
+  usual case if you play your two accounts one at a time.
+
 - **Logging in with Wide Family switched on no longer pauses the game.** Every exchange used to
   open each shared character's whole record and read it end to end, just to work out that nothing
   about them had changed — on both sides, at every login. It now answers that question from the
