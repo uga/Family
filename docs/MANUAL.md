@@ -829,7 +829,14 @@ session.
 link, how many members are shared, how long building and fingerprinting them takes, and what the
 same question would cost without decoding anybody. Building and fingerprinting is what an
 exchange costs and there is one at every login, so those two numbers are the ones to report. It
-measures and sends nothing.
+measures and sends nothing, and nobody has to be online — a link and what it shares are
+remembered whether or not the other person is playing.
+
+Run it twice in a row. Family decodes each record once per session, so the first run of a login
+pays for that and the second does not, and the difference between the two is exactly what a
+login is spending. The automatic exchange does the same decoding by itself about ten seconds
+after you enter the world, so a first run that is genuinely cold means either being quick or
+turning the automatic update off on the Wide Family panel first.
 
 **Something errored.** Turn on *Narrate what the scanners are doing* in Options, reproduce it,
 and report the message together with the line at the bottom of the Options panel. It says
