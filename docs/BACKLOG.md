@@ -2619,3 +2619,113 @@ against nothing is, and only the reading says which it is.
 the list itself sent only when the fold differs from the one the other side last acknowledged. It
 costs a round trip to save a few kilobytes, which is why it is not built now - the round trip is
 the thing this whole feature is short of.
+
+---
+
+## 42. Which ways of ending a session write the saved variables
+
+**Asked:** 2026-09-09, by Alberto, reading `WIDE-TRANSFER.md` §5 — *quali morti le scrivano non
+è stato misurato qui*. Fair: it is written there as an unknown, and it is one of the few
+unknowns in this repository that costs nothing to settle.
+
+**Why it is worth settling, and it is not the marks.** If a hard kill loses the session's saved
+variables it loses far more than Wide Family's bookkeeping: it loses **everything scanned since
+the last save** - the bags opened, the quests turned in, the money spent, the recipes learned.
+The marks are the least of it, and they are the part that repairs itself (a mark rolled back
+resends a member the other side already had, which is the safe direction, and the `have` list
+corrects it anyway). So the answer changes no code. It changes what `MANUAL.md` can honestly
+tell a player about closing the game, and that is worth a paragraph.
+
+**It does not need the game's cooperation.** The file is on disk and its content and modified
+time are both readable from outside, which makes this the rare question that can be answered
+without asking the client anything.
+
+**The probe.** For each client, the file is
+
+    <client>\WTF\Account\<ACCOUNT>\SavedVariables\Family.lua
+
+- `C:\World of Warcraft Classic\World of Warcraft\_classic_era_\`
+- `C:\World of Warcraft Classic\World of Warcraft\_anniversary_\`
+- `D:\World of Warcraft\_classic_\`
+
+In game, stamp the table with something that cannot already be in it, and note the wall clock:
+
+    /run FamilyDB.probe = date() print(FamilyDB.probe)
+
+Then end the session **one way**, and before starting the game again read the file:
+
+    powershell -Command "Get-Item '<path>' | Select LastWriteTime; Select-String -Path '<path>' -Pattern 'probe'"
+
+Reading it **before restarting** is the whole method: the client loads the old file at launch and
+writes it again at the next logout, so a game that has been restarted answers about the restart
+rather than about the kill.
+
+Six endings, each with a fresh stamp: `/reload`, logout to character select, Exit Game from the
+menu, alt-F4 on the window, End Task, and a disconnect forced by disabling the network adapter.
+The last of those is the one that matters most - a disconnect is common where alt-F4 is not - and
+it is the one whose answer is least guessable, because the client returns to the character screen
+on its own and may well save on the way.
+
+`Family.lua.bak` sits beside the file and is the previous save; read both, because a `.bak`
+holding the stamp and a `.lua` that does not is itself an answer.
+
+---
+
+## 43. A prompt acknowledgement instead of a lazy one
+
+**Asked:** 2026-09-09, by Alberto, as *e che dobbiamo fare per garantirlo* about delivery.
+
+**Today, and it is further along than it sounds.** The addon channel acknowledges nothing
+(§11.1), so Family built its own acknowledgement on 2026-09-08 - it is just a lazy one. `have`,
+the list of marks a `want` carries, is a cumulative acknowledgement of everything the other side
+holds: anything not in it is sent again. That already makes delivery **eventually** certain for
+any pair who both run Family and are eventually online together, which is the strongest promise
+anything here can make. What is missing is not certainty. It is *promptness* and *honesty*:
+
+- The reconciliation happens at the **next exchange** - the next login, or *Update now*. Inside
+  one long transfer, nothing is confirmed and nothing is retried.
+- The panel says *sent*, meaning queued and taken by the client. It cannot say *arrived*, so a
+  transfer that vanished looks exactly like one that worked.
+- Backlog 39's escape hatch has no signal to act on: a count that sits still is the only symptom
+  a stalled transfer has.
+
+**What it would take.** One short message, `got`, sent by the receiver after each `data` batch,
+naming the marks it stored. Then: the sender knows within a second or two, retries the unacked
+batches a bounded number of times instead of waiting for the next login, and the panel can say
+*183 of 210 confirmed* rather than *sent*. The cost is one small message per batch - eighteen for
+two hundred and ten members, against the hundreds the batches themselves take - so it is
+arithmetically free.
+
+**What it still would not guarantee**, and this is why the framing matters more than the feature:
+that their client is running, that the server carries the whisper, or that they do not quit
+halfway. Prompt is not the same as certain, and no design here reaches certain.
+
+**A protocol change inside §6**, so it is Alberto's to take rather than mine. It is backward
+compatible in the usual shape - a Family too old to send `got` is simply never acknowledged, and
+falls back to the `have` reconciliation it already understands.
+
+---
+
+## 44. Whether a link can cross factions
+
+**Asked:** 2026-09-09, out of the same question. Reach was the one thing `WIDE-TRANSFER.md` §7
+said was uncertain, and it named the wrong uncertainty.
+
+**What is settled:** realm is not a boundary. Specification §11.1 was closed by the 1.0.0 pass -
+two families on unrelated realms exchanged - and the one measured failure in this area is a
+different one: a character on a partner realm cannot **send** on the `GUILD` addon channel
+(DATASOURCES, measured on Mists 2026-08-30), which is Guild share's opening and not a whisper.
+
+**What is not measured anywhere in this repository: faction.** A whisper between Alliance and
+Horde is refused by the server on these clients, and if that is so then a Wide Family link across
+factions cannot work at all - and Family would report it as *none of their N characters are
+online*, which is a sentence about them being offline when they are sitting there. §11 asks for
+the opposite: say the boundary plainly rather than appearing broken.
+
+**The probe:** two accounts, opposite factions, one realm - link them and press *Update now*.
+Then read `/family guild test` for what the client answered to each send. Alberto has the two
+accounts, which is why this is answerable at all.
+
+**If it comes back refused**, the work is one sentence and where to put it: the panel says a link
+cannot cross factions, and it says so when the link is asked for rather than after an update that
+looks like it timed out.

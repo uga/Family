@@ -157,7 +157,7 @@ memory**: whatever had not left is gone.
 | **Sender switches to another character** | the queue dies with the session | `FamilyDB` is per account, so the marks survive the switch | 12–15 s after entering the world, if the other family is still on | nothing — the undelivered batches are unmarked, so they are offered again |
 | **Sender logs out, returns the next day** | as above | as above | the next time both are online at once | nothing; the records are simply a day older, and every panel says so |
 | **Sender exits the game normally** | as above | as above | as above | nothing |
-| **Sender alt-F4s or crashes** | as above | if the client dies without writing its saved variables, the marks revert to the last save — **this repository has not measured which kills write them** | as above | nothing: an out-of-date mark resends a member that was already there, which is the safe direction, and the next `want` corrects it anyway |
+| **Sender alt-F4s or crashes** | as above | if the client dies without writing its saved variables, the marks revert to the last save — **which kills write them is not measured, and backlog 42 is the probe** | as above | nothing *of the marks*: one rolled back resends a member that was already there, and the `have` list corrects it anyway. What a lost save costs is everything else scanned that session, which is the reason to run the probe |
 | **Sender disconnects** | identical to a logout from the wire's point of view | as above | as above | nothing |
 | **One recipient goes offline mid-transfer** | the client refuses each whisper and says so in chat, one round trip later; up to four more messages leave before the first refusal arrives | the rest of the queue for them is dropped, the batch job is abandoned, **and the marks it wrote are taken back** | their next login announcement, or ours | nothing |
 | **All of a recipient's characters are offline** | nothing is built at all — reachability is asked before the offering is assembled | the marks stand | as above | nothing |
@@ -190,13 +190,24 @@ Every delay Wide Family and Comm impose, with the file each is read from.
 
 ## 7. What is still not guaranteed
 
-- **Delivery is never acknowledged.** The addon channel says nothing about whether a whisper
-  arrived (§11.1). The strongest signal that exists is *the client took every piece and refused
-  none*, and that is what a mark is written from — which is why the `have` list, and not the mark,
-  is what correctness rests on.
-- **Whether two players can exchange addon messages at all** depends on whether the game will
-  carry a whisper between them, which is not true of every pairing on every client. Family says so
-  plainly rather than appearing broken.
+- **The channel acknowledges nothing, so Family acknowledges for it — lazily.** No addon message
+  is confirmed by the game. The strongest signal that exists is *the client took every piece and
+  refused none*, and that is what a mark is written from. The `have` list is the acknowledgement
+  proper: it is cumulative, it arrives at the next exchange, and it makes delivery **eventually**
+  certain for any pair who both run Family and are eventually online together. What it is not is
+  prompt — inside one long transfer nothing is confirmed and nothing is retried, and a panel that
+  says *sent* means *queued and taken*. Backlog 43 is the short `got` message that would close
+  that, and what it still would not promise.
+- **Reach across realms is settled and is not the open question.** Specification §11.1 was closed
+  by the 1.0.0 pass — two families on unrelated realms exchanged — so a realm is not a boundary,
+  and the one measured failure nearby is a different one: a character on a partner realm cannot
+  *send* on the `GUILD` addon channel, which is Guild share's opening rather than a whisper. §6's
+  own paragraph on this is older than §11.1 and reads as vaguer than what is now known.
+- **Faction is the boundary nothing here has measured.** A whisper between Alliance and Horde is
+  refused by the server on these clients; if that holds, a link cannot cross factions at all, and
+  today Family would report it as *none of their N characters are online* — a sentence about
+  somebody being offline when they are sitting in front of you. Backlog 44 is the probe and the
+  sentence it should say instead.
 - **A `want` now carries a line per member held.** For 210 members that is about 6.5 KB before
   compression — counted, from a 20-character key and a 10-character mark — so at most three
   seconds of wire per exchange, and in practice much less because a list of similar strings
