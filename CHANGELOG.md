@@ -29,6 +29,11 @@ is a decision rather than an afternoon of archaeology.
   how many members each link shares and how long an exchange spends on them, which is the number
   worth reporting. It measures and sends nothing.
 
+- **Update now says what is already on its way.** Sharing a large family takes minutes on the
+  game's channels, and pressing the button again during them used to queue a second copy of
+  everything behind the first — which made the wait twice as long. Both panels now say what is
+  still going out, or still coming in, and the count moves while you watch it.
+
 ### Fixed
 
 - **And nothing is prepared at all for a family that is not online.** Logging in used to build

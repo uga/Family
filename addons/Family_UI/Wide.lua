@@ -675,6 +675,30 @@ local function build(frame)
             end)
 
             nextButton(L["Update now"], BUTTON_FAR, function()
+                -- **Not while one is still going out.**
+                --
+                -- A family of any size takes minutes on a rate-limited channel, and for all
+                -- of those minutes the other side's characters look stale - so the button
+                -- gets pressed again. Nothing stopped that: the second press rebuilt the
+                -- whole offering, packed it, and queued every piece of it *behind* the first
+                -- copy, which doubles the wait it was pressed to shorten, and pays the
+                -- packing cost a second time in one frame. Nothing was corrupted; it was
+                -- simply slower, and the reply said "Sent", which invites a third press.
+                --
+                -- The button stays pressable and answers. A greyed one reads as broken -
+                -- the same argument `Family/Guild.lua` makes about an Update now that says
+                -- "no need". Specification §6: the interface reports progress rather than
+                -- appearing to hang.
+                local queued = Family.Comm:Pending()
+                if queued > 0 then
+                    Family:Print(L["Still sending: %d pieces are in Family's own queue - "
+                        .. "everything it has to send, not only this link. Nothing was "
+                        .. "added, because what you are asking for is already on its way."],
+                        queued)
+                    frame:Refresh()
+                    return
+                end
+
                 -- **Everything**, whether or not this side thinks they already have it.
                 -- This is the button somebody presses when something looks wrong, and one
                 -- that answered "nothing has changed" would be no use to them. Every other
@@ -708,7 +732,8 @@ local function build(frame)
             -- without.
             local state = nextRow()
             state.text:SetPoint("RIGHT", -RIGHT_INSET, 0)
-            state.text:SetText(link.problem
+
+            local said = link.problem
                 and ("|cffffaa00" .. link.problem .. "|r")
                 or string.format(
                     L["|cff888888you share %s in %s   |||   they share %d with you"
@@ -719,7 +744,21 @@ local function build(frame)
                         grants),
                     #theirs,
                     link.lastExchange and UI:Ago(link.lastExchange) or L["never"],
-                    open and "" or L["   |||   click the name to open"]))
+                    open and "" or L["   |||   click the name to open"])
+
+            -- What is still going out, said where the age of the last exchange is said.
+            --
+            -- The count is Family's whole outgoing queue rather than this link's share of
+            -- it, and the sentence says so: there is one queue, and a guild announcement or
+            -- a second link's exchange sits in it too. A number that named this link would
+            -- be a claim the code cannot back.
+            local queued = Family.Comm:Pending()
+            if queued > 0 then
+                said = said .. string.format(
+                    L["   |cffffd700|||   sending, %d pieces left in the queue|r"], queued)
+            end
+
+            state.text:SetText(said)
 
             if open then
                 y = y + 8
@@ -1059,6 +1098,21 @@ local function build(frame)
         for index = usedCells + 1, #cells do cells[index]:Hide() end
         for index = usedButtons + 1, #buttons do buttons[index]:Hide() end
         list:SetHeight(math.max(y, 1))
+
+        -- **A count that stands still is worse than no count.**
+        --
+        -- Every other repaint on this panel is caused by the record changing, and a queue
+        -- draining changes no record: the pieces go out and nothing here is written. So the
+        -- number drawn above would be whatever it was when the panel was last opened, which
+        -- is a wrong number rather than an old one.
+        --
+        -- Re-armed only while there is something left and the panel is on screen, so it
+        -- stops on its own the moment the queue empties or the player looks elsewhere.
+        if Family.Comm:Pending() > 0 and frame:IsShown() then
+            Family:After(1, "wide.queue", function()
+                if frame:IsShown() then frame:Refresh() end
+            end)
+        end
     end
 end
 

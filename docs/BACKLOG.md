@@ -496,6 +496,32 @@ ticked.
 
 ---
 
+## 39. A way out of a transfer that never finishes
+
+**Asked:** 2026-09-08, out of the same audit that put a progress count on the Wide Family and
+Guild panels. The count answers *is anything happening*; it does not answer *ten minutes have
+passed and nothing is arriving*.
+
+**Today:** there is no way out and no need for one yet. What exists already: `Comm:Sweep` runs
+on a fifteen-second ticker and drops a half-arrived transfer that has not been added to for
+sixty seconds, so a sender who logged out mid-transfer is cleaned up on the receiving side
+without anybody pressing anything. `Comm:Abandon` empties the outgoing queue and is called by
+nothing but the harness; `Comm:AbandonTo(target)` empties one target's share of it and is
+already used inside `Comm` when the client says somebody is not there.
+
+So the pieces for *cancel and start again* exist and nothing calls them from a panel.
+
+**Held deliberately.** The counter shipped first because it may be the whole answer: a queue
+that is visibly draining is not a hang, and a queue that is visibly **not** draining is a
+different fault - the client refusing to carry messages - which a cancel button would hide
+rather than fix. Worth revisiting only if somebody reports a count that sits still.
+
+Two things to decide if it is built: whether cancelling drops what has already been delivered
+on the far side (it does not - they keep what arrived, which is §6's own rule), and whether the
+button is the same one, changed, or a second one beside it.
+
+---
+
 ## 10. Warlocks: the per-demon abilities known
 
 **Asked:** read which demon-specific abilities a warlock has learned.

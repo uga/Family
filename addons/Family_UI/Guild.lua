@@ -204,6 +204,29 @@ local function build(frame)
 	-- only by where it is pinned cannot answer that. Stops where the buttons begin.
 	offNote:SetWidth((UI.CONTENT_W or 740) - 250)
 	updateButton:SetScript("OnClick", function()
+		-- **Not while their answers are still coming in.**
+		--
+		-- This button is not the shape Wide Family's is. It sends one announcement to the
+		-- guild and then waits, so what takes the minutes is not our queue but everybody
+		-- else's replies arriving a piece at a time. Pressing it again costs this client
+		-- almost nothing and asks the whole guild to start over - which is the expensive
+		-- direction, and the one nothing was stopping.
+		--
+		-- Counted with `Comm:Waiting`, which is transfers half arrived from anybody: the
+		-- sentence says *arriving* rather than naming the guild, because a Wide Family
+		-- exchange coming in is in that number too and a count that claimed otherwise would
+		-- be a claim the code cannot back.
+		local arriving = Family.Comm:Waiting()
+		if arriving > 0 then
+			Family:Print(arriving == 1
+				and L["Still receiving %d transfer. Asking again would ask everybody to "
+					.. "start over."]
+				or L["Still receiving %d transfers. Asking again would ask everybody to "
+					.. "start over."], arriving)
+			frame:Refresh()
+			return
+		end
+
 		local ok, why = Family.Guild:Refresh("asked for")
 		if ok then
 			Family:Print(L["Asked the guild. Whoever is online and running Family answers."])
@@ -432,7 +455,29 @@ local function build(frame)
 			for index = usedCells + 1, #cells do cells[index]:Hide() end
 			for index = usedBoxes + 1, #boxes do boxes[index]:Hide() end
 			list:SetHeight(math.max(y, 1))
+
+			-- What is still arriving, on the end of whatever this panel was going to say.
+			--
+			-- Specification §6: the interface reports progress rather than appearing to
+			-- hang. On this panel the wait is other people's answers coming in piece by
+			-- piece, and none of those pieces writes a record until the last one lands - so
+			-- without this the panel is still and silent for minutes while it works.
+			local arriving = Family.Comm:Waiting()
+			if message and arriving > 0 then
+				message = message .. string.format(arriving == 1
+					and L["   |cffffd700|||   %d transfer still arriving|r"]
+					or L["   |cffffd700|||   %d transfers still arriving|r"], arriving)
+			end
+
 			if message then status:SetText(message) end
+
+			-- Nothing else repaints this while they arrive: a half-arrived transfer writes
+			-- no record, so no change is announced until it is whole.
+			if arriving > 0 and frame:IsShown() then
+				Family:After(1, "guild.arriving", function()
+					if frame:IsShown() then frame:Refresh() end
+				end)
+			end
 		end
 
 		------------------------------------------------------------------------------------

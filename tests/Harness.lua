@@ -10103,6 +10103,71 @@ do
 		end
 	end)
 
+	-- **The button while a transfer is still going out.**
+	--
+	-- A family of any size takes minutes on a rate-limited channel, and for all of them the
+	-- other side looks stale - so Update now gets pressed again. Nothing stopped that: the
+	-- second press rebuilt the whole offering and queued it *behind* the first copy, doubling
+	-- the wait it was pressed to shorten. Specification §6 asks the interface to report
+	-- progress rather than appear to hang, which is the same sentence read the other way.
+	--
+	-- `Comm:Pending` is stubbed rather than filled, because what is under test is the panel's
+	-- answer to a queue that is not empty, not Comm's queueing - which has its own checks.
+	wearing(ours, function()
+		Family.UI:ShowTab("wide")
+
+		local update = findButton("Update now")
+		check("the panel offers Update now", update ~= nil)
+
+		if update then
+			local realPending = Family.Comm.Pending
+			local asked = 0
+			local realExchange = Family.Wide.ExchangeWith
+			Family.Wide.ExchangeWith = function(this, ...)
+				asked = asked + 1
+				return realExchange(this, ...)
+			end
+
+			Family.Comm.Pending = function() return 42 end
+			local before = #DEFAULT_CHAT_FRAME.messages
+			fireClick(update)
+
+			local said = ""
+			for index = before + 1, #DEFAULT_CHAT_FRAME.messages do
+				said = said .. " " .. DEFAULT_CHAT_FRAME.messages[index]
+			end
+
+			check("pressing it while a transfer is going out queues nothing more",
+				asked == 0, tostring(asked) .. " exchanges started")
+			check("and says what is still to go, rather than saying it sent something",
+				said:find("42", 1, true) ~= nil
+					and said:find(Family.L["Sent %d member(s) and asked for theirs."]:gsub(
+						"%%d", ""), 1, true) == nil,
+				said)
+			-- Pressable and answering, not greyed: a greyed button reads as broken, which is
+			-- the argument Family/Guild.lua already makes about an Update now that says "no
+			-- need".
+			check("and the button is still a button", update.__enabled ~= false)
+
+			-- And what is in flight is drawn where the age of the last exchange is drawn, so
+			-- the panel says it without being asked.
+			Family.UI:Refresh()
+			check("the panel says what is still on its way",
+				visibleText(string.format(
+					Family.L["   |cffffd700|||   sending, %d pieces left in the queue|r"],
+					42)))
+
+			-- With nothing left to send, the button is the button again.
+			Family.Comm.Pending = function() return 0 end
+			fireClick(update)
+			check("and with the queue empty it exchanges as it always did", asked == 1,
+				tostring(asked))
+
+			Family.Comm.Pending = realPending
+			Family.Wide.ExchangeWith = realExchange
+		end
+	end)
+
 	Family.Comm:Abandon()
 	sent = {}
 end
@@ -12729,6 +12794,62 @@ print("guild share")
 
 		check("the panel says what is shared and with whom",
 			visibleText("What you share with"))
+
+		-- **Update now while the guild's answers are still coming in.**
+		--
+		-- This button is not the shape Wide Family's is: it sends one announcement and then
+		-- waits, so the minutes are spent receiving N guildmates' replies a piece at a time.
+		-- Pressing it again costs this client nothing and asks the whole guild to start over,
+		-- which is the expensive direction - and nothing was stopping it. §6 asks the
+		-- interface to report progress rather than appear to hang.
+		--
+		-- `Comm:Waiting` is stubbed rather than filled: what is under test is the panel's
+		-- answer to transfers half arrived, not Comm's reassembly, which has its own checks.
+		do
+			-- By its own name, not by its label: Wide Family's panel has a button saying
+			-- the same words, and searching for the words found that one.
+			local update = _G.FamilyGuildUpdate
+			check("the guild panel offers Update now", update ~= nil)
+
+			if update then
+				local asked = 0
+				local realRefresh = Family.Guild.Refresh
+				Family.Guild.Refresh = function(this, ...)
+					asked = asked + 1
+					return realRefresh(this, ...)
+				end
+
+				local realWaiting = Family.Comm.Waiting
+				Family.Comm.Waiting = function() return 3 end
+
+				local before = #DEFAULT_CHAT_FRAME.messages
+				fireClick(update)
+
+				local said = ""
+				for index = before + 1, #DEFAULT_CHAT_FRAME.messages do
+					said = said .. " " .. DEFAULT_CHAT_FRAME.messages[index]
+				end
+
+				check("pressing it while answers are arriving asks nobody again",
+					asked == 0, tostring(asked) .. " announcements")
+				check("and says how many are still on their way", said:find("3", 1, true)
+					~= nil, said)
+				check("and the button is still a button", update.__enabled ~= false)
+
+				Family.UI:Refresh()
+				check("the panel says it too, beside what it was already saying",
+					visibleText(string.format(
+						Family.L["   |cffffd700|||   %d transfers still arriving|r"], 3)))
+
+				Family.Comm.Waiting = function() return 0 end
+				fireClick(update)
+				check("and with nothing arriving it asks the guild as it always did",
+					asked == 1, tostring(asked))
+
+				Family.Comm.Waiting = realWaiting
+				Family.Guild.Refresh = realRefresh
+			end
+		end
 
 		-- Folded away to begin with. The panel is about the guild's people; a player with
 		-- eight characters in it has thirty rows of grid sitting on a roster of a hundred
