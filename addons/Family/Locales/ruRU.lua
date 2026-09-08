@@ -207,6 +207,7 @@ Family.locales.ruRU = {
 	["what this client can do, and how Family worked it out"] = "что умеет этот клиент и как Family это определил",
 	["which crafting cooldowns have come back, and for whom"] = "какие ремесленные восстановления вернулись и у кого",
 	["how long a Wide Family exchange takes on this client"] = "сколько занимает обмен Широкой семьи на этом клиенте",
+	["  |cff888888deciding costs %d ms today: %d of %d unchanged, and an unchanged member is never opened.|r"] = "  |cff888888решение стоит %d мс: %d из %d без изменений, и неизменённый участник не открывается.|r",
 	["Wide Family is switched off, so there is nothing to time."] = "Широкая семья выключена, измерять нечего.",
 	["no links, so there is nothing to time."] = "связей нет, измерять нечего.",
 	["|cffffd700%s|r: %d members, building %d ms, fingerprinting %d ms, marking %d ms"] = "|cffffd700%s|r: %d участников, сборка %d мс, отпечаток %d мс, метка %d мс",

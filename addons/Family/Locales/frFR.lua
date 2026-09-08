@@ -207,6 +207,7 @@ Family.locales.frFR = {
 	["what this client can do, and how Family worked it out"] = "ce que ce client sait faire, et comment Family l'a déterminé",
 	["which crafting cooldowns have come back, and for whom"] = "quels temps de recharge d'artisanat sont revenus, et pour qui",
 	["how long a Wide Family exchange takes on this client"] = "combien de temps prend un échange Grande Famille sur ce client",
+	["  |cff888888deciding costs %d ms today: %d of %d unchanged, and an unchanged member is never opened.|r"] = "  |cff888888décider coûte %d ms aujourd'hui : %d sur %d inchangés, et un membre inchangé n'est jamais ouvert.|r",
 	["Wide Family is switched off, so there is nothing to time."] = "Grande Famille est désactivé, il n'y a donc rien à mesurer.",
 	["no links, so there is nothing to time."] = "aucun lien, il n'y a donc rien à mesurer.",
 	["|cffffd700%s|r: %d members, building %d ms, fingerprinting %d ms, marking %d ms"] = "|cffffd700%s|r : %d membres, construction %d ms, empreinte %d ms, marquage %d ms",

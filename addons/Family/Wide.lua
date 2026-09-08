@@ -840,6 +840,28 @@ Family.Comm:OnAbsent("wide", function(name, _, already)
     return handled
 end)
 
+-- What deciding costs now, and how much of it comes back as *nothing to do*.
+--
+-- For `/family widetime` and for nothing else. The diagnostic times the old path on purpose -
+-- building an offering and folding it is what an exchange used to spend, and seeing that number
+-- is what makes the case - so it needs this beside it or it reports the cost of a road nothing
+-- drives down any more.
+--
+-- Nothing is built and nothing is sent: this is the marking pass and only that.
+function Wide:MarkCost(link)
+    local total, held = 0, 0
+
+    for memberKey in pairs(link.grants or {}) do
+        local mark, isOffered = sendingMark(link, memberKey)
+        if isOffered then
+            total = total + 1
+            if mark ~= nil and (link.sent or {})[memberKey] == mark then held = held + 1 end
+        end
+    end
+
+    return total, held
+end
+
 function Wide:GrantedKeys(link)
     local keys = {}
     for memberKey, granted in pairs(link.grants or {}) do

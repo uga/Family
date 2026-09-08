@@ -9337,6 +9337,18 @@ do
 			-- printed line names all three whatever it measured.
 			check("and says what the cheap answer to the same question would cost",
 				said:find("marking", 1, true) ~= nil, said)
+			-- And what deciding costs *today*, which is a different question from the three
+			-- timings: those measure the road an exchange used to take. Without this the
+			-- diagnostic reads exactly the same after the fix as before it, which is how it
+			-- read on the first client that tried both.
+			-- Read as numbers rather than as the word, because the line says "unchanged"
+			-- whatever it counted: the first version of this check passed with the count
+			-- replaced by nought.
+			local held, offered = said:match("(%d+) of (%d+)")
+			check("and how much of the work comes back as nothing to do",
+				tonumber(offered) ~= nil and tonumber(offered) > 0
+					and tonumber(held) ~= nil,
+				said)
 			check("having actually folded each offering, which is what a login pays",
 				folded > 0, tostring(folded))
 			check("and actually marked each granted member, which is what it could pay",

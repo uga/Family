@@ -207,6 +207,7 @@ Family.locales.deDE = {
 	["what this client can do, and how Family worked it out"] = "was dieser Client kann und wie Family das herausgefunden hat",
 	["which crafting cooldowns have come back, and for whom"] = "welche Herstellungs-Abklingzeiten zurück sind, und für wen",
 	["how long a Wide Family exchange takes on this client"] = "wie lange ein Weite-Familie-Austausch auf diesem Client dauert",
+	["  |cff888888deciding costs %d ms today: %d of %d unchanged, and an unchanged member is never opened.|r"] = "  |cff888888Entscheiden kostet heute %d ms: %d von %d unverändert, und ein unveränderter Eintrag wird nie geöffnet.|r",
 	["Wide Family is switched off, so there is nothing to time."] = "Weite Familie ist ausgeschaltet, es gibt also nichts zu messen.",
 	["no links, so there is nothing to time."] = "keine Verbindungen, es gibt also nichts zu messen.",
 	["|cffffd700%s|r: %d members, building %d ms, fingerprinting %d ms, marking %d ms"] = "|cffffd700%s|r: %d Mitglieder, Aufbau %d ms, Fingerabdruck %d ms, Markierung %d ms",

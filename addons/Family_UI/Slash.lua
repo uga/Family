@@ -615,6 +615,17 @@ add("widetime", L["how long a Wide Family exchange takes on this client"], funct
 		Family:Print(L["|cffffd700%s|r: %d members, building %d ms, fingerprinting %d ms, "
 			.. "marking %d ms"], Family.Wide:Called(link) or familyID, count,
 			building, folding, marking)
+
+		-- The three above are what an exchange used to spend. This is what one spends now,
+		-- and it is a different question from the timings: how much of the work comes back
+		-- as *nothing to do*. Without it the diagnostic reports the cost of a road nothing
+		-- drives down any more, and looks unchanged after the very fix it argued for.
+		at = now()
+		local total, held = Family.Wide:MarkCost(link)
+		local deciding = now() - at
+
+		Family:Print(L["  |cff888888deciding costs %d ms today: %d of %d unchanged, and "
+			.. "an unchanged member is never opened.|r"], deciding, held, total)
 	end
 
 	if links == 0 then
