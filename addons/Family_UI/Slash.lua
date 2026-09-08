@@ -612,20 +612,22 @@ add("widetime", L["how long a Wide Family exchange takes on this client"], funct
 		end
 		local marking = now() - at
 
-		Family:Print(L["|cffffd700%s|r: %d members, building %d ms, fingerprinting %d ms, "
-			.. "marking %d ms"], Family.Wide:Called(link) or familyID, count,
-			building, folding, marking)
-
-		-- The three above are what an exchange used to spend. This is what one spends now,
-		-- and it is a different question from the timings: how much of the work comes back
-		-- as *nothing to do*. Without it the diagnostic reports the cost of a road nothing
-		-- drives down any more, and looks unchanged after the very fix it argued for.
 		at = now()
 		local total, held = Family.Wide:MarkCost(link)
 		local deciding = now() - at
 
-		Family:Print(L["  |cff888888deciding costs %d ms today: %d of %d unchanged, and "
-			.. "an unchanged member is never opened.|r"], deciding, held, total)
+		-- **What it costs now, first and in plain words.**
+		--
+		-- The three timings above are the old road, walked on purpose so that there is
+		-- something to compare against - and printing them first was a mistake that
+		-- misled the first two people who read the output, one of them the author of the
+		-- addon. A diagnostic that has to be explained is not one.
+		Family:Print(L["|cffffd700%s|r: %d members. Now: marking %d ms, %d of %d "
+			.. "unchanged, and an unchanged member is never opened."],
+			Family.Wide:Called(link) or familyID, count, deciding, held, total)
+
+		Family:Print(L["  |cff888888What it used to cost, for comparison: building %d ms, "
+			.. "fingerprinting %d ms.|r"], building, folding)
 	end
 
 	if links == 0 then
@@ -633,9 +635,7 @@ add("widetime", L["how long a Wide Family exchange takes on this client"], funct
 		return
 	end
 
-	Family:Print(L["|cff888888Building and fingerprinting is what each exchange costs, and "
-		.. "there is one at every login. Marking is what the same question costs without "
-		.. "decoding anybody. Nothing was sent.|r"])
+	Family:Print(L["|cff888888Nothing was sent, and nobody had to be online.|r"])
 end)
 
 -- Diagnostic rather than a feature. Working out which shape of the talent call a build wants

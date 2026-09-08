@@ -827,13 +827,11 @@ session.
 
 **"The game stops for a moment when Wide Family is on."** Type `/family widetime`. It says, per
 link, how many members are shared, how long building and fingerprinting them takes, and what the
-same question would cost without decoding anybody, and then, on a second line, what deciding
-costs today and how many of those members come back as *nothing to do*. It measures and sends
-nothing, and nobody has to be online — a link and what it shares are remembered whether or not
-the other person is playing.
-
-The first three numbers describe the road an exchange used to take, so they do not fall when
-Family gets faster; the second line is the road it takes now. Report both.
+much marking them costs and how many of them come back as *nothing to do* — that is what an
+exchange spends today. Underneath, in grey, is what the same exchange used to cost before this
+version, which is there to be compared against and is not what anything spends any more. It
+measures and sends nothing, and nobody has to be online — a link and what it shares are
+remembered whether or not the other person is playing.
 
 Run it twice in a row. Family decodes each record once per session, so the first run of a login
 pays for that and the second does not, and the difference between the two is exactly what a
