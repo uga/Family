@@ -181,16 +181,17 @@ end
 
 -- A short mark of the record as it sits on disk, made without decoding it.
 --
--- For the login walk, and for nothing else: it decodes one member per call for the whole family
--- and, from the second session on, does it to discover that there is nothing to ask about.
--- Comparing this against what was written down beside the names store tells it that in the time
--- it takes to fold a string.
+-- Two readers, and they ask the same question of it: *has this member changed since I last
+-- looked?* The login walk asks so that it can skip a member whose item names it has already
+-- fetched, and a Wide Family exchange asks so that it can skip building - and therefore
+-- decoding - a member the other side already has. Both used to answer it the expensive way and
+-- both answer it here now.
 --
 -- **Only where the record is a string**, which is the compressed path and the one that has a
 -- decode worth skipping. Stored plain - the fallback when the compression libraries are not
 -- loaded - the payload *is* the table, `Codec:Decode` hands it straight back, and folding it
--- would cost more than the walk this is saving. No mark means the walk reads the member as it
--- always did.
+-- would cost more than either caller saves. No mark means *not known*, and both callers do the
+-- expensive thing rather than guess, which is §2.2 pointed at our own bookkeeping.
 --
 -- **Every byte, and the first version of this read only the ends.** Folding a 30 KB record
 -- costs 1.0 ms in lua5.1 on the machine this was written on and folding its first and last 256
@@ -206,7 +207,14 @@ end
 -- every tick, and a family of any size is spread rather than folded at once.
 function Database:PayloadMark(key)
 	local entry = record(key, false)
-	if not entry or type(entry.payload) ~= "string" then return nil end
+	if not entry then return nil end
+
+	-- A member with nothing recorded yet is a fact of its own, and a stable one - so it gets
+	-- a mark rather than the nil that means *this cannot be worked out*. The two used to be
+	-- the same answer, which made every such member look changed on every comparison.
+	if entry.payload == nil then return "none" end
+
+	if type(entry.payload) ~= "string" then return nil end
 
 	-- The codec and the length go in as well as the bytes. The same data written by two
 	-- codecs is two different strings, and a mark that did not say which would match across

@@ -22450,6 +22450,45 @@ print("an exchange carries what changed, not everything again")
 	check("and a second one, with nothing changed, does not carry them again",
 		carried ~= nil and carried[key] == nil, tostring(carried and carried[key]))
 
+	-- **And decides that without decoding anybody or folding anything big.**
+	--
+	-- This is the whole of the fix and it cannot be seen from the wire: the same members are
+	-- held back as before, and what changed is what deciding costs. Measured on a live client
+	-- with /family widetime before it: fifteen members, 213 to 301 ms of fingerprinting
+	-- against 12 ms of marking, paid at every exchange and there is one at every login.
+	--
+	-- Counted rather than timed, because a millisecond here is nought and a timing check is a
+	-- check about this machine.
+	do
+		local decodes, folds = 0, 0
+		local realPayload = Family.Database.Payload
+		local realPrint = Family.Codec.Fingerprint
+
+		Family.Database.Payload = function(this, memberKey)
+			decodes = decodes + 1
+			return realPayload(this, memberKey)
+		end
+		-- Tables only: marking folds the stored string through this same call, and counting
+		-- both would count the cheap answer as though it were the expensive one.
+		Family.Codec.Fingerprint = function(this, data)
+			if type(data) == "table" then folds = folds + 1 end
+			return realPrint(this, data)
+		end
+
+		Family.Wide:ExchangeWith("thrifty", "nothing has changed, again")
+
+		Family.Database.Payload = realPayload
+		Family.Codec.Fingerprint = realPrint
+
+		check("an exchange that sends nobody decodes nobody", decodes == 0,
+			tostring(decodes) .. " decoded")
+		-- The one small fold left is the mark itself, made of the payload mark, the meta
+		-- fields and the granted list - never the built offering, which is the thing that
+		-- costs.
+		check("and folds only the marks, never a whole record", folds <= 1,
+			tostring(folds) .. " tables folded")
+	end
+
 	-- **But still names them as offered**, which is what makes holding them back safe: the far
 	-- side forgets anybody missing from that list, so "unchanged" and "withdrawn" have to stay
 	-- two different sentences. Left out of both, a member would be deleted over there.
@@ -22468,6 +22507,42 @@ print("an exchange carries what changed, not everything again")
 	Family.Wide:ExchangeWith("thrifty", "something moved")
 	check("a member whose record has changed is carried again",
 		carried and carried[key] == true, tostring(carried and carried[key]))
+
+	-- **And one whose payload changed while their meta did not.**
+	--
+	-- Bags are the payload and nothing about them shows in meta, so a member who emptied a bag
+	-- has a record that differs and a meta that does not. The mark is made of the payload as it
+	-- sits on disk precisely so this is seen without decoding it - take the payload out of the
+	-- mark and this is the check that goes red while everything on the wire looks right.
+	do
+		local payload = Family.Database:Payload(key) or {}
+		payload.bags = payload.bags or {}
+		payload.bags[4] = { size = 6, slots = { [1] = { id = 2589, count = 3 } } }
+		Family.Database:SetPayload(key, payload)
+
+		carried = nil
+		Family.Wide:ExchangeWith("thrifty", "their bags moved")
+		check("and one whose payload changed while their meta did not",
+			carried and carried[key] == true, tostring(carried and carried[key]))
+	end
+
+	-- A member the record cannot date is sent every time, which is what happened before any of
+	-- this: their offering carries the moment it was built, so it differs from itself on every
+	-- exchange. Kept deliberately rather than marked as unchanged, because holding back a
+	-- record whose age is unknown would freeze that age on the far side.
+	do
+		local meta = Family.Database:Meta(key)
+		local held = meta.seen
+		meta.seen = nil
+
+		Family.Wide:ExchangeWith("thrifty", "no date on the record")
+		carried = nil
+		Family.Wide:ExchangeWith("thrifty", "no date on the record, again")
+		check("a member with no date on their record is carried every time",
+			carried and carried[key] == true, tostring(carried and carried[key]))
+
+		meta.seen = held
+	end
 
 	-- And asked for in full, whatever the marks say. Update now is the button somebody presses
 	-- when a thing looks wrong, and a button that answers "nothing has changed" is no use.

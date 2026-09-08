@@ -588,23 +588,98 @@ end
 -- **A mark that cannot be worked out means send**, which is the §2.2 shape pointed at our own
 -- bookkeeping: not knowing whether a record changed is not knowing, and the cheap answer to
 -- not knowing is the honest one.
-local function worthSending(link, members, full)
-    link.sent = link.sent or {}
+-- **Asked before the offering is built, and without decoding anybody.**
+--
+-- This used to fingerprint the built offering, which meant every exchange decoded every granted
+-- member's record and then folded the result byte by byte - to discover, nearly every time, that
+-- nothing had changed. Measured on Alberto's own client with `/family widetime`: fifteen members
+-- cost 213 to 301 ms to fingerprint and 12 ms to mark, and the fingerprint is paid at every
+-- exchange while there is one at every login. Forty members is most of a second, eighty is more
+-- than one, and both sides pay it.
+--
+-- Everything the mark is made of can be had without decoding: the mark of the payload **as it
+-- sits on disk** (`Database:PayloadMark`, which the login walk already uses), the handful of meta
+-- fields that go on the wire, and which categories are granted. A change anywhere in the record
+-- moves the payload mark, including one in a category that is not shared - which resends a member
+-- that need not have been, and that is the safe direction to be wrong in.
+--
+-- **What cannot be worked out means send**, which is the §2.2 shape pointed at our own
+-- bookkeeping. Three things reach that: a record whose payload is not a string, a member with no
+-- `seen` at all - whose built offering carries `time()` and so differs on every exchange anyway,
+-- which is exactly today's behaviour kept - and anything else that answers nothing.
+--
+-- Nothing about the wire changes. The same members are offered and the same ones are held back;
+-- what changes is that deciding costs a fold of a few hundred bytes rather than a decode and a
+-- walk of the whole record.
+local function sendingMark(link, memberKey)
+    local granted = grantsFor(link, memberKey)
+    if not granted or not next(granted) then return nil, false end
 
-    local marks, sending, held = {}, {}, 0
+    local meta = Family.Database:Meta(memberKey)
+    if not meta then return nil, false end
 
-    for memberKey, entry in pairs(members) do
-        local mark = Family.Codec:Fingerprint(entry)
-        marks[memberKey] = mark
+    -- Offered, but not markable: the built entry would carry a fresh `time()` and differ from
+    -- itself on every exchange, so it is sent every time and always was.
+    if not meta.seen then return nil, true end
 
-        if full or mark == nil or link.sent[memberKey] ~= mark then
-            sending[memberKey] = entry
-        else
-            held = held + 1
+    local fields, ids = {}, {}
+    local wantsPayload = false
+
+    for _, field in ipairs(IDENTITY) do fields[field] = meta[field] end
+
+    for _, category in ipairs(CATEGORIES) do
+        if granted[category.id] then
+            ids[#ids + 1] = category.id
+            for _, field in ipairs(category.meta or {}) do fields[field] = meta[field] end
+            if category.payload then wantsPayload = true end
         end
     end
 
-    return sending, marks, held
+    local payloadMark
+    if wantsPayload then
+        payloadMark = Family.Database:PayloadMark(memberKey)
+        if not payloadMark then return nil, true end
+    end
+
+    -- Small: a payload mark is one short string however big the record behind it is, and the
+    -- meta fields are numbers and words. This is the fold the timings above call *marking*.
+    return Family.Codec:Fingerprint({
+        payload = payloadMark,
+        meta = fields,
+        granted = ids,
+        seen = meta.seen,
+    }), true
+end
+
+local function worthSending(link, full)
+    link.sent = link.sent or {}
+
+    local marks, sending, offered, held, count = {}, {}, {}, 0, 0
+
+    for memberKey in pairs(link.grants or {}) do
+        local mark, isOffered = sendingMark(link, memberKey)
+
+        if isOffered then
+            if not full and mark ~= nil and link.sent[memberKey] == mark then
+                offered[memberKey] = true
+                marks[memberKey] = mark
+                held = held + 1
+                count = count + 1
+            else
+                -- Built only now, which is where the decode lives. A member that is held
+                -- back is never built at all.
+                local entry = offering(link, memberKey)
+                if entry then
+                    offered[memberKey] = true
+                    marks[memberKey] = mark
+                    sending[memberKey] = entry
+                    count = count + 1
+                end
+            end
+        end
+    end
+
+    return sending, marks, held, offered, count
 end
 
 -- `full` sends everything whether or not it has changed; `ask` sends the second half of the
@@ -632,8 +707,7 @@ function Wide:ExchangeWith(familyID, why, options)
     local full = options ~= nil and options.full == true
     local ask = (options == nil) or options.ask ~= false
 
-    local members, count = self:Offering(link)
-    local sending, marks, held = worthSending(link, members, full)
+    local sending, marks, held, offered, count = worthSending(link, full)
 
     local ok, problem = send(link, "data", envelope({
         members = sending,
@@ -663,7 +737,7 @@ function Wide:ExchangeWith(familyID, why, options)
     -- withdrawn and granted again would match a mark from before the withdrawal and never be
     -- sent - the other side dropped them on the `offering` list and would never get them back.
     for memberKey in pairs(link.sent) do
-        if members[memberKey] == nil then link.sent[memberKey] = nil end
+        if not offered[memberKey] then link.sent[memberKey] = nil end
     end
 
     -- Bulk, although it is one line long.

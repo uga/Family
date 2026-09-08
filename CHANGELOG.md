@@ -31,6 +31,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Logging in with Wide Family switched on no longer pauses the game.** Every exchange used to
+  open each shared character's whole record and read it end to end, just to work out that nothing
+  about them had changed — on both sides, at every login. It now answers that question from the
+  record as it sits on disk. On a family of fifteen shared characters that is a fifth of a second
+  saved per exchange; on the larger ones that reported this it is more than a second. The first
+  exchange after updating sends everything once, in the background, and then settles.
+
 - **Each pet says how many training points it still has to spend**, on its own row in Pets, in
   green when there are any. It is what is left, not what the pet started with — the number you
   would go to a trainer about. A freshly tamed pet, which owes points until it is loyal, says so
