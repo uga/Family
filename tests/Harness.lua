@@ -22596,6 +22596,67 @@ print("a fingerprint is about the data, not about the table")
 end)()
 
 print()
+print("queued is not sent, and the sender is told which")
+
+-- **Wide Family writes down what the other side now holds**, and it used to write it the moment
+-- `Comm:Send` returned - which says a body was cut up and put in a list, not that any of it left.
+-- The list is memory and the note is disk, so a player who logged out half way through a first
+-- transfer came back with a link claiming to have sent members that had never been on the wire,
+-- and nothing would offer them again.
+--
+-- What can honestly be reported from here is *the client took every piece and refused none*. It
+-- is one step short of delivery and it is as far as this channel goes (§11.1). The three cases
+-- below are the three that matter: it went, it was abandoned, it was refused.
+--
+-- Bulk and to a name nobody has heard from, because that is the only way to hold a queue open in
+-- here: this harness has no ticker, so `pump` drains everything the instant it is handed over,
+-- and a check written against a non-bulk message would watch a message that had already gone.
+;(function()
+	local realRaw = C_ChatInfo.SendAddonMessage
+	local realCombat = InCombatLockdown
+	InCombatLockdown = function() return false end
+	C_ChatInfo.SendAddonMessage = function() return 0 end
+
+	local went = 0
+	Family.Comm:Send("delivery", string.rep("q", 900), "WHISPER",
+		"Deliveryone-Thunderstrike", true, function() went = went + 1 end)
+
+	check("a message is not reported sent while pieces of it are still queued",
+		went == 0 and Family.Comm:Pending() > 0,
+		tostring(went) .. " reported, " .. Family.Comm:Pending() .. " queued")
+
+	advance(5)
+	check("and is reported once every piece has been taken, exactly once",
+		went == 1, tostring(went))
+
+	-- Abandoned half way: never reported at all. This is the friend who logs out mid-transfer,
+	-- and it is the case the marks on the other side of this callback exist for.
+	went = 0
+	Family.Comm:Send("delivery", string.rep("q", 900), "WHISPER",
+		"Deliverytwo-Thunderstrike", true, function() went = went + 1 end)
+	local queued = Family.Comm:Pending()
+	Family.Comm:AbandonTo("Deliverytwo-Thunderstrike")
+	advance(5)
+	check("a transfer abandoned part way is never reported sent",
+		went == 0 and queued > 1, tostring(went) .. " reported of " .. queued .. " queued")
+
+	-- And a client that will not take it at all is not a delivery either, however short the
+	-- message was. Short on purpose: a one-piece message is the one case an abandon cannot
+	-- catch, so the refusal has to.
+	went = 0
+	C_ChatInfo.SendAddonMessage = function() error("the client refused") end
+	Family.Comm:Send("delivery", "short", "WHISPER", "Deliverythree-Thunderstrike", false,
+		function() went = went + 1 end)
+	advance(1)
+	check("nor is one the client would not take", went == 0, tostring(went))
+
+	C_ChatInfo.SendAddonMessage = realRaw
+	InCombatLockdown = realCombat
+	Family.Comm:Abandon()
+	advance(1)
+end)()
+
+print()
 print("an exchange carries what changed, not everything again")
 
 -- **Backlog 31's other half.** Every exchange used to send every granted member's whole record -
@@ -22635,7 +22696,14 @@ print("an exchange carries what changed, not everything again")
 	-- not record what it believes the other side now holds - which is right, and which made the
 	-- first draft of this block check nothing at all: every mark stayed nil, so every exchange
 	-- looked like the first one.
-	Family.Comm.Send = function(_, kind, text)
+	--
+	-- **And calling `onSent`, because the real one does.** A mark is written when the client has
+	-- taken every piece of a message, not when the message was handed to the queue, so a stub
+	-- that answers true and never calls back models a client that accepts everything and delivers
+	-- nothing - which is not the case being written about here. Modelling a success as a silence
+	-- is the same fixture mistake as L-063.
+	Family.Comm.Send = function(_, kind, text, _channel, _target, _bulk, onSent)
+		if onSent then onSent() end
 		if kind == "data" then
 			local body = Family.Codec:FromWire(text)
 			carried = {}
@@ -22824,7 +22892,8 @@ print("an exchange carries what changed, not everything again")
 	-- half of what made ticking a column expensive. Counted by kind, because the difference is a
 	-- message that goes or does not.
 	local asked = 0
-	Family.Comm.Send = function(_, kind)
+	Family.Comm.Send = function(_, kind, _text, _channel, _target, _bulk, onSent)
+		if onSent then onSent() end
 		if kind == "want" then asked = asked + 1 end
 		return true
 	end
@@ -22866,7 +22935,8 @@ print("an exchange carries what changed, not everything again")
 		for _ = 1, 8 do advance(1.1) end
 
 		local messages, arrived, everyOffering = 0, {}, true
-		Family.Comm.Send = function(_, kind, text)
+		Family.Comm.Send = function(_, kind, text, _channel, _target, _bulk, onSent)
+			if onSent then onSent() end
 			if kind == "data" then
 				messages = messages + 1
 				local body = Family.Codec:FromWire(text) or {}
@@ -22925,6 +22995,241 @@ print("an exchange carries what changed, not everything again")
 
 	Family.Comm.Send = realSend
 	Family.Database:Forget(key)
+	FamilyDB.wide = held
+end)()
+
+print()
+print("a transfer that stopped half way is picked up, not believed")
+
+-- **Three faults with one shape**, and one repair.
+--
+-- A first exchange with a large family is minutes of wire. Before this, the marks saying what
+-- the other side now holds were written as each batch was *queued*, and the queue is memory
+-- while the marks are disk: log out half way and the marks survive the messages. The same hole,
+-- more often - a friend who logs out mid-transfer has the rest of the queue dropped by
+-- `AbandonTo` while the marks stay written. Both left members that this side would never offer
+-- again.
+--
+-- Nothing was noticed because `onWant` answered every request with the entire offering, in one
+-- unbatched body, at every exchange - which is to say the bug was hidden by a bigger one.
+--
+-- The repair is that the side which *has* the records is the side that says what it holds: every
+-- member goes out carrying a short mark, comes back in the next `want`, and the difference is
+-- what is sent. Whatever either side believed about a transfer that stopped, the next request
+-- settles it - so a logout mid-transfer resumes rather than restarting, and rather than
+-- silently losing what it thought it had sent.
+;(function()
+	local held = FamilyDB.wide
+	local keys = {}
+
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["theirs"] = { name = "Their lot", grants = {}, siblings = {}, members = {},
+			characters = { ["Them-Fire Maw"] = time() } } },
+	}
+	local link = Family.Wide:Links()["theirs"]
+
+	-- What each message carried, and whether the client took it. `deliver` is the whole point of
+	-- the fixture: a stub that always calls back models a wire that never breaks, which is the
+	-- one case none of this is about.
+	local sent, wants, deliver = {}, {}, true
+	local realSend = Family.Comm.Send
+	Family.Comm.Send = function(_, kind, text, _channel, _target, _bulk, onSent)
+		local body = Family.Codec:FromWire(text) or {}
+		if kind == "data" then
+			sent[#sent + 1] = body
+		elseif kind == "want" then
+			wants[#wants + 1] = body
+		end
+		if deliver and onSent then onSent() end
+		return true
+	end
+
+	local function carried()
+		local all = {}
+		for _, body in ipairs(sent) do
+			for memberKey, entry in pairs(body.members or {}) do all[memberKey] = entry end
+		end
+		return all
+	end
+
+	local function howMany(t)
+		local count = 0
+		for _ in pairs(t) do count = count + 1 end
+		return count
+	end
+
+	-- Fifteen, because a batch is twelve: a transfer that fits in one message can be abandoned
+	-- but never abandoned *part way*, and part way is the case.
+	for index = 1, 15 do
+		local memberKey = string.format("Halfway%02d-Fire Maw", index)
+		keys[#keys + 1] = memberKey
+		Family.Database:SetMeta(memberKey, { name = string.format("Halfway%02d", index),
+			realm = "Fire Maw", classFile = "MAGE", level = 60, faction = "Alliance",
+			money = index * 100, seen = time() - 60 })
+		Family.Wide:Grant("theirs", memberKey, "money", true)
+	end
+
+	-- Granting settles into an exchange of its own, and that one batches too. Let it finish
+	-- before anything below measures, or what is counted is two exchanges interleaved.
+	for _ = 1, 8 do advance(1.1) end
+
+	local function exchange(options)
+		sent = {}
+		Family.Wide:ExchangeWith("theirs", "a check", options)
+		for _ = 1, 4 do advance(1.1) end
+		return carried()
+	end
+
+	-- **The mark travels with the member.** It is one short opaque string of ours, stored beside
+	-- the record over there and handed back in their next request. Without it the other side has
+	-- no way to say what it holds and the whole repair below has nothing to stand on.
+	link.sent = nil
+	local out = exchange({ full = true })
+	check("a member goes out carrying the mark of the record that was sent",
+		type((out[keys[1]] or {}).mark) == "string",
+		tostring((out[keys[1]] or {}).mark))
+	check("and all fifteen of them go", howMany(out) == 15, tostring(howMany(out)))
+
+	out = exchange()
+	check("a second exchange with nothing changed carries nobody", howMany(out) == 0,
+		tostring(howMany(out)))
+
+	-- **A batch the client never took leaves no mark**, which is the logout in one line.
+	link.sent = nil
+	deliver = false
+	out = exchange({ full = true })
+	check("a transfer nothing took is still put on the wire", howMany(out) == 15,
+		tostring(howMany(out)))
+
+	local marked = howMany(link.sent or {})
+	check("and nothing is written down as sent while that is true", marked == 0,
+		tostring(marked) .. " marked")
+
+	deliver = true
+	out = exchange()
+	check("so the next exchange offers every one of them again", howMany(out) == 15,
+		tostring(howMany(out)))
+
+	-- **A transfer abandoned mid-flight takes its own marks back.** This is the friend who logs
+	-- out while we are sending: `Comm` empties the queue, and what it cannot do is unwrite the
+	-- marks the batches that had gone already put on our disk.
+	link.sent = nil
+	sent = {}
+	Family.Wide:ExchangeWith("theirs", "and then they went", { full = true })
+	check("the first batch of a transfer is marked as it goes",
+		howMany(link.sent or {}) == 12, tostring(howMany(link.sent or {})))
+
+	local left = Family.Wide:AbandonBatches("theirs")
+	check("and the rest is still waiting when they go", left == 3, tostring(left))
+	check("abandoning the transfer takes back what it had marked",
+		howMany(link.sent or {}) == 0, tostring(howMany(link.sent or {})))
+
+	-- **The request says what we hold of theirs**, in their own words for it. A member that
+	-- arrived without a mark is left out rather than sent as a nothing, which would be a claim.
+	link.members = {
+		["Ofttheirs-Fire Maw"] = { meta = { name = "Ofttheirs" }, mark = "776655" },
+		["Nomark-Fire Maw"] = { meta = { name = "Nomark" } },
+	}
+	wants = {}
+	Family.Wide:ExchangeWith("theirs", "asking for theirs")
+	local want = wants[#wants]
+	check("the request carries the mark of each of theirs we already hold",
+		want and (want.have or {})["Ofttheirs-Fire Maw"] == "776655",
+		tostring(want and (want.have or {})["Ofttheirs-Fire Maw"]))
+	check("and says nothing at all about one that arrived without a mark",
+		want ~= nil and (want.have or {})["Nomark-Fire Maw"] == nil,
+		tostring(want and (want.have or {})["Nomark-Fire Maw"]))
+
+	-- **And a request of theirs is answered from their list, not from our bookkeeping.**
+	local function theyAsk(have)
+		sent = {}
+		local body = Family.Codec:ToWire({ family = "theirs", schema = 1, have = have })
+		Family.Comm:Receive("1\0011\0011\001want\001" .. body, "Them-Fire Maw", "WHISPER")
+		for _ = 1, 4 do advance(1.1) end
+		return carried()
+	end
+
+	link.sent = nil
+	local marks = {}
+	for memberKey, entry in pairs(exchange({ full = true })) do
+		marks[memberKey] = entry.mark
+	end
+
+	out = theyAsk(marks)
+	check("a request from somebody who holds everything is answered with nobody",
+		howMany(out) == 0, tostring(howMany(out)))
+
+	-- One member missing from their list: exactly that one goes, and the offering list still
+	-- names all fifteen so nobody is forgotten over there.
+	local without = {}
+	for memberKey, mark in pairs(marks) do without[memberKey] = mark end
+	without[keys[1]] = nil
+
+	out = theyAsk(without)
+	check("and one that is missing a member is answered with that member and no other",
+		howMany(out) == 1 and out[keys[1]] ~= nil,
+		tostring(howMany(out)) .. " carried")
+	check("while still naming the whole offering, so the rest are not forgotten",
+		#((sent[1] or {}).offering or {}) == 15,
+		tostring(#((sent[1] or {}).offering or {})))
+
+	-- **The logout, from the other chair.** This side believes it has sent all fifteen. The side
+	-- that actually has the records says it holds none of them, and that is the answer.
+	out = theyAsk({})
+	check("a side that says it holds nothing is sent everything, whatever this side believed",
+		howMany(out) == 15, tostring(howMany(out)))
+
+	-- **And a Family too old to say what it holds is answered in full**, which is what every
+	-- version has always done here. Nothing is lost talking to an old client except the saving.
+	link.sent = nil
+	exchange({ full = true })
+	out = theyAsk(nil)
+	check("a request with no list at all is answered with the whole offering",
+		howMany(out) == 15, tostring(howMany(out)))
+
+	-- **And the answer goes out in batches like everything else.** This used to be one body of
+	-- every granted member, packed in one frame, at every exchange - which is at every login of
+	-- either side.
+	check("and it goes a dozen at a time rather than in one bundle",
+		#sent > 1 and howMany((sent[1] or {}).members or {}) <= 12,
+		tostring(#sent) .. " messages, " .. howMany((sent[1] or {}).members or {})
+			.. " in the first")
+
+	-- **And the client's own refusal reaches the transfer**, not only the queue.
+	--
+	-- `Comm` empties what was queued for a name it has just been told is not there. What it
+	-- cannot do is unwrite the marks that the batches which had already gone put on our disk, and
+	-- those are a claim about their side that the refusal has just disproved. Left in, the
+	-- members of every batch before the one that failed were sent into a silence and never
+	-- offered again.
+	--
+	-- Their other characters are taken off the link first, so that the refusal is the end of the
+	-- road rather than the start of an attempt on the next name - which would begin a transfer of
+	-- its own and mark them all over again.
+	link.sent = nil
+	link.members = {}
+	link.name = nil
+	sent = {}
+	Family.Wide:ExchangeWith("theirs", "and now they log out", { full = true })
+	check("a transfer is under way, with its first batch marked and the rest to come",
+		Family.Wide:Batching("theirs") == 3 and howMany(link.sent or {}) == 12,
+		tostring(Family.Wide:Batching("theirs")) .. " left, "
+			.. howMany(link.sent or {}) .. " marked")
+
+	fire("CHAT_MSG_SYSTEM", string.format(ERR_CHAT_PLAYER_NOT_FOUND_S, "Them"))
+
+	check("the client saying they are not there drops the rest of the transfer",
+		Family.Wide:Batching("theirs") == 0, tostring(Family.Wide:Batching("theirs")))
+	check("and unwrites what it had already marked as theirs",
+		howMany(link.sent or {}) == 0, tostring(howMany(link.sent or {})) .. " marked")
+
+	Family.Comm.Send = realSend
+	for _, memberKey in ipairs(keys) do
+		Family.Wide:Grant("theirs", memberKey, "money", false)
+		Family.Database:Forget(memberKey)
+	end
+	advance(0.2)
 	FamilyDB.wide = held
 end)()
 

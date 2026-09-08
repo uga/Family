@@ -516,6 +516,13 @@ that is visibly draining is not a hang, and a queue that is visibly **not** drai
 different fault - the client refusing to carry messages - which a cancel button would hide
 rather than fix. Worth revisiting only if somebody reports a count that sits still.
 
+**Cheaper to build since 2026-09-08, and less needed.** A cancelled transfer used to have a cost
+that had nothing to do with the button: the marks were written when a batch was queued, so
+emptying the queue would have left this side believing it had sent what it had thrown away. Marks
+are now written on delivery and a job that is abandoned takes back what it wrote, so `Comm:Abandon`
+plus `Wide:AbandonBatches` is already the whole of the mechanism - and the members that did not go
+are simply offered again at the next exchange. The reason to still hold it is unchanged.
+
 Two things to decide if it is built: whether cancelling drops what has already been delivered
 on the far side (it does not - they keep what arrived, which is §6's own rule), and whether the
 button is the same one, changed, or a second one beside it.
@@ -2582,3 +2589,33 @@ carrying no count at all because none of theirs are back yet - which is the *0 r
 saying nothing* rule, proved by a mutation and now seen. Alchemy's three fit without folding,
 three being the cap rather than the trigger.
 
+
+---
+
+## 41. What the `have` list costs on a real client
+
+**Asked:** 2026-09-08, by this session rather than by a player, as the one loose end of the
+transfer work done the same day.
+
+**Today:** every `want` carries `have` - one entry per member of theirs this side holds, each a
+member key and the short mark that member arrived with. That is what makes an interrupted
+transfer resume rather than restart, and what stops either side's bookkeeping from having to be
+right (`docs/WIDE-TRANSFER.md` §4). It is sent at every exchange, and there is one at every login
+of either side.
+
+**What is counted, and what is not.** A member key is about twenty characters and a mark is ten,
+so two hundred and ten members is about 6.5 KB before compression - counted, not estimated - which
+at 2.3 KB a second is at most three seconds of wire. What it compresses to has **not** been
+measured: a list of similar strings compresses well and this is the best case for deflate, so the
+real figure is expected to be a fraction of that, and expected is not measured. The `want` also
+goes at level 5 rather than the bulk level 1, because it is not sent through the batching path.
+
+**The probe:** on a live client with a large link, time an exchange with `/family widetime` before
+and after, and read the message count off `Comm:Pending()` while the `want` is going out. Three
+seconds a login against a whole family resent is not a trade worth reversing; three seconds a login
+against nothing is, and only the reading says which it is.
+
+**The cheaper form, if it turns out to be wanted:** a fold of the whole `have` set sent first, with
+the list itself sent only when the fold differs from the one the other side last acknowledged. It
+costs a round trip to save a few kilobytes, which is why it is not built now - the round trip is
+the thing this whole feature is short of.

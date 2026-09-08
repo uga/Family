@@ -465,7 +465,7 @@ local function nobodyThere(link, anyKnown)
     return L["nobody of theirs has ever been heard from"]
 end
 
-local function send(link, kind, table_, bulk, level)
+local function send(link, kind, table_, bulk, level, onSent)
     -- Not to anybody the client has just told us is not there. Only what was learned the
     -- hard way, a moment ago, and only for a minute: there is no way to ask whether a name is
     -- online, so the one thing worth acting on is the answer the server already gave.
@@ -479,7 +479,7 @@ local function send(link, kind, table_, bulk, level)
     -- Every payload says which family it came from and which schema wrote it. The second is
     -- §6's requirement rather than a nicety: two versions that disagree must say so by name
     -- rather than quietly misreading each other's tables.
-    return Family.Comm:Send(kind, body, "WHISPER", target, bulk)
+    return Family.Comm:Send(kind, body, "WHISPER", target, bulk, onSent)
 end
 
 local function envelope(extra)
@@ -678,6 +678,13 @@ local function worthSending(link, full)
                 if entry then
                     offered[memberKey] = true
                     marks[memberKey] = mark
+                    -- **The mark travels with the member**, which is what lets the other side
+                    -- say what it holds rather than leaving us to remember it for them. It is
+                    -- one short opaque string of ours, meaningless over there and never looked
+                    -- into: they store it beside the record and hand it back in their next
+                    -- `want`. A client too old to know about it drops it, sends no `have`, and
+                    -- is answered in full exactly as before.
+                    entry.mark = mark
                     sending[memberKey] = entry
                     count = count + 1
                 end
@@ -717,18 +724,43 @@ local BATCH_GAP = 1
 -- on a transfer that takes minutes either way. `Codec:ToWire` explains the trade in full.
 local BULK_LEVEL = 1
 
--- One link's unfinished business, in memory only. A new exchange for the same link replaces
--- it: what it had not sent has no mark stored, so the next exchange offers it again. Losing
--- work here is safe; sending twice is safe; believing something was sent is not, which is why
--- a mark is written as its own batch is queued rather than when the job is made.
 local batching = {}
 
-local function postBatch(link, familyID, sending, marks, keys, from)
+-- One link's unfinished business, in memory only. A new exchange for the same link replaces it:
+-- what it had not sent has no mark stored, so the next exchange offers it again. Losing work
+-- here is safe; sending twice is safe; **believing something was sent is not**, and that is the
+-- whole of what changed on 2026-09-08.
+--
+-- The marks used to be written the moment `send` returned - which says the pieces were *queued*,
+-- not that they left. The queue is memory and the marks are disk, so a player who logged out
+-- half way through a first transfer of two hundred members came back with a link claiming to
+-- have sent members that had never been on the wire, and nothing would ever offer them again.
+-- The same hole, more often: a friend who logs out mid-transfer has the rest of the queue
+-- dropped by `AbandonTo` while the marks stay written.
+--
+-- So a mark is written from `Comm`'s own callback, when the client has taken every piece of that
+-- batch, and `job.marked` keeps what was written so that a job abandoned part way can take it
+-- back. What is left is the one-message batch refused a round trip after the client took it -
+-- too small to lose a piece to the abandon - and that one is repaired by the `have` list in the
+-- next `want`, which is the other side saying what it actually holds.
+local function unmark(job)
+    if not job then return end
+
+    local sent = job.link.sent
+    if sent then
+        for _, memberKey in ipairs(job.marked) do sent[memberKey] = nil end
+    end
+
+    job.marked = {}
+end
+
+local function postBatch(job, familyID)
+    local link, keys, from = job.link, job.keys, job.from
     local members = {}
     local upTo = math.min(from + BATCH - 1, #keys)
 
     for index = from, upTo do
-        members[keys[index]] = sending[keys[index]]
+        members[keys[index]] = job.sending[keys[index]]
     end
 
     local ok, problem = send(link, "data", envelope({
@@ -742,39 +774,40 @@ local function postBatch(link, familyID, sending, marks, keys, from)
         -- here and not carried above is *unchanged*, which is a different sentence from
         -- *withdrawn* and has to stay one.
         offering = Wide:GrantedKeys(link),
-    }), true, BULK_LEVEL)
+    }), true, BULK_LEVEL, function()
+        -- Every piece of this batch has been taken by the client. Now, and not before.
+        link.sent = link.sent or {}
+        for index = from, upTo do
+            local memberKey = keys[index]
+            if job.marks[memberKey] then
+                link.sent[memberKey] = job.marks[memberKey]
+                job.marked[#job.marked + 1] = memberKey
+            end
+        end
+    end)
 
     if not ok then return false, problem end
 
-    -- Remembered only once the client has taken it. `send` says whether it was queued, which
-    -- is not the same as delivered - so a transfer that dies half way leaves this side
-    -- believing they have something they do not. That is what `onWant` answering in full is
-    -- for: any exchange the other side starts refills them, and both sides start one at every
-    -- login.
-    for index = from, upTo do
-        local memberKey = keys[index]
-        if marks[memberKey] then link.sent[memberKey] = marks[memberKey] end
-    end
-
-    return true, upTo + 1
+    job.from = upTo + 1
+    return true
 end
 
 local function pumpBatches(familyID)
     local job = batching[familyID]
     if not job then return end
 
-    local ok, nextFrom = postBatch(job.link, familyID, job.sending, job.marks, job.keys,
-        job.from)
+    local ok = postBatch(job, familyID)
 
     -- A refusal mid-way is the other side having gone offline, and it is not a fault to
     -- report twice: the exchange it belongs to has already answered. What is left is dropped,
-    -- unmarked, and offered again by the next exchange.
+    -- and what this job had marked is unmarked with it - the batches that went before the
+    -- refusal are the ones this cannot vouch for either.
     if not ok then
+        unmark(job)
         batching[familyID] = nil
         return
     end
 
-    job.from = nextFrom
     if job.from > #job.keys then
         batching[familyID] = nil
         return
@@ -788,18 +821,22 @@ local function postMembers(link, familyID, sending, marks)
     for memberKey in pairs(sending) do keys[#keys + 1] = memberKey end
     table.sort(keys)
 
-    -- Nothing to send is still something to say: the offering list is how the far side learns
-    -- that a member was withdrawn, and it goes whether or not anybody's record moved.
-    if #keys == 0 then
-        return postBatch(link, familyID, sending, marks, keys, 1)
+    -- A job even where there is one batch, so that there is somewhere to record what has been
+    -- marked and somewhere to take it back from. Nothing to send is still something to say: the
+    -- offering list is how the far side learns that a member was withdrawn, and it goes whether
+    -- or not anybody's record moved.
+    local job = { link = link, sending = sending, marks = marks, keys = keys, from = 1,
+        marked = {} }
+    batching[familyID] = job
+
+    local ok, problem = postBatch(job, familyID)
+    if not ok then
+        unmark(job)
+        batching[familyID] = nil
+        return false, problem
     end
 
-    local ok, nextFrom = postBatch(link, familyID, sending, marks, keys, 1)
-    if not ok then return false, nextFrom end
-
-    if nextFrom <= #keys then
-        batching[familyID] = { link = link, sending = sending, marks = marks, keys = keys,
-            from = nextFrom }
+    if job.from <= #keys then
         Family:After(BATCH_GAP, "wide.batch." .. familyID,
             function() pumpBatches(familyID) end)
     else
@@ -814,6 +851,46 @@ function Wide:Batching(familyID)
     local job = batching[familyID]
     if not job then return 0 end
     return #job.keys - job.from + 1
+end
+
+-- Everything this link had in flight, dropped and unbelieved.
+--
+-- For the moment the client tells us the character we were whispering is not there. Its queue
+-- has already been emptied by `Comm` and the batches still to come would be whispered into the
+-- same silence - but the part that matters is the marks: what this job wrote is a claim about
+-- their disk made from our queue, and the refusal is the evidence that the claim is wrong.
+function Wide:AbandonBatches(familyID)
+    local job = batching[familyID]
+    if not job then return 0 end
+
+    local left = #job.keys - job.from + 1
+    unmark(job)
+    batching[familyID] = nil
+    return left
+end
+
+-- What we hold of theirs, in their own words for it.
+--
+-- Every member they have sent us arrived carrying the mark their side made of it, and this hands
+-- the lot back with the request. It is the whole repair for a transfer interrupted anywhere: it
+-- does not matter what either side believed about what had been delivered, because the side that
+-- has the records says so, and the side that has the grants sends the difference.
+--
+-- Members with no mark are left out rather than sent as false, which would be a claim. They are
+-- the ones the other side could not mark at all - a record it cannot date - and it resends those
+-- every time anyway.
+--
+-- It costs what a list of keys and short strings costs: two hundred and ten members is a few
+-- kilobytes before compression, once per exchange, against the alternative of resending records
+-- that are already over there.
+local function heldMarks(link)
+    local have = {}
+    for memberKey, entry in pairs(link.members or {}) do
+        if type(entry) == "table" and type(entry.mark) == "string" then
+            have[memberKey] = entry.mark
+        end
+    end
+    return have
 end
 
 -- `full` sends everything whether or not it has changed; `ask` sends the second half of the
@@ -870,7 +947,7 @@ function Wide:ExchangeWith(familyID, why, options)
     -- message until the character has proved they are there. Sent eagerly, it went out
     -- beside the canary and cost a second refusal from the client for somebody who was not
     -- online - which is the whole of what the canary is for.
-    if ask then send(link, "want", envelope({}), true) end
+    if ask then send(link, "want", envelope({ have = heldMarks(link) }), true) end
 
     link.lastAsked = time()
     Family:Debug("wide: exchanged with %s (%d offered, %d sent, %d unchanged, %s)",
@@ -925,6 +1002,18 @@ Family.Comm:OnAbsent("wide", function(name, _, already)
 
         if ours then
             handled = true
+
+            -- Whatever was still going out to them, dropped - and unbelieved. `Comm` has
+            -- already emptied its own queue for this name; what it cannot do is take back the
+            -- marks this side wrote as each batch went, and those are a claim about their disk
+            -- that the refusal has just disproved. Before the next name is tried, so that the
+            -- exchange it starts offers the members this one only thought it had sent.
+            local dropped = Wide:AbandonBatches(familyID)
+            if dropped > 0 then
+                Family:Debug("wide: dropped %d member(s) still to go to %s, and unmarked what "
+                    .. "this transfer had sent", dropped, name)
+            end
+
             local nextName, anyKnown = reachableName(link)
 
             if nextName then
@@ -1186,17 +1275,64 @@ local function onUnlink(_, text, sender)
     Family.Database:Changed("wide")
 end
 
+-- Somebody asking for ours.
+--
+-- Answered with whatever is granted right now, and with nothing else. A request is not
+-- permission; the grants are. `worthSending` reads the grants at this instant for exactly that
+-- reason, and a member withdrawn a second ago is not sent however loudly they are asked for.
+--
+-- **Through the batches, and only the difference**, which is the two things this used to do
+-- neither of. It built every granted member's whole record into one body and put it on the wire
+-- in one go - so the packing froze the client for as long as the family was big, and the wire
+-- carried a family that the other side mostly already had. It ran at every exchange, and there
+-- is one at every login of either side, so it quietly undid both the delta and the batching for
+-- the commonest case there is.
+--
+-- **What decides the difference is their list, not ours.** `have` is what they say they hold,
+-- each member with the mark we gave it when we sent it, and it replaces our own bookkeeping
+-- outright: they have the records, so they are the ones who can say. That is what makes an
+-- interrupted transfer resume rather than restart, and it is why the marks in `link.sent` no
+-- longer have to be right - only cheap.
+--
+-- A `want` with no list at all is a Family too old to send one, and it is answered in full,
+-- which is what every Family has always done here. Nothing is lost by talking to an old client
+-- except the saving.
 local function onWant(_, text, sender)
     local body = Family.Codec:FromWire(text)
     local link, familyID = linkOf(body, sender)
     if not link then return end
 
-    -- Answered with whatever is granted right now, and with nothing else. A request is not
-    -- permission; the grants are.
-    local members = select(1, Wide:Offering(link))
-    send(link, "data", envelope({ members = members, offering = Wide:GrantedKeys(link) }),
-        true)
-    Family:Debug("wide: answered a request from %s", tostring(sender))
+    local have = type(body.have) == "table" and body.have or nil
+
+    if have then
+        local held = {}
+        for memberKey, mark in pairs(have) do
+            -- Their table, so nothing in it is trusted to be the shape ours would be. A mark is
+            -- a short opaque string and anything else is not one.
+            if type(memberKey) == "string" and type(mark) == "string" then
+                held[memberKey] = mark
+            end
+        end
+        link.sent = held
+    end
+
+    local sending, marks, held, offered, count = worthSending(link, have == nil)
+
+    local ok, problem = postMembers(link, familyID, sending, marks)
+    if not ok then
+        Family:Debug("wide: could not answer %s: %s", tostring(sender), tostring(problem))
+        return
+    end
+
+    -- And nothing remembered about somebody we no longer offer, for the same reason
+    -- `ExchangeWith` forgets them: a member granted, withdrawn and granted again would otherwise
+    -- match a mark from before the withdrawal and never be sent again.
+    for memberKey in pairs(link.sent) do
+        if not offered[memberKey] then link.sent[memberKey] = nil end
+    end
+
+    Family:Debug("wide: answered %s (%d offered, %d sent, %d they already had)",
+        tostring(sender), count, count - held, held)
 end
 
 local function onData(_, text, sender)

@@ -2432,3 +2432,42 @@ it. `Family:ScanTooltipSpell` asks `NumLines()` before it asks `GetSpell()`, and
 built no lines built nothing. Beside it, the craft reader holds the id against a second reading:
 the client says what rank a spell is, so an id whose rank is not the row's rank is refused
 however it arrived.
+
+---
+
+## L-064 — A note written from a queue is a claim about memory, kept on disk
+
+Wide Family remembers what the other side already holds, so that a login does not resend a whole
+family. The mark for a member was written the instant `Comm:Send` returned — and `Comm:Send`
+returns when a body has been cut into pieces and appended to a list. Nothing had left.
+
+The queue is memory and the mark is a saved variable, so the two do not survive the same events.
+A player with two hundred and ten shared characters spends the better part of an hour on their
+first transfer; log out half way through it and the marks come back and the messages do not.
+Every member of every batch that was queued and not sent was, from then on, a member this side
+believed it had already sent and would never offer again. The same hole opens far more often
+without a logout: a friend who goes offline mid-transfer has the rest of the queue dropped by
+`Comm:AbandonTo`, while every mark written for it stays written.
+
+**It was invisible because a bigger inefficiency was hiding it.** `onWant` answered every request
+with the entire offering, unbatched and unmarked, and there is a request at every login of either
+side — so the damage was repaired every time, at the cost of resending a whole family every time.
+Fixing the waste would have exposed the fault; finding the fault first is the only reason it did
+not ship as a data loss.
+
+The general shape: **an acknowledgement invented locally is not an acknowledgement.** This
+channel acknowledges nothing (§11.1), so there is no true delivery signal to wait for — but there
+are three progressively weaker ones and only the weakest was being used. *Queued* is what the
+caller did. *Taken by the client, every piece, none refused* is what the client did. *Not
+contradicted by a refusal a round trip later* is what the server did. The note has to be written
+from the strongest signal available, and where even that is not proof, the party that actually
+holds the records has to be the one that says what it holds.
+
+**What now catches it.** Three checks at the seam and five above it. In `Comm`: *a message is not
+reported sent while pieces of it are still queued*, *a transfer abandoned part way is never
+reported sent*, and *nor is one the client would not take*. In `Wide`: *nothing is written down as
+sent while that is true*, *so the next exchange offers every one of them again*, *abandoning the
+transfer takes back what it had marked*, *the client saying they are not there drops the rest of
+the transfer*, and — the one that makes the rest a safety net rather than the mechanism — *a side
+that says it holds nothing is sent everything, whatever this side believed*. Eleven mutations were
+tried against them and all eleven were caught.

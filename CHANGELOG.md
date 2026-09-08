@@ -36,6 +36,19 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A share that is interrupted picks up where it stopped.** Sharing a large family for the first
+  time takes a while, and until now logging out in the middle of it — or closing the game, or the
+  other person going offline — could leave characters that Family believed it had sent and would
+  not send again. Nothing was lost on the other side; it simply never arrived, and nothing said
+  so. Each side now tells the other what it already has, so an interrupted share carries on from
+  there the next time you are both online, and nothing has to be right about what either of you
+  believed happened.
+
+- **Answering somebody else's update is as light as asking for one.** When the other family asked
+  for your data, Family sent every shared character's whole record again, all at once — however
+  little had changed and however big the family. That happened at every login. It now sends only
+  what they do not already have, a dozen characters at a time, like everything else.
+
 - **Sharing is about a seventh faster.** Every message Family sends had a fixed amount of room
   reserved for its own bookkeeping, and most of that room went unused; each message now carries
   as much as the game will let it. Nothing changed about what is sent — there is simply less

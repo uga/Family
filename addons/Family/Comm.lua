@@ -253,7 +253,7 @@ local function sendRaw(text, channel, target)
 
     if type(call) ~= "function" then
         noteAnswer("no such call")
-        return nil
+        return nil, false
     end
 
     -- pcall rather than Family:TryCall, which is what the rest of Family uses and which
@@ -275,11 +275,11 @@ local function sendRaw(text, channel, target)
     local ok, answer = pcall(call, PREFIX, text, channel, target)
     if not ok then
         noteAnswer("threw")
-        return nil
+        return nil, false
     end
 
     noteAnswer(type(answer) .. " " .. tostring(answer))
-    return answer
+    return answer, true
 end
 
 -- Whether anything may go out right now.
@@ -340,6 +340,46 @@ local function readyFor(entry)
     return (now() - since) >= PROBATION
 end
 
+-- Telling the sender that its message actually left.
+--
+-- **Queued is not sent, and the difference is a whole family's records.** A caller that writes
+-- something down the moment `Comm:Send` returns has written down a claim about a queue, and the
+-- queue is memory: a player who logs out half way through a transfer keeps the claim and loses
+-- the messages. Wide Family kept exactly that claim - which member the other side now holds -
+-- and so a logout mid-transfer left members marked as sent that had never been on the wire.
+--
+-- What can honestly be reported from here is *the client took every piece of this message and
+-- did not refuse any of them*, which is one step short of delivery and is as far as this channel
+-- goes: the game acknowledges nothing (§11.1). A whisper to somebody who logged out a second ago
+-- is taken by the client and answered with a complaint a round trip later, and that complaint
+-- arrives as `AbandonTo` dropping whatever is still queued - so a message of any size loses its
+-- remaining pieces and never completes. A one-piece message can still slip through that gap, and
+-- the caller is told as much in `Wide`, where the repair for it lives.
+--
+-- One counter per message rather than per piece, because a message is what the caller sent.
+local function delivered(entry, ok)
+    local job = entry.job
+    if not job or job.done then return end
+
+    -- One piece the client would not take is the whole message not sent. Nothing partial is
+    -- reported: half a member's bags is not half a fact.
+    if not ok then
+        job.done = true
+        return
+    end
+
+    job.left = job.left - 1
+    if job.left > 0 then return end
+
+    job.done = true
+    if not job.onSent then return end
+
+    local fine, err = pcall(job.onSent)
+    if not fine then
+        Family:Debug("comm: telling the sender its message went failed: %s", tostring(err))
+    end
+end
+
 local function drain()
     local sent, held = 0, 0
 
@@ -349,8 +389,9 @@ local function drain()
         local entry = outgoing[index]
         if entry and not entry.done then
             if readyFor(entry) then
-                sendRaw(entry.text, entry.channel, entry.target)
+                local _, went = sendRaw(entry.text, entry.channel, entry.target)
                 entry.done = true
+                delivered(entry, went)
                 sent = sent + 1
             else
                 held = held + 1
@@ -395,6 +436,18 @@ local function drain()
         -- scheduled for the instant the wait ends arrives to find it has not quite ended -
         -- and then schedules another, for ever.
         Family:After(PROBATION + 0.3, "comm.probation", drain)
+    elseif #outgoing > 0 and not ticker then
+        -- Still no ticker, and nothing is being held back either - so what is left is simply
+        -- more than one pass may send, and on this path there is nobody to come back for it.
+        --
+        -- The gap this closes: the canary holds a bulk transfer after its first piece, the
+        -- retry above sends the two a pass allows, and `held` is then nought because the loop
+        -- stopped on the count rather than on the wait. Nothing rescheduled, and the tail of
+        -- every message sat in the queue for the rest of the session. It cannot happen where
+        -- `C_Timer` exists, which is all three clients Family is built for, and it is the whole
+        -- of what the no-ticker fallback is for - so it was invisible until a check watched a
+        -- four-piece message all the way out.
+        Family:After(TICK, "comm.probation", drain)
     end
 end
 
@@ -421,7 +474,12 @@ end
 -- Every piece carries the message id and its place in the whole, so a receiver can put them
 -- back in order and can tell two transfers apart when they interleave - which they will, as
 -- soon as two people answer at once.
-function Comm:Send(kind, body, channel, target, bulk)
+-- `onSent` is called once, when every piece of this message has been handed to the client and
+-- none of them refused. It is never called for a message that was abandoned part way, which is
+-- the point of it. On a client with no ticker the queue drains inside this call, so it may run
+-- before `Comm:Send` returns - a caller that needs something in place first has to put it there
+-- first.
+function Comm:Send(kind, body, channel, target, bulk, onSent)
     if type(kind) ~= "string" then return false end
     body = tostring(body or "")
 
@@ -429,6 +487,7 @@ function Comm:Send(kind, body, channel, target, bulk)
     local id = nextMessageID
 
     local room, total = sliceFor(id, kind, body)
+    local job = { left = total, onSent = onSent }
 
     for index = 1, total do
         local piece = body:sub((index - 1) * room + 1, index * room)
@@ -437,6 +496,7 @@ function Comm:Send(kind, body, channel, target, bulk)
             channel = channel or "WHISPER",
             target = target,
             bulk = bulk and true or false,
+            job = job,
         }
     end
 

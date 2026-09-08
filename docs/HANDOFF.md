@@ -23,6 +23,7 @@ is authoritative on behaviour.
 | whether this was already settled | [`DECISIONS.md`](DECISIONS.md) |
 | whether this has already gone wrong once | [`LESSONS.md`](LESSONS.md) |
 | whether somebody has already asked for this | [`BACKLOG.md`](BACKLOG.md) |
+| how a Wide Family transfer runs, or how long one takes | [`WIDE-TRANSFER.md`](WIDE-TRANSFER.md) |
 
 Every one of these exists to override an answer that is plausible in general — a document that
 only confirmed the obvious would never have been written. Semantic versioning is the world's
