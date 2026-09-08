@@ -15287,6 +15287,44 @@ print("whispering somebody who is not there")
 	local queued = Family.Comm:Pending()
 	check("a family's records are many whispers, not one", queued > 5, tostring(queued))
 
+	-- **And each message is filled to what the game will carry.**
+	--
+	-- The header is this file's own and measures between 11 and 23 characters, so a fixed
+	-- 200-character piece left a seventh of every message empty - on the slowest thing in the
+	-- addon, where a large family is an hour and a half of queue.
+	--
+	-- Both halves are checked, and the second is the one that matters: a check that only
+	-- watched the ceiling would pass with 200, and with 20. Measured off the texts the client
+	-- was actually handed rather than off a constant, so it is about what goes out.
+	do
+		local handed = {}
+		local realSend = C_ChatInfo.SendAddonMessage
+		C_ChatInfo.SendAddonMessage = function(_, text)
+			handed[#handed + 1] = text
+			return 0
+		end
+
+		Family.Comm:Send("sizing", string.rep("z", 4000), "WHISPER", "Grella-Thunderstrike")
+		C_ChatInfo.SendAddonMessage = realSend
+
+		local longest, shortest, pieces = 0, math.huge, 0
+		for _, text in ipairs(handed) do
+			if text:find("\1sizing\1", 1, true) then
+				pieces = pieces + 1
+				if #text > longest then longest = #text end
+				-- The last piece is whatever was left over, so only the cut ones say
+				-- anything about the cutting.
+				if #text < shortest and pieces < 17 then shortest = #text end
+			end
+		end
+
+		check("a long body is handed over in pieces", pieces > 5, tostring(pieces))
+		check("none of them longer than the game will carry", longest <= 255,
+			tostring(longest))
+		check("and a full one filled to within a few characters of that",
+			shortest >= 240, tostring(shortest) .. " in the shortest full piece")
+	end
+
 	-- Somebody else's transfer, to prove the wrong one is not thrown away with it.
 	Family.Comm:Send("bulk", string.rep("y", 600), "WHISPER", "Tossica-Thunderstrike", true)
 	local both = Family.Comm:Pending()

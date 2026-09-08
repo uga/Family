@@ -62,10 +62,46 @@ local PREFIX = "Family"
 -- refused outright is reported as sent. What the call answers is therefore kept too.
 Comm.stats = { events = 0, ours = 0, malformed = 0, unhandled = 0, answers = {} }
 
--- What fits in a message, less the header this file puts on the front. 255 is the game's
--- limit; the rest is the message id, the sequence numbers and their separators, and it is
--- generous rather than exact because being wrong here truncates silently.
-local CHUNK = 200
+-- What fits in one addon message, and how much of it is ours to fill.
+--
+-- 255 is the game's limit. The header is this file's own - the message id, the piece number,
+-- how many pieces there are, the kind, and a separator after each - and it is between 11 and
+-- 23 characters for every kind and every plausible id, measured 2026-09-08. A fixed 200 left a
+-- seventh of every message empty, on a channel that is the slowest thing in the addon: a
+-- transfer of eleven megabytes takes an hour and a half at two kilobytes a second, and one
+-- message in seven of that was air.
+--
+-- So each message is sized by the header it will actually carry, and `LIMIT` keeps three
+-- characters back from the game's own number. That margin is the one thing here that is not
+-- measured: what a client does with a message of exactly 255 is not something this repository
+-- has watched, and being wrong about it truncates silently - which is the failure that costs a
+-- whole transfer rather than a message. Somebody who measures it can raise this by three.
+local LIMIT = 252
+
+-- The room left for the body, given how many pieces there will be. `total` stands in for the
+-- piece number as well, because a piece number is never longer than the total.
+local function roomFor(id, kind, total)
+    return LIMIT - #string.format("%d\1%d\1%d\1%s\1", id, total, total, kind)
+end
+
+-- How many pieces, and how big each may be. The two decide each other - a longer body needs
+-- more pieces, more pieces mean a longer header, a longer header leaves less room - so this
+-- settles rather than calculates, and stops the moment the answer stops moving. Three passes
+-- is more than it has ever taken: the header grows a character per power of ten.
+local function sliceFor(id, kind, body)
+    local room = roomFor(id, kind, 1)
+    local total = math.max(math.ceil(#body / room), 1)
+
+    for _ = 1, 3 do
+        local next_ = roomFor(id, kind, total)
+        local pieces = math.max(math.ceil(#body / next_), 1)
+        room = next_
+        if pieces == total then break end
+        total = pieces
+    end
+
+    return room, total
+end
 
 -- How fast the queue drains. Ten a second is the rate the community's throttling library
 -- settled on for bulk traffic, and it is not worth being cleverer than that.
@@ -392,10 +428,10 @@ function Comm:Send(kind, body, channel, target, bulk)
     nextMessageID = nextMessageID + 1
     local id = nextMessageID
 
-    local total = math.max(math.ceil(#body / CHUNK), 1)
+    local room, total = sliceFor(id, kind, body)
 
     for index = 1, total do
-        local piece = body:sub((index - 1) * CHUNK + 1, index * CHUNK)
+        local piece = body:sub((index - 1) * room + 1, index * room)
         outgoing[#outgoing + 1] = {
             text = string.format("%d\1%d\1%d\1%s\1%s", id, index, total, kind, piece),
             channel = channel or "WHISPER",

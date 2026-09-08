@@ -522,6 +522,31 @@ button is the same one, changed, or a second one beside it.
 
 ---
 
+## 40. A rate that finds out what the client will take
+
+**Asked:** 2026-09-08, by Alberto, as *what if we sent three or four kilobytes a second instead
+of two*. Half of that question was free and was done the same day - each message is now cut to
+the room its own header leaves, which is 14% fewer messages for the same bytes at the same rate.
+This is the other half, and it is not free.
+
+**Today:** `PER_TICK = 2` every `TICK = 0.2`, so ten messages a second. The comment beside it
+says why: *ten a second is the rate the community's throttling library settled on for bulk
+traffic, and it is not worth being cleverer than that.* This repository has **no measurement**
+of what a client will actually take, and the way that question fails is not a slow panel - it is
+the server dropping messages or disconnecting somebody for addon spam.
+
+**What makes it answerable rather than a guess:** `sendRaw` already records what the client said
+to every hand-off, and deliberately tells a refusal apart from a silence - that is what
+`Comm:Answers()` prints and what `/family guild test` shows. So a rate that rises while every
+hand-off is accepted and backs off at the first refusal is buildable from a signal that exists.
+
+**The probe it starts with**, on a live client with somebody to whisper: send a known body at
+ten a second, then at fifteen, then at twenty, and read `/family guild test` after each - what
+the client answered, how many it refused, and whether anything was lost. Until that is run,
+nothing here should move.
+
+---
+
 ## 10. Warlocks: the per-demon abilities known
 
 **Asked:** read which demon-specific abilities a warlock has learned.

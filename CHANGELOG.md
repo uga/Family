@@ -36,6 +36,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Sharing is about a seventh faster.** Every message Family sends had a fixed amount of room
+  reserved for its own bookkeeping, and most of that room went unused; each message now carries
+  as much as the game will let it. Nothing changed about what is sent — there is simply less
+  waiting.
+
 - **Sharing a large family no longer freezes the game while it packs.** Everything being sent
   used to be prepared in one go, which on a family of two hundred characters stopped the client
   for several seconds — and it happened not at a login but whenever the other person came online,

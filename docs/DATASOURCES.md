@@ -1520,8 +1520,10 @@ Family on, and then because Alberto asked what the worst plausible case looks li
 links of two hundred and ten characters each, half of them with a hundred bag slots, a hundred
 bank slots, a hundred and fifty letters and a profession of three hundred and fifty recipes.
 
-Sized with the addon's own LibSerialize and LibDeflate, against `Comm.lua`'s own rate - `CHUNK`
-200, `PER_TICK` 2, `TICK` 0.2, so **2,000 bytes a second, per client**. The members are made
+Sized with the addon's own LibSerialize and LibDeflate, against `Comm.lua`'s own rate - ten
+messages a second, `PER_TICK` 2 every `TICK` 0.2. At the 200-character piece those measurements
+were taken with, that is **2,000 bytes a second, per client**; it is about 2,300 now, for the
+reason in the next section. The members are made
 different from each other on purpose: made identical, deflate folds two hundred of them into
 almost nothing and the answer is a fiction. Times are lua5.1 on the machine this was written on;
 **a game client measured about three times slower** on the one comparison there is - a mark that
@@ -1560,6 +1562,33 @@ if every one of them were new to us that is 107 KB a minute, or 91% of the budge
 *not* tight in practice is the traffic control skipping an exchange with anybody whose data we
 already hold - though that skip is keyed on the sender's **character** name, so each of a
 player's six alts is a stranger the first time it announces.
+
+### How much of an addon message is Family's own header, measured 2026-09-08
+
+The game carries 255 characters in an addon message. `Comm.lua` puts its own header on the
+front of every piece - the message id, which piece this is, how many there are, the kind, and a
+separator after each - and the rest is payload. Measured against the format string it really
+uses:
+
+| kind | id | pieces | header | room |
+|---|---:|---:|---:|---:|
+| `data` | 1 | 1 | 11 | 244 |
+| `data` | 99 | 5,000 | 17 | 238 |
+| `data` | 99,999 | 9,999 | 21 | 234 |
+| `ghello` | 99,999 | 9,999 | 23 | 232 |
+
+Family used to cut every piece at a flat **200**, which is between 14% and 18% of each message
+left empty - on the slowest thing in the addon, where a large family is an hour and a half of
+queue. Each piece is now sized by the header it will actually carry, keeping three characters
+back from the game's number: what a client does with a message of exactly 255 is the one thing
+here nobody has watched, and being wrong about it truncates silently and costs a whole transfer
+rather than a message.
+
+| body | messages before | messages now | at ten a second |
+|---:|---:|---:|---:|
+| 4 KB | 20 | 17 | — |
+| 200 KB | 1,024 | 868 | 1.7 min → 1.4 min |
+| 11 MB | 57,672 | 49,717 | 96 min → 83 min |
 
 ### The game's own word for every game noun Family's text uses, `tools/game-words.py`
 
