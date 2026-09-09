@@ -2401,13 +2401,42 @@ whole-window rule records no costs from such a reading, and the merge keeps ever
 one found. Family now says so in the narration rather than leaving a record that did not change
 looking like a reading that never happened.
 
-**So the ambiguity feared for a nought has not been seen.** Every nought read so far is either
-this - a window pricing nothing at all - or Growl, which is free. A row for a family the creature
-does not belong to, priced at nought beside rows that are priced, is a case this repository has
-recorded once and has not reproduced: the Ravager's window does not list Charge, Scorpid Poison or
-Thunderstomp with a price of nought, it lists them **at nought along with everything else** in the
-state above. Until it is seen again, the appendix still declines to draw a nought and the Pets
-page still draws one, which is the safe way round.
+**And then the same question asked with the window pricing, which settles it.** Every row whose
+cost is nought, with the creature out and the window answering:
+
+    3  Charge Rank 1          none 0 0     39 Scorpid Poison Rank 2  none 0 0
+    5  Claw Rank 2            none 0 0     41 Screech Rank 1         none 0 0
+    11 Dive Rank 3            none 0 0     48 Thunderstomp Rank 2    none 0 0
+    ...                                    ...
+    70 Growl Rank 1           used 0 1     74 Growl Rank 5           used 0 40
+    71 Growl Rank 2           used 0 10    75 Growl Rank 6           used 0 50
+    72 Growl Rank 3           used 0 20    76 Growl Rank 7           used 0 60
+    73 Growl Rank 4           used 0 30    77 Growl Rank 8           used 0 70
+
+**Two groups and no others, and the level tells them apart.** The families a Ravager is not -
+Charge, Claw, Dive, Scorpid Poison, Screech, Thunderstomp - answer nought for the cost **and
+nought for the level**. Growl answers nought for the cost against a real ladder, 1 to 70.
+
+So: *a row the client has nothing to say about for this creature answers nought for both numbers
+together; a row that is genuinely free answers nought for one of them.* Both numbers come from the
+one call, which is what lets the second answer for the first, and it is the same shape as the
+whole-window state above, where every row lost both at once.
+
+The third return agrees - `none` against `used` - and is not what the rule is built on: it is
+Blizzard's own enumeration and what its values mean here has not been read, while *this row states
+no level* has a plain reading. Two independent answers agreeing is why this is written as settled
+rather than as likely.
+
+**What Family does with it.** A cost of nought is kept where the row states a level and dropped
+where it does not, so the record holds Growl at nought and holds nothing at all for Charge. Both
+the Pets page and the Beast Training appendix therefore draw a nought where they have one, because
+a nought that reached the record means *free*. The two rules tried before this reading were both
+wrong: *nought is never stored* lost Growl, which is what left a pet's points not adding up, and
+*nought is stored wherever the window priced anything* would have recorded Charge as free for a
+Ravager.
+
+**Dismissing and re-summoning re-reads the window**, reported from play the same day - which is
+the cheapest way to refresh what a creature's abilities cost.
 
 ### What crosses a Wide Family link as a word, and cannot be translated
 

@@ -3107,7 +3107,10 @@ do
 	local TAUGHT = {
 		{ "Arcane Resistance", "Rank 3", 45, 40, 24500 },
 		{ "Arcane Resistance", "Rank 4", 90, 50, 24501 },
-		{ "Growl", "Rank 1", 0, 0, 2649 },
+		-- Free, and it says so the way the client says it: no cost, and the level a creature
+		-- has to be. Measured with a Ravager out - Growl answers 0 against a ladder of 1 to
+		-- 70 while the families the creature is not answer 0 against 0.
+		{ "Growl", "Rank 1", 0, 1, 2649 },
 		-- The two shapes a wrong id arrives in, one for each reading that can refuse it.
 		-- Rank 8 is handed the id of the row before it, which names another ability
 		-- altogether and whose rank this client will not state - so only the name can
@@ -3203,21 +3206,26 @@ do
 		(rows[2] or {}).trainingPoints == 90 and (rows[2] or {}).petLevel == 50,
 		tostring((rows[2] or {}).trainingPoints) .. "/"
 			.. tostring((rows[2] or {}).petLevel))
-	-- **Nought is a reading here and an absence in a profession's window**, and the difference
-	-- is decided across the whole window rather than row by row.
+	-- **A cost of nought is a price where the row states a level, and nothing where it does
+	-- not**, and both numbers come from the one call - which is what lets the second answer for
+	-- the first.
 	--
-	-- The first rule was *nought is never stored*, written from the case that a profession
-	-- answers nought for every row - where a column of noughts really is the call answering
-	-- about something it has no opinion on. Beast Training then turned out to answer nought for
-	-- some rows and a real cost for others: measured on a live client 2026-09-09 with a Ravager
-	-- out, Growl is nought at every one of its seven ranks while Arcane Resistance is 5, 15 and
-	-- 45. Dropped, Growl read as *never priced*, which is a different sentence from *free* and
-	-- the wrong one - and it was the ability that left a pet's training points not adding up.
-	check("a nought in a window that priced something is kept, because there it is an answer",
-		(rows[3] or {}).trainingPoints == 0, tostring((rows[3] or {}).trainingPoints))
-	-- The level is a different call and keeps its own rule: nought there is not a level.
-	check("while a nought level is still nothing, because no creature is level nought",
-		(rows[3] or {}).petLevel == nil, tostring((rows[3] or {}).petLevel))
+	-- Measured on a live client 2026-09-09, with a Ravager out and the window pricing, asking
+	-- for every row whose cost was nought. Two groups and no others: Charge, Claw, Dive, Scorpid
+	-- Poison, Screech and Thunderstomp - the families a Ravager is not - answered nought against
+	-- nought, and Growl answered nought against a ladder of 1 to 70. A row the client has nothing
+	-- to say about answers nought for both numbers together; a row that is genuinely free answers
+	-- nought for one of them.
+	--
+	-- Two rules were tried before this reading and both were wrong. *Nought is never stored* lost
+	-- Growl, which is what left a pet's training points not adding up. *Nought is stored wherever
+	-- the window priced anything* would have recorded Charge as free for a Ravager.
+	check("a nought cost is kept where the row states a level, because there it is free",
+		(rows[3] or {}).trainingPoints == 0 and (rows[3] or {}).petLevel == 1,
+		tostring((rows[3] or {}).trainingPoints) .. "/" .. tostring((rows[3] or {}).petLevel))
+	check("and dropped where the row states no level either, because there it is silence",
+		(rows[4] or {}).trainingPoints == nil and (rows[4] or {}).petLevel == nil,
+		tostring((rows[4] or {}).trainingPoints) .. "/" .. tostring((rows[4] or {}).petLevel))
 
 	-- The whole reason there were no tooltips: a pet ability answers neither link call, so
 	-- without this door every row is recorded with no id and the reader can name none of them.
@@ -7083,15 +7091,12 @@ check("and with the level the pet has to be",
 check("and is named by the reader's own client, out of the id",
 	visibleText("Spell 24501"))
 
--- **But not a cost of nought**, which this list cannot read.
---
--- It is the trainer's own list, so it holds rows for families the creature that was out does not
--- belong to - a Ravager is shown Charge, Scorpid Poison and Thunderstomp - and the client answers
--- nought for those exactly as it answers nought for Growl, which really is free for everybody.
--- One number, two meanings, and nothing here can yet tell them apart (DATASOURCES). The Pets page
--- has no such doubt and does draw it: a creature only holds abilities it could learn.
-check("but a cost of nought is not drawn here, because it could mean either thing",
-	not visibleText("(0 " .. Family:GameWord("TRAINING_POINTS", Family.L["Training Points"])))
+-- **A cost of nought is drawn too**, because a nought that reached the record is one the client
+-- stated a level beside, and that is *free*. The rows it says nothing about - the families the
+-- creature out at the time did not belong to - answer nought for the level as well and never get
+-- as far as this page (DATASOURCES, read 2026-09-09).
+check("and a cost of nought is drawn, because a stored nought means free",
+	visibleText("(0 " .. Family:GameWord("TRAINING_POINTS", Family.L["Training Points"])))
 
 -- A row with nothing to say must take the tooltip down rather than leave the last row's up.
 --

@@ -543,19 +543,18 @@ local function build(frame)
 								taught.petLevel)
 							or "")
 
-						-- **A nought is not drawn here**, and it is drawn on the Pets page.
+						-- **A nought is drawn here too**, because a nought that was stored
+						-- is one the client stated a level beside, and that is *free*.
 						--
-						-- This is the trainer's list, so it holds rows for families the
-						-- creature that was out does not belong to - a Ravager is shown
-						-- Charge, Scorpid Poison and Thunderstomp - and the client answers
-						-- nought for the cost of those exactly as it answers nought for
-						-- Growl, which really is free for everybody. One number, two
-						-- meanings, and nothing here can yet say which (DATASOURCES). So
-						-- the appendix says nothing where it cannot tell.
-						--
-						-- The Pets page has no such doubt: a creature only holds abilities
-						-- it could learn, so a nought against one of its own is *free*.
-						local cost = (taught.trainingPoints or 0) > 0
+						-- This list holds rows for families the creature out at the time did
+						-- not belong to - a Ravager is shown Charge, Scorpid Poison and
+						-- Thunderstomp - and the client says nought for the cost of those.
+						-- It also says nought for their **level**, which is how they are told
+						-- apart from Growl: free at every rank, and still stating the level
+						-- a creature has to be (DATASOURCES, read 2026-09-09). The scanner
+						-- keeps only the second sort, so anything with a cost here has a cost
+						-- worth drawing, nought included.
+						local cost = taught.trainingPoints
 							and string.format(" |cff888888(%d %s)|r",
 								taught.trainingPoints, pointsWord)
 							or ""

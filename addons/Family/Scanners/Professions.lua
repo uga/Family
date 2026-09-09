@@ -546,22 +546,32 @@ local function readCraftRecipes()
 			-- the order: for Arcane Resistance ranks 3, 4 and 5 the second number is 40,
 			-- 50 and 60 - a level ladder - while the first is 45, 90 and 105.
 			--
-			-- **Nought is a reading in a window that prices anything, and an absence in one
-			-- that prices nothing.** Which is decided after the walk, not here, because it
-			-- is a fact about the window rather than about the row.
+			-- **A cost of nought is a price where the row states a level, and nothing where
+			-- it does not.** Both numbers come from this one call, and that is what makes
+			-- the second one able to answer for the first.
 			--
-			-- The first rule was *nought is never stored*, and it was written from the case
-			-- that a profession's window answers nought for every row - where a column of
-			-- noughts really is a claim rather than an absence (§2.2). Beast Training then
-			-- turned out to answer nought for **some** rows and a real cost for others, and
-			-- the nought there is the client's own answer: measured 2026-09-09 with a
-			-- Ravager out, Growl is nought at every one of its seven ranks while Arcane
-			-- Resistance is 5, 15 and 45. Dropped, Growl read as *never priced*, which is a
-			-- different sentence from *free* and the wrong one.
+			-- Measured 2026-09-09, with a Ravager out and the window pricing, asking for
+			-- every row whose cost is nought. They came back in two groups and no others:
+			--
+			--     Charge, Claw, Dive, Scorpid Poison, Screech, Thunderstomp   0   0
+			--     Growl, ranks 1 to 8                                         0   1..70
+			--
+			-- The first group is the families a Ravager is not, and the client has nothing
+			-- to say about them for this creature - so it says nought twice. The second is
+			-- Growl, which really is free for everybody, and it still states the level a
+			-- creature has to be. A row with nothing to say answers nought for **both**
+			-- numbers together; a row that is genuinely free answers nought for one of them.
+			--
+			-- The rule this replaces was *nought is never stored*, which lost Growl and left
+			-- a pet's training points not adding up, and then *nought is stored wherever the
+			-- window priced anything*, which was written before this reading and would have
+			-- recorded Charge as free for a Ravager.
 			points = tonumber(points)
 			needsLevel = tonumber(needsLevel)
-			if points and points >= 0 then recipe.trainingPoints = points end
 			if needsLevel and needsLevel > 0 then recipe.petLevel = needsLevel end
+			if points and (points > 0 or recipe.petLevel) then
+				recipe.trainingPoints = points
+			end
 
 			-- A third reader, for the rows where neither link carried an id.
 			--
@@ -601,13 +611,17 @@ local function readCraftRecipes()
 
 	putBack()
 
-	-- And now the window's own answer about noughts, decided across the whole of it.
+	-- And an outer guard across the whole window, for the one case the rule above cannot see.
 	--
-	-- A window where **nothing** carried a cost is a window with no such column - every
-	-- profession, and the noughts in it are the call answering about something it has no
-	-- opinion on. A window where **something** did is one where a nought is an answer: this
-	-- row costs nothing. So the noughts survive in the second case and are struck out in the
-	-- first, and neither is a guess about a row.
+	-- A window where **nothing** carried a cost is a window with no price column at all -
+	-- every profession, and the trainer's own window read when there is nothing to price for,
+	-- which answers nought twice on every one of its eighty-one rows. The row-by-row rule
+	-- already records nothing from either, because nothing there states a level.
+	--
+	-- What this adds is the case where some row states a level while no row has a cost. That
+	-- would read as *free* row by row, and nobody has seen a window in that state, so the
+	-- honest answer is to strike it: claiming free without having read a price beside it is
+	-- exactly the claim §2.2 refuses.
 	local anyPriced = false
 	for _, recipe in ipairs(recipes) do
 		if (recipe.trainingPoints or 0) > 0 then anyPriced = true end
