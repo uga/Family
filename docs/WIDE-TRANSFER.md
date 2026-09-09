@@ -231,7 +231,70 @@ Every delay Wide Family and Comm impose, with the file each is read from.
 
 ---
 
-## 7. What is still not guaranteed
+## 7. What can jam a transfer, and how to get it moving
+
+Four candidates, and only the first is a genuine jam. The rest are things that read like one.
+
+**1. A channel that accepts and delivers nothing.** This is the real one, and it is the only
+case in which everything above fails together. The client takes every piece and refuses none, so
+there is no complaint, so nothing is abandoned, so **every mark is written** — and the other side,
+which received nothing, has no reason to say anything, so the `have` list that repairs everything
+else never arrives. This side believes it has sent a whole family; the other side has nothing;
+neither will ever mention it again. It is exactly the shape a cross-faction whisper is suspected
+to have (backlog 44), and it is the reason that probe is worth running: the failure is silent by
+construction.
+
+**2. Automatic exchange off on both sides.** Then nothing is ever begun except by a person, which
+is what the switch is for (§6) — but a half-finished transfer between two people who have both
+switched it off waits for a button and not for a login.
+
+**3. A version mismatch.** Their Family refuses our payloads as unreadable while our marks record
+them as sent. This one is visible — the link says so in orange on the panel — and it **repairs
+itself** once the versions match: their side stored nothing, so their `have` is empty, so we send
+everything.
+
+**4. Not a jam, but it reads as one:** *Update now* refuses while **anything at all** is in
+Family's outgoing queue, and that is the whole queue — every link, plus a guild announcement.
+Fifteen linked families sharing 210 members each keep it busy for about ninety minutes, and for
+all of them the button on any link answers *still sending*. Worse, the sentence it answers with —
+*what you are asking for is already on its way* — is untrue for a link whose own share of the
+queue is empty. Backlog 45.
+
+### Getting it moving
+
+**The escape hatch exists, and it is the button.** *Update now* is the one caller that asks for
+`full`: it ignores every mark and sends the whole offering, whatever this side believes the other
+side holds. That is precisely the repair for case 1, and it is why the button was built to refuse
+politely rather than to grey out — a greyed control reads as broken, and §6 asks for progress
+reported rather than a hang.
+
+**Ending the link and making it again** is the heavier version of the same thing: a link that is
+made or remade forgets the marks outright (`forgetWhatTheyHold`), because a side that has just
+linked may hold nothing of ours.
+
+**Nothing else is needed, and nothing else exists.** There is no timer anywhere that re-exchanges,
+and `Wide:ExchangeAll` — which would — is called by nothing. An exchange begins in exactly four
+places: an announcement heard, a grant settling, the next character tried after a refusal, and
+that button.
+
+### A recipient who never comes back
+
+Nothing accumulates, and nothing is held waiting for them.
+
+- Their share of the queue is emptied at the first refusal, a second or two after the first
+  message — not held, not retried on a timer.
+- The batches that had gone are **unmarked** by the abandon, so the delta is kept intact. They
+  can come back in a year and receive exactly what they are missing, without a full resend.
+- On each of our logins we send them one `hello`, walk their characters as each is refused, and
+  print one line. That is the entire recurring cost of a family that is never coming back, and
+  with fifteen such links it is fifteen of those walks — bounded, and the same shape as the login
+  cost measured in September.
+- Nothing grows on disk. `link.members` holds what *they* shared, frozen at the last exchange;
+  `link.sent` holds marks for what was delivered; the panel says how long ago that was.
+
+---
+
+## 8. What is still not guaranteed
 
 - **The channel acknowledges nothing, so Family acknowledges for it — lazily.** No addon message
   is confirmed by the game. The strongest signal that exists is *the client took every piece and
@@ -240,7 +303,8 @@ Every delay Wide Family and Comm impose, with the file each is read from.
   certain for any pair who both run Family and are eventually online together. What it is not is
   prompt — inside one long transfer nothing is confirmed and nothing is retried, and a panel that
   says *sent* means *queued and taken*. Backlog 43 is the short `got` message that would close
-  that, and what it still would not promise.
+  that, and what it still would not promise. §7 case 1 is the one shape in which even the lazy
+  acknowledgement never fires.
 - **Reach across realms is settled and is not the open question.** Specification §11.1 was closed
   by the 1.0.0 pass — two families on unrelated realms exchanged — so a realm is not a boundary,
   and the one measured failure nearby is a different one: a character on a partner realm cannot

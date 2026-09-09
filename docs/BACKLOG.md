@@ -2729,3 +2729,39 @@ accounts, which is why this is answerable at all.
 **If it comes back refused**, the work is one sentence and where to put it: the panel says a link
 cannot cross factions, and it says so when the link is asked for rather than after an update that
 looks like it timed out.
+
+---
+
+## 45. *Update now* refuses for the whole queue, and says something untrue while it does
+
+**Asked:** 2026-09-09, by Alberto — *quando uno dei due esce durante il trasferimento il pulsante
+update now resta grigio?* It does not go grey, deliberately, and that part is right. What it does
+instead is worth fixing.
+
+**Today.** The button never greys: a greyed control reads as broken, and §6 asks for progress
+reported rather than a hang. It stays pressable and refuses with a sentence when `Comm:Pending()`
+is above nought. Two things about that guard:
+
+- **It counts the whole queue**, every link plus a guild announcement, and the sentence admits as
+  much — *everything it has to send, not only this link*. But the clause after it does not:
+  *what you are asking for is already on its way* is **untrue** for a link whose own share of the
+  queue is empty and which is simply waiting behind somebody else's transfer. Fifteen linked
+  families of 210 members keep the queue busy for about ninety minutes, and for all of it the
+  button on every link says that.
+- **It asks `Comm` and not `Wide`.** `Wide:Batching(familyID)` knows how many batches a link still
+  has to post and nothing consults it, so a link with fifteen batches to come whose queue happens
+  to be momentarily empty — which a small transfer manages between batches, though a large one
+  never does — can be started a second time alongside the first.
+
+**Recommended shape**, and it is small: refuse when *this link* has something in flight — its own
+queued pieces (`Comm:PendingTo(target)`, which the queue can answer because every entry carries
+its target) **or** a batching job (`Wide:Batching`). Otherwise do what was asked, and where the
+queue is busy with other traffic, say what it is queued behind rather than refusing on somebody
+else's behalf.
+
+**Why it matters more than a wording fix.** `WIDE-TRANSFER.md` §7 names one genuine way a transfer
+can jam — a channel that accepts everything and delivers nothing, where no refusal ever comes back
+and so nothing is ever repaired. The escape hatch from that is exactly this button, because it is
+the only caller that asks for `full`. An escape hatch that is unavailable for ninety minutes at a
+stretch is the wrong escape hatch, and this is backlog 39's question with a concrete case attached
+at last.
