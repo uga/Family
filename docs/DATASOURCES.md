@@ -1092,6 +1092,19 @@ a client that returns four values must not lose its whole spellbook to a nil. Th
 that: a mutation making a silent tab count as a specialisation reddens the ordinary spellbook
 checks, not only the new ones.
 
+**A `FLYOUT` row stands for spells rather than being one.** On Mists **Call Pet** is one button
+that opens into Call Pet 1 to 5, so dropping the row - which is right, since a flyout's id is not
+a spell id and storing it is what drew *Spell #9* - also drops everything the character keeps
+behind it. Family now opens it: `GetFlyoutInfo` for how many slots, `GetFlyoutSlotInfo` for each.
+
+**Neither of those calls has been read on any client here**, so nothing they say is believed on its
+own. A slot is kept only where it says it is *known* **and** the id it gives is one this client
+will name - two answers agreeing, the same standard `AgreesWithRow` holds a craft row to. Under any
+other shape, including the calls being absent altogether, nothing is kept and the row is dropped
+exactly as it was, which is the worst case rather than a new one. The first login on a client that
+has them narrates the flyout, its name and how many slots were kept, so the reading arrives without
+anybody going to look for it.
+
 **Read on a character too low to have chosen**, so all three specialisation tabs are somebody
 else's. What a character with an *active* specialisation answers here has not been read, and is the
 second reason the walk also records **one ability once**, under the first tab that holds it: if an

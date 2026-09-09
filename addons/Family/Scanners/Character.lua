@@ -274,6 +274,49 @@ local function aSpecialisation(offSpec)
 	return type(offSpec) == "number" and offSpec > 0
 end
 
+-- **What a character keeps behind a flyout.**
+--
+-- A flyout is one button that opens into several spells, and on Mists **Call Pet** is one: the
+-- book draws a single row where the character has Call Pet 1 to 5 behind it. Dropping the row is
+-- right as far as it goes - a flyout's id is not a spell id, which is what `Spell #9` on the page
+-- was - but it also drops everything the character actually holds there, and this is the one
+-- place in the book where a row stands for spells rather than being one.
+--
+-- **Nothing here is trusted.** Neither call has been read on any client in this repository. Both
+-- go through `TryCall`, and every answer is held against a second one before it is kept: the slot
+-- has to say it is known, and the id it gives has to be an id this client will *name*. Under any
+-- other shape - the calls absent, the returns in some other order, a slot that answers nothing -
+-- this keeps nothing and the row is dropped exactly as it is without it, which is today's
+-- behaviour and the worst case. The first login on a client that has them narrates what came
+-- back, so the reading arrives without anybody going to look for it.
+local function fromFlyout(flyoutID, into, seen, told)
+	local name, _, slots = Family:TryCall(GetFlyoutInfo, flyoutID)
+
+	slots = tonumber(slots)
+	if not slots or slots < 1 then return end
+
+	local kept = 0
+	for slot = 1, slots do
+		local spellID, _, known = Family:TryCall(GetFlyoutSlotInfo, flyoutID, slot)
+
+		spellID = tonumber(spellID)
+		local named = spellID and Family:TryCall(GetSpellInfo, spellID)
+
+		if spellID and known == true and type(named) == "string" and named ~= ""
+			and not seen[spellID] then
+			seen[spellID] = true
+			into[#into + 1] = spellID
+			kept = kept + 1
+		end
+	end
+
+	if not told.flyout then
+		told.flyout = true
+		Family:Debug("spellbook: flyout %s (%s) offered %d slot(s), kept %d",
+			tostring(flyoutID), tostring(name), slots, kept)
+	end
+end
+
 local function heldByCharacter(kind, told)
 	if type(kind) ~= "string" or kind == "SPELL" then return true end
 	if NOT_HELD[kind] then return false end
@@ -322,6 +365,8 @@ function Character:ReadSpells()
 				if spellID and heldByCharacter(kind, told) and not seen[spellID] then
 					seen[spellID] = true
 					school.spells[#school.spells + 1] = spellID
+				elseif spellID and kind == "FLYOUT" then
+					fromFlyout(spellID, school.spells, seen, told)
 				end
 			end
 

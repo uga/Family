@@ -28614,6 +28614,68 @@ print("a spellbook holds rows that are not this character's spells")
 		(schools["General"] or {})[2] == 3044 and #(schools["Hunter"] or {}) == 0,
 		table.concat({ #(schools["General"] or {}), #(schools["Hunter"] or {}) }, "/"))
 
+	-- **What the character keeps behind the flyout**, which dropping the row loses.
+	--
+	-- On Mists Call Pet is one button that opens into Call Pet 1 to 5, so the row stands for
+	-- spells rather than being one. Neither of these calls has been read on a client here, so
+	-- every answer is held against a second one: the slot says it is known, and the id it gives
+	-- is one the client will name.
+	local FLYOUT = {
+		[9] = { name = "Call Pet", slots = {
+			-- Known, and the client names it: kept.
+			{ 883, nil, true },
+			-- Known, but no name comes back for it - so it is not kept, because an id
+			-- nothing can name is the `Spell #9` this whole lane exists to avoid.
+			{ 999001, nil, true },
+			-- Named, and the character has not got it.
+			{ 83242, nil, false },
+		} },
+	}
+	local realFlyout, realFlyoutSlot = GetFlyoutInfo, GetFlyoutSlotInfo
+	GetFlyoutInfo = function(id)
+		local f = FLYOUT[id]
+		if not f then return nil end
+		return f.name, "", #f.slots, true
+	end
+	GetFlyoutSlotInfo = function(id, slot)
+		local row = FLYOUT[id] and FLYOUT[id].slots[slot]
+		if not row then return nil end
+		return row[1], row[2], row[3]
+	end
+	SPELL_NAMES[883] = "Call Pet 1"
+
+	TABS = { { "General", "", 0, 2, false, 0 } }
+	ROWS = { { "SPELL", 75 }, { "FLYOUT", 9 } }
+
+	book = Family.Character:ReadSpells()
+	spells = book and book[1] and book[1].spells or {}
+
+	check("a flyout gives up the spells the character keeps behind it",
+		spells[1] == 75 and spells[2] == 883 and #spells == 2,
+		table.concat({ tostring(spells[1]), tostring(spells[2]), #spells }, " "))
+	check("and not the ones it lists that they have not got",
+		(function()
+			for _, id in ipairs(spells) do if id == 83242 then return false end end
+			return true
+		end)())
+	check("nor an id this client will not put a name to",
+		(function()
+			for _, id in ipairs(spells) do if id == 999001 then return false end end
+			return true
+		end)())
+
+	-- **And a client without the calls loses nothing it had.** Which is the whole reason this
+	-- is written as two readings agreeing rather than as one call being believed: Era and
+	-- Burning Crusade have never answered either of them here.
+	GetFlyoutInfo, GetFlyoutSlotInfo = nil, nil
+	book = Family.Character:ReadSpells()
+	spells = book and book[1] and book[1].spells or {}
+	check("while a client that has no such call records the row as nothing at all",
+		#spells == 1 and spells[1] == 75, tostring(#spells))
+
+	GetFlyoutInfo, GetFlyoutSlotInfo = realFlyout, realFlyoutSlot
+	SPELL_NAMES[883] = nil
+
 	GetSpellTabInfo, GetSpellBookItemInfo = heldTabs, heldInfo
 	GetNumSpellTabs = heldNum
 end)()
