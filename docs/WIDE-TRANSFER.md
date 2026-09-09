@@ -180,7 +180,8 @@ it, which is worth walking through once.
 3. **B comes back first.** Ten seconds after entering the world B announces to A, and A is not
    there. The client refuses the whisper and says so a round trip later; Wide reads that as one
    candidate eliminated rather than as an answer, tries the next of A's characters, and so on down
-   the list. Every attempt that got as far as sending is abandoned **and unmarked** when its
+   the list — one `hello` each, not an exchange each (backlog 48). Every attempt that got as far
+   as sending is abandoned **and unmarked** when its
    refusal arrives, so B's own bookkeeping about what A holds is left exactly as it was. When the
    list runs out: *none of A's N characters are online*. Nothing is queued waiting for A, because
    there is nothing to wait with.

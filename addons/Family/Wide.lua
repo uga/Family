@@ -434,14 +434,32 @@ local function candidates(link)
     return names
 end
 
+-- Whom to whisper, and why there may be nobody even though somebody is left.
+--
+-- Three answers, not two. A name is returned where there is one; `anyKnown` says whether this
+-- link has any characters at all, which is a different sentence from *none of them is online*;
+-- and `shadowed` counts the ones skipped because whispering them **now** would make the client's
+-- next complaint impossible to place (`Comm:Shadowed`).
+--
+-- That last one is a wait rather than an answer, and the two must not be confused: a family whose
+-- only untried character shares a name with the one just tried is not a family that is offline,
+-- it is a family Family cannot yet tell apart. Saying *none of them is online* there would be a
+-- claim invented out of our own bookkeeping (§2.2).
 local function reachableName(link)
-    local anyKnown = false
+    local anyKnown, shadowed = false, 0
+
     for _, entry in ipairs(candidates(link)) do
         anyKnown = true
-        if not Family.Comm:Absent(entry.name) then return entry.name end
+        if not Family.Comm:Absent(entry.name) then
+            if Family.Comm:Shadowed(entry.name) then
+                shadowed = shadowed + 1
+            else
+                return entry.name
+            end
+        end
     end
 
-    return nil, anyKnown
+    return nil, anyKnown, shadowed
 end
 
 -- Everyone of theirs worth trying, so a caller can say how many were tried rather than
@@ -454,7 +472,15 @@ end
 --
 -- Two callers now: `send`, which finds out as it goes, and the exchange, which asks before it
 -- builds anything - so the sentence lives here rather than being written twice and drifting.
-local function nobodyThere(link, anyKnown)
+local function nobodyThere(link, anyKnown, shadowed)
+    -- Waiting is not the same as nobody, and it gets its own sentence. Rare on purpose: it needs
+    -- two characters of one name and a whisper to one of them inside the last fifteen seconds.
+    if shadowed and shadowed > 0 then
+        return string.format(L["%d of %s's characters share a name with one just tried, so "
+            .. "Family is waiting a moment to tell the client's answers apart."],
+            shadowed, tostring(Wide:Called(link)))
+    end
+
     if anyKnown then
         local count = characterCount(link)
         return string.format(count == 1
@@ -469,9 +495,9 @@ local function send(link, kind, table_, bulk, level, onSent)
     -- Not to anybody the client has just told us is not there. Only what was learned the
     -- hard way, a moment ago, and only for a minute: there is no way to ask whether a name is
     -- online, so the one thing worth acting on is the answer the server already gave.
-    local target, anyKnown = reachableName(link)
+    local target, anyKnown, shadowed = reachableName(link)
 
-    if not target then return false, nobodyThere(link, anyKnown) end
+    if not target then return false, nobodyThere(link, anyKnown, shadowed) end
 
     local body, why = Family.Codec:ToWire(table_, level)
     if not body then return false, why end
@@ -946,8 +972,8 @@ function Wide:ExchangeWith(familyID, why, options)
     -- the client has just refused is the commonest case there is for somebody who plays two
     -- accounts one at a time: every login builds an offering for a whisper that has nowhere to
     -- go. Nothing about the answer changes; only when it is discovered.
-    local target, anyKnown = reachableName(link)
-    if not target then return false, nobodyThere(link, anyKnown) end
+    local target, anyKnown, shadowed = reachableName(link)
+    if not target then return false, nobodyThere(link, anyKnown, shadowed) end
 
     local sending, marks, held, offered, count = worthSending(link, full)
 
@@ -976,6 +1002,56 @@ function Wide:ExchangeWith(familyID, why, options)
         tostring(why or "on request"))
 
     return true, count
+end
+
+-- Trying the next of their characters, cheaply.
+--
+-- **Because a refused announcement should not become a whole exchange.** A family is a person and
+-- only one of their characters is logged in, so being told one is not there eliminates a
+-- candidate rather than answering the question - and the walk that follows is right. What was
+-- wrong is what each step of it cost: the login announces with one message, its refusal started a
+-- **full exchange** against the next name, and the refusal of that started another. Reported from
+-- play 2026-09-09 with a linked family of seven, none online: six complete offerings built,
+-- packed, batched and queued for nobody, at a login, with *Update now* never pressed. Fifteen
+-- shared members hid it; two hundred and ten would not.
+--
+-- So a step of the walk is a `hello` - one message, the same one a login sends - and the exchange
+-- follows only once that message has been given long enough to come back refused. Whichever path
+-- started the walk: the first attempt is whatever the caller asked for, and every retry after it
+-- is a probe. A family that is entirely offline costs one small message per character.
+--
+-- **And nothing follows a probe the other side answered.** Their `onHello` starts an exchange of
+-- its own, whose `want` pulls our records out of us - so committing on top of that would be a
+-- second copy of everything. Heard from since the probe went out is the test, and `Comm` is where
+-- that is known.
+local function probeNext(familyID, link, name)
+    local body = Family.Codec:ToWire(envelope({}))
+    if not body then return false end
+
+    local wait = Family.Comm:Probation() + 0.5
+
+    -- The moment this went out, so that what follows can ask *have we heard from them since*
+    -- rather than *have we heard from them recently*. The two are not the same question, and the
+    -- first draft asked the second: somebody heard from two seconds before the probe was sent
+    -- answers it, so the probe read its own setup as a reply to a message it had not sent yet.
+    local sentAt = Family.Comm:Now()
+
+    Family.Comm:Send("hello", body, "WHISPER", name, false)
+
+    Family:After(wait, "wide.probe." .. familyID, function()
+        -- Refused. The walk has already moved on without this.
+        if Family.Comm:Absent(name) then return end
+
+        local heard = Family.Comm:HeardFrom(name)
+        if heard and heard > sentAt then
+            Family:Debug("wide: %s answered - their exchange is already under way", name)
+            return
+        end
+
+        Wide:ExchangeWith(familyID, "a probe that was not refused")
+    end)
+
+    return true
 end
 
 -- One of their characters turned out to be offline, mid-exchange.
@@ -1035,7 +1111,7 @@ Family.Comm:OnAbsent("wide", function(name, _, already)
                     .. "this transfer had sent", dropped, name)
             end
 
-            local nextName, anyKnown = reachableName(link)
+            local nextName, anyKnown, shadowed = reachableName(link)
 
             if nextName then
                 -- Said to the debug narration rather than to the player.
@@ -1044,8 +1120,18 @@ Family.Comm:OnAbsent("wide", function(name, _, already)
                 -- the client beside them, and none of the four is news: they are the
                 -- working, and the answer is the sentence below that says nobody was
                 -- there. A player who wants the working can switch the narration on.
-                Family:Debug("wide: %s is not online - trying %s", name, nextName)
-                Wide:ExchangeWith(familyID, "the last one was offline")
+                Family:Debug("wide: %s is not online - probing %s", name, nextName)
+                probeNext(familyID, link, nextName)
+            elseif shadowed > 0 then
+                -- Somebody is left to try and trying them now would make the client's next
+                -- complaint impossible to place. Wait for the window rather than guess
+                -- through it, and say nothing to the player: this is not an answer.
+                local wait = Family.Comm:NotFoundWindow() + 1
+                Family:Debug("wide: %d of %s's characters share a name with one just tried - "
+                    .. "waiting %d seconds", shadowed, tostring(Wide:Called(link)), wait)
+                Family:After(wait, "wide.shadow." .. familyID, function()
+                    Wide:ExchangeWith(familyID, "the shared name has cleared")
+                end)
             elseif anyKnown then
                 local count = characterCount(link)
 

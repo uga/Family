@@ -15598,7 +15598,8 @@ print("a family is a person with several characters")
 	C_ChatInfo = {
 		RegisterAddonMessagePrefix = function() return true end,
 		SendAddonMessage = function(prefix, text, channel, target)
-			sent[#sent + 1] = { channel = channel, target = target }
+			sent[#sent + 1] = { channel = channel, target = target,
+				kind = text:match("^%d+\1%d+\1%d+\1([^\1]*)\1") }
 			return true
 		end,
 	}
@@ -15662,6 +15663,21 @@ print("a family is a person with several characters")
 	local tried = sent[1] and sent[1].target
 	check("and being told they are not there tries the next of theirs",
 		tried == "Grellina-Thunderstrike", tostring(tried))
+
+	-- **With one message, and it is an announcement.**
+	--
+	-- The step of a walk is a probe, not a whole exchange. Reported from play 2026-09-09: a
+	-- linked family of seven with none online cost six complete offerings - built, packed,
+	-- batched and queued for nobody - at a login, because the refusal of the login's single
+	-- `hello` started an exchange against the next name and the refusal of that started another.
+	-- Fifteen shared members hid it; two hundred and ten would not.
+	--
+	-- Both halves are checked, and the count is the one that matters: an exchange is a `data`
+	-- and a `want`, so a walk that escalated would put two messages here and this would be one.
+	check("with one message and not a whole exchange", #sent == 1,
+		tostring(#sent) .. " messages")
+	check("and that message is an announcement",
+		sent[1] and sent[1].kind == "hello", sent[1] and tostring(sent[1].kind) or "nothing")
 
 	-- **And once, not once per message.** An exchange is many messages and the client refuses
 	-- each of the ones that had already left, so the same name comes back three or four times.
@@ -23469,6 +23485,165 @@ print("the switch governs what begins, not what has begun")
 		Family.Database:Forget(memberKey)
 	end
 	advance(0.2)
+	FamilyDB.wide = heldWide
+end)()
+
+print()
+print("a probe that is not refused becomes an exchange, and one that is answered does not")
+
+-- The other half of the walk. A step is one `hello`, and what follows it depends on what the
+-- client and the other player do with it:
+--
+--   Refused - the walk has already moved on to the next name without this, so nothing follows.
+--   Answered - their `onHello` has started an exchange of its own, whose `want` pulls our records
+--     out of us, so committing on top of it would put a second copy of everything on the wire.
+--   Silence - they are there and are not exchanging, so the exchange this probe stood in for
+--     follows, and the walk has cost one message instead of a whole offering.
+--
+-- And the deferral for two characters of one name, which is the same walk refusing to create a
+-- question the client cannot answer.
+;(function()
+	local heldWide = FamilyDB.wide
+	local realRaw = C_ChatInfo.SendAddonMessage
+	local sent = {}
+
+	C_ChatInfo.SendAddonMessage = function(_, text, channel, target)
+		sent[#sent + 1] = { channel = channel, target = target,
+			kind = text:match("^%d+\1%d+\1%d+\1([^\1]*)\1") }
+		return 0
+	end
+
+	local function notFound(who)
+		fire("CHAT_MSG_SYSTEM", string.format(ERR_CHAT_PLAYER_NOT_FOUND_S, who))
+	end
+
+	local function kinds(target)
+		local found = {}
+		for _, message in ipairs(sent) do
+			if message.target == target then found[#found + 1] = message.kind end
+		end
+		return found
+	end
+
+	local function has(target, kind)
+		for _, seen in ipairs(kinds(target)) do
+			if seen == kind then return true end
+		end
+		return false
+	end
+
+	FamilyDB.wide = {
+		enabled = true, auto = true, id = "us", requests = {}, pendingOut = {},
+		-- Named with a character of theirs, because that is what a link's name is - `candidates`
+		-- offers it last, as the oldest thing we know, and a fixture that put a family's label
+		-- there would have Family whispering a string that is nobody.
+		links = { ["probed"] = { name = "First-Fire Maw", grants = {}, siblings = {},
+			members = {},
+			characters = {
+				["First-Fire Maw"] = time(),
+				["Second-Fire Maw"] = time() - 100,
+			} } },
+	}
+
+	-- Everybody starts un-refused: `time()` barely moves in this harness, so an absent mark set
+	-- by an earlier block never expires on its own and the client saying they *are* there is
+	-- what clears one.
+	for _, who in ipairs({ "First-Fire Maw", "Second-Fire Maw" }) do
+		Family.Comm:Present(who)
+	end
+	Family.Comm:Abandon()
+
+	-- **Silence: the probe becomes the exchange.**
+	sent = {}
+	Family.Wide:ExchangeWith("probed", "a start")
+	check("an exchange goes to the one heard from last", has("First-Fire Maw", "data"),
+		table.concat(kinds("First-Fire Maw"), ",") )
+
+	sent = {}
+	notFound("First")
+	check("and its refusal probes the next with an announcement",
+		#kinds("Second-Fire Maw") == 1 and has("Second-Fire Maw", "hello"),
+		table.concat(kinds("Second-Fire Maw"), ","))
+
+	advance(3)
+	check("a probe nobody refused and nobody answered becomes the exchange it stood in for",
+		has("Second-Fire Maw", "data"), table.concat(kinds("Second-Fire Maw"), ","))
+
+	-- **Answered: nothing follows, because their exchange is already running.**
+	Family.Comm:Present("First-Fire Maw")
+	Family.Comm:Present("Second-Fire Maw")
+	Family.Comm:Abandon()
+
+	sent = {}
+	Family.Wide:ExchangeWith("probed", "again")
+	notFound("First")
+	check("the next is probed again", has("Second-Fire Maw", "hello"),
+		table.concat(kinds("Second-Fire Maw"), ","))
+
+	-- A moment after the probe rather than in the same instant as it, because the question the
+	-- probe asks is *have we heard from them since* - and a fixture that answers in the same tick
+	-- it asked in is testing an equality rather than an order.
+	sent = {}
+	advance(0.5)
+	Family.Comm:Receive("1\0011\0011\001hello\001hi", "Second-Fire Maw", "WHISPER")
+	advance(3)
+	check("but a probe they answered is not followed by an exchange of our own",
+		not has("Second-Fire Maw", "data"), table.concat(kinds("Second-Fire Maw"), ","))
+
+	-- **Two of their characters with one name: deferred, not declared.**
+	--
+	-- The client complains about a bare name, so whispering the second while the first's
+	-- complaint window is open produces a complaint that names neither. `Comm` refuses to guess -
+	-- rightly, two people of one name can both be online - and that refusal used to happen before
+	-- the queue was abandoned, so a whole exchange drained into somebody who was not there at one
+	-- server refusal per message. Reported from play with about a hundred and ten of them.
+	FamilyDB.wide.links["probed"].name = "Lead-Fire Maw"
+	FamilyDB.wide.links["probed"].characters = {
+		["Lead-Fire Maw"] = time(),
+		["Twin-Fire Maw"] = time() - 100,
+		["Twin-Other Realm"] = time() - 200,
+	}
+	for _, who in ipairs({ "Lead-Fire Maw", "Twin-Fire Maw", "Twin-Other Realm" }) do
+		Family.Comm:Present(who)
+	end
+	Family.Comm:Abandon()
+
+	sent = {}
+	Family.Wide:ExchangeWith("probed", "the twins")
+	notFound("Lead")
+	check("the first of two same-named characters is probed",
+		has("Twin-Fire Maw", "hello"), table.concat(kinds("Twin-Fire Maw"), ","))
+
+	sent = {}
+	local saidBefore = #DEFAULT_CHAT_FRAME.messages
+	notFound("Twin")
+
+	check("and its refusal whispers nothing to the one that shares its name",
+		#sent == 0, tostring(#sent) .. " messages")
+
+	local declared = 0
+	for index = saidBefore + 1, #DEFAULT_CHAT_FRAME.messages do
+		if DEFAULT_CHAT_FRAME.messages[index]:find("None of", 1, true) then
+			declared = declared + 1
+		end
+	end
+	check("nor tells the player none of them is online, because waiting is not an answer",
+		declared == 0, tostring(declared) .. " lines")
+
+	-- And once the window the client's complaints arrive in has closed, the deferred one is
+	-- tried - so this is a wait and not a character quietly dropped from the family.
+	local wasTime = time
+	time = function() return wasTime() + 60 end
+	sent = {}
+	advance(18)
+	time = wasTime
+
+	check("and once the window has closed the deferred character is tried after all",
+		has("Twin-Other Realm", "data"), table.concat(kinds("Twin-Other Realm"), ","))
+
+	C_ChatInfo.SendAddonMessage = realRaw
+	Family.Comm:Abandon()
+	advance(1)
 	FamilyDB.wide = heldWide
 end)()
 

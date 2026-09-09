@@ -41,6 +41,18 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **Logging in beside a linked family that is offline is much cheaper.** A family is a person and
+  only one of their characters is logged in, so Family tries them in turn — and each attempt used
+  to be a full update, prepared and queued for somebody who was not there. Seven characters
+  offline meant seven of those. It now asks each one with a single message and only prepares an
+  update once somebody answers.
+
+- **And a family with two characters of the same name no longer floods the channel.** The game
+  only says *no player named Malachia is currently playing*, which does not say which Malachia, so
+  Family could not tell whose answer it had and kept sending to both. It now waits a few seconds
+  for the ambiguity to clear rather than guessing, and says nothing in the meantime — because
+  waiting is not the same as nobody being online.
+
 - **A share that is interrupted picks up where it stopped.** Sharing a large family for the first
   time takes a while, and until now logging out in the middle of it — or closing the game, or the
   other person going offline — could leave characters that Family believed it had sent and would

@@ -569,6 +569,7 @@ Family.locales.deDE = {
 	["Still sending to %s: %d piece(s) still to go. Nothing was added, because what you are asking for is already on its way."] = "Wird noch an %s gesendet: %d Teil(e) stehen noch aus. Es wurde nichts hinzugefügt, denn was Sie verlangen, ist bereits unterwegs.",
 	["   |cffffd700|||   sending to them, %d pieces left|r"] = "   |cffffd700|||   sendet an sie, %d Teile übrig|r",
 	["Sent %d member(s) and asked for theirs. It goes out behind %d piece(s) Family was already sending to somebody else."] = "%d Mitglied(er) gesendet und nach ihren gefragt. Es geht hinter %d Teil(en) hinaus, die Family bereits an jemand anderen sendet.",
+	["%d of %s's characters share a name with one just tried, so Family is waiting a moment to tell the client's answers apart."] = "%d von %ss Charakteren teilen einen Namen mit einem gerade versuchten, daher wartet Family einen Moment, um die Antworten des Clients auseinanderhalten zu können.",
 	["Sent %d member(s) and asked for theirs."] = "%d Mitglied(er) gesendet und nach ihren gefragt.",
 	["nobody of theirs has ever been heard from"] = "von keinem der ihren wurde je etwas gehört",
 	["|cffffd700What %s may see of your characters|r"] = "|cffffd700Was %s von deinen Charakteren sehen darf|r",

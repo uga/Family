@@ -2855,7 +2855,7 @@ underneath it: whether the same should happen when Wide Family itself is switche
 
 ---
 
-## 48. A login against an offline family costs one whole exchange per character tried
+## 48. A login against an offline family costs one whole exchange per character tried — DONE 2026-09-09
 
 **Found in play 2026-09-09**, by Alberto, on the trial deploy — at login, with *Update now*
 never pressed. Linked family *Serena*, seven characters, none online:
@@ -2910,9 +2910,24 @@ first means queued and taken by the client, which is all `Comm` can promise - an
 read as a contradiction. It is the *sent* that is wrong to say so early rather than the second
 line; backlog 43 is what would let the button say *sending* and then the truth.
 
+
+**BUILT 2026-09-09.** A step of the walk is `probeNext`: one `hello`, and the exchange follows only
+after that message has been given `Comm`'s own probation plus a moment to come back refused. Three
+outcomes, all checked - **refused**, and the walk has already moved on without it; **answered**,
+and their `onHello` has started an exchange whose `want` pulls our records out of us, so
+committing on top would be a second copy of everything; **silence**, and the exchange this stood
+in for follows. The first attempt is still whatever the caller asked for, so *Update now* sends a
+real exchange to the first name and only its retries are probes.
+
+*And a fault of my own worth keeping.* The first version asked `Comm:HeardFrom` for an **age** and
+compared it against the wait, which answers *heard from recently* - also true of somebody heard
+from two seconds before the probe went out, so the probe read its own setup as a reply to a
+message it had not yet sent. `HeardFrom` now answers with the moment, and the caller compares two
+readings of one clock: an order rather than an equality, and no float to be on the wrong side of.
+
 ---
 
-## 49. Two characters of one name defeat the abandon, and the queue drains into the void
+## 49. Two characters of one name defeat the abandon, and the queue drains into the void — DONE 2026-09-09
 
 **Found in the same log**, and it is the reason that login produced about a hundred and ten
 refusals. *Serena* has two characters called **Malachia**, on Spineshatter and on Thunderstrike.
@@ -2960,3 +2975,15 @@ asked* is printed **twice per complaint**. That line is written from the chat fi
 registered on `CHAT_MSG_SYSTEM` runs once per chat frame that shows system messages - so a second
 frame doubles it. Not measured, and it is a debug line either way; the fix if it is that is to
 narrate from the event handler, which runs once, rather than from the filter, which does not.
+
+
+**BUILT 2026-09-09, as the deferral rather than as a guess.** `Comm:Shadowed(name)` answers
+whether whispering that character would make the client's next complaint impossible to place, and
+`reachableName` skips such a candidate and counts it separately. A walk that runs out of
+candidates *only* because of that says nothing to the player and comes back when the window has
+closed; `nobodyThere` has a sentence of its own for it, because **waiting** and **none of them is
+online** are two different claims and §2.2 is about exactly that difference.
+
+Seven mutations across the two entries, all caught - including one that shadows a character
+against itself, which reddens twenty-six checks three hundred lines away and is the shape of
+error this guard exists to avoid.

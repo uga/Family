@@ -644,6 +644,62 @@ function Comm:Absent(target)
     return true
 end
 
+-- Whether whispering this character would make the client's next complaint impossible to place.
+--
+-- The client complains about a **bare** name, so two characters called Malachia on two realms
+-- produce complaints that name neither of them. `whisperedAbout` sees two and refuses to guess,
+-- which is right - two people of one name can both be online, played from two accounts - but the
+-- refusal costs everything below it: nothing is marked, and, worse, nothing is **abandoned**, so
+-- a whole exchange drains into somebody who is not there at one server refusal per message.
+--
+-- Reported from play 2026-09-09: a linked family of seven with two Malachias produced about a
+-- hundred and ten refusals at a login, and would produce some thousands on a large family.
+--
+-- The way out is not a better guess. It is not to ask the question: a caller that knows a bare
+-- name is about to become ambiguous can wait for the window to close instead, and then the
+-- complaint that arrives is about exactly one character - which is the case every line of this
+-- file was written for. So this answers *would it be ambiguous*, and the deciding is the
+-- caller's, because only the caller has somebody else to try in the meantime.
+function Comm:Shadowed(target)
+    local base, key = baseKey(target), fullKey(target)
+    if not base or not key then return false end
+
+    local seen = whispered[base]
+    if not seen then return false end
+
+    local at = time()
+    for other, sent in pairs(seen) do
+        if other ~= key and (at - sent.at) <= NOT_FOUND_WINDOW then return true end
+    end
+
+    return false
+end
+
+-- The two waits a caller has to know about to use the above. Read rather than copied: a second
+-- copy of a number is a number that goes stale on the day the first one moves.
+function Comm:NotFoundWindow() return NOT_FOUND_WINDOW end
+function Comm:Probation() return PROBATION end
+
+-- When we last had a message from them, on this file's own clock, or nothing where we never have.
+--
+-- Proof they are there, which is a different question from `Absent` - that one answers *the
+-- server said no*, and silence is neither. Used by a caller that has sent a cheap probe and wants
+-- to know whether the answer to it has already arrived, so that it does not start a second
+-- conversation on top of the one now running.
+--
+-- **The moment and not the age**, which is the second attempt at this. An age answers *heard from
+-- within the last two seconds*, and that is also true of somebody heard from two seconds before
+-- the probe was sent - so the caller read its own setup as an answer to a message it had not yet
+-- sent. Two readings of a clock compare exactly; an age against a delay compares to within
+-- whatever the float left over.
+function Comm:HeardFrom(target)
+    local key = fullKey(target)
+    return key and present[key] or nil
+end
+
+-- The clock the two above are on, so a caller can say *since I sent that* rather than *recently*.
+function Comm:Now() return now() end
+
 function Comm:Present(target)
     local key = fullKey(target)
     if not key then return end
