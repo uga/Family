@@ -198,9 +198,9 @@ beginning an exchange, which carries the `want` that pulls the remainder out. B 
 can do nothing but try and fail, and that is not a gap to be closed: there is nobody to send to.
 
 **Unless the one already there has automatic exchange switched off**, in which case the
-announcement is heard and ignored, and the transfer stays half-finished until somebody presses
-*Update now*. That is what off means (§6) rather than an oversight, and it is the one combination
-where a half-finished transfer waits indefinitely.
+announcement is heard and ignored and nothing resumes on its own. That is what off means (§6)
+rather than an oversight. What it does *not* mean is set out below, because three of the things it
+would be reasonable to expect it to govern, it does not.
 
 **And how either of them left does not matter to any of this.** Even where a hard kill loses the
 saved variables (backlog 42), A comes back with older marks, offers more than it needs to, and is
@@ -211,6 +211,37 @@ made during that same session, which is a link that never existed as far as the 
 it is not. It means the next exchange offers precisely the members the other side does not have,
 because they said so, and carries neither the ones that arrived nor an apology for the ones that
 did not.
+
+---
+
+### The switch governs what begins, not what has begun
+
+*Exchange automatically* is one switch over two halves — announcing yourself when you log in, and
+answering somebody else's announcement while you play. Three things it deliberately does not
+govern, each of which somebody could reasonably expect it to.
+
+**A transfer already going out is not stopped by it.** Switch it off half way through and the
+remaining batches are still posted and the queue still drains. The switch is about what is *begun*
+without a person, and a person — or a login — already began this one. The panel goes on saying how
+much is left, so it is not a silent continuation.
+
+**A direct request is still answered.** `onWant` is gated on the feature being on and not on this
+switch, because **on demand is the floor the whole of §6 stands on and is never switched off with
+the automation**. So switching it off does not make you unreachable — it makes you silent until
+somebody asks. Which changes the answer to the compound case above: a half-finished transfer to
+somebody whose side has automation off is finished by **either** person pressing *Update now*, and
+the receiver's button is the better one to press. Theirs sends a `want` carrying what they hold,
+and the silent side answers it with exactly the remainder; the sender's own button sends the whole
+offering again, because that is what `full` means.
+
+**And what changed while it was off goes when somebody does ask.** A mark is of the record, and
+the switch is not part of the record — so a member played, emptied, or levelled during the quiet
+period has a different mark by the time anybody asks, and is offered again. A member that did not
+change is still held back. Nothing accumulates and nothing has to be remembered about the period.
+
+**One thing it does not do that it arguably should:** turning it back **on** begins nothing by
+itself. It is stored as a preference and the next announcement — the next login, on either side —
+is what acts on it. Backlog 47.
 
 ---
 

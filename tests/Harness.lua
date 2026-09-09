@@ -23350,6 +23350,129 @@ print("a transfer that stopped half way is picked up, not believed")
 end)()
 
 print()
+print("the switch governs what begins, not what has begun")
+
+-- *Exchange automatically* is one switch over two halves - announcing yourself when you log in,
+-- and answering somebody else's announcement while you play (§6). Three things it deliberately
+-- does **not** govern, each of which somebody could reasonably expect it to:
+--
+--   A transfer already going out. The switch is about what is *begun* without a person, and the
+--   batches of a transfer that a person or a login already started keep going out.
+--
+--   A direct request. `onWant` is gated on the feature being on and not on this switch, because
+--   on demand is the floor the whole of §6 stands on and is never switched off with the
+--   automation. So switching it off does not make you unreachable; it makes you silent until
+--   somebody asks.
+--
+--   What is remembered. A member changed while the switch is off is offered again the moment
+--   anybody does ask, because the mark is of the record and not of the switch.
+;(function()
+	local heldWide = FamilyDB.wide
+	local realSend = Family.Comm.Send
+	local keys, sent = {}, {}
+
+	FamilyDB.wide = {
+		enabled = true, auto = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["switched"] = { name = "Switched lot", grants = {}, siblings = {},
+			members = {}, characters = { ["Switch-Fire Maw"] = time() } } },
+	}
+	local link = Family.Wide:Links()["switched"]
+
+	Family.Comm.Send = function(_, kind, text, _channel, _target, _bulk, onSent)
+		if kind == "data" then sent[#sent + 1] = Family.Codec:FromWire(text) or {} end
+		if onSent then onSent() end
+		return true
+	end
+
+	local function carried()
+		local all = {}
+		for _, body in ipairs(sent) do
+			for memberKey, entry in pairs(body.members or {}) do all[memberKey] = entry end
+		end
+		return all
+	end
+
+	local function howMany(t)
+		local count = 0
+		for _ in pairs(t) do count = count + 1 end
+		return count
+	end
+
+	-- Twenty, because a batch is twelve: a transfer that fits in one message has nothing left
+	-- to post by the time the switch is touched, and having something left is the case.
+	for index = 1, 20 do
+		local memberKey = string.format("Switched%02d-Fire Maw", index)
+		keys[#keys + 1] = memberKey
+		Family.Database:SetMeta(memberKey, { name = string.format("Switched%02d", index),
+			realm = "Fire Maw", classFile = "WARLOCK", level = 60, faction = "Horde",
+			money = index * 10, seen = time() - 60 })
+		Family.Wide:Grant("switched", memberKey, "money", true)
+	end
+	for _ = 1, 8 do advance(1.1) end
+
+	-- **A transfer already going out is not stopped by the switch.**
+	link.sent = nil
+	sent = {}
+	Family.Wide:ExchangeWith("switched", "a transfer", { full = true })
+	check("a transfer of twenty has batches still to post",
+		Family.Wide:Batching("switched") > 0, tostring(Family.Wide:Batching("switched")))
+
+	Family.Wide:SetAutoUpdate(false)
+	for _ = 1, 4 do advance(1.1) end
+
+	check("switching automatic exchange off does not stop one already going out",
+		howMany(carried()) == 20, tostring(howMany(carried())) .. " of 20")
+	check("and nothing of it is left waiting", Family.Wide:Batching("switched") == 0,
+		tostring(Family.Wide:Batching("switched")))
+
+	local marks = {}
+	for memberKey, entry in pairs(carried()) do marks[memberKey] = entry.mark end
+
+	local function theyAsk(have)
+		sent = {}
+		local body = Family.Codec:ToWire({ family = "switched", schema = 1, have = have })
+		Family.Comm:Receive("1\0011\0011\001want\001" .. body, "Switch-Fire Maw", "WHISPER")
+		for _ = 1, 4 do advance(1.1) end
+		return carried()
+	end
+
+	-- **A direct request is still answered with the switch off.** On demand is the floor.
+	local without = {}
+	for memberKey, mark in pairs(marks) do without[memberKey] = mark end
+	without[keys[1]] = nil
+
+	local answered = theyAsk(without)
+	check("with automatic exchange off, a request from them is still answered",
+		howMany(answered) == 1 and answered[keys[1]] ~= nil,
+		tostring(howMany(answered)) .. " carried")
+
+	-- **And what changed while the switch was off goes when somebody asks.** The mark is of the
+	-- record, and the switch is not part of the record.
+	Family.Database:SetMeta(keys[2], { level = 61 })
+
+	answered = theyAsk(marks)
+	check("a member changed while the switch was off is offered again",
+		answered[keys[2]] ~= nil, tostring(answered[keys[2]] ~= nil))
+	check("and one that did not change is still held back",
+		answered[keys[1]] == nil, tostring(answered[keys[1]] ~= nil))
+
+	-- And turning it back on sends nothing by itself: it is a preference, and what it governs
+	-- is the *next* login on either side.
+	sent = {}
+	Family.Wide:SetAutoUpdate(true)
+	for _ = 1, 4 do advance(1.1) end
+	check("turning it back on begins nothing on its own", #sent == 0, tostring(#sent))
+
+	Family.Comm.Send = realSend
+	for _, memberKey in ipairs(keys) do
+		Family.Wide:Grant("switched", memberKey, "money", false)
+		Family.Database:Forget(memberKey)
+	end
+	advance(0.2)
+	FamilyDB.wide = heldWide
+end)()
+
+print()
 print("two links settle apart from each other")
 
 -- **Why the settle's key carries the family id.** `Family:After` replaces a pending call under

@@ -2817,3 +2817,27 @@ written down now rather than guessed at earlier.
 **Worth doing after 43**, if 43 is done: a `got` acknowledgement makes *what have they actually
 received* a fact rather than an inference, and this becomes a smaller question asked of a better
 answer.
+
+---
+
+## 47. Turning automatic exchange back on begins nothing
+
+**Asked:** 2026-09-09, by Alberto, as the tail of three questions about what the switch does to a
+transfer that is already incomplete. The first two answers were reassuring and this one is not.
+
+**Today.** `Wide:SetAutoUpdate(true)` writes one flag and returns. Nothing is announced, nothing
+is exchanged, and the next thing that acts on the switch is the next login announcement - ours or
+theirs. So somebody who switched it off yesterday, switched it on today, and is looking at a
+linked family whose records are two days old has done the thing that should fix it and watched
+nothing happen. The panel does not lie to them - it says how old the records are - but the switch
+reads as inert, which is how a working control comes to be reported as broken.
+
+**What it would take:** the same announcement the login path already makes. One `hello` per link,
+sent when the switch goes from off to on, which is a handful of small messages and is exactly what
+the player just asked for by ticking it. Everything downstream already exists.
+
+**Why it is not built yet.** It changes what leaves the machine in a circumstance where nothing
+left it before, and that is Alberto's to say rather than mine - even where the circumstance is a
+person deliberately ticking the box that means *talk to them*. There is also a smaller question
+underneath it: whether the same should happen when Wide Family itself is switched on with
+`/family wide on`, where the answer is probably no, because that path already asks for a reload.
