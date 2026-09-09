@@ -738,22 +738,31 @@ local function build(frame)
 						-- Three sentences rather than one with a plural hung on the end,
 						-- for the reason the rest of this project writes them out: no
 						-- language outside English forms all three the same way.
+						--
+						-- **And no unit in any of them.** The creature's own heading, one
+						-- row above, ends in the points it has left - so naming them again
+						-- here says nothing and cost the sentence its ending: reported from
+						-- play as *248 of 273 Training Points: accounted for, and 2
+						-- abilities have n...*, clipped where the column ran out.
 						if unpriced == 0 then
-							said = string.format(
-								L["%d of %d %s accounted for"],
-								sums.counted or 0, sums.spent, pointsWord)
+							said = string.format(L["%d of %d accounted for"],
+								sums.counted or 0, sums.spent)
 						elseif unpriced == 1 then
 							said = string.format(
-								L["%d of %d %s accounted for, and one ability has no "
-									.. "price recorded"],
-								sums.counted or 0, sums.spent, pointsWord)
+								L["%d of %d accounted for, and one ability has no price "
+									.. "recorded"],
+								sums.counted or 0, sums.spent)
 						else
 							said = string.format(
-								L["%d of %d %s accounted for, and %d abilities have no "
-									.. "price recorded"],
-								sums.counted or 0, sums.spent, pointsWord, unpriced)
+								L["%d of %d accounted for, and %d abilities have no price "
+									.. "recorded"],
+								sums.counted or 0, sums.spent, unpriced)
 						end
 
+						-- The whole width from where the names line up, because this row
+						-- has nothing on either side of it to make room for.
+						note.middle:SetWidth(math.max(
+							UI:ListWidth(scroll) - (180 + rowHeight + 2) - 8, 40))
 						note.middle:SetText("|cff888888" .. said .. "|r")
 					end
 

@@ -19,6 +19,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **A stray colon in the middle of several sentences.** Some of the words Family borrows from the
+  game are labels the game draws a number after, so they end in a colon — which then turned up
+  mid-sentence, as *77 Training Points:*. It is taken off wherever one of those words is used
+  inside a sentence.
+
 - **An ability that costs nothing now says so.** Growl is free at every rank, and Family was
   recording that as *no price known* rather than as *free* — which is why a pet's training points
   did not add up. A cost of nothing is now kept where the trainer's window gave one, and a later

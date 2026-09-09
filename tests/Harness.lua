@@ -28772,6 +28772,50 @@ print("what a creature's abilities cost it, against what the client says it spen
 end)()
 
 print()
+print("the game's own words, used inside a sentence")
+
+-- Several of these globals are the game's own **labels** rather than its words, and a label ends
+-- in a colon because the game draws a number after it. Family uses them inside sentences, so the
+-- colon lands in the middle of one: reported from play 2026-09-09 as *77 Training Points:* under
+-- a creature and *248 of 273 Training Points: accounted for* beside it.
+;(function()
+	local held = rawget(_G, "TRAINING_POINTS")
+
+	_G.TRAINING_POINTS = "Training Points:"
+	check("a label that ends in a colon is used without it",
+		Family:GameWord("TRAINING_POINTS", "Training Points") == "Training Points",
+		Family:GameWord("TRAINING_POINTS", "Training Points"))
+
+	_G.TRAINING_POINTS = "Trainingspunkte :"
+	check("and so is one with the space some languages put in front of it",
+		Family:GameWord("TRAINING_POINTS", "Training Points") == "Trainingspunkte",
+		Family:GameWord("TRAINING_POINTS", "Training Points"))
+
+	-- Only what trails. A word is not shortened because it has punctuation inside it, and a
+	-- global that is nothing but punctuation is left exactly as the client wrote it rather
+	-- than turned into an empty string.
+	_G.TRAINING_POINTS = "Points: de dressage"
+	check("while punctuation inside the word is left alone",
+		Family:GameWord("TRAINING_POINTS", "Training Points") == "Points: de dressage",
+		Family:GameWord("TRAINING_POINTS", "Training Points"))
+
+	_G.TRAINING_POINTS = ":"
+	check("and a word that is nothing but punctuation is not emptied",
+		Family:GameWord("TRAINING_POINTS", "Training Points") == ":",
+		Family:GameWord("TRAINING_POINTS", "Training Points"))
+
+	-- And a global the client does not have falls back to Family's own word, which is the
+	-- reason the call exists at all.
+	_G.TRAINING_POINTS = nil
+	check("a global this client has never heard of falls back to our own word",
+		Family:GameWord("TRAINING_POINTS", "Training Points")
+			== Family.L["Training Points"],
+		Family:GameWord("TRAINING_POINTS", "Training Points"))
+
+	_G.TRAINING_POINTS = held
+end)()
+
+print()
 if failures == 0 then
 	print("all checks passed")
 else

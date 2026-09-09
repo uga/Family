@@ -56,8 +56,25 @@ Family.L = setmetatable({}, {
 -- room it turns out to need - UI:FitColumns and UI:LayOutRow in Family_UI/Window.lua - which
 -- is the whole of the rule: the layout gives way to the word, never the word to the layout
 -- (specification §8).
+-- **Trailing punctuation is taken off.**
+--
+-- Several of these globals are the game's own *labels* rather than its words, and a label ends
+-- in a colon because the game draws a number after it: `TRAINING_POINTS` is "Training Points:"
+-- on an English client. Family uses them inside sentences, so the colon arrives in the middle of
+-- one - reported from play 2026-09-09 as *77 Training Points:* and *248 of 273 Training Points:
+-- accounted for*.
+--
+-- Only what trails, and only punctuation the game hangs on a label: a colon, a full stop, and
+-- whatever space is around them. Nothing inside the word is touched, so a language that writes a
+-- colon-like character as part of a word keeps it.
 function Family:GameWord(global, english)
 	local word = global and rawget(_G, global)
-	if type(word) == "string" and word ~= "" then return word end
+
+	if type(word) == "string" and word ~= "" then
+		local trimmed = word:gsub("%s*[:.]%s*$", "")
+		if trimmed ~= "" then return trimmed end
+		return word
+	end
+
 	return Family.L[english]
 end
