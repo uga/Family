@@ -578,6 +578,7 @@ Family.locales.ruRU = {
 	["%d of %d accounted for"] = "%d из %d учтено",
 	["%d of %d accounted for, and one ability has no price recorded"] = "%d из %d учтено, и для одной способности цена не записана",
 	["%d of %d accounted for, and %d abilities have no price recorded"] = "%d из %d учтено, и для %d способностей цена не записана",
+	["   |cff888888|||   %d of %d confirmed|r"] = "   |cff888888|||   подтверждено: %d из %d|r",
 	["Sent %d member(s) and asked for theirs."] = "Отправлено персонажей: %d, запрошены их.",
 	["nobody of theirs has ever been heard from"] = "ни от кого из них ничего не приходило",
 	["|cffffd700What %s may see of your characters|r"] = "|cffffd700Что %s может видеть о ваших персонажах|r",

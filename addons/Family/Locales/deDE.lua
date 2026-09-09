@@ -578,6 +578,7 @@ Family.locales.deDE = {
 	["%d of %d accounted for"] = "%d von %d zugeordnet",
 	["%d of %d accounted for, and one ability has no price recorded"] = "%d von %d zugeordnet, und für eine Fähigkeit ist kein Preis aufgezeichnet",
 	["%d of %d accounted for, and %d abilities have no price recorded"] = "%d von %d zugeordnet, und für %d Fähigkeiten ist kein Preis aufgezeichnet",
+	["   |cff888888|||   %d of %d confirmed|r"] = "   |cff888888|||   %d von %d bestätigt|r",
 	["Sent %d member(s) and asked for theirs."] = "%d Mitglied(er) gesendet und nach ihren gefragt.",
 	["nobody of theirs has ever been heard from"] = "von keinem der ihren wurde je etwas gehört",
 	["|cffffd700What %s may see of your characters|r"] = "|cffffd700Was %s von deinen Charakteren sehen darf|r",

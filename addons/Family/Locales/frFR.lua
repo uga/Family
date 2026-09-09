@@ -578,6 +578,7 @@ Family.locales.frFR = {
 	["%d of %d accounted for"] = "%d sur %d expliqués",
 	["%d of %d accounted for, and one ability has no price recorded"] = "%d sur %d expliqués, et une capacité n'a aucun prix enregistré",
 	["%d of %d accounted for, and %d abilities have no price recorded"] = "%d sur %d expliqués, et %d capacités n'ont aucun prix enregistré",
+	["   |cff888888|||   %d of %d confirmed|r"] = "   |cff888888|||   %d sur %d confirmés|r",
 	["Sent %d member(s) and asked for theirs."] = "%d membre(s) envoyé(s) et demande des leurs.",
 	["nobody of theirs has ever been heard from"] = "aucun des leurs ne s'est jamais manifesté",
 	["|cffffd700What %s may see of your characters|r"] = "|cffffd700Ce que %s peut voir de vos personnages|r",

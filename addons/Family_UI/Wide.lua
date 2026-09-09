@@ -783,6 +783,20 @@ local function build(frame)
                     L["   |cffffd700|||   sending to them, %d pieces left|r"], queued)
             end
 
+            -- **What they have actually confirmed**, which is a different thing from what was
+            -- sent and is the only one of the two worth a number on this line.
+            --
+            -- Said only where they answer: against a Family too old to acknowledge, what this
+            -- side records is what its own client took rather than what theirs stored, and
+            -- printing that as *confirmed* would be the guess the acknowledgement exists to
+            -- stop. Nothing is drawn there rather than a nought, which would read as *they
+            -- have none of it*.
+            local confirmed, offered = Family.Wide:Confirmed(entry.id)
+            if offered > 0 then
+                said = said .. string.format(
+                    L["   |cff888888|||   %d of %d confirmed|r"], confirmed, offered)
+            end
+
             state.text:SetText(said)
 
             if open then

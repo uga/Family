@@ -2682,7 +2682,7 @@ holding the stamp and a `.lua` that does not is itself an answer.
 
 ---
 
-## 43. A prompt acknowledgement instead of a lazy one
+## 43. A prompt acknowledgement instead of a lazy one — DONE 2026-09-09
 
 **Asked:** 2026-09-09, by Alberto, as *e che dobbiamo fare per garantirlo* about delivery.
 
@@ -2715,6 +2715,39 @@ halfway. Prompt is not the same as certain, and no design here reaches certain.
 compatible in the usual shape - a Family too old to send `got` is simply never acknowledged, and
 falls back to the `have` reconciliation it already understands.
 
+
+**BUILT 2026-09-09**, as the acknowledgement and not the retry.
+
+A side that stores a batch answers with `got`, carrying the marks of what it stored - the marks
+and not the keys, because a member is sent again when its record moves and a key alone would
+confirm the copy they hold rather than the copy they just sent. Nothing is answered for where
+there is nothing to confirm by: the offering-only message a grant settling sends carries no
+members, and so does a Family too old to put marks on them.
+
+**From then on a mark means their disk has it**, where before it meant our client took it - the
+strongest thing observable on a channel that confirms nothing (§11.1), and now not the only thing.
+A batch handed over and never acknowledged stays unmarked and is offered again by the next
+exchange, which is the repair happening by itself rather than by the `have` list catching it.
+
+**Learned, not declared.** `link.acks` is set the first time a `got` arrives from that link, and
+until then the delivery-marking every version has relied on carries on exactly as before. An older
+Family sends no `got`, nothing is asked of it, and nothing breaks. That is the only shape a
+protocol change inside §6 may take.
+
+**And the panel says it**: *%d of %d confirmed* on the link's own line, drawn only where they
+answer - against a Family that does not, what this side records is what its own client took, and
+printing that as *confirmed* would be the guess the whole thing exists to stop.
+
+**What was deliberately not built: the retry.** The entry proposed retrying unacked batches a
+bounded number of times, and that is a second sender on a channel with no flow control - which is
+exactly the amplification backlog 46 describes, reached from the other side. What is unconfirmed
+is already offered again at the next exchange, so the retry buys promptness at the cost of the one
+failure mode this feature keeps finding. Worth revisiting once 46 is built and there is somewhere
+for a repeat to be coalesced.
+
+Ten checks, seven mutations, all caught - including one that acknowledged an empty message, one
+that took a mark that was not a string, and one that let the delivery mark first so that the
+confirmation could do nothing and still pass.
 ---
 
 ## 44. Whether a link can cross factions

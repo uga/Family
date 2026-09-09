@@ -23535,6 +23535,190 @@ print("a transfer that stopped half way is picked up, not believed")
 end)()
 
 print()
+print("they say what they stored, and that is what a mark means afterwards")
+
+-- The channel confirms nothing (§11.1), so Family confirms for it. A side that stores a batch
+-- answers with the marks it stored, and from then on a mark on the sending side means *their disk
+-- has it* rather than *our client took it* - which is the difference between a fact and the
+-- strongest guess available.
+--
+-- **Learned, not declared.** A Family too old to answer sends no `got`, the flag stays unset, and
+-- the delivery-marking that side has always relied on carries on exactly as before. Nothing is
+-- asked of the other end and nothing breaks if it never answers, which is the only shape a
+-- protocol change inside §6 may take.
+;(function()
+	local heldWide = FamilyDB.wide
+	local realSend = Family.Comm.Send
+	local keys, sent, deliver = {}, {}, true
+
+	FamilyDB.wide = {
+		enabled = true, auto = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["acking"] = { name = "Acking-Fire Maw", grants = {}, siblings = {},
+			members = {}, characters = { ["Acking-Fire Maw"] = time() } } },
+	}
+	local link = Family.Wide:Links()["acking"]
+
+	Family.Comm.Send = function(_, kind, text, _channel, _target, _bulk, onSent)
+		sent[#sent + 1] = { kind = kind, body = Family.Codec:FromWire(text) or {} }
+		if deliver and onSent then onSent() end
+		return true
+	end
+
+	local function carried()
+		local all = {}
+		for _, message in ipairs(sent) do
+			if message.kind == "data" then
+				for memberKey, entry in pairs(message.body.members or {}) do
+					all[memberKey] = entry
+				end
+			end
+		end
+		return all
+	end
+
+	local function howMany(t)
+		local count = 0
+		for _ in pairs(t) do count = count + 1 end
+		return count
+	end
+
+	for index = 1, 3 do
+		local memberKey = string.format("Acked%02d-Fire Maw", index)
+		keys[#keys + 1] = memberKey
+		Family.Database:SetMeta(memberKey, { name = string.format("Acked%02d", index),
+			realm = "Fire Maw", classFile = "ROGUE", level = 60, faction = "Alliance",
+			money = index, seen = time() - 60 })
+		Family.Wide:Grant("acking", memberKey, "money", true)
+	end
+	for _ = 1, 6 do advance(1.1) end
+
+	-- **Receiving: what arrived is answered for, by the mark it came with.**
+	local theirs = {
+		["Ofttheirs-Fire Maw"] = { meta = { name = "Ofttheirs" }, mark = "abc123" },
+	}
+	sent = {}
+	Family.Comm:Receive("1\0011\0011\001data\001"
+		.. (Family.Codec:ToWire({ family = "acking", schema = 1, members = theirs,
+			offering = { "Ofttheirs-Fire Maw" } }) or ""),
+		"Acking-Fire Maw", "WHISPER")
+
+	local answer
+	for _, message in ipairs(sent) do
+		if message.kind == "got" then answer = message.body.got end
+	end
+	check("a batch that is stored is answered for",
+		answer ~= nil and answer["Ofttheirs-Fire Maw"] == "abc123",
+		tostring(answer and answer["Ofttheirs-Fire Maw"]))
+
+	-- The mark and not the key, because a member is sent again when its record moves: a key
+	-- alone would confirm the copy they hold rather than the copy they just sent.
+	check("by the mark it arrived with, so a later copy is a different confirmation",
+		type(answer and answer["Ofttheirs-Fire Maw"]) == "string")
+
+	-- And nothing is answered for where nothing arrived. The offering-only message a grant
+	-- settling sends carries no members, and an acknowledgement of nothing is a message for
+	-- its own sake on a channel that costs minutes.
+	sent = {}
+	Family.Comm:Receive("1\0011\0011\001data\001"
+		.. (Family.Codec:ToWire({ family = "acking", schema = 1, members = {},
+			offering = { "Ofttheirs-Fire Maw" } }) or ""),
+		"Acking-Fire Maw", "WHISPER")
+
+	local answered = 0
+	for _, message in ipairs(sent) do
+		if message.kind == "got" then answered = answered + 1 end
+	end
+	check("and a message that carried nobody is not answered for", answered == 0,
+		tostring(answered))
+
+	-- **Sending: until they answer, nothing changes.**
+	link.sent, link.acks = nil, nil
+	sent = {}
+	Family.Wide:ExchangeWith("acking", "before they ever answered", { full = true })
+	for _ = 1, 3 do advance(1.1) end
+
+	check("a link that has never answered is marked on delivery, as it always was",
+		howMany(link.sent or {}) == 3, tostring(howMany(link.sent or {})))
+
+	-- **Once they answer, the confirmation is what marks - and only the confirmation.**
+	--
+	-- Set here rather than left to the message below, so that the delivery has no chance to
+	-- mark anything first: a check that lets it mark and then delivers a `got` is asking
+	-- whether the member is marked, which it already was, and passes with the confirmation
+	-- doing nothing at all.
+	link.sent, link.acks = nil, true
+	sent = {}
+	Family.Wide:ExchangeWith("acking", "and now they answer", { full = true })
+	for _ = 1, 3 do advance(1.1) end
+
+	check("a delivery on its own marks nothing once they answer",
+		howMany(link.sent or {}) == 0, tostring(howMany(link.sent or {})))
+
+	local marks = {}
+	for memberKey, entry in pairs(carried()) do marks[memberKey] = entry.mark end
+
+	Family.Comm:Receive("1\0011\0011\001got\001"
+		.. (Family.Codec:ToWire({ family = "acking", schema = 1,
+			got = { [keys[1]] = marks[keys[1]] } }) or ""),
+		"Acking-Fire Maw", "WHISPER")
+
+	check("and their answer marks the member it names, with the mark it names it by",
+		(link.sent or {})[keys[1]] == marks[keys[1]],
+		tostring((link.sent or {})[keys[1]]) .. " against " .. tostring(marks[keys[1]]))
+	check("while the two they said nothing about stay unmarked",
+		howMany(link.sent or {}) == 1, tostring(howMany(link.sent or {})))
+	check("and the link knows they answer at all", link.acks == true, tostring(link.acks))
+
+	-- Their table, so nothing in it is trusted to be the shape ours would be. A mark is a short
+	-- opaque string and anything else is not one - and a mark that is not a mark, taken, would
+	-- match nothing on the next comparison and so hold a member back for ever.
+	Family.Comm:Receive("1\0011\0011\001got\001"
+		.. (Family.Codec:ToWire({ family = "acking", schema = 1,
+			got = { [keys[2]] = 7, [keys[3]] = { "not a mark" } } }) or ""),
+		"Acking-Fire Maw", "WHISPER")
+	check("while an answer whose marks are not marks is not taken for one",
+		(link.sent or {})[keys[2]] == nil and (link.sent or {})[keys[3]] == nil,
+		tostring((link.sent or {})[keys[2]]) .. "/" .. tostring((link.sent or {})[keys[3]]))
+
+	-- Which is the whole point: a batch handed over and never confirmed is offered again.
+	link.sent = nil
+	sent = {}
+	Family.Wide:ExchangeWith("acking", "handed over, never confirmed", { full = true })
+	for _ = 1, 3 do advance(1.1) end
+
+	sent = {}
+	Family.Wide:ExchangeWith("acking", "so it is offered again")
+	for _ = 1, 3 do advance(1.1) end
+	check("so what was never confirmed is offered again", howMany(carried()) == 3,
+		tostring(howMany(carried())))
+
+	-- And what the panel may say about it, which is nothing at all until they answer.
+	do
+		local heldAcks = link.acks
+		link.acks = nil
+		local confirmed, offered = Family.Wide:Confirmed("acking")
+		check("a link that does not answer is not reported as confirming anything",
+			confirmed == 0 and offered == 0,
+			tostring(confirmed) .. " of " .. tostring(offered))
+
+		link.acks = heldAcks
+		link.sent = { [keys[1]] = "x", [keys[2]] = "y" }
+		confirmed, offered = Family.Wide:Confirmed("acking")
+		check("and one that does is reported against everything it is offered",
+			confirmed == 2 and offered == 3,
+			tostring(confirmed) .. " of " .. tostring(offered))
+	end
+
+	Family.Comm.Send = realSend
+	for _, memberKey in ipairs(keys) do
+		Family.Wide:Grant("acking", memberKey, "money", false)
+		Family.Database:Forget(memberKey)
+	end
+	advance(0.2)
+	FamilyDB.wide = heldWide
+end)()
+
+print()
 print("the switch governs what begins, not what has begun")
 
 -- *Exchange automatically* is one switch over two halves - announcing yourself when you log in,

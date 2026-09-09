@@ -810,6 +810,15 @@ local function postBatch(job, familyID)
         offering = Wide:GrantedKeys(link),
     }), true, BULK_LEVEL, function()
         -- Every piece of this batch has been taken by the client. Now, and not before.
+        --
+        -- **Unless they acknowledge**, in which case this says nothing and their `got` does.
+        -- *The client took it* is the strongest thing this side can observe on a channel that
+        -- confirms nothing (§11.1); *they stored it* is what the other side can observe, and
+        -- once a link has shown it says so there is no reason to keep guessing beside it.
+        -- A batch that is handed over and never acknowledged then stays unmarked and is
+        -- offered again, which is the whole point of asking.
+        if link.acks then return end
+
         link.sent = link.sent or {}
         for index = from, upTo do
             local memberKey = keys[index]
@@ -1213,6 +1222,27 @@ function Wide:MarkCost(link)
     return total, held
 end
 
+-- How much of what we offer this link is confirmed to be on their disk, and how much we offer.
+--
+-- Only where they acknowledge: against a Family too old to say, `link.sent` records what our own
+-- client took rather than what theirs stored, and reporting that as *confirmed* would be the
+-- guess this whole thing was built to stop making. Nought and nought there means *there is
+-- nothing to report*, and the panel says nothing rather than nought.
+function Wide:Confirmed(familyID)
+    local link = self:Links()[familyID]
+    if not (link and link.acks) then return 0, 0 end
+
+    local confirmed, offered = 0, 0
+    for memberKey, granted in pairs(link.grants or {}) do
+        if next(granted) then
+            offered = offered + 1
+            if (link.sent or {})[memberKey] then confirmed = confirmed + 1 end
+        end
+    end
+
+    return confirmed, offered
+end
+
 function Wide:GrantedKeys(link)
     local keys = {}
     for memberKey, granted in pairs(link.grants or {}) do
@@ -1525,6 +1555,73 @@ local function onData(_, text, sender)
     link.lastExchange = time()
     Family:Debug("wide: %d member(s) arrived from %s", arrived, tostring(sender))
     Family.Database:Changed("wide")
+
+    -- **And say what was stored, by the mark it came with.**
+    --
+    -- The channel confirms nothing, so this is Family confirming for it. The sender can
+    -- observe only that its client took the message; this side can observe that the record is
+    -- on its disk, which is the thing the sender actually wants to know and cannot see.
+    --
+    -- The marks and not the keys, because a member is sent again when its record moves: a key
+    -- alone would confirm the copy they have rather than the copy they just sent, and the two
+    -- are the same key.
+    --
+    -- Only what arrived, never what is held - that is the `want` list's job and it is a
+    -- different size. A batch of twelve acknowledges twelve, which is a message small enough
+    -- not to count against a transfer that costs minutes.
+    --
+    -- And nothing at all where there is nothing to acknowledge: the offering-only message a
+    -- grant settling sends carries no members, and an acknowledgement of nothing is a message
+    -- for its own sake on a channel that costs minutes. The same silence answers a Family too
+    -- old to send marks with its members - there is nothing to confirm *by*, and saying so with
+    -- an empty table would be a message that means nothing at either end.
+    local got = {}
+    for memberKey, entry in pairs(body.members or {}) do
+        if type(entry) == "table" and type(entry.mark) == "string" then
+            got[memberKey] = entry.mark
+        end
+    end
+
+    if next(got) then
+        -- Straight out rather than behind the bulk: they have just sent us something, so they
+        -- are there, and this is an answer somebody is waiting on.
+        Family.Comm:Send("got", Family.Codec:ToWire(envelope({ got = got })) or "",
+            "WHISPER", sender, false)
+    end
+end
+
+-- They have stored what we sent, and say so by the mark it went out with.
+--
+-- **This is what `link.sent` means once a link answers**, and the difference from what it meant
+-- before is the difference between *our client took it* and *their disk has it*. A batch handed
+-- over and never acknowledged - because they logged out, because the server dropped it, because
+-- the whisper never crossed - is simply not marked, and the next exchange offers it again.
+--
+-- `link.acks` is how this side learns that the other end is new enough to say so, and it is
+-- learned rather than declared: an older Family sends no `got`, the flag stays unset, and the
+-- delivery-marking it has always relied on carries on exactly as before. Nothing is asked of the
+-- other side and nothing breaks if it never answers.
+local function onGot(_, text, sender)
+    local body = Family.Codec:FromWire(text)
+    local link = linkOf(body, sender)
+    if not link then return end
+
+    if type(body.got) ~= "table" then return end
+
+    link.sent = link.sent or {}
+    link.acks = true
+
+    local confirmed = 0
+    for memberKey, mark in pairs(body.got) do
+        -- Their table, so nothing in it is trusted to be the shape ours would be.
+        if type(memberKey) == "string" and type(mark) == "string" then
+            link.sent[memberKey] = mark
+            confirmed = confirmed + 1
+        end
+    end
+
+    Family:Debug("wide: %s confirmed %d member(s)", tostring(sender), confirmed)
+    Family.Database:Changed("wide")
 end
 
 -- Somebody linked has come online. Their client says so on login, and this side answers by
@@ -1832,6 +1929,7 @@ Family:OnDatabaseReady("wide", function()
     Family.Comm:On("unlink", whenEnabled(onUnlink))
     Family.Comm:On("want", whenEnabled(onWant))
     Family.Comm:On("data", whenEnabled(onData))
+    Family.Comm:On("got", whenEnabled(onGot))
     Family.Comm:On("hello", whenEnabled(onHello))
 
     Family:RegisterEvent("PLAYER_ENTERING_WORLD", "wide", function()

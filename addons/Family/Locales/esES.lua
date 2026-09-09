@@ -578,6 +578,7 @@ Family.locales.esES = {
 	["%d of %d accounted for"] = "%d de %d explicados",
 	["%d of %d accounted for, and one ability has no price recorded"] = "%d de %d explicados, y una habilidad no tiene precio registrado",
 	["%d of %d accounted for, and %d abilities have no price recorded"] = "%d de %d explicados, y %d habilidades no tienen precio registrado",
+	["   |cff888888|||   %d of %d confirmed|r"] = "   |cff888888|||   %d de %d confirmados|r",
 	["Sent %d member(s) and asked for theirs."] = "Enviado(s) %d miembro(s) y pedidos los suyos.",
 	["nobody of theirs has ever been heard from"] = "no se ha sabido nunca de ninguno de los suyos",
 	["|cffffd700What %s may see of your characters|r"] = "|cffffd700Lo que %s puede ver de tus personajes|r",

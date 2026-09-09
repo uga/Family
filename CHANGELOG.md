@@ -75,6 +75,12 @@ is a decision rather than an afternoon of archaeology.
   for the ambiguity to clear rather than guessing, and says nothing in the meantime — because
   waiting is not the same as nobody being online.
 
+- **The other side now says what it received**, so *sent* can become *confirmed*. The game never
+  says whether an addon message arrived, so Family used to know only that your own client had
+  taken it. Each side now answers for what it stored, the Wide Family panel says how much of what
+  you share has been confirmed, and anything that was never confirmed is simply sent again next
+  time — no longer something you have to notice.
+
 - **A share that is interrupted picks up where it stopped.** Sharing a large family for the first
   time takes a while, and until now logging out in the middle of it — or closing the game, or the
   other person going offline — could leave characters that Family believed it had sent and would
