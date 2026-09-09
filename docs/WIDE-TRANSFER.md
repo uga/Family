@@ -164,6 +164,49 @@ memory**: whatever had not left is gone.
 | **A recipient alt-F4s** | as for the sender, on their side | they keep every message that arrived complete; a half-arrived one is dropped after 60 s of silence | their next login | the half-arrived message, which is resent whole |
 | **Several recipients at once** | one queue, shared; total time is the sum | one job per link, independent | independently | nothing |
 
+### The compound case: both sides leave, and the receiver comes back first
+
+The rows above are single events. Put three of them in a row and the order decides who repairs
+it, which is worth walking through once.
+
+1. **A is ninety seconds into a six-minute transfer to B, and leaves.** However they leave —
+   logout, Exit Game, alt-F4, a disconnect — the wire sees the same thing: the queue dies with
+   the session and nothing is sent on the way out (§6). About 55 of A's 210 members have been
+   delivered and are marked; the other 155 were sitting in the queue, and are not marked, because
+   a mark is written on delivery.
+2. **B leaves too.** B keeps every message that arrived complete — those 55 members, on disk,
+   each with the mark A gave it. The one message that was still arriving is never completed and is
+   dropped; it would have been swept after 60 seconds of silence in any case.
+3. **B comes back first.** Ten seconds after entering the world B announces to A, and A is not
+   there. The client refuses the whisper and says so a round trip later; Wide reads that as one
+   candidate eliminated rather than as an answer, tries the next of A's characters, and so on down
+   the list. Every attempt that got as far as sending is abandoned **and unmarked** when its
+   refusal arrives, so B's own bookkeeping about what A holds is left exactly as it was. When the
+   list runs out: *none of A's N characters are online*. Nothing is queued waiting for A, because
+   there is nothing to wait with.
+4. **A comes back, later.** Ten seconds in, A announces. B hears it, waits two to five seconds,
+   and exchanges: B sends B's own delta, and a `want` carrying the marks of the 55 members of A's
+   that B holds. A's `onWant` replaces its own bookkeeping with B's list and sends **the other 155
+   and nothing else** — about four minutes, in the background.
+
+The transfer costs the ninety seconds already spent plus the four minutes remaining, and nothing
+crosses twice.
+
+**The side that comes back last is the side that restarts it.** A login announces and pushes
+nothing — what restarts an interrupted transfer is the *other* side hearing the announcement and
+beginning an exchange, which carries the `want` that pulls the remainder out. B returning first
+can do nothing but try and fail, and that is not a gap to be closed: there is nobody to send to.
+
+**Unless the one already there has automatic exchange switched off**, in which case the
+announcement is heard and ignored, and the transfer stays half-finished until somebody presses
+*Update now*. That is what off means (§6) rather than an oversight, and it is the one combination
+where a half-finished transfer waits indefinitely.
+
+**And how either of them left does not matter to any of this.** Even where a hard kill loses the
+saved variables (backlog 42), A comes back with older marks, offers more than it needs to, and is
+immediately cut back to the truth by B's `have`. The one thing a lost save could take is a link
+made during that same session, which is a link that never existed as far as the disk is concerned.
+
 **What "resumes" means, exactly.** Not that the interrupted transfer is picked up mid-message —
 it is not. It means the next exchange offers precisely the members the other side does not have,
 because they said so, and carries neither the ones that arrived nor an apology for the ones that

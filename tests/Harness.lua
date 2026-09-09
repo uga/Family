@@ -28079,6 +28079,76 @@ print("a profession that is no longer on the skill sheet")
 end)()
 
 print()
+print("logging in announces, and pushes nothing")
+
+-- **A login sends one word and then waits.** The `PLAYER_ENTERING_WORLD` handler announces to
+-- each link and does not exchange: what brings a family's records back is the *other* side
+-- hearing the announcement and starting an exchange of its own, which carries their `want` and
+-- pulls ours out of us.
+--
+-- Which makes one thing worth saying out loud, because it is the shape of a whole scenario:
+-- **the side that comes back last is the side that restarts a transfer**, and only if the side
+-- already there answers announcements. Two people who both left mid-transfer, the receiver
+-- returning first, resume nothing until the sender returns too - and nothing at all if the
+-- receiver has switched automatic exchange off, until somebody presses Update now.
+--
+-- Counted by who was whispered rather than by kind, because a guild announcement leaving in the
+-- same second is a different feature and would otherwise be read as this one pushing data.
+;(function()
+	local heldWide = FamilyDB.wide
+	local realSend = Family.Comm.Send
+	local sent = {}
+
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["afar"] = { name = "Afar lot", grants = {}, siblings = {}, members = {},
+			characters = { ["Afar-Fire Maw"] = time() } } },
+	}
+
+	Family.Comm.Send = function(_, kind, _text, _channel, target, _bulk, onSent)
+		if target == "Afar-Fire Maw" then sent[#sent + 1] = kind end
+		if onSent then onSent() end
+		return true
+	end
+
+	-- Something granted, so that a login which did push data would have data to push. Without
+	-- this the check passes against an empty offering and proves nothing.
+	Family.Database:SetMeta("Announcer-Fire Maw", { name = "Announcer", realm = "Fire Maw",
+		classFile = "DRUID", level = 60, faction = "Alliance", money = 7, seen = time() - 60 })
+	Family.Wide:Grant("afar", "Announcer-Fire Maw", "money", true)
+	for _ = 1, 6 do advance(1.1) end
+
+	check("the fixture has something that would go if a login pushed anything",
+		#sent > 0, tostring(#sent) .. " sent by the grant settling")
+
+	sent = {}
+	fire("PLAYER_ENTERING_WORLD")
+	for _ = 1, 12 do advance(1.1) end
+
+	check("a login announces itself and sends nothing else",
+		#sent == 1 and sent[1] == "hello",
+		#sent == 0 and "nothing" or table.concat(sent, ","))
+
+	-- And with automatic exchange off, not even that. Off has to mean nothing is begun by
+	-- anything but a person (section 6), which is also why an interrupted transfer between two
+	-- people who have both switched it off waits for Update now and not for a login.
+	sent = {}
+	Family.Wide:SetAutoUpdate(false)
+	fire("PLAYER_ENTERING_WORLD")
+	for _ = 1, 12 do advance(1.1) end
+
+	check("and with automatic exchange off it does not even announce",
+		#sent == 0, table.concat(sent, ","))
+
+	Family.Wide:SetAutoUpdate(true)
+	Family.Comm.Send = realSend
+	Family.Wide:Grant("afar", "Announcer-Fire Maw", "money", false)
+	Family.Database:Forget("Announcer-Fire Maw")
+	advance(0.2)
+	FamilyDB.wide = heldWide
+end)()
+
+print()
 if failures == 0 then
 	print("all checks passed")
 else
