@@ -396,7 +396,7 @@ Rows are factions, not members: `docs/DECISIONS.md` carries why.
 
 ---
 
-## 9. Hunters: the pet abilities known, and the pets themselves
+## 9. Hunters: the pet abilities known, and the pets themselves — DONE 2026-09-07
 
 **Asked:** read which per-pet abilities a hunter has learned, and the specialisations of the
 pets they own — listing the pets as well, not only the abilities.
@@ -554,7 +554,7 @@ nothing here should move.
 
 ---
 
-## 10. Warlocks: the per-demon abilities known
+## 10. Warlocks: the per-demon abilities known — DONE 2026-09-07, with entry 9
 
 **Asked:** read which demon-specific abilities a warlock has learned.
 
@@ -605,6 +605,17 @@ id sits in `UnitGUID("pet")` - the Imp is 416 on both clients - so a demon is fi
 identifier rather than a word. What its **abilities** are filed under is the one thing still owed,
 and it is the same open question as entry 9's: see *The pet book is the creature's, and the
 creature has an id* in [`DATASOURCES.md`](DATASOURCES.md).
+
+**BUILT 2026-09-07, by entry 9.** `Family/Scanners/Pets.lua` reads a creature's book while that
+creature is out and files a demon under its family id - `d:23` for the Imp - which is what this
+entry was asking for; the abilities are stored by spell id through a scanning tooltip, the answer
+that arrived the same day. Both halves are drawn in the same Pets section on Abilities & Talents,
+so there was never a warlock panel to build separately.
+
+**Two headers were left unmarked** when that landed, this one and entry 9's, and `DECISIONS.md`
+carried the fact alone until 2026-09-09. Worth noticing rather than quietly fixing: the backlog is
+where somebody looks to ask *has this been done*, and an entry that reads as open is a day spent
+rebuilding something.
 
 ---
 
