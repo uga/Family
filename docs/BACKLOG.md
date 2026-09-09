@@ -3089,7 +3089,7 @@ in. A price nobody has read is not a nought.
 
 ---
 
-## 51. The one ability a pet holds that Family cannot price
+## 51. The one ability a pet holds that Family cannot price — DONE 2026-09-09
 
 **Found:** 2026-09-09, by closing the arithmetic. Ranghesante's training points come to **248
 priced + 25 for Avoidance + 0 for Growl = 273**, which is exactly what the client says is spent -
@@ -3187,3 +3187,17 @@ row of the same window is bleed and goes; an id no other row claims stays, whate
 subtext carries. It catches the failure the rank arm was built for, without asking a passive to
 call itself *Rank 2*. Decide it once the line above is read — if the *name* arm is the one that
 refused, the diagnosis is different and so is the fix.
+
+**Built 2026-09-09, and it is the rank arm.** `GetSpellInfo` and `GetSpellSubtext` answer
+*Avoidance* and *Passive* for both ids, so the name arm was content and the rank arm refused: the
+row says *Rank 2*, the id says *Passive*. They disagree because the row is the hunter's ranked
+teaching spell and the id is the passive the pet ends up holding - Alberto found the teaching
+spells filed separately as 35699 and 35700, and the client says the same by itself.
+
+Neither the veto nor uniqueness was the answer. The rule is that **a rank reading which answers
+the same word for every row of an ability is not telling those rows apart**, so it is no evidence
+about any of them; one that answers differently still refuses, which is what keeps an id naming
+Bite Rank 6 off the Bite Rank 9 row. Two rows at least, and a row whose id answers nothing is
+passed over rather than counted as disagreement. The tooltip's ids are therefore judged once the
+window has been walked rather than row by row, and `MergeCrafts` reads the window the same way or
+it strikes back what the scan just kept. Four checks, five mutations, all caught.

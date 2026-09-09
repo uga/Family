@@ -63,6 +63,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### Fixed
 
+- **A pet ability the trainer prices but Family would not.** Some abilities are passive, and a
+  passive is listed at a rank in the trainer's window while calling itself simply *passive*
+  everywhere else. Family read that as two answers that did not match and threw the ability's
+  price away — which is why one Ravager's training points came to 248 where the game said 273.
+  Both of them are now recognised as the same ability, so a pet's points are more likely to add up.
+
 - **Logging in beside a linked family that is offline is much cheaper.** A family is a person and
   only one of their characters is logged in, so Family tries them in turn — and each attempt used
   to be a full update, prepared and queued for somebody who was not there. Seven characters

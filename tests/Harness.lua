@@ -3118,6 +3118,23 @@ do
 		-- wrong rank, which only the rank can refuse.
 		{ "Bite", "Rank 8", 0, 0, 24500 },
 		{ "Bite", "Rank 9", 0, 0, 17259 },
+		-- **The ability whose rank reading says nothing.**
+		--
+		-- Read on a live Burning Crusade client 2026-09-09. The window draws two Avoidance
+		-- rows and the tooltip answers one id for each, correctly - but `GetSpellSubtext`
+		-- answers *Passive* for both of them, which is the word the pet's own book prints
+		-- beside the ability and is not a rank. The rank lane refused both correct ids and
+		-- the creature's spent points came to 248 against the 273 the client stated.
+		{ "Avoidance", "Rank 1", 15, 30, 35694 },
+		{ "Avoidance", "Rank 2", 25, 60, 35698 },
+		-- And a third row of the same ability whose tooltip answers while the rank call does
+		-- not, which is the ordinary case rather than the exception: six of eight rows came
+		-- back nil from that call on the record the lane was first read from. Silence is not
+		-- a different answer, so it must not break the sameness of the two that did answer.
+		{ "Avoidance", "Rank 3", 0, 0, 35701 },
+		-- And the same disagreement where the ability has one row only, which is where it
+		-- stays evidence: there is nothing for the word to be the same as.
+		{ "Dash", "Rank 3", 25, 30, 23110 },
 	}
 
 	-- What rank the client says a spell is, which is the second reading the id is held
@@ -3125,7 +3142,9 @@ do
 	-- 24500 is deliberately absent: `GetSpellSubtext` answers for some pet ability ids and
 	-- not others - six of eight rows came back nil on a live Burning Crusade record - so the
 	-- rank lane has to be one that says nothing here.
-	local RANK_OF = { [24501] = "Rank 4", [2649] = "Rank 1", [17259] = "Rank 6" }
+	local RANK_OF = { [24501] = "Rank 4", [2649] = "Rank 1", [17259] = "Rank 6",
+		[35694] = "Passive", [35698] = "Passive", [23110] = "Rank 1" }
+	-- 35701 is deliberately absent from it: it is the row whose rank call says nothing.
 	local realSubtext = GetSpellSubtext
 	GetSpellSubtext = function(id) return RANK_OF[id] end
 
@@ -3138,7 +3157,8 @@ do
 	-- against before it is kept: `GetSpellSubtext` answers for some pet ability ids and not
 	-- others, so the name is the only one of the two that always says something.
 	local NAME_OF = { [24500] = "Arcane Resistance", [24501] = "Arcane Resistance",
-		[2649] = "Growl", [17259] = "Bite" }
+		[2649] = "Growl", [17259] = "Bite", [35694] = "Avoidance", [35698] = "Avoidance",
+		[35701] = "Avoidance", [23110] = "Dash" }
 	local realSpellInfo = GetSpellInfo
 	GetSpellInfo = function(what)
 		if type(what) == "string" then
@@ -3243,6 +3263,23 @@ do
 	check("while the rank the window stated is kept either way",
 		(rows[4] or {}).rank == "Rank 8" and (rows[5] or {}).rank == "Rank 9")
 
+	-- **And an ability whose rank reading answers the same word for every one of its rows.**
+	--
+	-- That reading is not telling those rows apart, so it is no evidence about either of them
+	-- and must not refuse either of them. Measured on a live client: two Avoidance rows, two
+	-- correct ids off the tooltip, and *Passive* from the rank call for both - which cost a pet
+	-- twenty-five of its two hundred and seventy-three spent points.
+	check("an id is kept where the rank call says the same word for every row of its name",
+		(rows[6] or {}).spellID == 35694 and (rows[7] or {}).spellID == 35698,
+		tostring((rows[6] or {}).spellID) .. "/" .. tostring((rows[7] or {}).spellID))
+	-- And each row keeps its own. A rule that let the word decide would put one id on both.
+	check("and each row keeps the id read from it, not the one beside it",
+		(rows[6] or {}).spellID ~= (rows[7] or {}).spellID)
+	-- Two rows at least: one row has nothing to be the same as, and a lone disagreement is
+	-- still best read as the id not being this row's.
+	check("while a name with a single row is still refused on a rank that disagrees",
+		(rows[9] or {}).spellID == nil, tostring((rows[9] or {}).spellID))
+
 	-- **A second reading with another creature out.**
 	--
 	-- The window prices and describes only what the pet currently summoned can learn, so the
@@ -3259,6 +3296,10 @@ do
 		{ "Growl", "Rank 1", 0, 0, 2649 },
 		{ "Bite", "Rank 8", 0, 0, nil },
 		{ "Bite", "Rank 9", 0, 0, nil },
+		{ "Avoidance", "Rank 1", 0, 0, nil },
+		{ "Avoidance", "Rank 2", 0, 0, nil },
+		{ "Avoidance", "Rank 3", 0, 0, nil },
+		{ "Dash", "Rank 3", 0, 0, nil },
 	}
 	GetCraftInfo = function(index)
 		local row = WITH_A_CAT[index]
@@ -3289,6 +3330,12 @@ do
 	-- And the rows that were never described stay undescribed rather than inheriting.
 	check("and a row neither reading could describe still carries no id",
 		(rows[4] or {}).spellID == nil and (rows[5] or {}).spellID == nil)
+	-- The merge re-checks every id it carries forward, so it has to read the window the same
+	-- way the scan does. Held against this row alone, *Passive* disagrees with *Rank 1* and the
+	-- merge would strike back exactly what the scan has just been taught to keep.
+	check("and an id the rank call cannot speak about survives the merge as well",
+		(rows[6] or {}).spellID == 35694 and (rows[7] or {}).spellID == 35698,
+		tostring((rows[6] or {}).spellID) .. "/" .. tostring((rows[7] or {}).spellID))
 
 	-- **A whole window that prices nothing, where the last reading priced something.**
 	--

@@ -502,6 +502,10 @@ local function readCraftRecipes()
 
 	local recipes = {}
 
+	-- What the tooltip answered for each row, judged once the window is finished rather
+	-- than row by row: what an id has to be held against is the rest of the window.
+	local tipID = {}
+
 	for index = 1, count do
 		local craftName, subText, craftType, numAvailable, _, points, needsLevel =
 			Family:TryCall(GetCraftInfo, index)
@@ -586,18 +590,9 @@ local function readCraftRecipes()
 			-- Only where the links said nothing, so a profession that already has an id
 			-- keeps the one it has and this changes nothing for enchanting.
 			if not recipe.spellID then
-				local id = Family:ScanTooltipSpell(function(tip)
+				tipID[recipe] = Family:ScanTooltipSpell(function(tip)
 					Family:TryCall(tip.SetCraftSpell, tip, index)
 				end)
-
-				-- And the id is made to agree with the row before it is kept.
-				--
-				-- The client says what rank a spell is, in its own words, so the row's
-				-- own rank is something the answer can be held against: an id whose rank
-				-- is not this row's rank is not this row's id, whatever it came back
-				-- from. Two readings of the same client have to agree, which is a
-				-- stronger thing to ask than that one of them answered.
-				recipe.spellID = Professions:AgreesWithRow(id, recipe) and id or nil
 			end
 
 			local cooldown = Family:TryCall(GetCraftCooldown, index)
@@ -610,6 +605,10 @@ local function readCraftRecipes()
 	end
 
 	putBack()
+
+	-- And the ids are held against the row they were read from - all of them together, because
+	-- what makes that reading able to refuse anything is the rest of the window.
+	Professions:KeepTooltipIDs(recipes, tipID)
 
 	-- And an outer guard across the whole window, for the one case the rule above cannot see.
 	--
@@ -742,7 +741,12 @@ end
 -- ability ids and not others - measured on a Burning Crusade record where six of eight rows
 -- came back nil and two answered *Rank 3* - so a nil there is no evidence either way, and only
 -- a rank that answers *and* disagrees refuses the id.
-function Professions:AgreesWithRow(id, row)
+--
+-- And it can be told, for one ability, that its rank has nothing to say. `mute` is that: the
+-- caller has read the subtext of every candidate id the window offered under this name and
+-- found them all the same word, which is a reading that cannot tell one of those rows from
+-- another and therefore cannot refuse either. See `KeepTooltipIDs`.
+function Professions:AgreesWithRow(id, row, mute)
 	if not id then return false end
 	if type(row) ~= "table" then return false end
 
@@ -752,7 +756,7 @@ function Professions:AgreesWithRow(id, row)
 		return false
 	end
 
-	if row.rank then
+	if row.rank and not mute then
 		local subText = Family:TryCall(GetSpellSubtext, id)
 		if type(subText) == "string" and subText ~= "" and subText ~= row.rank then
 			return false
@@ -760,6 +764,77 @@ function Professions:AgreesWithRow(id, row)
 	end
 
 	return true
+end
+
+-- **The abilities whose rank reading says nothing**, worked out from the window as a whole.
+--
+-- Measured 2026-09-09 on a Burning Crusade client with Beast Training open. The window draws
+-- *Avoidance Rank 1* at 15 and *Avoidance Rank 2* at 25; the tooltip answers 35694 and 35698,
+-- one id per row, and `GetSpellSubtext` answers **Passive** for both of them - which is the
+-- word the pet's own book prints beside the ability, and not a rank at all. So the rank lane
+-- refused two correct ids, and the pet's spent points came to 248 where the client said 273.
+--
+-- The window and the tooltip are describing **two different spells**, which is why they can
+-- disagree without either being wrong. The row is the hunter's teaching spell, and *Rank 1* and
+-- *Rank 2* are its ranks; the id the tooltip hands back is the ability the pet ends up holding,
+-- and its own subtext is *Passive*. The client says as much by itself - a row labelled Rank 2
+-- answering an id whose subtext is Passive is one reading of each of two spells, not two
+-- readings of one.
+--
+-- What separates that from the wrong id the lane exists for is not the word: it is that the
+-- word is the *same* for every row of the ability. A reading that answers identically for
+-- Rank 1 and Rank 2 is not telling those rows apart, so it is no evidence about either. A
+-- reading that answers differently for them is, and it keeps refusing - which is how an id
+-- naming Bite Rank 6 stays off the Bite Rank 9 row (L-063).
+--
+-- Two rows at least, because a single row has nothing to be the same as and the safe reading
+-- of a lone disagreement is still that the id is not this row's. A row whose id answers nothing
+-- is passed over rather than counted as a different answer - which is the same stance the lane
+-- itself takes, where a nil is no evidence either way. Six of eight rows came back nil on the
+-- record this was first read from, so an ability that answers for two of its rows and not for
+-- the third is the ordinary case and not the exception.
+local function mutedNames(rows, candidate)
+	local said, mute = {}, {}
+
+	for _, row in ipairs(rows) do
+		local id = candidate[row]
+		local subText = id and Family:TryCall(GetSpellSubtext, id)
+
+		if id and type(row.name) == "string" and type(subText) == "string"
+			and subText ~= "" then
+			local before = said[row.name]
+			if before == nil then
+				said[row.name] = subText
+				mute[row.name] = false
+			elseif before ~= subText then
+				mute[row.name] = nil
+			elseif mute[row.name] == false then
+				mute[row.name] = true
+			end
+		end
+	end
+
+	return mute
+end
+
+-- **Which of the tooltip's answers are kept**, decided across the window rather than row by row.
+--
+-- `candidate` is what the tooltip gave for each row, keyed by the row itself. Rows that already
+-- carried an id off one of the links are left exactly as they are: this is only ever the third
+-- reader, for the rows a link said nothing about.
+function Professions:KeepTooltipIDs(rows, candidate)
+	if type(rows) ~= "table" or type(candidate) ~= "table" then return rows end
+
+	local mute = mutedNames(rows, candidate)
+
+	for _, row in ipairs(rows) do
+		local id = candidate[row]
+		if id and not row.spellID then
+			row.spellID = self:AgreesWithRow(id, row, mute[row.name] == true) and id or nil
+		end
+	end
+
+	return rows
 end
 
 -- What is kept from an earlier reading of the same window.
@@ -784,6 +859,17 @@ function Professions:MergeCrafts(before, now)
 		if (entry.trainingPoints or 0) > 0 then hasPrices = hasPrices + 1 end
 	end
 
+	-- The ids kept from the earlier reading are held against this window the same way the scan
+	-- holds the tooltip's: together, so an ability whose rank reading answers one word for every
+	-- one of its rows cannot use that word to refuse any of them. Without this the merge would
+	-- strike back exactly what the scan has just been taught to keep.
+	local candidate = {}
+	for _, entry in ipairs(now) do
+		local kept = held[craftRowKey(entry)]
+		if kept and not entry.spellID then candidate[entry] = kept.spellID end
+	end
+	local mute = mutedNames(now, candidate)
+
 	for _, entry in ipairs(now) do
 		local kept = held[craftRowKey(entry)]
 		if kept then
@@ -791,7 +877,8 @@ function Professions:MergeCrafts(before, now)
 			-- the tooltip was made to prove itself can hold one rank's id on another
 			-- rank's row (L-063). The client says what rank a spell is; an id that
 			-- disagrees with the row it is on does not come forward.
-			if not entry.spellID and self:AgreesWithRow(kept.spellID, entry) then
+			if not entry.spellID
+				and self:AgreesWithRow(kept.spellID, entry, mute[entry.name] == true) then
 				entry.spellID = kept.spellID
 			end
 

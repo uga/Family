@@ -2438,6 +2438,40 @@ Ravager.
 **Dismissing and re-summoning re-reads the window**, reported from play the same day - which is
 the cheapest way to refresh what a creature's abilities cost.
 
+#### A Beast Training row and the id it hands back are two different spells
+
+Read 2026-09-09 on Burning Crusade, with a Ravager out and the window open, after the pet's spent
+training points came to 248 against the 273 the client itself stated. The whole of the difference
+was one ability:
+
+    window row 53   Avoidance   Rank 1   15 points   level 30   tooltip id 35694
+    window row 54   Avoidance   Rank 2   25 points   level 60   tooltip id 35698
+
+    pet's own book  Avoidance   Passive                                   35698
+
+    GetSpellInfo(35694)     Avoidance        GetSpellSubtext(35694)   Passive
+    GetSpellInfo(35698)     Avoidance        GetSpellSubtext(35698)   Passive
+
+So the two readings **do** meet on an id - the book's 35698 is the window's Rank 2 - and the join
+Family needs is the plain one it already does everywhere. What refused it was the rank cross-check,
+which asks the row's own rank word and `GetSpellSubtext` to be the same string and here got *Rank 2*
+against *Passive*.
+
+**They disagree because they are about two different spells.** The window row is the hunter's
+*teaching* spell, which is ranked, and the id the tooltip hands back is the ability the pet ends up
+holding, which is passive and says so. Alberto found the teaching spells listed separately -
+Avoidance Rank 1 and Rank 2 as 35699 and 35700 - and the client says the same thing without being
+asked: a row labelled *Rank 2* answering an id whose own subtext is *Passive* is one reading of each
+of two spells, not two readings of one. Nothing here is taken from that listing; it named the shape
+and the client confirmed it.
+
+**What Family does with it.** The rank cross-check now stands down for an ability whose rank call
+answers the *same* word for every row of it - a reading that cannot tell Rank 1 from Rank 2 is no
+evidence about either - and keeps refusing wherever the words differ, which is what keeps an id
+naming Bite Rank 6 off the Bite Rank 9 row. Two rows at least, and a row whose id answers nothing
+is passed over rather than counted as a different answer, because six of eight rows came back nil
+from that call on the record the lane was first built from.
+
 ### What crosses a Wide Family link as a word, and cannot be translated
 
 Read 2026-09-05, after Alberto asked whether a subzone is the only shared thing a reader sees in
