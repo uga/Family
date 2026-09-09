@@ -253,12 +253,17 @@ them as sent. This one is visible — the link says so in orange on the panel �
 itself** once the versions match: their side stored nothing, so their `have` is empty, so we send
 everything.
 
-**4. Not a jam, but it reads as one:** *Update now* refuses while **anything at all** is in
-Family's outgoing queue, and that is the whole queue — every link, plus a guild announcement.
-Fifteen linked families sharing 210 members each keep it busy for about ninety minutes, and for
-all of them the button on any link answers *still sending*. Worse, the sentence it answers with —
-*what you are asking for is already on its way* — is untrue for a link whose own share of the
-queue is empty. Backlog 45.
+**4. Not a jam, and no longer reads as one.** *Update now* used to refuse while **anything at
+all** was in Family's outgoing queue — every link, plus a guild announcement — so fifteen linked
+families sharing 210 members each kept the button answering *still sending* on every link for
+about ninety minutes, with a sentence that was untrue for any link whose own share of the queue
+was empty. Since 2026-09-09 it refuses only for the link it belongs to (`Wide:InFlight`), and
+where the channel is busy with somebody else's traffic it does what was asked and says what it is
+queued behind. Backlog 45.
+
+What remains, written down rather than fixed: the *other* side's button can make us queue our own
+transfer twice, because a `want` arriving mid-transfer starts a fresh batch job while the old
+job's messages are still in the queue. It costs time, not correctness. Backlog 46.
 
 ### Getting it moving
 
@@ -266,7 +271,9 @@ queue is empty. Backlog 45.
 `full`: it ignores every mark and sends the whole offering, whatever this side believes the other
 side holds. That is precisely the repair for case 1, and it is why the button was built to refuse
 politely rather than to grey out — a greyed control reads as broken, and §6 asks for progress
-reported rather than a hang.
+reported rather than a hang. **There is no state in which it greys**, including one where
+every character of the linked family is offline: it is pressed, it tries, and it answers *could
+not update: none of their six characters are online*.
 
 **Ending the link and making it again** is the heavier version of the same thing: a link that is
 made or remade forgets the marks outright (`forgetWhatTheyHold`), because a side that has just

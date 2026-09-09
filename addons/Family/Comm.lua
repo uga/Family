@@ -591,6 +591,30 @@ end
 -- are sitting in front of.
 local ABSENT_FOR = 60
 
+-- How much of the queue is for one character.
+--
+-- `Comm:Pending()` answers for the whole queue, which is the honest number for *is the channel
+-- busy* and the wrong one for *is anything going to them*. One link's panel asking the first and
+-- printing it as the second is what backlog 45 was about: fifteen linked families keep the queue
+-- busy for an hour and a half, and for all of it every link was told that what it was asking for
+-- was already on its way.
+--
+-- Compared through `fullKey`, like everything else in here, because a bare name and the same name
+-- with its realm are one character and two strings.
+function Comm:PendingTo(target)
+    local wanted = fullKey(target)
+    if not wanted then return 0 end
+
+    local count = 0
+    for _, entry in ipairs(outgoing) do
+        if entry.channel == "WHISPER" and fullKey(entry.target) == wanted then
+            count = count + 1
+        end
+    end
+
+    return count
+end
+
 function Comm:AbandonTo(target)
     local wanted = fullKey(target)
     if not wanted then return 0 end

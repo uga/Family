@@ -675,7 +675,7 @@ local function build(frame)
             end)
 
             nextButton(L["Update now"], BUTTON_FAR, function()
-                -- **Not while one is still going out.**
+                -- **Not while one is still going out to this family.**
                 --
                 -- A family of any size takes minutes on a rate-limited channel, and for all
                 -- of those minutes the other side's characters look stale - so the button
@@ -689,15 +689,31 @@ local function build(frame)
                 -- the same argument `Family/Guild.lua` makes about an Update now that says
                 -- "no need". Specification §6: the interface reports progress rather than
                 -- appearing to hang.
-                local queued = Family.Comm:Pending()
+                --
+                -- **This link's traffic, and not the whole queue** (backlog 45). The first
+                -- version of this asked `Comm:Pending()`, which counts every link plus a
+                -- guild announcement, and then told the player *what you are asking for is
+                -- already on its way* - a sentence that is false for a link whose own share
+                -- of the queue is empty and which is merely waiting behind somebody else's
+                -- transfer. Fifteen linked families of two hundred members keep that queue
+                -- busy for about ninety minutes, and this button is the only caller that
+                -- asks for `full`: it is the way out of a transfer that has gone wrong, and
+                -- one that refuses for an hour and a half on another link's behalf is the
+                -- wrong way out.
+                local queued = Family.Wide:InFlight(entry.id)
                 if queued > 0 then
-                    Family:Print(L["Still sending: %d pieces are in Family's own queue - "
-                        .. "everything it has to send, not only this link. Nothing was "
-                        .. "added, because what you are asking for is already on its way."],
-                        queued)
+                    Family:Print(L["Still sending to %s: %d piece(s) still to go. Nothing "
+                        .. "was added, because what you are asking for is already on its "
+                        .. "way."], tostring(Family.Wide:Called(link)), queued)
                     frame:Refresh()
                     return
                 end
+
+                -- What everybody else has in the queue, read before the exchange adds to it.
+                -- Not a refusal - the player asked for this link and this link is free - but
+                -- the wait is real and a button that says "Sent" while nothing moves for a
+                -- minute is the same lie in a smaller size.
+                local elsewhere = Family.Comm:Pending()
 
                 -- **Everything**, whether or not this side thinks they already have it.
                 -- This is the button somebody presses when something looks wrong, and one
@@ -709,8 +725,14 @@ local function build(frame)
                 -- with its verb missing, and it was one. What could not be done is the
                 -- update this button offers, and the reason that follows is a clause of its
                 -- own - so the two need joining rather than running together.
-                Family:Print(ok and L["Sent %d member(s) and asked for theirs."]
-                    or L["Could not update: %s"], count)
+                if ok and elsewhere > 0 then
+                    Family:Print(L["Sent %d member(s) and asked for theirs. It goes out "
+                        .. "behind %d piece(s) Family was already sending to somebody "
+                        .. "else."], count, elsewhere)
+                else
+                    Family:Print(ok and L["Sent %d member(s) and asked for theirs."]
+                        or L["Could not update: %s"], count)
+                end
                 frame:Refresh()
             end)
 
@@ -746,16 +768,19 @@ local function build(frame)
                     link.lastExchange and UI:Ago(link.lastExchange) or L["never"],
                     open and "" or L["   |||   click the name to open"])
 
-            -- What is still going out, said where the age of the last exchange is said.
+            -- What is still going out **to them**, said where the age of the last exchange
+            -- is said.
             --
-            -- The count is Family's whole outgoing queue rather than this link's share of
-            -- it, and the sentence says so: there is one queue, and a guild announcement or
-            -- a second link's exchange sits in it too. A number that named this link would
-            -- be a claim the code cannot back.
-            local queued = Family.Comm:Pending()
+            -- This used to be Family's whole outgoing queue, and the sentence said so, because
+            -- a number that named this link would have been a claim the code could not back.
+            -- `Wide:InFlight` backs it now: the pieces queued for the character this link
+            -- would be whispered, plus the batches it has yet to post. A row that counted
+            -- everybody's traffic put the same number on every link, which is the number of
+            -- a channel rather than of a family.
+            local queued = Family.Wide:InFlight(entry.id)
             if queued > 0 then
                 said = said .. string.format(
-                    L["   |cffffd700|||   sending, %d pieces left in the queue|r"], queued)
+                    L["   |cffffd700|||   sending to them, %d pieces left|r"], queued)
             end
 
             state.text:SetText(said)

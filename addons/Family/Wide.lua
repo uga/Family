@@ -869,6 +869,27 @@ function Wide:AbandonBatches(familyID)
     return left
 end
 
+-- What is still going out to one linked family: the pieces queued for the character this link
+-- would be whispered right now, plus the batches it has not posted yet.
+--
+-- **Two numbers because they cover different halves of a transfer, and neither covers both.** A
+-- job only exists while batches are being *posted* - one a second, so eighteen seconds for two
+-- hundred and ten members - and the queue then takes six minutes to carry them. So the job is the
+-- only signal for the first eighteen seconds and the queue is the only signal for the rest.
+--
+-- Asked of `reachableName` rather than of every character they have, which is both cheaper and
+-- truer: it is the character a transfer would go to now, and where the one it *was* going to has
+-- since been refused, everything queued for them was dropped at that refusal anyway.
+function Wide:InFlight(familyID)
+    local link = self:Links()[familyID]
+    if not link then return 0 end
+
+    local target = reachableName(link)
+    local queued = target and Family.Comm:PendingTo(target) or 0
+
+    return queued + self:Batching(familyID)
+end
+
 -- What we hold of theirs, in their own words for it.
 --
 -- Every member they have sent us arrived carrying the mark their side made of it, and this hands

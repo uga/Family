@@ -10111,8 +10111,8 @@ do
 	-- the wait it was pressed to shorten. Specification §6 asks the interface to report
 	-- progress rather than appear to hang, which is the same sentence read the other way.
 	--
-	-- `Comm:Pending` is stubbed rather than filled, because what is under test is the panel's
-	-- answer to a queue that is not empty, not Comm's queueing - which has its own checks.
+	-- `Wide:InFlight` is stubbed rather than filled, because what is under test is the panel's
+	-- answer to a link that is busy, not the counting - which has checks of its own below.
 	wearing(ours, function()
 		Family.UI:ShowTab("wide")
 
@@ -10121,6 +10121,7 @@ do
 
 		if update then
 			local realPending = Family.Comm.Pending
+			local realInFlight = Family.Wide.InFlight
 			local asked = 0
 			local realExchange = Family.Wide.ExchangeWith
 			Family.Wide.ExchangeWith = function(this, ...)
@@ -10128,42 +10129,79 @@ do
 				return realExchange(this, ...)
 			end
 
-			Family.Comm.Pending = function() return 42 end
-			local before = #DEFAULT_CHAT_FRAME.messages
-			fireClick(update)
-
-			local said = ""
-			for index = before + 1, #DEFAULT_CHAT_FRAME.messages do
-				said = said .. " " .. DEFAULT_CHAT_FRAME.messages[index]
+			local function saidBy(act)
+				local before = #DEFAULT_CHAT_FRAME.messages
+				act()
+				local said = ""
+				for index = before + 1, #DEFAULT_CHAT_FRAME.messages do
+					said = said .. " " .. DEFAULT_CHAT_FRAME.messages[index]
+				end
+				return said
 			end
 
-			check("pressing it while a transfer is going out queues nothing more",
+			-- The tail of the success sentence, which is the part with no number in it.
+			--
+			-- The first version of this took the whole sentence and blanked its `%d`, which
+			-- produces "Sent  member(s)..." with two spaces - a string the panel never prints.
+			-- It was only ever used to assert that the sentence was **absent**, so it passed
+			-- for the wrong reason and would have gone on passing if the button had said
+			-- "Sent" every time. Asserting the same string is present as well as absent is
+			-- what caught it.
+			local sentWord =
+				Family.L["Sent %d member(s) and asked for theirs."]:match("%%d(.*)$")
+
+			Family.Wide.InFlight = function() return 42 end
+			Family.Comm.Pending = function() return 42 end
+
+			local said = saidBy(function() fireClick(update) end)
+
+			check("pressing it while a transfer is going out to them queues nothing more",
 				asked == 0, tostring(asked) .. " exchanges started")
 			check("and says what is still to go, rather than saying it sent something",
 				said:find("42", 1, true) ~= nil
-					and said:find(Family.L["Sent %d member(s) and asked for theirs."]:gsub(
-						"%%d", ""), 1, true) == nil,
+					and said:find(sentWord, 1, true) == nil,
 				said)
 			-- Pressable and answering, not greyed: a greyed button reads as broken, which is
 			-- the argument Family/Guild.lua already makes about an Update now that says "no
-			-- need".
+			-- need". There is no state in which this button greys out, and this is the check
+			-- that says so.
 			check("and the button is still a button", update.__enabled ~= false)
 
 			-- And what is in flight is drawn where the age of the last exchange is drawn, so
 			-- the panel says it without being asked.
 			Family.UI:Refresh()
-			check("the panel says what is still on its way",
+			check("the panel says what is still on its way to them",
 				visibleText(string.format(
-					Family.L["   |cffffd700|||   sending, %d pieces left in the queue|r"],
-					42)))
+					Family.L["   |cffffd700|||   sending to them, %d pieces left|r"], 42)))
 
-			-- With nothing left to send, the button is the button again.
+			-- **A queue full of somebody else's traffic does not refuse for this link.**
+			--
+			-- Backlog 45, and the whole of it. The guard used to ask `Comm:Pending`, which
+			-- counts every link plus a guild announcement: fifteen linked families keep that
+			-- busy for about ninety minutes, and this button is the only caller that asks for
+			-- `full` - the way out of a transfer that has gone wrong. One that refuses for an
+			-- hour and a half on another link's behalf is the wrong way out.
+			Family.Wide.InFlight = function() return 0 end
+			said = saidBy(function() fireClick(update) end)
+
+			check("a queue busy with another link does not refuse this one", asked == 1,
+				tostring(asked) .. " exchanges started")
+			check("and the answer says what it is queued behind rather than pretending "
+				.. "the channel is free",
+				said:find(sentWord, 1, true) ~= nil and said:find("42", 1, true) ~= nil,
+				said)
+
+			-- And with nothing queued anywhere, the plain sentence and no arithmetic.
 			Family.Comm.Pending = function() return 0 end
-			fireClick(update)
-			check("and with the queue empty it exchanges as it always did", asked == 1,
-				tostring(asked))
+			said = saidBy(function() fireClick(update) end)
+			check("with nothing in the queue at all it exchanges as it always did",
+				asked == 2, tostring(asked))
+			check("and says so without mentioning a queue nobody is in",
+				said:find(sentWord, 1, true) ~= nil and said:find("42", 1, true) == nil,
+				said)
 
 			Family.Comm.Pending = realPending
+			Family.Wide.InFlight = realInFlight
 			Family.Wide.ExchangeWith = realExchange
 		end
 	end)
@@ -22657,6 +22695,75 @@ print("queued is not sent, and the sender is told which")
 end)()
 
 print()
+print("how much of the queue is for one character")
+
+-- `Comm:Pending()` answers for the whole queue, which is the right number for *is the channel
+-- busy* and the wrong one for *is anything going to them*. One link's panel asked the first and
+-- printed it as the second: fifteen linked families keep the queue busy for about ninety minutes,
+-- and for all of it every link was told that what it was asking for was already on its way
+-- (backlog 45).
+--
+-- Bulk to names nobody has heard from, so the canary holds each transfer after its first piece
+-- and the queue stays open to be counted. The clock is deliberately not moved.
+;(function()
+	local realRaw = C_ChatInfo.SendAddonMessage
+	local realCombat = InCombatLockdown
+	InCombatLockdown = function() return false end
+	C_ChatInfo.SendAddonMessage = function() return 0 end
+	Family.Comm:Abandon()
+
+	Family.Comm:Send("counting", string.rep("a", 900), "WHISPER",
+		"Countone-Fire Maw", true)
+	Family.Comm:Send("counting", string.rep("b", 1800), "WHISPER",
+		"Counttwo-Fire Maw", true)
+
+	local one = Family.Comm:PendingTo("Countone-Fire Maw")
+	local two = Family.Comm:PendingTo("Counttwo-Fire Maw")
+	local all = Family.Comm:Pending()
+
+	check("the queue says how much of itself is for one character",
+		one > 0 and two > one, tostring(one) .. " for one, " .. tostring(two) .. " for two")
+	check("and the two of them are the whole of it", one + two == all,
+		tostring(one) .. " + " .. tostring(two) .. " against " .. tostring(all))
+	check("while somebody with nothing queued is nought, not the whole queue",
+		Family.Comm:PendingTo("Countthree-Fire Maw") == 0,
+		tostring(Family.Comm:PendingTo("Countthree-Fire Maw")))
+
+	-- A bare name and the same name with its realm are one character, which is the difference
+	-- that made two earlier fixes in this file do nothing at all.
+	check("asked by the bare name, which is the form half of this file's names arrive in",
+		Family.Comm:PendingTo("Countone") == one,
+		tostring(Family.Comm:PendingTo("Countone")) .. " against " .. tostring(one))
+
+	-- And a link asks the same question about itself, through the character it would be
+	-- whispered. This half is the one a stubbed `Comm:Send` can never exercise, because
+	-- nothing reaches the queue at all under a stub - so it is asked here, where the queue is
+	-- real and full.
+	do
+		local heldWide = FamilyDB.wide
+		FamilyDB.wide = {
+			enabled = true, id = "us", requests = {}, pendingOut = {},
+			links = { ["counted"] = { name = "Counted lot", grants = {}, siblings = {},
+				members = {}, characters = { ["Countone-Fire Maw"] = time() } } },
+		}
+
+		check("a link counts what is queued for the character it would whisper",
+			Family.Wide:InFlight("counted") == one,
+			tostring(Family.Wide:InFlight("counted")) .. " against " .. tostring(one))
+		check("and not what is queued for somebody else's",
+			Family.Wide:InFlight("counted") ~= all,
+			tostring(Family.Wide:InFlight("counted")) .. " against " .. tostring(all))
+
+		FamilyDB.wide = heldWide
+	end
+
+	Family.Comm:Abandon()
+	C_ChatInfo.SendAddonMessage = realRaw
+	InCombatLockdown = realCombat
+	advance(1)
+end)()
+
+print()
 print("an exchange carries what changed, not everything again")
 
 -- **Backlog 31's other half.** Every exchange used to send every granted member's whole record -
@@ -23120,8 +23227,17 @@ print("a transfer that stopped half way is picked up, not believed")
 	check("the first batch of a transfer is marked as it goes",
 		howMany(link.sent or {}) == 12, tostring(howMany(link.sent or {})))
 
+	-- What a link has in flight is the two halves added up: what is queued for the character it
+	-- would be whispered, and what it has yet to post. Nothing is queued here - `Comm:Send` is
+	-- stubbed - so this is the second half on its own, which is the half a panel asking `Comm`
+	-- alone could never see.
+	check("a link knows what it still has in flight, batches included",
+		Family.Wide:InFlight("theirs") == 3, tostring(Family.Wide:InFlight("theirs")))
+
 	local left = Family.Wide:AbandonBatches("theirs")
 	check("and the rest is still waiting when they go", left == 3, tostring(left))
+	check("and it has nothing in flight once that is dropped",
+		Family.Wide:InFlight("theirs") == 0, tostring(Family.Wide:InFlight("theirs")))
 	check("abandoning the transfer takes back what it had marked",
 		howMany(link.sent or {}) == 0, tostring(howMany(link.sent or {})))
 

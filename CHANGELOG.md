@@ -29,10 +29,15 @@ is a decision rather than an afternoon of archaeology.
   how many members each link shares and how long an exchange spends on them, which is the number
   worth reporting. It measures and sends nothing.
 
-- **Update now says what is already on its way.** Sharing a large family takes minutes on the
-  game's channels, and pressing the button again during them used to queue a second copy of
-  everything behind the first — which made the wait twice as long. Both panels now say what is
-  still going out, or still coming in, and the count moves while you watch it.
+- **Update now says what is already on its way — for the family it belongs to.** Sharing a large
+  family takes minutes on the game's channels, and pressing the button again during them used to
+  queue a second copy of everything behind the first, which made the wait twice as long. Both
+  panels now say what is still going out, or still coming in, and the count moves while you watch
+  it. Wide Family's counts *this* family's share rather than everything Family is sending: with
+  several linked families the channel is busy for a long time, and a button that refused for all
+  of them until the last one had finished was refusing on somebody else's behalf. Where the
+  channel is busy with another family's update, the button does what you asked and tells you what
+  it is queued behind.
 
 ### Fixed
 

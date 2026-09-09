@@ -2732,7 +2732,7 @@ looks like it timed out.
 
 ---
 
-## 45. *Update now* refuses for the whole queue, and says something untrue while it does
+## 45. *Update now* refuses for the whole queue, and says something untrue while it does — DONE 2026-09-09
 
 **Asked:** 2026-09-09, by Alberto — *quando uno dei due esce durante il trasferimento il pulsante
 update now resta grigio?* It does not go grey, deliberately, and that part is right. What it does
@@ -2765,3 +2765,55 @@ and so nothing is ever repaired. The escape hatch from that is exactly this butt
 the only caller that asks for `full`. An escape hatch that is unavailable for ninety minutes at a
 stretch is the wrong escape hatch, and this is backlog 39's question with a concrete case attached
 at last.
+
+**Built 2026-09-09, as described.** `Comm:PendingTo(target)` counts one character's share of the
+queue - through `fullKey`, because a bare name and the same name with its realm are one character
+and two strings - and `Wide:InFlight(familyID)` adds that to `Wide:Batching`. Both halves are
+needed and neither covers the other: a batching job only lives while batches are being *posted*,
+one a second, so eighteen seconds for two hundred and ten members, and the queue then takes six
+minutes to carry them. The button refuses only for its own link; where the queue is busy with
+somebody else's traffic it does what was asked and says what it is queued behind. The link's
+status line stopped printing everybody's number on every row and prints its own.
+
+Nine checks, seven mutations, all caught. One of the mutations found something else: the old check
+that the button *had not* said "Sent" was matching a string the panel never prints - the sentence
+with its `%d` blanked, which is "Sent  member(s)" with two spaces - so it passed for the wrong
+reason and would have gone on passing if the button had said "Sent" every time. Asserting the same
+string present as well as absent is what caught it.
+
+**And it opened backlog 46**, which is the same disease reached from the other side.
+
+---
+
+## 46. The other side's button can queue our transfer twice
+
+**Found:** 2026-09-09, while building 45, and it is the same fault reached from the other end.
+
+**What happens.** A is mid-transfer to B. B presses *Update now*, which sends a `want` carrying
+B's `have`. A's `onWant` answers it by calling `postMembers`, which **replaces** `batching[id]`
+with a fresh job - and the batches the old job had already put in `Comm`'s queue are still in
+`Comm`'s queue. So A now has the remainder queued twice. Press again and it is three times.
+
+The arithmetic is 45's: at 1.6 seconds a member, a press one minute into a transfer of two hundred
+and ten members re-queues about 154 members while about 154 are still waiting. Nothing is
+corrupted - the far side merges, and the marks are written on delivery either way - but the wait
+doubles, and it doubles for the person who pressed the button to shorten it.
+
+**45 did not create this and does not much worsen it.** B's guard counts what is queued *from B*,
+and during an incoming transfer B has almost nothing outgoing - so B's button was already
+available before today, under the old global guard, as soon as B's own small share had drained.
+
+**Why the obvious fix is wrong.** Ignoring a `want` while a job is running would break the thing
+`have` exists for: a side that comes back having lost data says so in exactly that message, and
+being ignored for the length of a transfer means being ignored until the next login. The `want`
+has to be honoured; what must not happen is a second copy of the same bytes.
+
+**The shape that works** is to coalesce rather than to refuse: take the marks from `have` at once,
+because they are free and they are the truth; start a new job only where none is in flight; and
+where one is, note that a re-answer is due and make it once, when the queue for that character has
+drained. `Wide:InFlight` - built for 45 - is the test for *in flight*, which is why this is
+written down now rather than guessed at earlier.
+
+**Worth doing after 43**, if 43 is done: a `got` acknowledgement makes *what have they actually
+received* a fact rather than an inference, and this becomes a smaller question asked of a better
+answer.
