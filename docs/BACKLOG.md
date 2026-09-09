@@ -3253,3 +3253,38 @@ caught - including the positive filter, which the §2.2 check reddens.
 No migration: a stored book carries no kinds and cannot be re-filtered, so each character corrects
 itself the next time it is played, and a linked family gets the corrected book at the next
 exchange.
+
+---
+
+## 53. One ability drawn twice, under two schools
+
+**Reported from play 2026-09-09**, on the same low-level Mists hunter as backlog 52 and with 52's
+fix not yet deployed. The Abilities & Talents page draws two schools:
+
+    Hunter (5)          Arcane Shot, Auto Shot, Focused Aim, Revive Pet, Steady Shot
+    Beast Mastery (59)  Arcane Shot, Aspect of the Cheetah, Aspect of the Hawk,
+                        Aspect of the Pack, Auto Shot, Beast Cleave, Beast Lore, ...
+
+**Most of the 59 is backlog 52** - the class's whole future, greyed, and that fix removes it. What
+52 does not answer is **Arcane Shot and Auto Shot appearing under both headings.** If the client
+lists a known spell in the class tab *and* in the specialisation tab, then the duplication
+survives 52 and is its own fault; if it lists it as a future spell in the second, it goes with the
+rest.
+
+`Character:ReadSpells` stores a school per tab and keeps whatever each tab holds, and
+`Family_UI/Talents.lua:466` draws every school in turn with a count beside each - so nothing on
+either side would notice one id in two schools.
+
+**The reading, on the hunter that reported it, after deploying 52** - it prints exactly what the
+fixed scanner will record, tab by tab:
+
+    /run for t=1,GetNumSpellTabs() do local n,_,o,c=GetSpellTabInfo(t) for i=o+1,o+c do local k,d=GetSpellBookItemInfo(i,"spell") if k=="SPELL" then print(n,d,GetSpellBookItemName(i,"spell")) end end end
+
+Arcane Shot under two tab names says the duplication is real and has to be decided; under one says
+52 covers it.
+
+**And if it is real, what to do is not obvious**, which is why this is written down rather than
+guessed at. The schools are the game's own grouping and are worth keeping; drawing one ability
+twice is not. The candidates are to keep the first school an id appears in and drop the later ones,
+or to keep every school and let the page draw an id once. Both need the reading first, because the
+counts beside the headings have to keep meaning something either way.
