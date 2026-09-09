@@ -1076,8 +1076,27 @@ part, **46 appear under more than one tab and 8 under all three** - Arcane Shot,
 Trap and Stampede among them. That is why the page drew one ability several times; the repetition
 is the spec tabs, not a fault of its own.
 
-What separates a specialisation tab from the class tab **has not been read yet**, and until it has
-Family cannot tell them apart. `GetSpellTabInfo` answers more than the four returns Family takes.
+**What separates them, measured the same day.** `GetSpellTabInfo` answers with more than the four
+returns Family had been taking:
+
+    1 General        132219  0    28  false  0    false  nil
+    2 Hunter         626000  28   48  false  0    false  nil
+    3 Beast Mastery  461112  78   60  false  253  false  253
+    4 Marksmanship   236179  138  58  false  254  false  254
+    5 Survival       461113  196  57  false  255  false  255
+
+The **sixth** return is nought for the two tabs that are this character's and a specialisation's id
+for the three that are not; the eighth says it a second way. Family reads the sixth, and treats
+*absent* as *not a specialisation* - Era and Burning Crusade have never answered this call here, and
+a client that returns four values must not lose its whole spellbook to a nil. The harness holds
+that: a mutation making a silent tab count as a specialisation reddens the ordinary spellbook
+checks, not only the new ones.
+
+**Read on a character too low to have chosen**, so all three specialisation tabs are somebody
+else's. What a character with an *active* specialisation answers here has not been read, and is the
+second reason the walk also records **one ability once**, under the first tab that holds it: if an
+active specialisation's tab answers nought, its spells are that character's *and* the class tab's,
+and the tab rule alone would leave the repetition standing above level ten while removing it below.
 
 #### Which branch is which, measured 2026-09-06
 

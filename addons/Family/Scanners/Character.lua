@@ -243,6 +243,37 @@ end
 -- which is how the next reading arrives without anybody going to look for it.
 local NOT_HELD = { FUTURESPELL = true, FLYOUT = true }
 
+-- **A tab that is a specialisation's list rather than this character's.**
+--
+-- `FUTURESPELL` turned out to be half the answer: it is how the *class* tab marks what has not
+-- been learned, and a specialisation tab does not mark it at all. Read on the same hunter, tab by
+-- tab, keeping only the rows answering `SPELL` - Marksmanship 57, Survival 56, Beast Mastery at
+-- least 13, all of them on a character of level three or four. Stampede, Camouflage, Kill Shot,
+-- Chimera Shot, Mastery: Wild Quiver. A specialisation tab is a **list of what the specialisation
+-- can do**, the way the trainer's Craft window is a price list rather than an offer.
+--
+-- What separates one, measured 2026-09-09 - `GetSpellTabInfo` answers with more than the four
+-- returns this walk used to take:
+--
+--     1 General        132219  0    28  false  0    false  nil
+--     2 Hunter         626000  28   48  false  0    false  nil
+--     3 Beast Mastery  461112  78   60  false  253  false  253
+--     4 Marksmanship   236179  138  58  false  254  false  254
+--     5 Survival       461113  196  57  false  255  false  255
+--
+-- The sixth return is nought for the two tabs that are this character's and a specialisation's id
+-- for the three that are not. The eighth says the same thing a second way. Read on a character too
+-- low to have chosen a specialisation, so all three are somebody else's; **what a character with
+-- an active specialisation answers here has not been read**, which is the second reason for the
+-- de-duplication below.
+--
+-- Absent rather than nought is kept, for the same reason `NOT_HELD` is a refusal: Era and Burning
+-- Crusade have never answered this call here, and a client that returns four values must not lose
+-- its whole spellbook to a nil.
+local function aSpecialisation(offSpec)
+	return type(offSpec) == "number" and offSpec > 0
+end
+
 local function heldByCharacter(kind, told)
 	if type(kind) ~= "string" or kind == "SPELL" then return true end
 	if NOT_HELD[kind] then return false end
@@ -263,9 +294,23 @@ function Character:ReadSpells()
 	local book = {}
 	local told = {}
 
+	-- **One ability is recorded once**, under the first tab that holds it.
+	--
+	-- The book is tabs and a spell sits in as many of them as the game likes: of the seventy-two
+	-- distinct ids the reading above shows, forty-six are under more than one tab and eight under
+	-- all three - which is what drew Arcane Shot twice on the page, once under *Hunter* and once
+	-- under *Beast Mastery*. What Family is storing is the set of spells a character knows, and a
+	-- set holds a thing once.
+	--
+	-- It also carries the case the reading could not reach. A character with an active
+	-- specialisation may well answer nought for that tab, and its spells are then this
+	-- character's *and* the class tab's - so the tabs alone would leave the repetition standing
+	-- for everybody above level ten while removing it below.
+	local seen = {}
+
 	for tab = 1, tabs do
-		local name, _, offset, count = Family:TryCall(GetSpellTabInfo, tab)
-		if name and count and count > 0 then
+		local name, _, offset, count, _, offSpec = Family:TryCall(GetSpellTabInfo, tab)
+		if name and count and count > 0 and not aSpecialisation(offSpec) then
 			local school = { name = name, spells = {} }
 
 			for position = offset + 1, offset + count do
@@ -274,7 +319,8 @@ function Character:ReadSpells()
 				-- return, and a book holds rows that are not this character's spells.
 				local kind, spellID =
 					Family:TryCall(GetSpellBookItemInfo, position, "spell")
-				if spellID and heldByCharacter(kind, told) then
+				if spellID and heldByCharacter(kind, told) and not seen[spellID] then
+					seen[spellID] = true
 					school.spells[#school.spells + 1] = spellID
 				end
 			end

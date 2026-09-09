@@ -3256,7 +3256,7 @@ exchange.
 
 ---
 
-## 53. A specialisation tab is a price list, not a record of what a character holds
+## 53. A specialisation tab is a price list, not a record of what a character holds — DONE 2026-09-09
 
 **Reported from play 2026-09-09**, on the same low-level Mists hunter as backlog 52 and with 52's
 fix not yet deployed. The Abilities & Talents page draws two schools:
@@ -3325,3 +3325,24 @@ question if the tab can answer.
 around a hundred and eighty spells it has not got. Nothing is lost - the record corrects itself on
 the next login once this is fixed - but a linked family is being told something untrue in the
 meantime.
+
+**Read and built 2026-09-09.** `GetSpellTabInfo` answers with eight values, and the sixth is
+nought for General and the class tab and a specialisation's id for the other three:
+
+    1 General  0 28 false 0 false nil        3 Beast Mastery  78  60 false 253 false 253
+    2 Hunter  28 48 false 0 false nil        4 Marksmanship  138  58 false 254 false 254
+                                             5 Survival      196  57 false 255 false 255
+
+A tab that answers with a specialisation is not read. *Absent* is not a specialisation, for the
+same reason `NOT_HELD` is a refusal: Era and Burning Crusade have never answered this call here and
+must not lose their spellbooks to a nil - a mutation that treats a silent tab as a specialisation
+reddens the ordinary spellbook checks, which is the guard working.
+
+**And an ability is recorded once**, under the first tab that holds it. That is the reported
+duplication, and it also covers the case the reading could not reach: this was read on a character
+too low to have chosen, so all three tabs are somebody else's. A character with an *active*
+specialisation may answer nought for that tab, and its spells would then be both that tab's and the
+class tab's - so the tab rule alone would remove the repetition below level ten and leave it above.
+
+Four checks, four mutations, all caught. No migration: each character corrects itself the next time
+it is played, and a linked family gets the corrected book at the next exchange.

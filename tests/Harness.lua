@@ -28505,6 +28505,7 @@ print("a spellbook holds rows that are not this character's spells")
 -- `GetSpellBookItemInfo` says what kind of row it is and nothing had ever asked.
 ;(function()
 	local heldTabs, heldInfo = GetSpellTabInfo, GetSpellBookItemInfo
+	local heldNum = GetNumSpellTabs
 
 	-- The shape the client answered with, measured on the character that reported it. 5116 is
 	-- Concussive Shot and 781 is Disengage, neither of which a hunter of that level has; 9 is a
@@ -28556,7 +28557,65 @@ print("a spellbook holds rows that are not this character's spells")
 	check("while a kind no reading has measured is kept rather than thrown away",
 		#spells == 3, tostring(#spells))
 
+	-- **A specialisation's tab is a list of what that specialisation can do**, not of what this
+	-- character holds - and it says nothing about the rows it draws, so the kinds above cannot
+	-- refuse any of them. Measured 2026-09-09 on a hunter of level three or four, whose three
+	-- specialisation tabs answered SPELL for Stampede, Camouflage and Kill Shot:
+	--
+	--     1 General        0    28  false  0    false  nil
+	--     3 Beast Mastery  78   60  false  253  false  253
+	--
+	-- The sixth return is nought for the tabs that are this character's and a specialisation's
+	-- id for the ones that are not.
+	local TABS = {
+		{ "General", "", 0, 2, false, 0 },
+		{ "Hunter", "", 2, 2, false, 0 },
+		{ "Beast Mastery", "", 4, 2, false, 253 },
+	}
+	-- 3044 is Arcane Shot, which the hunter has and which the specialisation tab lists again;
+	-- 121818 is Stampede, which that character does not have at all.
+	local ROWS = {
+		{ "SPELL", 75 }, { "SPELL", 3044 },
+		{ "SPELL", 3044 }, { "FUTURESPELL", 5116 },
+		{ "SPELL", 3044 }, { "SPELL", 121818 },
+	}
+	GetSpellTabInfo = function(tab)
+		local row = TABS[tab]
+		if not row then return nil end
+		return row[1], row[2], row[3], row[4], row[5], row[6]
+	end
+	GetSpellBookItemInfo = function(position)
+		local row = ROWS[position]
+		if not row then return nil end
+		return row[1], row[2]
+	end
+	GetNumSpellTabs = function() return #TABS end
+
+	book = Family.Character:ReadSpells()
+	local schools = {}
+	for _, school in ipairs(book or {}) do schools[school.name] = school.spells end
+
+	check("a specialisation's own tab is not read at all",
+		schools["Beast Mastery"] == nil,
+		schools["Beast Mastery"] and #schools["Beast Mastery"] or "absent")
+	-- Which is the only thing keeping Stampede out: nothing in that tab said it was not held.
+	check("so an ability only that tab listed is not recorded",
+		(function()
+			for _, school in ipairs(book or {}) do
+				for _, id in ipairs(school.spells) do
+					if id == 121818 then return false end
+				end
+			end
+			return true
+		end)())
+	-- **Once, under the first tab that holds it.** Forty-six of the seventy-two ids read were
+	-- under more than one tab, which is what drew Arcane Shot twice on the page.
+	check("and an ability two tabs both hold is recorded once, under the first",
+		(schools["General"] or {})[2] == 3044 and #(schools["Hunter"] or {}) == 0,
+		table.concat({ #(schools["General"] or {}), #(schools["Hunter"] or {}) }, "/"))
+
 	GetSpellTabInfo, GetSpellBookItemInfo = heldTabs, heldInfo
+	GetNumSpellTabs = heldNum
 end)()
 
 print()
