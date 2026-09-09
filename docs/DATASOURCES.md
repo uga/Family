@@ -2465,6 +2465,10 @@ asked: a row labelled *Rank 2* answering an id whose own subtext is *Passive* is
 of two spells, not two readings of one. Nothing here is taken from that listing; it named the shape
 and the client confirmed it.
 
+**Confirmed in play the same day, after the fix.** Ranghesante reads *273 of 273* over twelve
+abilities, Avoidance among them at 25 under 35698, with none unpriced and none the client would not
+name; Pallazza reads *300 of 300* over eleven. Two creatures and no residue on either.
+
 **What Family does with it.** The rank cross-check now stands down for an ability whose rank call
 answers the *same* word for every row of it - a reading that cannot tell Rank 1 from Rank 2 is no
 evidence about either - and keeps refusing wherever the words differ, which is what keeps an id

@@ -2471,3 +2471,30 @@ transfer takes back what it had marked*, *the client saying they are not there d
 the transfer*, and — the one that makes the rest a safety net rather than the mechanism — *a side
 that says it holds nothing is sent everything, whatever this side believed*. Eleven mutations were
 tried against them and all eleven were caught.
+
+## L-065 — A panel drawing something is not evidence of what it was drawn from
+
+Backlog 51 had three candidates for why one pet ability could not be priced, and it was narrowed
+to the wrong one from a screenshot. The Beast Training appendix drew *Avoidance (15 Training
+Points) Rank 1* and *Avoidance (25 Training Points) Rank 2*, both named in the reader's own
+language, and that was written down as proof that the window's rows carry ids — so the candidate
+*the ids were refused* was struck out, and it was the true one.
+
+A craft row is named by `GetCraftInfo`, which hands back the word directly. Naming needed no id at
+all. The panel was drawing exactly what it draws when the fact in question is absent, which makes
+it evidence of nothing, and the inference reversed the search: the next reading was aimed at
+finding a second id for one ability when there was only ever one, sitting in a record with the id
+stripped off it.
+
+The general shape: **a rendering is downstream of many facts, so it can only witness the ones it
+could not have been produced without.** Before reading a panel as evidence, ask what it would look
+like if the thing being tested were false; where the answer is *the same*, the reading has to come
+from the record instead.
+
+**What now catches it.** `/family pettp` prints the id of every ability and, for one it could not
+price, the id of every window row under the same word — so *does this row carry an id* is answered
+by a column that says `-` rather than by what a panel managed to draw. The reading that settled
+backlog 51 took two lines of chat, and both of them were ids. In the harness: *an ability the ids
+could not join carries what the window has under its word*, *and it is still not priced by it,
+because a word is not an identifier*, and the four checks that hold the rank lane to what the
+window as a whole says.
