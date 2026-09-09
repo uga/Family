@@ -28497,6 +28497,69 @@ print("narrowing that panel by one skill, on both of its lists")
 end)()
 
 print()
+print("a spellbook holds rows that are not this character's spells")
+
+-- Reported from play 2026-09-09: a hunter of level three or four on Mists of Pandaria whose
+-- abilities page listed Stampede, Trueshot Aura, Trap Launcher and Scatter Shot, and among them
+-- a row reading *Spell #9* with no icon. One cause behind both - the first return of
+-- `GetSpellBookItemInfo` says what kind of row it is and nothing had ever asked.
+;(function()
+	local heldTabs, heldInfo = GetSpellTabInfo, GetSpellBookItemInfo
+
+	-- The shape the client answered with, measured on the character that reported it. 5116 is
+	-- Concussive Shot and 781 is Disengage, neither of which a hunter of that level has; 9 is a
+	-- flyout, which is a group of spells and not a spell, and names nothing.
+	local BOOK = {
+		{ "SPELL", 75 },
+		{ "FUTURESPELL", 5116 },
+		{ "FLYOUT", 9 },
+		{ "SPELL", 1978 },
+		{ "FUTURESPELL", 781 },
+	}
+	GetSpellTabInfo = function(tab)
+		if tab == 1 then return "General", "", 0, #BOOK end
+		return nil
+	end
+	GetSpellBookItemInfo = function(position)
+		local row = BOOK[position]
+		if not row then return nil end
+		return row[1], row[2]
+	end
+
+	local book = Family.Character:ReadSpells()
+	local spells = book and book[1] and book[1].spells or {}
+
+	check("a spell the character has is recorded",
+		spells[1] == 75 and spells[2] == 1978,
+		tostring(spells[1]) .. " " .. tostring(spells[2]))
+	-- The greyed row the game draws to say *you will learn this at level 60*. Fifty-two of them
+	-- on the character that reported this, which is what made a level three hunter look like a
+	-- level ninety one.
+	check("and one the game is only promising them is not",
+		#spells == 2, table.concat((function()
+			local out = {}
+			for _, id in ipairs(spells) do out[#out + 1] = tostring(id) end
+			return out
+		end)(), " "))
+	-- A flyout's id is a flyout's, so the client can put no name to it and the page drew
+	-- *Spell #9*. Checked by id rather than only by the count above, which a different fault
+	-- could satisfy.
+	check("nor is a row that is a group of spells rather than a spell",
+		spells[1] ~= 9 and spells[2] ~= 9)
+
+	-- **§2.2, and the reason this is written as a refusal rather than as an acceptance.** Only
+	-- one client has ever answered this call here. A kind that has not been measured is kept, so
+	-- a client with another word for an ordinary spell keeps its spellbook instead of losing it.
+	BOOK = { { "SPELL", 75 }, { "SOMETHING_NEW", 1978 }, { nil, 100 } }
+	book = Family.Character:ReadSpells()
+	spells = book and book[1] and book[1].spells or {}
+	check("while a kind no reading has measured is kept rather than thrown away",
+		#spells == 3, tostring(#spells))
+
+	GetSpellTabInfo, GetSpellBookItemInfo = heldTabs, heldInfo
+end)()
+
+print()
 print("the branch a profession was taken down")
 
 -- **Specialisations.** Blacksmiths choose armour or weapons, leatherworkers one of three

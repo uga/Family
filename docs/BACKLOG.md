@@ -3204,7 +3204,7 @@ it strikes back what the scan just kept. Four checks, five mutations, all caught
 
 ---
 
-## 52. A low-level character's spellbook is full of abilities they do not have
+## 52. A low-level character's spellbook is full of abilities they do not have — DONE 2026-09-09
 
 **Reported from play 2026-09-09**, on a level 3-4 hunter on Mists of Pandaria. The Abilities &
 Talents page lists Stampede, Trueshot Aura, Trap Launcher, Scatter Shot, Serpent Spread and the
@@ -3238,3 +3238,18 @@ strike. Re-read on the next login of each character, as `docs/DATASOURCES.md` de
 other scans.
 
 **Probably one line and a re-scan**, but the reading comes first.
+
+**Read and built 2026-09-09.** The probe came back with fifty-two rows: `FUTURESPELL` for every
+greyed *you will learn this later* row, and `FLYOUT 9` four times. Both are recorded in
+`docs/DATASOURCES.md` under *A spellbook row is not always one of this character's spells*.
+
+The rule is a **refusal of the two kinds that were read**, not an acceptance of the one that was.
+Only Mists has ever answered this call here, so keeping only `SPELL` would empty every spellbook
+on a client that answers with some other word - worse than the fault being fixed, and the trade
+§2.2 refuses. Anything that is neither measured kind nor `SPELL` is kept and narrated once, so the
+next reading arrives without anybody going to look for it. Four checks, four mutations, all
+caught - including the positive filter, which the §2.2 check reddens.
+
+No migration: a stored book carries no kinds and cannot be re-filtered, so each character corrects
+itself the next time it is played, and a linked family gets the corrected book at the next
+exchange.

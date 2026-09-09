@@ -82,6 +82,12 @@ picks itself up where it left off.
 
 ### Fixed
 
+- **A low-level character's abilities page listed things they have not learned.** On Mists of
+  Pandaria the spellbook draws every ability the class will ever get, greyed out, and Family was
+  recording them all — so a level three hunter appeared to know Stampede and Trueshot Aura, with a
+  nameless *Spell #9* among them. Only what a character actually has is kept now. Each character
+  corrects itself the next time you play them, and a linked family sees the correction after that.
+
 - **A pet ability the trainer prices but Family would not.** Passive abilities are listed at a
   rank in the trainer's window and call themselves *passive* everywhere else, and Family threw
   the price away rather than match the two — which is why one Ravager's points came to 248 where
@@ -265,6 +271,8 @@ Classic.
 ## 1.4.3 — 2026-09-03
 
 **Two crafting cooldowns that were telling you the wrong thing.**
+
+### Crafting cooldowns
 
 - **A salt shaker that said it was ready in 49 days.** Its cooldown is three. Family no longer
   believes an answer that says a cooldown has longer left than it lasts, and the next scan

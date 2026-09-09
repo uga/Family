@@ -1028,6 +1028,34 @@ They are written to **meta and not the payload** the book lives in. The summary 
 nothing else, which is what lets it cost the same for forty members as for four, and a list of
 branches is three numbers where a spellbook is a thousand.
 
+#### A spellbook row is not always one of this character's spells
+
+Read 2026-09-09 on Mists of Pandaria, on a hunter of level three or four whose Abilities & Talents
+page listed Stampede, Trueshot Aura, Trap Launcher and Scatter Shot, with a row reading *Spell #9*
+and no icon among them. Asking every position of the book for its **first** return - the one
+`Character:ReadSpells` had discarded since the beginning:
+
+    20 FUTURESPELL 33388     36 FUTURESPELL 5116      44 FUTURESPELL 781
+    23 FUTURESPELL 90267     37 FUTURESPELL 1462      76 FUTURESPELL 121818
+    27 FUTURESPELL 130487    38 FUTURESPELL 2641      31, 81, 141, 199  FLYOUT 9
+
+Fifty-two rows in all, and every one of them wrong to record:
+
+- **`FUTURESPELL`** is the greyed row the game draws to say *you will learn this at level 60*.
+  5116 is Concussive Shot and 781 is Disengage - abilities that character does not have.
+- **`FLYOUT`** is a group of spells rather than a spell, and the second return is then a
+  *flyout* id rather than a spell id. Nothing can name flyout 9, which is the *Spell #9*.
+
+**Only Mists has answered this call anywhere in this repository**, which decides how the rule is
+written. Family drops the two kinds that have been read and keeps everything else, narrating any
+kind that is neither those nor `SPELL` - because keeping only `SPELL` would empty every spellbook
+on a client that happened to answer with some other word, and §2.2 refuses exactly that trade.
+
+The blast radius is wider than the page that showed it: `Character:ReadSpecialisations` reads the
+same book, and a linked family is sent it - so a character could share a claim to abilities they
+have not got. A stored book carries no kinds and cannot be re-filtered, so each character corrects
+itself the next time it is played.
+
 #### Which branch is which, measured 2026-09-06
 
 Alberto supplied the sixteen icon file ids from his own three clients, by name. Attaching them

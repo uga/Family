@@ -218,11 +218,50 @@ function Character:ReadSpecialisations(book)
 	return found
 end
 
+-- **The rows the spellbook draws that the character has not got.**
+--
+-- The first return of `GetSpellBookItemInfo` says what kind of row this is, and it was thrown
+-- away for as long as Family has read a spellbook - so every row the window draws was stored as
+-- something the character knows. Reported from play 2026-09-09 and then measured on the
+-- character that reported it, a hunter of level three or four on Mists of Pandaria:
+--
+--     20 FUTURESPELL 33388     36 FUTURESPELL 5116      31  FLYOUT 9
+--     23 FUTURESPELL 90267     44 FUTURESPELL 781       81  FLYOUT 9
+--     27 FUTURESPELL 130487    76 FUTURESPELL 121818    199 FLYOUT 9
+--
+-- Fifty-two rows, all of them wrong. `FUTURESPELL` is the greyed row the game draws to say
+-- *you will learn this at level 60* - which is why a level three hunter's abilities page listed
+-- Stampede and Trueshot Aura - and `FLYOUT` is a group of spells rather than a spell, carrying a
+-- flyout's id where a spell id is expected. Nothing can name flyout 9, which is the **Spell #9**
+-- with no icon that reported this.
+--
+-- **Written as a refusal of the two kinds that were read, not as an acceptance of the one that
+-- was.** Only Mists has answered this call anywhere in this repository. If Era or Burning Crusade
+-- were to answer with some other word for an ordinary spell, keeping only `SPELL` would empty
+-- every spellbook on those clients - a far worse fault than the one being fixed, and exactly the
+-- shape §2.2 refuses. So a kind that is neither measured nor `SPELL` is kept and narrated once,
+-- which is how the next reading arrives without anybody going to look for it.
+local NOT_HELD = { FUTURESPELL = true, FLYOUT = true }
+
+local function heldByCharacter(kind, told)
+	if type(kind) ~= "string" or kind == "SPELL" then return true end
+	if NOT_HELD[kind] then return false end
+
+	if not told[kind] then
+		told[kind] = true
+		Family:Debug("spellbook: a row of kind %s was kept because that kind has never "
+			.. "been measured - worth reporting", kind)
+	end
+
+	return true
+end
+
 function Character:ReadSpells()
 	local tabs = Family:TryCall(GetNumSpellTabs) or 0
 	if tabs == 0 then return nil end
 
 	local book = {}
+	local told = {}
 
 	for tab = 1, tabs do
 		local name, _, offset, count = Family:TryCall(GetSpellTabInfo, tab)
@@ -231,9 +270,11 @@ function Character:ReadSpells()
 
 			for position = offset + 1, offset + count do
 				-- A spell has an id, so this is one of the places nothing has to be
-				-- stored by name at all (§2.1).
-				local _, spellID = Family:TryCall(GetSpellBookItemInfo, position, "spell")
-				if spellID then
+				-- stored by name at all (§2.1). What the id is *of* is the first
+				-- return, and a book holds rows that are not this character's spells.
+				local kind, spellID =
+					Family:TryCall(GetSpellBookItemInfo, position, "spell")
+				if spellID and heldByCharacter(kind, told) then
 					school.spells[#school.spells + 1] = spellID
 				end
 			end
