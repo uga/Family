@@ -3256,7 +3256,7 @@ exchange.
 
 ---
 
-## 53. One ability drawn twice, under two schools
+## 53. A specialisation tab is a price list, not a record of what a character holds
 
 **Reported from play 2026-09-09**, on the same low-level Mists hunter as backlog 52 and with 52's
 fix not yet deployed. The Abilities & Talents page draws two schools:
@@ -3288,3 +3288,40 @@ guessed at. The schools are the game's own grouping and are worth keeping; drawi
 twice is not. The candidates are to keep the first school an id appears in and drop the later ones,
 or to keep every school and let the page draw an id once. Both need the reading first, because the
 counts beside the headings have to keep meaning something either way.
+
+**Read 2026-09-09, and the duplication is a symptom rather than the fault.** The probe was run on
+the same hunter with 52 deployed, keeping only the rows answering `SPELL`:
+
+    Marksmanship  57 rows      Survival  56 rows      Beast Mastery  at least 13
+
+The General and class tabs were lost off the top of the chat frame and Beast Mastery is cut, so
+those two counts are whole and the third is a floor. It changes nothing: **Stampede, Camouflage,
+Kill Shot, Chimera Shot, Mastery: Wild Quiver, Explosive Shot, Black Arrow** all answered `SPELL`
+on a character of level three or four.
+
+So `FUTURESPELL` is how the **class** tab marks what has not been learned, and a **specialisation**
+tab does not mark it at all - it lists what the specialisation can do, the way the trainer's Craft
+window lists what a trainer can teach. 52 fixed the class tab, which is why the page now reads
+*Hunter (5)* correctly, and left three tabs each claiming the whole class.
+
+The overlap follows from that and needs no rule of its own: of the 72 distinct ids visible, **46
+are under more than one tab and 8 under all three.**
+
+**What is not read yet is how to tell a specialisation tab from the class tab.** `GetSpellTabInfo`
+returns more than the four values `Character:ReadSpells` takes, and what the rest say has never
+been read here. One line, on the same hunter:
+
+    /run for t=1,GetNumSpellTabs() do print(t,GetSpellTabInfo(t)) end
+
+Five or six lines of output, which the chat frame will not eat. Whatever separates them decides
+whether this is one condition in the walk or something that has to be asked per spell.
+
+**Do not reach for `IsSpellKnown` before that reading.** It would answer per spell rather than per
+tab, at a hundred and eighty calls a scan, and it is a client call nothing in Family has made on
+any of the three builds - so it needs a capability probe of its own (§2.3). The tab is the cheaper
+question if the tab can answer.
+
+**Live consequence, worth knowing while it stands:** a Mists character is recording and *sharing*
+around a hundred and eighty spells it has not got. Nothing is lost - the record corrects itself on
+the next login once this is fixed - but a linked family is being told something untrue in the
+meantime.

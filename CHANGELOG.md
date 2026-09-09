@@ -85,8 +85,9 @@ picks itself up where it left off.
 - **A low-level character's abilities page listed things they have not learned.** On Mists of
   Pandaria the spellbook draws every ability the class will ever get, greyed out, and Family was
   recording them all — so a level three hunter appeared to know Stampede and Trueshot Aura, with a
-  nameless *Spell #9* among them. Only what a character actually has is kept now. Each character
-  corrects itself the next time you play them, and a linked family sees the correction after that.
+  nameless *Spell #9* among them. The class's own list is now what the character actually has.
+  Each character corrects itself the next time you play them, and a linked family sees the
+  correction after that. The specialisation lists are a separate fault and are not fixed yet.
 
 - **A pet ability the trainer prices but Family would not.** Passive abilities are listed at a
   rank in the trainer's window and call themselves *passive* everywhere else, and Family threw

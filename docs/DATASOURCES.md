@@ -1056,6 +1056,29 @@ same book, and a linked family is sent it - so a character could share a claim t
 have not got. A stored book carries no kinds and cannot be re-filtered, so each character corrects
 itself the next time it is played.
 
+**And it is only half the answer, read the same day.** `FUTURESPELL` is how the *class* tab marks
+what a character has not learned yet. A **specialisation** tab does not mark them at all. Asked
+tab by tab on the same hunter, keeping only the rows answering `SPELL`:
+
+    Marksmanship  57 rows   Stampede, Camouflage, Kill Shot, Chimera Shot,
+                            Mastery: Wild Quiver, Trueshot Aura, Aimed Shot ...
+    Survival      56 rows   Explosive Shot, Black Arrow, Lock and Load,
+                            Mastery: Essence of the Viper ...
+    Beast Mastery 13 rows   read, and the top of that tab was lost off the chat frame
+
+Every one of those answered `SPELL` on a character of level three or four. So on Mists a
+specialisation tab is a **price list of what the specialisation can do**, exactly as the trainer's
+Craft window is a price list rather than an offer - not a record of what this character holds. The
+class tab is the one that answers the question Family is asking.
+
+The same reading says how heavily they overlap: of the 72 distinct ids visible in the untruncated
+part, **46 appear under more than one tab and 8 under all three** - Arcane Shot, Auto Shot, Snake
+Trap and Stampede among them. That is why the page drew one ability several times; the repetition
+is the spec tabs, not a fault of its own.
+
+What separates a specialisation tab from the class tab **has not been read yet**, and until it has
+Family cannot tell them apart. `GetSpellTabInfo` answers more than the four returns Family takes.
+
 #### Which branch is which, measured 2026-09-06
 
 Alberto supplied the sixteen icon file ids from his own three clients, by name. Attaching them
