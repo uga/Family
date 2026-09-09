@@ -1097,8 +1097,30 @@ that opens into Call Pet 1 to 5, so dropping the row - which is right, since a f
 a spell id and storing it is what drew *Spell #9* - also drops everything the character keeps
 behind it. Family now opens it: `GetFlyoutInfo` for how many slots, `GetFlyoutSlotInfo` for each.
 
-**Neither of those calls has been read on any client here**, so nothing they say is believed on its
-own. A slot is kept only where it says it is *known* **and** the id it gives is one this client
+**Confirmed on a live client 2026-09-09**, by `/family spellbook` on a level-five Mists hunter -
+the two calls were written against before either had been read, and the reading agrees with what
+was written:
+
+    Hunter: 48 row(s), read.
+        Arcane Shot   3044          flyout 9 Call Pet, 5 slot(s)
+        Auto Shot     75                Call Pet 1   883     true
+        Revive Pet    982               Call Pet 2   83242   false
+        Steady Shot   56641             Call Pet 3   83243   false
+        Focused Aim   87324             Call Pet 4   83244   false
+        Tracking      118424            Call Pet 5   83245   false
+        and 41 row(s) passed over: FUTURESPELL 41
+
+So `GetFlyoutInfo` answers a **name** and a **slot count**, and `GetFlyoutSlotInfo` answers a spell
+id and, third, a **boolean** for whether this character has it. Call Pet 1 is kept and Call Pet 2
+to 5 are not, which is what a hunter of that level holds. The same reading settles the hunter's
+other pet spells: Mend Pet, Tame Beast, Dismiss Pet, Feed Pet and Beast Lore are among the 41 that
+answered `FUTURESPELL`, so the client is saying the character has not learned them - Family is not
+losing them.
+
+The **General** tab on the same character reads 19 of its 28 rows, the other 9 being the riding
+skills and the rest of what the character will get later.
+
+Nothing they say is believed on its own even so. A slot is kept only where it says it is *known* **and** the id it gives is one this client
 will name - two answers agreeing, the same standard `AgreesWithRow` holds a craft row to. Under any
 other shape, including the calls being absent altogether, nothing is kept and the row is dropped
 exactly as it was, which is the worst case rather than a new one. The first login on a client that

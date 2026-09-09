@@ -282,8 +282,11 @@ end
 -- was - but it also drops everything the character actually holds there, and this is the one
 -- place in the book where a row stands for spells rather than being one.
 --
--- **Nothing here is trusted.** Neither call has been read on any client in this repository. Both
--- go through `TryCall`, and every answer is held against a second one before it is kept: the slot
+-- **Nothing here is trusted**, and it was written before either call had been read anywhere in
+-- this repository. Both were confirmed on a live Mists client the same day - `GetFlyoutInfo`
+-- answers *Call Pet* and 5, `GetFlyoutSlotInfo` answers 883 with **true** and 83242 to 83245 with
+-- **false** - and the guards stay, because Era and Burning Crusade still have not answered either.
+-- Both go through `TryCall`, and every answer is held against a second one before it is kept: the slot
 -- has to say it is known, and the id it gives has to be an id this client will *name*. Under any
 -- other shape - the calls absent, the returns in some other order, a slot that answers nothing -
 -- this keeps nothing and the row is dropped exactly as it is without it, which is today's
