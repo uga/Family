@@ -29015,6 +29015,47 @@ print("what a creature's abilities cost it, against what the client says it spen
 		tostring(priced["Bite"]) .. "/" .. tostring(priced["Claw"])
 			.. "/" .. tostring(priced["Growl"]))
 
+	-- **What the window holds under the same word, where the ids did not meet.**
+	--
+	-- The join is by spell id and stays that way - a word is the reader's own language and two
+	-- ranks of one ability share it. But an ability the creature holds and the window prices,
+	-- whose two ids do not meet, is a gap somebody can act on the moment they are shown what the
+	-- window has under that name. Ranghesante's Avoidance is exactly that: 15 and 25 in the
+	-- window, unmatched in the book, and worth 25 by the arithmetic.
+	do
+		local withNames = {
+			crafts = { [5149] = { name = "Beast Training", entries = {
+				{ name = "Avoidance", rank = "Rank 1", spellID = 111, trainingPoints = 15,
+					petLevel = 30 },
+				{ name = "Avoidance", rank = "Rank 2", spellID = 222, trainingPoints = 25,
+					petLevel = 60 },
+				{ name = "Bite", rank = "Rank 8", spellID = 16827, trainingPoints = 15 },
+			} } },
+			pets = { known = { ["p:9:Odd"] = { name = "Odd", trainingTotal = 100,
+				trainingSpent = 40, abilities = {
+					{ id = 999, name = "Avoidance", rank = "Passive" },
+					{ id = 16827, name = "Bite", rank = "Rank 8" },
+				} } } },
+		}
+
+		local odd = Family.Pets:Training(withNames)[1] or {}
+		local avoidance, bite
+		for _, ability in ipairs(odd.abilities or {}) do
+			if ability.name == "Avoidance" then avoidance = ability end
+			if ability.name == "Bite" then bite = ability end
+		end
+
+		check("an ability the ids could not join carries what the window has under its word",
+			avoidance ~= nil and #(avoidance.near or {}) == 2,
+			tostring(avoidance and #(avoidance.near or {})))
+		check("and it is still not priced by it, because a word is not an identifier",
+			avoidance ~= nil and avoidance.points == nil and odd.counted == 15,
+			tostring(avoidance and avoidance.points) .. ", counted " .. tostring(odd.counted))
+		check("while one the ids did join carries nothing of the sort",
+			bite ~= nil and bite.near == nil and bite.points == 15,
+			tostring(bite and bite.points))
+	end
+
 	-- And a member with nothing recorded answers with nothing rather than throwing.
 	check("a member with no pets answers with none", #Family.Pets:Training({}) == 0)
 	check("and so does one with no payload at all", #Family.Pets:Training(nil) == 0)

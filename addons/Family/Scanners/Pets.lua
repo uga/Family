@@ -313,9 +313,27 @@ function Pets:Training(payload)
     -- price* and *is not in the window* the same absence here - and they are, because neither
     -- can be added up.
     local priced = {}
+
+    -- And the same rows by the word they were recorded under, which is **not** how anything is
+    -- joined and is only ever shown.
+    --
+    -- The join is by spell id (§2.1) and stays that way: a word is the reader's own language and
+    -- two ranks of one ability share it. But when a creature holds an ability the window prices
+    -- and the two ids do not meet, the useful thing to put in front of somebody is *here is what
+    -- the window has under that name* - which turns a gap into a reading rather than a mystery.
+    -- Ranghesante's Avoidance is exactly that: priced at 15 and 25 in the window, unmatched in
+    -- the book, and worth 25 by the arithmetic.
+    local named = {}
+
     for _, record in pairs(payload.crafts or {}) do
         for _, entry in ipairs(record.entries or {}) do
             if entry.spellID then priced[entry.spellID] = entry.trainingPoints end
+
+            if type(entry.name) == "string" and entry.name ~= "" then
+                named[entry.name] = named[entry.name] or {}
+                local rows = named[entry.name]
+                rows[#rows + 1] = entry
+            end
         end
     end
 
@@ -343,6 +361,9 @@ function Pets:Training(payload)
                 name = ability.name,
                 rank = ability.rank,
                 points = points or nil,
+                -- Only where it could not be priced, and only ever to be shown: what the
+                -- window holds under the same word. Nothing is joined by it.
+                near = not points and ability.name and named[ability.name] or nil,
             }
         end
 

@@ -3125,3 +3125,22 @@ nothing to join with.
 
 **Small either way**, and worth doing because it is the last thing between the Pets page and a
 sum that always closes.
+
+**Narrowed 2026-09-09, from the panel rather than from a probe.** The Beast Training appendix
+draws *Avoidance (15 Training Points) Rank 1* and *Avoidance (25 Training Points) Rank 2*, both
+named in the reader's own language - which they can only be if the window's rows carry ids.
+Candidate 2 is out and candidate 3 is out with it, since the Pets page names Avoidance too. So it
+is candidate 1: **two ids for one ability**, the book's for the passive the creature holds and the
+window's for the spell the trainer teaches, exactly the shape `GetSpellInfo("Arcane Resistance")`
+answering 27350 had.
+
+**And the reading no longer needs a macro.** Both sides are already recorded, so `/family pettp`
+now prints each ability's own id and, for one it could not price, every row the window holds under
+the same word with its rank, id, cost and level. Two lines of chat instead of two probes that will
+not fit in a chat box.
+
+**What it does not do is join by that word**, and will not: a word is the reader's own language
+and two ranks of one ability share it (§2.1). What to join by instead is the open question, and
+the level is the candidate worth measuring - Rank 1 wants a creature of 30 and Rank 2 one of 60,
+and Ranghesante is 70, which narrows nothing on its own but does when the book says which rank it
+is holding. Read the two ids first.

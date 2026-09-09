@@ -585,10 +585,23 @@ add("pettp", L["check a pet's training points against what its abilities cost"],
 					key, creature.spent or 0, creature.total)
 
 				for _, ability in ipairs(creature.abilities) do
-					Family:Print("    %s %s   %s",
+					Family:Print("    %s %s   %s   |cff888888%s|r",
 						tostring(ability.name or ability.id),
 						tostring(ability.rank or ""),
-						ability.points and tostring(ability.points) or "|cff888888-|r")
+						ability.points and tostring(ability.points) or "|cff888888-|r",
+						tostring(ability.id or "-"))
+
+					-- What the window holds under the same word, where the ids did not
+					-- meet. Numbers and the client's own words only, so there is no
+					-- sentence here to translate and nothing to read as a claim: it is
+					-- the working, put in front of somebody who can act on it.
+					for _, row in ipairs(ability.near or {}) do
+						Family:Print("      |cff888888%s   %s   %s   %s|r",
+							tostring(row.rank or "-"),
+							tostring(row.spellID or "-"),
+							tostring(row.trainingPoints or "-"),
+							tostring(row.petLevel or "-"))
+					end
 				end
 
 				Family:Print(L["  %d priced, %d with no price in the trainer's window, %d "
