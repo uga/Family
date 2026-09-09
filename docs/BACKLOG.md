@@ -2895,6 +2895,21 @@ lives there and `Comm:OnAbsent` reads it.
 **Cost of not doing it:** every login, for every linked family that is offline, times the number
 of characters they have. For the two-account player who prompted all of this, that is every login.
 
+**And *Update now* has the same shape**, confirmed in the same session. The press itself is one
+exchange and that one is right - a person asked for it - but its refusal escalates into six more,
+exactly as the login's announcement did. So the rule cannot simply be *announcements walk with
+announcements*: the honest version is **probe, then commit**. The walk tries the next character
+with a single `hello`; if no refusal comes back inside the window `Comm` already waits for its
+canary, that character is there and the exchange follows. A family that is entirely offline then
+costs one small message per character instead of one offering per character, whichever path
+started the walk, and without depending on the other side's automatic-exchange switch.
+
+**One sentence to fix while in there.** The button prints *Sent 15 member(s) and asked for theirs*
+and then, three seconds later, *None of Serena's 7 characters are online*. Both are true - the
+first means queued and taken by the client, which is all `Comm` can promise - and together they
+read as a contradiction. It is the *sent* that is wrong to say so early rather than the second
+line; backlog 43 is what would let the button say *sending* and then the truth.
+
 ---
 
 ## 49. Two characters of one name defeat the abandon, and the queue drains into the void
