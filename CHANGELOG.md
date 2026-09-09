@@ -19,6 +19,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **An ability that costs nothing now says so.** Growl is free at every rank, and Family was
+  recording that as *no price known* rather than as *free* — which is why a pet's training points
+  did not add up. A cost of nothing is now kept where the trainer's window gave one, and a later
+  visit with a different pet out can no longer erase a price already read.
+
 - **What each of a pet's abilities cost it.** The Pets page now shows the training-point cost
   beside every ability Family has a price for, and says under the creature how much of what it has
   spent those account for — *248 of 273 Training Points accounted for, and 2 abilities have no

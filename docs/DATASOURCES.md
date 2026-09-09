@@ -2335,25 +2335,55 @@ over the abilities it holds, of the cost of the rank it holds* - and the twenty-
 belong to the two rows Family has never seen a price for. A model that was wrong in shape would
 not land within one plausible pair of costs.
 
-**What this does not settle**, and it is the question the reading was run to answer: whether the
-window prices a rank the creature **already holds**. Arcane Resistance Rank 3 is priced at 45 and
-the creature holds Rank 3 - but the crafts record accumulates across every time the window has
-been open, so that 45 may have been read when the rank was still to be learned. The two readings
-are indistinguishable from the record alone.
-
-**The line that settles it**, with Beast Training open and the creature out:
+**Settled the same day, with the window open and the creature out** - the reading above left it
+open whether the window prices a rank the creature *already holds*, because the crafts record
+accumulates and the 45 might have been read before Rank 3 was learned:
 
     /run for i=1,GetNumCrafts() do local n,r,_,_,_,c,l=GetCraftInfo(i)
         if n=="Arcane Resistance" or n=="Growl" or n=="Avoidance" then print(i,n,r,c,l) end end
 
-A cost of 45 against Arcane Resistance Rank 3 says the window prices what is already held. A
-cost of 0 says the recorded 45 is a memory of when it was trainable, and that Family's price table
-is a history rather than a current price list - which is a different thing to tell a player and
-changes nothing about the arithmetic.
+    51 Arcane Resistance Rank 1    5  20
+    52 Arcane Resistance Rank 2   15  30
+    53 Arcane Resistance Rank 3   45  40
+    54 Avoidance Rank 1           15  30
+    55 Avoidance Rank 2           25  60
+    71 Growl Rank 1                0   1
+    72 Growl Rank 2                0  10
+    ...
+    77 Growl Rank 7                0  60
 
-**Either way the panel may say what it can account for and no more.** A dash is not a nought:
-*this ability has no price recorded* and *this ability was free* are different claims, and only
-one of them has ever been read (§2.2).
+**The window is a price list and not an offer.** Arcane Resistance Rank 3 is priced at 45 with the
+creature holding Rank 3, so every rank is listed and priced whether or not it is already known.
+Which makes the cost of what a creature holds readable at any time, and Family's price table a
+current list rather than a memory.
+
+**And Growl is free, at every one of its seven ranks.** That is the reading that mattered most,
+because it was the one the old storage rule threw away: *nought is not stored* was written from a
+profession's window, where the call answers nought for every row because there is no such column.
+Beast Training answers nought for **some** rows and a real cost for others, and there the nought
+is the client's own answer. So the rule is now decided across the window rather than row by row -
+a window that priced nothing records no costs, a window that priced something keeps its noughts -
+and Growl reads as *free* rather than as *never priced*.
+
+**The arithmetic closes exactly.** 248 priced + 25 for Avoidance + 0 for Growl = **273**, which is
+what the client said. So the creature holds Avoidance **Rank 2**, and the only reason Family could
+not price it is that the pet's own book calls it *Passive* with no rank, and its id did not match
+either of the window's two Avoidance rows. That is the one thing still open here, and it is a
+question about an id rather than about the model.
+
+**One number, two meanings, and only in the trainer's list.** A nought cost is *this row is free*
+for Growl and *this creature cannot learn this row* for Charge, Scorpid Poison and Thunderstomp
+shown to a Ravager - the same nought from the same call. The **Pets** page has no such doubt,
+because a creature only holds abilities it could learn, so a nought against one of its own is
+drawn as free. The Beast Training appendix draws nothing where it cannot tell.
+
+**What would separate them** is the level beside the cost, and it has not been read: Growl answers
+a real ladder - 1, 10, 20, 30, 40, 50, 60 - beside its noughts. If a row the creature cannot learn
+answers nought for the level as well, the two are told apart by that and the appendix can price
+Growl too:
+
+    /run for i=1,GetNumCrafts() do local n,r,_,_,_,c,l=GetCraftInfo(i)
+        if n=="Charge" or n=="Scorpid Poison" or n=="Thunderstomp" then print(i,n,r,c,l) end end
 
 ### What crosses a Wide Family link as a word, and cannot be translated
 

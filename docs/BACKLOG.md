@@ -3053,3 +3053,42 @@ creature's own page has room for it, and a line under the creature reading *248 
 Points accounted for, and 2 abilities have no price recorded*. Accounted for, never a total: the
 page adds up what it has read and says how much of the spend that covers, and never fills the rest
 in. A price nobody has read is not a nought.
+
+---
+
+## 51. The one ability a pet holds that Family cannot price
+
+**Found:** 2026-09-09, by closing the arithmetic. Ranghesante's training points come to **248
+priced + 25 for Avoidance + 0 for Growl = 273**, which is exactly what the client says is spent -
+so the model is confirmed and what is left is a single ability that could not be matched.
+
+**Why Avoidance was not priced.** The pet's own book calls it *Avoidance*, **Passive**, with no
+rank word; the trainer's window carries *Avoidance Rank 1* at 15 and *Avoidance Rank 2* at 25.
+The arithmetic says the creature holds Rank 2. So the two readings describe the same ability and
+Family failed to join them, which leaves three candidates and no reading between them:
+
+1. the book's id for Avoidance is not the window's Rank 2 id - two ids for one ability, the way
+   `GetSpellInfo("Arcane Resistance")` answered 27350 where the book answered 24500;
+2. the window's Avoidance rows carry **no** id, because `AgreesWithRow` refused what the tooltip
+   gave - the row says *Rank 2* and `GetSpellSubtext` may say nothing for a pet ability, which is
+   the lane that was added for exactly this and may be answering wrongly here;
+3. the book's Avoidance entry carries no id at all.
+
+**The probe**, and it needs the pet out with Beast Training open:
+
+    /run local t=GameTooltip t:SetOwner(UIParent,"ANCHOR_NONE")
+        for i=1,GetNumCrafts() do local n,r=GetCraftInfo(i) if n=="Avoidance" then
+        t:ClearLines() pcall(t.SetCraftSpell,t,i) local s,d=t:GetSpell()
+        print("window",i,r,tostring(d),tostring(GetSpellSubtext and GetSpellSubtext(d))) end end
+    /run for i=1,HasPetSpells() do local n,r=GetSpellBookItemName(i,"pet")
+        if n=="Avoidance" then local t=GameTooltip t:SetOwner(UIParent,"ANCHOR_NONE")
+        t:ClearLines() pcall(t.SetSpellBookItem,t,i,"pet") local s,d=t:GetSpell()
+        print("book",i,tostring(r),tostring(d)) end end
+
+Two ids that differ says candidate 1 and the join needs a second key - name and rank, which every
+other reader in `Scanners/Professions.lua` already falls back to. A window id of nil says candidate
+2, and the rank cross-check is refusing a good id. A book id of nil says candidate 3, and there is
+nothing to join with.
+
+**Small either way**, and worth doing because it is the last thing between the Pets page and a
+sum that always closes.

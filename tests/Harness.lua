@@ -3203,10 +3203,22 @@ do
 		(rows[2] or {}).trainingPoints == 90 and (rows[2] or {}).petLevel == 50,
 		tostring((rows[2] or {}).trainingPoints) .. "/"
 			.. tostring((rows[2] or {}).petLevel))
-	-- A window with no such cost answers nought for every row, and a column of noughts is a
-	-- claim rather than an absence.
-	check("with nought recorded as nothing rather than as a cost of none",
-		(rows[3] or {}).trainingPoints == nil and (rows[3] or {}).petLevel == nil)
+	-- **Nought is a reading here and an absence in a profession's window**, and the difference
+	-- is decided across the whole window rather than row by row.
+	--
+	-- The first rule was *nought is never stored*, written from the case that a profession
+	-- answers nought for every row - where a column of noughts really is the call answering
+	-- about something it has no opinion on. Beast Training then turned out to answer nought for
+	-- some rows and a real cost for others: measured on a live client 2026-09-09 with a Ravager
+	-- out, Growl is nought at every one of its seven ranks while Arcane Resistance is 5, 15 and
+	-- 45. Dropped, Growl read as *never priced*, which is a different sentence from *free* and
+	-- the wrong one - and it was the ability that left a pet's training points not adding up.
+	check("a nought in a window that priced something is kept, because there it is an answer",
+		(rows[3] or {}).trainingPoints == 0, tostring((rows[3] or {}).trainingPoints))
+	-- The level is a different call and keeps its own rule: nought there is not a level.
+	check("while a nought level is still nothing, because no creature is level nought",
+		(rows[3] or {}).petLevel == nil, tostring((rows[3] or {}).petLevel))
+
 	-- The whole reason there were no tooltips: a pet ability answers neither link call, so
 	-- without this door every row is recorded with no id and the reader can name none of them.
 	check("and an id off the tooltip where neither link carried one",
@@ -3269,6 +3281,51 @@ do
 	-- And the rows that were never described stay undescribed rather than inheriting.
 	check("and a row neither reading could describe still carries no id",
 		(rows[4] or {}).spellID == nil and (rows[5] or {}).spellID == nil)
+
+	-- And the other half of the same rule: a window where **nothing** carried a cost has no
+	-- such column at all, and its noughts are the call answering about something it has no
+	-- opinion on. Every profession is that window, so getting this wrong would put a cost of
+	-- nought against every recipe in the game.
+	do
+		local FREE = {
+			{ "Runed Copper Rod", nil, 0, 0, 7421 },
+			{ "Runed Silver Rod", nil, 0, 0, 7795 },
+		}
+		-- Read back afterwards, because this scan replaces the record every check below
+		-- here is about: a fixture that measures one rule must hand the next one the state
+		-- it was given.
+		local heldCrafts = {}
+		for id, record in pairs((Family.Database:Payload(key) or {}).crafts or {}) do
+			heldCrafts[id] = record
+		end
+
+		local realInfo, realCraft = GetCraftInfo, tip.SetCraftSpell
+		GetCraftInfo = function(index)
+			local row = FREE[index]
+			if not row then return nil end
+			return row[1], row[2], "none", 0, nil, row[3], row[4]
+		end
+		tip.SetCraftSpell = function() end
+
+		Family.Professions:Scan(true)
+
+		local priced = 0
+		for _, record in pairs((Family.Database:Payload(key) or {}).crafts or {}) do
+			for _, entry in ipairs(record.entries or {}) do
+				if entry.name == "Runed Copper Rod" and entry.trainingPoints ~= nil then
+					priced = priced + 1
+				end
+			end
+		end
+		check("a window where nothing carried a cost records no costs at all",
+			priced == 0, tostring(priced) .. " rows priced")
+
+		GetCraftInfo, tip.SetCraftSpell = realInfo, realCraft
+
+		local restored = Family.Database:Payload(key) or {}
+		restored.crafts = heldCrafts
+		Family.Database:SetPayload(key, restored)
+	end
 
 	tip.SetCraftSpell = nil
 	GetSpellSubtext = realSubtext
@@ -6965,6 +7022,16 @@ check("and with the level the pet has to be",
 -- The id is the whole reason there is anything to hover: without one the row is a word.
 check("and is named by the reader's own client, out of the id",
 	visibleText("Spell 24501"))
+
+-- **But not a cost of nought**, which this list cannot read.
+--
+-- It is the trainer's own list, so it holds rows for families the creature that was out does not
+-- belong to - a Ravager is shown Charge, Scorpid Poison and Thunderstomp - and the client answers
+-- nought for those exactly as it answers nought for Growl, which really is free for everybody.
+-- One number, two meanings, and nothing here can yet tell them apart (DATASOURCES). The Pets page
+-- has no such doubt and does draw it: a creature only holds abilities it could learn.
+check("but a cost of nought is not drawn here, because it could mean either thing",
+	not visibleText("(0 " .. Family:GameWord("TRAINING_POINTS", Family.L["Training Points"])))
 
 -- A row with nothing to say must take the tooltip down rather than leave the last row's up.
 --
