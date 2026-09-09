@@ -19,6 +19,13 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **What each of a pet's abilities cost it.** The Pets page now shows the training-point cost
+  beside every ability Family has a price for, and says under the creature how much of what it has
+  spent those account for — *248 of 273 Training Points accounted for, and 2 abilities have no
+  price recorded*. Family only ever adds up what it has actually read from the trainer's window,
+  so an ability with no cost beside it is one it has never seen priced, which is not the same as
+  one that was free.
+
 - **`/family pettp`**, for anyone wondering where a pet's training points went. It lists each of a
   creature's abilities with what the trainer's window says it costs, what the client says the
   creature has spent altogether, and how much of that Family can account for. It reads what is

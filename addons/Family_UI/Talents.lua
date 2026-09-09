@@ -628,6 +628,25 @@ local function build(frame)
 				return table.concat(parts, ", ")
 			end
 
+			-- What each ability cost this creature, and how much of what it has spent that
+			-- accounts for.
+			--
+			-- Two readings of the same character, and they meet here: the creature's book says
+			-- which abilities it holds, the trainer's window says what each row costs, and the
+			-- client says how many points have gone altogether. Read 2026-09-09 on a Burning
+			-- Crusade Ravager: ten of its twelve abilities had a price, they came to 248, and the
+			-- client said 273 - so the model holds and the twenty-five missing belong to the two
+			-- rows Family has never seen priced.
+			--
+			-- **Accounted for, never a total.** The panel says what it can add up and how much of
+			-- the spend that covers; it never fills the gap in. A price Family has not read is
+			-- not a nought, and *this ability was free* is a claim nobody has made (§2.2). The
+			-- same reason a dash is drawn where a cost is unknown rather than a zero.
+			local accounting = {}
+			for _, entry in ipairs(Family.Pets:Training(payload)) do
+				accounting[entry.key] = entry
+			end
+
 			-- "Rank 10" belongs after "Rank 9", which comparing the words gets backwards.
 			local function rankOrder(text)
 				return tonumber(tostring(text):match("%d+") or "") or 0
@@ -635,6 +654,13 @@ local function build(frame)
 
 			for _, creature in ipairs(creatures) do
 				local keep = {}
+				local sums = accounting[creature.key] or {}
+
+				-- By id, which is what both readings file an ability under.
+				local costs = {}
+				for _, priced in ipairs(sums.abilities or {}) do
+					if priced.id and priced.points then costs[priced.id] = priced.points end
+				end
 
 				for _, ability in ipairs(creature.abilities or {}) do
 					-- The id first, which the reader's own client says in the reader's
@@ -652,6 +678,7 @@ local function build(frame)
 							known = said ~= nil,
 							icon = icon,
 							rank = ability.rank or "",
+							points = costs[ability.id or 0],
 						}
 					end
 				end
@@ -687,9 +714,41 @@ local function build(frame)
 							free > 0 and "40bf40" or "ff5555", free, pointsWord)
 						or "")
 
+					-- How much of what the client says was spent Family can account for,
+					-- under the creature it is about. Drawn only where there is a spend to
+					-- account for at all: Mists has no training points, and a line about
+					-- nought of nought is a sentence about a system that build does not have.
+					if sums.spent and sums.spent > 0 then
+						local note = nextRow()
+						local unpriced = (sums.unpriced or 0) + (sums.nameless or 0)
+						local said
+
+						-- Three sentences rather than one with a plural hung on the end,
+						-- for the reason the rest of this project writes them out: no
+						-- language outside English forms all three the same way.
+						if unpriced == 0 then
+							said = string.format(
+								L["%d of %d %s accounted for"],
+								sums.counted or 0, sums.spent, pointsWord)
+						elseif unpriced == 1 then
+							said = string.format(
+								L["%d of %d %s accounted for, and one ability has no "
+									.. "price recorded"],
+								sums.counted or 0, sums.spent, pointsWord)
+						else
+							said = string.format(
+								L["%d of %d %s accounted for, and %d abilities have no "
+									.. "price recorded"],
+								sums.counted or 0, sums.spent, pointsWord, unpriced)
+						end
+
+						note.middle:SetText("|cff888888" .. said .. "|r")
+					end
+
 					for _, ability in ipairs(keep) do
 						local r = nextRow()
-						r.left:SetText("")
+						r.left:SetText(ability.points
+							and string.format("|cff888888%d|r", ability.points) or "")
 						r.middle:SetText(ability.known and ability.name
 							or ("|cff9d9d9d" .. ability.name .. "|r"))
 						r.spellID = ability.id

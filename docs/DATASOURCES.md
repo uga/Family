@@ -2308,6 +2308,53 @@ one the client found* - turning out to have been worth writing: the name lookup 
 rank, and the tooltip reads the one in the book. Nothing was ever filed under 27350, so nothing
 has to be undone; what it settles is that the tooltip is not merely *a* door but the *right* one.
 
+### A creature's abilities against what it has spent, read 2026-09-09
+
+`/family pettp` on a Burning Crusade hunter, for **Ranghesante**, a Ravager the client says has
+spent **273** of **350** training points:
+
+    Arcane Resistance Rank 3    45
+    Avoidance Passive            -
+    Bite Rank 9                 29
+    Cobra Reflexes              15
+    Dash Rank 3                 25
+    Fire Resistance Rank 3      45
+    Frost Resistance Rank 2     15
+    Gore Rank 9                 29
+    Great Stamina Rank 3        15
+    Growl Rank 7                 -
+    Nature Resistance Rank 2    15
+    Shadow Resistance Rank 2    15
+
+    10 priced, 2 with no price in the trainer's window, 0 the client would not name,
+    and the priced ones come to 248.
+
+**Two hundred and forty-eight of two hundred and seventy-three, and exactly two abilities
+unpriced.** So the model holds as far as this can show it: *what a creature has spent is the sum,
+over the abilities it holds, of the cost of the rank it holds* - and the twenty-five missing
+belong to the two rows Family has never seen a price for. A model that was wrong in shape would
+not land within one plausible pair of costs.
+
+**What this does not settle**, and it is the question the reading was run to answer: whether the
+window prices a rank the creature **already holds**. Arcane Resistance Rank 3 is priced at 45 and
+the creature holds Rank 3 - but the crafts record accumulates across every time the window has
+been open, so that 45 may have been read when the rank was still to be learned. The two readings
+are indistinguishable from the record alone.
+
+**The line that settles it**, with Beast Training open and the creature out:
+
+    /run for i=1,GetNumCrafts() do local n,r,_,_,_,c,l=GetCraftInfo(i)
+        if n=="Arcane Resistance" or n=="Growl" or n=="Avoidance" then print(i,n,r,c,l) end end
+
+A cost of 45 against Arcane Resistance Rank 3 says the window prices what is already held. A
+cost of 0 says the recorded 45 is a memory of when it was trainable, and that Family's price table
+is a history rather than a current price list - which is a different thing to tell a player and
+changes nothing about the arithmetic.
+
+**Either way the panel may say what it can account for and no more.** A dash is not a nought:
+*this ability has no price recorded* and *this ability was free* are different claims, and only
+one of them has ever been read (§2.2).
+
 ### What crosses a Wide Family link as a word, and cannot be translated
 
 Read 2026-09-05, after Alberto asked whether a subzone is the only shared thing a reader sees in

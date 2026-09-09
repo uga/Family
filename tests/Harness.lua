@@ -7034,6 +7034,17 @@ do
 		{ name = "Alberto", level = 60, family = "Wolf" },
 	}
 
+	-- The trainer's window, which is where a price comes from. One of this creature's
+	-- abilities is priced and the rest are not, which is the state a live reading came back
+	-- in: ten of twelve priced, coming to 248 of the 273 the client said were spent.
+	payload.crafts = payload.crafts or {}
+	payload.crafts[5149] = { name = "Beast Training", seen = time(), entries = {
+		{ name = "Thunderclap", rank = "Rank 3", spellID = 14921, trainingPoints = 45 },
+		-- A row the window shows with no cost against it, which is the client's own answer
+		-- about this creature and not a gap in the reading. It must not price anything.
+		{ name = "Growl", rank = "Rank 7", spellID = 2649 },
+	} }
+
 	payload.pets = pets
 	Family.Database:SetPayload(who, payload)
 end
@@ -7062,6 +7073,32 @@ check("in the green that means there is something to do with it",
 check("and a creature that owes points says so, in a colour that is not that green",
 	visibleText("|cffff5555-40 " .. Family.L["Training Points"])
 		and not visibleText("|cff40bf40-40"))
+
+-- **What each ability cost, and how much of the spend that accounts for.**
+--
+-- Two readings of one character meeting on the page: the creature's book says which abilities it
+-- holds, the trainer's window says what each row costs, and the client says how many points have
+-- gone. Read on a live Burning Crusade Ravager 2026-09-09 - ten of twelve priced, coming to 248
+-- against the 273 the client reported - so the model holds and what is missing is what Family has
+-- never seen a price for.
+--
+-- **Accounted for, never a total**, which is the whole of §2.2 here: the page adds up what it has
+-- read and says how much of the spend that covers, and it never fills the rest in. A price
+-- nobody has read is not a nought, and *this ability was free* is a claim nobody has made.
+-- The cell and not the number, because the sum below says "45 of 273" and a check for a bare
+-- 45 passes on that sentence alone - which is how the first version of this passed with the
+-- column removed entirely.
+check("an ability with a price from the trainer's window is drawn with it",
+	visibleText("|cff88888845|r"))
+check("and the sum says how much of the spend it accounts for",
+	visibleText("45 of 273"))
+check("naming how many abilities it could not price rather than filling them in",
+	visibleText("no price recorded"))
+-- Several of them here, so the plural sentence is the one drawn - written out rather than formed
+-- by hanging an "s" on the end, for the reason every other plural in this project is.
+check("in the sentence that fits how many there were",
+	visibleText("abilities have no price recorded")
+		and not visibleText("one ability has no price recorded"))
 
 -- Each section runs entirely different code, and one that throws takes the panel with it,
 -- so all four are visited rather than only the one that happens to open first.

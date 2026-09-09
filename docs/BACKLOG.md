@@ -2990,7 +2990,7 @@ error this guard exists to avoid.
 
 ---
 
-## 50. Pet training points, added up on the panel
+## 50. Pet training points, added up on the panel — DONE 2026-09-09
 
 **Asked:** 2026-09-09, by Alberto, after confirming in play that Family now reads a pet ability's
 training-point cost one summon at a time and remembers it. *For Ranghesante, which really has 77
@@ -3034,3 +3034,22 @@ read the last line. Three outcomes, and each says what to build:
 **The one thing that is already worth drawing either way**: the per-ability cost, beside the
 ability, on the Pets section - because that is a fact from the trainer's own window and does not
 depend on the arithmetic working.
+
+
+**Read 2026-09-09, and built the same day.** Ranghesante, a Burning Crusade Ravager: **ten of
+twelve abilities priced, coming to 248, against the 273 the client says are spent.** The two
+unpriced are Avoidance and Growl Rank 7. Twenty-five missing across exactly two rows Family has
+never seen a price for, which is a model that holds rather than one that is wrong in shape.
+
+The full reading is in `DATASOURCES.md` under *A creature's abilities against what it has spent*,
+along with the one line that would settle what the reading still cannot: whether the trainer's
+window prices a rank the creature already holds, or whether the recorded 45 against Arcane
+Resistance Rank 3 is a memory of when that rank was still to be learned. The crafts record
+accumulates across every time the window has been open, so the two are indistinguishable from the
+record alone - and neither changes what the panel may say.
+
+**What is drawn:** the cost against each ability that has one, in the left column where the
+creature's own page has room for it, and a line under the creature reading *248 of 273 Training
+Points accounted for, and 2 abilities have no price recorded*. Accounted for, never a total: the
+page adds up what it has read and says how much of the spend that covers, and never fills the rest
+in. A price nobody has read is not a nought.
