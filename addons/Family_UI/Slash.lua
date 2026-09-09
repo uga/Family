@@ -636,6 +636,82 @@ end)
 --
 -- Nothing is sent. The offering is built and thrown away, which is worth saying to anybody being
 -- asked to type a diagnostic into a game.
+-- **What the client's spellbook says, row by row, and what Family takes from it.**
+--
+-- Written after three rounds of pasting macros into a chat box that cuts them off at the top.
+-- Everything here is asked of the **client**, not of the record: what is in doubt is which tabs
+-- Family reads, what kind the client calls each row, and what a flyout gives up when it is
+-- opened. The record is downstream of all three and cannot answer for any of them.
+--
+-- Only the rows Family would keep are listed, because those are the ones an answer is wanted
+-- about; the ones passed over are counted instead, which is the same shape `/family pettp` uses.
+add("spellbook", L["what the client's spellbook says, and what Family takes from it"], function()
+	local tabs = tonumber((Family:TryCall(GetNumSpellTabs))) or 0
+	if tabs == 0 then
+		Family:Print(L["This client has no spellbook that Family can read."])
+		return
+	end
+
+	for tab = 1, tabs do
+		local name, _, offset, count, _, offSpec = Family:TryCall(GetSpellTabInfo, tab)
+		offset, count = tonumber(offset) or 0, tonumber(count) or 0
+		local slotsOf = 0
+
+		if type(offSpec) == "number" and offSpec > 0 then
+			Family:Print(L["|cffffd700%s|r: %d row(s), and it is specialisation %d's own "
+				.. "list - not read."], tostring(name), count, offSpec)
+		else
+			local passed, kinds = 0, {}
+
+			Family:Print(L["|cffffd700%s|r: %d row(s), read."], tostring(name), count)
+
+			for position = offset + 1, offset + count do
+				local kind, id =
+					Family:TryCall(GetSpellBookItemInfo, position, "spell")
+
+				if kind == "SPELL" then
+					Family:Print("    %s   |cff888888%s|r",
+						tostring(Family:TryCall(GetSpellBookItemName, position,
+							"spell") or "?"), tostring(id))
+				elseif kind == "FLYOUT" then
+					-- The one row that stands for spells rather than being one, and
+					-- the reason Call Pet went missing. Its slots are printed with
+					-- what each says about itself, because that is what decides
+					-- whether Family keeps it.
+					local word, _, slots = Family:TryCall(GetFlyoutInfo, id)
+					slotsOf = tonumber(slots) or 0
+					Family:Print(L["    flyout |cff888888%s|r %s, %s slot(s)"],
+						tostring(id), tostring(word or "?"),
+						tostring(slots or "?"))
+
+					for slot = 1, slotsOf do
+						local spellID, _, known =
+							Family:TryCall(GetFlyoutSlotInfo, id, slot)
+						Family:Print("        %s   |cff888888%s   %s|r",
+							tostring(spellID
+								and Family:TryCall(GetSpellInfo, spellID)
+								or "?"),
+							tostring(spellID), tostring(known))
+					end
+				else
+					passed = passed + 1
+					kinds[tostring(kind)] = (kinds[tostring(kind)] or 0) + 1
+				end
+			end
+
+			if passed > 0 then
+				local said = {}
+				for word, howMany in pairs(kinds) do
+					said[#said + 1] = string.format("%s %d", word, howMany)
+				end
+				table.sort(said)
+				Family:Print(L["    and %d row(s) passed over: %s"], passed,
+					table.concat(said, ", "))
+			end
+		end
+	end
+end)
+
 add("widetime", L["how long a Wide Family exchange takes on this client"], function()
 	if not Family.Wide:Enabled() then
 		Family:Print(L["Wide Family is switched off, so there is nothing to time."])

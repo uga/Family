@@ -835,6 +835,16 @@ depends on what the trainer's window has shown you, so a creature whose abilitie
 price beside them is one whose Beast Training window you have opened with that creature out. A
 dash means Family has no price for that ability, which is not the same as it being free.
 
+**"A character's abilities look wrong."** Type `/family spellbook`. It walks the client's own
+spellbook in front of you and says, tab by tab, which tabs Family reads and which it leaves alone,
+every row it would record with that row's id, what is behind a button that opens into several
+spells, and how many rows it passed over and what the game called them.
+
+It asks the game, not Family's records — which is the point, because the records are the thing in
+doubt. Nothing is scanned and nothing is sent. On Mists of Pandaria the spellbook has a tab for
+each specialisation, listing everything that specialisation can ever do; those are not this
+character's abilities and Family says so rather than recording them.
+
 **"The game stops for a moment when Wide Family is on."** Type `/family widetime`. It says, per
 link, how many members are shared, how long building and fingerprinting them takes, and what the
 much marking them costs and how many of them come back as *nothing to do* — that is what an

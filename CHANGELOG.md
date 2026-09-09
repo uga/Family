@@ -105,9 +105,11 @@ picks itself up where it left off.
 
 ### If you are reporting a problem
 
-- **`/family pettp`** shows where a pet's training points went, and **`/family widetime`** says
-  how many characters each link shares and how long an exchange spends on them. Both read what is
-  already recorded — neither scans anything, and neither sends anything anywhere.
+- **`/family spellbook`** walks the client's own spellbook and says, tab by tab, what Family reads
+  from it and what it leaves alone — the answer to *why is this ability missing, or why is that one
+  there*. **`/family pettp`** shows where a pet's training points went, and **`/family widetime`**
+  says how many characters each link shares and how long an exchange spends on them. None of them
+  scans anything, and none of them sends anything anywhere.
 
 ## 2.0.0 — 2026-09-06
 

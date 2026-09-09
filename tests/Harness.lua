@@ -28632,16 +28632,17 @@ print("a spellbook holds rows that are not this character's spells")
 		} },
 	}
 	local realFlyout, realFlyoutSlot = GetFlyoutInfo, GetFlyoutSlotInfo
-	GetFlyoutInfo = function(id)
+	local stubFlyout = function(id)
 		local f = FLYOUT[id]
 		if not f then return nil end
 		return f.name, "", #f.slots, true
 	end
-	GetFlyoutSlotInfo = function(id, slot)
+	local stubSlot = function(id, slot)
 		local row = FLYOUT[id] and FLYOUT[id].slots[slot]
 		if not row then return nil end
 		return row[1], row[2], row[3]
 	end
+	GetFlyoutInfo, GetFlyoutSlotInfo = stubFlyout, stubSlot
 	SPELL_NAMES[883] = "Call Pet 1"
 
 	TABS = { { "General", "", 0, 2, false, 0 } }
@@ -28672,6 +28673,29 @@ print("a spellbook holds rows that are not this character's spells")
 	spells = book and book[1] and book[1].spells or {}
 	check("while a client that has no such call records the row as nothing at all",
 		#spells == 1 and spells[1] == 75, tostring(#spells))
+
+	-- **And the diagnostic says the same thing the scan does**, which is the whole reason it
+	-- exists: three rounds of macros pasted into a chat box that cuts them off at the top, when
+	-- both sides of every question are already in front of the client.
+	GetFlyoutInfo, GetFlyoutSlotInfo = stubFlyout, stubSlot
+	TABS = {
+		{ "General", "", 0, 2, false, 0 },
+		{ "Beast Mastery", "", 2, 1, false, 253 },
+	}
+	ROWS = { { "SPELL", 75 }, { "FLYOUT", 9 }, { "SPELL", 121818 } }
+
+	local before = #DEFAULT_CHAT_FRAME.messages
+	SlashCmdList["FAMILY"]("spellbook")
+	local said = table.concat(DEFAULT_CHAT_FRAME.messages, "\n", before + 1)
+
+	check("/family spellbook says which tabs it reads and which it does not",
+		said:find("General") ~= nil and said:find("253") ~= nil, said)
+	-- The one row that needed three readings to understand: what is behind it, and what each
+	-- slot says about itself, because that is what decides whether Family keeps it.
+	check("and opens a flyout, naming what each slot says about itself",
+		said:find("Call Pet") ~= nil and said:find("883") ~= nil, said)
+	check("while a specialisation's row is never listed as something the character has",
+		said:find("121818") == nil, said)
 
 	GetFlyoutInfo, GetFlyoutSlotInfo = realFlyout, realFlyoutSlot
 	SPELL_NAMES[883] = nil
