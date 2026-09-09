@@ -2852,3 +2852,96 @@ left it before, and that is Alberto's to say rather than mine - even where the c
 person deliberately ticking the box that means *talk to them*. There is also a smaller question
 underneath it: whether the same should happen when Wide Family itself is switched on with
 `/family wide on`, where the answer is probably no, because that path already asks for a reload.
+
+---
+
+## 48. A login against an offline family costs one whole exchange per character tried
+
+**Found in play 2026-09-09**, by Alberto, on the trial deploy — at login, with *Update now*
+never pressed. Linked family *Serena*, seven characters, none online:
+
+    wide: Spazzacamino-Thunderstrike is not online - trying Rolando-Thunderstrike
+    wide: exchanged with Serena (15 offered, 15 sent, 0 unchanged, the last one was offline)
+    wide: dropped 3 member(s) still to go to Rolando-Thunderstrike, and unmarked ...
+    wide: Rolando-Thunderstrike is not online - trying Grella-Thunderstrike
+    wide: exchanged with Serena (15 offered, 15 sent, 0 unchanged, the last one was offline)
+    ... six times
+
+**What is right about this** is everything except the cost. The login sends one `hello`; the
+client refuses it; `Comm:OnAbsent` reads that as *one candidate eliminated rather than an answer*
+and tries the next character, which is the design and is what a family being a person requires.
+The unmarking lines are the 2026-09-08 work doing exactly its job, and `0 unchanged` on every
+retry is that work visible: each abandoned transfer takes its marks back, so the next attempt
+honestly offers everything again.
+
+**What is wrong** is that the walk escalates. The login announced with a single message, and the
+refusal of that single message starts a **full exchange** against the next name - offering built,
+packed, batched, queued - and then the refusal of *that* starts another. Six characters tried is
+six complete offerings assembled for a family that is not there.
+
+Fifteen members made this invisible. Two hundred and ten would not: six offerings built and
+packed at a login, with the first batch of each on the wire, for nobody. It is the login cost that
+`sendingMark` was written to remove, arriving by a different door - and this repository told
+Alberto on 2026-09-09 that a family which never comes back costs *one hello and one walk of their
+characters*, which was written from the design and not from a log. It costs six exchanges.
+
+**The fix, and it makes the walk consistent rather than clever:** carry the *intent* down the
+walk. A walk that began with an announcement continues with announcements - one message per
+candidate, and the moment one lands, the other side's `onHello` starts the exchange itself, which
+is exactly what a login already relies on. A walk that began with *Update now* continues with
+exchanges, because a person asked for one. `Wide` is the only place that knows which, so the flag
+lives there and `Comm:OnAbsent` reads it.
+
+**Cost of not doing it:** every login, for every linked family that is offline, times the number
+of characters they have. For the two-account player who prompted all of this, that is every login.
+
+---
+
+## 49. Two characters of one name defeat the abandon, and the queue drains into the void
+
+**Found in the same log**, and it is the reason that login produced about a hundred and ten
+refusals. *Serena* has two characters called **Malachia**, on Spineshatter and on Thunderstrike.
+
+    wide: Malachia-Spineshatter is not online - trying Malachia-Thunderstrike
+    wide: exchanged with Serena (15 offered, 15 sent, 0 unchanged, ...)
+    comm: the client says Malachia is not playing, and 2 characters of that name were
+          whispered - so marking none of them
+    ... about a hundred more of those
+
+**Why it happens.** The client complains about a **bare** name. `Comm` asks which character it
+addressed under that name inside the fifteen-second window, finds two, and correctly refuses to
+guess: two Rolandos on two realms can be played from two accounts at once, so marking both would
+take an online character off the list. §2.2, and the guard is right.
+
+But the early return that implements it happens **before** `Comm:AbandonTo`. So nothing is
+abandoned, the canary expires after its second and a half, and the **entire** queued exchange
+drains into a character who is not there - one server refusal per message. Fifteen members is
+about fifty messages. Two hundred and ten would be about three thousand four hundred, over six
+minutes, which is the shape of traffic backlog 40 warns about.
+
+It ends by itself after fifteen seconds, when the first Malachia's entry ages out of the window,
+the next complaint is unambiguous, and the walk finishes correctly with *none of Serena's 7
+characters are online*. So it is expensive rather than broken.
+
+**Why the obvious fixes are wrong.** Both amount to guessing which Malachia the complaint is
+about, and **today's guard is protecting the case that works**: if the second Malachia is
+*online*, no complaint about them ever arrives - only stragglers about the first, from messages
+that had already left - and the ambiguity is what stops those stragglers being read as *the second
+one is offline too*. Narrowing by *all but one are already known absent* reads exactly that
+straggler as an answer, and would abandon a transfer to somebody who is there. Abandoning both
+queues has the same fault with the same likelihood.
+
+**The fix with no trade-off is to never create the ambiguity.** Do not whisper a second character
+whose bare name matches one whispered inside the window - defer them, and come back when the
+window has closed. The walk pauses for fifteen seconds on a family that has two same-named
+characters, and nothing else changes: no guess, no attribution, and the complaint that arrives is
+about exactly one character, which is the case every line of this code was written for.
+
+Wants `Comm` to answer *is this name shadowed by another we have just whispered*, and `Wide` to
+defer rather than declare when that is the only reason a walk ran out of candidates.
+
+**And one cosmetic thing in the same log:** *comm: the client says Malachia is not playing, and we
+asked* is printed **twice per complaint**. That line is written from the chat filter, and a filter
+registered on `CHAT_MSG_SYSTEM` runs once per chat frame that shows system messages - so a second
+frame doubles it. Not measured, and it is a debug line either way; the fix if it is that is to
+narrate from the event handler, which runs once, rather than from the filter, which does not.
