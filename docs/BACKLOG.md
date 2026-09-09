@@ -3201,3 +3201,40 @@ Bite Rank 6 off the Bite Rank 9 row. Two rows at least, and a row whose id answe
 passed over rather than counted as disagreement. The tooltip's ids are therefore judged once the
 window has been walked rather than row by row, and `MergeCrafts` reads the window the same way or
 it strikes back what the scan just kept. Four checks, five mutations, all caught.
+
+---
+
+## 52. A low-level character's spellbook is full of abilities they do not have
+
+**Reported from play 2026-09-09**, on a level 3-4 hunter on Mists of Pandaria. The Abilities &
+Talents page lists Stampede, Trueshot Aura, Trap Launcher, Scatter Shot, Serpent Spread and the
+rest of the class's list - none of which a character of that level has - and among them a row
+reading **Spell #9**, drawn with no icon.
+
+**One cause, two symptoms.** `Character:ReadSpells` walks the spellbook and keeps the *second*
+return of `GetSpellBookItemInfo`, discarding the first:
+
+    local _, spellID = Family:TryCall(GetSpellBookItemInfo, position, "spell")
+    if spellID then school.spells[#school.spells + 1] = spellID end
+
+`addons/Family/Scanners/Character.lua:221` is the function; the two lines above are 235 and 236.
+The first return is what *kind* of row this is, and nothing in Family has ever looked at it. So
+every row the window draws is stored as an ability the character knows - including the greyed
+ones the game shows to say *you will learn this at level 60*, which is the whole of the first
+symptom. And a row that is not a spell at all carries an id that is not a spell id, which the
+client will not name, which is `Spell #9` in `Family_UI/Talents.lua:448`.
+
+**Nothing here is measured yet.** The kinds the call can answer with, and the words it answers
+with, have not been read on any client in this repository - the screenshot says what is wrong and
+not what the client calls it. One line settles it, on the hunter that reported this:
+
+    /run for i=1,200 do local t,d=GetSpellBookItemInfo(i,"spell") if t~="SPELL" then print(i,t,d) end end
+
+**Where it reaches.** The book is not only drawn: `Character:ReadSpecialisations` reads it, and a
+linked family is sent it. So a character can be sharing a claim to abilities they do not have, and
+the fix has to correct records already written rather than only new ones - a stored book cannot be
+re-filtered, because what was dropped on the way in is the only thing that would say which rows to
+strike. Re-read on the next login of each character, as `docs/DATASOURCES.md` describes for the
+other scans.
+
+**Probably one line and a re-scan**, but the reading comes first.
