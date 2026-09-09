@@ -19,6 +19,11 @@ is a decision rather than an afternoon of archaeology.
 
 ### Added
 
+- **`/family pettp`**, for anyone wondering where a pet's training points went. It lists each of a
+  creature's abilities with what the trainer's window says it costs, what the client says the
+  creature has spent altogether, and how much of that Family can account for. It reads what is
+  already recorded — nothing is scanned and nothing is sent.
+
 - **A Pets page, on Abilities & Talents.** Every pet in a hunter's stable and every demon a
   warlock has summoned, each with what that creature can do. The game only says what a creature
   knows while it is out, so the page fills in one summon at a time and keeps what it has seen —

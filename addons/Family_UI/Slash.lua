@@ -557,6 +557,55 @@ add("ready", L["which crafting cooldowns have come back, and for whom"], functio
 	end
 end)
 
+-- Whether a creature's training points add up, on the client that has the creature.
+--
+-- Two readings of the same character put beside each other: the book says which abilities the
+-- creature holds and at which rank, the trainer's window says what each row costs, and
+-- `GetPetTrainingPoints` says how many points have been spent altogether. The sum of the priced
+-- abilities against that number is the question.
+--
+-- **It is a reading and not a claim.** Whether the trainer's window prices a rank the creature
+-- already holds is not measured anywhere in this repository - the window prices what the creature
+-- that is out *can learn*, and whether that includes the rank it is already on is exactly what
+-- this finds out. So it prints the working: how many abilities could be priced, how many could
+-- not, and what the priced ones come to. Nothing is scanned and nothing is sent; it reads what is
+-- already on disk.
+add("pettp", L["check a pet's training points against what its abilities cost"], function()
+	local found = 0
+
+	for key in pairs(Family.Database:Members()) do
+		local payload = Family.Database:Payload(key)
+
+		for _, creature in ipairs(Family.Pets:Training(payload)) do
+			if creature.total then
+				found = found + 1
+
+				Family:Print(L["|cffffd700%s|r (%s): the client says %d of %d training "
+					.. "points are spent."], creature.name or creature.family or key,
+					key, creature.spent or 0, creature.total)
+
+				for _, ability in ipairs(creature.abilities) do
+					Family:Print("    %s %s   %s",
+						tostring(ability.name or ability.id),
+						tostring(ability.rank or ""),
+						ability.points and tostring(ability.points) or "|cff888888-|r")
+				end
+
+				Family:Print(L["  %d priced, %d with no price in the trainer's window, %d "
+					.. "the client would not name - and the priced ones come to "
+					.. "|cffffd700%d|r."],
+					#creature.abilities - creature.unpriced - creature.nameless,
+					creature.unpriced, creature.nameless, creature.counted)
+			end
+		end
+	end
+
+	if found == 0 then
+		Family:Print(L["no creature with training points is recorded yet - summon a pet on a "
+			.. "client that has them, open Beast Training, and look again."])
+	end
+end)
+
 -- What a Wide Family exchange costs, in milliseconds, on the client complaining about it.
 --
 -- Reported from play by somebody with two accounts and eighty characters between them: the game

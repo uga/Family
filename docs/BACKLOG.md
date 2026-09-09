@@ -2987,3 +2987,50 @@ online** are two different claims and §2.2 is about exactly that difference.
 Seven mutations across the two entries, all caught - including one that shadows a character
 against itself, which reddens twenty-six checks three hundred lines away and is the shape of
 error this guard exists to avoid.
+
+---
+
+## 50. Pet training points, added up on the panel
+
+**Asked:** 2026-09-09, by Alberto, after confirming in play that Family now reads a pet ability's
+training-point cost one summon at a time and remembers it. *For Ranghesante, which really has 77
+of 350 left because it is a Burning Crusade pet, we ought to be able to say what each of its
+abilities cost and see whether they add up to 350 − 77.*
+
+**What exists.** Two readings of one character, and they already meet in the payload:
+
+- the creature's **book**, read while it is out, gives every ability it holds by **spell id** with
+  the rank word beside it (`Scanners/Pets.lua`);
+- the **trainer's window** - a Craft window, recorded with the professions - gives each row's
+  **cost in training points** and required pet level, by the same spell id
+  (`Scanners/Professions.lua`, and DATASOURCES on the ids agreeing: 24500 out of the book, 24501
+  and 27052 out of the window, one series);
+- `GetPetTrainingPoints` gives **total and spent**, settled by a second pet: 350 and 273 for a
+  creature whose window said 77 free.
+
+`Pets:Training(payload)` puts them together and `/family pettp` prints the working - what each
+ability costs where a price is known, how many could not be priced, and what the priced ones come
+to. Built 2026-09-09; ten checks, four mutations, all caught.
+
+**What is not known, and is why the panel half is not built.** Whether the trainer's window
+prices a rank the creature **already holds**. DATASOURCES has the window pricing *what the
+creature that is out can learn*, and a cat measured against every rank of Claw and nothing against
+Bite, Gore, Charge or Growl - the families it does not belong to. Whether *can learn* includes
+*is already on* is exactly the difference between the sum matching and the sum falling short by
+whatever the creature already knew. Nobody has read it.
+
+**So the reading comes first**, and it is a reading of data Alberto already has rather than a new
+probe in the game: run `/family pettp` on the Burning Crusade hunter with Ranghesante recorded and
+read the last line. Three outcomes, and each says what to build:
+
+- **The priced ones come to 273** — the model holds. The panel can show a cost against each
+  ability and *273 of 350 spent* under the creature, and the arithmetic is Family's to state.
+- **They come to less, and the unpriced ones are the ranks the creature already holds** — then the
+  window does not price what is already known, the shortfall is expected, and the panel should say
+  *what is priced* rather than a total that would look wrong.
+- **They come to something else entirely** — then the model is wrong in a way worth writing into
+  DATASOURCES before anything is drawn from it.
+
+**The one thing that is already worth drawing either way**: the per-ability cost, beside the
+ability, on the Pets section - because that is a fact from the trainer's own window and does not
+depend on the arithmetic working.

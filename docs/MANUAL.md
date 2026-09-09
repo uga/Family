@@ -825,6 +825,16 @@ client translates. A recipe list read before you changed language may take a mom
 the first time the panel is opened, while the client loads the items it has not seen this
 session.
 
+**"Do my pet's training points add up?"** Type `/family pettp`. For every creature Family has a
+record of, it lists the abilities the creature knows, what the trainer's window says each of them
+costs, and what the client says the creature has spent altogether — and then it says how many
+abilities it could price and what those come to.
+
+It reads what is already on disk: nothing is scanned and nothing is sent. What it can price
+depends on what the trainer's window has shown you, so a creature whose abilities all have a
+price beside them is one whose Beast Training window you have opened with that creature out. A
+dash means Family has no price for that ability, which is not the same as it being free.
+
 **"The game stops for a moment when Wide Family is on."** Type `/family widetime`. It says, per
 link, how many members are shared, how long building and fingerprinting them takes, and what the
 much marking them costs and how many of them come back as *nothing to do* — that is what an

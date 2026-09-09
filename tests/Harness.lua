@@ -28573,6 +28573,101 @@ print("logging in announces, and pushes nothing")
 end)()
 
 print()
+print("what a creature's abilities cost it, against what the client says it spent")
+
+-- Two readings of one character put beside each other: the creature's book says which abilities
+-- it holds and at which rank, by spell id; the trainer's window - a Craft window, recorded with
+-- the professions - says what each row costs, by the same spell id; and `GetPetTrainingPoints`
+-- says how many points have gone altogether.
+--
+-- **The arithmetic is a reading and not a claim.** Whether the trainer's window prices a rank the
+-- creature already holds is not measured anywhere in this repository, so what is built here
+-- reports the working - priced, unpriced, unnamed, and the sum - rather than a verdict. These
+-- checks are about the working being right, which is what makes the reading worth trusting when
+-- it comes back from a live client.
+;(function()
+	local payload = {
+		crafts = {
+			-- Beast Training, filed under the spell that opens it.
+			[5149] = { name = "Beast Training", entries = {
+				{ name = "Bite", rank = "Rank 8", spellID = 16827, trainingPoints = 15 },
+				{ name = "Claw", rank = "Rank 5", spellID = 16831, trainingPoints = 25 },
+				{ name = "Growl", rank = "Rank 6", spellID = 2649 },
+			} },
+			-- A profession, which prices nothing and must not be read as though it did.
+			[7411] = { name = "Enchanting", entries = {
+				{ name = "Runed Copper Rod", spellID = 7421 },
+			} },
+		},
+		pets = { known = {
+			["p:9:Ranghesante"] = {
+				name = "Ranghesante", family = "Ravager", level = 70,
+				trainingTotal = 350, trainingSpent = 273,
+				abilities = {
+					{ id = 16827, name = "Bite", rank = "Rank 8" },
+					{ id = 16831, name = "Claw", rank = "Rank 5" },
+					{ id = 2649, name = "Growl", rank = "Rank 6" },
+					{ id = 24500, name = "Arcane Resistance", rank = "Rank 3" },
+					{ name = "Something the client would not name" },
+				},
+			},
+		} },
+	}
+
+	local creatures = Family.Pets:Training(payload)
+	check("the creature is found", #creatures == 1 and creatures[1].name == "Ranghesante",
+		tostring(#creatures))
+
+	local one = creatures[1] or {}
+	check("and carries what the client said about its points",
+		one.total == 350 and one.spent == 273,
+		tostring(one.spent) .. " of " .. tostring(one.total))
+
+	-- Two of its five have a price in the window: Bite at 15 and Claw at 25.
+	check("the priced abilities are added up and no others", one.counted == 40,
+		tostring(one.counted))
+
+	-- Growl is in the window with no cost against it - which is the client's own answer about
+	-- *this* creature rather than a gap in the reading - and Arcane Resistance is not in the
+	-- window at all. Both are unpriced and neither is guessed at.
+	check("and the ones with no price are counted rather than assumed to cost nothing",
+		one.unpriced == 2, tostring(one.unpriced))
+
+	-- And an ability the client would not name at all cannot be priced for a different reason,
+	-- which is a different sentence and is counted apart.
+	check("while one the client would not name is its own kind of absence",
+		one.nameless == 1, tostring(one.nameless))
+
+	-- A profession's rows are not prices. Runed Copper Rod costs no training points and the
+	-- reading must not treat a recipe as one - a mutation that drops the `trainingPoints` test
+	-- would price it at nil and quietly change nothing here, so the check is that a craft window
+	-- with no costs contributes no priced rows at all.
+	do
+		local onlyProfession = {
+			crafts = { [7411] = payload.crafts[7411] },
+			pets = payload.pets,
+		}
+		local bare = Family.Pets:Training(onlyProfession)[1] or {}
+		check("a craft window that prices nothing prices nothing",
+			bare.counted == 0 and bare.unpriced == 4,
+			tostring(bare.counted) .. " counted, " .. tostring(bare.unpriced) .. " unpriced")
+	end
+
+	-- Each ability carries its own price where it has one, so a panel can draw the working
+	-- rather than only the total.
+	local priced = {}
+	for _, ability in ipairs(one.abilities or {}) do priced[ability.name] = ability.points end
+	check("each ability carries its own price where the window gave one",
+		priced["Bite"] == 15 and priced["Claw"] == 25 and priced["Growl"] == nil,
+		tostring(priced["Bite"]) .. "/" .. tostring(priced["Claw"])
+			.. "/" .. tostring(priced["Growl"]))
+
+	-- And a member with nothing recorded answers with nothing rather than throwing.
+	check("a member with no pets answers with none", #Family.Pets:Training({}) == 0)
+	check("and so does one with no payload at all", #Family.Pets:Training(nil) == 0)
+end)()
+
+print()
 if failures == 0 then
 	print("all checks passed")
 else

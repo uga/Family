@@ -283,6 +283,101 @@ function Pets:Scan()
 end
 
 --------------------------------------------------------------------------------------------
+-- What a creature's abilities cost it
+--
+-- Two readings of the same character, put beside each other. The creature's book says which
+-- abilities it holds and at which rank, by spell id; the trainer's window - which is a Craft
+-- window and is recorded with the professions - says what each row costs in training points, by
+-- the same spell id. `GetPetTrainingPoints` says how many the creature has spent altogether.
+--
+-- So the sum of the priced abilities can be held against the number the client gave, and that is
+-- a question worth asking rather than an answer worth assuming: **whether the trainer's window
+-- prices a rank the creature already holds is not measured anywhere in this repository.** The
+-- window prices what the creature that is out *can learn* (DATASOURCES), and whether that
+-- includes the rank it is already on is exactly what this arithmetic finds out.
+--
+-- Which is why it reports the working and not a verdict: how many abilities could be priced, how
+-- many could not, and what the priced ones add up to. A total that matched would confirm the
+-- model; one that falls short by the abilities that could not be priced says which reading is
+-- missing rather than that the pet is wrong. §2.2, pointed at our own arithmetic.
+--------------------------------------------------------------------------------------------
+
+function Pets:Training(payload)
+    payload = payload or {}
+
+    -- Every priced row this character's trainer window has ever shown, by spell id. Only the
+    -- rows that carry a cost: a craft window that is not Beast Training answers nought for
+    -- every row, and nought is not stored (§2.2).
+    -- The cost and not the row, so that a row without one stores nothing rather than storing a
+    -- row whose cost is nil. Writing nil into a table is writing nothing, which makes *has no
+    -- price* and *is not in the window* the same absence here - and they are, because neither
+    -- can be added up.
+    local priced = {}
+    for _, record in pairs(payload.crafts or {}) do
+        for _, entry in ipairs(record.entries or {}) do
+            if entry.spellID then priced[entry.spellID] = entry.trainingPoints end
+        end
+    end
+
+    local creatures = {}
+
+    for key, creature in pairs((payload.pets or {}).known or {}) do
+        local abilities, counted, unpriced, nameless = {}, 0, 0, 0
+
+        for _, ability in ipairs(creature.abilities or {}) do
+            local points = ability.id and priced[ability.id]
+
+            if points then
+                counted = counted + points
+            elseif not ability.id then
+                -- A client that would not name the ability at all cannot be asked to price
+                -- it either, and that is a different absence from *the window never showed
+                -- this row*. Counted apart so the report can say which.
+                nameless = nameless + 1
+            else
+                unpriced = unpriced + 1
+            end
+
+            abilities[#abilities + 1] = {
+                id = ability.id,
+                name = ability.name,
+                rank = ability.rank,
+                points = points or nil,
+            }
+        end
+
+        table.sort(abilities, function(a, b)
+            if (a.name or "") ~= (b.name or "") then
+                return tostring(a.name) < tostring(b.name)
+            end
+            return (a.id or 0) < (b.id or 0)
+        end)
+
+        creatures[#creatures + 1] = {
+            key = key,
+            name = creature.name,
+            family = creature.family,
+            level = creature.level,
+            total = creature.trainingTotal,
+            spent = creature.trainingSpent,
+            counted = counted,
+            unpriced = unpriced,
+            nameless = nameless,
+            abilities = abilities,
+        }
+    end
+
+    table.sort(creatures, function(a, b)
+        local left = a.name or a.family or ""
+        local right = b.name or b.family or ""
+        if left ~= right then return left < right end
+        return tostring(a.key) < tostring(b.key)
+    end)
+
+    return creatures
+end
+
+--------------------------------------------------------------------------------------------
 
 Family:OnDatabaseReady("pets", function()
 	Family:RegisterEvent("PLAYER_ENTERING_WORLD", "pets", function()
