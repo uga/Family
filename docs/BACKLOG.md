@@ -3144,3 +3144,46 @@ and two ranks of one ability share it (§2.1). What to join by instead is the op
 the level is the candidate worth measuring - Rank 1 wants a creature of 30 and Rank 2 one of 60,
 and Ranghesante is 70, which narrows nothing on its own but does when the book says which rank it
 is holding. Read the two ids first.
+
+**Read 2026-09-09, and it is candidate 2 — the narrowing above was wrong.** Two readings from a
+live Burning Crusade client, side by side:
+
+    window 53   Rank 1   35694
+    window 54   Rank 2   35698
+
+    Avoidance   Passive   -   35698
+      Rank 1   -   15   30
+      Rank 2   -   25   60
+
+The book's id for the passive the creature holds is **35698**, and the window's Rank 2 — the 25
+that closes the sum — is **35698**. They are the same id. There is no second key to find and no
+join to design: it is a plain id join and it already works everywhere else.
+
+What is missing is the id on the *stored* row. The two window rows come back from the record with
+their rank, their cost and their level and **no spell id at all**, which is what the `-` in the
+second column of each near line says. So the tooltip answered — the probe above read 35694 and
+35698 out of the same door, `SetCraftSpell` — and the answer was thrown away between there and
+disk. There is exactly one place that throws one away: `Scanners/Professions.lua:600`, where
+`Professions:AgreesWithRow` (same file, 745) refuses an id that does not agree with the row.
+
+**Which arm refused is the last unknown**, and both are visible in one line of chat with nothing
+open:
+
+    /run print(GetSpellInfo(35694),GetSpellSubtext(35694),GetSpellInfo(35698),GetSpellSubtext(35698))
+
+The rank arm is the candidate. The guard asks the window's `subText` and the spell's own
+`GetSpellSubtext` to be the same string, and on Beast Training they are not asking the same
+question: the window draws the trainer's ladder — *Rank 1*, *Rank 2* — while the spell carries its
+own subtext, which for a passive is the word the pet's book prints beside it, **Passive**. Two
+readings that disagree because they are about different things, and the guard cannot tell that
+apart from the bleed it was built to catch.
+
+**What the guard is actually for**, and what a replacement has to keep: five rows all called
+*Arcane Resistance*, where a tooltip answering the row below would silently price the wrong rank.
+The measurement that motivated it is in the comment at `Scanners/Professions.lua:588` — row 2
+answering 24501 and row 3 answering 27052. The candidate replacement is **uniqueness across the
+window** rather than agreement with a second reading: a tooltip id that also belongs to another
+row of the same window is bleed and goes; an id no other row claims stays, whatever word its
+subtext carries. It catches the failure the rank arm was built for, without asking a passive to
+call itself *Rank 2*. Decide it once the line above is read — if the *name* arm is the one that
+refused, the diagnosis is different and so is the fix.
