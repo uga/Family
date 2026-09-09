@@ -570,6 +570,7 @@ Family.locales.ruRU = {
 	["   |cffffd700|||   sending to them, %d pieces left|r"] = "   |cffffd700|||   отправка им, осталось частей: %d|r",
 	["Sent %d member(s) and asked for theirs. It goes out behind %d piece(s) Family was already sending to somebody else."] = "Отправлено персонажей: %d, запрошены их. Отправка идёт за %d частями, которые Family уже отправляет кому-то другому.",
 	["%d of %s's characters share a name with one just tried, so Family is waiting a moment to tell the client's answers apart."] = "%d персонажей %s носят то же имя, что и только что опробованный, поэтому Family ждёт немного, чтобы различить ответы клиента.",
+	["one of %s's characters shares a name with one just tried, so Family is waiting a moment to tell the client's answers apart."] = "Один из персонажей %s носит то же имя, что и только что опробованный, поэтому Family ждёт немного, чтобы различить ответы клиента.",
 	["Sent %d member(s) and asked for theirs."] = "Отправлено персонажей: %d, запрошены их.",
 	["nobody of theirs has ever been heard from"] = "ни от кого из них ничего не приходило",
 	["|cffffd700What %s may see of your characters|r"] = "|cffffd700Что %s может видеть о ваших персонажах|r",

@@ -476,9 +476,17 @@ local function nobodyThere(link, anyKnown, shadowed)
     -- Waiting is not the same as nobody, and it gets its own sentence. Rare on purpose: it needs
     -- two characters of one name and a whisper to one of them inside the last fifteen seconds.
     if shadowed and shadowed > 0 then
+        local who = tostring(Wide:Called(link))
+
+        -- One and several, because no language outside English forms both by hanging an "s"
+        -- on the end - the same reason the sentence below it is written twice.
+        if shadowed == 1 then
+            return string.format(L["one of %s's characters shares a name with one just tried, "
+                .. "so Family is waiting a moment to tell the client's answers apart."], who)
+        end
+
         return string.format(L["%d of %s's characters share a name with one just tried, so "
-            .. "Family is waiting a moment to tell the client's answers apart."],
-            shadowed, tostring(Wide:Called(link)))
+            .. "Family is waiting a moment to tell the client's answers apart."], shadowed, who)
     end
 
     if anyKnown then
@@ -1054,6 +1062,70 @@ local function probeNext(familyID, link, name)
     return true
 end
 
+-- The next step of a walk, wherever the walk is up to: probe somebody, wait for a name to stop
+-- being ambiguous, or say that nobody is there.
+--
+-- **One place rather than three**, because the deferred retry is a step of the same walk and the
+-- first version had it call `ExchangeWith` instead - so a family whose last untried character
+-- shared a name paid a full offering for the one candidate the probe was meant to make cheap.
+-- Seen in play on the first deploy of both: five probes and then, sixteen seconds later, an
+-- exchange.
+--
+-- Recursive through the deferral, and it terminates on the same argument the walk always did:
+-- every refusal marks one more name absent, so the list `reachableName` can offer shrinks by one
+-- each time and runs out. A deferral adds a wait to that, not a candidate.
+local tryNext
+tryNext = function(familyID, link)
+    local nextName, anyKnown, shadowed = reachableName(link)
+
+    if nextName then
+        -- Said to the debug narration rather than to the player. Walking a family of five is
+        -- four of these lines and four refusals from the client beside them, and none of the
+        -- four is news: they are the working, and the answer is the sentence at the end that
+        -- says nobody was there. A player who wants the working can switch the narration on.
+        Family:Debug("wide: probing %s", nextName)
+        return probeNext(familyID, link, nextName)
+    end
+
+    if shadowed > 0 then
+        -- Somebody is left to try and trying them now would make the client's next complaint
+        -- impossible to place. Wait for the window rather than guess through it, and say
+        -- nothing to the player: waiting is not an answer.
+        local wait = Family.Comm:NotFoundWindow() + 1
+        Family:Debug("wide: %d of %s's characters share a name with one just tried - waiting "
+            .. "%d seconds", shadowed, tostring(Wide:Called(link)), wait)
+
+        Family:After(wait, "wide.shadow." .. familyID, function()
+            local again = store().links[familyID]
+            if again then tryNext(familyID, again) end
+        end)
+        return true
+    end
+
+    if not anyKnown then return false end
+
+    local count = characterCount(link)
+
+    -- The answer rather than the working, which is why this one is printed where the lines
+    -- above it are narrated. Unless the player has asked not to be told: against a linked
+    -- family whose one character is rarely on, the automatic update produces this every time
+    -- and the answer stops being news. It still goes to the narration, so switching it off
+    -- loses the interruption and not the fact.
+    if Wide:Reports() then
+        Family:Print(count == 1
+            and L["|cffffaa00None of %s's %d character is online.|r Nothing was sent. Try "
+                .. "again when one of them is."]
+            or L["|cffffaa00None of %s's %d characters are online.|r Nothing was sent. Try "
+                .. "again when one of them is."],
+            tostring(Wide:Called(link)), count)
+    else
+        Family:Debug("wide: none of %s's %d character(s) are online",
+            tostring(Wide:Called(link)), count)
+    end
+
+    return false
+end
+
 -- One of their characters turned out to be offline, mid-exchange.
 --
 -- A family is a person, and a person is playing one character. The one we whispered is very
@@ -1111,48 +1183,8 @@ Family.Comm:OnAbsent("wide", function(name, _, already)
                     .. "this transfer had sent", dropped, name)
             end
 
-            local nextName, anyKnown, shadowed = reachableName(link)
-
-            if nextName then
-                -- Said to the debug narration rather than to the player.
-                --
-                -- Walking a family of five is four of these lines and four refusals from
-                -- the client beside them, and none of the four is news: they are the
-                -- working, and the answer is the sentence below that says nobody was
-                -- there. A player who wants the working can switch the narration on.
-                Family:Debug("wide: %s is not online - probing %s", name, nextName)
-                probeNext(familyID, link, nextName)
-            elseif shadowed > 0 then
-                -- Somebody is left to try and trying them now would make the client's next
-                -- complaint impossible to place. Wait for the window rather than guess
-                -- through it, and say nothing to the player: this is not an answer.
-                local wait = Family.Comm:NotFoundWindow() + 1
-                Family:Debug("wide: %d of %s's characters share a name with one just tried - "
-                    .. "waiting %d seconds", shadowed, tostring(Wide:Called(link)), wait)
-                Family:After(wait, "wide.shadow." .. familyID, function()
-                    Wide:ExchangeWith(familyID, "the shared name has cleared")
-                end)
-            elseif anyKnown then
-                local count = characterCount(link)
-
-                -- The answer rather than the working, which is why this one is printed
-                -- where the line above it is narrated. Unless the player has asked not to
-                -- be told: against a linked family whose one character is rarely on, the
-                -- automatic update produces this every time and the answer stops being
-                -- news. It still goes to the narration, so switching it off loses the
-                -- interruption and not the fact.
-                if Wide:Reports() then
-                    Family:Print(count == 1
-                        and L["|cffffaa00None of %s's %d character is online.|r Nothing "
-                            .. "was sent. Try again when one of them is."]
-                        or L["|cffffaa00None of %s's %d characters are online.|r Nothing "
-                            .. "was sent. Try again when one of them is."],
-                        tostring(Wide:Called(link)), count)
-                else
-                    Family:Debug("wide: none of %s's %d character(s) are online",
-                        tostring(Wide:Called(link)), count)
-                end
-            end
+            Family:Debug("wide: %s is not online", name)
+            tryNext(familyID, link)
         end
     end
 

@@ -570,6 +570,7 @@ Family.locales.esES = {
 	["   |cffffd700|||   sending to them, %d pieces left|r"] = "   |cffffd700|||   enviando a ellos, quedan %d piezas|r",
 	["Sent %d member(s) and asked for theirs. It goes out behind %d piece(s) Family was already sending to somebody else."] = "Enviado(s) %d miembro(s) y pedidos los suyos. Sale detrás de %d pieza(s) que Family ya estaba enviando a otra persona.",
 	["%d of %s's characters share a name with one just tried, so Family is waiting a moment to tell the client's answers apart."] = "%d de los personajes de %s comparten nombre con uno recién intentado, así que Family espera un momento para poder distinguir las respuestas del cliente.",
+	["one of %s's characters shares a name with one just tried, so Family is waiting a moment to tell the client's answers apart."] = "Uno de los personajes de %s comparte nombre con uno recién intentado, así que Family espera un momento para poder distinguir las respuestas del cliente.",
 	["Sent %d member(s) and asked for theirs."] = "Enviado(s) %d miembro(s) y pedidos los suyos.",
 	["nobody of theirs has ever been heard from"] = "no se ha sabido nunca de ninguno de los suyos",
 	["|cffffd700What %s may see of your characters|r"] = "|cffffd700Lo que %s puede ver de tus personajes|r",

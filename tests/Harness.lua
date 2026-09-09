@@ -23638,8 +23638,18 @@ print("a probe that is not refused becomes an exchange, and one that is answered
 	advance(18)
 	time = wasTime
 
+	-- **And tried the same cheap way**, which the first version of this got wrong: the deferred
+	-- retry called `ExchangeWith` rather than the walk's own next step, so a family whose last
+	-- untried character shared a name paid a full offering for the one candidate the probe was
+	-- meant to make cheap. Seen in play: five probes and then, sixteen seconds later, an
+	-- exchange. The order is what is checked - the announcement first, the exchange behind it.
+	local order = kinds("Twin-Other Realm")
 	check("and once the window has closed the deferred character is tried after all",
-		has("Twin-Other Realm", "data"), table.concat(kinds("Twin-Other Realm"), ","))
+		#order > 0, table.concat(order, ","))
+	check("with an announcement first, like every other step of the walk",
+		order[1] == "hello", table.concat(order, ","))
+	check("and the exchange behind it, once the probe went unrefused",
+		has("Twin-Other Realm", "data"), table.concat(order, ","))
 
 	C_ChatInfo.SendAddonMessage = realRaw
 	Family.Comm:Abandon()
