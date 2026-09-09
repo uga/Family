@@ -2377,13 +2377,37 @@ shown to a Ravager - the same nought from the same call. The **Pets** page has n
 because a creature only holds abilities it could learn, so a nought against one of its own is
 drawn as free. The Beast Training appendix draws nothing where it cannot tell.
 
-**What would separate them** is the level beside the cost, and it has not been read: Growl answers
-a real ladder - 1, 10, 20, 30, 40, 50, 60 - beside its noughts. If a row the creature cannot learn
-answers nought for the level as well, the two are told apart by that and the appendix can price
-Growl too:
+**And the window has a state in which it prices nothing at all**, read the same day. Asked for
+every row whose cost is nought:
 
-    /run for i=1,GetNumCrafts() do local n,r,_,_,_,c,l=GetCraftInfo(i)
-        if n=="Charge" or n=="Scorpid Poison" or n=="Thunderstomp" then print(i,n,r,c,l) end end
+    /run for i=1,GetNumCrafts() do local n,r,t,_,_,c,l=GetCraftInfo(i)
+        if (c or 0)==0 then print(i,n,r,t,c,l) end end
+
+    1  Arcane Resistance Rank 1  none 0 0
+    ...
+    81 Thunderstomp Rank 3       none 0 0
+
+**All eighty-one rows, nought for the cost and nought for the level** - including the Arcane
+Resistance rows that had answered 5/20, 15/30 and 45/40 twenty minutes earlier, and including the
+rows the earlier reading priced at 25 and 15. The list is still there and every number in it is
+gone, which is a different thing from a row the creature cannot learn and is what *the window
+prices what the creature that is out can learn* looks like when there is nothing to price for:
+**both numbers go to nought together, across the whole window.**
+
+What put it in that state was not recorded and is worth knowing - no creature summoned and the
+window no longer open are both candidates, and `GetNumCrafts` answering 81 says the list survives
+either. It matters only for the narration, because nothing is lost when it happens: the
+whole-window rule records no costs from such a reading, and the merge keeps every price an earlier
+one found. Family now says so in the narration rather than leaving a record that did not change
+looking like a reading that never happened.
+
+**So the ambiguity feared for a nought has not been seen.** Every nought read so far is either
+this - a window pricing nothing at all - or Growl, which is free. A row for a family the creature
+does not belong to, priced at nought beside rows that are priced, is a case this repository has
+recorded once and has not reproduced: the Ravager's window does not list Charge, Scorpid Poison or
+Thunderstomp with a price of nought, it lists them **at nought along with everything else** in the
+state above. Until it is seen again, the appendix still declines to draw a nought and the Pets
+page still draws one, which is the safe way round.
 
 ### What crosses a Wide Family link as a word, and cannot be translated
 

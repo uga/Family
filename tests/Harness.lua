@@ -3282,6 +3282,66 @@ do
 	check("and a row neither reading could describe still carries no id",
 		(rows[4] or {}).spellID == nil and (rows[5] or {}).spellID == nil)
 
+	-- **A whole window that prices nothing, where the last reading priced something.**
+	--
+	-- Measured 2026-09-09: eighty-one rows of Beast Training answering nought for the cost and
+	-- nought for the level on every one of them, including the rows that had answered 45 and 40
+	-- twenty minutes earlier. The window prices what the creature that is out can learn, and read
+	-- when there is nothing to price for it answers nought for both numbers everywhere.
+	--
+	-- Two rules already cover it and this checks that they do together: the whole-window rule
+	-- records no costs from such a reading, and the merge keeps every price the earlier one
+	-- found. What is added is only that Family says so, because a record that does not change is
+	-- otherwise indistinguishable from a reading that never happened.
+	do
+		local NOTHING_OUT = {
+			{ "Arcane Resistance", "Rank 3", 0, 0, nil },
+			{ "Arcane Resistance", "Rank 4", 0, 0, nil },
+			{ "Growl", "Rank 1", 0, 0, nil },
+		}
+		local heldCrafts = {}
+		for id, record in pairs((Family.Database:Payload(key) or {}).crafts or {}) do
+			heldCrafts[id] = record
+		end
+
+		local realInfo, realCraft = GetCraftInfo, tip.SetCraftSpell
+		GetCraftInfo = function(index)
+			local row = NOTHING_OUT[index]
+			if not row then return nil end
+			return row[1], row[2], "none", 0, nil, row[3], row[4]
+		end
+		tip.SetCraftSpell = function() end
+
+		local wasNarrating = FamilyDB.debug
+		FamilyDB.debug = true
+		local before = #DEFAULT_CHAT_FRAME.messages
+
+		Family.Professions:Scan(true)
+
+		local said = false
+		for index = before + 1, #DEFAULT_CHAT_FRAME.messages do
+			if DEFAULT_CHAT_FRAME.messages[index]:find("priced nothing where", 1, true) then
+				said = true
+			end
+		end
+		FamilyDB.debug = wasNarrating
+
+		rows = (((Family.Database:Payload(key) or {}).crafts or {})[5149] or {}).entries or {}
+
+		check("a reading that prices nothing keeps every price the last one found",
+			(rows[1] or {}).trainingPoints == 45 and (rows[2] or {}).trainingPoints == 90,
+			tostring((rows[1] or {}).trainingPoints) .. "/"
+				.. tostring((rows[2] or {}).trainingPoints))
+		check("and says so, because a record that did not change looks like nothing happened",
+			said)
+
+		GetCraftInfo, tip.SetCraftSpell = realInfo, realCraft
+
+		local restored = Family.Database:Payload(key) or {}
+		restored.crafts = heldCrafts
+		Family.Database:SetPayload(key, restored)
+	end
+
 	-- And the other half of the same rule: a window where **nothing** carried a cost has no
 	-- such column at all, and its noughts are the call answering about something it has no
 	-- opinion on. Every profession is that window, so getting this wrong would put a cost of

@@ -756,9 +756,18 @@ function Professions:MergeCrafts(before, now)
 	if type(before) ~= "table" or type(now) ~= "table" then return now end
 
 	local held = {}
+	local hadPrices = 0
 	for _, entry in ipairs(before) do
 		local key = craftRowKey(entry)
 		if key then held[key] = entry end
+		if (entry.trainingPoints or 0) > 0 then hadPrices = hadPrices + 1 end
+	end
+
+	-- Counted before the merge fills anything in, or every reading looks as though it priced
+	-- what the one before it did - which is the whole thing this is trying to notice.
+	local hasPrices = 0
+	for _, entry in ipairs(now) do
+		if (entry.trainingPoints or 0) > 0 then hasPrices = hasPrices + 1 end
 	end
 
 	for _, entry in ipairs(now) do
@@ -792,6 +801,23 @@ function Professions:MergeCrafts(before, now)
 
 			if not entry.petLevel then entry.petLevel = kept.petLevel end
 		end
+	end
+
+	-- **A reading that priced nothing, where the last one priced something.**
+	--
+	-- Worth narrating because it is invisible otherwise and it looks like a fault: the record
+	-- does not change, so nothing on any panel moves, and the reason is in a state of the game
+	-- rather than in the reading. The window prices what the creature that is out can learn, and
+	-- read when there is nothing to price for it answers nought for **both** numbers on every
+	-- row - measured 2026-09-09, eighty-one rows of Beast Training all answering 0 for the cost
+	-- and 0 for the level, including the rows that had answered 45 and 40 minutes earlier.
+	--
+	-- Nothing is lost when it happens: the whole-window rule records no costs from such a
+	-- reading, and the merge above keeps every price the earlier one found. This line only says
+	-- so, so that nobody has to work it out from a panel that did not change.
+	if hadPrices > 0 and hasPrices == 0 then
+		Family:Debug("professions: this reading priced nothing where %d row(s) were priced "
+			.. "before, so the prices already read are kept", hadPrices)
 	end
 
 	return now
