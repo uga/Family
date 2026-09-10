@@ -3392,3 +3392,16 @@ table, and the half that a table would answer worse.
 **What this is not:** adopting a new data source. `wago.tools` has been this project's source
 since the beginning (DATASOURCES §3) and `ItemSparse` is already one of the tables Family reads.
 The first answer given to this question said otherwise and was wrong.
+
+**Asked 2026-09-10 whether the availability flag could be fetched once from wago.tools** - not
+which vendor, only *is there at least one* - and the answer is that there is no such table to
+fetch. The served list holds nothing mapping a vendor to its stock; `CollectableSourceVendor`,
+`CollectableSourceVendorSparse` and `PerksVendorItem` are retail tables about collectables and the
+Trading Post and answer *Table not found* for the pinned Era build. Vendor inventories are in the
+server's database and are published nowhere.
+
+That leaves two sources for the flag: **a compilation somebody else gathered** - reserved, and the
+case §2.5 describes - or **the merchant frames this player opens**, which is what such a
+compilation is made of in the first place. Option 2 is therefore not a lesser version of the
+shipped table; it is the same mechanism, for one account, exact, and with the reputation discount
+included.

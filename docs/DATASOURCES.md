@@ -1609,6 +1609,24 @@ for one flux: they are photographs taken by different characters at different re
 The specification refuses the second half by name (§2.5, *where an item is looted, **sold**,
 quest-rewarded or otherwise obtained*).
 
+**And it cannot be fetched once and shipped, because there is no table to fetch.** Asked directly,
+2026-09-10: wago.tools lists every DB2 it serves, and nothing in that list maps a vendor to what it
+sells. The three that come closest are not it and are not served for these builds anyway -
+`CollectableSourceVendor`, `CollectableSourceVendorSparse` and `PerksVendorItem` are retail tables
+about collectables and the Trading Post, and all three answer `{"errors":"Table not found."}` for
+`1.15.9.69109`. `Creature` is display and type data and holds no inventory. Vendor stock lives in
+the server's own database, which is not published in any form, which is why a catalogue site has to
+gather it from players walking past the NPCs.
+
+So *at least one vendor sells this* cannot be delivered up front from the client's data. It can
+only come from a compilation somebody else made - which is reserved (`CLAUDE.md`, adopting a new
+data source) and is the case §2.5 describes - or from the merchant frames the player opens, which
+is what a catalogue site is itself made of.
+
+**Noticed while looking:** `ItemPriceBase` *is* served for Era - 1301 rows of `ItemLevel`, `Armor`,
+`Weapon` - which is where an equippable item's prices are generated from, and why the buy/sell
+ratio clusters at ×5 for gear and ×4 for trade goods rather than being one number.
+
 **Which closes the question about shipping the table.** Draw `BuyPrice` only for items seen on a
 vendor and the table buys nothing - the price was on the vendor's own list, already discounted.
 Draw it for the rest and Family states 166 gold for Sulfuras. The 253 KB purchases exactly the case
