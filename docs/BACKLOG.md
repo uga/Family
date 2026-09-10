@@ -3566,6 +3566,13 @@ be a sentence rather than a column.
 Whichever it is, the line under it says what was left out. *4310g across 892 items, 355 unpriced,
 oldest price 12 days* - never a bare total.
 
+**Where it landed, 2026-09-10.** Both shapes were tried and only one survived contact. A section of
+its own was built and removed the same day - *the panel put there is inconsistent with the rest of
+the logic* - and the figure now sits twice: as a line on a member's **Possessions** page under the
+seen-dates, over bags, bank, mail and auctions; and as a **Stock** column on the summary's Overview
+set, walked once per refresh, with the breakdown in the row tooltip. Clicking a Bags row opens that
+member's Possessions, the way a profession row already opened Professions.
+
 ---
 
 ## 59. Disenchanting on the tooltip
@@ -3590,23 +3597,12 @@ compilation somebody else made: reserved, and the case §2.5 describes.
 The band alone also implies the shard **tier** without naming it, and whether that is worth saying
 in words the client can give is the open question in 1.
 
-**Built 2026-09-10 as a section of its own**, `Family_UI/Worth.lua`, called **Worth** at Alberto's
-suggestion - the file, the tab id and `Index:Worth` then all say one word instead of the code
-saying one thing and the screen another.
-
-A section rather than a set on the summary, and that was the decision rather than a formality: the
-summary's sets read `meta` and nothing else, which is what lets them cost the same for forty
-members as for four, and this walks every item every member holds. Here a slower page is expected
-and the count of what could not be priced has room to be a sentence.
-
-**It has no icon**, which is deliberate rather than forgotten: textures cannot be probed, they go
-through `tools/FamilyIconSheet` and a screenshot, and a tab with no entry in `TAB_ICONS` draws no
-picture and keeps the space so the labels stay in line. Picking one is a job for whoever next runs
-that tool.
-
-Six checks, four mutations, all caught - the fourth only after a check was added for it, and that
-check failed against correct code on its first writing because its needle lived inside the right
-answer.
+**A note that belonged to entry 58 and outlived what it described.** The paragraphs that stood
+here reported a *Worth* section built on 2026-09-10 as `Family_UI/Worth.lua`, with its own tab and
+no icon. That section was removed the same day, at Alberto's word - *the panel put there is
+inconsistent with the rest of the logic* - and the figure went onto the Possessions page and into
+the summary's Stock column instead. Entry 58 carries where it actually landed. Nothing about
+disenchanting was ever built.
 
 ---
 
