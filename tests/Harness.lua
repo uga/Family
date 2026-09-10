@@ -4800,6 +4800,46 @@ do
 			(Family.Auctions:PriceOf(2880)) == 800,
 			tostring((Family.Auctions:PriceOf(2880))))
 
+		-- **What this character has up for sale on the older house**, and the row that is not
+		-- one. Thirteen rows were read on a live Burning Crusade client and the three the window
+		-- labels *Sold* answered a quantity of nought with the buyout carrying what is on its way
+		-- to the mailbox. They were already being left out because the client gives them no time
+		-- left either, so they read as expired - right by accident, and wrong the moment a client
+		-- answers that differently.
+		do
+			local OWNED = {
+				{ id = 24582, quantity = 1, minBid = 342000, buyout = 359999 },
+				{ id = 818, quantity = 0, minBid = 0, buyout = 1497 },
+				{ id = 8952, quantity = 3, minBid = 1733, buyout = 1824 },
+			}
+			local realNum2, realInfo2, realLeft = GetNumAuctionItems, GetAuctionItemInfo,
+				GetAuctionItemTimeLeft
+
+			GetNumAuctionItems = function(which) return which == "owner" and #OWNED or 0 end
+			GetAuctionItemInfo = function(which, i)
+				local row = which == "owner" and OWNED[i]
+				if not row then return nil end
+				return "Thing", nil, row.quantity, nil, nil, nil, nil, row.minBid, nil,
+					row.buyout, 0, nil, nil, nil, nil, nil, row.id
+			end
+			-- A real bucket for every row, which is what makes this check about the
+			-- quantity rather than about the expiry doing the work by accident.
+			GetAuctionItemTimeLeft = function() return 4 end
+
+			Family.Auctions:Scan()
+			local up = ((Family.Database:Payload(Family:CurrentMember())
+				or {}).auctions or {}).selling or {}
+
+			check("a sold auction is not counted as something up for sale",
+				#up == 2, tostring(#up))
+			check("and what is still up keeps its own numbers",
+				up[1] and up[1].buyout == 359999 and up[2] and up[2].buyout == 1824,
+				tostring(up[1] and up[1].buyout))
+
+			GetNumAuctionItems, GetAuctionItemInfo, GetAuctionItemTimeLeft =
+				realNum2, realInfo2, realLeft
+		end
+
 		-- **The newer auction house**, which Mists turned out to have while the eight old calls
 		-- there answer nothing at all. One row of it was printed on a live client rather than
 		-- guessed at, and `minPrice` is already the lowest price of one - so this route divides

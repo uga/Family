@@ -41,7 +41,19 @@ local function readList(which)
 		local name, _, quantity, _, _, _, _, minBid, _, buyout, bidAmount,
 			highBidder, _, _, _, _, itemID = Family:TryCall(GetAuctionItemInfo, which, index)
 
-		if name then
+		-- **A sold auction is not something on sale.**
+		--
+		-- Measured on Burning Crusade 2026-09-10, thirteen rows on one character: the three the
+		-- window labels *Sold* answer a quantity of nought and a minimum bid of nought, with the
+		-- buyout carrying the amount on its way to the mailbox - 14s97c, 25s36c, 16s38c, which is
+		-- what the window draws beside them as *Incoming Amount*. All ten live ones answer a real
+		-- quantity.
+		--
+		-- They were already being left out, and for the wrong reason: the client gives a sold
+		-- auction no time left either, so it read as expired and `Live` dropped it. The totals
+		-- were right by accident. A client that answered with a real bucket there would have
+		-- folded money already earned into what is still for sale, and nothing would have said so.
+		if name and (tonumber(quantity) or 0) > 0 then
 			local bucket = Family:TryCall(GetAuctionItemTimeLeft, which, index)
 
 			entries[#entries + 1] = {

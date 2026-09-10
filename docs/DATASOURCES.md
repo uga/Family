@@ -888,6 +888,30 @@ all. It rounds down now. Losing a fraction of a copper to a division is arithmet
 auction is losing the reading. A stack so large that one of them comes to nought is still refused,
 because nought is not a price anybody paid.
 
+#### A sold auction answers with no quantity
+
+Read on Burning Crusade 2026-09-10, thirteen rows on one character through the owner list:
+
+    item 818     quantity 0   minBid 0        buyout 1497     <- Tigerseye, Sold
+    item 1210    quantity 0   minBid 0        buyout 2536     <- Shadowgem, Sold
+    item 2770    quantity 0   minBid 0        buyout 1638     <- Copper Ore, Sold
+    item 24582   quantity 1   minBid 342000   buyout 359999   <- still up
+    ... ten of those ...
+
+The three the window labels **Sold** answer a quantity of nought and a minimum bid of nought, and
+the buyout carries what is on its way to the mailbox - 14s97c, 25s36c and 16s38c, which is what
+the window draws beside them as *Incoming Amount*. Confirmed by Alberto looking at the same
+screen: sold, waiting to be delivered. All ten live rows answer a real quantity.
+
+**They were already being left out, and for the wrong reason.** The client gives a sold auction no
+time left either, so it read as expired and `Live` dropped it - the totals were right by accident.
+A client that answered with a real bucket there would have folded money already earned into what
+is still for sale, and nothing on any panel would have said so. The quantity is what decides now.
+
+The panel's own arithmetic was held against that window at the same time: ten auctions,
+**158g57s88c** of bids and **166g92s45c** of buyouts, to the copper, with the three sold rows out
+of both.
+
 The same probe answered one more thing: **Era has no `C_AuctionHouse` at all** - `newer auction
 house: false` - and 25 `AUCTION_ITEM_LIST_UPDATE` firings across a session. Which is why neither
 route needs a gate: on that client the newer one has nothing to read from, and on Mists the older
