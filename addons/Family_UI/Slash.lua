@@ -783,6 +783,16 @@ add("ah", L["what this client offers on the auction house"], function()
 		for _, pair in ipairs(Family.Auctions:ModernSample() or {}) do
 			Family:Print("    %-24s |cff888888%s|r", pair[1], pair[2])
 		end
+
+		-- And one of this character's own, which is backlog 56 rather than the prices.
+		local calls, owned = Family.Auctions:ModernOwnedSample()
+		-- A name and a value, like the rows above it: there is no sentence here to translate,
+		-- and the words in it are the client's own.
+		Family:Print("    %-24s |cff888888%s|r", "owner calls",
+			#(calls or {}) > 0 and table.concat(calls, ", ") or "-")
+		for _, pair in ipairs(owned or {}) do
+			Family:Print("      %-22s |cff888888%s|r", pair[1], pair[2])
+		end
 	end
 
 	local prices, oldest, newest, held = Family.Auctions:Prices(), nil, nil, 0

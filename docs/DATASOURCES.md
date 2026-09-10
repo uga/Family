@@ -927,10 +927,31 @@ including the owner list - so *what a member has up for sale*, and the summary c
 it, have been silently empty on Mists rather than wrong. Nothing announced it because nought
 auctions is what somebody with no auctions has. Backlog 56.
 
-What the newer house needs is a reading of its own, which the probe now counts: which of
-`AUCTION_HOUSE_BROWSE_RESULTS_UPDATED`, `..._ADDED`, `COMMODITY_SEARCH_RESULTS_UPDATED`,
-`ITEM_SEARCH_RESULTS_UPDATED` and `OWNED_AUCTIONS_UPDATED` actually arrives while a player
-browses, and what `GetBrowseResults` and `GetNumOwnedAuctions` are holding when they do.
+**What the newer house answers**, read the same day. A search: `GetBrowseResults` holding **500**
+rows, `AUCTION_HOUSE_BROWSE_RESULTS_UPDATED` fired once and the other four not at all. One row of
+it, printed rather than named from memory:
+
+    containsOwnerItem  false
+    itemKey            { battlePetSpeciesID=0, itemID=32902, itemLevel=68, itemSuffix=0 }
+    minPrice           1
+    totalQuantity      442
+
+**`minPrice` is already the lowest price of one**, across every listing under that key, so this
+route divides nothing and takes no minimum of its own - the one place the newer house is simpler
+than the old, where fifty rows have to be walked and the least of them taken. A key carries an item
+level and a suffix, so two rows can share an id and be different things; Family files under the id,
+because the tooltip that will ask knows an id and nothing else, and the cheapest variant therefore
+speaks for the plain one.
+
+**And the owner list does answer there.** Listing one item took `GetNumOwnedAuctions` from nought
+to one and fired `OWNED_AUCTIONS_UPDATED` four times, with `COMMODITY_SEARCH_RESULTS_UPDATED`
+firing three. So backlog 56 has a route; what a row of it looks like is the next thing to read.
+
+**Neither route is gated, and both are registered on every client.** The old one reads a list that
+answers nought on Mists; the newer one reads a call Era has not got; each is silent where it does
+not apply. Nothing has to decide which auction house this is - which is exactly the decision that
+would have been got wrong, since all eight old symbols are present on the build where none of them
+work.
 
 **Reported alongside it: Era drew no price lines at all**, while remembering prices perfectly -
 and **confirmed the same day to have been the switch**, nothing else. It ships off and `FamilyDB`

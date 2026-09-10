@@ -4785,6 +4785,58 @@ do
 			(Family.Auctions:PriceOf(2880)) == 800,
 			tostring((Family.Auctions:PriceOf(2880))))
 
+		-- **The newer auction house**, which Mists turned out to have while the eight old calls
+		-- there answer nothing at all. One row of it was printed on a live client rather than
+		-- guessed at, and `minPrice` is already the lowest price of one - so this route divides
+		-- nothing and takes no minimum of its own.
+		do
+			local RESULTS = {}
+			local realHouse = C_AuctionHouse
+			C_AuctionHouse = { GetBrowseResults = function() return RESULTS end }
+
+			Family.Auctions:ForgetVisit()
+			RESULTS = {
+				{ itemKey = { itemID = 2589, itemLevel = 1, itemSuffix = 0 },
+					minPrice = 300, totalQuantity = 442 },
+				-- No key at all, and a key with no price: neither is a price.
+				{ minPrice = 700 },
+				{ itemKey = { itemID = 15410 }, minPrice = 0 },
+			}
+			Family.Auctions:ReadModernPrices()
+
+			check("a price is taken from the newer house's own results",
+				(Family.Auctions:PriceOf(2589)) == 300,
+				tostring((Family.Auctions:PriceOf(2589))))
+			-- The shape was read from a live client, so a row that is not that shape is a
+			-- client Family has not met and must not be guessed at.
+			check("while a row without the shape that was read is passed over",
+				(Family.Auctions:PriceOf(15410)) == nil,
+				tostring((Family.Auctions:PriceOf(15410))))
+
+			-- The visit rule is the same rule, because it is the same question.
+			RESULTS = { { itemKey = { itemID = 2589 }, minPrice = 900 } }
+			Family.Auctions:ReadModernPrices()
+			check("and the same visit still keeps the lower of what it saw",
+				(Family.Auctions:PriceOf(2589)) == 300,
+				tostring((Family.Auctions:PriceOf(2589))))
+
+			Family.Auctions:ForgetVisit()
+			Family.Auctions:ReadModernPrices()
+			check("while the next visit replaces it as it does on the older one",
+				(Family.Auctions:PriceOf(2589)) == 900,
+				tostring((Family.Auctions:PriceOf(2589))))
+
+			-- **Neither route is gated and both are registered everywhere.** The old one reads
+			-- a list that answers nought on Mists, the newer one a call Era has not got, and
+			-- each is silent where it does not apply - so nothing has to decide which house
+			-- this is, which is the decision that would have been wrong.
+			C_AuctionHouse = nil
+			check("a client without the newer house records nothing from it, quietly",
+				Family.Auctions:ReadModernPrices() == 0)
+
+			C_AuctionHouse = realHouse
+		end
+
 		GetNumAuctionItems, GetAuctionItemInfo, GetAuctionItemLink =
 			realNum, realInfo, realLink
 	end

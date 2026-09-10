@@ -279,6 +279,10 @@ local MODERN_EVENTS = {
 	"COMMODITY_SEARCH_RESULTS_UPDATED",
 	"ITEM_SEARCH_RESULTS_UPDATED",
 	"OWNED_AUCTIONS_UPDATED",
+	-- Counted rather than assumed, because the visit rule rests on them: a client where these
+	-- never fire is one where nothing ever starts a new visit, and prices would only ever fall.
+	"AUCTION_HOUSE_SHOW",
+	"AUCTION_HOUSE_CLOSED",
 }
 
 local modernHeard = {}
@@ -323,6 +327,45 @@ function Auctions:ModernSample()
 	return out
 end
 
+-- **And one of this character's own auctions**, for the repair in backlog 56.
+--
+-- Read 2026-09-10: listing a single item took `GetNumOwnedAuctions` from nought to one and fired
+-- `OWNED_AUCTIONS_UPDATED` four times, so the newer house does answer for the owner list - which
+-- is the feature that has been silently empty on that build since Family first ran there. What a
+-- row of it looks like is the next thing that must be read rather than named from memory.
+function Auctions:ModernOwnedSample()
+	if not C_AuctionHouse then return nil, nil end
+
+	local tried = {}
+	for _, name in ipairs { "GetOwnedAuctionInfo", "GetOwnedAuctions" } do
+		if type(C_AuctionHouse[name]) == "function" then tried[#tried + 1] = name end
+	end
+
+	local row = Family:TryCall(C_AuctionHouse.GetOwnedAuctionInfo, 1)
+	if type(row) ~= "table" then
+		local all = Family:TryCall(C_AuctionHouse.GetOwnedAuctions)
+		row = type(all) == "table" and all[1] or nil
+	end
+	if type(row) ~= "table" then return tried, nil end
+
+	local out = {}
+	for key, value in pairs(row) do
+		if type(value) == "table" then
+			local inner = {}
+			for k, v in pairs(value) do
+				inner[#inner + 1] = string.format("%s=%s", tostring(k), tostring(v))
+			end
+			table.sort(inner)
+			out[#out + 1] = { tostring(key), "{ " .. table.concat(inner, ", ") .. " }" }
+		else
+			out[#out + 1] = { tostring(key), tostring(value) }
+		end
+	end
+
+	table.sort(out, function(a, b) return a[1] < b[1] end)
+	return tried, out
+end
+
 -- What the newer house says it is holding right now, asked without being told to search.
 function Auctions:ModernCounts()
 	if not C_AuctionHouse then return nil end
@@ -331,6 +374,67 @@ function Auctions:ModernCounts()
 	local owned = Family:TryCall(C_AuctionHouse.GetNumOwnedAuctions)
 
 	return (type(browse) == "table") and #browse or nil, tonumber(owned)
+end
+
+-- **The same reading on the newer auction house**, which Mists turned out to have.
+--
+-- Measured 2026-09-10, one row of `C_AuctionHouse.GetBrowseResults()` printed rather than guessed
+-- at:
+--
+--     containsOwnerItem  false
+--     itemKey            { battlePetSpeciesID=0, itemID=32902, itemLevel=68, itemSuffix=0 }
+--     minPrice           1
+--     totalQuantity      442
+--
+-- **`minPrice` is already the lowest price of one**, across every listing under that key, so this
+-- route divides nothing and takes no minimum of its own - the client has done both. That is the
+-- one place the newer house is simpler than the old, where fifty rows have to be walked.
+--
+-- **Known imprecision, and the same one the tooltip has**: a key carries an item level and a
+-- suffix, so two rows can share an item id and be different things - a random-enchantment item is
+-- one id wearing dozens of suffixes. Family files a price under the id, because the tooltip that
+-- will ask for it knows an id and nothing else, so the cheapest variant speaks for the plain one.
+--
+-- Both routes are registered on every client and neither is gated: the old one reads a list that
+-- answers nought on Mists, the newer one reads a call that does not exist on Era, and each is
+-- silent where it does not apply. Nothing has to decide which house this is.
+function Auctions:ReadModernPrices()
+	if not C_AuctionHouse then return 0 end
+
+	local where = market()
+	if not where then return 0 end
+
+	local results = Family:TryCall(C_AuctionHouse.GetBrowseResults)
+	if type(results) ~= "table" then return 0 end
+
+	local prices = self:Prices(where)
+	local now = time()
+	local kept = 0
+
+	for _, entry in ipairs(results) do
+		local key = type(entry) == "table" and entry.itemKey
+		local itemID = type(key) == "table" and tonumber(key.itemID) or nil
+		local each = type(entry) == "table" and tonumber(entry.minPrice) or nil
+
+		if itemID and each and each > 0 then
+			local held = prices[itemID]
+
+			if not seenThisVisit[itemID] or type(held) ~= "table" then
+				seenThisVisit[itemID] = true
+				prices[itemID] = { p = each, at = now }
+				kept = kept + 1
+			elseif each < held.p then
+				held.p, held.at = each, now
+				kept = kept + 1
+			end
+		end
+	end
+
+	if kept > 0 then
+		Family:Debug("auctions: %d price(s) taken from %d browse result(s)", kept, #results)
+	end
+
+	return kept
 end
 
 -- One page of whatever the player last searched for.
@@ -402,6 +506,16 @@ Family:OnDatabaseReady("auctions", function()
 	for _, event in ipairs(MODERN_EVENTS) do
 		Family:RegisterEvent(event, "auctions", function()
 			modernHeard[event] = (modernHeard[event] or 0) + 1
+		end)
+	end
+
+	-- The newer house's own way of saying the same thing. `..._ADDED` is here because it is
+	-- how further results arrive where they arrive in pieces, and it costs nothing on a
+	-- client that never sends it.
+	for _, event in ipairs { "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED",
+		"AUCTION_HOUSE_BROWSE_RESULTS_ADDED" } do
+		Family:RegisterEvent(event, "auctions.prices", function()
+			Auctions:ReadModernPrices()
 		end)
 	end
 
