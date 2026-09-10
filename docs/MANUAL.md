@@ -835,20 +835,19 @@ depends on what the trainer's window has shown you, so a creature whose abilitie
 price beside them is one whose Beast Training window you have opened with that creature out. A
 dash means Family has no price for that ability, which is not the same as it being free.
 
-**"What is all my stuff worth?"** The **Worth** section, beside Possessions. One line per
-character, most valuable first, with the family's total above them.
+**"What is all my stuff worth?"** It is on the character's own **Possessions** page, under the
+line that says how recently each part of the list was seen — bags, bank, mail and auctions, which
+is also exactly what the figure covers. Not the guild bank, which is the guild's, and not the
+keyring, which is worth nothing anyway.
 
-It values what your characters are *holding* — bags, bank and unexpired mail — at what the auction
-house was last seen asking. What you have up for sale is not counted there, because the Activity
-set already prices it at what you are actually asking for it.
+Each thing is valued at what the auction house was last seen asking for it, and where Family has
+never seen one, at what a vendor pays — which the game knows for nearly everything, and is what
+makes the figure cover a whole bank alt rather than the few dozen things you happened to search
+for.
 
-The line at the top never gives a total without saying what it left out: how many items went into
-it, how many it had no price for, and how old the oldest price it used is. A character Family has
-no prices for at all does not appear, and a family with no prices yet is told so rather than shown
-a page of noughts — that is Family not knowing, which is a different thing from you owning nothing.
-
-Prices belong to one realm and one side, so a character on a realm you have never browsed the
-auction house on has nothing to value them with yet.
+The line never gives a total on its own. It says how much came from auction prices and how much
+from vendor prices, because those are two very different numbers, and how many things it had no
+price for at all — which is only what your client has never seen named.
 
 **"Can Family show vendor prices?"** Yes, and it is off until you turn it on — *Show vendor prices
 on item tooltips*, in Options. Two lines appear on an item's tooltip:

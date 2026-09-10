@@ -40,18 +40,18 @@ picks itself up where it left off.
   a question it stopped answering, and getting silence back — which looks exactly like having no
   auctions. Your listings, and what they are worth, are read again.
 
-### Worth
+### What it is all worth
 
-- **A new section that says what everything you own is worth**, beside Possessions. One line per
-  character, most valuable first, priced at what the auction house was last seen asking.
+- **A character's Possessions page says what everything they hold comes to**, under the line about
+  how recently each part of it was seen. Bags, bank, mail and auctions — not the guild bank, which
+  is the guild's, and not the keyring.
 
-- **It never gives a total without saying what it left out** — how many items went into it, how
-  many it had no price for, and how old the oldest price it used is. A character it has no prices
-  for is not listed, and a family with no prices yet is told so rather than shown a page of
-  noughts.
+- **Priced at the auction house where Family has seen one, and at what a vendor pays where it has
+  not.** The game knows what a vendor pays for nearly everything, which is what makes the figure
+  cover a whole bank alt rather than the few dozen things you happened to search for.
 
-- What you have **up for sale** is not counted there: the Activity set already prices it at what
-  you are asking for it.
+- **It never gives a total on its own** — how much came from auction prices, how much from vendor
+  prices, and how many things it had no price for at all.
 
 ### Vendor prices on item tooltips
 

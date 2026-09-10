@@ -24,7 +24,6 @@ Tooltip.lua
 Summary.lua
 Talents.lua
 Contents.lua
-Worth.lua
 Professions.lua
 Character.lua
 Quests.lua

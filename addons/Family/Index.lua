@@ -268,32 +268,60 @@ end
 --------------------------------------------------------------------------------------------
 -- What it is all worth
 --
--- Asked for 2026-09-10, and the reason the price work was done at all: *a panel that says what
--- everything I own is worth*. The arithmetic lives here rather than in the panel because the
--- index is already the thing that knows who holds what, and a walk of it is one pass over
--- everything rather than a question asked once per member.
+-- Asked for 2026-09-10, and the reason the price work happened at all. The arithmetic lives here
+-- rather than in a panel because the index is already the thing that knows who holds what, and a
+-- walk of it is one pass over everything rather than a question asked once per member.
 --
--- **Three things this deliberately does not do.**
+-- **Two prices, in that order.** What the auction house was last seen asking, and where there is
+-- none, what a vendor pays. The first version used the auction price alone and left most of a
+-- family unvalued - reported from play as *far too many items without a price*, and rightly: an
+-- auction price exists only for what somebody has browsed, while the client states a sell price
+-- for nearly every item there is. The sum says how much of it came from each, because a bank alt
+-- valued at vendor prices and one valued at the auction house are two very different numbers and
+-- a reader has to be able to tell which they are looking at.
 --
--- It does not value what is up for auction. Those already have a column of their own on the
--- Activity set, priced at what the seller is actually asking, which is a better number than
--- what the market was last seen wanting - and counting them here as well would say the same
--- gold twice.
+-- **A sell price of nought is a price.** Plenty of things cannot be sold at all, and that is an
+-- answer rather than a gap - what counts as unpriced is an item this client has never named.
 --
--- It does not price an item from another realm's market. A price belongs to one realm and one
--- side, so a member is valued in the market they stand in, and a member on a realm nobody has
--- browsed is honestly worth nothing yet rather than worth what things cost somewhere else.
+-- **Everything a member holds**, which since 2026-09-10 includes what they have listed: bags,
+-- bank, unexpired mail and live auctions. Not the guild bank, which belongs to the guild and not
+-- to any one member, and not the keyring, which the client values at nothing anyway.
 --
--- **And it never reports a total without saying what it left out.** The count of items it could
--- not price travels beside the money, the way the pet training line reports what it accounted
--- for rather than a bare sum. A worth that quietly omits four hundred unpriced stacks is the
--- kind of number that gets believed.
+-- **And it never reports a total without saying what it left out.** The count it could not price
+-- travels beside the money, the way the pet training line reports what it accounted for rather
+-- than a bare sum. A worth that quietly omits four hundred stacks is the kind of number that gets
+-- believed.
 --------------------------------------------------------------------------------------------
 
 local function marketOf(meta)
 	local realm = meta and meta.realm
 	if type(realm) ~= "string" or realm == "" then return nil end
 	return realm .. "\30" .. (type(meta.faction) == "string" and meta.faction or "?")
+end
+
+-- **What a vendor pays, remembered account-wide.**
+--
+-- The client answers for any item it has in its cache and answers nothing for one it has not met
+-- this session, so asking alone would value a family differently at every login. Written down
+-- instead, by id and with no language in it, the same arrangement `FamilyDB.itemNames` uses - and
+-- filled in from wherever an item is looked at, so it fills up rather than being gathered.
+local function sellPriceOf(itemID)
+	if type(_G.FamilyDB) ~= "table" then return nil end
+	FamilyDB.sellPrices = FamilyDB.sellPrices or {}
+
+	local held = FamilyDB.sellPrices[itemID]
+	if held ~= nil then return held end
+
+	local asked = tonumber((select(11, Family:TryCall(GetItemInfo, itemID))))
+	if asked == nil then return nil end
+
+	FamilyDB.sellPrices[itemID] = asked
+	return asked
+end
+
+Index.SellPriceOf = function(_, itemID)
+	itemID = tonumber(itemID)
+	return itemID and sellPriceOf(itemID) or nil
 end
 
 function Index:Worth()
@@ -322,7 +350,8 @@ function Index:Worth()
 			familyName = link and Family.Wide:Called(link) or nil,
 			market = market,
 			worth = 0,
-			priced = 0,
+			atMarket = 0,
+			atVendor = 0,
 			unpriced = 0,
 			oldest = nil,
 		}
@@ -334,9 +363,7 @@ function Index:Worth()
 
 	for itemID, holders in pairs(entries) do
 		for key, record in pairs(holders) do
-			-- What a member is holding, which is not what they have listed: an auction is
-			-- already worth what its own seller is asking.
-			local held = record.bags + record.bank + record.mail
+			local held = record.bags + record.bank + record.mail + record.auctions
 
 			if held > 0 then
 				local row = rowFor(key)
@@ -345,12 +372,18 @@ function Index:Worth()
 
 				if type(price) == "table" and tonumber(price.p) then
 					row.worth = row.worth + price.p * held
-					row.priced = row.priced + held
+					row.atMarket = row.atMarket + held
 					if price.at and (not row.oldest or price.at < row.oldest) then
 						row.oldest = price.at
 					end
 				else
-					row.unpriced = row.unpriced + held
+					local sell = sellPriceOf(itemID)
+					if sell then
+						row.worth = row.worth + sell * held
+						row.atVendor = row.atVendor + held
+					else
+						row.unpriced = row.unpriced + held
+					end
 				end
 			end
 		end
@@ -364,16 +397,25 @@ function Index:Worth()
 	return rows
 end
 
+-- One member's share of it, which is what the possessions panel draws above their bags.
+function Index:WorthOf(key)
+	for _, row in ipairs(self:Worth()) do
+		if row.key == key then return row end
+	end
+	return nil
+end
+
 -- The same thing added up, for a heading or a grand total.
 function Index:WorthTotal(rows)
-	local worth, priced, unpriced, oldest = 0, 0, 0, nil
+	local worth, atMarket, atVendor, unpriced, oldest = 0, 0, 0, 0, nil
 
 	for _, row in ipairs(rows or self:Worth()) do
 		worth = worth + row.worth
-		priced = priced + row.priced
+		atMarket = atMarket + row.atMarket
+		atVendor = atVendor + row.atVendor
 		unpriced = unpriced + row.unpriced
 		if row.oldest and (not oldest or row.oldest < oldest) then oldest = row.oldest end
 	end
 
-	return worth, priced, unpriced, oldest
+	return worth, atMarket, atVendor, unpriced, oldest
 end

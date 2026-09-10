@@ -408,19 +408,20 @@ everywhere (§2.3), this is never a Mists-only refinement.
 A specialisation that has never been visited has nothing recorded for it, and is offered as
 such rather than drawn as an empty tree (§2.2).
 
-### 4.4.1 Worth
+**What a member's possessions come to** is said on their own page, under the line saying how
+current each part of the list is. The perimeter is bags, bank, unexpired mail and live auctions -
+not the guild bank, which belongs to the guild, and not the keyring, which is worth nothing.
 
-What everything the family holds is worth, at what the auction house was last seen asking, one
-line per member with the family's total above them. Prices come from browsing an auction house
-and belong to one realm and one side, so a member is valued in the market they stand in and a
-member on a realm nobody has browsed is worth nothing yet rather than worth what things cost
-elsewhere. What is up for auction is not counted here: it already has a column priced at what its
-seller is asking.
+Each item is valued at what the auction house was last seen asking, and where there is none, at
+what a vendor pays; the client states a sell price for nearly everything, so the second lane is
+what makes the figure cover a family rather than a corner of one. A sell price of nought is a
+price - plenty of things cannot be sold - and what is left unpriced is only what this client has
+never named.
 
-**Never a total without what it left out.** The line says how many items went into it and how many
-could not be priced, and how old the oldest price it used is. A family nothing has been priced for
-is told so rather than shown a page of noughts, and a member nothing could be priced for is not
-drawn at all.
+**Never a total on its own.** The line says how much of the sum came from auction prices and how
+much from vendor prices, because those are two very different numbers, and how much it could not
+price at all. Auction prices belong to one realm and one side, so a member is valued in the market
+they stand in.
 
 ### 4.5 Search
 

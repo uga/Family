@@ -3607,3 +3607,19 @@ that tool.
 Six checks, four mutations, all caught - the fourth only after a check was added for it, and that
 check failed against correct code on its first writing because its needle lived inside the right
 answer.
+
+---
+
+## 60. What the worth figure does in Whole Family mode
+
+**Open, and Alberto's own idea, kept here rather than guessed at.** The figure now lives on a
+member's Possessions page. What the same page should do with *Whole family* switched on is
+undecided: his suggestion is **a tick box that appears only in that mode** - ticked, the page
+lists every character's summary line instead of search results; unticked, the search behaves as it
+does today.
+
+That is a good shape and it has one thing to weigh: the search is what that mode is *for*, and a
+box that replaces it has to be obviously a mode rather than a filter. `Contents.lua` already
+refused a tick box once for a related reason - *the whole family beside a small square reads as a
+setting* - and chose a button that marks itself selected instead, which is the furniture this
+would sit beside.

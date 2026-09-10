@@ -1943,7 +1943,7 @@ local UIPrivate = {}
 local UI_FILES = { "Window.lua", "MemberPicker.lua", "ChoicePicker.lua", "MemberFilters.lua",
 	"Tooltip.lua",
 	"Summary.lua", "Talents.lua",
-	"Contents.lua", "Worth.lua", "Professions.lua", "Character.lua", "Quests.lua",
+	"Contents.lua", "Professions.lua", "Character.lua", "Quests.lua",
 	"Wide.lua", "Guild.lua",
 	"Broker.lua", "Options.lua", "About.lua", "Slash.lua" }
 
@@ -4545,44 +4545,92 @@ check("an item nobody owns gets nothing at all", tooltipFor(999111) == false)
 print()
 print("what everything is worth")
 
--- Asked for 2026-09-10, and the reason the price work happened at all. The arithmetic is a walk
--- of the index rather than a question per member, and it reports what it could not price beside
--- what it could - a worth that quietly omits four hundred unpriced stacks is the kind of number
--- that gets believed.
+-- Asked for 2026-09-10, and reworked the same day after Alberto saw it: valuing only at the
+-- auction house left most of a family unpriced, because an auction price exists for what somebody
+-- has browsed while the client states a sell price for nearly everything.
 ;(function()
 	local mine = "Rich-FireMaw"
 	local market = "Fire Maw\30Alliance"
 
 	Family.Database:SetMeta(mine, { name = "Rich", realm = "Fire Maw", faction = "Alliance",
 		classFile = "MAGE", level = 60 })
-	-- Containers holding slots, which is the shape the index reads: it counts what is in
-	-- bags, in the bank and on unexpired letters.
+	-- Twenty at a market price, seven the client will sell, three it will not name.
 	Family.Database:SetPayload(mine, {
-		bags = { { slots = { { id = 2589, count = 20 }, { id = 4306, count = 5 } } } },
-		bank = { containers = { { slots = { { id = 2589, count = 100 } } } } },
+		bags = { { slots = { { id = 2589, count = 20 }, { id = 4306, count = 7 },
+			{ id = 999321, count = 3 } } } },
 	})
 
 	FamilyDB.auctionPrices = FamilyDB.auctionPrices or {}
 	FamilyDB.auctionPrices[market] = { [2589] = { p = 300, at = time() - 86400 } }
+	FamilyDB.sellPrices = nil
+
+	local realItemInfo = GetItemInfo
+	GetItemInfo = function(id)
+		if id == 4306 then
+			return "Silk Cloth", "|Hitem:4306|h", 1, 1, 1, "", "", 1, nil, nil, 250
+		end
+		return realItemInfo(id)
+	end
 
 	Family.Index:Invalidate()
-	local rows = Family.Index:Worth()
-
-	local ours
-	for _, row in ipairs(rows) do if row.key == mine then ours = row end end
+	local ours = Family.Index:WorthOf(mine)
 
 	check("what a member holds is valued at what the market was last asking",
-		ours and ours.worth == 120 * 300, ours and tostring(ours.worth) or "no row")
-	check("and what could not be priced is counted rather than left out",
-		ours and ours.priced == 120 and ours.unpriced == 5,
-		ours and (ours.priced .. "/" .. ours.unpriced) or "no row")
-	-- A price is a photograph, so the age of the oldest one travels with the sum.
-	check("with the age of the oldest price that went into it",
+		ours and ours.atMarket == 20, ours and tostring(ours.atMarket) or "no row")
+	-- **The fix for what Alberto reported.** Without this the seven were unpriced, and so was
+	-- most of a real family: browsing prices a few hundred items, the client prices nearly all.
+	check("and what the market has nothing to say about falls back on what a vendor pays",
+		ours and ours.atVendor == 7 and ours.worth == 20 * 300 + 7 * 250,
+		ours and (ours.atVendor .. " / " .. ours.worth) or "no row")
+	-- What is left over is what this client has never named, and nothing else.
+	check("while an item the client will not name is the only kind left unpriced",
+		ours and ours.unpriced == 3, ours and tostring(ours.unpriced) or "no row")
+	check("with the age of the oldest market price that went into it",
 		ours and ours.oldest and (time() - ours.oldest) >= 86400,
 		ours and tostring(ours.oldest) or "no row")
 
-	-- **A price belongs to one realm and one side.** A member standing somewhere nobody has
-	-- browsed is honestly worth nothing yet, rather than worth what things cost elsewhere.
+	-- **A sell price of nought is a price.** Plenty of things cannot be sold, and that is an
+	-- answer rather than a gap - counting it as unpriced would report a bag of quest items as
+	-- something Family failed on.
+	FamilyDB.sellPrices = nil
+	GetItemInfo = function(id)
+		if id == 4306 then
+			return "Silk Cloth", "|Hitem:4306|h", 1, 1, 1, "", "", 1, nil, nil, 0
+		end
+		return realItemInfo(id)
+	end
+	Family.Index:Invalidate()
+	ours = Family.Index:WorthOf(mine)
+	check("and a thing no vendor will buy is priced at nothing rather than left out",
+		ours and ours.atVendor == 7 and ours.worth == 20 * 300,
+		ours and (ours.atVendor .. " / " .. ours.worth) or "no row")
+
+	-- **Remembered, or a family is worth a different number at every login.** The client answers
+	-- for what is in its cache this session and nothing for the rest, so asking alone is not a
+	-- reading anybody can rely on.
+	GetItemInfo = realItemInfo
+	Family.Index:Invalidate()
+	ours = Family.Index:WorthOf(mine)
+	check("what a vendor pays is written down, so a client that has forgotten still knows",
+		ours and ours.atVendor == 7, ours and tostring(ours.atVendor) or "no row")
+
+	-- **What is listed counts.** Changed 2026-09-10 on Alberto's word: the perimeter is bags,
+	-- bank, mail and auctions - not the guild bank, which is the guild's, and not the keyring,
+	-- which the client values at nothing anyway.
+	FamilyDB.sellPrices = nil
+	Family.Database:SetPayload(mine, {
+		bags = { { slots = { { id = 2589, count = 20 } } } },
+		auctions = { seen = time(), bidding = {},
+			selling = { { id = 2589, count = 5, buyout = 1, expiresBy = time() + 999 } } },
+	})
+	Family.Index:Invalidate()
+	ours = Family.Index:WorthOf(mine)
+	check("and what a member has up for sale is part of what they are holding",
+		ours and ours.atMarket == 25 and ours.worth == 25 * 300,
+		ours and (ours.atMarket .. " / " .. ours.worth) or "no row")
+
+	-- A price belongs to one realm and one side. Somebody standing where nobody has browsed
+	-- still has a vendor to fall back on, which is the whole point of the second lane.
 	local elsewhere = "Poor-Spineshatter"
 	Family.Database:SetMeta(elsewhere, { name = "Poor", realm = "Spineshatter",
 		faction = "Alliance", classFile = "ROGUE", level = 60 })
@@ -4590,36 +4638,19 @@ print("what everything is worth")
 		{ bags = { { slots = { { id = 2589, count = 50 } } } } })
 	Family.Index:Invalidate()
 
-	local theirs
-	for _, row in ipairs(Family.Index:Worth()) do
-		if row.key == elsewhere then theirs = row end
-	end
-	check("while a member on a realm nobody has browsed is priced by nothing",
-		theirs and theirs.worth == 0 and theirs.unpriced == 50,
-		theirs and (theirs.worth .. "/" .. theirs.unpriced) or "no row")
+	local theirs = Family.Index:WorthOf(elsewhere)
+	check("while another realm's market prices nobody, whatever this one is asking",
+		theirs and theirs.atMarket == 0, theirs and tostring(theirs.atMarket) or "no row")
 
-	-- **What is up for auction is not counted here.** It has a column of its own, priced at
-	-- what the seller is actually asking, and counting it twice is saying the same gold twice.
-	Family.Database:SetPayload(mine, {
-		bags = { { slots = { { id = 2589, count = 20 }, { id = 4306, count = 5 } } } },
-		bank = { containers = { { slots = { { id = 2589, count = 100 } } } } },
-		auctions = { seen = time(), bidding = {},
-			selling = { { id = 2589, count = 1000, buyout = 1,
-				expiresBy = time() + 999 } } },
-	})
-	Family.Index:Invalidate()
-	for _, row in ipairs(Family.Index:Worth()) do if row.key == mine then ours = row end end
-	check("and what is up for sale is left to the column that already prices it",
-		ours and ours.worth == 120 * 300, ours and tostring(ours.worth) or "no row")
-
-	local worth, priced, unpriced = Family.Index:WorthTotal()
-	check("the family's own total is the rows added up",
-		worth >= 120 * 300 and priced >= 120 and unpriced >= 55,
-		table.concat({ worth, priced, unpriced }, "/"))
+	local worth, atMarket, atVendor, unpriced = Family.Index:WorthTotal()
+	check("and the family's total is the rows added up, bucket by bucket",
+		worth >= 25 * 300 and atMarket >= 25 and (atVendor + unpriced) >= 50,
+		table.concat({ worth, atMarket, atVendor, unpriced }, "/"))
 
 	Family.Database:Forget(mine)
 	Family.Database:Forget(elsewhere)
 	FamilyDB.auctionPrices[market] = nil
+	FamilyDB.sellPrices = nil
 	Family.Index:Invalidate()
 end)()
 
@@ -8050,79 +8081,50 @@ check("ammo bags are still only expected", sources.ammoBags == "expected",
 	tostring(sources.ammoBags))
 
 print()
-print("the Worth section")
+print("what a member's possessions come to, on their own page")
 
--- The panel over the arithmetic checked above. A section of its own rather than a set on the
--- summary, because the summary's sets read meta and nothing else on purpose, and this walks
--- every item every member holds.
+-- Where the figure lives since 2026-09-10. A section of its own read oddly beside everything
+-- else, and the number belongs where the things it counts are drawn - under the line saying how
+-- current each part of the list is, because those two answer the same question from opposite
+-- ends: how much to trust the list, and what the list comes to.
 ;(function()
-	local rich = "Croesus-FireMaw"
-	local market = "Fire Maw\30Alliance"
+	-- The panel draws whoever the picker lands on, and with no member chosen that is the
+	-- character being played - so the fixture goes on them and is put back afterwards, the
+	-- way the professions checks already borrow and return a record.
+	local who = Family:CurrentMember()
+	local market = (Family.Database:Meta(who) or {}).realm .. "\30"
+		.. ((Family.Database:Meta(who) or {}).faction or "?")
 
-	Family.Database:SetMeta(rich, { name = "Croesus", realm = "Fire Maw", faction = "Alliance",
-		classFile = "MAGE", level = 60 })
-	Family.Database:SetPayload(rich, {
-		bags = { { slots = { { id = 2589, count = 20 }, { id = 4306, count = 7 } } } },
+	local heldPayload = Family.Database:Payload(who)
+	Family.Database:SetPayload(who, {
+		bags = { { slots = { { id = 2589, count = 20 }, { id = 4306, count = 7 },
+			{ id = 999321, count = 3 } } } },
 	})
 
-	-- Somebody in the same market holding only things nobody has a price for.
-	local pauper = "Pauper-FireMaw"
-	Family.Database:SetMeta(pauper, { name = "Pauper", realm = "Fire Maw", faction = "Alliance",
-		classFile = "ROGUE", level = 60 })
-	Family.Database:SetPayload(pauper,
-		{ bags = { { slots = { { id = 4306, count = 9 } } } } })
-
 	FamilyDB.auctionPrices = FamilyDB.auctionPrices or {}
-	FamilyDB.auctionPrices[market] = { [2589] = { p = 500, at = time() - 3 * 86400 } }
+	FamilyDB.auctionPrices[market] = { [2589] = { p = 300, at = time() - 86400 } }
+	FamilyDB.sellPrices = { [4306] = 250 }
 	Family.Index:Invalidate()
 
-	-- The window open, because a row on a hidden panel is not drawn and the harness is right
-	-- to say so.
 	Family.UI:Show()
-	Family.UI:ShowTab("worth")
+	Family.UI:ShowTab("contents")
 
-	-- Read off this panel's own rows rather than swept out of every string in the client: a
-	-- sum of money is a phrase half the interface can produce, and a check that finds one
-	-- somewhere else passes for the wrong reason.
-	--
-	-- The needle is built with the same formatter the panel uses, because what is under test
-	-- is the arithmetic arriving on the row - money has its own checks, and looking for the
-	-- plain digits fails on the colour codes woven through them rather than on the number.
-	check("the Worth section adds up what the family holds",
-		drawnText(Family.UI:Money(20 * 500)), "20 x 500")
-	-- **Never a total without what it left out.** A worth that quietly omits the unpriced is
-	-- the kind of number that gets believed, and believed numbers sell a bank alt short. The
-	-- sentence is about the whole family, so the count in it is everybody's, not this row's.
-	check("and says how much of it it could not price",
-		visibleText("across 20 item(s)") and visibleText("could not be priced"))
-	-- A price is a photograph, so how old the oldest one is travels with the sum.
-	check("with the age of the oldest price it used",
-		visibleText("3d ago"))
-	check("and the member who holds it, with what they are holding",
-		drawnText("Croesus") and drawnText("20 priced, 7 not"))
-	-- **Somebody nothing could be priced for is not a row.** A line of noughts beside a name
-	-- says that character owns nothing, which is a different claim from Family not knowing what
-	-- their bags are worth - and the sentence above already says how much of the family that is.
-	--
-	-- Asked by the name rather than by the count: the first version looked for *0 priced,*,
-	-- which lives inside *20 priced,* on the row above and therefore failed against correct
-	-- code. A needle that is a substring of the right answer tests nothing.
-	check("while a member nothing could be priced for gets no row of noughts",
-		drawnText("Croesus") and not drawnText("Pauper"))
+	check("a member's page says what everything they hold comes to",
+		visibleText(Family.UI:Money(20 * 300 + 7 * 250)),
+		Family.UI:Money(20 * 300 + 7 * 250))
+	-- **Never a total on its own.** A bank alt valued at vendor prices and one valued at the
+	-- auction house are two very different numbers, and a reader has to be able to tell which
+	-- they are looking at - and how much of the bag the sum did not cover at all.
+	check("and how much of it came from each kind of price",
+		visibleText("20 at auction prices, 7 at vendor prices, 3 not priced"))
+	check("with the age of the oldest auction price it used",
+		visibleText("oldest price"))
 
-	-- **Nothing priced is not nothing owned**, and §2.2 says the two must not read alike: a
-	-- page of noughts says the family is poor, which is a different claim from not knowing.
-	FamilyDB.auctionPrices[market] = nil
-	Family.Index:Invalidate()
-	Family.UI:ShowTab("worth")
-	check("while a family nothing has been priced for is told so, not shown noughts",
-		visibleText("Nothing here has a price yet") and not drawnText("0g 00s 00c"))
-
-	Family.Database:Forget(rich)
-	Family.Database:Forget(pauper)
-	Family.Index:Invalidate()
-	Family.UI:ShowTab("summary")
 	Family.UI:Hide()
+	Family.Database:SetPayload(who, heldPayload)
+	FamilyDB.auctionPrices[market] = nil
+	FamilyDB.sellPrices = nil
+	Family.Index:Invalidate()
 end)()
 
 print()

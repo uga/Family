@@ -1060,6 +1060,32 @@ local function build(frame)
 		parts[#parts + 1] = meta.auctionsSeen
 			and string.format(L["auctions %s"], UI:Ago(meta.auctionsSeen))
 			or L["|cff9d9d9dauctions not seen|r"]
+		-- **What all of it is worth**, said under how current each part of it is, because the
+		-- two answer the same question from opposite ends: one is how much to trust the list,
+		-- the other is what the list comes to.
+		--
+		-- Asked for 2026-09-10, after a section of its own turned out to sit oddly beside
+		-- everything else. The number belongs where the things it counts are drawn.
+		--
+		-- **Never a total on its own.** It says how much of the sum came from the auction house
+		-- and how much from what a vendor pays, because a bank alt valued at vendor prices and
+		-- one valued at the auction house are two very different numbers, and how much it could
+		-- not price at all - which is the only honest way to publish a figure this large.
+		local held = Family.Index:WorthOf(member.key)
+		if held and (held.atMarket > 0 or held.atVendor > 0) then
+			local line = string.format(
+				L["worth %s   |cff888888(%d at auction prices, %d at vendor prices, "
+					.. "%d not priced)|r"],
+				UI:Money(held.worth), held.atMarket, held.atVendor, held.unpriced)
+
+			if held.oldest then
+				line = line .. "   |cff888888" ..
+					string.format(L["oldest price %s"], UI:Ago(held.oldest)) .. "|r"
+			end
+
+			parts[#parts + 1] = "\n" .. line
+		end
+
 		status:SetText(table.concat(parts, "   |cff888888|||r   "))
 
 		if #drawn == 0 then
