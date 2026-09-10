@@ -745,14 +745,14 @@ local function build(frame)
 		return button
 	end
 
-	-- Open this panel on a particular member's particular profession, for anything that
-	-- knows both - the summary, where clicking a profession is the obvious thing to try.
-	--
 	-- Selected by hand as far as the picker is concerned, because it was: somebody clicked
 	-- that member's row, and the choice should stand until they choose otherwise.
-	function UI:ShowProfessionFor(key, profession)
-		UI:ShowTab("professions")
-
+	--
+	-- Registered rather than declared here. `UI:ShowProfessionFor` has to exist before this
+	-- panel has ever been opened - a tab is built the first time it is looked at, and the
+	-- caller is a click on another panel - so the door is at the file's own scope and this is
+	-- what it opens once the room behind it exists.
+	UI.__selectProfession = function(key, profession)
 		for _, entry in ipairs(membersWithSkills()) do
 			if entry.key == key then
 				picker:Select(entry)
@@ -1456,6 +1456,21 @@ local function build(frame)
 		for index = used + 1, #rows do rows[index]:Hide() end
 		list:SetHeight(math.max(y, 1))
 	end
+end
+
+-- **Open this panel on a particular member's particular profession**, for anything that knows
+-- both - the summary, where clicking a profession is the obvious thing to try.
+--
+-- At the file's own scope, not inside the builder. A tab is built the first time it is looked at,
+-- and this is called by a click on a *different* panel - so on a session where nobody had opened
+-- Professions yet the function did not exist, and the click raised *attempt to call a nil value*
+-- once per row it touched. Reported from play 2026-09-10, twenty-one times over.
+--
+-- `ShowTab` is what builds it, so the selection happens after that and only if the panel got as
+-- far as registering itself.
+function UI:ShowProfessionFor(key, profession)
+	UI:ShowTab("professions")
+	if UI.__selectProfession then UI.__selectProfession(key, profession) end
 end
 
 UI:RegisterTab("professions", L["Professions"], build)

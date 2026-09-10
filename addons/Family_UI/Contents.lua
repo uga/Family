@@ -720,6 +720,24 @@ local function build(frame)
 
 	----------------------------------------------------------------------------------------
 
+	-- Whole family is switched off, because it was a member who was clicked. Selected by hand
+	-- as far as the picker is concerned, because it was.
+	--
+	-- Registered rather than declared here, for the reason written beside the professions
+	-- one: the door has to exist before this panel has ever been opened.
+	UI.__selectContents = function(key)
+		for _, entry in ipairs(membersWithContents()) do
+			if entry.key == key then
+				picker:Select(entry)
+				break
+			end
+		end
+
+		wholeFamily = false
+		if search then search:SetText("") end
+		frame:Refresh()
+	end
+
 	function frame:Refresh()
 		UI:MarkSelected(everyone, wholeFamily)
 
@@ -1040,6 +1058,12 @@ local function build(frame)
 			return finish(L["|cff9d9d9dNothing recorded yet.|r"])
 		end
 
+		-- Left where a check can read it. *Is this panel showing the member somebody asked
+		-- for* cannot be answered by looking for their name on screen: the picker draws a
+		-- name whether or not it was chosen, so a check that searches for one passes for a
+		-- panel that ignored the request entirely.
+		UI.__contentsShowing = member.key
+
 		local payload = UI:Payload(member.key)
 		local meta = member.meta
 		local drawn = containersOf(payload, meta)
@@ -1230,6 +1254,19 @@ local function build(frame)
 
 		return finish()
 	end
+end
+
+-- **Open this panel on a particular member**, for anything that knows one - the summary's Bags
+-- set, where clicking a character's row is the obvious thing to try and did nothing until
+-- 2026-09-10. A count of free slots is a reason to go and look at what is in them, and a reader
+-- should not have to find the panel and then find the character again.
+--
+-- At the file's own scope, not inside the builder, and the professions door beside it says why:
+-- a tab is built the first time it is looked at, so a function declared inside the builder does
+-- not exist for a caller on another panel.
+function UI:ShowContentsFor(key)
+	UI:ShowTab("contents")
+	if UI.__selectContents then UI.__selectContents(key) end
 end
 
 UI:RegisterTab("contents", L["Possessions"], build)

@@ -943,9 +943,13 @@ end
 
 UI.__stockOf = function(_, key) return stockOf[key] end
 
--- Gold alone, because eighty-eight pixels is what the column has and a stock of thousands does
--- not turn on its coppers. A member nothing could be priced for gets the blank that means nobody
--- looked, not a nought - §2.2, and the difference between a poor alt and an unread one.
+-- **Gold and silver, and no copper.** Eighty-eight pixels holds the two - *4310g 25s* is nine
+-- characters and the widest stock anybody is likely to have is ten - and it will not hold the
+-- three, which is what Money needs a hundred and six for. Asked for 2026-09-10, having seen it in
+-- play with the gold alone: the silver reads, the copper is noise on a figure this size.
+--
+-- A member nothing could be priced for gets the blank that means nobody looked, not a nought -
+-- §2.2, and the difference between a poor alt and an unread one.
 CELL.stock = function(_, key)
 	local row = stockOf[key]
 
@@ -956,7 +960,8 @@ CELL.stock = function(_, key)
 	if not row or (row.atMarket + row.atVendor) == 0 then
 		answer = UNKNOWN
 	else
-		answer = string.format("|cffffd700%d|rg", math.floor(row.worth / 10000))
+		answer = string.format("|cffffd700%d|rg |cffc7c7cf%02d|rs",
+			math.floor(row.worth / 10000), math.floor((row.worth % 10000) / 100))
 	end
 
 	if key == Family:CurrentMember() then UI.__cellStock = answer end
@@ -1378,7 +1383,8 @@ local TOTAL = {
 			end
 		end
 		if not any then return UNKNOWN end
-		return string.format("|cffffd700%d|rg", math.floor(sum / 10000))
+		return string.format("|cffffd700%d|rg |cffc7c7cf%02d|rs",
+			math.floor(sum / 10000), math.floor((sum % 10000) / 100))
 	end,
 
 	played = function(members)
@@ -3274,6 +3280,20 @@ local function build(frame)
 			if currentSet.id == "professions" then
 				row.professions = professionsIn(member.meta)
 				row.opens = row.professions and openProfession or nil
+			end
+
+			-- **And clicking a character on the Bags set opens their bags.** Asked for
+			-- 2026-09-10, from the same instinct that put the professions one here: a
+			-- count of free slots is a reason to go and look at what is in them, and a
+			-- reader should not have to find the panel and then find the character again.
+			--
+			-- No column to work out, unlike the professions row: every cell of this set
+			-- is about the same thing, so wherever the click landed the answer is the
+			-- member whose row it was.
+			if currentSet.id == "bags" then
+				row.opens = function(self)
+					UI:ShowContentsFor(self.memberKey)
+				end
 			end
 
 			-- The letters themselves, when somebody has clicked the figure that counts them.

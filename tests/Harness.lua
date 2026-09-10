@@ -8081,6 +8081,66 @@ check("ammo bags are still only expected", sources.ammoBags == "expected",
 	tostring(sources.ammoBags))
 
 print()
+print("a panel can be opened on a member before it has ever been built")
+
+-- **Reported from play 2026-09-10, twenty-one times in one sitting.** A tab is built the first
+-- time it is looked at, and both of these doors were declared *inside* their builder - so on a
+-- session where nobody had opened Professions yet, clicking a profession on the summary raised
+-- *attempt to call a nil value* once per row it touched. The door has to be at the file's scope
+-- and `ShowTab` is what builds the room behind it.
+;(function()
+	check("the professions panel can be opened on a member before it exists",
+		type(Family.UI.ShowProfessionFor) == "function")
+	check("and so can the possessions panel",
+		type(Family.UI.ShowContentsFor) == "function")
+end)()
+
+print()
+print("clicking a Bags row opens that character's possessions")
+
+-- Asked for 2026-09-10, from the same instinct that already put the professions one there: a
+-- count of free slots is a reason to go and look at what is in them, and a reader should not
+-- have to find the panel and then find the character again.
+;(function()
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	fireClick(Family.UI.__summarySets.bags)
+	Family.UI:Refresh()
+
+	local who, row = nil, nil
+	for _, f in ipairs(frames) do
+		if onScreen(f) and f.memberKey and f.opens then
+			row, who = f, f.memberKey
+			break
+		end
+	end
+
+	check("a member's row on the Bags set has something to open", row ~= nil,
+		tostring(who))
+
+	if row then
+		row.opens(row)
+		check("and clicking it lands on the possessions panel",
+			Family.UI:CurrentTab() == "contents", tostring(Family.UI:CurrentTab()))
+		-- Pointing at the character whose row it was, which is the whole of the ask: the
+		-- panel opening on somebody else is one more thing to fix by hand than not opening.
+		--
+		-- Asked of the panel rather than of the screen. The picker draws a name whether or
+		-- not it was chosen, so looking for one passes for a panel that ignored the request
+		-- - which is how the mutation that removes the selection first came back clean.
+		check("showing the character whose row was clicked",
+			Family.UI.__contentsShowing == who,
+			tostring(Family.UI.__contentsShowing) .. " vs " .. tostring(who))
+	end
+
+	-- Put back where the next check expects it: this panel now remembers a member, and one
+	-- chosen here would have the possessions checks further down drawing somebody else.
+	Family.UI:ShowContentsFor(Family:CurrentMember())
+	Family.UI:ShowTab("summary")
+	Family.UI:Hide()
+end)()
+
+print()
 print("the Stock column")
 
 -- Asked for 2026-09-10: the figure beside the money, which is the other half of the same
@@ -8125,8 +8185,12 @@ print("the Stock column")
 
 	-- **Gold alone in the cell.** Eighty-eight pixels is what the column has, and a stock of
 	-- thousands does not turn on its coppers.
-	check("the cell says what it comes to, in gold",
-		drawnText("206|rg"), "40 x 5g + 6 x 1g")
+	-- Asked of the cell itself. Looking for the figure on the panel finds it in the totals
+	-- line, which says the same thing when one member is the only priced one - so a mutation
+	-- that changed only the cell came back clean against a check that was reading the total.
+	check("the cell says what it comes to, in gold and silver",
+		Family.UI.__cellStock == "|cffffd700206|rg |cffc7c7cf00|rs",
+		tostring(Family.UI.__cellStock))
 
 	-- **A member nothing could be priced for gets the blank that means nobody looked.** A
 	-- nought there would say the character owns nothing, which is a different claim (§2.2).
@@ -8141,7 +8205,7 @@ print("the Stock column")
 	-- gold is what a Money cell says for anybody broke, and a needle that matches it tests
 	-- the wrong column. The same trap as looking for "0 priced," inside "20 priced,".
 	check("while a member nothing could be priced for is blank, not nought",
-		not drawnText("206|rg"))
+		not drawnText("206|rg |cffc7c7cf00|rs"))
 	-- And said of the cell itself, because *the number is gone* is also what a cell reading
 	-- nought would look like from outside, and nought is a claim that character owns nothing.
 	check("and the cell says so with the blank that means nobody looked",

@@ -2575,3 +2575,31 @@ tell an accident from a decision, so it is not refused; the check is where the t
 distinguishable, because somebody is looking. Proved by putting the counters back on the shared
 key: the gate reddens and names all three, `AUCTION_HOUSE_SHOW`, `AUCTION_HOUSE_CLOSED` and
 `OWNED_AUCTIONS_UPDATED`. The whole addon was clean of any other clash the day it was added.
+
+## L-069 — A door declared inside the room it opens
+
+`UI:ShowProfessionFor` lets another panel open the professions page on a particular member. It was
+declared inside that page's **builder**, and a tab in this window is built the first time somebody
+looks at it — so on any session where nobody had opened Professions yet, the function did not
+exist, and clicking a profession on the summary raised *attempt to call a nil value*. Reported from
+play, twenty-one times in one sitting, and confirmed by the reporter in one sentence: open
+Professions once and it works from then on.
+
+**It had been right for as long as anybody happened to open that panel first**, which on a panel
+people use constantly is nearly always. That is the shape worth remembering: the fault is not rare,
+it is *ordered* — invisible to anyone whose habits happen to build the room before knocking, and
+certain for anyone whose do not. No amount of using it finds that; only asking what has to be true
+before the first call does.
+
+And the same mistake was being made a second time in the same hour: the possessions door, written
+that afternoon to match the professions one, was copied into the same wrong place.
+
+**What now catches it.** *The professions panel can be opened on a member before it exists*, and
+the same for possessions — two checks that ask nothing but whether the function is there, before
+any panel has been shown. Both doors now sit at their file's own scope and call `ShowTab`, which
+builds the room, and then a hook the builder registers. The mutation that puts either back inside
+the builder takes the harness down.
+
+The general shape: **anything one panel offers another has to exist before either has been drawn.**
+A builder is the wrong scope for a public entry point, however natural it is to write it where the
+things it touches are in scope.

@@ -49,6 +49,9 @@ picks itself up where it left off.
 - **It adds up per realm and per faction**, like the money beside it. A character nothing could be
   priced for is blank rather than nought: that is Family not knowing, not them owning nothing.
 
+- **Clicking a character on the Bags set opens their possessions**, the way clicking a profession
+  already opened that profession.
+
 - **The Mount column moved to Miscellaneous** to make room, and **Class moved into the row's
   tooltip** to make room for it there. A character's class is still on every row, in the colour of
   their name.
@@ -63,6 +66,11 @@ picks itself up where it left off.
 
 - **It never gives a total on its own** — how much came from auction prices, how much from vendor
   prices, and how many things it had no price for at all.
+
+### Fixed
+
+- **Clicking a profession on the summary did nothing** until you had opened the Professions panel
+  once in that session — after which it worked for the rest of it.
 
 ### Vendor prices on item tooltips
 
