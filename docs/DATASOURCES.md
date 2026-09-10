@@ -950,6 +950,19 @@ level and a suffix, so two rows can share an id and be different things; Family 
 because the tooltip that will ask knows an id and nothing else, and the cheapest variant therefore
 speaks for the plain one.
 
+**Confirmed end to end 2026-09-10**, eleven auctions with stacks from one to a hundred and
+fifty-two, the panel's total held against the auction window row by row:
+
+    Goblin Deviled Clams  x12   19s99c each   2g39s88c
+    Solid Stone          x152    3s98c each   6g04s96c
+    Vermilion Onyx         x1   49g99s82c    49g99s82c
+    ... eleven rows ...                      75g80s94c
+
+Which is what the Activity set drew, to the copper. **Not multiplying would have given 62g80s86c**
+- thirteen gold out of seventy-five, on a screen where nothing else says what the answer should
+be. That is why the question went to the person who typed the prices rather than being settled by
+which reading looked more plausible: both did.
+
 **And the owner list does answer there.** Listing one item took `GetNumOwnedAuctions` from nought
 to one and fired `OWNED_AUCTIONS_UPDATED` four times, with `COMMODITY_SEARCH_RESULTS_UPDATED`
 firing three. Both `GetOwnedAuctionInfo` and `GetOwnedAuctions` are present. So backlog 56 has a
