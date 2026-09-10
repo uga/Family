@@ -537,14 +537,68 @@ local function priceLines(tooltip, itemID)
 	-- this lot cost* is not, and would need the buy price to be a thing the family could act on
 	-- rather than a thing one vendor was seen charging.
 	local count = (sell and sell > 0) and slotCount(tooltip, itemID) or nil
-	if count then
-		if (Family:TryCall(IsControlKeyDown)) then
-			lines[#lines + 1] = { string.format(L["Stack of %d"], count),
-				UI:Coins(sell * count), 0.4, 0.73, 1, 1, 1, 1 }
-		else
-			-- Said out loud only where it would do something, so an item that is not in a
-			-- stack in front of you carries no offer of a key that would answer nothing.
+	local held = Family.Index and Family.Index.WorthOfItem
+		and Family.Index:WorthOfItem(itemID) or nil
+	-- Nought held at nought each is not an answer worth a line, and neither is a lot this
+	-- client could not price at all.
+	if held and (held.atMarket + held.atVendor) == 0 then held = nil end
+
+	local down = Family:TryCall(IsControlKeyDown) and true or false
+
+	if count and down then
+		lines[#lines + 1] = { string.format(L["Stack of %d"], count),
+			UI:Coins(sell * count), 0.4, 0.73, 1, 1, 1, 1 }
+	end
+
+	-- **And what the family's whole lot of it comes to**, which is the question the stack line
+	-- answers for the pile in front of you and could never answer anywhere else.
+	--
+	-- Reported 2026-09-10 from play, at an auction house: *CTRL does not multiply here*. It
+	-- cannot, and not for want of trying - the count in the bags case is only usable because it
+	-- can be checked against the item the tooltip is describing, and on somebody else's auction
+	-- row there is nothing to check it against. So outside your own bags the key answers the
+	-- question Family is the only addon in the game that can answer: not what this pile is
+	-- worth, but what everything your characters are holding of it is worth.
+	--
+	-- Drawn like the Stock cell's tooltip on the summary, with the same three already-translated
+	-- labels under it, because it is the same figure asked about one item instead of one member -
+	-- and because a total reached at vendor prices and one reached at the auction house are two
+	-- very different numbers.
+	if held and down then
+		-- With the age of the oldest market reading that went into it, for the same reason the
+		-- auction line carries one: a market price is a photograph, and part of the lot may have
+		-- been valued from a reading taken on a realm nobody has visited for a fortnight.
+		local figure = UI:Coins(held.worth)
+		if held.oldest then
+			figure = string.format("%s |cff888888%s|r", figure, UI:Ago(held.oldest))
+		end
+
+		lines[#lines + 1] = { L["Worth"], figure, 0.4, 0.73, 1, 1, 1, 1 }
+		if held.atMarket > 0 then
+			lines[#lines + 1] = { L["at auction prices"], tostring(held.atMarket),
+				0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
+		end
+		if held.atVendor > 0 then
+			lines[#lines + 1] = { L["at vendor prices"], tostring(held.atVendor),
+				0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
+		end
+		if held.unpriced > 0 then
+			lines[#lines + 1] = { L["with no price"], tostring(held.unpriced),
+				0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
+		end
+	end
+
+	-- Said out loud only where it would do something, so an item nobody is holding and that is
+	-- not in a stack in front of you carries no offer of a key that would answer nothing.
+	--
+	-- One hint for two answers, and the stack wins where both are there: it is the nearer of the
+	-- two and the one somebody is looking at a bag to ask. Holding the key then shows both, which
+	-- is more than the hint promised and never less.
+	if not down then
+		if count then
 			lines[#lines + 1] = { L["|cff888888CTRL: what the stack is worth|r"] }
+		elseif held then
+			lines[#lines + 1] = { L["|cff888888CTRL: what the family's lot is worth|r"] }
 		end
 	end
 

@@ -405,6 +405,71 @@ function Index:WorthOf(key)
 	return nil
 end
 
+-- **What the family's lot of one item comes to**, which is the same walk as `Worth` narrowed to
+-- a single id rather than a second way of pricing things.
+--
+-- Asked for 2026-09-10, for the item tooltip, where the count of what the family holds has been
+-- drawn since the possessions block was written and its value never was. Outside your own bags
+-- there is no pile to multiply - on an auction row the frame belongs to whoever drew it and a
+-- count read off it could not be checked against anything (L-066's shape) - and this needs no
+-- pile at all: it is the index, which knows who holds what wherever they are standing.
+--
+-- **Valued per holder, not per reader.** A price is a photograph of one realm and one side, so a
+-- brother on another realm is valued at his market and not at ours. That is why the market is
+-- looked up per member here exactly as `Worth` does it, rather than asking `Auctions:PriceOf`
+-- once for the reader and multiplying.
+--
+-- The guild bank is left out, as it is everywhere else this arithmetic runs: it belongs to the
+-- guild rather than to any member, and the tooltip's own count of it is drawn on its own line.
+function Index:WorthOfItem(itemID)
+	itemID = tonumber(itemID)
+	if not itemID then return nil end
+	refresh()
+
+	local holders = entries[itemID]
+	if not holders then return nil end
+
+	local markets = {}
+	local out = { held = 0, worth = 0, atMarket = 0, atVendor = 0, unpriced = 0, oldest = nil }
+
+	for key, record in pairs(holders) do
+		local held = record.bags + record.bank + record.mail + record.auctions
+
+		if held > 0 then
+			local borrowed = Family.Wide and Family.Wide:Borrowed(key)
+			local meta = (borrowed and borrowed.meta) or Family.Database:Meta(key) or {}
+
+			local market = marketOf(meta)
+			if market and markets[market] == nil then
+				markets[market] = Family.Auctions and Family.Auctions:Prices(market) or false
+			end
+
+			local price = market and markets[market] and markets[market][itemID] or nil
+
+			out.held = out.held + held
+
+			if type(price) == "table" and tonumber(price.p) then
+				out.worth = out.worth + price.p * held
+				out.atMarket = out.atMarket + held
+				if price.at and (not out.oldest or price.at < out.oldest) then
+					out.oldest = price.at
+				end
+			else
+				local sell = sellPriceOf(itemID)
+				if sell then
+					out.worth = out.worth + sell * held
+					out.atVendor = out.atVendor + held
+				else
+					out.unpriced = out.unpriced + held
+				end
+			end
+		end
+	end
+
+	if out.held == 0 then return nil end
+	return out
+end
+
 -- The same thing added up, for a heading or a grand total.
 function Index:WorthTotal(rows)
 	local worth, atMarket, atVendor, unpriced, oldest = 0, 0, 0, 0, nil

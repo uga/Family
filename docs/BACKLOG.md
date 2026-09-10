@@ -3635,3 +3635,32 @@ called by hand.
 **Why this is not "the note lies".** The note is honest about what Family knows: it says *click to
 open* because Family has seen that window once and recorded what opened it. The fault is between
 that record and the cast, and on at least one profession the record is fine.
+
+---
+
+## 62. The stack multiplication, away from the bags
+
+**Slice B of the CTRL work**, split off 2026-09-10 when slice A landed. A is *what the family's lot
+is worth*, which needs no pile at all; this is the other half Alberto asked for — **pila di N**, on
+an auction row, the way it works in the bags.
+
+**Why it is not built with A.** The bags line is safe because the count is checkable: the frame the
+tooltip was opened for gives a bag and a slot, `Bags:SlotContents` says what is in that slot, and
+the line is dropped where that disagrees with the item being described. Away from the bags there is
+no such check. Alberto's own report was made with **Auctionator** loaded, so the row under the
+pointer is a frame Family did not draw and knows nothing about.
+
+**The reading that would settle it**, and it is one hover:
+
+1. What `GameTooltip:GetOwner()` actually answers on an auction row on that client — the frame, its
+   `GetID`, its parent and that parent's `GetID`.
+2. Whether anything on it yields a count, and whether that count can be **checked against the item**
+   — for the default browse list `GetAuctionItemLink("list", i)` names the item at index `i`, which
+   is exactly the check the bags case has; for somebody else's frame there may be none.
+3. The same two on a merchant frame and a loot window, which are the other places a pile sits in
+   front of you.
+
+**And the rule that decides it, written before the reading rather than after:** where a count cannot
+be checked against the item, the line is not drawn. A missing line costs somebody a keypress; a
+count against the wrong item is a wrong number that reads exactly like a right one, and this project
+has already refused that trade once.

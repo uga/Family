@@ -877,6 +877,19 @@ on its own never mentions it. Family works out how many are there from the slot 
 is on, and says nothing at all unless that slot really holds the item being described, so an
 unusual bag addon costs you the line rather than a wrong number.
 
+**Hold CTRL anywhere else** — at the auction house, at a vendor, over a link somebody posted in
+chat — and Family answers a question nothing else can: *what is everything my characters are
+holding of this worth?* One line with the money, and under it how much of it was reached at
+auction prices and how much at what a vendor pays, because those are two very different numbers.
+Each character is valued at their own realm's market, not at yours, and the age of the oldest
+reading that went into the figure sits beside it. The guild bank is counted on its own line above
+and is left out of this one: it is the guild's, not yours to spend.
+
+There is no *stack of* line away from your bags, and that is not an oversight. An auction row is
+drawn by whoever wrote the auction house you are using, and a count read off somebody else's frame
+could not be checked against the item you are hovering — so it would sometimes be a wrong number
+that reads exactly like a right one. Family would rather answer a different question correctly.
+
 If two characters see different prices for one thing, the higher is kept: a reputation discount
 only ever makes a vendor cheaper, so the highest price anyone was quoted is the closest thing to
 the real one.

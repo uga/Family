@@ -78,6 +78,12 @@ picks itself up where it left off.
   be guessing that anybody sells it.
 
 - **Hold CTRL over a stack** in your bags and the tooltip says what the whole stack sells for.
+
+- **Hold CTRL anywhere else** — at the auction house, at a vendor, over a link in chat — and the
+  tooltip says what everything your characters are holding of that item is worth, with how much of
+  it was reached at auction prices and how much at what a vendor pays. It is the question no other
+  addon can answer, because no other addon knows what your alts have. Each character is valued at
+  their own realm's market, and the guild bank stays out of it.
   The key can be pressed with the pointer already there. Only over a stack — a single item never
   offers the key.
 

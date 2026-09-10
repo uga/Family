@@ -519,6 +519,14 @@ the whole stack sells for; the count comes
 from the slot the pointer is on, and is used only where that slot really holds the item the
 tooltip is describing.
 
+**Away from the bags the same key answers a different question**: what the whole family's holding
+of that item is worth, with how much of the figure came from auction prices and how much from what
+a vendor pays, and the age of the oldest reading in it. Each holder is valued at their own realm
+and side rather than at the reader's, because a price belongs to one market. The guild bank is
+outside it, as it is outside every other worth Family states. There is deliberately no stack line
+away from the bags: a count read off a frame Family did not draw cannot be checked against the
+item being described, and a wrong count reads exactly like a right one.
+
 **TAB walks the filter boxes.** On any panel with more than one box on its filter row, TAB moves
 the cursor to the next and Shift-TAB to the previous, round rather than stopping at the end. A
 box that is not on the screen is stepped over.

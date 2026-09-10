@@ -4812,6 +4812,154 @@ do
 		GameTooltip.__owner = nil
 	end
 
+	-- **And what the family's whole lot of it is worth**, which is the answer the key gives where
+	-- there is no pile to multiply.
+	--
+	-- Reported from play 2026-09-10 at an auction house: CTRL did nothing there. It never could
+	-- have - the stack count is usable only because it can be checked against the item being
+	-- described, and somebody else's auction row offers nothing to check it against. So off the
+	-- bags the key answers the question only Family can: not what this pile comes to, but what
+	-- everything the family is holding of it comes to.
+	do
+		local here, away = "Hoarder-FireMaw", "Hoarder-Spineshatter"
+		local market = "Fire Maw\30Alliance"
+
+		Family.Database:SetMeta(here, { name = "Hoarder", realm = "Fire Maw",
+			faction = "Alliance", classFile = "WARLOCK", level = 60 })
+		Family.Database:SetPayload(here,
+			{ bags = { { slots = { { id = 2880, count = 12 }, { id = 999223, count = 6 } } } } })
+
+		-- A brother standing where nobody has browsed, which is what makes the market a
+		-- property of the holder rather than of whoever is reading the tooltip.
+		Family.Database:SetMeta(away, { name = "Hoarder", realm = "Spineshatter",
+			faction = "Alliance", classFile = "WARLOCK", level = 60 })
+		Family.Database:SetPayload(away,
+			{ bags = { { slots = { { id = 2880, count = 4 } } } } })
+
+		FamilyDB.auctionPrices = FamilyDB.auctionPrices or {}
+		FamilyDB.auctionPrices[market] = { [2880] = { p = 1000, at = time() - 600 } }
+		FamilyDB.sellPrices = nil
+		Family.Index:Invalidate()
+
+		-- The hint has no second column, so `priceLine` answers the *string* "nil" for it -
+		-- true enough for a condition and useless in a failure message. This says the line.
+		local function hintLine(itemID)
+			tooltipFor(itemID)
+			for _, line in ipairs(GameTooltip.__lines) do
+				if type(line[1]) == "string" and line[1]:find("CTRL", 1, true) then
+					return line[1]
+				end
+			end
+			return nil
+		end
+
+		-- No owner at all, which is the auction row: nothing to work a slot out of.
+		GameTooltip.GetOwner = nil
+		local realCtrl = IsControlKeyDown
+
+		IsControlKeyDown = function() return false end
+		check("with no pile in front of you, the key is still offered where the family holds some",
+			hintLine(2880) ~= nil and priceLine(2880, "Worth") == nil,
+			tostring(hintLine(2880)))
+
+		IsControlKeyDown = function() return true end
+		-- Twelve at the market price this realm was last asking, four at what a vendor pays.
+		check("and holding it says what the whole lot comes to, each holder at their own market",
+			plain(priceLine(2880, "Worth")):find("1g 21s", 1, true) == 1,
+			plain(priceLine(2880, "Worth")))
+		-- A market price is a photograph and the lot may have been valued from an old one, so
+		-- the age of the oldest reading that went into it travels with the figure.
+		check("with the age of the oldest reading it was reached with",
+			plain(priceLine(2880, "Worth")):find("ago", 1, true) ~= nil,
+			plain(priceLine(2880, "Worth")))
+		check("with the two lanes it was reached by, never the total on its own",
+			priceLine(2880, "at auction prices") == "12"
+				and priceLine(2880, "at vendor prices") == "4",
+			tostring(priceLine(2880, "at auction prices")) .. " / " ..
+				tostring(priceLine(2880, "at vendor prices")))
+
+		-- The guild bank is counted on its own line above and is nobody's to spend, so it is
+		-- outside this arithmetic here exactly as it is outside `Worth`.
+		FamilyDB.guilds = FamilyDB.guilds or {}
+		FamilyDB.guilds["Hoarders-FireMaw"] =
+			{ tabs = { { slots = { { id = 2880, count = 99 } } } } }
+		Family.Index:Invalidate()
+
+		-- Proved from both ends, because "unchanged" is also what a fixture that never arrived
+		-- would say: the guild's ninety-nine are on the tooltip, and they are not in the figure.
+		local function guildLine(itemID)
+			tooltipFor(itemID)
+			for _, line in ipairs(GameTooltip.__lines) do
+				if type(line[2]) == "string" and line[2]:find("guild bank", 1, true) then
+					return line[2]
+				end
+			end
+			return nil
+		end
+
+		check("while the guild bank's own pile is counted on its own line and left out of this one",
+			guildLine(2880) == "99 guild bank" and plain(priceLine(2880, "Worth")):find("1g 21s", 1, true) == 1,
+			tostring(guildLine(2880)) .. " / " .. plain(priceLine(2880, "Worth")))
+		FamilyDB.guilds["Hoarders-FireMaw"] = nil
+
+		-- A lot this client can price no part of says nothing and offers no key, rather than
+		-- drawing nought and inviting somebody to believe it (§2.2).
+		Family.Index:Invalidate()
+		check("and a lot nothing could price draws no figure",
+			priceLine(999223, "Worth") == nil, tostring(priceLine(999223, "Worth")))
+
+		-- **Asked with the key up, which is the only state that can answer it.** The first
+		-- writing of this check asked while CTRL was held, where the hint is never drawn at
+		-- all - so it passed against a version that offered the key on every tooltip in the
+		-- game, and a mutation walked straight through it.
+		IsControlKeyDown = function() return false end
+		check("and offers no key either, because there would be nothing behind it",
+			hintLine(999223) == nil, tostring(hintLine(999223)))
+		check("while the item the family really is holding still offers it",
+			hintLine(2880) == "|cff888888CTRL: what the family's lot is worth|r",
+			tostring(hintLine(2880)))
+
+		-- **Both answers at once**, which is the bag case for an item the family also keeps
+		-- elsewhere. The nearer question gets the hint - somebody looking in a bag is asking
+		-- about the pile - and holding the key answers both, which is more than it promised.
+		do
+			local button = {}
+			function button:GetID() return 3 end
+			function button:GetParent() return { GetID = function() return 0 end } end
+			GameTooltip.__owner = button
+			GameTooltip.GetOwner = function(self) return self.__owner end
+
+			local realSlot = Family.Bags.SlotContents
+			Family.Bags.SlotContents = function(_, bag, slot)
+				if bag == 0 and slot == 3 then return 2880, 12 end
+				return nil
+			end
+
+			IsControlKeyDown = function() return false end
+			check("with a pile in front of you as well, the nearer question gets the hint",
+				hintLine(2880) == "|cff888888CTRL: what the stack is worth|r",
+				tostring(hintLine(2880)))
+
+			IsControlKeyDown = function() return true end
+			check("and holding the key answers both of them",
+				priceLine(2880, "Stack of 12") ~= nil
+					and plain(priceLine(2880, "Worth")):find("1g 21s", 1, true) == 1,
+				tostring(priceLine(2880, "Stack of 12")) .. " / " ..
+					plain(priceLine(2880, "Worth")))
+
+			Family.Bags.SlotContents = realSlot
+			GameTooltip.GetOwner = nil
+			GameTooltip.__owner = nil
+		end
+
+		IsControlKeyDown = realCtrl
+		FamilyDB.auctionPrices[market] = nil
+		FamilyDB.sellPrices = nil
+		Family.Database:Forget(here)
+		Family.Database:Forget(away)
+		Family.Index:Invalidate()
+	end
+
 	-- **What the auction house was last asking**, read from the list the player is already
 	-- looking at. Nothing here queries anything.
 	do
