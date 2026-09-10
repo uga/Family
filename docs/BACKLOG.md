@@ -3375,6 +3375,17 @@ rather than of what it can do:
    as a price you can pay, correcting what is actually on sale from vendors as they are visited.
    Honest only if the label is honest, and the correction takes a long time to be worth anything.
 
+   **Checked 2026-09-10 against Alberto's own spot check** and it is 3 that the checking rules
+   out, not 1 or 2. `Weak Flux` (2880) reads buy 100, which is exactly the 1 silver a vendor
+   charges - the price is right. `Sulfuras` reads 166 gold, `Nightslayer Chestpiece` 21 gold and
+   `Scale of Onyxia` 2 gold, and nothing sells any of them. Only **4** items in all of Era have a
+   sell price and no buy price, so an absent buy price does not mark *unbuyable* either.
+
+   And then the argument closes on itself: draw the price only where the item was seen on a
+   vendor and the shipped table buys nothing, because the vendor's own list carried the price
+   already, discounted. Draw it anywhere else and Family says 166 gold for a legendary nobody
+   sells. The table costs 253 KB per client to purchase exactly the case where it must lie.
+
 **Recommended: 1 and 2 together.** It answers the whole of the user's question with no shipped
 table, and the half that a table would answer worse.
 

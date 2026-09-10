@@ -1585,12 +1585,34 @@ vendor prices the way a dedicated addon does. `ItemSparse` carries both, at colu
 **`SellPrice` is what a vendor pays you**, and the client hands the same number to any addon
 through `GetItemInfo` without anything being fetched or shipped. Nothing here is needed for it.
 
-**`BuyPrice` is not what a vendor charges you.** It is what the item *would* cost if something
-sold it, and it is set on items nothing sells: 4093 epics and 29 legendaries on Era carry one -
-`Destiny` (647), a drop, reads 350121 copper. Whether any vendor actually stocks an item is server
-data, and the specification refuses it by name (§2.5, *where an item is looted, **sold**,
-quest-rewarded or otherwise obtained*). So the column is a real client fact that does not answer
-the question a player is asking when they hover an item.
+**`BuyPrice` is exact, and it is not a statement that anything sells the item.** Checked against a
+thing many vendors really do stock, `Weak Flux` (2880): sell 25, buy 100 - and 1 silver is what a
+vendor charges for it, so the number is right. Then checked against things no vendor anywhere
+sells:
+
+    17182  Sulfuras, Hand of Ragnaros   forged      buy  1663117   (166g)
+    16820  Nightslayer Chestpiece       raid drop   buy   215686   (21g)
+    15138  Onyxia Scale Cloak           crafted     buy    75993   (7g)
+    15410  Scale of Onyxia              raid drop   buy    20000   (2g)
+
+4093 epics and 29 legendaries on Era carry one. **And absence does not mark the other case
+either**: exactly **4** items in the whole Era table have a `SellPrice` and no `BuyPrice`, against
+589 with a buy price and no sell price. The column is set on nearly everything.
+
+So the line does not fall between the two prices. It falls between **what a thing costs**, which is
+in the client's own table and exact, and **whether anything sells it**, which is not in any client
+table at all - vendor inventories live on the server. That is the work a site like Wowhead does by
+hand, gathered from players walking past the NPCs, which is why it can hold three different figures
+for one flux: they are photographs taken by different characters at different reputations.
+`wago.tools` mirrors the client's files and does no such gathering.
+
+The specification refuses the second half by name (§2.5, *where an item is looted, **sold**,
+quest-rewarded or otherwise obtained*).
+
+**Which closes the question about shipping the table.** Draw `BuyPrice` only for items seen on a
+vendor and the table buys nothing - the price was on the vendor's own list, already discounted.
+Draw it for the rest and Family states 166 gold for Sulfuras. The 253 KB purchases exactly the case
+in which it cannot tell the truth.
 
 **And it cannot be derived from the other.** The obvious guess is that buy is a fixed multiple of
 sell; it is not. Of the 18415 items carrying both, 50.2% are ×5, 24.1% are ×4, and the rest run
