@@ -3510,7 +3510,7 @@ than wrongly.
 
 ---
 
-## 57. Is the older auction house's buyout the stack or one of them?
+## 57. Is the older auction house's buyout the stack or one of them? — DONE 2026-09-10
 
 **Asked by Alberto 2026-09-10**, immediately after the newer house turned out to price a stackable
 good by the unit: *that could differ on Era and Burning Crusade, better check.* He is right that it
@@ -3533,3 +3533,16 @@ settled.
 
 **Small either way**, and it decides whether anything has to change or whether the existing
 assumption gets a measurement under it at last.
+
+**Read and answered the same day: the stack.** `minBid` was 28463 against a quantity of three,
+which does not divide - and a price of one cannot be a fraction of a copper, so that field is a
+total and the buyout beside it is the same kind of field. The typist confirmed it. Nothing had to
+change in the record or in the division; what changed is what happens when the division is untidy.
+
+**The fault the question uncovered.** The browse reader kept a price only where the stack divided
+exactly, which on a house where a person types the total for the stack throws most of them away
+without a word. It rounds down now, and refuses only a share that comes to nought. Three checks,
+three mutations, all caught.
+
+Recorded in `docs/DATASOURCES.md` under *The older house prices the whole stack*, along with the
+negative that makes the ungated design safe: Era has no `C_AuctionHouse` at all.

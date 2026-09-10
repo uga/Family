@@ -580,11 +580,23 @@ function Auctions:ReadPrices()
 		local buyout = tonumber(row[10])
 
 		-- **A bid-only auction is not a price.** No buyout means the thing has no number
-		-- anybody can pay today, and §2.2 says that is silence rather than nought. The stack
-		-- is divided only where it divides exactly, as at a vendor.
+		-- anybody can pay today, and §2.2 says that is silence rather than nought.
+		--
+		-- **The buyout here is the whole stack**, measured on Era 2026-09-10 and confirmed by
+		-- the person who posted it: three of a thing at 2g99s61c, and a minimum bid of 28463,
+		-- which does not divide by three at all - and a price of one cannot be a fraction of a
+		-- copper, because nobody can type one. So the stack total is what this call gives, and
+		-- the price of one is a division Family does.
+		--
+		-- **Rounded down rather than refused.** The first version kept only stacks that divided
+		-- exactly, which on a house where a human types the total for the stack throws most of
+		-- them away in silence: seven of something at five gold is 71.43 copper each, and that
+		-- was recorded as nothing. Losing less than a copper to a division is arithmetic;
+		-- losing the auction is losing the reading. A stack so large that one of them comes to
+		-- nought is still refused, because nought is not a price anybody paid.
 		if itemID and buyout and buyout > 0 and quantity and quantity > 0
-			and buyout % quantity == 0 then
-			local each = buyout / quantity
+			and math.floor(buyout / quantity) > 0 then
+			local each = math.floor(buyout / quantity)
 			local held = prices[itemID]
 
 			if not seenThisVisit[itemID] or type(held) ~= "table" then

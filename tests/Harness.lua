@@ -4726,6 +4726,12 @@ do
 			{ id = 2880, count = 1, buyout = 650 },
 			{ id = 4306, count = 5, buyout = 2500 },
 			{ id = 15410, count = 1, buyout = 0 },
+			-- **The buyout is the whole stack here**, typed by a person, so most of them do
+			-- not divide evenly. Seven at five gold is 71.43 copper each, and the first
+			-- version of this reader threw that away rather than round it.
+			{ id = 12037, count = 7, buyout = 50000 },
+			-- And one where a price of one comes to nothing, which is not a price.
+			{ id = 3385, count = 200, buyout = 100 },
 		}
 		Family.Auctions:ReadPrices()
 
@@ -4740,6 +4746,15 @@ do
 		check("while a bid-only auction is no price at all",
 			(Family.Auctions:PriceOf(15410)) == nil,
 			tostring((Family.Auctions:PriceOf(15410))))
+		-- Losing a fraction of a copper to a division is arithmetic; losing the auction is
+		-- losing the reading, and on a house where the total is typed by hand most stacks do
+		-- not divide.
+		check("and a stack that does not divide is rounded down rather than dropped",
+			(Family.Auctions:PriceOf(12037)) == 7142,
+			tostring((Family.Auctions:PriceOf(12037))))
+		check("while one whose share comes to nothing is refused, because nought is no price",
+			(Family.Auctions:PriceOf(3385)) == nil,
+			tostring((Family.Auctions:PriceOf(3385))))
 
 		-- **A second page of the same visit still takes the lower.** Read as *the last page
 		-- wins* this loses money: 40g seen, then page two at 60g, and the record says 60.

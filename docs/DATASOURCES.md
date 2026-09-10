@@ -869,6 +869,30 @@ client's own globals:
 | `ERR_AUCTION_BID_PLACED` | `Offre acceptée.` | a bid was accepted, and nothing more |
 | `ERR_AUCTION_OUTBID_S` | `Vous n'êtes plus le plus offrant pour %s.` | you lost it |
 
+#### The older house prices the whole stack, and the arithmetic says so before anybody is asked
+
+Read on Classic Era 2026-09-10, one auction just posted, through `GetAuctionItemInfo("owner", 1)`:
+
+    item 4611    quantity 3    minBid 28463    buyout 29961
+
+`29961 / 3` is 9987 exactly, which settles nothing on its own. **`28463 / 3` is 9487.666**, and a
+price of one cannot be a fraction of a copper because nobody can type one - so that field is a
+stack total, and the buyout beside it is the same kind of field. Confirmed by the person who typed
+it: 2g99s61c was for all three. So Family's older reader has always been right to treat the buyout
+as the whole auction, and the browse prices are right to divide.
+
+**Which turns up a fault of Family's own.** The first browse reader recorded a price only where the
+stack divided exactly, which on a house where a human types the total throws most of them away in
+silence - seven of something at five gold is 71.43 copper each, and that was recorded as nothing at
+all. It rounds down now. Losing a fraction of a copper to a division is arithmetic; losing the
+auction is losing the reading. A stack so large that one of them comes to nought is still refused,
+because nought is not a price anybody paid.
+
+The same probe answered one more thing: **Era has no `C_AuctionHouse` at all** - `newer auction
+house: false` - and 25 `AUCTION_ITEM_LIST_UPDATE` firings across a session. Which is why neither
+route needs a gate: on that client the newer one has nothing to read from, and on Mists the older
+one has nothing to read from, and each is silent rather than wrong.
+
 **And it is the same event the prices come off.** `AUCTION_ITEM_LIST_UPDATE` fires many times
 while somebody searches, as the trace above shows, so what is on sale can be read from the list
 the player is already looking at - `GetNumAuctionItems("list")`, `GetAuctionItemLink` for the id,
