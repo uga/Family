@@ -910,9 +910,9 @@ taken off it.
 
 Mists still to be read.
 
-**Reported alongside it: Era drew no price lines at all**, while remembering prices perfectly. The
-switch ships off and `FamilyDB` is one file per game version, so turning it on for Burning Crusade
-turns on nothing for Era. `/family ah` now says which way the switch is set, because that is the
+**Reported alongside it: Era drew no price lines at all**, while remembering prices perfectly -
+and **confirmed the same day to have been the switch**, nothing else. It ships off and `FamilyDB`
+is one file per game version, so turning it on for Burning Crusade turns on nothing for Era. `/family ah` now says which way the switch is set, because that is the
 question somebody is asking when they run it.
 
 A pattern is built from `ERR_AUCTION_WON_S` the way the oil charge line is built from
