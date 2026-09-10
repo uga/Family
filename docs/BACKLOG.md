@@ -3575,50 +3575,27 @@ member's Possessions, the way a profession row already opened Professions.
 
 ---
 
-## 59. Disenchanting on the tooltip
+## 59. Disenchanting on the tooltip — DROPPED 2026-09-10
 
-**Asked 2026-09-10:** could an item's tooltip name the shards it might disenchant into, with their
-probabilities? Measured before answering, and written up in `docs/DATASOURCES.md` under
-*Disenchanting: the client knows the band, not what comes out of it*.
+**Alberto's word, the day it was measured:** *non ci interessa, eliminiamo.*
 
-**The odds are not available**, on any of the three builds. `ItemDisenchantLoot` is served and
-gives a band - class, quality, item-level range - and a group id, and there is no table anywhere
-that says what a group yields. That is a server loot template. Naming the shards would need a
-compilation somebody else made: reserved, and the case §2.5 describes.
-
-**What is worth building instead**, and it needs nothing external:
-
-1. **Whether it can be disenchanted at all**, from the band. A grey item and a quest item say
-   nothing today and would go on saying nothing, which is the useful half of the answer.
-2. **Who in the family could do it.** Enchanting and its rank are recorded for every member
-   already, so this is *who can make this* asked backwards - and it is the one version of this
-   question no other addon can answer, because no other addon knows what the alts have.
-
-The band alone also implies the shard **tier** without naming it, and whether that is worth saying
-in words the client can give is the open question in 1.
-
-**A note that belonged to entry 58 and outlived what it described.** The paragraphs that stood
-here reported a *Worth* section built on 2026-09-10 as `Family_UI/Worth.lua`, with its own tab and
-no icon. That section was removed the same day, at Alberto's word - *the panel put there is
-inconsistent with the rest of the logic* - and the figure went onto the Possessions page and into
-the summary's Stock column instead. Entry 58 carries where it actually landed. Nothing about
-disenchanting was ever built.
+The heading stays because entry numbers are addresses — commits and `DECISIONS.md` rows point at
+them — and the measurement that killed it is not lost: the odds are **not available on any of the
+three builds**, `ItemDisenchantLoot` gives a band and a group id and no client table says what a
+group yields, and that is written up in [`DATASOURCES.md`](DATASOURCES.md) under *Disenchanting:
+the client knows the band, not what comes out of it*. Nothing was built.
 
 ---
 
-## 60. What the worth figure does in Whole Family mode
+## 60. What the worth figure does in Whole Family mode — CLOSED 2026-09-10, answered elsewhere
 
-**Open, and Alberto's own idea, kept here rather than guessed at.** The figure now lives on a
-member's Possessions page. What the same page should do with *Whole family* switched on is
-undecided: his suggestion is **a tick box that appears only in that mode** - ticked, the page
-lists every character's summary line instead of search results; unticked, the search behaves as it
-does today.
+**Alberto:** *non serve piu, abbiamo sistemato la questione worth con l'inserimento in overview.*
 
-That is a good shape and it has one thing to weigh: the search is what that mode is *for*, and a
-box that replaces it has to be obviously a mode rather than a filter. `Contents.lua` already
-refused a tick box once for a related reason - *the whole family beside a small square reads as a
-setting* - and chose a button that marks itself selected instead, which is the furniture this
-would sit beside.
+The question was what a member's Possessions page should do with *Whole family* switched on, and
+the tick box he had proposed for it. It does not need answering: the **Stock** column on the
+summary's Overview set is the whole-family reading, with a row per member and the realm and grand
+totals for nothing, and the figure on Possessions stays what it is — one character's things. So
+the search keeps that mode to itself, which is what it was for, and no control was added to it.
 
 ---
 
