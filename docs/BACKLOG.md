@@ -3449,6 +3449,12 @@ prints what came back on the next list update. Two runs cover both layouts. `/fa
 prints, now, the **total** on sale - the second return of `GetNumAuctionItems`, which nothing here
 had ever read - and whether the newer house has the calls that page past its first five hundred.
 
+**And then measured the cheap way instead.** `/family ah watch` hooks the client's own
+`QueryAuctionItems` and prints the next call it makes when Search is pressed - the arguments that
+are right for that build, from the build itself, with no traffic of ours and nothing that can
+disconnect anybody. It is what should have been tried first, and the two runs below are what it
+took to go and look for it.
+
 **Run for the first time the same day, on Burning Crusade, and it went wrong.** The `long` layout
 answered nothing in ten seconds; the command as first written then took the *other* layout on the
 next run, and the client crawled for minutes. Nothing was lost - `/reload` went through. The
@@ -3651,6 +3657,23 @@ prints the stored word, what arming answered at the last draw, whether the clien
 the two attributes read back, whether `GetScript("OnClick")` is still a function - the template
 *is* the casting, so a missing one means no attribute was ever going to be acted on - and what
 `IsProtected` says. It prints and decides nothing; which value is the odd one decides the repair.
+
+**And it answered, the same evening, on the live client:**
+
+    openWith Leatherworking    armed true    inCombat false
+    type spell                 spell Leatherworking
+    OnClick function           protected true    explicit true
+
+Every one of those is what a working button looks like. So the three candidates this entry named
+are all ruled out - the word is stored, arming ran, the attributes took, the frame really is
+protected - and one thing is left that none of those lines can see. The button is made from
+`UIPanelButtonTemplate,SecureActionButtonTemplate`; **both install an `OnClick` and only the second
+casts**. A surviving handler from the first reads exactly like the list above and does exactly what
+was reported: plays a sound, folds the page, opens nothing.
+
+The probe now prints whether that handler **is** `SecureActionButton_OnClick`. If it says false,
+the repair is to stop asking one frame to be both things - the look and the casting - which is a
+smaller change than it sounds, and the recipe rows next to it already work.
 
 **The likely repair, not to be written before that reading:** cast from `PostClick` with the name
 that demonstrably works there - `CastSpellByName(openWith)` - and keep the secure attributes as

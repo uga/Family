@@ -746,6 +746,23 @@ end)
 -- accepted and nothing ever arrives, leaving it armed would make the player's next ordinary
 -- search print an answer to a question asked ten minutes earlier. A probe that reports the wrong
 -- event is worse than one that reports nothing (L-068).
+-- **Watching the client ask, which should have been the first thing tried.**
+--
+-- The question is where `page` sits in `QueryAuctionItems`, and the auction house the player is
+-- looking at answers it every time Search is pressed. Hooked, it costs no traffic and cannot get
+-- anybody disconnected; two queries of our own, both accepted and both silent, are what it took
+-- to go and look for this.
+local function watchOne()
+	Family.Auctions:TellNextQuery(function(args, count)
+		Family:Print(L["  the client asked with %d argument(s):"], count or 0)
+		for index = 1, (count or 0) do
+			Family:Print("    %-3s |cff888888%s|r", index, tostring(args[index]))
+		end
+	end)
+
+	Family:Print(L["press Search on the auction house: the next query the client sends will be printed"])
+end
+
 -- **Named, never alternating, and one at a time.**
 --
 -- The first writing of this took the next layout on each run, so that two runs covered both. It
@@ -824,6 +841,8 @@ end
 -- purpose is to be asked - `CanSendAuctionQuery` says whether a query would be accepted right
 -- now, and that answer is the difference between a scanner that is safe and one that is not.
 add("ah", L["what this client offers on the auction house"], function(argument)
+	if argument == "watch" then return watchOne() end
+
 	local asked = type(argument) == "string" and argument:match("^query%s*(%a*)$")
 	if asked then return askOnce(asked) end
 

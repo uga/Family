@@ -1030,8 +1030,24 @@ after a query the client said it would accept - and that is itself the measureme
 the passive reader hears that event forty-three times in a session of ordinary searching, so a
 query that produces none of it is a query that did not do what it looks like it did.
 
-The next reading is `long` alone, once, on a client that has just been reloaded, with the auction
-window closed - and nothing else after it whatever it says. L-070.
+**Run again the same evening, `long` alone, once: the same silence and no lag at all.** So the
+crawl and the silence are two different things, and only the silence is repeatable. One caution on
+that reading, and it is against the instruction rather than the client: it was run with the auction
+window **closed**, which is what had been asked for, and a query outside an auctioneer session has
+nowhere to go. `CanSendAuctionQuery` still answers true there.
+
+#### The client asks for us, and that is the reading that costs nothing
+
+Written after the above and it should have come first. **The auction house calls
+`QueryAuctionItems` itself on every Search**, with the arguments that are right for that build.
+`/family ah watch` hooks it with `hooksecurefunc` - which runs after the real call and takes
+nothing from it, the same arrangement the bid watcher already uses - and prints the next one the
+client sends, argument by argument, then disarms.
+
+No traffic of ours, no guess at an order, and nothing that can disconnect anybody. The arguments
+are read with `select("#", ...)` rather than out of a table, because a nil in the middle **or at
+the end** is part of the shape and a table's length loses the last one - the short layout ends in
+`filterData`, which is exactly that case.
 
 **The test is not whether rows arrive.** A layout the client accepts can still have queried the
 wrong thing, and rows would come back either way. What settles it is **the total held against the

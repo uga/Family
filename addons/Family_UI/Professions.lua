@@ -268,6 +268,21 @@ local function toldAboutClick(button, record)
 		-- The template *is* the casting: if this is not a function, the part of the button
 		-- that casts is not there, and no attribute would ever have been acted on.
 		{ "OnClick", type((Family:TryCall(button.GetScript, button, "OnClick"))) },
+		-- **And which OnClick**, which is the question the line above cannot answer.
+		--
+		-- This button is made from two templates - `UIPanelButtonTemplate` for the look and
+		-- `SecureActionButtonTemplate` for the casting - and only the second casts anything. If
+		-- the first one's handler is the one that survived, everything else on this list still
+		-- reads correctly: armed, secure, the right spell, an OnClick that is a function. And
+		-- the click plays a sound and opens nothing, which is what was reported.
+		-- Asked as *the global exists and this is it*, never as an equality on its own: where
+		-- neither is there, `nil == nil` answers **true**, which would read as the one thing
+		-- this line exists to rule out.
+		{ "secureOnClick", tostring(_G.SecureActionButton_OnClick ~= nil
+			and (Family:TryCall(button.GetScript, button, "OnClick"))
+				== _G.SecureActionButton_OnClick) },
+		{ "secureGlobal", type(_G.SecureActionButton_OnClick) },
+		{ "unit", tostring((Family:TryCall(button.GetAttribute, button, "unit"))) },
 		{ "protected", tostring(protected) },
 		{ "explicit", tostring(explicit) },
 	})

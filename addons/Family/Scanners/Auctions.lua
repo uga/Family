@@ -693,6 +693,45 @@ function Auctions:ProbeQuery(which, page)
 	return true, nil
 end
 
+-- **Watching the client ask, instead of asking.**
+--
+-- The better half of the signature question, and it should have been the first: the auction house
+-- the player is looking at calls `QueryAuctionItems` itself every time Search is pressed, with the
+-- arguments that are right for **this** build. Hooked rather than sent, it costs no traffic, needs
+-- no guess, and cannot get anybody disconnected - and it answers exactly what two candidate
+-- layouts were written to guess at.
+--
+-- Measured on Burning Crusade 2026-09-10: one query of ours, accepted by `CanSendAuctionQuery`,
+-- with no error and no list update in ten seconds. Twice. Whatever that is, watching the client
+-- does not depend on the answer.
+--
+-- Told once, like the list reader beside it, and armed only on request - a hook that prints on
+-- every search is a hook somebody turns the addon off over.
+local tellNextQuery
+
+function Auctions:TellNextQuery(fn)
+	tellNextQuery = type(fn) == "function" and fn or nil
+end
+
+-- Every argument as the client passed it, positions and all - `select("#")` rather than a walk of
+-- the table, because a nil in the middle is a fact about the call and a table would swallow it.
+local function sawQuery(...)
+	if not tellNextQuery then return end
+
+	local told = tellNextQuery
+	tellNextQuery = nil
+
+	local count = select("#", ...)
+	local args = {}
+	for index = 1, count do
+		args[index] = tostring((select(index, ...)))
+	end
+
+	Family:TryCall(told, args, count)
+end
+
+Auctions.__sawQuery = sawQuery
+
 -- **The next list update, told once.**
 --
 -- Registered through the scanner's own handler rather than as a second one of its own: an event
@@ -794,6 +833,14 @@ Family:OnDatabaseReady("auctions", function()
 	-- reimplemented, because the bid is Blizzard's and the browse list is still standing when
 	-- the hook runs. Without the hook Family simply learns about the item later, when the
 	-- mailbox is opened - which is what it did before this existed.
+	-- The client's own query, watched. `hooksecurefunc` runs after the real call and takes
+	-- nothing away from it, which is the same arrangement the bid below uses.
+	if type(_G.hooksecurefunc) == "function" and type(_G.QueryAuctionItems) == "function" then
+		Family:TryCall(_G.hooksecurefunc, "QueryAuctionItems", sawQuery)
+	else
+		Family:Debug("no way to watch auction queries on this client")
+	end
+
 	if type(_G.hooksecurefunc) == "function" and type(_G.PlaceAuctionBid) == "function" then
 		Family:TryCall(_G.hooksecurefunc, "PlaceAuctionBid", function(list, index)
 			Auctions:NoteBid(list, index)

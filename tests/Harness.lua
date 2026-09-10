@@ -7191,6 +7191,17 @@ do
 	check("and says whether the casting part is on the button at all",
 		said.OnClick == "nil", tostring(said.OnClick))
 
+	-- **And which OnClick it is**, which the line above cannot answer: the button is made from
+	-- a look template and a casting template, and only the second casts. A surviving handler
+	-- from the first reads as a function here and opens nothing in the game.
+	--
+	-- Asked as *the secure global exists and this is it*. On its own the equality answers
+	-- **true** where neither is there - which is this harness exactly, and would have been a
+	-- clean bill of health printed by a client that had neither.
+	check("and whether it is the casting one, without nil agreeing with nil",
+		said.secureOnClick == "false" and said.secureGlobal == "nil",
+		tostring(said.secureOnClick) .. " / " .. tostring(said.secureGlobal))
+
 	seen = nil
 	fireClick(button, "LeftButton")
 	check("while an ordinary click afterwards says nothing, because it is told once",
@@ -8274,6 +8285,42 @@ do
 
 	_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan
 	Family.Auctions:TellNextList(nil)
+end
+
+-- **And the query the client sends itself, watched rather than sent.**
+--
+-- The better half of the same question, and it should have been the first thing tried: the
+-- auction house calls `QueryAuctionItems` on every Search with the arguments that are right for
+-- that build. It costs no traffic and cannot disconnect anybody.
+do
+	local seen, howMany
+	Family.Auctions:TellNextQuery(function(args, count) seen, howMany = args, count end)
+
+	-- A nil in the middle is a fact about the call, so the count comes from `select("#")`
+	-- and never from the length of a table that would have swallowed it.
+	Family.Auctions.__sawQuery("", nil, nil, nil, nil, nil, 3, nil, nil, false, false)
+
+	check("the query the client sends is read back argument by argument",
+		howMany == 11 and seen and seen[7] == "3" and seen[11] == "false",
+		tostring(howMany) .. " / " .. tostring(seen and seen[7]))
+	check("with the nils kept in their places, because a hole is part of the shape",
+		seen and seen[2] == "nil" and seen[6] == "nil",
+		tostring(seen and seen[2]) .. " / " .. tostring(seen and seen[6]))
+
+	-- **A query that ends in nothing is the case that separates the two readings.** A table's
+	-- length stops at the last thing in it, so counting that way loses a trailing nil - and the
+	-- short layout ends in one, which is `filterData`. Counted from the table this call is eight
+	-- arguments long and it is nine.
+	Family.Auctions:TellNextQuery(function(args, count) seen, howMany = args, count end)
+	Family.Auctions.__sawQuery("", nil, nil, 1, nil, nil, false, false, nil)
+	check("and one that ends in nothing is still as long as it was sent",
+		howMany == 9 and seen and seen[9] == "nil",
+		tostring(howMany) .. " / " .. tostring(seen and seen[9]))
+
+	seen = nil
+	Family.Auctions.__sawQuery("", nil, nil, 1)
+	check("and it is told once, so an ordinary search afterwards prints nothing",
+		seen == nil, tostring(seen))
 end
 
 before = #DEFAULT_CHAT_FRAME.messages
