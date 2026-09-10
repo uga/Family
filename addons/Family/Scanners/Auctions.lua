@@ -63,10 +63,83 @@ local function readList(which)
 	return entries
 end
 
+-- **What this character has up for sale, on the newer auction house.**
+--
+-- The repair for backlog 56: everything above reads calls that exist on Mists and answer nothing,
+-- so *what a member has up for sale* has been empty there since Family first ran on that build,
+-- and nothing announced it because nought auctions is what somebody with no auctions has.
+--
+-- Eight rows read on a live client 2026-09-10, with Auctionator and without it, identically - and
+-- a stackable good carries the same fields as a single item, which one row could not have shown:
+--
+--     auctionID 483115863   itemKey { itemID=5527, itemLevel=15, itemSuffix=0 }
+--     buyoutAmount 1999     quantity 12    status 0    timeLeftSeconds 85944
+--
+-- **`buyoutAmount` is the price of one**, confirmed by the person who typed it rather than
+-- inferred from the numbers: twelve clams at 19s99c is 19s99c *each*. The record this writes into
+-- has always held the whole auction's buyout, because that is what the older call gives - so this
+-- multiplies, and getting that backwards would have had the summary out by whatever somebody's
+-- stack sizes happened to be, silently. One row of 152 Solid Stone is the difference between
+-- 3s98c and 605g.
+--
+-- **`timeLeftSeconds` is real seconds**, so no bucket has to be translated and the expiry is
+-- exact rather than an upper bound.
+--
+-- **What is not here is bids.** No row carried a bid field, and every one of the eight was a
+-- buyout-only listing - so *the field is absent* and *there was nothing to bid on* cannot be told
+-- apart from this reading. A bid is read where the client offers one and defaults to nought
+-- otherwise, which is what the older reader already does with the same meaning.
+local function readModernOwned()
+	if not C_AuctionHouse then return {} end
+
+	local count = tonumber((Family:TryCall(C_AuctionHouse.GetNumOwnedAuctions))) or 0
+	if count < 1 then return {} end
+
+	local entries = {}
+
+	for index = 1, count do
+		local row = Family:TryCall(C_AuctionHouse.GetOwnedAuctionInfo, index)
+		local key = type(row) == "table" and row.itemKey
+		local itemID = type(key) == "table" and tonumber(key.itemID) or nil
+
+		if itemID then
+			local quantity = tonumber(row.quantity) or 1
+			local each = tonumber(row.buyoutAmount) or 0
+			local left = tonumber(row.timeLeftSeconds)
+			local bid = tonumber(row.bidAmount) or 0
+
+			entries[#entries + 1] = {
+				id = itemID,
+				count = quantity,
+				minBid = tonumber(row.minBid) or 0,
+				-- The whole auction, which is what this field has always meant.
+				buyout = each * quantity,
+				bid = bid,
+				hasBid = bid > 0,
+				-- Meaningless on one's own listings, and false is what the older reader
+				-- writes for them too.
+				highBidder = false,
+				bucket = 0,
+				-- Exact here rather than the upper bound of a bucket.
+				expiresBy = left and (time() + left) or time(),
+			}
+		end
+	end
+
+	return entries
+end
+
 function Auctions:Scan()
 	local key = Family:CurrentMember()
 
+	-- Both routes, neither gated, each silent where it does not apply - the same arrangement
+	-- the prices use, and for the same reason: all eight of the older symbols are present on
+	-- the build where none of them work, so nothing can be asked *which house is this*.
 	local selling = readList("owner")
+	if #selling == 0 then selling = readModernOwned() end
+
+	-- No bidder list on the newer house has been read, so this stays what the older call
+	-- answers - which on Mists is nothing, honestly rather than wrongly.
 	local bidding = readList("bidder")
 
 	local payload = Family.Database:Payload(key) or {}
@@ -381,6 +454,37 @@ function Auctions:ModernOwnedSample()
 	return tried, (#out > 0) and out or nil
 end
 
+-- **And the same for the older house's own listings**, which is a different question with the
+-- same shape.
+--
+-- Alberto asked whether *per one* or *per stack* might differ between the two, and it is exactly
+-- the sort of thing that would: on the newer house a stackable good is priced by the unit, and the
+-- older one has no such notion. Everything Family does on Era and Burning Crusade - the owner
+-- record, and the browse prices, which **divide** by the quantity - rests on that buyout being the
+-- whole stack, and that has never been read here.
+--
+-- Printed rather than reasoned about, so somebody with a stack listed can hold the number against
+-- what they typed.
+function Auctions:OldOwnedSample()
+	local count = tonumber((Family:TryCall(GetNumAuctionItems, "owner"))) or 0
+	if count < 1 then return nil end
+
+	local out = {}
+	for index = 1, count do
+		local row = { Family:TryCall(GetAuctionItemInfo, "owner", index) }
+		local link = Family:TryCall(GetAuctionItemLink, "owner", index)
+
+		out[#out + 1] = { "-", tostring(index) }
+		out[#out + 1] = { "item", tostring(type(link) == "string"
+			and link:match("item:(%d+)") or row[17]) }
+		out[#out + 1] = { "quantity", tostring(row[3]) }
+		out[#out + 1] = { "minBid", tostring(row[8]) }
+		out[#out + 1] = { "buyout", tostring(row[10]) }
+	end
+
+	return out
+end
+
 -- What the newer house says it is holding right now, asked without being told to search.
 function Auctions:ModernCounts()
 	if not C_AuctionHouse then return nil end
@@ -508,9 +612,14 @@ Family:OnDatabaseReady("auctions", function()
 		Auctions:ForgetVisit()
 
 		-- Asking is what makes the answer arrive; reading without asking gets whatever
-		-- the last visit left behind.
+		-- the last visit left behind. The newer house wants the same asking under another
+		-- name, and it is the same act rather than a bolder one: one's own listings, at a
+		-- window one has just opened.
 		Family:After(1, "auctions.ask", function()
 			Family:TryCall(GetOwnerAuctionItems)
+			if C_AuctionHouse then
+				Family:TryCall(C_AuctionHouse.QueryOwnedAuctions, {})
+			end
 		end)
 	end)
 
@@ -542,7 +651,8 @@ Family:OnDatabaseReady("auctions", function()
 		Auctions:ReadPrices()
 	end)
 
-	for _, event in ipairs { "AUCTION_OWNED_LIST_UPDATE", "AUCTION_BIDDER_LIST_UPDATE" } do
+	for _, event in ipairs { "AUCTION_OWNED_LIST_UPDATE", "AUCTION_BIDDER_LIST_UPDATE",
+		"OWNED_AUCTIONS_UPDATED" } do
 		Family:RegisterEvent(event, "auctions", function()
 			Family:After(0.5, "auctions", function() Auctions:Scan() end)
 		end)

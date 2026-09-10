@@ -4834,6 +4834,58 @@ do
 			check("a client without the newer house records nothing from it, quietly",
 				Family.Auctions:ReadModernPrices() == 0)
 
+			-- **And what this character has up for sale**, which is backlog 56 rather than the
+			-- prices, and the older feature of the two: everything above reads calls that
+			-- answer nothing on Mists, so that record has been empty there since Family
+			-- first ran on it.
+			do
+				local OWNED = {}
+				C_AuctionHouse = {
+					GetBrowseResults = function() return {} end,
+					GetNumOwnedAuctions = function() return #OWNED end,
+					GetOwnedAuctionInfo = function(i) return OWNED[i] end,
+				}
+
+				-- Eight rows were read on a live client and a stack carried the same fields
+				-- as a single item. 1999 for twelve is 1999 *each* - confirmed by the person
+				-- who typed it, not inferred - and the record this writes into has always
+				-- held the whole auction's buyout.
+				OWNED = {
+					{ auctionID = 483115863, buyoutAmount = 1999, quantity = 12,
+						status = 0, timeLeftSeconds = 85944,
+						itemKey = { itemID = 5527, itemLevel = 15, itemSuffix = 0 } },
+					{ auctionID = 483115819, buyoutAmount = 89499, quantity = 1,
+						status = 0, timeLeftSeconds = 85932,
+						itemKey = { itemID = 7910, itemLevel = 50, itemSuffix = 0 } },
+					-- A row with no key is not an auction anybody can act on.
+					{ auctionID = 1, buyoutAmount = 5, quantity = 1 },
+				}
+
+				Family.Auctions:Scan()
+				local kept = ((Family.Database:Payload(Family:CurrentMember())
+					or {}).auctions or {}).selling or {}
+
+				check("what a member has up for sale is read from the newer house too",
+					#kept == 2, tostring(#kept))
+				-- The one that would have been silently wrong: 1999 each for twelve.
+				check("and a stack's price is the whole auction, not one of them",
+					kept[1] and kept[1].buyout == 1999 * 12,
+					tostring(kept[1] and kept[1].buyout))
+				check("while a single item is itself",
+					kept[2] and kept[2].buyout == 89499,
+					tostring(kept[2] and kept[2].buyout))
+				-- Real seconds there, so the expiry is exact rather than a bucket's ceiling.
+				check("and the expiry is taken from the seconds the client gives",
+					kept[1] and kept[1].expiresBy
+						and kept[1].expiresBy > time() + 85000,
+					tostring(kept[1] and kept[1].expiresBy))
+				-- Summary.lua reads entry.bid without guarding it, so a nil there is a
+				-- crash rather than a blank.
+				check("with the fields the summary reads present rather than absent",
+					kept[1] and kept[1].bid == 0 and kept[1].hasBid == false
+						and kept[1].minBid == 0)
+			end
+
 			C_AuctionHouse = realHouse
 		end
 

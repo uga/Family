@@ -3458,7 +3458,7 @@ is what they would pay there, and it is not what their own side's house is askin
 
 ---
 
-## 56. The auctions scanner has never worked on Mists
+## 56. The auctions scanner has never worked on Mists — DONE 2026-09-10
 
 **Found 2026-09-10 by `/family ah`**, while chasing why the new price reader learned nothing on
 that build. It is not about the prices: `Scanners/Auctions.lua` reads `GetNumAuctionItems` and
@@ -3488,3 +3488,48 @@ build and the count moves when something is listed. **The one reading still miss
 a row**, which needs `/family ah` run on a character with something actually up for sale — the
 probe prints it and the last run had nothing listed, so it printed the two call names and no row. Both behind a capability that asks **which auction house this is** rather than whether a
 symbol exists - the shells are the argument for that, and are worth quoting wherever it is written.
+
+**Repaired 2026-09-10.** `readModernOwned` reads `GetOwnedAuctionInfo` and is tried whenever the
+older list answers with nothing - both routes registered everywhere, neither gated, each silent
+where it does not apply, which is the same arrangement the prices use and for the same reason.
+`QueryOwnedAuctions` is asked for at the window the way `GetOwnerAuctionItems` already was: the
+same act under another name, not a bolder one.
+
+Eight rows read on a live client, with Auctionator and without it, identically - and a stackable
+good carries the same fields as a single item, which one row could not have shown.
+
+**The reading that decided it was not in the dump.** `buyoutAmount` is the price of *one*,
+confirmed by the person who typed it rather than inferred from the numbers, and the record this
+writes into has always held the whole auction's buyout - so it multiplies. Backwards, the summary
+would have been out by whatever somebody's stack sizes happened to be and said nothing: one row of
+152 Solid Stone is the difference between 3s98c and 605g.
+
+Five checks, five mutations, all caught. **Not repaired: the bidder list**, which has no reading on
+the newer house - it stays what the older call answers, which on Mists is nothing, honestly rather
+than wrongly.
+
+---
+
+## 57. Is the older auction house's buyout the stack or one of them?
+
+**Asked by Alberto 2026-09-10**, immediately after the newer house turned out to price a stackable
+good by the unit: *that could differ on Era and Burning Crusade, better check.* He is right that it
+is the sort of thing that differs, and it has never been read here.
+
+**What rests on it.** `readList` stores the buyout as the whole auction, which is what the summary
+sums. And the browse-price reader **divides** by the quantity to get the price of one. If the older
+call already answers per unit, both are wrong - the record by nothing, the prices by a factor of
+whatever the stack size was, silently, because a price that is twenty times too low still looks
+like a price.
+
+**The reading**, on Era or Burning Crusade with a **stack** listed - one where the quantity is not
+one, so the two answers differ:
+
+    /family ah
+
+It now prints the older house's own listings: item, quantity, minBid, buyout. Hold the buyout
+against what was typed when the auction was posted, exactly as the newer house's question was
+settled.
+
+**Small either way**, and it decides whether anything has to change or whether the existing
+assumption gets a measurement under it at last.

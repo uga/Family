@@ -34,6 +34,12 @@ stabled pet and summoned demon with what each one can do, down to what its abili
 training points. Sharing with another family is faster, no longer freezes the game, and now
 picks itself up where it left off.
 
+### Fixed on Mists of Pandaria
+
+- **What a character has up for sale was always empty.** Family was asking that version of the game
+  a question it stopped answering, and getting silence back — which looks exactly like having no
+  auctions. Your listings, and what they are worth, are read again.
+
 ### Vendor prices on item tooltips
 
 - **What a vendor pays you**, on any item's tooltip, anywhere in the game. Off until you turn it

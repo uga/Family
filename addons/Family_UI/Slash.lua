@@ -796,6 +796,13 @@ add("ah", L["what this client offers on the auction house"], function()
 		end
 	end
 
+	-- The older house's own listings, where there are any. Whether that buyout is the stack
+	-- or one of them has never been read, and everything on Era and Burning Crusade rests on
+	-- it - the browse prices divide by the quantity.
+	for _, pair in ipairs(Family.Auctions:OldOwnedSample() or {}) do
+		Family:Print("    %-24s |cff888888%s|r", pair[1], pair[2])
+	end
+
 	local prices, oldest, newest, held = Family.Auctions:Prices(), nil, nil, 0
 	for _, row in pairs(prices) do
 		if type(row) == "table" and row.at then
