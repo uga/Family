@@ -444,6 +444,37 @@ local function makerBlock(_, itemID)
 	return makerLines(ours, theirs)
 end
 
+-- **What a vendor pays, and what a vendor charges.** Off unless asked for.
+--
+-- Two numbers of very different standing, which is why they are built here together rather than
+-- taken for one feature. The **sell** price comes with the item: the client hands it to any addon
+-- that asks, everywhere, exactly. The **buy** price is only ever a thing Family was shown - the
+-- client's own table carries a buy price for Sulfuras, which is forged and sold by nobody
+-- (`docs/DATASOURCES.md` §3) - so it is drawn only for items seen on a merchant's own list, where
+-- being for sale is not an inference.
+--
+-- Not on by default. It is the one thing Family puts on a tooltip that is not about the family.
+local function priceLines(_, itemID)
+	if not (FamilyDB and FamilyDB.prices) then return nil end
+
+	local lines = {}
+
+	-- The eleventh return, and asked for without a guard because the tooltip being drawn is
+	-- itself the proof this item is in the client's cache - it is showing its name.
+	local sell = tonumber((select(11, Family:TryCall(GetItemInfo, itemID))))
+	if sell and sell > 0 then
+		lines[#lines + 1] = { Family:GameWord("SELL_PRICE", L["Sell price"]),
+			UI:Money(sell), 0.4, 0.73, 1, 1, 1, 1 }
+	end
+
+	local buy = Family.Merchant and Family.Merchant:PriceOf(itemID)
+	if buy then
+		lines[#lines + 1] = { L["Vendor price"], UI:Money(buy), 0.4, 0.73, 1, 1, 1, 1 }
+	end
+
+	return #lines > 0 and lines or nil
+end
+
 --------------------------------------------------------------------------------------------
 -- Hooking
 --
@@ -526,7 +557,7 @@ local function onItem(tooltip, itemID)
 	-- whatever is added next reads as part of this list.
 	local blocks = {}
 
-	for _, build in ipairs { possessionLines, crafterLines, makerBlock } do
+	for _, build in ipairs { possessionLines, crafterLines, makerBlock, priceLines } do
 		local lines = build(tooltip, itemID)
 		if lines and #lines > 0 then blocks[#blocks + 1] = lines end
 	end

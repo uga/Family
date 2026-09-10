@@ -1669,6 +1669,24 @@ clients.
 `GetMerchantItemInfo` states the price of a thing that is, demonstrably, for sale - with the
 reputation discount already applied, which no table can carry.
 
+**Which is what Family reads, in `Scanners/Merchant.lua`.** Four calls, all through `TryCall` and
+all validated before anything is kept, because none of them has been read on a client here:
+`GetMerchantNumItems`, `GetMerchantItemInfo` (name, texture, price, quantity),
+`GetMerchantItemLink` for the id, and `GetMerchantItemCostInfo` for whether the row costs something
+other than money. A row is recorded only where the id resolves, the cost has no extra components,
+the price is positive and the quantity divides it exactly. Under any other shape nothing is
+recorded, which is the safe direction.
+
+**The highest sighting is the one kept.** Not a judgement about which reading is better, but the
+one direction a discount can move: a vendor asks the same base of everybody and reputation only
+lowers it, so the largest figure any character was quoted is the closest observation comes to the
+base, and every further sighting can only improve it. Keeping the newest would let one exalted
+character understate the price for the whole family; keeping the lowest would do it for good.
+
+A pleasant consequence: what this converges on **is** `ItemSparse.BuyPrice`, the column deliberately
+not shipped - but only for the items somebody can actually buy, which is the half the column cannot
+tell apart.
+
 Licence position: these are Blizzard's own client files, republished. wago.tools is a mirror,
 not an author. Using it carries whatever risk using the client's own data carries, and no
 more; it does not create a *new* rights holder to negotiate with. That is a materially better

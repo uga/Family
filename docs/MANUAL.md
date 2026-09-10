@@ -835,6 +835,22 @@ depends on what the trainer's window has shown you, so a creature whose abilitie
 price beside them is one whose Beast Training window you have opened with that creature out. A
 dash means Family has no price for that ability, which is not the same as it being free.
 
+**"Can Family show vendor prices?"** Yes, and it is off until you turn it on — *Show vendor prices
+on item tooltips*, in Options. Two lines appear on an item's tooltip:
+
+**Sell price** is what a vendor pays you. The game knows it for every item and Family simply says
+it, everywhere, straight away.
+
+**Vendor price** is what a vendor charges, and it appears only for items Family has actually seen
+on a merchant's list. Open a merchant and Family reads the shelf and remembers it, so the price is
+there afterwards wherever you meet the item — in your bags, in the auction house, on the floor. An
+item you have never seen for sale gets no such line, because Family would be guessing that anybody
+sells it at all.
+
+If two characters see different prices for one thing, the higher is kept: a reputation discount
+only ever makes a vendor cheaper, so the highest price anyone was quoted is the closest thing to
+the real one.
+
 **"A character's abilities look wrong."** Type `/family spellbook`. It walks the client's own
 spellbook in front of you and says, tab by tab, which tabs Family reads and which it leaves alone,
 every row it would record with that row's id, what is behind a button that opens into several

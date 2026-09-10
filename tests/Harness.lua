@@ -1875,6 +1875,9 @@ end
 -- harness rather than in the client.
 print("loading Family")
 local FamilyPrivate = {}
+-- Named so that a check further down can hold it against the .toc.
+LOADED_HERE = {}
+
 for _, file in ipairs {
 	"Core.lua",
 	-- The string table, then every translation of it. All four are read on every client,
@@ -1898,9 +1901,11 @@ for _, file in ipairs {
 	"Scanners/Quests.lua",
 	"Scanners/Currencies.lua",
 	"Scanners/Pets.lua",
+	"Scanners/Merchant.lua",
 	"Wide.lua",
 	"Guild.lua",
 } do
+	LOADED_HERE[#LOADED_HERE + 1] = file
 	load("addons/Family/" .. file, "Family", FamilyPrivate)
 end
 
@@ -4535,6 +4540,108 @@ check("and each owner's line totals what they have before breaking it down",
 	ownedLine and ownedLine:find("|cffffd700", 1, true) == 1
 		and ownedLine:find("(", 1, true) ~= nil, tostring(ownedLine))
 check("an item nobody owns gets nothing at all", tooltipFor(999111) == false)
+
+print()
+print("vendor prices: one from the client, one learned from merchants")
+
+-- Asked for 2026-09-10. The sell price is the client's and needs nothing; the buy price is only
+-- ever a thing Family was shown, because the client's own table carries one for items nothing
+-- sells - Sulfuras reads 166 gold and is forged (DATASOURCES §3).
+do
+	local STOCK = {}
+	local realNum, realInfo, realLink, realCost =
+		GetMerchantNumItems, GetMerchantItemInfo, GetMerchantItemLink, GetMerchantItemCostInfo
+
+	GetMerchantNumItems = function() return #STOCK end
+	GetMerchantItemInfo = function(i)
+		local row = STOCK[i]
+		if not row then return nil end
+		-- name, texture, price, quantity, ...
+		return "Thing", "icon", row.price, row.quantity
+	end
+	GetMerchantItemLink = function(i)
+		local row = STOCK[i]
+		return row and ("|Hitem:" .. row.id .. "|h") or nil
+	end
+	GetMerchantItemCostInfo = function(i)
+		local row = STOCK[i]
+		return row and row.components or 0
+	end
+
+	-- A single, a stack of five, a row bought with badges, and a price that will not divide.
+	STOCK = {
+		{ id = 2880, price = 100, quantity = 1, components = 0 },
+		{ id = 4306, price = 3000, quantity = 5, components = 0 },
+		{ id = 19019, price = 500, quantity = 1, components = 2 },
+		{ id = 15410, price = 7, quantity = 2, components = 0 },
+	}
+	Family.Merchant:Read()
+	local prices = Family.Merchant:Prices()
+
+	check("what a merchant charges is written down by item",
+		prices[2880] == 100, tostring(prices[2880]))
+	-- A stack has one price, so the price of one is a division.
+	check("and a stack is recorded as the price of one of them",
+		prices[4306] == 600, tostring(prices[4306]))
+	-- Badges, honour and marks: the money figure is part of the price, not the price.
+	check("while a row bought with something other than money is passed over",
+		prices[19019] == nil, tostring(prices[19019]))
+	check("and so is a stack price that will not divide into it",
+		prices[15410] == nil, tostring(prices[15410]))
+
+	-- **A discount can only lower what a vendor asks**, so the highest sighting is the one
+	-- closest to the base and the only one worth keeping. Without this an exalted character
+	-- understates the price for the whole family, permanently.
+	STOCK = { { id = 2880, price = 80, quantity = 1, components = 0 } }
+	Family.Merchant:Read()
+	check("a cheaper sighting does not overwrite what was seen before",
+		prices[2880] == 100, tostring(prices[2880]))
+
+	STOCK = { { id = 2880, price = 115, quantity = 1, components = 0 } }
+	Family.Merchant:Read()
+	check("while a dearer one does, because a discount only goes one way",
+		prices[2880] == 115, tostring(prices[2880]))
+
+	-- And on the tooltip. 11 is where the client puts the sell price.
+	local realItemInfo = GetItemInfo
+	GetItemInfo = function(id)
+		if id == 2880 or id == 999222 then
+			return "Thing", "|Hitem:" .. id .. "|h", 1, 1, 1, "", "", 1, nil, nil, 25
+		end
+		return realItemInfo(id)
+	end
+
+	local function priceLine(itemID, which)
+		tooltipFor(itemID)
+		for _, line in ipairs(GameTooltip.__lines) do
+			if type(line[1]) == "string" and line[1]:find(which, 1, true) then
+				return tostring(line[2])
+			end
+		end
+		return nil
+	end
+
+	FamilyDB.prices = true
+	check("with the switch on, the tooltip says what a vendor pays",
+		(priceLine(2880, "Sell price") or ""):find("25", 1, true) ~= nil,
+		tostring(priceLine(2880, "Sell price")))
+	check("and what one was seen charging",
+		(priceLine(2880, "Vendor price") or ""):find("1", 1, true) ~= nil,
+		tostring(priceLine(2880, "Vendor price")))
+	-- The whole point of learning it rather than shipping it: nothing is said about an item
+	-- no vendor has been seen selling, whatever any table says its price would be.
+	check("while an item no vendor was seen selling gets a sell price and no other",
+		priceLine(999222, "Sell price") ~= nil and priceLine(999222, "Vendor price") == nil,
+		tostring(priceLine(999222, "Vendor price")))
+
+	FamilyDB.prices = nil
+	check("and with the switch off it says neither",
+		priceLine(2880, "Sell price") == nil and priceLine(2880, "Vendor price") == nil)
+
+	GetItemInfo = realItemInfo
+	GetMerchantNumItems, GetMerchantItemInfo, GetMerchantItemLink, GetMerchantItemCostInfo =
+		realNum, realInfo, realLink, realCost
+end
 
 print()
 print("the crafters block on a recipe tooltip")
@@ -24972,6 +25079,31 @@ print("what Wide Family shares is what Family records")
 
 	check("and every file it lists could be read", #unreadable == 0,
 		table.concat(unreadable, " "))
+
+	-- **The harness loads a list of its own, and the two have to agree.**
+	--
+	-- Found the hard way 2026-09-10: a new scanner was added to the .toc, and the harness went
+	-- on running perfectly with the file never loaded - so every check written about it failed
+	-- on `Family.Merchant` being nil, which reads as the code being broken rather than as the
+	-- fixture not having it. The next one would be worse: a scanner already covered elsewhere
+	-- would simply go untested, silently, and the harness would still say all checks passed.
+	--
+	-- Only in that direction. A file the harness loads and the .toc does not is a different
+	-- fault and the check above the addon's own loader would catch it.
+	local missing = {}
+	do
+		local mine = {}
+		for _, file in ipairs(LOADED_HERE) do mine[file] = true end
+		for line in (toc or ""):gmatch("[^\r\n]+") do
+			local file = line:match("^%s*([%w_\\/]+%.lua)%s*$")
+			if file and not file:find("^Libs") then
+				local slashed = file:gsub("\\", "/")
+				if not mine[slashed] then missing[#missing + 1] = slashed end
+			end
+		end
+	end
+	check("and the harness loads every one of them itself", #missing == 0,
+		table.concat(missing, " "))
 	check("with enough of them for the question to mean anything",
 		#sources > 20, tostring(#sources))
 

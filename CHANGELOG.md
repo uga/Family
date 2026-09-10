@@ -34,6 +34,19 @@ stabled pet and summoned demon with what each one can do, down to what its abili
 training points. Sharing with another family is faster, no longer freezes the game, and now
 picks itself up where it left off.
 
+### Vendor prices on item tooltips
+
+- **What a vendor pays you**, on any item's tooltip, anywhere in the game. Off until you turn it
+  on, in Options.
+
+- **And what a vendor charges** — for the things Family has seen on a merchant's shelf. Open a
+  vendor and Family reads what is on sale and remembers it, so the price is with you afterwards
+  wherever you meet the item. An item you have never seen for sale gets no such line: Family would
+  be guessing that anybody sells it.
+
+- **The higher price wins** when two of your characters see different ones, because a reputation
+  discount only ever makes a vendor cheaper.
+
 ### Pets, for hunters and warlocks
 
 - **A Pets page**, on Abilities & Talents: every pet in the stable and every demon you have

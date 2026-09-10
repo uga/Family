@@ -3349,7 +3349,7 @@ it is played, and a linked family gets the corrected book at the next exchange.
 
 ---
 
-## 54. Vendor prices on the item tooltip
+## 54. Vendor prices on the item tooltip — DONE 2026-09-10
 
 **Asked 2026-09-10**, by one of Alberto's users, who wants what a dedicated vendor-price addon
 gives: what a vendor pays for a thing, and what a vendor charges for it.
@@ -3405,3 +3405,19 @@ case §2.5 describes - or **the merchant frames this player opens**, which is wh
 compilation is made of in the first place. Option 2 is therefore not a lesser version of the
 shipped table; it is the same mechanism, for one account, exact, and with the reputation discount
 included.
+
+**Built 2026-09-10 as 1 + 2, remembering what it sees.** `Scanners/Merchant.lua` reads a merchant's
+shelf on `MERCHANT_SHOW` and `MERCHANT_UPDATE` and writes `FamilyDB.vendorPrices[itemID]`, account
+wide and with no language in it. The tooltip block draws the client's sell price for any item and
+the learned price for an item that has been seen for sale, under a switch that ships off.
+
+Three rules the checks hold it to. **The highest sighting wins**, because a reputation discount
+only lowers what a vendor asks, so the largest figure any character was quoted is the closest thing
+to the base and every further sighting can only improve it. **A stack is divided**, and only where
+it divides exactly. **Anything with an extended cost is passed over** — badges, honour and marks
+make the money figure a part of the price rather than the price, which would put a few silver
+against an epic.
+
+Ten checks, six mutations, all caught. An eleventh check and L-066 came out of the build rather
+than the feature: the harness keeps its own copy of the addon's file list, and a new scanner in one
+and not the other would go untested in silence.

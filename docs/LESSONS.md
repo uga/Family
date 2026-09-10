@@ -2498,3 +2498,27 @@ backlog 51 took two lines of chat, and both of them were ids. In the harness: *a
 could not join carries what the window has under its word*, *and it is still not priced by it,
 because a word is not an identifier*, and the four checks that hold the rank lane to what the
 window as a whole says.
+
+## L-066 — A fixture list that copies a manifest goes stale in the direction that hides work
+
+A new scanner was added to `addons/Family/Family.toc` and the checks written for it all failed on
+`Family.Merchant` being nil. The harness keeps a load list of its own, a second copy of the same
+manifest, and the file had been added to one and not the other.
+
+This time it announced itself, because the very next thing written was a check that used the new
+module, and the harness died on it. **The dangerous direction is the other one.** Add a file whose
+behaviour is already covered by checks written against something else — a scanner that only writes
+to the record, say — and nothing dereferences it directly. The harness loads twelve scanners
+instead of thirteen, every existing check goes on passing, and the report says *all checks passed*
+while a whole file has never been executed.
+
+The general shape: **two lists of the same thing drift, and the drift is silent whenever the
+second list is the one that decides what gets tested.** A gate that reads the real manifest is the
+only thing that can notice.
+
+**What now catches it.** *And the harness loads every one of them itself*, beside the check that
+already reads `Family.toc` for a different purpose: every `.lua` the manifest lists, bar the
+libraries, must appear in the harness's own list. Proved by the silent case rather than the loud
+one — a mutation that removes the file from the harness's list *without* removing the load, so
+nothing crashes and only the gate speaks. The loud mutation proves nothing, because the crash
+happens before the gate is reached.

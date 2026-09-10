@@ -489,6 +489,13 @@ belonging to a linked family appear here too, marked as theirs. The breakdown ca
 to a single total for a quieter tooltip. Item identifier and item level are available and
 off by default.
 
+**Vendor prices, off by default.** An item tooltip can carry what a vendor pays for the thing,
+which the client states for every item, and what a vendor charges for it — but the second only for
+items Family has seen on a merchant's own list, and never otherwise. The client's own tables carry
+a buy price for nearly everything, including items nothing sells, so the number alone is not a
+statement that anything sells it; which vendor stocks what is server data and is refused by §2.5.
+The price kept is the highest ever seen, because a reputation discount only ever lowers it.
+
 **TAB walks the filter boxes.** On any panel with more than one box on its filter row, TAB moves
 the cursor to the next and Shift-TAB to the previous, round rather than stopping at the end. A
 box that is not on the screen is stepped over.
