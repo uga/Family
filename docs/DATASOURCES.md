@@ -927,6 +927,13 @@ including the owner list - so *what a member has up for sale*, and the summary c
 it, have been silently empty on Mists rather than wrong. Nothing announced it because nought
 auctions is what somebody with no auctions has. Backlog 56.
 
+**And the signature is sharper than that**, seen on the Activity set 2026-09-10: the column reads
+**not seen**, not nought. `Summary.lua` draws that where `meta.auctionsSeen` is absent, and that
+field is written at the end of a scan - so the scan had never *run*, not run and found nothing. It
+could not: the only two events that call it are the two that never fire on that build. Which is
+also why nobody reported it. *Not seen* is the right answer for a character who has never visited
+an auction house, and on Mists it was the answer for all of them.
+
 **What the newer house answers**, read the same day. A search: `GetBrowseResults` holding **500**
 rows, `AUCTION_HOUSE_BROWSE_RESULTS_UPDATED` fired once and the other four not at all. One row of
 it, printed rather than named from memory:
