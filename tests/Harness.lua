@@ -5061,6 +5061,88 @@ do
 			(Family.Auctions:PriceOf(2880)) == 800,
 			tostring((Family.Auctions:PriceOf(2880))))
 
+		-- **Asking, which nothing in this addon does in ordinary play.**
+		--
+		-- Slice 3 - a full read of everything on sale - is a page walk, and where `page` sits
+		-- in `QueryAuctionItems` differs between these builds. A signature is not a thing Lua
+		-- can be asked, so it is measured with one query on request; what the harness can hold
+		-- is that the query is shaped the way it says it is, and that it is never sent when the
+		-- client has said no.
+		do
+			local sent = {}
+			local realQuery, realCan = _G.QueryAuctionItems, _G.CanSendAuctionQuery
+			local allowed = true
+
+			_G.QueryAuctionItems = function(...) sent[#sent + 1] = { n = select("#", ...), ... } end
+			_G.CanSendAuctionQuery = function() return allowed end
+
+			-- **Both returns**, and the second is the whole reason this exists: fifty rows is
+			-- one page and the walk needs to know how many pages there are.
+			local realNum3 = GetNumAuctionItems
+			GetNumAuctionItems = function(which)
+				if which ~= "list" then return 0, 0 end
+				return 50, 1234
+			end
+			local onPage, inAll = Family.Auctions:ListTotals()
+			check("the list is asked how many are on this page and how many there are in all",
+				onPage == 50 and inAll == 1234,
+				tostring(onPage) .. " / " .. tostring(inAll))
+			GetNumAuctionItems = realNum3
+
+			-- **The client's own no is the gate.** Not a timer, not a count of our own: this
+			-- is the one call whose whole purpose is to say whether asking is safe.
+			allowed = false
+			local ok, why = Family.Auctions:ProbeQuery("long", 0)
+			check("a query is not sent while the client says it would not be accepted",
+				ok == false and #sent == 0 and type(why) == "string",
+				tostring(ok) .. " / " .. #sent .. " / " .. tostring(why))
+
+			allowed = true
+			ok = Family.Auctions:ProbeQuery("long", 7)
+			check("and the long layout puts the page seventh, where that build wants it",
+				ok == true and #sent == 1 and sent[1][7] == 7,
+				tostring(ok) .. " / " .. tostring(sent[1] and sent[1][7]))
+
+			ok = Family.Auctions:ProbeQuery("short", 7)
+			check("while the short one puts it fourth, which is the whole difference",
+				ok == true and #sent == 2 and sent[2][4] == 7,
+				tostring(ok) .. " / " .. tostring(sent[2] and sent[2][4]))
+
+			-- **`getAll` is never sent**, on either layout, at any page. It is the route that
+			-- freezes a client and disconnects people, and that decision was taken before a
+			-- line of this was written - so it is held here rather than trusted to a comment.
+			check("and neither layout ever asks for the whole house at once",
+				sent[1][10] == false and sent[2][7] == false,
+				tostring(sent[1][10]) .. " / " .. tostring(sent[2][7]))
+
+			-- A layout nobody has heard of is a refusal, not a query with a hole in it.
+			ok = Family.Auctions:ProbeQuery("sideways", 0)
+			check("a layout this file does not know sends nothing at all",
+				ok == false and #sent == 2, tostring(ok) .. " / " .. #sent)
+
+			-- **Told once, by the scanner's own handler.** A second registration under that
+			-- event's key would have replaced the reader the prices come off, which is how a
+			-- probe once reported an event arriving because the probe had replaced it (L-068).
+			local told = 0
+			Family.Auctions:TellNextList(function() told = told + 1 end)
+			fire("AUCTION_ITEM_LIST_UPDATE")
+			check("whoever asked to be told about the next list update is told",
+				told == 1, tostring(told))
+
+			fire("AUCTION_ITEM_LIST_UPDATE")
+			check("and told once, so an answer never lands on somebody else's search",
+				told == 1, tostring(told))
+
+			-- And the prices are still read while somebody is listening, which is the half a
+			-- one-shot hooked into the wrong place would quietly take away.
+			check("while the reader it was hooked into still runs",
+				(Family.Auctions:PriceOf(2880)) ~= nil,
+				tostring((Family.Auctions:PriceOf(2880))))
+
+			_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan
+			Family.Auctions:TellNextList(nil)
+		end
+
 		-- **What this character has up for sale on the older house**, and the row that is not
 		-- one. Thirteen rows were read on a live Burning Crusade client and the three the window
 		-- labels *Sold* answered a quantity of nought with the buyout carrying what is on its way

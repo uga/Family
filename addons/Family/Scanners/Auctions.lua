@@ -630,6 +630,102 @@ function Auctions:ReadPrices()
 end
 
 --------------------------------------------------------------------------------------------
+-- Asking, which nothing in this addon has ever done
+--
+-- Slice 3 of the price work is a full read of everything on sale, and it is the one thing here
+-- that could get somebody disconnected. `/family ah` has already settled that the query side
+-- exists on both older builds and that `CanSendAuctionQuery` answers. What it cannot settle is
+-- **the shape of the call**: a C function takes what it takes and Lua has no way to ask it, and
+-- the order of `QueryAuctionItems`' arguments is not the same on every one of these clients.
+--
+-- So it is measured the only way it can be - one query, on request, and the list read back. Two
+-- candidate layouts, and **neither of them is confirmed anywhere in this repository**: where
+-- `page` sits is the whole difference between them, and `page` is the only argument a walk has
+-- to vary.
+--
+--     long    name, minLevel, maxLevel, invType, class, subclass, PAGE, usable, quality, getAll, exact
+--     short   name, minLevel, maxLevel, PAGE, usable, quality, getAll, exact, filterData
+--
+-- **`getAll` is false in both and is never offered as a choice.** It is the route that freezes a
+-- client and disconnects people, and that it is never sent was decided before any of this was
+-- written (backlog 55).
+--
+-- **The answer is not *did rows arrive*.** A wrong layout can be accepted and quietly query the
+-- wrong thing - rows would still come back, and a scanner built on that would walk a filtered
+-- list believing it had walked the house. What settles it is the **total beside the rows**, held
+-- against the number the player's own auction window is showing on screen. That comparison is
+-- not something code can make, which is why this prints and decides nothing.
+local LAYOUTS = {
+	long = function(fn, page)
+		return pcall(fn, "", nil, nil, nil, nil, nil, page, nil, nil, false, false)
+	end,
+	short = function(fn, page)
+		return pcall(fn, "", nil, nil, page, nil, nil, false, false, nil)
+	end,
+}
+
+-- Both returns of it, and the second is the one a page walk needs: how many there are in all.
+-- Everything written here so far has used the first and nothing has ever read the second.
+function Auctions:ListTotals()
+	local onPage, inAll = Family:TryCall(GetNumAuctionItems, "list")
+	return tonumber(onPage), tonumber(inAll)
+end
+
+-- **One query, and nothing else.** Gated on the client's own answer rather than on a timer,
+-- because `CanSendAuctionQuery` is the difference between a scanner that is safe and one that
+-- is not, and it is a question with a real answer.
+function Auctions:ProbeQuery(which, page)
+	local fn = _G.QueryAuctionItems
+	if type(fn) ~= "function" then
+		return false, "QueryAuctionItems is not a function on this client"
+	end
+
+	if not LAYOUTS[which] then return false, "no layout called " .. tostring(which) end
+
+	if not Family:TryCall(CanSendAuctionQuery) then
+		return false, "the client says a query would not be accepted right now"
+	end
+
+	-- `pcall` rather than `TryCall`, because here the error **is** the measurement: a layout
+	-- the client refuses says so in words, and TryCall throws those words away.
+	local ok, err = LAYOUTS[which](fn, tonumber(page) or 0)
+	if not ok then return false, tostring(err) end
+	return true, nil
+end
+
+-- **The next list update, told once.**
+--
+-- Registered through the scanner's own handler rather than as a second one of its own: an event
+-- key registered twice replaces what was there, which is how a probe once came to report an
+-- event arriving because the probe was the thing that had replaced it (L-068).
+local tellNextList
+
+function Auctions:TellNextList(fn)
+	tellNextList = type(fn) == "function" and fn or nil
+end
+
+-- What is actually on the list, printed rather than summarised, so a layout that was accepted
+-- and queried the wrong thing can be seen to have done so.
+function Auctions:OldListSample(howMany)
+	local onPage = tonumber((Family:TryCall(GetNumAuctionItems, "list"))) or 0
+	local rows = {}
+
+	for index = 1, math.min(onPage, tonumber(howMany) or 3) do
+		local link = Family:TryCall(GetAuctionItemLink, "list", index)
+		local row = { Family:TryCall(GetAuctionItemInfo, "list", index) }
+
+		rows[#rows + 1] = {
+			index,
+			type(link) == "string" and (link:match("item:(%d+)") or "?") or "?",
+			tostring(row[3]),
+			tostring(row[10]),
+		}
+	end
+
+	return rows
+end
+
+--------------------------------------------------------------------------------------------
 
 Family:OnDatabaseReady("auctions", function()
 	Family:RegisterEvent("AUCTION_HOUSE_SHOW", "auctions", function()
@@ -676,6 +772,15 @@ Family:OnDatabaseReady("auctions", function()
 		fired = fired + 1
 		lastRows = tonumber((Family:TryCall(GetNumAuctionItems, "list"))) or 0
 		Auctions:ReadPrices()
+
+		-- And whoever asked to be told about the next one, told once. Inside this handler
+		-- rather than beside it: a second registration under this event's key would have
+		-- replaced the three lines above, which is L-068 exactly.
+		if tellNextList then
+			local told = tellNextList
+			tellNextList = nil
+			Family:TryCall(told)
+		end
 	end)
 
 	for _, event in ipairs { "AUCTION_OWNED_LIST_UPDATE", "AUCTION_BIDDER_LIST_UPDATE",

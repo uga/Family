@@ -3441,6 +3441,19 @@ accept**; **progress said out loud and cancellable**, because a client that stop
 minute is indistinguishable from one that has crashed; and **never `getAll`** unless a reading
 shows it both available and safe on that build, since it is the route that freezes and disconnects.
 
+**Picked up 2026-09-10, and it stopped on the first step - which is the point of taking it in that
+order.** A page walk has to vary `page`, and where `page` sits in `QueryAuctionItems` is not the
+same on all three builds. Lua cannot ask a C function what it takes, so it is measured: `/family ah
+query` sends **one** query with one of two candidate layouts, gated on `CanSendAuctionQuery`, and
+prints what came back on the next list update. Two runs cover both layouts. `/family ah` also
+prints, now, the **total** on sale - the second return of `GetNumAuctionItems`, which nothing here
+had ever read - and whether the newer house has the calls that page past its first five hundred.
+
+The full writing-up is in [`DATASOURCES.md`](DATASOURCES.md) under *What a full read still needs*.
+**Nothing walks anything until Alberto has run that on the three clients** and the totals have been
+held against what the auction window says on screen, because a layout the client accepts can still
+have queried the wrong thing - and rows arriving is not evidence that it did not.
+
 **4. A panel for what everything is worth.** Over the index Family already keeps, so the arithmetic
 is a walk rather than a scan. It has to be honest the way the pet training line is: never a total
 that quietly leaves out what it has no price for.

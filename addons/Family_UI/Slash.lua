@@ -712,6 +712,64 @@ add("spellbook", L["what the client's spellbook says, and what Family takes from
 	end
 end)
 
+-- **One query, on request, and the answer read back.**
+--
+-- The whole of slice 3 waits on this. A page walk has to vary `page`, and where `page` sits in
+-- `QueryAuctionItems` is not the same on every one of these builds - nothing can ask a C function
+-- what arguments it takes, so it is asked the only way there is: one query with one candidate
+-- layout, and the list held afterwards against what the auction window is showing on screen.
+--
+-- **One at a time, and never two in flight.** Each run takes the next layout, so two runs cover
+-- both, and a second query sent before the first has answered is precisely the traffic this
+-- feature exists to avoid generating.
+--
+-- **And it disarms itself.** The reader is a one-shot on the next list update; if the query is
+-- accepted and nothing ever arrives, leaving it armed would make the player's next ordinary
+-- search print an answer to a question asked ten minutes earlier. A probe that reports the wrong
+-- event is worse than one that reports nothing (L-068).
+local LAYOUT_ORDER = { "long", "short" }
+local nextLayout = 1
+
+local function askOnce()
+	local which = LAYOUT_ORDER[nextLayout]
+	nextLayout = nextLayout % #LAYOUT_ORDER + 1
+
+	local function report()
+		local onPage, inAll = Family.Auctions:ListTotals()
+		Family:Print(L["  the browse list holds %s row(s), of %s on sale in all"],
+			tostring(onPage), tostring(inAll))
+
+		-- Printed rather than counted, because a layout the client *accepted* can still have
+		-- queried the wrong thing, and rows arriving is not evidence that it did not.
+		for _, row in ipairs(Family.Auctions:OldListSample(3) or {}) do
+			Family:Print("    %-3s %-8s x%-5s |cff888888%s|r",
+				tostring(row[1]), tostring(row[2]), tostring(row[3]), tostring(row[4]))
+		end
+	end
+
+	local answered = false
+	Family.Auctions:TellNextList(function()
+		answered = true
+		report()
+	end)
+
+	Family:Print(L["  asking for page %d, %s layout - the answer follows when it arrives"],
+		0, which)
+
+	local ok, err = Family.Auctions:ProbeQuery(which, 0)
+	if not ok then
+		Family.Auctions:TellNextList(nil)
+		Family:Print(L["  refused: %s"], tostring(err))
+		return
+	end
+
+	Family:After(10, "auctions.probe", function()
+		if answered then return end
+		Family.Auctions:TellNextList(nil)
+		Family:Print(L["  nothing answered within %d seconds"], 10)
+	end)
+end
+
 -- **What this client offers on the auction house, and what it answers.**
 --
 -- Family reads the browse list and sends no query at all, which needs nothing from this. What
@@ -723,7 +781,9 @@ end)
 -- Symbols are reported as present or absent rather than called, except the one whose whole
 -- purpose is to be asked - `CanSendAuctionQuery` says whether a query would be accepted right
 -- now, and that answer is the difference between a scanner that is safe and one that is not.
-add("ah", L["what this client offers on the auction house"], function()
+add("ah", L["what this client offers on the auction house"], function(argument)
+	if argument == "query" then return askOnce() end
+
 	for _, name in ipairs {
 		"GetNumAuctionItems", "GetAuctionItemInfo", "GetAuctionItemLink",
 		"QueryAuctionItems", "CanSendAuctionQuery", "SortAuctionItems",
@@ -750,6 +810,13 @@ add("ah", L["what this client offers on the auction house"], function()
 			tostring((Family:TryCall(GetNumAuctionItems, which))))
 	end
 
+	-- **Both returns of it**, because the second is the one a page walk needs and nothing in
+	-- this repository has ever read it: fifty rows is one page, and how many pages there are
+	-- is the total divided by that.
+	local onPage, inAll = Family.Auctions:ListTotals()
+	Family:Print(L["  the browse list holds %s row(s), of %s on sale in all"],
+		tostring(onPage), tostring(inAll))
+
 	-- Whether the event ever arrives is the first of the three things that could be wrong, and
 	-- it is the one no amount of looking at the list can answer.
 	local fired, lastRows = Family.Auctions:ReadingsSeen()
@@ -767,6 +834,19 @@ add("ah", L["what this client offers on the auction house"], function()
 	end
 	Family:Print(L["  newer auction house: |cffffd700%s|r"],
 		#modern > 0 and table.concat(modern, ", ") or tostring(C_AuctionHouse ~= nil))
+
+	-- **And how the newer house is paged**, which is a different question from whether it is
+	-- there. One search answered five hundred rows on Mists and a house has more than five
+	-- hundred things in it, so something has to say whether that was all of them.
+	local paging = {}
+	for _, name in ipairs { "HasFullBrowseResults", "RequestMoreBrowseResults",
+		"ReplicateItems", "GetReplicateItemInfo", "IsThrottledMessageSystemReady" } do
+		if C_AuctionHouse and type(C_AuctionHouse[name]) == "function" then
+			paging[#paging + 1] = name
+		end
+	end
+	Family:Print(L["  paging the newer house: |cffffd700%s|r"],
+		#paging > 0 and table.concat(paging, ", ") or "-")
 
 	if #modern > 0 then
 		local browse, owned = Family.Auctions:ModernCounts()

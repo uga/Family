@@ -998,6 +998,46 @@ level and a suffix, so two rows can share an id and be different things; Family 
 because the tooltip that will ask knows an id and nothing else, and the cheapest variant therefore
 speaks for the plain one.
 
+#### What a full read still needs, and why it is not built yet
+
+Written 2026-09-10, when slice 3 was picked up. Three things are still unmeasured, and the first
+of them is the one that stops everything else.
+
+**1. The shape of `QueryAuctionItems`.** Nothing in this repository has ever called it, and a C
+function cannot be asked what arguments it takes. The order is not the same on every one of these
+builds, and `page` - the only argument a walk has to vary - sits in a different place depending on
+which order it is. Two candidate layouts are written into `Scanners/Auctions.lua`, **neither
+confirmed here**:
+
+    long    name, minLevel, maxLevel, invType, class, subclass, PAGE, usable, quality, getAll, exact
+    short   name, minLevel, maxLevel, PAGE, usable, quality, getAll, exact, filterData
+
+`/family ah query` sends **one** query with one of them - the next one each time it is run, so two
+runs cover both - gated on `CanSendAuctionQuery`, and prints what came back on the next list
+update: how many rows, how many there are in all, and the first three rows as ids and prices.
+
+**The test is not whether rows arrive.** A layout the client accepts can still have queried the
+wrong thing, and rows would come back either way. What settles it is **the total held against the
+number the auction window is showing on screen**, and the first three rows against what is at the
+top of it. That is a comparison a person makes, which is why the command prints and decides
+nothing.
+
+**2. How many there are in all.** `GetNumAuctionItems("list")` has a second return and nothing here
+had ever read it; `/family ah` now prints both. Fifty rows is one page, so the number of pages is
+the second divided by fifty - and a house with twelve thousand things in it is 240 queries, which
+is the arithmetic that decides whether an opt-in full scan is minutes or an evening.
+
+**3. How the newer house is paged.** One search answered **500** browse rows on Mists and a house
+holds more than five hundred things, so something has to say whether that was all of them.
+`/family ah` now reports whether `HasFullBrowseResults`, `RequestMoreBrowseResults`,
+`ReplicateItems`, `GetReplicateItemInfo` and `IsThrottledMessageSystemReady` exist on that build.
+Presence is not behaviour - that lesson is two sections above this one - so their answers are the
+next reading after this one, not a design.
+
+**`getAll` is false in both layouts and is not offered as a choice anywhere.** It is the route that
+freezes a client and disconnects people; that it is never sent was decided before a line of this
+was written, and the harness holds it rather than a comment.
+
 **Confirmed end to end 2026-09-10**, eleven auctions with stacks from one to a hundred and
 fifty-two, the panel's total held against the auction window row by row:
 
