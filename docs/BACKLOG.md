@@ -3421,3 +3421,37 @@ against an epic.
 Ten checks, six mutations, all caught. An eleventh check and L-066 came out of the build rather
 than the feature: the harness keeps its own copy of the addon's file list, and a new scanner in one
 and not the other would go untested in silence.
+
+---
+
+## 55. Reading everything on sale, and a panel for what it is all worth
+
+**Slices 3 and 4 of the price work**, split off 2026-09-10 when 1 and 2 landed. 1 is the passive
+reader - what is on the browse list while the player searches - and 2 is `/family ah`, the
+capability probe.
+
+**3. A full read, on request only.** Alberto is right that safe scanners exist; what is missing is
+a reading rather than a design. Nothing in this repository has ever called `QueryAuctionItems` or
+`CanSendAuctionQuery` or asked for `getAll`, so their shape here is hearsay. `/family ah` answers
+it on the three clients, and until it has, nothing is built.
+
+What is already decided about it: **off by default** - *read everything, I will wait* is a thing
+somebody asks for, never a thing that happens; **never a query the client has not said it will
+accept**; **progress said out loud and cancellable**, because a client that stops answering for a
+minute is indistinguishable from one that has crashed; and **never `getAll`** unless a reading
+shows it both available and safe on that build, since it is the route that freezes and disconnects.
+
+**4. A panel for what everything is worth.** Over the index Family already keeps, so the arithmetic
+is a walk rather than a scan. It has to be honest the way the pet training line is: never a total
+that quietly leaves out what it has no price for.
+
+    What everything you own is worth
+      1247 items, 892 with a price - 4310g
+      355 unpriced, and the oldest price is 12 days old
+
+Worth doing **after** the store has had some days in it. A panel over an empty record cannot be
+judged, and how stale prices go in ordinary play is what decides how the age should be drawn.
+
+**Known imprecision, recorded now so it is not discovered from a strange total later:** the neutral
+auction house is a third market, and a price read there is filed under the reader's own faction. It
+is what they would pay there, and it is not what their own side's house is asking.

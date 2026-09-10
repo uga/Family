@@ -869,6 +869,15 @@ client's own globals:
 | `ERR_AUCTION_BID_PLACED` | `Offre acceptée.` | a bid was accepted, and nothing more |
 | `ERR_AUCTION_OUTBID_S` | `Vous n'êtes plus le plus offrant pour %s.` | you lost it |
 
+**And it is the same event the prices come off.** `AUCTION_ITEM_LIST_UPDATE` fires many times
+while somebody searches, as the trace above shows, so what is on sale can be read from the list
+the player is already looking at - `GetNumAuctionItems("list")`, `GetAuctionItemLink` for the id,
+and `GetAuctionItemInfo` for the row, whose third value is the stack and whose tenth is the
+buyout, which is where the owner reader takes them from. Family sends **no query**: nothing here
+calls `QueryAuctionItems`, and the whole query side of the auction house has never been read
+anywhere in this repository. `/family ah` is what will settle that, on all three clients, before
+anything is built on it.
+
 A pattern is built from `ERR_AUCTION_WON_S` the way the oil charge line is built from
 `ITEM_SPELL_CHARGES`: escape the wording, turn the escaped `%s` into a wildcard, anchor it at
 both ends. Nothing here knows a word of French or of English.
