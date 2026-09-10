@@ -218,14 +218,19 @@ local SETS = {
 			{ key = "ilvl",   label = L["Item lvl"],  width = 70,  justify = "RIGHT" },
 			{ key = "xp",     label = L["Rest XP"],   width = 90,  justify = "RIGHT" },
 			{ key = "money",  label = L["Money"],     width = 106, justify = "RIGHT" },
+			-- **What everything this character is holding comes to**, beside what they
+			-- carry in coin, which is the other half of the same question.
+			--
+			-- It has the eighty-eight pixels the Mount column had, which went to
+			-- Miscellaneous to pay for it: this set adds up to the row's budget exactly,
+			-- so a column arriving here is always a column leaving. Eighty-eight is short
+			-- of the hundred and six Money needs, so this says **gold** and the row's
+			-- tooltip says the rest - on a stock of thousands the coppers are noise, and
+			-- the part a reader actually wants, which prices it was reached with, could
+			-- never have been a column at all.
+			{ key = "stock",  label = L["Stock"],     width = 88,  justify = "RIGHT" },
 			{ key = "played", label = L["Played"],    width = 85,  justify = "RIGHT" },
 			{ key = "seen",   label = L["Last seen"], width = 95,  justify = "RIGHT" },
-			-- How fast this character gets about. Forty-nine pixels were spare and are
-			-- not enough for the word: *Reittier* is eight letters and *Transport* is
-			-- nine in Russian, and the check that a heading fits said so in both. The
-			-- other twenty-one come from Money, which was the widest column here and
-			-- had the most to give.
-			{ key = "mount",  label = L["Mount"],     width = 88,  justify = "RIGHT" },
 		},
 	},
 	{
@@ -539,7 +544,16 @@ local SETS = {
 				wrap = true },
 			{ key = "hearth", label = L["Hearthstone"], width = 100, justify = "LEFT" },
 			{ key = "race",   label = L["Race"],        width = 70,  justify = "LEFT" },
-			{ key = "class",  label = L["Class"],       width = 80,  justify = "LEFT" },
+			-- **Mount came here when Stock took its place**, and Class went to the row's
+			-- tooltip to pay for it. Eighty rather than the eighty-eight it had: that
+			-- holds *Transport*, the longest of its headings, and `100%/150%`, the longest
+			-- thing it draws, and the other eight had to come from somewhere. They were
+			-- taken from Chrono first, and the gate refused it - a heading is a column's
+			-- floor and *Chrono* does not fit in thirty-two.
+			--
+			-- Class was the cheapest of these to move because a reader can also see it in
+			-- the colour of the name at the start of the row.
+			{ key = "mount",  label = L["Mount"],       width = 80,  justify = "RIGHT" },
 			-- World buffs banked in a Chronoboon, beside the other per-character facts
 			-- about a thing somebody is carrying. Forty pixels, which is what this set had
 			-- left of ROW_BUDGET and is more than a small number needs.
@@ -909,6 +923,45 @@ end
 CELL.level = function(meta) return meta.level and tostring(meta.level) or "?" end
 
 CELL.money = function(meta) return UI:Money(meta.money) end
+
+-- **What this character is holding, worked out once for the whole draw.**
+--
+-- Every other cell here reads `meta` and nothing else, which is what lets the summary cost the
+-- same for forty members as for four - and this one cannot, because a valuation is a walk of the
+-- index. So the walk happens once per refresh and the cells read what it left, rather than forty
+-- walks producing forty copies of one answer.
+--
+-- Held rather than stored. Prices move while somebody browses an auction house, so a figure
+-- written into a member's record at scan time would be as old as their last login; this is as old
+-- as the last time the panel was drawn, which is what a reader assumes of a panel.
+local stockOf = {}
+
+local function valueEverything()
+	stockOf = {}
+	for _, row in ipairs(Family.Index:Worth()) do stockOf[row.key] = row end
+end
+
+UI.__stockOf = function(_, key) return stockOf[key] end
+
+-- Gold alone, because eighty-eight pixels is what the column has and a stock of thousands does
+-- not turn on its coppers. A member nothing could be priced for gets the blank that means nobody
+-- looked, not a nought - §2.2, and the difference between a poor alt and an unread one.
+CELL.stock = function(_, key)
+	local row = stockOf[key]
+
+	-- Left where a check can read it, because from outside a cell drawing nought and a cell
+	-- drawing the blank differ by one character in a panel full of numbers - and they are
+	-- opposite claims: this character owns nothing, against nobody has priced what they own.
+	local answer
+	if not row or (row.atMarket + row.atVendor) == 0 then
+		answer = UNKNOWN
+	else
+		answer = string.format("|cffffd700%d|rg", math.floor(row.worth / 10000))
+	end
+
+	if key == Family:CurrentMember() then UI.__cellStock = answer end
+	return answer
+end
 
 CELL.ilvl = function(meta)
 	if not meta.itemLevel then return UNKNOWN end
@@ -1311,6 +1364,22 @@ end
 
 local TOTAL = {
 	money = function(members) return UI:Money(sumOf(members, "money")) end,
+
+	-- Added up like the money beside it, over whoever the row covers - a faction, a realm, or
+	-- everybody. A member nothing could be priced for contributes nothing and is not counted
+	-- as a nought; where that is all of them the total says so rather than claiming none.
+	stock = function(members)
+		local sum, any = 0, false
+		for _, member in ipairs(members) do
+			local row = UI:__stockOf(member.key)
+			if row and (row.atMarket + row.atVendor) > 0 then
+				sum = sum + row.worth
+				any = true
+			end
+		end
+		if not any then return UNKNOWN end
+		return string.format("|cffffd700%d|rg", math.floor(sum / 10000))
+	end,
 
 	played = function(members)
 		return duration(sumOf(members, "played")) or UNKNOWN
@@ -2112,11 +2181,33 @@ local function makeRow(parent)
 		-- One tooltip for the row rather than one per cell, which is the same argument the
 		-- professions set settled: the question is *where is this character*, not *what is
 		-- this one word*.
-		if self.__places then
-			local meta = UI:Meta(self.__places)
-			if not meta then return nil end
+		-- **One row, one tooltip, however many of these the set on screen sets.**
+		--
+		-- Miscellaneous sets two since 2026-09-10: the clipped columns, and the mount, which
+		-- came here when Stock took its width on the Overview. Written as two branches each
+		-- returning its own list, the second one went silent the moment the first applied -
+		-- and every check on it stayed green, because they were driving the Overview, where
+		-- it no longer is. One list, appended to by whatever applies, returned once.
+		local rowKey = self.__places or self.__riding or self.__stock or self.__skills
+		if not rowKey then return nil end
 
-			local lines = { { UI:NameOf(meta) } }
+		local shared = UI:Meta(rowKey)
+		if not shared then return nil end
+
+		local lines = { { UI:NameOf(shared) } }
+
+		if self.__places then
+			local meta = shared
+
+			-- **The class**, which lost its column to Mount. One word, and one a reader
+			-- can also see in the colour of the name it sits under.
+			if meta.classFile then
+				local named = _G.LOCALIZED_CLASS_NAMES_MALE
+				lines[#lines + 1] = { " " }
+				lines[#lines + 1] = { L["Class"],
+					(named and named[meta.classFile]) or meta.classFile }
+			end
+
 			local zone = Family.Names:Where(meta)
 			local under = meta.subzone
 
@@ -2165,8 +2256,6 @@ local function makeRow(parent)
 			end
 
 			-- Nothing worth a tooltip: the name alone is what the row already says.
-			if #lines == 1 then return nil end
-			return nil, nil, lines
 		end
 
 		-- **How fast they travel, and what they are allowed to ride**, which are two facts and
@@ -2174,10 +2263,7 @@ local function makeRow(parent)
 		-- column and the Overview set had no width to give one - so it goes where the other
 		-- two sets already put what a cell has no room for.
 		if self.__riding then
-			local meta = UI:Meta(self.__riding)
-			if not meta then return nil end
-
-			local lines = { { UI:NameOf(meta) } }
+			local meta = shared
 
 			local allowed = ridingOf(meta)
 			local speed = CELL.mount(meta)
@@ -2206,14 +2292,31 @@ local function makeRow(parent)
 				lines[#lines + 1] = { L["May ride"], table.concat(allowed, ", ") }
 			end
 
-			if #lines == 1 then return nil end
-			return nil, nil, lines
 		end
 
-		local meta = self.__skills and UI:Meta(self.__skills)
-		if not meta then return nil end
+		-- **What the Stock cell had no room to say.** The column is eighty-eight pixels and
+		-- says gold; the figure a reader would act on is the exact one, and beside it which
+		-- prices it was reached with - a stock valued at what a vendor pays and one valued at
+		-- the auction house are two very different numbers.
+		if self.__stock then
+			local held = UI:__stockOf(rowKey)
+			if held and (held.atMarket + held.atVendor) > 0 then
+				lines[#lines + 1] = { " " }
+				lines[#lines + 1] = { L["Stock"], UI:Money(held.worth) }
+				lines[#lines + 1] = { L["at auction prices"],
+					tostring(held.atMarket) }
+				lines[#lines + 1] = { L["at vendor prices"], tostring(held.atVendor) }
+				if held.unpriced > 0 then
+					lines[#lines + 1] = { L["with no price"],
+						tostring(held.unpriced) }
+				end
+			end
+		end
 
-		local lines = { { UI:NameOf(meta) } }
+		-- **The professions set's own half**, which was the fall-through when each of these
+		-- was a branch that returned its own list. It is a branch like the others now.
+		if self.__skills then
+			local meta = shared
 
 		local function add(entries, heading)
 			if #entries == 0 then return end
@@ -2253,7 +2356,10 @@ local function makeRow(parent)
 		add(skillsOf(meta, false), L["Professions"])
 		add(skillsOf(meta, true), L["Secondary Skills"])
 		add(weaponsOf(meta), L["Weapon Skills"])
+		end
 
+		-- Nothing worth a tooltip: the name alone is what the row already says.
+		if #lines == 1 then return nil end
 		return nil, nil, lines
 	end)
 
@@ -2789,6 +2895,11 @@ local function build(frame)
 		-- warlock and then deleting that character cannot leave the panel empty with the
 		-- button still saying Warlock.
 
+		-- **The one walk this panel does**, and only for the set that asks for it. Every other
+		-- cell here reads `meta`; Stock reads a valuation, which is a walk of the index, so it
+		-- happens once for the whole draw and never once per row.
+		if currentSet and currentSet.id == "overview" then valueEverything() end
+
 		-- The narrowing picker takes on whatever the set on screen is asking, or goes away
 		-- where the set asks nothing. Reconciled after its provider has been pointed at the
 		-- new set, or it would be dropping a choice against the old set's list.
@@ -3094,6 +3205,7 @@ local function build(frame)
 			row.__skills = nil
 			row.__places = nil
 			row.__riding = nil
+			row.__stock = nil
 
 			for index, column in ipairs(columns) do
 				-- Called rather than folded into an and/or, because a cell returns
@@ -3295,8 +3407,13 @@ local function build(frame)
 			-- And the same for the two clipped columns next door.
 			if currentSet.id == "misc" then row.__places = member.key end
 
-			-- And the mount column's other half, which has no column of its own.
-			if currentSet.id == "overview" then row.__riding = member.key end
+			-- And the mount column's other half, which has no column of its own. It moved
+			-- with the column it belongs to.
+			if currentSet.id == "misc" then row.__riding = member.key end
+
+			-- What the Stock cell has no room for: the exact figure, and which prices it
+			-- was reached with.
+			if currentSet.id == "overview" then row.__stock = member.key end
 
 			-- The lines below, on the same grid, with the member column left empty:
 			-- the name has been said and saying it again would make two members of

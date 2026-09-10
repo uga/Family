@@ -8081,6 +8081,79 @@ check("ammo bags are still only expected", sources.ammoBags == "expected",
 	tostring(sources.ammoBags))
 
 print()
+print("the Stock column")
+
+-- Asked for 2026-09-10: the figure beside the money, which is the other half of the same
+-- question. The Overview adds up to the row's budget exactly, so it cost the Mount column its
+-- place - Mount went to Miscellaneous, and Class went from there into the row's tooltip.
+;(function()
+	local who = Family:CurrentMember()
+	local meta = Family.Database:Meta(who) or {}
+	local market = (meta.realm or "?") .. "\30" .. (meta.faction or "?")
+
+	local heldPayload = Family.Database:Payload(who)
+	Family.Database:SetPayload(who, {
+		bags = { { slots = { { id = 2589, count = 40 }, { id = 4306, count = 6 },
+			{ id = 999654, count = 2 } } } },
+	})
+
+	FamilyDB.auctionPrices = FamilyDB.auctionPrices or {}
+	FamilyDB.auctionPrices[market] = { [2589] = { p = 50000, at = time() } }
+	FamilyDB.sellPrices = { [4306] = 10000 }
+	Family.Index:Invalidate()
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	fireClick(Family.UI.__summarySets.overview)
+	Family.UI:Refresh()
+
+	local function columnAt(key)
+		for index, column in ipairs(Family.UI.__summaryColumns or {}) do
+			if column.key == key then return index end
+		end
+		return nil
+	end
+
+	check("the overview set has a Stock column, and the Mount column has left it",
+		columnAt("stock") ~= nil and columnAt("mount") == nil,
+		tostring(columnAt("stock")) .. "/" .. tostring(columnAt("mount")))
+	-- Right of Money, which is where it was asked for and where it belongs: coin and stock
+	-- are the two halves of what somebody is worth.
+	check("and it stands immediately right of Money",
+		columnAt("stock") == columnAt("money") + 1,
+		tostring(columnAt("money")) .. " -> " .. tostring(columnAt("stock")))
+
+	-- **Gold alone in the cell.** Eighty-eight pixels is what the column has, and a stock of
+	-- thousands does not turn on its coppers.
+	check("the cell says what it comes to, in gold",
+		drawnText("206|rg"), "40 x 5g + 6 x 1g")
+
+	-- **A member nothing could be priced for gets the blank that means nobody looked.** A
+	-- nought there would say the character owns nothing, which is a different claim (§2.2).
+	FamilyDB.auctionPrices[market] = nil
+	FamilyDB.sellPrices = nil
+	Family.Index:Invalidate()
+	Family.UI:Refresh()
+	-- Asked as *the figure is gone*, not as *there is no nought on the panel*: a nought in
+	-- gold is what a Money cell says for anybody broke, and a needle that matches it tests
+	-- the wrong column. The same trap as looking for "0 priced," inside "20 priced,".
+	-- Asked as *the figure is gone*, not as *there is no nought on the panel*: a nought in
+	-- gold is what a Money cell says for anybody broke, and a needle that matches it tests
+	-- the wrong column. The same trap as looking for "0 priced," inside "20 priced,".
+	check("while a member nothing could be priced for is blank, not nought",
+		not drawnText("206|rg"))
+	-- And said of the cell itself, because *the number is gone* is also what a cell reading
+	-- nought would look like from outside, and nought is a claim that character owns nothing.
+	check("and the cell says so with the blank that means nobody looked",
+		Family.UI.__cellStock == nil or Family.UI.__cellStock == Family.UI.UNKNOWN,
+		tostring(Family.UI.__cellStock))
+
+	Family.UI:Hide()
+	Family.Database:SetPayload(who, heldPayload)
+	Family.Index:Invalidate()
+end)()
+
+print()
 print("what a member's possessions come to, on their own page")
 
 -- Where the figure lives since 2026-09-10. A section of its own read oddly beside everything
@@ -19246,18 +19319,20 @@ print("how fast a character can get about")
 		FamilyDB.wide = heldWide
 	end
 
-	-- And drawn, on the set where the rest of *how far along is this character* lives.
+	-- And drawn. It moved to Miscellaneous 2026-09-10 when Stock took its eighty-eight
+	-- pixels on the Overview: that set adds up to the row's budget exactly, so a new column
+	-- there is always a column leaving.
 	do
 		Family.UI:Show()
 		Family.UI:ShowTab("summary")
-		clickButton(Family.L["Overview"])
+		clickButton(Family.L["Miscellaneous"])
 		Family.UI:Refresh()
 
 		local at
 		for index, column in ipairs(Family.UI.__summaryColumns or {}) do
 			if column.key == "mount" then at = index end
 		end
-		check("the overview set has a Mount column", at ~= nil)
+		check("the miscellaneous set has a Mount column", at ~= nil)
 
 		local said
 		for _, f in ipairs(frames) do
@@ -28668,7 +28743,10 @@ print("what a character may ride, beside what they can")
 
 	Family.UI:Show()
 	Family.UI:ShowTab("summary")
-	fireClick(Family.UI.__summarySets.overview)
+	-- The mount column and its half of the row's tooltip moved to Miscellaneous 2026-09-10,
+	-- when Stock took its width on the Overview. They moved together, which is the point of
+	-- the check below that the line and the cell say the same thing.
+	fireClick(Family.UI.__summarySets.misc)
 	Family.UI:Refresh()
 
 	local function told(key)
@@ -28690,7 +28768,12 @@ print("what a character may ride, beside what they can")
 	end
 
 	local one = told(mounted)
-	check("the overview row says how fast a character travels", one ~= nil
+	-- **The class, which lost its column to Mount and moved here.** On the same tooltip as
+	-- the mount, because they are two facts about one character and this is one row.
+	check("and the row's tooltip names the class the column no longer shows",
+		one and one:find("Class", 1, true) ~= nil, tostring(one))
+
+	check("the row says how fast a character travels", one ~= nil
 		and one:find(Family.L["Mount"], 1, true) ~= nil and one:find("100", 1, true) ~= nil,
 		tostring(one))
 	check("and what they are allowed to ride", one ~= nil

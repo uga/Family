@@ -42,6 +42,17 @@ picks itself up where it left off.
 
 ### What it is all worth
 
+- **A Stock column on the summary's Overview**, beside Money — what everything that character is
+  holding comes to, in gold. The row's tooltip gives the exact figure and how much of it came from
+  auction prices and how much from what a vendor pays.
+
+- **It adds up per realm and per faction**, like the money beside it. A character nothing could be
+  priced for is blank rather than nought: that is Family not knowing, not them owning nothing.
+
+- **The Mount column moved to Miscellaneous** to make room, and **Class moved into the row's
+  tooltip** to make room for it there. A character's class is still on every row, in the colour of
+  their name.
+
 - **A character's Possessions page says what everything they hold comes to**, under the line about
   how recently each part of it was seen. Bags, bank, mail and auctions — not the guild bank, which
   is the guild's, and not the keyring.
