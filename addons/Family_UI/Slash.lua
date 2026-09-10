@@ -786,9 +786,10 @@ add("ah", L["what this client offers on the auction house"], function()
 
 		-- And one of this character's own, which is backlog 56 rather than the prices.
 		local calls, owned = Family.Auctions:ModernOwnedSample()
-		-- A name and a value, like the rows above it: there is no sentence here to translate,
-		-- and the words in it are the client's own.
-		Family:Print("    %-24s |cff888888%s|r", "owner calls",
+		-- The client's own symbol names, with nothing of ours beside them. The gate that
+		-- caught the first version of this line was right: *owner calls* is English, and a
+		-- label is a sentence however short it is.
+		Family:Print("    |cff888888%s|r",
 			#(calls or {}) > 0 and table.concat(calls, ", ") or "-")
 		for _, pair in ipairs(owned or {}) do
 			Family:Print("      %-22s |cff888888%s|r", pair[1], pair[2])

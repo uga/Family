@@ -2522,3 +2522,24 @@ libraries, must appear in the harness's own list. Proved by the silent case rath
 one — a mutation that removes the file from the harness's list *without* removing the load, so
 nothing crashes and only the gate speaks. The loud mutation proves nothing, because the crash
 happens before the gate is reached.
+
+## L-067 — A mutation runner that reads only failures reports crashes as survivors
+
+Four mutations were run against the newer auction-house reader and two came back clean. Both were
+the kind that cannot possibly be harmless — accepting a row with no item key writes to a nil index,
+and removing the guard on `C_AuctionHouse` indexes a nil before `TryCall` can protect anything.
+
+The runner was `lua5.1 tests/Harness.lua . | grep -E "^  FAIL"`. A mutation that makes the harness
+**die** prints no `FAIL` line at all: it prints a stack trace and stops. So the two loudest
+failures in the set read as the two that nothing caught, which is the worst direction for that
+signal to be wrong in — a survivor is a demand to go and write another check, and here it would
+have been a demand to write a check for something already fatal.
+
+The general shape: **a filter that only recognises one shape of failure calls every other shape a
+success.** It is the same fault as a fixture list that copies a manifest (L-066), one level up: the
+thing doing the checking had a blind spot the thing being checked could fall into.
+
+**What now catches it.** The runner reads the exit status, or looks for `all checks passed`, rather
+than counting `FAIL` lines — and any mutation is applied through a substitution that **asserts it
+matched**, because the other way a mutation survives is by never having been made. Both were used
+to re-run these four, and all four are caught: two redden a check and two take the harness down.
