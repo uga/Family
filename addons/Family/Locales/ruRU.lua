@@ -207,6 +207,7 @@ Family.locales.ruRU = {
 	["what this client can do, and how Family worked it out"] = "что умеет этот клиент и как Family это определил",
 	["which crafting cooldowns have come back, and for whom"] = "какие ремесленные восстановления вернулись и у кого",
 	["how long a Wide Family exchange takes on this client"] = "сколько занимает обмен Широкой семьи на этом клиенте",
+	["  it is holding %s browse result(s) and %s of your own auctions"] = "  в нём %s результат(ов) поиска и %s ваших лотов",
 	["  list updates heard since login: |cffffd700%d|r, last one showed %s"] = "  обновлений списка с момента входа: |cffffd700%d|r, последнее показало %s",
 	["  newer auction house: |cffffd700%s|r"] = "  новый аукцион: |cffffd700%s|r",
 	["  prices on tooltips are switched: |cffffd700%s|r"] = "  цены в подсказках: |cffffd700%s|r",

@@ -207,6 +207,7 @@ Family.locales.frFR = {
 	["what this client can do, and how Family worked it out"] = "ce que ce client sait faire, et comment Family l'a déterminé",
 	["which crafting cooldowns have come back, and for whom"] = "quels temps de recharge d'artisanat sont revenus, et pour qui",
 	["how long a Wide Family exchange takes on this client"] = "combien de temps prend un échange Grande Famille sur ce client",
+	["  it is holding %s browse result(s) and %s of your own auctions"] = "  il contient %s résultat(s) de recherche et %s de tes propres ventes",
 	["  list updates heard since login: |cffffd700%d|r, last one showed %s"] = "  mises à jour de liste entendues depuis la connexion : |cffffd700%d|r, la dernière montrait %s",
 	["  newer auction house: |cffffd700%s|r"] = "  hôtel des ventes plus récent : |cffffd700%s|r",
 	["  prices on tooltips are switched: |cffffd700%s|r"] = "  les prix sur les infobulles sont : |cffffd700%s|r",

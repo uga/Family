@@ -207,6 +207,7 @@ Family.locales.esES = {
 	["what this client can do, and how Family worked it out"] = "qué puede hacer este cliente, y cómo lo ha averiguado Family",
 	["which crafting cooldowns have come back, and for whom"] = "qué tiempos de reutilización de creación han vuelto, y de quién",
 	["how long a Wide Family exchange takes on this client"] = "cuánto tarda un intercambio de Familia Amplia en este cliente",
+	["  it is holding %s browse result(s) and %s of your own auctions"] = "  contiene %s resultado(s) de búsqueda y %s subastas tuyas",
 	["  list updates heard since login: |cffffd700%d|r, last one showed %s"] = "  actualizaciones de lista oídas desde el inicio: |cffffd700%d|r, la última mostró %s",
 	["  newer auction house: |cffffd700%s|r"] = "  casa de subastas más reciente: |cffffd700%s|r",
 	["  prices on tooltips are switched: |cffffd700%s|r"] = "  los precios en las descripciones están: |cffffd700%s|r",

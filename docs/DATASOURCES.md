@@ -908,7 +908,29 @@ not differ between those two builds in any way this probe can see. Nought rows i
 after it has been cleared, not a client that will not answer: fifty-seven prices had just been
 taken off it.
 
-Mists still to be read.
+**Mists of Pandaria has the newer auction house, and the old calls there are shells.** Read the
+same day, standing at an auction house with the prices switched on:
+
+    all eight: function          a query would be accepted now: true
+    list 0    bidder 0    owner 0
+    list updates heard since login: 0, last one showed nil
+    newer auction house: GetBrowseResults, SearchForFavorites, GetNumReplicateItems,
+                         QueryOwnedAuctions, SendBrowseQuery
+
+So `GetNumAuctionItems` and the seven beside it **exist and answer nothing**, all three selectors
+alike, and `AUCTION_ITEM_LIST_UPDATE` did not fire once across a session of browsing. Presence is
+not behaviour, which is §2.3 stated by measurement: a capability table that asked whether the
+symbol was there would have answered *yes* for a build where none of it works.
+
+**This is wider than the prices.** Everything in `Scanners/Auctions.lua` reads those calls,
+including the owner list - so *what a member has up for sale*, and the summary columns built on
+it, have been silently empty on Mists rather than wrong. Nothing announced it because nought
+auctions is what somebody with no auctions has. Backlog 56.
+
+What the newer house needs is a reading of its own, which the probe now counts: which of
+`AUCTION_HOUSE_BROWSE_RESULTS_UPDATED`, `..._ADDED`, `COMMODITY_SEARCH_RESULTS_UPDATED`,
+`ITEM_SEARCH_RESULTS_UPDATED` and `OWNED_AUCTIONS_UPDATED` actually arrives while a player
+browses, and what `GetBrowseResults` and `GetNumOwnedAuctions` are holding when they do.
 
 **Reported alongside it: Era drew no price lines at all**, while remembering prices perfectly -
 and **confirmed the same day to have been the switch**, nothing else. It ships off and `FamilyDB`

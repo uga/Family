@@ -3455,3 +3455,30 @@ judged, and how stale prices go in ordinary play is what decides how the age sho
 **Known imprecision, recorded now so it is not discovered from a strange total later:** the neutral
 auction house is a third market, and a price read there is filed under the reader's own faction. It
 is what they would pay there, and it is not what their own side's house is asking.
+
+---
+
+## 56. The auctions scanner has never worked on Mists
+
+**Found 2026-09-10 by `/family ah`**, while chasing why the new price reader learned nothing on
+that build. It is not about the prices: `Scanners/Auctions.lua` reads `GetNumAuctionItems` and
+`GetAuctionItemInfo`, and on Mists those exist and answer nothing - `list`, `bidder` and `owner`
+all nought, and `AUCTION_ITEM_LIST_UPDATE` not firing once across a session of browsing. That build
+has the newer auction house: `C_AuctionHouse` carries `GetBrowseResults`, `SendBrowseQuery`,
+`GetNumReplicateItems`, `QueryOwnedAuctions` and `SearchForFavorites`.
+
+**So *what a member has up for sale* has been empty on Mists since Family first ran there**, along
+with the summary's auction columns and the auction age Wide Family shares. Nothing ever announced
+it, because nought auctions is exactly what somebody with no auctions has - §2.2 read from the
+wrong side, and the reason a capability that asks *is the symbol present* would have answered yes.
+
+**The reading needed**, which `/family ah` now takes: which of the newer events arrives while a
+player browses and while they open their own auctions, and what `GetBrowseResults` and
+`GetNumOwnedAuctions` hold at that moment. The commodity and item searches are separate there and
+answer separately, which is a structural difference from the one list Era and Burning Crusade have,
+not a renaming.
+
+**Then two repairs, in this order.** The owner list first, because that one is a feature players
+already believe they have; the browse prices after, since they are new and nobody is missing them
+yet. Both behind a capability that asks **which auction house this is** rather than whether a
+symbol exists - the shells are the argument for that, and are worth quoting wherever it is written.

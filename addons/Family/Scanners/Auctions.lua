@@ -262,6 +262,41 @@ function Auctions:ReadingsSeen()
 	return fired, lastRows
 end
 
+-- **And the same count for the newer auction house**, because Mists turned out to have it.
+--
+-- Read 2026-09-10: on that build all three of the old lists answer nought, the old event never
+-- fires once, and `C_AuctionHouse` carries `GetBrowseResults`, `SendBrowseQuery`,
+-- `GetNumReplicateItems`, `QueryOwnedAuctions` and `SearchForFavorites`. So the eight old calls
+-- are shells - present, and answering nothing - and everything this file reads is dead there,
+-- which is not only the prices but the auctions a member has up for sale.
+--
+-- Which of the newer events actually arrives while a player browses is the next thing that has to
+-- be read rather than assumed, so they are counted the same way. `RegisterEvent` refuses an event
+-- the client has not got and says so, which makes this free on Era and Burning Crusade.
+local MODERN_EVENTS = {
+	"AUCTION_HOUSE_BROWSE_RESULTS_UPDATED",
+	"AUCTION_HOUSE_BROWSE_RESULTS_ADDED",
+	"COMMODITY_SEARCH_RESULTS_UPDATED",
+	"ITEM_SEARCH_RESULTS_UPDATED",
+	"OWNED_AUCTIONS_UPDATED",
+}
+
+local modernHeard = {}
+
+function Auctions:ModernEvents()
+	return MODERN_EVENTS, modernHeard
+end
+
+-- What the newer house says it is holding right now, asked without being told to search.
+function Auctions:ModernCounts()
+	if not C_AuctionHouse then return nil end
+
+	local browse = Family:TryCall(C_AuctionHouse.GetBrowseResults)
+	local owned = Family:TryCall(C_AuctionHouse.GetNumOwnedAuctions)
+
+	return (type(browse) == "table") and #browse or nil, tonumber(owned)
+end
+
 -- One page of whatever the player last searched for.
 function Auctions:ReadPrices()
 	local where = market()
@@ -327,6 +362,12 @@ Family:OnDatabaseReady("auctions", function()
 	Family:RegisterEvent("AUCTION_HOUSE_CLOSED", "auctions", function()
 		Auctions:ForgetVisit()
 	end)
+
+	for _, event in ipairs(MODERN_EVENTS) do
+		Family:RegisterEvent(event, "auctions", function()
+			modernHeard[event] = (modernHeard[event] or 0) + 1
+		end)
+	end
 
 	-- The browse list, which is whatever the player last searched for. Read rather than
 	-- asked for: nothing here sends a query.

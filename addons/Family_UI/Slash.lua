@@ -768,6 +768,17 @@ add("ah", L["what this client offers on the auction house"], function()
 	Family:Print(L["  newer auction house: |cffffd700%s|r"],
 		#modern > 0 and table.concat(modern, ", ") or tostring(C_AuctionHouse ~= nil))
 
+	if #modern > 0 then
+		local browse, owned = Family.Auctions:ModernCounts()
+		Family:Print(L["  it is holding %s browse result(s) and %s of your own auctions"],
+			tostring(browse), tostring(owned))
+
+		local events, heard = Family.Auctions:ModernEvents()
+		for _, event in ipairs(events) do
+			Family:Print("    %-38s |cff888888%d|r", event, heard[event] or 0)
+		end
+	end
+
 	local prices, oldest, newest, held = Family.Auctions:Prices(), nil, nil, 0
 	for _, row in pairs(prices) do
 		if type(row) == "table" and row.at then
