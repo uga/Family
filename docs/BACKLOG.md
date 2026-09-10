@@ -3623,3 +3623,42 @@ box that replaces it has to be obviously a mode rather than a filter. `Contents.
 refused a tick box once for a related reason - *the whole family beside a small square reads as a
 setting* - and chose a button that marks itself selected instead, which is the furniture this
 would sit beside.
+
+---
+
+## 61. The profession button arms itself and casts nothing
+
+**Reported 2026-09-10, from play:** the yellow note under a profession's own page says clicking
+the profession opens its window, and on Leatherworking clicking it *"just goes back to normal
+status"* - the page folds and redraws, and no window opens.
+
+**Two readings, both Alberto's, both taken that day.**
+
+1. The word is right and it is stored. The probe over `Family.UI.__professionsFound` answered
+   `165 75 Leatherworking`, so `record.openWith` for that member is the profession's own name as
+   the client gave it.
+2. `/run CastSpellByName("Leatherworking")` **opens the window** on that build. So the name casts,
+   from insecure code, at that moment, for that character.
+
+**Which leaves the secure button**, `Family_UI/Professions.lua` - `skillButton` builds it from
+`"UIPanelButtonTemplate,SecureActionButtonTemplate"` (line 728) and `armButton` (line 240) sets
+`type="spell"` and `spell=<openWith>`; the draw at line 1319 arms it only where the row is the
+member being played. Family's own work is in `PostClick` precisely so that the template's own
+`OnClick` - the part that casts - is not taken away, and the fold and the redraw the player sees
+are that `PostClick` running. So the click arrives; the cast does not happen.
+
+**What is not measured, and is the next thing rather than a fix:** what the button actually holds
+when it is clicked. `GetAttribute("type")` and `GetAttribute("spell")` read back inside that
+`PostClick`, plus whether `armButton` returned true at draw time at all - it answers false and
+silently without arming when `InCombatLockdown` is true or `SetAttribute` is missing, and neither
+of those shows up anywhere on the screen. Three values and the question is closed.
+
+**The likely repair, not to be written before that reading:** cast from `PostClick` with the name
+that demonstrably works there - `CastSpellByName(openWith)` - and keep the secure attributes as
+they are, so a build that honours them goes on doing so. It is the one route the measurement above
+has already shown open on this client, and it is insecure code calling the same function Alberto
+called by hand.
+
+**Why this is not "the note lies".** The note is honest about what Family knows: it says *click to
+open* because Family has seen that window once and recorded what opened it. The fault is between
+that record and the cast, and on at least one profession the record is fine.
