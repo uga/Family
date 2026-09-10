@@ -732,6 +732,14 @@ add("ah", L["what this client offers on the auction house"], function()
 		Family:Print("    %-26s |cff888888%s|r", name, type(_G[name]))
 	end
 
+	-- **Asked here because this is where somebody lands when the prices are not showing.**
+	--
+	-- The switch ships off, and `FamilyDB` is one file per game version - so turning it on for
+	-- Burning Crusade turns on nothing for Era, and the first report of it was exactly that:
+	-- prices remembered and none drawn.
+	Family:Print(L["  prices on tooltips are switched: |cffffd700%s|r"],
+		FamilyDB.prices and L["on"] or L["off"])
+
 	local askable = Family:TryCall(CanSendAuctionQuery)
 	Family:Print(L["  a query would be accepted now: |cffffd700%s|r"], tostring(askable))
 	Family:Print(L["  rows on show in the browse list: |cffffd700%s|r"],

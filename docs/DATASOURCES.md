@@ -896,7 +896,24 @@ than one call - what `getAll` does on these builds is a separate question and is
 The last line is the passive reader working in play: twenty-four prices off an ordinary search,
 with nothing queried for.
 
-Era and Mists still to be read.
+Classic Era, the same day, immediately after a search:
+
+    all eight: function
+    a query would be accepted now: true
+    rows on show in the browse list: 0
+    prices remembered for this realm and side: 57, oldest just now, newest just now
+
+**The same eight calls, and the same answer from `CanSendAuctionQuery`** - so the query side does
+not differ between those two builds in any way this probe can see. Nought rows is the browse list
+after it has been cleared, not a client that will not answer: fifty-seven prices had just been
+taken off it.
+
+Mists still to be read.
+
+**Reported alongside it: Era drew no price lines at all**, while remembering prices perfectly. The
+switch ships off and `FamilyDB` is one file per game version, so turning it on for Burning Crusade
+turns on nothing for Era. `/family ah` now says which way the switch is set, because that is the
+question somebody is asking when they run it.
 
 A pattern is built from `ERR_AUCTION_WON_S` the way the oil charge line is built from
 `ITEM_SPELL_CHARGES`: escape the wording, turn the escaped `%s` into a wildcard, anchor it at
