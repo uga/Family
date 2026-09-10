@@ -67,11 +67,6 @@ picks itself up where it left off.
 - **It never gives a total on its own** — how much came from auction prices, how much from vendor
   prices, and how many things it had no price for at all.
 
-### Fixed
-
-- **Clicking a profession on the summary did nothing** until you had opened the Professions panel
-  once in that session — after which it worked for the rest of it.
-
 ### Vendor prices on item tooltips
 
 - **What a vendor pays you**, on any item's tooltip, anywhere in the game. Off until you turn it
@@ -143,6 +138,9 @@ picks itself up where it left off.
   you watch it, instead of quietly queueing a second copy behind the first.
 
 ### Fixed
+
+- **Clicking a profession on the summary did nothing** until you had opened the Professions panel
+  once in that session — after which it worked for the rest of it.
 
 - **A low-level character's abilities page listed things they have not learned.** On Mists of
   Pandaria the spellbook draws every ability the class will ever get, greyed out, and Family was
