@@ -627,8 +627,11 @@ Family:OnDatabaseReady("auctions", function()
 		Auctions:ForgetVisit()
 	end)
 
+	-- A key of their own. Under "auctions" these counters replaced the handlers registered
+	-- above them for the two events they share, so opening the auction house stopped asking
+	-- for this character's own listings and nothing was ever scanned.
 	for _, event in ipairs(MODERN_EVENTS) do
-		Family:RegisterEvent(event, "auctions", function()
+		Family:RegisterEvent(event, "auctions.heard", function()
 			modernHeard[event] = (modernHeard[event] or 0) + 1
 		end)
 	end

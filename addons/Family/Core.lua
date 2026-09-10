@@ -57,6 +57,26 @@ function Family:RegisterEvent(event, key, handler)
 			return false
 		end
 	end
+	-- **A second registration under one key replaces the first, in silence.**
+	--
+	-- Which is what a key is for - it is how `UnregisterEvent` finds one again - but it means two
+	-- callers who pick the same word for different work quietly cancel each other, and the one
+	-- that loses is whichever ran first. Found 2026-09-10: a probe's counters were registered for
+	-- `AUCTION_HOUSE_SHOW` under the same key as the handler that asks the auction house for this
+	-- character's own listings, so opening the window stopped asking, and the panel went on
+	-- reading *not seen* for everybody with nothing in the log to say why.
+	--
+	-- Counted rather than refused, because replacing is legitimate and this file cannot tell the
+	-- two apart. The harness asserts the count is nought after a full startup, which is where an
+	-- accident and a deliberate replacement do become distinguishable: somebody is looking.
+	if listeners[event][key] and listeners[event][key] ~= handler then
+		self.__eventClashes = (self.__eventClashes or 0) + 1
+		self.__eventClashList = self.__eventClashList or {}
+		self.__eventClashList[#self.__eventClashList + 1] = event .. "/" .. tostring(key)
+		self:Debug("event %s already had a handler under key %s - the first one is gone",
+			event, tostring(key))
+	end
+
 	listeners[event][key] = handler
 	return true
 end

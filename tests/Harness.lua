@@ -7882,6 +7882,22 @@ check("a panel that fails to build says so", reported)
 Family.UI:ShowTab("summary")
 
 before = #DEFAULT_CHAT_FRAME.messages
+-- **No two callers may register for one event under one key.**
+--
+-- `RegisterEvent` files a handler under a key so that `UnregisterEvent` can find it again, and a
+-- second registration under the same key replaces the first without a word. Two callers who
+-- happen to choose the same word therefore cancel each other, and the one that loses is whichever
+-- ran first - which is nothing at all like a crash, and looks from the panel like a feature that
+-- was never written.
+--
+-- Found 2026-09-10, and it had already cost a round: a probe's event counters were filed under
+-- the same key as the handler that asks the auction house for this character's own listings, so
+-- opening the window stopped asking and the summary read *not seen* for everybody. The probe went
+-- on reporting the event as arriving, because the probe was the thing that had replaced it.
+check("no event has two handlers filed under one key",
+	(Family.__eventClashes or 0) == 0,
+	table.concat(Family.__eventClashList or {}, " "))
+
 SlashCmdList["FAMILY"]("caps")
 check("/family caps lists every capability",
 	#DEFAULT_CHAT_FRAME.messages - before >= 10,

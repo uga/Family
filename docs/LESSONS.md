@@ -2543,3 +2543,32 @@ thing doing the checking had a blind spot the thing being checked could fall int
 than counting `FAIL` lines — and any mutation is applied through a substitution that **asserts it
 matched**, because the other way a mutation survives is by never having been made. Both were used
 to re-run these four, and all four are caught: two redden a check and two take the harness down.
+
+## L-068 — The probe reported the event arriving because the probe was what had replaced it
+
+`Family:RegisterEvent(event, key, handler)` files a handler under a key so `UnregisterEvent` can
+find it again, and a second registration under the same key replaces the first without a word.
+
+A probe was built to count auction events, and its counters were filed under `"auctions"` — the
+key the scanner already used. Three of the events it counted were events the scanner had handlers
+for. So opening the auction house stopped clearing the visit and stopped asking the newer house
+for this character's own listings, and the summary went on reading *not seen* for everybody.
+
+**And the diagnostic said the event was arriving.** It was: two firings, faithfully counted, by
+the counter that had taken the handler's place. The instrument was reporting the health of the
+thing it had broken, and it read perfectly. Three rounds went by with *the event fires and the
+scan does not run* looking like a mystery inside the scanner, which is the last place it was.
+
+The general shape: **an instrument installed in the same slot as the mechanism measures itself.**
+It is worse than a blind instrument, because a blind one is quiet and this one is confident. And
+it is the second time today that a checking tool had a blind spot the checked thing fell into
+(L-067), which is what a key that is a bare word invites: `"auctions"` is not a namespace, it is a
+word two pieces of code both find obvious.
+
+**What now catches it.** `RegisterEvent` counts a replacement and says so through `Debug`, and the
+harness asserts the count is nought after a full startup — *no event has two handlers filed under
+one key*, which names the offenders when it fails. Replacing is legitimate and the addon cannot
+tell an accident from a decision, so it is not refused; the check is where the two become
+distinguishable, because somebody is looking. Proved by putting the counters back on the shared
+key: the gate reddens and names all three, `AUCTION_HOUSE_SHOW`, `AUCTION_HOUSE_CLOSED` and
+`OWNED_AUCTIONS_UPDATED`. The whole addon was clean of any other clash the day it was added.
