@@ -3478,7 +3478,13 @@ player browses and while they open their own auctions, and what `GetBrowseResult
 answer separately, which is a structural difference from the one list Era and Burning Crusade have,
 not a renaming.
 
-**Then two repairs, in this order.** The owner list first, because that one is a feature players
-already believe they have; the browse prices after, since they are new and nobody is missing them
-yet. Both behind a capability that asks **which auction house this is** rather than whether a
+**The browse prices are done**, 2026-09-10 — 497 taken from 500 results on a live Mists client,
+with `AUCTION_HOUSE_SHOW` firing so the visit rule works there too. Both routes are registered on
+every client and neither is gated, which is the shape the repair below should follow.
+
+**The owner list is what is left, and it is the one that matters**, because it is a feature players
+already believe they have. `GetOwnedAuctionInfo` and `GetOwnedAuctions` are both present on that
+build and the count moves when something is listed. **The one reading still missing is the shape of
+a row**, which needs `/family ah` run on a character with something actually up for sale — the
+probe prints it and the last run had nothing listed, so it printed the two call names and no row. Both behind a capability that asks **which auction house this is** rather than whether a
 symbol exists - the shells are the argument for that, and are worth quoting wherever it is written.

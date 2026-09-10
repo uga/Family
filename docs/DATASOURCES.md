@@ -945,7 +945,22 @@ speaks for the plain one.
 
 **And the owner list does answer there.** Listing one item took `GetNumOwnedAuctions` from nought
 to one and fired `OWNED_AUCTIONS_UPDATED` four times, with `COMMODITY_SEARCH_RESULTS_UPDATED`
-firing three. So backlog 56 has a route; what a row of it looks like is the next thing to read.
+firing three. Both `GetOwnedAuctionInfo` and `GetOwnedAuctions` are present. So backlog 56 has a
+route; what a row of it looks like is the next thing to read, and needs a character with something
+actually up for sale.
+
+**The reader working, measured the same day:**
+
+    auctions: 497 price(s) taken from 500 browse result(s)
+    prices remembered for this realm and side: 497, oldest just now, newest just now
+    AUCTION_HOUSE_SHOW 1     AUCTION_HOUSE_CLOSED 0
+
+Two things settled by that. **The visit events fire on the newer house**, so the rule that starts a
+new reading works on all three builds and prices there cannot drift downwards for ever - which was
+the open risk when this route was written. And a browse with nothing typed into it answers with the
+cap, so one idle look at the auction house on Mists is worth more than a session of searching on
+Era: 497 of the 500 carried a usable key and a price, and the three that did not were passed over
+rather than guessed at.
 
 **Neither route is gated, and both are registered on every client.** The old one reads a list that
 answers nought on Mists; the newer one reads a call Era has not got; each is silent where it does
