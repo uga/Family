@@ -341,29 +341,44 @@ function Auctions:ModernOwnedSample()
 		if type(C_AuctionHouse[name]) == "function" then tried[#tried + 1] = name end
 	end
 
-	local row = Family:TryCall(C_AuctionHouse.GetOwnedAuctionInfo, 1)
-	if type(row) ~= "table" then
-		local all = Family:TryCall(C_AuctionHouse.GetOwnedAuctions)
-		row = type(all) == "table" and all[1] or nil
-	end
-	if type(row) ~= "table" then return tried, nil end
+	-- **All of them, not the first.** A stackable good and a single item are two different
+	-- things on the newer house and may not carry the same fields, and one row cannot show
+	-- that. Seven rows of chat is a fair price for not guessing.
+	local howMany = tonumber((Family:TryCall(C_AuctionHouse.GetNumOwnedAuctions))) or 0
+	local all = Family:TryCall(C_AuctionHouse.GetOwnedAuctions)
+	if type(all) ~= "table" then all = nil end
 
 	local out = {}
-	for key, value in pairs(row) do
-		if type(value) == "table" then
-			local inner = {}
-			for k, v in pairs(value) do
-				inner[#inner + 1] = string.format("%s=%s", tostring(k), tostring(v))
+	for index = 1, math.max(howMany, all and #all or 0) do
+		local row = Family:TryCall(C_AuctionHouse.GetOwnedAuctionInfo, index)
+		if type(row) ~= "table" then row = all and all[index] or nil end
+
+		if type(row) == "table" then
+			out[#out + 1] = { "-", tostring(index) }
+
+			local keys = {}
+			for key in pairs(row) do keys[#keys + 1] = tostring(key) end
+			table.sort(keys)
+
+			for _, key in ipairs(keys) do
+				local value = row[key]
+				if type(value) == "table" then
+					local inner = {}
+					for k, v in pairs(value) do
+						inner[#inner + 1] =
+							string.format("%s=%s", tostring(k), tostring(v))
+					end
+					table.sort(inner)
+					out[#out + 1] =
+						{ key, "{ " .. table.concat(inner, ", ") .. " }" }
+				else
+					out[#out + 1] = { key, tostring(value) }
+				end
 			end
-			table.sort(inner)
-			out[#out + 1] = { tostring(key), "{ " .. table.concat(inner, ", ") .. " }" }
-		else
-			out[#out + 1] = { tostring(key), tostring(value) }
 		end
 	end
 
-	table.sort(out, function(a, b) return a[1] < b[1] end)
-	return tried, out
+	return tried, (#out > 0) and out or nil
 end
 
 -- What the newer house says it is holding right now, asked without being told to search.
