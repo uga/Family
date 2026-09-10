@@ -1575,6 +1575,33 @@ Two findings worth keeping:
   every item, without the character having to know it. That is a whole third-party library's
   job done by the client — 418 items on Era alone.
 
+#### The two prices, and what only one of them means
+
+Measured 2026-09-10 on the pinned Era build, after Alberto was asked whether Family could show
+vendor prices the way a dedicated addon does. `ItemSparse` carries both, at columns 59 and 60:
+
+    24442 rows        SellPrice non-zero 18419        BuyPrice non-zero 19004
+
+**`SellPrice` is what a vendor pays you**, and the client hands the same number to any addon
+through `GetItemInfo` without anything being fetched or shipped. Nothing here is needed for it.
+
+**`BuyPrice` is not what a vendor charges you.** It is what the item *would* cost if something
+sold it, and it is set on items nothing sells: 4093 epics and 29 legendaries on Era carry one -
+`Destiny` (647), a drop, reads 350121 copper. Whether any vendor actually stocks an item is server
+data, and the specification refuses it by name (§2.5, *where an item is looted, **sold**,
+quest-rewarded or otherwise obtained*). So the column is a real client fact that does not answer
+the question a player is asking when they hover an item.
+
+**And it cannot be derived from the other.** The obvious guess is that buy is a fixed multiple of
+sell; it is not. Of the 18415 items carrying both, 50.2% are ×5, 24.1% are ×4, and the rest run
+from ×1 to ×7 with no pattern - *Bent Staff* is ×5.222 and *Worn Axe* ×5.429. A shipped table is
+the only way to have them, at 19004 entries and about 253 KB for Era alone, before the other two
+clients.
+
+**What is true by construction is the merchant's own list.** With a vendor open,
+`GetMerchantItemInfo` states the price of a thing that is, demonstrably, for sale - with the
+reputation discount already applied, which no table can carry.
+
 Licence position: these are Blizzard's own client files, republished. wago.tools is a mirror,
 not an author. Using it carries whatever risk using the client's own data carries, and no
 more; it does not create a *new* rights holder to negotiate with. That is a materially better

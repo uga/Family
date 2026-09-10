@@ -3346,3 +3346,38 @@ class tab's - so the tab rule alone would remove the repetition below level ten 
 
 Four checks, four mutations, all caught. No migration: each character corrects itself the next time
 it is played, and a linked family gets the corrected book at the next exchange.
+
+---
+
+## 54. Vendor prices on the item tooltip
+
+**Asked 2026-09-10**, by one of Alberto's users, who wants what a dedicated vendor-price addon
+gives: what a vendor pays for a thing, and what a vendor charges for it.
+
+**The first half is free and needs nothing.** `GetItemInfo` hands the sell price with the item,
+anywhere in the game. It passes §2.5 without an argument - the client said it - and the useful
+part is the stack: *this pile is worth 4g 98s* is the question, and it is a multiplication.
+
+**The second half is measured and written up** in `docs/DATASOURCES.md` §3, under *The two prices,
+and what only one of them means*. In short: `ItemSparse.BuyPrice` exists, is not derivable from
+`SellPrice`, weighs about 253 KB for Era alone - and is set on 4093 epics and 29 legendaries that
+nothing sells, so drawing it as *what this costs* states a price for things no vendor has. Which
+vendor stocks what is server data, and §2.5 names it.
+
+**Three ways to build it**, and the choice is Alberto's because it is a question of what Family is
+rather than of what it can do:
+
+1. **Sell price only**, from the client, off by default, no table shipped. Small, always true.
+2. **Sell price always, plus the buy price while a merchant window is open**, read from that
+   merchant's own list. True by construction, and it carries the reputation discount, which no
+   shipped table can. Costs nothing but the code.
+3. **Ship `ItemSparse.BuyPrice` for all three clients** and label it as a list price rather than
+   as a price you can pay, correcting what is actually on sale from vendors as they are visited.
+   Honest only if the label is honest, and the correction takes a long time to be worth anything.
+
+**Recommended: 1 and 2 together.** It answers the whole of the user's question with no shipped
+table, and the half that a table would answer worse.
+
+**What this is not:** adopting a new data source. `wago.tools` has been this project's source
+since the beginning (DATASOURCES §3) and `ItemSparse` is already one of the tables Family reads.
+The first answer given to this question said otherwise and was wrong.
