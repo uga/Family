@@ -1795,6 +1795,34 @@ only come from a compilation somebody else made - which is reserved (`CLAUDE.md`
 data source) and is the case §2.5 describes - or from the merchant frames the player opens, which
 is what a catalogue site is itself made of.
 
+#### Disenchanting: the client knows the band, not what comes out of it
+
+Asked 2026-09-10 - could a tooltip name the shards an item might disenchant into, with their
+odds? `ItemDisenchantLoot` **is** served, on all three builds, which is further than the vendor
+question got:
+
+    Era 50 rows    Burning Crusade 74    Mists 116
+    ID, Subclass, Quality, MinLevel, MaxLevel, SkillRequired, ExpansionID, Class
+
+    group 3   class 2  quality 2  ilvl 5-15    group 23  class 4  quality 3  ilvl 41-45
+    group 4   class 4  quality 2  ilvl 5-15    group 25  class 4  quality 2  ilvl 41-45
+
+Each row is a **band**: a class (2 is weapons, 4 is armour), a quality, and an item-level range,
+answering with a group id. So the client can say which group a thing falls into, and that is the
+whole of what it says. **There is no companion table with the outcomes** - the served list holds
+`ItemDisenchantLoot` and nothing else of the kind, `ItemSalvage` and `ItemSalvageLoot` being a
+different and retail-only thing. Which shards a group yields, and with what probability, is a
+server loot template and is published nowhere.
+
+`SkillRequired` is **nought on all fifty Era rows**, so it does not carry the requirement either.
+
+**What can be said honestly, and it is not nothing.** Whether an item is disenchantable at all,
+and which band it is in - both from the client. And, in the shape Family is actually for, **who in
+the family could do it**: enchanting and its rank are already recorded for every member, so *who
+can disenchant this* is the same question as *who can make this*, asked backwards. Naming the
+shards is the part that would need a catalogue somebody else compiled, which is reserved
+(`CLAUDE.md`) and is the case §2.5 describes.
+
 #### Loot: the bosses are in the client, on one of the three
 
 Asked 2026-09-10, straight after the vendor question and with the same shape. Measured:

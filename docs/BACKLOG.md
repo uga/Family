@@ -3565,3 +3565,27 @@ be a sentence rather than a column.
 
 Whichever it is, the line under it says what was left out. *4310g across 892 items, 355 unpriced,
 oldest price 12 days* - never a bare total.
+
+---
+
+## 59. Disenchanting on the tooltip
+
+**Asked 2026-09-10:** could an item's tooltip name the shards it might disenchant into, with their
+probabilities? Measured before answering, and written up in `docs/DATASOURCES.md` under
+*Disenchanting: the client knows the band, not what comes out of it*.
+
+**The odds are not available**, on any of the three builds. `ItemDisenchantLoot` is served and
+gives a band - class, quality, item-level range - and a group id, and there is no table anywhere
+that says what a group yields. That is a server loot template. Naming the shards would need a
+compilation somebody else made: reserved, and the case §2.5 describes.
+
+**What is worth building instead**, and it needs nothing external:
+
+1. **Whether it can be disenchanted at all**, from the band. A grey item and a quest item say
+   nothing today and would go on saying nothing, which is the useful half of the answer.
+2. **Who in the family could do it.** Enchanting and its rank are recorded for every member
+   already, so this is *who can make this* asked backwards - and it is the one version of this
+   question no other addon can answer, because no other addon knows what the alts have.
+
+The band alone also implies the shard **tier** without naming it, and whether that is worth saying
+in words the client can give is the open question in 1.
