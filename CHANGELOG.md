@@ -40,6 +40,19 @@ picks itself up where it left off.
   a question it stopped answering, and getting silence back — which looks exactly like having no
   auctions. Your listings, and what they are worth, are read again.
 
+### Worth
+
+- **A new section that says what everything you own is worth**, beside Possessions. One line per
+  character, most valuable first, priced at what the auction house was last seen asking.
+
+- **It never gives a total without saying what it left out** — how many items went into it, how
+  many it had no price for, and how old the oldest price it used is. A character it has no prices
+  for is not listed, and a family with no prices yet is told so rather than shown a page of
+  noughts.
+
+- What you have **up for sale** is not counted there: the Activity set already prices it at what
+  you are asking for it.
+
 ### Vendor prices on item tooltips
 
 - **What a vendor pays you**, on any item's tooltip, anywhere in the game. Off until you turn it

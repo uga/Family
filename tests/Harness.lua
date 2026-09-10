@@ -1943,7 +1943,8 @@ local UIPrivate = {}
 local UI_FILES = { "Window.lua", "MemberPicker.lua", "ChoicePicker.lua", "MemberFilters.lua",
 	"Tooltip.lua",
 	"Summary.lua", "Talents.lua",
-	"Contents.lua", "Professions.lua", "Character.lua", "Quests.lua", "Wide.lua", "Guild.lua",
+	"Contents.lua", "Worth.lua", "Professions.lua", "Character.lua", "Quests.lua",
+	"Wide.lua", "Guild.lua",
 	"Broker.lua", "Options.lua", "About.lua", "Slash.lua" }
 
 for _, file in ipairs(UI_FILES) do
@@ -8047,6 +8048,82 @@ check("dual spec is marked as seen in the game", sources.dualSpec == "seen in ga
 	tostring(sources.dualSpec))
 check("ammo bags are still only expected", sources.ammoBags == "expected",
 	tostring(sources.ammoBags))
+
+print()
+print("the Worth section")
+
+-- The panel over the arithmetic checked above. A section of its own rather than a set on the
+-- summary, because the summary's sets read meta and nothing else on purpose, and this walks
+-- every item every member holds.
+;(function()
+	local rich = "Croesus-FireMaw"
+	local market = "Fire Maw\30Alliance"
+
+	Family.Database:SetMeta(rich, { name = "Croesus", realm = "Fire Maw", faction = "Alliance",
+		classFile = "MAGE", level = 60 })
+	Family.Database:SetPayload(rich, {
+		bags = { { slots = { { id = 2589, count = 20 }, { id = 4306, count = 7 } } } },
+	})
+
+	-- Somebody in the same market holding only things nobody has a price for.
+	local pauper = "Pauper-FireMaw"
+	Family.Database:SetMeta(pauper, { name = "Pauper", realm = "Fire Maw", faction = "Alliance",
+		classFile = "ROGUE", level = 60 })
+	Family.Database:SetPayload(pauper,
+		{ bags = { { slots = { { id = 4306, count = 9 } } } } })
+
+	FamilyDB.auctionPrices = FamilyDB.auctionPrices or {}
+	FamilyDB.auctionPrices[market] = { [2589] = { p = 500, at = time() - 3 * 86400 } }
+	Family.Index:Invalidate()
+
+	-- The window open, because a row on a hidden panel is not drawn and the harness is right
+	-- to say so.
+	Family.UI:Show()
+	Family.UI:ShowTab("worth")
+
+	-- Read off this panel's own rows rather than swept out of every string in the client: a
+	-- sum of money is a phrase half the interface can produce, and a check that finds one
+	-- somewhere else passes for the wrong reason.
+	--
+	-- The needle is built with the same formatter the panel uses, because what is under test
+	-- is the arithmetic arriving on the row - money has its own checks, and looking for the
+	-- plain digits fails on the colour codes woven through them rather than on the number.
+	check("the Worth section adds up what the family holds",
+		drawnText(Family.UI:Money(20 * 500)), "20 x 500")
+	-- **Never a total without what it left out.** A worth that quietly omits the unpriced is
+	-- the kind of number that gets believed, and believed numbers sell a bank alt short. The
+	-- sentence is about the whole family, so the count in it is everybody's, not this row's.
+	check("and says how much of it it could not price",
+		visibleText("across 20 item(s)") and visibleText("could not be priced"))
+	-- A price is a photograph, so how old the oldest one is travels with the sum.
+	check("with the age of the oldest price it used",
+		visibleText("3d ago"))
+	check("and the member who holds it, with what they are holding",
+		drawnText("Croesus") and drawnText("20 priced, 7 not"))
+	-- **Somebody nothing could be priced for is not a row.** A line of noughts beside a name
+	-- says that character owns nothing, which is a different claim from Family not knowing what
+	-- their bags are worth - and the sentence above already says how much of the family that is.
+	--
+	-- Asked by the name rather than by the count: the first version looked for *0 priced,*,
+	-- which lives inside *20 priced,* on the row above and therefore failed against correct
+	-- code. A needle that is a substring of the right answer tests nothing.
+	check("while a member nothing could be priced for gets no row of noughts",
+		drawnText("Croesus") and not drawnText("Pauper"))
+
+	-- **Nothing priced is not nothing owned**, and §2.2 says the two must not read alike: a
+	-- page of noughts says the family is poor, which is a different claim from not knowing.
+	FamilyDB.auctionPrices[market] = nil
+	Family.Index:Invalidate()
+	Family.UI:ShowTab("worth")
+	check("while a family nothing has been priced for is told so, not shown noughts",
+		visibleText("Nothing here has a price yet") and not drawnText("0g 00s 00c"))
+
+	Family.Database:Forget(rich)
+	Family.Database:Forget(pauper)
+	Family.Index:Invalidate()
+	Family.UI:ShowTab("summary")
+	Family.UI:Hide()
+end)()
 
 print()
 print("the minimap button and the options that switch it")
@@ -25502,17 +25579,28 @@ print("what Wide Family shares is what Family records")
 	-- Only in that direction. A file the harness loads and the .toc does not is a different
 	-- fault and the check above the addon's own loader would catch it.
 	local missing = {}
-	do
+	local function against(text, loaded, where)
 		local mine = {}
-		for _, file in ipairs(LOADED_HERE) do mine[file] = true end
-		for line in (toc or ""):gmatch("[^\r\n]+") do
+		for _, file in ipairs(loaded) do mine[file] = true end
+		for line in (text or ""):gmatch("[^\r\n]+") do
 			local file = line:match("^%s*([%w_\\/]+%.lua)%s*$")
 			if file and not file:find("^Libs") then
 				local slashed = file:gsub("\\", "/")
-				if not mine[slashed] then missing[#missing + 1] = slashed end
+				if not mine[slashed] then
+					missing[#missing + 1] = where .. "/" .. slashed
+				end
 			end
 		end
 	end
+
+	against(toc, LOADED_HERE, "Family")
+	-- **Both manifests, because both have a second list here.** The first version of this
+	-- checked the data addon alone, and the interface has exactly the same arrangement - a
+	-- panel could be in the .toc and not in `UI_FILES`, load in the game, and never be
+	-- examined by a single check. Found while adding a panel, which is the only reason the
+	-- gap was not walked into twice (L-066).
+	against(slurp("addons/Family_UI/Family_UI.toc"), UI_FILES, "Family_UI")
+
 	check("and the harness loads every one of them itself", #missing == 0,
 		table.concat(missing, " "))
 	check("with enough of them for the question to mean anything",

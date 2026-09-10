@@ -2518,7 +2518,10 @@ only thing that can notice.
 
 **What now catches it.** *And the harness loads every one of them itself*, beside the check that
 already reads `Family.toc` for a different purpose: every `.lua` the manifest lists, bar the
-libraries, must appear in the harness's own list. Proved by the silent case rather than the loud
+libraries, must appear in the harness's own list. **Both manifests**, added 2026-09-10 while
+building a panel: the interface keeps a second list of exactly the same kind, and the first version
+of this gate covered the data addon alone — so the lesson had been half-learned, in the half that
+happened to be in front of me. Proved by the silent case rather than the loud
 one — a mutation that removes the file from the harness's list *without* removing the load, so
 nothing crashes and only the gate speaks. The loud mutation proves nothing, because the crash
 happens before the gate is reached.

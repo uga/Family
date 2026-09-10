@@ -3549,7 +3549,7 @@ negative that makes the ungated design safe: Era has no `C_AuctionHouse` at all.
 
 ---
 
-## 58. The panel for what everything is worth
+## 58. The panel for what everything is worth — DONE 2026-09-10
 
 **The arithmetic landed 2026-09-10** as `Index:Worth` and `Index:WorthTotal`, checked and with no
 interface on it. What is left is where it is drawn, and that is a real question rather than a
@@ -3589,3 +3589,21 @@ compilation somebody else made: reserved, and the case §2.5 describes.
 
 The band alone also implies the shard **tier** without naming it, and whether that is worth saying
 in words the client can give is the open question in 1.
+
+**Built 2026-09-10 as a section of its own**, `Family_UI/Worth.lua`, called **Worth** at Alberto's
+suggestion - the file, the tab id and `Index:Worth` then all say one word instead of the code
+saying one thing and the screen another.
+
+A section rather than a set on the summary, and that was the decision rather than a formality: the
+summary's sets read `meta` and nothing else, which is what lets them cost the same for forty
+members as for four, and this walks every item every member holds. Here a slower page is expected
+and the count of what could not be priced has room to be a sentence.
+
+**It has no icon**, which is deliberate rather than forgotten: textures cannot be probed, they go
+through `tools/FamilyIconSheet` and a screenshot, and a tab with no entry in `TAB_ICONS` draws no
+picture and keeps the space so the labels stay in line. Picking one is a job for whoever next runs
+that tool.
+
+Six checks, four mutations, all caught - the fourth only after a check was added for it, and that
+check failed against correct code on its first writing because its needle lived inside the right
+answer.

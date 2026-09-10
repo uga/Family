@@ -318,6 +318,7 @@ function Index:Worth()
 			key = key,
 			name = meta.name or key,
 			realm = meta.realm,
+			classFile = meta.classFile,
 			familyName = link and Family.Wide:Called(link) or nil,
 			market = market,
 			worth = 0,

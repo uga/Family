@@ -408,6 +408,20 @@ everywhere (§2.3), this is never a Mists-only refinement.
 A specialisation that has never been visited has nothing recorded for it, and is offered as
 such rather than drawn as an empty tree (§2.2).
 
+### 4.4.1 Worth
+
+What everything the family holds is worth, at what the auction house was last seen asking, one
+line per member with the family's total above them. Prices come from browsing an auction house
+and belong to one realm and one side, so a member is valued in the market they stand in and a
+member on a realm nobody has browsed is worth nothing yet rather than worth what things cost
+elsewhere. What is up for auction is not counted here: it already has a column priced at what its
+seller is asking.
+
+**Never a total without what it left out.** The line says how many items went into it and how many
+could not be priced, and how old the oldest price it used is. A family nothing has been priced for
+is told so rather than shown a page of noughts, and a member nothing could be priced for is not
+drawn at all.
+
 ### 4.5 Search
 
 One search box, one *where* to search, one *what* to search.

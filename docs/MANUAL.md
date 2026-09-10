@@ -835,6 +835,21 @@ depends on what the trainer's window has shown you, so a creature whose abilitie
 price beside them is one whose Beast Training window you have opened with that creature out. A
 dash means Family has no price for that ability, which is not the same as it being free.
 
+**"What is all my stuff worth?"** The **Worth** section, beside Possessions. One line per
+character, most valuable first, with the family's total above them.
+
+It values what your characters are *holding* — bags, bank and unexpired mail — at what the auction
+house was last seen asking. What you have up for sale is not counted there, because the Activity
+set already prices it at what you are actually asking for it.
+
+The line at the top never gives a total without saying what it left out: how many items went into
+it, how many it had no price for, and how old the oldest price it used is. A character Family has
+no prices for at all does not appear, and a family with no prices yet is told so rather than shown
+a page of noughts — that is Family not knowing, which is a different thing from you owning nothing.
+
+Prices belong to one realm and one side, so a character on a realm you have never browsed the
+auction house on has nothing to value them with yet.
+
 **"Can Family show vendor prices?"** Yes, and it is off until you turn it on — *Show vendor prices
 on item tooltips*, in Options. Two lines appear on an item's tooltip:
 
