@@ -181,6 +181,17 @@ local function itemReadyAt(bag, slot)
 	return time() + remaining
 end
 
+-- The same reading, for anything outside this file that needs one slot.
+--
+-- Exposed rather than copied. A second shim over the container API is a second thing that has to
+-- keep agreeing with the first, and the container call changed shape between these clients - which
+-- is exactly the drift L-066 is about.
+function Bags:SlotContents(bag, slot)
+	bag, slot = tonumber(bag), tonumber(slot)
+	if not bag or not slot then return nil end
+	return slotContents(bag, slot)
+end
+
 function Bags:Scan()
 	local key = Family:CurrentMember()
 

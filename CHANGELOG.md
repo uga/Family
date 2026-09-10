@@ -44,6 +44,9 @@ picks itself up where it left off.
   wherever you meet the item. An item you have never seen for sale gets no such line: Family would
   be guessing that anybody sells it.
 
+- **Hold CTRL over a stack** in your bags and the tooltip says what the whole stack sells for.
+  Only over a stack — a single item never offers the key.
+
 - **The higher price wins** when two of your characters see different ones, because a reputation
   discount only ever makes a vendor cheaper.
 

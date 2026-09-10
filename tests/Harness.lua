@@ -4634,6 +4634,54 @@ do
 		priceLine(999222, "Sell price") ~= nil and priceLine(999222, "Vendor price") == nil,
 		tostring(priceLine(999222, "Vendor price")))
 
+	-- **The stack, behind CTRL.** A tooltip carries no stack size, so the slot the pointer is on
+	-- is worked out from the frame the tooltip was opened for - and then checked against the item
+	-- the tooltip is describing, so a wrong guess costs a missing line and never a wrong number.
+	do
+		local bagButton = { __id = 3 }
+		function bagButton:GetID() return self.__id end
+		function bagButton:GetParent() return { GetID = function() return 0 end } end
+		GameTooltip.__owner = bagButton
+		GameTooltip.GetOwner = function(self) return self.__owner end
+
+		local SLOT = { [0] = { [3] = { 2880, 20 } } }
+		local realSlot = Family.Bags.SlotContents
+		Family.Bags.SlotContents = function(_, bag, slot)
+			local row = SLOT[bag] and SLOT[bag][slot]
+			if not row then return nil end
+			return row[1], row[2]
+		end
+
+		FamilyDB.prices = true
+		local realCtrl = IsControlKeyDown
+
+		IsControlKeyDown = function() return false end
+		check("a stack in the bag is offered the key rather than the answer",
+			priceLine(2880, "CTRL") ~= nil and priceLine(2880, "Stack of") == nil)
+
+		IsControlKeyDown = function() return true end
+		-- 25 each, twenty of them.
+		check("and holding it says what the whole stack is worth",
+			(priceLine(2880, "Stack of 20") or ""):find("05", 1, true) ~= nil,
+			tostring(priceLine(2880, "Stack of 20")))
+
+		-- The guard that makes a wrong owner harmless: the slot has to hold the item the
+		-- tooltip is describing. It reads exactly like a right answer otherwise.
+		SLOT = { [0] = { [3] = { 4306, 20 } } }
+		check("while a slot holding something else is not counted at all",
+			priceLine(2880, "Stack of") == nil, tostring(priceLine(2880, "Stack of")))
+
+		-- One of a thing is not a stack, and has nothing to say that the line above it did not.
+		SLOT = { [0] = { [3] = { 2880, 1 } } }
+		check("and a single item is neither counted nor offered the key",
+			priceLine(2880, "Stack of") == nil and priceLine(2880, "CTRL") == nil)
+
+		IsControlKeyDown = realCtrl
+		Family.Bags.SlotContents = realSlot
+		GameTooltip.GetOwner = nil
+		GameTooltip.__owner = nil
+	end
+
 	FamilyDB.prices = nil
 	check("and with the switch off it says neither",
 		priceLine(2880, "Sell price") == nil and priceLine(2880, "Vendor price") == nil)

@@ -495,6 +495,9 @@ items Family has seen on a merchant's own list, and never otherwise. The client'
 a buy price for nearly everything, including items nothing sells, so the number alone is not a
 statement that anything sells it; which vendor stocks what is server data and is refused by §2.5.
 The price kept is the highest ever seen, because a reputation discount only ever lowers it.
+Holding **CTRL** over a stack in your bags adds what the whole stack sells for; the count comes
+from the slot the pointer is on, and is used only where that slot really holds the item the
+tooltip is describing.
 
 **TAB walks the filter boxes.** On any panel with more than one box on its filter row, TAB moves
 the cursor to the next and Shift-TAB to the previous, round rather than stopping at the end. A

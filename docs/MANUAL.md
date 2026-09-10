@@ -847,6 +847,12 @@ there afterwards wherever you meet the item — in your bags, in the auction hou
 item you have never seen for sale gets no such line, because Family would be guessing that anybody
 sells it at all.
 
+**Hold CTRL over a stack in your bags** and a third line says what the whole stack sells for —
+*Stack of 20*, and the total. The line offering the key appears only over a stack, so an item
+sitting on its own never mentions it. Family works out how many are there from the slot the pointer
+is on, and says nothing at all unless that slot really holds the item being described, so an
+unusual bag addon costs you the line rather than a wrong number.
+
 If two characters see different prices for one thing, the higher is kept: a reputation discount
 only ever makes a vendor cheaper, so the highest price anyone was quoted is the closest thing to
 the real one.

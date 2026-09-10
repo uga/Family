@@ -454,7 +454,39 @@ end
 -- being for sale is not an inference.
 --
 -- Not on by default. It is the one thing Family puts on a tooltip that is not about the family.
-local function priceLines(_, itemID)
+-- **How many are in the slot the pointer is on**, where the pointer is on a slot at all.
+--
+-- A tooltip does not carry a stack size, so this asks the frame the tooltip was opened for: a
+-- container button is its slot and its parent is its bag, with newer clients putting the bag on
+-- the button as well. Neither is guaranteed of an arbitrary frame, and Family is far from the only
+-- addon that draws bags.
+--
+-- **So the guess is checked before it is used.** The slot it works out has to actually hold the
+-- item the tooltip is describing; where it does not, this answers nothing and the stack line is
+-- not drawn. A wrong guess therefore costs a missing line rather than a wrong number, which is the
+-- only trade worth making - a count against the wrong item would read exactly like a right one.
+local function slotCount(tooltip, itemID)
+	if not (tooltip and tooltip.GetOwner) then return nil end
+
+	local owner = Family:TryCall(tooltip.GetOwner, tooltip)
+	if type(owner) ~= "table" then return nil end
+
+	local slot = owner.GetID and Family:TryCall(owner.GetID, owner)
+	local bag = owner.bagID
+	if bag == nil and owner.GetParent then
+		local parent = Family:TryCall(owner.GetParent, owner)
+		bag = parent and parent.GetID and Family:TryCall(parent.GetID, parent)
+	end
+
+	if not Family.Bags then return nil end
+	local found, count = Family.Bags:SlotContents(bag, slot)
+	if found ~= itemID then return nil end
+
+	count = tonumber(count)
+	return count and count > 1 and count or nil
+end
+
+local function priceLines(tooltip, itemID)
 	if not (FamilyDB and FamilyDB.prices) then return nil end
 
 	local lines = {}
@@ -470,6 +502,25 @@ local function priceLines(_, itemID)
 	local buy = Family.Merchant and Family.Merchant:PriceOf(itemID)
 	if buy then
 		lines[#lines + 1] = { L["Vendor price"], UI:Money(buy), 0.4, 0.73, 1, 1, 1, 1 }
+	end
+
+	-- **What the pile in front of you is worth**, which is the question a per-item price is
+	-- usually standing in for. Behind CTRL because it is the answer to a different question and
+	-- two more lines on every stack in the bag is a tooltip nobody thanked anybody for.
+	--
+	-- The sell price only. *What do I get for this lot* is what a stack is asked; *what would
+	-- this lot cost* is not, and would need the buy price to be a thing the family could act on
+	-- rather than a thing one vendor was seen charging.
+	local count = (sell and sell > 0) and slotCount(tooltip, itemID) or nil
+	if count then
+		if (Family:TryCall(IsControlKeyDown)) then
+			lines[#lines + 1] = { string.format(L["Stack of %d"], count),
+				UI:Money(sell * count), 0.4, 0.73, 1, 1, 1, 1 }
+		else
+			-- Said out loud only where it would do something, so an item that is not in a
+			-- stack in front of you carries no offer of a key that would answer nothing.
+			lines[#lines + 1] = { L["|cff888888CTRL: what the stack is worth|r"] }
+		end
 	end
 
 	return #lines > 0 and lines or nil
