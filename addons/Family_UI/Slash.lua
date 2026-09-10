@@ -777,6 +777,12 @@ add("ah", L["what this client offers on the auction house"], function()
 		for _, event in ipairs(events) do
 			Family:Print("    %-38s |cff888888%d|r", event, heard[event] or 0)
 		end
+
+		-- The shape of one row, printed rather than assumed. Field names are the thing
+		-- that has gone wrong twice today, and the client is sitting right here.
+		for _, pair in ipairs(Family.Auctions:ModernSample() or {}) do
+			Family:Print("    %-24s |cff888888%s|r", pair[1], pair[2])
+		end
 	end
 
 	local prices, oldest, newest, held = Family.Auctions:Prices(), nil, nil, 0

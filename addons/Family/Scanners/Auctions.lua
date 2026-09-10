@@ -287,6 +287,42 @@ function Auctions:ModernEvents()
 	return MODERN_EVENTS, modernHeard
 end
 
+-- **One browse result, whatever shape it is.**
+--
+-- Read 2026-09-10: `GetBrowseResults` was holding 500 rows on Mists and
+-- `AUCTION_HOUSE_BROWSE_RESULTS_UPDATED` had fired once, so the passive route exists there. What
+-- a row *is* has not been read, and guessing at field names is how the vendor question went wrong
+-- this morning - so the probe prints one, and the reader is written against what comes back
+-- rather than against what a field is usually called.
+--
+-- Returned rather than printed, because this file may not talk to the player.
+function Auctions:ModernSample()
+	if not C_AuctionHouse then return nil end
+
+	local results = Family:TryCall(C_AuctionHouse.GetBrowseResults)
+	if type(results) ~= "table" then return nil end
+
+	local first = results[1]
+	if type(first) ~= "table" then return nil end
+
+	local out = {}
+	for key, value in pairs(first) do
+		if type(value) == "table" then
+			local inner = {}
+			for k, v in pairs(value) do
+				inner[#inner + 1] = string.format("%s=%s", tostring(k), tostring(v))
+			end
+			table.sort(inner)
+			out[#out + 1] = { tostring(key), "{ " .. table.concat(inner, ", ") .. " }" }
+		else
+			out[#out + 1] = { tostring(key), tostring(value) }
+		end
+	end
+
+	table.sort(out, function(a, b) return a[1] < b[1] end)
+	return out
+end
+
 -- What the newer house says it is holding right now, asked without being told to search.
 function Auctions:ModernCounts()
 	if not C_AuctionHouse then return nil end
