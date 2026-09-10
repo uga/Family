@@ -1623,6 +1623,33 @@ only come from a compilation somebody else made - which is reserved (`CLAUDE.md`
 data source) and is the case §2.5 describes - or from the merchant frames the player opens, which
 is what a catalogue site is itself made of.
 
+#### Loot: the bosses are in the client, on one of the three
+
+Asked 2026-09-10, straight after the vendor question and with the same shape. Measured:
+
+    JournalEncounterItem   1.15.9.69109   404 Table not found
+    JournalEncounterItem   2.5.6.69110    404 Table not found
+    JournalEncounterItem   5.5.4.69078    8563 rows, 7259 distinct items
+    JournalEncounter       5.5.4.69078    454 encounters
+    JournalInstance        5.5.4.69078    85 instances
+
+    ID, JournalEncounterID, ItemID, FactionMask, Flags, DifficultyMask, DisplaySeasonID
+
+That is the Adventure Guide's own loot listing - **dungeon and raid bosses only**, and only on the
+client that has an Adventure Guide. It is not general loot: a wolf's meat, world drops, rare
+spawns, gathering, quest rewards and vendor stock are all server data and appear in no client
+table on any build.
+
+**Worth writing down because it is a real tension in §2.5, not a closed question.** That section
+refuses *where an item is looted* by name, and the reason it gives is that such things *need facts
+the client does not hold*. For Mists boss loot the client does hold them, which is the same
+exemption §2.5 grants the generators in `tools/`. So the letter refuses and the reason does not.
+Changing that is a specification decision and is Alberto's.
+
+Recommended against, for reasons that are not about the data: one client of three; the Mists client
+already draws it in its own Adventure Guide; and it says nothing about members, which is what
+Family is for.
+
 **Noticed while looking:** `ItemPriceBase` *is* served for Era - 1301 rows of `ItemLevel`, `Armor`,
 `Weapon` - which is where an equippable item's prices are generated from, and why the buy/sell
 ratio clusters at ×5 for gear and ×4 for trade goods rather than being one number.
