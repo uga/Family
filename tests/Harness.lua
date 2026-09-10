@@ -4542,6 +4542,87 @@ check("and each owner's line totals what they have before breaking it down",
 check("an item nobody owns gets nothing at all", tooltipFor(999111) == false)
 
 print()
+print("what everything is worth")
+
+-- Asked for 2026-09-10, and the reason the price work happened at all. The arithmetic is a walk
+-- of the index rather than a question per member, and it reports what it could not price beside
+-- what it could - a worth that quietly omits four hundred unpriced stacks is the kind of number
+-- that gets believed.
+;(function()
+	local mine = "Rich-FireMaw"
+	local market = "Fire Maw\30Alliance"
+
+	Family.Database:SetMeta(mine, { name = "Rich", realm = "Fire Maw", faction = "Alliance",
+		classFile = "MAGE", level = 60 })
+	-- Containers holding slots, which is the shape the index reads: it counts what is in
+	-- bags, in the bank and on unexpired letters.
+	Family.Database:SetPayload(mine, {
+		bags = { { slots = { { id = 2589, count = 20 }, { id = 4306, count = 5 } } } },
+		bank = { containers = { { slots = { { id = 2589, count = 100 } } } } },
+	})
+
+	FamilyDB.auctionPrices = FamilyDB.auctionPrices or {}
+	FamilyDB.auctionPrices[market] = { [2589] = { p = 300, at = time() - 86400 } }
+
+	Family.Index:Invalidate()
+	local rows = Family.Index:Worth()
+
+	local ours
+	for _, row in ipairs(rows) do if row.key == mine then ours = row end end
+
+	check("what a member holds is valued at what the market was last asking",
+		ours and ours.worth == 120 * 300, ours and tostring(ours.worth) or "no row")
+	check("and what could not be priced is counted rather than left out",
+		ours and ours.priced == 120 and ours.unpriced == 5,
+		ours and (ours.priced .. "/" .. ours.unpriced) or "no row")
+	-- A price is a photograph, so the age of the oldest one travels with the sum.
+	check("with the age of the oldest price that went into it",
+		ours and ours.oldest and (time() - ours.oldest) >= 86400,
+		ours and tostring(ours.oldest) or "no row")
+
+	-- **A price belongs to one realm and one side.** A member standing somewhere nobody has
+	-- browsed is honestly worth nothing yet, rather than worth what things cost elsewhere.
+	local elsewhere = "Poor-Spineshatter"
+	Family.Database:SetMeta(elsewhere, { name = "Poor", realm = "Spineshatter",
+		faction = "Alliance", classFile = "ROGUE", level = 60 })
+	Family.Database:SetPayload(elsewhere,
+		{ bags = { { slots = { { id = 2589, count = 50 } } } } })
+	Family.Index:Invalidate()
+
+	local theirs
+	for _, row in ipairs(Family.Index:Worth()) do
+		if row.key == elsewhere then theirs = row end
+	end
+	check("while a member on a realm nobody has browsed is priced by nothing",
+		theirs and theirs.worth == 0 and theirs.unpriced == 50,
+		theirs and (theirs.worth .. "/" .. theirs.unpriced) or "no row")
+
+	-- **What is up for auction is not counted here.** It has a column of its own, priced at
+	-- what the seller is actually asking, and counting it twice is saying the same gold twice.
+	Family.Database:SetPayload(mine, {
+		bags = { { slots = { { id = 2589, count = 20 }, { id = 4306, count = 5 } } } },
+		bank = { containers = { { slots = { { id = 2589, count = 100 } } } } },
+		auctions = { seen = time(), bidding = {},
+			selling = { { id = 2589, count = 1000, buyout = 1,
+				expiresBy = time() + 999 } } },
+	})
+	Family.Index:Invalidate()
+	for _, row in ipairs(Family.Index:Worth()) do if row.key == mine then ours = row end end
+	check("and what is up for sale is left to the column that already prices it",
+		ours and ours.worth == 120 * 300, ours and tostring(ours.worth) or "no row")
+
+	local worth, priced, unpriced = Family.Index:WorthTotal()
+	check("the family's own total is the rows added up",
+		worth >= 120 * 300 and priced >= 120 and unpriced >= 55,
+		table.concat({ worth, priced, unpriced }, "/"))
+
+	Family.Database:Forget(mine)
+	Family.Database:Forget(elsewhere)
+	FamilyDB.auctionPrices[market] = nil
+	Family.Index:Invalidate()
+end)()
+
+print()
 print("vendor prices: one from the client, one learned from merchants")
 
 -- Asked for 2026-09-10. The sell price is the client's and needs nothing; the buy price is only

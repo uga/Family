@@ -264,3 +264,115 @@ function Index:Total(itemID)
 
 	return total, guildTotal
 end
+
+--------------------------------------------------------------------------------------------
+-- What it is all worth
+--
+-- Asked for 2026-09-10, and the reason the price work was done at all: *a panel that says what
+-- everything I own is worth*. The arithmetic lives here rather than in the panel because the
+-- index is already the thing that knows who holds what, and a walk of it is one pass over
+-- everything rather than a question asked once per member.
+--
+-- **Three things this deliberately does not do.**
+--
+-- It does not value what is up for auction. Those already have a column of their own on the
+-- Activity set, priced at what the seller is actually asking, which is a better number than
+-- what the market was last seen wanting - and counting them here as well would say the same
+-- gold twice.
+--
+-- It does not price an item from another realm's market. A price belongs to one realm and one
+-- side, so a member is valued in the market they stand in, and a member on a realm nobody has
+-- browsed is honestly worth nothing yet rather than worth what things cost somewhere else.
+--
+-- **And it never reports a total without saying what it left out.** The count of items it could
+-- not price travels beside the money, the way the pet training line reports what it accounted
+-- for rather than a bare sum. A worth that quietly omits four hundred unpriced stacks is the
+-- kind of number that gets believed.
+--------------------------------------------------------------------------------------------
+
+local function marketOf(meta)
+	local realm = meta and meta.realm
+	if type(realm) ~= "string" or realm == "" then return nil end
+	return realm .. "\30" .. (type(meta.faction) == "string" and meta.faction or "?")
+end
+
+function Index:Worth()
+	refresh()
+
+	local rows, byKey = {}, {}
+	local markets = {}
+
+	local function rowFor(key)
+		if byKey[key] then return byKey[key] end
+
+		local borrowed, link = nil, nil
+		if Family.Wide then borrowed, link = Family.Wide:Borrowed(key) end
+		local meta = (borrowed and borrowed.meta) or Family.Database:Meta(key) or {}
+
+		local market = marketOf(meta)
+		if market and markets[market] == nil then
+			markets[market] = Family.Auctions and Family.Auctions:Prices(market) or false
+		end
+
+		local row = {
+			key = key,
+			name = meta.name or key,
+			realm = meta.realm,
+			familyName = link and Family.Wide:Called(link) or nil,
+			market = market,
+			worth = 0,
+			priced = 0,
+			unpriced = 0,
+			oldest = nil,
+		}
+
+		byKey[key] = row
+		rows[#rows + 1] = row
+		return row
+	end
+
+	for itemID, holders in pairs(entries) do
+		for key, record in pairs(holders) do
+			-- What a member is holding, which is not what they have listed: an auction is
+			-- already worth what its own seller is asking.
+			local held = record.bags + record.bank + record.mail
+
+			if held > 0 then
+				local row = rowFor(key)
+				local price = row.market and markets[row.market]
+					and markets[row.market][itemID] or nil
+
+				if type(price) == "table" and tonumber(price.p) then
+					row.worth = row.worth + price.p * held
+					row.priced = row.priced + held
+					if price.at and (not row.oldest or price.at < row.oldest) then
+						row.oldest = price.at
+					end
+				else
+					row.unpriced = row.unpriced + held
+				end
+			end
+		end
+	end
+
+	table.sort(rows, function(a, b)
+		if a.worth ~= b.worth then return a.worth > b.worth end
+		return tostring(a.key) < tostring(b.key)
+	end)
+
+	return rows
+end
+
+-- The same thing added up, for a heading or a grand total.
+function Index:WorthTotal(rows)
+	local worth, priced, unpriced, oldest = 0, 0, 0, nil
+
+	for _, row in ipairs(rows or self:Worth()) do
+		worth = worth + row.worth
+		priced = priced + row.priced
+		unpriced = unpriced + row.unpriced
+		if row.oldest and (not oldest or row.oldest < oldest) then oldest = row.oldest end
+	end
+
+	return worth, priced, unpriced, oldest
+end

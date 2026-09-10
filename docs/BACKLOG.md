@@ -3546,3 +3546,22 @@ three mutations, all caught.
 
 Recorded in `docs/DATASOURCES.md` under *The older house prices the whole stack*, along with the
 negative that makes the ungated design safe: Era has no `C_AuctionHouse` at all.
+
+---
+
+## 58. The panel for what everything is worth
+
+**The arithmetic landed 2026-09-10** as `Index:Worth` and `Index:WorthTotal`, checked and with no
+interface on it. What is left is where it is drawn, and that is a real question rather than a
+formality: **the summary's column sets read `meta` and nothing else**, on purpose, which is what
+lets them cost the same for forty members as for four. This walks the index, so it cannot be a
+`CELL` without giving that up.
+
+Two shapes worth weighing. A **set of its own** on the summary, computed once per refresh and held
+for the session - it fits the existing furniture, gives per-member rows and the realm and grand
+totals for nothing, and needs the refresh path to learn that one set is expensive. Or a **section**
+of its own beside Possessions, where a slower page is expected and the unpriced count has room to
+be a sentence rather than a column.
+
+Whichever it is, the line under it says what was left out. *4310g across 892 items, 355 unpriced,
+oldest price 12 days* - never a bare total.
