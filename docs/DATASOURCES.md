@@ -878,6 +878,26 @@ calls `QueryAuctionItems`, and the whole query side of the auction house has nev
 anywhere in this repository. `/family ah` is what will settle that, on all three clients, before
 anything is built on it.
 
+#### What the query side answers, `/family ah`
+
+Burning Crusade Anniversary, 2026-09-10, standing at an auction house with a search on screen:
+
+    GetNumAuctionItems  GetAuctionItemInfo  GetAuctionItemLink  QueryAuctionItems
+    CanSendAuctionQuery  SortAuctionItems  GetAuctionItemSubClasses  GetSelectedAuctionItem
+        all eight: function
+
+    a query would be accepted now: true
+    rows on show in the browse list: 50
+    prices remembered for this realm and side: 24, oldest 2m ago, newest 1m ago
+
+So the whole query side exists on that build and `CanSendAuctionQuery` answers, which is the call
+a safe scan has to be gated on. **Fifty rows is one page**, so a full read is a page walk rather
+than one call - what `getAll` does on these builds is a separate question and is not asked here.
+The last line is the passive reader working in play: twenty-four prices off an ordinary search,
+with nothing queried for.
+
+Era and Mists still to be read.
+
 A pattern is built from `ERR_AUCTION_WON_S` the way the oil charge line is built from
 `ITEM_SPELL_CHARGES`: escape the wording, turn the escaped `%s` into a wildcard, anchor it at
 both ends. Nothing here knows a word of French or of English.
