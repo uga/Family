@@ -187,14 +187,138 @@ function Auctions:NoteWon()
 end
 
 --------------------------------------------------------------------------------------------
+-- What things are going for
+--
+-- Asked for 2026-09-10: remember the buyout of what is on sale, so that Family can eventually say
+-- what everything a family holds is worth. Read from the browse list the player is already
+-- looking at - `AUCTION_ITEM_LIST_UPDATE` fires many times while somebody searches, measured on a
+-- live Era client 2026-08-31 and written up in `docs/DATASOURCES.md`. Nothing is queried here.
+--
+-- **Not account-wide.** An auction price belongs to one realm and one faction, unlike everything
+-- else Family keeps in `FamilyDB`, so the store is keyed by both before the item. The neutral
+-- auction house is a third market and is filed under the reader's own faction, which is what they
+-- would pay there and is not the same as what their side's own house is asking - a known
+-- imprecision rather than a solved problem.
+--------------------------------------------------------------------------------------------
+
+-- Which market this character is standing in. Both parts are the client's own English tokens
+-- rather than anything a reader sees, so a record written on a German client lines up with one
+-- written here.
+local function market()
+	local realm = Family:TryCall(GetRealmName)
+	local faction = Family:TryCall(UnitFactionGroup, "player")
+	if type(realm) ~= "string" or realm == "" then return nil end
+	return realm .. "\30" .. (type(faction) == "string" and faction or "?")
+end
+
+-- **What counts as one reading, and why it has to be a visit rather than a page.**
+--
+-- The rule asked for is *the freshest wins, and among the freshest the lowest*. Taken literally
+-- as "the last page seen wins" it loses money: search Black Lotus, see 40g, open page two of the
+-- same search, see 60g - and the record now says 60 for something you could have had at 40.
+--
+-- So a reading is an auction house **visit**. The first sighting of an item in a visit replaces
+-- whatever was there, however old or new; every later sighting in the same visit keeps the lower.
+-- Emptied when the window opens and again when it closes, so nothing survives to make yesterday's
+-- browse look like today's.
+local seenThisVisit = {}
+
+function Auctions:Prices(where)
+	if type(_G.FamilyDB) ~= "table" then return {} end
+	FamilyDB.auctionPrices = FamilyDB.auctionPrices or {}
+
+	where = where or market()
+	if not where then return {} end
+
+	FamilyDB.auctionPrices[where] = FamilyDB.auctionPrices[where] or {}
+	return FamilyDB.auctionPrices[where]
+end
+
+-- The price and when it was seen, for the market this character is in. Two returns rather than
+-- the row itself, because a caller that is handed the row can hold on to it.
+function Auctions:PriceOf(itemID)
+	itemID = tonumber(itemID)
+	if not itemID then return nil end
+
+	local held = self:Prices()[itemID]
+	if type(held) ~= "table" then return nil end
+	return held.p, held.at
+end
+
+function Auctions:ForgetVisit()
+	seenThisVisit = {}
+end
+
+-- One page of whatever the player last searched for.
+function Auctions:ReadPrices()
+	local where = market()
+	if not where then return 0 end
+
+	local count = tonumber((Family:TryCall(GetNumAuctionItems, "list"))) or 0
+	if count < 1 then return 0 end
+
+	local prices = self:Prices(where)
+	local now = time()
+	local kept = 0
+
+	for index = 1, count do
+		local link = Family:TryCall(GetAuctionItemLink, "list", index)
+		local itemID = type(link) == "string" and tonumber(link:match("item:(%d+)")) or nil
+
+		-- Captured into a table rather than off a run of placeholders, for the reason the
+		-- reader above gives: the signature moves between clients (L-032). The stack size is
+		-- the third and the buyout the tenth, which is where the owner reader takes them from.
+		local row = { Family:TryCall(GetAuctionItemInfo, "list", index) }
+		local quantity = tonumber(row[3])
+		local buyout = tonumber(row[10])
+
+		-- **A bid-only auction is not a price.** No buyout means the thing has no number
+		-- anybody can pay today, and §2.2 says that is silence rather than nought. The stack
+		-- is divided only where it divides exactly, as at a vendor.
+		if itemID and buyout and buyout > 0 and quantity and quantity > 0
+			and buyout % quantity == 0 then
+			local each = buyout / quantity
+			local held = prices[itemID]
+
+			if not seenThisVisit[itemID] or type(held) ~= "table" then
+				seenThisVisit[itemID] = true
+				prices[itemID] = { p = each, at = now }
+				kept = kept + 1
+			elseif each < held.p then
+				held.p, held.at = each, now
+				kept = kept + 1
+			end
+		end
+	end
+
+	if kept > 0 then
+		Family:Debug("auctions: %d price(s) taken from %d row(s) on show", kept, count)
+	end
+
+	return kept
+end
+
+--------------------------------------------------------------------------------------------
 
 Family:OnDatabaseReady("auctions", function()
 	Family:RegisterEvent("AUCTION_HOUSE_SHOW", "auctions", function()
+		Auctions:ForgetVisit()
+
 		-- Asking is what makes the answer arrive; reading without asking gets whatever
 		-- the last visit left behind.
 		Family:After(1, "auctions.ask", function()
 			Family:TryCall(GetOwnerAuctionItems)
 		end)
+	end)
+
+	Family:RegisterEvent("AUCTION_HOUSE_CLOSED", "auctions", function()
+		Auctions:ForgetVisit()
+	end)
+
+	-- The browse list, which is whatever the player last searched for. Read rather than
+	-- asked for: nothing here sends a query.
+	Family:RegisterEvent("AUCTION_ITEM_LIST_UPDATE", "auctions", function()
+		Auctions:ReadPrices()
 	end)
 
 	for _, event in ipairs { "AUCTION_OWNED_LIST_UPDATE", "AUCTION_BIDDER_LIST_UPDATE" } do

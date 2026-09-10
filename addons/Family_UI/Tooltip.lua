@@ -504,6 +504,23 @@ local function priceLines(tooltip, itemID)
 		lines[#lines + 1] = { L["Vendor price"], UI:Coins(buy), 0.4, 0.73, 1, 1, 1, 1 }
 	end
 
+	-- **And what the auction house was last asking**, with the age of the reading beside it.
+	--
+	-- A vendor's price is a fact that holds until Blizzard changes it; this is a photograph of a
+	-- market, and a photograph without a date on it is a claim about today made from something
+	-- that might be a fortnight old. So the two are never drawn alike: the age is part of the
+	-- answer, not a detail behind a hover.
+	--
+	-- Per realm and per faction, which `Auctions:PriceOf` handles - a price read on one side of
+	-- one realm says nothing about the other.
+	local auction, seen = nil, nil
+	if Family.Auctions then auction, seen = Family.Auctions:PriceOf(itemID) end
+	if auction then
+		lines[#lines + 1] = { L["Auction"],
+			string.format("%s |cff888888%s|r", UI:Coins(auction), UI:Ago(seen)),
+			0.4, 0.73, 1, 1, 1, 1 }
+	end
+
 	-- **What the pile in front of you is worth**, which is the question a per-item price is
 	-- usually standing in for. Behind CTRL because it is the answer to a different question and
 	-- two more lines on every stack in the bag is a tooltip nobody thanked anybody for.

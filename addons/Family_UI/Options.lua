@@ -54,10 +54,11 @@ local SWITCHES = {
 		set = function(on) FamilyDB.tooltips = on and true or false end,
 	},
 	{
-		label = L["Show vendor prices on item tooltips"],
-		note = L["What a vendor pays you, which the game always knows - and what a vendor "
-			.. "charges, for the items Family has seen on a merchant's list. Nothing is "
-			.. "claimed about an item no vendor has been seen selling."],
+		label = L["Show prices on item tooltips"],
+		note = L["What a vendor pays you, which the game always knows - what a vendor "
+			.. "charges, for the items Family has seen on a merchant's list - and what the "
+			.. "auction house was last asking, with the age of that reading beside it. "
+			.. "Nothing is claimed about an item nobody has been seen selling."],
 		get = function() return FamilyDB.prices and true or false end,
 		set = function(on) FamilyDB.prices = on and true or nil end,
 	},

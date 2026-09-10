@@ -4699,6 +4699,96 @@ do
 		GameTooltip.__owner = nil
 	end
 
+	-- **What the auction house was last asking**, read from the list the player is already
+	-- looking at. Nothing here queries anything.
+	do
+		local LIST = {}
+		local realNum, realInfo, realLink =
+			GetNumAuctionItems, GetAuctionItemInfo, GetAuctionItemLink
+
+		GetNumAuctionItems = function(which) return which == "list" and #LIST or 0 end
+		GetAuctionItemLink = function(which, i)
+			local row = which == "list" and LIST[i]
+			return row and ("|Hitem:" .. row.id .. "|h") or nil
+		end
+		GetAuctionItemInfo = function(which, i)
+			local row = which == "list" and LIST[i]
+			if not row then return nil end
+			-- name, texture, count, ... minBid, _, buyout
+			return "Thing", "icon", row.count, 1, nil, 1, nil, 1, nil, row.buyout
+		end
+
+		Family.Auctions:ForgetVisit()
+		-- Three of one thing at three prices, a stack that divides, and a bid-only auction.
+		LIST = {
+			{ id = 2880, count = 1, buyout = 900 },
+			{ id = 2880, count = 1, buyout = 400 },
+			{ id = 2880, count = 1, buyout = 650 },
+			{ id = 4306, count = 5, buyout = 2500 },
+			{ id = 15410, count = 1, buyout = 0 },
+		}
+		Family.Auctions:ReadPrices()
+
+		-- Among what is on show right now, what you would actually pay.
+		check("the lowest buyout on show is the one kept",
+			(Family.Auctions:PriceOf(2880)) == 400,
+			tostring((Family.Auctions:PriceOf(2880))))
+		check("and a stack is divided into the price of one",
+			(Family.Auctions:PriceOf(4306)) == 500,
+			tostring((Family.Auctions:PriceOf(4306))))
+		-- No buyout is no number anybody can pay, which is silence and not nought (§2.2).
+		check("while a bid-only auction is no price at all",
+			(Family.Auctions:PriceOf(15410)) == nil,
+			tostring((Family.Auctions:PriceOf(15410))))
+
+		-- **A second page of the same visit still takes the lower.** Read as *the last page
+		-- wins* this loses money: 40g seen, then page two at 60g, and the record says 60.
+		LIST = { { id = 2880, count = 1, buyout = 800 } }
+		Family.Auctions:ReadPrices()
+		check("a dearer sighting later in the same visit does not replace it",
+			(Family.Auctions:PriceOf(2880)) == 400,
+			tostring((Family.Auctions:PriceOf(2880))))
+
+		-- **And the next visit replaces it, whatever it says.** A market moves, so the
+		-- freshest reading is the truth - which is the opposite of the vendor rule above,
+		-- where the base is fixed and only a discount moves it.
+		Family.Auctions:ForgetVisit()
+		Family.Auctions:ReadPrices()
+		check("while the next visit replaces it even where it is dearer",
+			(Family.Auctions:PriceOf(2880)) == 800,
+			tostring((Family.Auctions:PriceOf(2880))))
+
+		FamilyDB.prices = true
+		local shown = priceLine(2880, "Auction")
+		check("and the tooltip says it with the age of the reading beside it",
+			plain(shown) == "8s just now", plain(shown))
+
+		-- **A price belongs to one realm and one side**, unlike everything else in `FamilyDB`.
+		-- Asked as a behaviour rather than by looking at the key: the first version of this
+		-- checked that *a* key existed and held the item, which a single key called
+		-- "everywhere" satisfies just as well, and the mutation for it lived.
+		local realFaction, realRealm = UnitFactionGroup, GetRealmName
+
+		UnitFactionGroup = function() return "Horde" end
+		check("a price read on one side is not answered for the other",
+			(Family.Auctions:PriceOf(2880)) == nil,
+			tostring((Family.Auctions:PriceOf(2880))))
+
+		UnitFactionGroup = realFaction
+		GetRealmName = function() return "Somewhere Else" end
+		check("nor one read on another realm",
+			(Family.Auctions:PriceOf(2880)) == nil,
+			tostring((Family.Auctions:PriceOf(2880))))
+
+		GetRealmName = realRealm
+		check("while the market it was read in still has it",
+			(Family.Auctions:PriceOf(2880)) == 800,
+			tostring((Family.Auctions:PriceOf(2880))))
+
+		GetNumAuctionItems, GetAuctionItemInfo, GetAuctionItemLink =
+			realNum, realInfo, realLink
+	end
+
 	FamilyDB.prices = nil
 	check("and with the switch off it says neither",
 		priceLine(2880, "Sell price") == nil and priceLine(2880, "Vendor price") == nil)

@@ -48,6 +48,11 @@ picks itself up where it left off.
   The key can be pressed with the pointer already there. Only over a stack — a single item never
   offers the key.
 
+- **What the auction house was last asking**, with how long ago beside it. Family reads it off
+  the list while you search — it never asks the auction house for anything itself — and keeps it
+  per realm and per side, because those are not the same market. The cheapest on show in one visit
+  wins; your next visit replaces it, because a fortnight-old price is a photograph.
+
 - **Prices on a tooltip name only the coins they need** — *7c*, *2s 8c*, *19g 12s 99c*.
 
 - **The higher price wins** when two of your characters see different ones, because a reputation
@@ -124,7 +129,9 @@ picks itself up where it left off.
 
 ### If you are reporting a problem
 
-- **`/family spellbook`** walks the client's own spellbook and says, tab by tab, what Family reads
+- **`/family ah`** says what your version of the game offers at the auction house and how many
+  prices Family is holding for the realm and side you are on. **`/family spellbook`** walks the
+  client's own spellbook and says, tab by tab, what Family reads
   from it and what it leaves alone — the answer to *why is this ability missing, or why is that one
   there*. **`/family pettp`** shows where a pet's training points went, and **`/family widetime`**
   says how many characters each link shares and how long an exchange spends on them. None of them

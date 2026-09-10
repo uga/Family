@@ -712,6 +712,46 @@ add("spellbook", L["what the client's spellbook says, and what Family takes from
 	end
 end)
 
+-- **What this client offers on the auction house, and what it answers.**
+--
+-- Family reads the browse list and sends no query at all, which needs nothing from this. What
+-- needs it is the thing after: a full read of everything on sale, which is the one feature in
+-- this addon that could get somebody disconnected, and whose calls have never been touched
+-- anywhere in this repository - so nothing is built on them until this has been run on all
+-- three clients and the answers written down (§2.3, and the reason `/family spellbook` exists).
+--
+-- Symbols are reported as present or absent rather than called, except the one whose whole
+-- purpose is to be asked - `CanSendAuctionQuery` says whether a query would be accepted right
+-- now, and that answer is the difference between a scanner that is safe and one that is not.
+add("ah", L["what this client offers on the auction house"], function()
+	for _, name in ipairs {
+		"GetNumAuctionItems", "GetAuctionItemInfo", "GetAuctionItemLink",
+		"QueryAuctionItems", "CanSendAuctionQuery", "SortAuctionItems",
+		"GetAuctionItemSubClasses", "GetSelectedAuctionItem",
+	} do
+		Family:Print("    %-26s |cff888888%s|r", name, type(_G[name]))
+	end
+
+	local askable = Family:TryCall(CanSendAuctionQuery)
+	Family:Print(L["  a query would be accepted now: |cffffd700%s|r"], tostring(askable))
+	Family:Print(L["  rows on show in the browse list: |cffffd700%s|r"],
+		tostring((Family:TryCall(GetNumAuctionItems, "list"))))
+
+	local prices, oldest, newest, held = Family.Auctions:Prices(), nil, nil, 0
+	for _, row in pairs(prices) do
+		if type(row) == "table" and row.at then
+			held = held + 1
+			if not oldest or row.at < oldest then oldest = row.at end
+			if not newest or row.at > newest then newest = row.at end
+		end
+	end
+
+	Family:Print(L["  prices remembered for this realm and side: |cffffd700%d|r"], held)
+	if held > 0 then
+		Family:Print(L["  oldest %s, newest %s"], UI:Ago(oldest), UI:Ago(newest))
+	end
+end)
+
 add("widetime", L["how long a Wide Family exchange takes on this client"], function()
 	if not Family.Wide:Enabled() then
 		Family:Print(L["Wide Family is switched off, so there is nothing to time."])

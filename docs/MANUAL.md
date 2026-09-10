@@ -849,6 +849,13 @@ there afterwards wherever you meet the item — in your bags, in the auction hou
 item you have never seen for sale gets no such line, because Family would be guessing that anybody
 sells it at all.
 
+**Auction** is what the auction house was last asking, with how long ago that was beside it —
+*4g 20s, 3d ago*. Family reads it from the list you are already looking at while you search; it
+never asks the auction house for anything on its own. Prices are kept per realm and per side,
+because they are not the same market. Among everything on show in one visit the cheapest wins,
+since that is what you would actually pay; your next visit replaces it whatever it says, because
+a price a fortnight old is a photograph and the newest one is the truth.
+
 **Hold CTRL over a stack in your bags** and a third line says what the whole stack sells for —
 *Stack of 20*, and the total. You can press the key with the pointer already on the stack; the
 tooltip fills the line in. The line offering the key appears only over a stack, so an item sitting
@@ -859,6 +866,11 @@ unusual bag addon costs you the line rather than a wrong number.
 If two characters see different prices for one thing, the higher is kept: a reputation discount
 only ever makes a vendor cheaper, so the highest price anyone was quoted is the closest thing to
 the real one.
+
+**"What does my client offer at the auction house?"** Type `/family ah`. It lists the auction
+calls this version of the game has and whether one would be accepted right now, says how many rows
+are on show, and how many prices Family is holding for the realm and side you are on, with the age
+of the oldest and newest. It asks the game rather than Family's records, and it sends no query.
 
 **"A character's abilities look wrong."** Type `/family spellbook`. It walks the client's own
 spellbook in front of you and says, tab by tab, which tabs Family reads and which it leaves alone,
