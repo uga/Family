@@ -5089,36 +5089,102 @@ do
 				tostring(onPage) .. " / " .. tostring(inAll))
 			GetNumAuctionItems = realNum3
 
-			-- **The client's own no is the gate.** Not a timer, not a count of our own: this
-			-- is the one call whose whole purpose is to say whether asking is safe.
-			allowed = false
-			local ok, why = Family.Auctions:ProbeQuery("long", 0)
-			check("a query is not sent while the client says it would not be accepted",
+			-- **Nothing is sent before the client has been watched sending one.** This is
+			-- what replaced two versions that guessed the argument order, the second of
+			-- which put the page where `getAll` lives - and `0` there is not a page, it is
+			-- **true**, because in Lua only nil and false are false.
+			--
+			-- **With the position remembered from a previous session and nothing watched
+			-- yet**, which is what a fresh login looks like: `FamilyDB` keeps where the page
+			-- sits, and the client's own call is per-session and has not happened.
+			FamilyDB.auctionPageAt = 4
+			local ok, why = Family.Auctions:ReplayQuery(0)
+			check("no query is sent before one of the client's own has been seen this session",
 				ok == false and #sent == 0 and type(why) == "string",
 				tostring(ok) .. " / " .. #sent .. " / " .. tostring(why))
 
+			FamilyDB.auctionPageAt = nil
+
+			-- The nine-argument call read off a live Burning Crusade client 2026-09-10:
+			-- name, min, max, page, usable, quality, getAll, exact, filterData.
+			Family.Auctions.__sawQuery("", 0, 0, 0, false, -1, false, false, nil)
+			ok, why = Family.Auctions:ReplayQuery(1)
+			check("nor after one, while which argument is the page is still unknown",
+				ok == false and #sent == 0, tostring(ok) .. " / " .. #sent)
+
+			-- **Two of the client's own, differing in one place, say where the page is.**
+			-- Search, then Next. Nothing else on that window moved between them.
+			Family.Auctions.__sawQuery("", 0, 0, 1, false, -1, false, false, nil)
+			check("two of the client's queries differing in one number say where the page is",
+				Family.Auctions:PagePosition() == 4,
+				tostring(Family.Auctions:PagePosition()))
+
+			-- **The client's own no is still the gate.** Not a timer and not a count of
+			-- ours: it is the one call whose purpose is to say whether asking is safe.
+			allowed = false
+			ok = Family.Auctions:ReplayQuery(2)
+			check("a query is not sent while the client says it would not be accepted",
+				ok == false and #sent == 0, tostring(ok) .. " / " .. #sent)
+
 			allowed = true
-			ok = Family.Auctions:ProbeQuery("long", 7)
-			check("and the long layout puts the page seventh, where that build wants it",
-				ok == true and #sent == 1 and sent[1][7] == 7,
-				tostring(ok) .. " / " .. tostring(sent[1] and sent[1][7]))
+			ok = Family.Auctions:ReplayQuery(2)
+			check("and what is sent is the client's own call with the page changed",
+				ok == true and #sent == 1 and sent[1].n == 9 and sent[1][4] == 2,
+				tostring(ok) .. " / " .. tostring(sent[1] and sent[1][4]))
 
-			ok = Family.Auctions:ProbeQuery("short", 7)
-			check("while the short one puts it fourth, which is the whole difference",
-				ok == true and #sent == 2 and sent[2][4] == 7,
-				tostring(ok) .. " / " .. tostring(sent[2] and sent[2][4]))
+			-- **Every other argument is the one the client chose**, which is the whole point:
+			-- there is no order to guess at and no boolean slot to put a number into.
+			check("with every other argument exactly as the client sent it",
+				sent[1][1] == "" and sent[1][2] == 0 and sent[1][6] == -1
+					and sent[1][7] == false and sent[1][8] == false,
+				table.concat({ tostring(sent[1][6]), tostring(sent[1][7]) }, " / "))
 
-			-- **`getAll` is never sent**, on either layout, at any page. It is the route that
-			-- freezes a client and disconnects people, and that decision was taken before a
-			-- line of this was written - so it is held here rather than trusted to a comment.
-			check("and neither layout ever asks for the whole house at once",
-				sent[1][10] == false and sent[2][7] == false,
-				tostring(sent[1][10]) .. " / " .. tostring(sent[2][7]))
+			-- **`getAll` is never true**, and this asks it where the client put it rather
+			-- than where a guess put it. The check this replaces asserted position ten on a
+			-- nine-argument client, which is the same guess the code was making - so it
+			-- could never have caught the code being wrong. L-071.
+			local at = Family.Auctions:PagePosition()
+			local everTrue = false
+			for _, call in ipairs(sent) do
+				for index = 1, call.n do
+					if index ~= at and call[index] == true then everTrue = true end
+				end
+			end
+			check("and no argument Family did not change is ever turned true",
+				everTrue == false)
 
-			-- A layout nobody has heard of is a refusal, not a query with a hole in it.
-			ok = Family.Auctions:ProbeQuery("sideways", 0)
-			check("a layout this file does not know sends nothing at all",
-				ok == false and #sent == 2, tostring(ok) .. " / " .. #sent)
+			-- A page that is not a number is page nought, never a nil dropped into the call.
+			ok = Family.Auctions:ReplayQuery("sideways")
+			check("a page that is not a number is nought rather than a hole in the call",
+				ok == true and #sent == 2 and sent[2][4] == 0,
+				tostring(sent[2] and sent[2][4]))
+
+			-- **And two queries have to differ in exactly one place, holding a number.**
+			--
+			-- Anything else is the player having touched the window between them - a rarity
+			-- filter, a different search - and reading a page out of that would walk the
+			-- wrong argument for the rest of the session.
+			-- Asked as *is the remembered answer overwritten*, not *is it nil*. An unclear
+			-- pair writes nothing, so what is already known survives it - and the first
+			-- writing of these two checked for nil, which the standing 4 made impossible.
+			-- Two identical calls first, so each pair below is the pair being asked about.
+			check("the page is where two clean queries put it, before any of this",
+				Family.Auctions:PagePosition() == 4,
+				tostring(Family.Auctions:PagePosition()))
+
+			Family.Auctions.__sawQuery("", 0, 0, 9, false, -1, false, false, nil)
+			Family.Auctions.__sawQuery("", 0, 0, 9, false, -1, false, false, nil)
+			Family.Auctions.__sawQuery("", 5, 0, 9, false, 3, false, false, nil)
+			check("two queries differing in two places overwrite nothing",
+				Family.Auctions:PagePosition() == 4,
+				tostring(Family.Auctions:PagePosition()))
+
+			Family.Auctions.__sawQuery("", 0, 0, 9, false, -1, false, false, nil)
+			Family.Auctions.__sawQuery("", 0, 0, 9, false, -1, false, false, nil)
+			Family.Auctions.__sawQuery("copper", 0, 0, 9, false, -1, false, false, nil)
+			check("and a difference that is not a number is a search, not a page",
+				Family.Auctions:PagePosition() == 4,
+				tostring(Family.Auctions:PagePosition()))
 
 			-- **Told once, by the scanner's own handler.** A second registration under that
 			-- event's key would have replaced the reader the prices come off, which is how a
@@ -8267,20 +8333,23 @@ do
 	_G.QueryAuctionItems = function() sent = sent + 1 end
 	_G.CanSendAuctionQuery = function() return allowed end
 
+	-- Nothing of the client's watched yet, so there is nothing to replay and nothing goes out.
 	local at = #DEFAULT_CHAT_FRAME.messages
+	FamilyDB.auctionPageAt = nil
 	SlashCmdList["FAMILY"]("ah query")
-	check("a query with no layout named sends nothing and says which words to type",
+	check("a query with nothing of the client's to replay sends nothing, and says so",
 		sent == 0 and #DEFAULT_CHAT_FRAME.messages > at, tostring(sent))
 
-	SlashCmdList["FAMILY"]("ah query sideways")
-	check("and a layout nobody has heard of sends nothing either", sent == 0, tostring(sent))
+	-- Two of the client's own, differing in the page alone.
+	Family.Auctions.__sawQuery("", 0, 0, 0, false, -1, false, false, nil)
+	Family.Auctions.__sawQuery("", 0, 0, 1, false, -1, false, false, nil)
 
-	SlashCmdList["FAMILY"]("ah query long")
-	check("while a named one is sent, once", sent == 1, tostring(sent))
+	SlashCmdList["FAMILY"]("ah query 3")
+	check("while with one to replay it goes out, once", sent == 1, tostring(sent))
 
 	-- The part that matters. A query that has not answered is a reason to stop and say so,
-	-- never a reason to try the other layout.
-	SlashCmdList["FAMILY"]("ah query short")
+	-- never a reason to send another.
+	SlashCmdList["FAMILY"]("ah query 4")
 	check("and a second is refused while the first has not answered", sent == 1, tostring(sent))
 
 	_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan

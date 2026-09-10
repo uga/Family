@@ -3449,6 +3449,13 @@ prints what came back on the next list update. Two runs cover both layouts. `/fa
 prints, now, the **total** on sale - the second return of `GetNumAuctionItems`, which nothing here
 had ever read - and whether the newer house has the calls that page past its first five hundred.
 
+**Measured 2026-09-10, and the answer removes the whole design that was being argued about.** The
+client sends **nine** arguments on Burning Crusade, the page is the fourth, and `getAll` is the
+seventh - which is where the guessed layout had been putting the page, with `0` in it, and `0` is
+true in Lua. So Family does not compose a query at all now: it replays the client's own last one
+with the page changed, and works out which argument is the page from two of the client's queries
+differing in one numeric place. Era and Mists still to read. L-071.
+
 **And then measured the cheap way instead.** `/family ah watch` hooks the client's own
 `QueryAuctionItems` and prints the next call it makes when Search is pressed - the arguments that
 are right for that build, from the build itself, with no traffic of ours and nothing that can

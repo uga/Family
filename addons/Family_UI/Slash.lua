@@ -763,26 +763,18 @@ local function watchOne()
 	Family:Print(L["press Search on the auction house: the next query the client sends will be printed"])
 end
 
--- **Named, never alternating, and one at a time.**
+-- **One page, replayed from the client's own query, and one at a time.**
 --
--- The first writing of this took the next layout on each run, so that two runs covered both. It
--- was run twice on a live Burning Crusade client 2026-09-10: the first said nothing answered
--- within ten seconds, and after the second the client was crawling for minutes. Whatever the
--- cause turns out to be, the shape was wrong - it let somebody send a second query while the
--- first had visibly not come back, and it chose which one for them.
+-- Two versions of this stood here and both were wrong. The first alternated between two guessed
+-- argument layouts, which made *try the other one* the natural response to silence (L-070). The
+-- second let those layouts be named, which is better and still a guess - and one of them put the
+-- page where `getAll` lives, where `0` is not a page but **true**.
 --
--- So the layout is typed out, a run inside the lock refuses, and nothing at all is sent until
--- the outstanding one has answered or the lock has run out.
-local LAYOUTS_OFFERED = { long = true, short = true }
+-- Nothing is guessed now. `/family ah watch` records what the auction house asks for, and this
+-- sends that same call with the page changed. If nothing has been watched, nothing is sent.
 local inFlight = nil
 
-local function askOnce(which)
-	if not LAYOUTS_OFFERED[which] then
-		Family:Print(L["say which layout: /family ah query long, or /family ah query short"])
-		return
-	end
-
-	-- **A query already sent and not answered is a reason to stop, not to try the other one.**
+local function askOnce(page)
 	if inFlight and (time() - inFlight) < 60 then
 		Family:Print(L["a query sent %d second(s) ago has not answered yet - nothing more is sent"],
 			time() - inFlight)
@@ -794,8 +786,8 @@ local function askOnce(which)
 		Family:Print(L["  the browse list holds %s row(s), of %s on sale in all"],
 			tostring(onPage), tostring(inAll))
 
-		-- Printed rather than counted, because a layout the client *accepted* can still have
-		-- queried the wrong thing, and rows arriving is not evidence that it did not.
+		-- Printed rather than counted: a query that came back is not a query that came back
+		-- with the right thing, and the rows are what say which it was.
 		for _, row in ipairs(Family.Auctions:OldListSample(3) or {}) do
 			Family:Print("    %-3s %-8s x%-5s |cff888888%s|r",
 				tostring(row[1]), tostring(row[2]), tostring(row[3]), tostring(row[4]))
@@ -809,12 +801,11 @@ local function askOnce(which)
 		report()
 	end)
 
-	Family:Print(L["  asking for page %d, %s layout - the answer follows when it arrives"],
-		0, which)
+	Family:Print(L["  asking for page %d, the client's own query with the page changed"], page)
 
 	inFlight = time()
 
-	local ok, err = Family.Auctions:ProbeQuery(which, 0)
+	local ok, err = Family.Auctions:ReplayQuery(page)
 	if not ok then
 		inFlight = nil
 		Family.Auctions:TellNextList(nil)
@@ -822,11 +813,35 @@ local function askOnce(which)
 		return
 	end
 
-	Family:After(10, "auctions.probe", function()
+	Family:After(30, "auctions.probe", function()
 		if answered then return end
 		Family.Auctions:TellNextList(nil)
-		Family:Print(L["  nothing answered within %d seconds"], 10)
+		Family:Print(L["  nothing answered within %d seconds"], 30)
 	end)
+end
+
+-- **Watching the client ask, which should have been the first thing tried.**
+--
+-- The auction house calls `QueryAuctionItems` itself every time Search is pressed, with the
+-- arguments that are right for that build. Hooked, it costs no traffic and cannot get anybody
+-- disconnected; two queries of our own, one of which said `getAll = true` by accident, are what
+-- it took to go and look for this.
+local function watchOne()
+	Family.Auctions:TellNextQuery(function(args, count)
+		Family:Print(L["  the client asked with %d argument(s):"], count or 0)
+		for index = 1, (count or 0) do
+			Family:Print("    %-3s |cff888888%s|r", index, tostring(args[index]))
+		end
+
+		local at = Family.Auctions:PagePosition()
+		if at then
+			Family:Print(L["  and the page is argument %d, from two of its own queries"], at)
+		else
+			Family:Print(L["  press Next as well: two queries differing in one place say which argument is the page"])
+		end
+	end)
+
+	Family:Print(L["press Search on the auction house: the next query the client sends will be printed"])
 end
 
 -- **What this client offers on the auction house, and what it answers.**
@@ -843,8 +858,8 @@ end
 add("ah", L["what this client offers on the auction house"], function(argument)
 	if argument == "watch" then return watchOne() end
 
-	local asked = type(argument) == "string" and argument:match("^query%s*(%a*)$")
-	if asked then return askOnce(asked) end
+	local asked = type(argument) == "string" and argument:match("^query%s*(%d*)$")
+	if asked then return askOnce(tonumber(asked) or 0) end
 
 	for _, name in ipairs {
 		"GetNumAuctionItems", "GetAuctionItemInfo", "GetAuctionItemLink",

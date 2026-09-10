@@ -655,42 +655,29 @@ end
 -- list believing it had walked the house. What settles it is the **total beside the rows**, held
 -- against the number the player's own auction window is showing on screen. That comparison is
 -- not something code can make, which is why this prints and decides nothing.
-local LAYOUTS = {
-	long = function(fn, page)
-		return pcall(fn, "", nil, nil, nil, nil, nil, page, nil, nil, false, false)
-	end,
-	short = function(fn, page)
-		return pcall(fn, "", nil, nil, page, nil, nil, false, false, nil)
-	end,
-}
+-- **Nothing is guessed any more: the client's own query is the only shape ever sent.**
+--
+-- Two candidate layouts stood here, both guesses at the argument order, and one of them was
+-- dangerous. Measured on Burning Crusade 2026-09-10 by watching the client itself, that build
+-- takes **nine** arguments and `getAll` is the **seventh**:
+--
+--     ""     0    0    0     false    -1       false    false   nil
+--     name   min  max  page  usable   quality  getAll   exact   filterData
+--
+-- The `long` guess put `page` seventh, and the page was `0`. **In Lua `0` is true** - only nil and
+-- false are false - so that call said `getAll = true`, which is the one thing this feature was
+-- written never to do. It fits what was seen: ten seconds of silence, because a whole-house read
+-- takes far longer than that, and a client crawling a minute later because it was arriving.
+--
+-- So the guessing is gone. `sawQuery` below records what the auction house asked for, and the only
+-- query Family ever sends is **that same call with the page changed** - every argument one the
+-- client itself chose, on a build the client itself described.
 
 -- Both returns of it, and the second is the one a page walk needs: how many there are in all.
--- Everything written here so far has used the first and nothing has ever read the second.
+-- Everything written here so far has used the first and nothing had ever read the second.
 function Auctions:ListTotals()
 	local onPage, inAll = Family:TryCall(GetNumAuctionItems, "list")
 	return tonumber(onPage), tonumber(inAll)
-end
-
--- **One query, and nothing else.** Gated on the client's own answer rather than on a timer,
--- because `CanSendAuctionQuery` is the difference between a scanner that is safe and one that
--- is not, and it is a question with a real answer.
-function Auctions:ProbeQuery(which, page)
-	local fn = _G.QueryAuctionItems
-	if type(fn) ~= "function" then
-		return false, "QueryAuctionItems is not a function on this client"
-	end
-
-	if not LAYOUTS[which] then return false, "no layout called " .. tostring(which) end
-
-	if not Family:TryCall(CanSendAuctionQuery) then
-		return false, "the client says a query would not be accepted right now"
-	end
-
-	-- `pcall` rather than `TryCall`, because here the error **is** the measurement: a layout
-	-- the client refuses says so in words, and TryCall throws those words away.
-	local ok, err = LAYOUTS[which](fn, tonumber(page) or 0)
-	if not ok then return false, tostring(err) end
-	return true, nil
 end
 
 -- **Watching the client ask, instead of asking.**
@@ -708,26 +695,104 @@ end
 -- Told once, like the list reader beside it, and armed only on request - a hook that prints on
 -- every search is a hook somebody turns the addon off over.
 local tellNextQuery
+local lastQueries = {}
 
 function Auctions:TellNextQuery(fn)
 	tellNextQuery = type(fn) == "function" and fn or nil
 end
 
--- Every argument as the client passed it, positions and all - `select("#")` rather than a walk of
--- the table, because a nil in the middle is a fact about the call and a table would swallow it.
+-- **Where the page sits, worked out rather than assumed.**
+--
+-- Two of the client's own queries identical but for one place, and that place holding a number in
+-- both, can only differ in the page: everything else on that window is a control the player did
+-- not touch between one Search and the next. Anything less clear than that answers nothing rather
+-- than guessing, because a wrong answer here means walking the wrong argument.
+local function pagePositionFrom(now, before)
+	if not (now and before) or now.n ~= before.n then return nil end
+
+	local differing
+	for index = 1, now.n do
+		if now[index] ~= before[index] then
+			if differing then return nil end
+			differing = index
+		end
+	end
+
+	if not differing then return nil end
+	if type(now[differing]) ~= "number" or type(before[differing]) ~= "number" then
+		return nil
+	end
+
+	return differing
+end
+
+function Auctions:PagePosition()
+	return type(_G.FamilyDB) == "table" and FamilyDB.auctionPageAt or nil
+end
+
+function Auctions:LastQuery()
+	return lastQueries[1]
+end
+
+-- Every argument as the client passed it, positions and all - `select("#")` rather than the length
+-- of a table, because a nil in the middle **or at the end** is part of the shape and a table's
+-- length loses the last one.
 local function sawQuery(...)
+	local count = select("#", ...)
+	local raw = { n = count, ... }
+
+	table.insert(lastQueries, 1, raw)
+	lastQueries[3] = nil
+
+	local at = pagePositionFrom(lastQueries[1], lastQueries[2])
+	if at and type(_G.FamilyDB) == "table" then FamilyDB.auctionPageAt = at end
+
 	if not tellNextQuery then return end
 
 	local told = tellNextQuery
 	tellNextQuery = nil
 
-	local count = select("#", ...)
-	local args = {}
+	local said = {}
 	for index = 1, count do
-		args[index] = tostring((select(index, ...)))
+		said[index] = tostring(raw[index])
 	end
 
-	Family:TryCall(told, args, count)
+	Family:TryCall(told, said, count)
+end
+
+-- **The client's own call, with the page changed and nothing else.**
+--
+-- This is the whole of what a page walk is allowed to send. Every argument is one the auction
+-- house itself chose on this build, so there is no order to guess at and no boolean slot to put a
+-- number into; the page goes where two of the client's own queries showed it to be.
+function Auctions:ReplayQuery(page)
+	local last = lastQueries[1]
+	if not last then
+		return false, "no query of the client's own has been seen this session"
+	end
+
+	local at = self:PagePosition()
+	if not at then
+		return false, "which argument is the page has not been worked out yet"
+	end
+
+	if type(_G.QueryAuctionItems) ~= "function" then
+		return false, "QueryAuctionItems is not a function on this client"
+	end
+
+	if not Family:TryCall(CanSendAuctionQuery) then
+		return false, "the client says a query would not be accepted right now"
+	end
+
+	local args = {}
+	for index = 1, last.n do args[index] = last[index] end
+	args[at] = tonumber(page) or 0
+
+	-- `pcall` rather than `TryCall`, because here an error is the measurement and TryCall throws
+	-- the words away. `unpack` with an explicit end, so a trailing nil is still sent.
+	local ok, err = pcall(_G.QueryAuctionItems, unpack(args, 1, last.n))
+	if not ok then return false, tostring(err) end
+	return true, nil
 end
 
 Auctions.__sawQuery = sawQuery

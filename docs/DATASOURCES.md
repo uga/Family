@@ -1036,6 +1036,27 @@ that reading, and it is against the instruction rather than the client: it was r
 window **closed**, which is what had been asked for, and a query outside an auctioneer session has
 nowhere to go. `CanSendAuctionQuery` still answers true there.
 
+#### The signature, measured on Burning Crusade 2026-09-10
+
+Read by hooking the client's own call and pressing Search on an unfiltered Browse tab - empty name,
+empty level range, rarity *All*, *Usable Items* unchecked:
+
+    1  ""        5  false
+    2  0         6  -1
+    3  0         7  false
+    4  0         8  false
+                 9  nil
+
+**Nine arguments**, and every visible control on that window has one of them: name, minimum level,
+maximum level, **page**, usable, quality, `getAll`, exact match, filter data. The page is the
+fourth and it is nought-based; rarity *All* is `-1`; the empty level boxes are `0` rather than nil.
+
+**`getAll` is the seventh.** The eleven-argument layout that had been guessed here put `page`
+seventh and passed `0` for it - and in Lua `0` is true, so that call asked for the whole house.
+That is L-071, and it is why nothing is guessed any more: Family now sends **the client's own last
+query with the page changed**, and works out which argument is the page from two of the client's
+own queries differing in exactly one numeric place. Era and Mists are not read yet.
+
 #### The client asks for us, and that is the reading that costs nothing
 
 Written after the above and it should have come first. **The auction house calls

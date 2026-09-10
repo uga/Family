@@ -2633,3 +2633,49 @@ unconfirmed guesses at the argument order. A gate on the asking is not a gate on
 says which words to type; an unknown one sends nothing; a named one is sent exactly once; and **a
 second is refused while the first has not answered**, which is the mutation that matters — removing
 the lock turns it red. The layout is typed out in full, so a query is always aimed by a person.
+
+---
+
+## L-071 — `0` is true, and a check written from the same guess as the code proves nothing
+
+Two mistakes in one call, and the second is why the first survived.
+
+**The call.** `/family ah query` sent `QueryAuctionItems` with a guessed argument order. One of the
+two candidate layouts was eleven arguments long and put `page` seventh. Burning Crusade takes
+**nine** arguments, and its seventh is `getAll` — the whole-house read this feature was written
+never to send. The page passed was `0`.
+
+**In Lua only `nil` and `false` are false.** `0` is true. So that call said `getAll = true`.
+
+What was seen from the game fits it exactly: *nothing answered within 10 seconds*, because a
+whole-house read takes far longer than ten seconds, and a client crawling for minutes a little
+later — which read as a second, separate fault and was the first one arriving. Alberto got a
+`/reload` through and nothing was lost.
+
+**The check that was supposed to prevent this.** There was one, written in the same hour as the
+code, and it said: *neither layout ever asks for the whole house at once*. It asserted
+`sent[1][10] == false`. Position ten. On a nine-argument client there is no position ten, and the
+argument that mattered was seven.
+
+The check encoded **the same guess the code was making**, so it could not fail while the code was
+wrong. It was not a weak check; it was a restatement. A check derived from the implementation
+tests that the implementation is itself — the whole value of one is that it comes from somewhere
+else, and here the only somewhere else was a measurement nobody had taken.
+
+**And the measurement was free the whole time.** The auction house calls `QueryAuctionItems`
+itself every time Search is pressed. `hooksecurefunc` on it prints the exact call the client makes
+on that build — no traffic, no guess, nothing that can disconnect anybody. It answers in one
+keypress what two dangerous queries could not.
+
+**What now catches it.** The guessing is gone rather than corrected: Family sends only the client's
+own last query with the page changed, so every argument is one the auction house itself chose, and
+which argument is the page comes from two of the client's own queries differing in one numeric
+place. The `getAll` check now walks every argument Family did not change and fails if any of them
+is `true`, rather than naming a position. Twelve checks around it; the pair that says an unclear
+difference must overwrite nothing had to be rewritten too, because its first writing asked whether
+the answer was nil when a correct answer was already stored — the same shape of mistake, one file
+away.
+
+**The general rule: when something has to be done in a shape nobody here knows, look for something
+that already does it before writing the guess.** The client, another addon's traffic, the game's
+own UI — one of them is usually doing it in front of you.
