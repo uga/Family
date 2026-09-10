@@ -742,8 +742,31 @@ add("ah", L["what this client offers on the auction house"], function()
 
 	local askable = Family:TryCall(CanSendAuctionQuery)
 	Family:Print(L["  a query would be accepted now: |cffffd700%s|r"], tostring(askable))
-	Family:Print(L["  rows on show in the browse list: |cffffd700%s|r"],
-		tostring((Family:TryCall(GetNumAuctionItems, "list"))))
+
+	-- All three lists rather than the one Family reads, because *nought on the browse list* and
+	-- *nought everywhere* are different faults and only one of them is about the selector.
+	for _, which in ipairs { "list", "bidder", "owner" } do
+		Family:Print("    %-8s |cff888888%s|r", which,
+			tostring((Family:TryCall(GetNumAuctionItems, which))))
+	end
+
+	-- Whether the event ever arrives is the first of the three things that could be wrong, and
+	-- it is the one no amount of looking at the list can answer.
+	local fired, lastRows = Family.Auctions:ReadingsSeen()
+	Family:Print(L["  list updates heard since login: |cffffd700%d|r, last one showed %s"],
+		fired, tostring(lastRows))
+
+	-- And whether this build has the newer auction house at all, which would put what the player
+	-- is looking at somewhere the calls above cannot see.
+	local modern = {}
+	for _, name in ipairs { "GetBrowseResults", "SearchForFavorites", "GetNumReplicateItems",
+		"QueryOwnedAuctions", "SendBrowseQuery" } do
+		if C_AuctionHouse and type(C_AuctionHouse[name]) == "function" then
+			modern[#modern + 1] = name
+		end
+	end
+	Family:Print(L["  newer auction house: |cffffd700%s|r"],
+		#modern > 0 and table.concat(modern, ", ") or tostring(C_AuctionHouse ~= nil))
 
 	local prices, oldest, newest, held = Family.Auctions:Prices(), nil, nil, 0
 	for _, row in pairs(prices) do

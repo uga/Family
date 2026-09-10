@@ -249,6 +249,19 @@ function Auctions:ForgetVisit()
 	seenThisVisit = {}
 end
 
+-- **Counted, because on Mists nothing is being learned and three things could explain it.**
+--
+-- Reported 2026-09-10: all eight calls present, a query would be accepted, and nought prices after
+-- a session of browsing - where the same probe on Burning Crusade said fifty rows on show. Either
+-- the event does not fire on that build, or it fires and the list answers nought, or the list is
+-- not where that client puts what the player is looking at. A count of the firings and of what was
+-- on show at the last one tells the three apart, which reasoning about them cannot.
+local fired, lastRows = 0, nil
+
+function Auctions:ReadingsSeen()
+	return fired, lastRows
+end
+
 -- One page of whatever the player last searched for.
 function Auctions:ReadPrices()
 	local where = market()
@@ -318,6 +331,8 @@ Family:OnDatabaseReady("auctions", function()
 	-- The browse list, which is whatever the player last searched for. Read rather than
 	-- asked for: nothing here sends a query.
 	Family:RegisterEvent("AUCTION_ITEM_LIST_UPDATE", "auctions", function()
+		fired = fired + 1
+		lastRows = tonumber((Family:TryCall(GetNumAuctionItems, "list"))) or 0
 		Auctions:ReadPrices()
 	end)
 
