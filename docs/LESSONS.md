@@ -2603,3 +2603,33 @@ the builder takes the harness down.
 The general shape: **anything one panel offers another has to exist before either has been drawn.**
 A builder is the wrong scope for a public entry point, however natural it is to write it where the
 things it touches are in scope.
+
+---
+
+## L-070 — A probe that offers a second try is a probe that will be tried twice
+
+`/family ah query` was written to settle a question no reading could answer any other way: where
+`page` sits in `QueryAuctionItems`, which is not the same on all three builds. It sent one query,
+gated on the client's own `CanSendAuctionQuery`, and printed what came back — and, to save Alberto
+having to type a word, it **took the next of the two candidate layouts on each run**.
+
+Run once on a live Burning Crusade client it said *nothing answered within 10 seconds*. Which is an
+invitation: the obvious next thing for anybody to do is run it again. He did, the second layout
+went out, and the client crawled for minutes. He got a `/reload` through and nothing was lost.
+
+**The design was wrong in two ways, and the second is the one worth remembering.**
+
+- It chose the layout for the player, so nobody could aim it.
+- **It made *try the other one* the natural response to silence.** A query that has not answered is
+  evidence that something is wrong with the query, and the one thing that must not happen next is a
+  second one. The alternation did not merely permit that — it arranged it.
+
+The safety rule this project had already written down was *never a query the client has not said it
+will accept*, and `CanSendAuctionQuery` did say yes. That rule is about **whether** to ask. It says
+nothing about **what** is being asked, and both of the layouts here were, by their own comment,
+unconfirmed guesses at the argument order. A gate on the asking is not a gate on the arguments.
+
+**What now catches it.** Four checks around `/family ah query`: an unnamed layout sends nothing and
+says which words to type; an unknown one sends nothing; a named one is sent exactly once; and **a
+second is refused while the first has not answered**, which is the mutation that matters — removing
+the lock turns it red. The layout is typed out in full, so a query is always aimed by a person.

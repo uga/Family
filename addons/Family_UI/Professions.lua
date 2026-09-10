@@ -227,6 +227,52 @@ end
 
 local pending
 
+--------------------------------------------------------------------------------------------
+-- What the button was holding when it was clicked
+--
+-- Backlog 61, reported from play: clicking Leatherworking folds the page and opens no window,
+-- while `CastSpellByName("Leatherworking")` typed by hand does open it. So the stored word is
+-- good and the fault is somewhere between it and the cast - and every step of that is invisible
+-- from outside. Arming answers false without saying so; an attribute that did not take reads
+-- back as nil; a template that never applied leaves no mark at all.
+--
+-- Told once, on request, and from **inside** the click, which is the only place these can be
+-- read. At file scope because a tab is built the first time it is looked at, and a door declared
+-- inside the room it opens is not there until somebody has already been in (L-069).
+--------------------------------------------------------------------------------------------
+
+local tellNextClick
+
+function UI:TellNextProfessionClick(fn)
+	tellNextClick = type(fn) == "function" and fn or nil
+end
+
+local function toldAboutClick(button, record)
+	if not tellNextClick then return end
+
+	local told = tellNextClick
+	tellNextClick = nil
+
+	-- **Every `TryCall` here is parenthesised**, and it is not a style. `TryCall` returns the
+	-- call's own returns, which for a call that returns nothing is *no values at all* rather
+	-- than nil - and `type()` with no argument is an error, not an answer about nothing.
+	local protected, explicit = Family:TryCall(button.IsProtected, button)
+
+	Family:TryCall(told, {
+		{ "openWith", tostring(record and record.openWith) },
+		-- What `armButton` answered at the last draw, not what it would answer now.
+		{ "armed", tostring(button.__armed) },
+		{ "inCombat", tostring((Family:TryCall(InCombatLockdown)) and true or false) },
+		{ "type", tostring((Family:TryCall(button.GetAttribute, button, "type"))) },
+		{ "spell", tostring((Family:TryCall(button.GetAttribute, button, "spell"))) },
+		-- The template *is* the casting: if this is not a function, the part of the button
+		-- that casts is not there, and no attribute would ever have been acted on.
+		{ "OnClick", type((Family:TryCall(button.GetScript, button, "OnClick"))) },
+		{ "protected", tostring(protected) },
+		{ "explicit", tostring(explicit) },
+	})
+end
+
 -- A button that will cast, or one that will not. Both have to be arranged out of combat, so
 -- in a fight the button simply does nothing rather than doing something unpredictable.
 --
@@ -1316,12 +1362,16 @@ local function build(frame)
 			-- Clicking it opens that profession, where this is the member being played
 			-- and Family has seen the window once and so knows what opens it.
 			local record = stored[entry.id]
-			armButton(button, member.key == Family:CurrentMember()
+			-- **Kept rather than dropped**, because arming answers false in silence - out
+			-- of combat, on a frame with no `SetAttribute` - and a button that was never
+			-- armed looks exactly like one that was armed and did nothing. Backlog 61.
+			button.__armed = armButton(button, member.key == Family:CurrentMember()
 				and record and record.openWith or nil)
 
 			-- PostClick, never OnClick: see armButton above. This button's OnClick belongs
 			-- to the game, and taking it was why clicking a profession opened nothing.
-			button:SetScript("PostClick", function()
+			button:SetScript("PostClick", function(self)
+				toldAboutClick(self, record)
 				chosen = entry.id
 				-- A recipe name typed for one profession means nothing in the next,
 				-- and an empty list reads as missing data rather than as a filter.

@@ -7150,6 +7150,58 @@ end
 check("a profession that makes nothing is given no button",
 	professionButtonNamed("Herbalism") == nil)
 check("one that does keeps its button", professionButtonNamed("Blacksmithing") ~= nil)
+
+-- **Backlog 61: what the button was holding when it was clicked.**
+--
+-- Reported from play: clicking Leatherworking folds the page and opens no window, while the
+-- same word cast by hand does open it. Which of the three ways that can happen cannot be told
+-- apart from outside the click - arming refuses in silence, an attribute that did not take
+-- reads back nil, and a template that never applied leaves no mark - so the reading is taken
+-- from inside it. What the harness holds is that the probe reports what is really there, and
+-- that it is told once.
+do
+	for _, record in pairs(Family.Database:Payload(key).professions or {}) do
+		if type(record) == "table" then record.openWith = "Blacksmithing" end
+	end
+	Family.UI:ShowProfessionFor(key, "Blacksmithing")
+
+	local button = professionButtonNamed("Blacksmithing")
+	local seen
+	Family.UI:TellNextProfessionClick(function(rows) seen = rows end)
+	fireClick(button, "LeftButton")
+
+	local said = {}
+	for _, pair in ipairs(seen or {}) do said[pair[1]] = pair[2] end
+
+	check("the click says what the button is armed with, which nothing outside it can see",
+		said.type == "spell" and said.spell == "Blacksmithing",
+		tostring(said.type) .. " / " .. tostring(said.spell))
+	-- The one arming answers in silence: false out of combat, false on a frame with no
+	-- SetAttribute, and a button that was never armed looks exactly like one that was.
+	check("and what arming itself answered, which it otherwise says to nobody",
+		said.armed == "true" and said.openWith == "Blacksmithing",
+		tostring(said.armed) .. " / " .. tostring(said.openWith))
+	-- The template is the casting. If this is not a function the casting part is not there,
+	-- and no attribute would ever have been acted on.
+	-- **And it says whether the casting part is there at all**, which is the reading the whole
+	-- probe exists for. Here it is "nil" and that is correct: this harness builds frames from a
+	-- template name it does not act on, so nothing ever installs the template's own OnClick.
+	-- In the game that same word coming back would be the answer - the button is a plain one
+	-- wearing a secure name, and no attribute on it was ever going to be acted on.
+	check("and says whether the casting part is on the button at all",
+		said.OnClick == "nil", tostring(said.OnClick))
+
+	seen = nil
+	fireClick(button, "LeftButton")
+	check("while an ordinary click afterwards says nothing, because it is told once",
+		seen == nil, tostring(seen))
+
+	-- And the door is at file scope, so it can be knocked on before the room is built - which
+	-- is the fault this panel shipped once already (L-069).
+	check("and the probe can be armed before the panel has ever been drawn",
+		type(Family.UI.TellNextProfessionClick) == "function")
+	Family.UI:TellNextProfessionClick(nil)
+end
 check("and the ones left out are named, with the reason", visibleText("Herbalism")
 	and visibleText("Not listed"))
 
@@ -8190,6 +8242,39 @@ end
 local before = #DEFAULT_CHAT_FRAME.messages
 SlashCmdList["FAMILY"]("status")
 check("/family status says something", #DEFAULT_CHAT_FRAME.messages > before)
+
+-- **The auction query is named, and one at a time.**
+--
+-- Measured on a live Burning Crusade client 2026-09-10, the day this was written: run once, it
+-- said nothing answered within ten seconds; run a second time - which the first writing of it
+-- invited, by taking the next layout each time - the client crawled for minutes. Whatever the
+-- cause turns out to be, the shape was wrong twice over: it chose the layout for the player, and
+-- it let a second query go while the first had visibly not come back.
+do
+	local sent, allowed = 0, true
+	local realQuery, realCan = _G.QueryAuctionItems, _G.CanSendAuctionQuery
+	_G.QueryAuctionItems = function() sent = sent + 1 end
+	_G.CanSendAuctionQuery = function() return allowed end
+
+	local at = #DEFAULT_CHAT_FRAME.messages
+	SlashCmdList["FAMILY"]("ah query")
+	check("a query with no layout named sends nothing and says which words to type",
+		sent == 0 and #DEFAULT_CHAT_FRAME.messages > at, tostring(sent))
+
+	SlashCmdList["FAMILY"]("ah query sideways")
+	check("and a layout nobody has heard of sends nothing either", sent == 0, tostring(sent))
+
+	SlashCmdList["FAMILY"]("ah query long")
+	check("while a named one is sent, once", sent == 1, tostring(sent))
+
+	-- The part that matters. A query that has not answered is a reason to stop and say so,
+	-- never a reason to try the other layout.
+	SlashCmdList["FAMILY"]("ah query short")
+	check("and a second is refused while the first has not answered", sent == 1, tostring(sent))
+
+	_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan
+	Family.Auctions:TellNextList(nil)
+end
 
 before = #DEFAULT_CHAT_FRAME.messages
 SlashCmdList["FAMILY"]("talents")

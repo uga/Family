@@ -1012,9 +1012,26 @@ confirmed here**:
     long    name, minLevel, maxLevel, invType, class, subclass, PAGE, usable, quality, getAll, exact
     short   name, minLevel, maxLevel, PAGE, usable, quality, getAll, exact, filterData
 
-`/family ah query` sends **one** query with one of them - the next one each time it is run, so two
-runs cover both - gated on `CanSendAuctionQuery`, and prints what came back on the next list
-update: how many rows, how many there are in all, and the first three rows as ids and prices.
+`/family ah query long` and `/family ah query short` send **one** query each, gated on
+`CanSendAuctionQuery`, and print what came back on the next list update: how many rows, how many
+there are in all, and the first three rows as ids and prices. The layout is typed out in full and a
+second query is refused while the first has not answered - see below for why.
+
+**Measured 2026-09-10, on a live Burning Crusade client, and it is the first real reading here.**
+The `long` layout was sent and **nothing answered within ten seconds**. The command as first
+written then took the *other* layout on the next run, which is the obvious thing to do after
+silence - and after that second query the client crawled for minutes. Alberto got a `/reload`
+through without a hard kill, so nothing was lost.
+
+What this does **not** say is which layout is wrong, or that either of them caused the crawl: a
+server-side throttle after two queries in quick succession would look the same from inside the
+game. What it does say is that **the silence is real** - ten seconds with no `AUCTION_ITEM_LIST_UPDATE`
+after a query the client said it would accept - and that is itself the measurement. On that build
+the passive reader hears that event forty-three times in a session of ordinary searching, so a
+query that produces none of it is a query that did not do what it looks like it did.
+
+The next reading is `long` alone, once, on a client that has just been reloaded, with the auction
+window closed - and nothing else after it whatever it says. L-070.
 
 **The test is not whether rows arrive.** A layout the client accepts can still have queried the
 wrong thing, and rows would come back either way. What settles it is **the total held against the

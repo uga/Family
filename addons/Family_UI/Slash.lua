@@ -712,6 +712,25 @@ add("spellbook", L["what the client's spellbook says, and what Family takes from
 	end
 end)
 
+-- **What the profession button was holding when it was clicked.**
+--
+-- Backlog 61. The word is right - Alberto's own probe answered `165 75 Leatherworking` - and
+-- casting that word by hand opens the window, so the fault is in the button. Which of the three
+-- ways it can fail cannot be told apart from outside the click: arming refuses in silence, an
+-- attribute that did not take reads back nil, and a template that never applied leaves no mark.
+--
+-- One click, told once, and nothing decided here: the values are printed and the reading is
+-- Alberto's, because the repair depends on which of them is the odd one.
+add("openwith", L["what a profession button is holding when you click it"], function()
+	UI:TellNextProfessionClick(function(seen)
+		for _, pair in ipairs(seen or {}) do
+			Family:Print("    %-12s |cff888888%s|r", pair[1], pair[2])
+		end
+	end)
+
+	Family:Print(L["click a profession on the professions page: the next click will say what its button held"])
+end)
+
 -- **One query, on request, and the answer read back.**
 --
 -- The whole of slice 3 waits on this. A page walk has to vary `page`, and where `page` sits in
@@ -727,12 +746,31 @@ end)
 -- accepted and nothing ever arrives, leaving it armed would make the player's next ordinary
 -- search print an answer to a question asked ten minutes earlier. A probe that reports the wrong
 -- event is worse than one that reports nothing (L-068).
-local LAYOUT_ORDER = { "long", "short" }
-local nextLayout = 1
+-- **Named, never alternating, and one at a time.**
+--
+-- The first writing of this took the next layout on each run, so that two runs covered both. It
+-- was run twice on a live Burning Crusade client 2026-09-10: the first said nothing answered
+-- within ten seconds, and after the second the client was crawling for minutes. Whatever the
+-- cause turns out to be, the shape was wrong - it let somebody send a second query while the
+-- first had visibly not come back, and it chose which one for them.
+--
+-- So the layout is typed out, a run inside the lock refuses, and nothing at all is sent until
+-- the outstanding one has answered or the lock has run out.
+local LAYOUTS_OFFERED = { long = true, short = true }
+local inFlight = nil
 
-local function askOnce()
-	local which = LAYOUT_ORDER[nextLayout]
-	nextLayout = nextLayout % #LAYOUT_ORDER + 1
+local function askOnce(which)
+	if not LAYOUTS_OFFERED[which] then
+		Family:Print(L["say which layout: /family ah query long, or /family ah query short"])
+		return
+	end
+
+	-- **A query already sent and not answered is a reason to stop, not to try the other one.**
+	if inFlight and (time() - inFlight) < 60 then
+		Family:Print(L["a query sent %d second(s) ago has not answered yet - nothing more is sent"],
+			time() - inFlight)
+		return
+	end
 
 	local function report()
 		local onPage, inAll = Family.Auctions:ListTotals()
@@ -750,14 +788,18 @@ local function askOnce()
 	local answered = false
 	Family.Auctions:TellNextList(function()
 		answered = true
+		inFlight = nil
 		report()
 	end)
 
 	Family:Print(L["  asking for page %d, %s layout - the answer follows when it arrives"],
 		0, which)
 
+	inFlight = time()
+
 	local ok, err = Family.Auctions:ProbeQuery(which, 0)
 	if not ok then
+		inFlight = nil
 		Family.Auctions:TellNextList(nil)
 		Family:Print(L["  refused: %s"], tostring(err))
 		return
@@ -782,7 +824,8 @@ end
 -- purpose is to be asked - `CanSendAuctionQuery` says whether a query would be accepted right
 -- now, and that answer is the difference between a scanner that is safe and one that is not.
 add("ah", L["what this client offers on the auction house"], function(argument)
-	if argument == "query" then return askOnce() end
+	local asked = type(argument) == "string" and argument:match("^query%s*(%a*)$")
+	if asked then return askOnce(asked) end
 
 	for _, name in ipairs {
 		"GetNumAuctionItems", "GetAuctionItemInfo", "GetAuctionItemLink",

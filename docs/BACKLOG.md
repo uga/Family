@@ -3449,6 +3449,13 @@ prints what came back on the next list update. Two runs cover both layouts. `/fa
 prints, now, the **total** on sale - the second return of `GetNumAuctionItems`, which nothing here
 had ever read - and whether the newer house has the calls that page past its first five hundred.
 
+**Run for the first time the same day, on Burning Crusade, and it went wrong.** The `long` layout
+answered nothing in ten seconds; the command as first written then took the *other* layout on the
+next run, and the client crawled for minutes. Nothing was lost - `/reload` went through. The
+command has been narrowed to match: the layout is typed out in full, and a second query is refused
+while the first has not answered. L-070, and the reading itself is kept in DATASOURCES because ten
+seconds of silence after an accepted query is a measurement.
+
 The full writing-up is in [`DATASOURCES.md`](DATASOURCES.md) under *What a full read still needs*.
 **Nothing walks anything until Alberto has run that on the three clients** and the totals have been
 held against what the auction window says on screen, because a layout the client accepts can still
@@ -3638,6 +3645,12 @@ when it is clicked. `GetAttribute("type")` and `GetAttribute("spell")` read back
 `PostClick`, plus whether `armButton` returned true at draw time at all - it answers false and
 silently without arming when `InCombatLockdown` is true or `SetAttribute` is missing, and neither
 of those shows up anywhere on the screen. Three values and the question is closed.
+
+**Built 2026-09-10 as `/family openwith`**, which arms a one-shot: the next click on a profession
+prints the stored word, what arming answered at the last draw, whether the client was in combat,
+the two attributes read back, whether `GetScript("OnClick")` is still a function - the template
+*is* the casting, so a missing one means no attribute was ever going to be acted on - and what
+`IsProtected` says. It prints and decides nothing; which value is the odd one decides the repair.
 
 **The likely repair, not to be written before that reading:** cast from `PostClick` with the name
 that demonstrably works there - `CastSpellByName(openWith)` - and keep the secure attributes as
