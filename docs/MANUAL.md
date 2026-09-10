@@ -839,7 +839,9 @@ dash means Family has no price for that ability, which is not the same as it bei
 on item tooltips*, in Options. Two lines appear on an item's tooltip:
 
 **Sell price** is what a vendor pays you. The game knows it for every item and Family simply says
-it, everywhere, straight away.
+it, everywhere, straight away. Prices here name only the coins they have something in — *7c*,
+*2s 8c*, *19g 12s 99c* — unlike the columns in Family's own window, where the noughts are what keep
+gold under gold and silver under silver down the page.
 
 **Vendor price** is what a vendor charges, and it appears only for items Family has actually seen
 on a merchant's list. Open a merchant and Family reads the shelf and remembers it, so the price is
@@ -848,8 +850,9 @@ item you have never seen for sale gets no such line, because Family would be gue
 sells it at all.
 
 **Hold CTRL over a stack in your bags** and a third line says what the whole stack sells for —
-*Stack of 20*, and the total. The line offering the key appears only over a stack, so an item
-sitting on its own never mentions it. Family works out how many are there from the slot the pointer
+*Stack of 20*, and the total. You can press the key with the pointer already on the stack; the
+tooltip fills the line in. The line offering the key appears only over a stack, so an item sitting
+on its own never mentions it. Family works out how many are there from the slot the pointer
 is on, and says nothing at all unless that slot really holds the item being described, so an
 unusual bag addon costs you the line rather than a wrong number.
 

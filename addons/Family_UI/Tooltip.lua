@@ -496,17 +496,25 @@ local function priceLines(tooltip, itemID)
 	local sell = tonumber((select(11, Family:TryCall(GetItemInfo, itemID))))
 	if sell and sell > 0 then
 		lines[#lines + 1] = { Family:GameWord("SELL_PRICE", L["Sell price"]),
-			UI:Money(sell), 0.4, 0.73, 1, 1, 1, 1 }
+			UI:Coins(sell), 0.4, 0.73, 1, 1, 1, 1 }
 	end
 
 	local buy = Family.Merchant and Family.Merchant:PriceOf(itemID)
 	if buy then
-		lines[#lines + 1] = { L["Vendor price"], UI:Money(buy), 0.4, 0.73, 1, 1, 1, 1 }
+		lines[#lines + 1] = { L["Vendor price"], UI:Coins(buy), 0.4, 0.73, 1, 1, 1, 1 }
 	end
 
 	-- **What the pile in front of you is worth**, which is the question a per-item price is
 	-- usually standing in for. Behind CTRL because it is the answer to a different question and
 	-- two more lines on every stack in the bag is a tooltip nobody thanked anybody for.
+	--
+	-- **The key can be pressed with the pointer already there**, measured in play 2026-09-10 on a
+	-- Bagnon frame: hover the stack, then hold CTRL, and the line arrives. That is not this file
+	-- repainting somebody else's tooltip - the thing the note at the foot of this file measured
+	-- as unreliable - it is the bag addon re-showing its own tooltip when the modifier changes,
+	-- which re-fires the hook. The owner asking for its own tooltip again is the route that note
+	-- already calls stable; the difference is only which owner. Nothing here has to arrange it,
+	-- and where a bag addon does not, moving off and back with the key held still works.
 	--
 	-- The sell price only. *What do I get for this lot* is what a stack is asked; *what would
 	-- this lot cost* is not, and would need the buy price to be a thing the family could act on
@@ -515,7 +523,7 @@ local function priceLines(tooltip, itemID)
 	if count then
 		if (Family:TryCall(IsControlKeyDown)) then
 			lines[#lines + 1] = { string.format(L["Stack of %d"], count),
-				UI:Money(sell * count), 0.4, 0.73, 1, 1, 1, 1 }
+				UI:Coins(sell * count), 0.4, 0.73, 1, 1, 1, 1 }
 		else
 			-- Said out loud only where it would do something, so an item that is not in a
 			-- stack in front of you carries no offer of a key that would answer nothing.

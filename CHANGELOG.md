@@ -45,7 +45,10 @@ picks itself up where it left off.
   be guessing that anybody sells it.
 
 - **Hold CTRL over a stack** in your bags and the tooltip says what the whole stack sells for.
-  Only over a stack — a single item never offers the key.
+  The key can be pressed with the pointer already there. Only over a stack — a single item never
+  offers the key.
+
+- **Prices on a tooltip name only the coins they need** — *7c*, *2s 8c*, *19g 12s 99c*.
 
 - **The higher price wins** when two of your characters see different ones, because a reputation
   discount only ever makes a vendor cheaper.

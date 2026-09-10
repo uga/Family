@@ -1023,6 +1023,35 @@ function UI:Money(copper)
 		gold, silver, bronze)
 end
 
+-- **The same money, without the places nothing is standing in.**
+--
+-- `UI:Money` above pads deliberately: on a table it is a column, and a column only reads as one if
+-- gold, silver and copper land in the same three places on every row - so *0g 00s 25c* earns its
+-- two noughts there.
+--
+-- A tooltip is not a column. Nothing is lining up underneath it, so the two noughts are two units
+-- of width spent saying that a thing costs no gold, and *25c* is the whole of the fact. Asked for
+-- 2026-09-10, after the prices went into play: **7c**, **2s 8c**, **19g 12s 99c**.
+--
+-- Only the units that have something in them, highest first, and *0c* where the answer really is
+-- nothing - which is a fact about a price and must not print as the blank that means nobody looked.
+function UI:Coins(copper)
+	if copper == nil then return UI.UNKNOWN end
+
+	local gold = math.floor(copper / 10000)
+	local silver = math.floor((copper % 10000) / 100)
+	local bronze = copper % 100
+
+	local parts = {}
+	if gold > 0 then parts[#parts + 1] = string.format("|cffffd700%d|rg", gold) end
+	if silver > 0 then parts[#parts + 1] = string.format("|cffc7c7cf%d|rs", silver) end
+	if bronze > 0 or #parts == 0 then
+		parts[#parts + 1] = string.format("|cffeda55f%d|rc", bronze)
+	end
+
+	return table.concat(parts, " ")
+end
+
 -- A member named somewhere that is not about them alone: a search result, a tooltip, a
 -- broker line. Two things can need saying, and only when they need saying.
 --

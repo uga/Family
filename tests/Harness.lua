@@ -4621,13 +4621,30 @@ do
 		return nil
 	end
 
+	-- **Money on a tooltip drops the places nothing is standing in**, which a column cannot:
+	-- there it is *0g 00s 25c* so that three units land under three units on the row above.
+	-- Asked for 2026-09-10 with these three shapes.
+	local function plain(text)
+		return (tostring(text):gsub("|c%\x%\x%\x%\x%\x%\x%\x%\x", ""):gsub("|r", ""))
+	end
+	check("a price says only the units it has something in",
+		plain(Family.UI:Coins(7)) == "7c" and plain(Family.UI:Coins(208)) == "2s 8c"
+			and plain(Family.UI:Coins(191299)) == "19g 12s 99c",
+		table.concat({ plain(Family.UI:Coins(7)), plain(Family.UI:Coins(208)),
+			plain(Family.UI:Coins(191299)) }, " | "))
+	-- Nought is a fact about a price. The blank means nobody looked, and the two must not
+	-- print the same (§2.2), exactly as for the padded form beside it.
+	check("while nothing at all is still told apart from nothing being known",
+		plain(Family.UI:Coins(0)) == "0c" and Family.UI:Coins(nil) == Family.UI.UNKNOWN,
+		plain(Family.UI:Coins(0)))
+
 	FamilyDB.prices = true
 	check("with the switch on, the tooltip says what a vendor pays",
-		(priceLine(2880, "Sell price") or ""):find("25", 1, true) ~= nil,
-		tostring(priceLine(2880, "Sell price")))
+		plain(priceLine(2880, "Sell price")) == "25c",
+		plain(priceLine(2880, "Sell price")))
 	check("and what one was seen charging",
-		(priceLine(2880, "Vendor price") or ""):find("1", 1, true) ~= nil,
-		tostring(priceLine(2880, "Vendor price")))
+		plain(priceLine(2880, "Vendor price")) == "1s 15c",
+		plain(priceLine(2880, "Vendor price")))
 	-- The whole point of learning it rather than shipping it: nothing is said about an item
 	-- no vendor has been seen selling, whatever any table says its price would be.
 	check("while an item no vendor was seen selling gets a sell price and no other",
@@ -4662,8 +4679,8 @@ do
 		IsControlKeyDown = function() return true end
 		-- 25 each, twenty of them.
 		check("and holding it says what the whole stack is worth",
-			(priceLine(2880, "Stack of 20") or ""):find("05", 1, true) ~= nil,
-			tostring(priceLine(2880, "Stack of 20")))
+			plain(priceLine(2880, "Stack of 20")) == "5s",
+			plain(priceLine(2880, "Stack of 20")))
 
 		-- The guard that makes a wrong owner harmless: the slot has to hold the item the
 		-- tooltip is describing. It reads exactly like a right answer otherwise.
