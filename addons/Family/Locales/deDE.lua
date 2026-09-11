@@ -243,6 +243,7 @@ Family.locales.deDE = {
 	["which argument is the page is not known yet - use /family ah watch"] = "welches Argument die Seite ist, ist noch unbekannt - nutze /family ah watch",
 	["you asked it to stop"] = "du hast es gestoppt",
 	["this build has the newer auction house, which has no pages to walk"] = "diese Version hat das neuere Auktionshaus, das keine Seiten zum Durchlaufen hat",
+	["the next click will also cast what the button says it would cast"] = "der nächste Klick wirkt auch das, was die Schaltfläche zu wirken behauptet",
 	["  newer auction house: |cffffd700%s|r"] = "  neueres Auktionshaus: |cffffd700%s|r",
 	["  prices on tooltips are switched: |cffffd700%s|r"] = "  Preise in Tooltips sind: |cffffd700%s|r",
 	["on"] = "an",

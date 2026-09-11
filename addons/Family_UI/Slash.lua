@@ -721,12 +721,19 @@ end)
 --
 -- One click, told once, and nothing decided here: the values are printed and the reading is
 -- Alberto's, because the repair depends on which of them is the odd one.
-add("openwith", L["what a profession button is holding when you click it"], function()
+add("openwith", L["what a profession button is holding when you click it"], function(argument)
+	local casting = argument == "cast"
+
 	UI:TellNextProfessionClick(function(seen)
 		for _, pair in ipairs(seen or {}) do
 			Family:Print("    %-12s |cff888888%s|r", pair[1], pair[2])
 		end
-	end)
+	end, casting)
+
+	if casting then
+		-- Said before it happens, because this one acts on the world rather than reading it.
+		Family:Print(L["the next click will also cast what the button says it would cast"])
+	end
 
 	Family:Print(L["click a profession on the professions page: the next click will say what its button held"])
 end)

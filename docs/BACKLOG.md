@@ -3702,6 +3702,27 @@ that record and the cast, and on at least one profession the record is fine.
 
 ---
 
+**And the second reading killed that too, 2026-09-11:**
+
+    secureOnClick true    secureGlobal function    unit nil
+
+So the handler on the button **is** `SecureActionButton_OnClick`, on a frame that is genuinely
+protected, armed with the right spell, out of combat, with no unit attribute in the way. Every
+single thing that can be read about that button says it should cast, and it opens nothing.
+
+**What is left to separate is where the call is made from.** `CastSpellByName("Leatherworking")`
+typed into a macro opens the window; the secure handler makes the same call and nothing happens.
+Either it works from inside the click too - in which case the repair is one line, `PostClick`
+doing by hand what the template will not - or it does not, and the subject is taint rather than
+templates.
+
+`/family openwith cast` is that measurement, and it is also the candidate repair: it arms the same
+one-shot and additionally casts `openWith` from the `PostClick`, then looks a second later at what
+`GetTradeSkillLine` says. Explicitly asked for and done once, because unlike everything else on
+this entry it **acts on the world rather than reading it**.
+
+---
+
 ## 62. The stack multiplication, away from the bags
 
 **Slice B of the CTRL work**, split off 2026-09-10 when slice A landed. A is *what the family's lot

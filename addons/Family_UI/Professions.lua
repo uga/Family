@@ -242,9 +242,11 @@ local pending
 --------------------------------------------------------------------------------------------
 
 local tellNextClick
+local castNextClick
 
-function UI:TellNextProfessionClick(fn)
+function UI:TellNextProfessionClick(fn, alsoCast)
 	tellNextClick = type(fn) == "function" and fn or nil
+	castNextClick = tellNextClick ~= nil and alsoCast and true or false
 end
 
 local function toldAboutClick(button, record)
@@ -257,6 +259,38 @@ local function toldAboutClick(button, record)
 	-- call's own returns, which for a call that returns nothing is *no values at all* rather
 	-- than nil - and `type()` with no argument is an error, not an answer about nothing.
 	local protected, explicit = Family:TryCall(button.IsProtected, button)
+
+	-- **And, where it was asked for, the cast itself - from this same click.**
+	--
+	-- Every reading below says the button is right: armed, protected, the real casting handler
+	-- on it, the correct spell. And it opens nothing. `CastSpellByName(openWith)` typed into a
+	-- macro *does* open it, so the one thing left to separate is whether the same call works
+	-- from inside this click or only from a macro - which is the difference between a repair
+	-- that is one line and a fault that is about taint.
+	--
+	-- Asked for explicitly and done once, because this casts a spell: it is a measurement that
+	-- acts on the world, not one that reads it.
+	-- Read rather than reset: `TellNextProfessionClick` sets both flags together and this is
+	-- only reached while the first of them is armed, so clearing it here changes nothing that
+	-- any check can tell apart - which is the definition of a line that should not be here.
+	local casting = castNextClick
+
+	if casting then
+		local word = record and record.openWith
+		local ok, err = pcall(_G.CastSpellByName, word)
+
+		-- A second later, because the window is the client's to open and it does not do it
+		-- inside our call. `GetTradeSkillLine` is what the panel already asks.
+		Family:After(1, "openwith.cast", function()
+			local line = Family:TryCall(GetTradeSkillLine)
+			Family:TryCall(told, {
+				{ "cast", tostring(word) },
+				{ "callWorked", tostring(ok) },
+				{ "callSaid", ok and "-" or tostring(err) },
+				{ "windowNow", tostring(line) },
+			})
+		end)
+	end
 
 	Family:TryCall(told, {
 		{ "openWith", tostring(record and record.openWith) },

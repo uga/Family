@@ -7374,6 +7374,50 @@ do
 	check("while an ordinary click afterwards says nothing, because it is told once",
 		seen == nil, tostring(seen))
 
+	-- **And the click can cast, once, when that was asked for.**
+	--
+	-- Every reading above says the button is right and it opens nothing, so what is left to
+	-- separate is whether the same call works from inside the click or only from a macro. That
+	-- casts a spell, so it is asked for explicitly and happens once.
+	do
+		local castWith = {}
+		local realCast = _G.CastSpellByName
+		_G.CastSpellByName = function(word) castWith[#castWith + 1] = word end
+
+		local calls = 0
+		Family.UI:TellNextProfessionClick(function() calls = calls + 1 end, true)
+		fireClick(button, "LeftButton")
+		check("a click armed to cast casts what the button was holding",
+			#castWith == 1 and castWith[1] == "Blacksmithing",
+			tostring(castWith[1]))
+
+		-- **And it asks about the window afterwards, not inside its own call.** The client
+		-- opens that window in its own time, so looking immediately would always answer
+		-- *nothing opened* and would say so about a cast that worked perfectly.
+		--
+		-- Asked by counting rather than by advancing the clock: `advance` drives every timer
+		-- in this harness, and a two-second nudge here moved the guild exchange far enough
+		-- that five checks a thousand lines below went red. A probe's clock is not the only
+		-- one running.
+		check("and the window is asked about later, not inside the same call",
+			calls == 1, tostring(calls))
+
+		-- Once. A probe that casts on every click afterwards is a probe that opens windows
+		-- at people for the rest of the session.
+		fireClick(button, "LeftButton")
+		check("and it never casts again without being asked again",
+			#castWith == 1, tostring(#castWith))
+
+		-- And the ordinary arming does not cast at all, which is the default every other
+		-- run of this command takes.
+		Family.UI:TellNextProfessionClick(function() end)
+		fireClick(button, "LeftButton")
+		check("while arming it without asking for a cast casts nothing",
+			#castWith == 1, tostring(#castWith))
+
+		_G.CastSpellByName = realCast
+	end
+
 	-- And the door is at file scope, so it can be knocked on before the room is built - which
 	-- is the fault this panel shipped once already (L-069).
 	check("and the probe can be armed before the panel has ever been drawn",

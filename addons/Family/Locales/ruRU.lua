@@ -243,6 +243,7 @@ Family.locales.ruRU = {
 	["which argument is the page is not known yet - use /family ah watch"] = "какой аргумент является страницей, ещё неизвестно - используй /family ah watch",
 	["you asked it to stop"] = "ты остановил это",
 	["this build has the newer auction house, which has no pages to walk"] = "в этой версии новый аукцион, у которого нет страниц для обхода",
+	["the next click will also cast what the button says it would cast"] = "следующее нажатие также применит то, что кнопка обещает применить",
 	["  newer auction house: |cffffd700%s|r"] = "  новый аукцион: |cffffd700%s|r",
 	["  prices on tooltips are switched: |cffffd700%s|r"] = "  цены в подсказках: |cffffd700%s|r",
 	["on"] = "включены",
