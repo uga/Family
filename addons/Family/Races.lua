@@ -260,3 +260,71 @@ function Family:RaceName(meta)
 	local english = entry and entry.names.enUS
 	return english and english[1] or nil
 end
+
+
+--------------------------------------------------------------------------------------------
+-- A picture of the race itself
+--
+-- Alberto's suggestion 2026-09-11, for the block of what a character is wearing, and his argument
+-- for it is the right one: the client must already hold the picture, because icons do not travel
+-- from a server. Family has the rest - `raceFile`, `raceID` and `sex` are recorded for every
+-- member and travel with the identity fields, so a brother's race and gender are known too.
+--
+-- **It lives here and not in the panel that asks**, for the reason the harness holds: a panel must
+-- not read `meta.raceFile` at all. There the rule is about the *word* for a race, which has to be
+-- asked for so it arrives in the reader's language; here the same field is wanted as an
+-- identifier, which is §2.1 read the other way round. Both are served by keeping race knowledge in
+-- one file.
+--
+-- **An atlas rather than a texture path.** A path is the one thing in Family that cannot be
+-- probed - the client echoes back whatever string it was handed, so a wrong one draws nothing and
+-- says nothing. An atlas is a name the client resolves itself, and `C_Texture.GetAtlasInfo`
+-- answers whether it knows it. This is the only picture in the addon that can be confirmed in
+-- code rather than by a screenshot.
+--
+-- **Which arguments `GetRaceAtlas` takes is not confirmed anywhere in this repository**, so they
+-- are not guessed at: the candidate forms are tried and the first whose answer the client
+-- recognises is kept. A client that recognises none of them answers nothing, and the caller draws
+-- what it drew before.
+--
+-- Read on Classic Era 2026-09-11 with `/family caps`: `RACE_ICON_TCOORDS` is absent, so the
+-- coordinate table the class icons use has no counterpart here, and `GetRaceAtlas` is a function.
+local raceAtlas = {}
+
+local function atlasKnown(name)
+	if type(name) ~= "string" or name == "" then return false end
+	local info = _G.C_Texture and Family:TryCall(C_Texture.GetAtlasInfo, name)
+	return type(info) == "table"
+end
+
+function Family:RaceAtlas(meta)
+	if type(meta) ~= "table" then return nil end
+
+	local raceFile = meta.raceFile
+	if type(raceFile) ~= "string" or raceFile == "" then return nil end
+
+	local sex = tonumber(meta.sex)
+	local key = raceFile .. "\30" .. tostring(sex)
+	if raceAtlas[key] ~= nil then return raceAtlas[key] or nil end
+
+	local ask = _G.GetRaceAtlas
+	if type(ask) ~= "function" then
+		raceAtlas[key] = false
+		return nil
+	end
+
+	-- The game numbers sex 2 male and 3 female; some of these calls want the word instead.
+	-- Both forms are offered and neither is asserted.
+	local word = (sex == 3) and "female" or "male"
+
+	for _, form in ipairs { { raceFile, word }, { raceFile, sex }, { raceFile } } do
+		local name = Family:TryCall(ask, form[1], form[2])
+		if atlasKnown(name) then
+			raceAtlas[key] = name
+			return name
+		end
+	end
+
+	raceAtlas[key] = false
+	return nil
+end

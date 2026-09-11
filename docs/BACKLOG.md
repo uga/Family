@@ -3873,7 +3873,7 @@ folds - which reads as arbitrary unless the page says why. Ten is a number a rea
 
 ---
 
-## 65. The equipment block's picture: the character's own race and gender
+## 65. The equipment block's picture: the character's own race and gender — DONE 2026-09-11
 
 **Alberto's suggestion, 2026-09-11**, looking at the Equipped block on the possessions page: it
 currently wears the icon of a real worn piece - the chest where there is one - and it would read
@@ -3898,12 +3898,29 @@ which is confirmed anywhere in this repository - and, where a coordinate table i
 few of its **keys**, because a table keyed `DWARF` and one keyed `DWARF_MALE` are different
 features and only one of them can draw a gender.
 
-**Two things it will still not settle.** The sheet's own path is a texture, and a texture is the
-one thing in Family that cannot be probed - the client echoes back whatever string it was handed -
-so it goes through `tools/FamilyIconSheet` and a screenshot like every other one. And
-`SetPortraitTexture` only answers for a unit, which is this player and nobody else, so it can draw
-your own character and not a brother's - which would be a block that looks like a person on one
-page and like a breastplate on the next.
+**Read on Classic Era the same day, and the answer was better than either half of that.**
+
+    CLASS_ICON_TCOORDS  table      RACE_ICON_TCOORDS  nil
+    GetRaceAtlas        function   SetPortraitTexture function
+
+No coordinate table, so the class icons' route has no counterpart - and `GetRaceAtlas` makes it
+unnecessary. **An atlas is not a texture path**, and that distinction is the whole of why this is
+the one picture in Family that can be confirmed in code: a path is echoed back whatever string it
+was handed, so a wrong one draws nothing and says nothing, while an atlas is a name the client
+either knows or does not and `C_Texture.GetAtlasInfo` answers which. No screenshot needed.
+
+**Built as `Family:RaceAtlas(meta)` in `Races.lua`**, not in the panel that asks - the harness
+holds that no panel may read `meta.raceFile` at all, and it is right: there the rule is about the
+*word* for a race, which must be asked for so it arrives in the reader's language, while here the
+same field is wanted as an identifier. Both are served by race knowledge living in one file.
+
+Which arguments `GetRaceAtlas` takes is confirmed nowhere, so the candidate forms are tried and the
+first whose answer the client recognises is kept; a client that recognises none draws what it drew
+before, a real worn piece. The answer is worked out once per race and gender.
+
+`SetPortraitTexture` was not used and the entry's own objection is why: it answers for a **unit**,
+which is this player and nobody else, so it would draw a person on your own page and a breastplate
+on a brother's.
 
 
 ---

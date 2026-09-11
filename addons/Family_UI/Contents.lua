@@ -188,7 +188,7 @@ local function containersOf(payload, meta)
 			local face = worn[CHEST] and worn[CHEST].id or worn[order[1]].id
 
 			blocks[#blocks + 1] = { where = "equipped", size = #order, slots = slots,
-				free = 0, itemID = face }
+				free = 0, itemID = face, atlas = Family:RaceAtlas(meta) }
 		end
 	end
 
@@ -1210,7 +1210,20 @@ local function build(frame)
 			block.frame:Show()
 			y = y + height + BLOCK_GAP
 
-			block.icon.texture:SetTexture(containerIcon(container))
+			-- **An atlas where the client knows one**, which for the equipment block is the
+			-- character's own race and gender. A path and an atlas are set by different
+			-- calls, so the picture is cleared before the other is asked for - a texture
+			-- that was handed an atlas keeps drawing it when handed a nil path.
+			if container.atlas and block.icon.texture.SetAtlas then
+				block.icon.texture:SetTexture(nil)
+				Family:TryCall(block.icon.texture.SetAtlas, block.icon.texture,
+					container.atlas)
+			else
+				if block.icon.texture.SetAtlas then
+					Family:TryCall(block.icon.texture.SetAtlas, block.icon.texture, nil)
+				end
+				block.icon.texture:SetTexture(containerIcon(container))
+			end
 
 			local title
 			if container.where == "mail" then

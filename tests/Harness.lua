@@ -248,6 +248,21 @@ function frameMethods:CreateTexture()
 		texture.__fill = { r = r, g = g, b = b, a = a }
 	end
 	fs.SetAllPoints = function(texture) texture.__allPoints = true end
+
+	-- **An atlas is not a path**, and the difference is the whole reason Family can check one:
+	-- a path is echoed back whatever it was handed, while an atlas is a name the client either
+	-- knows or does not. Recorded separately so a panel can be asked which of the two it drew
+	-- with.
+	--
+	-- **Neither clears the other here**, and that is deliberate. Whether the game's own textures
+	-- do is not measured anywhere in this repository, and a stub written from the same belief as
+	-- the code it is testing agrees with it whatever the truth is - which is L-053's shape and
+	-- is exactly what let two mutations against the clearing live. So the fixture holds both
+	-- and the code has to do its own housekeeping.
+	fs.SetAtlas = function(texture, name) texture.__atlas = name end
+	fs.GetAtlas = function(texture) return texture.__atlas end
+	fs.SetTexture = function(texture, path) texture.__texture = path end
+	fs.GetTexture = function(texture) return texture.__texture end
 	self.__textures = self.__textures or {}
 	self.__textures[#self.__textures + 1] = fs
 	return fs
@@ -9078,6 +9093,121 @@ print("clicking a Bags row opens that character's possessions")
 
 		payload.equipment = { worn = { [16] = { id = 871, itemLevel = 60 },
 			[5] = { id = 2589, itemLevel = 12 } } }
+		-- **And the block wears the character's own face where the client has one.**
+		--
+		-- Alberto's suggestion, and his argument: the client must already hold the picture,
+		-- because icons do not travel from a server. An **atlas** rather than a texture path,
+		-- which is the whole reason this one can be checked at all - a path is echoed back
+		-- whatever it was handed, while an atlas is a name the client either knows or does not
+		-- and `C_Texture.GetAtlasInfo` says which.
+		do
+			local asked = {}
+			local realRace, realTexture = _G.GetRaceAtlas, _G.C_Texture
+			local asking
+			asking = function(race, how)
+				asked[#asked + 1] = tostring(race) .. "/" .. tostring(how)
+				-- Only the worded form is answered, so the first candidate that is
+				-- recognised is the one kept - and a form the client does not take
+				-- answers something it will not recognise either.
+				if how == "male" then return "race-dwarf-male" end
+				return "nonsense-" .. tostring(how)
+			end
+			_G.GetRaceAtlas = asking
+			_G.C_Texture = { GetAtlasInfo = function(name)
+				return name == "race-dwarf-male" and { width = 64 } or nil
+			end }
+
+			local meta = Family.Database:Meta(me) or {}
+			local heldRace, heldSex = meta.raceFile, meta.sex
+			meta.raceFile, meta.sex = "Dwarf", 2
+
+			check("a race and a gender the client knows an atlas for answers with it",
+				Family:RaceAtlas(meta) == "race-dwarf-male",
+				tostring(Family:RaceAtlas(meta)))
+
+			-- **Only an atlas the client recognises**, never whatever the call returned:
+			-- an unknown atlas draws nothing at all and says nothing about having done so,
+			-- which is the same silence a wrong texture path gives.
+			meta.raceFile, meta.sex = "Gnome", 3
+			check("while one it does not recognise is refused rather than drawn blank",
+				Family:RaceAtlas(meta) == nil, tostring(Family:RaceAtlas(meta)))
+
+			-- A client with no such call at all answers nothing, and the block goes on
+			-- wearing a real worn piece - a picture of something the character owns.
+			--
+			-- Asked about a race nothing has asked about yet: an answer already worked out
+			-- is remembered for the session, so re-asking about the dwarf would have been
+			-- reading the cache rather than the client, and the first writing of this check
+			-- did exactly that.
+			_G.GetRaceAtlas = nil
+			meta.raceFile, meta.sex = "Tauren", 2
+			check("and a client without the call answers nothing rather than throwing",
+				Family:RaceAtlas(meta) == nil, tostring(Family:RaceAtlas(meta)))
+
+			-- **And the answer is worked out once.** Three candidate forms a member is a lot
+			-- of calls on a panel that redraws on every keystroke.
+			--
+			-- The stub is put back for this, not the real global: with no call in place
+			-- nothing is counted whether the answer was remembered or not, and the first
+			-- writing of this check restored the wrong one and proved nothing.
+			_G.GetRaceAtlas = asking
+			meta.raceFile, meta.sex = "Dwarf", 2
+			local before = #asked
+			Family:RaceAtlas(meta)
+			Family:RaceAtlas(meta)
+			check("while an answer already worked out is not asked for again",
+				#asked == before, tostring(#asked - before))
+
+			-- **And the block really wears it.** Everything above is about the answer; this
+			-- is about the picture, and the two were separated by a texture stub that did
+			-- not know what an atlas was - so both mutations against the drawing lived.
+			meta.raceFile, meta.sex = "Dwarf", 2
+			local heldWorn = payload.equipment
+			payload.equipment = { worn = { [5] = { id = 4001, itemLevel = 60 } } }
+			Family.UI:ShowContentsFor(me)
+
+			-- The block's picture is a texture on a frame rather than a frame of its own,
+			-- so it is looked for among the textures those frames made.
+			local face
+			for _, f in ipairs(frames) do
+				for _, texture in ipairs(f.__textures or {}) do
+					if texture.__atlas == "race-dwarf-male" then face = texture end
+				end
+			end
+			check("and the block of what they are wearing really wears that face",
+				face ~= nil, tostring(face))
+
+			-- A path and an atlas are set by different calls and each has to clear the
+			-- other, or a block that had a picture goes on drawing it under the next.
+			check("and the picture it had before is cleared rather than left underneath",
+				face and face.__texture == nil,
+				tostring(face and face.__texture))
+
+			-- **And gives it up when the block it was drawn on becomes something else.**
+			--
+			-- These blocks come from a pool: the one that drew the equipment draws a bag on
+			-- the next member, and a texture handed an atlas goes on drawing it when handed
+			-- a path unless something says otherwise. A dwarf's face on a backpack.
+			payload.equipment = nil
+			Family.UI:ShowContentsFor(me)
+
+			local stillWearing
+			for _, f in ipairs(frames) do
+				for _, texture in ipairs(f.__textures or {}) do
+					if f.__shown ~= false and texture.__atlas == "race-dwarf-male" then
+						stillWearing = texture
+					end
+				end
+			end
+			check("and gives that face up when its block becomes a bag",
+				stillWearing == nil, tostring(stillWearing and stillWearing.__atlas))
+
+			payload.equipment = heldWorn
+
+			meta.raceFile, meta.sex = heldRace, heldSex
+			_G.GetRaceAtlas, _G.C_Texture = realRace, realTexture
+		end
+
 		local function blockKinds()
 			return table.concat(Family.UI.__contentsBlocks or {}, ",")
 		end

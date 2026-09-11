@@ -95,6 +95,9 @@ picks itself up where it left off.
 - **It is drawn on the Possessions page**, first, as its own block, and it counts towards what
   that character's things are worth.
 
+- **That block wears the character's own face** — their race and gender, from the game's own
+  artwork, on the clients that have it.
+
 ### Reading the auction house
 
 - **`/family ah scan go` reads every page of the auction house** and remembers what everything is
