@@ -4625,6 +4625,70 @@ do
 	Family.Index:Invalidate()
 end
 
+-- **Two of one sword on one character, and they are worth different money.**
+--
+-- Alberto's own example, 2026-09-11: an auction price is a price for the **unbound** version of
+-- an item. One has been worn and is soulbound, the other has not; the auction house says ten gold
+-- and a vendor says half a gold. The first is worth ten gold and the second half a gold, and they
+-- share an item id - so the figure has to split a member's own holding, not just the family's.
+do
+	local SWORD = 872
+	local mine = "Twosword-FireMaw"
+	local market = "Fire Maw\30Alliance"
+
+	Family.Database:SetMeta(mine, { name = "Twosword", realm = "Fire Maw",
+		faction = "Alliance", classFile = "WARRIOR", level = 60 })
+	Family.Database:SetPayload(mine, {
+		bags = { { slots = {
+			{ id = SWORD, count = 1 },
+			-- The same sword, worn once and handed back: still in a bag, and no longer
+			-- something anybody can list.
+			{ id = SWORD, count = 1, bound = true },
+		} } },
+	})
+
+	FamilyDB.auctionPrices = FamilyDB.auctionPrices or {}
+	FamilyDB.auctionPrices[market] = { [SWORD] = { p = 100000, at = time() } }
+	FamilyDB.sellPrices = FamilyDB.sellPrices or {}
+	FamilyDB.sellPrices[SWORD] = 5000
+	Family.Index:Invalidate()
+
+	local held = Family.Index:WorthOf(mine)
+	check("a bound copy is valued at what a vendor pays, not at the auction house",
+		held and held.worth == 100000 + 5000,
+		held and tostring(held.worth) or "no row")
+	check("and the two lanes say which was which",
+		held and held.atMarket == 1 and held.atVendor == 1,
+		held and (held.atMarket .. " / " .. held.atVendor) or "no row")
+
+	-- The same figure asked about one item, which is what the tooltip draws.
+	local lot = Family.Index:WorthOfItem(SWORD)
+	check("and one item's own lot splits the same way",
+		lot and lot.worth == 105000 and lot.atMarket == 1 and lot.atVendor == 1,
+		lot and tostring(lot.worth) or "nothing")
+
+	-- **Bound and unpriceable is unpriced, not nought.** A soulbound thing no vendor buys is
+	-- something Family cannot value, and saying nought would be a claim rather than a gap.
+	FamilyDB.sellPrices[SWORD] = nil
+	local realItemInfo = GetItemInfo
+	GetItemInfo = function(id)
+		if id == SWORD then return nil end
+		return realItemInfo(id)
+	end
+	Family.Index:Invalidate()
+
+	held = Family.Index:WorthOf(mine)
+	check("while a bound one nothing will buy is left unpriced rather than valued at nought",
+		held and held.unpriced == 1 and held.atMarket == 1,
+		held and (held.unpriced .. " / " .. held.atMarket) or "no row")
+
+	GetItemInfo = realItemInfo
+	FamilyDB.auctionPrices[market] = nil
+	FamilyDB.sellPrices = nil
+	Family.Database:Forget(mine)
+	Family.Index:Invalidate()
+end
+
 print()
 print("what everything is worth")
 
@@ -5340,8 +5404,19 @@ do
 				-- **The server is the clock.** The next page goes out because this one
 				-- arrived, never because a timer went off - a timer would go on sending
 				-- into a server that had stopped answering.
+				-- **One page in, one page out.** That event fires several times for a
+				-- single query - this file has recorded that since the passive reader was
+				-- written - and the walk advanced on every one of them. Seen in play on
+				-- Classic Era 2026-09-11: *page 25 of 537* printed six times over, with a
+				-- query sent for each. So the burst is let settle before the next goes out.
 				fire("AUCTION_ITEM_LIST_UPDATE")
-				check("and the next page is asked for because the last one arrived",
+				fire("AUCTION_ITEM_LIST_UPDATE")
+				fire("AUCTION_ITEM_LIST_UPDATE")
+				check("six answers to one query are still one query answered",
+					#sent == before + 1, tostring(#sent - before))
+
+				advance(1)
+				check("and the next page is asked for once the answers have stopped",
 					#sent == before + 2 and sent[#sent][4] == 1,
 					tostring(sent[#sent] and sent[#sent][4]))
 
@@ -5349,6 +5424,7 @@ do
 				-- answers about now, and this spends an hour in a lot of nows.
 				allowed = false
 				fire("AUCTION_ITEM_LIST_UPDATE")
+				advance(1)
 				check("while a client saying not yet is waited for, not pushed through",
 					#sent == before + 2, tostring(#sent - before))
 
@@ -5359,7 +5435,9 @@ do
 					tostring(sent[#sent] and sent[#sent][4]))
 
 				fire("AUCTION_ITEM_LIST_UPDATE")
+				advance(1)
 				fire("AUCTION_ITEM_LIST_UPDATE")
+				advance(1)
 				check("the last page ends it, and nothing is sent after it",
 					#sent == before + 4 and Family.Auctions:Walking() == nil,
 					tostring(#sent - before))
@@ -6539,6 +6617,33 @@ local back = Family.Codec:Decode(codecName, encoded)
 check("plain codec round-trips", back.b[2] == 3)
 check("unknown codec reports rather than errors",
 	select(2, Family.Codec:Decode("nope", "x")) ~= nil)
+
+-- **A slot's binding travels with the slot.**
+--
+-- Asked by Alberto 2026-09-11, and it is the right question: a tooltip can only be pointed at a
+-- bag this client is holding, so a sibling's sword can never be examined here - whatever the
+-- owner recorded when they scanned is all there will ever be. `Wide.lua` puts each granted
+-- payload key on the wire whole (`out.payload[key] = payload[key]`) and this is the part that
+-- could have quietly dropped a field: the codec serialises the table rather than a list of
+-- fields it knows about.
+do
+	local name, wire = Family.Codec:Encode({
+		bags = { { slots = {
+			{ id = 872, count = 1 },
+			{ id = 872, count = 1, bound = true },
+		} } },
+		equipment = { worn = { [16] = { id = 872, itemLevel = 60, bound = true } } },
+	})
+	local home = Family.Codec:Decode(name, wire)
+
+	check("a bound slot arrives bound on the other side",
+		home and home.bags[1].slots[2].bound == true
+			and home.bags[1].slots[1].bound == nil,
+		tostring(home and home.bags[1].slots[2].bound))
+	check("and so does a bound piece of worn gear",
+		home and home.equipment.worn[16].bound == true,
+		tostring(home and home.equipment.worn[16].bound))
+end
 
 print()
 print("interface")
@@ -22003,6 +22108,63 @@ ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
 		local aimedAt
 		tip.SetInventoryItem = function(_, unit, slot) aimedAt = "body " .. tostring(slot) end
 		tip.SetBagItem = function(_, bag, slot) aimedAt = "bag " .. tostring(bag) end
+
+		-- **And the kind decides whether the instance is asked at all.** Measured on all
+		-- three clients: `GetItemInfo`'s fourteenth return is 0 never, 1 pickup, 2 equip,
+		-- 3 use, 4 quest - so only 2 and 3 can be either, and everything else is settled by
+		-- one call. That is the difference between a tooltip for a handful of slots and a
+		-- tooltip for every slot of every bag.
+		do
+			local KIND = {}
+			local realInfo = GetItemInfo
+			GetItemInfo = function(id)
+				if KIND[id] ~= nil then
+					return "Thing", "|Hitem:" .. id .. "|h", 1, 1, 1, "", "", 1,
+						"", 0, 10, 2, 1, KIND[id], 254
+				end
+				return realInfo(id)
+			end
+
+			local asked = 0
+			tip.SetBagItem = function() asked = asked + 1 end
+
+			KIND[771] = 0
+			showing("Linen Cloth")
+			check("a thing that never binds is answered without a tooltip",
+				Family:BoundIn(0, 1, 771) == false and asked == 0, tostring(asked))
+
+			KIND[772] = 1
+			check("and one that binds when picked up is bound wherever it is, also without one",
+				Family:BoundIn(0, 1, 772) == true and asked == 0, tostring(asked))
+
+			KIND[773] = 4
+			check("a quest item likewise", Family:BoundIn(0, 1, 773) == true and asked == 0,
+				tostring(asked))
+
+			-- The two that can be either. Alberto's two swords are this row.
+			KIND[774] = 2
+			showing("A Sword", "Binds when equipped")
+			check("while bind on equip is the one the instance has to be asked about",
+				Family:BoundIn(0, 1, 774) == false and asked == 1, tostring(asked))
+
+			showing("A Sword", "Soulbound")
+			check("and the same sword once worn answers the other way",
+				Family:BoundIn(0, 1, 774) == true, "")
+
+			-- Measured on Era: a bind-on-use item already used reads 3 and says soulbound.
+			KIND[775] = 3
+			showing("A Used Thing", "Soulbound")
+			check("bind on use is asked about too, because a used one is bound",
+				Family:BoundIn(0, 1, 775) == true, "")
+
+			-- A client that has not cached the item says nothing, and nothing is recorded.
+			check("and an item this client cannot describe answers nothing at all",
+				Family:BoundIn(0, 1, 999888) == nil,
+				tostring(Family:BoundIn(0, 1, 999888)))
+
+			GetItemInfo = realInfo
+			tip.SetBagItem = function(_, bag, slot) aimedAt = "bag " .. tostring(bag) end
+		end
 
 		showing("A Sword", "Soulbound")
 		aimedAt = nil

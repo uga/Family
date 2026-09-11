@@ -72,6 +72,13 @@ function Character:ReadEquipment()
 
 			worn[slot] = { id = id, itemLevel = level, item = worth }
 
+			-- **And whether it can still be sold**, which on worn gear is nearly always no
+			-- and is not always no: a shirt binds to nobody, and reads `nil` on every one of
+			-- the three clients this was measured on. *What is equipped is soulbound* is the
+			-- shortcut this measurement exists to refuse (backlog 63).
+			local bound = Family:BoundWorn(slot, id)
+			if bound then worn[slot].bound = true end
+
 			-- A tabard and a shirt have item levels and contribute nothing to how
 			-- geared somebody is, so they are recorded and not counted.
 			local isCosmetic = slot == (_G.INVSLOT_BODY or 4)

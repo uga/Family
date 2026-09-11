@@ -416,6 +416,59 @@ local function bindingShown(aim)
 	return nil
 end
 
+-- How the **kind** binds, which is a different question from whether this one has
+--
+-- Measured on all three clients 2026-09-11 and written up in DATASOURCES: `GetItemInfo`'s
+-- fourteenth return says how an item binds, and the mapping came from holding that return against
+-- each item's own tooltip rather than from a name -
+--
+--     0 never binds    1 on pickup    2 on equip    3 on use    4 quest item
+--
+-- **Which is what makes the instance cheap to know.** Only 2 and 3 can be either bound or not, so
+-- only those need their tooltip read; 1 and 4 are bound wherever they are, and 0 never is. A mining
+-- pick, a fishing pole and a bag of cloth are settled by one call apiece, which is the difference
+-- between reading a handful of slots a character and reading every slot of every bag.
+--
+-- A client that has not cached the item answers nothing, and nothing is the honest answer: the
+-- caller records no binding rather than guessing at one, and the next scan asks again.
+local NEEDS_THE_INSTANCE = { [2] = true, [3] = true }
+
+function Family:BindTypeOf(itemID)
+	if not itemID then return nil end
+	local kind = tonumber((select(14, self:TryCall(GetItemInfo, itemID))))
+	return kind
+end
+
+-- Whether this particular one cannot be sold at an auction house any more.
+--
+-- **The whole point of the exercise** (backlog 63): an auction price is a price for the unbound
+-- version of an item, so a soulbound sword and the identical one in a bag are two different
+-- figures. Answers true, false, or nothing at all where the client cannot say.
+function Family:BoundIn(bag, slot, itemID)
+	local kind = self:BindTypeOf(itemID)
+	if kind == nil then return nil end
+
+	if kind == 1 or kind == 4 then return true end
+	if not NEEDS_THE_INSTANCE[kind] then return false end
+
+	local binding = self:BindingIn(bag, slot)
+	if binding == nil then return nil end
+	return binding == "soulbound" or binding == "account" or binding == "quest"
+end
+
+-- And the same for a slot on this character's own body.
+function Family:BoundWorn(slot, itemID)
+	local kind = self:BindTypeOf(itemID)
+	if kind == nil then return nil end
+
+	if kind == 1 or kind == 4 then return true end
+	if not NEEDS_THE_INSTANCE[kind] then return false end
+
+	local binding = self:BindingWorn(slot)
+	if binding == nil then return nil end
+	return binding == "soulbound" or binding == "account" or binding == "quest"
+end
+
 -- A slot in one of this character's own containers.
 function Family:BindingIn(bag, slot)
 	return bindingShown(function(tip)

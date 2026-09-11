@@ -804,6 +804,14 @@ local walk
 local PAGE_ROWS = 50
 local QUIET_SECONDS = 30
 
+-- How long the answers to one query are given to stop arriving before the next goes out.
+--
+-- `AUCTION_ITEM_LIST_UPDATE` fires several times for a single query, which is why this exists
+-- rather than asking the moment the first one lands. It is also the walk's only pacing: at five
+-- hundred and thirty-seven pages a third of a second apiece is about three minutes, and a server
+-- that has just sent six messages is not asking to be written to again immediately.
+local SETTLE_SECONDS = 0.3
+
 function Auctions:Walking()
 	return walk ~= nil and walk or nil
 end
@@ -850,25 +858,46 @@ end
 local function walkHeard()
 	if not walk then return end
 
-	local _, inAll = Auctions:ListTotals()
-	if inAll and inAll > 0 then
-		walk.inAll = inAll
-		walk.pages = math.ceil(inAll / PAGE_ROWS)
-	end
-
-	walk.done = (walk.page or 0) + 1
+	-- **One page in, one page out.** `AUCTION_ITEM_LIST_UPDATE` fires several times for a
+	-- single query - this file has said so since the passive reader was written - so without
+	-- this the walk advanced on every one of them: it asked for the next page once per event
+	-- rather than once per page, and said so in the chat frame six times running.
+	--
+	-- Seen in play on Classic Era 2026-09-11: *page 25 of 537* printed six times, *page 75*
+	-- six more. The duplicated lines were the harmless half; the duplicated queries were not.
+	--
+	-- Not waiting for anything now, which is what the quiet timeout reads.
 	walk.sentAt = nil
 
-	if walk.told then Family:TryCall(walk.told, "page", walk) end
+	-- **The burst is let settle, and settling is what collapses it.** `Family:After` replaces a
+	-- pending timer of the same key, so six answers to one query schedule the same callback six
+	-- times and it runs once. A flag saying *already answered* was written here first and did
+	-- nothing the key was not already doing - no check could tell the two apart, which is what
+	-- says it should not be here.
+	--
+	-- It is also the gentler thing to do to a server that has just sent six messages.
+	Family:After(SETTLE_SECONDS, "auctions.walk.settle", function()
+		if not walk then return end
 
-	if walk.pages and walk.done >= walk.pages then
-		local finished, told = walk, walk.told
-		walk = nil
-		if told then Family:TryCall(told, "finished", finished) end
-		return
-	end
+		local _, inAll = Auctions:ListTotals()
+		if inAll and inAll > 0 then
+			walk.inAll = inAll
+			walk.pages = math.ceil(inAll / PAGE_ROWS)
+		end
 
-	askPage(walk.done)
+		walk.done = (walk.page or 0) + 1
+
+		if walk.told then Family:TryCall(walk.told, "page", walk) end
+
+		if walk.pages and walk.done >= walk.pages then
+			local finished, told = walk, walk.told
+			walk = nil
+			if told then Family:TryCall(told, "finished", finished) end
+			return
+		end
+
+		askPage(walk.done)
+	end)
 end
 
 -- **Started only by somebody asking for it**, and it says what it is about to do before it does

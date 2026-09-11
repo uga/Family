@@ -258,6 +258,20 @@ function Bags:Scan()
 				if itemID then
 					entry.slots[slot] = { id = itemID, count = count, item = worth }
 
+					-- **Whether this one can still be sold at an auction house.**
+					--
+					-- Backlog 63: an auction price is a price for the unbound version of
+					-- an item, so a soulbound sword and the identical one beside it in the
+					-- bag are worth different money. Recorded here because here is the only
+					-- place the instance is reachable at all - a tooltip can be pointed at
+					-- a bag this client is holding and at nothing else, so a sibling's
+					-- sword can only ever be what they recorded when they scanned.
+					--
+					-- Costs one call a slot and a tooltip only where the kind can be
+					-- either - bind on equip or bind on use. A bag of cloth builds none.
+					local bound = Family:BoundIn(bag, slot, itemID)
+					if bound then entry.slots[slot].bound = true end
+
 					-- How many charges are left, for the few items that have any.
 					--
 					-- Gated on the generated table, so a bag of cloth costs one lookup a

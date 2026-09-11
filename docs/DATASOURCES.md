@@ -882,12 +882,28 @@ A shirt, worn, and its tooltip says nothing about binding at all - so it never b
 be sold at auction while being worn. Any rule of the form *what is equipped is soulbound* is
 wrong, and it is wrong on exactly the items a shortcut would have been written for.
 
-**One value was not measured and it is the one that decides the cost.** The probe as first written
-printed `GetItemInfo` only for slots whose tooltip said something, so there is no row for the grey
-and white things and the trade goods that fill most of a bag - and whether those read **0** is what
-decides whether a full read has to build a tooltip for every slot or only for the bind-on-equip
-ones. The probe now prints a few of the quiet rows as well; until that run comes back, nothing is
-assumed about them.
+**And the quiet rows, read on Classic Era the same day**, which is the half the first writing of
+the probe filtered out and the half that decides what this costs:
+
+| item | return 14 | its tooltip |
+|---|---|---|
+| 2901 mining pick, 6365 fishing pole, 5956 blacksmith hammer, 6533 fish attractor | **0** | nothing at all |
+| 5872, a bind-on-use thing already used | **3** | `soulbound` |
+
+So **0 is *never binds***, and **3 is bind-on-use** - measured on Burning Crusade from an unused
+one and on Era from a used one, which is also the row that says 3 needs the instance exactly as 2
+does. The full mapping, over three clients and some thirty items:
+
+    0 never   1 on pickup   2 on equip   3 on use   4 quest item
+
+**Which makes the instance cheap.** Only 2 and 3 can be either bound or not, so only those need a
+tooltip; 1 and 4 are bound wherever they sit and 0 never is. A bag of cloth, a pick and a pole are
+settled by one call apiece. That is the difference between reading a handful of slots a character
+and reading every slot of every bag, and it is why this was measured before anything was built.
+
+`C_Item.IsBound` exists as a function on all three builds and is not used: presence is not
+behaviour on these clients, and the tooltip answers in the client's own words without a second
+reading to justify it.
 
 ### What the server says when an auction is bought out, measured 2026-08-31
 

@@ -34,7 +34,7 @@ local stale = {}    -- members whose part of the index is known to be wrong
 local function bucket(itemID, key)
 	entries[itemID] = entries[itemID] or {}
 	entries[itemID][key] = entries[itemID][key] or
-		{ bags = 0, bank = 0, mail = 0, auctions = 0, worn = 0 }
+		{ bags = 0, bank = 0, mail = 0, auctions = 0, worn = 0, bound = 0 }
 	return entries[itemID][key]
 end
 
@@ -51,6 +51,16 @@ local function addContainers(key, containers, field)
 			if item.id then
 				local record = bucket(item.id, key)
 				record[field] = record[field] + (item.count or 1)
+
+				-- **How many of them can no longer be sold at an auction house.**
+				--
+				-- Backlog 63: an auction price is a price for the unbound version, so two
+				-- of one id on one character - one worn once, one never - are worth
+				-- different money. Counted rather than flagged, because a member can hold
+				-- both at the same time and the figure needs to split them.
+				if item.bound then
+					record.bound = record.bound + (item.count or 1)
+				end
 			end
 		end
 	end
@@ -90,6 +100,9 @@ local function addMember(key)
 			if item.id then
 				local record = bucket(item.id, key)
 				record.worn = record.worn + 1
+				-- Nearly always bound, and not always: a shirt binds to nobody. Read per
+				-- piece rather than assumed, which is the measurement backlog 63 rests on.
+				if item.bound then record.bound = record.bound + 1 end
 			end
 		end
 	end
@@ -253,6 +266,7 @@ function Index:Owners(itemID)
 				mail = record.mail,
 				auctions = record.auctions,
 				worn = record.worn,
+				bound = record.bound,
 				total = total,
 			}
 		end
@@ -391,19 +405,34 @@ function Index:Worth()
 				local price = row.market and markets[row.market]
 					and markets[row.market][itemID] or nil
 
-				if type(price) == "table" and tonumber(price.p) then
-					row.worth = row.worth + price.p * held
-					row.atMarket = row.atMarket + held
+				-- **A bound one has no auction price, whatever the auction house says.**
+				--
+				-- Backlog 63, reported by Alberto: what is on sale there is the unbound
+				-- version of the item, and a soulbound copy cannot be listed at any price.
+				-- Its only buyer is a vendor. So the market lane values what is still
+				-- sellable and the rest falls through to what a vendor pays - which is how
+				-- two of one sword on one character come to be ten gold and half a gold.
+				local bound = math.min(record.bound, held)
+				local free = held - bound
+
+				if free > 0 and type(price) == "table" and tonumber(price.p) then
+					row.worth = row.worth + price.p * free
+					row.atMarket = row.atMarket + free
 					if price.at and (not row.oldest or price.at < row.oldest) then
 						row.oldest = price.at
 					end
 				else
+					bound = held
+					free = 0
+				end
+
+				if bound > 0 then
 					local sell = sellPriceOf(itemID)
 					if sell then
-						row.worth = row.worth + sell * held
-						row.atVendor = row.atVendor + held
+						row.worth = row.worth + sell * bound
+						row.atVendor = row.atVendor + bound
 					else
-						row.unpriced = row.unpriced + held
+						row.unpriced = row.unpriced + bound
 					end
 				end
 			end
@@ -470,19 +499,29 @@ function Index:WorthOfItem(itemID)
 
 			out.held = out.held + held
 
-			if type(price) == "table" and tonumber(price.p) then
-				out.worth = out.worth + price.p * held
-				out.atMarket = out.atMarket + held
+			-- The same split as `Worth` above: a bound copy has no auction price at all,
+			-- because it cannot be listed at one. Backlog 63.
+			local bound = math.min(record.bound, held)
+			local free = held - bound
+
+			if free > 0 and type(price) == "table" and tonumber(price.p) then
+				out.worth = out.worth + price.p * free
+				out.atMarket = out.atMarket + free
 				if price.at and (not out.oldest or price.at < out.oldest) then
 					out.oldest = price.at
 				end
 			else
+				bound = held
+				free = 0
+			end
+
+			if bound > 0 then
 				local sell = sellPriceOf(itemID)
 				if sell then
-					out.worth = out.worth + sell * held
-					out.atVendor = out.atVendor + held
+					out.worth = out.worth + sell * bound
+					out.atVendor = out.atVendor + bound
 				else
-					out.unpriced = out.unpriced + held
+					out.unpriced = out.unpriced + bound
 				end
 			end
 		end

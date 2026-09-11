@@ -3776,7 +3776,7 @@ has already refused that trade once.
 
 ---
 
-## 63. An auction price is a price for the unbound version
+## 63. An auction price is a price for the unbound version — DONE 2026-09-11
 
 **Reported 2026-09-11, by Alberto, and it is a correctness fault in the worth arithmetic rather
 than a feature.** Family values what a member holds at what the auction house was last seen
@@ -3824,11 +3824,20 @@ nil` - a shirt, worn, saying nothing about binding, so it never binds and can be
 worn. *Equipped means bound* is false, and false on exactly the items somebody would have reached
 for it over.
 
-**Still unmeasured, and it is the one that decides the cost:** what the never-binding things read.
-The probe filtered to the rows whose tooltip said something, so the greys, the whites and the trade
-goods that are most of a bag have no row at all. It now prints a few quiet ones too. Until that
-comes back, nothing is assumed about them - and the fix cannot be sized without it, because
-*tooltip for every slot* and *tooltip for the bind-on-equip ones* are different features.
+**Closed the same day by the last reading, on Classic Era.** A pick, a pole, a hammer and a fish
+attractor all read **0** with nothing on their tooltips, so 0 is *never binds*; and a bind-on-use
+item already used read **3** and said `soulbound`, which is what says 3 needs the instance exactly
+as 2 does. Full mapping and the items it came from are in DATASOURCES.
+
+**So the fix is the cheap one.** Only bind-on-equip and bind-on-use are asked about by tooltip; 1
+and 4 are bound wherever they sit and 0 never is, one call apiece. The bags, the bank and the worn
+gear record `bound` on the slot; the index counts how many of a member's copies are bound; and the
+worth values those at what a vendor pays and never at the auction house. Alberto's two swords are
+a check, by name.
+
+**What is deliberately not recorded:** mail and auctions. Nothing soulbound can be posted or
+listed, so those are unbound by the game's own rules rather than by a reading here - and neither
+is reachable by a tooltip anyway. The guild bank is the same and is outside the worth in any case.
 
 **Where the answer has to live.** The index stores counts per member per item id, and this is a
 property of a slot rather than of an id - so either the scanners record it beside the item

@@ -148,6 +148,13 @@ function Bank:Scan()
 					if itemID then
 						entry.slots[slot] = { id = itemID, count = count, item = worth }
 
+						-- The same as the bags, and for the same reason: a soulbound
+						-- thing has no auction price, only what a vendor pays for it
+						-- (backlog 63). A bank slot is a container slot, so the same
+						-- reader answers for it.
+						local bound = Family:BoundIn(bag, slot, itemID)
+						if bound then entry.slots[slot].bound = true end
+
 						-- The same gate as the bags, and the same reason. The guild bank
 						-- below is deliberately left out: its tabs load a page at a time,
 						-- and a charge read off a tab that has not arrived would be wrong

@@ -67,6 +67,11 @@ picks itself up where it left off.
 - **It never gives a total on its own** — how much came from auction prices, how much from vendor
   prices, and how many things it had no price for at all.
 
+- **Soulbound things are valued at what a vendor pays, never at the auction house.** What is on
+  sale there is the unbound version of an item: a sword you have worn cannot be listed at any
+  price. Two of the same sword on one character — one worn, one not — are now worth what they are
+  really worth, which is not the same figure twice.
+
 ### Shorter lists stay whole
 
 - **A list of ten or fewer is no longer contracted.** The crafting, reputations and possessions
