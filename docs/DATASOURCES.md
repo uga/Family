@@ -1057,6 +1057,45 @@ That is L-071, and it is why nothing is guessed any more: Family now sends **the
 query with the page changed**, and works out which argument is the page from two of the client's
 own queries differing in exactly one numeric place. Era and Mists are not read yet.
 
+#### How big the house is, measured 2026-09-11
+
+The replayed query worked on the first try: page 1 asked for by Family, fifty rows back, and the
+second return of `GetNumAuctionItems("list")` - the one nothing here had ever read - said
+
+    the browse list holds 50 row(s), of 180205 on sale in all
+
+**180,205 auctions, fifty to a page: 3,605 pages.** That is the arithmetic entry 55 said would
+decide whether an opt-in full read is minutes or an evening, and it is an evening. It is also why
+`getAll` exists at all, and why it is still never sent: the whole house in one call is the route
+that freezes a client.
+
+So the walk is **clocked by the server** - the next page is asked for because the previous one
+arrived, never on a timer, so it runs exactly as fast as the client is being answered and cannot
+get ahead of it. `CanSendAuctionQuery` is asked before **every** page rather than only the first,
+because it answers about now and this spends an hour in a lot of nows. It stops on the house
+closing, on a refusal that does not clear, on a page that does not arrive within thirty seconds,
+and on being told to. Everything already read is kept.
+
+#### And none of the above is Mists, measured 2026-09-11
+
+`/family ah watch` was armed on Mists, Search was pressed, and **nothing was ever printed**. That
+client does not call `QueryAuctionItems` at all - the old calls there are shells, which this file
+already recorded, and this is the same fact from the other end. `/family ah query 1` refused with
+*no query of the client's own has been seen this session*, which was true and misleading: on that
+build it never will be.
+
+**And its house is a different shape, not just a different call.** The browse list is **one row
+per item** with the number on sale beside it - *Northern Spices 3,583*, *Refreshing Spring Water
+912* - and the individual auctions appear only when a row is opened. There is no Prev/Next,
+because there are no pages: one search answered **500 rows** and the reader took **495 prices out
+of them in a single ordinary look**, which is more than a page walk on the older house gets in
+fifty queries.
+
+So a full read there is `SendBrowseQuery` with nothing in it, then `RequestMoreBrowseResults` until
+`HasFullBrowseResults` says so - three calls whose presence `/family ah` now reports and whose
+behaviour has not been read. Until it has, the page walk refuses on that build **and says which
+house it is looking at**, rather than reporting a query that will never arrive.
+
 #### The client asks for us, and that is the reading that costs nothing
 
 Written after the above and it should have come first. **The auction house calls

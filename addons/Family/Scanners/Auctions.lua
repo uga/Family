@@ -321,6 +321,26 @@ end
 
 -- The price and when it was seen, for the market this character is in. Two returns rather than
 -- the row itself, because a caller that is handed the row can hold on to it.
+-- How many this market has a price for, which is the only progress figure that means anything
+-- during a read: pages are how far it has got, prices are what it has been worth.
+function Auctions:PriceCount()
+	local held = 0
+	for _, row in pairs(self:Prices()) do
+		if type(row) == "table" and row.at then held = held + 1 end
+	end
+	return held
+end
+
+-- How many this market has a price for, which is the only progress figure that means anything
+-- during a read of the house: pages are how far it has got, prices are what it has been worth.
+function Auctions:PriceCount()
+	local held = 0
+	for _, row in pairs(self:Prices()) do
+		if type(row) == "table" and row.at then held = held + 1 end
+	end
+	return held
+end
+
 function Auctions:PriceOf(itemID)
 	itemID = tonumber(itemID)
 	if not itemID then return nil end
@@ -760,6 +780,126 @@ local function sawQuery(...)
 	Family:TryCall(told, said, count)
 end
 
+-- Reading the whole house, one page at a time
+--
+-- Slice 3, and it is buildable only because of what sits above it: Family does not compose a
+-- query, it replays the client's own with the page changed, so a walk varies one number and
+-- nothing else. Measured on Burning Crusade 2026-09-11 - the house held **180,205** auctions,
+-- which at fifty a page is **3,605 pages**. That is the arithmetic the backlog said would decide
+-- whether this is minutes or an evening, and the answer is an evening.
+--
+-- **Clocked by the server, never by a timer.** The next page is asked for when the previous one
+-- has arrived, so the walk runs exactly as fast as the client is being answered and cannot get
+-- ahead of it. A timer would keep sending into a server that had stopped replying, which is how
+-- addon traffic becomes a disconnection.
+--
+-- **`CanSendAuctionQuery` before every page**, not just the first. It answers about now, and a
+-- walk spends an hour in a lot of nows.
+--
+-- **And it stops on everything that is not progress**: the house closing, a refusal, a page that
+-- does not arrive within half a minute, or the player saying so. Never `getAll` - that is not a
+-- setting here, it is an argument of the client's own that Family never touches.
+local walk
+
+local PAGE_ROWS = 50
+local QUIET_SECONDS = 30
+
+function Auctions:Walking()
+	return walk ~= nil and walk or nil
+end
+
+function Auctions:StopWalk(why)
+	if not walk then return false end
+	local stopping, told = walk, walk.told
+	walk = nil
+	if told then Family:TryCall(told, "stopped", stopping, why) end
+	return true
+end
+
+-- One page, or a reason there is not one.
+local function askPage(page)
+	if not walk then return end
+
+	if not Family:TryCall(CanSendAuctionQuery) then
+		-- Waited for rather than pushed through: this is the client saying not yet, and
+		-- the only wrong answer is to ask again immediately.
+		walk.waits = (walk.waits or 0) + 1
+		if walk.waits > 60 then
+			return Auctions:StopWalk("refusing")
+		end
+		return Family:After(0.5, "auctions.walk", function() askPage(page) end)
+	end
+
+	walk.waits = 0
+	walk.page = page
+	walk.sentAt = time()
+
+	local ok = Auctions:ReplayQuery(page)
+	if not ok then return Auctions:StopWalk("query") end
+
+	-- A page that never arrives ends the walk rather than leaving it looking alive.
+	Family:After(QUIET_SECONDS, "auctions.walk.quiet", function()
+		if walk and walk.sentAt and (time() - walk.sentAt) >= QUIET_SECONDS then
+			Auctions:StopWalk("quiet")
+		end
+	end)
+end
+
+-- What arrived, and then the next one. Called from the scanner's own list handler, after the
+-- prices on the page have been read - so the walk never reads anything itself.
+local function walkHeard()
+	if not walk then return end
+
+	local _, inAll = Auctions:ListTotals()
+	if inAll and inAll > 0 then
+		walk.inAll = inAll
+		walk.pages = math.ceil(inAll / PAGE_ROWS)
+	end
+
+	walk.done = (walk.page or 0) + 1
+	walk.sentAt = nil
+
+	if walk.told then Family:TryCall(walk.told, "page", walk) end
+
+	if walk.pages and walk.done >= walk.pages then
+		local finished, told = walk, walk.told
+		walk = nil
+		if told then Family:TryCall(told, "finished", finished) end
+		return
+	end
+
+	askPage(walk.done)
+end
+
+-- **Started only by somebody asking for it**, and it says what it is about to do before it does
+-- it. The size is not known until the first page comes back, which is why the first page is the
+-- whole of what starting it commits to.
+function Auctions:StartWalk(told)
+	-- **A code, never a sentence.** These are said to the player, and a sentence written here
+	-- would be an English one wherever it was read (§2.1). The words live in `Slash.lua`, where
+	-- everything else the player is told lives and where the translation gate can see them.
+	if walk then return false, "running" end
+
+	-- **The newer house is not walked this way, and saying *no query seen yet* there would be
+	-- true and misleading.** On Mists the old calls are shells - all three selectors answer
+	-- nought and `AUCTION_ITEM_LIST_UPDATE` never fires - and the client never calls
+	-- `QueryAuctionItems` at all, so the thing this waits for cannot happen. Measured
+	-- 2026-09-11: `/family ah watch` armed and nothing was ever printed. That house answers one
+	-- row per item with a count beside it and has no pages to walk.
+	if _G.C_AuctionHouse and type(C_AuctionHouse.SendBrowseQuery) == "function" then
+		return false, "newerHouse"
+	end
+
+	if not self:LastQuery() then return false, "seenNothing" end
+	if not self:PagePosition() then return false, "pageUnknown" end
+
+	walk = { page = 0, done = 0, started = time(), told = told }
+	askPage(0)
+	return true, nil
+end
+
+Auctions.__walkHeard = walkHeard
+
 -- **The client's own call, with the page changed and nothing else.**
 --
 -- This is the whole of what a page walk is allowed to send. Every argument is one the auction
@@ -849,6 +989,9 @@ Family:OnDatabaseReady("auctions", function()
 
 	Family:RegisterEvent("AUCTION_HOUSE_CLOSED", "auctions", function()
 		Auctions:ForgetVisit()
+		-- Walking away from the auctioneer ends the read. Everything already taken is kept:
+		-- a half-read house is a lot of prices, not a failure.
+		Auctions:StopWalk("closed")
 	end)
 
 	-- A key of their own. Under "auctions" these counters replaced the handlers registered
@@ -876,6 +1019,10 @@ Family:OnDatabaseReady("auctions", function()
 		fired = fired + 1
 		lastRows = tonumber((Family:TryCall(GetNumAuctionItems, "list"))) or 0
 		Auctions:ReadPrices()
+
+		-- And if a read of the whole house is running, this is its clock: the next page is
+		-- asked for because this one arrived, never because a timer went off.
+		walkHeard()
 
 		-- And whoever asked to be told about the next one, told once. Inside this handler
 		-- rather than beside it: a second registration under this event's key would have

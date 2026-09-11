@@ -67,6 +67,14 @@ picks itself up where it left off.
 - **It never gives a total on its own** — how much came from auction prices, how much from vendor
   prices, and how many things it had no price for at all.
 
+### Reading the auction house
+
+- **`/family ah scan go` reads every page of the auction house** and remembers what everything is
+  going for. It is off unless you ask for it, it tells you how far it has got, and
+  `/family ah scan stop` ends it. On a busy realm this is thousands of pages and takes a while —
+  it goes exactly as fast as the server answers, and everything it has already read is kept if you
+  stop it or walk away.
+
 ### Vendor prices on item tooltips
 
 - **What a vendor pays you**, on any item's tooltip, anywhere in the game. Off until you turn it

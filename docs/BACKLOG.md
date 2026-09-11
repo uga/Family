@@ -3474,6 +3474,14 @@ The full writing-up is in [`DATASOURCES.md`](DATASOURCES.md) under *What a full 
 held against what the auction window says on screen, because a layout the client accepts can still
 have queried the wrong thing - and rows arriving is not evidence that it did not.
 
+**Slice 3 landed 2026-09-11 for the two older builds**, as `/family ah scan go` - a page walk
+clocked by the server, 3,605 pages on a house of 180,205 auctions, stoppable and resumable by
+simply doing it again. What is left of it is **the newer house**, which is a different shape
+rather than a different call: one row per item with a count beside it, no pages, and 495 prices
+off a single ordinary search. Its full read is `SendBrowseQuery` then `RequestMoreBrowseResults`
+until `HasFullBrowseResults`, none of which has been read yet - so the walk refuses there and says
+which house it is looking at. DATASOURCES carries both readings.
+
 **4. A panel for what everything is worth.** Over the index Family already keeps, so the arithmetic
 is a walk rather than a scan. It has to be honest the way the pet training line is: never a total
 that quietly leaves out what it has no price for.

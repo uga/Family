@@ -5205,6 +5205,107 @@ do
 				(Family.Auctions:PriceOf(2880)) ~= nil,
 				tostring((Family.Auctions:PriceOf(2880))))
 
+			-- **The walk, which is the thing that sends three and a half thousand queries.**
+			--
+			-- Measured on Burning Crusade 2026-09-11: 180,205 auctions, fifty to a page, so
+			-- 3,605 pages. Everything below is about the pacing rather than the reading -
+			-- the prices come off each page through `ReadPrices`, which the handler already
+			-- calls and which is checked above.
+			do
+				local said = {}
+				local pages, rows = 4, 50
+
+				local realNum4 = GetNumAuctionItems
+				GetNumAuctionItems = function(which)
+					if which ~= "list" then return 0, 0 end
+					return rows, pages * rows
+				end
+
+				-- **And nothing walks on the newer house**, where saying *no query of the
+				-- client's own has been seen* would be true and misleading: that client
+				-- never calls `QueryAuctionItems` at all, so the thing it waits for cannot
+				-- happen. Measured on Mists 2026-09-11 - the watcher armed and stayed
+				-- silent, which reads as a broken probe rather than as a different house.
+				local realModern = _G.C_AuctionHouse
+				_G.C_AuctionHouse = { SendBrowseQuery = function() end }
+				local mistsNo, mistsWhy = Family.Auctions:StartWalk(function() end)
+				check("a read refuses on the newer house, and says that is why",
+					mistsNo == false and mistsWhy == "newerHouse",
+					tostring(mistsNo) .. " / " .. tostring(mistsWhy))
+				_G.C_AuctionHouse = realModern
+
+				-- **Nothing walks while it is not known which argument the page is.**
+				-- Varying the wrong one is three and a half thousand queries for the same
+				-- fifty rows, and on this client the wrong one could be `getAll`.
+				local held = FamilyDB.auctionPageAt
+				FamilyDB.auctionPageAt = nil
+				local before = #sent
+				local no, refused = Family.Auctions:StartWalk(function() end)
+				check("a read refuses to start while where the page sits is unknown",
+					no == false and refused == "pageUnknown" and #sent == before,
+					tostring(no) .. " / " .. tostring(refused))
+				FamilyDB.auctionPageAt = held
+
+				before = #sent
+				local ok, why = Family.Auctions:StartWalk(function(what, state, reason)
+					said[#said + 1] = { what, state.done, reason }
+				end)
+				check("a read of the house starts at page nought",
+					ok == true and #sent == before + 1 and sent[#sent][4] == 0,
+					tostring(ok) .. " / " .. tostring(why))
+
+				-- **The server is the clock.** The next page goes out because this one
+				-- arrived, never because a timer went off - a timer would go on sending
+				-- into a server that had stopped answering.
+				fire("AUCTION_ITEM_LIST_UPDATE")
+				check("and the next page is asked for because the last one arrived",
+					#sent == before + 2 and sent[#sent][4] == 1,
+					tostring(sent[#sent] and sent[#sent][4]))
+
+				-- **`CanSendAuctionQuery` before every page**, not only the first: it
+				-- answers about now, and this spends an hour in a lot of nows.
+				allowed = false
+				fire("AUCTION_ITEM_LIST_UPDATE")
+				check("while a client saying not yet is waited for, not pushed through",
+					#sent == before + 2, tostring(#sent - before))
+
+				allowed = true
+				advance(1)
+				check("and the page goes out once it says yes",
+					#sent == before + 3 and sent[#sent][4] == 2,
+					tostring(sent[#sent] and sent[#sent][4]))
+
+				fire("AUCTION_ITEM_LIST_UPDATE")
+				fire("AUCTION_ITEM_LIST_UPDATE")
+				check("the last page ends it, and nothing is sent after it",
+					#sent == before + 4 and Family.Auctions:Walking() == nil,
+					tostring(#sent - before))
+
+				local finished = said[#said]
+				check("and it says so, with how many pages it read",
+					finished and finished[1] == "finished" and finished[2] == pages,
+					finished and (finished[1] .. " " .. tostring(finished[2])) or "nothing")
+
+				-- **Walking away from the auctioneer ends it.** Everything already taken
+				-- is kept: a half-read house is a lot of prices, not a failure.
+				said = {}
+				Family.Auctions:StartWalk(function(what, state, reason)
+					said[#said + 1] = { what, state.done, reason }
+				end)
+				fire("AUCTION_HOUSE_CLOSED")
+				check("closing the auction house ends a read that is running",
+					Family.Auctions:Walking() == nil and said[#said]
+						and said[#said][3] == "closed",
+					tostring(said[#said] and said[#said][3]))
+
+				-- A reason is a code and never a sentence: the words are in Slash.lua,
+				-- where the translation gate can see them (§2.1).
+				check("and the reason it gives is a code the words are looked up from",
+					said[#said][3] == "closed" and #said[#said][3] < 20)
+
+				GetNumAuctionItems = realNum4
+			end
+
 			_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan
 			Family.Auctions:TellNextList(nil)
 		end

@@ -731,38 +731,6 @@ add("openwith", L["what a profession button is holding when you click it"], func
 	Family:Print(L["click a profession on the professions page: the next click will say what its button held"])
 end)
 
--- **One query, on request, and the answer read back.**
---
--- The whole of slice 3 waits on this. A page walk has to vary `page`, and where `page` sits in
--- `QueryAuctionItems` is not the same on every one of these builds - nothing can ask a C function
--- what arguments it takes, so it is asked the only way there is: one query with one candidate
--- layout, and the list held afterwards against what the auction window is showing on screen.
---
--- **One at a time, and never two in flight.** Each run takes the next layout, so two runs cover
--- both, and a second query sent before the first has answered is precisely the traffic this
--- feature exists to avoid generating.
---
--- **And it disarms itself.** The reader is a one-shot on the next list update; if the query is
--- accepted and nothing ever arrives, leaving it armed would make the player's next ordinary
--- search print an answer to a question asked ten minutes earlier. A probe that reports the wrong
--- event is worse than one that reports nothing (L-068).
--- **Watching the client ask, which should have been the first thing tried.**
---
--- The question is where `page` sits in `QueryAuctionItems`, and the auction house the player is
--- looking at answers it every time Search is pressed. Hooked, it costs no traffic and cannot get
--- anybody disconnected; two queries of our own, both accepted and both silent, are what it took
--- to go and look for this.
-local function watchOne()
-	Family.Auctions:TellNextQuery(function(args, count)
-		Family:Print(L["  the client asked with %d argument(s):"], count or 0)
-		for index = 1, (count or 0) do
-			Family:Print("    %-3s |cff888888%s|r", index, tostring(args[index]))
-		end
-	end)
-
-	Family:Print(L["press Search on the auction house: the next query the client sends will be printed"])
-end
-
 -- **One page, replayed from the client's own query, and one at a time.**
 --
 -- Two versions of this stood here and both were wrong. The first alternated between two guessed
@@ -820,6 +788,70 @@ local function askOnce(page)
 	end)
 end
 
+-- **Reading the whole house, which is what all of the above was for.**
+--
+-- Off by default and started by a word nobody types by accident. Measured on Burning Crusade
+-- 2026-09-11: the house held 180,205 auctions, which at fifty a page is 3,605 pages and the best
+-- part of an hour standing at the auctioneer. *Read everything, I will wait* is a thing somebody
+-- asks for on purpose, so it takes a second word to start - and one to stop.
+-- Why it stopped, in words. The walk answers with a code and the words are here, because a
+-- sentence written in the scanner would be an English one wherever it was read (§2.1) - and this
+-- is the file the translation gate reads.
+local WHY = {
+	asked = L["you asked it to stop"],
+	closed = L["the auction house was closed"],
+	refusing = L["the client went on refusing queries"],
+	quiet = L["a page was asked for and never arrived"],
+	query = L["the client would not take the query"],
+	running = L["a read of the house is already running"],
+	seenNothing = L["no query of the client's own has been seen this session"],
+	pageUnknown = L["which argument is the page is not known yet - use /family ah watch"],
+	newerHouse = L["this build has the newer auction house, which has no pages to walk"],
+}
+
+local function scan(word)
+	if word == "stop" then
+		if not Family.Auctions:StopWalk("asked") then
+			Family:Print(L["nothing is being read"])
+		end
+		return
+	end
+
+	if Family.Auctions:Walking() then
+		Family:Print(L["%s - /family ah scan stop ends it"], WHY.running)
+		return
+	end
+
+	if word ~= "go" then
+		Family:Print(L["this reads every page of the auction house and takes a long time: /family ah scan go"])
+		return
+	end
+
+	local ok, why = Family.Auctions:StartWalk(function(what, state, reason)
+		if what == "page" then
+			-- Said every so often rather than every page: three and a half thousand lines
+			-- is not progress, it is a chat frame nobody can use while it happens.
+			if state.pages and (state.done == 1 or state.done % 25 == 0) then
+				Family:Print(L["  page %d of %d, %d price(s) known here"],
+					state.done, state.pages, Family.Auctions:PriceCount())
+			end
+			return
+		end
+
+		if what == "finished" then
+			Family:Print(L["read the whole house: %d page(s), %d price(s) known here"],
+				state.done or 0, Family.Auctions:PriceCount())
+			return
+		end
+
+		-- Everything already taken is kept. A half-read house is a lot of prices.
+		Family:Print(L["stopped after %d page(s): %s"], state.done or 0, WHY[reason]
+			or tostring(reason))
+	end)
+
+	if not ok then Family:Print(L["  refused: %s"], WHY[why] or tostring(why)) end
+end
+
 -- **Watching the client ask, which should have been the first thing tried.**
 --
 -- The auction house calls `QueryAuctionItems` itself every time Search is pressed, with the
@@ -841,6 +873,12 @@ local function watchOne()
 		end
 	end)
 
+	-- Said before the waiting rather than after it: on the newer house this hook can never
+	-- fire, and an armed probe that stays silent forever reads as a broken probe.
+	if _G.C_AuctionHouse and type(C_AuctionHouse.SendBrowseQuery) == "function" then
+		Family:Print(L["this build has the newer auction house, which has no pages to walk"])
+	end
+
 	Family:Print(L["press Search on the auction house: the next query the client sends will be printed"])
 end
 
@@ -857,6 +895,9 @@ end
 -- now, and that answer is the difference between a scanner that is safe and one that is not.
 add("ah", L["what this client offers on the auction house"], function(argument)
 	if argument == "watch" then return watchOne() end
+
+	local scanning = type(argument) == "string" and argument:match("^scan%s*(%a*)$")
+	if scanning then return scan(scanning) end
 
 	local asked = type(argument) == "string" and argument:match("^query%s*(%d*)$")
 	if asked then return askOnce(tonumber(asked) or 0) end
