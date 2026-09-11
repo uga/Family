@@ -826,6 +826,23 @@ local SHOW = {
 		Family:TryCall(GameTooltip.SetHyperlink, GameTooltip, item)
 	end,
 
+	-- **The slot this client is holding, rather than a description of the item in it.**
+	--
+	-- Reported from play 2026-09-11, with both tooltips side by side: a shield that had been
+	-- worn and taken off reads **Soulbound** in the game's own bag and *Binds when equipped*
+	-- on Family's page. Neither is wrong - the second is the game describing the **item**,
+	-- because a link is all a panel drawing somebody else's bag can have, and binding is not
+	-- in a link (Core.lua says the same about charges). But where the bag is one this client
+	-- is holding, there is no need to settle for the item: the slot itself can be asked, and
+	-- it answers about the thing in front of you.
+	--
+	-- Two numbers in one string, because a resolver hands over one value.
+	bagslot = function(where)
+		local bag, slot = tostring(where):match("^(-?%d+):(%d+)$")
+		if not bag then return end
+		Family:TryCall(GameTooltip.SetBagItem, GameTooltip, tonumber(bag), tonumber(slot))
+	end,
+
 	spell = function(id)
 		Family:TryCall(GameTooltip.SetSpellByID, GameTooltip, id)
 		if not wroteAnything() then

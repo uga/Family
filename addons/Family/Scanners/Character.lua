@@ -76,8 +76,21 @@ function Character:ReadEquipment()
 			-- and is not always no: a shirt binds to nobody, and reads `nil` on every one of
 			-- the three clients this was measured on. *What is equipped is soulbound* is the
 			-- shortcut this measurement exists to refuse (backlog 63).
+			-- **And asked again where the client could not answer yet.** Reported from play
+			-- 2026-09-11: a bind-on-equip helm worn by the character being played was still
+			-- valued at what the auction house asks. This scan runs at login, and at login
+			-- `GetItemInfo` often has nothing to say about an item it has not cached - so
+			-- the kind came back unknown, no binding was recorded, and nothing asked again
+			-- for the rest of the session. The bags reader carries the same trap and the
+			-- same answer.
 			local bound = Family:BoundWorn(slot, id)
-			if bound then worn[slot].bound = true end
+			if bound == nil then
+				Family.Names:Item(id, "character.bound", function()
+					Family:After(0.5, "character", function() Character:Scan() end)
+				end)
+			elseif bound then
+				worn[slot].bound = true
+			end
 
 			-- A tabard and a shirt have item levels and contribute nothing to how
 			-- geared somebody is, so they are recorded and not counted.

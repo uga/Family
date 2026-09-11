@@ -643,6 +643,19 @@ local function build(frame)
 		-- writes "<Random enchantment>" where the stats should be - a description of
 		-- something nobody owns (Core.lua).
 		UI:AttachTooltip(button, function(self)
+			-- **The slot itself, where this client is holding it.** A link describes the
+			-- item and says *binds when equipped* about a shield that bound months ago;
+			-- the slot describes the thing in the bag. Only for the character being
+			-- played, and only for a container the client can actually be asked about -
+			-- the bank's own bags are addressable while its window is open and not after
+			-- (`openContainer` below draws the same line).
+			local block = self.block
+			if block and self.memberKey == Family:CurrentMember() and self.slotIndex
+				and block.bag and (block.where == "bags"
+					or (block.where == "bank" and Family.Bank:IsOpen())) then
+				return "bagslot", block.bag .. ":" .. self.slotIndex
+			end
+
 			if self.itemLink then return "itemlink", self.itemLink end
 			return "item", self.itemID
 		end)
@@ -1250,6 +1263,7 @@ local function build(frame)
 				button:Show()
 
 				button.block = container
+				button.slotIndex = slot
 				button.memberKey = member.key
 				button.itemID = item and item.id or nil
 				button.itemLink = item and item.item or nil

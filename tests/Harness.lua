@@ -3543,6 +3543,38 @@ do
 	COOLDOWN_UNSETTLED = false
 	Family.Bags:Scan()
 
+	-- **An item the client cannot describe yet is asked for again, not written off.**
+	--
+	-- Reported from play 2026-09-11: a bind-on-equip helm worn by the character being played
+	-- was still valued at what the auction house asks. The scan had run at login, `GetItemInfo`
+	-- had nothing to say about an item it had not cached, so the kind came back unknown and no
+	-- binding was recorded - and nothing asked a second time for the rest of the session. The
+	-- charges reader two dozen lines above carries the same trap and the same answer.
+	do
+		local askedFor = {}
+		local realNames = Family.Names.Item
+		Family.Names.Item = function(self, id, why, callback)
+			askedFor[#askedFor + 1] = tostring(why)
+			return realNames(self, id, why, callback)
+		end
+
+		local realInfo = GetItemInfo
+		GetItemInfo = function(id) return nil end
+
+		Family.Bags:Scan()
+
+		local askedAboutBinding = false
+		for _, why in ipairs(askedFor) do
+			if why == "bags.bound" then askedAboutBinding = true end
+		end
+		check("an item the client cannot describe is asked for again rather than written off",
+			askedAboutBinding, table.concat(askedFor, ","))
+
+		GetItemInfo = realInfo
+		Family.Names.Item = realNames
+		Family.Bags:Scan()
+	end
+
 	local settled = Family.Database:Meta(key).itemCooldowns
 	check("and the next scan records it, so a refusal costs one scan and not the fact",
 		settled and #settled == 1 and settled[1].readyAt - time() <= 86400,
@@ -4606,6 +4638,38 @@ do
 	local both = Family.UI:HeldWhere({ bags = 1, worn = 1, total = 2 })
 	check("and equipped is named after the places a reader could go and look",
 		both:find("bags", 1, true) < both:find("equipped", 1, true), both)
+
+	-- **And how many of them are bound**, which is the one thing on this line the game's own
+	-- tooltip cannot say. Reported from play 2026-09-11: a shield worn once and taken off
+	-- reads *Soulbound* in the bag and *Binds when equipped* on Family's page, because a panel
+	-- describes the item through a link while binding belongs to the copy. Family reads the
+	-- slot when it scans and was simply not saying what it found - and saying it reaches a
+	-- brother's shield too, where no slot on this machine could be asked at all.
+	do
+		local held = _G.ITEM_SOULBOUND
+		_G.ITEM_SOULBOUND = "Soulbound"
+
+		local some = Family.UI:HeldWhere({ bags = 3, bound = 1, total = 3 })
+		check("and it says how many of them are bound",
+			some:find("1 Soulbound", 1, true) ~= nil, some)
+
+		-- Said in the game's own word, so it reads as the tooltip beside it does (§2.1).
+		_G.ITEM_SOULBOUND = "Seelengebunden"
+		check("in the client's own word for it, not one of ours",
+			Family.UI:HeldWhere({ bags = 3, bound = 1, total = 3 })
+				:find("1 Seelengebunden", 1, true) ~= nil,
+			Family.UI:HeldWhere({ bags = 3, bound = 1, total = 3 }))
+
+		-- Nothing bound, nothing said: a line that ends "0 Soulbound" on every ordinary
+		-- stack of cloth is a line nobody reads to the end of.
+		_G.ITEM_SOULBOUND = "Soulbound"
+		check("while nothing bound says nothing at all",
+			Family.UI:HeldWhere({ bags = 3, bound = 0, total = 3 })
+				:find("Soulbound", 1, true) == nil,
+			Family.UI:HeldWhere({ bags = 3, bound = 0, total = 3 }))
+
+		_G.ITEM_SOULBOUND = held
+	end
 
 	-- **And it is worth something.** Alberto's call 2026-09-11, asked as a question before it
 	-- was built: the panel draws the gear, so a total on that same page that ignored it would
@@ -8856,6 +8920,18 @@ SlashCmdList["FAMILY"]("rescan")
 check("/family rescan runs both scanners",
 	#DEFAULT_CHAT_FRAME.messages > before)
 
+-- **And the character, which it did not and is named as though it does.** Whether a worn piece
+-- has bound is written by `Character:ScanNow` and by nothing else, so the one command whose whole
+-- purpose is *scan me again* was leaving the equipment exactly as it found it.
+do
+	local ran = false
+	local realScan = Family.Character.Scan
+	Family.Character.Scan = function(self) ran = true; return realScan(self) end
+	SlashCmdList["FAMILY"]("rescan")
+	check("and the character too, which is where a worn item's binding is written", ran)
+	Family.Character.Scan = realScan
+end
+
 -- A panel whose builder throws must say so rather than looking like a panel with no data.
 before = #DEFAULT_CHAT_FRAME.messages
 Family.UI:RegisterTab("broken", "Broken", function() error("deliberate") end)
@@ -8990,6 +9066,66 @@ print("clicking a Bags row opens that character's possessions")
 			blockKinds():find("equipped", 1, true) == nil, blockKinds())
 
 		payload.equipment = heldEquipment
+
+		-- **A slot of this client's own is described by the slot, not by a link.**
+		--
+		-- Reported from play 2026-09-11 with both tooltips side by side: a shield worn once
+		-- and taken off reads *Soulbound* in the game's own bag and *Binds when equipped* on
+		-- Family's page. A link describes the item; binding belongs to the copy, and a panel
+		-- drawing somebody else's bag has nothing but the link. Where the bag is one this
+		-- client is holding, the slot can be asked instead.
+		Family.UI:ShowContentsFor(me)
+
+		local slotButton
+		for _, f in ipairs(frames) do
+			if f.__shown ~= false and f.__familyTooltip and f.slotIndex and f.itemID
+				and type(f.block) == "table" and f.block.where == "bags" then
+				slotButton = f
+				break
+			end
+		end
+
+		check("a bag slot of this client's own is asked about as a slot",
+			slotButton and (slotButton.__familyTooltip(slotButton)) == "bagslot",
+			slotButton and tostring((slotButton.__familyTooltip(slotButton)))
+				or "no slot button drawn")
+		check("and by the bag and slot it is really in",
+			slotButton and select(2, slotButton.__familyTooltip(slotButton))
+				== tostring(slotButton.block.bag) .. ":" .. tostring(slotButton.slotIndex),
+			slotButton and tostring(select(2, slotButton.__familyTooltip(slotButton))))
+
+		-- **And somebody else's is not**, because there is no slot on this machine to ask
+		-- about. Saying *bag 0 slot 3* for a brother's bag would describe this player's own.
+		if slotButton then
+			local held = slotButton.memberKey
+			slotButton.memberKey = "Somebody-Else"
+			local kind = slotButton.__familyTooltip(slotButton)
+			check("while another member's slot falls back to describing the item",
+				kind == "itemlink" or kind == "item", tostring(kind))
+			slotButton.memberKey = held
+
+			-- **And a bank bag is only addressable while the bank window is open.** Its
+			-- container ids mean nothing once it is shut, so asking about bag 5 slot 1 with
+			-- the bank closed describes whatever this client has at that number now.
+			-- `openContainer` draws the same line for the same reason.
+			local realOpen = Family.Bank.IsOpen
+			local function pretendBank()
+				return slotButton.__familyTooltip({
+					memberKey = slotButton.memberKey, slotIndex = 1,
+					itemID = slotButton.itemID, block = { where = "bank", bag = 5 },
+				})
+			end
+
+			Family.Bank.IsOpen = function() return false end
+			check("and a bank slot is not asked about while the bank is shut",
+				pretendBank() ~= "bagslot", tostring(pretendBank()))
+
+			Family.Bank.IsOpen = function() return true end
+			check("while with it open the slot answers for itself",
+				pretendBank() == "bagslot", tostring(pretendBank()))
+
+			Family.Bank.IsOpen = realOpen
+		end
 	end
 
 	-- Put back where the next check expects it: this panel now remembers a member, and one
@@ -22175,7 +22311,11 @@ ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
 			check("bind on use is asked about too, because a used one is bound",
 				Family:BoundIn(0, 1, 775) == true, "")
 
-			-- A client that has not cached the item says nothing, and nothing is recorded.
+			-- **A client that has not cached the item says nothing**, which is the ordinary
+			-- state at login and is not an answer. Reported from play 2026-09-11: a
+			-- bind-on-equip helm worn by the character being played was valued at what the
+			-- auction house asks, because the scan ran before the client could describe it,
+			-- recorded no binding, and nothing asked a second time.
 			check("and an item this client cannot describe answers nothing at all",
 				Family:BoundIn(0, 1, 999888) == nil,
 				tostring(Family:BoundIn(0, 1, 999888)))

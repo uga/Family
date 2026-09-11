@@ -166,6 +166,7 @@ Family.locales.frFR = {
 	["Wide Family is already %s."] = "La Famille élargie est déjà %s.",
 	["  |cffffd700/family %s|r - %s"] = "    |cffffd700/family %s|r - %s",
 	["  %s: |cffffaa00no payload|r%s"] = "    %s : |cffffaa00aucune donnée|r%s",
+	["|cffff5555character scan failed|r: %s"] = "|cffff5555échec de l'analyse du personnage|r : %s",
 	["|cffff5555bag scan failed|r: %s"] = "|cffff5555échec de l'analyse des sacs|r : %s",
 	["no crafting cooldowns are ready."] = "aucun temps de recharge d'artisanat n'est prêt.",
 	["     spec %d: |cffffaa00missing|r"] = "     spé %d : |cffffaa00manquante|r",

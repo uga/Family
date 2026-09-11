@@ -166,6 +166,7 @@ Family.locales.ruRU = {
 	["Wide Family is already %s."] = "Большая семья уже %s.",
 	["  |cffffd700/family %s|r - %s"] = "    |cffffd700/family %s|r - %s",
 	["  %s: |cffffaa00no payload|r%s"] = "    %s: |cffffaa00нет данных|r%s",
+	["|cffff5555character scan failed|r: %s"] = "|cffff5555сканирование персонажа не удалось|r: %s",
 	["|cffff5555bag scan failed|r: %s"] = "|cffff5555не удалось просканировать сумки|r: %s",
 	["no crafting cooldowns are ready."] = "готовых ремесленных восстановлений нет.",
 	["     spec %d: |cffffaa00missing|r"] = "     спец %d: |cffffaa00отсутствует|r",

@@ -166,6 +166,7 @@ Family.locales.esES = {
 	["Wide Family is already %s."] = "La Familia amplia ya está %s.",
 	["  |cffffd700/family %s|r - %s"] = "    |cffffd700/family %s|r - %s",
 	["  %s: |cffffaa00no payload|r%s"] = "    %s: |cffffaa00sin datos|r%s",
+	["|cffff5555character scan failed|r: %s"] = "|cffff5555falló el escaneo del personaje|r: %s",
 	["|cffff5555bag scan failed|r: %s"] = "|cffff5555falló el escaneo de bolsas|r: %s",
 	["no crafting cooldowns are ready."] = "no hay reutilizaciones de creación listas.",
 	["     spec %d: |cffffaa00missing|r"] = "     esp %d: |cffffaa00falta|r",

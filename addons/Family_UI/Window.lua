@@ -1190,6 +1190,23 @@ function UI:HeldWhere(owner)
 		parts[#parts + 1] = string.format(L["%d equipped"], owner.worn)
 	end
 
+	-- **And how many of them are bound**, which is the one thing here Family knows and the
+	-- game's own tooltip cannot say.
+	--
+	-- Reported from play 2026-09-11: a shield worn once and taken off reads *Soulbound* in the
+	-- bag and *Binds when equipped* on Family's page, because a panel drawing a bag describes
+	-- the **item** through a link and binding belongs to the copy. Family reads the slot when
+	-- it scans, so it has the answer - it was simply never saying it. And saying it is worth
+	-- more than repairing the link would be: this reaches a brother's shield too, where there
+	-- is no slot on this machine to ask about at all.
+	--
+	-- In the game's own word rather than one of ours (§2.1), so it reads as the tooltip beside
+	-- it does, in whatever language the client is running.
+	if (owner.bound or 0) > 0 then
+		parts[#parts + 1] = string.format("%d %s", owner.bound,
+			Family:GameWord("ITEM_SOULBOUND", "Soulbound"))
+	end
+
 	local where = table.concat(parts, ", ")
 	if where == "" then return "" end
 

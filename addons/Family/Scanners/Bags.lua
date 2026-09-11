@@ -269,8 +269,20 @@ function Bags:Scan()
 					--
 					-- Costs one call a slot and a tooltip only where the kind can be
 					-- either - bind on equip or bind on use. A bag of cloth builds none.
+					-- **And asked again where the client could not answer yet.** At login it
+					-- often cannot: `GetItemInfo` says nothing about an item it has not
+					-- cached, so the kind is unknown, nothing is recorded, and nothing would
+					-- ever ask again - the record would carry no binding for the rest of the
+					-- character's life. That is the charges reader's own trap, a dozen lines
+					-- below, reached by a different road.
 					local bound = Family:BoundIn(bag, slot, itemID)
-					if bound then entry.slots[slot].bound = true end
+					if bound == nil then
+						Family.Names:Item(itemID, "bags.bound", function()
+							Family:After(0.5, "bags", function() Bags:Scan() end)
+						end)
+					elseif bound then
+						entry.slots[slot].bound = true
+					end
 
 					-- How many charges are left, for the few items that have any.
 					--

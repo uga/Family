@@ -152,8 +152,17 @@ function Bank:Scan()
 						-- thing has no auction price, only what a vendor pays for it
 						-- (backlog 63). A bank slot is a container slot, so the same
 						-- reader answers for it.
+						-- Asked again where the client could not answer yet, as the bags
+						-- do and for the same reason: an uncached item has no kind, so
+						-- nothing is recorded and nothing would ever ask a second time.
 						local bound = Family:BoundIn(bag, slot, itemID)
-						if bound then entry.slots[slot].bound = true end
+						if bound == nil then
+							Family.Names:Item(itemID, "bank.bound", function()
+								Family:After(0.5, "bank", function() Bank:Scan() end)
+							end)
+						elseif bound then
+							entry.slots[slot].bound = true
+						end
 
 						-- The same gate as the bags, and the same reason. The guild bank
 						-- below is deliberately left out: its tabs load a page at a time,

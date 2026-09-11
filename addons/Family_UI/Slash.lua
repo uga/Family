@@ -1189,6 +1189,19 @@ add("rescan", L["scan the current member again, now, and say what it found"], fu
 	if not ok2 then
 		Family:Print(L["|cffff5555bag scan failed|r: %s"], tostring(err2))
 	end
+
+	-- **And the character itself**, which this command did not do and is named as though it
+	-- did. Reported 2026-09-11: a bind-on-equip helm worn by another member was still valued
+	-- at what the auction house asks, because whether a worn piece has bound is written by
+	-- `Character:ScanNow` and by nothing else - so a record made before that field existed
+	-- carries no binding, and the one command whose whole purpose is *scan me again* left the
+	-- equipment exactly as it found it.
+	local ok3, err3 = pcall(function() Family.Character:Scan() end)
+	if not ok3 then
+		Family:Print(L["|cffff5555character scan failed|r: %s"], tostring(err3))
+	end
+
+	Family.Index:Invalidate()
 	UI:Refresh()
 	Family:Print(L["done. /family talents to see what landed."])
 end)

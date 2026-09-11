@@ -67,6 +67,10 @@ picks itself up where it left off.
 - **It never gives a total on its own** — how much came from auction prices, how much from vendor
   prices, and how many things it had no price for at all.
 
+- **An item's tooltip says how many of the ones your family holds are soulbound**, in the game's
+  own word — which is something no other addon can tell you about a character you are not
+  playing.
+
 - **Soulbound things are valued at what a vendor pays, never at the auction house.** What is on
   sale there is the unbound version of an item: a sword you have worn cannot be listed at any
   price. Two of the same sword on one character — one worn, one not — are now worth what they are
