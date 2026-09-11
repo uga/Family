@@ -5368,6 +5368,15 @@ do
 					return rows, pages * rows
 				end
 
+				-- Something on each page for the reader to take, or *what the pages gave
+				-- up* is nought for a walk that is working perfectly - which is the very
+				-- confusion this figure exists to clear up.
+				LIST = {
+					{ id = 4306, count = 1, buyout = 700 },
+					{ id = 2589, count = 1, buyout = 800 },
+				}
+				Family.Auctions:ForgetVisit()
+
 				-- **And nothing walks on the newer house**, where saying *no query of the
 				-- client's own has been seen* would be true and misleading: that client
 				-- never calls `QueryAuctionItems` at all, so the thing it waits for cannot
@@ -5395,7 +5404,7 @@ do
 
 				before = #sent
 				local ok, why = Family.Auctions:StartWalk(function(what, state, reason)
-					said[#said + 1] = { what, state.done, reason }
+					said[#said + 1] = { what, state.done, reason, state.kept }
 				end)
 				check("a read of the house starts at page nought",
 					ok == true and #sent == before + 1 and sent[#sent][4] == 0,
@@ -5446,6 +5455,15 @@ do
 				check("and it says so, with how many pages it read",
 					finished and finished[1] == "finished" and finished[2] == pages,
 					finished and (finished[1] .. " " .. tostring(finished[2])) or "nothing")
+
+				-- **And with what those pages gave up**, which is the only figure that
+				-- says a walk is moving. Reported from play: ninety-nine pages read and
+				-- the count of prices *known* went from 3923 to 3925, because that figure
+				-- only moves for an item nobody has ever browsed - so a walk that works and
+				-- a walk re-reading page nought look exactly alike from the chat frame.
+				check("and with what the pages gave up, which is the figure that moves",
+					(finished and finished[4] or 0) > 0,
+					tostring(finished and finished[4]))
 
 				-- **Walking away from the auctioneer ends it.** Everything already taken
 				-- is kept: a half-read house is a lot of prices, not a failure.

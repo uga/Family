@@ -855,8 +855,21 @@ end
 
 -- What arrived, and then the next one. Called from the scanner's own list handler, after the
 -- prices on the page have been read - so the walk never reads anything itself.
-local function walkHeard()
+-- **What the pages gave up, counted as they arrive.**
+--
+-- Reported from play on Classic Era 2026-09-11: ninety-nine pages read and the count of prices
+-- known went from 3923 to 3925. That figure is *how many items this market has a price for*, so
+-- it only moves for an item nobody has ever browsed - which after a season of ordinary searching
+-- is almost none of them, and a walk that is working looks exactly like a walk that is re-reading
+-- page nought.
+--
+-- `ReadPrices` answers how many it took off the page, and within one visit the first sighting of
+-- an item always counts - so a page of fifty gives up about fifty the first time it is seen and
+-- almost nothing the second. Summed here, it is the one number that tells the two apart.
+local function walkHeard(kept)
 	if not walk then return end
+
+	walk.kept = (walk.kept or 0) + (tonumber(kept) or 0)
 
 	-- **One page in, one page out.** `AUCTION_ITEM_LIST_UPDATE` fires several times for a
 	-- single query - this file has said so since the passive reader was written - so without
@@ -1116,11 +1129,13 @@ Family:OnDatabaseReady("auctions", function()
 	Family:RegisterEvent("AUCTION_ITEM_LIST_UPDATE", "auctions", function()
 		fired = fired + 1
 		lastRows = tonumber((Family:TryCall(GetNumAuctionItems, "list"))) or 0
-		Auctions:ReadPrices()
+		local kept = Auctions:ReadPrices()
 
 		-- And if a read of the whole house is running, this is its clock: the next page is
-		-- asked for because this one arrived, never because a timer went off.
-		walkHeard()
+		-- asked for because this one arrived, never because a timer went off. What the page
+		-- gave up goes with it, because that is the only figure that says the walk is really
+		-- moving - see `walkHeard`.
+		walkHeard(kept)
 
 		-- And whoever asked to be told about the next one, told once. Inside this handler
 		-- rather than beside it: a second registration under this event's key would have

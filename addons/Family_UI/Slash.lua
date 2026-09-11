@@ -906,15 +906,20 @@ local function scan(word)
 			-- Said every so often rather than every page: three and a half thousand lines
 			-- is not progress, it is a chat frame nobody can use while it happens.
 			if state.pages and (state.done == 1 or state.done % 25 == 0) then
-				Family:Print(L["  page %d of %d, %d price(s) known here"],
-					state.done, state.pages, Family.Auctions:PriceCount())
+				-- **Taken first, known second.** *Known* is how many items this market
+				-- has any price for and barely moves on a realm somebody has browsed;
+				-- *taken* is what these pages actually gave up, and it is the figure that
+				-- says whether the walk is moving at all.
+				Family:Print(L["  page %d of %d, %d price(s) taken, %d known here"],
+					state.done, state.pages, state.kept or 0,
+					Family.Auctions:PriceCount())
 			end
 			return
 		end
 
 		if what == "finished" then
-			Family:Print(L["read the whole house: %d page(s), %d price(s) known here"],
-				state.done or 0, Family.Auctions:PriceCount())
+			Family:Print(L["read the whole house: %d page(s), %d price(s) taken, %d known here"],
+				state.done or 0, state.kept or 0, Family.Auctions:PriceCount())
 			return
 		end
 
