@@ -67,9 +67,13 @@ picks itself up where it left off.
 - **It never gives a total on its own** — how much came from auction prices, how much from vendor
   prices, and how many things it had no price for at all.
 
-- **An item's tooltip says how many of the ones your family holds are soulbound**, in the game's
-  own word — which is something no other addon can tell you about a character you are not
-  playing.
+- **An item's tooltip says which of your *other* characters' copies are soulbound**, in the game's
+  own word — something no other addon can tell you, because their copy is not on this machine. For
+  the character you are playing the game already says it, and Family does not repeat it.
+
+- **Your own gear and bags are described by the slot they are in**, so a shield you wore once
+  reads *Soulbound* on Family's page exactly as it does in your bag, instead of *binds when
+  equipped*.
 
 - **Soulbound things are valued at what a vendor pays, never at the auction house.** What is on
   sale there is the unbound version of an item: a sword you have worn cannot be listed at any

@@ -329,6 +329,9 @@ function frameMethods:SetOwner() end
 function frameMethods:SetBagItem(bag, slot)
 	CHARGE_ASKED = CHARGE_ASKED + 1
 	wipe(self.__lines)
+	-- Recorded like the other setters, so the tooltip path can be asked which of its four ways
+	-- a row was drawn by. The charge lines below still decide what is *on* it.
+	self.__shownAs = { kind = "bagslot", id = tostring(bag) .. ":" .. tostring(slot) }
 
 	local lines = CHARGE_LINES[tostring(bag) .. ":" .. tostring(slot)] or {}
 	for index = 1, 12 do
@@ -380,6 +383,15 @@ KNOWN_SPELLS = {}
 function IsSpellKnown(spellID) return KNOWN_SPELLS[spellID] == true end
 
 ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
+
+-- A slot on the player's own body, which is how a worn piece is described where this client is
+-- the one wearing it. Recorded the way the other setters are, so the tooltip path can be asked
+-- which of its four ways a row was drawn by.
+function frameMethods:SetInventoryItem(unit, slot)
+	wipe(self.__lines)
+	self.__shownAs = { kind = "wornslot", id = slot }
+	table.insert(self.__lines, { "Worn " .. tostring(unit) .. ":" .. tostring(slot) })
+end
 
 function frameMethods:SetItemByID(id)
 	wipe(self.__lines)
@@ -4649,9 +4661,32 @@ do
 		local held = _G.ITEM_SOULBOUND
 		_G.ITEM_SOULBOUND = "Soulbound"
 
+		-- **Not on the row of the character being played.** The tooltip above the block has
+		-- already described that copy, through the slot this client is holding, which is what
+		-- makes it read *Soulbound* rather than *binds when equipped* - so saying it again is
+		-- the same fact twice on one tooltip.
+		check("nothing is said about binding on the row of the character being played",
+			Family.UI:HeldWhere({ key = Family:CurrentMember(), worn = 1, bound = 1,
+				total = 1 }):find("Soulbound", 1, true) == nil,
+			Family.UI:HeldWhere({ key = Family:CurrentMember(), worn = 1, bound = 1,
+				total = 1 }))
+
 		local some = Family.UI:HeldWhere({ bags = 3, bound = 1, total = 3 })
 		check("and it says how many of them are bound",
 			some:find("1 Soulbound", 1, true) ~= nil, some)
+
+		-- **Outside the bracket, not in the list of places.** Inside it, *1 (1 equipped,
+		-- 1 Soulbound)* reads as two things when it is one helm described twice - reported
+		-- the hour it shipped. The bracket lists where things are; bound is not a where.
+		check("and says it outside the list of places, which it is not one of",
+			some:find("Soulbound", 1, true) > some:find(")", 1, true), some)
+
+		-- **All of them bound is said in the word alone**, because *1 Soulbound* beside a
+		-- total of 1 is the same number twice over.
+		local all = Family.UI:HeldWhere({ worn = 1, bound = 1, total = 1 })
+		check("while all of them bound needs no number beside the word",
+			all:find("Soulbound", 1, true) ~= nil
+				and all:find("1 Soulbound", 1, true) == nil, all)
 
 		-- Said in the game's own word, so it reads as the tooltip beside it does (§2.1).
 		_G.ITEM_SOULBOUND = "Seelengebunden"
@@ -8142,8 +8177,14 @@ check("and a talent in a tree is described by the game, not by Family",
 
 Family.UI:ShowTab("contents")
 shownAs = hoverRow(function(f) return f.itemID ~= nil end)
-check("hovering a possession opens its item tooltip",
-	shownAs and shownAs.kind == "item", shownAs and shownAs.kind)
+-- **Described by the game, in whichever of its four ways fits the row.** This asked for "item"
+-- alone when an id was the only thing a possession row had; a slot this client is holding is now
+-- asked about as a slot, which is the same claim - the game describes it and Family does not -
+-- made more precisely. Which row gets which is checked where the rows are drawn.
+check("hovering a possession opens the game's own tooltip for it",
+	shownAs and (shownAs.kind == "item" or shownAs.kind == "itemlink"
+		or shownAs.kind == "bagslot" or shownAs.kind == "wornslot"),
+	shownAs and shownAs.kind)
 
 -- Searching the whole family rather than one member. Two different questions - "what is this
 -- member carrying" and "who has one of these" - and the second wants a name against every
@@ -9083,6 +9124,65 @@ print("clicking a Bags row opens that character's possessions")
 				slotButton = f
 				break
 			end
+		end
+
+		-- **And what is on this character's own back is asked about through the body.**
+		-- Reported from play 2026-09-11: a worn bind-on-equip helm read *Binds when equipped*
+		-- on Family's page while the shield beside it in the bag read *Soulbound*, because
+		-- one was described by its slot and the other by a link. The block packs the worn
+		-- pieces into a dense row, so the slot they are really in has to travel with them.
+		do
+			-- **Worn in two slots with a gap before them**, so the place in the drawn row
+			-- and the slot it is really in cannot agree by accident: index 1 is slot 5.
+			-- A fixture whose first piece sits in slot 1 says nothing about the difference,
+			-- and the mutation that draws the row's position instead walked straight
+			-- through it.
+			local heldNow = payload.equipment
+			payload.equipment = { worn = { [5] = { id = 4001, itemLevel = 60 },
+				[16] = { id = 4002, itemLevel = 60 } } }
+			Family.UI:ShowContentsFor(me)
+
+			local wornButton
+			for _, f in ipairs(frames) do
+				if f.__shown ~= false and f.__familyTooltip and f.itemID
+					and type(f.block) == "table" and f.block.where == "equipped" then
+					wornButton = f
+					break
+				end
+			end
+
+			check("a worn piece of this client's own is asked about through the body",
+				wornButton and (wornButton.__familyTooltip(wornButton)) == "wornslot",
+				wornButton and tostring((wornButton.__familyTooltip(wornButton)))
+					or "no worn button drawn")
+			-- **The slot it is really worn in, not the place in the row it was drawn at.**
+			-- The block packs the pieces dense so it reads as a row of things rather than a
+			-- paper doll full of holes, so the two numbers differ as soon as a character is
+			-- missing anything - and pointing a tooltip at the drawn position would describe
+			-- whatever happens to be worn at that number instead.
+			local wornPayload = (Family.Database:Payload(me) or {}).equipment
+			local reallyAt = wornButton
+				and select(2, wornButton.__familyTooltip(wornButton))
+			local piece = reallyAt and wornPayload and wornPayload.worn
+				and wornPayload.worn[reallyAt]
+
+			check("and by the slot it is really worn in, not the place it was drawn at",
+				reallyAt == 5 and piece and piece.id == wornButton.itemID,
+				tostring(reallyAt) .. " holds " .. tostring(piece and piece.id)
+					.. ", drawn for " .. tostring(wornButton and wornButton.itemID))
+
+			-- **And a brother's gear is not.** There is no body on this machine wearing it,
+			-- and asking about slot 5 would describe this player's own chest instead.
+			if wornButton then
+				local theirs = wornButton.__familyTooltip({
+					memberKey = "Somebody-Else", itemID = wornButton.itemID,
+					invSlot = 5, block = { where = "equipped" },
+				})
+				check("while another member's worn gear is described, not asked about",
+					theirs ~= "wornslot", tostring(theirs))
+			end
+
+			payload.equipment = heldNow
 		end
 
 		check("a bag slot of this client's own is asked about as a slot",

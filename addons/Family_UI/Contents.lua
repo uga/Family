@@ -174,7 +174,13 @@ local function containersOf(payload, meta)
 		table.sort(order)
 
 		for index, slot in ipairs(order) do
-			slots[index] = { id = worn[slot].id, count = 1, item = worn[slot].item }
+			-- **The slot it is really in travels with it.** The row is packed dense so the
+			-- block reads as a row of things rather than as a paper doll with holes in it -
+			-- and without the real number there is nothing to point a tooltip at, which is
+			-- what left a worn helm described by a link while the shield beside it in the
+			-- bag was described by its slot.
+			slots[index] = { id = worn[slot].id, count = 1, item = worn[slot].item,
+				invSlot = slot }
 		end
 
 		if #order > 0 then
@@ -650,10 +656,19 @@ local function build(frame)
 			-- the bank's own bags are addressable while its window is open and not after
 			-- (`openContainer` below draws the same line).
 			local block = self.block
-			if block and self.memberKey == Family:CurrentMember() and self.slotIndex
-				and block.bag and (block.where == "bags"
+			local mine = self.memberKey == Family:CurrentMember()
+
+			if block and mine and self.slotIndex and block.bag
+				and (block.where == "bags"
 					or (block.where == "bank" and Family.Bank:IsOpen())) then
 				return "bagslot", block.bag .. ":" .. self.slotIndex
+			end
+
+			-- **And what is on this character's own back**, which is reached by the body
+			-- rather than by a container. A worn bind-on-equip piece is bound and its link
+			-- still says *binds when equipped*, which is the game describing the item.
+			if block and mine and block.where == "equipped" and self.invSlot then
+				return "wornslot", self.invSlot
 			end
 
 			if self.itemLink then return "itemlink", self.itemLink end
@@ -1264,6 +1279,7 @@ local function build(frame)
 
 				button.block = container
 				button.slotIndex = slot
+				button.invSlot = item and item.invSlot or nil
 				button.memberKey = member.key
 				button.itemID = item and item.id or nil
 				button.itemLink = item and item.item or nil

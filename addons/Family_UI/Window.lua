@@ -1200,17 +1200,43 @@ function UI:HeldWhere(owner)
 	-- more than repairing the link would be: this reaches a brother's shield too, where there
 	-- is no slot on this machine to ask about at all.
 	--
-	-- In the game's own word rather than one of ours (§2.1), so it reads as the tooltip beside
-	-- it does, in whatever language the client is running.
-	if (owner.bound or 0) > 0 then
-		parts[#parts + 1] = string.format("%d %s", owner.bound,
-			Family:GameWord("ITEM_SOULBOUND", "Soulbound"))
-	end
-
 	local where = table.concat(parts, ", ")
 	if where == "" then return "" end
 
-	return string.format("|cffffd700%d|r |cffb0b0b0(%s)|r", owner.total or 0, where)
+	local said = string.format("|cffffd700%d|r |cffb0b0b0(%s)|r", owner.total or 0, where)
+
+	-- **And how many of them are bound, outside that list rather than in it.**
+	--
+	-- Inside it, *1 (1 equipped, 1 Soulbound)* reads as two things - one worn and one bound -
+	-- when it is one helm described twice. Reported the hour it shipped, and rightly: the list
+	-- in the bracket is a list of **places**, and bound is not a place, it is something true
+	-- of some of what is in them.
+	--
+	-- **And the count is dropped where it is all of them**, because *1 Soulbound* beside a
+	-- total of 1 is the same number said twice. What is left is the word, which reads as the
+	-- qualifier it is.
+	--
+	-- In the game's own word rather than one of ours (§2.1), so it reads as the tooltip above
+	-- it does, in whatever language the client is running.
+	-- **Not on your own row**, where the game has already said it: the tooltip above this
+	-- block describes the copy under the pointer, and for a character you are playing that is
+	-- a slot this client can be asked about - which is what now makes it read *Soulbound*
+	-- rather than *binds when equipped*. Saying it twice on the same tooltip is noise, and
+	-- Alberto said so the hour it shipped.
+	--
+	-- **And on everybody else's, where nothing else can.** A brother's shield is not on this
+	-- machine; no tooltip anywhere will say whether his copy has bound, and if it has then it
+	-- is worth what a vendor pays rather than what the auction house is asking. Without this
+	-- line that difference appears in the figure and nowhere in the words.
+	local bound = (owner.key ~= Family:CurrentMember()) and (owner.bound or 0) or 0
+	if bound > 0 then
+		local word = Family:GameWord("ITEM_SOULBOUND", "Soulbound")
+		said = said .. (bound >= (owner.total or 0)
+			and string.format(" |cff9d9d9d%s|r", word)
+			or string.format(" |cff9d9d9d%d %s|r", bound, word))
+	end
+
+	return said
 end
 
 --------------------------------------------------------------------------------------------

@@ -843,6 +843,13 @@ local SHOW = {
 		Family:TryCall(GameTooltip.SetBagItem, GameTooltip, tonumber(bag), tonumber(slot))
 	end,
 
+	-- A slot on this character's own body, for the same reason the bag slot exists: a worn
+	-- bind-on-equip piece is bound, and its link goes on saying *binds when equipped* because
+	-- that is a fact about the item rather than about the one on somebody's back.
+	wornslot = function(slot)
+		Family:TryCall(GameTooltip.SetInventoryItem, GameTooltip, "player", tonumber(slot))
+	end,
+
 	spell = function(id)
 		Family:TryCall(GameTooltip.SetSpellByID, GameTooltip, id)
 		if not wroteAnything() then
