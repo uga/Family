@@ -237,11 +237,16 @@ they were playing in.
 
 ## 5. Possessions
 
-One member's bags, bank, mailbox, auctions and guild bank, drawn as the containers themselves.
+One member's gear, bags, bank, mailbox, auctions and guild bank, drawn as the containers
+themselves.
 Where a thing sits in a bag is information — the potions are together, the third bag is the one
 that is full — and a sorted list throws all of it away.
 
 ![Possessions: the containers themselves, one bag hovered for its tooltip](images/possessions.png)
+
+**What they are wearing comes first**, as a block of its own — it is on the character rather
+than in anything they carry. It counts as theirs everywhere else too: hover a sword one character
+has in the bank and another has on their back, and Family says *2*, one bank and one equipped.
 
 Each container is one row: the **bag itself first**, then its slots. Hovering the bag says
 which bag it is, how full it is, and whether anything else will fit in it — a quiver's free

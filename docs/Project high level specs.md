@@ -409,8 +409,18 @@ A specialisation that has never been visited has nothing recorded for it, and is
 such rather than drawn as an empty tree (§2.2).
 
 **What a member's possessions come to** is said on their own page, under the line saying how
-current each part of the list is. The perimeter is bags, bank, unexpired mail and live auctions -
-not the guild bank, which belongs to the guild, and not the keyring, which is worth nothing.
+current each part of the list is. The perimeter is bags, bank, unexpired mail, live auctions and
+**what they are wearing** - not the guild bank, which belongs to the guild, and not the keyring,
+which is worth nothing.
+
+Worn gear is part of what somebody has, on the page and in the figure alike. It is drawn as its
+own block, first, because it is on the character rather than in anything they carry; it is counted
+on an item's tooltip as *equipped*, named last among the places because everything before it is
+somewhere a reader could go and pick one up; and it counts towards the figure, because a total
+printed under a page that draws the gear and then ignores it is incoherent with the page it sits
+on. Equipment remains its own **sharing** category (§6) - what a friend is wearing and what a
+friend owns are different things to show - and nothing in the counting needs to know that: a
+sibling contributes whichever of the two they granted.
 
 Each item is valued at what the auction house was last seen asking, and where there is none, at
 what a vendor pays; the client states a sell price for nearly everything, so the second lane is

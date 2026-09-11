@@ -4542,6 +4542,67 @@ check("and each owner's line totals what they have before breaking it down",
 		and ownedLine:find("(", 1, true) ~= nil, tostring(ownedLine))
 check("an item nobody owns gets nothing at all", tooltipFor(999111) == false)
 
+-- **What somebody is wearing is something the family has.**
+--
+-- Asked for 2026-09-11 in exactly this shape: a sword in one character's bank and on another
+-- character's back should read *2*, one bank and one equipped. It was recorded per slot by
+-- `Character:ReadEquipment` from the beginning and counted by nothing, so *who has one of these*
+-- - the whole question an item tooltip is asked - had been answered wrongly all along.
+do
+	local SWORD = 871
+
+	Family.Database:SetMeta("Banker-FireMaw", { name = "Banker", realm = "FireMaw",
+		faction = "Alliance", classFile = "MAGE", level = 60 })
+	Family.Database:SetPayload("Banker-FireMaw",
+		{ bank = { containers = { [1] = { slots = { { id = SWORD, count = 1 } } } } } })
+
+	Family.Database:SetMeta("Wearer-FireMaw", { name = "Wearer", realm = "FireMaw",
+		faction = "Alliance", classFile = "WARRIOR", level = 60 })
+	Family.Database:SetPayload("Wearer-FireMaw",
+		{ equipment = { worn = { [16] = { id = SWORD, itemLevel = 60 } } } })
+
+	Family.Index:Invalidate()
+	local owners = Family.Index:Owners(SWORD)
+
+	local byName = {}
+	for _, owner in ipairs(owners) do byName[owner.name] = owner end
+
+	check("an item on somebody's back counts as one the family has",
+		byName.Wearer and byName.Wearer.worn == 1 and byName.Wearer.total == 1,
+		byName.Wearer and tostring(byName.Wearer.total) or "not an owner at all")
+	check("and the family's total counts it beside the one in the bank",
+		(Family.Index:Total(SWORD)) == 2, tostring((Family.Index:Total(SWORD))))
+
+	-- The line each of them gets, which is the thing that was asked for in words.
+	check("with each line saying where their one is",
+		Family.UI:HeldWhere(byName.Wearer):find("1 equipped", 1, true) ~= nil
+			and Family.UI:HeldWhere(byName.Banker):find("1 bank", 1, true) ~= nil,
+		Family.UI:HeldWhere(byName.Wearer) .. " | " .. Family.UI:HeldWhere(byName.Banker))
+
+	-- **Equipped is named last** among the places, because everything before it is in a
+	-- container somebody can walk to and this one is on a character's back.
+	local both = Family.UI:HeldWhere({ bags = 1, worn = 1, total = 2 })
+	check("and equipped is named after the places a reader could go and look",
+		both:find("bags", 1, true) < both:find("equipped", 1, true), both)
+
+	-- **And it is worth something.** Alberto's call 2026-09-11, asked as a question before it
+	-- was built: the panel draws the gear, so a total on that same page that ignored it would
+	-- be incoherent with what is drawn above it.
+	FamilyDB.sellPrices = FamilyDB.sellPrices or {}
+	FamilyDB.sellPrices[SWORD] = 5000
+	Family.Index:Invalidate()
+
+	local held = Family.Index:WorthOf("Wearer-FireMaw")
+	check("what a character is wearing counts towards what they are worth",
+		held and held.worth == 5000 and held.atVendor == 1,
+		held and tostring(held.worth) or "no row")
+
+	FamilyDB.sellPrices[SWORD] = nil
+	Family.Database:Forget("Banker-FireMaw")
+	Family.Database:Forget("Wearer-FireMaw")
+	Family.Index:Invalidate()
+end
+
 print()
 print("what everything is worth")
 
@@ -8707,6 +8768,47 @@ print("clicking a Bags row opens that character's possessions")
 		check("showing the character whose row was clicked",
 			Family.UI.__contentsShowing == who,
 			tostring(Family.UI.__contentsShowing) .. " vs " .. tostring(who))
+	end
+
+	-- **And what they are wearing is drawn there too**, asked for 2026-09-11. It was recorded
+	-- from the beginning and drawn nowhere: a page called possessions that leaves out the
+	-- sword on the character's own back is not a list of what they have.
+	do
+		local me = Family:CurrentMember()
+		local payload = Family.Database:Payload(me) or {}
+		local heldEquipment = payload.equipment
+
+		payload.equipment = { worn = { [16] = { id = 871, itemLevel = 60 },
+			[5] = { id = 2589, itemLevel = 12 } } }
+		local function blockKinds()
+			return table.concat(Family.UI.__contentsBlocks or {}, ",")
+		end
+
+		Family.UI:ShowTab("contents")
+		Family.UI:ShowContentsFor(me)
+		check("what a character is wearing is drawn on their possessions page",
+			blockKinds():find("equipped", 1, true) ~= nil, blockKinds())
+
+		-- **First**, because it is on the character rather than in anything they carry.
+		check("and it is drawn before the bags, being on them rather than in anything",
+			blockKinds():find("^equipped") ~= nil, blockKinds())
+
+		-- **An equipment record with nothing in it is not a block.** Not the same as having
+		-- no record at all (§2.2): a character can be scanned and be wearing nothing, and an
+		-- empty block would draw a heading over no slots.
+		payload.equipment = { worn = {} }
+		Family.UI:ShowContentsFor(me)
+		check("while a scanned character wearing nothing gets no block either",
+			blockKinds():find("equipped", 1, true) == nil, blockKinds())
+
+		-- Asked from both ends, because a block that is always there passes the check above
+		-- whatever the member happens to be wearing.
+		payload.equipment = nil
+		Family.UI:ShowContentsFor(me)
+		check("and a character wearing nothing gets no such block",
+			blockKinds():find("equipped", 1, true) == nil, blockKinds())
+
+		payload.equipment = heldEquipment
 	end
 
 	-- Put back where the next check expects it: this panel now remembers a member, and one

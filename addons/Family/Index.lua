@@ -34,7 +34,7 @@ local stale = {}    -- members whose part of the index is known to be wrong
 local function bucket(itemID, key)
 	entries[itemID] = entries[itemID] or {}
 	entries[itemID][key] = entries[itemID][key] or
-		{ bags = 0, bank = 0, mail = 0, auctions = 0 }
+		{ bags = 0, bank = 0, mail = 0, auctions = 0, worn = 0 }
 	return entries[itemID][key]
 end
 
@@ -75,6 +75,24 @@ local function addMember(key)
 
 	addContainers(key, payload.bags, "bags")
 	if payload.bank then addContainers(key, payload.bank.containers, "bank") end
+
+	-- **What they are wearing**, which `Character:ReadEquipment` has recorded per slot since
+	-- long before this and which nothing counted until 2026-09-11. An item on somebody's back
+	-- is one the family owns, and *who has one of these* - the whole question an item tooltip
+	-- is asked - was being answered wrongly by leaving it out.
+	--
+	-- One per slot, so two rings of the same id are two. Equipment is its own sharing category
+	-- (§6) because what somebody wears and what they own are different things to show a friend,
+	-- and nothing here has to know that: a sibling who granted one and not the other simply has
+	-- the payload they granted.
+	if payload.equipment then
+		for _, item in pairs(payload.equipment.worn or {}) do
+			if item.id then
+				local record = bucket(item.id, key)
+				record.worn = record.worn + 1
+			end
+		end
+	end
 
 	-- Only mail that has not run out. An attachment on a letter that expired is gone, and
 	-- pointing somebody at it would send them looking for something that is not there.
@@ -214,6 +232,7 @@ function Index:Owners(itemID)
 	local owners = {}
 	for key, record in pairs(entries[itemID] or {}) do
 		local total = record.bags + record.bank + record.mail + record.auctions
+			+ record.worn
 		if total > 0 then
 			local borrowed, link = nil, nil
 			if Family.Wide then borrowed, link = Family.Wide:Borrowed(key) end
@@ -233,6 +252,7 @@ function Index:Owners(itemID)
 				bank = record.bank,
 				mail = record.mail,
 				auctions = record.auctions,
+				worn = record.worn,
 				total = total,
 			}
 		end
@@ -364,6 +384,7 @@ function Index:Worth()
 	for itemID, holders in pairs(entries) do
 		for key, record in pairs(holders) do
 			local held = record.bags + record.bank + record.mail + record.auctions
+				+ record.worn
 
 			if held > 0 then
 				local row = rowFor(key)
@@ -434,6 +455,7 @@ function Index:WorthOfItem(itemID)
 
 	for key, record in pairs(holders) do
 		local held = record.bags + record.bank + record.mail + record.auctions
+			+ record.worn
 
 		if held > 0 then
 			local borrowed = Family.Wide and Family.Wide:Borrowed(key)

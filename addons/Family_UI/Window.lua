@@ -1164,6 +1164,12 @@ function UI:HeldWhere(owner)
 	if (owner.auctions or 0) > 0 then
 		parts[#parts + 1] = string.format(L["%d auction"], owner.auctions)
 	end
+	-- **Last, because it is the one nobody can go and fetch.** Everything before it is in a
+	-- container somewhere; this is on somebody's back, and a reader deciding where to get one
+	-- wants the ones they can pick up named first.
+	if (owner.worn or 0) > 0 then
+		parts[#parts + 1] = string.format(L["%d equipped"], owner.worn)
+	end
 
 	local where = table.concat(parts, ", ")
 	if where == "" then return "" end

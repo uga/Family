@@ -155,6 +155,37 @@ local function containersOf(payload, meta)
 		end
 	end
 
+	-- **What they are wearing, first**, because it is on the character rather than in anything
+	-- and it is the block a reader looking at somebody's page glances at before the bags.
+	--
+	-- Packed into a dense row rather than drawn at slot numbers: this panel draws pictures of
+	-- things, not a paper doll, and nineteen positions with six holes in them reads as a fault.
+	-- Two rings of one id are two slots, which is what a count of what the family holds needs.
+	--
+	-- **Its picture is a real worn item's**, taken from the client with `GetItemIcon` rather
+	-- than from a texture path written here: a path is the one thing in Family that cannot be
+	-- probed, and the fallback below would draw a suit of armour as a backpack, which is the
+	-- mistake the bank's own comment records. The chest where there is one, because it is the
+	-- piece that reads as a person, and otherwise whatever is worn first.
+	if payload and payload.equipment then
+		local worn = payload.equipment.worn or {}
+		local order, slots = {}, {}
+		for slot in pairs(worn) do order[#order + 1] = slot end
+		table.sort(order)
+
+		for index, slot in ipairs(order) do
+			slots[index] = { id = worn[slot].id, count = 1, item = worn[slot].item }
+		end
+
+		if #order > 0 then
+			local CHEST = _G.INVSLOT_CHEST or 5
+			local face = worn[CHEST] and worn[CHEST].id or worn[order[1]].id
+
+			blocks[#blocks + 1] = { where = "equipped", size = #order, slots = slots,
+				free = 0, itemID = face }
+		end
+	end
+
 	-- The carried bags first, then the keyring after them. The game numbers it below the
 	-- backpack, but nobody thinks of their keys as the first thing they carry: it is a
 	-- drawer at the end of the row, and it is drawn where it is thought of.
@@ -1120,7 +1151,17 @@ local function build(frame)
 		local LABEL = {
 			bags = "", bank = L["|cff88bbff(bank)|r"], mail = L["|cffff8040Mail|r"],
 			auctions = L["|cffffd700Auctions|r"], guild = L["|cff40c040Guild bank|r"],
+			equipped = L["|cffe6cc80Equipped|r"],
 		}
+
+		-- What was drawn and in what order, for the checks - the headings on this panel live
+		-- in each block's mouseover tooltip rather than on the screen, so there is nothing
+		-- visible to read them back from. `__contentsShowing` and `__cellStock` are the same
+		-- arrangement.
+		UI.__contentsBlocks = {}
+		for _, container in ipairs(drawn) do
+			UI.__contentsBlocks[#UI.__contentsBlocks + 1] = container.where
+		end
 
 		for index, container in ipairs(drawn) do
 			used = index
@@ -1156,6 +1197,8 @@ local function build(frame)
 				end
 			elseif container.where == "auctions" then
 				title = LABEL.auctions
+			elseif container.where == "equipped" then
+				title = LABEL.equipped
 			elseif container.where == "guild" then
 				title = string.format(L["%s |cff888888tab %d|r"], LABEL.guild,
 					container.bag or 0)

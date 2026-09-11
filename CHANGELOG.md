@@ -67,6 +67,15 @@ picks itself up where it left off.
 - **It never gives a total on its own** — how much came from auction prices, how much from vendor
   prices, and how many things it had no price for at all.
 
+### What a character is wearing counts as theirs
+
+- **Gear is part of possessions now.** Hover a sword one character keeps in the bank and another
+  wears, and Family says you have two of them — one in the bank, one equipped. It was always
+  recorded and never counted.
+
+- **It is drawn on the Possessions page**, first, as its own block, and it counts towards what
+  that character's things are worth.
+
 ### Reading the auction house
 
 - **`/family ah scan go` reads every page of the auction house** and remembers what everything is
