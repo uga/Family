@@ -1170,12 +1170,15 @@ add("ah", L["what this client offers on the auction house"], function(argument)
 	-- candidates, none of them confirmed anywhere in this repository, and the answer is what
 	-- they print rather than what they are called. Meaningful only with the window open.
 	--
-	-- Read 2026-09-11, both at a friendly auctioneer: on Mists `npc` answered *Auctioneer
-	-- Chilton / Alliance / true* and `target` said the same; on Classic Era `npc` answered
-	-- **nothing at all** and only `target` did. So whichever of these turns out to carry the
-	-- faction, `npc` is not a unit every client has - and neither reading settles the question,
-	-- because both auctioneers were one side's. What is still wanted is this same line read
-	-- standing at a goblin auctioneer, which is the only place the answer can differ.
+	-- Read on all three clients 2026-09-11, each at a friendly auctioneer. Burning Crusade and
+	-- Mists answer the same thing under both names - *Auctioneer Lympkin / Alliance / true*,
+	-- *Auctioneer Chilton / Alliance / true*. Classic Era answers under `target` alone and says
+	-- **nothing at all** for `npc`. So whichever of these turns out to carry the faction,
+	-- `target` is the one every client has.
+	--
+	-- And none of the three settles the question, because all three auctioneers were one side's.
+	-- What is still wanted is this same line read standing at a **goblin** auctioneer, which is
+	-- the only place the answer can differ.
 	for _, name in ipairs { "npc", "target" } do
 		Family:Print("    %-10s |cff888888%s / %s / %s|r", name,
 			tostring((Family:TryCall(UnitName, name))),

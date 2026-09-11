@@ -23,11 +23,11 @@
 -- house it is never there at all - so nothing is built, nothing is hidden, and no version
 -- number is consulted (§2.3).
 --
--- Measured 2026-09-11. On Classic Era all six controls are present as tables and
--- `AuctionFrameBrowse_Search` as a function; on Mists every one of them is **nil**, while
--- `QueryAuctionItems` and `CanSendAuctionQuery` are still `function` there - shells that answer
--- nought. So the call being there says nothing about the window being there, and it is the
--- window this hangs off.
+-- Measured on all three clients 2026-09-11. Classic Era and Burning Crusade answer identically:
+-- all six controls present as tables and `AuctionFrameBrowse_Search` as a function. On Mists
+-- every one of them is **nil**, while `QueryAuctionItems` and `CanSendAuctionQuery` are still
+-- `function` there - shells that answer nought. So the call being there says nothing about the
+-- window being there, and it is the window this hangs off.
 
 local _, UI = ...
 
