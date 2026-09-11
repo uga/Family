@@ -31788,10 +31788,30 @@ print("the button on the auction window")
 		end,
 	}
 
+	-- The control it sits beside, which is a button of the client's own with a size the client
+	-- gave it. Reported from play on Burning Crusade 2026-09-11: no button appeared at all, and
+	-- the first writing had anchored it to a corner of `AuctionFrameBrowse` - a container
+	-- nothing here had measured, whose corners are therefore not where they look.
+	_G.BrowseResetButton = CreateFrame("Frame", "BrowseResetButton", _G.AuctionFrameBrowse)
+
 	fire("AUCTION_HOUSE_SHOW")
 	local button = _G.FamilyReadHouseButton
 	check("and one is built on the window that is there",
 		button ~= nil and button.__parent == _G.AuctionFrameBrowse)
+
+	check("and it hangs off a control of the client's own, not a corner of the panel",
+		button and button.__anchoredTo and button.__anchoredTo[_G.BrowseResetButton] == true
+			and not (button.__anchoredTo[_G.AuctionFrameBrowse]),
+		button and tostring(button.__anchoredTo))
+
+	-- **Above the panel's own controls**, which is the claim - a button that is there and
+	-- covered reads exactly like one that was never built. Measured against a **sibling** and
+	-- not against the parent: a child is above its parent whatever anybody does, so comparing
+	-- with the panel passed with the raising taken out and proved nothing at all.
+	check("and it is drawn above the panel's own controls",
+		button and button:GetFrameLevel() > _G.BrowseResetButton:GetFrameLevel(),
+		button and (button:GetFrameLevel() .. " over "
+			.. _G.BrowseResetButton:GetFrameLevel()))
 
 	-- **Which argument is the page is not known**, which is the state a player who has just
 	-- logged in and walked to an auctioneer is in - and the state the read used to refuse in,

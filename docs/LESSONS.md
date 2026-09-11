@@ -2720,3 +2720,38 @@ the slot kills the second.
 **The general rule: a fixture that answers nothing by default makes every question about nothing
 unanswerable.** Where a stub's silence is its resting state, the code cannot be tested for
 handling silence — the harness has no way to say which silences were meant.
+
+---
+
+## L-073 — A corner of a frame nobody measured is not where it looks
+
+Reported from play on Burning Crusade 2026-09-11, with a screenshot of the browse panel: **no
+button at all.** It had shipped that morning with ten checks behind it, every one of them green.
+
+The button was anchored `BOTTOMLEFT` of `AuctionFrameBrowse` with a small offset. That frame is
+the panel's container, and nothing in this repository had ever read its size. A frame the client
+created with no size of its own has none - its bottom-left is its top-left - so the button was
+placed at a corner of the window rather than at the bottom of the panel, where the portrait, the
+money and the window's own edge all are.
+
+**Why the checks passed.** They asked whether a button was built, whose child it was, and what
+clicking it did - all of which were true and none of which is *where it is*. The harness has no
+layout engine, so a position it cannot compute is a position it cannot contradict; anchoring is
+the one part of a panel this gate cannot answer for, which makes it exactly the part to pin to
+something the client sized itself.
+
+**And the first repair carried the same hole.** A check written beside the fix compared the
+button's frame level with **its parent's** - and a child is above its parent whatever the code
+does, so it passed with the raising taken back out. Measured against a sibling it fails properly.
+That is L-071's shape a second time: a check that restates what is structurally true tests
+nothing.
+
+**What now catches it.** The button hangs off `BrowseResetButton`, a control the client gave a
+size and a place, with the container only as a fallback no measured client needs; and `/family ah`
+prints the button's size, its anchor and whether it is visible, so *not installed* and *drawn
+where nothing can be seen* stop being the same report. Two checks: it is anchored to a control of
+the client's own and not to a corner of the panel, and it sits above the panel's own controls.
+
+**The general rule: anchor to something the client sized, not to a corner of something you have
+never measured.** A container's corner is a guess wearing the clothes of a coordinate.
+

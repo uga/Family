@@ -1064,6 +1064,26 @@ add("ah", L["what this client offers on the auction house"], function(argument)
 		Family:Print("    %-26s |cff888888%s|r", name, type(_G[name]))
 	end
 
+	-- **And Family's own button on that window, which was reported missing.**
+	--
+	-- Two faults look identical from the player's chair - a build without it, and one where it
+	-- was drawn somewhere nothing can be seen - and this line tells them apart: absent says the
+	-- first, a size and a corner says the second.
+	local ours = _G.FamilyReadHouseButton
+	if type(ours) == "table" then
+		-- Composed rather than written into the format, because the format is a sentence
+		-- the moment it carries an English word and this file is where those are caught.
+		local point, _, _, x, y = Family:TryCall(ours.GetPoint, ours, 1)
+		Family:Print("    %-26s |cff888888%s|r", "FamilyReadHouseButton", table.concat({
+			tostring((Family:TryCall(ours.GetWidth, ours))),
+			tostring((Family:TryCall(ours.GetHeight, ours))),
+			tostring(point), tostring(x), tostring(y),
+			tostring((Family:TryCall(ours.IsVisible, ours))),
+		}, " / "))
+	else
+		Family:Print("    %-26s |cff888888%s|r", "FamilyReadHouseButton", type(ours))
+	end
+
 	-- **Asked here because this is where somebody lands when the prices are not showing.**
 	--
 	-- The switch ships off, and `FamilyDB` is one file per game version - so turning it on for

@@ -39,6 +39,17 @@ local L = Family.L
 local SEARCH = "BrowseSearchButton"
 local NEXT_PAGE = "BrowseNextPageButton"
 
+-- **What to sit beside.** Reported from play on Burning Crusade 2026-09-11: no button appeared
+-- on the browse panel at all. `AuctionFrameBrowse` is the panel's container and nothing here
+-- measured it before anchoring to a corner of it - a frame whose size has never been read is a
+-- frame whose corners are not where they look, and a button placed at one of them can be under
+-- the portrait, behind the money, or off the window entirely.
+--
+-- So it hangs off a **control**, which has a size because the client gave it one and which the
+-- player can see for themselves. Reset is the one with room beside it, and it is present as a
+-- table on both clients that have this window (measured on all three, 2026-09-11).
+local BESIDE = "BrowseResetButton"
+
 local button
 
 -- What the button is waiting for, or nothing. **One click starts one sequence**: a probe that
@@ -147,13 +158,33 @@ end
 local function build()
 	if button or type(_G.AuctionFrameBrowse) ~= "table" then return end
 
-	button = CreateFrame("Button", "FamilyReadHouseButton", _G.AuctionFrameBrowse,
-		"UIPanelButtonTemplate")
+	-- Through `TryCall`, because a template this client turns out not to have would otherwise
+	-- take the auction window down with it - and a window that will not open is a worse fault
+	-- than a button that is not there.
+	button = (Family:TryCall(CreateFrame, "Button", "FamilyReadHouseButton",
+		_G.AuctionFrameBrowse, "UIPanelButtonTemplate"))
+	if type(button) ~= "table" then
+		button = nil
+		return
+	end
+
 	button:SetSize(120, 22)
 
-	-- Under the browse list rather than over it: this window is full, and a button that covers
-	-- a row of somebody's search results is a button they resent.
-	button:SetPoint("BOTTOMLEFT", _G.AuctionFrameBrowse, "BOTTOMLEFT", 20, 14)
+	-- Beside Reset, which is a control with a size of its own rather than a corner of a
+	-- container nothing has measured. Falling back to the panel only where that control is
+	-- missing, which no client measured so far does.
+	local beside = _G[BESIDE]
+	if type(beside) == "table" then
+		button:SetPoint("LEFT", beside, "RIGHT", 8, 0)
+	else
+		button:SetPoint("TOPLEFT", _G.AuctionFrameBrowse, "TOPLEFT", 20, -80)
+	end
+
+	-- Above whatever the panel draws in that corner. A button that is there and covered reads
+	-- exactly like a button that was never built.
+	local level = tonumber((Family:TryCall(button.GetFrameLevel, button)))
+	if level then Family:TryCall(button.SetFrameLevel, button, level + 4) end
+
 	button:SetScript("OnClick", clicked)
 
 	UI:AttachTooltip(button, function()
