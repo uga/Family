@@ -106,6 +106,10 @@ picks itself up where it left off.
   it goes exactly as fast as the server answers, and everything it has already read is kept if you
   stop it or walk away.
 
+- **A button on the auction house window starts it**, so you never have to type anything. It
+  presses Search for you if you have not searched yet, and the same button stops the read. On
+  Mists of Pandaria there is no such window and no button — that version has no pages to walk.
+
 - **It says how long it has been going and roughly how long is left**, worked out from the pages
   it has already read rather than from a guess, so you can decide whether to wait for it.
 

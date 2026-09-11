@@ -32,5 +32,6 @@ Guild.lua
 Broker.lua
 Options.lua
 About.lua
+Auctions.lua
 Slash.lua
 

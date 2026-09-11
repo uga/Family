@@ -1999,7 +1999,7 @@ local UI_FILES = { "Window.lua", "MemberPicker.lua", "ChoicePicker.lua", "Member
 	"Summary.lua", "Talents.lua",
 	"Contents.lua", "Professions.lua", "Character.lua", "Quests.lua",
 	"Wide.lua", "Guild.lua",
-	"Broker.lua", "Options.lua", "About.lua", "Slash.lua" }
+	"Broker.lua", "Options.lua", "About.lua", "Auctions.lua", "Slash.lua" }
 
 for _, file in ipairs(UI_FILES) do
 	load("addons/Family_UI/" .. file, "Family_UI", UIPrivate)
@@ -31737,6 +31737,121 @@ print("how long a read of the auction house takes")
 	check("and a read stopped part way says how long that was",
 		tonumber(stopped:match("in (%d+) second")) ~= nil, stopped)
 
+	_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan
+	_G.GetNumAuctionItems = realNum
+end)()
+
+print()
+print("the button on the auction window")
+;(function()
+	-- **It presses the window's own buttons, and that is the whole point.** Family composes no
+	-- auction query - two of ours, one of which said `getAll = true` by accident, are what it
+	-- took to learn that - so the button presses Search, the client composes the query, Family
+	-- hears it through the hook it already has, and the walk replays it.
+	--
+	-- Measured on Classic Era 2026-09-11: all six controls of that window are present as
+	-- tables and `AuctionFrameBrowse_Search` as a function.
+
+	-- **Nothing is built where that window is not.** It belongs to an addon the client loads
+	-- on first opening an auction house, and on a build with the newer house it never appears
+	-- at all - so this is checked before the window is invented, when it is genuinely absent.
+	fire("AUCTION_HOUSE_SHOW")
+	check("no button is built where the auction window is not",
+		_G.FamilyReadHouseButton == nil, tostring(_G.FamilyReadHouseButton))
+
+	local realQuery, realCan, realNum = _G.QueryAuctionItems, _G.CanSendAuctionQuery,
+		_G.GetNumAuctionItems
+	_G.QueryAuctionItems = function() end
+	_G.CanSendAuctionQuery = function() return true end
+	_G.GetNumAuctionItems = function(which)
+		if which ~= "list" then return 0, 0 end
+		return 50, 200
+	end
+
+	_G.AuctionFrameBrowse = CreateFrame("Frame", "AuctionFrameBrowse", UIParent)
+
+	-- The client's own two buttons. Pressing Search is what makes the client send a query, so
+	-- these do that - the chain under test is press, client asks, Family hears, walk replays.
+	local pressed = { search = 0, page = 0 }
+	_G.BrowseSearchButton = {
+		IsEnabled = function() return true end,
+		Click = function()
+			pressed.search = pressed.search + 1
+			Family.Auctions.__sawQuery("wool", 0, 0, 0, false, -1, false, false, nil)
+		end,
+	}
+	_G.BrowseNextPageButton = {
+		IsEnabled = function() return true end,
+		Click = function()
+			pressed.page = pressed.page + 1
+			Family.Auctions.__sawQuery("wool", 0, 0, 1, false, -1, false, false, nil)
+		end,
+	}
+
+	fire("AUCTION_HOUSE_SHOW")
+	local button = _G.FamilyReadHouseButton
+	check("and one is built on the window that is there",
+		button ~= nil and button.__parent == _G.AuctionFrameBrowse)
+
+	-- **Which argument is the page is not known**, which is the state a player who has just
+	-- logged in and walked to an auctioneer is in - and the state the read used to refuse in,
+	-- telling them to run a probe.
+	local heldAt = FamilyDB.auctionPageAt
+	FamilyDB.auctionPageAt = nil
+
+	button.__scripts.OnClick(button)
+	check("one click presses the window's own Search, and sends nothing of Family's own",
+		pressed.search == 1 and pressed.page == 0 and Family.Auctions:Walking() == nil,
+		pressed.search .. " / " .. pressed.page)
+
+	-- **And a second click while it waits does nothing.** The auction house is the one place
+	-- in this addon where a doubled action costs somebody a disconnection, and a probe that
+	-- can be started twice is a probe that will be (L-070).
+	button.__scripts.OnClick(button)
+	check("while a second click changes nothing while it is waiting",
+		pressed.search == 1 and pressed.page == 0,
+		pressed.search .. " / " .. pressed.page)
+
+	fire("AUCTION_ITEM_LIST_UPDATE")
+	check("the answer to Search is not enough, so it presses Next as well",
+		pressed.page == 1 and Family.Auctions:Walking() == nil,
+		tostring(pressed.page))
+
+	-- Two queries of the client's own differing in one numeric place, which is the whole of
+	-- what says which argument the page is.
+	check("and two of the client's own queries are what taught it where the page sits",
+		FamilyDB.auctionPageAt == 4, tostring(FamilyDB.auctionPageAt))
+
+	fire("AUCTION_ITEM_LIST_UPDATE")
+	check("and then the read starts, without the player typing anything",
+		Family.Auctions:Walking() ~= nil)
+
+	-- **The same button stops it**, because a read somebody started by clicking is a read they
+	-- will want to stop by clicking.
+	button.__scripts.OnClick(button)
+	check("and the same button stops it", Family.Auctions:Walking() == nil)
+
+	-- **Walking away from the auctioneer clears a sequence that was still waiting.** Otherwise
+	-- the next visit finds the button locked by a press nobody remembers making.
+	-- **Walking away from the auctioneer frees a sequence that was still waiting**, or the next
+	-- visit finds the button locked by a press nobody remembers making. Shown by the click
+	-- after it doing something at all: a button still waiting ignores one, as the check above
+	-- this has just established.
+	FamilyDB.auctionPageAt = nil
+	local waiting = pressed.search
+	button.__scripts.OnClick(button)
+	check("a click with nothing known starts waiting again",
+		pressed.search == waiting + 1 and Family.Auctions:Walking() == nil,
+		tostring(pressed.search - waiting))
+
+	fire("AUCTION_HOUSE_CLOSED")
+	button.__scripts.OnClick(button)
+	check("and closing the window frees a button left waiting",
+		Family.Auctions:Walking() ~= nil)
+
+	Family.Auctions:StopWalk("asked")
+	Family.Auctions:TellNextList(nil)
+	FamilyDB.auctionPageAt = heldAt
 	_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan
 	_G.GetNumAuctionItems = realNum
 end)()

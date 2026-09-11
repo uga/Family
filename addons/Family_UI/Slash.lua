@@ -904,22 +904,20 @@ local function spanOf(seconds)
 	return string.format(L["%d minute(s)"], math.floor(seconds / 60 + 0.5))
 end
 
-local function scan(word)
-	if word == "stop" then
-		if not Family.Auctions:StopWalk("asked") then
-			Family:Print(L["nothing is being read"])
-		end
-		return
-	end
+-- **Started from two places**: this command, and the button on the auction window itself
+-- (Auctions.lua). The words live here whichever pressed it, because this is the file the
+-- translation gate reads and a sentence written anywhere else would be an English one wherever
+-- it was read (§2.1).
+function UI:StopHouseRead()
+	if Family.Auctions:StopWalk("asked") then return true end
+	Family:Print(L["nothing is being read"])
+	return false
+end
 
+function UI:StartHouseRead()
 	if Family.Auctions:Walking() then
 		Family:Print(L["%s - /family ah scan stop ends it"], WHY.running)
-		return
-	end
-
-	if word ~= "go" then
-		Family:Print(L["this reads every page of the auction house and takes a long time: /family ah scan go"])
-		return
+		return false, "running"
 	end
 
 	local ok, why = Family.Auctions:StartWalk(function(what, state, reason)
@@ -962,6 +960,22 @@ local function scan(word)
 	end)
 
 	if not ok then Family:Print(L["  refused: %s"], WHY[why] or tostring(why)) end
+	return ok, why
+end
+
+local function scan(word)
+	if word == "stop" then return UI:StopHouseRead() end
+
+	if word ~= "go" then
+		if Family.Auctions:Walking() then
+			Family:Print(L["%s - /family ah scan stop ends it"], WHY.running)
+		else
+			Family:Print(L["this reads every page of the auction house and takes a long time: /family ah scan go"])
+		end
+		return
+	end
+
+	UI:StartHouseRead()
 end
 
 -- **Watching the client ask, which should have been the first thing tried.**
@@ -1155,6 +1169,13 @@ add("ah", L["what this client offers on the auction house"], function(argument)
 	-- So the question is whether the client will say the auctioneer is neutral. These are
 	-- candidates, none of them confirmed anywhere in this repository, and the answer is what
 	-- they print rather than what they are called. Meaningful only with the window open.
+	--
+	-- Read 2026-09-11, both at a friendly auctioneer: on Mists `npc` answered *Auctioneer
+	-- Chilton / Alliance / true* and `target` said the same; on Classic Era `npc` answered
+	-- **nothing at all** and only `target` did. So whichever of these turns out to carry the
+	-- faction, `npc` is not a unit every client has - and neither reading settles the question,
+	-- because both auctioneers were one side's. What is still wanted is this same line read
+	-- standing at a goblin auctioneer, which is the only place the answer can differ.
 	for _, name in ipairs { "npc", "target" } do
 		Family:Print("    %-10s |cff888888%s / %s / %s|r", name,
 			tostring((Family:TryCall(UnitName, name))),
