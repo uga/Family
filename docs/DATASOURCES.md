@@ -1096,6 +1096,18 @@ So a full read there is `SendBrowseQuery` with nothing in it, then `RequestMoreB
 behaviour has not been read. Until it has, the page walk refuses on that build **and says which
 house it is looking at**, rather than reporting a query that will never arrive.
 
+**And the shape of that query is read the same way the older one was**: `/family ah watch` hooks
+`C_AuctionHouse.SendBrowseQuery` as well, and prints the table the auction house itself passes when
+Search is pressed - a field at a time, one level deep, with a list saying how many are in it. A
+table cannot go wrong the way a row of arguments did (L-071), but the field names are exactly as
+much hearsay, and one wrong name is a query that searches for something nobody asked about.
+
+The description of it found a fault in its own first writing, worth recording because it is a Lua
+trap rather than a WoW one: fetching a value with `t[k] ~= nil and t[k] or fallback` **loses every
+value that is `false`**, and `exactMatch` is false far more often than it is true. Looking a key up
+again by `tostring(key)` loses every numeric key as well. The check for it went red the first time
+it ran.
+
 #### The client asks for us, and that is the reading that costs nothing
 
 Written after the above and it should have come first. **The auction house calls

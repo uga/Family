@@ -223,6 +223,7 @@ Family.locales.deDE = {
 	["what a profession button is holding when you click it"] = "was eine Berufsschaltfläche beim Klicken enthält",
 	["click a profession on the professions page: the next click will say what its button held"] = "klicke auf einen Beruf auf der Berufe-Seite: der nächste Klick sagt, was seine Schaltfläche enthielt",
 	["a query sent %d second(s) ago has not answered yet - nothing more is sent"] = "eine vor %d Sekunde(n) gesendete Abfrage hat noch nicht geantwortet - es wird nichts weiter gesendet",
+	["  the client browsed with %d field(s):"] = "  der Client suchte mit %d Feld(ern):",
 	["  the client asked with %d argument(s):"] = "  der Client fragte mit %d Argument(en):",
 	["press Search on the auction house: the next query the client sends will be printed"] = "drücke Suchen im Auktionshaus: die nächste Abfrage des Clients wird ausgegeben",
 	["  asking for page %d, the client's own query with the page changed"] = "  frage Seite %d ab, die eigene Abfrage des Clients mit geänderter Seite",

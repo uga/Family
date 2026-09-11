@@ -223,6 +223,7 @@ Family.locales.esES = {
 	["what a profession button is holding when you click it"] = "qué contiene el botón de una profesión al pulsarlo",
 	["click a profession on the professions page: the next click will say what its button held"] = "pulsa una profesión en la página de profesiones: la próxima pulsación dirá qué contenía su botón",
 	["a query sent %d second(s) ago has not answered yet - nothing more is sent"] = "una consulta enviada hace %d segundo(s) aún no ha respondido - no se envía nada más",
+	["  the client browsed with %d field(s):"] = "  el cliente buscó con %d campo(s):",
 	["  the client asked with %d argument(s):"] = "  el cliente preguntó con %d argumento(s):",
 	["press Search on the auction house: the next query the client sends will be printed"] = "pulsa Buscar en la casa de subastas: se imprimirá la próxima consulta que envíe el cliente",
 	["  asking for page %d, the client's own query with the page changed"] = "  pidiendo la página %d, la propia consulta del cliente con la página cambiada",

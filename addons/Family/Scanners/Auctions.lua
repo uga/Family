@@ -900,6 +900,75 @@ end
 
 Auctions.__walkHeard = walkHeard
 
+-- **And the newer house's own query, watched the same way.**
+--
+-- Mists does not call `QueryAuctionItems` at all - measured 2026-09-11, the watcher was armed and
+-- stayed silent - and its house has no pages: one row per item with a count beside it, five
+-- hundred rows to a browse. Its full read is the same shape as the old one all the same, which is
+-- *replay what the client asked for*: `SendBrowseQuery` with whatever the auction house itself
+-- passes, and then more results asked for until it says there are no more.
+--
+-- **What is in that query is not written down here and is not going to be guessed.** It is a
+-- table rather than a row of arguments, so the argument-order trap of L-071 cannot happen - but
+-- the field names are exactly as much hearsay, and one wrong one is a query that searches for
+-- something nobody asked about.
+local tellNextBrowse
+local lastBrowse
+
+function Auctions:TellNextBrowse(fn)
+	tellNextBrowse = type(fn) == "function" and fn or nil
+end
+
+function Auctions:LastBrowse()
+	return lastBrowse
+end
+
+-- The table the client passed, described a field at a time. One level deep and no further: the
+-- sorts and the filters are lists of tables, and saying how many are in each is what a reader
+-- needs to know that they are there at all.
+local function describe(query)
+	local rows = {}
+	if type(query) ~= "table" then
+		rows[#rows + 1] = { "-", type(query) }
+		return rows
+	end
+
+	-- **The keys themselves, not their names.** Looking a value up again by `tostring(key)`
+	-- loses every numeric key, and fetching it through `a ~= nil and a or b` loses every value
+	-- that is `false` - which on this query is `exactMatch`, a field that is false far more
+	-- often than it is true. The check for it went red on the first writing.
+	local keys = {}
+	for key in pairs(query) do keys[#keys + 1] = key end
+	table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
+
+	for _, key in ipairs(keys) do
+		local value = query[key]
+		if type(value) == "table" then
+			local count = 0
+			for _ in pairs(value) do count = count + 1 end
+			rows[#rows + 1] = { tostring(key), "{" .. count .. "}" }
+		else
+			rows[#rows + 1] = { tostring(key), tostring(value) }
+		end
+	end
+
+	return rows
+end
+
+Auctions.__describeBrowse = describe
+
+local function sawBrowse(query)
+	lastBrowse = query
+
+	if not tellNextBrowse then return end
+
+	local told = tellNextBrowse
+	tellNextBrowse = nil
+	Family:TryCall(told, describe(query))
+end
+
+Auctions.__sawBrowse = sawBrowse
+
 -- **The client's own call, with the page changed and nothing else.**
 --
 -- This is the whole of what a page walk is allowed to send. Every argument is one the auction
@@ -1051,6 +1120,13 @@ Family:OnDatabaseReady("auctions", function()
 		Family:TryCall(_G.hooksecurefunc, "QueryAuctionItems", sawQuery)
 	else
 		Family:Debug("no way to watch auction queries on this client")
+	end
+
+	-- The same, for the house that has no pages. A table method rather than a global, which
+	-- `hooksecurefunc` takes as its first two arguments.
+	if type(_G.hooksecurefunc) == "function" and _G.C_AuctionHouse
+		and type(C_AuctionHouse.SendBrowseQuery) == "function" then
+		Family:TryCall(_G.hooksecurefunc, C_AuctionHouse, "SendBrowseQuery", sawBrowse)
 	end
 
 	if type(_G.hooksecurefunc) == "function" and type(_G.PlaceAuctionBid) == "function" then

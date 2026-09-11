@@ -223,6 +223,7 @@ Family.locales.ruRU = {
 	["what a profession button is holding when you click it"] = "что содержит кнопка профессии в момент нажатия",
 	["click a profession on the professions page: the next click will say what its button held"] = "нажми на профессию на странице профессий: следующее нажатие скажет, что содержала её кнопка",
 	["a query sent %d second(s) ago has not answered yet - nothing more is sent"] = "запрос, отправленный %d секунд(ы) назад, ещё не ответил - больше ничего не отправляется",
+	["  the client browsed with %d field(s):"] = "  клиент искал с %d полем(ями):",
 	["  the client asked with %d argument(s):"] = "  клиент запросил с %d аргументом(ами):",
 	["press Search on the auction house: the next query the client sends will be printed"] = "нажми «Поиск» в аукционе: следующий запрос клиента будет напечатан",
 	["  asking for page %d, the client's own query with the page changed"] = "  запрашиваю страницу %d, собственный запрос клиента с изменённой страницей",

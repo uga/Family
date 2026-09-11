@@ -3482,6 +3482,12 @@ off a single ordinary search. Its full read is `SendBrowseQuery` then `RequestMo
 until `HasFullBrowseResults`, none of which has been read yet - so the walk refuses there and says
 which house it is looking at. DATASOURCES carries both readings.
 
+**Next step, built 2026-09-11:** `/family ah watch` now hooks that house's own `SendBrowseQuery`
+too and prints the table the client passes, field by field. The full read there is the same shape
+as the old one - replay what the client asked for - and the two things still unread are what that
+query holds and whether `RequestMoreBrowseResults` and `HasFullBrowseResults` behave as their names
+suggest. Presence is not behaviour, which this file has already measured twice on this build.
+
 **4. A panel for what everything is worth.** Over the index Family already keeps, so the arithmetic
 is a walk rather than a scan. It has to be honest the way the pet training line is: never a total
 that quietly leaves out what it has no price for.

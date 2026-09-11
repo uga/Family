@@ -8582,6 +8582,48 @@ do
 		seen and seen[2] == "nil" and seen[6] == "nil",
 		tostring(seen and seen[2]) .. " / " .. tostring(seen and seen[6]))
 
+	-- **And the newer house's own browse, watched the same way.**
+	--
+	-- Mists never calls `QueryAuctionItems`, so the hook above can never fire there. Its query
+	-- is a table rather than a row of arguments - which makes the argument-order trap of L-071
+	-- impossible and leaves the field names exactly as much hearsay, so they are read off the
+	-- client's own call and described rather than named here.
+	do
+		local described
+		Family.Auctions:TellNextBrowse(function(rows) described = rows end)
+		Family.Auctions.__sawBrowse({ searchString = "", exactMatch = false, minLevel = 0,
+			sorts = { {}, {} }, filters = {} })
+
+		local said = {}
+		for _, pair in ipairs(described or {}) do said[pair[1]] = pair[2] end
+
+		check("the newer house's query is read back field by field",
+			said.searchString == "" and said.exactMatch == "false" and said.minLevel == "0",
+			tostring(said.searchString) .. " / " .. tostring(said.exactMatch))
+		-- One level deep: a list of sorts says how many, which is what tells a reader it is
+		-- there at all. Two levels would print a wall and settle nothing more.
+		check("and a field holding a list says how many are in it",
+			said.sorts == "{2}" and said.filters == "{0}",
+			tostring(said.sorts) .. " / " .. tostring(said.filters))
+
+		-- Kept, because the full read on that build is this same query asked again.
+		check("and the query itself is kept for replaying",
+			type(Family.Auctions:LastBrowse()) == "table",
+			type(Family.Auctions:LastBrowse()))
+
+		described = nil
+		Family.Auctions.__sawBrowse({ searchString = "copper" })
+		check("while it is told once, like the other house's",
+			described == nil, tostring(described))
+
+		-- A client that hands over something that is not a table says so rather than throwing.
+		Family.Auctions:TellNextBrowse(function(rows) described = rows end)
+		Family.Auctions.__sawBrowse(nil)
+		check("and a browse with no query at all is described rather than thrown over",
+			described and described[1] and described[1][2] == "nil",
+			described and tostring(described[1] and described[1][2]) or "nothing")
+	end
+
 	-- **A query that ends in nothing is the case that separates the two readings.** A table's
 	-- length stops at the last thing in it, so counting that way loses a trailing nil - and the
 	-- short layout ends in one, which is `filterData`. Counted from the table this call is eight

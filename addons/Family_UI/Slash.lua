@@ -949,10 +949,18 @@ local function watchOne()
 		end
 	end)
 
-	-- Said before the waiting rather than after it: on the newer house this hook can never
-	-- fire, and an armed probe that stays silent forever reads as a broken probe.
+	-- **And the newer house's own query, where that is the house there is.** The old hook can
+	-- never fire on that build, so arming only it would leave a probe silent forever - which
+	-- reads as a broken probe rather than as a different auction house.
 	if _G.C_AuctionHouse and type(C_AuctionHouse.SendBrowseQuery) == "function" then
 		Family:Print(L["this build has the newer auction house, which has no pages to walk"])
+
+		Family.Auctions:TellNextBrowse(function(rows)
+			Family:Print(L["  the client browsed with %d field(s):"], #rows)
+			for _, pair in ipairs(rows) do
+				Family:Print("    %-22s |cff888888%s|r", pair[1], pair[2])
+			end
+		end)
 	end
 
 	Family:Print(L["press Search on the auction house: the next query the client sends will be printed"])
