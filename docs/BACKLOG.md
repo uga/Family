@@ -3868,3 +3868,37 @@ only honest way to confirm rows-per-page is to look at a full one.
 **And it is worth weighing before building.** With several groups on one page, *everything fits*
 is a property of the page rather than of a group, so a long block would stay open while a short one
 folds - which reads as arbitrary unless the page says why. Ten is a number a reader can learn.
+
+---
+
+## 65. The equipment block's picture: the character's own race and gender
+
+**Alberto's suggestion, 2026-09-11**, looking at the Equipped block on the possessions page: it
+currently wears the icon of a real worn piece - the chest where there is one - and it would read
+better as the character themselves. *In this case a male dwarf.*
+
+**And he is right that the client must already hold it**: icons do not travel from a server, so
+the picture is in the local files and is addressed by an id of some kind.
+
+**Family has the other half already.** `Identity.lua` records `raceFile`, `raceID` and
+`sex = UnitSex("player")` for every member, and they travel with the identity fields (`Wide.lua`
+`IDENTITY`), so a brother's race and gender are known too.
+
+**What is missing is how to address the picture, and there is a precedent for exactly this.** The
+class icons in `Character.lua` use `CLASS_ICON_TCOORDS` - a table the **client** provides, keyed
+by class file name, giving coordinates into `UI-CharacterCreate-Classes`. The rule written beside
+it is the one that matters here: *given up on rather than guessed at where the coordinates are
+missing, because a wrong corner of that file is a picture of somebody else's class.*
+
+**So the reading needed is one command.** `/family caps` now prints whether this client has
+`RACE_ICON_TCOORDS`, `RACE_ICON_TCOORDS_256`, `GetRaceAtlas` or `SetPortraitTexture` - none of
+which is confirmed anywhere in this repository - and, where a coordinate table is there, the first
+few of its **keys**, because a table keyed `DWARF` and one keyed `DWARF_MALE` are different
+features and only one of them can draw a gender.
+
+**Two things it will still not settle.** The sheet's own path is a texture, and a texture is the
+one thing in Family that cannot be probed - the client echoes back whatever string it was handed -
+so it goes through `tools/FamilyIconSheet` and a screenshot like every other one. And
+`SetPortraitTexture` only answers for a unit, which is this player and nobody else, so it can draw
+your own character and not a brother's - which would be a block that looks like a person on one
+page and like a breastplate on the next.

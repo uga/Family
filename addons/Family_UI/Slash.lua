@@ -1244,6 +1244,38 @@ add("caps", L["what this client can do, and how Family worked it out"], function
 		Family:Print("  %s  %-16s %s%s|r%s", mark, entry.feature, colour,
 			L[entry.source], note)
 	end
+
+	-- **What this client has for drawing a race**, asked because Alberto suggested the
+	-- equipment block wear the character's own race-and-gender picture and he is right that
+	-- the client must already hold it - icons do not travel from a server.
+	--
+	-- Family has the other half already: `Identity.lua` records `raceFile`, `raceID` and
+	-- `sex` for every member. What is missing is how to address the picture, and the class
+	-- icons say how that is done here - `CLASS_ICON_TCOORDS`, a table the **client** provides,
+	-- with `Character.lua` giving up rather than guessing where an entry is absent, because a
+	-- wrong corner of that file is a picture of somebody else's class.
+	--
+	-- These names are candidates and none of them is confirmed anywhere in this repository.
+	-- The answer is what is printed, not what they are called.
+	for _, name in ipairs { "CLASS_ICON_TCOORDS", "RACE_ICON_TCOORDS",
+		"RACE_ICON_TCOORDS_256", "GetRaceAtlas", "SetPortraitTexture" } do
+		Family:Print("    %-24s |cff888888%s|r", name, type(rawget(_G, name)))
+	end
+
+	-- And the shape of its keys, printed rather than named: a table keyed "DWARF" and one
+	-- keyed "DWARF_MALE" are different features, and only one of them can draw a gender.
+	local coords = rawget(_G, "RACE_ICON_TCOORDS")
+	if type(coords) == "table" then
+		local keys, shown = {}, 0
+		for key in pairs(coords) do keys[#keys + 1] = tostring(key) end
+		table.sort(keys)
+		for _, key in ipairs(keys) do
+			if shown < 6 then
+				shown = shown + 1
+				Family:Print("      %s", key)
+			end
+		end
+	end
 end)
 
 add("debug", L["narrate what the scanners are doing"], function()
