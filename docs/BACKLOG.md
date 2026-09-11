@@ -3749,3 +3749,50 @@ pointer is a frame Family did not draw and knows nothing about.
 be checked against the item, the line is not drawn. A missing line costs somebody a keypress; a
 count against the wrong item is a wrong number that reads exactly like a right one, and this project
 has already refused that trade once.
+
+---
+
+## 63. An auction price is a price for the unbound version
+
+**Reported 2026-09-11, by Alberto, and it is a correctness fault in the worth arithmetic rather
+than a feature.** Family values what a member holds at what the auction house was last seen
+asking. That figure is what somebody is charging for **an item nobody has bound yet**. A
+soulbound one cannot be sold there at all, at any price, and its only buyer is a vendor.
+
+**His own example, and it is the shape the fix has to fit.** Two of the same sword on one
+character, both bind-on-equip; one has been worn and one has not. The auction house says ten gold
+and a vendor says half a gold. The first is worth ten gold and the second is worth half a gold,
+and they share an item id.
+
+**Three cases, and only one of them is per-instance:**
+
+| what it is | sellable at auction | what says so |
+|---|---|---|
+| never binds — grey, white, materials, most trade goods | yes | the **item** |
+| bind on pickup — boss loot | never, so no auction price can exist for it either | the **item** |
+| bind on equip, not yet worn | yes | the item, and this instance |
+| bind on equip, already worn | no | only this instance |
+
+**And this week made the worst half worse.** Equipment went into the perimeter on 2026-09-11 and
+is valued at auction prices like everything else - and worn gear is the one category that is
+almost always bound. The figure went up on exactly the items where it should not have.
+
+**What has been built so far is the reading, not the fix.** `Family:BindingIn(bag, slot)` and
+`Family:BindingWorn(slot)` read the instance off its own tooltip, in the client's own words - the
+same machinery the charges reader uses, and for the same reason: a link describes the item and
+binding is not in a link. `/family bind` prints what this client has to say: the game's binding
+strings, whether `C_Item.IsBound` exists, what each worn piece answers, and **every return of
+`GetItemInfo` numbered from 9 to 15**, because which position carries the bind type is not written
+down anywhere in this repository and is not going to be guessed.
+
+**What the fix needs from that reading:** whether the bind type can be had from the item (cheap,
+one call, no tooltip) for the two cases that do not need the instance, so that a tooltip scan is
+spent only on bind-on-equip. Scanning every slot of every member would be a tooltip built for
+every item a family owns.
+
+**Where the answer has to live.** The index stores counts per member per item id, and this is a
+property of a slot rather than of an id - so either the scanners record it beside the item
+(`slots[n].bound = true`) the way charges already are, or the worth cannot tell the two swords
+apart. Recording it at scan time is also the only moment the instance is reachable at all: the
+tooltip can only be pointed at a bag the client is holding, so a sibling's sword can never be
+asked about and whatever was recorded when they scanned is all there will ever be.

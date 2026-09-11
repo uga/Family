@@ -361,6 +361,82 @@ local function chargesShown(aim)
 	return nil
 end
 
+-- Whether the thing the tooltip is pointed at is already bound, and how it binds
+--
+-- Asked for 2026-09-11, because the worth arithmetic was valuing soulbound gear at what the
+-- auction house is asking for the unbound version of it. A bind-on-equip sword in a bag can be
+-- sold there; the identical one on somebody's back cannot, and the difference is a property of
+-- **that instance** rather than of the item. Alberto's own example: two of the same sword on one
+-- character, one worn - ten gold and half a gold, same id.
+--
+-- **Read off the tooltip, because there is nowhere else.** `GetItemInfo` answers about the item
+-- and can say *this kind binds when equipped*; only the instance knows whether this one already
+-- has. The setter is the caller's for exactly the reason the charges reader gives above: a link
+-- describes the item, and binding is not in a link.
+--
+-- **The words are the game's own.** `ITEM_SOULBOUND` and its neighbours are whatever the client
+-- is running in, which is what makes this work on a German client without a table of German in
+-- it (§2.1). A client missing one of them simply never matches it.
+local BINDINGS = {
+	{ "soulbound", "ITEM_SOULBOUND", "Soulbound" },
+	{ "account", "ITEM_ACCOUNTBOUND", "Account Bound" },
+	{ "equip", "ITEM_BIND_ON_EQUIP", "Binds when equipped" },
+	{ "pickup", "ITEM_BIND_ON_PICKUP", "Binds when picked up" },
+	{ "use", "ITEM_BIND_ON_USE", "Binds when used" },
+	{ "quest", "ITEM_BIND_QUEST", "Quest Item" },
+}
+
+local function bindingShown(aim)
+	local tip = scanTooltip()
+	if not tip then return nil end
+
+	Family:TryCall(tip.SetOwner, tip, _G.UIParent, "ANCHOR_NONE")
+	aim(tip)
+
+	local lines = tonumber((Family:TryCall(tip.NumLines, tip))) or 0
+
+	for index = 1, lines do
+		local line = _G[SCAN_TOOLTIP .. "TextLeft" .. index]
+		local text = line and Family:TryCall(line.GetText, line)
+
+		if type(text) == "string" then
+			for _, row in ipairs(BINDINGS) do
+				local word = rawget(_G, row[2])
+				-- Compared whole rather than searched for: "Binds when equipped" contains
+				-- no other binding's words, but a language where one is a prefix of another
+				-- would file every bind-on-use item as bind-on-equip.
+				if type(word) == "string" and word ~= ""
+					and text:gsub("^%s+", ""):gsub("%s+$", "") == word then
+					return row[1]
+				end
+			end
+		end
+	end
+
+	return nil
+end
+
+-- A slot in one of this character's own containers.
+function Family:BindingIn(bag, slot)
+	return bindingShown(function(tip)
+		Family:TryCall(tip.SetBagItem, tip, bag, slot)
+	end)
+end
+
+-- And a slot on this character's own body, where anything that binds already has.
+function Family:BindingWorn(slot)
+	return bindingShown(function(tip)
+		Family:TryCall(tip.SetInventoryItem, tip, "player", slot)
+	end)
+end
+
+-- What the client says about the **item**, which is a different question: the kind binds one way
+-- or another or not at all, whoever is holding it. Every return is handed back rather than one,
+-- because which position carries the bind type is exactly what has not been measured here.
+function Family:ItemInfoRow(itemID)
+	return { Family:TryCall(GetItemInfo, itemID) }
+end
+
 -- A slot in one of this character's own containers - a bag, or the bank.
 function Family:ChargesIn(bag, slot)
 	return chargesShown(function(tip)

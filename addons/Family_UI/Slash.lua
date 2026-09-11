@@ -712,6 +712,75 @@ add("spellbook", L["what the client's spellbook says, and what Family takes from
 	end
 end)
 
+-- **What the client can say about binding**, which the worth arithmetic needs and does not have.
+--
+-- Reported 2026-09-11: an item's auction price is a price for the **unbound** version of it. A
+-- bind-on-equip sword in a bag can be sold there; the identical one on somebody's back cannot,
+-- and Family was valuing both at the auction price. Two of the same sword on one character, one
+-- worn, are ten gold and half a gold.
+--
+-- Three questions and only one of them is per-instance, which is why this prints before anything
+-- is built: what the game's own binding words are on this client, what `GetItemInfo` says about
+-- the **kind** - and **which of its returns carries that**, which is not written down anywhere in
+-- this repository and is not going to be guessed - and what the tooltip says about the instance.
+add("bind", L["what this client can say about what is bound: /family bind"], function()
+	for _, name in ipairs { "ITEM_SOULBOUND", "ITEM_BIND_ON_EQUIP", "ITEM_BIND_ON_PICKUP",
+		"ITEM_BIND_ON_USE", "ITEM_ACCOUNTBOUND", "ITEM_BIND_QUEST" } do
+		Family:Print("    %-22s |cff888888%s|r", name, tostring(rawget(_G, name)))
+	end
+
+	for _, name in ipairs { "C_Item", "C_Container" } do
+		Family:Print("    %-22s |cff888888%s|r", name, type(rawget(_G, name)))
+	end
+	Family:Print("    %-22s |cff888888%s|r", "C_Item.IsBound",
+		_G.C_Item and type(C_Item.IsBound) or "-")
+
+	-- **What is worn**, where anything that binds at all already has. Read first because it is
+	-- the half this week's change made wrong: gear went into the worth at auction prices.
+	local FIRST = _G.INVSLOT_FIRST_EQUIPPED or 1
+	local LAST = _G.INVSLOT_LAST_EQUIPPED or 19
+	local shown = 0
+
+	for slot = FIRST, LAST do
+		local id = Family:TryCall(GetInventoryItemID, "player", slot)
+		if id and shown < 6 then
+			shown = shown + 1
+			Family:Print(L["  worn slot %d, item %d: |cffffd700%s|r"], slot, id,
+				tostring(Family:BindingWorn(slot)))
+		end
+	end
+
+	-- **And what is carried.** The interesting rows are the ones the tooltip says something
+	-- about, so an ordinary bag of cloth does not fill the chat frame with nothing.
+	local said = 0
+	for bag = 0, 4 do
+		for slot = 1, 36 do
+			local id = Family:TryCall(GetContainerItemID, bag, slot)
+				or (_G.C_Container and Family:TryCall(C_Container.GetContainerItemID, bag, slot))
+
+			if id and said < 10 then
+				local binding = Family:BindingIn(bag, slot)
+				if binding then
+					said = said + 1
+					local row = Family:ItemInfoRow(id)
+					Family:Print(L["  bag %d slot %d, item %d: |cffffd700%s|r"],
+						bag, slot, id, tostring(binding))
+					-- Every return, numbered. Which position carries the bind type is the
+					-- whole point of printing them rather than naming one.
+					for index = 9, 15 do
+						Family:Print("      %-3d |cff888888%s|r", index,
+							tostring(row[index]))
+					end
+				end
+			end
+		end
+	end
+
+	if said == 0 then
+		Family:Print(L["  nothing in the bags said anything about binding"])
+	end
+end)
+
 -- **What the profession button was holding when it was clicked.**
 --
 -- Backlog 61. The word is right - Alberto's own probe answered `165 75 Leatherworking` - and

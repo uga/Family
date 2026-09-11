@@ -21845,6 +21845,83 @@ ITEM_SPELL_CHARGES = "%d |4Charge:Charges;"
 	check("a client with no such global reads no charges and does not throw",
 		Family:ChargesIn(0, 1) == nil, tostring(Family:ChargesIn(0, 1)))
 
+	-- **And whether this particular one is already bound**, which is a different question from
+	-- how its kind binds and is the one the worth arithmetic needs.
+	--
+	-- Asked for 2026-09-11: an auction price is a price for the **unbound** version. A
+	-- bind-on-equip sword in a bag can be sold there and the identical one on a character's back
+	-- cannot, so two of one id on one character are two different figures.
+	do
+		tip.SetInventoryItem = function() end
+
+		_G.ITEM_SOULBOUND = "Soulbound"
+		_G.ITEM_BIND_ON_EQUIP = "Binds when equipped"
+		_G.ITEM_BIND_ON_PICKUP = "Binds when picked up"
+
+		showing("Thunderfury", "Binds when picked up", "Unique")
+		check("how a thing binds is read off its own tooltip",
+			Family:BindingIn(0, 1) == "pickup", tostring(Family:BindingIn(0, 1)))
+
+		showing("A Sword", "Binds when equipped", "Two-Hand")
+		check("and one that has not bound yet says so rather than saying bound",
+			Family:BindingIn(0, 1) == "equip", tostring(Family:BindingIn(0, 1)))
+
+		showing("A Sword", "Soulbound", "Two-Hand")
+		check("while the same sword once it is worn reads as bound",
+			Family:BindingIn(0, 1) == "soulbound", tostring(Family:BindingIn(0, 1)))
+
+		-- Grey and white things, materials, most of a bag: they never bind and there is no
+		-- line about it, which is silence rather than a fault (§2.2).
+		showing("Linen Cloth", "Crafting Reagent")
+		check("and a thing that never binds says nothing about binding at all",
+			Family:BindingIn(0, 1) == nil, tostring(Family:BindingIn(0, 1)))
+
+		-- **Whole lines, never a search.** "Binds when equipped" contains no other binding's
+		-- words in English, and a language where one wording is the start of another would
+		-- file every bind-on-use item as bind-on-equip.
+		_G.ITEM_BIND_ON_USE = "Binds when equipped or used"
+		showing("A Trinket", "Binds when equipped or used")
+		check("a wording that begins with another is not mistaken for it",
+			Family:BindingIn(0, 1) == "use", tostring(Family:BindingIn(0, 1)))
+		_G.ITEM_BIND_ON_USE = nil
+
+		-- The client's own words, whatever they are. Nothing in the source says "Soulbound"
+		-- in any language, which is what makes this work on a German client.
+		_G.ITEM_SOULBOUND = "Seelengebunden"
+		showing("Ein Schwert", "Seelengebunden")
+		check("and a client in another language is read by the same code",
+			Family:BindingIn(0, 1) == "soulbound", tostring(Family:BindingIn(0, 1)))
+		_G.ITEM_SOULBOUND = "Soulbound"
+
+		-- A client missing the global simply never matches it, rather than matching nil.
+		_G.ITEM_SOULBOUND = nil
+		showing("A Sword", "Soulbound")
+		check("a client with no such global matches nothing rather than everything",
+			Family:BindingIn(0, 1) == nil, tostring(Family:BindingIn(0, 1)))
+		_G.ITEM_SOULBOUND = "Soulbound"
+
+		-- **Worn gear is read through the setter for the body, not for a bag**, and the fake
+		-- says which was used: with both of them doing nothing, a reader that asked the wrong
+		-- one would answer perfectly and be pointed at bag nought all session.
+		local aimedAt
+		tip.SetInventoryItem = function(_, unit, slot) aimedAt = "body " .. tostring(slot) end
+		tip.SetBagItem = function(_, bag, slot) aimedAt = "bag " .. tostring(bag) end
+
+		showing("A Sword", "Soulbound")
+		aimedAt = nil
+		check("and what is worn is asked about through its own setter",
+			Family:BindingWorn(16) == "soulbound" and aimedAt == "body 16",
+			tostring(aimedAt))
+
+		aimedAt = nil
+		check("while what is carried is asked about through the container's",
+			Family:BindingIn(3, 7) == "soulbound" and aimedAt == "bag 3", tostring(aimedAt))
+
+		tip.SetBagItem = function() end
+		tip.SetInventoryItem = function() end
+	end
+
+
 	_G.ITEM_SPELL_CHARGES = heldFormat
 end)()
 
