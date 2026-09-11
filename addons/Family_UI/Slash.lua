@@ -878,10 +878,31 @@ local WHY = {
 	quiet = L["a page was asked for and never arrived"],
 	query = L["the client would not take the query"],
 	running = L["a read of the house is already running"],
-	seenNothing = L["no query of the client's own has been seen this session"],
-	pageUnknown = L["which argument is the page is not known yet - use /family ah watch"],
+	-- **What to actually do about it**, rather than the name of the thing that is missing.
+	-- Reported from play 2026-09-11: *scan go goes on being refused unless I do watch first*.
+	-- `watch` teaches Family nothing - it only prints what it hears. What teaches it is the
+	-- player using the auction house: Search gives it a query of the client's own to replay,
+	-- and Next gives it a second one differing in the page and nothing else.
+	seenNothing = L["press Search on the auction house first - the read replays the client's own query rather than composing one"],
+	pageUnknown = L["press Next on the auction house once - two queries differing in one place are what says which argument is the page"],
 	newerHouse = L["this build has the newer auction house, which has no pages to walk"],
 }
+
+-- **How long, in words somebody can act on.**
+--
+-- The client's own wording where it has one: `SecondsToTime` is already in the player's language
+-- and already says hours and minutes the way that language says them (§2.5). Family's own two
+-- forms are the fallback for a build without it, which is a question nothing here can answer -
+-- so both are written and both are exercised.
+local function spanOf(seconds)
+	seconds = math.max(0, math.floor(tonumber(seconds) or 0))
+
+	local said = (Family:TryCall(_G.SecondsToTime, seconds))
+	if type(said) == "string" and said ~= "" then return said end
+
+	if seconds < 60 then return string.format(L["%d second(s)"], seconds) end
+	return string.format(L["%d minute(s)"], math.floor(seconds / 60 + 0.5))
+end
 
 local function scan(word)
 	if word == "stop" then
@@ -906,26 +927,38 @@ local function scan(word)
 			-- Said every so often rather than every page: three and a half thousand lines
 			-- is not progress, it is a chat frame nobody can use while it happens.
 			if state.pages and (state.done == 1 or state.done % 25 == 0) then
-				-- **Taken first, known second.** *Known* is how many items this market
-				-- has any price for and barely moves on a realm somebody has browsed;
-				-- *taken* is what these pages actually gave up, and it is the figure that
-				-- says whether the walk is moving at all.
-				Family:Print(L["  page %d of %d, %d price(s) taken, %d known here"],
+				-- **Taken first, then the clock.** *Taken* is what these pages actually
+				-- gave up, and it is the figure that says whether the walk is moving at
+				-- all - *known here* barely moves on a realm somebody has browsed, so it
+				-- is kept for the end rather than repeated every twenty-five pages.
+				--
+				-- **And how long is left, measured rather than guessed**: the pages read
+				-- so far took as long as they took, and the ones to come are the same
+				-- pages off the same server. Asked for from play - *how long will it
+				-- take?* - which nothing could answer while the walk timed itself and
+				-- told nobody.
+				local gone = Family.Auctions:WalkSeconds(state) or 0
+				local left = state.done > 0
+					and gone / state.done * (state.pages - state.done) or 0
+
+				Family:Print(L["  page %d of %d, %d price(s) taken - %s gone, about %s to go"],
 					state.done, state.pages, state.kept or 0,
-					Family.Auctions:PriceCount())
+					spanOf(gone), spanOf(left))
 			end
 			return
 		end
 
 		if what == "finished" then
-			Family:Print(L["read the whole house: %d page(s), %d price(s) taken, %d known here"],
-				state.done or 0, state.kept or 0, Family.Auctions:PriceCount())
+			Family:Print(L["read the whole house: %d page(s) in %s, %d price(s) taken, %d known here"],
+				state.done or 0, spanOf(Family.Auctions:WalkSeconds(state) or 0),
+				state.kept or 0, Family.Auctions:PriceCount())
 			return
 		end
 
 		-- Everything already taken is kept. A half-read house is a lot of prices.
-		Family:Print(L["stopped after %d page(s): %s"], state.done or 0, WHY[reason]
-			or tostring(reason))
+		Family:Print(L["stopped after %d page(s) in %s: %s"], state.done or 0,
+			spanOf(Family.Auctions:WalkSeconds(state) or 0),
+			WHY[reason] or tostring(reason))
 	end)
 
 	if not ok then Family:Print(L["  refused: %s"], WHY[why] or tostring(why)) end
@@ -993,6 +1026,26 @@ add("ah", L["what this client offers on the auction house"], function(argument)
 		"GetNumAuctionItems", "GetAuctionItemInfo", "GetAuctionItemLink",
 		"QueryAuctionItems", "CanSendAuctionQuery", "SortAuctionItems",
 		"GetAuctionItemSubClasses", "GetSelectedAuctionItem",
+	} do
+		Family:Print("    %-26s |cff888888%s|r", name, type(_G[name]))
+	end
+
+	-- **And what the auction window's own controls are called.**
+	--
+	-- Asked for from play 2026-09-11: *what if we put a button in the auction house window, the
+	-- way other addons do?* The answer to *why is the read refused* is that Family replays the
+	-- client's own query and has not heard one - and a button that presses the window's own
+	-- Search, and then its own Next, would give it both without Family composing anything. That
+	-- is the same shape as the profession button, which asks the client to open its own window
+	-- rather than reaching inside it.
+	--
+	-- Which is buildable only once these are known to be there, under these names, on each of
+	-- the three clients - a frame that is not there answers nil and a button under another name
+	-- answers nil in exactly the same way (§2.3).
+	for _, name in ipairs {
+		"AuctionFrame", "AuctionFrameBrowse", "BrowseSearchButton",
+		"BrowseNextPageButton", "BrowsePrevPageButton", "BrowseResetButton",
+		"AuctionFrameBrowse_Search", "AuctionFrameBrowse_OnEvent",
 	} do
 		Family:Print("    %-26s |cff888888%s|r", name, type(_G[name]))
 	end

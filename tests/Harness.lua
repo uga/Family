@@ -8848,6 +8848,7 @@ do
 	Family.Auctions:TellNextList(nil)
 end
 
+
 -- **And the query the client sends itself, watched rather than sent.**
 --
 -- The better half of the same question, and it should have been the first thing tried: the
@@ -31629,6 +31630,115 @@ print("the game's own words, used inside a sentence")
 		Family:GameWord("TRAINING_POINTS", "Training Points"))
 
 	_G.TRAINING_POINTS = held
+end)()
+
+print()
+print("how long a read of the auction house takes")
+-- **How long a read of the whole house takes, said by the read itself.**
+--
+-- Asked from play 2026-09-11: *and how long will it take?* Nothing could answer. The walk noted
+-- when it started and told nobody, and the only figure anywhere was a comment saying *the best
+-- part of an hour* for three and a half thousand pages - arithmetic somebody did in their head.
+--
+-- Driven through the slash command rather than through `StartWalk`, because what was missing was
+-- not a measurement but a sentence: the walk knew all along.
+;(function()
+	local realQuery, realCan, realNum = _G.QueryAuctionItems, _G.CanSendAuctionQuery,
+		_G.GetNumAuctionItems
+	local pages, rows = 4, 50
+
+	_G.QueryAuctionItems = function() end
+	_G.CanSendAuctionQuery = function() return true end
+	_G.GetNumAuctionItems = function(which)
+		if which ~= "list" then return 0, 0 end
+		return rows, pages * rows
+	end
+
+	-- Two of the client's own queries, differing in the page alone, which is the whole of what
+	-- a walk needs: it replays one of them with that place changed and composes nothing.
+	Family.Auctions.__sawQuery("", 0, 0, 0, false, -1, false, false, nil)
+	Family.Auctions.__sawQuery("", 0, 0, 1, false, -1, false, false, nil)
+
+	-- **The refusal says what to do, and what to do is not `watch`.** Reported from play: *scan
+	-- go goes on being refused unless I do watch first*. Watching teaches Family nothing - it
+	-- prints what it hears - and the refusal had been sending people to it for a week.
+	local held = FamilyDB.auctionPageAt
+	FamilyDB.auctionPageAt = nil
+	local at = #DEFAULT_CHAT_FRAME.messages
+	SlashCmdList["FAMILY"]("ah scan go")
+	local refusal = DEFAULT_CHAT_FRAME.messages[#DEFAULT_CHAT_FRAME.messages] or ""
+	check("a refused read says what to press, not which probe to run",
+		#DEFAULT_CHAT_FRAME.messages > at and not refusal:find("ah watch")
+			and refusal:find("Next"), refusal)
+	FamilyDB.auctionPageAt = held
+
+	local function lastSaying(what)
+		for index = #DEFAULT_CHAT_FRAME.messages, 1, -1 do
+			local line = DEFAULT_CHAT_FRAME.messages[index]
+			if line:find(what, 1, true) then return line end
+		end
+	end
+
+	Family.Auctions:ForgetVisit()
+	LIST = { { id = 4306, count = 1, buyout = 700 } }
+
+	SlashCmdList["FAMILY"]("ah scan go")
+	check("a read of the whole house starts from the slash command",
+		Family.Auctions:Walking() ~= nil)
+
+	-- Two seconds of it before the first page lands, so there is something to measure. The
+	-- harness clock is the one `GetTime` answers from, which is the clock the walk subtracts -
+	-- `time()` here is a constant, and a walk timed by it would read nought however long it ran.
+	advance(2)
+	fire("AUCTION_ITEM_LIST_UPDATE")
+	advance(1)
+
+	-- **The estimate is the pages already read, not a number written here.** One page of four
+	-- in about three seconds leaves three pages of the same server, so what is left has to be
+	-- about three times what is gone. A projection that ignored the pages remaining would say
+	-- the same thing whatever the house held, and a check for *some number* would pass for it.
+	local progress = lastSaying("to go") or ""
+	local gone, left = progress:match("(%d+) second%(s%) gone, about (%d+) second")
+	gone, left = tonumber(gone), tonumber(left)
+	check("a read that is running says how long it has been and how long is left",
+		gone and left and gone > 0 and left >= gone * 2 and left <= gone * 5,
+		progress)
+
+	for _ = 1, pages - 1 do
+		fire("AUCTION_ITEM_LIST_UPDATE")
+		advance(1)
+	end
+
+	local done = lastSaying("read the whole house") or ""
+	check("and a read that has finished says how long it took",
+		Family.Auctions:Walking() == nil and tonumber(done:match("in (%d+) second")) > 0,
+		done)
+
+	-- **The client's own words for a span where it has them**, which are already in the
+	-- player's language and already say hours the way that language says them (§2.5). Family's
+	-- own wording is the fallback, and both are here because which of the three clients has
+	-- this call is not a question anything in this repository has asked yet.
+	local realSpan = _G.SecondsToTime
+	_G.SecondsToTime = function(seconds) return "the client's " .. math.floor(seconds) end
+
+	Family.Auctions:ForgetVisit()
+	SlashCmdList["FAMILY"]("ah scan go")
+	advance(1)
+	fire("AUCTION_ITEM_LIST_UPDATE")
+	advance(1)
+	check("and it says a span in the client's own words where the client has them",
+		(lastSaying("to go") or ""):find("the client's", 1, true) ~= nil,
+		lastSaying("to go"))
+
+	_G.SecondsToTime = realSpan
+	Family.Auctions:StopWalk("asked")
+
+	local stopped = lastSaying("stopped after") or ""
+	check("and a read stopped part way says how long that was",
+		tonumber(stopped:match("in (%d+) second")) ~= nil, stopped)
+
+	_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan
+	_G.GetNumAuctionItems = realNum
 end)()
 
 print()

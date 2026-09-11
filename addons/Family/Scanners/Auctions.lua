@@ -816,6 +816,21 @@ function Auctions:Walking()
 	return walk ~= nil and walk or nil
 end
 
+-- **How long a walk has been going.** Asked for from play 2026-09-11 - *and how long will it
+-- take?* - which nothing could answer, because the walk timed itself and told nobody.
+--
+-- A reading rather than an estimate: the file's own comment said *the best part of an hour* for
+-- three and a half thousand pages, and that was arithmetic somebody did in their head.
+function Auctions:WalkSeconds(state)
+	state = state or walk
+	if not state or not state.clock then return nil end
+
+	local now = tonumber((Family:TryCall(GetTime)))
+	if not now then return nil end
+
+	return now - state.clock
+end
+
 function Auctions:StopWalk(why)
 	if not walk then return false end
 	local stopping, told = walk, walk.told
@@ -935,7 +950,11 @@ function Auctions:StartWalk(told)
 	if not self:LastQuery() then return false, "seenNothing" end
 	if not self:PagePosition() then return false, "pageUnknown" end
 
-	walk = { page = 0, done = 0, started = time(), told = told }
+	-- Two clocks, because they answer different questions. `time()` says *when this started*
+	-- and counts whole seconds of wall clock; `GetTime` is the one to subtract for *how long it
+	-- has been going*, and it is the one that moves under a harness.
+	walk = { page = 0, done = 0, started = time(), told = told,
+		clock = tonumber((Family:TryCall(GetTime))) }
 	askPage(0)
 	return true, nil
 end

@@ -106,6 +106,13 @@ picks itself up where it left off.
   it goes exactly as fast as the server answers, and everything it has already read is kept if you
   stop it or walk away.
 
+- **It says how long it has been going and roughly how long is left**, worked out from the pages
+  it has already read rather than from a guess, so you can decide whether to wait for it.
+
+- **If it will not start, it now says which button to press.** Search the auction house once and
+  turn one page, and the read has everything it needs: it replays the search you made rather than
+  inventing one of its own.
+
 ### Vendor prices on item tooltips
 
 - **What a vendor pays you**, on any item's tooltip, anywhere in the game. Off until you turn it
