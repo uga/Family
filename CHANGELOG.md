@@ -100,15 +100,16 @@ picks itself up where it left off.
 
 ### Reading the auction house
 
-- **`/family ah scan go` reads every page of the auction house** and remembers what everything is
-  going for. It is off unless you ask for it, it tells you how far it has got, and
-  `/family ah scan stop` ends it. On a busy realm this is thousands of pages and takes a while —
+- **`/family ah scan go` walks every page of what the auction house last searched for** and
+  remembers what everything is going for. It is off unless you ask for it, it tells you how far it
+  has got, and `/family ah scan stop` ends it. On a busy realm this is thousands of pages and takes a while —
   it goes exactly as fast as the server answers, and everything it has already read is kept if you
   stop it or walk away.
 
-- **A button on the auction house window starts it**, so you never have to type anything. It
-  presses Search for you if you have not searched yet, and the same button stops the read. It sits
-  beside Reset on the Browse panel. On Mists of Pandaria there is no such window and no button —
+- **A button on the auction house window reads the whole house**, so you never have to type
+  anything. It clears the search first — otherwise it would read only what you last searched for —
+  then searches and walks every page there is. The same button stops it. It sits beside Reset on
+  the Browse panel. On Mists of Pandaria there is no such window and no button —
   that version has no pages to walk.
 
 - **It says how long it has been going and roughly how long is left**, worked out from the pages

@@ -2786,3 +2786,39 @@ arrive whole.
 answer is passed straight to a player, check what it *contains*, not that it arrived - and make
 the fixture return the real thing, not a tidy invention of the same shape.
 
+---
+
+## L-075 — It read every page of something, and called it the house
+
+From play on Burning Crusade 2026-09-11, the read Family had just shipped:
+
+    read the whole house: 68 page(s) in 49 second(s), 830 price(s) taken, 4278 known here
+
+Forty-nine seconds. Alberto's reply is what exposed it: *Auctionator does a full scan of the same
+auction house in about fifteen minutes.* Both numbers cannot describe the same work - and the one
+that was wrong was ours. This repository had already measured that house at **180,205 auctions,
+3,605 pages**, written into the scanner the week the walk was built. Sixty-eight pages is one
+part in fifty of it, and every row in the screenshot was a `Pattern:`.
+
+The walk replays the client's own query with the page changed. That is its whole design and it is
+right - Family composes no auction query. But it means **whatever narrowed that query narrows the
+walk**, and the player had been searching for recipes. Family read every page of a category,
+faithfully, and announced the house.
+
+**Nothing could have caught it from inside.** A query is a list of arguments; a blank one and a
+narrow one are the same shape, so no amount of looking at it says which was which. The count that
+would have given it away was there all along - the second return of `GetNumAuctionItems` says how
+many are on sale in all, and it said 3,397 where the file's own comment says 180,205 - but nothing
+compared them, because nothing had a reason to doubt the sentence.
+
+**What now catches it.** Whether the house was read is a **claim the caller makes**, not a guess:
+the button presses the window's own Reset before it presses Search, so the search that goes out is
+a search for everything, and only then is the walk told it is reading the house. The slash
+command, which replays whatever the client last asked, ends on *read every page of that search*.
+A Reset the client will not take is not fatal - the walk still runs, and it is reported as the
+search it was. Four checks; three mutations, all caught.
+
+**The general rule: when a sentence claims scope, something has to have established the scope.**
+*Every page* is a fact about the walk; *the whole house* is a fact about the query, and they are
+not the same fact.
+

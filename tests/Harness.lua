@@ -31716,9 +31716,17 @@ print("how long a read of the auction house takes")
 		advance(1)
 	end
 
-	local done = lastSaying("read the whole house") or ""
+	-- **The slash command replays whatever the client last asked for**, which is a search and
+	-- not necessarily the house, so this is the line it ends on. Reported from play: a walk of
+	-- sixty-eight pages called *the whole house* on a house measured at 3,605 - it had
+	-- faithfully read every page of a search for recipes.
+	local done = lastSaying("read every page of that search") or ""
+	check("a read started from the command says it read that search, not the house",
+		Family.Auctions:Walking() == nil and done ~= ""
+			and lastSaying("read the whole house") == nil, done)
+
 	check("and a read that has finished says how long it took",
-		Family.Auctions:Walking() == nil and tonumber(done:match("in (%d+) second")) > 0,
+		tonumber(done:match("in (%d+) second")) and tonumber(done:match("in (%d+) second")) > 0,
 		done)
 
 	-- **And where that time went**, which is the only way to answer whether a read could be
@@ -31818,6 +31826,15 @@ print("the button on the auction window")
 	-- nothing here had measured, whose corners are therefore not where they look.
 	_G.BrowseResetButton = CreateFrame("Frame", "BrowseResetButton", _G.AuctionFrameBrowse)
 
+	-- **Reset is a control the button presses, not only one it sits beside.** Reported from
+	-- play on Burning Crusade 2026-09-11: the read walked sixty-eight pages and called it the
+	-- whole house, on a house this repository had measured at 3,605 pages - it had faithfully
+	-- read every page of the player's last search, which was a category of recipes. Emptying
+	-- the form first is what makes the search that follows a search for everything.
+	local resets, resetWorks = 0, true
+	_G.BrowseResetButton.IsEnabled = function() return resetWorks end
+	_G.BrowseResetButton.Click = function() resets = resets + 1 end
+
 	fire("AUCTION_HOUSE_SHOW")
 	local button = _G.FamilyReadHouseButton
 	check("and one is built on the window that is there",
@@ -31878,20 +31895,71 @@ print("the button on the auction window")
 	-- **Walking away from the auctioneer clears a sequence that was still waiting.** Otherwise
 	-- the next visit finds the button locked by a press nobody remembers making.
 	-- **Walking away from the auctioneer frees a sequence that was still waiting**, or the next
-	-- visit finds the button locked by a press nobody remembers making. Shown by the click
-	-- after it doing something at all: a button still waiting ignores one, as the check above
-	-- this has just established.
-	FamilyDB.auctionPageAt = nil
+	-- visit finds the button locked by a press nobody remembers making.
 	local waiting = pressed.search
 	button.__scripts.OnClick(button)
-	check("a click with nothing known starts waiting again",
-		pressed.search == waiting + 1 and Family.Auctions:Walking() == nil,
-		tostring(pressed.search - waiting))
-
 	fire("AUCTION_HOUSE_CLOSED")
 	button.__scripts.OnClick(button)
 	check("and closing the window frees a button left waiting",
-		Family.Auctions:Walking() ~= nil)
+		pressed.search == waiting + 2, tostring(pressed.search - waiting))
+
+	-- Freed rather than assumed free: the click above left it waiting on a search, and the
+	-- check before that one is the whole of why a waiting button ignores clicks.
+	fire("AUCTION_HOUSE_CLOSED")
+	Family.Auctions:StopWalk("asked")
+	Family.Auctions:TellNextList(nil)
+
+	local function lastSaying(what)
+		for index = #DEFAULT_CHAT_FRAME.messages, 1, -1 do
+			local line = DEFAULT_CHAT_FRAME.messages[index]
+			if line:find(what, 1, true) then return line end
+		end
+	end
+
+	-- **And what it says it read.** With the form emptied by us, the search that went out was a
+	-- search for everything and the house is what was walked.
+	local rounds = resets
+	button.__scripts.OnClick(button)
+	check("the button empties the search form before searching",
+		resets == rounds + 1, tostring(resets - rounds))
+
+	fire("AUCTION_ITEM_LIST_UPDATE")
+	fire("AUCTION_ITEM_LIST_UPDATE")
+	advance(1)
+	for _ = 1, 4 do
+		fire("AUCTION_ITEM_LIST_UPDATE")
+		advance(1)
+	end
+	check("and a read it cleared the form for is reported as the whole house",
+		lastSaying("read the whole house") ~= nil,
+		lastSaying("read every page of that search") or "nothing said")
+
+	-- **And a Reset the client will not take is not fatal, only not the house.** The search
+	-- still goes out and the walk still runs; what it read is then whatever the form held, and
+	-- that is what it is called.
+	resetWorks = false
+	Family.Auctions:ForgetVisit()
+	local before = #DEFAULT_CHAT_FRAME.messages
+	button.__scripts.OnClick(button)
+	fire("AUCTION_ITEM_LIST_UPDATE")
+	advance(1)
+	for _ = 1, 4 do
+		fire("AUCTION_ITEM_LIST_UPDATE")
+		advance(1)
+	end
+
+	local said
+	for index = #DEFAULT_CHAT_FRAME.messages, before + 1, -1 do
+		local line = DEFAULT_CHAT_FRAME.messages[index]
+		if line:find("read every page of that search", 1, true)
+			or line:find("read the whole house", 1, true) then
+			said = line
+			break
+		end
+	end
+	check("while a form it could not empty is reported as that search, not the house",
+		said ~= nil and said:find("that search", 1, true) ~= nil, tostring(said))
+	resetWorks = true
 
 	Family.Auctions:StopWalk("asked")
 	Family.Auctions:TellNextList(nil)

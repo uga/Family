@@ -914,7 +914,7 @@ function UI:StopHouseRead()
 	return false
 end
 
-function UI:StartHouseRead()
+function UI:StartHouseRead(everything)
 	if Family.Auctions:Walking() then
 		Family:Print(L["%s - /family ah scan stop ends it"], WHY.running)
 		return false, "running"
@@ -948,7 +948,17 @@ function UI:StartHouseRead()
 
 		if what == "finished" then
 			local took = Family.Auctions:WalkSeconds(state) or 0
-			Family:Print(L["read the whole house: %d page(s) in %s, %d price(s) taken, %d known here"],
+
+			-- **What it read, which is not always the house.** A walk replays the
+			-- client's last query with the page changed, so a player who had searched
+			-- *Recipe* was walked through the recipes and told the whole house had been
+			-- read. Reported from play 2026-09-11: sixty-eight pages, on a house this
+			-- repository measured at 3,605 the week it was written. Nothing can look at a
+			-- query and tell a blank one from a narrow one - so this says whichever it
+			-- was told, and it is told only by whoever cleared the form.
+			Family:Print(state.everything
+					and L["read the whole house: %d page(s) in %s, %d price(s) taken, %d known here"]
+					or L["read every page of that search: %d page(s) in %s, %d price(s) taken, %d known here"],
 				state.done or 0, spanOf(took), state.kept or 0,
 				Family.Auctions:PriceCount())
 
@@ -969,7 +979,7 @@ function UI:StartHouseRead()
 		Family:Print(L["stopped after %d page(s) in %s: %s"], state.done or 0,
 			spanOf(Family.Auctions:WalkSeconds(state) or 0),
 			WHY[reason] or tostring(reason))
-	end)
+	end, everything)
 
 	if not ok then Family:Print(L["  refused: %s"], WHY[why] or tostring(why)) end
 	return ok, why
@@ -982,7 +992,7 @@ local function scan(word)
 		if Family.Auctions:Walking() then
 			Family:Print(L["%s - /family ah scan stop ends it"], WHY.running)
 		else
-			Family:Print(L["this reads every page of the auction house and takes a long time: /family ah scan go"])
+			Family:Print(L["this walks every page of the search the auction house last made and takes a long time: /family ah scan go"])
 		end
 		return
 	end

@@ -50,12 +50,29 @@ local NEXT_PAGE = "BrowseNextPageButton"
 -- table on both clients that have this window (measured on all three, 2026-09-11).
 local BESIDE = "BrowseResetButton"
 
+-- **And the control that makes it the whole house rather than the last search.**
+--
+-- Reported from play on Burning Crusade 2026-09-11: the button read sixty-eight pages and said
+-- it had read the whole house, on a house this repository had already measured at 3,605 pages.
+-- It had - faithfully - walked every page of what the player last searched for, which was a
+-- category of recipes. A walk replays the client's query with the page changed, so whatever
+-- narrowed that query narrows the walk.
+--
+-- The window has a control for exactly this, and it is the client's own: Reset empties the
+-- search form. Pressed first, the Search that follows is a search for everything, and that is
+-- the only way this button can honestly be called *read it all*.
+local RESET = "BrowseResetButton"
+
 local button
 
 -- What the button is waiting for, or nothing. **One click starts one sequence**: a probe that
 -- can be started twice is a probe that will be, and the auction house is the one place in this
 -- addon where a doubled action costs somebody a disconnection (L-070).
 local waitingFor
+
+-- Whether the search form was emptied by us before the search went out. It is the only thing
+-- that knows whether the walk is reading the house or reading a category.
+local clearedForm
 
 -- How long a press of the window's own button is given to be answered before the sequence is
 -- abandoned. The walk has its own, longer patience once it is running; this is only about the
@@ -110,9 +127,10 @@ heard = function()
 	if not waitingFor then return end
 
 	if ready() then
+		local everything = clearedForm
 		waitingFor = nil
 		refresh()
-		UI:StartHouseRead()
+		UI:StartHouseRead(everything)
 		return
 	end
 
@@ -120,9 +138,10 @@ heard = function()
 		-- Next has been pressed and the two queries still do not differ in one clear place.
 		-- The walk will refuse and say which button to press, which is the same sentence
 		-- whoever asked for the read.
+		local everything = clearedForm
 		waitingFor = nil
 		refresh()
-		UI:StartHouseRead()
+		UI:StartHouseRead(everything)
 		return
 	end
 
@@ -143,9 +162,14 @@ local function clicked()
 
 	if waitingFor then return end
 
-	-- Everything the walk needs is already known, which is the ordinary case for somebody who
-	-- has used the auction house at all this session.
-	if ready() then return UI:StartHouseRead(), refresh() end
+	-- **Always Reset, then Search - never the shortcut.** Knowing which argument is the page is
+	-- not the same as the last query being a search for everything, and this used to start the
+	-- walk straight away whenever it was. That is how a walk of one category came to be called
+	-- the whole house.
+	--
+	-- A Reset the client will not accept is not fatal: the search still goes out and the walk
+	-- still runs, but what it read is then whatever the form held, and it is reported as that.
+	clearedForm = press(RESET)
 
 	waitingFor = "search"
 	Family.Auctions:TellNextList(heard)
@@ -190,7 +214,7 @@ local function build()
 	UI:AttachTooltip(button, function()
 		return nil, nil, {
 			{ L["Read it all"] },
-			{ L["this reads every page of the auction house and takes a long time: /family ah scan go"] },
+			{ L["this clears the search, then reads every page there is - it takes a long time"] },
 		}
 	end)
 

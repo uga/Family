@@ -951,7 +951,12 @@ end
 -- **Started only by somebody asking for it**, and it says what it is about to do before it does
 -- it. The size is not known until the first page comes back, which is why the first page is the
 -- whole of what starting it commits to.
-function Auctions:StartWalk(told)
+-- `everything` is the caller saying it has cleared the search form itself, and it is a claim
+-- rather than a guess: Family cannot look at a query and tell a blank one from a narrow one, so
+-- whoever pressed Reset is the only thing that knows. Reported from play 2026-09-11 - a walk of
+-- sixty-eight pages announced as *the whole house* on a house this repository had already
+-- measured at three and a half thousand.
+function Auctions:StartWalk(told, everything)
 	-- **A code, never a sentence.** These are said to the player, and a sentence written here
 	-- would be an English one wherever it was read (§2.1). The words live in `Slash.lua`, where
 	-- everything else the player is told lives and where the translation gate can see them.
@@ -974,6 +979,7 @@ function Auctions:StartWalk(told)
 	-- and counts whole seconds of wall clock; `GetTime` is the one to subtract for *how long it
 	-- has been going*, and it is the one that moves under a harness.
 	walk = { page = 0, done = 0, started = time(), told = told,
+		everything = everything and true or false,
 		clock = tonumber((Family:TryCall(GetTime))) }
 	askPage(0)
 	return true, nil
