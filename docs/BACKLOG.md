@@ -3646,7 +3646,7 @@ the search keeps that mode to itself, which is what it was for, and no control w
 
 ---
 
-## 61. The profession button arms itself and casts nothing
+## 61. The profession button arms itself and casts nothing — DONE 2026-09-11
 
 **Reported 2026-09-10, from play:** the yellow note under a profession's own page says clicking
 the profession opens its window, and on Leatherworking clicking it *"just goes back to normal
@@ -3722,10 +3722,28 @@ Either it works from inside the click too - in which case the repair is one line
 doing by hand what the template will not - or it does not, and the subject is taint rather than
 templates.
 
-`/family openwith cast` is that measurement, and it is also the candidate repair: it arms the same
-one-shot and additionally casts `openWith` from the `PostClick`, then looks a second later at what
-`GetTradeSkillLine` says. Explicitly asked for and done once, because unlike everything else on
-this entry it **acts on the world rather than reading it**.
+`/family openwith cast` was that measurement, and it was also the candidate repair: it armed the
+same one-shot and additionally cast `openWith` from the `PostClick`, then looked a second later at
+what `GetTradeSkillLine` said.
+
+**Measured on Burning Crusade 2026-09-11, on Leatherworking - the exact profession reported:**
+
+    cast Leatherworking    callWorked true    callSaid -    windowNow Leatherworking
+
+and the window opened. Confirmed on Mists with Cooking the same evening.
+
+**So the repair shipped**: the `PostClick` asks the client to open the profession by its stored
+word, under the same two conditions arming has - the member being played, and a word Family has
+actually seen. The secure attributes are kept rather than replaced, so a build that honours them
+goes on honouring them and this is a second way of asking rather than a different one.
+
+**Why the cast is in `PostClick` and not where the arming is:** the button is re-armed on every
+refresh, and a cast written there would open a window on every redraw of the panel. There is a
+check for exactly that, and the mutation that moves it turns three lines red.
+
+`/family openwith cast` is gone with the question it answered - the product does that now, and a
+probe that cast as well would have cast twice. `/family openwith` still prints what the button is
+holding, which is the part that is worth keeping.
 
 ---
 

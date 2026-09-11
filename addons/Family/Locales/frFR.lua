@@ -244,7 +244,6 @@ Family.locales.frFR = {
 	["which argument is the page is not known yet - use /family ah watch"] = "quel argument est la page n'est pas encore connu - utilisez /family ah watch",
 	["you asked it to stop"] = "vous l'avez arrêté",
 	["this build has the newer auction house, which has no pages to walk"] = "cette version a le nouvel hôtel des ventes, qui n'a pas de pages à parcourir",
-	["the next click will also cast what the button says it would cast"] = "le prochain clic lancera aussi ce que le bouton dit qu'il lancerait",
 	["  newer auction house: |cffffd700%s|r"] = "  hôtel des ventes plus récent : |cffffd700%s|r",
 	["  prices on tooltips are switched: |cffffd700%s|r"] = "  les prix sur les infobulles sont : |cffffd700%s|r",
 	["on"] = "activés",

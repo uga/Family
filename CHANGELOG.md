@@ -168,6 +168,10 @@ picks itself up where it left off.
 
 ### Fixed
 
+- **Clicking a profession opens its window again.** The yellow note said it would and nothing
+  happened: the button was built correctly and the game was simply not acting on it. Family now
+  asks for the window itself as well.
+
 - **Clicking a profession on the summary did nothing** until you had opened the Professions panel
   once in that session — after which it worked for the rest of it.
 
