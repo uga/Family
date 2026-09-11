@@ -341,6 +341,11 @@ CHARGE_ASKED = 0
 
 function frameMethods:SetOwner() end
 
+-- Declared here and written further down, because `SetBagItem` below needs it and a local
+-- declared after its first use is not that local at all - it compiles as a global, and a
+-- global is nil. The same footing `Tooltip.lua` puts its modifier frame on.
+local declined
+
 function frameMethods:SetBagItem(bag, slot)
 	CHARGE_ASKED = CHARGE_ASKED + 1
 	wipe(self.__lines)
@@ -348,7 +353,29 @@ function frameMethods:SetBagItem(bag, slot)
 	-- a row was drawn by. The charge lines below still decide what is *on* it.
 	self.__shownAs = { kind = "bagslot", id = tostring(bag) .. ":" .. tostring(slot) }
 
-	local lines = CHARGE_LINES[tostring(bag) .. ":" .. tostring(slot)] or {}
+	local lines = CHARGE_LINES[tostring(bag) .. ":" .. tostring(slot)]
+
+	-- **A slot holding something is described, and the keyring is not.**
+	--
+	-- This used to answer nothing for every slot without a charge line, which made a tooltip
+	-- that never appeared indistinguishable from one that appeared and said the ordinary
+	-- thing - so the panel could ask about a slot, get silence, and show an empty row with
+	-- nothing here objecting.
+	--
+	-- The exception is measured rather than reasoned: reported from play on Classic Era
+	-- 2026-09-11, a key in the keyring draws no tooltip while the bags either side of it do.
+	-- The keyring's container number is negative, which is where every other oddity about it
+	-- has come from (Scanners/Bags.lua).
+	if not lines then
+		local held = _G.BAGS and _G.BAGS[bag] and _G.BAGS[bag].items
+			and _G.BAGS[bag].items[slot]
+		if held and (tonumber(bag) or 0) >= 0 then
+			lines = { "Slot " .. tostring(bag) .. ":" .. tostring(slot) }
+		end
+	end
+
+	if not lines then return declined(self) end
+
 	for index = 1, 12 do
 		local text = lines[index]
 		if text then table.insert(self.__lines, { text }) end
@@ -435,7 +462,7 @@ end
 -- afterwards goes nowhere, which is exactly what the quest rows did the day they started
 -- asking - and this is what makes the fallback's own SetOwner checkable rather than a
 -- precaution nobody can measure.
-local function declined(tooltip)
+declined = function(tooltip)
 	wipe(tooltip.__lines)
 	tooltip.__shownAs = nil
 	tooltip.__shown = false
@@ -9291,8 +9318,9 @@ print("clicking a Bags row opens that character's possessions")
 			-- missing anything - and pointing a tooltip at the drawn position would describe
 			-- whatever happens to be worn at that number instead.
 			local wornPayload = (Family.Database:Payload(me) or {}).equipment
-			local reallyAt = wornButton
+			local wornWhere = wornButton
 				and select(2, wornButton.__familyTooltip(wornButton))
+			local reallyAt = type(wornWhere) == "table" and wornWhere.slot or nil
 			local piece = reallyAt and wornPayload and wornPayload.worn
 				and wornPayload.worn[reallyAt]
 
@@ -9300,6 +9328,12 @@ print("clicking a Bags row opens that character's possessions")
 				reallyAt == 5 and piece and piece.id == wornButton.itemID,
 				tostring(reallyAt) .. " holds " .. tostring(piece and piece.id)
 					.. ", drawn for " .. tostring(wornButton and wornButton.itemID))
+
+			-- **And it carries the item as well as the slot**, so a body the client will
+			-- not answer about leaves the row describing the piece rather than empty.
+			check("and carries the item alongside, for a slot that answers nothing",
+				reallyAt and (wornWhere.id == wornButton.itemID or wornWhere.link ~= nil),
+				tostring(wornWhere and wornWhere.id))
 
 			-- **And a brother's gear is not.** There is no body on this machine wearing it,
 			-- and asking about slot 5 would describe this player's own chest instead.
@@ -9319,10 +9353,18 @@ print("clicking a Bags row opens that character's possessions")
 			slotButton and (slotButton.__familyTooltip(slotButton)) == "bagslot",
 			slotButton and tostring((slotButton.__familyTooltip(slotButton)))
 				or "no slot button drawn")
+		local slotWhere = slotButton
+			and select(2, slotButton.__familyTooltip(slotButton))
+
 		check("and by the bag and slot it is really in",
-			slotButton and select(2, slotButton.__familyTooltip(slotButton))
-				== tostring(slotButton.block.bag) .. ":" .. tostring(slotButton.slotIndex),
-			slotButton and tostring(select(2, slotButton.__familyTooltip(slotButton))))
+			type(slotWhere) == "table" and slotWhere.bag == slotButton.block.bag
+				and slotWhere.slot == slotButton.slotIndex,
+			slotButton and tostring(slotWhere))
+
+		check("and carries the item alongside, for a bag that answers nothing",
+			type(slotWhere) == "table"
+				and (slotWhere.id == slotButton.itemID or slotWhere.link ~= nil),
+			tostring(type(slotWhere) == "table" and slotWhere.id))
 
 		-- **And somebody else's is not**, because there is no slot on this machine to ask
 		-- about. Saying *bag 0 slot 3* for a brother's bag would describe this player's own.
@@ -9355,6 +9397,49 @@ print("clicking a Bags row opens that character's possessions")
 				pretendBank() == "bagslot", tostring(pretendBank()))
 
 			Family.Bank.IsOpen = realOpen
+		end
+
+		-- **A key in the keyring says what it is**, which it had stopped doing entirely.
+		--
+		-- Reported from play on Classic Era 2026-09-11: the keyring's slots draw no tooltip
+		-- at all while the bags either side of them draw one. The slot lane asked the client
+		-- about a negative container, the client said nothing, and nothing said anything
+		-- afterwards - so the row that should have described a key described nought.
+		--
+		-- Two checks, because either alone passes for the wrong reason: that the key is
+		-- described at all, and that an ordinary bag still answers as a slot rather than
+		-- everything falling through to the link and losing the binding line with it.
+		local keyButton, bagButton
+		for _, f in ipairs(frames) do
+			if f.__shown ~= false and f.__familyTooltip and f.slotIndex and f.itemID
+				and type(f.block) == "table" and f.block.where == "bags" then
+				if f.block.bag == _G.KEYRING_CONTAINER then keyButton = keyButton or f
+				else bagButton = bagButton or f end
+			end
+		end
+
+		local function hover(button)
+			GameTooltip.__shownAs = nil
+			wipe(GameTooltip.__lines)
+			button.__scripts.OnEnter(button)
+			return GameTooltip.__shownAs, #GameTooltip.__lines
+		end
+
+		if keyButton then
+			local kind, lines = hover(keyButton)
+			check("a key in the keyring is described, by the item where the slot will not",
+				lines > 0 and kind and (kind.kind == "item" or kind.kind == "itemlink"),
+				tostring(kind and kind.kind) .. ", " .. tostring(lines) .. " line(s)")
+		else
+			check("a key in the keyring is described, by the item where the slot will not",
+				false, "no keyring slot drawn")
+		end
+
+		if bagButton then
+			local kind, lines = hover(bagButton)
+			check("while an ordinary bag slot is still asked about as a slot",
+				lines > 0 and kind and kind.kind == "bagslot",
+				tostring(kind and kind.kind) .. ", " .. tostring(lines) .. " line(s)")
 		end
 	end
 

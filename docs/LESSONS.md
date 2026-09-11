@@ -2679,3 +2679,44 @@ away.
 **The general rule: when something has to be done in a shape nobody here knows, look for something
 that already does it before writing the guess.** The client, another addon's traffic, the game's
 own UI — one of them is usually doing it in front of you.
+
+---
+
+## L-072 — A fixture that is silent everywhere cannot notice silence anywhere
+
+Reported from play on Classic Era 2026-09-11: **a key in the keyring draws no tooltip at all**,
+while the bags either side of it draw one normally. The same key on another character's page
+described itself perfectly.
+
+The lane is the one written a week earlier so that your own gear and bags are described by the
+*slot* rather than by a link — a shield worn once reads *Soulbound* in the bag and was reading
+*binds when equipped* on Family's page. That lane calls `SetBagItem(bag, slot)` and stops. Every
+other lane in that table — item, spell, currency, talent — tries a second call when the first
+writes nothing, and the file says at length why: *a setter that is missing and a setter that
+describes nothing both come back as silence*. The two slot lanes were written without it.
+
+The keyring's container number is negative, and the scanner has carried a comment since it was
+written about how oddly the client answers questions about it. So the slot lane asked, the client
+said nothing, and `showFor` — finding no lines and no fallback — hid the tooltip. The row that
+should have described a key described nought.
+
+**Why nothing here caught it.** The tooltip stub answered `SetBagItem` with lines only where
+`CHARGE_LINES` had an entry for that exact bag and slot, which is one slot in the whole fixture.
+Every other slot in every other bag came back empty. So a tooltip that never appeared and a
+tooltip that appeared and said the ordinary thing were **the same thing** to this harness, and the
+check standing over it asked only which lane the row had chosen — which the stub recorded whether
+it wrote anything or not.
+
+The fixture was silent everywhere, so silence was not a symptom.
+
+**What now catches it.** `SetBagItem` describes any slot holding an item and stays silent for the
+keyring only — and that exception is the reading from play, written down as one, not a guess about
+negative container numbers dressed up as a fixture (L-053). Two checks, because either alone
+passes for the wrong reason: a key in the keyring must end up described by the item, and an
+ordinary bag slot must still be asked about as a slot rather than everything falling through to
+the link and taking the binding line with it. Removing the fallback kills the first; never asking
+the slot kills the second.
+
+**The general rule: a fixture that answers nothing by default makes every question about nothing
+unanswerable.** Where a stub's silence is its resting state, the code cannot be tested for
+handling silence — the harness has no way to say which silences were meant.

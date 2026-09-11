@@ -661,14 +661,18 @@ local function build(frame)
 			if block and mine and self.slotIndex and block.bag
 				and (block.where == "bags"
 					or (block.where == "bank" and Family.Bank:IsOpen())) then
-				return "bagslot", block.bag .. ":" .. self.slotIndex
+				-- With the item alongside, because a container the client will not
+				-- describe leaves the row silent otherwise (Tooltip.lua).
+				return "bagslot", { bag = block.bag, slot = self.slotIndex,
+					link = self.itemLink, id = self.itemID }
 			end
 
 			-- **And what is on this character's own back**, which is reached by the body
 			-- rather than by a container. A worn bind-on-equip piece is bound and its link
 			-- still says *binds when equipped*, which is the game describing the item.
 			if block and mine and block.where == "equipped" and self.invSlot then
-				return "wornslot", self.invSlot
+				return "wornslot", { slot = self.invSlot,
+					link = self.itemLink, id = self.itemID }
 			end
 
 			if self.itemLink then return "itemlink", self.itemLink end

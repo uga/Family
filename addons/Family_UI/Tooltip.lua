@@ -811,6 +811,27 @@ local function wroteAnything()
 	return (tonumber(lines) or 0) > 0
 end
 
+-- **The item itself, by the longest form there is of it.** A link carries the enchant, the
+-- gems and the random suffix; an id carries the item somebody bought and nothing that happened
+-- to it since. Both are tried because neither is on every client and neither can be trusted to
+-- report failure.
+--
+-- Shared, because the two slot lanes below fall back to it: a slot this client will not
+-- describe should leave the row saying what a sibling's row says, not saying nothing.
+local function describeItem(what)
+	if what.link then
+		Family:TryCall(GameTooltip.SetHyperlink, GameTooltip, what.link)
+		if wroteAnything() then return end
+	end
+
+	if not what.id then return end
+
+	Family:TryCall(GameTooltip.SetItemByID, GameTooltip, what.id)
+	if not wroteAnything() then
+		Family:TryCall(GameTooltip.SetHyperlink, GameTooltip, "item:" .. what.id)
+	end
+end
+
 local SHOW = {
 	item = function(id)
 		Family:TryCall(GameTooltip.SetItemByID, GameTooltip, id)
@@ -836,18 +857,33 @@ local SHOW = {
 	-- is holding, there is no need to settle for the item: the slot itself can be asked, and
 	-- it answers about the thing in front of you.
 	--
-	-- Two numbers in one string, because a resolver hands over one value.
+	-- The bag, the slot, and what to say if the slot will not answer - because some
+	-- containers do not. Reported from play on Classic Era 2026-09-11: a key in the keyring
+	-- draws no tooltip at all, while the bags either side of it draw one. The keyring's
+	-- container number is negative and Family has known since the scanner was written that
+	-- the client answers questions about it oddly (Scanners/Bags.lua); this is the same
+	-- awkwardness reaching the panel.
+	--
+	-- A setter that describes nothing and a setter that is not there both come back as
+	-- silence (Family:TryCall), and silence here meant the row showed **nothing**, where
+	-- every other member's copy of that same key shows the item. So the slot is asked first
+	-- and the item second: precision where the client will give it, and the item everywhere
+	-- else.
 	bagslot = function(where)
-		local bag, slot = tostring(where):match("^(-?%d+):(%d+)$")
-		if not bag then return end
-		Family:TryCall(GameTooltip.SetBagItem, GameTooltip, tonumber(bag), tonumber(slot))
+		if type(where) ~= "table" then return end
+		Family:TryCall(GameTooltip.SetBagItem, GameTooltip,
+			tonumber(where.bag), tonumber(where.slot))
+		if not wroteAnything() then describeItem(where) end
 	end,
 
 	-- A slot on this character's own body, for the same reason the bag slot exists: a worn
 	-- bind-on-equip piece is bound, and its link goes on saying *binds when equipped* because
 	-- that is a fact about the item rather than about the one on somebody's back.
-	wornslot = function(slot)
-		Family:TryCall(GameTooltip.SetInventoryItem, GameTooltip, "player", tonumber(slot))
+	wornslot = function(where)
+		if type(where) ~= "table" then return end
+		Family:TryCall(GameTooltip.SetInventoryItem, GameTooltip, "player",
+			tonumber(where.slot))
+		if not wroteAnything() then describeItem(where) end
 	end,
 
 	spell = function(id)

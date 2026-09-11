@@ -212,6 +212,9 @@ picks itself up where it left off.
 
 - **A stray colon in the middle of several sentences**, as *77 Training Points:*.
 
+- **A key in your keyring now has a tooltip.** Hovering one on your own Possessions page showed
+  nothing at all, while the same key on another character's page described itself normally.
+
 ### If you are reporting a problem
 
 - **`/family ah`** says what your version of the game offers at the auction house and how many
