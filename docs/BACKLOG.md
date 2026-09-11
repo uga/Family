@@ -3503,6 +3503,8 @@ judged, and how stale prices go in ordinary play is what decides how the age sho
 auction house is a third market, and a price read there is filed under the reader's own faction. It
 is what they would pay there, and it is not what their own side's house is asking.
 
+**Sharpened 2026-09-11 by Alberto, and it turns an accepted imprecision into entry 66.**
+
 ---
 
 ## 56. The auctions scanner has never worked on Mists — DONE 2026-09-10
@@ -3902,3 +3904,37 @@ so it goes through `tools/FamilyIconSheet` and a screenshot like every other one
 `SetPortraitTexture` only answers for a unit, which is this player and nobody else, so it can draw
 your own character and not a brother's - which would be a block that looks like a person on one
 page and like a breastplate on the next.
+
+
+---
+
+## 66. A neutral price crosses the faction line, on that realm and no other
+
+**Alberto, 2026-09-11**, from a stack of Thick Leather: *at auction prices 39, at vendor prices 4*.
+The four are on a Horde alt of the same realm, and he is right that it is not a gap in the data -
+
+> se il personaggio di opposta fazione è su questo stesso realm, allora il dato dell'AH neutrale si
+> applica anche a lui, altrimenti no
+
+**Why it reads that way today.** A price belongs to one realm and one side, which is right and is
+checked: an Alliance house says nothing about what Horde pays. But the **neutral** house is shared
+by both sides of one realm, so a reading taken there is true for both - and Family cannot use it
+that way because of how it files, not because of what it knows. Every reading goes under *realm and
+the reader's own faction*, so a neutral reading is stored as though it were one side's, and the
+other side's characters fall through to what a vendor pays.
+
+**What has to be measured first: will the client say which house this is?** Recognising auctioneers
+by name is §2.1 exactly and is not on the table. `/family ah` now prints, with the window open,
+what `UnitName`, `UnitFactionGroup` and `UnitIsFriend` answer for `npc` and `target`, and whether
+any deposit-rate call exists - the neutral house takes a different cut, so a rate would say it
+without naming a goblin. **None of those is confirmed anywhere in this repository.**
+
+**What it would take once one of them answers.** A third market key for the realm - the same shape
+as today's two, with the faction part replaced by a neutral mark - written when the reading was
+taken at that house, and consulted as a fallback by **any** character on that realm whose own side
+has no price. Never as a first choice: your own side's house is what you would actually pay at,
+and the neutral one carries a worse cut and a longer walk.
+
+**And it would not be retrospective.** Everything already stored was filed under a faction with no
+record of where it was read, so the readings taken before this exists cannot be re-sorted - they
+stay where they are and are replaced in the ordinary way, by somebody visiting.

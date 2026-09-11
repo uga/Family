@@ -1088,6 +1088,36 @@ add("ah", L["what this client offers on the auction house"], function(argument)
 		Family:Print("    %-24s |cff888888%s|r", pair[1], pair[2])
 	end
 
+	-- **Which house this is**, which nothing here has ever asked and which decides whether a
+	-- price crosses the faction line.
+	--
+	-- Alberto, 2026-09-11: the neutral auction house is shared by both sides of one realm, so a
+	-- price read there applies to a Horde character on that realm as well - and only there. A
+	-- price read at an Alliance house says nothing about what Horde pays. Family files every
+	-- reading under *realm and the reader's faction*, so a neutral reading is filed as though it
+	-- were one side's, and the other side's characters fall back on what a vendor pays. That is
+	-- what makes four units of leather on a Horde alt read *at vendor prices* beside thirty-nine
+	-- at market on the same realm.
+	--
+	-- So the question is whether the client will say the auctioneer is neutral. These are
+	-- candidates, none of them confirmed anywhere in this repository, and the answer is what
+	-- they print rather than what they are called. Meaningful only with the window open.
+	for _, name in ipairs { "npc", "target" } do
+		Family:Print("    %-10s |cff888888%s / %s / %s|r", name,
+			tostring((Family:TryCall(UnitName, name))),
+			tostring((Family:TryCall(UnitFactionGroup, name))),
+			tostring((Family:TryCall(UnitIsFriend, "player", name))))
+	end
+
+	for _, name in ipairs { "GetAuctionHouseDepositRate", "GetAuctionDeposit",
+		"C_AuctionHouse.GetAuctionHouseDepositRate" } do
+		local fn = rawget(_G, name)
+		if not fn and _G.C_AuctionHouse then
+			fn = C_AuctionHouse[(name:gsub("^C_AuctionHouse%.", ""))]
+		end
+		Family:Print("    %-38s |cff888888%s|r", name, type(fn))
+	end
+
 	local prices, oldest, newest, held = Family.Auctions:Prices(), nil, nil, 0
 	for _, row in pairs(prices) do
 		if type(row) == "table" and row.at then
