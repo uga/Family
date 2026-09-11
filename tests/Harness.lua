@@ -31704,7 +31704,14 @@ print("how long a read of the auction house takes")
 		gone and left and gone > 0 and left >= gone * 2 and left <= gone * 5,
 		progress)
 
+	-- **Several answers to each query, as the client really sends them**, and half a second of
+	-- server between the query and them. Without both, a walk that counted its waiting once per
+	-- answer instead of once per page read exactly like one that counted it right: the fixture
+	-- answered instantly and only once, so there was nothing to count wrongly.
 	for _ = 1, pages - 1 do
+		advance(0.5)
+		fire("AUCTION_ITEM_LIST_UPDATE")
+		fire("AUCTION_ITEM_LIST_UPDATE")
 		fire("AUCTION_ITEM_LIST_UPDATE")
 		advance(1)
 	end
@@ -31714,21 +31721,38 @@ print("how long a read of the auction house takes")
 		Family.Auctions:Walking() == nil and tonumber(done:match("in (%d+) second")) > 0,
 		done)
 
-	-- **The client's own words for a span where it has them**, which are already in the
-	-- player's language and already say hours the way that language says them (§2.5). Family's
-	-- own wording is the fallback, and both are here because which of the three clients has
-	-- this call is not a question anything in this repository has asked yet.
+	-- **And where that time went**, which is the only way to answer whether a read could be
+	-- faster. Asked from play: other addons scan without drawing the window, is that quicker?
+	-- The server's half cannot be argued with; the rest is Family's own settling between pages,
+	-- and that is a decision. A line that did not separate them could not inform one.
+	local split = lastSaying("waiting for the server") or ""
+	local waited = tonumber(split:match("(%d+) second%(s%) waiting"))
+	local pacing = tonumber(split:match("second%(s%) waiting for the server, (%d+) second"))
+	check("and says how much of that was the server and how much was its own pacing",
+		waited and pacing and waited > 0 and pacing > 0
+			and waited + pacing <= tonumber(done:match("in (%d+) second")) + 1,
+		split .. " of " .. done)
+
+	-- **The client's own wording is asked for and not used, because of what comes back.**
+	--
+	-- This lane called `SecondsToTime` first, on the grounds that the client's answer is already
+	-- in the player's language (§2.5). Read back from play on Burning Crusade 2026-09-11, that
+	-- answer is **`49 |4Sec:Secs;`** - the game's plural escape, unresolved, printed raw into
+	-- the chat frame. The call is real; what it returns is a template somebody else's renderer
+	-- finishes. So the fixture hands back exactly that, and nothing a player reads may carry it.
 	local realSpan = _G.SecondsToTime
-	_G.SecondsToTime = function(seconds) return "the client's " .. math.floor(seconds) end
+	_G.SecondsToTime = function(seconds)
+		return string.format("%d |4Sec:Secs;", math.floor(seconds))
+	end
 
 	Family.Auctions:ForgetVisit()
 	SlashCmdList["FAMILY"]("ah scan go")
 	advance(1)
 	fire("AUCTION_ITEM_LIST_UPDATE")
 	advance(1)
-	check("and it says a span in the client's own words where the client has them",
-		(lastSaying("to go") or ""):find("the client's", 1, true) ~= nil,
-		lastSaying("to go"))
+	local span = lastSaying("to go") or ""
+	check("a span is said in Family's own words, never in a template the client left unfinished",
+		span:find("|4", 1, true) == nil and span:find("second", 1, true) ~= nil, span)
 
 	_G.SecondsToTime = realSpan
 	Family.Auctions:StopWalk("asked")

@@ -2755,3 +2755,34 @@ the client's own and not to a corner of the panel, and it sits above the panel's
 **The general rule: anchor to something the client sized, not to a corner of something you have
 never measured.** A container's corner is a guess wearing the clothes of a coordinate.
 
+---
+
+## L-074 — The client answered, and what it answered was a half-finished template
+
+`SecondsToTime` was used for every span Family says about a read of the auction house, on a rule
+this project holds to elsewhere and is right about: the client's own wording is already in the
+player's language, and Family reports what the client says rather than translating around it.
+
+Read back from play on Burning Crusade 2026-09-11:
+
+    read the whole house: 68 page(s) in 49 |4Sec:Secs;, 830 price(s) taken
+
+`|4Sec:Secs;` is the game's plural escape. The call is real, it answered, and what it answered is
+a **template** - a string another part of the client finishes when it draws it, and which arrives
+in the chat frame exactly as written. Family had checked that the call existed and that its answer
+was a non-empty string. Both were true. Neither is *the answer is usable*.
+
+**The harness agreed because the harness was guessing too.** Its stub returned
+`"the client's 49"` - a plain sentence invented here, standing in for a call nobody had run. That
+is L-053's shape again: a fixture written from the same belief as the code agrees with it whatever
+the truth is, and the belief here was *whatever comes back can be printed*.
+
+**What now catches it.** The stub returns what the client returned, escape and all, and the check
+says a span Family prints may not carry `|4` - so the lane that uses the template fails. The lane
+itself is gone: Family says spans in its own words, which are translated in this repository and
+arrive whole.
+
+**The general rule: a call answering is not a call answering something you can use.** Where an
+answer is passed straight to a player, check what it *contains*, not that it arrived - and make
+the fixture return the real thing, not a tidy invention of the same shape.
+

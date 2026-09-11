@@ -890,15 +890,15 @@ local WHY = {
 
 -- **How long, in words somebody can act on.**
 --
--- The client's own wording where it has one: `SecondsToTime` is already in the player's language
--- and already says hours and minutes the way that language says them (§2.5). Family's own two
--- forms are the fallback for a build without it, which is a question nothing here can answer -
--- so both are written and both are exercised.
+-- This asked the client first, through `SecondsToTime`, on the grounds that its answer is
+-- already in the player's language (§2.5). Read back from play on Burning Crusade 2026-09-11,
+-- that answer arrives as **`49 |4Sec:Secs;`** - the game's plural escape, unresolved, printed
+-- raw into the chat frame. The call is real and its answer is a template somebody else's
+-- renderer finishes, so asking it was right and using what came back was not.
+--
+-- So Family says it in its own words, which are translated in this repository and arrive whole.
 local function spanOf(seconds)
 	seconds = math.max(0, math.floor(tonumber(seconds) or 0))
-
-	local said = (Family:TryCall(_G.SecondsToTime, seconds))
-	if type(said) == "string" and said ~= "" then return said end
 
 	if seconds < 60 then return string.format(L["%d second(s)"], seconds) end
 	return string.format(L["%d minute(s)"], math.floor(seconds / 60 + 0.5))
@@ -947,9 +947,21 @@ function UI:StartHouseRead()
 		end
 
 		if what == "finished" then
+			local took = Family.Auctions:WalkSeconds(state) or 0
 			Family:Print(L["read the whole house: %d page(s) in %s, %d price(s) taken, %d known here"],
-				state.done or 0, spanOf(Family.Auctions:WalkSeconds(state) or 0),
-				state.kept or 0, Family.Auctions:PriceCount())
+				state.done or 0, spanOf(took), state.kept or 0,
+				Family.Auctions:PriceCount())
+
+			-- **Where that time actually went**, which is the only way to answer whether a
+			-- read could be made faster. Asked from play: other addons scan without drawing
+			-- the window - is that quicker? Waiting is the server's half and cannot be
+			-- argued with; the rest is Family's own pacing between pages, and that is a
+			-- decision rather than a fact.
+			local waited = Family.Auctions:WalkWaiting(state)
+			if waited then
+				Family:Print(L["  %s waiting for the server, %s of Family's own pacing"],
+					spanOf(waited), spanOf(math.max(0, took - waited)))
+			end
 			return
 		end
 

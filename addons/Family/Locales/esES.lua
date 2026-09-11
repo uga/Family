@@ -245,6 +245,7 @@ Family.locales.esES = {
 	["this build has the newer auction house, which has no pages to walk"] = "esta versión tiene la casa de subastas nueva, que no tiene páginas que recorrer",
 	["  page %d of %d, %d price(s) taken - %s gone, about %s to go"] = "  página %d de %d, %d precio(s) tomados - %s transcurrido, quedan unos %s",
 	["read the whole house: %d page(s) in %s, %d price(s) taken, %d known here"] = "casa de subastas leída entera: %d página(s) en %s, %d precio(s) tomados, %d conocidos aquí",
+	["  %s waiting for the server, %s of Family's own pacing"] = "  %s esperando al servidor, %s de ritmo propio de Family",
 	["Read it all"] = "Leerlo todo",
 	["Searching..."] = "Buscando...",
 	["Stop"] = "Detener",

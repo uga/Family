@@ -831,6 +831,13 @@ function Auctions:WalkSeconds(state)
 	return now - state.clock
 end
 
+-- **How much of that was the server.** The rest is the settling Family does between pages, which
+-- is the only half anybody here can decide about.
+function Auctions:WalkWaiting(state)
+	state = state or walk
+	return state and state.waited or nil
+end
+
 function Auctions:StopWalk(why)
 	if not walk then return false end
 	local stopping, told = walk, walk.told
@@ -856,6 +863,11 @@ local function askPage(page)
 	walk.waits = 0
 	walk.page = page
 	walk.sentAt = time()
+
+	-- **When this one went out**, so that what the server took can be told apart from what
+	-- Family's own pacing took. Asked from play: could a read be made faster? Only the second
+	-- half is ours to decide, and until now nothing said how big it was.
+	walk.sentClock = tonumber((Family:TryCall(GetTime)))
 
 	local ok = Auctions:ReplayQuery(page)
 	if not ok then return Auctions:StopWalk("query") end
@@ -896,6 +908,14 @@ local function walkHeard(kept)
 	--
 	-- Not waiting for anything now, which is what the quiet timeout reads.
 	walk.sentAt = nil
+
+	-- And the round trip goes on the pile, once per page rather than once per answer: the
+	-- clock is cleared with the flag above it, so the five answers that follow add nothing.
+	if walk.sentClock then
+		local now = tonumber((Family:TryCall(GetTime)))
+		if now then walk.waited = (walk.waited or 0) + (now - walk.sentClock) end
+		walk.sentClock = nil
+	end
 
 	-- **The burst is let settle, and settling is what collapses it.** `Family:After` replaces a
 	-- pending timer of the same key, so six answers to one query schedule the same callback six

@@ -245,6 +245,7 @@ Family.locales.deDE = {
 	["this build has the newer auction house, which has no pages to walk"] = "diese Version hat das neuere Auktionshaus, das keine Seiten zum Durchlaufen hat",
 	["  page %d of %d, %d price(s) taken - %s gone, about %s to go"] = "  Seite %d von %d, %d Preis(e) genommen - %s vergangen, noch etwa %s",
 	["read the whole house: %d page(s) in %s, %d price(s) taken, %d known here"] = "ganzes Auktionshaus gelesen: %d Seite(n) in %s, %d Preis(e) genommen, %d hier bekannt",
+	["  %s waiting for the server, %s of Family's own pacing"] = "  %s Warten auf den Server, %s eigener Takt von Family",
 	["Read it all"] = "Alles lesen",
 	["Searching..."] = "Suche...",
 	["Stop"] = "Anhalten",

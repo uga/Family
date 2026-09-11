@@ -245,6 +245,7 @@ Family.locales.ruRU = {
 	["this build has the newer auction house, which has no pages to walk"] = "в этой версии новый аукцион, у которого нет страниц для обхода",
 	["  page %d of %d, %d price(s) taken - %s gone, about %s to go"] = "  страница %d из %d, взято цен: %d - прошло %s, осталось около %s",
 	["read the whole house: %d page(s) in %s, %d price(s) taken, %d known here"] = "прочитан весь аукцион: страниц: %d за %s, взято цен: %d, здесь известно: %d",
+	["  %s waiting for the server, %s of Family's own pacing"] = "  %s ожидания сервера, %s собственного темпа Family",
 	["Read it all"] = "Прочитать всё",
 	["Searching..."] = "Поиск...",
 	["Stop"] = "Остановить",
