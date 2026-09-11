@@ -848,6 +848,47 @@ This is the second time an Era habit has been read as a Burning Crusade bug - th
 Mote-to-Primal, in the other direction - and it is the argument for the per-expansion tables
 stated as a measurement rather than as a principle.
 
+### Binding: what the item says, and what the instance says, measured 2026-09-11
+
+Read on Mists with `/family bind`, against a character's own bags and worn gear. Every one of the
+game's binding strings is present - `ITEM_SOULBOUND`, `ITEM_BIND_ON_EQUIP`, `ITEM_BIND_ON_PICKUP`,
+`ITEM_BIND_ON_USE`, `ITEM_ACCOUNTBOUND`, `ITEM_BIND_QUEST` - and `C_Item.IsBound` exists on that
+build as a function.
+
+**`GetItemInfo`'s fourteenth return is the bind type**, and the mapping is not inferred from a
+name: it is the fourteenth return held against what each item's own tooltip said, over ten items
+of three kinds.
+
+| return 14 | items read | their tooltip said |
+|---|---|---|
+| **1** | 6948 Hearthstone, 63216, 63211 | `soulbound` |
+| **2** | 10009, 7519, 10018, 10003, 7052 | `equip` |
+| **4** | 63028, 7667 | `quest` |
+
+So 1 is bind-on-pickup, 2 is bind-on-equip and 4 is a quest item, on that build. The rest of the
+row is the ordinary signature and was read the same way: 9 is the equip location, 10 the texture
+file id, 11 the sell price, 12 and 13 the class and subclass, 15 the expansion.
+
+**What the item cannot say is whether this one has bound.** Return 14 is a property of the kind: a
+bind-on-equip sword reads 2 whether it is in a bag or on somebody's back. The instance is only in
+its own tooltip, which is what `Family:BindingIn` and `Family:BindingWorn` read - whole lines
+compared against the game's own words, so a German client needs no German here.
+
+**And equipped does not mean bound.** The clearest single row of the reading:
+
+    worn slot 4, item 4334: nil
+
+A shirt, worn, and its tooltip says nothing about binding at all - so it never binds, and it can
+be sold at auction while being worn. Any rule of the form *what is equipped is soulbound* is
+wrong, and it is wrong on exactly the items a shortcut would have been written for.
+
+**One value was not measured and it is the one that decides the cost.** The probe as first written
+printed `GetItemInfo` only for slots whose tooltip said something, so there is no row for the grey
+and white things and the trade goods that fill most of a bag - and whether those read **0** is what
+decides whether a full read has to build a tooltip for every slot or only for the bind-on-equip
+ones. The probe now prints a few of the quiet rows as well; until that run comes back, nothing is
+assumed about them.
+
 ### What the server says when an auction is bought out, measured 2026-08-31
 
 Buying something out sends it by mail, exactly as posting to an alt does, so it belongs in the

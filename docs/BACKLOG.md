@@ -3796,6 +3796,22 @@ one call, no tooltip) for the two cases that do not need the instance, so that a
 spent only on bind-on-equip. Scanning every slot of every member would be a tooltip built for
 every item a family owns.
 
+**Read 2026-09-11 on Mists, and most of that is answered.** `GetItemInfo`'s **fourteenth** return
+is the bind type - 1 pickup, 2 equip, 4 quest - measured by holding it against each item's own
+tooltip over ten items of three kinds, and written up in DATASOURCES. So the two cases that do not
+need the instance are one call each, and the tooltip is spent on bind-on-equip alone.
+
+**And the shortcut that would have been written without it is wrong.** `worn slot 4, item 4334:
+nil` - a shirt, worn, saying nothing about binding, so it never binds and can be sold while being
+worn. *Equipped means bound* is false, and false on exactly the items somebody would have reached
+for it over.
+
+**Still unmeasured, and it is the one that decides the cost:** what the never-binding things read.
+The probe filtered to the rows whose tooltip said something, so the greys, the whites and the trade
+goods that are most of a bag have no row at all. It now prints a few quiet ones too. Until that
+comes back, nothing is assumed about them - and the fix cannot be sized without it, because
+*tooltip for every slot* and *tooltip for the bind-on-equip ones* are different features.
+
 **Where the answer has to live.** The index stores counts per member per item id, and this is a
 property of a slot rather than of an id - so either the scanners record it beside the item
 (`slots[n].bound = true`) the way charges already are, or the worth cannot tell the two swords

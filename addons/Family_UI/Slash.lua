@@ -752,15 +752,20 @@ add("bind", L["what this client can say about what is bound: /family bind"], fun
 
 	-- **And what is carried.** The interesting rows are the ones the tooltip says something
 	-- about, so an ordinary bag of cloth does not fill the chat frame with nothing.
-	local said = 0
+	local said, quiet = 0, 0
 	for bag = 0, 4 do
 		for slot = 1, 36 do
 			local id = Family:TryCall(GetContainerItemID, bag, slot)
 				or (_G.C_Container and Family:TryCall(C_Container.GetContainerItemID, bag, slot))
 
-			if id and said < 10 then
+			-- **Including the ones that say nothing**, which the first writing of this left
+			-- out - and they are the ones that decide whether a tooltip has to be built for
+			-- every slot of every bag. A reading that filters to the interesting rows cannot
+			-- answer a question about the boring ones.
+			if id and said < 14 then
 				local binding = Family:BindingIn(bag, slot)
-				if binding then
+				if binding or quiet < 4 then
+					if not binding then quiet = quiet + 1 end
 					said = said + 1
 					local row = Family:ItemInfoRow(id)
 					Family:Print(L["  bag %d slot %d, item %d: |cffffd700%s|r"],
