@@ -31736,9 +31736,15 @@ print("how long a read of the auction house takes")
 	local split = lastSaying("waiting for the server") or ""
 	local waited = tonumber(split:match("(%d+) second%(s%) waiting"))
 	local pacing = tonumber(split:match("second%(s%) waiting for the server, (%d+) second"))
+	-- **Waiting is part of the elapsed time and cannot exceed it.** That is the invariant, and
+	-- it is what a walk counting its waiting once per answer instead of once per page breaks -
+	-- it triples the figure and sails past the clock. Not *pacing is more than nothing*: with
+	-- the settle at a tenth of a second, four pages of pacing round to nought seconds, and a
+	-- check that insisted otherwise would be a check about this fixture's numbers.
+	local total = tonumber(done:match("in (%d+) second"))
 	check("and says how much of that was the server and how much was its own pacing",
-		waited and pacing and waited > 0 and pacing > 0
-			and waited + pacing <= tonumber(done:match("in (%d+) second")) + 1,
+		waited and pacing and total and waited > 0 and waited <= total
+			and waited + pacing <= total + 1,
 		split .. " of " .. done)
 
 	-- **The client's own wording is asked for and not used, because of what comes back.**

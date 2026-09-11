@@ -807,10 +807,22 @@ local QUIET_SECONDS = 30
 -- How long the answers to one query are given to stop arriving before the next goes out.
 --
 -- `AUCTION_ITEM_LIST_UPDATE` fires several times for a single query, which is why this exists
--- rather than asking the moment the first one lands. It is also the walk's only pacing: at five
--- hundred and thirty-seven pages a third of a second apiece is about three minutes, and a server
--- that has just sent six messages is not asking to be written to again immediately.
-local SETTLE_SECONDS = 0.3
+-- rather than asking the moment the first one lands, and a server that has just sent six
+-- messages is not asking to be written to again immediately.
+--
+-- **It is also the walk's only pacing, which makes it the only part of the speed anybody here
+-- decides.** Measured on Burning Crusade 2026-09-11: sixty-eight pages in forty-nine seconds,
+-- about three quarters of a second each, of which this was three tenths - so the server took
+-- roughly four tenths and Family spent the rest waiting on purpose. Over a house of 3,605 pages
+-- that is eighteen minutes of a forty-three minute read.
+--
+-- Alberto's comparison is what sized it: another addon reads the same house in about fifteen
+-- minutes, which is a quarter of a second a page in total - less than this delay alone was. Cut
+-- to a tenth on his instruction, which gives back about twelve of those eighteen minutes and is
+-- still a real pause between one page and the next. It does not close the gap: even at nothing
+-- at all the server's own four tenths a page is twenty-five minutes, and what the rest of that
+-- difference is has not been measured by anybody here.
+local SETTLE_SECONDS = 0.1
 
 function Auctions:Walking()
 	return walk ~= nil and walk or nil
