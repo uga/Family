@@ -218,7 +218,11 @@ local function crafterLines(tooltip, itemID)
 		local theirs = Family.Guild:CraftersOf(Family.Recipes:TaughtBy(itemID),
 			Family.Recipes:Makes(itemID), itemName)
 
-		for index = 1, math.min(GUILD_CAP, #theirs) do
+		-- One over the cap is drawn whole: a line reading "and 1 more" costs the line the
+		-- name would have cost (UI:ShowAtMost).
+		local shown = UI:ShowAtMost(#theirs, GUILD_CAP)
+
+		for index = 1, shown do
 			local who = theirs[index]
 			local r, g, b = classColour(who.classFile)
 
@@ -231,9 +235,9 @@ local function crafterLines(tooltip, itemID)
 			}
 		end
 
-		if #theirs > GUILD_CAP then
+		if shown < #theirs then
 			lines[#lines + 1] = { string.format(L["|cff888888and %d more|r"],
-				#theirs - GUILD_CAP), "" }
+				#theirs - shown), "" }
 		end
 	end
 
@@ -289,7 +293,10 @@ local function makerLines(ours, theirs)
 
 	local lines = { { L["|cff66bbffCan make it|r"],
 		string.format("|cff888888%d|r", total) } }
-	local room = GUILD_CAP
+	-- One over the cap is drawn whole, here as everywhere: the contraction line costs the
+	-- line the name would have cost (UI:ShowAtMost).
+	local shown = UI:ShowAtMost(total, GUILD_CAP)
+	local room = shown
 
 	for index = 1, math.min(room, #ours) do
 		local who = labelled(ours)[index]
@@ -330,9 +337,9 @@ local function makerLines(ours, theirs)
 
 	-- A tooltip that fills the screen has answered a different question from the one asked,
 	-- so the rest are counted rather than listed.
-	if total > GUILD_CAP then
+	if shown < total then
 		lines[#lines + 1] = { string.format(L["|cff888888and %d more|r"],
-			total - GUILD_CAP), "" }
+			total - shown), "" }
 	end
 
 	return lines

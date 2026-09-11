@@ -349,8 +349,10 @@ local function describe(tooltip)
 	-- Whatever room this group was given, and a line saying what was left out. A family that
 	-- is quietly shown as smaller than it is would be worse than one that does not fit.
 	local function drawGroup(list, indent)
-		local limit = take[list] or #list
-		if limit > #list then limit = #list end
+		-- One over what the room allows is drawn whole: the line that would have said
+		-- *and 1 more* costs exactly the line the name costs (UI:ShowAtMost), so nothing
+		-- overflows by taking it.
+		local limit = UI:ShowAtMost(#list, take[list] or #list)
 
 		for index = 1, limit do drawMember(list[index], indent) end
 

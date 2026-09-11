@@ -443,14 +443,17 @@ local ORDERS = {
 
 -- How many lines of a block are drawn before the rest fold away.
 --
--- **Three, which is the reputations list's own number** - `FACTION_PEOPLE` in `Character.lua` -
--- because that list is the model this shape was asked for by, and a reader who has learnt the
--- fold on one page should meet the same fold on the other. Written as five first, on the
--- reasoning that the item tooltip names five holders and a panel should not hide what a tooltip
--- already says; reported the same day with a screenshot of four holders and five holders both
--- refusing to fold, which is Alberto's call and the better one - the precedent that matters is
--- the panel he pointed at, not the tooltip.
-local BLOCK_LINES = 3
+-- **The same number as the reputations list** - `UI.FACTION_PEOPLE` in `Character.lua` - because
+-- that list is the model this shape was asked for by, and a reader who has learnt the fold on one
+-- page should meet the same fold on the other. Written as five first, on the reasoning that the
+-- item tooltip names five holders and a panel should not hide what a tooltip already says;
+-- reported the same day with a screenshot of four holders and five holders both refusing to fold,
+-- which is Alberto's call and the better one - the precedent that matters is the panel he pointed
+-- at, not the tooltip. It was three until 2026-09-11 and is ten now.
+-- See UI.CRAFTING_PEOPLE in Summary.lua for why this is ten rather than three.
+-- Kept if something already set it, so a second load of this file does not put a layout
+-- number back where it was: the harness drives the folds at three and the panels reload.
+UI.BLOCK_LINES = UI.BLOCK_LINES or 10
 
 -- The block whose lines are all showing, if any. On the panel rather than on a row, because
 -- rows are pooled and a row would carry it into whatever is drawn next.
@@ -987,8 +990,8 @@ local function build(frame)
 				-- character whose key happens to read the same.
 				local block = key and (tostring(groupColumn) .. "\1" .. key) or nil
 				local open = block ~= nil and UI.__openContents == block
-				local foldable = block ~= nil and held > BLOCK_LINES
-				local limit = (foldable and not open) and BLOCK_LINES or held
+				local foldable = block ~= nil and UI:ShowAtMost(held, UI.BLOCK_LINES) < held
+				local limit = (foldable and not open) and UI.BLOCK_LINES or held
 
 				for offset = 0, limit - 1 do
 					local line = lines[at + offset]

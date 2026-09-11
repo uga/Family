@@ -3818,3 +3818,26 @@ property of a slot rather than of an id - so either the scanners record it besid
 apart. Recording it at scan time is also the only moment the instance is reachable at all: the
 tooltip can only be pointed at a bag the client is holding, so a sibling's sword can never be
 asked about and whatever was recorded when they scanned is all there will ever be.
+
+---
+
+## 64. Fold only what does not fit on the page
+
+**Alberto's own reading of the French player's report, 2026-09-11**, and the better rule: *se la
+lista è di una decina di righe, quindi meno di quelle che stanno su una pagina, a che serve
+contrarre?* The criterion is not how many a fold hides, it is whether the whole thing fits.
+
+**What was done instead, and why.** The caps went from three to ten and a list one over a cap is
+drawn whole - which covers the case reported and every case like it, and needed no geometry. The
+rule as stated needs the number of rows a panel can show, and that is a measured height: the
+panels read their scroll frame's size while refreshing, and on a first draw that answer is nought
+(`Window.lua` carries the note and the fault it caused). Deriving it from the window's own
+constants would be arithmetic over layout code rather than a measurement.
+
+**What it would take:** a content height that is known before any frame is laid out, the way
+`UI.CONTENT_W` already is for width - which is a screenshot job rather than a reading, since the
+only honest way to confirm rows-per-page is to look at a full one.
+
+**And it is worth weighing before building.** With several groups on one page, *everything fits*
+is a property of the page rather than of a group, so a long block would stay open while a short one
+folds - which reads as arbitrary unless the page says why. Ten is a number a reader can learn.

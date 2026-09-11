@@ -1987,10 +1987,25 @@ function professionColumns()
 	return columns
 end
 
--- How many crafters of one timer are drawn before the rest fold away. Three, which is
--- `FACTION_PEOPLE` on the reputations list and `BLOCK_LINES` on the possessions search: three
--- panels, one fold, and a reader who has learnt it once.
-UI.CRAFTING_PEOPLE = 3
+-- How many crafters of one timer are drawn before the rest fold away. The same as
+-- `UI.FACTION_PEOPLE` on the reputations list and `UI.BLOCK_LINES` on the possessions search:
+-- three panels, one fold, and a reader who has learnt it once.
+-- **Ten, not three.** Reported 2026-09-11 by a French player and sharpened by Alberto: a list
+-- short enough to read whole is a list with nothing to gain by contracting it. Three was chosen
+-- when these blocks were first drawn and it contracts lists that were never in anybody's way -
+-- four members drew three and *and 1 more*, which hides a name and saves a line it then spends
+-- on saying so.
+--
+-- These panels scroll, so a contraction is not protection against overflowing: it is there to
+-- keep a summary from becoming a list. Ten is where a group stops being something read at a
+-- glance. It is a layout choice rather than a measurement, and it is written once here so that
+-- changing one's mind is one line.
+--
+-- The harness sets these to small numbers where it drives the folding itself, so a fixture does
+-- not need twelve members to exercise a fold.
+-- Kept if something already set it, so a second load of this file does not put a layout
+-- number back where it was: the harness drives the folds at three and the panels reload.
+UI.CRAFTING_PEOPLE = UI.CRAFTING_PEOPLE or 10
 
 -- **This set is drawn the other way up, and the columns say so.**
 --
@@ -3541,7 +3556,8 @@ local function build(frame)
 				end)
 
 				local open = UI.__openCrafting == group.label
-				local foldable = #group.people > (UI.CRAFTING_PEOPLE or 3)
+				local foldable = UI:ShowAtMost(#group.people, UI.CRAFTING_PEOPLE or 3)
+					< #group.people
 				local limit = (foldable and not open) and (UI.CRAFTING_PEOPLE or 3)
 					or #group.people
 

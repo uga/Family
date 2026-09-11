@@ -164,7 +164,10 @@ end)
 -- How many of a faction's people are shown before the rest are folded away, and how much room
 -- their standing needs beside them. Three, because the ask was three and because a faction a
 -- family of forty has all met is forty lines nobody scrolls past.
-local FACTION_PEOPLE = 3
+-- See UI.CRAFTING_PEOPLE in Summary.lua for why this is ten rather than three.
+-- Kept if something already set it, so a second load of this file does not put a layout
+-- number back where it was: the harness drives the folds at three and the panels reload.
+UI.FACTION_PEOPLE = UI.FACTION_PEOPLE or 10
 local FACTION_RIGHT = 200
 
 -- Everyone the gear grid draws: our own members, then each linked family's siblings under
@@ -1201,9 +1204,11 @@ local function build(frame)
 					end)
 
 					local open = UI.__openFaction == row.id
-					local limit = open and #row.people
-						or math.min(FACTION_PEOPLE, #row.people)
-					local foldable = #row.people > FACTION_PEOPLE
+					local foldable = UI:ShowAtMost(#row.people, UI.FACTION_PEOPLE) < #row.people
+					-- The cap applies only where the list is really being contracted. Read
+					-- the other way round it drew the cap and no *and 1 more* line, which
+					-- silently loses whoever was one over it.
+					local limit = (foldable and not open) and UI.FACTION_PEOPLE or #row.people
 
 					for index = 1, limit do
 						local person = row.people[index]
@@ -1414,9 +1419,11 @@ local function build(frame)
 					end)
 
 					local open = UI.__openQuest == row.id
-					local limit = open and #row.people
-						or math.min(FACTION_PEOPLE, #row.people)
-					local foldable = #row.people > FACTION_PEOPLE
+					local foldable = UI:ShowAtMost(#row.people, UI.FACTION_PEOPLE) < #row.people
+					-- The cap applies only where the list is really being contracted. Read
+					-- the other way round it drew the cap and no *and 1 more* line, which
+					-- silently loses whoever was one over it.
+					local limit = (foldable and not open) and UI.FACTION_PEOPLE or #row.people
 
 					for index = 1, limit do
 						local person = row.people[index]

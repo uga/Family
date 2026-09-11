@@ -67,6 +67,12 @@ picks itself up where it left off.
 - **It never gives a total on its own** — how much came from auction prices, how much from vendor
   prices, and how many things it had no price for at all.
 
+### Shorter lists stay whole
+
+- **A list of ten or fewer is no longer contracted.** The crafting, reputations and possessions
+  blocks used to show three and then *and 1 more*, which hides a name to save a line it then
+  spends saying so. Reported by a French player.
+
 ### What a character is wearing counts as theirs
 
 - **Gear is part of possessions now.** Hover a sword one character keeps in the bank and another

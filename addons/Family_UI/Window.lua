@@ -1156,6 +1156,25 @@ end
 --
 -- Each place is a whole phrase rather than a number with a word stuck after it: where the
 -- number goes inside the phrase is a fact about the language, not about the bag.
+-- How many of a list to draw before contracting the rest into a line
+--
+-- Reported 2026-09-11 by a French player, from the crafting set: four members drew three and
+-- *et 1 de plus*. **A line saying "and 1 more" costs exactly the line the one it is hiding would
+-- have cost** - so it saves nothing at all and spends a name to do it. The same is true of every
+-- list in this addon that contracts into a line of its own.
+--
+-- So a cap is a cap on what is worth hiding, not on what is worth showing: one over it is drawn
+-- whole. Two over it is where a contraction starts paying for itself.
+--
+-- Not for a contraction that is *appended* to a line that is already being drawn - the guild
+-- panel does that, and there the extra name costs a row while the words cost nothing.
+function UI:ShowAtMost(total, cap)
+	total = tonumber(total) or 0
+	cap = tonumber(cap) or total
+	if total <= cap + 1 then return total end
+	return cap
+end
+
 function UI:HeldWhere(owner)
 	local parts = {}
 	if (owner.bags or 0) > 0 then parts[#parts + 1] = string.format(L["%d bags"], owner.bags) end

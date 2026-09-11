@@ -1952,6 +1952,28 @@ for _, file in ipairs(UI_FILES) do
 end
 fire("ADDON_LOADED", "Family_UI")
 
+-- **The shipped fold caps, checked here and then driven down to three.**
+--
+-- Raised from three to ten on 2026-09-11, reported by a French player: a list short enough to
+-- read whole has nothing to gain by contracting, and three was contracting lists nobody was
+-- troubled by. Held first, because a default is a thing this file must not be silent about -
+-- and because everything below would pass just as well against three.
+check("the fold caps ship at ten, not three",
+	Family.UI.CRAFTING_PEOPLE == 10 and Family.UI.FACTION_PEOPLE == 10
+		and Family.UI.BLOCK_LINES == 10,
+	table.concat({ Family.UI.CRAFTING_PEOPLE, Family.UI.FACTION_PEOPLE,
+		Family.UI.BLOCK_LINES }, "/"))
+check("and all three agree, because one fold is learnt once",
+	Family.UI.CRAFTING_PEOPLE == Family.UI.FACTION_PEOPLE
+		and Family.UI.FACTION_PEOPLE == Family.UI.BLOCK_LINES)
+
+-- Then driven down, so that a fixture of five exercises a fold that ships at twelve. What the
+-- checks below are about is the folding itself - that it hides, offers, opens and closes - and
+-- twelve members would say nothing about that which five do not.
+Family.UI.CRAFTING_PEOPLE = 3
+Family.UI.FACTION_PEOPLE = 3
+Family.UI.BLOCK_LINES = 3
+
 -- But the tab is there. It used to appear only once the feature was on, so the only way to
 -- learn Wide Family existed was to read a manual - and a choice nobody can find is not a
 -- choice anybody has made. Both sharing features ship off and both panels are in the list
@@ -9312,6 +9334,12 @@ print("everybody's quests at once")
 		{ key = "Qtwo-FireMaw", name = "Qtwo", done = 3 },
 		{ key = "Qthree-FireMaw", name = "Qthree", done = 2 },
 		{ key = "Qfour-FireMaw", name = "Qfour", done = 1 },
+		-- **Five, not four.** A list one over the cap is drawn whole now: a line reading
+		-- *and 1 more* costs exactly the line the name would have, so it hides somebody and
+		-- saves nothing. Reported by a French player from the crafting set (UI:ShowAtMost),
+		-- and a fixture of four would be testing the contraction against a list that no
+		-- longer contracts.
+		{ key = "Qfive-FireMaw", name = "Qfive", done = 1 },
 	}
 
 	for _, member in ipairs(roster) do
@@ -9396,6 +9424,16 @@ print("everybody's quests at once")
 	knowQuest(5001, shared.title)
 	Family.UI:Refresh()
 
+	-- **Opened and closed once before anything is read**, so that every row this block needs
+	-- already exists. `under` walks `frames` in the order rows were created, and a row a
+	-- growing pool makes for the first time is last in that list rather than beside the rows
+	-- it was drawn with - the trap `foldRow` below carries, reached from the other side. With
+	-- the pool already grown the two orders agree and the reading is about the panel.
+	Family.UI.__openQuest = "id:5001"
+	Family.UI:Refresh()
+	Family.UI.__openQuest = nil
+	Family.UI:Refresh()
+
 	local quest = rowSaying(shared.title)
 	check("a quest four of them are on is one row", quest ~= nil)
 
@@ -9453,16 +9491,39 @@ print("everybody's quests at once")
 				and (under(quest, "Qtwo").right.__text or ""):find("3 / 5", 1, true) ~= nil,
 			under(quest, "Qtwo") and under(quest, "Qtwo").right.__text)
 
-		check("only three of them at once", under(quest, "Qfour") == nil)
+		-- **Asked of the screen rather than of the order.** `under` walks rows in the order
+		-- they were created, and one a growing pool makes for the first time sits at the end
+		-- of that list rather than beside the rows it was drawn with - the trap `foldRow`
+		-- above carries. Whether a name is being shown at all is a question about the screen.
+		local function shownSaying(needle)
+			for _, f in ipairs(frames) do
+				local middle = type(f.middle) == "table" and f.middle.__text
+				if f.__shown ~= false and type(middle) == "string"
+					and middle:find(needle, 1, true) then
+					return f
+				end
+			end
+			return nil
+		end
 
-		local more = foldRow(string.format(Family.L["|cff888888and %d more|r"], 1))
+		check("only three of them at once",
+			under(quest, "Qfour") == nil and shownSaying("Qfour") == nil)
+
+		local more = foldRow(string.format(Family.L["|cff888888and %d more|r"], 2))
 		check("and the rest offered rather than dropped", more ~= nil)
 
 		if more then
 			more.__scripts.OnClick(more)
 			quest = rowSaying(shared.title)
-			check("clicking that shows them",
-				quest and under(quest, "Qfour") ~= nil)
+			-- **Drawn twice on purpose.** `under` walks `frames` in the order they were
+			-- created, and a row a growing pool makes for the first time is last in that
+			-- list rather than beside the rows it was drawn with - the same trap `foldRow`
+			-- above carries. The second draw reuses rows that now all exist, so the order
+			-- is the order on the screen.
+			Family.UI:Refresh()
+			quest = rowSaying(shared.title)
+
+			check("clicking that shows them", shownSaying("Qfour") ~= nil)
 
 			local fewer = foldRow(Family.L["|cff888888fewer|r"])
 			if fewer then fewer.__scripts.OnClick(fewer) end
@@ -27734,14 +27795,18 @@ print("the family's reputations, as factions rather than as members")
 			-- And one nobody else has, which must still be listed.
 			rep(270, "Zandalar Tribe", "Other", 3, 10, 1000),
 		} },
-		-- Two more with the same faction, so that it has more people than a block shows
-		-- and the fold has something to fold. Three is the cut, so four is the smallest
-		-- fixture that can tell "shows everybody" from "shows three and says so".
+		-- Three more with the same faction, so that it has more people than a block shows
+		-- and the fold has something to fold. Three is the cut here, and a list one over a
+		-- cut is drawn whole since 2026-09-11 - so **five** is the smallest fixture that can
+		-- tell "shows everybody" from "shows three and says so".
 		{ key = "Repthree-Fire Maw", name = "Repthree", reps = {
 			rep(59, "Thorium Brotherhood", "Steamwheedle", 4, 300, 1000),
 		} },
 		{ key = "Repfour-Fire Maw", name = "Repfour", reps = {
 			rep(59, "Thorium Brotherhood", "Steamwheedle", 3, 400, 1000),
+		} },
+		{ key = "Repfive-Fire Maw", name = "Repfive", reps = {
+			rep(59, "Thorium Brotherhood", "Steamwheedle", 2, 450, 1000),
 		} },
 	}
 
