@@ -32011,6 +32011,53 @@ print("a modified click on an item")
 	check("and shift, which the game already uses, is left alone", opened == nil,
 		tostring(opened))
 
+	-- **Who else is claiming the click, asked of the client and not guessed.**
+	--
+	-- From play on Mists 2026-09-12: CTRL and ALT and a click turn the cursor into a magnifying
+	-- glass. `hooksecurefunc` takes nothing away from whoever does that - it runs after the real
+	-- call and hands its answer back untouched - but which thing it is can be asked. None of
+	-- these three calls is in this harness, which is the case that matters: a probe that reports
+	-- nothing because a call was missing is a probe that has stopped working silently.
+	local reported = {}
+	Family.UI:TellNextItemClick(function(rows)
+		for _, pair in ipairs(rows) do reported[pair[1]] = pair[2] end
+	end)
+
+	ctrl, alt, shift = true, true, false
+	HandleModifiedItemClick(link)
+
+	check("a probe on a client with none of those calls still reports the click",
+		reported.control == "true" and reported["1"] == link,
+		tostring(reported.control) .. " / " .. tostring(reported["1"]))
+
+	check("and says it could not find out who else is claiming it, rather than nothing",
+		reported.cursor ~= nil and reported["hooked by"] ~= nil
+			and reported.clicked ~= nil,
+		tostring(reported.cursor) .. " | " .. tostring(reported["hooked by"]))
+
+	-- And with the calls there, their answers are what is printed.
+	local realCursor, realFocus, realSecure = _G.GetCursorInfo, _G.GetMouseFocus,
+		_G.issecurevariable
+	_G.GetCursorInfo = function() return "item", 4242 end
+	_G.GetMouseFocus = function() return { GetName = function() return "BagnonItem7" end } end
+	_G.issecurevariable = function() return false, "SomeOtherAddon" end
+
+	reported = {}
+	Family.UI:TellNextItemClick(function(rows)
+		for _, pair in ipairs(rows) do reported[pair[1]] = pair[2] end
+	end)
+	HandleModifiedItemClick(link)
+
+	check("while a client that can answer names the frame and the addon",
+		reported.clicked == "BagnonItem7"
+			and reported["hooked by"]:find("SomeOtherAddon", 1, true)
+			and reported.cursor:find("4242", 1, true),
+		tostring(reported.clicked) .. " | " .. tostring(reported["hooked by"])
+			.. " | " .. tostring(reported.cursor))
+
+	_G.GetCursorInfo, _G.GetMouseFocus, _G.issecurevariable = realCursor, realFocus, realSecure
+	ctrl, alt, shift = false, false, false
+
 	-- **Counted whether or not anybody was listening**, which is what tells *the hook does not
 	-- fire here* apart from *the hook was never installed*. Both are silence otherwise.
 	check("and every one of them is counted", Family.UI:ItemClicksSeen() >= 3,

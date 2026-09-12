@@ -115,6 +115,31 @@ local function heard(link, ...)
 		{ "alt", tostring(alt) },
 	}
 
+	-- **And who else is claiming this click.**
+	--
+	-- Asked 2026-09-12: on Mists, CTRL and ALT and a click turn the cursor into a magnifying
+	-- glass, and the question is whether Family is taking something away from whoever does
+	-- that. It is not - `hooksecurefunc` runs after the real call and passes its answer back
+	-- untouched, so both things happen and neither is lost. But *which* thing is worth knowing,
+	-- and none of it has to be guessed at.
+	--
+	-- `GetCursorInfo` says what the cursor is now holding, which is the magnifying glass's own
+	-- description of itself. `GetMouseFocus` names the frame that was clicked, and a frame's
+	-- name says whose it is - `ContainerFrame1Item5` is the client's own bag, anything else is
+	-- somebody's addon. `issecurevariable` answers whether this global has been touched by an
+	-- addon **and names it**, which is the question asked, answered by the client rather than
+	-- by a list of suspects.
+	local kind, one, two = Family:TryCall(GetCursorInfo)
+	held[#held + 1] = { "cursor", table.concat({ tostring(kind), tostring(one),
+		tostring(two) }, " / ") }
+
+	local focus = (Family:TryCall(GetMouseFocus))
+	local named = type(focus) == "table" and (Family:TryCall(focus.GetName, focus)) or nil
+	held[#held + 1] = { "clicked", tostring(named) }
+
+	local secure, owner = Family:TryCall(issecurevariable, "HandleModifiedItemClick")
+	held[#held + 1] = { "hooked by", tostring(secure) .. " / " .. tostring(owner) }
+
 	-- And everything the client handed over, by position. Which argument is the link is not
 	-- something to write down from memory on three clients at once.
 	local got = packOf(link, ...)

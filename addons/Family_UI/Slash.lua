@@ -975,8 +975,20 @@ local function replicateOnce()
 
 	Family:After(30, "auctions.replicate.probe", function()
 		if answered then return end
+		replicating = nil
 		Family.Auctions:TellNextReplicate(nil)
 		Family:Print(L["  nothing answered within %d seconds"], 30)
+
+		-- **And what the client looks like now that it has not answered.** Seen from play on
+		-- Mists 2026-09-12: two calls answered forty-three thousand rows each and a third,
+		-- minutes later, answered nothing at all. A whole-list read is the kind of thing a
+		-- server rations, so the state after the silence is worth as much as the state
+		-- before it - a throttle that has closed and a call that did nothing are the same
+		-- silence otherwise, which is the shape this whole probe exists to avoid.
+		Family:Print(L["  the throttled message system is ready: |cffffd700%s|r"],
+			tostring(Family.Auctions:ThrottleReady()))
+		Family:Print(L["  it holds %s replicated row(s) before asking"],
+			tostring(Family.Auctions:ReplicateCount()))
 	end)
 end
 
