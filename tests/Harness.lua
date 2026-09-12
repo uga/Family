@@ -35700,6 +35700,14 @@ print("the money that came out of the mailbox")
 	TakeInboxMoney(1)
 	INBOX[1].money = 0
 	fire("MAIL_INBOX_UPDATE")
+	-- **But not on the update itself.** Read from play that evening: *Total collected* and *Now
+	-- you own*, and only then the client's *You receive item: [Core of Elements]* for the letter
+	-- the update had just removed. Alberto: *funziona, ma siamo piu veloci del server.*
+	said = saidSince(before)
+	check("the total waits a moment after the mailbox empties, for the client's own last line",
+		said:find("Total collected", 1, true) == nil and said:find("You collected", 1, true) ~= nil,
+		said)
+	advance(1.5)
 	said = saidSince(before)
 	check("emptying the mailbox says the total there and then, with the box still open",
 		said:find("Total collected: 2g", 1, true) ~= nil
@@ -35710,6 +35718,20 @@ print("the money that came out of the mailbox")
 	fire("MAIL_CLOSED")
 	check("and closing it straight after does not say it again",
 		saidSince(before):find("Total collected", 1, true) == nil, saidSince(before))
+
+	-- **Closed inside the wait**: said on closing, and the wait that fires later finds the visit
+	-- already said and adds nothing.
+	before = letters {
+		{ sender = "Auction House", subject = "Sold", money = 700, cod = 0, days = 25,
+		  items = {} },
+	}
+	TakeInboxMoney(1)
+	INBOX[1].money = 0
+	fire("MAIL_INBOX_UPDATE")
+	fire("MAIL_CLOSED")
+	advance(1.5)
+	check("a mailbox closed while the total is waiting says it once",
+		select(2, saidSince(before):gsub("Total collected", "")) == 1, saidSince(before))
 
 	-- **A letter still holding something is not an empty mailbox**, and a letter of words alone,
 	-- read and left, is not something to take - it stays in the box however empty it is.
@@ -35723,6 +35745,8 @@ print("the money that came out of the mailbox")
 	TakeInboxMoney(1)
 	INBOX[1].money = 0
 	fire("MAIL_INBOX_UPDATE")
+	-- Past the wait, or this could not fail: the total never comes on the update itself now.
+	advance(1.5)
 	check("while a letter still has something in it the total waits",
 		saidSince(before):find("Total collected", 1, true) == nil, saidSince(before))
 
@@ -35740,6 +35764,7 @@ print("the money that came out of the mailbox")
 	TakeInboxMoney(1)
 	INBOX[1].money = 0
 	fire("MAIL_INBOX_UPDATE")
+	advance(1.5)
 	check("and a letter of words alone left behind does not keep the mailbox from being empty",
 		saidSince(before):find("Total collected", 1, true) ~= nil, saidSince(before))
 	fire("MAIL_CLOSED")
@@ -35753,6 +35778,7 @@ print("the money that came out of the mailbox")
 	TakeInboxMoney(1)
 	INBOX[1].money = 0
 	fire("MAIL_INBOX_UPDATE")
+	advance(1.5)
 	check("and a mailbox the server still holds letters for is not empty yet",
 		saidSince(before):find("Total collected", 1, true) == nil, saidSince(before))
 	INBOX_ON_SERVER = nil

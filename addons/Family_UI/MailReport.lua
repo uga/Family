@@ -53,6 +53,12 @@ local waiting = 0
 -- What this visit has come to, which is what gets said on the way out.
 local visitMoney = 0
 
+-- How long an emptied mailbox waits before saying its total. Not measured - the client's loot line
+-- has no event of its own to wait for that would not also fire for loot from anything else - so
+-- picked: the chat log does not say by how much the line trailed, only that it did, so this is a
+-- guess to be read back from play, short enough that the total still answers the last click.
+local TOTAL_SETTLE = 1
+
 local function wanted()
 	return Family.Extras and Family.Extras:On("mailReport")
 end
@@ -106,7 +112,17 @@ local function sayWhatCameIn()
 	-- quando chiudo la mailbox - per esempio perche ho riempito le borse e devo andare in banca -
 	-- whichever happens first.* Only once: saying it resets the visit, so closing the box
 	-- straight after has nothing new to add and says nothing.
-	if not anything and waiting <= 0 and visitMoney > 0 then sayTheTotal(true) end
+	--
+	-- **A moment after, not on the update itself.** Read from play the same evening: the total
+	-- came out, and *then* the client's *You receive item* for the last letter. The letter has
+	-- left the inbox by the update that says so; the client's line for what was in it comes a
+	-- little later. Waiting lets that line land above the total rather than below it, and a
+	-- sum still arriving in the meantime starts the wait again - `Family:After` restarts a
+	-- pending call under the same key. Closing the box before it fires says the total then,
+	-- which empties the visit, so the wait finds nothing left to say.
+	if not anything and waiting <= 0 and visitMoney > 0 then
+		Family:After(TOTAL_SETTLE, "ui.mailreport.total", function() sayTheTotal(true) end)
+	end
 end
 
 -- **The way out**: what the visit brought in, and what this character now owns. `GetMoney`

@@ -1,6 +1,6 @@
-name: the total waits for the mailbox to close even when there is nothing left to take
+name: an emptied mailbox says its total on the update, ahead of the client's line for the last letter
 file: addons/Family_UI/MailReport.lua
 --- old
 		Family:After(TOTAL_SETTLE, "ui.mailreport.total", function() sayTheTotal(true) end)
 --- new
-		local _ = anything
+		sayTheTotal(true)
