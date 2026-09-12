@@ -139,6 +139,18 @@ local function possessionLines(tooltip, itemID)
 
 		lines[#lines + 1] = { string.format(L["|cff888888and %d more|r"], #owners - shown),
 			"|cff888888" .. rest .. "|r", nil, nil, nil, 0.5, 0.5, 0.5 }
+
+		-- **And where the rest of them are**, because a contraction on this block is not the
+		-- same as one on the crafters block. *Who can make it* is answered by three or four
+		-- names and the rest are spares; *who has one* is a list somebody may genuinely need
+		-- all of - they are deciding which character to log in as. So the tooltip says where
+		-- the whole of it lives rather than leaving them to find it.
+		--
+		-- Both names come from the same table the panel draws its own from, so the note is in
+		-- the reader's language and says what is actually written on the screen.
+		lines[#lines + 1] = { string.format(
+			L["|cff888888the whole list is on Family's %s page, under %s|r"],
+			L["Possessions"], L["Whole family"]), "", 0.5, 0.5, 0.5 }
 	end
 
 	-- The guild banks under them, capped the same way and by the same reasoning: a family

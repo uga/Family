@@ -31918,6 +31918,37 @@ print("a family bigger than a tooltip")
 		contraction and (tostring(contraction[1]) .. " / " .. tostring(contraction[2]))
 			or "no contraction")
 
+	-- **And where the rest of them are.** *Who can make it* is answered by three or four names
+	-- and the rest are spares; *who has one* may be a list somebody needs all of, because they
+	-- are deciding which character to log in as. Asked for 2026-09-12.
+	--
+	-- The two names are read out of the same table the panel labels itself from, so a check
+	-- that looked for the English would pass on a note pointing at a page that does not exist
+	-- under that name in the reader's language.
+	local pointer
+	local seenHeader = false
+	for _, line in ipairs(GameTooltip.__lines) do
+		local left = type(line[1]) == "string" and line[1] or ""
+		if left:find("Family possessions", 1, true) then seenHeader = true
+		elseif seenHeader and left:find(Family.L["Whole family"], 1, true) then
+			pointer = left
+			break
+		end
+	end
+
+	check("and a contracted list says where the whole of it lives",
+		pointer ~= nil and pointer:find(Family.L["Possessions"], 1, true) ~= nil,
+		tostring(pointer))
+
+	-- And only where it was contracted: a note under a list that is all there is noise.
+	withOwners(11)
+	local strayed = false
+	for _, line in ipairs(GameTooltip.__lines) do
+		local left = type(line[1]) == "string" and line[1] or ""
+		if left:find(Family.L["Whole family"], 1, true) then strayed = true end
+	end
+	check("while a list drawn whole is not sent anywhere else", not strayed)
+
 	Family.Index.Owners = realOwners
 end)()
 

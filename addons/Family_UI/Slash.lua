@@ -1489,6 +1489,20 @@ add("caps", L["what this client can do, and how Family worked it out"], function
 			L[entry.source], note)
 	end
 
+	-- **Whether a modified click on an item can be caught at all**, asked because Alberto
+	-- suggested the tooltip could say *hold CTRL-ALT and click to open Family here*.
+	--
+	-- Family cannot repaint somebody else's tooltip - the note at the foot of `Tooltip.lua`
+	-- measured that as unreliable, and the CTRL worth block only works because the bag addon
+	-- re-shows its own tooltip when the modifier changes. A click is a different route and
+	-- would not depend on that. `HandleModifiedItemClick` is the client's own crossroads for
+	-- one, and whether it is there, and whether it fires from a bag slot on these builds, is
+	-- unread - so nothing is built on it until this line has been looked at on all three.
+	for _, name in ipairs { "HandleModifiedItemClick", "IsModifiedClick",
+		"ChatEdit_InsertLink", "SetItemRef" } do
+		Family:Print("    %-26s |cff888888%s|r", name, type(_G[name]))
+	end
+
 	-- **What this client has for drawing a race**, asked because Alberto suggested the
 	-- equipment block wear the character's own race-and-gender picture and he is right that
 	-- the client must already hold it - icons do not travel from a server.

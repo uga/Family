@@ -820,6 +820,7 @@ Family.locales.frFR = {
 	["%s |cff66bbff(guild)|r"] = "%s |cff66bbff(guilde)|r",
 	["|cff66bbffguild|r |cff888888%s|r"] = "|cff66bbffguilde|r |cff888888%s|r",
 	["|cff888888and %d more|r"] = "|cff888888et %d de plus|r",
+	["|cff888888the whole list is on Family's %s page, under %s|r"] = "|cff888888la liste complète est sur la page %s de Family, sous %s|r",
 	["|cff66bbffFamily possessions|r"] = "|cff66bbffInventaire de la famille|r",
 
 	-- The member picker

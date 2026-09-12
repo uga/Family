@@ -820,6 +820,7 @@ Family.locales.ruRU = {
 	["%s |cff66bbff(guild)|r"] = "%s |cff66bbff(гильдия)|r",
 	["|cff66bbffguild|r |cff888888%s|r"] = "|cff66bbffгильдия|r |cff888888%s|r",
 	["|cff888888and %d more|r"] = "|cff888888и ещё %d|r",
+	["|cff888888the whole list is on Family's %s page, under %s|r"] = "|cff888888полный список - на странице %s в Family, в разделе %s|r",
 	["|cff66bbffFamily possessions|r"] = "|cff66bbffИмущество семьи|r",
 
 	-- The member picker

@@ -87,6 +87,9 @@ picks itself up where it left off.
   holding the most and counts the rest, with how many they hold between them so the total at the
   top still adds up. Guild banks the same.
 
+- **And it says where the whole list is** — Family's Possessions page, under Whole family — so a
+  contracted list is a signpost rather than a dead end.
+
 ### Shorter lists stay whole
 
 - **A list of ten or fewer is no longer contracted.** The crafting, reputations and possessions
