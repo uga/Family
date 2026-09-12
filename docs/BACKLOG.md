@@ -315,10 +315,14 @@ Both collect Family now, and unticking the option removes it from either.
 
 ---
 
-## 5. Honor: rank, this week's progress, and what is left of the cap
+## 5. Honor: rank, this week's progress, and what is left of the cap — DEFERRED 2026-09-12
 
 **Asked:** track honor, including ranks and weekly progress, and how much is missing for the
 weekly cap.
+
+**Deferred 2026-09-12**, with entry 70, on Alberto's own grouping: *e un progetto ampio, che viene
+dopo (come anche honor/pvp)*. Not dropped and nothing about it has changed - it is a size, and it
+queues behind the things that are not.
 
 **Today:** nothing. Family records no honor at all.
 
@@ -3424,7 +3428,7 @@ and not the other would go untested in silence.
 
 ---
 
-## 55. Reading everything on sale, and a panel for what it is all worth
+## 55. Reading everything on sale, and a panel for what it is all worth — CLOSED 2026-09-12, both slices shipped
 
 **Slices 3 and 4 of the price work**, split off 2026-09-10 when 1 and 2 landed. 1 is the passive
 reader - what is on the browse list while the player searches - and 2 is `/family ah`, the
@@ -3504,6 +3508,12 @@ auction house is a third market, and a price read there is filed under the reade
 is what they would pay there, and it is not what their own side's house is asking.
 
 **Sharpened 2026-09-11 by Alberto, and it turns an accepted imprecision into entry 66.**
+
+**Closed 2026-09-12, both slices shipped.** Slice 3 is the whole-house read: the walk that replays
+the client's own query with the page changed (entry 61), the slice reader that takes a list
+somebody else's addon loaded, and the Family tab on the auction window carrying the button and
+its progress. Slice 4 is the Worth column and its panel (entry 58). The one thing this entry
+raised and did not settle is entry 66, which stays open on its own.
 
 ---
 
@@ -4202,9 +4212,16 @@ Settled on the way:
 **Still to look at, with eyes rather than a check:** whether eight sixteen-pixel pictures and a
 recipe name both fit at the narrow end of the panel, in German and Russian as well as English.
 
-## 70. One bag for everything a character carries, and a search box over the whole family
+## 70. One bag for everything a character carries, and a search box over the whole family — DEFERRED 2026-09-12
 
 **Asked for 2026-09-12**, as an extra rather than as part of what Family is.
+
+**Deferred the same day, by the person who asked for it**: *e un progetto ampio, che viene dopo
+(come anche honor/pvp)*. The specification below is complete and stays here whole. The one thing
+worth doing before any of it is the reading at the foot of this entry - whether a container button
+can be reparented and repositioned without losing its secure click - and that reading has to be
+taken **twice**, once with a bag addon disabled and once with one installed, because the person
+most likely to try this is running one.
 
 > consolidamento delle borse del personaggio, degli spazi in banca e (da tbc in avanti) della
 > guild bank [...] oltre a farti vedere un'unico "borsone" anziché tante borse distinte (dandoti

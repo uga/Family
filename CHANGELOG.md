@@ -108,6 +108,12 @@ picks itself up where it left off.
   quietly totalling without it, and one that no money can buy adds nothing, with the total saying
   so. Off until you switch it on.
 
+- **A material that is itself made follows its own recipe.** A Lionheart Champion needs a Lionheart
+  Blade, which nobody sells and every crafter makes — so its cost is what the Blade's own materials
+  come to, plus the rest. It follows a chain as deep as the game has: a Runed Eternium Rod is eight
+  rods, and all eight are counted. Where somebody is selling a part, what they are asking wins over
+  what making one would cost.
+
 - **A new Extras panel, above Options**, for the jobs Family will do for you that are not what
   Family is for. Each one is off or on by itself, and a new one always arrives off.
 
