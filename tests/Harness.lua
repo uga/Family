@@ -10076,6 +10076,50 @@ if professionsEveryone then
 					overflowed == nil, tostring(overflowed))
 				end
 
+				-- **One count of who is hidden, at the end of the line.** Reported off a
+				-- screenshot: *Ermete 300, +8   guild Astala, Malachia* - the members'
+				-- overflow in the middle of the line, names still coming after it.
+				do
+					Family.Recipes.Search = function()
+						local members = {}
+						for index = 1, 11 do
+							members[index] = { key = "Maker" .. index .. "-FireMaw",
+								name = "Maker" .. index, classFile = "MAGE", rank = 300,
+								familyName = "A Very Long Borrowed Family Name" }
+						end
+						return { { name = "Eleven Handed Thing", profession = 164,
+							spellID = 990002, members = members,
+							-- Eight guildmates, so the guild overflows too: with two that both
+							-- fit, a count of the members alone is the same number and the
+							-- check below could not tell the two apart.
+							guild = { { name = "Astala-FireMaw" }, { name = "Malachia-FireMaw" },
+								{ name = "Brunhilde-FireMaw" }, { name = "Cassandra-FireMaw" },
+								{ name = "Desdemona-FireMaw" }, { name = "Ermengarda-FireMaw" },
+								{ name = "Filomena-FireMaw" }, { name = "Genoveffa-FireMaw" } } } }
+					end
+					Family.UI:Refresh()
+
+					local text = Family.UI.__recipeRowFor(1).note.__text or ""
+					local bare = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+					local shownMembers = select(2, bare:gsub("Maker", ""))
+					local shownGuild = 0
+					for _, who in ipairs { "Astala", "Malachia", "Brunhilde", "Cassandra",
+						"Desdemona", "Ermengarda", "Filomena", "Genoveffa" } do
+						if bare:find(who, 1, true) then shownGuild = shownGuild + 1 end
+					end
+					local count = tonumber(bare:match("%+(%d+)%s*$"))
+
+					check("the count of who is not shown is the last thing on the line",
+						count ~= nil, bare)
+					check("and it counts both groups, which is what opening the row lists",
+						count == (11 - shownMembers) + (8 - shownGuild) and shownGuild < 8,
+						tostring(count) .. " against " .. shownMembers .. " and "
+							.. shownGuild .. " shown: " .. bare)
+					check("and the line it ends is still inside the column",
+						(Family.UI.__recipeRowFor(1).note:GetStringWidth() or 0) <= 420,
+						tostring(Family.UI.__recipeRowFor(1).note:GetStringWidth()))
+				end
+
 				-- Put the short-named nine back and leave the row open, because the
 				-- checks below are about what this same unfolded row draws next.
 				Family.Recipes.Search = shortNames
@@ -13400,11 +13444,20 @@ do
 				local link = nil
 				for _, one in pairs(Family.Wide:Links()) do link = link or one end
 				if link then
+					-- **With nothing recorded as sent**, so that there is a gap to explain.
+					-- Once marking worked, this link had every member kept by the time the
+					-- check ran, and "0 + 0 against 0" held whether the second reason was
+					-- counted or not - the recorded mutation dropping it survived.
+					local heldSent = link.sent
+					link.sent = {}
+
 					local unmarkable, unsent = Family.Wide:MarkGaps(link)
 					local total, kept = Family.Wide:MarkCost(link)
 					check("the two reasons a member is not counted unchanged add up to the gap",
-						unmarkable + unsent == total - kept,
+						total > kept and unmarkable + unsent == total - kept,
 						unmarkable .. " + " .. unsent .. " against " .. (total - kept))
+
+					link.sent = heldSent
 				end
 			end
 
@@ -14280,12 +14333,32 @@ do
 			-- that says so.
 			check("and the button is still a button", update.__enabled ~= false)
 
-			-- And what is in flight is drawn where the age of the last exchange is drawn, so
-			-- the panel says it without being asked.
+			-- And what is in flight is drawn under the state of the link, on a line of its
+			-- own, so the panel says it without being asked.
+			--
+			-- Its own line since 2026-09-12. Appended to the state line it was cut off twice
+			-- from play - *send...*, then *192 pieces left...* after that line had learned to
+			-- drop its hint - and it is the one thing on the panel that changes while
+			-- somebody watches it.
 			Family.UI:Refresh()
 			check("the panel says what is still on its way to them",
 				visibleText(string.format(
-					Family.L["   |cffffd700|||   sending to them, %d pieces left|r"], 42)))
+					Family.L["|cffffd700sending to them, %d pieces left|r"], 42)))
+
+			-- **And not on the state line**, which is the half that says it moved rather than
+			-- merely also appearing somewhere else.
+			do
+				local shared = nil
+				for _, f in ipairs(fontStrings) do
+					if type(f.__text) == "string" and f.__text:find("last exchange", 1, true)
+						and f.__visible ~= false and onScreen(f) then
+						shared = f.__text
+					end
+				end
+				check("and not on the line that says the state of the link",
+					shared ~= nil and not shared:find("pieces left", 1, true),
+					tostring(shared))
+			end
 
 			-- **A queue full of somebody else's traffic does not refuse for this link.**
 			--
@@ -35115,6 +35188,29 @@ print("two ways of saying it, and the shorter one where the longer will not fit"
 	-- Exactly filling the room is fitting, not overflowing.
 	check("and a line that exactly fills the room is not shortened",
 		Family.UI:Shorter(long, short, ruler(long), ruler) == long)
+
+	-- **`UI:FitNames` asked directly**, overflow marker and all. The crafter row stopped
+	-- handing it a marker when the count moved to the end of the line, and at that point no
+	-- check anywhere exercised the half of it that makes room for one - the recorded mutation
+	-- removing that half survived. A helper whose documented behaviour nothing tests is a
+	-- helper that will be relied on for something it no longer does.
+	do
+		local pieces = { "aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc", "dddddddddd" }
+		local function marker(n) return "+" .. n end
+		local sep = ruler(", ")
+		local two = ruler(pieces[1]) + sep + ruler(pieces[2])
+
+		-- Room for exactly two names and nothing more: without the marker they fit, with it
+		-- they cannot, so the answer has to fall back to one and leave the marker its space.
+		check("names fit to the room when nothing has to be counted",
+			Family.UI:FitNames(pieces, two, ruler, nil) == 2)
+		check("and one fewer when the count of the rest has to fit beside them",
+			Family.UI:FitNames(pieces, two, ruler, marker) == 1)
+		check("and never none, however narrow the room",
+			Family.UI:FitNames(pieces, 1, ruler, marker) == 1)
+		check("and everything where everything fits, with no count needed",
+			Family.UI:FitNames(pieces, 10000, ruler, marker) == 4)
+	end
 
 	-- **Unmeasurable is not short.** A client that will not answer, or a panel whose width
 	-- has not been worked out yet, must not cost every line its last segment - that would be

@@ -2617,6 +2617,11 @@ ever marked, so no mark ever travelled with one, so there was never anything to 
 question this entry asks can only be answered once both sides run the fix and have exchanged at
 least once. It stays open, with the probe now in place to answer it in one line.
 
+**And the first real reading, the same evening**, once both sides ran the fix: *5 marks held of
+theirs, 236 bytes on the wire, 264 bytes before compression*. About 53 bytes a member serialised,
+and deflate saving a tenth - which is what it does to a few hundred bytes and says little about
+what it does to eleven thousand. The question needs a link with a large family behind it.
+
 
 
 **Asked:** 2026-09-08, by this session rather than by a player, as the one loose end of the
