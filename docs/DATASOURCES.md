@@ -3639,3 +3639,43 @@ one, where both prices are the same number. `ReplicateMatchOwned` now walks on p
 settles nothing and stops only on a listing of more than one - and it says how many of the
 player's listings are of more than one, so a run that could never have answered says so.
 
+### What the client has already spoken for, by modifier
+
+Read on Classic Era 2026-09-12 through `/family itemclick`, which enumerates the client's own
+named modified-click actions rather than testing a list of guesses:
+
+    SELFCAST NONE            FOCUSCAST NONE           AUTOLOOTTOGGLE SHIFT
+    MAILAUTOLOOTTOGGLE SHIFT STICKYCAMERA CTRL        CHATLINK SHIFT-BUTTON1
+    DRESSUP CTRL-BUTTON1     EXPANDITEM SHIFT-BUTTON2 SPLITSTACK SHIFT
+    PICKUPACTION SHIFT       PICKUPITEM SHIFT         COMPAREITEMS SHIFT
+    OPENALLBAGS SHIFT        QUESTWATCHTOGGLE SHIFT   TOKENWATCHTOGGLE SHIFT
+    SHOWITEMFLYOUT ALT       SHOWMULTICASTFLYOUT ALT
+    DOMINOS_IGNORE_STICKY_FRAMES ALT
+
+Three things follow.
+
+**`DRESSUP` is `CTRL-BUTTON1`** - the Dressing Room that opens beside Family's own gesture is the
+client, under its own name, exactly as its window says.
+
+**`SHOWITEMFLYOUT` is `ALT`**, and that is the bar of alt-clicked armour that appears on the
+player's own character sheet. Also the client, not an addon.
+
+**`DOMINOS_IGNORE_STICKY_FRAMES` is in the list**, which is an addon's own action - so this list
+takes registrations, and an addon can put a named action of its own in the game's key bindings
+screen for the player to rebind.
+
+There is no free single modifier. SHIFT is spoken for eight times over, CTRL by the Dressing Room
+and the sticky camera, ALT by two flyouts and an addon. Nothing in the list uses two modifiers
+together, which is why CTRL and ALT works at all and why both of its halves fire something else.
+
+### Where a modified click reaches an addon, and where it does not
+
+Confirmed on Era and Mists 2026-09-12: **bag slots, chat links and the inspect window of another
+player** all route through `HandleModifiedItemClick`.
+
+**The player's own character sheet does not.** With the probe armed, a CTRL and ALT click on a
+worn piece printed nothing at all and `modified clicks heard since login` stayed at nought - a
+counter that rises for every modified click whether or not anybody is listening. So the crossroads
+is never reached there, rather than reached and refused. Anything wanting that window would have
+to hook its slot buttons, which is a different mechanism and has had no reading taken.
+
