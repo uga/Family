@@ -31703,8 +31703,13 @@ print("how long a read of the auction house takes")
 
 	-- Two of the client's own queries, differing in the page alone, which is the whole of what
 	-- a walk needs: it replays one of them with that place changed and composes nothing.
-	Family.Auctions.__sawQuery("", 0, 0, 0, false, -1, false, false, nil)
-	Family.Auctions.__sawQuery("", 0, 0, 1, false, -1, false, false, nil)
+	--
+	-- **And they are a search rather than a blank form**, because what the read announces at the
+	-- end is now read off the query itself rather than claimed by whoever started it. A fixture
+	-- that recorded an empty search here and then expected *that search* was agreeing with the
+	-- old claim, not testing it.
+	Family.Auctions.__sawQuery("Recipe", 0, 0, 0, false, -1, false, false, nil)
+	Family.Auctions.__sawQuery("Recipe", 0, 0, 1, false, -1, false, false, nil)
 
 	-- **The refusal says what to do, and what to do is not `watch`.** Reported from play: *scan
 	-- go goes on being refused unless I do watch first*. Watching teaches Family nothing - it
@@ -31894,6 +31899,65 @@ print("how long a read of the auction house takes")
 
 	check("and says where that time went, which is why anybody stops one",
 		afterStop ~= nil, tostring(afterStop))
+
+	-- **What a read announces is read off the client's own query, not claimed by whoever started
+	-- it.** It was a claim: whoever pressed Reset said whether the form was empty. A control the
+	-- client disables is a control it refuses to be clicked, so a blank form reported as one
+	-- that *could not be emptied* - twice running from play on 2026-09-12, on a search that was
+	-- three and a half thousand pages, which is a house.
+	--
+	-- **A blank search is not all nils**, which is the trap the whole reading turns on. Measured
+	-- on Burning Crusade: `"" 0 0 0 false -1 false false nil`, and the quality is **-1** for
+	-- *any*. A test for *everything is nil or false* would call that a filtered search and would
+	-- have been written by somebody who had not read the measurement.
+	Family.Auctions.__sawQuery("", 0, 0, 0, false, -1, false, false, nil)
+	check("a search nobody narrowed is read as the whole house, quality of -1 and all",
+		Family.Auctions:QueryAsksForEverything() == true)
+
+	Family.Auctions.__sawQuery("Recipe", 0, 0, 0, false, -1, false, false, nil)
+	check("and a search with something typed in it is read as that search",
+		Family.Auctions:QueryAsksForEverything() == false)
+
+	Family.Auctions.__sawQuery("   ", 0, 0, 0, false, -1, false, false, nil)
+	check("and a box holding nothing but spaces narrows nothing",
+		Family.Auctions:QueryAsksForEverything() == true)
+
+	Family.Auctions.__sawQuery("", 0, 0, 0, false, -1, false, true, nil)
+	check("and an exact-match flag is something the player asked for",
+		Family.Auctions:QueryAsksForEverything() == false)
+
+	-- **A query somebody else made is not replayed if it carries a `true`.**
+	--
+	-- Family replays whatever last called `QueryAuctionItems`, and on a machine with another
+	-- auction addon that is not always the auction window. Measured on Burning Crusade
+	-- 2026-09-12 with `/family ah watch` armed while Auctionator started a full scan: nine
+	-- arguments and the seventh **true**. That is `getAll` - the one call this whole feature was
+	-- built never to send - and it had just become the query a walk would replay three and a
+	-- half thousand times with the page changed.
+	--
+	-- By value rather than by position, because the position differs by build. The check that
+	-- was meant to cover this lived only against the two guessed layouts, and went out with them
+	-- when the client described its own (L-071).
+	Family.Auctions.__sawQuery("", 0, 0, 0, false, -1, true, false, nil)
+	local noWay, wholeHouse = Family.Auctions:StartWalk(function() end)
+	check("a read refuses to start on a query somebody else made asking for the whole house",
+		noWay == false and wholeHouse == "wholeHouse" and Family.Auctions:Walking() == nil,
+		tostring(noWay) .. " " .. tostring(wholeHouse))
+
+	local sent, refused = Family.Auctions:ReplayQuery(0)
+	check("and refuses to send one page of it either",
+		sent == false and refused == "wholeHouse", tostring(sent) .. " " .. tostring(refused))
+
+	-- **And the page itself is exempt, which is the argument a walk exists to change.** Without
+	-- that, the guard would refuse every query on a build where the page happens to be true -
+	-- and `0` is true in Lua, which is how the whole-house read was sent by accident once.
+	Family.Auctions.__sawQuery("", 0, 0, 0, false, -1, false, false, nil)
+	Family.Auctions.__sawQuery("", 0, 0, 1, false, -1, false, false, nil)
+	check("while an ordinary query is still replayed",
+		(Family.Auctions:ReplayQuery(2)) == true)
+
+	Family.Auctions.__sawQuery("Recipe", 0, 0, 0, false, -1, false, false, nil)
+	Family.Auctions.__sawQuery("Recipe", 0, 0, 1, false, -1, false, false, nil)
 
 	-- **A walk that stops moving is stopped, and until now nothing here had ever run the guard
 	-- that was supposed to do it.**
@@ -32616,19 +32680,29 @@ print("the button on the auction window")
 
 	-- The client's own two buttons. Pressing Search is what makes the client send a query, so
 	-- these do that - the chain under test is press, client asks, Family hears, walk replays.
+	-- **And the form has contents, because that is what the whole question turns on.** Search
+	-- sends whatever the box holds and Reset empties it, exactly as the window does - so what a
+	-- read announces at the end follows from the buttons that were pressed rather than from a
+	-- variable this fixture sets.
+	--
+	-- It held a constant `"wool"` before, on both paths, which made both of the checks at the
+	-- end of this lane agree with whatever the code did: the claim used to come from Reset's own
+	-- answer and the query was never consulted, so the query never had to be right (L-053).
+	local formHolds = "wool"
+
 	local pressed = { search = 0, page = 0 }
 	_G.BrowseSearchButton = {
 		IsEnabled = function() return true end,
 		Click = function()
 			pressed.search = pressed.search + 1
-			Family.Auctions.__sawQuery("wool", 0, 0, 0, false, -1, false, false, nil)
+			Family.Auctions.__sawQuery(formHolds, 0, 0, 0, false, -1, false, false, nil)
 		end,
 	}
 	_G.BrowseNextPageButton = {
 		IsEnabled = function() return true end,
 		Click = function()
 			pressed.page = pressed.page + 1
-			Family.Auctions.__sawQuery("wool", 0, 0, 1, false, -1, false, false, nil)
+			Family.Auctions.__sawQuery(formHolds, 0, 0, 1, false, -1, false, false, nil)
 		end,
 	}
 
@@ -32645,7 +32719,7 @@ print("the button on the auction window")
 	-- the form first is what makes the search that follows a search for everything.
 	local resets, resetWorks = 0, true
 	_G.BrowseResetButton.IsEnabled = function() return resetWorks end
-	_G.BrowseResetButton.Click = function() resets = resets + 1 end
+	_G.BrowseResetButton.Click = function() resets = resets + 1 formHolds = "" end
 
 	fire("AUCTION_HOUSE_SHOW")
 	local button = _G.FamilyReadHouseButton
@@ -32749,7 +32823,9 @@ print("the button on the auction window")
 	end
 
 	-- **And what it says it read.** With the form emptied by us, the search that went out was a
-	-- search for everything and the house is what was walked.
+	-- search for everything and the house is what was walked - which the read works out from
+	-- that query rather than from Reset having answered yes.
+	local saidFrom = #DEFAULT_CHAT_FRAME.messages
 	local rounds = resets
 	button.__scripts.OnClick(button)
 	check("the button empties the search form before searching",
@@ -32769,9 +32845,21 @@ print("the button on the auction window")
 		advance(1)
 	end
 
+	-- Looked for **after this click** and nowhere else. Scanning the whole chat frame, this
+	-- found the line another lane above had printed and passed on it - a check about a button
+	-- reading a line no button in this lane wrote.
+	local calledIt
+	for index = saidFrom + 1, #DEFAULT_CHAT_FRAME.messages do
+		local line = DEFAULT_CHAT_FRAME.messages[index]
+		if line:find("read the whole house", 1, true)
+			or line:find("read every page of that search", 1, true) then
+			calledIt = line
+		end
+	end
+
 	check("and a read it cleared the form for is reported as the whole house",
-		lastSaying("read the whole house") ~= nil,
-		lastSaying("read every page of that search") or "nothing said")
+		calledIt ~= nil and calledIt:find("the whole house", 1, true) ~= nil,
+		tostring(calledIt))
 
 	-- **And the button stops saying Stop.** Reported from play 2026-09-12: the read finished,
 	-- the chat frame said so, and the button still read *Stop* - so pressing it started a new
@@ -32797,8 +32885,12 @@ print("the button on the auction window")
 
 	-- **And a Reset the client will not take is not fatal, only not the house.** The search
 	-- still goes out and the walk still runs; what it read is then whatever the form held, and
-	-- that is what it is called.
+	-- that is what it is called - worked out from the query the client sent, not from Reset
+	-- having said no. A disabled Reset is the client refusing the click, and reading that as
+	-- *the form could not be emptied* printed a warning over a blank form twice from play on
+	-- 2026-09-12, on a search that was three and a half thousand pages.
 	resetWorks = false
+	formHolds = "wool"
 	Family.Auctions:ForgetVisit()
 	local before = #DEFAULT_CHAT_FRAME.messages
 	button.__scripts.OnClick(button)

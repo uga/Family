@@ -1029,6 +1029,56 @@ end
 -- query Family ever sends is **that same call with the page changed** - every argument one the
 -- client itself chose, on a build the client itself described.
 
+-- **Whether the client's last query asked for everything, read off the query itself.**
+--
+-- This used to be a claim somebody made: whoever pressed Reset said so, on the grounds that
+-- Family could not look at a query and tell a blank one from a narrow one. That stopped being
+-- true the day `sawQuery` began recording every argument, and a disabled Reset then made it
+-- wrong in play - twice running on 2026-09-12, a read announced that the form could not be
+-- emptied while walking three and a half thousand pages, which is a house and not a search.
+--
+-- A blank search on Burning Crusade is measured, and it is not all nils: `"" 0 0 0 false -1
+-- false false nil`, where quality is **-1** for *any*. So a value narrows the query only if it
+-- is a string with something in it, a number above nought, or `true`; nil, false, nought, the
+-- empty string and -1 are all the client saying it asked for nothing in particular.
+--
+-- The page is skipped, because the page is the one argument a walk changes on purpose.
+local function narrows(value)
+	if type(value) == "string" then return value:match("%S") ~= nil end
+	if type(value) == "number" then return value > 0 end
+	return value == true
+end
+
+-- **And whether it is a query Family may replay at all.** A different question from the one
+-- above: that is *did the player narrow the search*, this is *did somebody ask for the lot in
+-- one go*. A `true` anywhere Family does not touch is the second, on every build, whatever
+-- position it sits in.
+function Auctions:QueryCarriesTrue(last)
+	last = last or self:LastQuery()
+	if not last then return false end
+
+	local at = self:PagePosition()
+
+	for index = 1, last.n do
+		if index ~= at and last[index] == true then return true end
+	end
+
+	return false
+end
+
+function Auctions:QueryAsksForEverything()
+	local last = self:LastQuery()
+	if not last then return nil end
+
+	local at = self:PagePosition()
+
+	for index = 1, last.n do
+		if index ~= at and narrows(last[index]) then return false end
+	end
+
+	return true
+end
+
 -- Both returns of it, and the second is the one a page walk needs: how many there are in all.
 -- Everything written here so far has used the first and nothing had ever read the second.
 function Auctions:ListTotals()
@@ -1259,8 +1309,8 @@ local function askPage(page)
 	walk.sentClock = tonumber((Family:TryCall(GetTime)))
 	walk.stirredAt = walk.sentClock or walk.stirredAt
 
-	local ok = Auctions:ReplayQuery(page)
-	if not ok then return Auctions:StopWalk("query") end
+	local ok, why = Auctions:ReplayQuery(page)
+	if not ok then return Auctions:StopWalk(why == "wholeHouse" and "wholeHouse" or "query") end
 end
 
 -- What arrived, and then the next one. Called from the scanner's own list handler, after the
@@ -1348,14 +1398,6 @@ local function walkHeard(kept)
 	end)
 end
 
--- **Started only by somebody asking for it**, and it says what it is about to do before it does
--- it. The size is not known until the first page comes back, which is why the first page is the
--- whole of what starting it commits to.
--- `everything` is the caller saying it has cleared the search form itself, and it is a claim
--- rather than a guess: Family cannot look at a query and tell a blank one from a narrow one, so
--- whoever pressed Reset is the only thing that knows. Reported from play 2026-09-11 - a walk of
--- sixty-eight pages announced as *the whole house* on a house this repository had already
--- measured at three and a half thousand.
 -- **A walk that has stopped moving is stopped, whatever stopped it.**
 --
 -- There was a guard here before and it watched one thing: a page asked for and never answered.
@@ -1398,7 +1440,18 @@ local function watchForSilence()
 	Family:After(1, "auctions.walk.quiet", watchForSilence)
 end
 
-function Auctions:StartWalk(told, everything)
+-- **Started only by somebody asking for it**, and it says what it is about to do before it does
+-- it. The size is not known until the first page comes back, which is why the first page is the
+-- whole of what starting it commits to.
+--
+-- **Whether it is the house or a search is read off the client's own query**, not claimed by
+-- whoever started the read. It was a claim once, and the comment here said Family could not tell
+-- a blank query from a narrow one - which stopped being true the day `sawQuery` began recording
+-- every argument, and was wrong in play twice on 2026-09-12: a disabled Reset was reported as a
+-- form that could not be emptied, on a search that turned out to be three and a half thousand
+-- pages. Reported the other way round on 2026-09-11 too - a walk of sixty-eight pages announced
+-- as the whole house. See `QueryAsksForEverything`.
+function Auctions:StartWalk(told)
 	-- **A code, never a sentence.** These are said to the player, and a sentence written here
 	-- would be an English one wherever it was read (§2.1). The words live in `Slash.lua`, where
 	-- everything else the player is told lives and where the translation gate can see them.
@@ -1417,11 +1470,15 @@ function Auctions:StartWalk(told, everything)
 	if not self:LastQuery() then return false, "seenNothing" end
 	if not self:PagePosition() then return false, "pageUnknown" end
 
+	-- Refused before it starts as well as before every page, because the player deserves to be
+	-- told rather than to watch a read stop on its first one.
+	if self:QueryCarriesTrue() then return false, "wholeHouse" end
+
 	-- Two clocks, because they answer different questions. `time()` says *when this started*
 	-- and counts whole seconds of wall clock; `GetTime` is the one to subtract for *how long it
 	-- has been going*, and it is the one that moves under a harness.
 	walk = { page = 0, done = 0, started = time(), told = told,
-		everything = everything and true or false,
+		everything = self:QueryAsksForEverything() and true or false,
 		clock = tonumber((Family:TryCall(GetTime))) }
 	walk.stirredAt = walk.clock
 	watchForSilence()
@@ -1523,6 +1580,25 @@ function Auctions:ReplayQuery(page)
 	if not Family:TryCall(CanSendAuctionQuery) then
 		return false, "the client says a query would not be accepted right now"
 	end
+
+	-- **Never replay a query that carries a `true`, whoever made it.**
+	--
+	-- Family replays the client's last `QueryAuctionItems`, and *the client* is whatever called
+	-- it - the auction window, or any addon on that machine. Measured on Burning Crusade
+	-- 2026-09-12 with `/family ah watch` armed while Auctionator started a full scan: nine
+	-- arguments, the seventh **true**. That is `getAll`, the whole-house read this feature was
+	-- written never to send, and it had just become the query a walk would replay three and a
+	-- half thousand times with the page changed.
+	--
+	-- The check that was meant to stop this only ever existed in the harness, and it was written
+	-- against the two guessed layouts that were deleted when the client described its own
+	-- (L-071). Replaying removed the guessing and quietly removed the guard with it: *every
+	-- argument is one the client chose* is only safe while the client is the auction window.
+	--
+	-- By value and not by position, because the position is a different number on every build
+	-- and the one thing true everywhere is that a walk has no business sending a `true` it did
+	-- not put there.
+	if self:QueryCarriesTrue(last) then return false, "wholeHouse" end
 
 	local args = {}
 	for index = 1, last.n do args[index] = last[index] end

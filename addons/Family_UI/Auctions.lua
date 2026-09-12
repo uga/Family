@@ -94,10 +94,6 @@ local button
 -- addon where a doubled action costs somebody a disconnection (L-070).
 local waitingFor
 
--- Whether the search form was emptied by us before the search went out. It is the only thing
--- that knows whether the walk is reading the house or reading a category.
-local clearedForm
-
 -- How long a press of the window's own button is given to be answered before the sequence is
 -- abandoned. The walk has its own, longer patience once it is running; this is only about the
 -- two presses that get it started.
@@ -159,10 +155,9 @@ heard = function()
 	if not waitingFor then return end
 
 	if ready() then
-		local everything = clearedForm
 		waitingFor = nil
 		refresh()
-		UI:StartHouseRead(everything)
+		UI:StartHouseRead()
 		return
 	end
 
@@ -170,10 +165,9 @@ heard = function()
 		-- Next has been pressed and the two queries still do not differ in one clear place.
 		-- The walk will refuse and say which button to press, which is the same sentence
 		-- whoever asked for the read.
-		local everything = clearedForm
 		waitingFor = nil
 		refresh()
-		UI:StartHouseRead(everything)
+		UI:StartHouseRead()
 		return
 	end
 
@@ -197,7 +191,7 @@ local function clicked()
 	-- **The newer house has nothing to search first.** It answers its whole list to one call,
 	-- so there is no form to empty and no page to turn - the read starts on the press.
 	if Family.Auctions:CanReplicate() then
-		UI:StartHouseRead(true)
+		UI:StartHouseRead()
 		refresh()
 		return
 	end
@@ -207,17 +201,14 @@ local function clicked()
 	-- walk straight away whenever it was. That is how a walk of one category came to be called
 	-- the whole house.
 	--
-	-- A Reset the client will not accept is not fatal: the search still goes out and the walk
-	-- still runs, but what it read is then whatever the form held, and it is reported as that.
-	clearedForm = press(RESET)
-
-	-- **Said out loud when it could not.** A button called *read it all* that ends on *read
-	-- every page of that search* is a button somebody has to guess about. Reported from play
-	-- 2026-09-12: a read ended on that sentence and nothing anywhere said which of the two
-	-- things had happened.
-	if not clearedForm then
-		Family:Print(L["the search form could not be emptied - reading what it holds instead"])
-	end
+	-- **Its answer is not the claim, though, and used to be.** A control the client disables is
+	-- a control it is refusing to be clicked, and the client disables Reset for its own reasons
+	-- - reported from play 2026-09-12, twice running, a read that announced *the search form
+	-- could not be emptied* and then walked three and a half thousand pages, which is a house.
+	-- What is read is now decided by the query the client actually sends, which Family hears in
+	-- full: see `Auctions:QueryAsksForEverything`. Reset is still pressed, because pressing it
+	-- is what empties the form; it just no longer gets to say what happened.
+	press(RESET)
 
 	waitingFor = "search"
 	Family.Auctions:TellNextList(heard)

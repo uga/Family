@@ -4,7 +4,7 @@ file: addons/Family_UI/Slash.lua
 		whereTheTimeWent(state, took)
 
 		if UI.HouseReadChanged then UI:HouseReadChanged() end
-	end, everything)
+	end)
 --- new
 		if UI.HouseReadChanged then UI:HouseReadChanged() end
-	end, everything)
+	end)

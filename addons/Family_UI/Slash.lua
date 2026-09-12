@@ -1066,6 +1066,11 @@ local WHY = {
 	closed = L["the auction house was closed"],
 	refusing = L["the client went on refusing queries"],
 	quiet = L["a page was asked for and never arrived"],
+	-- **Not our query, and not one to repeat three thousand times.** Family replays whatever
+	-- last called `QueryAuctionItems`, and on a machine with another auction addon that is not
+	-- always the auction window: measured on Burning Crusade 2026-09-12 with the watcher armed,
+	-- Auctionator's full scan sends `getAll` true.
+	wholeHouse = L["another addon just asked this client for the whole house at once - search the auction house yourself and try again"],
 	query = L["the client would not take the query"],
 	running = L["a read of the house is already running"],
 	-- **What to actually do about it**, rather than the name of the thing that is missing.
@@ -1167,7 +1172,7 @@ local function startReplicateRead()
 	return ok, why
 end
 
-function UI:StartHouseRead(everything)
+function UI:StartHouseRead()
 	if Family.Auctions:Walking() or Family.Auctions:ReplicateReading() then
 		Family:Print(L["%s - /family ah scan stop ends it"], WHY.running)
 		return false, "running"
@@ -1252,7 +1257,7 @@ function UI:StartHouseRead(everything)
 		whereTheTimeWent(state, took)
 
 		if UI.HouseReadChanged then UI:HouseReadChanged() end
-	end, everything)
+	end)
 
 	if not ok then Family:Print(L["  refused: %s"], WHY[why] or tostring(why)) end
 

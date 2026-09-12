@@ -1,0 +1,5 @@
+name: a query somebody else made carrying getAll is replayed like any other
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	if self:QueryCarriesTrue(last) then return false, "wholeHouse" end
+--- new

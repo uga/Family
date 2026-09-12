@@ -131,6 +131,15 @@ picks itself up where it left off.
   it has already read rather than from a guess, so you can decide whether to wait for it. When it
   finishes it says how much of that was waiting for the server.
 
+- **It works out for itself whether it read the house or a search**, from the search the auction
+  house actually sent rather than from whether the Reset button would take a click. It used to say
+  the form could not be emptied when the form was simply already empty.
+
+- **It will not touch a query another auction addon just made.** Some of them ask the game for the
+  entire auction house in a single request; Family never does that, and it now refuses to reuse
+  such a request rather than repeating it thousands of times. Search the auction house yourself
+  and start the read again.
+
 - **A read that stops getting answers now ends itself** instead of sitting there looking busy.
   Whatever it has already taken is kept, and it says why it stopped and where the time went.
 

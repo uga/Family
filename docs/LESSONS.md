@@ -3069,3 +3069,35 @@ not have done yesterday.
 **The general rule: a clock the harness does not move is a clock no check can reach.** Before
 trusting a timeout, ask what the fixture does to the thing it subtracts. If the answer is
 nothing, the timeout is prose.
+
+## L-084 — the guard went out with the thing it guarded
+
+`QueryAuctionItems` was guessed at twice, and one guess put the page where `getAll` lives and
+passed `0` for it — `0` is true in Lua, so it asked for the whole house and crawled the client
+(L-071). The repair was to stop guessing: Family records the query the auction window itself
+sends and replays that same call with the page changed. Every argument is then one the client
+chose, on a build the client described.
+
+The check written against the old fault asserted `getAll` was false at a named position. When
+the guessed layouts were deleted, that check had nothing left to stand on and went with them.
+Nothing replaced it, because replaying looked like it had made the fault impossible.
+
+It had not. **The client is whatever last called `QueryAuctionItems`**, and on a machine with
+another auction addon that is not always the auction window. Alberto armed `/family ah watch`
+and started Auctionator's full scan: nine arguments, the seventh **true**. For as long as that
+was the last query, Family's next read would have replayed `getAll` with the page changed,
+three and a half thousand times.
+
+Nobody was looking for this. It came out of a probe run to answer a different question — why
+another addon reads the same house in fifteen minutes.
+
+**What now catches it.** `ReplayQuery` refuses any query carrying `true` in an argument Family
+does not change, by value and never by position, and `StartWalk` refuses up front so the player
+is told rather than watching a read stop on its first page. Three checks and the recorded
+mutation `replay-a-query-carrying-getall.mut`.
+
+**The general rule: when a fix makes a class of fault impossible, the check for it does not
+become redundant — it becomes the thing that proves the fix still holds.** Deleting the old
+mechanism is not a reason to delete the check; it is a reason to re-aim it at the new one. Ask,
+of every guard removed alongside a rewrite, what would now notice if the rewrite's premise
+stopped being true.

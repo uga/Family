@@ -1,0 +1,6 @@
+name: a quality of -1 is read as the player having asked for a quality
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	if type(value) == "number" then return value > 0 end
+--- new
+	if type(value) == "number" then return value ~= 0 end

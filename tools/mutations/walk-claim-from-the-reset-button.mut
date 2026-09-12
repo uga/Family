@@ -1,0 +1,6 @@
+name: what a read says it walked is claimed by the caller again, not read off the query
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		everything = self:QueryAsksForEverything() and true or false,
+--- new
+		everything = true,
