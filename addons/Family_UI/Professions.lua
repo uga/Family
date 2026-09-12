@@ -1187,43 +1187,6 @@ local function build(frame)
 				end
 
 				if UI.__openCrafters == key then
-					-- **The materials first**, because *what does this take* is a question
-					-- about the recipe and everything under it is about people.
-					if madeOf then
-						used = used + 1
-						local line = row(used)
-						line:SetPoint("TOPLEFT", 0, -y)
-						line:SetPoint("TOPRIGHT", 0, -y)
-						line:SetHeight(ROW)
-						line:Show()
-						y = y + ROW
-
-						line.spellID, line.itemID = nil, nil
-						line.memberKey, line.profession, line.recipeName = nil, nil, nil
-						line.canOpen, line.expandKey = false, nil
-						line.fallback = nil
-						line.icon:SetTexture(nil)
-						line.note:SetText("")
-
-						-- Hard against the right-hand edge: this line carries nothing
-						-- else, so there is no column to keep clear of.
-						showMaterials(line, recipe, MATERIAL_INSET_BARE)
-						line.text:SetWidth(math.max(60,
-							UI:ListWidth(scroll) - ROW - 20 - MATERIAL_ROOM))
-						line.text:SetText("        " .. L["|cff66bbffMade with|r"])
-					end
-
-					-- **Only the ones the folded row could not fit.**
-					--
-					-- Asked 2026-09-12: *perche ripetere i primi 4?* It listed everybody,
-					-- so the four already on the row above were said twice and a reader had
-					-- to work out which four those were. The row says four and then **+9**;
-					-- the nine are what opening it is for, and they carry on in the same
-					-- order because it is the same list.
-					--
-					-- The caps are the ones the row itself used a few lines up: four of ours
-					-- shown beside three of the guild's, which is what `spare` and the
-					-- guild's own three were counted against.
 					local everybody = {}
 
 					for index = 5, #recipe.members do
@@ -1324,6 +1287,37 @@ local function build(frame)
 
 						line.note:SetWidth(NOTE_WIDTH)
 						line.note:SetText(table.concat(said, ", "))
+					end
+
+					-- **The materials last**, which is Alberto's ordering and not the one
+					-- written first: *se l'elenco dei crafters e accorciato, allora dobbiamo
+					-- anzitutto finire l'elenco dei crafters, e poi inserire la riga dei
+					-- materiali.* Opening a row is finishing a sentence the row started -
+					-- four names and a **+9** - so the nine come first and anything else
+					-- after them. Put above, the materials interrupted the list they were
+					-- not part of.
+					if madeOf then
+						used = used + 1
+						local line = row(used)
+						line:SetPoint("TOPLEFT", 0, -y)
+						line:SetPoint("TOPRIGHT", 0, -y)
+						line:SetHeight(ROW)
+						line:Show()
+						y = y + ROW
+
+						line.spellID, line.itemID = nil, nil
+						line.memberKey, line.profession, line.recipeName = nil, nil, nil
+						line.canOpen, line.expandKey = false, nil
+						line.fallback = nil
+						line.icon:SetTexture(nil)
+						line.note:SetText("")
+
+						-- Hard against the right-hand edge: this line carries nothing
+						-- else, so there is no column to keep clear of.
+						showMaterials(line, recipe, MATERIAL_INSET_BARE)
+						line.text:SetWidth(math.max(60,
+							UI:ListWidth(scroll) - ROW - 20 - MATERIAL_ROOM))
+						line.text:SetText("        " .. L["|cff66bbffMade with|r"])
 					end
 				end
 			end

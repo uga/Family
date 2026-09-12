@@ -1,0 +1,10 @@
+name: an opened recipe puts its materials above the crafters it was opened to show
+file: addons/Family_UI/Professions.lua
+--- old
+						line.note:SetWidth(NOTE_WIDTH)
+						line.note:SetText(table.concat(said, ", "))
+					end
+
+					-- **The materials last**, which is Alberto's ordering and not the one
+--- new
+					-- **The materials last**, which is Alberto's ordering and not the one

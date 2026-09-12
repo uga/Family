@@ -9387,6 +9387,13 @@ if professionsEveryone then
 		-- scrollato, e rischia di farmi sparire in cima il nome della ricetta a cui si
 		-- riferiscono.* A dozen names is twelve rows one way and three the other.
 		do
+			-- Materials as well as crafters, because the ordering of the two is half of
+			-- what this block is about.
+			local realReagentsHere = Family.Recipes.Reagents
+			Family.Recipes.Reagents = function(_, spell)
+				return spell and { { item = 2589, count = 2 } } or nil
+			end
+
 			local realSearch = Family.Recipes.Search
 			Family.Recipes.Search = function(_, needle)
 				local members = {}
@@ -9427,8 +9434,30 @@ if professionsEveryone then
 				said:find("Maker1", 1, true) == nil and said:find("Maker5", 1, true) ~= nil
 					and said:find("Maker9", 1, true) ~= nil, said)
 
+			-- **And the materials come after them.** Alberto's ordering: *se l'elenco dei
+			-- crafters e accorciato, allora dobbiamo anzitutto finire l'elenco dei crafters,
+			-- e poi inserire la riga dei materiali.* Opening a row finishes a sentence the
+			-- row started - four names and a +5 - so the five come first and anything else
+			-- after them.
+			do
+				local lastNames, firstStrip
+				for index = 2, 14 do
+					local r = Family.UI.__recipeRowFor(index)
+					if r.__shown == true then
+						if (r.note and r.note.__text or "") ~= "" then lastNames = index end
+						if not firstStrip and r.mats[8].icon:IsShown() then
+							firstStrip = index
+						end
+					end
+				end
+				check("with the materials line under the last of them, not above the first",
+					firstStrip ~= nil and lastNames ~= nil and firstStrip > lastNames,
+					tostring(firstStrip) .. " against " .. tostring(lastNames))
+			end
+
 			row1.__scripts.OnClick(row1)
 			Family.Recipes.Search = realSearch
+			Family.Recipes.Reagents = realReagentsHere
 			Family.UI:Refresh()
 		end
 
