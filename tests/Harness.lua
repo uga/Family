@@ -33997,6 +33997,38 @@ print("what a craftable thing costs to make")
 	check("and a recipe made of itself is answered rather than followed for ever",
 		looped ~= nil and looped.total == 0 and looped.bound == 1,
 		looped and tostring(looped.total) or "nothing")
+
+	-- **A chain as deep as the game really goes.** Ten, counted on Burning Crusade: a Runed
+	-- Eternium Rod through Adamantite, Fel Iron, Arcanite, Truesilver, Golden, Silver and
+	-- Copper. The first writing stopped at four, which would have costed the top of that
+	-- chain and reported the rest as *not for sale*.
+	do
+		local CHAIN, base = {}, 700500
+		for step = 1, 10 do
+			CHAIN[base + step] = 920000 + step
+		end
+		local realMade, realReag, realBoundHere =
+			Family.Recipes.MadeBy, Family.RecipeReagents, Family.BoundReagents
+
+		local reagents, bound = {}, {}
+		for step = 1, 10 do
+			-- Each link eats the one below it, and the bottom one eats a priced bar.
+			reagents[920000 + step] = step > 1 and { base + step - 1, 1 } or { BAR, 1 }
+			bound[base + step] = true
+		end
+		Family.RecipeReagents = { [2] = reagents }
+		Family.BoundReagents = { [2] = bound }
+		Family.Recipes.MadeBy = function(_, itemID) return CHAIN[itemID] end
+
+		local top = Family.Recipes:CostToMake(base + 10)
+		check("a chain as deep as the game really goes is followed to the bottom of it",
+			top and top.total == 300 and top.bound == 0,
+			top and tostring(top.total) or "nothing")
+
+		Family.Recipes.MadeBy, Family.RecipeReagents, Family.BoundReagents =
+			realMade, realReag, realBoundHere
+	end
+
 	Family.BoundReagents = realBound
 
 	----------------------------------------------------------------------------------------

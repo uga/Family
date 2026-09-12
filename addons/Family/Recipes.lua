@@ -1048,29 +1048,49 @@ end
 -- una bill of materials da valorizzare (ci riusciamo?)*. Yes: a Lionheart Champion costs a
 -- Lionheart Blade's materials plus its own, and that is one more turn of this same function.
 --
--- **The rods are not this**, and the distinction Alberto was worried about does not have to be
--- drawn here because the game has already drawn it. A tool is required to be *present* and is
--- never consumed, and the client keeps those somewhere else entirely - `SpellTotems`, which
--- Family does not read. Measured 2026-09-12 across the whole of `SpellReagents`: Arclight
--- Spanner, Blacksmith Hammer, Mining Pick, Skinning Knife and Gyromatic Micro-Adjustor are
--- consumed by **nought** recipes, and each Runed rod by exactly **one** - the recipe that eats
--- it to make the next rod up. So no enchant ever lists its rod here, and the only place a rod
--- has a cost is the one place it really is a material.
+-- **A tool is not this**, and the distinction Alberto was worried about does not have to be drawn
+-- here because the game has already drawn it. A tool is required to be *present* and is never
+-- consumed, and the client keeps those somewhere else entirely - `SpellTotems`, which Family does
+-- not read. Measured 2026-09-12 across the whole of `SpellReagents`: Arclight Spanner, Blacksmith
+-- Hammer, Mining Pick, Skinning Knife and Gyromatic Micro-Adjustor are consumed by **nought**
+-- recipes. So no enchant ever lists its rod, and the only place a rod is a cost is a recipe where
+-- it really is a material.
+--
+-- **Which is not the same on every client, and the first writing of this comment said it was.**
+-- Corrected by Alberto 2026-09-12 and then read out of the tables, which agree with him:
+--
+--     Era  7795 Runed Silver Rod  <- Silver Rod, 6 Strange Dust, 3 Greater Magic Essence,
+--                                    1 Shadowgem
+--     TBC  7795 Runed Silver Rod  <- Silver Rod, 6 Strange Dust, 3 Greater Magic Essence,
+--                                    1 Runed Copper Rod
+--
+-- The same spell id, and a different bill. On Era each Runed rod takes a plain rod a blacksmith
+-- made and no previous Runed rod anywhere; from Burning Crusade the chain exists, which goes with
+-- the other thing that changed - there a better rod stands in for a lesser one, and on Era it does
+-- not. This is the clearest case there is for the tables being shipped per expansion: one merged
+-- table would have been wrong about all eight rods.
 --
 -- **Bought before made**, which keeps caveat 1 the rule it was written as: a thing somebody is
 -- selling costs what they are asking, whatever making one would come to.
 --
--- Bounded and guarded. Depth, because a table shipped from a game's own files is not a promise
--- of a finite chain; and the branch's own items, because a cycle here would hang the client
+-- **Bounded twice, and the depth is counted rather than picked.** Ten is the deepest chain there
+-- is on Burning Crusade - a Runed Eternium Rod, through Adamantite, Fel Iron, Arcanite,
+-- Truesilver, Golden, Silver and Copper - and the first writing of this said four, which would
+-- have stopped halfway up it and reported the rest as *not for sale*. The second bound is on
+-- **work**, not depth: recursion only happens where nothing is selling the material, so on a
+-- client with no prices at all a wide recipe could branch further than a tooltip has any business
+-- doing. And the branch's own items are remembered, because a cycle would hang the client
 -- drawing a tooltip - which is the one place in this addon that must never be slow.
-local MAX_DEPTH = 4
+local MAX_DEPTH = 10
+local MAX_RECIPES = 60
 
-function Recipes:CostToMake(itemID, depth, branch)
+function Recipes:CostToMake(itemID, depth, branch, budget)
 	itemID = tonumber(itemID)
 	if not itemID then return nil end
 
 	depth = depth or 1
 	branch = branch or {}
+	budget = budget or { left = MAX_RECIPES }
 
 	local spell = self:MadeBy(itemID)
 	if not spell then return nil end
@@ -1093,8 +1113,9 @@ function Recipes:CostToMake(itemID, depth, branch)
 		else
 			-- Nobody is selling it. Making one may still have a price.
 			local made = nil
-			if depth < MAX_DEPTH and not branch[part.item] then
-				made = self:CostToMake(part.item, depth + 1, branch)
+			if depth < MAX_DEPTH and budget.left > 0 and not branch[part.item] then
+				budget.left = budget.left - 1
+				made = self:CostToMake(part.item, depth + 1, branch, budget)
 			end
 
 			if made and made.total then

@@ -4377,8 +4377,15 @@ should - a recursion needs a depth limit, a cycle guard, and a decision about wh
 sub-recipe is itself short of prices. Written down rather than done.
 
 A worry that the **rods** were polluting the set as tools nobody consumes was checked and is
-unfounded: Runed Copper Rod is a reagent of exactly one recipe, the one that consumes it to make
-the next rod up.
+unfounded, though the first answer to it was half wrong. Tools proper - Arclight Spanner,
+Blacksmith Hammer, Mining Pick, Skinning Knife - are consumed by no recipe at all, so no enchant
+ever lists its rod. But *each rod is eaten by the recipe for the next one up* is true only from
+Burning Crusade. Alberto corrected it and the tables agree: spell 7795 makes a Runed Silver Rod
+out of a Silver Rod, 6 Strange Dust, 3 Greater Magic Essence and a **Shadowgem** on Era, and out
+of those three plus a **Runed Copper Rod** from Burning Crusade on - the same spell id, a
+different bill, which goes with a better rod standing in for a lesser one there and not on Era.
+The deepest chain that creates is **ten** links, and the recursion's depth limit was counted
+against it rather than guessed.
 
 One thing left unverified: the Era bind-on-pickup set contains eight items with ids above 200,000
 - *Crate of Tainted Gniodine Solution*, *Inert Mantle of Nightmares*, *Shard of the Void* and five

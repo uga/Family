@@ -1,0 +1,6 @@
+name: the cost recursion stops short of the deepest chain the game really has
+file: addons/Family/Recipes.lua
+--- old
+local MAX_DEPTH = 10
+--- new
+local MAX_DEPTH = 4
