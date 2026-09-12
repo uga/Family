@@ -828,6 +828,14 @@ add("itemclick", L["what a modified click on an item hands over"], function()
 
 	-- **How many have gone past already**, which is what tells *the hook is not called from a
 	-- bag* apart from *the hook was never installed*. Both arrive as silence otherwise.
+	-- **What this client has already spoken for.** The Dressing Room takes CTRL and a click,
+	-- and holding ALT as well does not stop it - measured from play on Mists 2026-09-12, with
+	-- the game's own window saying so. Which combination is free is the client's to answer, not
+	-- ours to pick: this is the same list its key bindings screen draws.
+	for _, pair in ipairs(UI:ModifiedClickActions()) do
+		Family:Print("    %-22s |cff888888%s|r", pair[1], pair[2])
+	end
+
 	Family:Print(L["  modified clicks heard since login: |cffffd700%d|r"], UI:ItemClicksSeen())
 	Family:Print(L["hold your modifiers and click an item: the next one will say what it held"])
 end)

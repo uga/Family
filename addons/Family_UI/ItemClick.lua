@@ -60,6 +60,32 @@ function UI:ItemClicksSeen()
 	return seen
 end
 
+-- **Which modified clicks this client has already spoken for.**
+--
+-- Reported from play on Mists 2026-09-12, with the game's own window saying it: CTRL and a click
+-- opens the Dressing Room, and holding ALT as well does not stop it. So CTRL and ALT is taken -
+-- by the client, not by an addon - and Family's gesture has to move.
+--
+-- Which combination is free is not a thing to pick and hope. The client keeps the list itself:
+-- every named modified-click action and the keys bound to it, the same list the game's own key
+-- bindings screen draws. Read out rather than guessed at, so the answer comes from the build in
+-- front of the player and holds on all three.
+function UI:ModifiedClickActions()
+	local out = {}
+
+	local count = tonumber((Family:TryCall(_G.GetNumModifiedClickActions)))
+	if not count then return out end
+
+	for index = 1, count do
+		local name = (Family:TryCall(_G.GetModifiedClickAction, index))
+		if type(name) == "string" then
+			out[#out + 1] = { name, tostring((Family:TryCall(_G.GetModifiedClick, name))) }
+		end
+	end
+
+	return out
+end
+
 local function packOf(...)
 	return { n = select("#", ...), ... }
 end

@@ -32011,6 +32011,37 @@ print("a modified click on an item")
 	check("and shift, which the game already uses, is left alone", opened == nil,
 		tostring(opened))
 
+	-- **Which combinations this client has already spoken for**, asked of the client rather
+	-- than picked and hoped. From play on Mists 2026-09-12, with the game's own window saying
+	-- it: CTRL and a click opens the Dressing Room and holding ALT as well does not stop it.
+	-- Choosing the next combination by intuition is how the first one was chosen.
+	check("a client that cannot list its modified clicks answers an empty list, not an error",
+		type(Family.UI:ModifiedClickActions()) == "table"
+			and #Family.UI:ModifiedClickActions() == 0)
+
+	local realNum, realAction, realBound = _G.GetNumModifiedClickActions,
+		_G.GetModifiedClickAction, _G.GetModifiedClick
+	_G.GetNumModifiedClickActions = function() return 2 end
+	_G.GetModifiedClickAction = function(index)
+		return index == 1 and "DRESSUP" or "CHATLINK"
+	end
+	_G.GetModifiedClick = function(name)
+		return name == "DRESSUP" and "CTRL" or "SHIFT"
+	end
+
+	local actions = Family.UI:ModifiedClickActions()
+	-- Both names, not just the first: with only one checked, a reader that invented the names
+	-- instead of enumerating them passed - the second one it made up happened to be bound the
+	-- same way in this fixture, which is the fixture agreeing rather than the code working.
+	check("while one that can names each of them and the keys it is bound to",
+		#actions == 2 and actions[1][1] == "DRESSUP" and actions[1][2] == "CTRL"
+			and actions[2][1] == "CHATLINK" and actions[2][2] == "SHIFT",
+		#actions .. " listed: " .. tostring(actions[1] and actions[1][1])
+			.. ", " .. tostring(actions[2] and actions[2][1]))
+
+	_G.GetNumModifiedClickActions, _G.GetModifiedClickAction, _G.GetModifiedClick =
+		realNum, realAction, realBound
+
 	-- **Who else is claiming the click, asked of the client and not guessed.**
 	--
 	-- From play on Mists 2026-09-12: CTRL and ALT and a click turn the cursor into a magnifying
