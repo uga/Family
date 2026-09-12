@@ -1,0 +1,6 @@
+name: letters the server has not listed yet are forgotten when deciding the mailbox is empty
+file: addons/Family_UI/MailReport.lua
+--- old
+	if (tonumber(held) or shown) > shown then anything = true end
+--- new
+	local _ = held

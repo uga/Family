@@ -2,7 +2,7 @@ name: money asked for is dropped on the next update, before the server has deliv
 file: addons/Family_UI/MailReport.lua
 --- old
 	heldMoney = money
-end
+
 --- new
 	heldMoney, waiting = money, 0
-end
+

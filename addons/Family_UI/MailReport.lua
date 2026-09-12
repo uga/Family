@@ -57,20 +57,36 @@ local function wanted()
 	return Family.Extras and Family.Extras:On("mailReport")
 end
 
-local function inboxMoney()
-	local money = 0
-	local count = tonumber((Family:TryCall(GetInboxNumItems))) or 0
-	for index = 1, count do
-		-- The fifth return. `packageIcon, stationeryIcon, sender, subject, money, ...`
-		local _, _, _, _, letterMoney = Family:TryCall(GetInboxHeaderInfo, index)
-		money = money + (tonumber(letterMoney) or 0)
+-- The money still in the inbox, and whether there is anything left in it to take at all.
+--
+-- **Left to take**, not *letters left*: a letter that carried only words stays in the mailbox
+-- after it has been read, so a box nobody can take another thing out of is rarely a box with no
+-- letters in it. Nothing carrying money and nothing carrying an attachment is the empty that
+-- somebody emptying their post means. And not while the server is holding more than the client
+-- has been shown - the second value of `GetInboxNumItems` - because those are still to come.
+local function inboxNow()
+	local money, anything = 0, false
+	local shown, held = Family:TryCall(GetInboxNumItems)
+	shown = tonumber(shown) or 0
+
+	for index = 1, shown do
+		-- `packageIcon, stationeryIcon, sender, subject, money, cod, daysLeft, itemCount, ...`
+		local _, _, _, _, letterMoney, _, _, itemCount = Family:TryCall(GetInboxHeaderInfo, index)
+		letterMoney = tonumber(letterMoney) or 0
+		money = money + letterMoney
+		if letterMoney > 0 or (tonumber(itemCount) or 0) > 0 then anything = true end
 	end
-	return money
+
+	if (tonumber(held) or shown) > shown then anything = true end
+
+	return money, anything
 end
+
+local sayTheTotal
 
 -- **What has come in since the last look**, one line a sum, as it arrives.
 local function sayWhatCameIn()
-	local money = inboxMoney()
+	local money, anything = inboxNow()
 
 	if heldMoney and waiting > 0 then
 		-- Capped at what the clicked letters were holding: the letter says what it has and the
@@ -84,6 +100,13 @@ local function sayWhatCameIn()
 	end
 
 	heldMoney = money
+
+	-- **And the total the moment there is nothing left to take**, rather than waiting for the
+	-- mailbox to close. Alberto, 2026-09-12: *il totale va stampato quando svuoto la casella o
+	-- quando chiudo la mailbox - per esempio perche ho riempito le borse e devo andare in banca -
+	-- whichever happens first.* Only once: saying it resets the visit, so closing the box
+	-- straight after has nothing new to add and says nothing.
+	if not anything and waiting <= 0 and visitMoney > 0 then sayTheTotal(true) end
 end
 
 -- **The way out**: what the visit brought in, and what this character now owns. `GetMoney`
@@ -91,14 +114,18 @@ end
 --
 -- **The one place a request is let go of.** Opening the mailbox used to clear it as well, and with
 -- two places doing it neither was load-bearing - the recorded mutation removing either survived.
-local function sayTheTotal()
+function sayTheTotal(stillOpen)
 	if wanted() and visitMoney > 0 then
 		Family:Print(L["|cff66bbffTotal collected:|r %s"], UI:Coins(visitMoney))
 		Family:Print(L["|cff66bbffNow you own:|r %s"],
 			UI:Coins(tonumber((Family:TryCall(GetMoney))) or 0))
 	end
 
-	heldMoney, waiting, visitMoney = nil, 0, 0
+	-- Emptied with the box still open: the visit's sum has been said and starts again from
+	-- nothing, but what the inbox holds is still being watched - a letter can arrive while it
+	-- is open. Closed: all of it goes.
+	visitMoney = 0
+	if not stillOpen then heldMoney, waiting = nil, 0 end
 end
 
 --------------------------------------------------------------------------------------------
@@ -107,7 +134,7 @@ Family:OnDatabaseReady("ui.mailreport", function()
 	-- **Its own key.** A second registration under the mail scanner's would replace the
 	-- scanner's, which is L-068 and has already cost this addon a feature once.
 	Family:RegisterEvent("MAIL_SHOW", "ui.mailreport", function()
-		heldMoney = inboxMoney()
+		heldMoney = (inboxNow())
 		visitMoney = 0
 	end)
 
@@ -119,7 +146,10 @@ Family:OnDatabaseReady("ui.mailreport", function()
 		sayWhatCameIn()
 	end)
 
-	Family:RegisterEvent("MAIL_CLOSED", "ui.mailreport", sayTheTotal)
+	-- Wrapped, because an event handler is handed the event's own arguments - and passed
+	-- straight in, those arrive as `stillOpen`, and a mailbox that has closed would keep what it
+	-- was waiting for into the next visit.
+	Family:RegisterEvent("MAIL_CLOSED", "ui.mailreport", function() sayTheTotal(false) end)
 
 	if type(_G.hooksecurefunc) ~= "function" then
 		Family:Debug("no way to watch the mailbox on this client")

@@ -1,0 +1,7 @@
+name: emptying the mailbox says the total and closing it says the same total again
+file: addons/Family_UI/MailReport.lua
+--- old
+	visitMoney = 0
+	if not stillOpen then heldMoney, waiting = nil, 0 end
+--- new
+	if not stillOpen then heldMoney, waiting, visitMoney = nil, 0, 0 end

@@ -117,7 +117,8 @@ picks itself up where it left off.
   them no longer costs a whole row.
 
 - **The money that came out of the mailbox, in chat.** A line for each sum as it arrives, and,
-  when you close the mailbox, what the visit came to and what you are carrying now. The game
+  as soon as there is nothing left to take - or when you close the mailbox, if that comes first -
+  what the visit came to and what you are carrying now. The game
   already tells you about items; it says nothing about the gold in a mailbox full of auction
   sales. Works with the game's own Open All and with mail addons. Off until you switch it on.
 

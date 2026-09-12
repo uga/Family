@@ -1288,7 +1288,9 @@ INBOX = {
 	{ sender = "Auction House", subject = "Sold", money = 50000, cod = 0, days = 25,
 	  items = {} },
 }
-GetInboxNumItems = function() return #INBOX end
+-- Shown, and held by the server: the second is larger when a mailbox has more letters than the
+-- client lists at once. Nil here is "as many as are shown".
+GetInboxNumItems = function() return #INBOX, INBOX_ON_SERVER or #INBOX end
 GetInboxHeaderInfo = function(index)
 	local m = INBOX[index]
 	if not m then return nil end
@@ -35659,6 +35661,75 @@ print("the money that came out of the mailbox")
 	-- `GetMoney` answers for whoever is logged in and for nobody else.
 	check("and says what this character now owns",
 		said:find("Now you own", 1, true) ~= nil, said)
+
+	-- **The total the moment there is nothing left to take, or on closing - whichever first.**
+	-- Alberto, 2026-09-12: *il totale va stampato quando svuoto la casella o quando chiudo la
+	-- mailbox, per esempio perche ho riempito le borse e devo andare in banca - whichever happens
+	-- first.* Read from play the same day, the total had not appeared at all.
+	before = letters {
+		{ sender = "Auction House", subject = "Sold", money = 20000, cod = 0, days = 25,
+		  items = {} },
+	}
+	TakeInboxMoney(1)
+	INBOX[1].money = 0
+	fire("MAIL_INBOX_UPDATE")
+	said = saidSince(before)
+	check("emptying the mailbox says the total there and then, with the box still open",
+		said:find("Total collected: 2g", 1, true) ~= nil
+			and said:find("Now you own", 1, true) ~= nil, said)
+
+	-- Once. Closing straight after has nothing new to add.
+	before = #DEFAULT_CHAT_FRAME.messages
+	fire("MAIL_CLOSED")
+	check("and closing it straight after does not say it again",
+		saidSince(before):find("Total collected", 1, true) == nil, saidSince(before))
+
+	-- **A letter still holding something is not an empty mailbox**, and a letter of words alone,
+	-- read and left, is not something to take - it stays in the box however empty it is.
+	before = letters {
+		{ sender = "Auction House", subject = "Sold", money = 20000, cod = 0, days = 25,
+		  items = {} },
+		{ sender = "Deiana", subject = "Wool", money = 0, cod = 0, days = 20,
+		  items = { { 2592, 5 } } },
+		{ sender = "Deiana", subject = "Hello", money = 0, cod = 0, days = 20, items = {} },
+	}
+	TakeInboxMoney(1)
+	INBOX[1].money = 0
+	fire("MAIL_INBOX_UPDATE")
+	check("while a letter still has something in it the total waits",
+		saidSince(before):find("Total collected", 1, true) == nil, saidSince(before))
+
+	-- And the bags fill before the post is empty: closing is the other of the two moments.
+	fire("MAIL_CLOSED")
+	check("and closing a mailbox that was not emptied says it then",
+		saidSince(before):find("Total collected: 2g", 1, true) ~= nil, saidSince(before))
+
+	-- Taking the wool afterwards, with only the letter of words left, is an empty mailbox.
+	before = letters {
+		{ sender = "Auction House", subject = "Sold", money = 500, cod = 0, days = 25,
+		  items = {} },
+		{ sender = "Deiana", subject = "Hello", money = 0, cod = 0, days = 20, items = {} },
+	}
+	TakeInboxMoney(1)
+	INBOX[1].money = 0
+	fire("MAIL_INBOX_UPDATE")
+	check("and a letter of words alone left behind does not keep the mailbox from being empty",
+		saidSince(before):find("Total collected", 1, true) ~= nil, saidSince(before))
+	fire("MAIL_CLOSED")
+
+	-- **More on the server than the client has listed** is post still to come.
+	before = letters {
+		{ sender = "Auction House", subject = "Sold", money = 500, cod = 0, days = 25,
+		  items = {} },
+	}
+	INBOX_ON_SERVER = 60
+	TakeInboxMoney(1)
+	INBOX[1].money = 0
+	fire("MAIL_INBOX_UPDATE")
+	check("and a mailbox the server still holds letters for is not empty yet",
+		saidSince(before):find("Total collected", 1, true) == nil, saidSince(before))
+	INBOX_ON_SERVER = nil
+	fire("MAIL_CLOSED")
 
 	-- **Nothing collected, nothing said.** A line reading *0c* on every mailbox somebody opens
 	-- to look at is a line they switch the feature off over - and an item taken is not money.

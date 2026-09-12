@@ -1,0 +1,6 @@
+name: a letter still holding attachments is taken for an empty mailbox
+file: addons/Family_UI/MailReport.lua
+--- old
+		if letterMoney > 0 or (tonumber(itemCount) or 0) > 0 then anything = true end
+--- new
+		if letterMoney > 0 then anything = true end
