@@ -1108,11 +1108,27 @@ read the **browse list** - the same list Family already takes prices off, throug
 Not a list private to that addon: the client's own, and both returns grow together as it
 arrives. A house Family measured at 178,128 auctions was on its way into the list Family reads.
 
-**The client lags very badly while it arrives, and does not disconnect.** Reported from play the
-same evening, on the same 178,128-auction house. That is the first deliberate reading of it here:
-the only other one was `getAll` sent by accident on 2026-09-10, which showed as ten seconds of
-silence and a client crawling a minute later (L-071). It is the delivery that costs this, not
-reading the list afterwards.
+**The client lags very badly, does not disconnect, and *when* it lags is the open question.**
+Reported from play the same evening, on the same 178,128-auction house. The first deliberate
+reading of it here - the only other was `getAll` sent by accident on 2026-09-10, seen from the
+outside as ten seconds of silence and a client crawling a minute later (L-071).
+
+Read more closely a few minutes on, and the shape is not what the first note here said. That note
+read *the delivery costs this, not reading the list afterwards*, which was a cause fitted to a
+correlation and is withdrawn. What was actually watched: the other addon shows a percentage and
+no scrolling window; from nothing to 99% took about three minutes **with little or no lag**, and
+it then sat at **99% for about another three minutes, lagging hard**.
+
+Two readings fit and they point opposite ways:
+
+- the last of it is still arriving, and the percentage is that addon's own estimate - then the
+  cost is delivery, and anything reading the finished list pays none of it;
+- it is all there and something is walking 178,128 rows in one pass - then the cost is the
+  **reading**, and anything else reading that list pays it too.
+
+**What tells them apart**, and it costs nothing: `/family ah` twice during the stall, ten seconds
+apart, and compare the `list` count. Still climbing is the first; standing still at the full total
+is the second. Unread as of this writing.
 
 **And `AUCTION_ITEM_LIST_UPDATE` had not fired once.** The probe's counter stood at 43 with
 72,704 rows already there, last one showing 50 - so the list fills in silence, and whether
