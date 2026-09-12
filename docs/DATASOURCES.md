@@ -1108,6 +1108,12 @@ read the **browse list** - the same list Family already takes prices off, throug
 Not a list private to that addon: the client's own, and both returns grow together as it
 arrives. A house Family measured at 178,128 auctions was on its way into the list Family reads.
 
+**The client lags very badly while it arrives, and does not disconnect.** Reported from play the
+same evening, on the same 178,128-auction house. That is the first deliberate reading of it here:
+the only other one was `getAll` sent by accident on 2026-09-10, which showed as ten seconds of
+silence and a client crawling a minute later (L-071). It is the delivery that costs this, not
+reading the list afterwards.
+
 **And `AUCTION_ITEM_LIST_UPDATE` had not fired once.** The probe's counter stood at 43 with
 72,704 rows already there, last one showing 50 - so the list fills in silence, and whether
 anything is said at the end is unread.
