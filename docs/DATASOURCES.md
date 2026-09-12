@@ -3677,16 +3677,25 @@ Confirmed on Era and Mists 2026-09-12: **bag slots, chat links and the inspect w
 player** all route through `HandleModifiedItemClick`.
 
 **The player's own character sheet does, on a client where nothing is in the way.** Confirmed on
-Mists 2026-09-12, where ItemRack is not installed: a CTRL and ALT click on a worn piece opens the
-family's copies exactly as a bag slot does.
+Mists **and on Burning Crusade** 2026-09-12, on neither of which is ItemRack installed: a CTRL and
+ALT click on a worn piece opens the family's copies exactly as a bag slot does. Two machines
+differing in everything except that one addon, and agreeing - which is what the Era reading needed
+and did not have.
 
 This paragraph said the opposite for an hour, on the strength of the Era reading below, and the
 claim was wrong. With the probe armed **on Era**, the same click printed nothing at all and
 `modified clicks heard since login` stayed at nought - a counter that rises for every modified
 click whether or not anybody is listening - so the crossroads really was never reached **there**.
 What was not controlled is that the Era client has ItemRack on it and the Mists one does not, and
-the conclusion credited the difference to the client. What Era without ItemRack does is still
-unread (L-082).
+the conclusion credited the difference to the client. Burning Crusade without ItemRack then
+answered it, so what stops the click on Era is the addon and not the client (L-082).
+
+**And ItemRack cannot be asked to leave the key alone.** Its option for disabling alt-click
+governs what the key does to bars it has already built, not whether it takes the key at all - so
+there is nothing to switch off and nothing to detect. Where something else has claimed the
+combination on a window, Family does not get the click there. Accepted rather than worked around:
+four places already work, and the fifth would mean fighting another addon for a key on one
+window.
 
 (The `clicked` line of that probe, which was blank on Mists, was written down here as a reading.
 It was not. Measured on Classic Era 2026-09-12: **`GetMouseFocus` is nil and `GetMouseFoci` is a
