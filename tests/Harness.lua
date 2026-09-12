@@ -33045,6 +33045,46 @@ print("the button on the auction window")
 				and said:find("answer 2%s+|cff888888false") ~= nil,
 			said:sub(1, 300))
 
+		-- **And the probe shows the list's rows as whole item strings, without sending
+		-- anything.** These lines lived under `ah query`, which is no use for the question they
+		-- answer: that lane sends a query, and somebody who has just searched *of the Bear*
+		-- wants to see what came back rather than ask for it again.
+		--
+		-- The bare id is what every reader here has ever taken out of a link, so the eighth
+		-- field - which is the whole of backlog 67 - has never been looked at on any client.
+		do
+			local realLinkFor = _G.GetAuctionItemLink
+			local realNumFor, realInfoFor = _G.GetNumAuctionItems, _G.GetAuctionItemInfo
+
+			_G.GetNumAuctionItems = function(which)
+				if which ~= "list" then return 0, 0 end
+				return 2, 2
+			end
+			_G.GetAuctionItemLink = function(which, index)
+				if which ~= "list" then return nil end
+				return "|cffffffff|Hitem:1234" .. index
+					.. ":0:0:0:0:0:-25:1701:60|h[Sword of the Bear]|h|r"
+			end
+			_G.GetAuctionItemInfo = function(which)
+				if which ~= "list" then return nil end
+				return "Sword of the Bear", "icon", 1, 1, nil, 1, nil, 1, nil, 9000
+			end
+
+			local at = #DEFAULT_CHAT_FRAME.messages
+			SlashCmdList["FAMILY"]("ah")
+			local shown = table.concat(DEFAULT_CHAT_FRAME.messages, "\n", at + 1,
+				#DEFAULT_CHAT_FRAME.messages)
+
+			-- One check and not two: reading the bare id back out, which is what these
+			-- lines did before, prints `12341` and fails this on its own.
+			check("the probe shows a list row as the whole item string, suffix and all",
+				shown:find("item:12341:0:0:0:0:0:-25:1701:60", 1, true) ~= nil,
+				shown:sub(1, 400))
+
+			_G.GetAuctionItemLink = realLinkFor
+			_G.GetNumAuctionItems, _G.GetAuctionItemInfo = realNumFor, realInfoFor
+		end
+
 		-- And says nothing extra where there is nothing extra, or the line above is furniture
 		-- every client draws whatever it answered.
 		_G.CanSendAuctionQuery = function() return true end

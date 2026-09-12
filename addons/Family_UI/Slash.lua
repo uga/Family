@@ -1485,6 +1485,22 @@ add("ah", L["what this client offers on the auction house"], function(argument)
 	Family:Print(L["  the browse list holds %s row(s), of %s on sale in all"],
 		tostring(onPage), tostring(inAll))
 
+	-- **And what the first few of them actually are**, whole item strings rather than the id
+	-- taken out of them.
+	--
+	-- Everything this repository has ever read from an auction link is `item:(%d+)`, so what
+	-- else is in one on these builds is unread - and backlog 67 turns on the **eighth** field.
+	-- Keying on a position nobody has looked at is L-071 in another costume.
+	--
+	-- Here rather than under `ah query`, which is where these lines lived and where they are no
+	-- use for this: that lane **sends** a query, and this reads the list already on the screen.
+	-- Somebody searching *of the Bear* and running the probe should not have to send anything to
+	-- see what came back.
+	for _, row in ipairs(Family.Auctions:OldListSample(3) or {}) do
+		Family:Print("    %-3s %-8s x%-5s |cff888888%s|r",
+			tostring(row[1]), tostring(row[2]), tostring(row[3]), tostring(row[4]))
+	end
+
 	-- Whether the event ever arrives is the first of the three things that could be wrong, and
 	-- it is the one no amount of looking at the list can answer.
 	local fired, lastRows = Family.Auctions:ReadingsSeen()

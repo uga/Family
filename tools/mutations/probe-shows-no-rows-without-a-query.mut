@@ -1,0 +1,11 @@
+name: seeing what is on the list needs a query to be sent again
+file: addons/Family_UI/Slash.lua
+--- old
+	for _, row in ipairs(Family.Auctions:OldListSample(3) or {}) do
+		Family:Print("    %-3s %-8s x%-5s |cff888888%s|r",
+			tostring(row[1]), tostring(row[2]), tostring(row[3]), tostring(row[4]))
+	end
+
+	-- Whether the event ever arrives is the first of the three things that could be wrong, and
+--- new
+	-- Whether the event ever arrives is the first of the three things that could be wrong, and

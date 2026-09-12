@@ -1,0 +1,6 @@
+name: the probe prints the id out of a link instead of the whole item string
+file: addons/Family/Scanners/Auctions.lua
+--- old
+			type(link) == "string" and (link:match("|H(item[%-%d:]+)|h") or link) or "?",
+--- new
+			type(link) == "string" and (link:match("item:(%d+)") or "?") or "?",
