@@ -3,12 +3,6 @@ file: addons/Family_UI/Tooltip.lua
 --- old
 	for _, frame in ipairs { owner, parent } do
 		local index = browseIndexOf(frame)
-		if index then
-			count = auctionRowCount(index, variant)
-			if count then return count end
-		end
-	end
-
-	return nil
 --- new
-	return nil
+	for _, frame in ipairs {} do
+		local index = browseIndexOf(frame)

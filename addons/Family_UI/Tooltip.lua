@@ -662,6 +662,82 @@ local function auctionRowCount(index, variant)
 	return count and count > 1 and count or nil
 end
 
+-- **A merchant's row, which the client can also be asked about by index.**
+--
+-- Read from play 2026-09-12, and the chain is the auction row's turned around: the owner is
+-- `MerchantItem8ItemButton` carrying id **8**, and its parent `MerchantItem8` carries nought.
+-- So the walk below has to try both ends, which it already did.
+--
+-- `GetMerchantItemInfo` was read rather than recalled, every return printed and numbered:
+--
+--     1=Wall Shield  2=134949  3=1839  4=1  5=-1  6=false  7=false  8=false
+--
+-- name, texture, price, **quantity**, how many are left, and three flags. The fourth is the
+-- one wanted - what one purchase hands over - and it is the position this whole probe existed
+-- to establish rather than assume.
+--
+-- Identity again, and for the reason L-087 gives: the frame must be one of the client's own
+-- merchant buttons, not something that merely carries a number.
+local function merchantIndexOf(frame)
+	local index = idOf(frame)
+	if not (index and index > 0) then return nil end
+
+	-- The buttons are named by their **slot on the page** and carry the index into the
+	-- merchant's list, which on the first page are the same number - so the frame is looked
+	-- for among the slots rather than found by building its name out of its own id. A vendor
+	-- with two pages would answer `MerchantItem18ItemButton` to the second, and there is no
+	-- such frame.
+	local slots = tonumber(_G.MERCHANT_ITEMS_PER_PAGE) or 12
+	for slot = 1, slots do
+		if _G["MerchantItem" .. slot .. "ItemButton"] == frame then return index end
+	end
+
+	return nil
+end
+
+local function merchantRowCount(index, variant)
+	local link = Family:TryCall(GetMerchantItemLink, index)
+	if type(link) ~= "string" then return nil end
+	if Family:VariantKey(itemIDFrom(link), link) ~= variant then return nil end
+
+	local _, _, _, quantity = Family:TryCall(GetMerchantItemInfo, index)
+	quantity = tonumber(quantity)
+	return quantity and quantity > 1 and quantity or nil
+end
+
+-- **A loot window's row**, the third and last of the places backlog 62 names.
+--
+-- Read from play 2026-09-12: the owner is `LootButton2` carrying id **2** and its parent is
+-- `LootFrame` carrying nought - so this one holds its number one step higher up than a
+-- merchant's row does, which is the third arrangement of three and the reason none of them
+-- were guessed at.
+--
+--     1=133754  2=Flimsy Chain Cloak  3=1
+--
+-- texture, name, **quantity**. The third, and a different position from the merchant's fourth,
+-- which is exactly what makes reading these rather than recalling them worth the two hovers.
+local function lootIndexOf(frame)
+	local index = idOf(frame)
+	if not (index and index > 0) then return nil end
+
+	local slots = tonumber(_G.LOOTFRAME_NUMBUTTONS) or 4
+	for slot = 1, slots do
+		if _G["LootButton" .. slot] == frame then return index end
+	end
+
+	return nil
+end
+
+local function lootRowCount(index, variant)
+	local link = Family:TryCall(GetLootSlotLink, index)
+	if type(link) ~= "string" then return nil end
+	if Family:VariantKey(itemIDFrom(link), link) ~= variant then return nil end
+
+	local _, _, quantity = Family:TryCall(GetLootSlotInfo, index)
+	quantity = tonumber(quantity)
+	return quantity and quantity > 1 and quantity or nil
+end
+
 local function pileCount(tooltip, itemID, variant)
 	local owner, parent = ownerChain(tooltip)
 	if not owner then return nil end
@@ -675,6 +751,18 @@ local function pileCount(tooltip, itemID, variant)
 		local index = browseIndexOf(frame)
 		if index then
 			count = auctionRowCount(index, variant)
+			if count then return count end
+		end
+
+		index = merchantIndexOf(frame)
+		if index then
+			count = merchantRowCount(index, variant)
+			if count then return count end
+		end
+
+		index = lootIndexOf(frame)
+		if index then
+			count = lootRowCount(index, variant)
 			if count then return count end
 		end
 	end

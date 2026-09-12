@@ -1,0 +1,11 @@
+name: any frame carrying a number is read as one of the vendor's own buttons
+file: addons/Family_UI/Tooltip.lua
+--- old
+	for slot = 1, slots do
+		if _G["MerchantItem" .. slot .. "ItemButton"] == frame then return index end
+	end
+
+	return nil
+--- new
+	local _ = slots
+	return index

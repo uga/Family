@@ -2,5 +2,7 @@ name: an auction row's count is taken without checking what the row holds
 file: addons/Family_UI/Tooltip.lua
 --- old
 	if Family:VariantKey(itemIDFrom(link), link) ~= variant then return nil end
+
+	local _, _, count = Family:TryCall(GetAuctionItemInfo, "list", index)
 --- new
-	if not link then return nil end
+	local _, _, count = Family:TryCall(GetAuctionItemInfo, "list", index)

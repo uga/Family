@@ -1,0 +1,6 @@
+name: a loot slot's quantity is read from the position a merchant keeps it in
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local _, _, quantity = Family:TryCall(GetLootSlotInfo, index)
+--- new
+	local _, _, _, quantity = Family:TryCall(GetLootSlotInfo, index)

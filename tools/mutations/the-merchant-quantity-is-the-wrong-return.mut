@@ -1,0 +1,6 @@
+name: a merchant's stack size is read from the price rather than from the quantity
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local _, _, _, quantity = Family:TryCall(GetMerchantItemInfo, index)
+--- new
+	local _, _, quantity = Family:TryCall(GetMerchantItemInfo, index)
