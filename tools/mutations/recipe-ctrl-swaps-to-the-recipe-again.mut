@@ -1,0 +1,8 @@
+name: CTRL on a recipe row swaps to the recipe again instead of meaning what it means elsewhere
+file: addons/Family_UI/Professions.lua
+--- old
+			if self.itemID then return "item", self.itemID, self.fallback end
+--- new
+			if self.itemID and not (IsControlKeyDown and IsControlKeyDown() and self.spellID) then
+				return "item", self.itemID, self.fallback
+			end

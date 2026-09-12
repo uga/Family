@@ -468,7 +468,6 @@ Family.locales.deDE = {
 	["Skill needed"] = "Benötigte Fertigkeit",
 	["|cff9d9d9dNo quest has been recorded for anybody yet.|r"] = "|cff9d9d9dEs wurde noch für niemanden eine Quest aufgezeichnet.|r",
 	["|cffffd700%d|r of %d quests   |cff888888|||r   %d with quests recorded"] = "|cffffd700%d|r von %d Quests   |cff888888|||r   %d mit aufgezeichneten Quests",
-	["|cff888888CTRL swaps the recipe and what it makes|r"] = "|cff888888STRG tauscht das Rezept und das, was es herstellt|r",
 	["|cff888888fewer|r"] = "|cff888888weniger|r",
 	["Name"] = "Name",
 	["By name, which is the order the search itself comes back in."] = "Nach Namen, was die Reihenfolge ist, in der die Suche selbst antwortet.",

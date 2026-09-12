@@ -83,6 +83,10 @@ picks itself up where it left off.
 
 ### Extras
 
+- **CTRL on a recipe now does what it does everywhere else**: it adds up what the family holds of
+  what the recipe makes and what that is worth. It used to swap to the recipe, which the pictures
+  of its materials on each row have made unnecessary.
+
 - **Every recipe row says what it is made of.** The materials, with how many of each, on the right
   of the recipe's own line — for every character, not only the one whose profession window is
   open. On the whole-family search, where the row already carries a recipe and everybody who can

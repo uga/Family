@@ -864,40 +864,22 @@ local function build(frame)
 
 		UI:NoWrap(r.text, r.note)
 
-		-- A recipe is a spell that sometimes makes an item, so the tooltip is whichever of
-		-- the two this one has. The spell is preferred: it is the recipe, and it says what
-		-- the thing costs to make as well as what it is.
+		-- **What it makes, where it makes anything; the recipe only where it makes nothing.**
 		--
-		-- Both readings of a recipe, and CTRL chooses.
+		-- CTRL used to swap the two: hover for the item, hold the key for the recipe. Asked for
+		-- on 2026-09-05, and made redundant on 2026-09-12 by the bill of materials this row now
+		-- draws as pictures - the recipe's one piece of information a player wanted was what it
+		-- takes, and that is on the row itself. Alberto: *we should disable it, so that CTRL will
+		-- be used here too to multiply quantities and calculate worth, like in all other places.*
+		-- A key that does one thing everywhere but here is a key somebody has to remember the
+		-- exception for.
 		--
-		-- A recipe row knows two things: the spell that makes something and the item it
-		-- makes. It showed whichever it found first, so most professions read as the recipe
-		-- and enchanting - which makes no item - read the same way by accident rather than
-		-- by agreement. Asked for as *hovering gives the item, hovering with CTRL held gives
-		-- the recipe*.
-		--
-		-- Where only one of the two is known the modifier does nothing and says nothing:
-		-- offering a swap that swaps to the same tooltip is worse than not offering it.
+		-- So the item, which carries everything CTRL means elsewhere - the family's lot and what
+		-- it is worth, and the materials under *Made with*. An enchant makes no item and keeps
+		-- its spell, which is the only thing there is to describe.
 		UI:AttachTooltip(r, function(self)
-			-- The spell where the record has one, and where it does not, the one the
-			-- shipped join says makes this item.
-			--
-			-- A Classic Era trade skill record carries the item and no spell at all
-			-- (DATASOURCES §2), so on that whole client the swap had nothing to swap to
-			-- and said nothing about it - reported from play as broken when it was doing
-			-- exactly what it was told. The record is left alone; this is only what to
-			-- describe.
-			local spellID = self.spellID or Family.Recipes:MadeBy(self.itemID)
-
-			local both = spellID and self.itemID
-			local hint = both and L["|cff888888CTRL swaps the recipe and what it makes|r"]
-				or nil
-			local recipe = IsControlKeyDown and IsControlKeyDown()
-
-			if self.itemID and not (both and recipe) then
-				return "item", self.itemID, self.fallback, hint
-			end
-			if spellID then return "spell", spellID, self.fallback, hint end
+			if self.itemID then return "item", self.itemID, self.fallback end
+			if self.spellID then return "spell", self.spellID, self.fallback end
 			if self.fallback then return nil, nil, self.fallback end
 			return nil
 		end)

@@ -9379,13 +9379,13 @@ check("a faction, which the game will not describe, shows what Family knows inst
 -- frame - and searching for "any row with a spell" finds the spellbook's.
 Family.UI:ShowTab("professions")
 
--- Both readings of a recipe, and CTRL chooses.
+-- **What a recipe makes, and CTRL means here what it means everywhere else.**
 --
--- A row knows the spell that makes something and the item it makes. It used to show whichever
--- it found first, which was the spell - so every profession read as the recipe and enchanting,
--- which makes no item, agreed with the rest by accident. Asked for as *hovering gives the item,
--- hovering with CTRL held gives the recipe*, and the modifier is measured here rather than the
--- variable behind it because a player presses a key.
+-- CTRL used to swap a recipe row between the item and the recipe. Made redundant 2026-09-12 by
+-- the bill of materials the row now draws as pictures, and Alberto's call: *we should disable it,
+-- so that CTRL will be used here too to multiply quantities and calculate worth, like in all other
+-- places* - in the whole-family list as well, which shares these rows. The modifier is measured
+-- rather than the variable behind it, because a player presses a key.
 local heldControl = _G.IsControlKeyDown
 _G.IsControlKeyDown = function() return false end
 
@@ -9395,17 +9395,15 @@ check("hovering a recipe opens the tooltip for what it makes",
 
 _G.IsControlKeyDown = function() return true end
 shownAs = hoverRow(function(f) return f.spellID == 2667 end)
-check("and with CTRL held, for the recipe itself",
-	shownAs and shownAs.kind == "spell", shownAs and shownAs.kind)
+check("and with CTRL held it is still what it makes, so the key does what it does elsewhere",
+	shownAs and shownAs.kind == "item", shownAs and shownAs.kind)
 
--- And the row says so, because a reading you only find by holding a key you had no reason to
--- hold is a reading nobody finds.
+-- And nothing offers a swap that no longer exists.
 do
 	local said = ""
 	for _, line in ipairs(GameTooltip.__lines) do said = said .. " " .. tostring(line[1]) end
-	check("and the row says the key is there to press",
-		said:find(Family.L["|cff888888CTRL swaps the recipe and what it makes|r"],
-			1, true) ~= nil, said)
+	check("and the row no longer offers to swap the recipe for what it makes",
+		not said:find("swaps the recipe", 1, true), said)
 end
 
 -- **And a row that has only the item**, which on Classic Era is every trade skill row there is:
@@ -9452,22 +9450,12 @@ do
 			GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "item",
 			GameTooltip.__shownAs and GameTooltip.__shownAs.kind)
 
-		local said = ""
-		for _, line in ipairs(GameTooltip.__lines) do
-			said = said .. " " .. tostring(line[1])
-		end
-		check("and now says the key is there to press, which it could not before",
-			said:find(Family.L["|cff888888CTRL swaps the recipe and what it makes|r"],
-				1, true) ~= nil, said)
-
 		_G.IsControlKeyDown = function() return true end
 		GameTooltip.__shownAs = nil
 		row.__scripts.OnEnter(row)
-		check("and with the key held it gives the recipe the join found",
-			GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "spell"
-				and GameTooltip.__shownAs.id == 2667,
-			GameTooltip.__shownAs and (tostring(GameTooltip.__shownAs.kind) .. " "
-				.. tostring(GameTooltip.__shownAs.id)))
+		check("and with the key held it is still what it makes",
+			GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "item",
+			GameTooltip.__shownAs and tostring(GameTooltip.__shownAs.kind))
 
 		_G.IsControlKeyDown = function() return false end
 		row.spellID = held
@@ -9517,8 +9505,12 @@ do
 	wipe(GameTooltip.__lines)
 	tick()
 
+	-- **The repaint is what is asserted, not what it repaints to.** This watcher once existed
+	-- to swap a recipe for its product; it stays because CTRL still changes what a tooltip
+	-- says - the family's lot and its worth - and a key that only took effect once the pointer
+	-- moved would be a key nobody saw working.
 	check("and pressing it repaints without the pointer moving",
-		GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "spell",
+		GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "item",
 		GameTooltip.__shownAs and GameTooltip.__shownAs.kind)
 
 	-- And it notices a *change* rather than a state, or every frame would repaint the
@@ -9556,8 +9548,8 @@ do
 
 			_G.IsControlKeyDown = function() return true end
 			tick()
-			check("and the swap happens anyway, because the key is watched not awaited",
-				GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "spell",
+			check("and the repaint happens anyway, because the key is watched not awaited",
+				GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "item",
 				GameTooltip.__shownAs and GameTooltip.__shownAs.kind)
 
 			_G.IsControlKeyDown = function() return false end
@@ -10145,6 +10137,53 @@ if professionsEveryone then
 						(Family.UI.__recipeRowFor(1).note:GetStringWidth() or 0) <= 420,
 						tostring(Family.UI.__recipeRowFor(1).note:GetStringWidth()))
 				end
+
+				-- **CTRL on the whole-family list does what it does everywhere else.** The rows
+				-- are shared with the member list, and so is the tooltip - asked for in so
+				-- many words: *the above, also in whole family mode of course.*
+				;(function()
+					local heldKey = _G.IsControlKeyDown
+					Family.Recipes.Search = function()
+						return { { name = "Heavy Linen Gloves", profession = 197,
+							spellID = 3840, itemID = 4307,
+							members = { { key = "Maker1-FireMaw", name = "Maker1",
+								classFile = "MAGE", rank = 300 } }, guild = {} },
+							{ name = "Enchant Bracer - Minor Health", profession = 333,
+							spellID = 7418,
+							members = { { key = "Maker1-FireMaw", name = "Maker1",
+								classFile = "MAGE", rank = 300 } }, guild = {} } }
+					end
+					Family.UI:Refresh()
+
+					local function hovered(index)
+						local r = Family.UI.__recipeRowFor(index)
+						GameTooltip.__shownAs = nil
+						r.__scripts.OnEnter(r)
+						return GameTooltip.__shownAs
+					end
+
+					local gloves, enchant = nil, nil
+					for index = 1, 4 do
+						local r = Family.UI.__recipeRowFor(index)
+						if r.itemID == 4307 then gloves = index end
+						if r.spellID == 7418 and not r.itemID then enchant = index end
+					end
+
+					_G.IsControlKeyDown = function() return true end
+					local asked = gloves and hovered(gloves)
+					check("on the whole-family list CTRL leaves a recipe on what it makes",
+						asked ~= nil and asked.kind == "item",
+						tostring(gloves) .. " " .. tostring(asked and asked.kind))
+
+					-- An enchant makes no item, so the recipe is the only thing there is to
+					-- describe, with the key held or not.
+					local spell = enchant and hovered(enchant)
+					check("while a recipe that makes no item describes the recipe itself",
+						spell ~= nil and spell.kind == "spell",
+						tostring(enchant) .. " " .. tostring(spell and spell.kind))
+
+					_G.IsControlKeyDown = heldKey
+				end)()
 
 				-- Put the short-named nine back and leave the row open, because the
 				-- checks below are about what this same unfolded row draws next.
