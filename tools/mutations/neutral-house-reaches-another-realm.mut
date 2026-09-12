@@ -1,0 +1,7 @@
+name: the shared house is shared by every realm rather than by one
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	local realm = where:match("^(.-)\30")
+	return realm and (realm .. "\30" .. NEUTRAL) or nil
+--- new
+	return NEUTRAL

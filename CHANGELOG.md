@@ -141,6 +141,11 @@ picks itself up where it left off.
   answers, three minutes with the game refusing to let the next question out, and 27 seconds of
   Family's own pacing.
 
+- **A price read at a goblin auction house counts for both sides of that realm.** It is one market
+  shared by everybody there, so a character of the opposite faction on the same realm is valued
+  from it too — and one on a different realm is not. Your own side's house still wins wherever it
+  has a price, because that is where you would actually buy.
+
 ### Of the Bear and of the Whale are two different swords
 
 - **Random-enchantment items are counted and priced one suffix at a time.** A Superior Sword *of

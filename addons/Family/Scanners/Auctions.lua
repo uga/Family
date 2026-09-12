@@ -305,14 +305,76 @@ end
 -- imprecision rather than a solved problem.
 --------------------------------------------------------------------------------------------
 
--- Which market this character is standing in. Both parts are the client's own English tokens
--- rather than anything a reader sees, so a record written on a German client lines up with one
--- written here.
+-- Which market this character belongs to. Both parts are the client's own English tokens rather
+-- than anything a reader sees, so a record written on a German client lines up with one written
+-- here.
+--
+-- **This is the lookup key** - whose prices value this character's things - and it is their own
+-- realm and their own side whatever house they happen to be standing in.
 local function market()
 	local realm = Family:TryCall(GetRealmName)
 	local faction = Family:TryCall(UnitFactionGroup, "player")
 	if type(realm) ~= "string" or realm == "" then return nil end
 	return realm .. "\30" .. (type(faction) == "string" and faction or "?")
+end
+
+-- **The neutral house's own key**, one per realm and shared by both sides of it.
+--
+-- A star rather than a word: `UnitFactionGroup` can answer **Neutral** for a real player - a
+-- pandaren who has not chosen - and a key that collided with that would file one character's
+-- prices in the shared store.
+local NEUTRAL = "*"
+
+local function neutralMarket(where)
+	where = where or market()
+	if type(where) ~= "string" then return nil end
+	local realm = where:match("^(.-)\30")
+	return realm and (realm .. "\30" .. NEUTRAL) or nil
+end
+
+Auctions.NEUTRAL = NEUTRAL
+
+-- **Whether this is the neutral house**, asked of the auctioneer rather than of their name.
+--
+-- Backlog 66, and measured on Burning Crusade 2026-09-12 at both kinds in one session:
+--
+--     Ironforge   Auctioneer Lympkin  / Alliance / true    deposit rate 5
+--     Everlook    Auctioneer Grizzlin / nil      / true    deposit rate 25
+--
+-- Two discriminators and this uses the first. **A faction of nil is the answer, and only where
+-- somebody is actually there**: nothing targeted answers nil as well, and reading that as *the
+-- neutral house* would file a whole realm's prices in the shared store from a tooltip. So the
+-- name is what says an auctioneer was found, and the faction is what says which kind.
+--
+-- The rate is not used, though it is the cleaner-looking of the two. Keying on **25** would be
+-- recognising a house by a magic number that is a property of one build, which is the shape §2.1
+-- refuses; the faction is a thing the client is answering *about that unit*.
+--
+-- `npc` and `target` both answer on Burning Crusade and Mists, and Classic Era answers under
+-- `target` alone - measured 2026-09-11 - so the first that names anybody is the one asked.
+--
+-- Three answers, not two: true, false, and **nil for nobody has been asked**, which is not the
+-- same as *not neutral* and must not be stored as one.
+function Auctions:HouseIsNeutral()
+	for _, unit in ipairs { "npc", "target" } do
+		local name = Family:TryCall(UnitName, unit)
+		if type(name) == "string" and name ~= "" then
+			local faction = Family:TryCall(UnitFactionGroup, unit)
+			return type(faction) ~= "string"
+		end
+	end
+
+	return nil
+end
+
+-- **Where a reading taken right now belongs**, which is not always where this character's things
+-- are valued. A price read at the goblin house is true for both sides of that realm, so it is
+-- filed under the realm and not under the reader.
+local function readingMarket()
+	local mine = market()
+	if not mine then return nil end
+	if Auctions:HouseIsNeutral() == true then return neutralMarket(mine) or mine end
+	return mine
 end
 
 -- **What counts as one reading, and why it has to be a visit rather than a page.**
@@ -371,6 +433,15 @@ function Auctions:MarketPrices(where)
 	return self:Prices(where)
 end
 
+-- **And the realm's shared house beside it**, for a caller walking a whole index: two tables to
+-- look in rather than a function call per item, because that walk is every item every member
+-- holds and `Worth` runs it on every draw of the summary.
+function Auctions:NeutralPrices(where)
+	if not self:PricesWanted() then return nil end
+	local shared = neutralMarket(where)
+	return shared and self:Prices(shared) or nil
+end
+
 function Auctions:Prices(where)
 	if type(_G.FamilyDB) ~= "table" then return {} end
 	FamilyDB.auctionPrices = FamilyDB.auctionPrices or {}
@@ -405,12 +476,22 @@ function Auctions:PriceCount()
 end
 
 -- Asked with a variant key, which for an item with no suffix is the id it always was.
+--
+-- **Your own side's house first, the realm's neutral house second** (backlog 66). Alberto:
+-- *se il personaggio di opposta fazione e su questo stesso realm, allora il dato dell'AH neutrale
+-- si applica anche a lui.* It is a fallback and never a first choice - your own house is what you
+-- would actually pay at, and the neutral one carries a worse cut and a longer walk.
 function Auctions:PriceOf(variant)
 	if not self:PricesWanted() then return nil end
 	if type(variant) == "string" then variant = tonumber(variant) or variant end
 	if not (type(variant) == "number" or type(variant) == "string") then return nil end
 
 	local held = self:Prices()[variant]
+	if type(held) ~= "table" then
+		local shared = neutralMarket()
+		held = shared and self:Prices(shared)[variant] or nil
+	end
+
 	if type(held) ~= "table" then return nil end
 	return held.p, held.at
 end
@@ -857,7 +938,7 @@ end
 local function readSome()
 	if not reading then return end
 
-	local prices = Auctions:Prices()
+	local prices = Auctions:Prices(readingMarket())
 	if not prices then return Auctions:StopReplicateRead("query") end
 
 	local now = time()
@@ -954,7 +1035,7 @@ function Auctions:ReadModernPrices()
 	if not C_AuctionHouse then return 0 end
 	if not self:PricesWanted() then return 0 end
 
-	local where = market()
+	local where = readingMarket()
 	if not where then return 0 end
 
 	local results = Family:TryCall(C_AuctionHouse.GetBrowseResults)
@@ -1307,7 +1388,7 @@ end
 function Auctions:ReadPrices()
 	if not self:PricesWanted() then return 0 end
 
-	local where = market()
+	local where = readingMarket()
 	if not where then return 0 end
 
 	local count = tonumber((Family:TryCall(GetNumAuctionItems, "list"))) or 0

@@ -918,4 +918,13 @@ Family.locales.frFR = {
 	["    |cffffaa00this record collapsed|r %s: %d recipe(s) -> %d"] = "    |cffffaa00cet enregistrement s'est effondré|r %s : %d recette(s) -> %d",
 	["      the window showed %d row(s): %d header(s), %d recipe(s)"] = "      la fenêtre affichait %d ligne(s) : %d en-tête(s), %d recette(s)",
 	["      have materials: %s, name filter: %s, search box: %s, levels: %s"] = "      composants disponibles : %s, filtre de nom : %s, champ de recherche : %s, niveaux : %s",
+	["  at index %d: auction row %s x%s, merchant row %s"] = "  à l'index %d : ligne d'enchère %s x%s, ligne de marchand %s",
+	["  frame %s, id %s"] = "  cadre %s, id %s",
+	["  its parent %s, id %s"] = "  son parent %s, id %s",
+	["  no owner - this tooltip was not opened for a frame"] = "  aucun propriétaire - cette infobulle n'a été ouverte pour aucun cadre",
+	["  the tooltip is describing %s"] = "  l'infobulle décrit %s",
+	["armed - point at one row and it will say what is under the pointer"] = "armé - pointez une ligne et elle dira ce qui est sous le pointeur",
+	["this client has no tooltip to watch"] = "ce client n'a pas d'infobulle à observer",
+	["what the frame under a tooltip says about its row: /family hover, then point"] = "ce que le cadre sous une infobulle dit de sa ligne : /family hover, puis pointez",
+	["|cffffd700What the pointer was on|r"] = "|cffffd700Ce que le pointeur visait|r",
 }

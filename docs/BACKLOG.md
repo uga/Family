@@ -3971,7 +3971,7 @@ on a brother's.
 
 ---
 
-## 66. A neutral price crosses the faction line, on that realm and no other
+## 66. A neutral price crosses the faction line, on that realm and no other — **done 2026-09-12**
 
 **Alberto, 2026-09-11**, from a stack of Thick Leather: *at auction prices 39, at vendor prices 4*.
 The four are on a Horde alt of the same realm, and he is right that it is not a gap in the data -
@@ -3997,6 +3997,29 @@ as today's two, with the faction part replaced by a neutral mark - written when 
 taken at that house, and consulted as a fallback by **any** character on that realm whose own side
 has no price. Never as a first choice: your own side's house is what you would actually pay at,
 and the neutral one carries a worse cut and a longer walk.
+
+**Read 2026-09-12, at both kinds of house in one session, and it settles it.**
+
+    Ironforge   Auctioneer Lympkin  / Alliance / true    GetAuctionHouseDepositRate -> 5
+    Everlook    Auctioneer Grizzlin / nil      / true    GetAuctionHouseDepositRate -> 25
+
+**Two discriminators, and the build uses the faction.** A house with no side is the neutral one,
+and that is the client answering about *that unit* rather than a number recognised from a table.
+The rate would have worked and is not used: keying on **25** is recognising a house by a magic
+number that is a property of one build, which is the shape §2.1 refuses. It is written down here
+because it corroborates the first and because the next reader will wonder.
+
+**And the answer is three-valued, not two.** Nothing targeted answers nil for the faction as well,
+so *nobody has been asked* had to be told from *not neutral* - the auctioneer's **name** is what
+says somebody is there. Without that, a whole realm's prices would be filed in the shared store
+from a tooltip drawn with nothing selected.
+
+**Built the same day.** A reading taken at that house is filed under `realm \30 *` - a star, because
+`UnitFactionGroup` can answer **Neutral** for a real player and a key that collided with that would
+put one character's prices in the shared store. Valuing tries the member's own side first and the
+realm's shared house second, never the other way round: your own house is what you would actually
+pay at. Two tables rather than a call per item, because that walk is every item every member holds
+on every draw of the summary. Ten checks and four mutations.
 
 **And it would not be retrospective.** Everything already stored was filed under a faction with no
 record of where it was read, so the readings taken before this exists cannot be re-sorted - they

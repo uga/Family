@@ -1,0 +1,15 @@
+name: nothing targeted is read as the neutral house
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		local name = Family:TryCall(UnitName, unit)
+		if type(name) == "string" and name ~= "" then
+			local faction = Family:TryCall(UnitFactionGroup, unit)
+			return type(faction) ~= "string"
+		end
+	end
+
+	return nil
+--- new
+	end
+
+	return type(Family:TryCall(UnitFactionGroup, "npc")) ~= "string"

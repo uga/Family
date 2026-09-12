@@ -4989,6 +4989,136 @@ do
 end
 
 print()
+print("the neutral auction house is one market for both sides of a realm")
+
+-- **Backlog 66, and it took two readings to become buildable.** Measured on Burning Crusade
+-- 2026-09-12 at both kinds of house in one session:
+--
+--     Ironforge   Auctioneer Lympkin  / Alliance / true    deposit rate 5
+--     Everlook    Auctioneer Grizzlin / nil      / true    deposit rate 25
+--
+-- Alberto, 2026-09-11, from a stack of Thick Leather valued *at auction prices 39, at vendor
+-- prices 4*: *se il personaggio di opposta fazione e su questo stesso realm, allora il dato
+-- dell'AH neutrale si applica anche a lui, altrimenti no.*
+;(function()
+	local realName, realFaction = UnitName, UnitFactionGroup
+	local realRealm = GetRealmName
+
+	local at = nil
+	UnitName = function(unit)
+		if unit == "npc" or unit == "target" then return at and at.name or nil end
+		return realName(unit)
+	end
+	UnitFactionGroup = function(unit)
+		if unit == "npc" or unit == "target" then return at and at.faction or nil end
+		return realFaction(unit)
+	end
+
+	-- **Three answers, not two.** Nothing targeted answers nil for the faction as well, and
+	-- reading that as *the neutral house* would file a whole realm's prices in the shared
+	-- store from a tooltip. The name is what says somebody is there.
+	at = nil
+	check("with nobody there the question is unanswered, which is not the same as not neutral",
+		Family.Auctions:HouseIsNeutral() == nil,
+		tostring(Family.Auctions:HouseIsNeutral()))
+
+	at = { name = "Auctioneer Lympkin", faction = "Alliance" }
+	check("an auctioneer with a side is not the neutral house",
+		Family.Auctions:HouseIsNeutral() == false,
+		tostring(Family.Auctions:HouseIsNeutral()))
+
+	at = { name = "Auctioneer Grizzlin", faction = nil }
+	check("and one the client gives no side for is",
+		Family.Auctions:HouseIsNeutral() == true,
+		tostring(Family.Auctions:HouseIsNeutral()))
+
+	----------------------------------------------------------------------------------------
+	-- Where a reading taken there is filed
+	----------------------------------------------------------------------------------------
+
+	GetRealmName = function() return "Fire Maw" end
+	local held = FamilyDB.auctionPrices
+	FamilyDB.auctionPrices = {}
+
+	local realNum, realInfo, realLink = GetNumAuctionItems, GetAuctionItemInfo,
+		GetAuctionItemLink
+	GetNumAuctionItems = function(which) return which == "list" and 1 or 0 end
+	GetAuctionItemLink = function(which) return which == "list" and "|Hitem:2589|h" or nil end
+	GetAuctionItemInfo = function(which)
+		if which ~= "list" then return nil end
+		return "Linen", "icon", 1, 1, nil, 1, nil, 1, nil, 700
+	end
+
+	Family.Auctions:ForgetVisit()
+	Family.Auctions:ReadPrices()
+
+	check("a reading taken at the neutral house is filed under the realm, not under a side",
+		(FamilyDB.auctionPrices["Fire Maw\30*"] or {})[2589] ~= nil
+			and (FamilyDB.auctionPrices["Fire Maw\30Alliance"] or {})[2589] == nil,
+		tostring((FamilyDB.auctionPrices["Fire Maw\30Alliance"] or {})[2589]))
+
+	----------------------------------------------------------------------------------------
+	-- And who it is worth something to
+	----------------------------------------------------------------------------------------
+
+	Family.Database:SetMeta("Ally-FireMaw", { name = "Ally", realm = "Fire Maw",
+		faction = "Alliance", classFile = "MAGE", level = 60 })
+	Family.Database:SetPayload("Ally-FireMaw",
+		{ bags = { { slots = { { id = 2589, count = 1 } } } } })
+
+	Family.Database:SetMeta("Horde-FireMaw", { name = "Hordy", realm = "Fire Maw",
+		faction = "Horde", classFile = "WARRIOR", level = 60 })
+	Family.Database:SetPayload("Horde-FireMaw",
+		{ bags = { { slots = { { id = 2589, count = 1 } } } } })
+
+	-- **The one this entry is about.** Before this, every reading went under the reader's own
+	-- faction, so the other side's characters fell through to what a vendor pays.
+	Family.Database:SetMeta("Away-Spineshatter", { name = "Away", realm = "Spineshatter",
+		faction = "Horde", classFile = "WARRIOR", level = 60 })
+	Family.Database:SetPayload("Away-Spineshatter",
+		{ bags = { { slots = { { id = 2589, count = 1 } } } } })
+
+	Family.Index:Invalidate()
+
+	local function worthOf(key)
+		local row = Family.Index:WorthOf(key)
+		return row and row.atMarket or 0
+	end
+
+	check("a character on the other side of that realm is valued from the shared house",
+		worthOf("Horde-FireMaw") == 1, tostring(worthOf("Horde-FireMaw")))
+	check("and so is one on the side that read it",
+		worthOf("Ally-FireMaw") == 1, tostring(worthOf("Ally-FireMaw")))
+
+	-- *altrimenti no* - the shared house is shared by one realm and by nothing else.
+	check("while a character on another realm is not",
+		worthOf("Away-Spineshatter") == 0, tostring(worthOf("Away-Spineshatter")))
+
+	-- **Never as a first choice.** Your own house is what you would actually pay at; the
+	-- neutral one carries a worse cut and a longer walk.
+	FamilyDB.auctionPrices["Fire Maw\30Alliance"] = { [2589] = { p = 100, at = time() } }
+	Family.Index:Invalidate()
+
+	local mine = Family.Index:WorthOf("Ally-FireMaw")
+	check("your own side's house wins over the shared one where both have a price",
+		mine and mine.worth == 100, mine and tostring(mine.worth) or "no row")
+
+	local theirs = Family.Index:WorthOf("Horde-FireMaw")
+	check("while the other side still has only the shared one",
+		theirs and theirs.worth == 700, theirs and tostring(theirs.worth) or "no row")
+
+	FamilyDB.auctionPrices = held
+	Family.Database:Forget("Ally-FireMaw")
+	Family.Database:Forget("Horde-FireMaw")
+	Family.Database:Forget("Away-Spineshatter")
+	Family.Index:Invalidate()
+
+	GetNumAuctionItems, GetAuctionItemInfo, GetAuctionItemLink = realNum, realInfo, realLink
+	UnitName, UnitFactionGroup, GetRealmName = realName, realFaction, realRealm
+	Family.Auctions:ForgetVisit()
+end)()
+
+print()
 print("a random-enchantment suffix is a thing of its own")
 
 -- **Backlog 67, in Alberto's own words for it.**

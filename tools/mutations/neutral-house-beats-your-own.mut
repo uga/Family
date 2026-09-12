@@ -1,0 +1,10 @@
+name: the shared house is consulted before the reader's own
+file: addons/Family/Index.lua
+--- old
+	local held = pair.mine and pair.mine[variant]
+	if type(held) == "table" then return held end
+	held = pair.shared and pair.shared[variant]
+--- new
+	local held = pair.shared and pair.shared[variant]
+	if type(held) == "table" then return held end
+	held = pair.mine and pair.mine[variant]

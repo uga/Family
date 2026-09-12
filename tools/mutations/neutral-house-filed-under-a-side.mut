@@ -1,0 +1,7 @@
+name: a reading taken at the neutral house is filed under the reader's own side
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	if Auctions:HouseIsNeutral() == true then return neutralMarket(mine) or mine end
+	return mine
+--- new
+	return mine

@@ -424,6 +424,32 @@ local function marketOf(meta)
 	return realm .. "\30" .. (type(meta.faction) == "string" and meta.faction or "?")
 end
 
+-- **What a thing is worth to this member, their own house first.**
+--
+-- Backlog 66: the neutral auction house is shared by both sides of one realm, so a reading taken
+-- there is true for a member on either - and until 2026-09-12 every reading was filed under the
+-- reader's own faction, so the other side's characters fell through to what a vendor pays.
+--
+-- Two tables rather than a call per item. This runs for every item every member holds, on every
+-- draw of the summary, and a function call in that loop is the sort of thing the auction reader
+-- had to have taken back out of it for costing too much.
+local function priceIn(pair, variant)
+	if not pair then return nil end
+	local held = pair.mine and pair.mine[variant]
+	if type(held) == "table" then return held end
+	held = pair.shared and pair.shared[variant]
+	return type(held) == "table" and held or nil
+end
+
+local function marketPair(market)
+	if not (market and Family.Auctions) then return false end
+	return {
+		mine = Family.Auctions:MarketPrices(market) or nil,
+		shared = Family.Auctions.NeutralPrices
+			and Family.Auctions:NeutralPrices(market) or nil,
+	}
+end
+
 -- **What a vendor pays, remembered account-wide.**
 --
 -- The client answers for any item it has in its cache and answers nothing for one it has not met
@@ -464,7 +490,7 @@ function Index:Worth()
 
 		local market = marketOf(meta)
 		if market and markets[market] == nil then
-			markets[market] = Family.Auctions and Family.Auctions:MarketPrices(market) or false
+			markets[market] = marketPair(market)
 		end
 
 		local row = {
@@ -496,8 +522,7 @@ function Index:Worth()
 				-- **By variant**, the same heading the auction reader files under, so that
 				-- an *of the Bear* sword is valued at what an *of the Bear* sword goes for
 				-- rather than at whichever of its siblings happened to be cheapest.
-				local price = row.market and markets[row.market]
-					and markets[row.market][variant] or nil
+				local price = row.market and priceIn(markets[row.market], variant)
 
 				-- **A bound one has no auction price, whatever the auction house says.**
 				--
@@ -593,10 +618,10 @@ function Index:WorthOfItem(variant)
 
 			local market = marketOf(meta)
 			if market and markets[market] == nil then
-				markets[market] = Family.Auctions and Family.Auctions:MarketPrices(market) or false
+				markets[market] = marketPair(market)
 			end
 
-			local price = market and markets[market] and markets[market][variant] or nil
+			local price = market and priceIn(markets[market], variant) or nil
 
 			out.held = out.held + held
 

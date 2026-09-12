@@ -918,4 +918,13 @@ Family.locales.ruRU = {
 	["    |cffffaa00this record collapsed|r %s: %d recipe(s) -> %d"] = "    |cffffaa00эта запись обрушилась|r %s: рецептов %d -> %d",
 	["      the window showed %d row(s): %d header(s), %d recipe(s)"] = "      окно показывало строк - %d: заголовков - %d, рецептов - %d",
 	["      have materials: %s, name filter: %s, search box: %s, levels: %s"] = "      есть материалы: %s, фильтр по названию: %s, поле поиска: %s, уровни: %s",
+	["  at index %d: auction row %s x%s, merchant row %s"] = "  по индексу %d: строка аукциона %s x%s, строка торговца %s",
+	["  frame %s, id %s"] = "  рамка %s, id %s",
+	["  its parent %s, id %s"] = "  её родитель %s, id %s",
+	["  no owner - this tooltip was not opened for a frame"] = "  нет владельца - эта подсказка открыта не для рамки",
+	["  the tooltip is describing %s"] = "  подсказка описывает %s",
+	["armed - point at one row and it will say what is under the pointer"] = "готово - наведите на строку, и она скажет, что под указателем",
+	["this client has no tooltip to watch"] = "у этого клиента нет подсказки, за которой можно следить",
+	["what the frame under a tooltip says about its row: /family hover, then point"] = "что рамка под подсказкой говорит о своей строке: /family hover, затем наведите",
+	["|cffffd700What the pointer was on|r"] = "|cffffd700На чём был указатель|r",
 }

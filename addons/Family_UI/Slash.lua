@@ -952,6 +952,89 @@ end)
 --
 -- One click, told once, and nothing decided here - the values are printed and the reading is
 -- Alberto's, the same arrangement `/family openwith` uses.
+-- **What the frame under a tooltip says about the row it is on.**
+--
+-- Backlog 62 - *pila di N* on an auction row, the way it works in the bags - and the reading it
+-- has been waiting for. The bags line is safe because the count is checkable: the frame the
+-- tooltip was opened for gives a bag and a slot, `Bags:SlotContents` says what is in that slot,
+-- and the line is dropped where the two disagree. Away from the bags there is no such check, and
+-- Alberto's own report was made with another auction addon loaded - so the row under the pointer
+-- is a frame Family did not draw and knows nothing about.
+--
+-- **The rule was written before this probe rather than after**, and it decides what the reading
+-- is for: where a count cannot be checked against the item, the line is not drawn. A missing line
+-- costs somebody a keypress; a count against the wrong item is a wrong number that reads exactly
+-- like a right one.
+--
+-- So this prints the chain and, for each id it finds, what the client says is at that index -
+-- which is the check, if there is one.
+local hovering = false
+
+local function hoverProbe(tooltip)
+	if not hovering then return end
+	hovering = false
+
+	Family:Print(L["|cffffd700What the pointer was on|r"])
+
+	local owner = tooltip.GetOwner and (Family:TryCall(tooltip.GetOwner, tooltip)) or nil
+	if type(owner) ~= "table" then
+		Family:Print(L["  no owner - this tooltip was not opened for a frame"])
+		return
+	end
+
+	local function named(frame)
+		if type(frame) ~= "table" then return "-" end
+		return tostring((Family:TryCall(frame.GetName, frame)))
+	end
+
+	local function idOf(frame)
+		if type(frame) ~= "table" or type(frame.GetID) ~= "function" then return nil end
+		return tonumber((Family:TryCall(frame.GetID, frame)))
+	end
+
+	local parent = owner.GetParent and (Family:TryCall(owner.GetParent, owner)) or nil
+
+	Family:Print(L["  frame %s, id %s"], named(owner), tostring(idOf(owner)))
+	Family:Print(L["  its parent %s, id %s"], named(parent), tostring(idOf(parent)))
+
+	local _, link = Family:TryCall(tooltip.GetItem, tooltip)
+	Family:Print(L["  the tooltip is describing %s"],
+		type(link) == "string" and (link:gsub("|", "||")) or tostring(link))
+
+	-- **The check, where there is one.** For the client's own browse list the item at an index
+	-- is nameable, which is exactly what the bags case has; for somebody else's frame there may
+	-- be nothing to compare against at all, and that is the answer rather than a failure.
+	for _, id in ipairs { idOf(owner), idOf(parent) } do
+		if id and id > 0 then
+			local row = Family:TryCall(GetAuctionItemLink, "list", id)
+			local _, _, count = Family:TryCall(GetAuctionItemInfo, "list", id)
+			local sold = Family:TryCall(GetMerchantItemLink, id)
+			Family:Print(L["  at index %d: auction row %s x%s, merchant row %s"], id,
+				type(row) == "string" and (row:gsub("|", "||")) or tostring(row),
+				tostring(count),
+				type(sold) == "string" and (sold:gsub("|", "||")) or tostring(sold))
+		end
+	end
+end
+
+add("hover", L["what the frame under a tooltip says about its row: /family hover, then point"],
+function()
+	if type(_G.GameTooltip) ~= "table" or type(GameTooltip.HookScript) ~= "function" then
+		Family:Print(L["this client has no tooltip to watch"])
+		return
+	end
+
+	-- Hooked once ever. `HookScript` accumulates, so arming this twice would print twice for
+	-- the rest of the session - which is the same trap the auction watcher is written around.
+	if not UI.__hoverHooked then
+		UI.__hoverHooked = true
+		GameTooltip:HookScript("OnTooltipSetItem", hoverProbe)
+	end
+
+	hovering = true
+	Family:Print(L["armed - point at one row and it will say what is under the pointer"])
+end)
+
 add("itemclick", L["what a modified click on an item hands over"], function()
 	if type(_G.HandleModifiedItemClick) ~= "function" then
 		Family:Print(L["this client has no crossroads for a modified click on an item"])

@@ -918,4 +918,13 @@ Family.locales.esES = {
 	["    |cffffaa00this record collapsed|r %s: %d recipe(s) -> %d"] = "    |cffffaa00este registro se desplomó|r %s: %d receta(s) -> %d",
 	["      the window showed %d row(s): %d header(s), %d recipe(s)"] = "      la ventana mostraba %d fila(s): %d encabezado(s), %d receta(s)",
 	["      have materials: %s, name filter: %s, search box: %s, levels: %s"] = "      con materiales: %s, filtro de nombre: %s, caja de búsqueda: %s, niveles: %s",
+	["  at index %d: auction row %s x%s, merchant row %s"] = "  en el índice %d: fila de subasta %s x%s, fila de vendedor %s",
+	["  frame %s, id %s"] = "  marco %s, id %s",
+	["  its parent %s, id %s"] = "  su padre %s, id %s",
+	["  no owner - this tooltip was not opened for a frame"] = "  sin propietario: esta descripción no se abrió para ningún marco",
+	["  the tooltip is describing %s"] = "  la descripción trata de %s",
+	["armed - point at one row and it will say what is under the pointer"] = "listo: apunta a una fila y dirá qué hay bajo el puntero",
+	["this client has no tooltip to watch"] = "este cliente no tiene descripción que observar",
+	["what the frame under a tooltip says about its row: /family hover, then point"] = "qué dice el marco bajo una descripción sobre su fila: /family hover, luego apunta",
+	["|cffffd700What the pointer was on|r"] = "|cffffd700Sobre qué estaba el puntero|r",
 }

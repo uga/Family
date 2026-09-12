@@ -918,4 +918,13 @@ Family.locales.deDE = {
 	["    |cffffaa00this record collapsed|r %s: %d recipe(s) -> %d"] = "    |cffffaa00dieser Eintrag brach ein|r %s: %d Rezept(e) -> %d",
 	["      the window showed %d row(s): %d header(s), %d recipe(s)"] = "      das Fenster zeigte %d Zeile(n): %d Überschrift(en), %d Rezept(e)",
 	["      have materials: %s, name filter: %s, search box: %s, levels: %s"] = "      Material vorhanden: %s, Namensfilter: %s, Suchfeld: %s, Stufen: %s",
+	["  at index %d: auction row %s x%s, merchant row %s"] = "  bei Index %d: Auktionszeile %s x%s, Händlerzeile %s",
+	["  frame %s, id %s"] = "  Rahmen %s, ID %s",
+	["  its parent %s, id %s"] = "  sein Elternrahmen %s, ID %s",
+	["  no owner - this tooltip was not opened for a frame"] = "  kein Besitzer - dieser Tooltip wurde für keinen Rahmen geöffnet",
+	["  the tooltip is describing %s"] = "  der Tooltip beschreibt %s",
+	["armed - point at one row and it will say what is under the pointer"] = "bereit - zeige auf eine Zeile und sie sagt, was unter dem Zeiger ist",
+	["this client has no tooltip to watch"] = "dieser Client hat keinen Tooltip zum Beobachten",
+	["what the frame under a tooltip says about its row: /family hover, then point"] = "was der Rahmen unter einem Tooltip über seine Zeile sagt: /family hover, dann zeigen",
+	["|cffffd700What the pointer was on|r"] = "|cffffd700Worauf der Zeiger war|r",
 }
