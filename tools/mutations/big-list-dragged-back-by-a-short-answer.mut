@@ -1,0 +1,11 @@
+name: a short answer during a delivery drags the read's place down to it
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	if count < bigRead.at then
+		bigRead.ticking = nil
+		return
+	end
+
+	bigRead.count = count
+--- new
+	bigRead.count = count

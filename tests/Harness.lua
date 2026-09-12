@@ -5437,37 +5437,43 @@ do
 			-- and the finishing test is met on the same tick. The mutation removing that
 			-- guard survived, which is what says it was not doing anything.
 			--
-			-- What no arithmetic covers is one big list replaced by a **different** big one,
-			-- where the read would carry on into the new one at the old row. On this house
-			-- that cannot happen - fifty rows is a page, past that means somebody loaded the
-			-- lot, and the addon that does it will not do it twice inside a quarter of an
-			-- hour. It is written down rather than guarded against, because a guard nothing
-			-- can reach is a guard nothing keeps honest.
+			-- **A short answer in the middle of a delivery does not throw the place away.**
+			--
+			-- A rule here once said the opposite - a list of ordinary size means an ordinary
+			-- search replaced it, so drop the read - and it was taken out the same day. While
+			-- a whole-house list was being delivered on Burning Crusade 2026-09-12, the
+			-- client answered **fifty** to some of those updates with a hundred and eleven
+			-- thousand rows on the list a moment later, so every one of them killed the read
+			-- and nothing was read at all (L-086).
 			Family.Auctions:ForgetVisit()
+			Family.Auctions:StopBigListRead()
 			LIST = {}
 			for index = 1, 4000 do
 				LIST[index] = { id = 200000 + index, count = 1, buyout = 700 }
 			end
 			Family.Auctions:ReadPrices()
 			advance(0.1)
+			local before = Family.Auctions:BigListReading()
 
-			-- An ordinary search, which in play arrives as this same event with a list of
-			-- ordinary size - so the fixture calls the reader rather than only swapping the
-			-- rows underneath it.
 			LIST = { { id = 2880, count = 1, buyout = 900 } }
 			Family.Auctions:ReadPrices()
-			advance(1)
+			advance(0.2)
 
-			-- **And a search of ordinary size is what says the list was replaced**, so the
-			-- next loaded one begins at row one rather than carrying on into somebody else's
-			-- rows at an index that means nothing there.
+			local kept = Family.Auctions:BigListReading()
+			check("a short answer part way through a delivery leaves the read where it was",
+				before ~= nil and kept ~= nil and kept.at == before.at and before.at > 0,
+				tostring(before and before.at) .. " then " .. tostring(kept and kept.at))
+
+			-- **And a loaded list shorter than the row already reached is a different one**,
+			-- where that row means nothing, so it begins again. This is where the hazard the
+			-- withdrawn rule was aimed at actually lives.
 			LIST = {}
-			for index = 1, 4000 do
+			for index = 1, 200 do
 				LIST[index] = { id = 400000 + index, count = 1, buyout = 900 }
 			end
 			Family.Auctions:ReadPrices()
 			local afresh = Family.Auctions:BigListReading()
-			check("and a list replaced by an ordinary search is not carried on into",
+			check("while a loaded list shorter than that row is read from the beginning",
 				afresh ~= nil and afresh.at == 0, tostring(afresh and afresh.at))
 			advance(1)
 

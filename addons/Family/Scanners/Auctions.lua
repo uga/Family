@@ -1070,10 +1070,19 @@ bigReadTick = function()
 
 	local count = tonumber((Family:TryCall(GetNumAuctionItems, "list"))) or 0
 
-	-- A shorter list needs no guard here: the slice below is `at + 1 .. min(at + 500, count)`,
-	-- which against one is an empty range, so the catching-up test at the bottom is met on this
-	-- same tick and the ticking stops. Beginning again is `ReadPrices`' business, because only
-	-- an update saying the list is longer can start anything.
+	-- **A count below where the read has got to is not read from and does not move it.**
+	--
+	-- Measured on Burning Crusade 2026-09-12: while a whole-house list was being delivered the
+	-- client also answered **fifty** to some of those updates, with a hundred and eleven
+	-- thousand rows on the list a moment later. Whatever that is, a reader that let it drag its
+	-- place down to fifty would then carry on from there into the real list and skip the lot.
+	-- So the tick reads nothing and keeps its place; the next update that says the list is long
+	-- again picks it up where it was.
+	if count < bigRead.at then
+		bigRead.ticking = nil
+		return
+	end
+
 	bigRead.count = count
 
 	local to = math.min(bigRead.at + ROWS_PER_TICK, count)
@@ -1127,7 +1136,9 @@ function Auctions:ReadPrices()
 		-- replaces one frame further along; restarting every time the reader catches up is
 		-- the same thing again, slower, and that is what the row count is remembered for.
 		--
-		if not bigRead then
+		-- A loaded list **shorter than the row already reached** is a different one, and the
+		-- row means nothing in it, so that read begins again.
+		if not bigRead or count < bigRead.at then
 			bigRead = { at = 0, count = count, kept = 0,
 				tally = { rows = 0, items = 0, priced = 0,
 					seen = {}, pricedSeen = {} } }
@@ -1143,16 +1154,20 @@ function Auctions:ReadPrices()
 		return 0
 	end
 
-	-- **A list of ordinary size means an ordinary search has replaced whatever was there**, so
-	-- the row a loaded list had been read to is about somebody else's rows now and is dropped.
+	-- **An ordinary-sized list is read and nothing else.** It does *not* throw away a loaded
+	-- list's place, and a rule here saying it did was written this morning and taken out the
+	-- same day.
 	--
-	-- Told apart by this rather than by the row count going backwards, which was the first
-	-- attempt and does not work: by the time the reader sees a shorter list it has already
-	-- dragged its own place down to the end of it, and the next loaded list then carries on from
-	-- there. Fifty rows is a page and past that means somebody loaded the lot, so *back to a
-	-- page* is the honest signal and it is the one the client actually gives.
-	bigRead = nil
-
+	-- It was aimed at a real hazard - a read carrying on into a different list at a row that
+	-- means nothing there - but at a version of it that cannot happen on this house: past a
+	-- page means somebody loaded the lot, and nobody loads it twice inside a quarter of an hour.
+	-- What it did instead was break something that happens every time. Measured from play on
+	-- Burning Crusade 2026-09-12: while a whole-house list was being delivered, the client also
+	-- answered **fifty** to some of those updates, so every one of them killed the read - a
+	-- hundred and eleven thousand rows on the list and nothing reading them (L-086).
+	--
+	-- The hazard it was aimed at is handled where it belongs, above: a loaded list shorter than
+	-- the row already reached is a different list and starts again.
 	return readRows(where, 1, count)
 end
 

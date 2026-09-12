@@ -1,8 +1,18 @@
 name: the loaded-list read throws its place away every time it catches up
 file: addons/Family/Scanners/Auctions.lua
 --- old
+		end
+
 		bigRead.ticking = nil
 		return
+	end
+
+	Family:After(0.05, "auctions.biglist", bigReadTick)
 --- new
+		end
+
 		bigRead = nil
 		return
+	end
+
+	Family:After(0.05, "auctions.biglist", bigReadTick)

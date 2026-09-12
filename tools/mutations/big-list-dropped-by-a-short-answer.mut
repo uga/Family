@@ -1,0 +1,15 @@
+name: an ordinary-sized answer throws away a loaded list's place again
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	return readRows(where, 1, count)
+end
+
+--------------------------------------------------------------------------------------------
+-- Asking, which nothing in this addon has ever done
+--- new
+	bigRead = nil
+	return readRows(where, 1, count)
+end
+
+--------------------------------------------------------------------------------------------
+-- Asking, which nothing in this addon has ever done

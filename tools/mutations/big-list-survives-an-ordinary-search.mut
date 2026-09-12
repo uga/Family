@@ -1,8 +1,0 @@
-name: an ordinary search does not clear the place a loaded list was read to
-file: addons/Family/Scanners/Auctions.lua
---- old
-	bigRead = nil
-
-	return readRows(where, 1, count)
---- new
-	return readRows(where, 1, count)

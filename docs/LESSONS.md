@@ -3133,3 +3133,39 @@ something refused** and nothing more, and it gets written that way.
 name the effect rather than the cause.** It is the same fault as L-082 seen from the other side -
 there, two things varied and the conclusion named one; here, two things agreed and the conclusion
 picked one.
+
+## L-086 — a rule built for a case that cannot happen, breaking one that does
+
+The reader that goes through a loaded auction list in slices keeps the row it has reached, so a
+list still arriving is carried on rather than started again. That left one hazard: a *different*
+list appearing while the row is remembered, where the row means nothing.
+
+The rule written for it was *a list of ordinary size means an ordinary search has replaced it, so
+drop the read*. It looked like the honest signal — fifty rows is a page, past that means somebody
+loaded the whole house.
+
+Two things were wrong with it, and the second is the lesson.
+
+It was aimed at a case that **cannot happen on this house**. A loaded list only comes from a
+whole-house request, and nothing makes two of those inside a quarter of an hour. The scenario the
+rule guarded — an ordinary search, then a loaded list, resuming at a stale row — needs those two
+things back to back.
+
+And it broke a case that happens **every time**. Measured from play on Burning Crusade
+2026-09-12: while a whole-house list was being delivered, the client also answered **fifty** to
+some of those updates. Every one of those killed the read. The probe showed 111,616 rows on the
+list with no read running at all, and then a read restarting at row 500 with 175,567 to go.
+
+The hazard is real; it just lives somewhere else. A loaded list **shorter than the row already
+reached** is a different list, and that is where it begins again — a test on the thing that is
+actually wrong rather than on a proxy for it.
+
+**What now catches it.** Two checks, and they had to be a pair: a short answer part way through a
+delivery leaves the read where it was, and a loaded list shorter than that row is read from the
+beginning. Two recorded mutations, `big-list-dropped-by-a-short-answer.mut` and
+`big-list-dragged-back-by-a-short-answer.mut`.
+
+**The general rule: before writing a guard, say out loud what has to happen for it to fire.** If
+that sequence cannot occur here, the guard is not protection — it is a new behaviour, with its own
+failure modes, bought for nothing. This is the third time in a day: an unreachable stop reason, a
+redundant guard the arithmetic already covered, and now one that cost a whole scan.
