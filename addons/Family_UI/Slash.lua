@@ -805,6 +805,44 @@ add("openwith", L["what a profession button is holding when you click it"], func
 	Family:Print(L["click a profession on the professions page: the next click will say what its button held"])
 end)
 
+-- **Whose is that?**
+--
+-- Asked 2026-09-12, about a bar of item buttons built by alt-clicking worn armour: it outlives
+-- the character sheet, it can be dragged around the screen, and an item with an on-use makes a
+-- button you can put where you want it. Good enough to want to know who wrote it.
+--
+-- A frame is the one thing on screen that can be asked. Almost every addon names its frames after
+-- itself, and where a frame is anonymous its parent usually is not - so the chain upward is the
+-- answer, and the client gives it. Five seconds because the pointer has to be somewhere else to
+-- type this, and pointing at a thing is the whole of what it asks of anybody.
+--
+-- Nothing is sent, nothing is changed, nothing is stored. It reads names.
+add("whatis", L["name the frame the pointer is resting on, five seconds from now"], function()
+	Family:Print(L["point at it and wait five seconds"])
+
+	Family:After(5, "ui.whatis", function()
+		local frame = (Family:TryCall(GetMouseFocus))
+
+		if type(frame) ~= "table" then
+			Family:Print(L["  the client named nothing under the pointer"])
+			return
+		end
+
+		-- Up the chain rather than the one frame, and no further than eight: an anonymous
+		-- button in an anonymous row usually hangs off something with its author's name on
+		-- it, and it is that name the question is really about.
+		for depth = 0, 8 do
+			if type(frame) ~= "table" then break end
+
+			Family:Print("    %-2d %-28s |cff888888%s|r", depth,
+				tostring((Family:TryCall(frame.GetName, frame))),
+				tostring((Family:TryCall(frame.GetObjectType, frame))))
+
+			frame = (Family:TryCall(frame.GetParent, frame))
+		end
+	end)
+end)
+
 -- **What a modified click on an item is, on this client.**
 --
 -- Alberto's idea, for a possessions list too long to draw whole: hold a modifier, click the item,

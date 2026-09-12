@@ -32070,6 +32070,57 @@ print("reading the newer house whole")
 end)()
 
 print()
+print("naming the frame under the pointer")
+;(function()
+	-- Asked 2026-09-12: which addon builds the bar of item buttons that alt-clicking worn
+	-- armour makes? A frame is the one thing on screen that can be asked, and almost every
+	-- addon names its frames after itself - so the chain upward is the answer.
+	local realFocus = _G.GetMouseFocus
+
+	_G.GetMouseFocus = function() return nil end
+	local at = #DEFAULT_CHAT_FRAME.messages
+	SlashCmdList["FAMILY"]("whatis")
+	advance(6)
+	check("with nothing under the pointer it says so rather than nothing at all",
+		#DEFAULT_CHAT_FRAME.messages > at + 1, "said nothing")
+
+	-- **Up the chain, not the one frame.** An anonymous button in an anonymous row hangs off
+	-- something with its author's name on it, and that name is what the question is about - so
+	-- stopping at the first frame answers with a blank exactly where it matters most.
+	local top = { GetName = function() return "SomeAddonBar" end,
+		GetObjectType = function() return "Frame" end }
+	local middle = { GetName = function() return nil end,
+		GetObjectType = function() return "Frame" end,
+		GetParent = function() return top end }
+	local button = { GetName = function() return nil end,
+		GetObjectType = function() return "Button" end,
+		GetParent = function() return middle end }
+
+	_G.GetMouseFocus = function() return button end
+	at = #DEFAULT_CHAT_FRAME.messages
+	SlashCmdList["FAMILY"]("whatis")
+	advance(6)
+
+	local said = table.concat(DEFAULT_CHAT_FRAME.messages, "\n", at + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("and an anonymous button is followed up to whoever owns it",
+		said:find("SomeAddonBar", 1, true) ~= nil, said == "" and "nothing said" or said)
+
+	-- **And it does not ask before the pointer has been put anywhere.** The whole of what it
+	-- asks of somebody is to point at a thing, which takes longer than typing the command.
+	_G.GetMouseFocus = function() return button end
+	at = #DEFAULT_CHAT_FRAME.messages
+	SlashCmdList["FAMILY"]("whatis")
+	local immediately = table.concat(DEFAULT_CHAT_FRAME.messages, "\n", at + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("while it waits before looking, rather than naming the chat box",
+		immediately:find("SomeAddonBar", 1, true) == nil, immediately)
+	advance(6)
+
+	_G.GetMouseFocus = realFocus
+end)()
+
+print()
 print("a modified click on an item")
 ;(function()
 	-- Measured on Burning Crusade 2026-09-12 with `/family itemclick` armed and an item clicked

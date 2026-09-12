@@ -3657,8 +3657,11 @@ Three things follow.
 **`DRESSUP` is `CTRL-BUTTON1`** - the Dressing Room that opens beside Family's own gesture is the
 client, under its own name, exactly as its window says.
 
-**`SHOWITEMFLYOUT` is `ALT`**, and that is the bar of alt-clicked armour that appears on the
-player's own character sheet. Also the client, not an addon.
+**`SHOWITEMFLYOUT` is `ALT`**, so the client does claim that key on equipment slots. It is *not*
+the bar of alt-clicked armour Alberto saw on his character sheet, which this file said for a few
+minutes and had no business saying: he identified that as **ItemRack**. The list explains which
+keys are spoken for; it does not say who acted on any particular press, and reading it as though
+it did is the same over-reach as naming a column from the shape of its numbers.
 
 **`DOMINOS_IGNORE_STICKY_FRAMES` is in the list**, which is an addon's own action - so this list
 takes registrations, and an addon can put a named action of its own in the game's key bindings
