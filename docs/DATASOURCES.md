@@ -1055,6 +1055,30 @@ level and a suffix, so two rows can share an id and be different things; Family 
 because the tooltip that will ask knows an id and nothing else, and the cheapest variant therefore
 speaks for the plain one.
 
+#### Another addon's full scan, measured 2026-09-12
+
+`/family ah watch` prints every argument of the next `QueryAuctionItems` **whoever sends it**,
+which turns out to include other addons on the same machine. Armed on Burning Crusade
+Anniversary and then Auctionator's *Full Scan* pressed:
+
+    1  ""      2  nil   3  nil   4  0     5  nil
+    6  nil     7  true  8  false 9  nil
+
+Nine arguments, the page fourth as this build has always answered, and the **seventh `true`**.
+On this build that position is `getAll` — one request for the entire house, which is what the
+fifteen minutes Alberto measured against Family's page walk actually buys, and which is a
+different mechanism rather than a faster walk. Family's own walk on the same house is 2.1
+seconds a page over 3,563 pages, just over two hours, of which 1.85 seconds a page is the client
+refusing to send.
+
+**This is a reading about another addon, taken on one machine.** What it settles is what that
+scan sends, not what any addon must send.
+
+It also settles something about Family, and not comfortably: Family replays *the client's last
+query*, and the client is whatever last called that function. For as long as this was the last
+one, a walk would have replayed `getAll` with the page changed. It now refuses any query
+carrying a `true` in an argument it does not change — see `docs/LESSONS.md` L-084.
+
 #### What a full read still needs, and why it is not built yet
 
 Written 2026-09-10, when slice 3 was picked up. Three things are still unmeasured, and the first
