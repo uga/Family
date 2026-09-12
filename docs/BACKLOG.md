@@ -4015,6 +4015,25 @@ recorded.
    stats. It is not used and this entry does not propose using it; it is written down so that the
    next reader knows it was seen and left alone rather than missed.
 
+**What must not be broken, and is easy to break by accident.** Alberto, checking, 2026-09-12:
+
+> gli accessori dell'oggetto vanno letti e conservati a beneficio dei tooltip ! Se possiedo due
+> oggetti uguali, con gemme diverse, passando il mouse su uno e sull'altro devo vedere le gemme
+> dell'uno e dell'altro. Idem per gli enchant. Questa parte oggi è già così.
+
+It is, and deliberately. `Tooltip.lua`'s `itemlink` lane hands the **stored item string** to
+`SetHyperlink` - *an item string carries all of that and an item id carries none of it, which is
+why gear is the one place Family keeps the longer form* - and `Contents.lua` passes it in from what
+the scanners saved. Bags, bank, mail, auctions and worn all store it.
+
+**The key and the payload are different things**, and that is what makes this safe. The key is what
+a thing is counted and looked up under; the payload is what is drawn when somebody points at it.
+Collapsing enchants and gems into one key does not remove them from the payload - two swords with
+different gems are still two things in a bag, each showing its own, and counted as two. Splitting
+the key by suffix later would change which heading they sit under and nothing about what is shown.
+
+Any change here that reaches the **payload** is out of scope and is a fault, not a simplification.
+
 **And the lookup has to ask what the filing asked**, or a split is worse than a collapse: a bag item
 looked up under a key nothing was ever filed under reads as *nobody has one*, which is a confident
 wrong answer where today there is a slightly blunt right one.
