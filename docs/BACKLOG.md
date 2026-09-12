@@ -3883,6 +3883,42 @@ folds - which reads as arbitrary unless the page says why. Ten is a number a rea
 
 ---
 
+### The rule, as Alberto put it 2026-09-12
+
+> Pieghiamo i risultati multipli solo se, non piegando, sforiamo la capienza nativa della pagina.
+> Se il numero di righe espanse e > max applichiamo le pieghe, calcolando quanto ci serve piegare
+> per tornare sotto il limite - pero con la piega minima che lascia per ogni sottoelenco multiplo
+> 10 unita visibili, e la piega massima che ne lascia solo 3. Se nonostante le pieghe massime
+> l'elenco sfora la capienza massima della pagina, ovviamente resta cosi.
+
+**It answers the objection above**, and that is the point of it: the fold depth is a property of
+the **page**, and every multi-block on that page is folded to the same depth. Nothing is folded
+because of how long it happens to be, so there is nothing arbitrary to explain.
+
+**And the obstacle this entry recorded turns out to be already solved in the file.** *A content
+height that is known before any frame is laid out* is exactly the shape `UI:ListWidth` already
+has: ask the scroll frame, and where the answer is too small to be real, fall back to a shipped
+constant. The window is **not resizable** - `Window.lua` sets 924 by 560 and nothing offers a
+handle - so one measured fallback is right for everybody.
+
+**It is not one number, though.** A possessions result row is 20 pixels and a professions row is
+32, so the same content height is about 21 rows on one panel and about 13 on the other. The number
+is a division rather than a constant, with the row height each panel already has.
+
+**What is still owed is a screenshot**, which this entry said from the start: rows-per-page is the
+one thing that can only be confirmed by looking at a full one.
+
+**One consequence, named rather than discovered.** On a broad search - 78 lines for *cr* - no cap
+fits, so every block goes to three. The fold then no longer buys *no scrolling*; it buys more
+distinct items per screen. Still worth having, and a different benefit from the one the rule is
+stated for, so a reader should not be told the first.
+
+**Composes with the cap rule already there.** `UI:ShowAtMost` draws a block whole when it is one
+over the cap, because *and 1 more* costs exactly the line it hides. That survives whatever the
+page picks: the chosen depth is a cap, and the same reasoning applies to it.
+
+---
+
 ## 65. The equipment block's picture: the character's own race and gender — DONE 2026-09-11
 
 **Alberto's suggestion, 2026-09-11**, looking at the Equipped block on the possessions page: it
