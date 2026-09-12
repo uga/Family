@@ -583,7 +583,11 @@ local function offering(link, memberKey)
 
     -- Stamped with when this side last looked, not with when it was sent. The other end
     -- shows the age of the fact, and a fact does not get younger by being posted.
-    out.seen = meta.seen or time()
+    --
+    -- Which this did the opposite of until 2026-09-12: it read a `seen` nothing writes, so the
+    -- fallback was taken every time and every member arrived stamped with the moment of the
+    -- exchange - a fact made younger by being posted, beside the sentence saying it never is.
+    out.seen = meta.lastSeen or time()
 
     return out
 end
@@ -660,7 +664,15 @@ local function sendingMark(link, memberKey)
 
     -- Offered, but not markable: the built entry would carry a fresh `time()` and differ from
     -- itself on every exchange, so it is sent every time and always was.
-    if not meta.seen then return nil, true end
+    --
+    -- **`lastSeen`, which is the field `Database:SetMeta` actually writes.** This read `seen`
+    -- from the day marking was built, and nothing in the addon has ever written a `seen` into
+    -- a member's meta - so every member of every family was unmarkable and every exchange sent
+    -- everybody, which is the whole of what marking existed to stop. Read from play 2026-09-12
+    -- once `/family widetime` could say why a member was not unchanged: *30 cannot be marked
+    -- at all*, out of 30. The harness never saw it because its fixture handed `SetMeta` a
+    -- `seen` of its own (L-090). The guild share has read `lastSeen` all along.
+    if not meta.lastSeen then return nil, true end
 
     local fields, ids = {}, {}
     local wantsPayload = false
@@ -687,7 +699,7 @@ local function sendingMark(link, memberKey)
         payload = payloadMark,
         meta = fields,
         granted = ids,
-        seen = meta.seen,
+        seen = meta.lastSeen,
     }), true
 end
 

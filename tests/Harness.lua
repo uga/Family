@@ -27076,12 +27076,15 @@ print("an exchange carries what changed, not everything again")
 
 	-- A member of ours with something granted, so there is a payload to hold back or resend.
 	--
-	-- **With a `seen` stamp**, which every member Family has actually read has and which this
-	-- fixture wanted twice before it got one. `offering` sets `out.seen = meta.seen or time()`,
-	-- so a member nobody has ever looked at genuinely is a different record on every exchange
-	-- and is right to be resent - the mark is not wrong there, the record is.
+	-- **Dated the way the addon dates a member, and in no other way.** This fixture used to
+	-- hand `SetMeta` a `seen = time() - 60` of its own, with a comment saying every member
+	-- Family has read carries one. None does: `SetMeta` stamps `lastSeen`, and nothing in the
+	-- addon has ever written `seen` into a member's meta. So the marking code read a field only
+	-- this fixture supplied, every check here passed, and in play every member of every family
+	-- was unmarkable and resent on every exchange - read back as *30 cannot be marked at all*,
+	-- out of 30 (L-090). What a fixture writes has to be something the code writes.
 	Family.Database:SetMeta(key, { name = "Shared", realm = "Fire Maw", classFile = "PRIEST",
-		level = 60, faction = "Alliance", money = 1234, seen = time() - 60 })
+		level = 60, faction = "Alliance", money = 1234 })
 	Family.Wide:Grant("thrifty", key, "possessions", true)
 
 	-- What one exchange actually put on the wire, read off the envelope rather than counted:
@@ -27206,8 +27209,8 @@ print("an exchange carries what changed, not everything again")
 	-- record whose age is unknown would freeze that age on the far side.
 	do
 		local meta = Family.Database:Meta(key)
-		local held = meta.seen
-		meta.seen = nil
+		local held = meta.lastSeen
+		meta.lastSeen = nil
 
 		Family.Wide:ExchangeWith("thrifty", "no date on the record")
 		carried = nil
@@ -27215,7 +27218,29 @@ print("an exchange carries what changed, not everything again")
 		check("a member with no date on their record is carried every time",
 			carried and carried[key] == true, tostring(carried and carried[key]))
 
-		meta.seen = held
+		meta.lastSeen = held
+	end
+
+	-- **What goes out is dated when the member was last seen, not when it was posted.** The
+	-- far side shows the age of the fact, and a fact does not get younger by being sent. This
+	-- read a `seen` nothing writes and so stamped every member with the moment of the exchange,
+	-- beside a comment saying it never did.
+	--
+	-- Asserted against a date an hour old on purpose. Against a fresh one, "the last-seen time"
+	-- and "now" are the same second often enough that the recorded mutation was caught under a
+	-- loaded run and survived a quiet one - a check that depends on the clock not ticking.
+	do
+		local meta = Family.Database:Meta(key)
+		local held = meta.lastSeen
+		meta.lastSeen = time() - 3600
+
+		local members = Family.Wide:Offering(link)
+		local sent = members[key] and members[key].seen
+		check("a shared member is dated when it was last seen, not when it was sent",
+			sent == meta.lastSeen,
+			tostring(sent) .. " against " .. tostring(meta.lastSeen))
+
+		meta.lastSeen = held
 	end
 
 	-- And asked for in full, whatever the marks say. Update now is the button somebody presses

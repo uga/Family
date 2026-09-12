@@ -1,0 +1,6 @@
+name: a shared member is dated with the moment it was sent rather than when it was last seen
+file: addons/Family/Wide.lua
+--- old
+    out.seen = meta.lastSeen or time()
+--- new
+    out.seen = time()

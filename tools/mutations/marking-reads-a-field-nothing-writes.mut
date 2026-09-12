@@ -1,0 +1,6 @@
+name: marking reads a seen that nothing writes, so every member is resent every time
+file: addons/Family/Wide.lua
+--- old
+    if not meta.lastSeen then return nil, true end
+--- new
+    if not meta.seen then return nil, true end
