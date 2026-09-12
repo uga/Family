@@ -3579,3 +3579,39 @@ Nothing is built on this yet. What is still wanted is the match line from a clie
 player has listings, and whether `GetReplicateItemLink` is there beside the rest (the probe now
 reports it).
 
+#### Which position is which
+
+Read on Mists 2026-09-12, from the client's *other* description of the same auctions. The
+player's own listings answer named fields through `GetOwnedAuctionInfo`, and they are in the
+replicated list too, so a row carrying all of an auction's values says where each one lives:
+
+    looking for your own auctions in the replicated list:
+      owned/scanned 4 / 43300
+        itemID         17 = 4232
+        quantity       3  = 1
+        buyoutAmount   10 = 498
+
+**Position 3 is the quantity, 10 is the price, 17 is the item id.** Not read off the shape of
+the numbers - matched against what the named route said about the same auction, and a row has to
+match on **every** field or the first stack of anything sharing one number becomes ours.
+
+**What that reading did not settle.** The auction that matched had a quantity of **one**, so the
+price for one and the price for the whole lot are the same number and position 10 could be either.
+`ReplicateMatchOwned` now looks for both forms and labels which one matched, so a single listing
+with a quantity above one settles it in one reading.
+
+#### A row can arrive incomplete
+
+The same call, run again a few minutes later, answered 43,300 rows whose first two looked like
+this:
+
+    1   (empty)      2   nil      3   1      4   -1      5   false
+    6   1            7   nil      8   0      9   0      10  2175500
+    11  0            12-15 nil    16  0      17  82204   18  false
+
+The id and the price are there; the name, the texture and the rest are not. **Position 18 was
+`true` in the run where the names arrived and `false` in the run where they did not**, which is
+the only thing observed about it - what it is called is not known, and no name for it is written
+down here. Whatever it is, a reader that wants a name off these rows cannot assume one is
+present, and a reader that only wants an id and a price may not care.
+

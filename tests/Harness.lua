@@ -32122,10 +32122,42 @@ print("asking the newer house for its whole list")
 	end
 
 	check("the replicated columns are worked out from the client's own named route",
-		#map.matches == 1 and at.itemID == 17 and at.quantity == 3
-			and at.buyoutAmount == 10,
+		#map.matches == 1 and at.itemID == 17 and at.quantity == 3,
 		#map.matches .. " match(es): " .. tostring(at.itemID) .. " / "
-			.. tostring(at.quantity) .. " / " .. tostring(at.buyoutAmount))
+			.. tostring(at.quantity))
+
+	-- **And which price it is, which one auction cannot always say.** Read from play on Mists
+	-- 2026-09-12: the auction that matched had a quantity of one, so the price for one and the
+	-- price for the stack were the same number and the reading settled nothing. This fixture
+	-- lists a hundred and one, priced per item - so a match on the per-item figure is a match
+	-- that could have gone the other way, and the label says which it was.
+	check("and a stack says whether that price is for one or for the lot",
+		at["buyoutAmount(each)"] == 10 and at["buyoutAmount(stack)"] == nil,
+		tostring(at["buyoutAmount(each)"]) .. " each, "
+			.. tostring(at["buyoutAmount(stack)"]) .. " stack")
+
+	-- **And the other way round.** Both forms have to be looked for or the answer is whichever
+	-- one was written down here, which is the guess this whole exercise exists to avoid: with
+	-- only the per-item form tried, a house that prices by the stack simply never matches and
+	-- says nothing, and nothing here would object.
+	_G.C_AuctionHouse.GetReplicateItemInfo = function(index)
+		if index == 0 then
+			return "Truesilver Bar", "t", 101, 1, true, 1, "L", 0, 0, 44993 * 101,
+				0, nil, nil, nil, nil, 0, 3858, true
+		end
+		return "Something Else", "t", 101, 1, true, 1, "L", 0, 0, 11,
+			0, nil, nil, nil, nil, 0, 4242, true
+	end
+
+	local byStack = {}
+	for _, match in ipairs(Family.Auctions:ReplicateMatchOwned().matches) do
+		for _, field in ipairs(match.at) do byStack[field[1]] = field[2] end
+	end
+
+	check("and a house that prices by the lot is read as pricing by the lot",
+		byStack["buyoutAmount(stack)"] == 10 and byStack["buyoutAmount(each)"] == nil,
+		tostring(byStack["buyoutAmount(stack)"]) .. " stack, "
+			.. tostring(byStack["buyoutAmount(each)"]) .. " each")
 
 	-- **And a row that shares one value with an auction of ours is not that auction.** Every
 	-- field has to be somewhere in the row, or the first stack of 101 anything in the house

@@ -648,14 +648,31 @@ function Auctions:ReplicateMatchOwned(limit)
 	-- What to look for: every value one of these auctions is described by, and the name the
 	-- **other** route gave it. `buyoutAmount` is per item there and the reader above multiplies
 	-- it out, so both forms are looked for rather than one being assumed.
+	-- **Both forms of the price, because one auction cannot tell them apart.**
+	--
+	-- Read from play on Mists 2026-09-12: the auction that matched had a quantity of **one**, so
+	-- the price for one and the price for the stack are the same number and the match says
+	-- nothing about which of them position ten holds. An auction of a hundred and one says it in
+	-- one reading - so both are looked for, and the label that comes back says which it was.
 	local wanted = {}
 	for _, auction in ipairs(mine) do
 		local each = auction.count > 0 and (auction.buyout / auction.count) or auction.buyout
+
 		wanted[#wanted + 1] = {
+			told = auction.count,
 			{ "itemID", auction.id },
 			{ "quantity", auction.count },
-			{ "buyoutAmount", each },
+			{ auction.count > 1 and "buyoutAmount(each)" or "buyoutAmount(1)", each },
 		}
+
+		if auction.count > 1 then
+			wanted[#wanted + 1] = {
+				told = auction.count,
+				{ "itemID", auction.id },
+				{ "quantity", auction.count },
+				{ "buyoutAmount(stack)", auction.buyout },
+			}
+		end
 	end
 
 	local held = self:ReplicateCount() or 0
@@ -682,12 +699,21 @@ function Auctions:ReplicateMatchOwned(limit)
 				end
 
 				if found == #auction then
-					out.matches[#out.matches + 1] = { index = index, at = where }
+					out.matches[#out.matches + 1] = {
+						index = index, at = where, quantity = auction.told,
+					}
 				end
 			end
 		end
 
-		if #out.matches >= 2 then break end
+		-- **A match on a stack is worth more than a match on a single**, so the walk does not
+		-- stop at the first one it finds if that one settled nothing.
+		local settled = 0
+		for _, match in ipairs(out.matches) do
+			if (match.quantity or 1) > 1 then settled = settled + 1 end
+		end
+
+		if settled >= 1 or #out.matches >= 4 then break end
 	end
 
 	return out
