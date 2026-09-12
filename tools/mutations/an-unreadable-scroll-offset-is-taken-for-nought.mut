@@ -1,0 +1,6 @@
+name: a scroll offset the client will not give up is treated as a list at the top
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if not offset then return nil end
+--- new
+	offset = offset or 0

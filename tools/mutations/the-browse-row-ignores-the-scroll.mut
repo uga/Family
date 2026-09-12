@@ -1,0 +1,6 @@
+name: an auction row is read at the slot showing it rather than at the row it is showing
+file: addons/Family_UI/Tooltip.lua
+--- old
+	return offset + slot
+--- new
+	return slot

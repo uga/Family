@@ -1,0 +1,6 @@
+name: the redraw guard keys on the item alone, so two rows of it are one tooltip
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local describing = tostring(variant) .. "@" .. tostring(owner)
+--- new
+	local describing = tostring(variant)

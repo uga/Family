@@ -1,0 +1,7 @@
+name: a frame carrying no id at all is concatenated into a name and takes the tooltip down
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local slot = idOf(frame)
+	if not slot then return nil end
+--- new
+	local slot = idOf(frame)

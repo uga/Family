@@ -557,29 +557,38 @@ end
 -- being for sale is not an inference.
 --
 -- Not on by default. It is the one thing Family puts on a tooltip that is not about the family.
--- **How many are in the slot the pointer is on**, where the pointer is on a slot at all.
+-- **How many are in the pile the pointer is on**, where the pointer is on a pile at all.
 --
--- A tooltip does not carry a stack size, so this asks the frame the tooltip was opened for: a
--- container button is its slot and its parent is its bag, with newer clients putting the bag on
--- the button as well. Neither is guaranteed of an arbitrary frame, and Family is far from the only
--- addon that draws bags.
+-- A tooltip does not carry a stack size, so this asks the frame the tooltip was opened for.
+-- Two places can answer, and neither is guaranteed of an arbitrary frame: a container button
+-- is its slot and its parent is its bag, with newer clients putting the bag on the button as
+-- well; an auction row is an index into the browse list the client is holding.
 --
--- **So the guess is checked before it is used.** The slot it works out has to actually hold the
--- item the tooltip is describing; where it does not, this answers nothing and the stack line is
--- not drawn. A wrong guess therefore costs a missing line rather than a wrong number, which is the
--- only trade worth making - a count against the wrong item would read exactly like a right one.
-local function slotCount(tooltip, itemID)
-	if not (tooltip and tooltip.GetOwner) then return nil end
+-- **So the guess is checked before it is used.** Whatever the frame chain suggests has to
+-- actually hold the item the tooltip is describing; where it does not, this answers nothing and
+-- the stack line is not drawn. A wrong guess therefore costs a missing line rather than a wrong
+-- number, which is the only trade worth making - a count against the wrong item would read
+-- exactly like a right one. That rule was written into backlog 62 before the reading was taken
+-- rather than after it, and it is what makes an unknown frame safe to ask.
+local function ownerChain(tooltip)
+	if not (tooltip and tooltip.GetOwner) then return nil, nil end
 
 	local owner = Family:TryCall(tooltip.GetOwner, tooltip)
-	if type(owner) ~= "table" then return nil end
+	if type(owner) ~= "table" then return nil, nil end
 
-	local slot = owner.GetID and Family:TryCall(owner.GetID, owner)
+	local parent = owner.GetParent and Family:TryCall(owner.GetParent, owner) or nil
+	return owner, type(parent) == "table" and parent or nil
+end
+
+local function idOf(frame)
+	if type(frame) ~= "table" or type(frame.GetID) ~= "function" then return nil end
+	return tonumber((Family:TryCall(frame.GetID, frame)))
+end
+
+local function bagCount(owner, parent, itemID)
+	local slot = idOf(owner)
 	local bag = owner.bagID
-	if bag == nil and owner.GetParent then
-		local parent = Family:TryCall(owner.GetParent, owner)
-		bag = parent and parent.GetID and Family:TryCall(parent.GetID, parent)
-	end
+	if bag == nil then bag = idOf(parent) end
 
 	if not Family.Bags then return nil end
 	local found, count = Family.Bags:SlotContents(bag, slot)
@@ -587,6 +596,90 @@ local function slotCount(tooltip, itemID)
 
 	count = tonumber(count)
 	return count and count > 1 and count or nil
+end
+
+-- **Which row of the browse list a frame is showing.**
+--
+-- Backlog 62 held this back for two days on the grounds that away from the bags there is nothing
+-- to check a count against. The reading taken 2026-09-12 found the chain - the owner is a
+-- `BrowseButtonNItem` whose own id is nought, its parent is `BrowseButtonN` with id N - and the
+-- first version stopped there, treating N as the row and trusting `GetAuctionItemLink` to catch
+-- it if it was not.
+--
+-- **That check was worthless and the reading that found it out was one hover.** Reported from
+-- play the same day: unscrolled the counts are right, scrolled the tooltip claims a stack of ten
+-- over a stack of five. Two faults at once, and the second is the one that matters.
+--
+-- The first: N is the **slot on the screen**, not the row in the list. The client names its
+-- fifteen buttons once and never renumbers them, so scrolled down three rows the fifth button is
+-- showing the eighth auction.
+--
+-- The second, and the reason the first was not caught: **a browse list is a list of one item.**
+-- Somebody searching for Linen Cloth is looking at twenty rows of Linen Cloth, so *the link at
+-- this index matches the tooltip* is satisfied by every row on the page - the wrong one included.
+-- A check a sibling can satisfy is not a check, and this one read as one right up until it was
+-- pointed at a scrolled list. L-087.
+--
+-- So the row is worked out properly and the check goes back to being a check rather than the
+-- thing holding the feature up.
+--
+-- **Identity, not a name.** `_G["BrowseButton5"]` being this very frame is what says the client's
+-- own browse list is under the pointer - and therefore that `BrowseScrollFrame` is the scroll
+-- frame governing it. Matching the frame's name as a string would accept anything that happened
+-- to be called that; comparing the objects cannot. Where the frame is somebody else's, or the
+-- offset cannot be read at all, this answers nothing and no line is drawn.
+local function browseIndexOf(frame)
+	-- The nil is refused because the line below would concatenate it and take a tooltip down
+	-- with it. **A slot of nought is not refused separately**, and used to be: `BrowseButton0`
+	-- is not a frame the client has, so the identity test already answers no - a second guard
+	-- in front of it was one nothing could reach, and the mutation aimed at it survived every
+	-- run because it described a fault that cannot happen (L-086).
+	local slot = idOf(frame)
+	if not slot then return nil end
+	if _G["BrowseButton" .. slot] ~= frame then return nil end
+
+	local offset = tonumber((Family:TryCall(_G.FauxScrollFrame_GetOffset,
+		_G.BrowseScrollFrame)))
+	if not offset then return nil end
+
+	return offset + slot
+end
+
+-- **Checked on the variant and not on the id**, because a browse list is also where two rows of
+-- one item id sit next to each other wearing different suffixes. Comparing the numbers would
+-- call *of the Bear* a match for *of the Whale*.
+--
+-- It is a sanity check on the arithmetic above and no longer the thing the feature stands on:
+-- it catches an index that has landed on a different item, and cannot catch one that has landed
+-- on another row of the same one.
+local function auctionRowCount(index, variant)
+	local link = Family:TryCall(GetAuctionItemLink, "list", index)
+	if type(link) ~= "string" then return nil end
+	if Family:VariantKey(itemIDFrom(link), link) ~= variant then return nil end
+
+	local _, _, count = Family:TryCall(GetAuctionItemInfo, "list", index)
+	count = tonumber(count)
+	return count and count > 1 and count or nil
+end
+
+local function pileCount(tooltip, itemID, variant)
+	local owner, parent = ownerChain(tooltip)
+	if not owner then return nil end
+
+	local count = bagCount(owner, parent, itemID)
+	if count then return count end
+
+	-- The owner first and its parent second, because that is the order the reading found them
+	-- in: the texture carries the picture and the button around it carries the row.
+	for _, frame in ipairs { owner, parent } do
+		local index = browseIndexOf(frame)
+		if index then
+			count = auctionRowCount(index, variant)
+			if count then return count end
+		end
+	end
+
+	return nil
 end
 
 -- **Three of these lines are about the item and two are about the variant**, and getting that
@@ -738,7 +831,7 @@ local function priceLines(tooltip, itemID, variant)
 	-- The sell price only. *What do I get for this lot* is what a stack is asked; *what would
 	-- this lot cost* is not, and would need the buy price to be a thing the family could act on
 	-- rather than a thing one vendor was seen charging.
-	local count = (sell and sell > 0) and slotCount(tooltip, itemID) or nil
+	local count = (sell and sell > 0) and pileCount(tooltip, itemID, variant) or nil
 	local held = Family.Index and Family.Index.WorthOfItem
 		and Family.Index:WorthOfItem(variant or itemID) or nil
 	-- Nought held at nought each is not an answer worth a line, and neither is a lot this
@@ -900,8 +993,20 @@ local function onItem(tooltip, itemID, data)
 	-- **The guard is on the variant**, not on the item. Two suffixed swords of one id are two
 	-- different tooltips, and keying this on the id alone would have shown the first one's
 	-- block against the second one's stats.
-	if lastDescribed[tooltip] == variant then return end
-	lastDescribed[tooltip] = variant
+	-- **And on the frame as well as the variant**, which a browse list is the reason for. The
+	-- guard exists so that a tooltip re-firing for the thing it is already describing does not
+	-- get the block twice; keyed on the variant alone it also refuses to redraw when the
+	-- pointer moves from one row of Linen Cloth to the next, because those two rows are the
+	-- same variant. `OnTooltipCleared` normally fires between them and clears this - but a
+	-- stack count belongs to the row and not to the item, so where it does not fire the reader
+	-- is left looking at the previous row's number. Two rows, one item, different counts is
+	-- exactly the case reported from play 2026-09-12, and it is not a case to leave resting on
+	-- another addon firing an event.
+	local owner = tooltip.GetOwner and (Family:TryCall(tooltip.GetOwner, tooltip)) or nil
+	local describing = tostring(variant) .. "@" .. tostring(owner)
+
+	if lastDescribed[tooltip] == describing then return end
+	lastDescribed[tooltip] = describing
 
 	-- Worked out before anything is written, because a tooltip has no way to take a line
 	-- back off. Each block that has something to say is preceded by one blank line and the
@@ -1422,6 +1527,11 @@ modifiers:SetScript("OnUpdate", function()
 end)
 
 UI.__tooltipModifiers = modifiers
+
+-- **The pile the pointer is on, reachable by the harness**, because the whole of backlog 62
+-- is one decision - does the frame chain name the same item the tooltip is describing - and a
+-- decision that cannot be asked directly is a decision tested through four other layers.
+UI.__pileCount = pileCount
 
 -- The two that came first, kept because an item row is by far the commonest case and reads
 -- better named than as a kind passed in.
