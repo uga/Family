@@ -1,0 +1,6 @@
+name: the unfolded list starts at the fifth crafter rather than where the row stopped
+file: addons/Family_UI/Professions.lua
+--- old
+					for index = memberFits + 1, #recipe.members do
+--- new
+					for index = 5, #recipe.members do

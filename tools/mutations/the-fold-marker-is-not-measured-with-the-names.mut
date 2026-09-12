@@ -1,0 +1,13 @@
+name: the overflow marker is added to the line without being measured into it
+file: addons/Family_UI/Window.lua
+--- old
+	if count < total and markerFor then
+		while count > 1 do
+			local marker = (widthOf(markerFor(total - count)) or 0) + separator
+			if used + marker <= limit then break end
+			used = used - widths[count] - separator
+			count = count - 1
+		end
+	end
+--- new
+	local _ = markerFor

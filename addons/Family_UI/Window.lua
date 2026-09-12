@@ -57,6 +57,7 @@ local TAB_ICONS = {
 	character   = "Interface\\Icons\\INV_Shirt_White_01",
 	wide        = "Interface\\Icons\\INV_Misc_GroupNeedMore",
 	guild       = "Interface\\Icons\\INV_Shirt_GuildTabard_01",
+	extras      = "Interface\\Icons\\INV_Misc_Wrench_01",
 	options     = "Interface\\Icons\\Ability_Repair",
 	about       = "Interface\\Common\\help-i",
 }
@@ -390,6 +391,88 @@ function UI:ReleaseFocusOnClick(box)
 	if not box then return box end
 	watchedBoxes[#watchedBoxes + 1] = box
 	return box
+end
+
+-- **As many names as the line will actually take, and the rest counted.**
+--
+-- Reported 2026-09-12 off a screenshot of *Smelt Bronze*: four crafters fit comfortably where
+-- four short names fit, and `Spazzacamino of Serena 74` is as wide as two of them - a borrowed
+-- family's character carries the family name and sometimes the realm as well. *Su ogni riga (la
+-- prima, sotto la piega, e le altre espanse) ci vanno tanti nomi quanti al massimo ce ne possono
+-- stare.* A fixed four is a rule about a name length nobody has.
+--
+-- Measured rather than counted, for the reason `LayOutRow` above is: a count of characters is a
+-- count of the wrong thing, and the class colour, the family suffix and the rank all ride along
+-- inside the string. `widthOf` is the caller's - a closure over a font string carrying the row's
+-- own font - so this decides and the caller draws, and the decision can be asked directly.
+--
+-- **The overflow marker has to fit too**, and how wide it is depends on how many were dropped,
+-- which depends on how many fit. So the pass grows first and then backs off until the whole line
+-- - names, separators and marker - is inside the limit.
+--
+-- One name always survives. A line reading only **+7** tells the reader less than the widest
+-- single name followed by **+6**, and a fold that hides everything is not a fold.
+local FIT_SEPARATOR = ", "
+
+function UI:FitNames(pieces, limit, widthOf, markerFor)
+	local total = pieces and #pieces or 0
+	if total == 0 then return 0 end
+	if type(widthOf) ~= "function" or not (tonumber(limit) and limit > 0) then
+		return total
+	end
+
+	local widths, separator = {}, widthOf(FIT_SEPARATOR) or 0
+	for index = 1, total do widths[index] = widthOf(pieces[index]) or 0 end
+
+	local used, count = 0, 0
+	for index = 1, total do
+		local add = widths[index] + (count > 0 and separator or 0)
+		if used + add > limit then break end
+		used, count = used + add, count + 1
+	end
+
+	if count < total and markerFor then
+		while count > 1 do
+			local marker = (widthOf(markerFor(total - count)) or 0) + separator
+			if used + marker <= limit then break end
+			used = used - widths[count] - separator
+			count = count - 1
+		end
+	end
+
+	return math.max(count, 1)
+end
+
+-- **Two ways of saying it, and the shorter one where the longer will not fit.**
+--
+-- Reported off a screenshot 2026-09-12: a Wide Family line ending *send...*, cut mid-word. That
+-- line is a row of segments separated by bars, and what clipping takes is whatever is furthest
+-- right - which had no relation to what was worth keeping. The caller writes both versions and
+-- says which is which; this only measures.
+--
+-- Unmeasurable is not short. With no ruler, or no room to measure against, the long one is used:
+-- dropping something because a measurement could not be taken would lose a segment on every
+-- client that answered oddly, which is worse than the clipping this exists to avoid.
+function UI:Shorter(long, short, limit, widthOf)
+	if type(widthOf) ~= "function" then return long end
+	if not (tonumber(limit) and limit > 0) then return long end
+	if (widthOf(long) or 0) <= limit then return long end
+	return short
+end
+
+-- The measuring stick, made once from a font string the caller already owns. Handed the text and
+-- asked how wide it comes out - which is what `GetStringWidth` answers and a character count does
+-- not. The string is put back afterwards so that measuring never changes what is on the screen.
+function UI:WidthRuler(fontString)
+	if not (fontString and fontString.GetStringWidth and fontString.SetText) then return nil end
+
+	return function(text)
+		local was = fontString.GetText and fontString:GetText() or nil
+		fontString:SetText(text or "")
+		local wide = fontString:GetStringWidth() or 0
+		fontString:SetText(was or "")
+		return wide
+	end
 end
 
 function UI:FitButton(button, minimum)

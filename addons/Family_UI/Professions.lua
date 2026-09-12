@@ -1095,37 +1095,31 @@ local function build(frame)
 				-- 300, G..." - which loses the count as well as the names. Four and a
 				-- number is a shorter true answer than five and a truncation, and the
 				-- rest are a click away rather than gone.
-				local names, spare = {}, 0
+				local everyone = {}
 				for _, who in ipairs(UI:NamesOf(recipe.members)) do
-					if #names < 4 then
-						-- The class's colour, asked for from play 2026-09-05 of a
-						-- search fifteen recipes long whose every name was one
-						-- gold. `Recipes.lua` has carried `classFile` on these
-						-- entries since they were written; nothing had read it.
-						--
-						-- Closed before the rank rather than around it, so the
-						-- grey of the number is not what a `|r` returns to.
-						local shown = UI:ClassMarkup(who.classFile) .. who.label
-							.. "|r"
+					-- The class's colour, asked for from play 2026-09-05 of a
+					-- search fifteen recipes long whose every name was one
+					-- gold. `Recipes.lua` has carried `classFile` on these
+					-- entries since they were written; nothing had read it.
+					--
+					-- Closed before the rank rather than around it, so the
+					-- grey of the number is not what a `|r` returns to.
+					local shown = UI:ClassMarkup(who.classFile) .. who.label .. "|r"
 
-						-- Whose character it is, in the same words the possessions
-						-- search and the item tooltip use, so the three cannot come
-						-- to word it differently. A name here is read as somebody
-						-- to log in on, and a linked family's character is somebody
-						-- to ask instead.
-						if who.familyName then
-							shown = string.format(L["%s |cff9d9d9dof %s|r"], shown,
-								tostring(who.familyName))
-						end
-
-						names[#names + 1] = who.rank
-							and string.format("%s |cff888888%d|r", shown, who.rank)
-							or shown
-					else
-						spare = spare + 1
+					-- Whose character it is, in the same words the possessions
+					-- search and the item tooltip use, so the three cannot come
+					-- to word it differently. A name here is read as somebody
+					-- to log in on, and a linked family's character is somebody
+					-- to ask instead.
+					if who.familyName then
+						shown = string.format(L["%s |cff9d9d9dof %s|r"], shown,
+							tostring(who.familyName))
 					end
+
+					everyone[#everyone + 1] = who.rank
+						and string.format("%s |cff888888%d|r", shown, who.rank)
+						or shown
 				end
-				if spare > 0 then names[#names + 1] = string.format(L["+%d"], spare) end
 
 				-- The guild's answer as a second group on the same row, labelled as
 				-- theirs (§7.1). One box, one question, two sources - and they are kept
@@ -1142,18 +1136,45 @@ local function build(frame)
 					guild[#guild + 1] = character:match("^([^%-]+)") or character
 				end
 
-				local note = table.concat(names, ", ")
-				if #guild > 0 then
-					-- Capped, because this line does not wrap and a guild of twenty
-					-- Family users would push the recipe's own name off the row.
-					local shown = {}
-					for index = 1, math.min(3, #guild) do shown[index] = guild[index] end
-					if #guild > 3 then
-						shown[#shown + 1] = string.format(L["+%d"], #guild - 3)
-					end
+				-- **Measured, not counted.** Reported 2026-09-12 off a screenshot: a
+				-- borrowed family's crafter carries the family name with them, so
+				-- "Spazzacamino of Serena 74" is as wide as two ordinary names and a
+				-- fixed four either wastes the row or overruns it. `UI:FitNames` asks
+				-- the font string how wide each name actually comes out and takes as
+				-- many as the column will hold, marker included.
+				local ruler = UI:WidthRuler(r.note)
+				local function plus(n) return string.format(L["+%d"], n) end
 
-					local block = string.format(L["|cff66bbffguild|r |cff888888%s|r"],
+				-- The guild goes first when there is one, and never gets more than a
+				-- third of the column: it is a second group on a row that belongs to
+				-- the family's own answer, and a guild of twenty must not push that
+				-- answer off the line. Its own overflow is counted separately, because
+				-- **+4 of yours** and **+4 guildmates** are two different facts.
+				local block, blockWidth = nil, 0
+				local guildFits, guildSpare = 0, 0
+				if #guild > 0 then
+					guildFits = UI:FitNames(guild, NOTE_WIDTH / 3, ruler, plus)
+					guildSpare = #guild - guildFits
+
+					local shown = {}
+					for index = 1, guildFits do shown[index] = guild[index] end
+					if guildSpare > 0 then shown[#shown + 1] = plus(guildSpare) end
+
+					block = string.format(L["|cff66bbffguild|r |cff888888%s|r"],
 						table.concat(shown, ", "))
+					blockWidth = (ruler and ruler(block .. "   ") or 0)
+				end
+
+				local memberFits =
+					UI:FitNames(everyone, NOTE_WIDTH - blockWidth, ruler, plus)
+				local spare = #everyone - memberFits
+
+				local names = {}
+				for index = 1, memberFits do names[index] = everyone[index] end
+				if spare > 0 then names[#names + 1] = plus(spare) end
+
+				local note = table.concat(names, ", ")
+				if block then
 					note = (note ~= "" and (note .. "   ") or "") .. block
 				end
 
@@ -1170,8 +1191,8 @@ local function build(frame)
 				------------------------------------------------------------------------
 
 				local key = recipe.spellID or recipe.itemID or recipe.name
-				-- Three of the guild's are shown beside four of ours; the rest are the fold.
-				local hidden = spare + math.max(0, #guild - 3)
+				-- Whatever the row could not hold, from either group, is the fold.
+				local hidden = spare + guildSpare
 
 				-- **What it is made of is a reason to open a row too**, which is how the
 				-- materials reach this list at all: they will not fit on the row - eight
@@ -1189,14 +1210,18 @@ local function build(frame)
 				if UI.__openCrafters == key then
 					local everybody = {}
 
-					for index = 5, #recipe.members do
+					-- **From where the row stopped**, which is now a measurement and not
+					-- a constant. Asked 2026-09-12: *nelle righe espanse vanno solo i
+					-- crafters NON menzionati nella riga principale* - and the row above
+					-- fits as many as it fits, so this is the only place that knows.
+					for index = memberFits + 1, #recipe.members do
 						local who = recipe.members[index]
 						everybody[#everybody + 1] = { label = who.label or who.name,
 							classFile = who.classFile, familyName = who.familyName,
 							rank = who.rank, cooldown = who.cooldown }
 					end
 
-					for index = 4, #(recipe.guild or {}) do
+					for index = guildFits + 1, #(recipe.guild or {}) do
 						local who = recipe.guild[index]
 						local character = tostring(who.name or who.key or "?")
 						everybody[#everybody + 1] = {
@@ -1204,7 +1229,8 @@ local function build(frame)
 							guild = true, at = who.at, cooldown = who.cooldown }
 					end
 
-					-- **Four to a line, in the column the folded row uses.**
+					-- **As many to a line as the line will take, in the column the folded
+					-- row uses.**
 					--
 					-- Asked for 2026-09-12 off a screenshot of six crafters on six lines:
 					-- *per coerenza grafica basterebbero delle righe ciascuna con un elenco
@@ -1212,12 +1238,63 @@ local function build(frame)
 					-- empty block is a lot of screen for a list the folded row fits four of
 					-- on one line - and it does not line up with anything.
 					--
-					-- Four, because four is what the folded row shows, and this is the same
-					-- list continued rather than a different presentation of it. Nine
-					-- crafters is three lines: four, four, one.
-					local PER_LINE = 4
+					-- **And measured rather than counted**, reported the same day: a fixed
+					-- four is a rule about a name length nobody has, and a borrowed family's
+					-- crafter carries the family name with them. *Su ogni riga ci vanno
+					-- tanti nomi quanti al massimo ce ne possono stare.*
+					--
+					-- No overflow marker here, because nothing overflows: this is the fold
+					-- already opened, and it runs onto as many lines as the names need.
+					local decorated = {}
+					for _, who in ipairs(everybody) do
+						-- Ours by their class, the guild's left as they were: a
+						-- guildmate arrives with no class recorded, and colouring
+						-- them by a class nobody knows would paint every one of
+						-- them white - which reads as a claim rather than as the
+						-- absence of one.
+						local shown = tostring(who.label or "?")
+						if not who.guild then
+							shown = UI:ClassMarkup(who.classFile) .. shown .. "|r"
+						end
 
-					for at = 1, #everybody, PER_LINE do
+						-- And whose, on the unfolded line as on the folded one. A
+						-- character that reads as ours in one and theirs in the
+						-- other is worse than one that reads as theirs in neither.
+						if who.familyName then
+							shown = string.format(L["%s |cff9d9d9dof %s|r"], shown,
+								tostring(who.familyName))
+						end
+
+						if who.rank then
+							shown = shown .. string.format(" |cff888888%d|r", who.rank)
+						end
+
+						-- **The guild marker goes on the name now.** It was the note
+						-- column's job while a line was one person; several to a line,
+						-- the column is the names and there is nowhere else for it to
+						-- go. It still has to be said: it decides whether you whisper
+						-- somebody or log in as them.
+						if who.guild then
+							shown = shown .. L[" |cff66bbff(guild)|r"]
+						end
+
+						-- A cooldown outranks everything else about a name, as it
+						-- does on the tooltip and for the same reason: which
+						-- guildmate to ask about a transmute is decided by whose
+						-- is up and by nothing else (§4.5). Inline for the same
+						-- reason the guild marker is.
+						if who.cooldown then
+							shown = shown .. " " .. (who.cooldown.ready
+								and L["|cff40bf40ready now|r"]
+								or string.format(L["|cffff8040ready %s|r"],
+									UI:In(who.cooldown.readyAt)))
+						end
+
+						decorated[#decorated + 1] = shown
+					end
+
+					local at = 1
+					while at <= #decorated do
 						used = used + 1
 						local line = row(used)
 						line:SetPoint("TOPLEFT", 0, -y)
@@ -1234,58 +1311,21 @@ local function build(frame)
 						line.text:SetText("")
 						showMaterials(line, nil)
 
-						local said = {}
-						for index = at, math.min(at + PER_LINE - 1, #everybody) do
-							local who = everybody[index]
-
-							-- Ours by their class, the guild's left as they were: a
-							-- guildmate arrives with no class recorded, and colouring
-							-- them by a class nobody knows would paint every one of
-							-- them white - which reads as a claim rather than as the
-							-- absence of one.
-							local shown = tostring(who.label or "?")
-							if not who.guild then
-								shown = UI:ClassMarkup(who.classFile) .. shown .. "|r"
-							end
-
-							-- And whose, on the unfolded line as on the folded one. A
-							-- character that reads as ours in one and theirs in the
-							-- other is worse than one that reads as theirs in neither.
-							if who.familyName then
-								shown = string.format(L["%s |cff9d9d9dof %s|r"], shown,
-									tostring(who.familyName))
-							end
-
-							if who.rank then
-								shown = shown ..
-									string.format(" |cff888888%d|r", who.rank)
-							end
-
-							-- **The guild marker goes on the name now.** It was the
-							-- note column's job while a line was one person; four to a
-							-- line, the column is the names and there is nowhere else
-							-- for it to go. It still has to be said: it decides
-							-- whether you whisper somebody or log in as them.
-							if who.guild then
-								shown = shown .. L[" |cff66bbff(guild)|r"]
-							end
-
-							-- A cooldown outranks everything else about a name, as it
-							-- does on the tooltip and for the same reason: which
-							-- guildmate to ask about a transmute is decided by whose
-							-- is up and by nothing else (§4.5). Inline for the same
-							-- reason the guild marker is.
-							if who.cooldown then
-								shown = shown .. " " .. (who.cooldown.ready
-									and L["|cff40bf40ready now|r"]
-									or string.format(L["|cffff8040ready %s|r"],
-										UI:In(who.cooldown.readyAt)))
-							end
-
-							said[#said + 1] = shown
-						end
-
 						line.note:SetWidth(NOTE_WIDTH)
+
+						-- Measured against this line's own font string, so a line of
+						-- long names holds fewer than a line of short ones - which is
+						-- the whole of what was asked for.
+						local rest = {}
+						for index = at, #decorated do rest[#rest + 1] = decorated[index] end
+
+						local takes = UI:FitNames(rest, NOTE_WIDTH,
+							UI:WidthRuler(line.note), nil)
+
+						local said = {}
+						for index = 1, takes do said[index] = rest[index] end
+						at = at + takes
+
 						line.note:SetText(table.concat(said, ", "))
 					end
 

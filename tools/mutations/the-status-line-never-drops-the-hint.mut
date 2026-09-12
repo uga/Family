@@ -1,0 +1,7 @@
+name: a line that will not fit is drawn long anyway and clipped mid-word
+file: addons/Family_UI/Window.lua
+--- old
+	if (widthOf(long) or 0) <= limit then return long end
+	return short
+--- new
+	return long

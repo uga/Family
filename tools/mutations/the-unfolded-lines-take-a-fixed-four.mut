@@ -1,7 +1,7 @@
-name: an unfolded recipe puts one crafter on each line rather than as many as fit
+name: the unfolded crafter lines take four names each whatever their length
 file: addons/Family_UI/Professions.lua
 --- old
 						local takes = UI:FitNames(rest, NOTE_WIDTH,
 							UI:WidthRuler(line.note), nil)
 --- new
-						local takes = 1
+						local takes = math.min(4, #rest)

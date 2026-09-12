@@ -1,0 +1,8 @@
+name: measuring a string leaves it in the font string it measured with
+file: addons/Family_UI/Window.lua
+--- old
+		local wide = fontString:GetStringWidth() or 0
+		fontString:SetText(was or "")
+		return wide
+--- new
+		return fontString:GetStringWidth() or 0

@@ -1,0 +1,8 @@
+name: a line nothing could measure is shortened on the strength of the guess
+file: addons/Family_UI/Window.lua
+--- old
+	if type(widthOf) ~= "function" then return long end
+	if not (tonumber(limit) and limit > 0) then return long end
+--- new
+	if type(widthOf) ~= "function" then return short end
+	if not (tonumber(limit) and limit > 0) then return short end

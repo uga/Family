@@ -1,0 +1,7 @@
+name: the crafter row takes a fixed four names rather than as many as fit
+file: addons/Family_UI/Professions.lua
+--- old
+				local memberFits =
+					UI:FitNames(everyone, NOTE_WIDTH - blockWidth, ruler, plus)
+--- new
+				local memberFits = math.min(4, #everyone)

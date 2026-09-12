@@ -755,9 +755,25 @@ local function build(frame)
             local state = nextRow()
             state.text:SetPoint("RIGHT", -RIGHT_INSET, 0)
 
-            local said = link.problem
-                and ("|cffffaa00" .. link.problem .. "|r")
-                or string.format(
+            -- **Built twice, and the shorter one is used where the longer will not fit.**
+            --
+            -- Reported off a screenshot 2026-09-12: the line ended *send...*, cut mid-word.
+            -- Moving it onto a row of its own had already been done for the same reason once,
+            -- and then two more segments were appended to it - so the row is wide enough for
+            -- what it was and not for what it became. Adding a third row would be the same
+            -- fix a third time.
+            --
+            -- What gives way is **the hint and not a fact**. *Click the name to open* tells
+            -- the reader something they can also find out by clicking; *sending to them, 4
+            -- pieces left* is the state of a transfer and is why anybody is reading this line.
+            -- Clipping takes them in the wrong order, because clipping takes whatever is on
+            -- the right.
+            local function sentence(withHint)
+                if link.problem then
+                    return "|cffffaa00" .. link.problem .. "|r"
+                end
+
+                local said = string.format(
                     L["|cff888888you share %s in %s   |||   they share %d with you"
                     .. "   |||   last exchange %s%s|r"],
                     string.format(members == 1 and L["%d member"] or L["%d members"],
@@ -766,7 +782,7 @@ local function build(frame)
                         grants),
                     #theirs,
                     link.lastExchange and UI:Ago(link.lastExchange) or L["never"],
-                    open and "" or L["   |||   click the name to open"])
+                    (withHint and not open) and L["   |||   click the name to open"] or "")
 
             -- What is still going out **to them**, said where the age of the last exchange
             -- is said.
@@ -777,11 +793,11 @@ local function build(frame)
             -- would be whispered, plus the batches it has yet to post. A row that counted
             -- everybody's traffic put the same number on every link, which is the number of
             -- a channel rather than of a family.
-            local queued = Family.Wide:InFlight(entry.id)
-            if queued > 0 then
-                said = said .. string.format(
-                    L["   |cffffd700|||   sending to them, %d pieces left|r"], queued)
-            end
+                local queued = Family.Wide:InFlight(entry.id)
+                if queued > 0 then
+                    said = said .. string.format(
+                        L["   |cffffd700|||   sending to them, %d pieces left|r"], queued)
+                end
 
             -- **What they have actually confirmed**, which is a different thing from what was
             -- sent and is the only one of the two worth a number on this line.
@@ -791,13 +807,20 @@ local function build(frame)
             -- printing that as *confirmed* would be the guess the acknowledgement exists to
             -- stop. Nothing is drawn there rather than a nought, which would read as *they
             -- have none of it*.
-            local confirmed, offered = Family.Wide:Confirmed(entry.id)
-            if offered > 0 then
-                said = said .. string.format(
-                    L["   |cff888888|||   %d of %d confirmed|r"], confirmed, offered)
+                local confirmed, offered = Family.Wide:Confirmed(entry.id)
+                if offered > 0 then
+                    said = said .. string.format(
+                        L["   |cff888888|||   %d of %d confirmed|r"], confirmed, offered)
+                end
+
+                return said
             end
 
-            state.text:SetText(said)
+            -- The room this line actually has: the list, less the inset at each end. Measured
+            -- against the font string that is going to draw it, so the answer is in the font
+            -- it will be drawn in rather than in characters.
+            state.text:SetText(UI:Shorter(sentence(true), sentence(false),
+                UI:ListWidth(scroll) - 4 - RIGHT_INSET, UI:WidthRuler(state.text)))
 
             if open then
                 y = y + 8
