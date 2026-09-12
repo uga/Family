@@ -13,19 +13,56 @@ instead; the run patches, gates, restores, and reports.
 them: a mutation that no longer applies is a mutation that has quietly stopped testing anything,
 which is the same silence every lesson in this repository is about.
 
+**Wait for it. Do not work beside it.** This is a gate on what has just been written, and a gate
+answered after the next thing is built is not a gate - a red result then has no clear place to
+restart from. Alberto, 2026-09-12: *che senso ha metterlo in parallelo per andare avanti nel
+frattempo? E se quando finisce dice che non andava bene qualcosa, da "dove" ricominci?*
+
+**So the parallelism is here, inside the run**, and its whole purpose is to make waiting
+affordable. One case is one gate, the gate is about six seconds, and the cases have nothing to
+say to each other - ninety of them serially is nine minutes, which is long enough that somebody
+starts doing something else, and that is how the rule above gets broken.
+
+**Nothing here touches the working tree either.** It used to: each case was written into the real
+file, gated, and written back. Two things went wrong with that and neither was hypothetical. A
+`git add -A` during a run once staged a mutated file. And a run killed part way through left a
+mutation standing in `Scanners/Auctions.lua` - the `finally` never reached - so the next gate was
+red for a reason that had nothing to do with anything anybody had written (L-089). A copy cannot
+do either: kill this at any moment and the repository is exactly as it was.
+
     tools/mutate.py                 every case in tools/mutations
     tools/mutate.py one.mut two.mut just those
+    tools/mutate.py --jobs 1        one at a time, for when a failure needs watching
 
-Exit is non-zero if any mutation survived or any anchor has gone.
+Exit is non-zero if any mutation survived, any anchor has gone, or any gate hung.
 """
 
 import os
+import queue
+import shutil
 import subprocess
 import sys
+import tempfile
+import threading
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CASES = os.path.join(ROOT, "tools", "mutations")
 GATE = ["lua5.1", "tests/Harness.lua", "."]
+
+# How long one gate may take before it is called hung. The gate is about six seconds; a mutated
+# one is slower where it is slower at all, and never by this much. Measured rather than picked:
+# raise it if an honest run ever comes near, and do not raise it to make a hang go away.
+TIMEOUT = 120
+
+# What is left out of a worker's copy. Everything else comes, because guessing what the gate
+# reads is how this went wrong the first time: the copy held `addons` and `tests` only, the
+# harness also loads `tools/FamilyIconSheet/IconSheet.lua`, and so every gate in every copy was
+# red before a single mutation was applied - which reported all ninety-six as caught. A run that
+# cannot fail is worth nothing, and this one was mine.
+#
+# The caches are the only thing here worth excluding, and only for size: 476 MB of downloaded
+# game data against about 10 MB of everything else.
+SKIP = ("*-cache", ".git", "__pycache__", "*.pyc")
 
 
 def parse(path):
@@ -54,21 +91,67 @@ def parse(path):
         "\n".join(blocks["new"])
 
 
-def gate():
-    return subprocess.run(GATE, cwd=ROOT, capture_output=True, text=True).returncode
+def gate(where, seconds=None):
+    """The gate, with a clock on it. Answers a return code, or None if it never finished.
+
+    **A mutation can make the harness spin.** Take the bound off a loop, or the exit off a
+    walk, and the gate stops being a thing that answers - and a run with no clock on it then
+    waits for ever on one case out of ninety. That is not a hypothetical shape: half the
+    mutations recorded here remove a guard or a limit.
+
+    A hang is reported as its own outcome rather than folded into either answer. It is *not*
+    a survivor - the code plainly broke - and calling it caught would be claiming a check saw
+    something when nothing was ever read back.
+    """
+    try:
+        return subprocess.run(GATE, cwd=where, capture_output=True, text=True,
+                              timeout=seconds).returncode
+    except subprocess.TimeoutExpired:
+        return None
 
 
-def run(path):
+def copy_tree(into, source=None):
+    """The repository, less the downloaded caches, copied for one worker."""
+    shutil.copytree(source or ROOT, into, ignore=shutil.ignore_patterns(*SKIP))
+    return into
+
+
+def prove(where):
+    """**A copy has to gate green before anything is mutated in it.**
+
+    Every case here works by making the gate go red, so a copy that is red already reports
+    every one of them as caught. That is not a hypothetical: the first writing of this copied
+    two directories out of the repository, the harness reads a third, and the run came back
+    96 of 96 in fourteen seconds. Nothing about the output said so.
+
+    So the copy is gated once, clean, before it is used - and the run stops rather than
+    reporting on a tree it has no reason to trust.
+    """
+    answered = gate(where, TIMEOUT)
+    if answered == 0:
+        return None
+
+    if answered is None:
+        return "the copy's own gate did not finish in %d seconds" % TIMEOUT
+
+    out = subprocess.run(GATE, cwd=where, capture_output=True, text=True)
+    tail = (out.stderr or out.stdout or "").strip().split("\n")
+    return "the copy's own gate is red before any mutation: %s" % (
+        tail[0] if tail else "no output")
+
+
+def run(path, where):
+    """One case, in one worker's copy. Answers (caught, line to print)."""
     name, target, old, new = parse(path)
 
     if not target or not old:
-        print("  BROKEN   %s - no file: or no --- old block" % name)
-        return False
+        return False, "  BROKEN   %s - no file: or no --- old block" % name
 
-    full = os.path.join(ROOT, target)
+    full = os.path.join(where, target)
     if not os.path.exists(full):
-        print("  MOVED    %s - %s is not there" % (name, target))
-        return False
+        # Said against the repository rather than against the copy, because "not there" is a
+        # fact about the project and naming a temporary directory would hide it.
+        return False, "  MOVED    %s - %s is not there" % (name, target)
 
     with open(full, encoding="utf-8") as handle:
         held = handle.read()
@@ -77,27 +160,42 @@ def run(path):
     if seen != 1:
         # Not a skip. A mutation matching nothing tests nothing, and one matching twice
         # patches whichever came first, which is not the case anybody wrote down.
-        print("  ANCHOR   %s - the fragment appears %d times in %s" % (name, seen, target))
-        return False
+        return False, "  ANCHOR   %s - the fragment appears %d times in %s" % (
+            name, seen, target)
 
     try:
         with open(full, "w", encoding="utf-8") as handle:
             handle.write(held.replace(old, new, 1))
 
-        if gate() != 0:
-            print("  caught   %s" % name)
-            return True
+        answered = gate(where, TIMEOUT)
+        if answered is None:
+            return True, "  HUNG     %s - the gate ran past %d seconds" % (name, TIMEOUT)
+        if answered != 0:
+            return True, "  caught   %s" % name
 
-        print("  SURVIVED %s" % name)
-        return False
+        return False, "  SURVIVED %s" % name
     finally:
+        # Still restored, even though this is a copy: a worker runs many cases in the one
+        # tree, and a case left patched would make every case after it meaningless.
         with open(full, "w", encoding="utf-8") as handle:
             handle.write(held)
 
 
 def main(argv):
-    if argv:
-        paths = [p if os.path.isabs(p) else os.path.join(ROOT, p) for p in argv]
+    jobs = None
+    rest = []
+    argv = list(argv)
+    while argv:
+        arg = argv.pop(0)
+        if arg == "--jobs":
+            jobs = int(argv.pop(0)) if argv else None
+        elif arg.startswith("--jobs="):
+            jobs = int(arg.split("=", 1)[1])
+        else:
+            rest.append(arg)
+
+    if rest:
+        paths = [p if os.path.isabs(p) else os.path.join(ROOT, p) for p in rest]
     else:
         paths = sorted(os.path.join(CASES, f) for f in os.listdir(CASES)
                        if f.endswith(".mut"))
@@ -107,15 +205,89 @@ def main(argv):
         return 1
 
     # The gate has to be green first, or every mutation below "catches" something that was
-    # already broken and the whole run says nothing.
-    if gate() != 0:
+    # already broken and the whole run says nothing. Run against the repository itself, since
+    # this is the one gate of the lot that is about the code as it actually stands.
+    standing = gate(ROOT, TIMEOUT)
+    if standing is None:
+        print("the gate did not finish in %d seconds before any mutation was applied - "
+              "that is the thing to look at" % TIMEOUT)
+        return 1
+    if standing != 0:
         print("the gate is red before any mutation - fix that first")
         return 1
 
-    print("%d mutation(s)" % len(paths))
+    if jobs is None:
+        jobs = min(8, len(paths), os.cpu_count() or 1)
+    jobs = max(1, min(jobs, len(paths)))
+
+    print("%d mutation(s), %d at a time" % (len(paths), jobs))
+    sys.stdout.flush()
+
+    holding = tempfile.mkdtemp(prefix="family-mutate-")
+    results = [None] * len(paths)
+
+    try:
+        first = copy_tree(os.path.join(holding, "w0"))
+        wrong = prove(first)
+    except Exception as trouble:            # noqa: BLE001 - reported, not swallowed
+        shutil.rmtree(holding, ignore_errors=True)
+        print("the copy could not be made: %s" % trouble)
+        return 1
+
+    if wrong:
+        shutil.rmtree(holding, ignore_errors=True)
+        print(wrong)
+        print("nothing was run, because a red copy would report every case as caught")
+        return 1
+
+    todo = queue.Queue()
+    for index, path in enumerate(paths):
+        todo.put((index, path))
+
+    done = [0]
+    counting = threading.Lock()
+
+    def worker(slot):
+        # Copied from the tree that was already proved rather than from the repository, and
+        # proved once rather than once a worker: they are the same bytes, and a clean gate is
+        # six seconds that every worker would otherwise spend answering the same question.
+        where = first if slot == 0 else copy_tree(os.path.join(holding, "w%d" % slot), first)
+
+        while True:
+            try:
+                index, path = todo.get_nowait()
+            except queue.Empty:
+                return
+
+            results[index] = run(path, where)
+
+            # Progress goes to stderr so that stdout stays the report and nothing else -
+            # a run this long with no sign of life is one somebody kills, which is exactly
+            # what happened before it had any.
+            with counting:
+                done[0] += 1
+                sys.stderr.write("\r  %d/%d" % (done[0], len(paths)))
+                sys.stderr.flush()
+
+    try:
+        threads = [threading.Thread(target=worker, args=(slot,)) for slot in range(jobs)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+    finally:
+        shutil.rmtree(holding, ignore_errors=True)
+
+    sys.stderr.write("\r          \r")
+    sys.stderr.flush()
+
+
+    # In the order they were recorded, whatever order they finished in: a report that shuffles
+    # itself between runs cannot be compared with the last one.
     bad = 0
-    for path in paths:
-        if not run(path):
+    for caught, line in results:
+        print(line)
+        if not caught:
             bad += 1
 
     print("")
