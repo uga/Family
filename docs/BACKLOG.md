@@ -4387,7 +4387,18 @@ different bill, which goes with a better rod standing in for a lesser one there 
 The deepest chain that creates is **ten** links, and the recursion's depth limit was counted
 against it rather than guessed.
 
-One thing left unverified: the Era bind-on-pickup set contains eight items with ids above 200,000
-- *Crate of Tainted Gniodine Solution*, *Inert Mantle of Nightmares*, *Shard of the Void* and five
-others. They are in `ItemSparse` at the pinned Era build and are presumably seasonal content, but
-nobody here has confirmed they are reachable on a live Era realm.
+~~One thing left unverified: the Era bind-on-pickup set contains eight items with ids above
+200,000.~~ **Identified by Alberto, 2026-09-12: Season of Discovery, and out of our perimeter.**
+The pinned Era build is the 1.15 client, which carries that content whether or not anybody here
+plays it.
+
+**Counted rather than left as a feeling: 309 of the Era table's 1,674 recipes carry a spell id at
+or above 400,000 - 13 KB, 22.6% of that table and 4% of the file.** They bring 66 materials
+nothing else uses, which is where those eight oddities come from.
+
+**They stay, and the reason is not the 13 KB.** The only cheap way to identify them is a cut on
+the spell id, and that cut cannot tell Season of Discovery from **Anniversary** - which runs on
+the same 1.15 client, is where Alberto plays, and is very much in perimeter. A filter that drops
+real recipes to save four per cent of a file is the trade this project keeps getting caught by.
+Left in, inert: a recipe nobody on this realm knows is never looked up, and if somebody does play
+that realm Family is right for them for nothing.
