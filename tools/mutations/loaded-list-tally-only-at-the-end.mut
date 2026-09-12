@@ -1,0 +1,14 @@
+name: the loaded-list counts are published only once the whole list is read
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	local tally = bigRead.tally
+	if tally then
+		Auctions.lastLoadedList = {
+			rows = tally.rows, items = tally.items, priced = tally.priced,
+			at = time(),
+		}
+	end
+
+	if bigRead.at >= count then
+--- new
+	if bigRead.at >= count then

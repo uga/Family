@@ -5409,25 +5409,40 @@ do
 			Family.Auctions:ForgetVisit()
 			Family.Auctions:StopBigListRead()
 			Family.Auctions.lastLoadedList = nil
+			-- Longer than one slice, so that *part way through* is a state the fixture can
+			-- actually be in: twelve hundred rows, six hundred items with two auctions each,
+			-- and every third item bid-only.
 			LIST = {}
-			for index = 1, 120 do
+			for index = 1, 1200 do
 				local item = 500000 + math.floor((index - 1) / 2)
 				LIST[index] = { id = item, count = 1,
 					buyout = (item % 3 == 0) and 0 or 800 }
 			end
 			Family.Auctions:ReadPrices()
+			advance(0.1)
+
+			-- **And the figures are there part way through**, not only once the whole list is
+			-- read. Recorded on catching up alone at first, and the run that most needed
+			-- explaining - a read killed and restarted throughout (L-086) - answered nothing:
+			-- the one line built to say whether this is worth having was silent exactly when
+			-- it was asked.
+			local partly = Family.Auctions.lastLoadedList
+			check("a loaded list only part way read still says what it has counted so far",
+				partly ~= nil and partly.rows == 500,
+				tostring(partly and partly.rows))
+
 			advance(1)
 
 			local counted = Family.Auctions.lastLoadedList
 			check("what a loaded list held is counted while it is read, not by reading it twice",
-				counted ~= nil and counted.rows == 120 and counted.items == 60,
+				counted ~= nil and counted.rows == 1200 and counted.items == 600,
 				counted and (counted.rows .. " row(s), " .. counted.items .. " item(s)")
 					or "nothing counted")
 
-			-- Twenty of the sixty items are bid-only, so forty have a price. Without this the
-			-- tally could be counting every item as priced and nothing would notice.
+			-- Two hundred of the six hundred items are bid-only, so four hundred have a price.
+			-- Without this the tally could call every item priced and nothing would notice.
 			check("and how many of those items had a price anybody could pay",
-				counted ~= nil and counted.priced == 40,
+				counted ~= nil and counted.priced == 400,
 				tostring(counted and counted.priced))
 
 			-- **A list replaced by an ordinary search ends the read**, and it needs no guard
