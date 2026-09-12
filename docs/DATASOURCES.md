@@ -1159,10 +1159,9 @@ addon reported 15,899 distinct items; Family holds 5,906 for this realm and side
 **A full list does not survive the window closing.** Reopened, `list` reads 0. Whatever is going
 to be read has to be read while it is there.
 
-**The client says an ordinary query would be accepted, in one value, while that addon counts down
-three and a half minutes.** So the interval is that addon's own and not something the client is
-reporting - and `CanSendAuctionQuery` still answers with a single value in this state too, which
-was the one state left unread.
+~~**The client says an ordinary query would be accepted, in one value, while that addon counts
+down three and a half minutes**, so the interval is that addon's own.~~ **Wrong, and corrected
+below.** That reading was taken with only the first of `CanSendAuctionQuery`'s answers on show.
 
 Timing, from play: about three minutes to 99% with little lag, then about three more sitting at
 99% lagging hard, so roughly six minutes for the scan against the fifteen the countdown runs for.
@@ -1177,12 +1176,24 @@ Family's own build as the only deliberate difference.
 
 Two more readings came with the second run, and both correct earlier notes here:
 
-- **`CanSendAuctionQuery` gives two values after all**, on this same build and client: `false,
-  false` while a whole-house read was arriving and `true, true` at rest. The note above records
-  a single value in both states and *the arity never changes* as an assumption - the assumption
-  is contradicted. What the second one means is unread, and whether it turns false during that
-  addon's own countdown while the first stays true is the reading that would say whether the
-  client knows about the interval at all.
+- **`CanSendAuctionQuery` gives two values after all**, on this same build and client. The note
+  above records a single value and *the arity never changes* as an assumption; the assumption is
+  contradicted, and so is the conclusion that rested on it. Read across three states:
+
+  | standing at an auctioneer | first | second |
+  |---|---|---|
+  | nothing running | `true` | `true` |
+  | a whole-house read arriving | `false` | `false` |
+  | that addon counting down 48 seconds | **`true`** | **`false`** |
+
+  The two answers **diverge in the third state and only there**: an ordinary query would be
+  accepted while the second says no. So the second answer tracks the whole-house route, and the
+  quarter of an hour is the **client's**, reported by that addon rather than invented by it -
+  the opposite of what the struck-through line above concluded from the first answer alone.
+
+  What the second return is *called* is not established here and is not guessed at; what is
+  measured is that it says no exactly while a whole-house read is not available. Family sends no
+  such read, so this changes nothing it does - it closes a question rather than opening a door.
 - **The event does not fire while the list is filling.** 156,800 rows on the list with the
   counter still at nought; then 30,148 firings once it was done, and 74,483 a little later. So a
   reader hung off that event sees nothing for the whole delivery and then everything at once.
