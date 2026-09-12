@@ -25,17 +25,63 @@ local _, Family = ...
 local Index = {}
 Family.Index = Index
 
-local entries       -- itemID -> memberKey -> { bags =, bank =, mail =, auctions = }
-local guildEntries  -- itemID -> guildKey -> count
+-- **Keyed by variant, not by item** (backlog 67).
+--
+-- `Family:VariantKey` answers with the item id for anything without a random-enchantment
+-- suffix - which is nearly everything - and with `"id:suffix"` for the rest. So a Superior
+-- Sword *of the Bear* and one *of the Whale* are two headings here, because Alberto settled
+-- that they are two things: *sono DUE oggetti distinti, e se passo il mouse su Whatever Sword
+-- of the Bear nel tooltip devo vedere che la fam ne possiede UNA.*
+--
+-- An enchant and a gem are **not** a variant and never open a heading of their own. They are
+-- still stored and still drawn - see `variantStrings` below and `Tooltip.lua` - because what a
+-- thing is counted under and what is shown when somebody points at it are different questions.
+local entries       -- variantKey -> memberKey -> { bags =, bank =, mail =, auctions = }
+local guildEntries  -- variantKey -> guildKey -> count
 local stale = {}    -- members whose part of the index is known to be wrong
+
+-- **One item string per suffixed heading**, so that a search result can be named, drawn and
+-- hovered as the thing it actually is rather than as "<Random enchantment>".
+--
+-- Only for the suffixed headings. A plain id covers every enchanted and gemmed copy of one
+-- item, so no single string describes it and storing one would describe the first one seen as
+-- if it were all of them.
+--
+-- **The suffix seed is not part of the key and is not chosen between here.** Two *of the Bear*
+-- swords with different seeds carry the same name and different numbers (backlog 67); the first
+-- string seen is kept, so a stat line read off it is one of the family's and not necessarily
+-- the one being hovered. The name, the icon and the count - which is what this table exists for
+-- - are the same for both.
+local variantStrings
+
+-- Worked out once per heading rather than once per keystroke: `Index:Search` runs over every
+-- heading the family holds each time a letter is typed, and asking the client to build a name
+-- out of an item string is not the same cost as reading one out of a table.
+local variantNames = {}
 
 --------------------------------------------------------------------------------------------
 
-local function bucket(itemID, key)
-	entries[itemID] = entries[itemID] or {}
-	entries[itemID][key] = entries[itemID][key] or
+local function bucket(variant, key)
+	entries[variant] = entries[variant] or {}
+	entries[variant][key] = entries[variant][key] or
 		{ bags = 0, bank = 0, mail = 0, auctions = 0, worn = 0, bound = 0 }
-	return entries[itemID][key]
+	return entries[variant][key]
+end
+
+-- The heading a recorded thing belongs under, and the string that describes it where the
+-- heading is a suffixed one.
+--
+-- `item.item` is the stored item string, which every scanner has written beside the id since
+-- long before this - bags, bank, mail, auctions, worn and the guild bank - and which is nil for
+-- the ordinary case. Nothing had to be re-scanned for any of this.
+local function headingFor(item)
+	local variant = Family:VariantKey(item.id, item.item)
+
+	if type(variant) == "string" and item.item and not variantStrings[variant] then
+		variantStrings[variant] = item.item
+	end
+
+	return variant
 end
 
 local function forget(key)
@@ -49,7 +95,7 @@ local function addContainers(key, containers, field)
 	for _, container in pairs(containers or {}) do
 		for _, item in pairs(container.slots or {}) do
 			if item.id then
-				local record = bucket(item.id, key)
+				local record = bucket(headingFor(item), key)
 				record[field] = record[field] + (item.count or 1)
 
 				-- **How many of them can no longer be sold at an auction house.**
@@ -98,7 +144,7 @@ local function addMember(key)
 	if payload.equipment then
 		for _, item in pairs(payload.equipment.worn or {}) do
 			if item.id then
-				local record = bucket(item.id, key)
+				local record = bucket(headingFor(item), key)
 				record.worn = record.worn + 1
 				-- Nearly always bound, and not always: a shirt binds to nobody. Read per
 				-- piece rather than assumed, which is the measurement backlog 63 rests on.
@@ -112,7 +158,7 @@ local function addMember(key)
 	if payload.mail then
 		for _, letter in ipairs(Family.Mail:Live(payload.mail)) do
 			for _, item in ipairs(letter.attachments or {}) do
-				local record = bucket(item.id, key)
+				local record = bucket(headingFor(item), key)
 				record.mail = record.mail + (item.count or 1)
 			end
 		end
@@ -123,7 +169,7 @@ local function addMember(key)
 		local selling = Family.Auctions:Live(payload.auctions)
 		for _, entry in ipairs(selling) do
 			if entry.id then
-				local record = bucket(entry.id, key)
+				local record = bucket(headingFor(entry), key)
 				record.auctions = record.auctions + (entry.count or 1)
 			end
 		end
@@ -137,9 +183,10 @@ local function addGuilds()
 		for _, tab in pairs(guild.tabs or {}) do
 			for _, item in pairs(tab.slots or {}) do
 				if item.id then
-					guildEntries[item.id] = guildEntries[item.id] or {}
-					guildEntries[item.id][guildKey] =
-						(guildEntries[item.id][guildKey] or 0) + (item.count or 1)
+					local variant = headingFor(item)
+					guildEntries[variant] = guildEntries[variant] or {}
+					guildEntries[variant][guildKey] =
+						(guildEntries[variant][guildKey] or 0) + (item.count or 1)
 				end
 			end
 		end
@@ -150,6 +197,8 @@ end
 
 local function rebuild()
 	entries = {}
+	variantStrings = {}
+	wipe(variantNames)
 	wipe(stale)
 
 	for key in pairs(Family.Database:Members()) do
@@ -217,6 +266,41 @@ end
 --
 -- Capped, because a two-letter search matches half of everything and a tooltip-sized answer
 -- is more use than a complete one.
+-- **What to call one heading.**
+--
+-- A suffixed heading has a name of its own - *Superior Sword of the Bear* - and the client will
+-- build it from the item string, which is the only reason that string is kept. `GetItemInfo`
+-- asked with the bare id answers *<Random enchantment>* where the stats should be and the plain
+-- name where the suffix should be, so every variant of one item would come back reading alike.
+--
+-- Falls back to the base item's cached name, which is what this answered for everything before
+-- variants existed and what it still answers for an item string the client has not met yet.
+local function nameOf(variant)
+	local held = variantNames[variant]
+	if held ~= nil then return held or nil end
+
+	local name = nil
+	local text = variantStrings and variantStrings[variant]
+	if text then
+		local said = Family:TryCall(GetItemInfo, text)
+		if type(said) == "string" and said ~= "" then name = said end
+	end
+
+	name = name or Family.Names:CachedItem(Family:BaseItem(variant))
+
+	-- Cached either way. A miss is worth remembering too: the whole point of this table is
+	-- that `Index:Search` walks every heading on every keystroke.
+	variantNames[variant] = name or false
+	return name
+end
+
+-- The item string behind a heading, where there is one. What the search list hovers and draws,
+-- and nil for a plain id - see `variantStrings`.
+function Index:VariantString(variant)
+	refresh()
+	return variantStrings and variantStrings[variant] or nil
+end
+
 function Index:Search(needle, limit)
 	if type(needle) ~= "string" or needle == "" then return {} end
 	refresh()
@@ -225,10 +309,11 @@ function Index:Search(needle, limit)
 	limit = limit or 200
 
 	local found = {}
-	for itemID in pairs(entries or {}) do
-		local name = Family.Names:CachedItem(itemID)
+	for variant in pairs(entries or {}) do
+		local name = nameOf(variant)
 		if name and name:lower():find(needle, 1, true) then
-			found[#found + 1] = { id = itemID, name = name }
+			found[#found + 1] = { id = variant, name = name,
+				item = variantStrings[variant] }
 		end
 	end
 
@@ -238,12 +323,18 @@ function Index:Search(needle, limit)
 	return found
 end
 
-function Index:Owners(itemID)
-	if not itemID then return {}, {} end
+-- **Asked with a variant key**, which for everything without a suffix is the item id it always
+-- was - so every caller that hands over a bare id goes on working and goes on being right.
+--
+-- A caller that hands over the *base* id of a suffixed item now gets nothing, and that is the
+-- change: an *of the Bear* sword is no longer counted under the plain sword. Whoever is asking
+-- has the link the player is pointing at, and `Family:VariantKey` turns it into the heading.
+function Index:Owners(variant)
+	if not variant then return {}, {} end
 	refresh()
 
 	local owners = {}
-	for key, record in pairs(entries[itemID] or {}) do
+	for key, record in pairs(entries[variant] or {}) do
 		local total = record.bags + record.bank + record.mail + record.auctions
 			+ record.worn
 		if total > 0 then
@@ -278,7 +369,7 @@ function Index:Owners(itemID)
 	end)
 
 	local guilds = {}
-	for guildKey, count in pairs((guildEntries or {})[itemID] or {}) do
+	for guildKey, count in pairs((guildEntries or {})[variant] or {}) do
 		guilds[#guilds + 1] = { key = guildKey, count = count }
 	end
 	table.sort(guilds, function(a, b) return a.count > b.count end)
@@ -287,8 +378,8 @@ function Index:Owners(itemID)
 end
 
 -- How many the whole family holds, across everybody and everywhere.
-function Index:Total(itemID)
-	local owners, guilds = self:Owners(itemID)
+function Index:Total(variant)
+	local owners, guilds = self:Owners(variant)
 
 	local total = 0
 	for _, owner in ipairs(owners) do total = total + owner.total end
@@ -395,15 +486,18 @@ function Index:Worth()
 		return row
 	end
 
-	for itemID, holders in pairs(entries) do
+	for variant, holders in pairs(entries) do
 		for key, record in pairs(holders) do
 			local held = record.bags + record.bank + record.mail + record.auctions
 				+ record.worn
 
 			if held > 0 then
 				local row = rowFor(key)
+				-- **By variant**, the same heading the auction reader files under, so that
+				-- an *of the Bear* sword is valued at what an *of the Bear* sword goes for
+				-- rather than at whichever of its siblings happened to be cheapest.
 				local price = row.market and markets[row.market]
-					and markets[row.market][itemID] or nil
+					and markets[row.market][variant] or nil
 
 				-- **A bound one has no auction price, whatever the auction house says.**
 				--
@@ -427,7 +521,14 @@ function Index:Worth()
 				end
 
 				if bound > 0 then
-					local sell = sellPriceOf(itemID)
+					-- **The base item, and knowingly.** A vendor pays more for the
+					-- suffixed one and `GetItemInfo` would say so if it were asked with
+					-- the item string - but `FamilyDB.sellPrices` is keyed by id and
+					-- filled from every window an item is looked at in, so asking it a
+					-- different question here would file a variant's price under the
+					-- plain item for everything else that reads it. Written down rather
+					-- than guessed at: backlog 67 leaves it out on purpose.
+					local sell = sellPriceOf(Family:BaseItem(variant))
 					if sell then
 						row.worth = row.worth + sell * bound
 						row.atVendor = row.atVendor + bound
@@ -471,12 +572,12 @@ end
 --
 -- The guild bank is left out, as it is everywhere else this arithmetic runs: it belongs to the
 -- guild rather than to any member, and the tooltip's own count of it is drawn on its own line.
-function Index:WorthOfItem(itemID)
-	itemID = tonumber(itemID)
-	if not itemID then return nil end
+function Index:WorthOfItem(variant)
+	if type(variant) == "string" then variant = tonumber(variant) or variant end
+	if not (type(variant) == "number" or type(variant) == "string") then return nil end
 	refresh()
 
-	local holders = entries[itemID]
+	local holders = entries[variant]
 	if not holders then return nil end
 
 	local markets = {}
@@ -495,7 +596,7 @@ function Index:WorthOfItem(itemID)
 				markets[market] = Family.Auctions and Family.Auctions:Prices(market) or false
 			end
 
-			local price = market and markets[market] and markets[market][itemID] or nil
+			local price = market and markets[market] and markets[market][variant] or nil
 
 			out.held = out.held + held
 
@@ -516,7 +617,8 @@ function Index:WorthOfItem(itemID)
 			end
 
 			if bound > 0 then
-				local sell = sellPriceOf(itemID)
+				-- The base item's, as in `Worth` above and for the reason written there.
+				local sell = sellPriceOf(Family:BaseItem(variant))
 				if sell then
 					out.worth = out.worth + sell * bound
 					out.atVendor = out.atVendor + bound

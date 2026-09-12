@@ -42,7 +42,7 @@ picks itself up where it left off.
 
 ### What it is all worth
 
-- **A Stock column on the summary's Overview**, beside Money — what everything that character is
+- **A Worth column on the summary's Overview**, beside Money — what everything that character is
   holding comes to, in gold. The row's tooltip gives the exact figure and how much of it came from
   auction prices and how much from what a vendor pays.
 
@@ -54,7 +54,8 @@ picks itself up where it left off.
 
 - **The Mount column moved to Miscellaneous** to make room, and **Class moved into the row's
   tooltip** to make room for it there. A character's class is still on every row, in the colour of
-  their name.
+  their name. Race now leads the Miscellaneous columns, and on Bags each *seen* column sits beside
+  the numbers it dates instead of both of them queueing at the end.
 
 - **A character's Possessions page says what everything they hold comes to**, under the line about
   how recently each part of it was seen. Bags, bank, mail and auctions — not the guild bank, which
@@ -80,12 +81,44 @@ picks itself up where it left off.
   price. Two of the same sword on one character — one worn, one not — are now worth what they are
   really worth, which is not the same figure twice.
 
+### Of the Bear and of the Whale are two different swords
+
+- **Random-enchantment items are counted and priced one suffix at a time.** A Superior Sword *of
+  the Bear* and one *of the Whale* share an item number and nothing else — different stats,
+  wildly different prices — and Family used to add them up as one thing and put the cheaper one's
+  price on both. Hovering the Bear one now says how many of *those* the family has, and what a
+  Bear one is going for.
+
+- **It is not a rare case.** A whole Burning Crusade auction house read end to end held 4,607
+  items and 10,494 things once the suffix told them apart. More than half of what is on sale was
+  being priced off a sibling.
+
+- **Who can make one is still asked about the item.** The suffix is rolled at the forge, so one
+  blacksmith's plans make every version — the crafters block on a tooltip is unchanged.
+
+- **Enchants and gems are not variants.** Two of the same sword with different enchants are still
+  two of one thing to count, and each still shows its own enchant when you point at it.
+
+- **A search for a green now lists each version on its own line**, named and drawn as itself,
+  instead of one line reading *<Random enchantment>* for all of them.
+
+- **Prices already saved are unaffected.** Anything without a suffix keeps the price Family had
+  for it. A suffixed thing has no price until the next time you have the auction house open, which
+  is honest where the shared one was wrong.
+
 ### A family bigger than a tooltip
 
 - **An item nearly all your characters carry no longer fills the screen.** With two hundred
   characters holding a Runecloth Bag, its tooltip listed every one of them. It now names the ten
   holding the most and counts the rest, with how many they hold between them so the total at the
   top still adds up. Guild banks the same.
+
+- **Nothing the game will not pay a copper for is announced as being worth something.** An item
+  with no sell price used to offer the CTRL line and then answer *Worth 0c*.
+
+- **The CTRL hint on a stack says both things it will show.** Hovering a stack, it offered *what
+  the stack is worth* and then also drew what the family's whole lot comes to — so on anything you
+  had two of, the second answer was never announced.
 
 - **Hold CTRL and ALT and click an item** — in your bags, in chat, anywhere the game lets a
   modified click through — and Family opens on every character who has one. The tooltip says so

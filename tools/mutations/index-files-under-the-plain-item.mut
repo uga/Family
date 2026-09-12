@@ -1,0 +1,8 @@
+name: the index collapses every suffix back into the plain item
+file: addons/Family/Index.lua
+--- old
+local function headingFor(item)
+	local variant = Family:VariantKey(item.id, item.item)
+--- new
+local function headingFor(item)
+	local variant = item.id

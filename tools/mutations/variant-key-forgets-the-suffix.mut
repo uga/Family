@@ -1,0 +1,9 @@
+name: the variant key answers with the item id whatever suffix it is handed
+file: addons/Family/Core.lua
+--- old
+	local suffix = self:ItemSuffix(link)
+	if not suffix then return itemID end
+
+	return itemID .. ":" .. suffix
+--- new
+	return itemID

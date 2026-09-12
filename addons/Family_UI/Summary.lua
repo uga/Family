@@ -228,7 +228,11 @@ local SETS = {
 			-- tooltip says the rest - on a stock of thousands the coppers are noise, and
 			-- the part a reader actually wants, which prices it was reached with, could
 			-- never have been a column at all.
-			{ key = "stock",  label = L["Stock"],     width = 88,  justify = "RIGHT" },
+			--
+			-- **Called Worth**, which is what the tooltip on an item has called the same
+			-- figure since it was built. Asked for 2026-09-12: *piu esatto, e coerente con
+			-- il tooltip*. Stock is a count of things and this is money.
+			{ key = "stock",  label = L["Worth"],     width = 88,  justify = "RIGHT" },
 			{ key = "played", label = L["Played"],    width = 85,  justify = "RIGHT" },
 			{ key = "seen",   label = L["Last seen"], width = 95,  justify = "RIGHT" },
 		},
@@ -236,14 +240,20 @@ local SETS = {
 	{
 		id = "bags", label = L["Bags"],
 		columns = {
+			-- **Bags, then the bank, and each of them says how old its own reading is.**
+			--
+			-- Asked for 2026-09-12. The two *seen* columns used to sit together at the end,
+			-- which put the age of the bag reading four columns away from the bag numbers
+			-- it qualifies and next to the bank's - so the eye had to cross the whole row
+			-- to find out whether *24 free* was from this morning or from a month ago.
 			{ key = "bagfree",  label = L["Free bags"],  width = 90, justify = "RIGHT" },
 			{ key = "bagtotal", label = L["Bag slots"],  width = 90, justify = "RIGHT" },
-			{ key = "bankfree", label = L["Free bank"],  width = 90, justify = "RIGHT" },
-			{ key = "banktotal",label = L["Bank slots"], width = 90, justify = "RIGHT" },
-			{ key = "bankseen", label = L["Bank seen"],  width = 100, justify = "RIGHT" },
 			-- Bags are live, but only for a member who has been played: this says how
 			-- old "live" is for each of them.
 			{ key = "bagseen",  label = L["Bags seen"], width = 100, justify = "RIGHT" },
+			{ key = "bankfree", label = L["Free bank"],  width = 90, justify = "RIGHT" },
+			{ key = "banktotal",label = L["Bank slots"], width = 90, justify = "RIGHT" },
+			{ key = "bankseen", label = L["Bank seen"],  width = 100, justify = "RIGHT" },
 		},
 	},
 	{
@@ -539,11 +549,15 @@ local SETS = {
 			-- row has beside the member column, so the room came out of them rather than
 			-- off the edge. Guild gives the most because `UI:GuildLabel` stopped drawing
 			-- the realm on it, and the hearthstone because a bind location is a city name.
+			--
+			-- **Race leads**, asked for 2026-09-12. It is the one fact here that never
+			-- changes, and it belongs against the name rather than after two columns that
+			-- say where somebody happens to be standing.
+			{ key = "race",   label = L["Race"],        width = 70,  justify = "LEFT" },
 			{ key = "guild",  label = L["Guild"],       width = 164, justify = "LEFT" },
 			{ key = "where",  label = L["Where"],       width = 130, justify = "LEFT",
 				wrap = true },
 			{ key = "hearth", label = L["Hearthstone"], width = 100, justify = "LEFT" },
-			{ key = "race",   label = L["Race"],        width = 70,  justify = "LEFT" },
 			-- **Mount came here when Stock took its place**, and Class went to the row's
 			-- tooltip to pay for it. Eighty rather than the eighty-eight it had: that
 			-- holds *Transport*, the longest of its headings, and `100%/150%`, the longest
@@ -2315,7 +2329,7 @@ local function makeRow(parent)
 
 		end
 
-		-- **What the Stock cell had no room to say.** The column is eighty-eight pixels and
+		-- **What the Worth cell had no room to say.** The column is eighty-eight pixels and
 		-- says gold; the figure a reader would act on is the exact one, and beside it which
 		-- prices it was reached with - a stock valued at what a vendor pays and one valued at
 		-- the auction house are two very different numbers.
@@ -2323,7 +2337,7 @@ local function makeRow(parent)
 			local held = UI:__stockOf(rowKey)
 			if held and (held.atMarket + held.atVendor) > 0 then
 				lines[#lines + 1] = { " " }
-				lines[#lines + 1] = { L["Stock"], UI:Money(held.worth) }
+				lines[#lines + 1] = { L["Worth"], UI:Money(held.worth) }
 				lines[#lines + 1] = { L["at auction prices"],
 					tostring(held.atMarket) }
 				lines[#lines + 1] = { L["at vendor prices"], tostring(held.atVendor) }

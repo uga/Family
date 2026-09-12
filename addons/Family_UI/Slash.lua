@@ -120,6 +120,62 @@ add("recipes", L["why a recipe is in the wrong language: /family recipes"], func
 				shown(Family:TryCall(GetTradeSkillRecipeLink, index)),
 				shown(Family:TryCall(GetTradeSkillItemLink, index)))
 		end
+
+		-- **What the window is hiding**, which is the one thing a record of one recipe
+		-- against a rank of 372 could be and which nothing here has ever asked.
+		--
+		-- Reported 2026-09-12: a character at Cooking 372/375 recorded as knowing a single
+		-- grey recipe. This file's own section on the recipe readers says *a recipe window
+		-- lists what it shows, not what the character knows* and then guards exactly one way
+		-- of it showing less - a collapsed sub-class header. The window has several others,
+		-- and Family handles none of them: **Have Materials**, the search box, an item-level
+		-- range, a sub-class picker and an inventory-slot picker. Any one of them leaves a
+		-- window listing a handful of rows with the character knowing dozens.
+		--
+		-- Asked rather than assumed, and by existence rather than by build number: these
+		-- calls are not all on all three clients, and which of them this one has is part of
+		-- the answer. Nothing here changes a filter - a probe that repaired the thing it was
+		-- measuring could not measure it twice.
+		local rows = Family:TryCall(GetNumTradeSkills) or 0
+		local headers, listed = 0, 0
+		for index = 1, rows do
+			local _, kind = Family:TryCall(GetTradeSkillInfo, index)
+			if kind == "header" then headers = headers + 1
+			elseif kind then listed = listed + 1 end
+		end
+		Family:Print(L["    the window shows %d row(s): %d header(s), %d recipe(s)"],
+			rows, headers, listed)
+
+		-- The checkbox has no getter of its own; the frame it lives on is the answer, and
+		-- its name differs between builds, so both are looked for.
+		local box = _G.TradeSkillFrameAvailableFilterCheckButton
+			or (_G.TradeSkillFrame and _G.TradeSkillFrame.FilterButton)
+		Family:Print(L["    have materials: %s"],
+			box and tostring((Family:TryCall(box.GetChecked, box)) and true or false)
+				or L["no such control"])
+
+		local named = GetTradeSkillItemNameFilter
+			and Family:TryCall(GetTradeSkillItemNameFilter)
+		local searchBox = _G.TradeSkillFrameSearchBox
+			or (_G.TradeSkillFrame and _G.TradeSkillFrame.SearchBox)
+		Family:Print(L["    name filter: %s, search box: %s"],
+			tostring(named),
+			searchBox and tostring((Family:TryCall(searchBox.GetText, searchBox)))
+				or L["no such control"])
+
+		if GetTradeSkillItemLevelFilter then
+			local low, high = Family:TryCall(GetTradeSkillItemLevelFilter)
+			Family:Print(L["    item level filter: %s to %s"],
+				tostring(low), tostring(high))
+		end
+
+		-- Neither picker can be read back, so what is printed is whether the client has the
+		-- call at all - which is what says whether clearing them is even possible here.
+		for _, name in ipairs { "TradeSkillOnlyShowMakeable", "TradeSkillOnlyShowSkillUps",
+			"SetTradeSkillItemNameFilter", "SetTradeSkillItemLevelFilter",
+			"SetTradeSkillSubClassFilter", "SetTradeSkillInvSlotFilter" } do
+			Family:Print(L["    %s: %s"], name, type(_G[name]))
+		end
 	end
 
 	local craft = Family:TryCall(GetCraftName)
@@ -335,15 +391,29 @@ end)
 
 add("tooltiptest", L["check the possessions block for an item: /family tooltiptest 2589"],
 	function(argument)
-		local itemID = tonumber((argument or ""):match("(%d+)"))
+		argument = argument or ""
+
+		-- **A whole link is accepted, and is the only way to ask about a variant.**
+		--
+		-- Since backlog 67 an *of the Bear* sword is filed under its own heading, and the
+		-- number in a link cannot say which suffix it carries. Shift-clicking the item into
+		-- chat and running this on the link asks about the thing itself; a bare id still asks
+		-- about the plain item, which is what it always asked about.
+		local link = argument:match("|H(item[%-%d:]+)|h") or argument:match("item:[%-%d:]+")
+
+		-- Out of the link first. A bare `(%d+)` finds the colour code at the front of one.
+		local itemID = tonumber(argument:match("item:(%d+)")) or tonumber(argument:match("(%d+)"))
 		if not itemID then
 			Family:Print(L["give an item id, or shift-click an item link into chat and " ..
 				"use the number from it."])
 			return
 		end
 
-		local owners, guilds = Family.Index:Owners(itemID)
-		Family:Print(L["item %d: %d member(s), %d guild bank(s)"], itemID, #owners, #guilds)
+		local variant = Family:VariantKey(itemID, link)
+
+		local owners, guilds = Family.Index:Owners(variant)
+		Family:Print(L["item %s: %d member(s), %d guild bank(s)"],
+			tostring(variant), #owners, #guilds)
 
 		for _, owner in ipairs(owners) do
 			Family:Print(L["  %s: %d (bags %d, bank %d, mail %d, auction %d)"],

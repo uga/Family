@@ -1,0 +1,7 @@
+name: a member's own auction records no item string, so its suffix is lost
+file: addons/Family/Scanners/Auctions.lua
+--- old
+				item = Family:ItemString(
+					Family:TryCall(GetAuctionItemLink, which, index)),
+--- new
+				item = nil,

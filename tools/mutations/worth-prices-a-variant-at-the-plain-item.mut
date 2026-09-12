@@ -1,0 +1,7 @@
+name: one item's lot is valued at whatever the plain item was last seen going for
+file: addons/Family/Index.lua
+--- old
+			local price = market and markets[market] and markets[market][variant] or nil
+--- new
+			local price = market and markets[market]
+				and markets[market][Family:BaseItem(variant)] or nil

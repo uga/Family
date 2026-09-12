@@ -1,7 +1,6 @@
-name: the variant count ignores the suffix and counts base items
+name: the browse list is filed and counted under the base item
 file: addons/Family/Scanners/Auctions.lua
 --- old
-			local suffix = Family:ItemSuffix(link)
-			local variant = suffix and (itemID .. ":" .. suffix) or itemID
+		local variant = itemID and Family:VariantKey(itemID, link) or nil
 --- new
-			local variant = itemID
+		local variant = itemID

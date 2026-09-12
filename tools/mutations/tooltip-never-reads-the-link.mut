@@ -1,0 +1,13 @@
+name: the tooltip works from the item id alone and never reads the link
+file: addons/Family_UI/Tooltip.lua
+--- old
+local function linkFrom(tooltip, data)
+	if type(data) == "table" and type(data.hyperlink) == "string" then
+		return data.hyperlink
+	end
+--- new
+local function linkFrom(tooltip, data)
+	if true then return nil end
+	if type(data) == "table" and type(data.hyperlink) == "string" then
+		return data.hyperlink
+	end

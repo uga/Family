@@ -1,0 +1,9 @@
+name: the CTRL hint names the stack alone where it could name both answers
+file: addons/Family_UI/Tooltip.lua
+--- old
+		if count and held then
+			lines[#lines + 1] =
+				{ L["|cff888888CTRL: what the stack and the family's lot is worth|r"] }
+		elseif count then
+--- new
+		if count then

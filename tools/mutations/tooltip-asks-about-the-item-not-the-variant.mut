@@ -1,0 +1,6 @@
+name: the possessions block asks about the item rather than the thing being pointed at
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local owners, guilds = Family.Index:Owners(variant or itemID)
+--- new
+	local owners, guilds = Family.Index:Owners(itemID)

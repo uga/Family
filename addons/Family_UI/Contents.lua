@@ -1053,18 +1053,24 @@ local function build(frame)
 					r:Show()
 					y = y + 20
 
-					-- By id, and only by id. A search result is one line for an item
-					-- that several members may hold in several different suffixed
-					-- forms, so there is no one string that describes it - and a row
-					-- reused from a previous search would otherwise keep the last one
-					-- it was given.
-					r.itemID, r.itemLink = line.item.id, nil
+					-- **One line is one variant now** (backlog 67), so there *is* a
+					-- string that describes it - an *of the Bear* sword and an *of the
+					-- Whale* one are two rows, and each hovers as itself instead of
+					-- both reading "<Random enchantment>".
+					--
+					-- The id beside it is the base item, because that is the only thing
+					-- `SetItemByID` and `GetItemIcon` will answer about, and it is what
+					-- this falls back to for an item with no suffix. Both are written
+					-- on every row, nil included: a pooled row reused from a previous
+					-- search would otherwise keep the last string it was given.
+					r.itemID = Family:BaseItem(line.item.id)
+					r.itemLink = line.item.item
 					r.expandBlock = nil
 					r.highlight:Hide()
 
 					local heading = groupColumn ~= "item" or offset == 0
 					r.icon:SetTexture(heading
-						and (Family:TryCall(GetItemIcon, line.item.id)
+						and (Family:TryCall(GetItemIcon, r.itemID)
 							or "Interface\\Icons\\INV_Misc_QuestionMark")
 						or nil)
 					r.text:SetText(heading and line.item.name or "")

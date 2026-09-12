@@ -29,6 +29,33 @@ local function itemIDFrom(link)
 	return tonumber(link:match("item:(%d+)"))
 end
 
+-- **The link behind the tooltip, which is the only thing that says which variant this is.**
+--
+-- An item id names the plain item; a random-enchantment one is that id plus a suffix, and the
+-- suffix is the whole of what tells *of the Bear* from *of the Whale* (backlog 67). So the
+-- possessions and worth blocks need the link, not the number.
+--
+-- Two routes because neither is on every client, which is already why both tooltip hooks are
+-- registered a few hundred lines below. The newer one hands the item over in its data and leaves
+-- nothing on the tooltip - measured, and the reason taking that branch *instead* made the whole
+-- block vanish on Mists. The older one leaves it on the tooltip and hands over nothing.
+--
+-- `data.hyperlink` is read rather than assumed: where it is absent the tooltip is asked, and
+-- where both come back with nothing the id alone is used and the answer is the one Family gave
+-- before variants existed. Nothing here can be worse than that.
+local function linkFrom(tooltip, data)
+	if type(data) == "table" and type(data.hyperlink) == "string" then
+		return data.hyperlink
+	end
+
+	if tooltip and tooltip.GetItem then
+		local _, link = Family:TryCall(tooltip.GetItem, tooltip)
+		if type(link) == "string" then return link end
+	end
+
+	return nil
+end
+
 -- How many, and where they are: "37 (17 bags, 20 bank)".
 --
 -- Moved to `UI:HeldWhere` in Window.lua when the possessions search started saying the same
@@ -91,8 +118,11 @@ end
 local OWNER_CAP = 10
 local GUILD_CAP = 5
 
-local function possessionLines(tooltip, itemID)
-	local owners, guilds = Family.Index:Owners(itemID)
+-- **Asked by variant** (backlog 67). Hovering a Superior Sword *of the Bear* says how many of
+-- *those* the family has, not how many swords of that id in any suffix - which is what Alberto
+-- asked for in as many words and what the collapsed key was getting wrong.
+local function possessionLines(tooltip, itemID, variant)
+	local owners, guilds = Family.Index:Owners(variant or itemID)
 
 	if #owners == 0 and #guilds == 0 then
 		-- Silence rather than "nobody has any". A tooltip that grows a line for every
@@ -559,7 +589,14 @@ local function slotCount(tooltip, itemID)
 	return count and count > 1 and count or nil
 end
 
-local function priceLines(tooltip, itemID)
+-- **Three of these lines are about the item and two are about the variant**, and getting that
+-- split wrong is how a tooltip comes to contradict itself (backlog 67).
+--
+-- What a vendor pays and what a merchant was seen charging are read out of the client by id, and
+-- the stack in front of you is a stack of one item. What the auction house is asking, and what
+-- the family's lot comes to, are about the thing being pointed at - and an *of the Bear* sword
+-- is not priced by an *of the Whale* one.
+local function priceLines(tooltip, itemID, variant)
 	if not (FamilyDB and FamilyDB.prices) then return nil end
 
 	local lines = {}
@@ -587,7 +624,7 @@ local function priceLines(tooltip, itemID)
 	-- Per realm and per faction, which `Auctions:PriceOf` handles - a price read on one side of
 	-- one realm says nothing about the other.
 	local auction, seen = nil, nil
-	if Family.Auctions then auction, seen = Family.Auctions:PriceOf(itemID) end
+	if Family.Auctions then auction, seen = Family.Auctions:PriceOf(variant or itemID) end
 	if auction then
 		lines[#lines + 1] = { L["Auction"],
 			string.format("%s |cff888888%s|r", UI:Coins(auction), UI:Ago(seen)),
@@ -611,10 +648,18 @@ local function priceLines(tooltip, itemID)
 	-- rather than a thing one vendor was seen charging.
 	local count = (sell and sell > 0) and slotCount(tooltip, itemID) or nil
 	local held = Family.Index and Family.Index.WorthOfItem
-		and Family.Index:WorthOfItem(itemID) or nil
+		and Family.Index:WorthOfItem(variant or itemID) or nil
 	-- Nought held at nought each is not an answer worth a line, and neither is a lot this
 	-- client could not price at all.
-	if held and (held.atMarket + held.atVendor) == 0 then held = nil end
+	--
+	-- **Nor a lot that comes to nothing.** Reported from play 2026-09-12 on Holy Dust: two
+	-- held, both soulbound, and the client's sell price for it is nought - so the key was
+	-- offered, pressing it drew *Worth 0c* and *at vendor prices 2*, and the reader had been
+	-- promised an answer and given a rounding. A sell price of nought **is** a price and
+	-- `Index.lua` is right to count it as one: a thing nobody buys contributes nothing to what
+	-- a character is worth, which is different from Family not knowing. That is the summary's
+	-- question. This is a tooltip, and here nought is a line nobody wanted.
+	if held and (held.worth == 0 or (held.atMarket + held.atVendor) == 0) then held = nil end
 
 	local down = Family:TryCall(IsControlKeyDown) and true or false
 
@@ -664,11 +709,18 @@ local function priceLines(tooltip, itemID)
 	-- Said out loud only where it would do something, so an item nobody is holding and that is
 	-- not in a stack in front of you carries no offer of a key that would answer nothing.
 	--
-	-- One hint for two answers, and the stack wins where both are there: it is the nearer of the
-	-- two and the one somebody is looking at a bag to ask. Holding the key then shows both, which
-	-- is more than the hint promised and never less.
+	-- **And it names both answers where there are two.** One hint used to stand for the pair
+	-- and the stack won wherever both applied, on the reasoning that it is the nearer of the
+	-- two - so on every stack anybody owns, the hint promised one line and CTRL produced four,
+	-- and the family's lot was announced only on the things nobody had two of. Reported from
+	-- play 2026-09-12 in exactly those terms: *the family's lot comment already appears but
+	-- only on stacks of 1 items only.* Promising less than a key does is not modesty, it is a
+	-- reader never finding out the answer is there.
 	if not down then
-		if count then
+		if count and held then
+			lines[#lines + 1] =
+				{ L["|cff888888CTRL: what the stack and the family's lot is worth|r"] }
+		elseif count then
 			lines[#lines + 1] = { L["|cff888888CTRL: what the stack is worth|r"] }
 		elseif held then
 			lines[#lines + 1] = { L["|cff888888CTRL: what the family's lot is worth|r"] }
@@ -735,21 +787,26 @@ local function onSpell(tooltip, spellID)
 	tooltip:Show()
 end
 
-local function onItem(tooltip, itemID)
+local function onItem(tooltip, itemID, data)
 	if not tooltip then return end
 	if tooltip.IsForbidden and tooltip:IsForbidden() then return end
 	if not (FamilyDB and FamilyDB.tooltips ~= false) then return end
 
 	-- The newer route hands the item over; the older one has to be asked. Either may be
 	-- the one that fires on a given client, so both are accepted.
-	if not itemID and tooltip.GetItem then
-		local _, link = tooltip:GetItem()
-		itemID = itemIDFrom(link)
-	end
+	local link = linkFrom(tooltip, data)
+	if not itemID then itemID = itemIDFrom(link) end
 	if not itemID then return end
 
-	if lastDescribed[tooltip] == itemID then return end
-	lastDescribed[tooltip] = itemID
+	-- Which of the item's random-enchantment variants this is, or the plain id where there is
+	-- no suffix and where no link could be had at all.
+	local variant = Family:VariantKey(itemID, link)
+
+	-- **The guard is on the variant**, not on the item. Two suffixed swords of one id are two
+	-- different tooltips, and keying this on the id alone would have shown the first one's
+	-- block against the second one's stats.
+	if lastDescribed[tooltip] == variant then return end
+	lastDescribed[tooltip] = variant
 
 	-- Worked out before anything is written, because a tooltip has no way to take a line
 	-- back off. Each block that has something to say is preceded by one blank line and the
@@ -760,8 +817,11 @@ local function onItem(tooltip, itemID)
 	-- whatever is added next reads as part of this list.
 	local blocks = {}
 
+	-- **The item id and the variant both travel**, and each block takes the one its question
+	-- is about: who owns one and what it is worth are the variant's, who can make one and what
+	-- the client will say about it are the item's. Backlog 67 is that table and nothing else.
 	for _, build in ipairs { possessionLines, crafterLines, makerBlock, priceLines } do
-		local lines = build(tooltip, itemID)
+		local lines = build(tooltip, itemID, variant)
 		if lines and #lines > 0 then blocks[#blocks + 1] = lines end
 	end
 
@@ -827,7 +887,7 @@ Family:OnDatabaseReady("tooltips", function()
 	-- Kept reachable so the harness can fire it: this is the route that failed silently in
 	-- the game, and a test that cannot call it cannot catch that happening again.
 	UI.__modernCallback = function(tooltip, data)
-		onItem(tooltip, data and data.id)
+		onItem(tooltip, data and data.id, data)
 	end
 
 	if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall

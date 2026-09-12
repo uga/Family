@@ -1247,7 +1247,17 @@ ERR_AUCTION_OUTBID_S = "You were outbid on %s."
 -- and your bids too, and only the scanner decides which of those is a purchase.
 GetAuctionItemLink = function(which, index)
 	if which == "list" then return BROWSE[index] and BROWSE[index].link or nil end
-	return OWNED[index] and "|Hitem:2840|h[Something of yours]|h" or nil
+	if not OWNED[index] then return nil end
+
+	-- **The second of these carries a random-enchantment suffix**, so that what a member has
+	-- listed can be counted as the thing it is (backlog 67). Their own auctions were the one
+	-- place a scanner recorded no item string at all, which meant an *of the Bear* sword on
+	-- sale was counted under the plain sword - and hovering the Bear one said nobody had it.
+	if index == 2 then
+		return "|cff1eff00|Hitem:2842:0:0:0:0:0:-7:0:60|h[Silver Rod of the Bear]|h|r"
+	end
+
+	return "|Hitem:2840|h[Something of yours]|h"
 end
 
 PlaceAuctionBid = function() end
@@ -4179,6 +4189,24 @@ check("an expired auction is not still reported", #selling == 1, tostring(#selli
 time = realTime
 check("and it is back when the clock is", #(Family.Auctions:Live(auctions)) == 2)
 
+-- **What a member has listed is recorded as the thing it is, not as its plain item.**
+--
+-- Backlog 67. Every other scanner has stored the item string beside the id since long before
+-- variants were keys - bags, bank, mail, worn, the guild bank - and a member's own auctions
+-- were the one that did not, because the older call gives the id in its own returns and
+-- nobody had needed more than that.
+check("a member's own auction records the string that says which variant it is",
+	auctions and auctions.selling[2].item == "item:2842:0:0:0:0:0:-7:0:60",
+	auctions and tostring(auctions.selling[2].item))
+check("while the plain one records none, as it always did",
+	auctions and auctions.selling[1].item == nil,
+	auctions and tostring(auctions.selling[1].item))
+
+Family.Index:Invalidate()
+check("so the family counts it under that heading and never under the plain item",
+	(Family.Index:Total("2842:-7")) == 1 and (Family.Index:Total(2842)) == 0,
+	(Family.Index:Total("2842:-7")) .. " / " .. (Family.Index:Total(2842)))
+
 -- Buying something out, which the server posts to you as mail
 --
 -- The same claim as a letter posted to an alt: something is on its way to this character that
@@ -4397,6 +4425,43 @@ do
 		textOf():find("Can make it", 1, true) ~= nil, textOf())
 	check("and theirs is ready, having never been seen counting down",
 		textOf():find("ready now", 1, true) ~= nil, textOf())
+
+	-- **Who can make one is asked about the base item; who has one, about the variant.**
+	--
+	-- The third row of backlog 67's table, and the one Alberto wrote out twice because it is
+	-- the one that reads like a contradiction: *dal punto di vista degli oggetti sono distinte,
+	-- ma dal punto di vista del "who can craft them", entrambe sono craftabili dal blacksmith*.
+	-- The suffix is rolled at the forge, so one recipe makes them all - while what comes out of
+	-- it is its own thing to own and to price.
+	--
+	-- Both halves on one hover, because the fault this catches is the two blocks quietly
+	-- agreeing on a key: three plain ones in a bag, and a suffixed one under the cursor.
+	do
+		Family.Database:SetPayload("Salter-FireMaw", { bags = { { slots = {
+			{ id = 15846, count = 1 },
+			{ id = 15409, count = 3 },
+		} } } })
+		Family.Index:Invalidate("Salter-FireMaw")
+
+		wipe(GameTooltip.__lines)
+		GameTooltip.__itemName = "Refined Deeprock Salt"
+		GameTooltip.__itemLink =
+			"|cffffffff|Hitem:15409:0:0:0:0:0:-7:0:60|h[Salt of the Bear]|h|r"
+		if GameTooltip.__scripts.OnTooltipCleared then
+			GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+		end
+		GameTooltip.__scripts.OnTooltipSetItem(GameTooltip)
+
+		check("a suffixed thing still says who can make one, because one recipe makes them all",
+			textOf():find("Can make it", 1, true) ~= nil, textOf())
+		check("while three plain ones in a bag are not counted as the suffixed one",
+			textOf():find("Family possessions", 1, true) == nil, textOf())
+
+		-- Put back what the checks below this one were written against.
+		Family.Database:SetPayload("Salter-FireMaw", { bags = {
+			{ slots = { { id = 15846, count = 1 } } } } })
+		Family.Index:Invalidate("Salter-FireMaw")
+	end
 
     -- And when it is counting down, the tooltip says when rather than saying ready.
 	Family.Database:SetMeta("Salter-FireMaw",
@@ -4838,6 +4903,210 @@ do
 end
 
 print()
+print("a random-enchantment suffix is a thing of its own")
+
+-- **Backlog 67, in Alberto's own words for it.**
+--
+--     Se un mio personaggio ha Whatever Sword of the Whale e l'altro ha Whatever Sword of the
+--     Bear, sono DUE oggetti distinti! E se passo il mouse su Whatever Sword of the Bear nel
+--     tooltip devo vedere che la fam ne possiede UNA
+--
+-- Three questions and two keys: how many the family has and what one is worth are asked about
+-- the **variant**; who can make one is asked about the **base item**, because the suffix is
+-- rolled at the forge and one recipe makes them all.
+--
+-- Sized before it was built, from a whole house on Burning Crusade 2026-09-12: 4,607 items
+-- became 10,494 variants. This is not a footnote about greens.
+do
+	local SWORD = 6339
+	local BEAR = "item:6339::::::-7:769720366:5::::::::::"
+	local WHALE = "item:6339::::::-19:112233:5::::::::::"
+	-- An enchant and no suffix. Alberto settled that this is **not** a variant, which is why
+	-- the key is the suffix alone and never `Family:ItemString`.
+	local ENCHANTED = "item:6339:2504:::::0:0:5::::::::::"
+
+	----------------------------------------------------------------------------------------
+	-- The key itself
+	----------------------------------------------------------------------------------------
+
+	check("an item with no suffix is filed under its own id, and as a number",
+		Family:VariantKey(SWORD, nil) == SWORD,
+		tostring(Family:VariantKey(SWORD, nil)))
+	check("an enchanted one is that same number, because an enchant is not a variant",
+		Family:VariantKey(SWORD, ENCHANTED) == SWORD,
+		tostring(Family:VariantKey(SWORD, ENCHANTED)))
+	check("while a random-enchantment one is a heading of its own",
+		Family:VariantKey(SWORD, BEAR) == "6339:-7",
+		tostring(Family:VariantKey(SWORD, BEAR)))
+	check("and two suffixes are two headings",
+		Family:VariantKey(SWORD, WHALE) == "6339:-19",
+		tostring(Family:VariantKey(SWORD, WHALE)))
+
+	-- A numeric string has to fold back into the number or one item opens two headings, one
+	-- of which nothing would ever look under again.
+	check("a key handed back in as a string is the same heading, not a second one",
+		Family:VariantKey("6339") == SWORD and Family:VariantKey("6339:-7") == "6339:-7",
+		tostring(Family:VariantKey("6339")))
+
+	-- Everything that has to ask the *client* something - a name, an icon, a vendor price, a
+	-- recipe - asks about this, because an item id is the only thing the client will answer to.
+	check("and the base item comes back out of either shape",
+		Family:BaseItem("6339:-7") == SWORD and Family:BaseItem(SWORD) == SWORD
+			and Family:BaseItem("6339") == SWORD,
+		tostring(Family:BaseItem("6339:-7")))
+
+	----------------------------------------------------------------------------------------
+	-- Who has one
+	----------------------------------------------------------------------------------------
+
+	Family.Database:SetMeta("Bearer-FireMaw", { name = "Bearer", realm = "Fire Maw",
+		faction = "Alliance", classFile = "WARRIOR", level = 60 })
+	Family.Database:SetPayload("Bearer-FireMaw",
+		{ bags = { { slots = { { id = SWORD, count = 1, item = BEAR } } } } })
+
+	Family.Database:SetMeta("Whaler-FireMaw", { name = "Whaler", realm = "Fire Maw",
+		faction = "Alliance", classFile = "MAGE", level = 60 })
+	Family.Database:SetPayload("Whaler-FireMaw",
+		{ bags = { { slots = { { id = SWORD, count = 1, item = WHALE } } } } })
+
+	Family.Index:Invalidate()
+
+	check("one of the Bear and one of the Whale are one each, not two of one sword",
+		(Family.Index:Total("6339:-7")) == 1 and (Family.Index:Total("6339:-19")) == 1,
+		(Family.Index:Total("6339:-7")) .. " / " .. (Family.Index:Total("6339:-19")))
+
+	-- **The sharpest of these.** Collapsing the suffix again puts both of them back under the
+	-- plain sword, and every check above this one would still pass.
+	check("and nobody at all holds the plain sword, because nobody does",
+		#(Family.Index:Owners(SWORD)) == 0,
+		tostring(#(Family.Index:Owners(SWORD))))
+
+	check("each heading names the character who actually has that one",
+		(Family.Index:Owners("6339:-7"))[1].name == "Bearer"
+			and (Family.Index:Owners("6339:-19"))[1].name == "Whaler",
+		(Family.Index:Owners("6339:-7"))[1].name)
+
+	-- The other half of Alberto's rule, and the one a careless split would break: an enchant
+	-- and a gem must **not** open a heading, or a sword enchanted and a sword plain read as
+	-- one each where the family has two.
+	Family.Database:SetPayload("Whaler-FireMaw", { bags = { { slots = {
+		{ id = SWORD, count = 1, item = ENCHANTED },
+		{ id = SWORD, count = 1 },
+	} } } })
+	Family.Index:Invalidate()
+
+	check("an enchanted copy and a plain one are one heading holding two",
+		(Family.Index:Total(SWORD)) == 2,
+		tostring((Family.Index:Total(SWORD))))
+
+	----------------------------------------------------------------------------------------
+	-- What the player actually sees, which is the thing that was asked for
+	----------------------------------------------------------------------------------------
+
+	-- Through the real hook and off a real link, because the block reads the link off the
+	-- tooltip and nothing else in this file proves that route carries a suffix at all.
+	local function hovering(text)
+		wipe(GameTooltip.__lines)
+		GameTooltip.__itemName = "Superior Sword"
+		GameTooltip.__itemLink = "|cff1eff00|H" .. text .. "|h[Superior Sword]|h|r"
+
+		if GameTooltip.__scripts.OnTooltipCleared then
+			GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+		end
+		GameTooltip.__scripts.OnTooltipSetItem(GameTooltip)
+
+		for _, line in ipairs(GameTooltip.__lines) do
+			if type(line[1]) == "string" and line[1]:find("Family possessions") then
+				-- Stripped of its colour first. `|cffffd700` ends in digits, so a bare
+				-- `(%d+)` reads a count of one off the escape code as 7001 - which is
+				-- how this check first passed for the wrong reason and then failed for
+				-- the wrong reason.
+				local said = tostring(line[2]):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+				return tonumber(said:match("(%d+)"))
+			end
+		end
+		return nil
+	end
+
+	Family.Database:SetPayload("Whaler-FireMaw",
+		{ bags = { { slots = { { id = SWORD, count = 1, item = WHALE } } } } })
+	Family.Index:Invalidate()
+
+	check("hovering the Bear one says the family has one of those",
+		hovering(BEAR) == 1, tostring(hovering(BEAR)))
+	check("and hovering the Whale one says the same about the Whale one",
+		hovering(WHALE) == 1, tostring(hovering(WHALE)))
+	check("while the plain sword gets no block at all, because nobody has a plain one",
+		hovering("item:6339") == nil, tostring(hovering("item:6339")))
+
+	----------------------------------------------------------------------------------------
+	-- And in the search list, where one line used to stand for all of them
+	----------------------------------------------------------------------------------------
+
+	-- The comment this replaces said there was no one string that could describe a search
+	-- result, because several members might hold several suffixed forms under one line. Now
+	-- one line is one variant, so there is - and each row hovers and reads as itself instead
+	-- of every one of them saying "<Random enchantment>".
+	do
+		local realItemInfo = GetItemInfo
+		GetItemInfo = function(what)
+			if what == BEAR then return "Superior Sword of the Bear" end
+			if what == WHALE then return "Superior Sword of the Whale" end
+			return realItemInfo(what)
+		end
+		Family.Index:Invalidate()
+
+		local found = Family.Index:Search("of the bear")
+		check("a search names a variant as the thing it is, not as its plain item",
+			#found == 1 and found[1].id == "6339:-7"
+				and found[1].name == "Superior Sword of the Bear",
+			#found .. " found, " .. tostring(found[1] and found[1].name))
+
+		-- The string travels with it, because that is what the row hovers on: an item id
+		-- describes the generic sword and says "<Random enchantment>" where the stats are.
+		check("and carries the string the row needs to draw the real tooltip",
+			found[1] ~= nil and found[1].item == BEAR,
+			tostring(found[1] and found[1].item))
+
+		check("while the two suffixes are two lines rather than one",
+			#(Family.Index:Search("superior sword")) == 2,
+			tostring(#(Family.Index:Search("superior sword"))))
+
+		GetItemInfo = realItemInfo
+		Family.Index:Invalidate()
+	end
+
+	----------------------------------------------------------------------------------------
+	-- What one is worth
+	----------------------------------------------------------------------------------------
+
+	local market = "Fire Maw\30Alliance"
+	FamilyDB.auctionPrices = FamilyDB.auctionPrices or {}
+	FamilyDB.auctionPrices[market] = {
+		[SWORD] = { p = 100, at = time() },
+		["6339:-7"] = { p = 500000, at = time() },
+	}
+	Family.Index:Invalidate()
+
+	local bear = Family.Index:WorthOfItem("6339:-7")
+	check("a variant is valued at its own price and not at its cheapest sibling's",
+		bear ~= nil and bear.worth == 500000 and bear.atMarket == 1,
+		bear and tostring(bear.worth) or "nothing")
+
+	-- And the one with no reading of its own gets none, rather than the plain item's: an
+	-- honest gap where the collapsed key gave a confident wrong number.
+	local whale = Family.Index:WorthOfItem("6339:-19")
+	check("while one nobody has priced falls through rather than borrowing a price",
+		whale ~= nil and whale.atMarket == 0,
+		whale and tostring(whale.atMarket) or "nothing")
+
+	FamilyDB.auctionPrices[market] = nil
+	Family.Database:Forget("Bearer-FireMaw")
+	Family.Database:Forget("Whaler-FireMaw")
+	Family.Index:Invalidate()
+end
+
+print()
 print("what everything is worth")
 
 -- Asked for 2026-09-10, and reworked the same day after Alberto saw it: valuing only at the
@@ -5203,6 +5472,44 @@ do
 		check("and a lot nothing could price draws no figure",
 			priceLine(999223, "Worth") == nil, tostring(priceLine(999223, "Worth")))
 
+		-- **A lot that comes to nothing is not an answer either.**
+		--
+		-- Reported from play 2026-09-12 on Holy Dust: two of it, both soulbound, and the
+		-- client's sell price for that item is **nought**. So the key was offered, pressing it
+		-- drew *Worth 0c* and *at vendor prices 2*, and somebody was promised an answer and
+		-- handed a rounding. A sell price of nought is a price and `Index.lua` is right to
+		-- count it as one - a thing nobody buys contributes nothing to what a character is
+		-- worth, which is not the same as Family not knowing. That is the summary's question;
+		-- this is a tooltip.
+		do
+			FamilyDB.sellPrices = FamilyDB.sellPrices or {}
+			FamilyDB.sellPrices[999223] = 0
+			Family.Index:Invalidate()
+
+			local realCtrlHere = IsControlKeyDown
+			IsControlKeyDown = function() return true end
+			check("a lot the game will not pay a copper for draws no worth at all",
+				priceLine(999223, "Worth") == nil, tostring(priceLine(999223, "Worth")))
+			check("and none of the lanes underneath it either",
+				priceLine(999223, "at vendor prices") == nil,
+				tostring(priceLine(999223, "at vendor prices")))
+
+			IsControlKeyDown = function() return false end
+			check("nor is the key offered for it, because there is nothing behind it",
+				hintLine(999223) == nil, tostring(hintLine(999223)))
+
+			-- And one copper is still worth saying, so this is a rule about nought rather
+			-- than a threshold somebody will trip over later.
+			FamilyDB.sellPrices[999223] = 1
+			Family.Index:Invalidate()
+			check("while a lot worth a single copper is still an answer",
+				hintLine(999223) ~= nil, tostring(hintLine(999223)))
+
+			FamilyDB.sellPrices[999223] = nil
+			Family.Index:Invalidate()
+			IsControlKeyDown = realCtrlHere
+		end
+
 		-- **Asked with the key up, which is the only state that can answer it.** The first
 		-- writing of this check asked while CTRL was held, where the hint is never drawn at
 		-- all - so it passed against a version that offered the key on every tooltip in the
@@ -5215,8 +5522,10 @@ do
 			tostring(hintLine(2880)))
 
 		-- **Both answers at once**, which is the bag case for an item the family also keeps
-		-- elsewhere. The nearer question gets the hint - somebody looking in a bag is asking
-		-- about the pile - and holding the key answers both, which is more than it promised.
+		-- elsewhere. The hint has to name both, because a hint that promises one of the two
+		-- is how the family's lot came to be announced only on the things nobody had two of -
+		-- reported from play 2026-09-12, on a stack of three: *the family's lot comment
+		-- already appears but only on stacks of 1 items only.*
 		do
 			local button = {}
 			function button:GetID() return 3 end
@@ -5231,9 +5540,21 @@ do
 			end
 
 			IsControlKeyDown = function() return false end
-			check("with a pile in front of you as well, the nearer question gets the hint",
-				hintLine(2880) == "|cff888888CTRL: what the stack is worth|r",
+			check("with a pile in front of you as well, the hint names both answers",
+				hintLine(2880)
+					== "|cff888888CTRL: what the stack and the family's lot is worth|r",
 				tostring(hintLine(2880)))
+
+			-- And a pile of something the family keeps nowhere else still offers the one
+			-- answer there is, rather than promising a lot that would draw nothing.
+			do
+				local realWorth = Family.Index.WorthOfItem
+				Family.Index.WorthOfItem = function() return nil end
+				check("while a pile of something nobody else holds offers only the stack",
+					hintLine(2880) == "|cff888888CTRL: what the stack is worth|r",
+					tostring(hintLine(2880)))
+				Family.Index.WorthOfItem = realWorth
+			end
 
 			IsControlKeyDown = function() return true end
 			check("and holding the key answers both of them",
@@ -5612,6 +5933,37 @@ do
 				mixed ~= nil and mixed.items == 1 and mixed.variants == 3,
 				tostring(mixed and mixed.items) .. " item(s), "
 					.. tostring(mixed and mixed.variants) .. " variant(s)")
+
+			-- **And each of those three is priced as itself** (backlog 67).
+			--
+			-- The whole reason Alberto asked for this: *sono oggetti diversi con valori di
+			-- mercato diversissimi*. Filed under the base id and keeping the lowest, one
+			-- cheap sibling became the price of every one of them - so the Bear sword at four
+			-- gold priced the Whale sword at four gold, on an item worth four hundred.
+			--
+			-- Three rows, one base item, prices four thousand apart. The middle of them has
+			-- no suffix at all and has to keep the plain id it always had, or every price
+			-- saved before today would be filed under a heading nothing looks at.
+			Family.Auctions:ForgetVisit()
+			Family.Auctions:StopBigListRead()
+			LIST = {
+				{ id = 700001, count = 1, buyout = 100,
+					link = "|Hitem:700001:0:0:0:0:0:-25:0:60|h[Sword]|h" },
+				{ id = 700001, count = 1, buyout = 7000,
+					link = "|Hitem:700001:0:0:0:0:0:0:0:60|h[Sword]|h" },
+				{ id = 700001, count = 1, buyout = 400000,
+					link = "|Hitem:700001:0:0:0:0:0:-41:0:60|h[Sword]|h" },
+			}
+			Family.Auctions:ReadPrices()
+
+			check("a cheap suffix does not become the price of an expensive one",
+				(Family.Auctions:PriceOf("700001:-41")) == 400000
+					and (Family.Auctions:PriceOf("700001:-25")) == 100,
+				tostring((Family.Auctions:PriceOf("700001:-41"))) .. " / "
+					.. tostring((Family.Auctions:PriceOf("700001:-25"))))
+			check("while the one with no suffix keeps the plain id every saved price uses",
+				(Family.Auctions:PriceOf(700001)) == 7000,
+				tostring((Family.Auctions:PriceOf(700001))))
 
 			GetAuctionItemInfo = realInfoBig
 			Family.Auctions:ForgetVisit()
@@ -11488,16 +11840,77 @@ do
 	Family.Database:SetMeta(key, { bagsSeen = heldSeen })
 	clickButton("Overview") clickButton("Miscellaneous")
 
-	-- The Guild cell, one column to the left, and the same §2.2 question asked of it. Second:
-	-- member, then this.
-	local function guildCellOf(memberKey)
+	-- The Guild cell, and the same §2.2 question asked of it.
+	--
+	-- Found by asking which column it ended up in, exactly as the boon cell above is - and
+	-- for the reason written there. This read `f.cells[2]` and Race moving in front of Guild
+	-- on 2026-09-12 broke it, which is the same trap in the same block a second time.
+	local function cellOf(memberKey, wanted)
+		local at
+		for index, column in ipairs(Family.UI.__summaryColumns or {}) do
+			if column.key == wanted then at = index end
+		end
+		if not at then return nil end
+
 		for _, f in ipairs(frames) do
 			if f.cells and f.__shown == true and f.memberKey == memberKey then
-				local cell = f.cells[2]
+				local cell = f.cells[at]
 				if cell then return cell.__text end
 			end
 		end
 		return nil
+	end
+
+	local function guildCellOf(memberKey) return cellOf(memberKey, "guild") end
+
+	-- **The order of this set, which was asked for and is therefore a claim.**
+	--
+	-- Alberto, 2026-09-12: *in the Miscellaneous Panel Race column goes before Guild.* It is
+	-- the one fact on this row that never changes, so it belongs against the name rather than
+	-- after two columns saying where somebody happens to be standing.
+	do
+		local order = {}
+		for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+			order[#order + 1] = tostring(column.key)
+		end
+		check("Miscellaneous puts Race in front of Guild",
+			table.concat(order, " "):find("race guild", 1, true) ~= nil,
+			table.concat(order, " "))
+	end
+
+	-- **And the two other things asked for on the same afternoon**, both of them orderings and
+	-- a name, all three read off what the panel actually drew rather than off the table it was
+	-- drawn from.
+	do
+		local function orderOf(setName)
+			clickButton("Overview")
+			clickButton(setName)
+			local keys, labels = {}, {}
+			for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+				keys[#keys + 1] = tostring(column.key)
+				labels[#labels + 1] = tostring(column.label)
+			end
+			return table.concat(keys, " "), table.concat(labels, " ")
+		end
+
+		-- *In the Bags panel, Bags Seen column goes before Free Bank.* The age of a reading
+		-- belongs beside the numbers it qualifies: with both *seen* columns at the end, the
+		-- eye had to cross four columns to find out whether *24 free* was from this morning.
+		local bags = orderOf("Bags")
+		check("Bags keeps the bag columns together, age included, before the bank's",
+			bags:find("bagfree bagtotal bagseen bankfree banktotal bankseen", 1, true) ~= nil,
+			bags)
+
+		-- *Stock ---> Worth, piu esatto, e coerente con il tooltip.* Stock is a count of
+		-- things; this column is money, and the item tooltip has called the same figure Worth
+		-- since it was built.
+		local _, overview = orderOf("Overview")
+		check("and the Overview's money-for-everything-held column is called Worth",
+			overview:find("Worth", 1, true) ~= nil and overview:find("Stock", 1, true) == nil,
+			overview)
+
+		clickButton("Overview")
+		clickButton("Miscellaneous")
 	end
 
 	local heldGuild = (Family.Database:Members()[key].meta or {}).guild

@@ -59,6 +59,16 @@ local function readList(which)
 			entries[#entries + 1] = {
 				id = itemID,
 				count = quantity or 1,
+				-- **What it actually is**, where the id does not say (backlog 67).
+				--
+				-- The same field name and the same rule as the bags, the bank, the
+				-- mailbox and the guild bank: `Family:ItemString` answers for an item
+				-- carrying a suffix, an enchant or a gem and answers nothing for the
+				-- ordinary case. Without it a member's own *of the Bear* sword, listed
+				-- at the auction house, was counted under the plain sword - so hovering
+				-- the Bear one said the family had none while one of them was on sale.
+				item = Family:ItemString(
+					Family:TryCall(GetAuctionItemLink, which, index)),
 				minBid = minBid or 0,
 				buyout = buyout or 0,
 				bid = bidAmount or 0,
@@ -123,6 +133,15 @@ local function readModernOwned()
 			entries[#entries + 1] = {
 				id = itemID,
 				count = quantity,
+				-- As above, and only where the client offers one. The eight rows read on
+				-- Mists 2026-09-10 carried `auctionID`, `itemKey`, `buyoutAmount`,
+				-- `quantity`, `status` and `timeLeftSeconds` and **no link**, so this is
+				-- expected to be nil on that build and is read rather than assumed: an
+				-- `itemKey.itemSuffix` is there, in the newer house's own numbering,
+				-- and turning that into a heading without comparing it against an item
+				-- string first is the mistake L-071 records.
+				item = type(row.itemLink) == "string"
+					and Family:ItemString(row.itemLink) or nil,
 				minBid = tonumber(row.minBid) or 0,
 				-- The whole auction, which is what this field has always meant.
 				buyout = each * quantity,
@@ -341,11 +360,12 @@ function Auctions:PriceCount()
 	return held
 end
 
-function Auctions:PriceOf(itemID)
-	itemID = tonumber(itemID)
-	if not itemID then return nil end
+-- Asked with a variant key, which for an item with no suffix is the id it always was.
+function Auctions:PriceOf(variant)
+	if type(variant) == "string" then variant = tonumber(variant) or variant end
+	if not (type(variant) == "number" or type(variant) == "string") then return nil end
 
-	local held = self:Prices()[itemID]
+	local held = self:Prices()[variant]
 	if type(held) ~= "table" then return nil end
 	return held.p, held.at
 end
@@ -802,8 +822,19 @@ local function readSome()
 		local got = packOf(Family:TryCall(C_AuctionHouse.GetReplicateItemInfo, reading.done))
 
 		if got.n > 0 then
+			-- **The heading, from a link where the client will give one** (backlog 67).
+			--
+			-- `GetReplicateItemInfo` returns no link at all - it was read field by field on
+			-- Mists 2026-09-12 and there is none in it - so the suffix has to come from the
+			-- separate call, and whether that call exists on this build is not assumed.
+			-- Where it is absent the row files under its base item, which is what every row
+			-- did before today and is right for everything without a suffix.
+			local link = C_AuctionHouse.GetReplicateItemLink
+				and Family:TryCall(C_AuctionHouse.GetReplicateItemLink, reading.done)
+			local variant = Family:VariantKey(got[REPLICATE_ITEM], link)
+
 			reading.kept = reading.kept + Auctions:KeepPrice(prices,
-				got[REPLICATE_ITEM], got[REPLICATE_LOT], got[REPLICATE_QUANTITY], now)
+				variant, got[REPLICATE_LOT], got[REPLICATE_QUANTITY], now)
 		end
 
 		reading.done = reading.done + 1
@@ -885,6 +916,17 @@ function Auctions:ReadModernPrices()
 	local now = time()
 	local kept = 0
 
+	-- **Filed under the base item here, and knowingly** (backlog 67).
+	--
+	-- This route has no link to read a suffix out of. What it has is `itemKey.itemSuffix`,
+	-- which is sitting right there in the reading taken on Mists 2026-09-10 - and which is a
+	-- number in *the newer house's* numbering, never once compared against the eighth field of
+	-- an item string on that client. Keying a heading on a position nobody has read is L-071 in
+	-- another costume, and it went wrong that way once already.
+	--
+	-- So a suffixed item browsed on Mists has **no** price rather than a sibling's. The whole
+	-- house read below this does carry a link and does file by variant; this is the route the
+	-- player's own searching goes through, and what it costs is one green until a house is read.
 	for _, entry in ipairs(results) do
 		local key = type(entry) == "table" and entry.itemKey
 		local itemID = type(key) == "table" and tonumber(key.itemID) or nil
@@ -942,8 +984,8 @@ function Auctions:PriceEach(lot, quantity)
 	return each
 end
 
-function Auctions:KeepPrice(prices, itemID, lot, quantity, now)
-	return self:KeepEach(prices, itemID, self:PriceEach(lot, quantity), now)
+function Auctions:KeepPrice(prices, variant, lot, quantity, now)
+	return self:KeepEach(prices, variant, self:PriceEach(lot, quantity), now)
 end
 
 -- **The filing half, given a price already worked out.**
@@ -957,15 +999,26 @@ end
 -- Which of the two changes in that build cost it is not established - the reader was also being
 -- killed and restarted throughout the same run (L-086) - so this is not offered as the diagnosis.
 -- It is offered as work nobody was ever buying anything with.
-function Auctions:KeepEach(prices, itemID, each, now)
-	itemID = tonumber(itemID)
-	if not (itemID and each) then return 0 end
+--
+-- **Filed by variant** since backlog 67: a plain item under its id exactly as before, and a
+-- random-enchantment one under `"id:suffix"`. Alberto's reason is that these are not one market
+-- - *sono oggetti diversi con valori di mercato diversissimi* - and the old arrangement priced
+-- every *of the* sibling at whichever of them happened to be cheapest.
+--
+-- Nothing saved has to be thrown away or migrated. A price recorded before today sits under a
+-- bare id and goes on being the right answer for the unsuffixed item; a suffixed one has no
+-- price until the next read of a house, which is honest where the shared one was wrong.
+function Auctions:KeepEach(prices, variant, each, now)
+	-- A numeric string is the same heading as the number, or one item would end up with two.
+	if type(variant) == "string" then variant = tonumber(variant) or variant end
+	if not (type(variant) == "number" or type(variant) == "string") then return 0 end
+	if not each then return 0 end
 
-	local held = prices[itemID]
+	local held = prices[variant]
 
-	if not seenThisVisit[itemID] or type(held) ~= "table" then
-		seenThisVisit[itemID] = true
-		prices[itemID] = { p = each, at = now }
+	if not seenThisVisit[variant] or type(held) ~= "table" then
+		seenThisVisit[variant] = true
+		prices[variant] = { p = each, at = now }
 		return 1
 	elseif each < held.p then
 		held.p, held.at = each, now
@@ -986,6 +1039,12 @@ local function readRows(where, from, to, tally)
 	for index = from, to do
 		local link = Family:TryCall(GetAuctionItemLink, "list", index)
 		local itemID = type(link) == "string" and tonumber(link:match("item:(%d+)")) or nil
+
+		-- **The heading this row is filed and counted under** (backlog 67): the id for a
+		-- plain item, `"id:suffix"` for a random-enchantment one. Worked out once for both
+		-- the filing and the tally, because the last thing added to this loop twice over had
+		-- to come out again for costing too much on a hundred and seventy-five thousand rows.
+		local variant = itemID and Family:VariantKey(itemID, link) or nil
 
 		-- Captured into a table rather than off a run of placeholders, for the reason the
 		-- reader above gives: the signature moves between clients (L-032). The stack size is
@@ -1012,7 +1071,7 @@ local function readRows(where, from, to, tally)
 		-- was recorded as nothing. Losing less than a copper to a division is arithmetic;
 		-- losing the auction is losing the reading. A stack so large that one of them comes to
 		-- nought is still refused, because nought is not a price anybody paid.
-		kept = kept + Auctions:KeepEach(prices, itemID, each, now)
+		kept = kept + Auctions:KeepEach(prices, variant, each, now)
 
 		-- **A count of what the house actually offers**, kept as the rows go by because
 		-- walking a hundred and seventy-five thousand of them a second time to find out
@@ -1045,17 +1104,13 @@ local function readRows(where, from, to, tally)
 
 			-- **And the same count again with the random-enchantment suffix kept apart.**
 			--
-			-- The two side by side are the whole of backlog 67's open question. Family files
-			-- a price under the base id and keeps the lowest, so every *of the* variant of a
-			-- green is priced at whichever of them is cheapest - an order of magnitude, not a
-			-- rounding. Whether that matters here or is a footnote depends on a number nobody
-			-- has: how much of a house is suffixed at all.
+			-- The two side by side sized backlog 67 before it was built, and they are kept
+			-- because they still say two different things: `items` is how many things the
+			-- client can name and `variants` is how many headings Family now files under.
+			-- Counted on Burning Crusade 2026-09-12: 4,607 against 10,494.
 			--
-			-- Enchants and gems are deliberately **not** variants (Alberto, 2026-09-12), so
-			-- this is the suffix alone and not `ItemString`.
-			local suffix = Family:ItemSuffix(link)
-			local variant = suffix and (itemID .. ":" .. suffix) or itemID
-
+			-- The same key the row was filed under, rather than a second one worked out the
+			-- same way. Two of those a month from now are two rules.
 			if not tally.variantSeen[variant] then
 				tally.variantSeen[variant] = true
 				tally.variants = tally.variants + 1

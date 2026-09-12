@@ -218,6 +218,52 @@ function Family:ItemSuffix(link)
 	return suffix
 end
 
+-- **What a thing is counted and looked up under** (backlog 67).
+--
+-- The item id alone, where the thing has no random-enchantment suffix - which is nearly
+-- everything, and is why this answers a **number** there rather than a string that would have
+-- to be parsed back. Where there is a suffix it is the id and the suffix joined: `"6339:-7"`.
+--
+-- **The key and the payload are different things**, and keeping them apart is what makes this
+-- safe. This decides which heading a thing is filed under; what is *drawn* when somebody points
+-- at it is still the stored item string, gems, enchants and all. Nothing here touches that.
+--
+-- **A number for the ordinary case, deliberately.** Every store this key reaches - the index,
+-- the auction prices in `FamilyDB` - is already keyed by item id for everything recorded before
+-- today, and a plain item goes on answering with exactly that number. So no saved price and no
+-- recorded possession has to be migrated or thrown away: what changes is that a *suffixed* thing
+-- stops sharing a heading with its siblings, which is the whole point.
+--
+-- Numeric strings are normalised back to numbers, so a caller that has been handed `"2589"`
+-- somewhere cannot open a second heading for an item that already has one.
+function Family:VariantKey(itemID, link)
+	if type(itemID) == "string" then
+		-- Already a key: `"6339:-7"` has no number in it and comes straight back.
+		local whole = tonumber(itemID)
+		if not whole then return itemID end
+		itemID = whole
+	end
+
+	itemID = tonumber(itemID)
+	if not itemID then return nil end
+
+	local suffix = self:ItemSuffix(link)
+	if not suffix then return itemID end
+
+	return itemID .. ":" .. suffix
+end
+
+-- **The item the client knows about**, out of one of those keys.
+--
+-- Everything that has to ask the *client* something - a name, an icon, what a vendor pays,
+-- which recipe makes it - asks about the base item, because that is the only thing an item id
+-- names. `GetItemInfo` given `"6339:-7"` answers nothing at all.
+function Family:BaseItem(key)
+	if type(key) == "number" then return key end
+	if type(key) ~= "string" then return nil end
+	return tonumber(key:match("^(%-?%d+):")) or tonumber(key)
+end
+
 --------------------------------------------------------------------------------------------
 -- Charges, which no container call will answer
 --

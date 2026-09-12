@@ -3956,7 +3956,7 @@ and the neutral one carries a worse cut and a longer walk.
 record of where it was read, so the readings taken before this exists cannot be re-sorted - they
 stay where they are and are replaced in the ordinary way, by somebody visiting.
 
-## 67. Suffix variants are one item to the index, and should be one only for crafting
+## 67. Suffix variants are one item to the index, and should be one only for crafting — **done 2026-09-12**
 
 **Alberto, 2026-09-12.** It began as a question about counting - another addon reports 16,105 items
 in a house where Family finds about 6,800 - and his answer cut it into three, not two.
@@ -4058,3 +4058,88 @@ Any change here that reaches the **payload** is out of scope and is a fault, not
 **And the lookup has to ask what the filing asked**, or a split is worse than a collapse: a bag item
 looked up under a key nothing was ever filed under reads as *nobody has one*, which is a confident
 wrong answer where today there is a slightly blunt right one.
+
+---
+
+**Built 2026-09-12.** `Family:VariantKey` in `Core.lua` answers with the item **id** where there is
+no suffix and `"id:suffix"` where there is; `Family:BaseItem` turns either back into the id the
+client will answer questions about. The index, the auction price store and the two tooltip blocks
+that ask *how many* and *what is it worth* key on the first; names, icons, vendor prices and *who
+can make one* key on the second. Nothing was re-scanned and nothing saved was migrated: a plain
+item's key is the number it always was, so every price recorded before today is still the right
+answer for the thing it was recorded about.
+
+**One gap was closed on the way.** A member's own auctions were the single scanner that recorded no
+item string, so a suffixed thing they had listed was counted under the plain item - hovering it
+said the family had none while one was on sale. It records the string now, like every other one.
+
+**Two things are deliberately left out and are not oversights.**
+
+1. **A vendor's price is still the base item's.** `GetItemInfo` would answer per variant if it were
+   handed the item string, but `FamilyDB.sellPrices` is keyed by id and filled from every window an
+   item is looked at in, so asking a different question in one place would file a variant's price
+   under the plain item everywhere else.
+2. **The newer auction house's browse route still files under the base item.** It has no link to
+   read a suffix out of - what it has is `itemKey.itemSuffix`, in that house's own numbering, never
+   once compared against the eighth field of an item string on that client. Keying on a position
+   nobody has read is L-071 in another costume. Its whole-house route does carry a link, guarded by
+   existence, and does file by variant.
+
+## 68. A profession's recipes can be recorded from a window that is showing a fraction of them
+
+**Reported from play, 2026-09-12.** Tanardo at **Cooking 372/375**, recorded as knowing **one**
+recipe - *Goblin Deviled Clams*, grey - and seen 13 days ago. Logging him in and opening cooking
+again put **75** back. So the reader works and the record was wrong, which means something wrote a
+one-recipe record over a seventy-five-recipe one and nothing said so.
+
+`Scanners/Professions.lua` already has a section header saying exactly the shape of this:
+
+> A recipe window lists what it shows, not what the character knows
+
+and it guards **one** way of a window showing less than it holds - a collapsed sub-class header,
+expanded before reading and put back after. The window has several other ways, and Family handles
+none of them: **Have Materials**, the search box, an item-level range, a sub-class picker and an
+inventory-slot picker. Any one of them leaves a window listing a handful of rows on a character who
+knows dozens. One grey recipe out of seventy-five is what *Have Materials* looks like when the only
+thing in your bags is clams.
+
+**A second explanation fits and is not ruled out**: a window read before it has finished filling.
+The reader guards `count == 0` explicitly - *a window that is open and lists nothing is not a window
+nobody has opened* - and does nothing about a window that lists one row of an eventual seventy-five.
+
+**Neither is chosen here.** The two are told apart by a reading, and the reading is now buildable:
+`/family recipes` says how many rows the window is showing, how many of them are headers, whether
+Have Materials is ticked, what the name and item-level filters hold, and which of the six filter
+calls this client has at all. Nothing in that probe changes a filter - a probe that repaired the
+thing it was measuring could not measure it twice.
+
+**What must not be built before that reading.** A rule of the shape *do not replace a large record
+with a much smaller one* is exactly L-086: a player really can unlearn a profession, and a guard
+written for a case that cannot happen breaking one that does has cost this project three days in
+one week. Whichever of the two it turns out to be has its own fix - clearing the filters and putting
+them back, the way the headers already are; or waiting for the window to settle - and both are
+mechanical once the reading says which.
+
+## 69. Recipe materials on the Professions panel
+
+**Asked for 2026-09-12.** Each recipe line carries what it needs, on the right of the row:
+
+> Example: Smelt Felsteel - on the left as it is now, icon and name; on the right the icons of
+> the required materials (Fel Iron Bar + Eternium Bar) with the quantities required (3 and 2)
+> printed on top.
+
+**The whole difficulty is where the reagents come from**, and it is a DATASOURCES question before
+it is a panel one. `GetTradeSkillReagentInfo` answers for a recipe in a window that is open, on the
+character who knows it - and this panel's whole point is answering about the *other* forty
+characters, whose windows are shut and who are not logged in. So a reagent list is either
+**recorded** at scan time beside the recipe it belongs to, which makes every stored profession
+bigger and only fills in as each member opens each window, or **generated** into a table under
+`tools/`, which is a new data source and therefore reserved.
+
+Nothing here is decided. What has to be read first is what the client actually answers per row
+while a window is open - the call's shape moves between these clients like every other one - and
+whether the icons and counts can be had without a second lookup per reagent.
+
+Two smaller things the drawing will have to settle: a recipe with five reagents against a row that
+has room for three, and what a row says for a member whose recipes were recorded before this
+existed. Neither is a reason not to do it; both are reasons not to start with the panel.

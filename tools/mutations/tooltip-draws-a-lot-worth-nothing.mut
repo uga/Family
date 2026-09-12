@@ -1,0 +1,6 @@
+name: a tooltip draws a family lot that comes to nought and offers the key for it
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if held and (held.worth == 0 or (held.atMarket + held.atVendor) == 0) then held = nil end
+--- new
+	if held and (held.atMarket + held.atVendor) == 0 then held = nil end
