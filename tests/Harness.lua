@@ -31820,6 +31820,79 @@ print("how long a read of the auction house takes")
 end)()
 
 print()
+print("a family bigger than a tooltip")
+;(function()
+	-- Asked 2026-09-12: two hundred and ten characters, nearly all carrying a Runecloth Bag -
+	-- what does that tooltip look like? It looked like two hundred and eleven lines. Every other
+	-- list in the addon had been given a cap and this one had been missed, so the block wrote one
+	-- line an owner and nothing stopped it.
+	--
+	-- Driven at `Index:Owners`, which is the boundary this block reads from: the claim under test
+	-- is *given this many owners, draw this many lines*, and building two hundred and ten members
+	-- would be testing the index instead.
+	local realOwners = Family.Index.Owners
+
+	local function withOwners(howMany)
+		Family.Index.Owners = function()
+			local owners = {}
+			for index = 1, howMany do
+				owners[index] = {
+					key = "Owner" .. index, name = "Owner" .. index,
+					realm = "Fire Maw", classFile = "MAGE",
+					bags = 1, bank = 0, mail = 0, auctions = 0, worn = 0,
+					bound = 0, total = 1,
+				}
+			end
+			return owners, {}
+		end
+
+		GameTooltip.__lines = {}
+		GameTooltip.__itemName = "Runecloth Bag"
+		GameTooltip.__itemLink = "|Hitem:14156|h"
+		if GameTooltip.__scripts.OnTooltipCleared then
+			GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+		end
+		GameTooltip.__scripts.OnTooltipSetItem(GameTooltip)
+
+		local drawn, contraction, after = 0, nil, false
+		for _, line in ipairs(GameTooltip.__lines) do
+			local left = type(line[1]) == "string" and line[1] or ""
+			if left:find("Family possessions", 1, true) then after = true
+			elseif after and left:find("Owner", 1, true) then drawn = drawn + 1
+			elseif after and left:find("more", 1, true) then
+				contraction = line
+				break
+			end
+		end
+
+		return drawn, contraction
+	end
+
+	-- **One over the cap is drawn whole**, which is the rule the French player's report gave the
+	-- whole addon: a line reading *and 1 more* costs exactly the line it hides, so it saves
+	-- nothing and spends a name doing it.
+	local drawn, contraction = withOwners(11)
+	check("eleven owners are all drawn, because hiding one saves nothing",
+		drawn == 11 and contraction == nil, drawn .. " drawn, contracted: "
+			.. tostring(contraction ~= nil))
+
+	drawn, contraction = withOwners(210)
+	check("while two hundred and ten do not fill the screen",
+		drawn == 10 and contraction ~= nil, drawn .. " drawn, contracted: "
+			.. tostring(contraction ~= nil))
+
+	-- **And the ones not drawn are still counted**, or the total in the header stops adding up -
+	-- which is the one thing somebody reads this block for on an item they own hundreds of.
+	check("and the ones it did not name still say how many they hold",
+		contraction and contraction[1]:find("200", 1, true)
+			and contraction[2]:find("200", 1, true),
+		contraction and (tostring(contraction[1]) .. " / " .. tostring(contraction[2]))
+			or "no contraction")
+
+	Family.Index.Owners = realOwners
+end)()
+
+print()
 print("asking the newer house for its whole list")
 ;(function()
 	-- **Sent once, by a word nobody types by accident, and locked while it is in the air.**

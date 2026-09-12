@@ -77,6 +77,20 @@ end
 -- one tooltip that produced a double gap in the middle and a stray one at the end. Spacing
 -- between blocks is a property of there being two, so it is decided where they are put
 -- together (below) and nowhere else.
+-- How many names a block will list before it starts counting instead. A tooltip that fills the
+-- screen has answered a different question from the one it was asked.
+--
+-- **Declared above every block that uses one.** Written below the first, a local is a global
+-- there and a global is nil - and `UI:ShowAtMost` given a nil cap quietly returns the whole list
+-- rather than throwing, so the contraction would simply not happen and nothing would say so
+-- (L-069). The crafters block was moved up here for the same reason before it.
+--
+-- Two numbers because the questions are different sizes. *Who can make this* is answered by a
+-- handful of names; *who has one* can be answered by a whole family, and the owners block is the
+-- one somebody reads on an item two hundred characters happen to carry.
+local OWNER_CAP = 10
+local GUILD_CAP = 5
+
 local function possessionLines(tooltip, itemID)
 	local owners, guilds = Family.Index:Owners(itemID)
 
@@ -92,7 +106,26 @@ local function possessionLines(tooltip, itemID)
 	local lines = { { L["|cff66bbffFamily possessions|r"],
 		total > 0 and ("|cffffd700" .. total .. "|r") or "" } }
 
-	for _, owner in ipairs(labelled(owners)) do
+	-- **A family can be bigger than a tooltip.**
+	--
+	-- Asked 2026-09-12: two hundred and ten characters, nearly all carrying a Runecloth Bag.
+	-- This block wrote one line an owner and nothing stopped it, so that tooltip was two
+	-- hundred and eleven lines - off the top of the screen, and the item's own text with it.
+	-- Every other list in the addon had been given the treatment and this one had been missed.
+	--
+	-- The list arrives sorted by how many each holds and then by name (`Index:Owners`), so the
+	-- ones drawn are the ones worth walking to. `UI:ShowAtMost` is the rule the rest of the
+	-- addon uses, and it is a cap on what is worth **hiding**: eleven owners draw eleven,
+	-- because a line reading *and 1 more* costs exactly the line it hides.
+	--
+	-- The count the hidden ones hold goes in the right-hand column, where every other line in
+	-- this block already carries a count - so the header's total still adds up, which is the
+	-- whole reason somebody reads this block on an item they own hundreds of.
+	local shown = UI:ShowAtMost(#owners, OWNER_CAP)
+	local named = labelled(owners)
+
+	for index = 1, shown do
+		local owner = named[index]
 		local r, g, b = classColour(owner.classFile)
 		-- A sibling's name carries their family. The count means something different for
 		-- them - it is not in a bag you can walk to - and a line that read the same as
@@ -100,10 +133,31 @@ local function possessionLines(tooltip, itemID)
 		lines[#lines + 1] = { whose(owner), placesOf(owner), r, g, b, 0.8, 0.8, 0.8 }
 	end
 
-	for _, guild in ipairs(guilds) do
+	if shown < #owners then
+		local rest = 0
+		for index = shown + 1, #owners do rest = rest + (owners[index].total or 0) end
+
+		lines[#lines + 1] = { string.format(L["|cff888888and %d more|r"], #owners - shown),
+			"|cff888888" .. rest .. "|r", nil, nil, nil, 0.5, 0.5, 0.5 }
+	end
+
+	-- The guild banks under them, capped the same way and by the same reasoning: a family
+	-- this size has more than one guild, and this block is already the longest on the tooltip.
+	local guildsShown = UI:ShowAtMost(#guilds, GUILD_CAP)
+
+	for index = 1, guildsShown do
+		local guild = guilds[index]
 		lines[#lines + 1] = { "|cff40c040" .. UI:GuildLabel(guild.key) .. "|r",
 			string.format(L["%d guild bank"], guild.count),
 			nil, nil, nil, 0.8, 0.8, 0.8 }
+	end
+
+	if guildsShown < #guilds then
+		local rest = 0
+		for index = guildsShown + 1, #guilds do rest = rest + (guilds[index].count or 0) end
+
+		lines[#lines + 1] = { string.format(L["|cff888888and %d more|r"], #guilds - guildsShown),
+			"|cff888888" .. rest .. "|r", nil, nil, nil, 0.5, 0.5, 0.5 }
 	end
 
 	return lines
@@ -160,14 +214,6 @@ local STATE = {
 		return string.format(L["|cffff8040needs %s|r"], name)
 	end,
 }
-
--- How many names either crafters block will list before it starts counting instead. A tooltip
--- that fills the screen has answered a different question from the one asked.
---
--- Declared above both of them: written below the first, it was a global there and nil, and the
--- guild half of the pattern block would have thrown the moment a guildmate turned out to know
--- one - which nothing exercised, so the harness was quiet about it.
-local GUILD_CAP = 5
 
 local function crafterLines(tooltip, itemID)
 	local profession, minLevel, certain, itemName = Family.Recipes:ItemProfession(itemID)

@@ -80,6 +80,13 @@ picks itself up where it left off.
   price. Two of the same sword on one character — one worn, one not — are now worth what they are
   really worth, which is not the same figure twice.
 
+### A family bigger than a tooltip
+
+- **An item nearly all your characters carry no longer fills the screen.** With two hundred
+  characters holding a Runecloth Bag, its tooltip listed every one of them. It now names the ten
+  holding the most and counts the rest, with how many they hold between them so the total at the
+  top still adds up. Guild banks the same.
+
 ### Shorter lists stay whole
 
 - **A list of ten or fewer is no longer contracted.** The crafting, reputations and possessions
