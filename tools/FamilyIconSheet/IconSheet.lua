@@ -86,6 +86,34 @@ local GROUPS = {
 	},
 
 	{
+		title = "The Extras tab, which ships with no picture",
+		note = "Alberto sent one on 2026-09-12 as an image, and an image is not a path: a "
+			.. "texture is the one thing here that cannot be probed, so the only instrument "
+			.. "is this sheet and an eye. Dark greenish metal, a hook curving from the "
+			.. "upper left, a ring or lens at the lower right. Ability_Repair is not a "
+			.. "candidate - Options already wears it, and the harness refuses two tabs "
+			.. "alike.",
+		icons = {
+			{ "Interface\\Icons\\INV_Gizmo_01", "a gizmo" },
+			{ "Interface\\Icons\\INV_Gizmo_02" },
+			{ "Interface\\Icons\\INV_Gizmo_03" },
+			{ "Interface\\Icons\\INV_Gizmo_06" },
+			{ "Interface\\Icons\\INV_Gizmo_08" },
+			{ "Interface\\Icons\\INV_Misc_Gear_01", "a cog" },
+			{ "Interface\\Icons\\INV_Misc_Gear_02" },
+			{ "Interface\\Icons\\INV_Misc_Gear_03" },
+			{ "Interface\\Icons\\INV_Misc_Gear_05" },
+			{ "Interface\\Icons\\INV_Misc_EnggizmosOilcan" },
+			{ "Interface\\Icons\\INV_Misc_Wrench_01" },
+			{ "Interface\\Icons\\INV_Misc_Hook_01", "a hook" },
+			{ "Interface\\Icons\\INV_Misc_SpyGlass_02", "a lens" },
+			{ "Interface\\Icons\\Trade_Engineering", "the profession's own" },
+			{ "Interface\\Icons\\INV_Gizmo_pipe_01" },
+			{ "Interface\\Icons\\INV_Gizmo_khoriumpowercore" },
+		},
+	},
+
+	{
 		title = "The bank's own container, on the Possessions panel",
 		note = "It falls through to the backpack button today, so the bank reads as a bag. "
 			.. "Wanted: something that says vault or stash without being a bag.",
