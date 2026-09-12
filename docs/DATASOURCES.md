@@ -1134,6 +1134,45 @@ is the second. Unread as of this writing.
 72,704 rows already there, last one showing 50 - so the list fills in silence, and whether
 anything is said at the end is unread.
 
+#### What the whole scan actually did, read afterwards 2026-09-12
+
+The probe again once the client was calm, with that addon's own countdown running:
+
+| | before | after |
+|---|---|---|
+| `list updates heard since login` | 43 | **5788** |
+| `prices remembered for this realm and side` | 4533 | **5906** |
+| `list`, auction window freshly reopened | 50 | **0** |
+| `a query would be accepted now` | `true` | `true`, and nothing after it |
+
+Four things follow, and none of them needed a query of Family's own.
+
+**`AUCTION_ITEM_LIST_UPDATE` fires, and fires enormously.** 5,745 of them across one scan, where
+the reading taken partway through - 72,704 rows on the list, counter still at 43 - had suggested
+the list filled in silence. It does not; the silence was the middle of it. So Family can notice a
+full list without being told to look.
+
+**Family already took 1,373 prices from it, with no code for the purpose.** The passive reader
+reads the browse list whenever that event fires, and the browse list was the whole house. That
+addon reported 15,899 distinct items; Family holds 5,906 for this realm and side now.
+
+**A full list does not survive the window closing.** Reopened, `list` reads 0. Whatever is going
+to be read has to be read while it is there.
+
+**The client says an ordinary query would be accepted, in one value, while that addon counts down
+three and a half minutes.** So the interval is that addon's own and not something the client is
+reporting - and `CanSendAuctionQuery` still answers with a single value in this state too, which
+was the one state left unread.
+
+Timing, from play: about three minutes to 99% with little lag, then about three more sitting at
+99% lagging hard, so roughly six minutes for the scan against the fifteen the countdown runs for.
+The fifteen minutes this was first compared against is mostly the wait, not the read.
+
+**And Family's own part in that stall is not nothing.** `ReadPrices` walks `1..count` of the
+browse list every time that event fires, with no cap - fifty rows on an ordinary search, and up
+to 178,128 rows here, 5,745 times. How large the list was at each of those is unread, so what
+share of the stall was Family's is unmeasured; that the multiplier exists is not.
+
 #### What a full read still needs, and why it is not built yet
 
 Written 2026-09-10, when slice 3 was picked up. Three things are still unmeasured, and the first
