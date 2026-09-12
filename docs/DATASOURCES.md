@@ -1213,6 +1213,36 @@ Two more readings came with the second run, and both correct earlier notes here:
   counter still at nought; then 30,148 firings once it was done, and 74,483 a little later. So a
   reader hung off that event sees nothing for the whole delivery and then everything at once.
 
+#### What an auction item link actually carries, measured 2026-09-12
+
+Everything this repository had ever taken from an auction link is `item:(%d+)`. The read-only
+probe now prints the whole item string instead, and on Burning Crusade Anniversary, searching
+*of the Bear*:
+
+    item:31215::::::-7:769720366:5::::::::::
+    item:31157::::::-7:1952776252:5::::::::::
+    item:31156::::::-7:1035796540:5::::::::::
+
+Held against the shape `Core.lua` records - `item : id : enchant : gem1 : gem2 : gem3 : gem4 :
+suffix : unique` - three things are settled and none of them was known here before.
+
+**The eighth field is the suffix, and it is negative.** `-7` on all three, across three different
+base items, which is what *of the Bear* is. `ItemString`'s comment already said suffixes are
+negative on these clients, from having been caught by it; this is the first time it has been read
+deliberately.
+
+**Fields three to seven are genuinely empty**, not nought - `::::::` between the id and the
+suffix. Any pattern demanding a digit there matches nothing at all, which is why the reader's is
+`[%-%d]*`.
+
+**The ninth field differs for every single auction.** 769720366, 1952776252, 1035796540 on three
+rows. It is the suffix seed, which scales the same suffix's numbers without changing its name.
+
+That last one decides a design question rather than describing one. Keying a variant on the whole
+item string - which is what `Family:ItemString` returns - would make **every auction its own
+variant**, and the count of them would be the count of rows with a different name on it. The key
+is the base id plus the eighth field alone (backlog 67), and this is why.
+
 #### What a full read still needs, and why it is not built yet
 
 Written 2026-09-10, when slice 3 was picked up. Three things are still unmeasured, and the first
