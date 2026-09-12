@@ -3615,3 +3615,27 @@ the only thing observed about it - what it is called is not known, and no name f
 down here. Whatever it is, a reader that wants a name off these rows cannot assume one is
 present, and a reader that only wants an id and a price may not care.
 
+#### The price at position 10 is for the whole lot
+
+Settled on Mists 2026-09-12 by a listing of more than one, which is the only kind that can settle
+it:
+
+    owned/stacks/scanned 4 / 3 / 20804
+      itemID              17 = 3858
+      quantity            3  = 20
+      buyoutAmount(stack) 10 = 899860
+
+The named route had already said that auction is **twenty** of item 3858 at **44,993** apiece.
+The replicated row carries 20 at position 3 and **899,860** at position 10, and 899,860 is
+44,993 x 20. So `GetOwnedAuctionInfo.buyoutAmount` is the price of **one** and replicate position
+10 is the price of **the lot**.
+
+**A per-item price from a replicated row is therefore position 10 divided by position 3**, and
+anything that reads these rows and files a price by item id has to do that division or it will
+file a stack of twenty as though one cost twenty times what it does.
+
+The earlier reading could not have found this: the auction that matched then had a quantity of
+one, where both prices are the same number. `ReplicateMatchOwned` now walks on past a match that
+settles nothing and stops only on a listing of more than one - and it says how many of the
+player's listings are of more than one, so a run that could never have answered says so.
+
