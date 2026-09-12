@@ -1,8 +1,8 @@
 name: a new extra arrives switched on rather than off
 file: addons/Family/Extras.lua
 --- old
-	auctionPrices = true,
+	craftingCost = false,
 	mailReport = false,
 --- new
-	auctionPrices = true,
+	craftingCost = true,
 	mailReport = true,
