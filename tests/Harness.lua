@@ -32084,6 +32084,34 @@ print("naming the frame under the pointer")
 	check("with nothing under the pointer it says so rather than nothing at all",
 		#DEFAULT_CHAT_FRAME.messages > at + 1, "said nothing")
 
+	-- **A call that is not there and a pointer over empty air are not the same answer.**
+	-- Reported from play on Era 2026-09-12, pointing straight at a button: *the client named
+	-- nothing under the pointer* - which cannot be true of a button, so the sentence was
+	-- covering for a call that does not exist on that build. It says which now.
+	local said = table.concat(DEFAULT_CHAT_FRAME.messages, "\n", at + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("and says whether the client has anything to ask in the first place",
+		said:find("GetMouseFocus/Foci", 1, true) ~= nil, said)
+
+	-- **And the other name is tried**, because which of the two a build has is not known here
+	-- and a guess would be answered by silence either way.
+	local realMany = _G.GetMouseFoci
+	_G.GetMouseFocus = nil
+	_G.GetMouseFoci = function()
+		return { { GetName = function() return "FromTheOtherCall" end,
+			GetObjectType = function() return "Frame" end } }
+	end
+
+	at = #DEFAULT_CHAT_FRAME.messages
+	SlashCmdList["FAMILY"]("whatis")
+	advance(6)
+	said = table.concat(DEFAULT_CHAT_FRAME.messages, "\n", at + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("a build with only the other call is asked through that one",
+		said:find("FromTheOtherCall", 1, true) ~= nil, said)
+
+	_G.GetMouseFoci = realMany
+
 	-- **Up the chain, not the one frame.** An anonymous button in an anonymous row hangs off
 	-- something with its author's name on it, and that name is what the question is about - so
 	-- stopping at the first frame answers with a blank exactly where it matters most.

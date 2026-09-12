@@ -2942,3 +2942,32 @@ fixture's starting state.
 every previous caller had already done for it.** The work it never had to do is exactly the work
 it will now be missing, and it will be missing it silently.
 
+---
+
+## L-080 — I wrote the lesson, and then built the next tool without it
+
+`/family itemclick` counts every modified click it sees whether or not anybody is listening, and
+the comment beside that counter says exactly why: *the hook not firing from a bag and the hook
+never being installed arrive as the same silence.* That was written this morning.
+
+`/family whatis` was written an hour later. It asked `GetMouseFocus`, and where the answer was not
+a frame it said **the client named nothing under the pointer**. Reported from play on Era
+2026-09-12, pointing straight at a button:
+
+    the client named nothing under the pointer
+
+Which cannot be true of a button. The sentence was covering for a call that is not on that build -
+and the same blank had already appeared in the click probe's `clicked` line on Mists, where it was
+written down as *a reading, not a fault*, on the assumption that the call existed and had nothing
+to say. That note is now wrong in the same way.
+
+**What now catches it.** The tool prints the type of both candidate names before it asks anything,
+so a build with neither says so; and it tries the second name where the first answers nothing,
+because which of the two a client has is not known here and a guess is answered by silence either
+way. Two checks, both mutations caught.
+
+**The general rule: the lesson is not learned when it is written down, only when the next thing
+built has it.** A rule about telling absence from emptiness has to be applied at every call that
+can be absent - and the moment to check is while writing the sentence that reports the silence,
+because that sentence is where the two cases get merged.
+

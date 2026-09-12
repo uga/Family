@@ -3679,6 +3679,10 @@ player** all route through `HandleModifiedItemClick`.
 **The player's own character sheet does not.** With the probe armed, a CTRL and ALT click on a
 worn piece printed nothing at all and `modified clicks heard since login` stayed at nought - a
 counter that rises for every modified click whether or not anybody is listening. So the crossroads
-is never reached there, rather than reached and refused. Anything wanting that window would have
+is never reached there, rather than reached and refused.
+
+(The `clicked` line of that probe, which was blank on Mists, was written down here as a reading.
+It was not: `GetMouseFocus` appears not to be on these builds at all, which is a different fact -
+see L-080. The counter above is unaffected, and it is the counter that carries the conclusion.) Anything wanting that window would have
 to hook its slot buttons, which is a different mechanism and has had no reading taken.
 

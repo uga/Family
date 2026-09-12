@@ -821,7 +821,27 @@ add("whatis", L["name the frame the pointer is resting on, five seconds from now
 	Family:Print(L["point at it and wait five seconds"])
 
 	Family:After(5, "ui.whatis", function()
-		local frame = (Family:TryCall(GetMouseFocus))
+		-- **Which of these the client has, said out loud.**
+		--
+		-- The first writing asked `GetMouseFocus` and printed *nothing under the pointer* when
+		-- it answered nothing - so a client without that call and a pointer over empty air
+		-- arrived as the same sentence. Reported from play on Era 2026-09-12 pointing straight
+		-- at a button, which is the case that cannot be both.
+		--
+		-- Two names because the answer is not known here and is not worth guessing: one
+		-- returns a frame, the other a list of them. Whichever answers is the one used, and
+		-- the types are printed either way, so a build with neither says **that** rather than
+		-- looking like an empty screen.
+		local one = type(_G.GetMouseFocus)
+		local many = type(_G.GetMouseFoci)
+		Family:Print("    %-20s |cff888888%s / %s|r", "GetMouseFocus/Foci", one, many)
+
+		local frame = (Family:TryCall(_G.GetMouseFocus))
+
+		if type(frame) ~= "table" then
+			local list = (Family:TryCall(_G.GetMouseFoci))
+			frame = type(list) == "table" and list[1] or nil
+		end
 
 		if type(frame) ~= "table" then
 			Family:Print(L["  the client named nothing under the pointer"])
