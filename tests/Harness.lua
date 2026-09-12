@@ -9464,6 +9464,33 @@ end
 	Family.Index.HeldBy, Family.Recipes.Reagents = realHeld, realReagents
 end)()
 
+-- **And through the real index, from a real record of the bank.** The check above answers
+-- `HeldBy` itself, so the road from what a bank scan stores to *can make* was never walked by
+-- anything. Reported from play 2026-09-12: eight Shadow Draenite in Eccebombo's bank and no
+-- *can make* beside the cut that takes one.
+;(function()
+	local realReagents = Family.Recipes.Reagents
+	local RAW, CUT = 23107, 880200
+	Family.Recipes.Reagents = function(_, spell)
+		return spell == CUT and { { item = RAW, count = 1 } } or nil
+	end
+
+	Family.Database:SetMeta("Cutter-FireMaw", { name = "Cutter", realm = "FireMaw",
+		faction = "Alliance", classFile = "ROGUE", level = 70 })
+	Family.Database:SetPayload("Cutter-FireMaw", {
+		bags = { [0] = { size = 16, free = 16, slots = {} } },
+		bank = { containers = { [-1] = { slots = { { id = RAW, count = 8 } } },
+			[5] = { slots = { [3] = { id = RAW, count = 3 } } } } },
+	})
+	Family.Index:Invalidate()
+
+	check("a character with raw gems in the bank alone can cut that many",
+		Family.Recipes:CanMake("Cutter-FireMaw", CUT) == 11,
+		tostring(Family.Recipes:CanMake("Cutter-FireMaw", CUT)))
+
+	Family.Recipes.Reagents = realReagents
+end)()
+
 -- **And the row draws that number, not the client's.** Asked of the drawn row, with the
 -- calculation made to answer a figure the fixture's recorded one is not.
 ;(function()
