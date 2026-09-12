@@ -377,6 +377,17 @@ function Index:Owners(variant)
 	return owners, guilds
 end
 
+-- **What one character holds of one thing, place by place**, or nil where they hold none.
+--
+-- The per-member half of `Owners` above without the sorting or the naming, for a question asked
+-- once a recipe row: *how many of this can that character make out of what they have*. The same
+-- record the possessions search and the tooltip read, so the three cannot disagree about a count.
+function Index:HeldBy(key, variant)
+	if not (key and variant) then return nil end
+	refresh()
+	return (entries[variant] or {})[key]
+end
+
 -- How many the whole family holds, across everybody and everywhere.
 function Index:Total(variant)
 	local owners, guilds = self:Owners(variant)

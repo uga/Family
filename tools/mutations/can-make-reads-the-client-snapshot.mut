@@ -1,0 +1,6 @@
+name: the recipe row shows the client's old snapshot instead of what the character now holds
+file: addons/Family_UI/Professions.lua
+--- old
+				local times = spell and Family.Recipes:CanMake(member.key, spell)
+--- new
+				local times = recipe.available

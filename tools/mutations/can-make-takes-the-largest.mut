@@ -1,0 +1,6 @@
+name: what a character can make is set by the most plentiful material rather than the scarcest
+file: addons/Family/Recipes.lua
+--- old
+		if times == nil or enough < times then times = enough end
+--- new
+		if times == nil or enough > times then times = enough end

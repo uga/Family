@@ -83,6 +83,9 @@ picks itself up where it left off.
 
 ### Extras
 
+- **"Can make" counts what the character has in their bags and bank**, as of the last time they
+  logged in, instead of what their profession window said the last time it was opened.
+
 - **Hover a letter under a character to read it in full**: the whole subject, who sent it, when it
   expires and the money in it.
 

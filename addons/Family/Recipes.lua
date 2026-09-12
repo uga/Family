@@ -273,6 +273,37 @@ function Recipes:MadeBy(itemID)
 	return known[itemID]
 end
 
+-- **How many times a character can make a recipe out of what they have.**
+--
+-- The number on a recipe row used to be the client's own - the third value of
+-- `GetTradeSkillInfo`, read while that character's profession window was open - which made it a
+-- photograph of the moment the window was last opened, and which containers the client counts was
+-- never measured here. Alberto's call 2026-09-12: *calcoliamo noi da Possessions - e' un numero
+-- aggiornato all'ultima volta che abbiamo aggiornato il personaggio, ci sta.*
+--
+-- **Bags and bank**, and nothing else. The post has to be collected before anything in it can be
+-- used, an auction is somebody else's until it ends, and what a character is wearing is not a
+-- material. The smallest of `held / needed` across the materials, rounded down.
+--
+-- Nil where the recipe's materials are not known, which is an answer rather than a nought: a
+-- recipe Family cannot see into is not one the character is short of anything for.
+function Recipes:CanMake(memberKey, spellID)
+	if not (memberKey and spellID and Family.Index) then return nil end
+
+	local parts = self:Reagents(spellID)
+	if not parts or #parts == 0 then return nil end
+
+	local times = nil
+	for _, part in ipairs(parts) do
+		local record = Family.Index:HeldBy(memberKey, part.item)
+		local have = record and (record.bags + record.bank) or 0
+		local enough = math.floor(have / math.max(part.count or 1, 1))
+		if times == nil or enough < times then times = enough end
+	end
+
+	return times
+end
+
 -- **The one item a recipe spell makes**, where it makes one.
 --
 -- Read from play 2026-09-12 on Burning Crusade: an enchanting recipe that makes a thing - Lesser

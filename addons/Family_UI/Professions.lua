@@ -1779,8 +1779,16 @@ local function build(frame)
 				note = string.format(L["|cffff8040ready %s|r"], UI:In(recipe.readyAt))
 			elseif recipe.readyAt then
 				note = L["|cff40bf40ready now|r"]
-			elseif recipe.available and recipe.available > 0 then
-				note = string.format(L["|cff40bf40can make %s|r"], recipe.available)
+			else
+				-- Worked out from what this character holds, not read off the client's window.
+				-- The spell where the record has one and, where it has only the product, the
+				-- spell that makes it - the same pair the materials strip beside it uses.
+				local spell = recipe.spellID
+					or (recipe.itemID and Family.Recipes:MadeBy(recipe.itemID))
+				local times = spell and Family.Recipes:CanMake(member.key, spell)
+				if times and times > 0 then
+					note = string.format(L["|cff40bf40can make %s|r"], times)
+				end
 			end
 			r.note:SetText(note)
 

@@ -9411,6 +9411,69 @@ do
 		not said:find("swaps the recipe", 1, true), said)
 end
 
+-- **How many a character can make, worked out from what they hold.** It was the client's own
+-- number, read while that character's window was open, which made it a photograph nobody could
+-- date. Alberto's call 2026-09-12: *calcoliamo noi da Possessions.* Bags and bank count; the post,
+-- an auction and what is being worn do not.
+;(function()
+	local realHeld, realReagents = Family.Index.HeldBy, Family.Recipes.Reagents
+	local A, B = 880001, 880002
+	local holds = {}
+	Family.Index.HeldBy = function(_, key, item)
+		return key == "Crafter-FireMaw" and holds[item] or nil
+	end
+	Family.Recipes.Reagents = function(_, spell)
+		if spell == 880100 then
+			return { { item = A, count = 3 }, { item = B, count = 2 } }
+		end
+		return nil
+	end
+	local function held(bags, bank, mail, auctions, worn)
+		return { bags = bags, bank = bank, mail = mail or 0, auctions = auctions or 0,
+			worn = worn or 0, bound = 0 }
+	end
+
+	-- Nine of the first (seven in the bags, two in the bank) is three; five of the second, all
+	-- banked, is two. The smaller wins.
+	holds = { [A] = held(7, 2), [B] = held(0, 5) }
+	check("a recipe can be made as many times as its scarcest material allows",
+		Family.Recipes:CanMake("Crafter-FireMaw", 880100) == 2,
+		tostring(Family.Recipes:CanMake("Crafter-FireMaw", 880100)))
+	-- Without the bank the second material would be none at all.
+	check("counting what is in the bank as well as the bags",
+		Family.Recipes:CanMake("Crafter-FireMaw", 880100) > 0)
+
+	-- Thirty in the post, on auction and worn, and still the same answer.
+	holds = { [A] = held(7, 2, 30, 30, 30), [B] = held(0, 5, 30, 30, 30) }
+	check("and not what is in the post, on auction or being worn",
+		Family.Recipes:CanMake("Crafter-FireMaw", 880100) == 2,
+		tostring(Family.Recipes:CanMake("Crafter-FireMaw", 880100)))
+
+	holds = { [A] = held(7, 2) }
+	check("a material they have none of means none can be made",
+		Family.Recipes:CanMake("Crafter-FireMaw", 880100) == 0,
+		tostring(Family.Recipes:CanMake("Crafter-FireMaw", 880100)))
+
+	-- A recipe Family cannot see into is not one the character is short of anything for.
+	check("and a recipe whose materials are not known answers nothing rather than nought",
+		Family.Recipes:CanMake("Crafter-FireMaw", 880199) == nil,
+		tostring(Family.Recipes:CanMake("Crafter-FireMaw", 880199)))
+
+	Family.Index.HeldBy, Family.Recipes.Reagents = realHeld, realReagents
+end)()
+
+-- **And the row draws that number, not the client's.** Asked of the drawn row, with the
+-- calculation made to answer a figure the fixture's recorded one is not.
+;(function()
+	local realCanMake = Family.Recipes.CanMake
+	Family.Recipes.CanMake = function() return 7 end
+	Family.UI:Refresh()
+	local drew = visibleText("can make 7")
+	Family.Recipes.CanMake = realCanMake
+	Family.UI:Refresh()
+	check("the recipe row says what the character can make from what they hold", drew)
+end)()
+
 -- **And a row that has only the item**, which on Classic Era is every trade skill row there is:
 -- that client's records carry an item id on every recipe and a spell id on none (DATASOURCES §2).
 -- So the swap had nothing to swap to on that whole client, said nothing about it, and was

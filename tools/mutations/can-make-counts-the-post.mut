@@ -1,0 +1,6 @@
+name: what a character can make counts letters they have not collected
+file: addons/Family/Recipes.lua
+--- old
+		local have = record and (record.bags + record.bank) or 0
+--- new
+		local have = record and (record.bags + record.bank + record.mail) or 0
