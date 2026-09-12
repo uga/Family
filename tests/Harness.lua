@@ -5263,9 +5263,12 @@ do
 			GetNumAuctionItems, GetAuctionItemInfo, GetAuctionItemLink
 
 		GetNumAuctionItems = function(which) return which == "list" and #LIST or 0 end
+		-- An explicit link where a row wants one, so that a random-enchantment suffix can be
+		-- put in front of the reader. Everything else keeps the bare shape it had.
 		GetAuctionItemLink = function(which, i)
 			local row = which == "list" and LIST[i]
-			return row and ("|Hitem:" .. row.id .. "|h") or nil
+			if not row then return nil end
+			return row.link or ("|Hitem:" .. row.id .. "|h")
 		end
 		GetAuctionItemInfo = function(which, i)
 			local row = which == "list" and LIST[i]
@@ -5439,6 +5442,15 @@ do
 				counted and (counted.rows .. " row(s), " .. counted.items .. " item(s)")
 					or "nothing counted")
 
+			-- **And the same items counted again with the suffix telling two apart.**
+			--
+			-- The fixture's rows carry no suffix at all, so this figure has to equal the item
+			-- count here - the half that says the counter is not simply counting rows. The
+			-- half that says it can tell a variant is below.
+			check("with no suffixes about, the two item counts are the same number",
+				counted ~= nil and counted.variants == counted.items,
+				tostring(counted and counted.variants))
+
 			-- Two hundred of the six hundred items are bid-only, so four hundred have a price.
 			-- Without this the tally could call every item priced and nothing would notice.
 			check("and how many of those items had a price anybody could pay",
@@ -5540,6 +5552,37 @@ do
 			fire("AUCTION_HOUSE_CLOSED")
 			check("and closing the auction house ends it",
 				Family.Auctions:BigListReading() == nil)
+
+			-- **One base item wearing three suffixes is three things, and an enchant is not
+			-- a variant.**
+			--
+			-- Alberto, 2026-09-12: *incantesimi (gemme etc): per il momento non consideriamoli
+			-- varianti*. So the key is the suffix alone rather than `ItemString`, which answers
+			-- for any of enchant, gems or suffix - a sword enchanted and a sword plain are one
+			-- thing to own and one thing to price.
+			--
+			-- Sixty rows of a single base item: twenty with no suffix, twenty of the Bear,
+			-- twenty of the Whale, and every second one carrying an enchant as well. One item,
+			-- **three** variants - and if the enchant counted, six.
+			Family.Auctions:ForgetVisit()
+			Family.Auctions:StopBigListRead()
+			Family.Auctions.lastLoadedList = nil
+			LIST = {}
+			for index = 1, 60 do
+				local suffix = ({ 0, -25, -41 })[math.floor((index - 1) / 20) + 1]
+				local enchant = (index % 2 == 0) and 2504 or 0
+				LIST[index] = { id = 700000, count = 1, buyout = 800,
+					link = "|Hitem:700000:" .. enchant .. ":0:0:0:0:"
+						.. suffix .. ":0:60|h[Sword]|h" }
+			end
+			Family.Auctions:ReadPrices()
+			advance(1)
+
+			local mixed = Family.Auctions.lastLoadedList
+			check("one base item under three suffixes counts as one item and three variants",
+				mixed ~= nil and mixed.items == 1 and mixed.variants == 3,
+				tostring(mixed and mixed.items) .. " item(s), "
+					.. tostring(mixed and mixed.variants) .. " variant(s)")
 
 			GetAuctionItemInfo = realInfoBig
 			Family.Auctions:ForgetVisit()

@@ -265,6 +265,7 @@ Family.locales.ruRU = {
 	["off"] = "выключены",
 	["what this client offers on the auction house"] = "что этот клиент предлагает на аукционе",
 	["  a query would be accepted now: |cffffd700%s|r"] = "  запрос был бы принят сейчас: |cffffd700%s|r",
+	["  and %d of them once a random-enchantment suffix tells two apart"] = "  и %d, если случайный суффикс различает два предмета",
 	["  prices remembered for this realm and side: |cffffd700%d|r"] = "  запомнено цен для этого мира и стороны: |cffffd700%d|r",
 	["  oldest %s, newest %s"] = "  самая старая %s, самая свежая %s",
 	["  reading a loaded list: %d of %d row(s), %d price(s) taken"] = "  читаю загруженный список: %d из %d строк(и), взято цен: %d",

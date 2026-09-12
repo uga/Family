@@ -3,12 +3,12 @@ file: addons/Family/Scanners/Auctions.lua
 --- old
 		if not bigRead or count < bigRead.at then
 			bigRead = { at = 0, count = count, kept = 0,
-				tally = { rows = 0, items = 0, priced = 0,
-					seen = {}, pricedSeen = {} } }
+				tally = { rows = 0, items = 0, priced = 0, variants = 0,
+					seen = {}, pricedSeen = {}, variantSeen = {} } }
 		else
 			bigRead.count = count
 		end
 --- new
 		bigRead = { at = 0, count = count, kept = 0,
-			tally = { rows = 0, items = 0, priced = 0,
-				seen = {}, pricedSeen = {} } }
+			tally = { rows = 0, items = 0, priced = 0, variants = 0,
+				seen = {}, pricedSeen = {}, variantSeen = {} } }

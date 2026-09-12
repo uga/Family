@@ -187,6 +187,37 @@ function Family:ItemString(link)
 	return nil
 end
 
+-- **The random-enchantment suffix alone, out of a link.**
+--
+-- `ItemString` above answers for *any* of the enchant, gem and suffix fields, which is the right
+-- question for *is this thing worth storing whole* and the wrong one for *is this a different
+-- item*. Alberto settled that on 2026-09-12: an enchant is not a variant, a suffix is. Two swords
+-- *of the Bear* and *of the Whale* are two things to own and two things to price; the same sword
+-- enchanted and plain is one thing (backlog 67).
+--
+-- The eighth field, by the shape written above this function: `item : id : enchant : gem1 : gem2 :
+-- gem3 : gem4 : suffix : unique`. Read out with one pattern rather than by splitting the string,
+-- because this is asked once for each of a hundred and seventy-five thousand auction rows and the
+-- last thing added to that loop had to be taken out again for costing too much.
+--
+-- **Empty fields are why the pattern is `[%-%d]*` and not `%-?%d+`.** These links genuinely carry
+-- nothing between two colons, and a pattern demanding a digit there matches nothing at all - the
+-- same trap the splitting above this one is written to avoid. Negative, because suffixes are
+-- negative on these clients, which `ItemString` records from having been caught by it.
+--
+-- Nought and absent are the same answer here: no suffix, so no variant.
+function Family:ItemSuffix(link)
+	if type(link) ~= "string" then return nil end
+
+	local suffix = link:match(
+		"item:[%-%d]*:[%-%d]*:[%-%d]*:[%-%d]*:[%-%d]*:[%-%d]*:([%-%d]*)")
+
+	suffix = tonumber(suffix)
+	if not suffix or suffix == 0 then return nil end
+
+	return suffix
+end
+
 --------------------------------------------------------------------------------------------
 -- Charges, which no container call will answer
 --

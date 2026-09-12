@@ -1032,6 +1032,24 @@ local function readRows(where, from, to, tally)
 				tally.items = tally.items + 1
 			end
 
+			-- **And the same count again with the random-enchantment suffix kept apart.**
+			--
+			-- The two side by side are the whole of backlog 67's open question. Family files
+			-- a price under the base id and keeps the lowest, so every *of the* variant of a
+			-- green is priced at whichever of them is cheapest - an order of magnitude, not a
+			-- rounding. Whether that matters here or is a footnote depends on a number nobody
+			-- has: how much of a house is suffixed at all.
+			--
+			-- Enchants and gems are deliberately **not** variants (Alberto, 2026-09-12), so
+			-- this is the suffix alone and not `ItemString`.
+			local suffix = Family:ItemSuffix(link)
+			local variant = suffix and (itemID .. ":" .. suffix) or itemID
+
+			if not tally.variantSeen[variant] then
+				tally.variantSeen[variant] = true
+				tally.variants = tally.variants + 1
+			end
+
 			if each and not tally.pricedSeen[itemID] then
 				tally.pricedSeen[itemID] = true
 				tally.priced = tally.priced + 1
@@ -1142,7 +1160,7 @@ bigReadTick = function()
 	if tally then
 		Auctions.lastLoadedList = {
 			rows = tally.rows, items = tally.items, priced = tally.priced,
-			at = time(),
+			variants = tally.variants, at = time(),
 		}
 	end
 
@@ -1188,8 +1206,8 @@ function Auctions:ReadPrices()
 		-- row means nothing in it, so that read begins again.
 		if not bigRead or count < bigRead.at then
 			bigRead = { at = 0, count = count, kept = 0,
-				tally = { rows = 0, items = 0, priced = 0,
-					seen = {}, pricedSeen = {} } }
+				tally = { rows = 0, items = 0, priced = 0, variants = 0,
+					seen = {}, pricedSeen = {}, variantSeen = {} } }
 		else
 			bigRead.count = count
 		end
@@ -1867,9 +1885,15 @@ function Auctions:OldListSample(howMany)
 		local link = Family:TryCall(GetAuctionItemLink, "list", index)
 		local row = { Family:TryCall(GetAuctionItemInfo, "list", index) }
 
+		-- **The whole item string, not the id out of it.**
+		--
+		-- Everything this repository has ever taken from an auction link is `item:(%d+)`, so
+		-- what else is in one on these builds is unread - and backlog 67 turns on the eighth
+		-- field of it. A key built on a position nobody has looked at is L-071 in another
+		-- costume, so the position is printed and read rather than trusted.
 		rows[#rows + 1] = {
 			index,
-			type(link) == "string" and (link:match("item:(%d+)") or "?") or "?",
+			type(link) == "string" and (link:match("|H(item[%-%d:]+)|h") or link) or "?",
 			tostring(row[3]),
 			tostring(row[10]),
 		}

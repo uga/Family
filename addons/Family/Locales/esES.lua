@@ -265,6 +265,7 @@ Family.locales.esES = {
 	["off"] = "desactivados",
 	["what this client offers on the auction house"] = "qué ofrece este cliente en la casa de subastas",
 	["  a query would be accepted now: |cffffd700%s|r"] = "  una consulta se aceptaría ahora: |cffffd700%s|r",
+	["  and %d of them once a random-enchantment suffix tells two apart"] = "  y %d si un sufijo de encantamiento aleatorio distingue dos",
 	["  prices remembered for this realm and side: |cffffd700%d|r"] = "  precios recordados para este reino y bando: |cffffd700%d|r",
 	["  oldest %s, newest %s"] = "  el más antiguo %s, el más reciente %s",
 	["  reading a loaded list: %d of %d row(s), %d price(s) taken"] = "  leyendo una lista cargada: %d de %d fila(s), %d precio(s) tomado(s)",

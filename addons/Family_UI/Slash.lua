@@ -1469,6 +1469,13 @@ add("ah", L["what this client offers on the auction house"], function(argument)
 	if last then
 		Family:Print(L["  the last loaded list: %d row(s), %d item(s), %d with a price"],
 			last.rows or 0, last.items or 0, last.priced or 0)
+
+		-- **And the same items counted again with the suffix kept apart**, which is the whole
+		-- of backlog 67's open question: a price is filed under the base id and the lowest
+		-- wins, so every *of the* variant of a green is priced at whichever is cheapest. The
+		-- two figures side by side say whether that is a footnote or most of the feature.
+		Family:Print(L["  and %d of them once a random-enchantment suffix tells two apart"],
+			last.variants or 0)
 	end
 
 	-- **Both returns of it**, because the second is the one a page walk needs and nothing in

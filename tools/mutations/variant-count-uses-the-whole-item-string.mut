@@ -1,0 +1,7 @@
+name: an enchant is treated as a variant, not only the suffix
+file: addons/Family/Core.lua
+--- old
+	local suffix = link:match(
+		"item:[%-%d]*:[%-%d]*:[%-%d]*:[%-%d]*:[%-%d]*:[%-%d]*:([%-%d]*)")
+--- new
+	local suffix = link:match("item:[%-%d]*:([%-%d]*)")

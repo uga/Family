@@ -5,7 +5,7 @@ file: addons/Family/Scanners/Auctions.lua
 	if tally then
 		Auctions.lastLoadedList = {
 			rows = tally.rows, items = tally.items, priced = tally.priced,
-			at = time(),
+			variants = tally.variants, at = time(),
 		}
 	end
 

@@ -1,0 +1,7 @@
+name: the variant count ignores the suffix and counts base items
+file: addons/Family/Scanners/Auctions.lua
+--- old
+			local suffix = Family:ItemSuffix(link)
+			local variant = suffix and (itemID .. ":" .. suffix) or itemID
+--- new
+			local variant = itemID

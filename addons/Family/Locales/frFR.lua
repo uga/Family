@@ -265,6 +265,7 @@ Family.locales.frFR = {
 	["off"] = "désactivés",
 	["what this client offers on the auction house"] = "ce que ce client propose à l'hôtel des ventes",
 	["  a query would be accepted now: |cffffd700%s|r"] = "  une requête serait acceptée maintenant : |cffffd700%s|r",
+	["  and %d of them once a random-enchantment suffix tells two apart"] = "  et %d si un suffixe d'enchantement aléatoire en distingue deux",
 	["  prices remembered for this realm and side: |cffffd700%d|r"] = "  prix mémorisés pour ce royaume et ce camp : |cffffd700%d|r",
 	["  oldest %s, newest %s"] = "  le plus ancien %s, le plus récent %s",
 	["  reading a loaded list: %d of %d row(s), %d price(s) taken"] = "  lecture d'une liste chargée : %d ligne(s) sur %d, %d prix pris",
