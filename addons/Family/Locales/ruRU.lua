@@ -803,7 +803,8 @@ Family.locales.ruRU = {
 	["|cff888888name, level, item level|r"] = "|cff888888имя, уровень, уровень предметов|r",
 	["|cff40bf40Crafting cooldowns ready|r"] = "|cff40bf40Ремесленные восстановления готовы|r",
 	["|cff888888Left-click for the family. Right-click for the options. Shift-click to change what the money counts.|r"] = "|cff888888Левый щелчок - семья. Правый - настройки. Shift+щелчок меняет то, что считают деньги.|r",
-	["|cff888888the bar is counting|r"] = "|cff888888полоса считает|r",
+	["|cff888888the bar shows money on|r"] = "|cff888888на панели деньги|r",
+	["all family"] = "всей семьи",
 	["this character"] = "этот персонаж",
 
 	-- What Family adds to an item tooltip

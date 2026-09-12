@@ -12330,8 +12330,8 @@ do
 
 		-- And it still says which narrower thing the bar is counting, which is what explains
 		-- the bar and the tooltip disagreeing on purpose.
-		check("and still names what the bar is counting",
-			scoped:find("the bar is counting", 1, true) ~= nil, scoped)
+		check("and still names what the bar shows money on",
+			scoped:find("the bar shows money on", 1, true) ~= nil, scoped)
 
 		Family.UI:CycleBrokerScope()
 
@@ -12416,8 +12416,23 @@ do
 
 		-- And it says so on hover, or a number that quietly changed meaning is worse than
 		-- no number at all.
-		check("and the tooltip names what the bar is counting",
-			brokerTooltipText():find("the bar is counting", 1, true) ~= nil)
+		check("and the tooltip names what the bar shows money on",
+			brokerTooltipText():find("the bar shows money on", 1, true) ~= nil)
+
+		-- **And in the default mode too.** Reported from play: the line was there for one
+		-- character and for the realm and missing for the whole family, which read as though
+		-- something had gone missing rather than as nothing needing to be said.
+		-- In a function of its own: this part of the file sits at the Lua limit of two
+		-- hundred locals in one scope, and a `do` block still counts against it.
+		;(function()
+			FamilyDB.ui.brokerScope = "all"
+			local found = nil
+			for each in (brokerTooltipText() .. "\n"):gmatch("([^\n]*)\n") do
+				if each:find("the bar shows money on", 1, true) then found = each end
+			end
+			check("the default mode says the bar shows money on the whole family",
+				found ~= nil and found:find("all family", 1, true) ~= nil, tostring(found))
+		end)()
 
 		-- An unknown value on disk - an older version, or a hand-edited file - must read as
 		-- the whole family rather than as nothing at all.

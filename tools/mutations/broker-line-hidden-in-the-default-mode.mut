@@ -1,0 +1,10 @@
+name: the tooltip says what the bar shows money on in two modes and says nothing in the default
+file: addons/Family_UI/Broker.lua
+--- old
+	tooltip:AddLine(" ")
+	tooltip:AddDoubleLine(L["|cff888888the bar shows money on|r"], on)
+--- new
+	if scope ~= "all" then
+		tooltip:AddLine(" ")
+		tooltip:AddDoubleLine(L["|cff888888the bar shows money on|r"], on)
+	end

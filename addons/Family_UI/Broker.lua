@@ -418,19 +418,30 @@ local function describe(tooltip)
 	-- What the bar itself is counting, said where somebody will read it.
 	--
 	-- A number that quietly means something else is worse than no number: middle-click once by
-	-- accident and the money on the bar drops, with nothing anywhere to say why. So the scope
-	-- is named on hover whenever it is not the whole family, and the way back is named with it.
+	-- accident and the money on the bar drops, with nothing anywhere to say why.
+	--
+	-- **Said in every mode, the default included**, and in words that say what the number is.
+	-- Reported from play 2026-09-12: *"the bar is counting" is cryptical - better "the bar shows
+	-- money on"*, and *the line appears only when the current character or the realm is selected,
+	-- while it is not displayed in the default mode, but it should.* Leaving it off for the whole
+	-- family was the reasoning that the default needs no explaining - and a line that is there in
+	-- two modes out of three reads, in the third, as though something had gone missing.
 	local scope = UI:BrokerScope()
-	if scope ~= "all" then
-		local mine = Family.Database:Members()[Family:CurrentMember()]
-		local ours = (mine and mine.meta) or {}
+	local mine = Family.Database:Members()[Family:CurrentMember()]
+	local ours = (mine and mine.meta) or {}
 
-		tooltip:AddLine(" ")
-		tooltip:AddDoubleLine(L["|cff888888the bar is counting|r"],
-			scope == "character" and (ours.name or L["this character"])
-				or string.format("%s |cff888888(%s)|r", tostring(ours.realm or "?"),
-					tostring(ours.faction or UI.UNKNOWN_SIDE)))
+	local on
+	if scope == "character" then
+		on = ours.name or L["this character"]
+	elseif scope == "realm" then
+		on = string.format("%s |cff888888(%s)|r", tostring(ours.realm or "?"),
+			tostring(ours.faction or UI.UNKNOWN_SIDE))
+	else
+		on = L["all family"]
 	end
+
+	tooltip:AddLine(" ")
+	tooltip:AddDoubleLine(L["|cff888888the bar shows money on|r"], on)
 
 	tooltip:AddLine(" ")
 	tooltip:AddLine(L["|cff888888Left-click for the family. Right-click for the options. "

@@ -803,7 +803,8 @@ Family.locales.frFR = {
 	["|cff888888name, level, item level|r"] = "|cff888888nom, niveau, niveau d'objet|r",
 	["|cff40bf40Crafting cooldowns ready|r"] = "|cff40bf40Temps de recharge d'artisanat prêts|r",
 	["|cff888888Left-click for the family. Right-click for the options. Shift-click to change what the money counts.|r"] = "|cff888888Clic gauche pour la famille. Clic droit pour les options. Maj+clic pour changer ce que compte l'argent.|r",
-	["|cff888888the bar is counting|r"] = "|cff888888la barre compte|r",
+	["|cff888888the bar shows money on|r"] = "|cff888888la barre affiche l'argent de|r",
+	["all family"] = "toute la famille",
 	["this character"] = "ce personnage",
 
 	-- What Family adds to an item tooltip
