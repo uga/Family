@@ -136,11 +136,14 @@ picks itself up where it left off.
   left* was being cut to *send...* on narrower panels. Where the line will not fit, the hint about
   clicking the name gives way and the facts stay.
 
-### Stack prices at the auction house
+### Stack prices wherever a pile is in front of you
 
 - **Hold CTRL over an auction and Family says what that stack is worth**, the same line it has
   always drawn over a stack in your bags. It follows the row you are pointing at, scrolled or
   not.
+
+- **The same at a vendor and over a loot window**, so what a purchase hands you and what is
+  lying on the floor are priced the way what is in your bags already was.
 
 ### A Family tab on the auction house
 

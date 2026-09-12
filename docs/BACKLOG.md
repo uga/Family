@@ -3781,10 +3781,23 @@ The frame is now admitted by identity - `_G["BrowseButton" .. slot]` must be tha
 an unknown row, or an offset the client will not give up, draws nothing rather than something
 plausible. **The rule the entry was written around held throughout and is what makes that safe.**
 
-**Still open, and each is one hover.** A merchant's window and a loot window are the other two
-places a pile sits in front of you. `/family hover` now prints every return of
-`GetMerchantItemInfo` and `GetLootSlotInfo` numbered, because which position carries the quantity
-is the thing to read rather than recall.
+**All three read, and no two are alike** - which is the whole argument for having taken the
+hovers instead of writing what the API "obviously" does:
+
+| | where the number is | which return is the quantity |
+|---|---|---|
+| auction | `BrowseButtonNItem` id 0, inside `BrowseButtonN` id N | third of `GetAuctionItemInfo` |
+| merchant | `MerchantItemNItemButton` id N, inside `MerchantItemN` id 0 | **fourth** of `GetMerchantItemInfo` |
+| loot | `LootButtonN` id N, inside `LootFrame` id 0 | **third** of `GetLootSlotInfo` |
+
+The number is on the child in one and on the parent in another; the quantity is the fourth return
+in one and the third in the other two. Three arrangements out of three possible, from three
+hovers.
+
+The auction half is confirmed in play, scrolled and unscrolled. **The remaining reading is one
+hover at a vendor with more than one page**, on the second page: every one of these was taken on
+a first page, where the slot on the screen and the index into the list are the same number - and
+that is exactly the coincidence that hid the scroll fault for a day.
 
 ---
 
