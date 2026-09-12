@@ -4000,10 +4000,20 @@ recorded.
    thousands, it is most of the value of the price feature and a visible change to every
    possessions block. The loaded list makes the house side cheap to count - a second tally beside
    the one already counting distinct base ids, over full item strings rather than ids.
-2. **Whether an enchant is a variant.** `ItemString` answers for *any* of enchant, gems or suffix,
-   so keying possessions on it would file an enchanted sword apart from a plain one. For *what is
-   it worth* that is probably right; for *how many do I own* it is probably not, and it is Alberto's
-   call rather than a thing to be inferred.
+2. ~~Whether an enchant is a variant.~~ **Settled by Alberto, 2026-09-12: only the suffix is.**
+   *Incantesimi (gemme etc): per il momento non consideriamoli varianti.* So the key is not
+   `ItemString`, which answers for any of enchant, gems or suffix - it is the **base id plus the
+   suffix alone**, which is the eighth field of the item string as `Core.lua` records its shape:
+   `item : id : enchant : gem1 : gem2 : gem3 : gem4 : suffix : unique`.
+
+   What is already stored is enough for that and nothing has to be re-scanned. A plain item stores
+   no string at all, and an enchanted one with no suffix stores a string whose eighth field is
+   nought - both fall back to the base id, which is what *not a variant* means.
+
+   The **ninth** field is the suffix seed, which scales the same suffix's numbers without changing
+   its name. Two *of the Bear* swords with different seeds are the same name and not the same
+   stats. It is not used and this entry does not propose using it; it is written down so that the
+   next reader knows it was seen and left alone rather than missed.
 
 **And the lookup has to ask what the filing asked**, or a split is worse than a collapse: a bag item
 looked up under a key nothing was ever filed under reads as *nobody has one*, which is a confident
