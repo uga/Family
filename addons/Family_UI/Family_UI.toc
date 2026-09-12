@@ -30,6 +30,7 @@ Quests.lua
 Wide.lua
 Guild.lua
 Broker.lua
+Extras.lua
 Options.lua
 About.lua
 Auctions.lua

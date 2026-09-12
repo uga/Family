@@ -1,0 +1,7 @@
+name: the auction tab is built even where the extra was off before the window opened
+file: addons/Family_UI/Auctions.lua
+--- old
+local function build()
+	if not wanted() then return end
+--- new
+local function build()

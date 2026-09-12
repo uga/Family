@@ -63,6 +63,7 @@ Comm.lua
 Database.lua
 Names.lua
 Mounts.lua
+Extras.lua
 Index.lua
 Recipes.lua
 Cooldowns.lua

@@ -1,0 +1,8 @@
+name: the auction tab stays on the window after the extra is switched off
+file: addons/Family_UI/Auctions.lua
+--- old
+function UI:ExtraChanged(name)
+	if name ~= "auctionPrices" then return end
+--- new
+function UI:ExtraChanged(name)
+	if true then return end

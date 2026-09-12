@@ -894,4 +894,11 @@ Family.locales.ruRU = {
 	["page %d of %d, %d price(s) taken - about %s to go"] = "страница %d из %d, взято цен: %d - осталось около %s",
 	["reading a list somebody else loaded: %d of %d row(s)"] = "читаю список, загруженный кем-то другим: %d из %d строк(и)",
 	["reading the whole list: %d of %d row(s), %d price(s) taken"] = "читаю весь список: %d из %d строк(и), взято цен: %d",
+	["Extras"] = "Дополнения",
+	["Jobs Family will do for you that are not what Family is for. Each one is off or on by itself, and a new one always arrives off."] = "Дела, которые Family возьмёт на себя, хотя они и не его основная задача. Каждое включается и выключается отдельно, а новое всегда приходит выключенным.",
+	["Read prices at the auction house"] = "Читать цены на аукционе",
+	["With this off, Family values what your characters hold at what a vendor pays - which the game states for nearly everything - and nothing else. With it on, whatever the auction window is showing is read as well: your own searches, and the Family tab that appears on that window, which can walk every page there is. Prices already recorded are kept either way."] = "Когда выключено, Family оценивает имущество персонажей только по цене торговца, которую игра называет почти для всего. Когда включено, читается и то, что показывает окно аукциона: ваши собственные поиски и вкладка Family на этом окне, способная пройти все страницы. Уже сохранённые цены остаются в обоих случаях.",
+	["Say what came out of the mailbox"] = "Сообщать, что пришло из почты",
+	["A line in chat for each thing taken out of a letter and each sum collected, and a total when you close the mailbox. The game says nothing about what a mailbox full of auction returns actually came to."] = "Строка в чате на каждый предмет, вынутый из письма, и на каждую полученную сумму, а при закрытии почты - итог. Игра ничего не говорит о том, сколько на самом деле принёс почтовый ящик, полный аукционных возвратов.",
+	["reading prices at the auction house is switched off - turn it on under Extras"] = "чтение аукционных цен выключено - включите его в разделе «Дополнения»",
 }

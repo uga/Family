@@ -1972,7 +1972,7 @@ for _, file in ipairs {
 	"RecipeTeaches.lua",
 	"QuestSorts.lua",
 	"Capabilities.lua", "Codec.lua",
-	"Comm.lua", "Database.lua", "Names.lua", "Mounts.lua", "Index.lua",
+	"Comm.lua", "Database.lua", "Names.lua", "Mounts.lua", "Extras.lua", "Index.lua",
 	"Recipes.lua", "Cooldowns.lua",
 	"Scanners/Bags.lua", "Scanners/Talents.lua", "Scanners/Professions.lua",
 	"Scanners/Bank.lua", "Scanners/Identity.lua",
@@ -2024,7 +2024,7 @@ local UI_FILES = { "Window.lua", "MemberPicker.lua", "ChoicePicker.lua", "Member
 	"Summary.lua", "Talents.lua",
 	"Contents.lua", "Professions.lua", "Character.lua", "Quests.lua",
 	"Wide.lua", "Guild.lua",
-	"Broker.lua", "Options.lua", "About.lua", "Auctions.lua", "ItemClick.lua",
+	"Broker.lua", "Extras.lua", "Options.lua", "About.lua", "Auctions.lua", "ItemClick.lua",
 	"Slash.lua" }
 
 for _, file in ipairs(UI_FILES) do
@@ -33750,6 +33750,110 @@ print("the button on the auction window")
 end)()
 
 print()
+print("Extras: jobs Family is not for, each switched by itself")
+
+-- **Asked for 2026-09-12.** *Mi stanno venendo in mente un po' di queste features collaterali,
+-- forse puo valer la pena di creare un ulteriore pannello Extras (sopra Options) per abilitarle
+-- / disabilitarle singolarmente.*
+--
+-- The store lives in the recorder half and the panel in `Family_UI`, which is not tidiness: the
+-- auction reader obeys this, and `Family_UI` is a separate addon a player can have disabled.
+;(function()
+	local held = FamilyDB.extras
+	FamilyDB.extras = nil
+
+	-- **A new extra ships off**, because a feature that starts talking in somebody's chat frame
+	-- because they updated an addon is a feature they uninstall the addon over.
+	check("an extra nobody has switched is off",
+		Family.Extras:On("mailReport") == false,
+		tostring(Family.Extras:On("mailReport")))
+
+	-- **And the auction house is the exception, because it is not a new job.** Family has read
+	-- prices since the store was written; shipping that switch off would take every auction
+	-- price off every tooltip on upgrade, which is a change nobody asked for.
+	check("while the auction house, which Family already did, is on",
+		Family.Extras:On("auctionPrices") == true,
+		tostring(Family.Extras:On("auctionPrices")))
+
+	check("a name nothing declared is off and stays off",
+		Family.Extras:On("nosuchthing") == false
+			and Family.Extras:Set("nosuchthing", true) == false,
+		tostring(Family.Extras:On("nosuchthing")))
+
+	Family.Extras:Set("mailReport", true)
+	check("switching one on is remembered", Family.Extras:On("mailReport") == true)
+	Family.Extras:Set("mailReport", false)
+	check("and switching it off again is remembered as off rather than as unset",
+		Family.Extras:On("mailReport") == false and FamilyDB.extras.mailReport == false,
+		tostring(FamilyDB.extras.mailReport))
+
+	----------------------------------------------------------------------------------------
+	-- What the auction switch actually turns off
+	----------------------------------------------------------------------------------------
+
+	local realQuery, realCan, realNum = _G.QueryAuctionItems, _G.CanSendAuctionQuery,
+		_G.GetNumAuctionItems
+	_G.QueryAuctionItems = function() end
+	_G.CanSendAuctionQuery = function() return true end
+
+	local asked = 0
+	local realInfo, realLink = _G.GetAuctionItemInfo, _G.GetAuctionItemLink
+	_G.GetNumAuctionItems = function(which) return which == "list" and 3 or 0 end
+	_G.GetAuctionItemLink = function(which, i)
+		return which == "list" and ("|Hitem:" .. (900000 + i) .. "|h") or nil
+	end
+	_G.GetAuctionItemInfo = function(which, i)
+		if which ~= "list" then return nil end
+		asked = asked + 1
+		return "Thing", "icon", 1, 1, nil, 1, nil, 1, nil, 500
+	end
+
+	Family.Auctions:ForgetVisit()
+	Family.Auctions:StopBigListRead()
+
+	Family.Extras:Set("auctionPrices", false)
+	check("with the auction extra off, a page on the browse list is not read at all",
+		Family.Auctions:ReadPrices() == 0 and asked == 0, tostring(asked) .. " row(s) asked")
+
+	-- **Refused before anything is pressed or sent.** A switch that is off has to be off
+	-- everywhere rather than in the places somebody remembered.
+	local ok, why = Family.Auctions:StartWalk(function() end)
+	check("and a walk of the house refuses, naming the switch rather than a fault",
+		ok == false and why == "switchedOff", tostring(ok) .. " / " .. tostring(why))
+
+	-- **What is already saved is kept**, because turning it off is a decision about what
+	-- Family does from now on and not an instruction to throw away an hour's reading.
+	local market = "Fire Maw\30Alliance"
+	FamilyDB.auctionPrices = FamilyDB.auctionPrices or {}
+	FamilyDB.auctionPrices[market] = { [2589] = { p = 4242, at = time() } }
+
+	check("nothing saved is thrown away, only left unused",
+		FamilyDB.auctionPrices[market][2589].p == 4242,
+		tostring(FamilyDB.auctionPrices[market][2589].p))
+	check("and nothing is valued from it while the switch is off",
+		Family.Auctions:MarketPrices(market) == nil,
+		tostring(Family.Auctions:MarketPrices(market)))
+
+	Family.Extras:Set("auctionPrices", true)
+	check("switching it back on finds the market where it was",
+		Family.Auctions:MarketPrices(market) ~= nil
+			and Family.Auctions:MarketPrices(market)[2589].p == 4242,
+		tostring(Family.Auctions:MarketPrices(market)))
+
+	check("and a page is read again", Family.Auctions:ReadPrices() > 0 and asked > 0,
+		tostring(asked) .. " row(s) asked")
+
+	FamilyDB.auctionPrices[market] = nil
+	Family.Auctions:ForgetVisit()
+	Family.Auctions:StopBigListRead()
+
+	_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan
+	_G.GetNumAuctionItems, _G.GetAuctionItemInfo = realNum, realInfo
+	_G.GetAuctionItemLink = realLink
+	FamilyDB.extras = held
+end)()
+
+print()
 print("a Family tab on the auction window")
 
 -- **Asked for 2026-09-12, off Classic Era.** *Perche non facciamo un panel Family per la finestra
@@ -33941,6 +34045,40 @@ print("a Family tab on the auction window")
 	check("while nothing being read leaves no timer redrawing it",
 		before == 0, tostring(before) .. " redraw(s) with nothing to show")
 	Family.Auctions.PriceCount = realProgress
+
+	----------------------------------------------------------------------------------------
+	-- And the switch that says whether any of this belongs on the window
+	----------------------------------------------------------------------------------------
+
+	-- Asked for as an extra: with the auction reading off, Family values a family at what a
+	-- vendor pays and reads nothing here - so a tab offering to read the house would be a
+	-- control that does nothing at all.
+	Family.Extras:Set("auctionPrices", false)
+	check("switching the auction extra off takes the tab and the button off the window",
+		tab.__shown == false and newButton.__shown == false and panel.__shown == false,
+		tostring(tab.__shown) .. " / " .. tostring(newButton.__shown))
+
+	Family.Extras:Set("auctionPrices", true)
+	check("and switching it on puts them back without waiting for the next visit",
+		tab.__shown == true and newButton.__shown == true,
+		tostring(tab.__shown) .. " / " .. tostring(newButton.__shown))
+
+	-- **And with it off from the start, nothing is built at all.** Which is not the same
+	-- claim: the two above are about a window that already has our furniture on it.
+	--
+	-- **The window has to be able to take one**, or this passes for the wrong reason: after
+	-- the tab above was added `AuctionFrame.numTabs` is four and there is no `AuctionFrameTab4`
+	-- to hang the next one off, so `buildTab` would answer nothing whatever the switch said.
+	-- Written without this, the mutation removing the guard walked straight through it.
+	Family.Extras:Set("auctionPrices", false)
+	Family.UI:__forgetAuctionFurniture()
+	_G.FamilyAuctionTab, _G.FamilyAuctionPanel = nil, nil
+	_G.AuctionFrame.numTabs = 3
+	fire("AUCTION_HOUSE_SHOW")
+	check("and with it off before the window opens, no tab is built in the first place",
+		_G.FamilyAuctionTab == nil and _G.FamilyAuctionPanel == nil,
+		tostring(_G.FamilyAuctionTab))
+	Family.Extras:Set("auctionPrices", true)
 
 	_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan
 end)()

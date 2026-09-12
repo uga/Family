@@ -894,4 +894,11 @@ Family.locales.frFR = {
 	["page %d of %d, %d price(s) taken - about %s to go"] = "page %d sur %d, %d prix relevé(s) - encore %s environ",
 	["reading a list somebody else loaded: %d of %d row(s)"] = "lecture d'une liste chargée par quelqu'un d'autre : %d ligne(s) sur %d",
 	["reading the whole list: %d of %d row(s), %d price(s) taken"] = "lecture de la liste entière : %d ligne(s) sur %d, %d prix relevé(s)",
+	["Extras"] = "Extras",
+	["Jobs Family will do for you that are not what Family is for. Each one is off or on by itself, and a new one always arrives off."] = "Des tâches que Family veut bien faire pour vous sans que ce soit sa raison d'être. Chacune s'active ou se désactive séparément, et une nouvelle arrive toujours désactivée.",
+	["Read prices at the auction house"] = "Lire les prix à l'hôtel des ventes",
+	["With this off, Family values what your characters hold at what a vendor pays - which the game states for nearly everything - and nothing else. With it on, whatever the auction window is showing is read as well: your own searches, and the Family tab that appears on that window, which can walk every page there is. Prices already recorded are kept either way."] = "Désactivé, Family estime ce que vos personnages possèdent au seul prix de vente au marchand, que le jeu indique pour presque tout. Activé, ce que la fenêtre des enchères affiche est lu en plus : vos propres recherches, et l'onglet Family qui apparaît sur cette fenêtre et peut parcourir toutes les pages. Les prix déjà enregistrés sont conservés dans les deux cas.",
+	["Say what came out of the mailbox"] = "Dire ce qui est sorti de la boîte aux lettres",
+	["A line in chat for each thing taken out of a letter and each sum collected, and a total when you close the mailbox. The game says nothing about what a mailbox full of auction returns actually came to."] = "Une ligne dans le canal de discussion pour chaque objet retiré d'une lettre et chaque somme encaissée, puis un total à la fermeture de la boîte. Le jeu ne dit rien de ce qu'a rapporté une boîte pleine de retours d'enchères.",
+	["reading prices at the auction house is switched off - turn it on under Extras"] = "la lecture des prix à l'hôtel des ventes est désactivée - activez-la dans Extras",
 }

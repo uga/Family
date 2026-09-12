@@ -894,4 +894,11 @@ Family.locales.esES = {
 	["page %d of %d, %d price(s) taken - about %s to go"] = "página %d de %d, %d precio(s) tomado(s) - quedan unos %s",
 	["reading a list somebody else loaded: %d of %d row(s)"] = "leyendo una lista cargada por otro: %d de %d fila(s)",
 	["reading the whole list: %d of %d row(s), %d price(s) taken"] = "leyendo la lista entera: %d de %d fila(s), %d precio(s) tomado(s)",
+	["Extras"] = "Extras",
+	["Jobs Family will do for you that are not what Family is for. Each one is off or on by itself, and a new one always arrives off."] = "Tareas que Family hará por ti aunque no sean su cometido. Cada una se activa o desactiva por separado, y una nueva siempre llega desactivada.",
+	["Read prices at the auction house"] = "Leer precios en la casa de subastas",
+	["With this off, Family values what your characters hold at what a vendor pays - which the game states for nearly everything - and nothing else. With it on, whatever the auction window is showing is read as well: your own searches, and the Family tab that appears on that window, which can walk every page there is. Prices already recorded are kept either way."] = "Con esto apagado, Family valora lo que tienen tus personajes solo con el precio que paga un vendedor, que el juego indica para casi todo. Encendido, también se lee lo que muestre la ventana de subastas: tus propias búsquedas y la pestaña Family que aparece en esa ventana, capaz de recorrer todas las páginas. Los precios ya guardados se conservan en ambos casos.",
+	["Say what came out of the mailbox"] = "Decir qué salió del buzón",
+	["A line in chat for each thing taken out of a letter and each sum collected, and a total when you close the mailbox. The game says nothing about what a mailbox full of auction returns actually came to."] = "Una línea de chat por cada cosa sacada de una carta y por cada suma cobrada, y un total al cerrar el buzón. El juego no dice nada de lo que ha dado un buzón lleno de devoluciones de subastas.",
+	["reading prices at the auction house is switched off - turn it on under Extras"] = "la lectura de precios en la casa de subastas está desactivada - actívala en Extras",
 }

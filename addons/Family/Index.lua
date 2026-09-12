@@ -464,7 +464,7 @@ function Index:Worth()
 
 		local market = marketOf(meta)
 		if market and markets[market] == nil then
-			markets[market] = Family.Auctions and Family.Auctions:Prices(market) or false
+			markets[market] = Family.Auctions and Family.Auctions:MarketPrices(market) or false
 		end
 
 		local row = {
@@ -593,7 +593,7 @@ function Index:WorthOfItem(variant)
 
 			local market = marketOf(meta)
 			if market and markets[market] == nil then
-				markets[market] = Family.Auctions and Family.Auctions:Prices(market) or false
+				markets[market] = Family.Auctions and Family.Auctions:MarketPrices(market) or false
 			end
 
 			local price = market and markets[market] and markets[market][variant] or nil

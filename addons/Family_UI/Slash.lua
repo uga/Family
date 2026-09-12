@@ -1153,6 +1153,8 @@ local WHY = {
 	newerHouse = L["this build has the newer auction house, which has no pages to walk"],
 	olderHouse = L["this build has the older auction house, which is read a page at a time"],
 	emptyList = L["the client answered no rows at all"],
+	-- **A switch the player owns**, so the answer names it rather than describing a fault.
+	switchedOff = L["reading prices at the auction house is switched off - turn it on under Extras"],
 }
 
 -- **How long, in words somebody can act on.**

@@ -1,0 +1,11 @@
+name: switching the auction extra off is read as an instruction to stop keeping prices
+file: addons/Family/Scanners/Auctions.lua
+--- old
+function Auctions:MarketPrices(where)
+	if not self:PricesWanted() then return nil end
+	return self:Prices(where)
+end
+--- new
+function Auctions:MarketPrices(where)
+	return self:Prices(where)
+end

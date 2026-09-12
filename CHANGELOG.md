@@ -81,6 +81,16 @@ picks itself up where it left off.
   price. Two of the same sword on one character — one worn, one not — are now worth what they are
   really worth, which is not the same figure twice.
 
+### Extras
+
+- **A new Extras panel, above Options**, for the jobs Family will do for you that are not what
+  Family is for. Each one is off or on by itself, and a new one always arrives off.
+
+- **Reading prices at the auction house is now one of them**, and it is on, because Family has
+  always done it. Switch it off and Family values what your characters hold at what a vendor pays
+  — which the game states for nearly everything — reads nothing at an auction house, and puts no
+  tab on that window. Prices already recorded are kept, so switching it back on finds them.
+
 ### A Family tab on the auction house
 
 - **The auction window has a Family tab**, with the *Read it all* button on it and a line saying

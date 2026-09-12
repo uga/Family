@@ -1,0 +1,8 @@
+name: a whole-house walk starts although the auction extra is switched off
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	-- Refused before anything is pressed or sent, so a switch that is off is off everywhere
+	-- rather than in the places somebody remembered.
+	if not self:PricesWanted() then return false, "switchedOff" end
+--- new
+	if false then return false, "switchedOff" end

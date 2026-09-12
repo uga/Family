@@ -4176,3 +4176,43 @@ list, and one sized for five would truncate 81 recipes of 2,655.
 4. Icons for the reagents. `GetItemIcon(id)` answers for anything cached and nothing for an item
    this client has never met, which is the same wait every other item picture in Family handles;
    it is a known shape, not a new problem.
+
+## 70. One bag for everything a character carries, and a search box over the whole family
+
+**Asked for 2026-09-12**, as an extra rather than as part of what Family is.
+
+> consolidamento delle borse del personaggio, degli spazi in banca e (da tbc in avanti) della
+> guild bank [...] oltre a farti vedere un'unico "borsone" anziché tante borse distinte (dandoti
+> anche la possibilità di definirne la geometria cioè quante colonne, e la scala) si ricordano
+> anche come facciamo noi dei contenuti delle borse negli alt, popola i tooltip etc. Chi usa
+> Family non ha bisogno di tale seconda funzione, anzi, la disabilita per evitare sovraffollamento
+> del tooltip. Avendo anche la prima, potrebbe fare a meno dell'addon del tutto!
+
+And then:
+
+> gli addon menzionati incorporano nella finestra delle bag consolidate anche una casella di
+> ricerca - che potremmo facilmente mettere anche noi. E la nostra sarebbe anche molto più
+> potente perché potremmo farla agire su whole family, cosa che gli altri si sognano.
+
+**The argument is a good one and it is about overlap, not about bags.** Somebody running Family
+and one of those addons already turns that addon's alt-tracking off to keep the tooltip readable
+- so they are carrying a whole second addon for its *first* half alone. The half Family does not
+have is the one bag, the geometry and the scale.
+
+**And the search box is the part Family is uniquely placed to do**, because `Index:Search` already
+answers *who in this family has one of these* across every member, every container, mail and
+auctions - which is exactly what the other addons cannot reach.
+
+**None of it is designed here, and one thing has to be settled before any of it is.** A
+consolidated bag is not a list of items: it is a grid of the player's own live containers that
+things are dragged out of, right-clicked, split and sold from. Every one of those is a secure
+action on a button the client owns, and a frame that draws items but cannot be used as a bag is
+worse than no frame. So the first question is what a slot in this grid actually **is** - a real
+`ContainerFrameItemButton` moved, or a button of ours that proxies one - and that is a reading
+somebody has to take on all three clients before a line of it is written.
+
+Three smaller things, all real and none of them blockers: the guild bank is Burning Crusade
+onwards and is the guild's rather than a character's, so it is a third section and not a fourth
+bag; the geometry and scale are settings and therefore belong wherever the Extras panel keeps
+them; and a bag Family draws has to keep working while another bag addon is installed, because
+the person most likely to try this is running one.

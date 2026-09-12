@@ -1,0 +1,8 @@
+name: the auction extra is off and the browse list is read anyway
+file: addons/Family/Scanners/Auctions.lua
+--- old
+function Auctions:ReadPrices()
+	if not self:PricesWanted() then return 0 end
+
+--- new
+function Auctions:ReadPrices()

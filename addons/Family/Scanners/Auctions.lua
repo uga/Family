@@ -327,6 +327,32 @@ end
 -- browse look like today's.
 local seenThisVisit = {}
 
+-- **Whether Family is reading this house at all**, which is a switch a player owns.
+--
+-- Asked for 2026-09-12. With it off, Family values what a family holds at what a vendor pays -
+-- which the game states for nearly everything - and reads nothing here: no page, no loaded list
+-- somebody else delivered, no walk, and no tab on the auction window.
+--
+-- **What is already saved is kept.** Turning it off is a decision about what Family does from
+-- now on, not an instruction to throw away a market somebody spent an hour reading; turning it
+-- back on finds it where it was. So this gates the reading and the *use*, and never the store.
+--
+-- Guarded, because `Family.Extras` arrives in its own file and this one is asked at login by a
+-- capability probe before much else is up.
+function Auctions:PricesWanted()
+	local extras = Family.Extras
+	if not extras then return true end
+	return extras:On("auctionPrices")
+end
+
+-- **The prices to value things with**, which is the store when the switch is on and nothing at
+-- all when it is off. Its own name because *where the prices are kept* and *what may be priced
+-- from them* are two questions, and a caller wanting the first is a writer.
+function Auctions:MarketPrices(where)
+	if not self:PricesWanted() then return nil end
+	return self:Prices(where)
+end
+
 function Auctions:Prices(where)
 	if type(_G.FamilyDB) ~= "table" then return {} end
 	FamilyDB.auctionPrices = FamilyDB.auctionPrices or {}
@@ -362,6 +388,7 @@ end
 
 -- Asked with a variant key, which for an item with no suffix is the id it always was.
 function Auctions:PriceOf(variant)
+	if not self:PricesWanted() then return nil end
 	if type(variant) == "string" then variant = tonumber(variant) or variant end
 	if not (type(variant) == "number" or type(variant) == "string") then return nil end
 
@@ -869,6 +896,7 @@ end
 function Auctions:StartReplicateRead(told)
 	if reading then return false, "running" end
 	if not self:CanReplicate() then return false, "olderHouse" end
+	if not self:PricesWanted() then return false, "switchedOff" end
 
 	-- Asked **once**, by somebody who said so: this is the same call the probe sends, and the
 	-- one thing in this addon that a server may ration for the rest of an evening.
@@ -905,6 +933,7 @@ end
 
 function Auctions:ReadModernPrices()
 	if not C_AuctionHouse then return 0 end
+	if not self:PricesWanted() then return 0 end
 
 	local where = market()
 	if not where then return 0 end
@@ -1257,6 +1286,8 @@ bigReadTick = function()
 end
 
 function Auctions:ReadPrices()
+	if not self:PricesWanted() then return 0 end
+
 	local where = market()
 	if not where then return 0 end
 
@@ -1773,6 +1804,10 @@ function Auctions:StartWalk(told)
 	-- would be an English one wherever it was read (§2.1). The words live in `Slash.lua`, where
 	-- everything else the player is told lives and where the translation gate can see them.
 	if walk then return false, "running" end
+
+	-- Refused before anything is pressed or sent, so a switch that is off is off everywhere
+	-- rather than in the places somebody remembered.
+	if not self:PricesWanted() then return false, "switchedOff" end
 
 	-- **The newer house is not walked this way, and saying *no query seen yet* there would be
 	-- true and misleading.** On Mists the old calls are shells - all three selectors answer

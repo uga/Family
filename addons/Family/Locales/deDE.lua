@@ -894,4 +894,11 @@ Family.locales.deDE = {
 	["page %d of %d, %d price(s) taken - about %s to go"] = "Seite %d von %d, %d Preis(e) übernommen - noch etwa %s",
 	["reading a list somebody else loaded: %d of %d row(s)"] = "lese eine von jemand anderem geladene Liste: %d von %d Zeile(n)",
 	["reading the whole list: %d of %d row(s), %d price(s) taken"] = "lese die ganze Liste: %d von %d Zeile(n), %d Preis(e) übernommen",
+	["Extras"] = "Extras",
+	["Jobs Family will do for you that are not what Family is for. Each one is off or on by itself, and a new one always arrives off."] = "Aufgaben, die Family für dich übernimmt, obwohl sie nicht sein eigentlicher Zweck sind. Jede lässt sich einzeln ein- und ausschalten, und eine neue kommt immer ausgeschaltet an.",
+	["Read prices at the auction house"] = "Preise im Auktionshaus lesen",
+	["With this off, Family values what your characters hold at what a vendor pays - which the game states for nearly everything - and nothing else. With it on, whatever the auction window is showing is read as well: your own searches, and the Family tab that appears on that window, which can walk every page there is. Prices already recorded are kept either way."] = "Ist dies aus, bewertet Family den Besitz deiner Charaktere allein mit dem Händlerpreis, den das Spiel für fast alles nennt. Ist es an, wird zusätzlich gelesen, was das Auktionsfenster gerade zeigt: deine eigenen Suchen und der Family-Reiter auf diesem Fenster, der jede Seite durchgehen kann. Bereits gespeicherte Preise bleiben so oder so erhalten.",
+	["Say what came out of the mailbox"] = "Sagen, was aus dem Briefkasten kam",
+	["A line in chat for each thing taken out of a letter and each sum collected, and a total when you close the mailbox. The game says nothing about what a mailbox full of auction returns actually came to."] = "Eine Chatzeile für jeden Gegenstand aus einem Brief und jede eingenommene Summe, dazu eine Gesamtsumme beim Schließen des Briefkastens. Das Spiel sagt nichts darüber, was ein Briefkasten voller Auktionsrückläufer tatsächlich eingebracht hat.",
+	["reading prices at the auction house is switched off - turn it on under Extras"] = "das Lesen von Auktionspreisen ist ausgeschaltet - schalte es unter Extras ein",
 }

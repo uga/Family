@@ -428,7 +428,18 @@ local function buildTab()
 	return panel
 end
 
+-- **Whether any of this should be on the window at all.**
+--
+-- Asked for 2026-09-12 as an extra a player switches: with it off Family values a family at
+-- what a vendor pays and reads nothing here, so a tab offering to read the house would be a
+-- control that does nothing. Asked of the scanner rather than of the setting, because the
+-- scanner is what obeys it and one of them has to be the answer.
+local function wanted()
+	return Family.Auctions:PricesWanted()
+end
+
 local function build()
+	if not wanted() then return end
 	if button then return end
 
 	-- The newer house first, because on a build that has it the old window is not there at all
@@ -487,6 +498,29 @@ local function build()
 			{ L["this clears the search, then reads every page there is - it takes a long time"] },
 		}
 	end)
+
+	refresh()
+end
+
+-- **The switch was flipped, so this window has to catch up.**
+--
+-- Neither direction happens on its own: the auction window is built when a player first opens
+-- an auction house, so turning the extra on while standing at an auctioneer has to build the
+-- tab now, and turning it off has to take it away rather than leave a control that does
+-- nothing. Hidden rather than destroyed - a frame cannot be unmade in this game, and hiding is
+-- what the client itself does with the tabs it is not showing.
+function UI:ExtraChanged(name)
+	if name ~= "auctionPrices" then return end
+
+	if wanted() then
+		build()
+		if tab then tab:Show() end
+		if button then button:Show() end
+	else
+		if panel then panel:Hide() end
+		if tab then tab:Hide() end
+		if button then button:Hide() end
+	end
 
 	refresh()
 end
