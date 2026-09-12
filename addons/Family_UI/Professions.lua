@@ -51,8 +51,13 @@ local NOTE_WIDTH = 420
 -- **Eight, because recipes use eight.** Counted on Burning Crusade: 725 recipes take three
 -- materials and 81 take seven or eight, so a strip drawn for three would be short on a third of
 -- the list. Right-aligned, so the column of counts lines up down the page whatever a recipe needs.
-local MATERIAL_ICON = 16
-local MATERIAL_GAP = 3
+--
+-- **The same size as the picture of the thing they make**, asked for 2026-09-12 on seeing the
+-- first draw of it. Derived from `ROW` rather than written as a number beside it, which is the
+-- whole point: the recipe's own icon is `ROW - 4`, and two constants that have to stay equal are
+-- two constants that will not.
+local MATERIAL_ICON = ROW - 4
+local MATERIAL_GAP = 4
 local MATERIALS_MAX = 8
 local MATERIAL_ROOM = MATERIALS_MAX * (MATERIAL_ICON + MATERIAL_GAP)
 
@@ -1034,8 +1039,8 @@ local function build(frame)
 				-- pooled between the two lists, so a strip left on one by the member list
 				-- would follow a recipe in the search that has nothing to do with it.
 				local hasMaterials = showMaterials(r, recipe)
-				r.text:SetWidth(UI:ListWidth(scroll) - NOTE_WIDTH - 10 - ROW
-					- (hasMaterials and MATERIAL_ROOM or 0))
+				r.text:SetWidth(math.max(60, UI:ListWidth(scroll) - NOTE_WIDTH - 10 - ROW
+					- (hasMaterials and MATERIAL_ROOM or 0)))
 
 				-- Highest skill first, then by name. The line is capped, so the order
 				-- decides which four survive it - alphabetical made "+14" hide fourteen
@@ -1584,8 +1589,11 @@ local function build(frame)
 			-- that has none - an enchant applied to something makes no item and lists no
 			-- strip, and a name cut short to leave space for nothing is a name cut short.
 			local hasMaterials = showMaterials(r, recipe)
-			r.text:SetWidth(UI:ListWidth(scroll) - 170 - ROW
-				- (hasMaterials and MATERIAL_ROOM or 0))
+			-- A floor, because the strip grew to the size of the recipe's own picture and a
+			-- narrow window can now ask for a negative width - which the client takes as
+			-- *as wide as the text needs* and draws straight through everything to its right.
+			r.text:SetWidth(math.max(60, UI:ListWidth(scroll) - 170 - ROW
+				- (hasMaterials and MATERIAL_ROOM or 0)))
 
 			-- Whatever the client said this row's icon was, recorded at scan time. Failing
 			-- that, the icon of the thing it makes - which is right for anything that
