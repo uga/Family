@@ -3956,40 +3956,55 @@ and the neutral one carries a worse cut and a longer walk.
 record of where it was read, so the readings taken before this exists cannot be re-sorted - they
 stay where they are and are replaced in the ordinary way, by somebody visiting.
 
-## 67. A random-suffix green is priced at the cheapest of its variants
+## 67. Suffix variants are one item to the index, and should be one only for crafting
 
-**Alberto, 2026-09-12**, on why another addon counts 16,105 items in a house where Family finds
-about 6,800:
+**Alberto, 2026-09-12.** It began as a question about counting - another addon reports 16,105 items
+in a house where Family finds about 6,800 - and his answer cut it into three, not two.
 
 > e fa bene perché sono oggetti diversi con valori di mercato diversissimi !
 
-He is right, and it is a fault rather than a difference in bookkeeping.
+> Se un mio personaggio ha Whatever Sword of the Whale e l'altro ha Whatever Sword of the Bear, sono
+> DUE oggetti distinti ! E se passo il mouse su Whatever Sword of the Bear nel tooltip devo vedere
+> che la fam ne possiede UNA
 
-**What Family does today.** Every price is filed under the base item id, taken from the link with
-`item:(%d+)`. So *Superior Sword of the Bear* and *of the Whale* are one entry, and the rule that
-keeps the **lowest** buyout seen this visit then makes the worst variant's price the price of all
-of them. On a green with a random enchantment that is not a ten per cent error, it is an order of
-magnitude.
+> La variante degli oggetti craftabili che possono portare varianti of the è decisa (random) al
+> momento del crafting [...] dal punto di vista degli oggetti sono distinte, ma dal punto di vista
+> del "who can craft them", entrambe sono craftabili dal blacksmith
 
-**Where collapsing is right and must stay.** Possessions. Three Superior Swords are three of the
-same thing to somebody deciding which alt to log in as, and splitting the count by suffix would
-break a pile that is one pile in the player's head. This is a **pricing** key, not a change to how
-Family stores what it owns (§2.1).
+**So the rule is by question, not by item.**
 
-**Two things must be measured before any of it, and neither is known here.**
+| the tooltip is answering | keyed by |
+|---|---|
+| how many of these the family has | the **variant** |
+| what one is worth | the **variant** |
+| who can make one | the **base item** — the suffix is rolled at the forge, so one recipe makes them all |
 
-1. **Does the link carry the suffix, on these builds, in a form that can be a key?** The auction
-   list hands back a link and this repository has only ever read `item:(%d+)` out of it. What else
-   is in that string on Classic Era, Burning Crusade and Mists is unread. A key invented from
-   hearsay about item strings is L-071 in another costume.
-2. **How much of a house is suffixed at all?** If it is two hundred items of six thousand, this is
-   a footnote; if it is thousands, it is most of the value of the whole price feature. The loaded
-   list makes this cheap to count - a second tally beside the one that already counts distinct base
-   ids, over full links rather than base ids, and the two numbers side by side answer it in one
-   scan.
+An earlier draft of this entry said collapsing was right for possessions, on the grounds that three
+Superior Swords are one pile in the player's head. That is wrong and Alberto said so: hovering the
+Bear one has to say the family owns the Bear one.
 
-**Only then, the shape.** Most likely a price key that is the base id where there is no suffix and
-something wider where there is, so that the common case costs nothing and stays exactly as it is.
-The tooltip lookup has to ask the same question the filing did, or the split is worse than the
-collapse: a bag item would be looked up under a key nothing was ever filed under, and a price that
-exists would read as silence.
+**The ground is already laid, which was not obvious.** `Family:ItemString` in `Core.lua` pulls the
+whole item string out of a link and answers with it whenever any of the enchant, gem or suffix
+fields is non-zero - and its comment records that suffixes are **negative** on these clients, which
+is why its pattern accepts a minus sign. Every scanner that records a thing already stores that
+string beside the id: bags, bank, mail, auctions and worn. **Nothing needs re-scanning.**
+
+What collapses is later. `Index:Owners` and `Index:Total` walk `entries[itemID]`, and the price
+store is keyed by item id, so both questions are answered for the base item however the variant was
+recorded.
+
+**What still has to be settled, and neither is a matter of opinion.**
+
+1. **How much of anything is suffixed at all.** If it is two hundred items of six thousand in a
+   house, and a handful across a family, this is a correctness fix with no visible effect; if it is
+   thousands, it is most of the value of the price feature and a visible change to every
+   possessions block. The loaded list makes the house side cheap to count - a second tally beside
+   the one already counting distinct base ids, over full item strings rather than ids.
+2. **Whether an enchant is a variant.** `ItemString` answers for *any* of enchant, gems or suffix,
+   so keying possessions on it would file an enchanted sword apart from a plain one. For *what is
+   it worth* that is probably right; for *how many do I own* it is probably not, and it is Alberto's
+   call rather than a thing to be inferred.
+
+**And the lookup has to ask what the filing asked**, or a split is worse than a collapse: a bag item
+looked up under a key nothing was ever filed under reads as *nobody has one*, which is a confident
+wrong answer where today there is a slightly blunt right one.
