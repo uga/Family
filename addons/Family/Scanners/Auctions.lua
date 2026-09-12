@@ -922,13 +922,24 @@ end
 -- first writing recorded that as nothing at all. Losing a fraction of a copper is arithmetic;
 -- losing the auction is losing the reading. A lot so large that one comes to nought is still
 -- refused, because nought is not a price anybody paid.
-function Auctions:KeepPrice(prices, itemID, lot, quantity, now)
-	itemID, lot, quantity = tonumber(itemID), tonumber(lot), tonumber(quantity)
-	if not (itemID and lot and quantity) then return 0 end
-	if lot <= 0 or quantity <= 0 then return 0 end
+-- **What one of a thing costs, or nothing.** Its own function because two callers need exactly
+-- this arithmetic and exactly these refusals - the filing below, and the tally that counts how
+-- much of a house is priced at all. Written twice, they would be two rules a month from now.
+function Auctions:PriceEach(lot, quantity)
+	lot, quantity = tonumber(lot), tonumber(quantity)
+	if not (lot and quantity) then return nil end
+	if lot <= 0 or quantity <= 0 then return nil end
 
 	local each = math.floor(lot / quantity)
-	if each <= 0 then return 0 end
+	if each <= 0 then return nil end
+
+	return each
+end
+
+function Auctions:KeepPrice(prices, itemID, lot, quantity, now)
+	itemID = tonumber(itemID)
+	local each = self:PriceEach(lot, quantity)
+	if not (itemID and each) then return 0 end
 
 	local held = prices[itemID]
 
@@ -947,7 +958,7 @@ end
 -- **A stretch of the browse list, filed.** Its own function because the list is not always a
 -- page: see `ReadPrices` below for what a list of a hundred and seventy-eight thousand rows is
 -- and how it got there.
-local function readRows(where, from, to)
+local function readRows(where, from, to, tally)
 	local prices = Auctions:Prices(where)
 	local now = time()
 	local kept = 0
@@ -979,6 +990,30 @@ local function readRows(where, from, to)
 		-- losing the auction is losing the reading. A stack so large that one of them comes to
 		-- nought is still refused, because nought is not a price anybody paid.
 		kept = kept + Auctions:KeepPrice(prices, itemID, buyout, quantity, now)
+
+		-- **A count of what the house actually offers**, kept as the rows go by because
+		-- walking a hundred and seventy-five thousand of them a second time to find out
+		-- would be the very thing this reader was written to stop doing.
+		--
+		-- Asked because two numbers did not agree, and picking between them by reasoning is
+		-- how the last two conclusions here went wrong (L-085). After a full pass over that
+		-- house Family held 6,782 prices where the other addon reported 15,880 items, and
+		-- the gap is either auctions with no buyout - which are no price at all (§2.2) - or
+		-- that addon counting something other than this house. `items` against `priced`
+		-- says which, and neither has ever been counted anywhere.
+		if tally and itemID then
+			tally.rows = tally.rows + 1
+
+			if not tally.seen[itemID] then
+				tally.seen[itemID] = true
+				tally.items = tally.items + 1
+			end
+
+			if Auctions:PriceEach(buyout, quantity) and not tally.pricedSeen[itemID] then
+				tally.pricedSeen[itemID] = true
+				tally.priced = tally.priced + 1
+			end
+		end
 	end
 
 	if kept > 0 then
@@ -1042,7 +1077,7 @@ bigReadTick = function()
 	bigRead.count = count
 
 	local to = math.min(bigRead.at + ROWS_PER_TICK, count)
-	bigRead.kept = (bigRead.kept or 0) + readRows(where, bigRead.at + 1, to)
+	bigRead.kept = (bigRead.kept or 0) + readRows(where, bigRead.at + 1, to, bigRead.tally)
 	bigRead.at = to
 
 	if bigRead.at >= count then
@@ -1058,6 +1093,21 @@ bigReadTick = function()
 		-- over and over and re-read the head of it every time - *4 price(s) taken* at row
 		-- 11,500, because the first eleven thousand had all been seen already. Correct, and
 		-- a great deal of work for nothing.
+		-- **Kept where the probe can read it**, as a copy of the counts.
+		--
+		-- The two sets of ids behind them stay where they are until the read itself is
+		-- dropped. Emptying them here read like tidying - they are fifteen thousand entries
+		-- and their work was done - and it is not: catching up is not finishing, so the next
+		-- update that says the list is longer carries this same read on and indexes them
+		-- again. Nil, inside a timer's `pcall`, that is one row read and then silence.
+		local tally = bigRead.tally
+		if tally then
+			Auctions.lastLoadedList = {
+				rows = tally.rows, items = tally.items, priced = tally.priced,
+				at = time(),
+			}
+		end
+
 		bigRead.ticking = nil
 		return
 	end
@@ -1078,7 +1128,9 @@ function Auctions:ReadPrices()
 		-- the same thing again, slower, and that is what the row count is remembered for.
 		--
 		if not bigRead then
-			bigRead = { at = 0, count = count, kept = 0 }
+			bigRead = { at = 0, count = count, kept = 0,
+				tally = { rows = 0, items = 0, priced = 0,
+					seen = {}, pricedSeen = {} } }
 		else
 			bigRead.count = count
 		end

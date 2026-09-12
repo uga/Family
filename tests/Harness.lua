@@ -5390,6 +5390,46 @@ do
 				asked == 6000 and (Family.Auctions:PriceOf(105500)) == 6000,
 				asked .. " / " .. tostring((Family.Auctions:PriceOf(105500))))
 
+			-- **And how much of that house had a price at all, counted as it went.**
+			--
+			-- Asked because two numbers disagreed and nothing could say which was which: a
+			-- full pass over 175,869 rows left Family holding 6,782 prices where the other
+			-- addon reported 15,880 items. Either most of that house is bid-only, which is
+			-- no price at all (§2.2), or that figure counts something other than this house
+			-- - and choosing between those by reasoning is how the last two conclusions in
+			-- `DATASOURCES.md` came to be wrong (L-085).
+			--
+			-- **The fixture has to make the two counts differ**, or a tally that counted
+			-- rows and called them items would pass: a hundred and twenty rows, sixty items
+			-- with two auctions each, and a third of those items bid-only.
+			-- Both readers reset, because forgetting a visit is not stopping a read and
+			-- has not been since they were told apart: a read left sitting at row 4,000 is
+			-- told a list of 120 is shorter than where it stands and does nothing at all.
+			-- In play that is the window closing; here it has to be said.
+			Family.Auctions:ForgetVisit()
+			Family.Auctions:StopBigListRead()
+			Family.Auctions.lastLoadedList = nil
+			LIST = {}
+			for index = 1, 120 do
+				local item = 500000 + math.floor((index - 1) / 2)
+				LIST[index] = { id = item, count = 1,
+					buyout = (item % 3 == 0) and 0 or 800 }
+			end
+			Family.Auctions:ReadPrices()
+			advance(1)
+
+			local counted = Family.Auctions.lastLoadedList
+			check("what a loaded list held is counted while it is read, not by reading it twice",
+				counted ~= nil and counted.rows == 120 and counted.items == 60,
+				counted and (counted.rows .. " row(s), " .. counted.items .. " item(s)")
+					or "nothing counted")
+
+			-- Twenty of the sixty items are bid-only, so forty have a price. Without this the
+			-- tally could be counting every item as priced and nothing would notice.
+			check("and how many of those items had a price anybody could pay",
+				counted ~= nil and counted.priced == 40,
+				tostring(counted and counted.priced))
+
 			-- **A list replaced by an ordinary search ends the read**, and it needs no guard
 			-- of its own to do it: one was written here and taken out again, because no
 			-- check could tell the code with it from the code without. A slice is

@@ -1,0 +1,6 @@
+name: the loaded-list tally counts a bid-only auction as having a price
+file: addons/Family/Scanners/Auctions.lua
+--- old
+			if Auctions:PriceEach(buyout, quantity) and not tally.pricedSeen[itemID] then
+--- new
+			if not tally.pricedSeen[itemID] then

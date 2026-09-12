@@ -268,6 +268,7 @@ Family.locales.ruRU = {
 	["  prices remembered for this realm and side: |cffffd700%d|r"] = "  запомнено цен для этого мира и стороны: |cffffd700%d|r",
 	["  oldest %s, newest %s"] = "  самая старая %s, самая свежая %s",
 	["  reading a loaded list: %d of %d row(s), %d price(s) taken"] = "  читаю загруженный список: %d из %d строк(и), взято цен: %d",
+	["  the last loaded list: %d row(s), %d item(s), %d with a price"] = "  последний загруженный список: строк %d, предметов %d, из них с ценой %d",
 	["Show prices on item tooltips"] = "Показывать цены в подсказках предметов",
 	["What a vendor pays you, which the game always knows - what a vendor charges, for the items Family has seen on a merchant's list - and what the auction house was last asking, with the age of that reading beside it. Nothing is claimed about an item nobody has been seen selling."] = "Сколько торговец платит тебе - это игра знает всегда - сколько торговец просит, для предметов, которые Family видела в списке торговца - и сколько в последний раз просил аукцион, с возрастом этого показания рядом. О предмете, который никто не был замечен продающим, ничего не утверждается.",
 	["Auction"] = "Аукцион",

@@ -1457,6 +1457,20 @@ add("ah", L["what this client offers on the auction house"], function(argument)
 			big.at or 0, big.count or 0, big.kept or 0)
 	end
 
+	-- **And what the last loaded list turned out to hold**, which is the one thing that says
+	-- whether reading a house somebody else loaded is worth what it looks like it is worth.
+	--
+	-- Asked because two numbers disagreed: after a full pass over 175,869 rows on Burning
+	-- Crusade 2026-09-12, Family held 6,782 prices where the other addon reported 15,880 items.
+	-- Either most of that house has no buyout, which is no price at all (§2.2), or that number
+	-- counts something else. Distinct items against distinct items with a price says which, and
+	-- it is counted as the rows go by rather than by walking them twice.
+	local last = Family.Auctions.lastLoadedList
+	if last then
+		Family:Print(L["  the last loaded list: %d row(s), %d item(s), %d with a price"],
+			last.rows or 0, last.items or 0, last.priced or 0)
+	end
+
 	-- **Both returns of it**, because the second is the one a page walk needs and nothing in
 	-- this repository has ever read it: fifty rows is one page, and how many pages there are
 	-- is the total divided by that.

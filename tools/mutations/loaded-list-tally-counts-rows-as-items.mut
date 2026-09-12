@@ -1,0 +1,9 @@
+name: the loaded-list tally counts rows and calls them items
+file: addons/Family/Scanners/Auctions.lua
+--- old
+			if not tally.seen[itemID] then
+				tally.seen[itemID] = true
+				tally.items = tally.items + 1
+			end
+--- new
+			tally.items = tally.items + 1

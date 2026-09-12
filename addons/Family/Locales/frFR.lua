@@ -268,6 +268,7 @@ Family.locales.frFR = {
 	["  prices remembered for this realm and side: |cffffd700%d|r"] = "  prix mémorisés pour ce royaume et ce camp : |cffffd700%d|r",
 	["  oldest %s, newest %s"] = "  le plus ancien %s, le plus récent %s",
 	["  reading a loaded list: %d of %d row(s), %d price(s) taken"] = "  lecture d'une liste chargée : %d ligne(s) sur %d, %d prix pris",
+	["  the last loaded list: %d row(s), %d item(s), %d with a price"] = "  la dernière liste chargée : %d ligne(s), %d objet(s), %d avec un prix",
 	["Show prices on item tooltips"] = "Afficher les prix sur les infobulles",
 	["What a vendor pays you, which the game always knows - what a vendor charges, for the items Family has seen on a merchant's list - and what the auction house was last asking, with the age of that reading beside it. Nothing is claimed about an item nobody has been seen selling."] = "Ce qu'un marchand te paie, que le jeu sait toujours - ce qu'un marchand demande, pour les objets que Family a vus sur la liste d'un marchand - et ce que l'hôtel des ventes demandait en dernier, avec l'âge de cette lecture à côté. Rien n'est affirmé sur un objet que personne n'a été vu vendre.",
 	["Auction"] = "Hôtel des ventes",
