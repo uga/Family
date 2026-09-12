@@ -88,13 +88,17 @@ picks itself up where it left off.
   open. On the whole-family search, where the row already carries a recipe and everybody who can
   make it, click the recipe and the materials appear on a line underneath.
 
-- **Opening a recipe on the whole-family search lists four crafters to a line**, in the same
+- **Opening a recipe on the whole-family search lists several crafters to a line**, in the same
   column the folded row uses, instead of one name per line. A dozen people who can make something
-  was a dozen rows, which scrolled the recipe's own name off the top.
+  was a dozen rows, which scrolled the recipe's own name off the top. Each line now holds as many
+  names as will actually fit, so a borrowed family's character carrying their family name with
+  them no longer costs a whole row.
 
-- **What came out of the mailbox, in chat.** A line for each thing taken and each sum collected,
-  and a total when you close it. The game says nothing about what a mailbox full of auction
-  returns actually came to. Off until you switch it on.
+- **What came out of the mailbox, in chat.** A line naming each thing you took, then what that
+  letter was holding in money — and, when you close the mailbox, what the visit came to and what
+  you are carrying now. The game says nothing about what a mailbox full of auction returns
+  actually came to. Nothing is claimed that did not arrive, so a take your bags were too full for
+  is not reported. Off until you switch it on.
 
 - **Reading prices and reading the whole house are two separate switches.** Using an auction house
   fills Family in, and so does the full scan of an addon like Auctionator — Family listens and
@@ -125,6 +129,18 @@ picks itself up where it left off.
 - **Prices on a tooltip line up in a column again.** The age of an auction reading now leads the
   line in brackets — *(1h ago) 3s 92c* — instead of trailing it, so the sell price, the auction
   price and what your family's lot is worth all end at the same edge.
+
+### Wide Family
+
+- **The line under a linked family no longer loses its last words.** *Sending to them, 4 pieces
+  left* was being cut to *send...* on narrower panels. Where the line will not fit, the hint about
+  clicking the name gives way and the facts stay.
+
+### Stack prices at the auction house
+
+- **Hold CTRL over an auction and Family says what that stack is worth**, the same line it has
+  always drawn over a stack in your bags. It follows the row you are pointing at, scrolled or
+  not.
 
 ### A Family tab on the auction house
 

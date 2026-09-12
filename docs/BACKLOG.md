@@ -3759,7 +3759,36 @@ holding, which is the part that is worth keeping.
 
 ---
 
-## 62. The stack multiplication, away from the bags
+## 62. The stack multiplication, away from the bags — **done 2026-09-12**
+
+**Built, after the first version shipped a wrong number and Alberto found it in one hover.** The
+readings that settled it, and what each one cost:
+
+*With Auctionator and without*, the owner is `BrowseButtonNItem` with an id of nought inside
+`BrowseButtonN` with id N. Auctionator drives the client's own browse list rather than replacing
+it, which is the same reason Family harvests its scans for nothing.
+
+*Scrolled*, the counts are wrong. Two faults behind one symptom. The client names its fifteen
+browse buttons once and never renumbers them, so N is the **slot on the screen**; the row is
+`FauxScrollFrame_GetOffset(BrowseScrollFrame)` plus it. And the guard that was supposed to catch
+exactly this could not: *the link at this index matches the tooltip* is satisfied by every row of a
+browse list, because a browse list is twenty rows of the same item. See L-087.
+
+*Row to row*, the tooltip kept the previous row's count, because the redraw guard was keyed on the
+item and two rows of one item are one key. A count belongs to the row.
+
+The frame is now admitted by identity - `_G["BrowseButton" .. slot]` must be that very frame - so
+an unknown row, or an offset the client will not give up, draws nothing rather than something
+plausible. **The rule the entry was written around held throughout and is what makes that safe.**
+
+**Still open, and each is one hover.** A merchant's window and a loot window are the other two
+places a pile sits in front of you. `/family hover` now prints every return of
+`GetMerchantItemInfo` and `GetLootSlotInfo` numbered, because which position carries the quantity
+is the thing to read rather than recall.
+
+---
+
+## 62 (as written, before the readings). The stack multiplication, away from the bags
 
 **Slice B of the CTRL work**, split off 2026-09-10 when slice A landed. A is *what the family's lot
 is worth*, which needs no pile at all; this is the other half Alberto asked for — **pila di N**, on
@@ -3861,6 +3890,14 @@ asked about and whatever was recorded when they scanned is all there will ever b
 ---
 
 ## 64. Fold only what does not fit on the page
+
+**Half of it landed 2026-09-12 without being called that**: the crafter rows now fit *as many
+names as the line will take* rather than a constant four, measured with `UI:FitNames`. That is
+this entry's rule applied to one line. What the entry is still about is the **page**: folding a
+list only when not folding it would overrun the rows the panel has, which is a decision about
+twenty-one rows and not about one row's width.
+
+
 
 **Alberto's own reading of the French player's report, 2026-09-11**, and the better rule: *se la
 lista è di una decina di righe, quindi meno di quelle che stanno su una pagina, a che serve

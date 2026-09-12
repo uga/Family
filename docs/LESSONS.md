@@ -3169,3 +3169,118 @@ beginning. Two recorded mutations, `big-list-dropped-by-a-short-answer.mut` and
 that sequence cannot occur here, the guard is not protection — it is a new behaviour, with its own
 failure modes, bought for nothing. This is the third time in a day: an unreachable stop reason, a
 redundant guard the arithmetic already covered, and now one that cost a whole scan.
+
+---
+
+## L-087 — a check a sibling can satisfy is not a check
+
+**2026-09-12, backlog 62.** The stack line was extended from the bags to the auction house. The
+bags case is safe because the count can be *checked*: the frame gives a bag and a slot, and the
+line is dropped where that slot does not hold the item the tooltip is describing. Backlog 62 wrote
+the rule down before the reading was taken — *where a count cannot be checked against the item, the
+line is not drawn* — and the auction version was built on what looked like the same check:
+
+```lua
+if Family:VariantKey(itemIDFrom(link), link) ~= variant then return nil end
+```
+
+Alberto's two hovers said the chain worked. The frame's parent carried a number, and the browse
+list at that number named exactly the item under the pointer. Both readings, with Auctionator and
+without.
+
+I wrote in the file that if a scrolled list turned out to number its buttons by screen position
+rather than by row, *the link will not match and the line will not be drawn — which is this block
+failing the way it is meant to*. I told Alberto the same thing in as many words: it fails safe.
+
+**It did not fail safe.** Reported from play the same afternoon: scrolled, the tooltip claimed a
+stack of ten over a stack of five. Two faults, and only the first is the ordinary kind.
+
+The first: the client names its fifteen browse buttons once and never renumbers them, so the id is
+the **slot on the screen** and not the row in the list. Scrolled by three, button five is showing
+the eighth auction. An offset was needed and was not there.
+
+The second is the lesson. **A browse list is a list of one item.** Somebody searching for linen
+cloth is looking at twenty rows of *Bolt of Linen Cloth*. So *the link at this index matches the
+tooltip* is satisfied by every row on the page — the wrong one exactly as readily as the right one.
+The check was not weak. It was **incapable of failing** in the one situation it existed for, and it
+read as a real check right up until it was pointed at a scrolled list.
+
+The bags check does not have this property by luck: a bag slot holds one item, and the neighbouring
+slot usually holds something else. The auction row's neighbours are its twins. Copying the shape of
+the guard carried none of what made it work.
+
+**And a third, from the same screenshot.** The guard that stops the tooltip block being written
+twice was keyed on the item. Two rows of one item are one key, so moving the pointer from row to
+row did not redraw and the previous row's count stayed on the screen. A count belongs to the
+**row**; keying it to the item is the same mistake in a second place.
+
+**What now catches it.** The row is worked out from `FauxScrollFrame_GetOffset` and the frame is
+admitted by **identity** — `_G["BrowseButton5"]` must be that very frame, not something named like
+it. The fixture is a page of twelve rows of one item with different counts, hovered scrolled;
+before, every row answered alike and any index passed. Four recorded mutations, and the redraw
+guard now carries the frame.
+
+**The general rule: when a check compares the thing under the pointer against a list, ask what
+else in that list would also pass.** If the answer is "the neighbours", the comparison is
+identifying the *kind* and not the *one*, and something else has to carry the identity. Say it out
+loud before writing "this fails safe" — that sentence is a claim about a case, and a case can be
+constructed and hovered.
+
+---
+
+## L-088 — twice in one session, a check that could not fail
+
+**2026-09-12.** Chasing L-087 I wrote two checks that passed for reasons unrelated to what they
+were about. Both went green immediately, which is what made them worth writing down.
+
+The first measured how many crafter names fit on a row, by handing the fixture members with long
+`label` fields. `UI:NamesOf` **writes `label` from `name` every time it is called**, so the panel
+received six-letter names that never came near the edge of the column. The sweep ran thirteen name
+lengths and measured one.
+
+The second asserted that moving to the next auction row shows that row's count, with
+`find("Stack of 2")`. The stale line it was meant to catch reads **`Stack of 20`**, and `find`
+matches inside it. The check passed against precisely the value it existed to reject.
+
+Neither was caught by reading the code. Both were caught by **removing the fix and watching the
+check go red** — the first refused to, and the second went red before the fix was even in.
+
+**What now catches it.** Both checks were rewritten: the long string goes in `name`, and the count
+is pulled out with `match("Stack of (%d+)")` and compared whole.
+
+**The general rule: a new check is not finished when it passes. It is finished when it has been
+seen to fail.** Take the fix out, run it, put the fix back. That is thirty seconds, it is the only
+thing that distinguishes a check from a comment, and it is what recording a mutation makes
+permanent. This project has a tool for exactly this and the temptation is always to write the check,
+see green, and move on.
+
+---
+
+## L-089 — the wait loop matched its own command line
+
+**2026-09-12.** `tools/mutate.py` patches the tree in place, so nothing may be edited or committed
+while it runs. To wait for it I wrote:
+
+```bash
+until ! pgrep -f "tools/mutate.py" >/dev/null; do sleep 10; done
+```
+
+`pgrep -f` matches against the whole command line, and that string **is** in this loop's own
+command line. So it found itself, every time, and could not terminate. Alberto killed it after an
+hour, and again after thirty-five minutes when I wrote the same loop a second time.
+
+The second cost is the one worth writing down. While that loop was alive, **every other `pgrep`
+for the same pattern also answered yes** — including the ones I was using to check whether the
+tree was safe to edit. The instrument I was using to tell whether work was in progress was itself
+the work it was reporting. I read "still running" and waited, twice, on nothing.
+
+**What to do instead.** Wait on the artefact, not on the process: the run writes its exit status
+into a file, so `until grep -q "MUTATE_EXIT=" out; do sleep 10; done` terminates because it is
+about a file and not about a process list. Where a process really must be waited on, hold its PID
+and wait on that. To *inspect*, `ps -eo pid,etime,cmd | grep "[m]utate.py"` — the bracket keeps
+the grep from matching itself, and `etime` shows at a glance that a thirty-five-minute process is
+not a fresh one.
+
+**The general rule: a check that can observe itself is not a check.** This is L-087 in a shell -
+there the browse list's neighbours satisfied the guard, here the watcher satisfied its own
+condition. Both read as working right up until the case they existed for.
