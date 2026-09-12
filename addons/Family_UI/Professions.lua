@@ -1145,38 +1145,67 @@ local function build(frame)
 				local ruler = UI:WidthRuler(r.note)
 				local function plus(n) return string.format(L["+%d"], n) end
 
-				-- The guild goes first when there is one, and never gets more than a
-				-- third of the column: it is a second group on a row that belongs to
-				-- the family's own answer, and a guild of twenty must not push that
-				-- answer off the line. Its own overflow is counted separately, because
-				-- **+4 of yours** and **+4 guildmates** are two different facts.
-				local block, blockWidth = nil, 0
-				local guildFits, guildSpare = 0, 0
-				if #guild > 0 then
-					guildFits = UI:FitNames(guild, NOTE_WIDTH / 3, ruler, plus)
-					guildSpare = #guild - guildFits
+				-- The guild is fitted first when there is one, and never gets more than a
+				-- third of the column: it is a second group on a row that belongs to the
+				-- family's own answer, and a guild of twenty must not push that answer off
+				-- the line.
+				local guildFits = #guild > 0
+					and UI:FitNames(guild, NOTE_WIDTH / 3, ruler, nil) or 0
+				local memberFits = 0
 
+				-- **One count of who is not shown, and it goes last.** Reported off a
+				-- screenshot 2026-09-12: *Deiana 300, Eccebombo 300, Ermete 300, +8   guild
+				-- Astala, Malachia* - the members' overflow sat in the middle of the line with
+				-- names still to come after it, so it read as though the list had ended and
+				-- then carried on. One number at the end, counting both groups, is also what
+				-- opening the row gives: the lines under it are ours and the guild's together.
+				local function assemble()
+					local names = {}
+					for index = 1, memberFits do names[index] = everyone[index] end
+					local note = table.concat(names, ", ")
+
+					if guildFits > 0 then
+						local shown = {}
+						for index = 1, guildFits do shown[index] = guild[index] end
+						local block = string.format(L["|cff66bbffguild|r |cff888888%s|r"],
+							table.concat(shown, ", "))
+						note = (note ~= "" and (note .. "   ") or "") .. block
+					end
+
+					local hidden = (#everyone - memberFits) + (#guild - guildFits)
+					if hidden > 0 then
+						note = (note ~= "" and (note .. "   ") or "") .. plus(hidden)
+					end
+					return note
+				end
+
+				local blockWidth = 0
+				if guildFits > 0 and ruler then
 					local shown = {}
 					for index = 1, guildFits do shown[index] = guild[index] end
-					if guildSpare > 0 then shown[#shown + 1] = plus(guildSpare) end
+					blockWidth = ruler(string.format(L["|cff66bbffguild|r |cff888888%s|r"],
+						table.concat(shown, ", ")) .. "   ")
+				end
+				memberFits = UI:FitNames(everyone, NOTE_WIDTH - blockWidth, ruler, nil)
 
-					block = string.format(L["|cff66bbffguild|r |cff888888%s|r"],
-						table.concat(shown, ", "))
-					blockWidth = (ruler and ruler(block .. "   ") or 0)
+				-- **The count has to fit as well**, and where it goes it is not beside the
+				-- names it counts, so `FitNames` cannot make room for it. The whole line is
+				-- measured as it will be drawn and names are given up - ours first, keeping
+				-- at least one, then the guild's - until it is inside the column.
+				local note = assemble()
+				while ruler and ruler(note) > NOTE_WIDTH do
+					if memberFits > 1 then
+						memberFits = memberFits - 1
+					elseif guildFits > 0 then
+						guildFits = guildFits - 1
+					else
+						break
+					end
+					note = assemble()
 				end
 
-				local memberFits =
-					UI:FitNames(everyone, NOTE_WIDTH - blockWidth, ruler, plus)
 				local spare = #everyone - memberFits
-
-				local names = {}
-				for index = 1, memberFits do names[index] = everyone[index] end
-				if spare > 0 then names[#names + 1] = plus(spare) end
-
-				local note = table.concat(names, ", ")
-				if block then
-					note = (note ~= "" and (note .. "   ") or "") .. block
-				end
+				local guildSpare = #guild - guildFits
 
 				r.note:SetWidth(NOTE_WIDTH)
 				r.note:SetText(note)

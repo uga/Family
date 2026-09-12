@@ -1,0 +1,6 @@
+name: the count at the end of a crafter row leaves out the guildmates it hides
+file: addons/Family_UI/Professions.lua
+--- old
+					local hidden = (#everyone - memberFits) + (#guild - guildFits)
+--- new
+					local hidden = #everyone - memberFits

@@ -1,0 +1,13 @@
+name: the members' overflow is written before the guild's names rather than after them
+file: addons/Family_UI/Professions.lua
+--- old
+					local note = table.concat(names, ", ")
+
+					if guildFits > 0 then
+--- new
+					local note = table.concat(names, ", ")
+					if #everyone > memberFits then
+						note = note .. ", " .. plus(#everyone - memberFits)
+					end
+
+					if guildFits > 0 then

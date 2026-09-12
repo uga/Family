@@ -1,0 +1,6 @@
+name: the count at the end of a crafter row is appended without being measured into it
+file: addons/Family_UI/Professions.lua
+--- old
+				while ruler and ruler(note) > NOTE_WIDTH do
+--- new
+				while false do
