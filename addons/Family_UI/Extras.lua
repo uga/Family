@@ -55,12 +55,13 @@ local SWITCHES = {
 	},
 	{
 		name = "craftingCost",
-		label = L["Say what a craftable item costs to make"],
-		note = L["On the tooltip of anything a profession makes: every material with what it "
-			.. "would cost to buy, and the total. The cheapest source wins where there is "
-			.. "more than one. A material Family has no price for is said to be unknown "
-			.. "rather than counted as nothing, and one that binds on pickup adds nothing "
-			.. "because no money can buy it - the total says so when it happens."],
+		label = L["Say what a craftable item is made with"],
+		note = L["On the tooltip of anything a profession makes, whether or not any of your "
+			.. "characters can make one: every material and how many of it, under who can "
+			.. "make it and above what it sells for. Where Family has prices it totals them, "
+			.. "cheapest source first. A material with no price is said to be unknown rather "
+			.. "than counted as nothing, and one that binds on pickup adds nothing because no "
+			.. "money can buy it - the total says so when it happens."],
 	},
 	{
 		name = "mailReport",

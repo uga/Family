@@ -596,7 +596,7 @@ end
 -- the stack in front of you is a stack of one item. What the auction house is asking, and what
 -- the family's lot comes to, are about the thing being pointed at - and an *of the Bear* sword
 -- is not priced by an *of the Whale* one.
--- **What this thing costs to make**, on the tooltip of anything a profession makes.
+-- **What this thing is made with**, on the tooltip of anything a profession makes.
 --
 -- Asked for 2026-09-12, with three caveats that are the whole of the design:
 --
@@ -611,6 +611,17 @@ end
 -- and one whose materials include something nobody can buy says so under the number, because a
 -- reader comparing that figure with an auction price has to know what it leaves out.
 --
+-- **The list comes first and the arithmetic second**, which is Alberto's 2026-09-12 correction:
+-- *mentre impariamo ancora come fare il conto economico, possiamo intanto cominciare a stampare
+-- la BoM sul tooltip, perche quella la conosciamo.* So the section is drawn for anything the
+-- game says is craftable, whether or not anybody in the family can make one and whether or not a
+-- single material has a price - what is known is the recipe, and a price is a thing that fills in
+-- later.
+--
+-- **It sits under *Can make it* and above the prices**, which is the order asked for and is the
+-- order the blocks are listed in below: who owns one, who can make one, what making one takes,
+-- what selling one is worth.
+--
 -- Behind its own switch under Extras, and off until somebody asks for it: an eight-material
 -- recipe is nine lines, and nine lines on every craftable thing in the game is a tooltip
 -- somebody turns the whole addon off over.
@@ -621,7 +632,7 @@ local function costLines(tooltip, itemID)
 		and Family.Recipes:CostToMake(itemID) or nil
 	if not cost or #cost.parts == 0 then return nil end
 
-	local lines = { { L["|cff66bbffCosts to make|r"], "" } }
+	local lines = { { L["|cff66bbffMade with|r"], "" } }
 
 	for _, part in ipairs(cost.parts) do
 		-- The client's own name where it has met the item, and the id where it has not. A

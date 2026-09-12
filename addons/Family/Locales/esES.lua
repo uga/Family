@@ -901,9 +901,7 @@ Family.locales.esES = {
 	["Say what came out of the mailbox"] = "Decir qué salió del buzón",
 	["A line in chat for each thing taken out of a letter and each sum collected, and a total when you close the mailbox. The game says nothing about what a mailbox full of auction returns actually came to."] = "Una línea de chat por cada cosa sacada de una carta y por cada suma cobrada, y un total al cerrar el buzón. El juego no dice nada de lo que ha dado un buzón lleno de devoluciones de subastas.",
 	["reading prices at the auction house is switched off - turn it on under Extras"] = "la lectura de precios en la casa de subastas está desactivada - actívala en Extras",
-	["Say what a craftable item costs to make"] = "Decir cuánto cuesta fabricar un objeto",
-	["On the tooltip of anything a profession makes: every material with what it would cost to buy, and the total. The cheapest source wins where there is more than one. A material Family has no price for is said to be unknown rather than counted as nothing, and one that binds on pickup adds nothing because no money can buy it - the total says so when it happens."] = "En la descripción de todo lo que fabrica una profesión: cada material con lo que costaría comprarlo, y el total. Gana la fuente más barata cuando hay varias. Un material del que Family no tiene precio se indica como desconocido en lugar de contarlo como cero, y uno que se liga al recogerlo no suma nada porque ningún dinero puede comprarlo: el total lo indica cuando ocurre.",
-	["|cff66bbffCosts to make|r"] = "|cff66bbffCoste de fabricación|r",
+	["On the tooltip of anything a profession makes, whether or not any of your characters can make one: every material and how many of it, under who can make it and above what it sells for. Where Family has prices it totals them, cheapest source first. A material with no price is said to be unknown rather than counted as nothing, and one that binds on pickup adds nothing because no money can buy it - the total says so when it happens."] = "En la descripción de todo lo que fabrica una profesión: cada material con lo que costaría comprarlo, y el total. Gana la fuente más barata cuando hay varias. Un material del que Family no tiene precio se indica como desconocido en lugar de contarlo como cero, y uno que se liga al recogerlo no suma nada porque ningún dinero puede comprarlo: el total lo indica cuando ocurre.",
 	["item %d"] = "objeto %d",
 	["some prices are missing"] = "faltan algunos precios",
 	["not counting materials no money can buy"] = "sin los materiales que no se pueden comprar",
@@ -914,4 +912,6 @@ Family.locales.esES = {
 	["received %d x %s"] = "%d x %s recibido(s)",
 	["collected %s"] = "%s cobrado(s)",
 	["|cff66bbffFrom the mailbox:|r %d item(s), %s collected"] = "|cff66bbffDel buzón:|r %d objeto(s), %s cobrado(s)",
+	["Say what a craftable item is made with"] = "Decir de qué está hecho un objeto fabricable",
+	["|cff66bbffMade with|r"] = "|cff66bbffHecho con|r",
 }

@@ -1,0 +1,6 @@
+name: the bill of materials is hidden on a recipe nobody has priced
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if not cost or #cost.parts == 0 then return nil end
+--- new
+	if not cost or #cost.parts == 0 or cost.total == nil then return nil end

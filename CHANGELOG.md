@@ -109,11 +109,12 @@ picks itself up where it left off.
   takes the prices for nothing. Family's own page-by-page read is the second switch, and it is for
   people who have no such addon: the game only lets one search out at a time, so it takes minutes.
 
-- **What a craftable thing costs to make, on its tooltip.** Every material with what it would
-  cost to buy and the total underneath. The cheapest source wins where an item can be had from
-  more than one. A material Family has no price for makes the whole recipe say *some prices are
-  missing* rather than quietly totalling without it — and one that no money can buy adds nothing,
-  with the total saying so. Off until you switch it on.
+- **What a craftable thing is made with, on its tooltip.** Every material and how many of it,
+  under who can make it and above what it sells for — for anything a profession makes, whether or
+  not any of your characters can make one. Where Family has prices it totals them, cheapest source
+  first: a material it has no price for makes the recipe say *some prices are missing* rather than
+  quietly totalling without it, and one that no money can buy adds nothing, with the total saying
+  so. Off until you switch it on.
 
 - **A new Extras panel, above Options**, for the jobs Family will do for you that are not what
   Family is for. Each one is off or on by itself, and a new one always arrives off.

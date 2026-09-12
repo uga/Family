@@ -34016,14 +34016,40 @@ print("what a craftable thing costs to make")
 	-- lines on every craftable thing in the game is a tooltip somebody turns the addon off
 	-- over - which is what the Extras panel is for.
 	Family.Extras:Set("craftingCost", false)
-	check("with the extra off, a craftable thing says nothing about what it costs",
-		hovering(SWORD):find("Costs to make", 1, true) == nil, hovering(SWORD))
+	check("with the extra off, a craftable thing says nothing about what it is made of",
+		hovering(SWORD):find("Made with", 1, true) == nil, hovering(SWORD))
 
 	Family.Extras:Set("craftingCost", true)
 	local drawn = hovering(SWORD)
 	check("with it on, the tooltip breaks the recipe down and totals it",
-		drawn:find("Costs to make", 1, true) ~= nil
+		drawn:find("Made with", 1, true) ~= nil
 			and drawn:find("Total", 1, true) ~= nil, drawn)
+
+	-- **The list comes first and the arithmetic second.** Asked for 2026-09-12: *mentre
+	-- impariamo ancora come fare il conto economico, possiamo intanto cominciare a stampare la
+	-- BoM sul tooltip, perche quella la conosciamo.* So a recipe nobody has priced a single
+	-- material of still lists its materials - what is known is the recipe.
+	do
+		local realVendorAll, realAuctionAll = Family.Merchant.PriceOf, Family.Auctions.PriceOf
+		Family.Merchant.PriceOf = function() return nil end
+		Family.Auctions.PriceOf = function() return nil end
+
+		local bare = hovering(SWORD)
+		check("and a recipe with no prices at all still says what it is made of",
+			bare:find("Made with", 1, true) ~= nil and bare:find("x3", 1, true) ~= nil,
+			bare)
+
+		Family.Merchant.PriceOf, Family.Auctions.PriceOf = realVendorAll, realAuctionAll
+	end
+
+	-- **Under who can make it and above what it sells for**, which is the order asked for.
+	check("with the section sitting under the crafters and above the prices",
+		(function()
+			local order = hovering(SWORD)
+			local at = order:find("Made with", 1, true)
+			local sell = order:find("Sell price", 1, true)
+			return at ~= nil and (sell == nil or at < sell)
+		end)(), hovering(SWORD))
 
 	-- Asked for in as many words: *il tooltip mi deve dettagliare il conto della ricetta cioe
 	-- stampare ogni componente con il suo costo totale.*
