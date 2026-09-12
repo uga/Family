@@ -1040,11 +1040,23 @@ function UI:StartHouseRead(everything)
 			-- the window - is that quicker? Waiting is the server's half and cannot be
 			-- argued with; the rest is Family's own pacing between pages, and that is a
 			-- decision rather than a fact.
+			-- **Three parts, because the first writing of this had two and the second
+			-- was a lie.** Read back from play on Classic Era 2026-09-12: *1 minute
+			-- waiting for the server, 4 minutes of Family's own pacing* on 394 pages,
+			-- where the settle at a tenth of a second accounts for forty seconds. The
+			-- other three minutes were the client refusing to send - the server's own
+			-- throttle, arriving as `CanSendAuctionQuery` saying no and being waited out
+			-- half a second at a time. Calling the remainder *ours* put somebody else's
+			-- limit under our name and pointed the only tuning decision at the wrong knob.
 			local waited = Family.Auctions:WalkWaiting(state)
+			local held = Family.Auctions:WalkHeld(state) or 0
 			if waited then
-				Family:Print(L["  %s waiting for the server, %s of Family's own pacing"],
-					spanOf(waited), spanOf(math.max(0, took - waited)))
+				Family:Print(L["  %s waiting for the server, %s while it would not send, %s of Family's own pacing"],
+					spanOf(waited), spanOf(held),
+					spanOf(math.max(0, took - waited - held)))
 			end
+
+			if UI.HouseReadChanged then UI:HouseReadChanged() end
 			return
 		end
 
@@ -1052,9 +1064,17 @@ function UI:StartHouseRead(everything)
 		Family:Print(L["stopped after %d page(s) in %s: %s"], state.done or 0,
 			spanOf(Family.Auctions:WalkSeconds(state) or 0),
 			WHY[reason] or tostring(reason))
+
+		if UI.HouseReadChanged then UI:HouseReadChanged() end
 	end, everything)
 
 	if not ok then Family:Print(L["  refused: %s"], WHY[why] or tostring(why)) end
+
+	-- **Whatever happened, whoever is showing it says so again.** A read that ends between
+	-- one list update and the next leaves nothing to redraw on, which is how a button went on
+	-- reading *Stop* after the read had finished - and then started a new one when it was
+	-- pressed. Reported from play 2026-09-12.
+	if UI.HouseReadChanged then UI:HouseReadChanged() end
 	return ok, why
 end
 

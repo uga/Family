@@ -95,6 +95,14 @@ local function refresh()
 	end
 end
 
+-- **Said again whenever a read starts or ends**, whoever started it. A read that ends between
+-- one list update and the next leaves nothing to redraw on: reported from play 2026-09-12, the
+-- button still read *Stop* after the walk had finished, and pressing it started a new read
+-- instead of stopping anything.
+function UI:HouseReadChanged()
+	refresh()
+end
+
 -- **Pressing a control of the window's, if it is there and willing.** A button that is disabled
 -- is a button the client is saying no with - the last page has no next one - and clicking it
 -- anyway achieves nothing and looks like it achieved something.
@@ -170,6 +178,14 @@ local function clicked()
 	-- A Reset the client will not accept is not fatal: the search still goes out and the walk
 	-- still runs, but what it read is then whatever the form held, and it is reported as that.
 	clearedForm = press(RESET)
+
+	-- **Said out loud when it could not.** A button called *read it all* that ends on *read
+	-- every page of that search* is a button somebody has to guess about. Reported from play
+	-- 2026-09-12: a read ended on that sentence and nothing anywhere said which of the two
+	-- things had happened.
+	if not clearedForm then
+		Family:Print(L["the search form could not be emptied - reading what it holds instead"])
+	end
 
 	waitingFor = "search"
 	Family.Auctions:TellNextList(heard)

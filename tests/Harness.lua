@@ -31773,9 +31773,14 @@ print("how long a read of the auction house takes")
 	-- faster. Asked from play: other addons scan without drawing the window, is that quicker?
 	-- The server's half cannot be argued with; the rest is Family's own settling between pages,
 	-- and that is a decision. A line that did not separate them could not inform one.
+	-- **Three parts, because two of them were being added together under the wrong name.**
+	-- Read back from play: *1 minute waiting for the server, 4 minutes of Family's own pacing*
+	-- on 394 pages, where the settle at a tenth of a second accounts for forty seconds. The
+	-- rest was the client refusing to send, which is the server's throttle and not ours.
 	local split = lastSaying("waiting for the server") or ""
 	local waited = tonumber(split:match("(%d+) second%(s%) waiting"))
-	local pacing = tonumber(split:match("second%(s%) waiting for the server, (%d+) second"))
+	local held = tonumber(split:match("second%(s%) waiting for the server, (%d+) second"))
+	local pacing = tonumber(split:match("would not send, (%d+) second"))
 	-- **Waiting is part of the elapsed time and cannot exceed it.** That is the invariant, and
 	-- it is what a walk counting its waiting once per answer instead of once per page breaks -
 	-- it triples the figure and sails past the clock. Not *pacing is more than nothing*: with
@@ -31783,9 +31788,33 @@ print("how long a read of the auction house takes")
 	-- check that insisted otherwise would be a check about this fixture's numbers.
 	local total = tonumber(done:match("in (%d+) second"))
 	check("and says how much of that was the server and how much was its own pacing",
-		waited and pacing and total and waited > 0 and waited <= total
-			and waited + pacing <= total + 1,
+		waited and held and pacing and total and waited > 0 and waited <= total
+			and waited + held + pacing <= total + 1,
 		split .. " of " .. done)
+
+	-- **And a client that will not send is its own figure**, neither the answer taking time nor
+	-- a delay anybody here chose. Held at *not yet* across two whole retries, it has to appear.
+	Family.Auctions:ForgetVisit()
+	local refusals = 0
+	_G.CanSendAuctionQuery = function()
+		refusals = refusals + 1
+		return refusals > 3
+	end
+
+	SlashCmdList["FAMILY"]("ah scan go")
+	advance(2)
+	fire("AUCTION_ITEM_LIST_UPDATE")
+	advance(1)
+	for _ = 1, 4 do
+		fire("AUCTION_ITEM_LIST_UPDATE")
+		advance(1)
+	end
+	_G.CanSendAuctionQuery = function() return true end
+
+	local refused = lastSaying("would not send") or ""
+	check("and time the client spent refusing to send is counted as neither of the other two",
+		tonumber(refused:match("server, (%d+) second")) and
+			tonumber(refused:match("server, (%d+) second")) > 0, refused)
 
 	-- **The client's own wording is asked for and not used, because of what comes back.**
 	--
@@ -32100,13 +32129,42 @@ print("the button on the auction window")
 	fire("AUCTION_ITEM_LIST_UPDATE")
 	fire("AUCTION_ITEM_LIST_UPDATE")
 	advance(1)
-	for _ = 1, 4 do
+
+	-- **Stopped the moment the walk is over, with nothing fired after it.** Driven to a fixed
+	-- number of rounds instead, the last event of the run redraws the button while the walk is
+	-- still alive - and the check below then passes on a label nothing had corrected. Which it
+	-- did: muting the end-of-read notice left it green.
+	for _ = 1, 8 do
+		if Family.Auctions:Walking() == nil then break end
 		fire("AUCTION_ITEM_LIST_UPDATE")
 		advance(1)
 	end
+
 	check("and a read it cleared the form for is reported as the whole house",
 		lastSaying("read the whole house") ~= nil,
 		lastSaying("read every page of that search") or "nothing said")
+
+	-- **And the button stops saying Stop.** Reported from play 2026-09-12: the read finished,
+	-- the chat frame said so, and the button still read *Stop* - so pressing it started a new
+	-- read instead of stopping anything. A read that ends between one list update and the next
+	-- leaves nothing to redraw on, which is why the end has to say so itself.
+	local stopText = Family.L["Stop"]
+	check("and the button stops offering to stop once the read has finished",
+		Family.Auctions:Walking() == nil and button.__text ~= stopText,
+		tostring(button.__text))
+
+	-- Which is only worth anything if it *did* say Stop while it ran, or the check above
+	-- passes on a button that never changes at all.
+	Family.Auctions:ForgetVisit()
+	button.__scripts.OnClick(button)
+	fire("AUCTION_ITEM_LIST_UPDATE")
+	advance(1)
+	check("while it does say so while one is running",
+		Family.Auctions:Walking() ~= nil and button.__text == stopText,
+		tostring(button.__text))
+	Family.Auctions:StopWalk("asked")
+	check("and again once that one is stopped", button.__text ~= stopText,
+		tostring(button.__text))
 
 	-- **And a Reset the client will not take is not fatal, only not the house.** The search
 	-- still goes out and the walk still runs; what it read is then whatever the form held, and

@@ -2860,3 +2860,58 @@ announced more than once or if a second query goes out.
 **The general rule: deduplicating by replacement covers the events you have not handled yet, never
 the ones you have.** If the work leaves a marker behind, the marker is what makes it idempotent.
 
+---
+
+## L-077 — The remainder is not the thing you were measuring
+
+The read of the auction house was made to say where its time went, so that *would scanning
+silently be faster* could be answered with a number instead of an opinion. It reported two
+figures: how long it had waited for the server, and the rest, called **Family's own pacing**.
+
+From play on Classic Era 2026-09-12, a whole house in five minutes:
+
+    1 minute(s) waiting for the server, 4 minute(s) of Family's own pacing
+
+Three hundred and ninety-four pages, and the settle between them is a tenth of a second - forty
+seconds, not four minutes. The other three were `CanSendAuctionQuery` answering *not yet* and
+being waited out half a second at a time: the server's own throttle, arriving through the client.
+
+The figure was computed as `elapsed - waited`, so it was never *our pacing*. It was **everything
+not otherwise measured**, wearing the name of the one thing in it somebody here had chosen. And
+because it wore that name, it pointed the only tuning decision at the wrong knob: the settle had
+been cut from three tenths to one the day before on the strength of arithmetic from this same
+line, and that change can have saved at most eighty seconds of a five minute read.
+
+**What now catches it.** The refusals are timed where they happen and reported as a third figure
+of their own, so the remainder is small and is really the settle. A check holds the client at
+*not yet* across several retries and fails if that time lands anywhere but its own column.
+
+**The general rule: a residual is a residual.** Subtracting what you measured from the total does
+not name what is left - it only proves you were not measuring it. Give it a neutral name, or go
+and measure it.
+
+---
+
+## L-078 — A check that a stray event repaired
+
+A read that finishes between one auction list update and the next leaves nothing to redraw on, so
+the button on the auction window went on reading **Stop** after the walk was over - and pressing
+it started a new read instead of stopping one. Reported from play 2026-09-12.
+
+The fix is an end-of-read notice, and the check written beside it asked exactly the right
+question: after the walk has finished, does the button still offer to stop? It passed. It also
+passed with the notice muted.
+
+The harness drove the walk for a fixed number of rounds, and the last of those fired a list
+update while the walk was still alive. The button redraws on that event too - so by the time the
+check looked, the label had been corrected by something that has nothing to do with the repair,
+and the reported bug was invisible again inside the test written for it.
+
+**What now catches it.** The loop stops the moment the walk is over and fires nothing after it,
+so the only thing that can have corrected the label is the notice. Muting the notice now fails
+two checks: the label after the end, and the label during the run.
+
+**The general rule: when a fix is *say something at the moment nothing else will*, the test has to
+arrange that nothing else does.** A fixture that keeps the ordinary traffic flowing tests the
+ordinary traffic.
+

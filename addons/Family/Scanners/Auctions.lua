@@ -934,6 +934,14 @@ function Auctions:WalkWaiting(state)
 	return state and state.waited or nil
 end
 
+-- **And how long the client spent refusing to send.** A third thing, not a share of the other
+-- two: `CanSendAuctionQuery` answering no is the server's throttle reaching us through the
+-- client, and it is neither the answer taking time nor a delay anybody here chose.
+function Auctions:WalkHeld(state)
+	state = state or walk
+	return state and state.held or nil
+end
+
 function Auctions:StopWalk(why)
 	if not walk then return false end
 	local stopping, told = walk, walk.told
@@ -953,7 +961,21 @@ local function askPage(page)
 		if walk.waits > 60 then
 			return Auctions:StopWalk("refusing")
 		end
+
+		-- **And how long it goes on saying it**, which turned out to be most of a read.
+		-- Reported from play on Classic Era 2026-09-12: 394 pages in five minutes, of
+		-- which one was the server answering - leaving four that were called *Family's own
+		-- pacing* when the settle at a tenth of a second a page accounts for forty seconds
+		-- of them. The rest is here, in half-second retries nobody was counting.
+		walk.heldFrom = walk.heldFrom or tonumber((Family:TryCall(GetTime)))
+
 		return Family:After(0.5, "auctions.walk", function() askPage(page) end)
+	end
+
+	if walk.heldFrom then
+		local now = tonumber((Family:TryCall(GetTime)))
+		if now then walk.held = (walk.held or 0) + (now - walk.heldFrom) end
+		walk.heldFrom = nil
 	end
 
 	walk.waits = 0
