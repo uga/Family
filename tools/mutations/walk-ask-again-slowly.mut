@@ -1,0 +1,6 @@
+name: the walk asks again only twice a second, as it used to
+file: addons/Family/Scanners/Auctions.lua
+--- old
+local ASK_AGAIN = 0.1
+--- new
+local ASK_AGAIN = 0.5

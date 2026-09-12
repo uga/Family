@@ -753,6 +753,12 @@ end
 
 local REPLICATE_QUANTITY, REPLICATE_LOT, REPLICATE_ITEM = 3, 10, 17
 
+-- How often the client is asked whether a query may go out yet, and how long a walk puts up with
+-- being told no. Asking is free - it is the client answering about itself - so the interval is
+-- short and the patience is in seconds, which is what anybody actually means by it.
+local ASK_AGAIN = 0.1
+local REFUSAL_PATIENCE = 30
+
 local ROWS_PER_TICK = 500
 local READ_QUIET = 30
 
@@ -1203,19 +1209,30 @@ local function askPage(page)
 	if not Family:TryCall(CanSendAuctionQuery) then
 		-- Waited for rather than pushed through: this is the client saying not yet, and
 		-- the only wrong answer is to ask again immediately.
-		walk.waits = (walk.waits or 0) + 1
-		if walk.waits > 60 then
+		--
+		-- **Given up on by the clock, not by a count of tries.** It used to stop after sixty
+		-- refusals, which was thirty seconds only because they were half a second apart -
+		-- so the patience was a property of the retry interval, and changing that interval
+		-- below would have quietly changed how long the walk puts up with a busy server.
+
+		-- **And how long it goes on saying it**, which turned out to be most of a read.
+		-- Measured on Burning Crusade 2026-09-12, twenty-seven pages: three seconds waiting
+		-- for the server, three of Family's own settle, and **fifty-eight here**. The house
+		-- is not slow to answer; the client will not let the question out.
+		local now = tonumber((Family:TryCall(GetTime)))
+		walk.heldFrom = walk.heldFrom or now
+
+		if now and walk.heldFrom and (now - walk.heldFrom) > REFUSAL_PATIENCE then
 			return Auctions:StopWalk("refusing")
 		end
 
-		-- **And how long it goes on saying it**, which turned out to be most of a read.
-		-- Reported from play on Classic Era 2026-09-12: 394 pages in five minutes, of
-		-- which one was the server answering - leaving four that were called *Family's own
-		-- pacing* when the settle at a tenth of a second a page accounts for forty seconds
-		-- of them. The rest is here, in half-second retries nobody was counting.
-		walk.heldFrom = walk.heldFrom or tonumber((Family:TryCall(GetTime)))
-
-		return Family:After(0.5, "auctions.walk", function() askPage(page) end)
+		-- **Asked again sooner than it used to be, because asking costs nothing.**
+		-- `CanSendAuctionQuery` is the client answering about itself - no traffic, no
+		-- server. At half a second, a permission granted just after a refusal was still
+		-- waited out for the rest of the half second, so up to that much of every page's
+		-- *would not send* was this timer rather than the throttle. It is a tenth now, and
+		-- what is left in that column is the server's.
+		return Family:After(ASK_AGAIN, "auctions.walk", function() askPage(page) end)
 	end
 
 	if walk.heldFrom then
@@ -1224,7 +1241,6 @@ local function askPage(page)
 		walk.heldFrom = nil
 	end
 
-	walk.waits = 0
 	walk.page = page
 	walk.sentAt = time()
 

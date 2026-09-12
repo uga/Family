@@ -31802,14 +31802,18 @@ print("how long a read of the auction house takes")
 	-- **And a client that will not send is its own figure**, neither the answer taking time nor
 	-- a delay anybody here chose. Held at *not yet* across two whole retries, it has to appear.
 	Family.Auctions:ForgetVisit()
+	-- Refused for a couple of seconds rather than a couple of tries. The client is asked every
+	-- tenth of a second now, because asking costs nothing and a coarser timer was itself part of
+	-- what the *would not send* column was measuring - so a fixture counting tries would say
+	-- three tenths of a second and round to nought.
 	local refusals = 0
 	_G.CanSendAuctionQuery = function()
 		refusals = refusals + 1
-		return refusals > 3
+		return refusals > 25
 	end
 
 	SlashCmdList["FAMILY"]("ah scan go")
-	advance(2)
+	advance(4)
 	fire("AUCTION_ITEM_LIST_UPDATE")
 	advance(1)
 	for _ = 1, 4 do
@@ -31822,6 +31826,26 @@ print("how long a read of the auction house takes")
 	check("and time the client spent refusing to send is counted as neither of the other two",
 		tonumber(refused:match("server, (%d+) second")) and
 			tonumber(refused:match("server, (%d+) second")) > 0, refused)
+
+	-- **A walk gives up on a client that will not stop refusing, by the clock.** It used to
+	-- count to sixty refusals, which was thirty seconds only because they were half a second
+	-- apart - so the patience was a property of the retry interval, and shortening that
+	-- interval to a tenth would have cut it to six seconds without a word.
+	Family.Auctions:ForgetVisit()
+	_G.CanSendAuctionQuery = function() return false end
+	SlashCmdList["FAMILY"]("ah scan go")
+
+	advance(20)
+	check("a client saying not yet is waited out for a good while, not for a few tries",
+		Family.Auctions:Walking() ~= nil, "gave up inside twenty seconds")
+
+	advance(15)
+	check("and given up on by the clock once it will not stop",
+		Family.Auctions:Walking() == nil
+			and (lastSaying("stopped after") or ""):find("refus", 1, true) ~= nil,
+		lastSaying("stopped after") or "still walking")
+
+	_G.CanSendAuctionQuery = function() return true end
 
 	-- **The client's own wording is asked for and not used, because of what comes back.**
 	--

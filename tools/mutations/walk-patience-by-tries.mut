@@ -1,0 +1,11 @@
+name: the walk gives up on a refusing client after a count of tries, not by the clock
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		if now and walk.heldFrom and (now - walk.heldFrom) > REFUSAL_PATIENCE then
+			return Auctions:StopWalk("refusing")
+		end
+--- new
+		walk.waits = (walk.waits or 0) + 1
+		if walk.waits > 60 then
+			return Auctions:StopWalk("refusing")
+		end
