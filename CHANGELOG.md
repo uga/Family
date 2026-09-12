@@ -131,6 +131,15 @@ picks itself up where it left off.
   it has already read rather than from a guess, so you can decide whether to wait for it. When it
   finishes it says how much of that was waiting for the server.
 
+- **If another addon loads the whole auction house, Family reads it too — for nothing.** Some
+  auction addons fetch every listing in one request. Whatever that puts on screen, Family now goes
+  through it a slice at a time and keeps the prices, without sending a single request of its own.
+  On a house of 178,000 listings that is thousands of prices you did not wait for.
+
+- **And it no longer makes that scan worse.** Family used to re-read the whole list every time the
+  game said the list had changed, which on an ordinary search is fifty rows and during one of those
+  scans is very much more. That is what the slices replace.
+
 - **It works out for itself whether it read the house or a search**, from the search the auction
   house actually sent rather than from whether the Reset button would take a click. It used to say
   the form could not be emptied when the form was simply already empty.

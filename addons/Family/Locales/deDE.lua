@@ -267,6 +267,7 @@ Family.locales.deDE = {
 	["  a query would be accepted now: |cffffd700%s|r"] = "  eine Abfrage würde jetzt angenommen: |cffffd700%s|r",
 	["  prices remembered for this realm and side: |cffffd700%d|r"] = "  gemerkte Preise für dieses Reich und diese Seite: |cffffd700%d|r",
 	["  oldest %s, newest %s"] = "  ältester %s, neuester %s",
+	["  reading a loaded list: %d of %d row(s), %d price(s) taken"] = "  lese eine geladene Liste: %d von %d Zeile(n), %d Preis(e) genommen",
 	["Show prices on item tooltips"] = "Preise in Gegenstands-Tooltips zeigen",
 	["What a vendor pays you, which the game always knows - what a vendor charges, for the items Family has seen on a merchant's list - and what the auction house was last asking, with the age of that reading beside it. Nothing is claimed about an item nobody has been seen selling."] = "Was ein Händler dir zahlt, was das Spiel immer weiß - was ein Händler verlangt, für die Gegenstände, die Family auf einer Händlerliste gesehen hat - und was das Auktionshaus zuletzt verlangte, mit dem Alter dieser Ablesung daneben. Über einen Gegenstand, den niemand verkaufen gesehen wurde, wird nichts behauptet.",
 	["Auction"] = "Auktion",

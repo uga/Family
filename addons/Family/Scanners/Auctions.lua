@@ -352,6 +352,7 @@ end
 
 function Auctions:ForgetVisit()
 	seenThisVisit = {}
+	Auctions:StopBigListRead()
 end
 
 -- **Counted, because on Mists nothing is being learned and three things could explain it.**
@@ -762,6 +763,12 @@ local REFUSAL_PATIENCE = 30
 local ROWS_PER_TICK = 500
 local READ_QUIET = 30
 
+-- **How many rows the older house puts on one page**, which two things now need: the walk, to
+-- work out how many pages a house is, and the price reader below, to tell an ordinary browse from
+-- a list somebody has loaded the whole house into. Up here with the other row counts rather than
+-- beside the walk, because a second constant meaning *a page* is two numbers to keep in step.
+local PAGE_ROWS = 50
+
 local reading
 
 function Auctions:ReplicateReading()
@@ -938,18 +945,15 @@ function Auctions:KeepPrice(prices, itemID, lot, quantity, now)
 	return 0
 end
 
-function Auctions:ReadPrices()
-	local where = market()
-	if not where then return 0 end
-
-	local count = tonumber((Family:TryCall(GetNumAuctionItems, "list"))) or 0
-	if count < 1 then return 0 end
-
-	local prices = self:Prices(where)
+-- **A stretch of the browse list, filed.** Its own function because the list is not always a
+-- page: see `ReadPrices` below for what a list of a hundred and seventy-eight thousand rows is
+-- and how it got there.
+local function readRows(where, from, to)
+	local prices = Auctions:Prices(where)
 	local now = time()
 	local kept = 0
 
-	for index = 1, count do
+	for index = from, to do
 		local link = Family:TryCall(GetAuctionItemLink, "list", index)
 		local itemID = type(link) == "string" and tonumber(link:match("item:(%d+)")) or nil
 
@@ -979,10 +983,101 @@ function Auctions:ReadPrices()
 	end
 
 	if kept > 0 then
-		Family:Debug("auctions: %d price(s) taken from %d row(s) on show", kept, count)
+		Family:Debug("auctions: %d price(s) taken from row(s) %d to %d", kept, from, to)
 	end
 
 	return kept
+end
+
+-- **A list too big to read between two frames is read across them.**
+--
+-- The browse list is fifty rows when somebody searches, and everything here was written for
+-- that. It is not always fifty. Measured on Burning Crusade 2026-09-12 with another auction
+-- addon's whole-house scan running: **72,704 rows on that list** partway through, on a house of
+-- 178,128 - the client's own list, the one this file has always read, filled by a `getAll` Family
+-- did not send and would never send.
+--
+-- Two things follow, and they pull the same way.
+--
+-- The first is a fault. `ReadPrices` walked `1..count` every time `AUCTION_ITEM_LIST_UPDATE`
+-- fired, and that event fired **5,745 times** across that one scan. Fifty rows an event is
+-- nothing; a hundred and seventy-eight thousand, thousands of times, is a client that will not
+-- accept a keypress - which is what Alberto had for three minutes. How much of that stall was
+-- Family's is unmeasured and is not claimed here. That the multiplier was ours, in code that runs
+-- whether or not anybody asked Family for anything, is not in doubt.
+--
+-- The second is a gift. Family took **1,373 prices** out of that scan with nothing written for
+-- the purpose, because the passive reader read the browse list and the browse list was the house.
+-- Reading it properly is worth more than avoiding it: a full house costs nothing to read, sends
+-- nothing, and cannot get anybody disconnected, because somebody else has already paid for it.
+--
+-- So a list bigger than a page goes to slices, five hundred rows a tick, which is the same
+-- machinery and the same figure as the newer house's whole-list read - 43,130 rows in seven
+-- seconds on Mists, with the game still answering its keyboard. One read at a time, and a list
+-- that keeps growing keeps the same read going rather than starting another.
+local bigRead
+
+function Auctions:BigListReading()
+	return bigRead
+end
+
+function Auctions:StopBigListRead()
+	bigRead = nil
+	return true
+end
+
+local bigReadTick
+
+bigReadTick = function()
+	if not bigRead then return end
+
+	local where = market()
+	if not where then bigRead = nil return end
+
+	local count = tonumber((Family:TryCall(GetNumAuctionItems, "list"))) or 0
+
+	-- **A shorter list ends the read, and there is no guard here doing it.** One was written -
+	-- *the list was replaced under us, stop* - and taken out again when the mutation removing it
+	-- survived: the slice below is `at + 1 .. min(at + 500, count)`, which against a shorter list
+	-- is an empty range, and the finishing test at the bottom is then met on this same tick. The
+	-- guard read like the thing that handled it and was not.
+	bigRead.count = count
+
+	local to = math.min(bigRead.at + ROWS_PER_TICK, count)
+	bigRead.kept = (bigRead.kept or 0) + readRows(where, bigRead.at + 1, to)
+	bigRead.at = to
+
+	if bigRead.at >= count then
+		Family:Debug("auctions: %d price(s) taken from a list of %d row(s)",
+			bigRead.kept or 0, count)
+		bigRead = nil
+		return
+	end
+
+	Family:After(0.05, "auctions.biglist", bigReadTick)
+end
+
+function Auctions:ReadPrices()
+	local where = market()
+	if not where then return 0 end
+
+	local count = tonumber((Family:TryCall(GetNumAuctionItems, "list"))) or 0
+	if count < 1 then return 0 end
+
+	if count > PAGE_ROWS then
+		-- **Already going, so it is told how far the list now reaches and left alone.**
+		-- Restarting on every event is the fault this replaces, one frame further along.
+		if bigRead then
+			bigRead.count = count
+			return 0
+		end
+
+		bigRead = { at = 0, count = count, kept = 0 }
+		Family:After(0, "auctions.biglist", bigReadTick)
+		return 0
+	end
+
+	return readRows(where, 1, count)
 end
 
 --------------------------------------------------------------------------------------------
@@ -1187,7 +1282,6 @@ end
 -- setting here, it is an argument of the client's own that Family never touches.
 local walk
 
-local PAGE_ROWS = 50
 local QUIET_SECONDS = 30
 
 -- How long the answers to one query are given to stop arriving before the next goes out.
@@ -1670,6 +1764,10 @@ Family:OnDatabaseReady("auctions", function()
 		-- has one of them and the call for the other is a shell that answers nought.
 		Auctions:StopReplicateRead("closed")
 		Auctions:StopWalk("closed")
+
+		-- And the slices, which are indices into a list that is about to be gone. Reading
+		-- on would be rows of nothing, or worse, rows of whatever is there next time.
+		Auctions:StopBigListRead()
 	end)
 
 	-- A key of their own. Under "auctions" these counters replaced the handlers registered

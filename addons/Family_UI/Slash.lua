@@ -1447,6 +1447,16 @@ add("ah", L["what this client offers on the auction house"], function(argument)
 			tostring((Family:TryCall(GetNumAuctionItems, which))))
 	end
 
+	-- **And whether a loaded list is being read through**, which is the only moving thing here
+	-- that nothing else reports. The browse list is fifty rows when somebody searches and can be
+	-- the whole house when another addon has loaded it - measured at 72,704 rows on Burning
+	-- Crusade 2026-09-12 - and Family reads that in slices rather than between two frames.
+	local big = Family.Auctions:BigListReading()
+	if big then
+		Family:Print(L["  reading a loaded list: %d of %d row(s), %d price(s) taken"],
+			big.at or 0, big.count or 0, big.kept or 0)
+	end
+
 	-- **Both returns of it**, because the second is the one a page walk needs and nothing in
 	-- this repository has ever read it: fifty rows is one page, and how many pages there are
 	-- is the total divided by that.

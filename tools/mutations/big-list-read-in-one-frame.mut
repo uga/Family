@@ -1,0 +1,6 @@
+name: a loaded list is walked in the one frame again, as it was
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	if count > PAGE_ROWS then
+--- new
+	if false then

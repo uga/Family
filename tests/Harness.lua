@@ -5312,6 +5312,111 @@ do
 			(Family.Auctions:PriceOf(3385)) == nil,
 			tostring((Family.Auctions:PriceOf(3385))))
 
+		-- **A list bigger than a page is not read between two frames.**
+		--
+		-- Everything above was written for the fifty rows a search puts on the browse list.
+		-- Measured on Burning Crusade 2026-09-12 with another addon's whole-house scan
+		-- running: **72,704 rows on that same list**, on a house of 178,128, and
+		-- `AUCTION_ITEM_LIST_UPDATE` fired **5,745 times** across the scan. `ReadPrices`
+		-- walked `1..count` on every one of them, which is a multiplier nobody had put
+		-- there on purpose and which lives in code that runs whether or not anybody asked
+		-- Family for anything.
+		--
+		-- **Counted through the client's own calls**, because *did it finish quickly* is not
+		-- the property - a reader could be slow and still correct. What has to be true is
+		-- that one event does not walk a hundred and seventy-eight thousand rows.
+		do
+			local asked = 0
+			local realInfoBig = GetAuctionItemInfo
+			GetAuctionItemInfo = function(which, i)
+				if which == "list" then asked = asked + 1 end
+				return realInfoBig(which, i)
+			end
+
+			Family.Auctions:ForgetVisit()
+			LIST = {}
+			for index = 1, 4000 do
+				LIST[index] = { id = 100000 + index, count = 1, buyout = 500 + index }
+			end
+
+			Family.Auctions:ReadPrices()
+			check("a list far bigger than a page is not walked in the one frame",
+				asked == 0 and Family.Auctions:BigListReading() ~= nil, tostring(asked))
+
+			-- **One tick is one slice.** Without this, *it was all read by the end* passes
+			-- for a reader that still does the lot in a single frame one frame later, which
+			-- is the fault moved rather than fixed.
+			advance(0.1)
+			local partway = Family.Auctions:BigListReading()
+			check("one tick reads a slice of it and no more",
+				asked == 500 and partway ~= nil and partway.at == 500,
+				asked .. " row(s), at " .. tostring(partway and partway.at))
+
+			-- **And a second event does not start it again**, which is the fault one frame
+			-- further along: five thousand events each restarting at row one is the same
+			-- multiplier wearing a different hat.
+			--
+			-- Asked **after a slice has been read**, because before one has, a read that
+			-- restarts and a read that carries on both sit at row nought and the check
+			-- cannot tell them apart. Written that way first, and the mutation walked
+			-- straight through it.
+			Family.Auctions:ReadPrices()
+			local carried = Family.Auctions:BigListReading()
+			check("and another list update carries the same read on rather than restarting it",
+				carried ~= nil and carried.at == 500, tostring(carried and carried.at))
+
+			advance(1)
+			check("and all of it is read across the frames that follow",
+				Family.Auctions:BigListReading() == nil and asked == 4000
+					and (Family.Auctions:PriceOf(100001)) == 501
+					and (Family.Auctions:PriceOf(104000)) == 4500,
+				asked .. " / " .. tostring((Family.Auctions:PriceOf(104000))))
+
+			-- **A list replaced by an ordinary search ends the read**, and it needs no guard
+			-- of its own to do it: one was written here and taken out again, because no
+			-- check could tell the code with it from the code without. A slice is
+			-- `at + 1 .. min(at + 500, count)`, so against a shorter list the range is empty
+			-- and the finishing test is met on the same tick. The mutation removing that
+			-- guard survived, which is what says it was not doing anything.
+			--
+			-- What no arithmetic covers is one big list replaced by a **different** big one,
+			-- where the read would carry on into the new one at the old row. On this house
+			-- that cannot happen - fifty rows is a page, past that means somebody loaded the
+			-- lot, and the addon that does it will not do it twice inside a quarter of an
+			-- hour. It is written down rather than guarded against, because a guard nothing
+			-- can reach is a guard nothing keeps honest.
+			Family.Auctions:ForgetVisit()
+			LIST = {}
+			for index = 1, 4000 do
+				LIST[index] = { id = 200000 + index, count = 1, buyout = 700 }
+			end
+			Family.Auctions:ReadPrices()
+			advance(0.1)
+			LIST = { { id = 2880, count = 1, buyout = 900 } }
+			advance(1)
+			check("and a list replaced by an ordinary search ends the slices",
+				Family.Auctions:BigListReading() == nil)
+
+			-- And the window closing does the same, from the other direction.
+			Family.Auctions:ForgetVisit()
+			LIST = {}
+			for index = 1, 4000 do
+				LIST[index] = { id = 300000 + index, count = 1, buyout = 700 }
+			end
+			Family.Auctions:ReadPrices()
+			advance(0.1)
+			check("a read of a loaded list is running before the window shuts",
+				Family.Auctions:BigListReading() ~= nil)
+			fire("AUCTION_HOUSE_CLOSED")
+			check("and closing the auction house ends it",
+				Family.Auctions:BigListReading() == nil)
+
+			GetAuctionItemInfo = realInfoBig
+			Family.Auctions:ForgetVisit()
+			LIST = { { id = 2880, count = 1, buyout = 400 } }
+			Family.Auctions:ReadPrices()
+		end
+
 		-- **A second page of the same visit still takes the lower.** Read as *the last page
 		-- wins* this loses money: 40g seen, then page two at 60g, and the record says 60.
 		LIST = { { id = 2880, count = 1, buyout = 800 } }
