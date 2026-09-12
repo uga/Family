@@ -4007,8 +4007,20 @@ recorded.
    It also closes the question this whole thread started from - why that addon reported about
    16,000 items where Family holds about 6,800. That was 70% of the house; the variant count
    extrapolates towards its 16,133, and the base-item count towards Family's 6,877. **The two were
-   never counting the same thing**, and neither was wrong. No bid-only auctions, no unread rows:
-   the whole gap is the suffix collapse.
+   never counting the same thing**, and neither was wrong. No bid-only auctions: 4,595 of the
+   4,607 carry a buyout, so the price side of the gap is nothing.
+
+   ~~No unread rows either.~~ **That half was a claim with nothing behind it**, written the hour
+   before the counter that could check it was deployed, and the counter says otherwise: of 155,500
+   rows read on the same house, **47,994 - 30.9% - gave back no link at all**. What that costs is a
+   different question from what it is, and the only evidence to hand is that the distinct counts
+   did not move with the row count. 155,500 rows gave 4,413 items and 9,990 variants where 125,310
+   rows hours earlier gave 4,607 and 10,494: **more rows, fewer distinct**, which is house churn
+   rather than reading. The variety had flattened long before either figure, so the blanks are
+   unlikely to be hiding whole items - though they can perfectly well hide the *cheapest* listing
+   of an item already seen, and that is unmeasured. Nothing in the game tells the two apart today:
+   `ReadPrices` runs only on `AUCTION_ITEM_LIST_UPDATE`, which stops when the delivery does, and
+   the reader carries its place forward, so the same list cannot be walked twice.
 2. ~~Whether an enchant is a variant.~~ **Settled by Alberto, 2026-09-12: only the suffix is.**
    *Incantesimi (gemme etc): per il momento non consideriamoli varianti.* So the key is not
    `ItemString`, which answers for any of enchant, gems or suffix - it is the **base id plus the
