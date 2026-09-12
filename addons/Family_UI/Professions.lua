@@ -61,27 +61,32 @@ local MATERIAL_GAP = 4
 local MATERIALS_MAX = 8
 local MATERIAL_ROOM = MATERIALS_MAX * (MATERIAL_ICON + MATERIAL_GAP)
 
--- **Where the strip's right-hand edge sits, and it is not one number.**
+-- **The strip is hard against the right-hand edge, and the note sits to its left.**
 --
--- Asked 2026-09-12: *perche non sposti la colonna dei materiali ancora piu a destra?* The space
--- he was pointing at is the note column - *can make 4*, *ready in 3h* - which is reserved on every
--- row and empty on most of them. So the strip takes it when there is nothing in it and gives it
--- back when there is, which is the whole of the room going spare and none of the room in use.
---
--- Two numbers because there are two states: a row with a note and a row without one.
+-- It was the other way round: the note kept a column on the far right and the strip moved in to
+-- clear it whenever there was one. Asked from play 2026-09-12 off a screenshot of *Fine Leather
+-- Belt*, whose two materials sat in the middle of the row with *can make 1* beyond them: *can
+-- make n should stay on the LEFT of the icons, not on the right.* With the pictures always ending
+-- at the same edge, the materials of every row line up down the page, which a strip that moved
+-- whenever a row carried a note could never do.
 local NOTE_ROOM = 150
 local MATERIAL_INSET_BARE = 8
-local MATERIAL_INSET = MATERIAL_INSET_BARE + NOTE_ROOM + 6
+local NOTE_GAP = 8
 
--- **A function rather than an expression in the draw loop**, so the decision can be asked
--- directly. Written inline, the only way to reach it was to drive a whole panel draw, and the
--- check written that way passed an inset in by hand - which tested that the strip honours the
--- number it is given and never that the right number is chosen.
-local function insetFor(note)
-	return (note ~= nil and note ~= "") and MATERIAL_INSET or MATERIAL_INSET_BARE
+-- **Where the note ends, asked of the number of pictures actually drawn.** A function rather than
+-- an expression in the draw loop so the decision can be asked directly - the check once written
+-- by driving a whole panel passed the number in by hand and so tested nothing about choosing it.
+--
+-- Right-aligned against the leftmost picture rather than against a fixed column, because a
+-- recipe of two materials has six empty slots to its left, and a note parked beyond those would
+-- sit a hand's width from the thing it is about.
+local function noteOffsetFor(shown)
+	shown = tonumber(shown) or 0
+	if shown <= 0 then return MATERIAL_INSET_BARE end
+	return MATERIAL_INSET_BARE + shown * (MATERIAL_ICON + MATERIAL_GAP) + NOTE_GAP
 end
 
-UI.__materialInsetFor = insetFor
+UI.__noteOffsetFor = noteOffsetFor
 
 -- The profession buttons along the top. Wider than they were by what a picture takes, so that
 -- "Leatherworking 375" lost no room to it - the same trade the tab strip made.
@@ -706,9 +711,9 @@ local function build(frame)
 	-- product and no spell at all (DATASOURCES §2), so where there is no spell the item is asked
 	-- what makes it - which is the same fallback `Recipes:MadeBy` exists for.
 	-- Called with no recipe to put the strip away, which is what the whole-family list does.
-	local function showMaterials(r, recipe, inset)
+	local function showMaterials(r, recipe)
 		recipe = recipe or {}
-		inset = inset or MATERIAL_INSET
+		local inset = MATERIAL_INSET_BARE
 		local spell = recipe.spellID
 			or (recipe.itemID and Family.Recipes:MadeBy(recipe.itemID)) or nil
 		local parts = spell and Family.Recipes:Reagents(spell) or nil
@@ -745,7 +750,18 @@ local function build(frame)
 			end
 		end
 
-		return held > 0
+		-- **And the note goes to the left of whatever was drawn**, on every row this touches.
+		-- Here rather than in each list, because the rows are pooled between the member list
+		-- and the whole-family search, and a row that kept a note moved aside for somebody's
+		-- materials would carry that into a list with no strip at all - where the note is a
+		-- column of crafters' names that belongs hard against the edge.
+		local drawn = math.min(held, MATERIALS_MAX)
+		if r.note then
+			r.note:ClearAllPoints()
+			r.note:SetPoint("RIGHT", -noteOffsetFor(drawn), 0)
+		end
+
+		return held > 0, drawn
 	end
 
 	local function row(index)
@@ -1383,7 +1399,7 @@ local function build(frame)
 
 						-- Hard against the right-hand edge: this line carries nothing
 						-- else, so there is no column to keep clear of.
-						showMaterials(line, recipe, MATERIAL_INSET_BARE)
+						showMaterials(line, recipe)
 						line.text:SetWidth(math.max(60,
 							UI:ListWidth(scroll) - ROW - 20 - MATERIAL_ROOM))
 						line.text:SetText("        " .. L["|cff66bbffMade with|r"])
@@ -1780,14 +1796,15 @@ local function build(frame)
 			end
 			r.note:SetText(note)
 
-			local inset = insetFor(note)
-			local hasMaterials = showMaterials(r, recipe, inset)
+			local hasMaterials = showMaterials(r, recipe)
 
 			-- A floor, because the strip grew to the size of the recipe's own picture and a
 			-- narrow window can now ask for a negative width - which the client takes as
 			-- *as wide as the text needs* and draws straight through everything to its right.
-			r.text:SetWidth(math.max(60, UI:ListWidth(scroll) - ROW - 20 - inset
-				- (hasMaterials and MATERIAL_ROOM or 0)))
+			-- The same room as before, only in a different order: the strip's, then the note's.
+			r.text:SetWidth(math.max(60, UI:ListWidth(scroll) - ROW - 20 - MATERIAL_INSET_BARE
+				- (hasMaterials and MATERIAL_ROOM or 0)
+				- (note ~= "" and (NOTE_ROOM + NOTE_GAP) or 0)))
 
 			-- Whatever the client said this row's icon was, recorded at scan time. Failing
 			-- that, the icon of the thing it makes - which is right for anything that

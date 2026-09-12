@@ -1,0 +1,8 @@
+name: a pooled row keeps its note moved aside after the materials that moved it have gone
+file: addons/Family_UI/Professions.lua
+--- old
+		if r.note then
+			r.note:ClearAllPoints()
+--- new
+		if r.note and drawn > 0 then
+			r.note:ClearAllPoints()

@@ -1,6 +1,6 @@
-name: the materials strip sits in the note's room whether or not there is a note
+name: the note is drawn over the materials instead of to their left
 file: addons/Family_UI/Professions.lua
 --- old
-	return (note ~= nil and note ~= "") and MATERIAL_INSET or MATERIAL_INSET_BARE
+			r.note:SetPoint("RIGHT", -noteOffsetFor(drawn), 0)
 --- new
-	return MATERIAL_INSET_BARE
+			r.note:SetPoint("RIGHT", -noteOffsetFor(0), 0)

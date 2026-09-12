@@ -8408,41 +8408,56 @@ print("what a recipe is made of, beside the recipe")
 	check("while a recipe with no materials at all leaves an empty strip behind it",
 		shown == 0, tostring(shown) .. " still shown: " .. counts)
 
-	-- **The strip takes the note's room only where there is no note.**
+	-- **The strip is hard against the edge, and the note sits to its left.**
 	--
-	-- Asked for 2026-09-12 - *perche non sposti la colonna dei materiali ancora piu a destra?*
-	-- The space was the note column, *can make 4* or *ready in 3h*, reserved on every row and
-	-- empty on most of them. So the strip takes it when there is nothing in it and gives it back
-	-- when there is, and the anchor is what says which - read off the offset the panel actually
+	-- Asked from play 2026-09-12 off a screenshot of *Fine Leather Belt*: *can make n should stay
+	-- on the LEFT of the icons, not on the right.* It had been the other way round - the note kept
+	-- a column on the far right and the strip moved in to clear it - so the materials of a row
+	-- with a note and a row without one did not line up. Read off the offsets the panel actually
 	-- set, because the alternative is asserting that the code meant to.
 	do
-		local function edge()
-			local at = strip.mats[8].icon.__offsets
+		local function rightOf(region)
+			local at = region and region.__offsets
 			return at and at.RIGHT and at.RIGHT.x or nil
 		end
 
-		-- **The decision, asked directly.** Written as an expression in the draw loop it could
-		-- only be reached by driving a whole panel, and the check written that way passed an
-		-- inset in by hand - which tests that the strip honours the number it is given and
-		-- never that the right number is chosen. The mutation walked straight through it.
-		local withNote = Family.UI.__materialInsetFor("|cff40bf40can make 4|r")
-		local without = Family.UI.__materialInsetFor("")
-		check("a row with a note keeps the strip clear of it",
-			withNote > without and without <= 8,
+		strip.note:SetText("|cff40bf40can make 4|r")
+		Family.UI.__showRecipeMaterials(strip, { spellID = 910001 })
+		local withNote = rightOf(strip.mats[8].icon)
+
+		strip.note:SetText("")
+		Family.UI.__showRecipeMaterials(strip, { spellID = 910001 })
+		local without = rightOf(strip.mats[8].icon)
+
+		check("the materials end at the same edge whether or not the row has a note",
+			withNote ~= nil and withNote == without,
 			tostring(withNote) .. " against " .. tostring(without))
-		check("and a row with none is the same as a row with an empty one",
-			Family.UI.__materialInsetFor(nil) == without,
-			tostring(Family.UI.__materialInsetFor(nil)))
 
-		-- And the strip honours whichever it is handed, which is the other half.
-		Family.UI.__showRecipeMaterials(strip, { spellID = 910001 }, without)
-		local bare = edge()
-		Family.UI.__showRecipeMaterials(strip, { spellID = 910001 }, withNote)
-		local beside = edge()
+		-- The leftmost picture actually drawn, found rather than counted - this recipe's third
+		-- material needs one of and carries no number, which is easy to miscount as two - and
+		-- its width taken from the step between two slots, a picture and its gap, so the check
+		-- does not lean on a size the stub may not have recorded.
+		strip.note:SetText("|cff40bf40can make 4|r")
+		Family.UI.__showRecipeMaterials(strip, { spellID = 910001 })
+		local first = nil
+		for slot = 1, 8 do
+			if strip.mats[slot].icon:IsShown() then first = first or slot end
+		end
+		local step = (rightOf(strip.mats[7].icon) or 0) - (rightOf(strip.mats[8].icon) or 0)
+		local pictureLeft = (rightOf(strip.mats[first or 8].icon) or 0) + step
+		local noteRight = rightOf(strip.note)
+		check("and the note ends to the left of the leftmost picture drawn",
+			noteRight ~= nil and noteRight < pictureLeft,
+			tostring(noteRight) .. " against a picture starting at " .. tostring(pictureLeft))
 
-		check("with the strip actually drawn where it was told to be",
-			bare ~= nil and beside ~= nil and bare > beside,
-			tostring(bare) .. " against " .. tostring(beside))
+		-- **And a row with no materials puts it back against the edge.** The rows are pooled
+		-- with the whole-family search, where the note is a column of crafters' names; a row
+		-- that kept a note moved aside for somebody's materials would carry that across.
+		Family.UI.__showRecipeMaterials(strip, nil)
+		check("while a row with no materials has its note against the edge again",
+			rightOf(strip.note) == -Family.UI.__noteOffsetFor(0)
+				and Family.UI.__noteOffsetFor(0) < Family.UI.__noteOffsetFor(2),
+			tostring(rightOf(strip.note)))
 	end
 
 	Family.Recipes.MadeBy = realMadeBy
