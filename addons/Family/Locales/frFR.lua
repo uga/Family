@@ -914,4 +914,5 @@ Family.locales.frFR = {
 	["|cff66bbffFrom the mailbox:|r %d item(s), %s collected"] = "|cff66bbffDe la boîte aux lettres :|r %d objet(s), %s encaissé(s)",
 	["Say what a craftable item is made with"] = "Dire de quoi un objet fabricable est fait",
 	["|cff66bbffMade with|r"] = "|cff66bbffFabriqué avec|r",
+	[" |cff66bbff(guild)|r"] = " |cff66bbff(guilde)|r",
 }

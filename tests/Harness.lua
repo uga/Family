@@ -9380,6 +9380,51 @@ if professionsEveryone then
 			Family.UI:Refresh()
 		end
 
+		-- **Four names to an unfolded line, not one.**
+		--
+		-- Reported 2026-09-12 off a screenshot of six crafters on six lines, with the reason:
+		-- *se i nomi sono parecchi, gia ne bastano una dozzina, l'elenco a 1 nome a riga va
+		-- scrollato, e rischia di farmi sparire in cima il nome della ricetta a cui si
+		-- riferiscono.* A dozen names is twelve rows one way and three the other.
+		do
+			local realSearch = Family.Recipes.Search
+			Family.Recipes.Search = function(_, needle)
+				local members = {}
+				for index = 1, 9 do
+					members[index] = { key = "Maker" .. index .. "-FireMaw",
+						name = "Maker" .. index, label = "Maker" .. index,
+						classFile = "MAGE", rank = 300 }
+				end
+				return { { name = "Nine Handed Thing", profession = 164, spellID = 990001,
+					members = members, guild = {} } }
+			end
+			Family.UI:Refresh()
+
+			local row1 = Family.UI.__recipeRowFor(1)
+			row1.__scripts.OnClick(row1)
+
+			-- Counted off the rows the panel drew, and by what is *on* them: a line with
+			-- four names is one line whatever the code meant to do.
+			local lines, names = 0, 0
+			for index = 2, 14 do
+				local r = Family.UI.__recipeRowFor(index)
+				local text = r.note and r.note.__text or ""
+				if r.__shown == true and text ~= "" then
+					lines = lines + 1
+					local _, commas = text:gsub(",", "")
+					names = names + commas + 1
+				end
+			end
+
+			check("nine crafters unfold onto three lines rather than nine",
+				lines == 3 and names == 9,
+				lines .. " line(s), " .. names .. " name(s)")
+
+			row1.__scripts.OnClick(row1)
+			Family.Recipes.Search = realSearch
+			Family.UI:Refresh()
+		end
+
 		choose("crafters")
 		check("by how many of the family can make it, most first",
 			page() == "Silver Rod | Runed Copper Breastplate | Wizard Oil", page())
@@ -24356,8 +24401,9 @@ print("the changelog, as release.sh will cut it")
 	local text = handle and handle:read("*a") or ""
 	if handle then handle:close() end
 
-	local sections, headings, twice, loose = 0, 0, {}, {}
+	local sections, headings, twice, loose, repeated = 0, 0, {}, {}, {}
 	local section, seen = nil, {}
+	local entries = {}
 
 	for line in (text .. "\n"):gmatch("([^\n]*)\n") do
 		if line:match("^## ") then
@@ -24370,7 +24416,24 @@ print("the changelog, as release.sh will cut it")
 			end
 			seen[line] = true
 			seen.any = true
-		elseif line:match("^%- %*%*") and section and not seen.any then
+		elseif line:match("^%- %*%*") and section then
+			-- **And the same entry twice.** The headings above were being checked and
+			-- the bullets were not, and on 2026-09-12 three of them went into Unreleased
+			-- twice by exactly the drift this block was written about: appended in two
+			-- passes by somebody looking at the top of the file. The release page would
+			-- have carried all six.
+			-- **The whole line**, not the bold lead out of it. A released version uses a
+			-- short bold word as a sub-heading - *Possessions*, *Character* - and several
+			-- of those repeat inside one version quite properly. What must not repeat is
+			-- an entry, and an entry is the sentence.
+			if entries[line] then
+				repeated[#repeated + 1] = string.format("%s -> %s",
+					tostring(section), line:sub(4, 64))
+			end
+			entries[line] = true
+		end
+
+		if line:match("^%- %*%*") and section and not seen.any then
 			-- An entry above its section's first heading. It reads as belonging to the
 			-- version rather than to Added or Fixed, and it is the same drift by another
 			-- route: appended to the top of a section instead of the top of a heading.
@@ -24390,6 +24453,8 @@ print("the changelog, as release.sh will cut it")
 		#twice == 0, table.concat(twice, " | "))
 	check("and no entry sits above the heading it belongs under",
 		#loose == 0, table.concat(loose, " | "))
+	check("and no version says the same thing twice",
+		#repeated == 0, table.concat(repeated, " | "))
 end)()
 
 print()

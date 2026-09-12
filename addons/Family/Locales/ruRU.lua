@@ -914,4 +914,5 @@ Family.locales.ruRU = {
 	["|cff66bbffFrom the mailbox:|r %d item(s), %s collected"] = "|cff66bbffИз почты:|r предметов - %d, получено %s",
 	["Say what a craftable item is made with"] = "Сообщать, из чего сделан изготавливаемый предмет",
 	["|cff66bbffMade with|r"] = "|cff66bbffИзготовлено из|r",
+	[" |cff66bbff(guild)|r"] = " |cff66bbff(гильдия)|r",
 }

@@ -1,0 +1,6 @@
+name: an unfolded recipe puts one crafter on each line rather than four
+file: addons/Family_UI/Professions.lua
+--- old
+					local PER_LINE = 4
+--- new
+					local PER_LINE = 1

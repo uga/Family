@@ -85,20 +85,12 @@ picks itself up where it left off.
 
 - **Every recipe row says what it is made of.** The materials, with how many of each, on the right
   of the recipe's own line — for every character, not only the one whose profession window is
-  open.
+  open. On the whole-family search, where the row already carries a recipe and everybody who can
+  make it, click the recipe and the materials appear on a line underneath.
 
-- **What came out of the mailbox, in chat.** A line for each thing taken and each sum collected,
-  and a total when you close it. The game says nothing about what a mailbox full of auction
-  returns actually came to. Off until you switch it on.
-
-- **Reading prices and reading the whole house are two separate switches.** Using an auction house
-  fills Family in, and so does the full scan of an addon like Auctionator — Family listens and
-  takes the prices for nothing. Family's own page-by-page read is the second switch, and it is for
-  people who have no such addon: the game only lets one search out at a time, so it takes minutes.
-
-- **Every recipe row says what it is made of.** The materials, with how many of each, on the right
-  of the recipe's own line — for every character, not only the one whose profession window is
-  open.
+- **Opening a recipe on the whole-family search lists four crafters to a line**, in the same
+  column the folded row uses, instead of one name per line. A dozen people who can make something
+  was a dozen rows, which scrolled the recipe's own name off the top.
 
 - **What came out of the mailbox, in chat.** A line for each thing taken and each sum collected,
   and a total when you close it. The game says nothing about what a mailbox full of auction

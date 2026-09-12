@@ -1228,7 +1228,20 @@ local function build(frame)
 							guild = true, at = who.at, cooldown = who.cooldown }
 					end
 
-					for _, who in ipairs(everybody) do
+					-- **Four to a line, in the column the folded row uses.**
+					--
+					-- Asked for 2026-09-12 off a screenshot of six crafters on six lines:
+					-- *per coerenza grafica basterebbero delle righe ciascuna con un elenco
+					-- di nomi come la principale.* Six names down the left of an otherwise
+					-- empty block is a lot of screen for a list the folded row fits four of
+					-- on one line - and it does not line up with anything.
+					--
+					-- Four, because four is what the folded row shows, and this is the same
+					-- list continued rather than a different presentation of it. Nine
+					-- crafters is three lines: four, four, one.
+					local PER_LINE = 4
+
+					for at = 1, #everybody, PER_LINE do
 						used = used + 1
 						local line = row(used)
 						line:SetPoint("TOPLEFT", 0, -y)
@@ -1242,46 +1255,62 @@ local function build(frame)
 						line.canOpen, line.expandKey = false, nil
 						line.fallback = nil
 						line.icon:SetTexture(nil)
+						line.text:SetText("")
+						showMaterials(line, nil)
 
-						line.text:SetWidth(UI:ListWidth(scroll) - NOTE_WIDTH - 10 - ROW)
-						-- Ours by their class, the guild's left as they were: a
-						-- guildmate arrives with no class recorded, and colouring
-						-- them by a class nobody knows would paint every one of
-						-- them white - which reads as a claim rather than as the
-						-- absence of one.
-						local shown = tostring(who.label or "?")
-						if not who.guild then
-							shown = UI:ClassMarkup(who.classFile) .. shown .. "|r"
-						end
+						local said = {}
+						for index = at, math.min(at + PER_LINE - 1, #everybody) do
+							local who = everybody[index]
 
-						-- And whose, on the unfolded line as on the folded one. A
-						-- character that reads as ours in one and theirs in the
-						-- other is worse than one that reads as theirs in neither.
-						if who.familyName then
-							shown = string.format(L["%s |cff9d9d9dof %s|r"], shown,
-								tostring(who.familyName))
-						end
+							-- Ours by their class, the guild's left as they were: a
+							-- guildmate arrives with no class recorded, and colouring
+							-- them by a class nobody knows would paint every one of
+							-- them white - which reads as a claim rather than as the
+							-- absence of one.
+							local shown = tostring(who.label or "?")
+							if not who.guild then
+								shown = UI:ClassMarkup(who.classFile) .. shown .. "|r"
+							end
 
-						line.text:SetText(string.format("        %s%s", shown,
-							who.rank and string.format(" |cff888888%d|r", who.rank) or ""))
+							-- And whose, on the unfolded line as on the folded one. A
+							-- character that reads as ours in one and theirs in the
+							-- other is worse than one that reads as theirs in neither.
+							if who.familyName then
+								shown = string.format(L["%s |cff9d9d9dof %s|r"], shown,
+									tostring(who.familyName))
+							end
 
-						-- A cooldown displaces whatever this column would have said,
-						-- as it does on the tooltip and for the same reason: which
-						-- guildmate to ask about a transmute is decided by whose is up
-						-- and by nothing else (§4.5). The row still says it is the
-						-- guild's, because that decides whether you whisper or log in.
-						local state
-						if who.cooldown then
-							state = who.cooldown.ready and L["|cff40bf40ready now|r"]
-								or string.format(L["|cffff8040ready %s|r"],
-									UI:In(who.cooldown.readyAt))
+							if who.rank then
+								shown = shown ..
+									string.format(" |cff888888%d|r", who.rank)
+							end
+
+							-- **The guild marker goes on the name now.** It was the
+							-- note column's job while a line was one person; four to a
+							-- line, the column is the names and there is nowhere else
+							-- for it to go. It still has to be said: it decides
+							-- whether you whisper somebody or log in as them.
+							if who.guild then
+								shown = shown .. L[" |cff66bbff(guild)|r"]
+							end
+
+							-- A cooldown outranks everything else about a name, as it
+							-- does on the tooltip and for the same reason: which
+							-- guildmate to ask about a transmute is decided by whose
+							-- is up and by nothing else (§4.5). Inline for the same
+							-- reason the guild marker is.
+							if who.cooldown then
+								shown = shown .. " " .. (who.cooldown.ready
+									and L["|cff40bf40ready now|r"]
+									or string.format(L["|cffff8040ready %s|r"],
+										UI:In(who.cooldown.readyAt)))
+							end
+
+							said[#said + 1] = shown
 						end
 
 						line.note:SetWidth(NOTE_WIDTH)
-						line.note:SetText(who.guild
-							and string.format(L["|cff66bbffguild|r |cff888888%s|r"],
-								state or (who.at and UI:Ago(who.at)) or "")
-							or (state or ""))
+						line.note:SetText(table.concat(said, ", "))
 					end
 				end
 			end
