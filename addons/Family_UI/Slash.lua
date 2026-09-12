@@ -805,6 +805,33 @@ add("openwith", L["what a profession button is holding when you click it"], func
 	Family:Print(L["click a profession on the professions page: the next click will say what its button held"])
 end)
 
+-- **What a modified click on an item is, on this client.**
+--
+-- Alberto's idea, for a possessions list too long to draw whole: hold a modifier, click the item,
+-- and Family opens at it. `/family caps` says the crossroads exists on Mists; whether it fires
+-- from a **bag slot**, what it hands over and which modifiers reach it are three more questions,
+-- and nothing is built until they have been answered on all three clients.
+--
+-- One click, told once, and nothing decided here - the values are printed and the reading is
+-- Alberto's, the same arrangement `/family openwith` uses.
+add("itemclick", L["what a modified click on an item hands over"], function()
+	if type(_G.HandleModifiedItemClick) ~= "function" then
+		Family:Print(L["this client has no crossroads for a modified click on an item"])
+		return
+	end
+
+	UI:TellNextItemClick(function(seen)
+		for _, pair in ipairs(seen or {}) do
+			Family:Print("    %-10s |cff888888%s|r", pair[1], pair[2])
+		end
+	end)
+
+	-- **How many have gone past already**, which is what tells *the hook is not called from a
+	-- bag* apart from *the hook was never installed*. Both arrive as silence otherwise.
+	Family:Print(L["  modified clicks heard since login: |cffffd700%d|r"], UI:ItemClicksSeen())
+	Family:Print(L["hold your modifiers and click an item: the next one will say what it held"])
+end)
+
 -- **One page, replayed from the client's own query, and one at a time.**
 --
 -- Two versions of this stood here and both were wrong. The first alternated between two guessed
@@ -912,6 +939,24 @@ local function replicateOnce()
 			Family:Print("    %-3s |cff888888%s|r", tostring(row.index), tostring(row.n))
 			for position, value in ipairs(row.values) do
 				Family:Print("      %-3s |cff888888%s|r", position, value)
+			end
+		end
+
+		-- **And which of those positions is which**, worked out rather than read off the
+		-- shape of the numbers. The player's own auctions are readable through a route that
+		-- answers **named** fields, and those same auctions are in this list - so a row
+		-- carrying all three of an auction's values says where each of them lives. The
+		-- client describing one auction twice, and the map falling out of the difference.
+		Family:Print(L["  looking for your own auctions in the replicated list:"])
+
+		local map = Family.Auctions:ReplicateMatchOwned()
+		Family:Print("    %-10s |cff888888%s / %s|r", "owned/scanned",
+			tostring(map.owned), tostring(map.scanned))
+
+		for _, match in ipairs(map.matches) do
+			for _, field in ipairs(match.at) do
+				Family:Print("      %-14s |cff888888%s = %s|r",
+					field[1], tostring(field[2]), tostring(field[3]))
 			end
 		end
 	end)
@@ -1249,7 +1294,8 @@ add("ah", L["what this client offers on the auction house"], function(argument)
 	-- hundred things in it, so something has to say whether that was all of them.
 	local paging = {}
 	for _, name in ipairs { "HasFullBrowseResults", "RequestMoreBrowseResults",
-		"ReplicateItems", "GetReplicateItemInfo", "IsThrottledMessageSystemReady" } do
+		"ReplicateItems", "GetReplicateItemInfo", "GetReplicateItemLink",
+		"IsThrottledMessageSystemReady" } do
 		if C_AuctionHouse and type(C_AuctionHouse[name]) == "function" then
 			paging[#paging + 1] = name
 		end

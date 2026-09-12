@@ -1999,7 +1999,8 @@ local UI_FILES = { "Window.lua", "MemberPicker.lua", "ChoicePicker.lua", "Member
 	"Summary.lua", "Talents.lua",
 	"Contents.lua", "Professions.lua", "Character.lua", "Quests.lua",
 	"Wide.lua", "Guild.lua",
-	"Broker.lua", "Options.lua", "About.lua", "Auctions.lua", "Slash.lua" }
+	"Broker.lua", "Options.lua", "About.lua", "Auctions.lua", "ItemClick.lua",
+	"Slash.lua" }
 
 for _, file in ipairs(UI_FILES) do
 	load("addons/Family_UI/" .. file, "Family_UI", UIPrivate)
@@ -31998,6 +31999,57 @@ print("asking the newer house for its whole list")
 	check("and the answer is read back by position, asking from nought as well as from one",
 		said:find("Linen Cloth", 1, true) ~= nil and said:find("20", 1, true) ~= nil,
 		said == "" and "nothing printed" or said)
+
+	-- **Which position holds what, worked out and not read off the shape of the numbers.**
+	--
+	-- From play on Mists 2026-09-12: one call answered 43,002 rows, numbered from nought,
+	-- eighteen returns apiece. Two of those are what a price needs, and writing down a table of
+	-- names from the look of them is the guess this repository has twice paid for. The player's
+	-- own auctions are readable through a route that answers **named** fields, and they are in
+	-- this list too - so a row carrying all of an auction's values says where each one lives.
+	--
+	-- The fake is built the other way round from the code: the owned route is given an auction
+	-- and the replicated row scatters its values at positions nothing here names, so a mapper
+	-- that had the positions written into it would fail.
+	_G.C_AuctionHouse.GetNumOwnedAuctions = function() return 1 end
+	_G.C_AuctionHouse.GetOwnedAuctionInfo = function()
+		return { itemKey = { itemID = 3858 }, quantity = 101, buyoutAmount = 44993,
+			minBid = 0, bidAmount = 0, timeLeftSeconds = 3600 }
+	end
+	_G.C_AuctionHouse.GetNumReplicateItems = function() return 3 end
+	-- **The row that matches is at index nought**, because that is where the play reading found
+	-- a real one - so a walk that starts at one misses it entirely rather than finding it a
+	-- little later. Put anywhere else, both a nought-based and a one-based walk reach it and the
+	-- fixture has nothing to say about which the list is.
+	_G.C_AuctionHouse.GetReplicateItemInfo = function(index)
+		if index == 0 then
+			--     1        2   3(count) 4  5     6  7     8  9  10(buyout) ... 17(id)
+			return "Truesilver Bar", "t", 101, 1, true, 1, "L", 0, 0, 44993,
+				0, nil, nil, nil, nil, 0, 3858, true
+		end
+		-- A row sharing one number with that auction, which must not be taken for it.
+		return "Something Else", "t", 101, 1, true, 1, "L", 0, 0, 11,
+			0, nil, nil, nil, nil, 0, 4242, true
+	end
+
+	local map = Family.Auctions:ReplicateMatchOwned()
+	local at = {}
+	for _, match in ipairs(map.matches) do
+		for _, field in ipairs(match.at) do at[field[1]] = field[2] end
+	end
+
+	check("the replicated columns are worked out from the client's own named route",
+		#map.matches == 1 and at.itemID == 17 and at.quantity == 3
+			and at.buyoutAmount == 10,
+		#map.matches .. " match(es): " .. tostring(at.itemID) .. " / "
+			.. tostring(at.quantity) .. " / " .. tostring(at.buyoutAmount))
+
+	-- **And a row that shares one value with an auction of ours is not that auction.** Every
+	-- field has to be somewhere in the row, or the first stack of 101 anything in the house
+	-- would be read as ours and the map taken from it.
+	check("while a row sharing one number with it is not mistaken for it",
+		map.matches[1] and map.matches[1].index == 0,
+		map.matches[1] and tostring(map.matches[1].index) or "none")
 
 	-- **And the answer frees it**, or one visit would be all anybody ever got.
 	SlashCmdList["FAMILY"]("ah replicate")

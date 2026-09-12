@@ -621,6 +621,78 @@ function Auctions:ReplicateSample(indices)
 	return rows
 end
 
+-- **Which position holds what, worked out from the client's other description of the same
+-- auction.**
+--
+-- Read from play on Mists 2026-09-12: one call answered **43,002 rows**, numbered from **nought**,
+-- eighteen returns apiece. Two of those eighteen are what a price needs - the item and what it is
+-- going for - and reading a table of names off the shape of the numbers is exactly the guess this
+-- repository has twice paid for (L-071, L-074).
+--
+-- It does not have to be guessed. The player's **own** auctions are readable through
+-- `GetOwnedAuctionInfo`, which answers **named** fields: `itemKey.itemID`, `quantity`,
+-- `buyoutAmount`. Those same auctions are somewhere in the replicated list. So this looks for a
+-- row carrying those values and reports **which positions** they turned up in - the client
+-- describing one auction twice, and the map falling out of the difference.
+--
+-- Nothing is sent and nothing is stored. It walks a list the client is already holding.
+function Auctions:ReplicateMatchOwned(limit)
+	local out = { scanned = 0, owned = 0, matches = {} }
+	if not _G.C_AuctionHouse then return out end
+	if type(C_AuctionHouse.GetReplicateItemInfo) ~= "function" then return out end
+
+	local mine = readModernOwned()
+	out.owned = #mine
+	if #mine == 0 then return out end
+
+	-- What to look for: every value one of these auctions is described by, and the name the
+	-- **other** route gave it. `buyoutAmount` is per item there and the reader above multiplies
+	-- it out, so both forms are looked for rather than one being assumed.
+	local wanted = {}
+	for _, auction in ipairs(mine) do
+		local each = auction.count > 0 and (auction.buyout / auction.count) or auction.buyout
+		wanted[#wanted + 1] = {
+			{ "itemID", auction.id },
+			{ "quantity", auction.count },
+			{ "buyoutAmount", each },
+		}
+	end
+
+	local held = self:ReplicateCount() or 0
+	local ceiling = math.min(held, tonumber(limit) or 60000)
+
+	for index = 0, ceiling - 1 do
+		out.scanned = out.scanned + 1
+
+		local got = packOf(Family:TryCall(C_AuctionHouse.GetReplicateItemInfo, index))
+		if got.n > 0 then
+			for _, auction in ipairs(wanted) do
+				-- Every field has to be somewhere in the row, or a row that happens to
+				-- share one number with an auction of ours would be read as that auction.
+				local found, where = 0, {}
+
+				for _, field in ipairs(auction) do
+					for position = 1, got.n do
+						if got[position] == field[2] then
+							found = found + 1
+							where[#where + 1] = { field[1], position, field[2] }
+							break
+						end
+					end
+				end
+
+				if found == #auction then
+					out.matches[#out.matches + 1] = { index = index, at = where }
+				end
+			end
+		end
+
+		if #out.matches >= 2 then break end
+	end
+
+	return out
+end
+
 -- **Sent once, and only by somebody asking for it in as many words.**
 --
 -- `pcall` rather than `TryCall`, because here an error is the measurement and `TryCall` throws

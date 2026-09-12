@@ -820,6 +820,11 @@ Family.locales.ruRU = {
 	["%s |cff66bbff(guild)|r"] = "%s |cff66bbff(гильдия)|r",
 	["|cff66bbffguild|r |cff888888%s|r"] = "|cff66bbffгильдия|r |cff888888%s|r",
 	["|cff888888and %d more|r"] = "|cff888888и ещё %d|r",
+	["  looking for your own auctions in the replicated list:"] = "  ищу твои собственные лоты в реплицированном списке:",
+	["what a modified click on an item hands over"] = "что передаёт клик с модификатором по предмету",
+	["this client has no crossroads for a modified click on an item"] = "у этого клиента нет перекрёстка для клика с модификатором по предмету",
+	["  modified clicks heard since login: |cffffd700%d|r"] = "  кликов с модификатором услышано со входа: |cffffd700%d|r",
+	["hold your modifiers and click an item: the next one will say what it held"] = "зажми модификаторы и щёлкни по предмету: следующий скажет, что он держал",
 	["|cff888888the whole list is on Family's %s page, under %s|r"] = "|cff888888полный список - на странице %s в Family, в разделе %s|r",
 	["|cff66bbffFamily possessions|r"] = "|cff66bbffИмущество семьи|r",
 

@@ -3542,3 +3542,40 @@ is 132350 and is present on Era, so when it was turned down for Unarmed it was t
 looking wrong - a gauntleted fist where a bare one was asked for - and not for being missing. The
 two failures are indistinguishable inside the client and are not indistinguishable here.
 
+### The newer auction house, read whole (Mists)
+
+Measured on Mists of Pandaria 2026-09-12, through `/family ah replicate`, one call and one answer.
+
+    the throttled message system is ready: true
+    it holds 0 replicated row(s) before asking
+    it holds 43002 replicated row(s) now, after 1 answer(s)
+
+**Forty-three thousand rows for one call, in a single `REPLICATE_ITEM_LIST_UPDATE`.** The old
+house needed 3,605 pages and most of an hour for a house of comparable size; this is the whole of
+it at once.
+
+**The list is numbered from nought.** Index 0 answered a row and so did index 1, which is why the
+probe asks for both rather than looping from either.
+
+**Eighteen returns a row, by position, and no names anywhere.** Two examples as they arrived:
+
+    0   Ichor of Undeath / 134437 / 1 / 1 / true / 1 / REQ_LEVEL_ABBR / 0 / 0 / 700
+        / 0 / nil / nil / nil / nil / 0 / 7972 / true
+    1   Swiftthistle / 134184 / 7 / 1 / true / 1 / REQ_LEVEL_ABBR / 0 / 0 / 54439
+        / 0 / nil / nil / nil / nil / 0 / 2452 / true
+
+**Which position is which is not written down here from the look of them.** Family works it out
+from the client's *other* description of the same auction: `GetOwnedAuctionInfo` answers **named**
+fields - `itemKey.itemID`, `quantity`, `buyoutAmount` - and the player's own listings are
+somewhere in the replicated list, so a row carrying all three of an auction's values says where
+each of them lives. `Auctions:ReplicateMatchOwned` does that and the probe prints the result. A
+row has to match on **every** field: the first stack of 101 anything would otherwise be read as
+ours and the map taken from it.
+
+Position seven is the string `REQ_LEVEL_ABBR` - a global's *name*, not its text, which is worth
+noticing before anything shows that column to anybody.
+
+Nothing is built on this yet. What is still wanted is the match line from a client where the
+player has listings, and whether `GetReplicateItemLink` is there beside the rest (the probe now
+reports it).
+

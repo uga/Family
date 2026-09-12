@@ -820,6 +820,11 @@ Family.locales.esES = {
 	["%s |cff66bbff(guild)|r"] = "%s |cff66bbff(hermandad)|r",
 	["|cff66bbffguild|r |cff888888%s|r"] = "|cff66bbffhermandad|r |cff888888%s|r",
 	["|cff888888and %d more|r"] = "|cff888888y %d más|r",
+	["  looking for your own auctions in the replicated list:"] = "  buscando tus propias subastas en la lista replicada:",
+	["what a modified click on an item hands over"] = "qué entrega un clic modificado sobre un objeto",
+	["this client has no crossroads for a modified click on an item"] = "este cliente no tiene un cruce para un clic modificado sobre un objeto",
+	["  modified clicks heard since login: |cffffd700%d|r"] = "  clics modificados oídos desde la conexión: |cffffd700%d|r",
+	["hold your modifiers and click an item: the next one will say what it held"] = "mantén tus modificadores y haz clic en un objeto: el siguiente dirá qué tenía",
 	["|cff888888the whole list is on Family's %s page, under %s|r"] = "|cff888888la lista completa está en la página %s de Family, bajo %s|r",
 	["|cff66bbffFamily possessions|r"] = "|cff66bbffPosesiones de la familia|r",
 

@@ -33,5 +33,6 @@ Broker.lua
 Options.lua
 About.lua
 Auctions.lua
+ItemClick.lua
 Slash.lua
 
