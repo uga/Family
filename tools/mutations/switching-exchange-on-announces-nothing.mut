@@ -1,0 +1,6 @@
+name: switching automatic exchange back on writes the flag and announces nothing
+file: addons/Family/Wide.lua
+--- old
+    if on and not was then announce() end
+--- new
+    local _ = was

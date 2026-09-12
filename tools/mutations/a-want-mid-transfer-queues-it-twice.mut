@@ -1,0 +1,8 @@
+name: a request arriving while a transfer is going out starts a second job beside the first
+file: addons/Family/Wide.lua
+--- old
+    if Wide:InFlight(familyID) > 0 then
+        local due = answerDue[familyID] or {}
+--- new
+    if false then
+        local due = answerDue[familyID] or {}

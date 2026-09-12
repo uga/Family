@@ -1,0 +1,6 @@
+name: setting automatic exchange on when it was already on announces again
+file: addons/Family/Wide.lua
+--- old
+    if on and not was then announce() end
+--- new
+    if on then announce() end

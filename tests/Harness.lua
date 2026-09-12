@@ -27975,6 +27975,40 @@ print("a transfer that stopped half way is picked up, not believed")
 		tostring(#sent) .. " messages, " .. howMany((sent[1] or {}).members or {})
 			.. " in the first")
 
+	-- **Their button pressed while ours is still going out** (backlog 46). It used to start a
+	-- second job beside the first, whose batches were still queued: the remainder twice over, and
+	-- three times on a second press. The request is honoured - it is how a side that lost data
+	-- says so - but once, when the transfer in flight has gone.
+	link.sent = nil
+	sent = {}
+	Family.Wide:ExchangeWith("theirs", "a transfer under way", { full = true })
+	local before46 = #sent
+	check("the fixture has a transfer in flight when their request arrives",
+		Family.Wide:InFlight("theirs") > 0 and before46 == 1,
+		tostring(Family.Wide:InFlight("theirs")) .. " in flight, " .. before46 .. " posted")
+
+	-- They hold everything but one, and ask twice.
+	local missing = {}
+	for memberKey, mark in pairs(marks) do missing[memberKey] = mark end
+	missing[keys[1]] = nil
+	for _ = 1, 2 do
+		Family.Comm:Receive("1\0011\0011\001want\001" .. Family.Codec:ToWire({ family = "theirs",
+			schema = 1, have = missing }), "Them-Fire Maw", "WHISPER")
+	end
+	check("a request arriving mid-transfer puts nothing on top of what is in flight",
+		#sent == before46, tostring(#sent - before46) .. " posted on top")
+
+	for _ = 1, 6 do advance(1.1) end
+	local repairs = 0
+	for index = before46 + 1, #sent do
+		if (sent[index].members or {})[keys[1]] then repairs = repairs + 1 end
+	end
+	check("and once it has drained, two requests are answered once, with what they lack",
+		repairs == 1, tostring(repairs) .. " answers carrying the missing member, "
+			.. tostring(#sent - before46) .. " messages after the request")
+	check("and nothing is left waiting to answer them", Family.Wide:InFlight("theirs") == 0,
+		tostring(Family.Wide:InFlight("theirs")))
+
 	-- **And the client's own refusal reaches the transfer**, not only the queue.
 	--
 	-- `Comm` empties what was queued for a name it has just been told is not there. What it
@@ -28303,12 +28337,13 @@ print("the switch governs what begins, not what has begun")
 	check("and one that did not change is still held back",
 		answered[keys[1]] == nil, tostring(answered[keys[1]] ~= nil))
 
-	-- And turning it back on sends nothing by itself: it is a preference, and what it governs
-	-- is the *next* login on either side.
+	-- And turning it back on puts no records out by itself. Since backlog 47 it announces, the way
+	-- a login does - that is checked where the login's own announcement is - and records follow
+	-- only once the other side answers, which nobody here does.
 	sent = {}
 	Family.Wide:SetAutoUpdate(true)
 	for _ = 1, 4 do advance(1.1) end
-	check("turning it back on begins nothing on its own", #sent == 0, tostring(#sent))
+	check("turning it back on sends no records until they answer", #sent == 0, tostring(#sent))
 
 	Family.Comm.Send = realSend
 	for _, memberKey in ipairs(keys) do
@@ -33661,7 +33696,20 @@ print("logging in announces, and pushes nothing")
 	check("and with automatic exchange off it does not even announce",
 		#sent == 0, table.concat(sent, ","))
 
+	-- **Switched back on, it announces there and then** (backlog 47), rather than leaving a
+	-- ticked box to wait for somebody's next login.
 	Family.Wide:SetAutoUpdate(true)
+	for _ = 1, 12 do advance(1.1) end
+	check("switching automatic exchange back on announces, and sends nothing else",
+		#sent == 1 and sent[1] == "hello",
+		#sent == 0 and "nothing" or table.concat(sent, ","))
+
+	-- Ticking a box already ticked is nobody asking for anything.
+	sent = {}
+	Family.Wide:SetAutoUpdate(true)
+	for _ = 1, 12 do advance(1.1) end
+	check("and setting it on when it was already on says nothing",
+		#sent == 0, table.concat(sent, ","))
 	Family.Comm.Send = realSend
 	Family.Wide:Grant("afar", "Announcer-Fire Maw", "money", false)
 	Family.Database:Forget("Announcer-Fire Maw")

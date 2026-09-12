@@ -2848,7 +2848,15 @@ string present as well as absent is what caught it.
 
 ---
 
-## 46. The other side's button can queue our transfer twice
+## 46. The other side's button can queue our transfer twice — DONE 2026-09-12
+
+**Built 2026-09-12 in the shape written below.** A `want` that arrives while `Wide:InFlight` is
+above nought takes its `have` marks at once and starts no job; the answer is made once, when the
+link has nothing in flight, however many requests arrived meanwhile, and in full if any of them
+was from a client too old to send a list. The drain is looked at every two seconds, since `Comm`
+has no per-target callback for an empty queue. One edge is left, and it is small: on a link that
+acknowledges, a batch taken by the client and not yet acknowledged when the queue empties is
+offered again in the answer - the safe direction, and the next `got` repairs the marks either way.
 
 **Found:** 2026-09-09, while building 45, and it is the same fault reached from the other end.
 
@@ -2883,7 +2891,12 @@ answer.
 
 ---
 
-## 47. Turning automatic exchange back on begins nothing
+## 47. Turning automatic exchange back on begins nothing — DONE 2026-09-12
+
+**Built 2026-09-12, on Alberto's word** - *fai il 46 e poi il 47* - which settles the question
+below of whether it was his to allow. Switching from off to on sends the login's own `hello` to
+each link at once; setting it on when it was already on sends nothing. `/family wide on` does not
+announce, for the reason given below: that path asks for a reload, and the login after it does.
 
 **Asked:** 2026-09-09, by Alberto, as the tail of three questions about what the switch does to a
 transfer that is already incomplete. The first two answers were reassuring and this one is not.

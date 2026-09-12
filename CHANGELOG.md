@@ -165,6 +165,13 @@ picks itself up where it left off.
   left* was being cut to *send...* on narrower panels. Where the line will not fit, the hint about
   clicking the name gives way and the facts stay.
 
+- **Their Update now no longer slows down what you are already sending them.** Pressed while a
+  transfer to them was under way, it queued the rest of that transfer a second time. The request
+  is now answered once, as soon as what was in flight has gone.
+
+- **Ticking Exchange automatically back on does something at once.** It used to wait for the next
+  login on either side; now it tells your linked families you are there, as a login does.
+
 ### Stack prices wherever a pile is in front of you
 
 - **Hold CTRL over an auction and Family says what that stack is worth**, the same line it has

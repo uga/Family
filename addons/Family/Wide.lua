@@ -200,8 +200,18 @@ end
 -- player's.
 function Wide:AutoUpdate() return store().auto ~= false end
 
+local announce
+
+-- **Switched from off to on, it says so.** Backlog 47: it used to write the flag and nothing else,
+-- so somebody who ticked it while looking at a linked family two days old had done the thing that
+-- should fix it and watched nothing happen until the next login on either side. The announcement
+-- is the login's own - one `hello` a link - and everything after it is what a login already sets
+-- going. Alberto, 2026-09-12, asked which to build: *fai il 46 e poi il 47*. Ticking a box that
+-- was already ticked is not a person asking for anything, and says nothing.
 function Wide:SetAutoUpdate(on)
+    local was = self:AutoUpdate()
     store().auto = on and true or false
+    if on and not was then announce() end
 end
 
 -- Whether Wide Family says in chat how an exchange went.
@@ -1522,6 +1532,34 @@ end
 -- A `want` with no list at all is a Family too old to send one, and it is answered in full,
 -- which is what every Family has always done here. Nothing is lost by talking to an old client
 -- except the saving.
+-- Requests that arrived while something was still going out to them, one per link: whether any of
+-- them asked in full, and who asked last. **One entry rather than a list**, because two presses of
+-- their button during one transfer are one question, and answering it twice is the fault itself.
+local answerDue = {}
+local answerWant
+
+-- How often a due answer looks at whether the transfer has drained. `Comm` has no callback for an
+-- empty queue per target, and a look is a table read.
+local DRAIN_POLL = 2
+
+local function answerWhenDrained(familyID)
+    -- The key restarts rather than queues, so asking again while waiting changes nothing.
+    Family:After(DRAIN_POLL, "wide.want." .. familyID, function()
+        local due, link = answerDue[familyID], Wide:Links()[familyID]
+        if not due then return end
+
+        if not link or not Wide:Enabled() then
+            answerDue[familyID] = nil
+            return
+        end
+
+        if Wide:InFlight(familyID) > 0 then return answerWhenDrained(familyID) end
+
+        answerDue[familyID] = nil
+        answerWant(link, familyID, due.full, due.sender)
+    end)
+end
+
 local function onWant(_, text, sender)
     local body = Family.Codec:FromWire(text)
     local link, familyID = linkOf(body, sender)
@@ -1541,7 +1579,27 @@ local function onWant(_, text, sender)
         link.sent = held
     end
 
-    local sending, marks, held, offered, count = worthSending(link, have == nil)
+    -- **Not on top of a transfer already going to them.** Backlog 46: their *Update now* pressed
+    -- a minute into ours used to start a second job beside the first, whose batches were still in
+    -- `Comm`'s queue - the remainder queued twice, and the wait doubled for the person who pressed
+    -- the button to shorten it. Refusing the request would be worse: a side that lost data says so
+    -- in exactly this message. So the marks above are taken at once, since they are free and they
+    -- are the truth, and the answer is made once, when what is in flight has gone.
+    if Wide:InFlight(familyID) > 0 then
+        local due = answerDue[familyID] or {}
+        due.full = due.full or have == nil
+        due.sender = sender
+        answerDue[familyID] = due
+        answerWhenDrained(familyID)
+        return
+    end
+
+    answerWant(link, familyID, have == nil, sender)
+end
+
+-- The answer to a `want`, made now or when the transfer it arrived during has drained.
+function answerWant(link, familyID, full, sender)
+    local sending, marks, held, offered, count = worthSending(link, full)
 
     local ok, problem = postMembers(link, familyID, sending, marks)
     if not ok then
@@ -1972,6 +2030,25 @@ end
 -- One gate in front of all six handlers rather than six copies of the same line. A message
 -- that arrives for a feature which is switched off is dropped where it lands: not stored, not
 -- answered, and not held as a request for somebody to find later.
+-- One `hello` to each linked family, which is what makes the other side exchange. Said at login
+-- and when automatic exchange is switched back on; the caller decides whether the switch allows it.
+function announce()
+    if not Wide:Enabled() then return end
+
+    if not Family.Codec:CanTalk() then
+        Family:Debug("wide: no serialisation libraries, so no links can be used")
+        return
+    end
+
+    for _, link in pairs(store().links) do
+        local body = Family.Codec:ToWire(envelope({}))
+        local target = reachableName(link)
+        if body and target then
+            Family.Comm:Send("hello", body, "WHISPER", target, false)
+        end
+    end
+end
+
 local function whenEnabled(handler)
     return function(...)
         if not Wide:Enabled() then return end
@@ -2004,19 +2081,7 @@ Family:OnDatabaseReady("wide", function()
                 return
             end
 
-            if not Family.Codec:CanTalk() then
-                Family:Debug("wide: no serialisation libraries, so no links can be used")
-                return
-            end
-
-            local wide = store()
-            for familyID, link in pairs(wide.links) do
-                local body = Family.Codec:ToWire(envelope({}))
-                local target = reachableName(link)
-                if body and target then
-                    Family.Comm:Send("hello", body, "WHISPER", target, false)
-                end
-            end
+            announce()
         end)
     end)
 

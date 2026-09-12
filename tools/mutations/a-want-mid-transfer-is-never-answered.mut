@@ -1,0 +1,7 @@
+name: a request arriving while a transfer is going out is noted and never answered
+file: addons/Family/Wide.lua
+--- old
+        answerDue[familyID] = nil
+        answerWant(link, familyID, due.full, due.sender)
+--- new
+        answerDue[familyID] = nil

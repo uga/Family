@@ -674,7 +674,8 @@ to share should not have to remember to press a button.
 
 **All of that is one switch, and it can be turned off.** *Exchange automatically* covers both
 halves — announcing yourself when you log in, and answering somebody else's announcement
-while you play. Off means neither happens and no exchange is ever begun by anything but a
+while you play. Switching it back on announces you there and then, as a login would. Off means
+neither happens and no exchange is ever begun by anything but a
 person: the panel's *Update now* remains, and **on demand is never switched off with it**, because it
 is the floor the whole feature stands on rather than a convenience on top of it.
 

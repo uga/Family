@@ -240,9 +240,9 @@ the switch is not part of the record — so a member played, emptied, or levelle
 period has a different mark by the time anybody asks, and is offered again. A member that did not
 change is still held back. Nothing accumulates and nothing has to be remembered about the period.
 
-**One thing it does not do that it arguably should:** turning it back **on** begins nothing by
-itself. It is stored as a preference and the next announcement — the next login, on either side —
-is what acts on it. Backlog 47.
+**Turning it back on announces.** Since 2026-09-12 switching it from off to on sends the same
+`hello` a login sends, one per link, and the other side's answer does the rest. Setting it on when
+it was already on sends nothing. Backlog 47.
 
 ---
 
@@ -293,9 +293,10 @@ was empty. Since 2026-09-09 it refuses only for the link it belongs to (`Wide:In
 where the channel is busy with somebody else's traffic it does what was asked and says what it is
 queued behind. Backlog 45.
 
-What remains, written down rather than fixed: the *other* side's button can make us queue our own
-transfer twice, because a `want` arriving mid-transfer starts a fresh batch job while the old
-job's messages are still in the queue. It costs time, not correctness. Backlog 46.
+**And the other side's button no longer queues ours twice.** A `want` arriving mid-transfer used
+to start a fresh batch job while the old job's messages were still in the queue. Since 2026-09-12
+its marks are taken at once and the answer waits until the link has nothing in flight, then goes
+once however many requests came in meanwhile. Backlog 46.
 
 ### Getting it moving
 
