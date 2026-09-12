@@ -1,0 +1,6 @@
+name: taking a whole letter looks at its first attachment and stops
+file: addons/Family_UI/MailReport.lua
+--- old
+			for attachment = 1, slots do noteAttachment(index, attachment) end
+--- new
+			noteAttachment(index, 1)

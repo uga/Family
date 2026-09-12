@@ -1,12 +1,13 @@
 name: the mailbox report announces what was asked for rather than what left
 file: addons/Family_UI/MailReport.lua
 --- old
+		local gone = {}
+		for itemID, was in pairs(held) do
 			local still = (now[itemID] or {}).count or 0
-			local gone = was.count - still
-
-			if gone > 0 then
+			if was.count > still then gone[itemID] = was.count - still end
+		end
 --- new
-			local still = (now[itemID] or {}).count or 0
-			local gone = was.count
-
-			if gone > 0 then
+		local gone = {}
+		for itemID, was in pairs(held) do
+			gone[itemID] = was.count
+		end

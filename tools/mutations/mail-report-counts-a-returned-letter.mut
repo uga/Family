@@ -1,6 +1,27 @@
 name: a letter returned to sender is reported as something received
 file: addons/Family_UI/MailReport.lua
 --- old
-	if held and asked then
+	if held and pending then
+		-- How much of each item actually left, which is the ceiling on what may be claimed.
+		-- A take the server refused leaves this at nought and the attachment says nothing.
+		local gone = {}
+		for itemID, was in pairs(held) do
+			local still = (now[itemID] or {}).count or 0
+			if was.count > still then gone[itemID] = was.count - still end
+		end
+
+		for _, row in ipairs(pending.attachments) do
 --- new
 	if held then
+		local gone, whatever = {}, {}
+		for itemID, was in pairs(held) do
+			local still = (now[itemID] or {}).count or 0
+			if was.count > still then
+				gone[itemID] = was.count - still
+				whatever[#whatever + 1] =
+					{ id = itemID, count = was.count - still, name = was.name }
+			end
+		end
+		pending = pending or { attachments = whatever, money = math.huge }
+
+		for _, row in ipairs(whatever) do

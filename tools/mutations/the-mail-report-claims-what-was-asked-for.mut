@@ -1,0 +1,6 @@
+name: the mailbox reports what a take asked for rather than what actually arrived
+file: addons/Family_UI/MailReport.lua
+--- old
+			local arrived = math.min(row.count or 0, left)
+--- new
+			local arrived = row.count or 0

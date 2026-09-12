@@ -1,0 +1,6 @@
+name: money out of the mailbox is claimed from the inbox alone, with no letter behind it
+file: addons/Family_UI/MailReport.lua
+--- old
+		local coin = math.min(pending.money, (heldMoney or 0) - money)
+--- new
+		local coin = (heldMoney or 0) - money

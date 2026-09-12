@@ -1,0 +1,7 @@
+name: closing the mailbox says what came in and not what the character is now worth
+file: addons/Family_UI/MailReport.lua
+--- old
+		Family:Print(L["|cff66bbffNow you own:|r %s"],
+			UI:Coins(tonumber((Family:TryCall(GetMoney))) or 0))
+--- new
+		local _ = nil
