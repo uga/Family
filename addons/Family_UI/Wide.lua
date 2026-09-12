@@ -757,23 +757,16 @@ local function build(frame)
 
             -- **Built twice, and the shorter one is used where the longer will not fit.**
             --
-            -- Reported off a screenshot 2026-09-12: the line ended *send...*, cut mid-word.
-            -- Moving it onto a row of its own had already been done for the same reason once,
-            -- and then two more segments were appended to it - so the row is wide enough for
-            -- what it was and not for what it became. Adding a third row would be the same
-            -- fix a third time.
-            --
             -- What gives way is **the hint and not a fact**. *Click the name to open* tells
-            -- the reader something they can also find out by clicking; *sending to them, 4
-            -- pieces left* is the state of a transfer and is why anybody is reading this line.
-            -- Clipping takes them in the wrong order, because clipping takes whatever is on
-            -- the right.
+            -- the reader something they can also find out by clicking; the state of the link
+            -- is why anybody is reading this line. Clipping takes them in the wrong order,
+            -- because clipping takes whatever is on the right.
             local function sentence(withHint)
                 if link.problem then
                     return "|cffffaa00" .. link.problem .. "|r"
                 end
 
-                local said = string.format(
+                return string.format(
                     L["|cff888888you share %s in %s   |||   they share %d with you"
                     .. "   |||   last exchange %s%s|r"],
                     string.format(members == 1 and L["%d member"] or L["%d members"],
@@ -783,44 +776,55 @@ local function build(frame)
                     #theirs,
                     link.lastExchange and UI:Ago(link.lastExchange) or L["never"],
                     (withHint and not open) and L["   |||   click the name to open"] or "")
-
-            -- What is still going out **to them**, said where the age of the last exchange
-            -- is said.
-            --
-            -- This used to be Family's whole outgoing queue, and the sentence said so, because
-            -- a number that named this link would have been a claim the code could not back.
-            -- `Wide:InFlight` backs it now: the pieces queued for the character this link
-            -- would be whispered, plus the batches it has yet to post. A row that counted
-            -- everybody's traffic put the same number on every link, which is the number of
-            -- a channel rather than of a family.
-                local queued = Family.Wide:InFlight(entry.id)
-                if queued > 0 then
-                    said = said .. string.format(
-                        L["   |cffffd700|||   sending to them, %d pieces left|r"], queued)
-                end
-
-            -- **What they have actually confirmed**, which is a different thing from what was
-            -- sent and is the only one of the two worth a number on this line.
-            --
-            -- Said only where they answer: against a Family too old to acknowledge, what this
-            -- side records is what its own client took rather than what theirs stored, and
-            -- printing that as *confirmed* would be the guess the acknowledgement exists to
-            -- stop. Nothing is drawn there rather than a nought, which would read as *they
-            -- have none of it*.
-                local confirmed, offered = Family.Wide:Confirmed(entry.id)
-                if offered > 0 then
-                    said = said .. string.format(
-                        L["   |cff888888|||   %d of %d confirmed|r"], confirmed, offered)
-                end
-
-                return said
             end
 
-            -- The room this line actually has: the list, less the inset at each end. Measured
-            -- against the font string that is going to draw it, so the answer is in the font
-            -- it will be drawn in rather than in characters.
-            state.text:SetText(UI:Shorter(sentence(true), sentence(false),
-                UI:ListWidth(scroll) - 4 - RIGHT_INSET, UI:WidthRuler(state.text)))
+            -- The room this line actually has: the list, less the inset at each end, **less
+            -- the width of the client's own three dots**. Read from play 2026-09-12: a line the
+            -- measurement said would fit was drawn *sending to them, 192 pieces left...*, cut
+            -- a character or so short. The client truncates a little before `GetStringWidth`
+            -- says the text runs out, keeping room for the ellipsis it is about to draw, so
+            -- that room is kept here as well. One observation, so an allowance rather than a
+            -- rule - and a line that loses its hint a few pixels early costs nothing.
+            local ruler = UI:WidthRuler(state.text)
+            local room = UI:ListWidth(scroll) - 4 - RIGHT_INSET
+                - (ruler and ruler("...") or 0)
+
+            state.text:SetText(UI:Shorter(sentence(true), sentence(false), room, ruler))
+
+            -- **The transfer on a line of its own**, while there is one to speak of.
+            --
+            -- It was appended to the line above, twice, and was cut off twice - the second time
+            -- after that line had been taught to drop its hint to make room. The segments there
+            -- are the standing state of the link; these two are the one thing on the panel that
+            -- changes while somebody watches it, which is a different kind of fact and a reason
+            -- to give it a place of its own rather than another pixel of somebody else's.
+            --
+            -- What is still going out **to them**: `Wide:InFlight` counts the pieces queued for
+            -- the character this link would be whispered, plus the batches still to post, so
+            -- the number belongs to this family and not to the channel.
+            --
+            -- And **what they have confirmed**, said only where they answer at all: against a
+            -- Family too old to acknowledge, what this side records is what its own client
+            -- took rather than what theirs stored, and nothing is drawn rather than a nought
+            -- that would read as *they have none of it*.
+            local queued = Family.Wide:InFlight(entry.id)
+            local confirmed, offered = Family.Wide:Confirmed(entry.id)
+
+            if not link.problem and (queued > 0 or offered > 0) then
+                local parts = {}
+                if queued > 0 then
+                    parts[#parts + 1] = string.format(
+                        L["|cffffd700sending to them, %d pieces left|r"], queued)
+                end
+                if offered > 0 then
+                    parts[#parts + 1] = string.format(
+                        L["|cff888888%d of %d confirmed|r"], confirmed, offered)
+                end
+
+                local transfer = nextRow()
+                transfer.text:SetPoint("RIGHT", -RIGHT_INSET, 0)
+                transfer.text:SetText(table.concat(parts, "   |cff888888|||r   "))
+            end
 
             if open then
                 y = y + 8
