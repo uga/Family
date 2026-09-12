@@ -352,7 +352,6 @@ end
 
 function Auctions:ForgetVisit()
 	seenThisVisit = {}
-	Auctions:StopBigListRead()
 end
 
 -- **Counted, because on Mists nothing is being learned and three things could explain it.**
