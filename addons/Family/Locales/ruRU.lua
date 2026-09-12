@@ -889,4 +889,9 @@ Family.locales.ruRU = {
 	["    name filter: %s, search box: %s"] = "    фильтр по названию: %s, поле поиска: %s",
 	["    item level filter: %s to %s"] = "    фильтр по уровню предмета: от %s до %s",
 	["    %s: %s"] = "    %s: %s",
+	["%d price(s) remembered for this realm and side"] = "запомнено цен для этого мира и фракции: %d",
+	["Family reads whatever the auction window is showing, so another addon's whole-house scan fills these prices too - and far faster than reading it a page at a time."] = "Family читает то, что показывает окно аукциона, поэтому полное сканирование другого аддона тоже наполняет эти цены - и куда быстрее, чем чтение по странице.",
+	["page %d of %d, %d price(s) taken - about %s to go"] = "страница %d из %d, взято цен: %d - осталось около %s",
+	["reading a list somebody else loaded: %d of %d row(s)"] = "читаю список, загруженный кем-то другим: %d из %d строк(и)",
+	["reading the whole list: %d of %d row(s), %d price(s) taken"] = "читаю весь список: %d из %d строк(и), взято цен: %d",
 }

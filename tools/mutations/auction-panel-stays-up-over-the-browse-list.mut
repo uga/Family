@@ -1,0 +1,8 @@
+name: the Family panel stays up when one of the client's own tabs is clicked
+file: addons/Family_UI/Auctions.lua
+--- old
+		Family:TryCall(_G.hooksecurefunc, "AuctionFrameTab_OnClick", function()
+			if panel then panel:Hide() end
+		end)
+--- new
+		Family:TryCall(_G.hooksecurefunc, "AuctionFrameTab_OnClick", function() end)

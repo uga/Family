@@ -1,0 +1,8 @@
+name: the panel only redraws while a read is already running, so it never sees one start
+file: addons/Family_UI/Auctions.lua
+--- old
+	if panel and (Family:TryCall(panel.IsShown, panel)) then return true end
+
+	return (Family.Auctions:Walking() or Family.Auctions:ReplicateReading()
+--- new
+	return (Family.Auctions:Walking() or Family.Auctions:ReplicateReading()

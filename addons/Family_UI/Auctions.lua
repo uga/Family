@@ -89,6 +89,25 @@ local RESET = "BrowseResetButton"
 
 local button
 
+-- **A tab of Family's own on the auction window, and the panel behind it.**
+--
+-- Asked for 2026-09-12, off Classic Era: *perche non facciamo un panel Family per la finestra
+-- della AH (come fa Auctionator) nel quale mettiamo il pulsante e il nostro progress?* The
+-- button had nowhere to say how far along it was except the chat frame, which is the one place
+-- a player is not looking while an auction house scrolls past.
+--
+-- **Built off the client's own furniture and nothing else.** The tab comes from
+-- `AuctionFrameTabTemplate`, which is the template the window's own three are made from; how
+-- many there already are is read out of `AuctionFrame.numTabs` rather than assumed to be three;
+-- and the panel is anchored to `AuctionFrameBrowse`, a frame the client built and sized, rather
+-- than to a corner of the window nobody here has measured (L-073).
+--
+-- **Every step is guarded and any of them may fail.** A client without the template, without
+-- `PanelTemplates_SetNumTabs`, or without a fourth tab's worth of room answers nothing here, and
+-- the button then sits beside Reset exactly where it has always sat. A tab that cannot be built
+-- must never cost somebody the button.
+local tab, panel, progress
+
 -- What the button is waiting for, or nothing. **One click starts one sequence**: a probe that
 -- can be started twice is a probe that will be, and the auction house is the one place in this
 -- addon where a doubled action costs somebody a disconnection (L-070).
@@ -103,15 +122,88 @@ local function ready()
 	return Family.Auctions:LastQuery() ~= nil and Family.Auctions:PagePosition() ~= nil
 end
 
-local function refresh()
-	if not button then return end
+-- **How far along whatever is reading has got**, in one sentence, or nothing where nothing is.
+--
+-- Three readers can be running and they are three different jobs, so this says which. A walk is
+-- pages off the old house; a replicate read is the newer house answering its whole list at once;
+-- and the third is not Family's read at all - it is somebody else's whole-house scan arriving on
+-- the client's browse list, which Family reads for free and which is the fastest way to fill a
+-- price store on any of these clients.
+--
+-- That third line is the one this panel exists for. On Classic Era 2026-09-12 the complaint was
+-- that Family's own read takes far longer than another addon's, which is true and is the
+-- throttle: the client refuses to send, 0.72 seconds a page over 394 pages, three of those five
+-- minutes spent being refused. Nothing here can win that back. What Family can do is show, while
+-- the other addon scans, that its work is being taken as well.
+local function progressText()
+	local walk = Family.Auctions:Walking()
+	if walk and walk.pages then
+		local gone = Family.Auctions:WalkSeconds(walk) or 0
+		local done = walk.done or 0
+		local left = done > 0 and gone / done * (walk.pages - done) or 0
+		return string.format(L["page %d of %d, %d price(s) taken - about %s to go"],
+			done, walk.pages, walk.kept or 0, UI:Span(left))
+	end
 
-	if Family.Auctions:Walking() or Family.Auctions:ReplicateReading() then
-		button:SetText(L["Stop"])
-	elseif waitingFor then
-		button:SetText(L["Searching..."])
-	else
-		button:SetText(L["Read it all"])
+	local reading = Family.Auctions:ReplicateReading()
+	if reading and reading.rows then
+		return string.format(L["reading the whole list: %d of %d row(s), %d price(s) taken"],
+			reading.done or 0, reading.rows, reading.kept or 0)
+	end
+
+	local big = Family.Auctions:BigListReading()
+	if big and big.count then
+		return string.format(L["reading a list somebody else loaded: %d of %d row(s)"],
+			big.at or 0, big.count)
+	end
+
+	return string.format(L["%d price(s) remembered for this realm and side"],
+		Family.Auctions:PriceCount())
+end
+
+-- **Kept going by a timer while something is reading**, and stopped the moment nothing is.
+--
+-- The event this panel would otherwise ride on is `AUCTION_ITEM_LIST_UPDATE`, and during another
+-- addon's whole-house delivery that event **does not fire at all** until the end - measured on
+-- Burning Crusade 2026-09-12, nought firings through the delivery and then tens of thousands at
+-- once. So a panel redrawn on that event would sit perfectly still through the one read it was
+-- built to show.
+--
+-- **A panel that is up keeps itself current, whether or not anything is reading yet.** Written
+-- first as *tick while a read is running*, which cannot start: with the panel open and nothing
+-- happening there is no timer, so the moment somebody else's scan begins there is nothing
+-- watching for it - and that scan is the whole reason this panel exists. Caught by the check
+-- that reads the panel without clicking it, which is the only way to ask whether the timer works.
+--
+-- It costs one string a second while the player is looking at this tab, and stops when they are
+-- not: the panel is put away on the client's own tabs, when the window opens, and when it shuts.
+local function ticking()
+	if panel and (Family:TryCall(panel.IsShown, panel)) then return true end
+
+	return (Family.Auctions:Walking() or Family.Auctions:ReplicateReading()
+		or Family.Auctions:BigListReading()) and true or false
+end
+
+local function refresh()
+	if button then
+		if Family.Auctions:Walking() or Family.Auctions:ReplicateReading() then
+			button:SetText(L["Stop"])
+		elseif waitingFor then
+			button:SetText(L["Searching..."])
+		else
+			button:SetText(L["Read it all"])
+		end
+	end
+
+	if progress then progress:SetText(progressText()) end
+
+	if ticking() then
+		Family:After(1, "ui.auctions.progress", function()
+			-- Whatever else has changed, the panel is redrawn while a read is alive and
+			-- the timer stops itself when one is not. `Family:After` replaces a pending
+			-- timer under the same key, so this cannot pile up however often it is called.
+			refresh()
+		end)
 	end
 end
 
@@ -218,13 +310,138 @@ local function clicked()
 	refresh()
 end
 
+-- **The client's own three panels, put away so ours can be seen.** Named rather than walked,
+-- because the window has furniture that is not a panel and hiding all of it would take the tabs
+-- with it. A name that is not there is not an error: on a client with only two of these, the
+-- third simply is not found.
+local CLIENT_PANELS = { "AuctionFrameBrowse", "AuctionFrameBid", "AuctionFrameAuctions" }
+
+local function hideClientPanels()
+	for _, name in ipairs(CLIENT_PANELS) do
+		local other = _G[name]
+		if type(other) == "table" and type(other.Hide) == "function" then
+			Family:TryCall(other.Hide, other)
+		end
+	end
+end
+
+-- **A tab of ours beside the window's own, and a panel behind it.**
+--
+-- Returns the panel or nothing, and nothing is a perfectly good answer: every call below is one
+-- this client may not have, and the button has somewhere else to sit.
+--
+-- **How many tabs there already are is read, not assumed.** `AuctionFrame.numTabs` is what
+-- `PanelTemplates_SetNumTabs` last wrote there, so it is the client's own count on whichever
+-- build this is - and three is exactly the sort of number that is right on two clients and
+-- wrong on the third.
+local function buildTab()
+	if panel then return panel end
+
+	local frame = _G.AuctionFrame
+	if type(frame) ~= "table" or type(frame.CreateFontString) ~= "function" then return nil end
+	if type(_G.PanelTemplates_SetNumTabs) ~= "function" then return nil end
+
+	local held = tonumber(frame.numTabs)
+	if not held or held < 1 then return nil end
+
+	local last = _G["AuctionFrameTab" .. held]
+	if type(last) ~= "table" or type(last.GetName) ~= "function" then return nil end
+
+	-- Through `TryCall`, because a template this client turns out not to have would take the
+	-- auction window down with it - and a window that will not open is a far worse fault than
+	-- a tab that is not there. The same guard the button below has used since it was written.
+	local made = (Family:TryCall(CreateFrame, "Button", "FamilyAuctionTab", frame,
+		"AuctionFrameTabTemplate"))
+	if type(made) ~= "table" or type(made.SetID) ~= "function" then return nil end
+
+	tab = made
+	tab:SetID(held + 1)
+	tab:SetText(L["Family"])
+	tab:SetPoint("LEFT", last, "RIGHT", -8, 0)
+
+	Family:TryCall(_G.PanelTemplates_SetNumTabs, frame, held + 1)
+	if type(_G.PanelTemplates_TabResize) == "function" then
+		Family:TryCall(_G.PanelTemplates_TabResize, tab, 0)
+	end
+
+	-- **Anchored to a frame the client sized**, which is the whole of L-073: the browse panel
+	-- is where the window's content goes, it has a size because the client gave it one, and a
+	-- corner of the outer window is a coordinate nobody here has measured. Parented to the
+	-- window rather than to that panel, or hiding the panel would hide ours with it.
+	panel = (Family:TryCall(CreateFrame, "Frame", "FamilyAuctionPanel", frame))
+	if type(panel) ~= "table" then
+		tab, panel = nil, nil
+		return nil
+	end
+
+	local content = _G.AuctionFrameBrowse
+	if type(content) == "table" then
+		panel:SetAllPoints(content)
+	else
+		panel:SetPoint("TOPLEFT", frame, "TOPLEFT", 20, -80)
+		panel:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -20, 40)
+	end
+	panel:Hide()
+
+	progress = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+	progress:SetPoint("TOPLEFT", panel, "TOPLEFT", 24, -60)
+	progress:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -24, -60)
+	progress:SetJustifyH("LEFT")
+
+	local blurb = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+	blurb:SetPoint("TOPLEFT", progress, "BOTTOMLEFT", 0, -10)
+	blurb:SetPoint("TOPRIGHT", progress, "BOTTOMRIGHT", 0, -10)
+	blurb:SetJustifyH("LEFT")
+	blurb:SetText(L["Family reads whatever the auction window is showing, so another addon's "
+		.. "whole-house scan fills these prices too - and far faster than reading it a page "
+		.. "at a time."])
+
+	tab:SetScript("OnClick", function(self)
+		if type(_G.PanelTemplates_SetTab) == "function" then
+			Family:TryCall(_G.PanelTemplates_SetTab, frame, self:GetID())
+		end
+		hideClientPanels()
+		panel:Show()
+		refresh()
+	end)
+
+	-- **And ours goes away when one of theirs is clicked.** Hooked on the client's own handler
+	-- where there is one, because that is the single place all three of its tabs go through;
+	-- where there is not, each tab is hooked instead. Hooking rather than replacing: what the
+	-- window does with its own tabs is none of Family's business.
+	if type(_G.hooksecurefunc) == "function"
+		and type(_G.AuctionFrameTab_OnClick) == "function" then
+		Family:TryCall(_G.hooksecurefunc, "AuctionFrameTab_OnClick", function()
+			if panel then panel:Hide() end
+		end)
+	else
+		for index = 1, held do
+			local other = _G["AuctionFrameTab" .. index]
+			if type(other) == "table" and type(other.HookScript) == "function" then
+				other:HookScript("OnClick", function()
+					if panel then panel:Hide() end
+				end)
+			end
+		end
+	end
+
+	return panel
+end
+
 local function build()
 	if button then return end
 
 	-- The newer house first, because on a build that has it the old window is not there at all
 	-- and nothing below would find anything to hang off.
 	local modern = modernWindow()
-	local parent = modern or _G.AuctionFrameBrowse
+
+	-- **A tab of Family's own, where this client will give us one.** Tried before the button is
+	-- built, because where it succeeds the button belongs on it. Only on the old window: the
+	-- newer house is a different frame whose tabs have never been read here, and inventing a
+	-- coordinate on a layout nobody has seen is the fault L-073 records.
+	local ours = not modern and buildTab() or nil
+
+	local parent = ours or modern or _G.AuctionFrameBrowse
 	if type(parent) ~= "table" then return end
 
 	-- Through `TryCall`, because a template this client turns out not to have would otherwise
@@ -239,12 +456,17 @@ local function build()
 
 	button:SetSize(120, 22)
 
-	-- Beside Reset on the old window, which is a control with a size of its own rather than a
-	-- corner of a container nothing has measured (L-073). On the newer one there is no such
-	-- control read yet, so the button hangs just outside the window's top-right corner, where
-	-- no layout can put anything over it.
-	local beside = not modern and _G[BESIDE] or nil
-	if type(beside) == "table" then
+	-- **On Family's own panel where there is one**, which is what it was asked for: the button
+	-- and how far it has got, in one place, on the window the player is already looking at.
+	--
+	-- Otherwise beside Reset on the old window, which is a control with a size of its own rather
+	-- than a corner of a container nothing has measured (L-073). On the newer one there is no
+	-- such control read yet, so the button hangs just outside the window's top-right corner,
+	-- where no layout can put anything over it.
+	local beside = not ours and not modern and _G[BESIDE] or nil
+	if ours then
+		button:SetPoint("TOPLEFT", ours, "TOPLEFT", 24, -20)
+	elseif type(beside) == "table" then
 		button:SetPoint("LEFT", beside, "RIGHT", 8, 0)
 	elseif modern then
 		button:SetPoint("TOPLEFT", modern, "TOPRIGHT", 6, -30)
@@ -269,11 +491,26 @@ local function build()
 	refresh()
 end
 
+-- **Reachable so the harness can build this twice**, which the game does not do and the checks
+-- have to: the button and the tab are built once and kept, so a lane that has already built them
+-- beside Reset cannot then build them on a window with tabs. Nothing in the addon calls this.
+--
+-- It does not take anything off the screen. What was built stays where it is; this only forgets
+-- the handles, which is exactly what makes it useless in play and useful in a check.
+function UI:__forgetAuctionFurniture()
+	button, tab, panel, progress = nil, nil, nil, nil
+end
+
 Family:OnDatabaseReady("ui.auctions", function()
 	-- The window is built when the client loads the addon that owns it, which is the first time
 	-- the player opens an auction house - so this is the earliest moment it can be there.
 	Family:RegisterEvent("AUCTION_HOUSE_SHOW", "ui.auctions", function()
 		build()
+
+		-- The client opens on its own first tab, so ours starts put away. Without this a
+		-- panel left showing when the window was shut comes back over the browse list.
+		if panel then panel:Hide() end
+
 		refresh()
 	end)
 
@@ -283,5 +520,6 @@ Family:OnDatabaseReady("ui.auctions", function()
 
 	Family:RegisterEvent("AUCTION_HOUSE_CLOSED", "ui.auctions", function()
 		giveUp()
+		if panel then panel:Hide() end
 	end)
 end)

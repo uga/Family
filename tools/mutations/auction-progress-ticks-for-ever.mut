@@ -1,0 +1,8 @@
+name: the panel goes on redrawing itself once a second after it is put away
+file: addons/Family_UI/Auctions.lua
+--- old
+	if ticking() then
+		Family:After(1, "ui.auctions.progress", function()
+--- new
+	if true then
+		Family:After(1, "ui.auctions.progress", function()

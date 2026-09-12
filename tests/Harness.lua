@@ -739,9 +739,18 @@ function frameMethods:SetPoint(point, a, b, c, d)
 	recordAnchor(self, point, a, b, c, d)
 end
 
-function frameMethods:SetAllPoints()
+-- **And what it was pointed at.** A frame filling another frame is a decision about which
+-- frame, and a stub that keeps only "yes, it fills something" cannot be asked which - which is
+-- the same argument the anchor recorder above this one is written from.
+function frameMethods:SetAllPoints(other)
 	self.__points = { TOPLEFT = true, BOTTOMRIGHT = true }
+	self.__fills = other
 end
+
+-- The client gives every frame these and a tab is identified by its number, so a stub without
+-- them turns a tab that knows which one it is into one that answers nil.
+function frameMethods:SetID(id) self.__id = tonumber(id) end
+function frameMethods:GetID() return self.__id end
 
 function frameMethods:ClearAllPoints() forgetAnchors(self) end
 
@@ -4941,6 +4950,19 @@ do
 	check("and two suffixes are two headings",
 		Family:VariantKey(SWORD, WHALE) == "6339:-19",
 		tostring(Family:VariantKey(SWORD, WHALE)))
+
+	-- **A suffix can be positive, and it is still a suffix.**
+	--
+	-- Read on Classic Era 2026-09-12 while a walk was running - `item:9841::::::1029:1310677248:1`
+	-- and `item:12028::::::1188:1907958400:1`, both positive, both with a seed behind them -
+	-- against `-7` on Burning Crusade the same day. `ItemString`'s comment claimed suffixes were
+	-- negative on these clients until the second of those readings; it was a claim about the game
+	-- made from one client, and the sign is nothing the key turns on.
+	check("a positive suffix is a heading exactly as a negative one is",
+		Family:VariantKey(9841, "item:9841::::::1029:1310677248:1::::::::::") == "9841:1029",
+		tostring(Family:VariantKey(9841, "item:9841::::::1029:1310677248:1::::::::::")))
+	check("and the base item comes back out of that shape too",
+		Family:BaseItem("9841:1029") == 9841, tostring(Family:BaseItem("9841:1029")))
 
 	-- A numeric string has to fold back into the number or one item opens two headings, one
 	-- of which nothing would ever look under again.
@@ -33725,6 +33747,202 @@ print("the button on the auction window")
 	FamilyDB.auctionPageAt = heldAt
 	_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan
 	_G.GetNumAuctionItems = realNum
+end)()
+
+print()
+print("a Family tab on the auction window")
+
+-- **Asked for 2026-09-12, off Classic Era.** *Perche non facciamo un panel Family per la finestra
+-- della AH (come fa Auctionator) nel quale mettiamo il pulsante e il nostro progress?* Until this,
+-- the only place a read could say how far it had got was the chat frame - which is the one place
+-- nobody is looking while an auction house scrolls past.
+--
+-- Every step of building it is a call this client may not have, so the shape under test is *the
+-- tab where the furniture is there, and the button beside Reset where it is not*. The lane above
+-- proves the second half, on a window with no `AuctionFrame` at all.
+;(function()
+	local realQuery, realCan = _G.QueryAuctionItems, _G.CanSendAuctionQuery
+	_G.QueryAuctionItems = function() end
+	_G.CanSendAuctionQuery = function() return true end
+
+	-- The window's own furniture, as the client has it: an outer frame that counts its tabs,
+	-- three tabs, and the panel-template helpers that keep that count.
+	_G.AuctionFrame = CreateFrame("Frame", "AuctionFrame", UIParent)
+	_G.AuctionFrame.numTabs = 3
+	for index = 1, 3 do
+		CreateFrame("Button", "AuctionFrameTab" .. index, _G.AuctionFrame)
+	end
+
+	_G.AuctionFrameBid = CreateFrame("Frame", "AuctionFrameBid", _G.AuctionFrame)
+	_G.AuctionFrameAuctions = CreateFrame("Frame", "AuctionFrameAuctions", _G.AuctionFrame)
+
+	local setTabTo
+	_G.PanelTemplates_SetNumTabs = function(frame, n) frame.numTabs = n end
+	_G.PanelTemplates_SetTab = function(_, id) setTabTo = id end
+	_G.PanelTemplates_TabResize = function() end
+
+	-- The client's own handler, which all three of its tabs go through - and which is what
+	-- Family hooks so that ours goes away when one of theirs is clicked.
+	_G.AuctionFrameTab_OnClick = function() end
+	for index = 1, 3 do
+		local one = _G["AuctionFrameTab" .. index]
+		one:SetScript("OnClick", function() _G.AuctionFrameTab_OnClick(one) end)
+	end
+
+	-- The lane above built the button beside Reset and kept it. Nothing in the addon rebuilds
+	-- furniture; the harness has to say so.
+	Family.UI:__forgetAuctionFurniture()
+	fire("AUCTION_HOUSE_SHOW")
+
+	local tab, panel = _G.FamilyAuctionTab, _G.FamilyAuctionPanel
+	local newButton = _G.FamilyReadHouseButton
+
+	check("a tab of Family's own is added where the window has tabs",
+		tab ~= nil and panel ~= nil, tostring(tab) .. " / " .. tostring(panel))
+
+	-- **How many there already were is read, never assumed.** Three is exactly the sort of
+	-- number that is right on two clients and wrong on the third, and `AuctionFrame.numTabs` is
+	-- the client's own count of them.
+	check("and it takes the number after the ones the client already had",
+		tab and tab:GetID() == 4, tostring(tab and tab:GetID()))
+	check("and the window is told it now has that many",
+		_G.AuctionFrame.numTabs == 4, tostring(_G.AuctionFrame.numTabs))
+
+	-- L-073: the browse panel is a frame the client built and sized; a corner of the outer
+	-- window is a coordinate nobody here has measured.
+	check("the panel fills a frame the client sized rather than a corner nobody has measured",
+		panel and panel.__fills == _G.AuctionFrameBrowse,
+		tostring(panel and panel.__fills))
+	check("and it is parented to the window, so hiding that panel does not hide ours",
+		panel and panel.__parent == _G.AuctionFrame, tostring(panel and panel.__parent))
+
+	check("it starts put away, because the client opens on its own first tab",
+		panel and panel.__shown == false, tostring(panel and panel.__shown))
+
+	-- **The button moves onto it**, which is half of what was asked for: the control and how
+	-- far it has got, in one place.
+	check("and the read button sits on that panel rather than beside Reset",
+		newButton and newButton.__anchoredTo and newButton.__anchoredTo[panel] == true,
+		newButton and tostring(newButton.__anchoredTo))
+
+	----------------------------------------------------------------------------------------
+	-- Showing and hiding, which is the whole of what a tab is
+	----------------------------------------------------------------------------------------
+
+	tab.__scripts.OnClick(tab)
+	check("clicking it shows our panel and puts the client's own away",
+		panel.__shown == true and _G.AuctionFrameBrowse.__shown == false
+			and _G.AuctionFrameBid.__shown == false
+			and _G.AuctionFrameAuctions.__shown == false,
+		tostring(panel.__shown) .. " / " .. tostring(_G.AuctionFrameBrowse.__shown))
+	check("and the window is told which tab is selected, in its own words",
+		setTabTo == 4, tostring(setTabTo))
+
+	-- Hooked rather than replaced: what the window does with its own tabs is none of Family's
+	-- business, and all three of them go through the one handler.
+	_G.AuctionFrameTab1.__scripts.OnClick(_G.AuctionFrameTab1)
+	check("and clicking one of the client's own takes ours away again",
+		panel.__shown == false, tostring(panel.__shown))
+
+	tab.__scripts.OnClick(tab)
+	fire("AUCTION_HOUSE_SHOW")
+	check("and a fresh visit opens on the client's tab, not on ours",
+		panel.__shown == false, tostring(panel.__shown))
+
+	tab.__scripts.OnClick(tab)
+	fire("AUCTION_HOUSE_CLOSED")
+	check("as does walking away from the auctioneer",
+		panel.__shown == false, tostring(panel.__shown))
+
+	----------------------------------------------------------------------------------------
+	-- What it says while something is reading
+	----------------------------------------------------------------------------------------
+
+	-- The progress line, which is a font string on the panel and not the button sitting beside
+	-- it: the first writing of this walked `frames` and found the button, so every one of the
+	-- checks below read *Read it all* and three of them were about to be adjusted to match it.
+	-- The standing blurb underneath is skipped by what it says rather than by its order.
+	--
+	-- **Read without touching anything.** The first writing clicked the tab inside this helper,
+	-- which redraws the panel - so every check below was reading text its own call had just
+	-- written, and the mutation stopping the timer entirely walked through all of them. The
+	-- click is now made once, up front, and what the panel says afterwards is the timer's doing.
+	local function saying()
+		for _, fs in ipairs(fontStrings) do
+			local text = fs.__parent == panel and fs.__text or nil
+			if type(text) == "string" and text ~= ""
+				and not text:find("auction window is showing", 1, true) then
+				return text
+			end
+		end
+		return nil
+	end
+
+	-- Shown once. Everything below reads the panel as the player would - by looking at it.
+	tab.__scripts.OnClick(tab)
+
+	-- With nothing running it says what the store holds, which is the figure somebody came to
+	-- this tab to find out.
+	check("with nothing being read it says how much this market is known for",
+		(saying() or ""):find("remembered", 1, true) ~= nil, tostring(saying()))
+
+	-- **The line this panel exists for.** Another addon's whole-house scan lands on the
+	-- client's own browse list and Family reads it for free - and `AUCTION_ITEM_LIST_UPDATE`
+	-- does not fire once during that delivery, so a panel riding on that event would sit
+	-- perfectly still through the one read it was built to show. This is the timer's job.
+	local realBig = Family.Auctions.BigListReading
+	Family.Auctions.BigListReading = function() return { at = 4000, count = 28758 } end
+
+	-- **The timer has to be what notices**, so the read starts and nothing is clicked. Measured
+	-- on Burning Crusade 2026-09-12: `AUCTION_ITEM_LIST_UPDATE` fires **nought** times through
+	-- another addon's whole-house delivery and tens of thousands at the end, so a panel riding
+	-- on that event sits perfectly still through the one read it was built to show.
+	--
+	-- One tick is not enough on its own: the panel is not redrawing at all until something is
+	-- reading, so the first tick after that becomes true is the one under test.
+	advance(1.1)
+	advance(1.1)
+	check("and while somebody else's loaded list is being read, it says how far along that is",
+		(saying() or ""):find("4000", 1, true) ~= nil
+			and (saying() or ""):find("28758", 1, true) ~= nil, tostring(saying()))
+	Family.Auctions.BigListReading = realBig
+
+	-- A walk is a different job again, and says so with what is left rather than only what is
+	-- done: *how long will it take* is the question that got the forecast written at all.
+	local realWalking, realSeconds = Family.Auctions.Walking, Family.Auctions.WalkSeconds
+	Family.Auctions.Walking = function()
+		return { pages = 584, done = 292, kept = 3000 }
+	end
+	Family.Auctions.WalkSeconds = function() return 150 end
+	advance(1.1)
+	advance(1.1)
+	check("and a walk of the old house says the page, what it has taken and what is left",
+		(saying() or ""):find("292", 1, true) ~= nil
+			and (saying() or ""):find("584", 1, true) ~= nil
+			and (saying() or ""):find("3000", 1, true) ~= nil,
+		tostring(saying()))
+	Family.Auctions.Walking, Family.Auctions.WalkSeconds = realWalking, realSeconds
+
+	-- **And the timer stops when nothing is running.** A panel that redraws itself once a
+	-- second forever is a panel doing work on every frame of a game nobody asked it about.
+	--
+	-- **With the panel put away**, which is the state this is about: a tab nobody is looking at
+	-- has nothing to keep current, and one that is up is redrawn every second on purpose.
+	--
+	-- Two ticks of slack first, because the last refresh taken while the panel was still up
+	-- armed one more timer and that one is supposed to fire. What must not happen is the one
+	-- after it.
+	_G.AuctionFrameTab1.__scripts.OnClick(_G.AuctionFrameTab1)
+	advance(2.2)
+	local before = 0
+	local realProgress = Family.Auctions.PriceCount
+	Family.Auctions.PriceCount = function() before = before + 1 return 0 end
+	advance(5)
+	check("while nothing being read leaves no timer redrawing it",
+		before == 0, tostring(before) .. " redraw(s) with nothing to show")
+	Family.Auctions.PriceCount = realProgress
+
+	_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan
 end)()
 
 print()

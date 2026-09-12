@@ -1,0 +1,7 @@
+name: the Family tab assumes the window has three tabs rather than asking
+file: addons/Family_UI/Auctions.lua
+--- old
+	local held = tonumber(frame.numTabs)
+	if not held or held < 1 then return nil end
+--- new
+	local held = 2

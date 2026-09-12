@@ -1226,10 +1226,23 @@ probe now prints the whole item string instead, and on Burning Crusade Anniversa
 Held against the shape `Core.lua` records - `item : id : enchant : gem1 : gem2 : gem3 : gem4 :
 suffix : unique` - three things are settled and none of them was known here before.
 
-**The eighth field is the suffix, and it is negative.** `-7` on all three, across three different
-base items, which is what *of the Bear* is. `ItemString`'s comment already said suffixes are
-negative on these clients, from having been caught by it; this is the first time it has been read
-deliberately.
+**The eighth field is the suffix.** `-7` on all three, across three different base items, which
+is what *of the Bear* is.
+
+~~And it is negative.~~ **Not always, and the correction came from the other client.** Read on
+Classic Era 2026-09-12, off the same probe with a walk running:
+
+    item:9841::::::1029:1310677248:1::::::::::
+    item:12028::::::1188:1907958400:1::::::::::
+
+**1029 and 1188, positive**, with a seed in the ninth field exactly as the negative ones have. So
+the sign is not a property of *these clients* - both signs occur, and on the same field. Nothing
+in Family turns on it: `ItemSuffix` reads `[%-%d]*` and `VariantKey` puts whatever comes back
+after the colon, so `"9841:1029"` and `"31215:-7"` are both headings and neither is special. The
+claim is corrected here because it was a claim about the game, and it was wrong.
+
+Both are told apart from *no suffix*, which is the only distinction the key needs: nought and
+absent mean the same thing and everything else is a variant.
 
 **Fields three to seven are genuinely empty**, not nought - `::::::` between the id and the
 suffix. Any pattern demanding a digit there matches nothing at all, which is why the reader's is

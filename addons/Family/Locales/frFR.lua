@@ -889,4 +889,9 @@ Family.locales.frFR = {
 	["    name filter: %s, search box: %s"] = "    filtre de nom : %s, champ de recherche : %s",
 	["    item level filter: %s to %s"] = "    filtre de niveau d'objet : %s à %s",
 	["    %s: %s"] = "    %s : %s",
+	["%d price(s) remembered for this realm and side"] = "%d prix mémorisé(s) pour ce royaume et ce camp",
+	["Family reads whatever the auction window is showing, so another addon's whole-house scan fills these prices too - and far faster than reading it a page at a time."] = "Family lit ce que la fenêtre des enchères affiche : le scan complet d'un autre addon remplit donc aussi ces prix, et bien plus vite que page par page.",
+	["page %d of %d, %d price(s) taken - about %s to go"] = "page %d sur %d, %d prix relevé(s) - encore %s environ",
+	["reading a list somebody else loaded: %d of %d row(s)"] = "lecture d'une liste chargée par quelqu'un d'autre : %d ligne(s) sur %d",
+	["reading the whole list: %d of %d row(s), %d price(s) taken"] = "lecture de la liste entière : %d ligne(s) sur %d, %d prix relevé(s)",
 }

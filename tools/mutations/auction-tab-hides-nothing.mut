@@ -1,0 +1,7 @@
+name: the Family panel is shown over the client's own without putting it away
+file: addons/Family_UI/Auctions.lua
+--- old
+		hideClientPanels()
+		panel:Show()
+--- new
+		panel:Show()

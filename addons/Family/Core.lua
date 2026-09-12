@@ -163,9 +163,14 @@ function Family:ItemString(link)
 
 	-- item : id : enchant : gem1 : gem2 : gem3 : gem4 : suffix : unique : ...
 	--
-	-- Suffixes are negative on these clients, which is why the pattern above accepts a minus
-	-- sign - without it the match stopped at the dash and the string was silently truncated
-	-- to something that no longer described the item at all.
+	-- **A suffix can be negative**, which is why the pattern above accepts a minus sign -
+	-- without it the match stopped at the dash and the string was silently truncated to
+	-- something that no longer described the item at all.
+	--
+	-- It can also be positive: `-7` measured on Burning Crusade and `1029` on Classic Era, both
+	-- 2026-09-12, both with a seed behind them. This comment said *suffixes are negative on
+	-- these clients* until the second of those readings, which was a claim about the game made
+	-- from one client. Nothing here turns on the sign; the test is against nought.
 	-- Split by hand rather than with gmatch. "[^:]+" drops the empty fields these links
 	-- genuinely contain and "[^:]*" yields an empty string between every pair of colons, so
 	-- both of them shift every field along and the suffix is read out of the gem slot.
@@ -202,8 +207,9 @@ end
 --
 -- **Empty fields are why the pattern is `[%-%d]*` and not `%-?%d+`.** These links genuinely carry
 -- nothing between two colons, and a pattern demanding a digit there matches nothing at all - the
--- same trap the splitting above this one is written to avoid. Negative, because suffixes are
--- negative on these clients, which `ItemString` records from having been caught by it.
+-- same trap the splitting above this one is written to avoid. A minus sign is accepted because a
+-- suffix can be negative: `-7` read on Burning Crusade and `1029` on Classic Era, both 2026-09-12,
+-- so **both signs occur** and neither is what makes a thing a variant.
 --
 -- Nought and absent are the same answer here: no suffix, so no variant.
 function Family:ItemSuffix(link)

@@ -81,6 +81,21 @@ picks itself up where it left off.
   price. Two of the same sword on one character — one worn, one not — are now worth what they are
   really worth, which is not the same figure twice.
 
+### A Family tab on the auction house
+
+- **The auction window has a Family tab**, with the *Read it all* button on it and a line saying
+  how far along a read is — pages done, prices taken, and roughly how long is left. Reading the
+  chat frame while an auction house scrolls past was never going to work.
+
+- **It also says when somebody else's scan is filling your prices.** Family reads whatever the
+  auction window is showing, so another addon's whole-house scan fills the same store — 28,758
+  rows in one go on a Classic Era house — and the tab now says so while it happens.
+
+- **Family's own read is slower than that, and it is the server's throttle rather than anything
+  Family decides.** A whole Classic Era house is 584 pages in five minutes: one minute waiting for
+  answers, three minutes with the game refusing to let the next question out, and 27 seconds of
+  Family's own pacing.
+
 ### Of the Bear and of the Whale are two different swords
 
 - **Random-enchantment items are counted and priced one suffix at a time.** A Superior Sword *of

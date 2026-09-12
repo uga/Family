@@ -1164,12 +1164,17 @@ local WHY = {
 -- renderer finishes, so asking it was right and using what came back was not.
 --
 -- So Family says it in its own words, which are translated in this repository and arrive whole.
-local function spanOf(seconds)
+-- **Hung on UI so the auction window's own panel can say the same thing.** A second copy of
+-- this on that side would be two ways of writing a span, and the first day they disagreed would
+-- be the day somebody compared the chat line with the panel and believed neither.
+function UI:Span(seconds)
 	seconds = math.max(0, math.floor(tonumber(seconds) or 0))
 
 	if seconds < 60 then return string.format(L["%d second(s)"], seconds) end
 	return string.format(L["%d minute(s)"], math.floor(seconds / 60 + 0.5))
 end
+
+local function spanOf(seconds) return UI:Span(seconds) end
 
 -- **Started from two places**: this command, and the button on the auction window itself
 -- (Auctions.lua). The words live here whichever pressed it, because this is the file the

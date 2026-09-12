@@ -1,0 +1,12 @@
+name: the Family panel is anchored to a corner of the window nobody has measured
+file: addons/Family_UI/Auctions.lua
+--- old
+	local content = _G.AuctionFrameBrowse
+	if type(content) == "table" then
+		panel:SetAllPoints(content)
+	else
+--- new
+	local content = nil
+	if type(content) == "table" then
+		panel:SetAllPoints(content)
+	else
