@@ -5459,7 +5459,8 @@ do
 		IsControlKeyDown = function() return true end
 		-- Twelve at the market price this realm was last asking, four at what a vendor pays.
 		check("and holding it says what the whole lot comes to, each holder at their own market",
-			plain(priceLine(2880, "Worth")):find("1g 21s", 1, true) == 1,
+			plain(priceLine(2880, "Worth")):find("1g 21s", 1, true) ~= nil
+				and plain(priceLine(2880, "Worth")):find("^%(") ~= nil,
 			plain(priceLine(2880, "Worth")))
 		-- A market price is a photograph and the lot may have been valued from an old one, so
 		-- the age of the oldest reading that went into it travels with the figure.
@@ -5492,7 +5493,8 @@ do
 		end
 
 		check("while the guild bank's own pile is counted on its own line and left out of this one",
-			guildLine(2880) == "99 guild bank" and plain(priceLine(2880, "Worth")):find("1g 21s", 1, true) == 1,
+			guildLine(2880) == "99 guild bank"
+				and plain(priceLine(2880, "Worth")):find("1g 21s", 1, true) ~= nil,
 			tostring(guildLine(2880)) .. " / " .. plain(priceLine(2880, "Worth")))
 		FamilyDB.guilds["Hoarders-FireMaw"] = nil
 
@@ -5589,7 +5591,7 @@ do
 			IsControlKeyDown = function() return true end
 			check("and holding the key answers both of them",
 				priceLine(2880, "Stack of 12") ~= nil
-					and plain(priceLine(2880, "Worth")):find("1g 21s", 1, true) == 1,
+					and plain(priceLine(2880, "Worth")):find("1g 21s", 1, true) ~= nil,
 				tostring(priceLine(2880, "Stack of 12")) .. " / " ..
 					plain(priceLine(2880, "Worth")))
 
@@ -6020,8 +6022,12 @@ do
 
 		FamilyDB.prices = true
 		local shown = priceLine(2880, "Auction")
-		check("and the tooltip says it with the age of the reading beside it",
-			plain(shown) == "8s just now", plain(shown))
+		-- **The age leads and the money ends the line.** Asked for 2026-09-12 off a
+		-- screenshot: with the age trailing, the price stops where the age begins and no
+		-- longer lines up with the sell price above it - so the one column somebody is
+		-- reading down is the one thing that moves.
+		check("and the tooltip says it with the age of the reading in front of the money",
+			plain(shown) == "(just now) 8s", plain(shown))
 
 		-- **A price belongs to one realm and one side**, unlike everything else in `FamilyDB`.
 		-- Asked as a behaviour rather than by looking at the key: the first version of this

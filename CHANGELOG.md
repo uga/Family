@@ -124,6 +124,10 @@ picks itself up where it left off.
   — which the game states for nearly everything — reads nothing at an auction house, and puts no
   tab on that window. Prices already recorded are kept, so switching it back on finds them.
 
+- **Prices on a tooltip line up in a column again.** The age of an auction reading now leads the
+  line in brackets — *(1h ago) 3s 92c* — instead of trailing it, so the sell price, the auction
+  price and what your family's lot is worth all end at the same edge.
+
 ### A Family tab on the auction house
 
 - **The auction window has a Family tab**, with the *Read it all* button on it and a line saying

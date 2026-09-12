@@ -712,8 +712,14 @@ local function priceLines(tooltip, itemID, variant)
 	local auction, seen = nil, nil
 	if Family.Auctions then auction, seen = Family.Auctions:PriceOf(variant or itemID) end
 	if auction then
+		-- **The age in front of the money, and in brackets.** Asked for 2026-09-12 off a
+		-- screenshot: with it trailing, the price on this line ends where the age begins and
+		-- no longer lines up with the sell price above it or the worth below - so the one
+		-- column a reader is actually comparing down is the one thing that moves. Every
+		-- figure on this block is right-aligned by the tooltip itself, so putting the
+		-- qualification first puts them all back in a column.
 		lines[#lines + 1] = { L["Auction"],
-			string.format("%s |cff888888%s|r", UI:Coins(auction), UI:Ago(seen)),
+			string.format("|cff888888(%s)|r %s", UI:Ago(seen), UI:Coins(auction)),
 			0.4, 0.73, 1, 1, 1, 1 }
 	end
 
@@ -772,9 +778,12 @@ local function priceLines(tooltip, itemID, variant)
 		-- With the age of the oldest market reading that went into it, for the same reason the
 		-- auction line carries one: a market price is a photograph, and part of the lot may have
 		-- been valued from a reading taken on a realm nobody has visited for a fortnight.
+		-- The age leads here too, for the reason the auction line above gives: these two are
+		-- the figures somebody reads down, and only one of them carrying a tail is what put
+		-- them out of line.
 		local figure = UI:Coins(held.worth)
 		if held.oldest then
-			figure = string.format("%s |cff888888%s|r", figure, UI:Ago(held.oldest))
+			figure = string.format("|cff888888(%s)|r %s", UI:Ago(held.oldest), figure)
 		end
 
 		lines[#lines + 1] = { L["Worth"], figure, 0.4, 0.73, 1, 1, 1, 1 }

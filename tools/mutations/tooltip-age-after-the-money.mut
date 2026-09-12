@@ -1,0 +1,6 @@
+name: the age of an auction reading trails the price and breaks the column
+file: addons/Family_UI/Tooltip.lua
+--- old
+			string.format("|cff888888(%s)|r %s", UI:Ago(seen), UI:Coins(auction)),
+--- new
+			string.format("%s |cff888888%s|r", UI:Coins(auction), UI:Ago(seen)),
