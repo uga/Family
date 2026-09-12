@@ -132,6 +132,12 @@ picks itself up where it left off.
 
 ### Wide Family
 
+- **Exchanges only send the characters that changed.** They were meant to from the start and were
+  sending everybody every time. On a link of thirty characters that is most of every exchange.
+
+- **A shared character shows when it was last seen**, not when it was last sent. Every one of them
+  used to look freshly updated after each exchange, whatever its real age.
+
 - **The line under a linked family no longer loses its last words.** *Sending to them, 4 pieces
   left* was being cut to *send...* on narrower panels. Where the line will not fit, the hint about
   clicking the name gives way and the facts stay.

@@ -3284,3 +3284,43 @@ not a fresh one.
 **The general rule: a check that can observe itself is not a check.** This is L-087 in a shell -
 there the browse list's neighbours satisfied the guard, here the watcher satisfied its own
 condition. Both read as working right up until the case they existed for.
+
+---
+
+## L-090 — the fixture supplied the field the code was missing
+
+**2026-09-12, backlog 31.** Marking lets an exchange skip every member that has not changed since
+the last one. It was built on 2026-09-06, checked, and recorded as done. Every check passed.
+
+In play it had **never worked once**. `/family widetime` said *0 of 30 unchanged*, and once the
+probe could say why: *30 cannot be marked at all*, out of 30.
+
+`sendingMark` refuses a member with no `meta.seen`, because an undated record would differ from
+itself on every exchange. **Nothing in the addon writes `meta.seen`.** `Database:SetMeta` stamps
+`lastSeen`, and has from the start; the guild share has read `lastSeen` all along. So every member
+of every family was unmarkable, and every exchange sent everybody — the exact cost marking was
+built to remove.
+
+The harness did not see it because its fixture called
+`SetMeta(key, { ..., seen = time() - 60 })`, with the comment *a `seen` stamp, which every member
+Family has actually read has, and which this fixture wanted twice before it got one*. That sentence
+is the whole lesson. The fixture wanted a `seen` twice, and the answer both times was to give it
+one — rather than to ask why the real thing had none. The code read a field that only the test
+supplied.
+
+It had a second face. `offering` stamps what it sends with `meta.seen or time()`, under a comment
+saying a fact does not get younger by being posted. Since `meta.seen` was always nil, it always
+took `time()` — making every fact exactly as young as its posting, beside the sentence saying it
+never did.
+
+**What now catches it.** The fixture no longer writes a date; it takes whatever `SetMeta` stamps.
+Three marking checks fail with the old field name. A new check asserts the date sent is the date
+last seen, against a date an hour old — because the first recorded mutation for it was caught under
+a loaded run and survived a quiet one, depending on whether the clock ticked a second in between.
+
+**The general rule: a fixture may only write what the code writes.** When a check needs a field
+and the fixture has to supply it, stop and find the line in the real code that produces it. If
+there is none, the check is about an arrangement that never occurs, and passing it proves the
+opposite of what it says. L-088 was a fixture writing a field the code *overwrites*; this is a
+fixture writing a field the code *never* writes. The first gave a vacuous check; this one gave a
+dead feature with a green light over it for a week.

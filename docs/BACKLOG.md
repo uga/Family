@@ -2609,6 +2609,16 @@ three being the cap rather than the trigger.
 
 ## 41. What the `have` list costs on a real client
 
+**Measured 2026-09-12, and the measurement was of an empty list.** `/family widecost` against
+Serena: *0 marks held of theirs, 116 bytes on the wire, 85 bytes before compression* - the
+compressed form larger than the raw one, which is what deflate and a printable encoding do to
+nearly nothing. The list was empty because **marking had never worked** (L-090): no member was
+ever marked, so no mark ever travelled with one, so there was never anything to hand back. The
+question this entry asks can only be answered once both sides run the fix and have exchanged at
+least once. It stays open, with the probe now in place to answer it in one line.
+
+
+
 **Asked:** 2026-09-08, by this session rather than by a player, as the one loose end of the
 transfer work done the same day.
 
@@ -3794,10 +3804,11 @@ The number is on the child in one and on the parent in another; the quantity is 
 in one and the third in the other two. Three arrangements out of three possible, from three
 hovers.
 
-The auction half is confirmed in play, scrolled and unscrolled. **The remaining reading is one
-hover at a vendor with more than one page**, on the second page: every one of these was taken on
-a first page, where the slot on the screen and the index into the list are the same number - and
-that is exactly the coincidence that hid the scroll fault for a day.
+The auction half is confirmed in play, scrolled and unscrolled. **The vendor's second page was
+read too**, because every other reading had been taken on a first page, where the slot on the
+screen and the index into the list are the same number - the coincidence that hid the auction
+scroll fault for a day. On page two `MerchantItem8ItemButton` carries **18**: the button's own id
+is the index into the list, which is what the code already reads. Nothing left open.
 
 ---
 
