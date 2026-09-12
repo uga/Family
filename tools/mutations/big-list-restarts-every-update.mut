@@ -1,8 +1,10 @@
 name: every list update starts the loaded-list read again from the first row
 file: addons/Family/Scanners/Auctions.lua
 --- old
-		if bigRead then
+		if not bigRead then
+			bigRead = { at = 0, count = count, kept = 0 }
+		else
 			bigRead.count = count
-			return 0
 		end
 --- new
+		bigRead = { at = 0, count = count, kept = 0 }

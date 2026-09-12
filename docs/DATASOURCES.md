@@ -1168,10 +1168,24 @@ Timing, from play: about three minutes to 99% with little lag, then about three 
 99% lagging hard, so roughly six minutes for the scan against the fifteen the countdown runs for.
 The fifteen minutes this was first compared against is mostly the wait, not the read.
 
-**And Family's own part in that stall is not nothing.** `ReadPrices` walks `1..count` of the
-browse list every time that event fires, with no cap - fifty rows on an ordinary search, and up
-to 178,128 rows here, 5,745 times. How large the list was at each of those is unread, so what
-share of the stall was Family's is unmeasured; that the multiplier exists is not.
+**And most of that stall was Family's, measured by taking it away.** `ReadPrices` walked
+`1..count` of the browse list every time that event fired, with no cap - fifty rows on an
+ordinary search, up to 178,128 rows here, thousands of times. Read in slices instead, the same
+scan on the same client and a house of the same size (177,377 against 178,128) stalled at 99%
+for **under thirty seconds instead of about three minutes**. Two runs on one machine, with
+Family's own build as the only deliberate difference.
+
+Two more readings came with the second run, and both correct earlier notes here:
+
+- **`CanSendAuctionQuery` gives two values after all**, on this same build and client: `false,
+  false` while a whole-house read was arriving and `true, true` at rest. The note above records
+  a single value in both states and *the arity never changes* as an assumption - the assumption
+  is contradicted. What the second one means is unread, and whether it turns false during that
+  addon's own countdown while the first stays true is the reading that would say whether the
+  client knows about the interval at all.
+- **The event does not fire while the list is filling.** 156,800 rows on the list with the
+  counter still at nought; then 30,148 firings once it was done, and 74,483 a little later. So a
+  reader hung off that event sees nothing for the whole delivery and then everything at once.
 
 #### What a full read still needs, and why it is not built yet
 

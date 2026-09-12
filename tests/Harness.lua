@@ -5366,11 +5366,29 @@ do
 				carried ~= nil and carried.at == 500, tostring(carried and carried.at))
 
 			advance(1)
+			local caught = Family.Auctions:BigListReading()
 			check("and all of it is read across the frames that follow",
-				Family.Auctions:BigListReading() == nil and asked == 4000
+				caught ~= nil and caught.at == 4000 and not caught.ticking
+					and asked == 4000
 					and (Family.Auctions:PriceOf(100001)) == 501
 					and (Family.Auctions:PriceOf(104000)) == 4500,
 				asked .. " / " .. tostring((Family.Auctions:PriceOf(104000))))
+
+			-- **Caught up is not finished, and the row it reached is kept.** A whole-house
+			-- read arrives while it is being read, so the list is longer a moment later -
+			-- and a reader that threw its place away here started again at row one every
+			-- time it caught up. Reported from play on Burning Crusade 2026-09-12: *99,000
+			-- of 177,371 rows, 10 price(s) taken*, because the first ninety-nine thousand
+			-- had all been read by earlier passes. Correct, and an enormous amount of work
+			-- for nothing.
+			for index = 4001, 6000 do
+				LIST[index] = { id = 100000 + index, count = 1, buyout = 500 + index }
+			end
+			Family.Auctions:ReadPrices()
+			advance(1)
+			check("and a list that has grown is carried on from where it stopped",
+				asked == 6000 and (Family.Auctions:PriceOf(105500)) == 6000,
+				asked .. " / " .. tostring((Family.Auctions:PriceOf(105500))))
 
 			-- **A list replaced by an ordinary search ends the read**, and it needs no guard
 			-- of its own to do it: one was written here and taken out again, because no
@@ -5392,10 +5410,26 @@ do
 			end
 			Family.Auctions:ReadPrices()
 			advance(0.1)
+
+			-- An ordinary search, which in play arrives as this same event with a list of
+			-- ordinary size - so the fixture calls the reader rather than only swapping the
+			-- rows underneath it.
 			LIST = { { id = 2880, count = 1, buyout = 900 } }
+			Family.Auctions:ReadPrices()
 			advance(1)
-			check("and a list replaced by an ordinary search ends the slices",
-				Family.Auctions:BigListReading() == nil)
+
+			-- **And a search of ordinary size is what says the list was replaced**, so the
+			-- next loaded one begins at row one rather than carrying on into somebody else's
+			-- rows at an index that means nothing there.
+			LIST = {}
+			for index = 1, 4000 do
+				LIST[index] = { id = 400000 + index, count = 1, buyout = 900 }
+			end
+			Family.Auctions:ReadPrices()
+			local afresh = Family.Auctions:BigListReading()
+			check("and a list replaced by an ordinary search is not carried on into",
+				afresh ~= nil and afresh.at == 0, tostring(afresh and afresh.at))
+			advance(1)
 
 			-- And the window closing does the same, from the other direction.
 			Family.Auctions:ForgetVisit()

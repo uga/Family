@@ -1035,11 +1035,10 @@ bigReadTick = function()
 
 	local count = tonumber((Family:TryCall(GetNumAuctionItems, "list"))) or 0
 
-	-- **A shorter list ends the read, and there is no guard here doing it.** One was written -
-	-- *the list was replaced under us, stop* - and taken out again when the mutation removing it
-	-- survived: the slice below is `at + 1 .. min(at + 500, count)`, which against a shorter list
-	-- is an empty range, and the finishing test at the bottom is then met on this same tick. The
-	-- guard read like the thing that handled it and was not.
+	-- A shorter list needs no guard here: the slice below is `at + 1 .. min(at + 500, count)`,
+	-- which against one is an empty range, so the catching-up test at the bottom is met on this
+	-- same tick and the ticking stops. Beginning again is `ReadPrices`' business, because only
+	-- an update saying the list is longer can start anything.
 	bigRead.count = count
 
 	local to = math.min(bigRead.at + ROWS_PER_TICK, count)
@@ -1047,9 +1046,19 @@ bigReadTick = function()
 	bigRead.at = to
 
 	if bigRead.at >= count then
-		Family:Debug("auctions: %d price(s) taken from a list of %d row(s)",
-			bigRead.kept or 0, count)
-		bigRead = nil
+		Family:Debug("auctions: %d price(s) taken from %d row(s) of a loaded list",
+			bigRead.kept or 0, bigRead.at)
+
+		-- **Caught up, not finished.** The read is kept exactly where it stopped and stops
+		-- ticking; a later update saying the list is longer picks it up from that row.
+		--
+		-- It used to be thrown away here, and the next update built a new one starting at
+		-- row one. Reported from play on Burning Crusade 2026-09-12: the list grows while a
+		-- whole-house read is being delivered, so the reader caught up with a short list
+		-- over and over and re-read the head of it every time - *4 price(s) taken* at row
+		-- 11,500, because the first eleven thousand had all been seen already. Correct, and
+		-- a great deal of work for nothing.
+		bigRead.ticking = nil
 		return
 	end
 
@@ -1064,17 +1073,33 @@ function Auctions:ReadPrices()
 	if count < 1 then return 0 end
 
 	if count > PAGE_ROWS then
-		-- **Already going, so it is told how far the list now reaches and left alone.**
-		-- Restarting on every event is the fault this replaces, one frame further along.
-		if bigRead then
+		-- **One read, carried forward.** Restarting on every update is the multiplier this
+		-- replaces one frame further along; restarting every time the reader catches up is
+		-- the same thing again, slower, and that is what the row count is remembered for.
+		--
+		if not bigRead then
+			bigRead = { at = 0, count = count, kept = 0 }
+		else
 			bigRead.count = count
-			return 0
 		end
 
-		bigRead = { at = 0, count = count, kept = 0 }
-		Family:After(0, "auctions.biglist", bigReadTick)
+		if not bigRead.ticking and bigRead.at < bigRead.count then
+			bigRead.ticking = true
+			Family:After(0, "auctions.biglist", bigReadTick)
+		end
+
 		return 0
 	end
+
+	-- **A list of ordinary size means an ordinary search has replaced whatever was there**, so
+	-- the row a loaded list had been read to is about somebody else's rows now and is dropped.
+	--
+	-- Told apart by this rather than by the row count going backwards, which was the first
+	-- attempt and does not work: by the time the reader sees a shorter list it has already
+	-- dragged its own place down to the end of it, and the next loaded list then carries on from
+	-- there. Fifty rows is a page and past that means somebody loaded the lot, so *back to a
+	-- page* is the honest signal and it is the one the client actually gives.
+	bigRead = nil
 
 	return readRows(where, 1, count)
 end
