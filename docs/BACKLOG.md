@@ -4128,18 +4128,51 @@ mechanical once the reading says which.
 > the required materials (Fel Iron Bar + Eternium Bar) with the quantities required (3 and 2)
 > printed on top.
 
-**The whole difficulty is where the reagents come from**, and it is a DATASOURCES question before
-it is a panel one. `GetTradeSkillReagentInfo` answers for a recipe in a window that is open, on the
-character who knows it - and this panel's whole point is answering about the *other* forty
-characters, whose windows are shut and who are not logged in. So a reagent list is either
-**recorded** at scan time beside the recipe it belongs to, which makes every stored profession
-bigger and only fills in as each member opens each window, or **generated** into a table under
-`tools/`, which is a new data source and therefore reserved.
+`GetTradeSkillReagentInfo` answers for a recipe in a window that is open, on the character who
+knows it - and this panel's whole point is answering about the *other* forty characters, whose
+windows are shut and who are not logged in. So the reagents have to come from somewhere else.
 
-Nothing here is decided. What has to be read first is what the client actually answers per row
-while a window is open - the call's shape moves between these clients like every other one - and
-whether the icons and counts can be had without a second lookup per reagent.
+~~Which would be a new data source, and therefore reserved.~~ **Wrong, and Alberto said so:**
+*e wago?? nn ci credo che non abbia le composizioni di tutte le ricette.* `wago.tools` is
+DATASOURCES §3 - adopted long ago, with eleven generators in `tools/` already fetching from it -
+so this is another table from a source the project already uses, not a new source at all.
 
-Two smaller things the drawing will have to settle: a recipe with five reagents against a row that
-has room for three, and what a row says for a member whose recipes were recorded before this
-existed. Neither is a reason not to do it; both are reasons not to start with the panel.
+**Measured 2026-09-12, on the three builds §3 pins.** `SpellReagents` is served for all of them:
+
+| Build | Rows | Spells with reagents | CSV |
+|---|---|---|---|
+| Classic Era `1.15.9.69109` | 2,305 | 2,297 | 121 KB |
+| Burning Crusade `2.5.6.69110` | 2,659 | 2,655 | 139 KB |
+| Mists `5.5.4.69078` | 6,781 | 6,362 | 346 KB |
+
+Columns are `SpellID`, `Reagent_0..7` and `ReagentCount_0..7`. Checked against Alberto's own
+example rather than taken on trust:
+
+    29360 Smelt Felsteel  ->  23445 x3, 23447 x2      (Fel Iron Bar, Eternium Bar)
+    27033 Heavy Netherweave Bandage -> 21877 x2       (Netherweave Cloth)
+    38868 Crunchy Serpent -> 31671 x1                 (Serpent Flesh)
+
+Which is exactly what he asked for, down to the two quantities.
+
+**Keyed on the spell id, which is what makes this fit.** Family already stores `recipe.spellID`
+for every recipe it records - Tanardo's probe that afternoon read 75 of 75 cooking recipes with one
+- and enchanting, which lives behind the older Craft frame, stores the same field. So one generated
+table answers for both windows and for every language, and nothing has to be re-scanned.
+
+**How wide a row has to be, counted rather than guessed.** The table has eight reagent slots and
+recipes use all eight. On Burning Crusade: 744 recipes need one reagent, 514 two, 725 three, 359
+four, 232 five, 65 six, 7 seven, 9 eight. So a row sized for three would truncate a third of the
+list, and one sized for five would truncate 81 recipes of 2,655.
+
+**What is still open**, and none of it is about where the data comes from any more:
+
+1. Whether to ship all three builds' tables or only the reagents for spells Family can actually
+   meet - the Mists table is two and a half times the others and most of it is spells no recipe
+   window lists.
+2. The row: eight icons against a row that currently holds an icon and a name, and what happens on
+   the narrow end of the panel.
+3. Whether the quantity is drawn on the icon, as asked, or beside it - a number over a 16-pixel
+   icon is legible in English and has to be checked at the sizes the panel actually uses.
+4. Icons for the reagents. `GetItemIcon(id)` answers for anything cached and nothing for an item
+   this client has never met, which is the same wait every other item picture in Family handles;
+   it is a known shape, not a new problem.

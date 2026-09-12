@@ -132,10 +132,28 @@ end
 --
 -- The same order the professions tooltip uses, by the reader's own word rather than by the key:
 -- these are recorded in whatever language the client that read them was set to.
+-- **What this character may ride**, which is a sentence Classic can write and later games
+-- cannot.
+--
+-- On Era the game has one riding skill per animal - Horse Riding, Wolf Riding, Raptor Riding,
+-- Mechanostrider Piloting - so listing them says something a reader wants and cannot get
+-- anywhere else. Burning Crusade collapsed all eight into a single skill called **Riding**, and
+-- this line then drew *May ride: Riding*, which is a label answering itself. Reported from play
+-- 2026-09-12, in those words: *che vuol dire?*
+--
+-- Left out **by id and never by the word**: 762 is the general skill on every client that has
+-- it, and its name is one of five different words in the table above this file. Matching on
+-- "Riding" would have taken Horse Riding with it in English and nothing at all in German.
+--
+-- So on a Burning Crusade or Mists character the line simply does not appear, and the Mount line
+-- above it - which says the two speeds - is the whole of what there is to say. On Era it says
+-- exactly what it always said.
+local GENERAL_RIDING = 762
+
 local function ridingOf(meta)
 	local found = {}
 	for id, skill in pairs((meta or {}).skills or {}) do
-		if Family:IsRidingSkill(id) then
+		if Family:IsRidingSkill(id) and tonumber(id) ~= GENERAL_RIDING then
 			found[#found + 1] = Family:ProfessionName(id, skill.name)
 		end
 	end

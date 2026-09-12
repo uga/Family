@@ -31099,9 +31099,19 @@ print("what a character may ride, beside what they can")
 	check("the row says how fast a character travels", one ~= nil
 		and one:find(Family.L["Mount"], 1, true) ~= nil and one:find("100", 1, true) ~= nil,
 		tostring(one))
-	check("and what they are allowed to ride", one ~= nil
-		and one:find(Family.L["May ride"], 1, true) ~= nil
-		and one:find(Family:ProfessionName(762), 1, true) ~= nil, tostring(one))
+	-- **And the general riding skill is not a permission worth naming.**
+	--
+	-- Burning Crusade collapsed the eight per-animal riding skills into one, called Riding - so
+	-- from that expansion on this line drew *May ride: Riding*, a label answering itself, on
+	-- every character who had ever bought a mount. Reported from play 2026-09-12 in those
+	-- words: *che vuol dire?* The Mount line above says the two speeds, which is all there is.
+	--
+	-- This member holds **only** skill 762, which is what every Burning Crusade and Mists
+	-- character holds, so the line has to be absent rather than tautological.
+	check("while a character whose only riding skill is the general one is told nothing extra",
+		one ~= nil and one:find(Family.L["May ride"], 1, true) == nil, tostring(one))
+	check("and still gets the speed, which is the half of it that says something",
+		one ~= nil and one:find(Family.L["Mount"], 1, true) ~= nil, tostring(one))
 
 	-- **The case the entry is about.** The cell is blank for this member and honestly so; the
 	-- tooltip is where there is room to say which of the two blanks it is.

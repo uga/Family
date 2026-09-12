@@ -2047,10 +2047,19 @@ Tables that earned their keep:
 | `Item` | `ClassID`, `SubclassID` |
 | `ItemEffect` | `ParentItemID` → `SpellID`, which links a recipe item to what it teaches; and `Charges`, the maximum an item carries |
 | `SpellName`, `SkillLine` | names, `DisplayName_lang` |
+| `SpellReagents` | `SpellID`, `Reagent_0..7`, `ReagentCount_0..7` — what a recipe is made of |
 | `Talent` | `TierID`, `ColumnIndex`, `TabID`, `ClassID`, `SpellRank_0` — the spell a talent is |
 | `TalentTab` | `ID`, `OrderIndex`, `ClassMask` — which of a class's three trees this is |
 | `ChrClasses` | `ID`, `Filename` — the class file string `UnitClass` answers with |
 | `ChrRaces` | `ID`, `Name_lang`, `Name_female_lang`, `ClientFileString`, `PlayableRaceBit` |
+
+**`SpellReagents` is served for all three pinned builds** and was read on 2026-09-12, against a
+recipe somebody named rather than against nothing: `29360` Smelt Felsteel gives `23445` ×3 and
+`23447` ×2 — Fel Iron Bar and Eternium Bar, which is what the game's own window shows. Era 2,305
+rows, Burning Crusade 2,659, Mists 6,781; eight reagent slots and recipes that use all eight, so a
+row drawn for three would truncate a third of Burning Crusade's list. Nothing is generated from it
+yet — backlog 69 — and this row exists so that the next reader does not have to find out again
+whether the table is there.
 
 `Talent` and `TalentTab` are what `addons/Family/TalentSpells.lua` is generated from, by
 `tools/talents.py`. **`Talent.SpellRank_0` is the spell id of a talent's first rank**, which is

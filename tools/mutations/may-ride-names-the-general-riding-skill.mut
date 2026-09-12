@@ -1,0 +1,6 @@
+name: the May ride line names the general riding skill, which answers itself
+file: addons/Family_UI/Summary.lua
+--- old
+		if Family:IsRidingSkill(id) and tonumber(id) ~= GENERAL_RIDING then
+--- new
+		if Family:IsRidingSkill(id) then

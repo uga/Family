@@ -113,6 +113,10 @@ picks itself up where it left off.
   holding the most and counts the rest, with how many they hold between them so the total at the
   top still adds up. Guild banks the same.
 
+- **A character's tooltip no longer says *May ride: Riding*.** From Burning Crusade on there is
+  one riding skill for everything, so naming it said nothing the speed above it had not already
+  said. On Classic Era, where each animal has its own skill, it still lists them.
+
 - **Nothing the game will not pay a copper for is announced as being worth something.** An item
   with no sell price used to offer the CTRL line and then answer *Worth 0c*.
 
