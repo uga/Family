@@ -3955,3 +3955,41 @@ and the neutral one carries a worse cut and a longer walk.
 **And it would not be retrospective.** Everything already stored was filed under a faction with no
 record of where it was read, so the readings taken before this exists cannot be re-sorted - they
 stay where they are and are replaced in the ordinary way, by somebody visiting.
+
+## 67. A random-suffix green is priced at the cheapest of its variants
+
+**Alberto, 2026-09-12**, on why another addon counts 16,105 items in a house where Family finds
+about 6,800:
+
+> e fa bene perché sono oggetti diversi con valori di mercato diversissimi !
+
+He is right, and it is a fault rather than a difference in bookkeeping.
+
+**What Family does today.** Every price is filed under the base item id, taken from the link with
+`item:(%d+)`. So *Superior Sword of the Bear* and *of the Whale* are one entry, and the rule that
+keeps the **lowest** buyout seen this visit then makes the worst variant's price the price of all
+of them. On a green with a random enchantment that is not a ten per cent error, it is an order of
+magnitude.
+
+**Where collapsing is right and must stay.** Possessions. Three Superior Swords are three of the
+same thing to somebody deciding which alt to log in as, and splitting the count by suffix would
+break a pile that is one pile in the player's head. This is a **pricing** key, not a change to how
+Family stores what it owns (§2.1).
+
+**Two things must be measured before any of it, and neither is known here.**
+
+1. **Does the link carry the suffix, on these builds, in a form that can be a key?** The auction
+   list hands back a link and this repository has only ever read `item:(%d+)` out of it. What else
+   is in that string on Classic Era, Burning Crusade and Mists is unread. A key invented from
+   hearsay about item strings is L-071 in another costume.
+2. **How much of a house is suffixed at all?** If it is two hundred items of six thousand, this is
+   a footnote; if it is thousands, it is most of the value of the whole price feature. The loaded
+   list makes this cheap to count - a second tally beside the one that already counts distinct base
+   ids, over full links rather than base ids, and the two numbers side by side answer it in one
+   scan.
+
+**Only then, the shape.** Most likely a price key that is the base id where there is no suffix and
+something wider where there is, so that the common case costs nothing and stays exactly as it is.
+The tooltip lookup has to ask the same question the filing did, or the split is worse than the
+collapse: a bag item would be looked up under a key nothing was ever filed under, and a price that
+exists would read as silence.
