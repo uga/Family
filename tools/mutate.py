@@ -247,11 +247,24 @@ def main(argv):
     done = [0]
     counting = threading.Lock()
 
+    # **Every tree is made before any worker touches one.** They used to be copied inside the
+    # workers, from the proved tree - which worker 0 was already patching. A copy taken while a
+    # case was standing in that tree carried the mutation in for good, and every case run in it
+    # afterwards came back caught whatever the checks did. Found 2026-09-12 when a case that
+    # survived three gates by hand was reported caught, and it means every full run between
+    # that change and this one said less than it appeared to. Copied from the proved tree, and
+    # proved once, still - but only while nothing is writing to it.
+    trees = [first]
+    try:
+        for slot in range(1, jobs):
+            trees.append(copy_tree(os.path.join(holding, "w%d" % slot), first))
+    except Exception as trouble:            # noqa: BLE001 - reported, not swallowed
+        shutil.rmtree(holding, ignore_errors=True)
+        print("the copy could not be made: %s" % trouble)
+        return 1
+
     def worker(slot):
-        # Copied from the tree that was already proved rather than from the repository, and
-        # proved once rather than once a worker: they are the same bytes, and a clean gate is
-        # six seconds that every worker would otherwise spend answering the same question.
-        where = first if slot == 0 else copy_tree(os.path.join(holding, "w%d" % slot), first)
+        where = trees[slot]
 
         while True:
             try:
