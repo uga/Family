@@ -434,8 +434,12 @@ end
 -- what a vendor pays and reads nothing here, so a tab offering to read the house would be a
 -- control that does nothing. Asked of the scanner rather than of the setting, because the
 -- scanner is what obeys it and one of them has to be the answer.
+-- **The tab is the walk's**, not the price reader's. Listening happens whether or not this
+-- window carries anything of Family's; a tab exists to start a read, so it belongs to the switch
+-- that says whether Family reads the house itself. With prices off, `WalkWanted` is false too -
+-- there would be nothing to do with the pages.
 local function wanted()
-	return Family.Auctions:PricesWanted()
+	return Family.Auctions:WalkWanted()
 end
 
 local function build()
@@ -510,7 +514,7 @@ end
 -- nothing. Hidden rather than destroyed - a frame cannot be unmade in this game, and hiding is
 -- what the client itself does with the tabs it is not showing.
 function UI:ExtraChanged(name)
-	if name ~= "auctionPrices" then return end
+	if name ~= "auctionPrices" and name ~= "houseWalk" then return end
 
 	if wanted() then
 		build()

@@ -1310,6 +1310,14 @@ GetInboxItemLink = function(index, attachment)
 	return item and ("|Hitem:" .. item[1] .. "|h") or nil
 end
 
+-- **The three ways a player asks for something out of a letter.** They do nothing here, which is
+-- the point: what actually left the inbox is decided by the fixture moving it, exactly as the
+-- server decides it in the game. These only say that somebody asked - which is the difference
+-- between a stack taken and a letter returned to sender.
+TakeInboxItem = function() end
+TakeInboxMoney = function() end
+AutoLootMailItem = function() end
+
 -- Enchanting is behind the Craft frame, not the trade skill one. Most of its recipes create
 -- no item at all - an enchant is a spell applied to something - and a few make oils and rods.
 -- Both shapes are here, because a reader that assumes an item exists loses most of the list.
@@ -2024,7 +2032,7 @@ local UI_FILES = { "Window.lua", "MemberPicker.lua", "ChoicePicker.lua", "Member
 	"Summary.lua", "Talents.lua",
 	"Contents.lua", "Professions.lua", "Character.lua", "Quests.lua",
 	"Wide.lua", "Guild.lua",
-	"Broker.lua", "Extras.lua", "Options.lua", "About.lua", "Auctions.lua", "ItemClick.lua",
+	"Broker.lua", "Extras.lua", "MailReport.lua", "Options.lua", "About.lua", "Auctions.lua", "ItemClick.lua",
 	"Slash.lua" }
 
 for _, file in ipairs(UI_FILES) do
@@ -7793,6 +7801,94 @@ end
 
 tabDrawsCleanly("contents", "the possessions panel builds and draws")
 tabDrawsCleanly("professions", "the professions panel builds and draws")
+
+print()
+print("what a recipe is made of, beside the recipe")
+
+-- **Asked for 2026-09-12**, and the first thing built out of the generated materials table:
+-- *sulla destra la lista delle icone dei materiali richiesti + le quantita richieste.*
+--
+-- Driven at the strip the panel actually filled rather than at the table it read, because a
+-- recipe's materials being *in* `RecipeReagents` and being *on the row* are two claims and only
+-- the second is the feature.
+;(function()
+	local held = Family.Capabilities.expansion
+	local heldReagents = Family.RecipeReagents
+	Family.Capabilities.expansion = 2
+
+	local BAR, CLOTH, THREAD = 700301, 700302, 700303
+	Family.RecipeReagents = { [2] = {
+		[910001] = { BAR, 3, CLOTH, 2, THREAD, 1 },
+		-- Nine materials against eight slots, which recipes really do reach: on Burning
+		-- Crusade 81 of them take seven or eight.
+		[910002] = { 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 9, 1 },
+	} }
+
+	local unpacked = Family.Recipes:Reagents(910001)
+	check("a recipe's materials come back in the order they ship in, with their counts",
+		#unpacked == 3 and unpacked[1].item == BAR and unpacked[1].count == 3
+			and unpacked[3].item == THREAD and unpacked[3].count == 1,
+		tostring(#unpacked))
+
+	-- **An Era record carries the product and no spell at all** (DATASOURCES §2), so a row
+	-- there has to ask the item what makes it. Without this the whole feature is blank on the
+	-- one client that most needs it.
+	local realMadeBy = Family.Recipes.MadeBy
+	Family.Recipes.MadeBy = function(_, itemID) return itemID == 700400 and 910001 or nil end
+	check("and a record with no spell on it finds them through the item it makes",
+		Family.Recipes:Reagents(Family.Recipes:MadeBy(700400)) ~= nil,
+		tostring(Family.Recipes:MadeBy(700400)))
+
+	----------------------------------------------------------------------------------------
+	-- The row itself, which is the claim. The table above is only what it reads.
+	----------------------------------------------------------------------------------------
+
+	-- **The panel's own first row**, not a fresh one at a high index: `rows` is a list the draw
+	-- loop walks with `#rows`, and putting an entry at 99 makes it sparse. The panel refills
+	-- this one on its next draw, so borrowing it costs nothing.
+	Family.UI:ShowTab("professions")
+	local strip = Family.UI.__recipeRowFor(1)
+
+	local function slots()
+		local shown, said = 0, {}
+		for index = 1, 8 do
+			local cell = strip.mats[index]
+			if cell.icon:IsShown() then
+				shown = shown + 1
+				said[#said + 1] = tostring(cell.count.__text)
+			end
+		end
+		return shown, table.concat(said, ",")
+	end
+
+	Family.UI.__showRecipeMaterials(strip, { spellID = 910001 })
+	local shown, counts = slots()
+	check("a recipe of three materials shows three pictures and no more",
+		shown == 3, tostring(shown) .. " shown")
+
+	-- Asked for in as many words: *le quantita richieste stampate sopra*. And one of a thing
+	-- carries no number, the way a bag draws a single item.
+	check("with the quantity printed on each, and nothing on the one it needs a single of",
+		counts == "3,2,", counts)
+
+	-- **A pooled row is written on every draw, empty slots included.** Without this a strip
+	-- follows the recipe that was in the row before it, which on a scrolling list is most of
+	-- them.
+	Family.UI.__showRecipeMaterials(strip, { spellID = 910002 })
+	shown = slots()
+	check("and a recipe of nine fills all eight slots rather than overflowing",
+		shown == 8, tostring(shown) .. " shown")
+
+	Family.UI.__showRecipeMaterials(strip, { spellID = nil, itemID = nil })
+	shown, counts = slots()
+	check("while a recipe with no materials at all leaves an empty strip behind it",
+		shown == 0, tostring(shown) .. " still shown: " .. counts)
+
+	Family.Recipes.MadeBy = realMadeBy
+
+	Family.RecipeReagents, Family.Capabilities.expansion = heldReagents, held
+end)()
+
 
 
 -- Each sort runs its own comparison over the same list, and a comparison that is not a
@@ -33775,19 +33871,26 @@ print("what a craftable thing costs to make")
 	-- before it asks about the binding. Written with one of these, the check for the first
 	-- passed against a fixture that was really testing the second.
 	local BAR, CLOTH, SKIN, RARE, SHARD = 700201, 700202, 700203, 700204, 700205
+	-- A bound intermediate with a recipe of its own, and the thing that eats it.
+	local BLADE, CHAMPION, LOOP = 700206, 700105, 700207
 
 	Family.RecipeReagents = { [2] = {
 		[900001] = { BAR, 3, CLOTH, 2 },   -- everything priced
 		[900002] = { BAR, 1, RARE, 1 },    -- one buyable thing nobody has priced
 		[900003] = { BAR, 2, SKIN, 4 },    -- one that binds on pickup
 		[900004] = { SHARD, 1 },           -- bound, and a vendor sells it anyway
+		[900005] = { BLADE, 1, BAR, 1 },   -- eats an intermediate nobody sells
+		[900006] = { BAR, 2, CLOTH, 1 },   -- how that intermediate is made
+		[900007] = { LOOP, 1 },            -- made of itself, which must not hang
 	} }
-	Family.BoundReagents = { [2] = { [SKIN] = true, [SHARD] = true } }
+	Family.BoundReagents = { [2] = { [SKIN] = true, [SHARD] = true, [BLADE] = true,
+		[LOOP] = true } }
 
 	local realMadeBy = Family.Recipes.MadeBy
 	Family.Recipes.MadeBy = function(_, itemID)
 		return ({ [SWORD] = 900001, [ROBE] = 900002, [CLOAK] = 900003,
-			[BELT] = 900004 })[itemID]
+			[BELT] = 900004, [CHAMPION] = 900005, [BLADE] = 900006,
+			[LOOP] = 900007 })[itemID]
 	end
 
 	check("a recipe's materials come back unpacked from the flat pairs they ship as",
@@ -33857,6 +33960,40 @@ print("what a craftable thing costs to make")
 		Family.Recipes:CostToMake(999333) == nil)
 
 	----------------------------------------------------------------------------------------
+	-- A material nobody sells may still be one this profession makes
+	----------------------------------------------------------------------------------------
+
+	-- Asked 2026-09-12: *Lionheart Blade, Drakefist Hammer: sono semilavorati, e quindi a loro
+	-- volta hanno una bill of materials da valorizzare (ci riusciamo?)*. The blade binds on
+	-- pickup and nobody sells one, so before this it counted as nothing at all.
+	local champion = Family.Recipes:CostToMake(CHAMPION)
+	local bladeCost = 2 * 300 + 1 * 90
+	check("a bound material with a recipe of its own is costed from that recipe",
+		champion and champion.total == bladeCost + 300 and champion.made == 1,
+		champion and tostring(champion.total) or "nothing")
+	check("and the line says the price came from making one rather than from buying one",
+		champion and champion.parts[1].from == "crafted",
+		champion and tostring(champion.parts[1].from))
+
+	-- **Bought before made**, which keeps the first caveat the rule it was written as: a thing
+	-- somebody is selling costs what they are asking, whatever making one would come to.
+	local realBound = Family.BoundReagents
+	vendorPrices[BLADE] = 5
+	local bought = Family.Recipes:CostToMake(CHAMPION)
+	check("while one somebody is selling costs what they are asking, not what making it would",
+		bought and bought.total == 5 + 300 and bought.made == 0,
+		bought and tostring(bought.total) or "nothing")
+	vendorPrices[BLADE] = nil
+
+	-- **A recipe that eats itself must not hang the client**, which is the one place in this
+	-- addon where a loop would be found by a player rather than by a check: a tooltip.
+	local looped = Family.Recipes:CostToMake(LOOP)
+	check("and a recipe made of itself is answered rather than followed for ever",
+		looped ~= nil and looped.total == 0 and looped.bound == 1,
+		looped and tostring(looped.total) or "nothing")
+	Family.BoundReagents = realBound
+
+	----------------------------------------------------------------------------------------
 	-- What the tooltip says, which is where the three caveats have to survive
 	----------------------------------------------------------------------------------------
 
@@ -33910,6 +34047,120 @@ print("what a craftable thing costs to make")
 	Family.Recipes.MadeBy = realMadeBy
 	Family.RecipeReagents, Family.BoundReagents = realReagents, realBound
 	Family.Capabilities.expansion = held
+end)()
+
+print()
+print("what came out of the mailbox")
+
+-- **Asked for 2026-09-12.** *Quando un personaggio legge e scarica i messaggi dalla casella
+-- postale, stampiamo una riga in chat per ogni oggetto scaricato, e per ogni somma incassata.
+-- Alla chiusura della casella, stampiamo il totale.*
+--
+-- **Read from what left the inbox, and only where a take was asked for.** Either half alone is
+-- wrong: the hook's arguments announce a stack the server refused - and bags are full exactly
+-- when a mailbox of auction returns is being emptied - while a diff with no hook reports a letter
+-- the player *returned to sender* as something they received.
+;(function()
+	local heldExtras = FamilyDB.extras
+	local heldInbox = INBOX
+
+	local function saidSince(from)
+		return table.concat(DEFAULT_CHAT_FRAME.messages, "\n", from + 1,
+			#DEFAULT_CHAT_FRAME.messages)
+	end
+
+	Family.Extras:Set("mailReport", true)
+
+	INBOX = {
+		{ sender = "Auction House", subject = "Sold", money = 12000, cod = 0, days = 25,
+		  items = { { 2589, 20 } } },
+		{ sender = "Deiana", subject = "Wool", money = 0, cod = 0, days = 20,
+		  items = { { 2592, 5 } } },
+	}
+	fire("MAIL_SHOW")
+
+	-- **Something left, and nobody asked for it.** A letter returned to sender leaves the inbox
+	-- exactly as a taken one does, and reporting it as received is the fault this half guards.
+	local before = #DEFAULT_CHAT_FRAME.messages
+	INBOX[2].items = {}
+	fire("MAIL_INBOX_UPDATE")
+	check("something leaving the inbox with nothing asked for is not reported as received",
+		saidSince(before):find("received", 1, true) == nil, saidSince(before))
+
+	-- And the comparison has kept up, so the thing that left is not blamed on the next take.
+	--
+	-- **Part of a stack**, which is what makes this a comparison rather than a repetition of
+	-- the hook's arguments. Written with the whole stack leaving, *what left* and *what was
+	-- there* are the same number and the mutation reporting the second walked through it.
+	before = #DEFAULT_CHAT_FRAME.messages
+	TakeInboxItem(1, 1)
+	INBOX[1].items = { { 2589, 12 } }
+	fire("MAIL_INBOX_UPDATE")
+	local said = saidSince(before)
+	check("while a stack part taken is reported at what actually left, not at what was there",
+		said:find("received 8", 1, true) ~= nil and said:find("received 20", 1, true) == nil,
+		said)
+
+	before = #DEFAULT_CHAT_FRAME.messages
+	TakeInboxItem(1, 1)
+	INBOX[1].items = {}
+	fire("MAIL_INBOX_UPDATE")
+	said = saidSince(before)
+	check("and the rest of it when the rest of it goes",
+		said:find("received 12", 1, true) ~= nil, said)
+
+	-- **The take that the server refused.** Asked for and nothing moved, which is what a full
+	-- bag looks like from in here - and reporting it would be a line about an item the player
+	-- has not got.
+	before = #DEFAULT_CHAT_FRAME.messages
+	TakeInboxItem(2, 1)
+	fire("MAIL_INBOX_UPDATE")
+	check("and a take the server refused says nothing at all",
+		saidSince(before):find("received", 1, true) == nil, saidSince(before))
+
+	before = #DEFAULT_CHAT_FRAME.messages
+	TakeInboxMoney(1)
+	INBOX[1].money = 0
+	fire("MAIL_INBOX_UPDATE")
+	check("money collected is reported as money rather than as an item",
+		saidSince(before):find("collected", 1, true) ~= nil, saidSince(before))
+
+	-- The figure somebody actually wanted: a mailbox of auction returns is forty lines and one
+	-- number.
+	before = #DEFAULT_CHAT_FRAME.messages
+	fire("MAIL_CLOSED")
+	said = saidSince(before)
+	check("and closing the mailbox totals the visit",
+		said:find("From the mailbox", 1, true) ~= nil and said:find("20 item", 1, true) ~= nil,
+		said)
+
+	-- **Nothing taken, nothing said.** A line reading *0 items, 0 copper* on every mailbox
+	-- somebody opens to check is a line they turn the feature off over.
+	fire("MAIL_SHOW")
+	before = #DEFAULT_CHAT_FRAME.messages
+	fire("MAIL_CLOSED")
+	check("while a mailbox nobody took anything out of says nothing",
+		saidSince(before):find("From the mailbox", 1, true) == nil, saidSince(before))
+
+	-- And off is off.
+	Family.Extras:Set("mailReport", false)
+	INBOX = {
+		{ sender = "Auction House", subject = "Sold", money = 500, cod = 0, days = 25,
+		  items = { { 2589, 3 } } },
+	}
+	fire("MAIL_SHOW")
+	before = #DEFAULT_CHAT_FRAME.messages
+	TakeInboxItem(1, 1)
+	INBOX[1].items = {}
+	fire("MAIL_INBOX_UPDATE")
+	fire("MAIL_CLOSED")
+	check("with the extra off the mailbox is emptied in silence",
+		saidSince(before):find("received", 1, true) == nil
+			and saidSince(before):find("From the mailbox", 1, true) == nil,
+		saidSince(before))
+
+	INBOX = heldInbox
+	FamilyDB.extras = heldExtras
 end)()
 
 print()

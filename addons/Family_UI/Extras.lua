@@ -38,11 +38,20 @@ local SWITCHES = {
 	{
 		name = "auctionPrices",
 		label = L["Read prices at the auction house"],
-		note = L["With this off, Family values what your characters hold at what a vendor "
-			.. "pays - which the game states for nearly everything - and nothing else. With "
-			.. "it on, whatever the auction window is showing is read as well: your own "
-			.. "searches, and the Family tab that appears on that window, which can walk "
-			.. "every page there is. Prices already recorded are kept either way."],
+		note = L["Using the auction house fills Family in: whatever that window is showing "
+			.. "is read, including the whole-house scan of an addon like Auctionator or "
+			.. "Auctioneer, which Family listens to and takes prices from for nothing. "
+			.. "With this off, Family values what your characters hold at what a vendor "
+			.. "pays - which the game states for nearly everything - and reads nothing at "
+			.. "an auction house. Prices already recorded are kept either way."],
+	},
+	{
+		name = "houseWalk",
+		label = L["Let Family read the whole auction house itself"],
+		note = L["Adds a Family tab to the auction window with a button that walks every "
+			.. "page there is. It takes minutes, because the game only lets one search out "
+			.. "at a time - so if you already run an auction addon, use its own full scan "
+			.. "instead and Family will hear it. This is for people who do not."],
 	},
 	{
 		name = "craftingCost",

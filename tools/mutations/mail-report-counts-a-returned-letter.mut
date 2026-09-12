@@ -1,0 +1,6 @@
+name: a letter returned to sender is reported as something received
+file: addons/Family_UI/MailReport.lua
+--- old
+	if held and asked then
+--- new
+	if held then

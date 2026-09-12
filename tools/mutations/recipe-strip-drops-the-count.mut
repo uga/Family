@@ -1,0 +1,8 @@
+name: the quantity is not printed on the material's picture
+file: addons/Family_UI/Professions.lua
+--- old
+				cell.count:SetText(part.count > 1 and tostring(part.count) or "")
+				cell.count:SetShown(part.count > 1)
+--- new
+				cell.count:SetText("")
+				cell.count:SetShown(false)

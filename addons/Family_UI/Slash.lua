@@ -1155,6 +1155,7 @@ local WHY = {
 	emptyList = L["the client answered no rows at all"],
 	-- **A switch the player owns**, so the answer names it rather than describing a fault.
 	switchedOff = L["reading prices at the auction house is switched off - turn it on under Extras"],
+	walkSwitchedOff = L["letting Family read the whole house itself is switched off - turn it on under Extras, or use your auction addon's own full scan and Family will hear it"],
 }
 
 -- **How long, in words somebody can act on.**

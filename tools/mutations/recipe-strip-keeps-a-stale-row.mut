@@ -1,0 +1,9 @@
+name: a pooled recipe row keeps the materials strip of the recipe before it
+file: addons/Family_UI/Professions.lua
+--- old
+			else
+				cell.icon:Hide()
+				cell.count:Hide()
+			end
+--- new
+			end

@@ -348,6 +348,24 @@ end
 -- **The prices to value things with**, which is the store when the switch is on and nothing at
 -- all when it is off. Its own name because *where the prices are kept* and *what may be priced
 -- from them* are two questions, and a caller wanting the first is a writer.
+-- **Whether Family will read the house itself**, which is a second switch and a different
+-- question from whether it reads prices at all.
+--
+-- Alberto's call 2026-09-12, after measuring where a read's five minutes go: *lasciamolo com'e.
+-- Negli extra pero lo abilitiamo/disabilitiamo.* Listening costs nothing and fills the store
+-- from whatever the player does anyway, including another addon's whole-house scan; walking the
+-- house a page at a time is minutes of a client that has to stay open, and is worth having only
+-- where nothing else is going to deliver that list.
+--
+-- Reading prices off is reading the house off too: there would be nothing to do with the pages.
+function Auctions:WalkWanted()
+	if not self:PricesWanted() then return false end
+
+	local extras = Family.Extras
+	if not extras then return true end
+	return extras:On("houseWalk")
+end
+
 function Auctions:MarketPrices(where)
 	if not self:PricesWanted() then return nil end
 	return self:Prices(where)
@@ -897,6 +915,7 @@ function Auctions:StartReplicateRead(told)
 	if reading then return false, "running" end
 	if not self:CanReplicate() then return false, "olderHouse" end
 	if not self:PricesWanted() then return false, "switchedOff" end
+	if not self:WalkWanted() then return false, "walkSwitchedOff" end
 
 	-- Asked **once**, by somebody who said so: this is the same call the probe sends, and the
 	-- one thing in this addon that a server may ration for the rest of an evening.
@@ -1808,6 +1827,7 @@ function Auctions:StartWalk(told)
 	-- Refused before anything is pressed or sent, so a switch that is off is off everywhere
 	-- rather than in the places somebody remembered.
 	if not self:PricesWanted() then return false, "switchedOff" end
+	if not self:WalkWanted() then return false, "walkSwitchedOff" end
 
 	-- **The newer house is not walked this way, and saying *no query seen yet* there would be
 	-- true and misleading.** On Mists the old calls are shells - all three selectors answer

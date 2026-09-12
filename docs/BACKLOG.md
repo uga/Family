@@ -4120,7 +4120,7 @@ one week. Whichever of the two it turns out to be has its own fix - clearing the
 them back, the way the headers already are; or waiting for the window to settle - and both are
 mechanical once the reading says which.
 
-## 69. Recipe materials on the Professions panel — **the data landed 2026-09-12, the panel has not**
+## 69. Recipe materials on the Professions panel — **done 2026-09-12**
 
 **Asked for 2026-09-12.** Each recipe line carries what it needs, on the right of the row:
 
@@ -4170,19 +4170,29 @@ list, and one sized for five would truncate 81 recipes of 2,655.
 `addons/Family/RecipeReagents.lua` - 1,674 recipes on Era, 2,304 on Burning Crusade, 5,333 on
 Mists, 300 KB - narrowed to the spells a trade skill teaches, and `Recipes:Reagents(spellID)`
 unpacks it. Per expansion, because 475 spells carry different reagents on different builds and one
-merged table would be 219 KB against 344 and wrong about every one of them. The first consumer was
-backlog 71, which needed the same table; **this panel is still not drawn.**
+merged table would be 219 KB against 344 and wrong about every one of them.
 
-What is left is all drawing:
+**And the row landed the same day.** The table had gone in for backlog 71 first, and the message
+saying so was easy to read as saying both were done - Alberto deployed and found nothing there.
+Eight slots on the right of every recipe row, right-aligned so the counts line up down the page,
+the quantity printed on the picture as asked and left off where a recipe needs a single one. A
+recipe of more than eight shows the **last** eight, because the expensive material is rarely the
+first one listed. The name gives up the room the strip takes and takes it back on a recipe with
+none - an enchant applied to something makes no item and lists nothing.
 
-1. ~~Whether to ship all three builds' tables.~~ All three, per expansion, for the reason above.
-2. The row: eight icons against a row that currently holds an icon and a name, and what happens on
-   the narrow end of the panel.
-3. Whether the quantity is drawn on the icon, as asked, or beside it - a number over a 16-pixel
-   icon is legible in English and has to be checked at the sizes the panel actually uses.
-4. Icons for the reagents. `GetItemIcon(id)` answers for anything cached and nothing for an item
-   this client has never met, which is the same wait every other item picture in Family handles;
-   it is a known shape, not a new problem.
+Written on **both** lists, the member's own and the whole-family search, because the rows are
+pooled between them and a strip left on one would follow a recipe in the other.
+
+Settled on the way:
+
+1. All three builds' tables, per expansion, for the reason above.
+2. The quantity is drawn **on** the picture, as asked, in the game's own outlined number font -
+   which is what the client does with a stack size and is why it is legible at sixteen pixels.
+3. Icons come from `GetItemIcon(id)`, which answers for anything cached and nothing for an item
+   this client has never met - the same wait every other item picture in Family handles.
+
+**Still to look at, with eyes rather than a check:** whether eight sixteen-pixel pictures and a
+recipe name both fit at the narrow end of the panel, in German and Russian as well as English.
 
 ## 70. One bag for everything a character carries, and a search box over the whole family
 
@@ -4236,11 +4246,25 @@ the person most likely to try this is running one.
 
 ### The specification, dictated 2026-09-12
 
-Written down as given, with what is already answerable marked as such. **This is not the
-Possessions panel**: that one draws what forty characters are *recorded* as holding, and this one
-draws the containers of the character being played, live - which is why its slots can be used,
-and why an item's quality and its quest flag can be asked of the client at the moment of drawing
-rather than stored.
+Written down as given, with what is already answerable marked as such.
+
+~~**This is not the Possessions panel**: it draws the containers of the character being played,
+live.~~ **Wrong, and Alberto said so at once:**
+
+> Quando apro la "big bag" vedo, certamente, anzitutto i contenuti delle mie borse MA (!) in cima
+> alla finestra avrò un picker che mi permette di richiamare un qualsiasi altro membro della
+> famiglia per consultare le SUE borse.
+
+So **the window has two modes and they are not cosmetically different.** On the character being
+played it draws live containers, and a slot is a thing that can be dragged out of, split, sold
+and right-clicked. On anybody else it draws a record, and a slot is a picture. A grid where those
+two look identical and only one of them does anything when clicked is the shape of a bug report,
+and which of the two a slot is has to be visible without clicking it.
+
+It also means the picker at the top is the one the rest of the addon already uses, and that this
+window and the Possessions panel are answering the same question in two presentations - which is
+an argument for sharing whatever reads a member's containers, and not for one of them growing a
+second copy of it.
 
 **The border of a slot**, each independently:
 
@@ -4291,14 +4315,19 @@ apart* is `special`; *two enchanting bags may be merged with each other* is two 
 by container number, with a comment explaining that the client will happily answer nonsense about
 it if asked the wrong question.
 
-**Not recorded, and does not need to be.** Quality and the quest flag are properties of the item
-in front of the player, and this window is the played character's own live containers - so they
-come from the client at draw time like every other picture in Family.
+**Quality and the quest flag, and the answer differs by mode.** Quality is a static property of
+an item, so `GetItemInfo` answers for anybody's copy once the client has met it - the same wait
+every other item picture in Family already handles. The quest flag is not: `GetContainerItemQuestInfo`
+is about a slot in a container that is open, so it can be asked on the played character and cannot
+be asked about an alt's record at all. Whether the item's own class is a good enough stand-in
+there - class 12 is Quest - is a reading nobody has taken.
 
-**The number of settings is itself a design problem.** Seven per window, times two windows, plus
-eight auto-open switches, plus three border options is more than twenty controls - which is more
-than the Extras panel should grow by, and probably belongs on the bag window itself the way the
-addons this replaces do it. Not decided.
+**The settings live on the bag window itself** - Alberto's call, 2026-09-12, on the observation
+that seven per window times two windows plus eight auto-open switches plus three border options is
+more than twenty controls, which is more than the Extras panel should grow by. The addons this
+would replace put them there and the reason is the same one: a control for how wide a bag is drawn
+belongs next to the bag it draws. Extras keeps the one switch that says whether the window exists
+at all.
 
 **And none of it moves the question at the top of this entry.** All of the above is decoration on
 a slot, and what a slot *is* - a real `ContainerFrameItemButton` moved, or a button of ours that

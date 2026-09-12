@@ -1040,9 +1040,37 @@ end
 --
 -- **Priced before bound.** A material that binds on pickup and is nonetheless sold by a vendor
 -- costs exactly what that vendor charges, and the order here is what makes that come out right.
-function Recipes:CostToMake(itemID)
+--
+-- **A material nobody sells may still be one this profession makes.**
+--
+-- Asked 2026-09-12, after the bind-on-pickup set turned out to hold three kinds of thing:
+-- *Lionheart Blade, Drakefist Hammer: giusto, sono semilavorati, e quindi a loro volta hanno
+-- una bill of materials da valorizzare (ci riusciamo?)*. Yes: a Lionheart Champion costs a
+-- Lionheart Blade's materials plus its own, and that is one more turn of this same function.
+--
+-- **The rods are not this**, and the distinction Alberto was worried about does not have to be
+-- drawn here because the game has already drawn it. A tool is required to be *present* and is
+-- never consumed, and the client keeps those somewhere else entirely - `SpellTotems`, which
+-- Family does not read. Measured 2026-09-12 across the whole of `SpellReagents`: Arclight
+-- Spanner, Blacksmith Hammer, Mining Pick, Skinning Knife and Gyromatic Micro-Adjustor are
+-- consumed by **nought** recipes, and each Runed rod by exactly **one** - the recipe that eats
+-- it to make the next rod up. So no enchant ever lists its rod here, and the only place a rod
+-- has a cost is the one place it really is a material.
+--
+-- **Bought before made**, which keeps caveat 1 the rule it was written as: a thing somebody is
+-- selling costs what they are asking, whatever making one would come to.
+--
+-- Bounded and guarded. Depth, because a table shipped from a game's own files is not a promise
+-- of a finite chain; and the branch's own items, because a cycle here would hang the client
+-- drawing a tooltip - which is the one place in this addon that must never be slow.
+local MAX_DEPTH = 4
+
+function Recipes:CostToMake(itemID, depth, branch)
 	itemID = tonumber(itemID)
 	if not itemID then return nil end
+
+	depth = depth or 1
+	branch = branch or {}
 
 	local spell = self:MadeBy(itemID)
 	if not spell then return nil end
@@ -1050,7 +1078,9 @@ function Recipes:CostToMake(itemID)
 	local parts = self:Reagents(spell)
 	if not parts then return nil end
 
-	local out = { spell = spell, parts = {}, total = 0, missing = 0, bound = 0 }
+	local out = { spell = spell, parts = {}, total = 0, missing = 0, bound = 0, made = 0 }
+
+	branch[itemID] = true
 
 	for _, part in ipairs(parts) do
 		local each, from = cheapest(part.item)
@@ -1060,17 +1090,34 @@ function Recipes:CostToMake(itemID)
 			row.each, row.from = each, from
 			row.total = each * part.count
 			out.total = out.total + row.total
-		elseif self:BoundReagent(part.item) then
-			row.bound = true
-			row.total = 0
-			out.bound = out.bound + 1
 		else
-			row.unknown = true
-			out.missing = out.missing + 1
+			-- Nobody is selling it. Making one may still have a price.
+			local made = nil
+			if depth < MAX_DEPTH and not branch[part.item] then
+				made = self:CostToMake(part.item, depth + 1, branch)
+			end
+
+			if made and made.total then
+				row.each, row.from = made.total, "crafted"
+				row.total = made.total * part.count
+				out.total = out.total + row.total
+				out.made = out.made + 1
+				-- A sub-recipe short of a material of its own is short here too.
+				out.bound = out.bound + made.bound
+			elseif self:BoundReagent(part.item) then
+				row.bound = true
+				row.total = 0
+				out.bound = out.bound + 1
+			else
+				row.unknown = true
+				out.missing = out.missing + 1
+			end
 		end
 
 		out.parts[#out.parts + 1] = row
 	end
+
+	branch[itemID] = nil
 
 	-- Said as *nothing* rather than as a number that left something out.
 	if out.missing > 0 then out.total = nil end

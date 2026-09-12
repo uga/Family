@@ -38,10 +38,12 @@ Family.Extras = Extras
 -- The auction house is the exception and is not really one: it is not a new job. Family has
 -- read prices since the day the store was written, and shipping that switch off would take
 -- every auction price off every tooltip on upgrade - which is a change nobody asked for
--- wearing the clothes of a new feature.
+-- wearing the clothes of a new feature. `houseWalk` is on for the same reason and no other:
+-- the button exists today, and a switch that removed it on upgrade would be that same change.
 local DEFAULTS = {
 	auctionPrices = true,
 	craftingCost = false,
+	houseWalk = true,
 	mailReport = false,
 }
 

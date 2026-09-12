@@ -41,6 +41,25 @@ local ROW = 32
 -- own name is a short line with room going spare beside it.
 local NOTE_WIDTH = 420
 
+-- **What a recipe is made of, on the right of its own row.**
+--
+-- Asked for 2026-09-12: *sulla destra la lista delle icone dei materiali richiesti + le quantità
+-- richieste stampate sopra.* The materials are generated rather than asked of the client, because
+-- the client will only answer for a window open on the character who knows the recipe and this
+-- panel is usually about somebody else (`Family/RecipeReagents.lua`).
+--
+-- **Eight, because recipes use eight.** Counted on Burning Crusade: 725 recipes take three
+-- materials and 81 take seven or eight, so a strip drawn for three would be short on a third of
+-- the list. Right-aligned, so the column of counts lines up down the page whatever a recipe needs.
+local MATERIAL_ICON = 16
+local MATERIAL_GAP = 3
+local MATERIALS_MAX = 8
+local MATERIAL_ROOM = MATERIALS_MAX * (MATERIAL_ICON + MATERIAL_GAP)
+
+-- Where the strip's right-hand edge sits: clear of the note column, which is the one that says
+-- *can make 4* or *ready in 3h*.
+local MATERIAL_INSET = 164
+
 -- The profession buttons along the top. Wider than they were by what a picture takes, so that
 -- "Leatherworking 375" lost no room to it - the same trade the tab strip made.
 local SKILL_W = 158
@@ -655,6 +674,47 @@ local function build(frame)
 	scroll:SetScrollChild(list)
 	UI:MakeScrollable(scroll)
 
+	-- **What this recipe is made of, drawn or put away.**
+	--
+	-- Rows are pooled, so a strip left over from a previous draw would follow a recipe that is
+	-- no longer in it - every slot is written on every row, empty ones included.
+	--
+	-- The spell is what the table is keyed on. A Classic Era trade skill record carries the
+	-- product and no spell at all (DATASOURCES §2), so where there is no spell the item is asked
+	-- what makes it - which is the same fallback `Recipes:MadeBy` exists for.
+	local function showMaterials(r, recipe)
+		local spell = recipe.spellID
+			or (recipe.itemID and Family.Recipes:MadeBy(recipe.itemID)) or nil
+		local parts = spell and Family.Recipes:Reagents(spell) or nil
+
+		-- More than the strip holds is drawn as the last eight rather than the first: the
+		-- expensive material is rarely the first one listed, and a strip that silently keeps
+		-- the wrong end is worse than one that is plainly full.
+		local held = parts and #parts or 0
+		local from = math.max(1, held - MATERIALS_MAX + 1)
+		local shown = held - from + 1
+
+		for slot = 1, MATERIALS_MAX do
+			local at = slot - (MATERIALS_MAX - shown)
+			local part = at >= 1 and parts and parts[from + at - 1] or nil
+			local cell = r.mats[slot]
+
+			if part then
+				cell.icon:SetTexture(Family:TryCall(GetItemIcon, part.item)
+					or "Interface\\Icons\\INV_Misc_QuestionMark")
+				cell.icon:Show()
+				-- One of a thing needs no number on it, the way a bag draws a single item.
+				cell.count:SetText(part.count > 1 and tostring(part.count) or "")
+				cell.count:SetShown(part.count > 1)
+			else
+				cell.icon:Hide()
+				cell.count:Hide()
+			end
+		end
+
+		return held > 0
+	end
+
 	local function row(index)
 		local existing = rows[index]
 		if existing then return existing end
@@ -734,6 +794,27 @@ local function build(frame)
 		r.note:SetWidth(150)
 		r.note:SetJustifyH("RIGHT")
 
+		-- The materials strip, built once and hidden until a row has something to put in it.
+		-- Right-aligned: slot eight is the rightmost, so a recipe of two hangs its two off the
+		-- same edge as a recipe of eight and the counts line up down the page.
+		r.mats = {}
+		for slot = 1, MATERIALS_MAX do
+			local icon = r:CreateTexture(nil, "ARTWORK")
+			icon:SetSize(MATERIAL_ICON, MATERIAL_ICON)
+			icon:SetPoint("RIGHT", r, "RIGHT",
+				-(MATERIAL_INSET + (MATERIALS_MAX - slot) * (MATERIAL_ICON + MATERIAL_GAP)), 0)
+			icon:Hide()
+
+			-- **On the picture, as asked**, which is what the game does with a stack size and
+			-- is why it is legible at sixteen pixels: an outlined number over the corner
+			-- rather than a caption beside it, which at this size would be another column.
+			local count = r:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
+			count:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", 1, 0)
+			count:Hide()
+
+			r.mats[slot] = { icon = icon, count = count }
+		end
+
 		UI:NoWrap(r.text, r.note)
 
 		-- A recipe is a spell that sometimes makes an item, so the tooltip is whichever of
@@ -777,6 +858,12 @@ local function build(frame)
 		rows[index] = r
 		return r
 	end
+
+	-- **Kept reachable so the harness can fill a strip and read it back**, the same arrangement
+	-- the tooltip's modern route uses. Reading the table these are built from would prove the
+	-- table; what has to be proved is the row - that a slot with nothing in it is put away, and
+	-- that the quantity ends up on the picture.
+	UI.__recipeRowFor, UI.__showRecipeMaterials = row, showMaterials
 
 	local function skillButton(index)
 		local existing = skillButtons[index]
@@ -942,7 +1029,13 @@ local function build(frame)
 
 				r.text:SetText(string.format("%s   |cff888888%s|r", recipe.name or "?",
 					profession))
-				r.text:SetWidth(UI:ListWidth(scroll) - NOTE_WIDTH - 10 - ROW)
+
+				-- **Written here too, and not because this list was asked for.** Rows are
+				-- pooled between the two lists, so a strip left on one by the member list
+				-- would follow a recipe in the search that has nothing to do with it.
+				local hasMaterials = showMaterials(r, recipe)
+				r.text:SetWidth(UI:ListWidth(scroll) - NOTE_WIDTH - 10 - ROW
+					- (hasMaterials and MATERIAL_ROOM or 0))
 
 				-- Highest skill first, then by name. The line is capped, so the order
 				-- decides which four survive it - alphabetical made "+14" hide fourteen
@@ -1486,7 +1579,13 @@ local function build(frame)
 
 			local style = DIFFICULTY[recipe.difficulty] or { colour = "|cffdddddd" }
 			r.text:SetText(style.colour .. (shownName or "?") .. "|r")
-			r.text:SetWidth(UI:ListWidth(scroll) - 170 - ROW)
+
+			-- The name gives up the room the materials take, and takes it back on a recipe
+			-- that has none - an enchant applied to something makes no item and lists no
+			-- strip, and a name cut short to leave space for nothing is a name cut short.
+			local hasMaterials = showMaterials(r, recipe)
+			r.text:SetWidth(UI:ListWidth(scroll) - 170 - ROW
+				- (hasMaterials and MATERIAL_ROOM or 0))
 
 			-- Whatever the client said this row's icon was, recorded at scan time. Failing
 			-- that, the icon of the thing it makes - which is right for anything that

@@ -83,6 +83,32 @@ picks itself up where it left off.
 
 ### Extras
 
+- **Every recipe row says what it is made of.** The materials, with how many of each, on the right
+  of the recipe's own line — for every character, not only the one whose profession window is
+  open.
+
+- **What came out of the mailbox, in chat.** A line for each thing taken and each sum collected,
+  and a total when you close it. The game says nothing about what a mailbox full of auction
+  returns actually came to. Off until you switch it on.
+
+- **Reading prices and reading the whole house are two separate switches.** Using an auction house
+  fills Family in, and so does the full scan of an addon like Auctionator — Family listens and
+  takes the prices for nothing. Family's own page-by-page read is the second switch, and it is for
+  people who have no such addon: the game only lets one search out at a time, so it takes minutes.
+
+- **Every recipe row says what it is made of.** The materials, with how many of each, on the right
+  of the recipe's own line — for every character, not only the one whose profession window is
+  open.
+
+- **What came out of the mailbox, in chat.** A line for each thing taken and each sum collected,
+  and a total when you close it. The game says nothing about what a mailbox full of auction
+  returns actually came to. Off until you switch it on.
+
+- **Reading prices and reading the whole house are two separate switches.** Using an auction house
+  fills Family in, and so does the full scan of an addon like Auctionator — Family listens and
+  takes the prices for nothing. Family's own page-by-page read is the second switch, and it is for
+  people who have no such addon: the game only lets one search out at a time, so it takes minutes.
+
 - **What a craftable thing costs to make, on its tooltip.** Every material with what it would
   cost to buy and the total underneath. The cheapest source wins where an item can be had from
   more than one. A material Family has no price for makes the whole recipe say *some prices are

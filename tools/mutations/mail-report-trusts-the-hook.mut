@@ -1,0 +1,12 @@
+name: the mailbox report announces what was asked for rather than what left
+file: addons/Family_UI/MailReport.lua
+--- old
+			local still = (now[itemID] or {}).count or 0
+			local gone = was.count - still
+
+			if gone > 0 then
+--- new
+			local still = (now[itemID] or {}).count or 0
+			local gone = was.count
+
+			if gone > 0 then
