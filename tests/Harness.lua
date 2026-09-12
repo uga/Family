@@ -5578,6 +5578,46 @@ do
 				check("while a client saying not yet is waited for, not pushed through",
 					#sent == before + 2, tostring(#sent - before))
 
+				-- **And a page held back by that refusal is still one page.**
+				--
+				-- `walk.done` is worked out from `walk.page`, and `askPage` writes
+				-- `walk.page` only once the client has taken the query - so while it is
+				-- refusing, the number stays where it was and a late answer settles the
+				-- same page over again. Replacing the pending timer cannot reach that: it
+				-- collapses the answers that arrive before it fires, not one after.
+				--
+				-- Seen in play on Burning Crusade 2026-09-12, on a connection that was
+				-- failing, which is when a client refuses: *page 25 of 3704* printed twice,
+				-- identically, and each of those had asked for page 25.
+				local toldAbout = {}
+				for _, line in ipairs(said) do
+					if line[1] == "page" then
+						toldAbout[line[2]] = (toldAbout[line[2]] or 0) + 1
+					end
+				end
+
+				local twice
+				for page, times in pairs(toldAbout) do
+					if times > 1 then twice = page .. " x" .. times end
+				end
+
+				fire("AUCTION_ITEM_LIST_UPDATE")
+				fire("AUCTION_ITEM_LIST_UPDATE")
+				advance(1)
+
+				local after = {}
+				for _, line in ipairs(said) do
+					if line[1] == "page" then
+						after[line[2]] = (after[line[2]] or 0) + 1
+					end
+				end
+				for page, times in pairs(after) do
+					if times > 1 then twice = twice or (page .. " x" .. times) end
+				end
+
+				check("and a page the client held back is not announced or asked for twice",
+					twice == nil and #sent == before + 2, twice or tostring(#sent - before))
+
 				allowed = true
 				advance(1)
 				check("and the page goes out once it says yes",

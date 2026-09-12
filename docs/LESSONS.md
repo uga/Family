@@ -2822,3 +2822,41 @@ search it was. Four checks; three mutations, all caught.
 *Every page* is a fact about the walk; *the whole house* is a fact about the query, and they are
 not the same fact.
 
+---
+
+## L-076 — Collapsing the answers that arrive early says nothing about the one that arrives late
+
+From play on Burning Crusade 2026-09-12, on a connection that was about to fail:
+
+    page 25 of 3704, 177 price(s) taken - 1 minute(s) gone, about 187 minute(s) to go
+    page 25 of 3704, 177 price(s) taken - 1 minute(s) gone, about 187 minute(s) to go
+
+The same symptom as the day before - *page 25 of 537* six times over - and a different cause,
+which is why the first fix did not reach it.
+
+`AUCTION_ITEM_LIST_UPDATE` fires several times for one query, so the walk waits for the answers
+to stop before asking for the next page, and `Family:After` replacing a pending timer of the same
+key is what collapses the burst. That is true of every answer arriving **before** the timer fires.
+It says nothing about one arriving after.
+
+And there is a window where one can. `walk.done` is worked out from `walk.page`, and `askPage`
+writes `walk.page` only once `CanSendAuctionQuery` has accepted the query; a client saying *not
+yet* leaves the number where it was. So a late answer settles the same page again - announces it
+again, and asks the server for it again. A failing connection is exactly when a client refuses,
+which is why this arrived on the evening the line went down.
+
+**Cutting the settle to a tenth of a second widened the window rather than making it.** The
+change was right and this was underneath it.
+
+**What the old note got wrong.** The comment in that file says a flag saying *already answered*
+"did nothing the key was not already doing", and that no check could tell the two apart. The first
+half was wrong: the key and a per-page guard answer different questions, and the reason no check
+could tell them apart was that no fixture had a client refusing between a settle and its send.
+
+**What now catches it.** The settle records which page it settled and refuses to settle that page
+twice. The check holds the client at *not yet* across a burst and fails if any page number is
+announced more than once or if a second query goes out.
+
+**The general rule: deduplicating by replacement covers the events you have not handled yet, never
+the ones you have.** If the work leaves a marker behind, the marker is what makes it idempotent.
+

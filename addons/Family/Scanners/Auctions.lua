@@ -939,6 +939,23 @@ local function walkHeard(kept)
 	Family:After(SETTLE_SECONDS, "auctions.walk.settle", function()
 		if not walk then return end
 
+		-- **A page is settled once, and the key alone does not promise that.**
+		--
+		-- Replacing a pending timer collapses the answers that arrive *before* it fires. It
+		-- says nothing about one that arrives after - and there is a window where that
+		-- matters, because `walk.done` is worked out from `walk.page`, and `askPage` writes
+		-- `walk.page` only once the client has accepted the query. A client saying *not yet*
+		-- leaves the number where it was, so a late answer settles the same page again:
+		-- announces it again, and asks for it again.
+		--
+		-- Seen in play on Burning Crusade 2026-09-12, on a connection that was failing -
+		-- which is exactly when `CanSendAuctionQuery` refuses: *page 25 of 3704* printed
+		-- twice, identically. This is a second cause of the symptom the settle was added
+		-- for, and the settle cannot reach it. Cutting the settle to a tenth of a second
+		-- widened the window rather than making it.
+		if walk.settledFor == walk.page then return end
+		walk.settledFor = walk.page
+
 		local _, inAll = Auctions:ListTotals()
 		if inAll and inAll > 0 then
 			walk.inAll = inAll
