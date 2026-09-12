@@ -83,6 +83,9 @@ picks itself up where it left off.
 
 ### Extras
 
+- **Prices on item tooltips are written in full**, gold, silver and copper, so a column of them
+  lines up.
+
 - **CTRL on a recipe now does what it does everywhere else**: it adds up what the family holds of
   what the recipe makes and what that is worth. It used to swap to the recipe, which the pictures
   of its materials on each row have made unnecessary.

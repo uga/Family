@@ -1,0 +1,6 @@
+name: what a recipe costs in total is written in the short form under a padded column
+file: addons/Family_UI/Tooltip.lua
+--- old
+		lines[#lines + 1] = { L["Total"], UI:Money(cost.total), 0.4, 0.73, 1, 1, 1, 1 }
+--- new
+		lines[#lines + 1] = { L["Total"], UI:Coins(cost.total), 0.4, 0.73, 1, 1, 1, 1 }

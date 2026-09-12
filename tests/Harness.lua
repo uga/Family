@@ -5545,11 +5545,16 @@ do
 		plain(Family.UI:Coins(0)))
 
 	FamilyDB.prices = true
+	-- **Every money figure on a tooltip is in the one g-s-c form.** Asked for 2026-09-12 off a
+	-- screenshot of *Made with* reading *87s 92c*, *95s* and *147g 9s 36c* down one right-aligned
+	-- column: *within the tooltips we should standardise all money figures to g-s-c standard.* The
+	-- short form was asked for on 2026-09-10, when a tooltip held one price with nothing lined up
+	-- under it; a tooltip now holds a column of them, and a column is what the padded form is for.
 	check("with the switch on, the tooltip says what a vendor pays",
-		plain(priceLine(2880, "Sell price")) == "25c",
+		plain(priceLine(2880, "Sell price")) == "0g 00s 25c",
 		plain(priceLine(2880, "Sell price")))
 	check("and what one was seen charging",
-		plain(priceLine(2880, "Vendor price")) == "1s 15c",
+		plain(priceLine(2880, "Vendor price")) == "0g 01s 15c",
 		plain(priceLine(2880, "Vendor price")))
 	-- The whole point of learning it rather than shipping it: nothing is said about an item
 	-- no vendor has been seen selling, whatever any table says its price would be.
@@ -5585,7 +5590,7 @@ do
 		IsControlKeyDown = function() return true end
 		-- 25 each, twenty of them.
 		check("and holding it says what the whole stack is worth",
-			plain(priceLine(2880, "Stack of 20")) == "5s",
+			plain(priceLine(2880, "Stack of 20")) == "0g 05s 00c",
 			plain(priceLine(2880, "Stack of 20")))
 
 		-- The guard that makes a wrong owner harmless: the slot has to hold the item the
@@ -5688,7 +5693,7 @@ do
 		IsControlKeyDown = function() return true end
 		-- Slot 5 of an unscrolled list is row 5, which holds twenty. 25c each.
 		check("and holding it multiplies the auction row the way it multiplies the bag slot",
-			plain(priceLine(2880, "Stack of 20")) == "5s",
+			plain(priceLine(2880, "Stack of 20")) == "0g 05s 00c",
 			plain(priceLine(2880, "Stack of 20")))
 
 		-- **The reading that broke the first version.** Reported from play 2026-09-12: *se
@@ -5977,7 +5982,7 @@ do
 		IsControlKeyDown = function() return true end
 		-- Twelve at the market price this realm was last asking, four at what a vendor pays.
 		check("and holding it says what the whole lot comes to, each holder at their own market",
-			plain(priceLine(2880, "Worth")):find("1g 21s", 1, true) ~= nil
+			plain(priceLine(2880, "Worth")):find("1g 21s %d%dc$") ~= nil
 				and plain(priceLine(2880, "Worth")):find("^%(") ~= nil,
 			plain(priceLine(2880, "Worth")))
 		-- A market price is a photograph and the lot may have been valued from an old one, so
@@ -6545,7 +6550,7 @@ do
 		-- longer lines up with the sell price above it - so the one column somebody is
 		-- reading down is the one thing that moves.
 		check("and the tooltip says it with the age of the reading in front of the money",
-			plain(shown) == "(just now) 8s", plain(shown))
+			plain(shown) == "(just now) 0g 08s 00c", plain(shown))
 
 		-- **A price belongs to one realm and one side**, unlike everything else in `FamilyDB`.
 		-- Asked as a behaviour rather than by looking at the key: the first version of this
@@ -35225,6 +35230,25 @@ print("what a craftable thing costs to make")
 			and farmed:find("not counting materials", 1, true) ~= nil, farmed)
 	check("and a recipe with nothing of the sort says no such thing",
 		hovering(SWORD):find("not counting materials", 1, true) == nil, hovering(SWORD))
+
+	-- **Every figure in the one g-s-c form, down the whole column.** The report this answers was
+	-- a *Made with* block reading *87s 92c* over *95s* over *147g 9s 36c*: three shapes in one
+	-- right-aligned column, so the units never lined up. Every money figure on the tooltip is
+	-- found and each must carry all three units, silver and copper two digits wide.
+	do
+		local text = hovering(SWORD):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+		local figures, odd = 0, nil
+		-- A figure is a run of units ending in c, s or g with digits in front; the whole run
+		-- is taken so that "95s" is seen as a figure missing its gold and copper.
+		for figure in text:gmatch("%d+[gsc][%d%sgsc]*") do
+			figure = figure:gsub("%s+$", "")
+			figures = figures + 1
+			if not figure:match("^%d+g %d%ds %d%dc$") then odd = odd or figure end
+		end
+		check("every money figure on a crafted thing's tooltip is written in full g-s-c",
+			figures > 0 and odd == nil,
+			tostring(figures) .. " figures, first odd one: " .. tostring(odd) .. " in " .. text)
+	end
 
 	Family.Extras:Set("craftingCost", false)
 	Family.Merchant.PriceOf, Family.Auctions.PriceOf = realVendor, realAuction

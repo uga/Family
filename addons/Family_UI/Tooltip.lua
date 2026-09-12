@@ -835,7 +835,7 @@ local function costLines(tooltip, itemID)
 			-- only the first is farming.
 			said = "|cff9d9d9d" .. L["not for sale"] .. "|r"
 		else
-			said = UI:Coins(part.total)
+			said = UI:Money(part.total)
 		end
 
 		lines[#lines + 1] = { string.format("%s |cff888888x%d|r", name, part.count), said,
@@ -850,7 +850,7 @@ local function costLines(tooltip, itemID)
 			"|cffffaa00" .. L["some prices are missing"] .. "|r",
 			0.4, 0.73, 1, 1, 1, 1 }
 	else
-		lines[#lines + 1] = { L["Total"], UI:Coins(cost.total), 0.4, 0.73, 1, 1, 1, 1 }
+		lines[#lines + 1] = { L["Total"], UI:Money(cost.total), 0.4, 0.73, 1, 1, 1, 1 }
 
 		-- Said only when it happened, and said under the number rather than beside it: it is
 		-- a qualification of the total and not another figure.
@@ -873,12 +873,12 @@ local function priceLines(tooltip, itemID, variant)
 	local sell = tonumber((select(11, Family:TryCall(GetItemInfo, itemID))))
 	if sell and sell > 0 then
 		lines[#lines + 1] = { Family:GameWord("SELL_PRICE", L["Sell price"]),
-			UI:Coins(sell), 0.4, 0.73, 1, 1, 1, 1 }
+			UI:Money(sell), 0.4, 0.73, 1, 1, 1, 1 }
 	end
 
 	local buy = Family.Merchant and Family.Merchant:PriceOf(itemID)
 	if buy then
-		lines[#lines + 1] = { L["Vendor price"], UI:Coins(buy), 0.4, 0.73, 1, 1, 1, 1 }
+		lines[#lines + 1] = { L["Vendor price"], UI:Money(buy), 0.4, 0.73, 1, 1, 1, 1 }
 	end
 
 	-- **And what the auction house was last asking**, with the age of the reading beside it.
@@ -900,7 +900,7 @@ local function priceLines(tooltip, itemID, variant)
 		-- figure on this block is right-aligned by the tooltip itself, so putting the
 		-- qualification first puts them all back in a column.
 		lines[#lines + 1] = { L["Auction"],
-			string.format("|cff888888(%s)|r %s", UI:Ago(seen), UI:Coins(auction)),
+			string.format("|cff888888(%s)|r %s", UI:Ago(seen), UI:Money(auction)),
 			0.4, 0.73, 1, 1, 1, 1 }
 	end
 
@@ -938,7 +938,7 @@ local function priceLines(tooltip, itemID, variant)
 
 	if count and down then
 		lines[#lines + 1] = { string.format(L["Stack of %d"], count),
-			UI:Coins(sell * count), 0.4, 0.73, 1, 1, 1, 1 }
+			UI:Money(sell * count), 0.4, 0.73, 1, 1, 1, 1 }
 	end
 
 	-- **And what the family's whole lot of it comes to**, which is the question the stack line
@@ -962,7 +962,7 @@ local function priceLines(tooltip, itemID, variant)
 		-- The age leads here too, for the reason the auction line above gives: these two are
 		-- the figures somebody reads down, and only one of them carrying a tail is what put
 		-- them out of line.
-		local figure = UI:Coins(held.worth)
+		local figure = UI:Money(held.worth)
 		if held.oldest then
 			figure = string.format("|cff888888(%s)|r %s", UI:Ago(held.oldest), figure)
 		end
