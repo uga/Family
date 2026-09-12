@@ -1,0 +1,6 @@
+name: a lot price is filed without dividing by the quantity
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	local each = math.floor(lot / quantity)
+--- new
+	local each = lot

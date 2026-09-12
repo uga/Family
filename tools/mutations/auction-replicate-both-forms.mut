@@ -1,0 +1,12 @@
+name: only the per-item form of the replicated price is looked for
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		if auction.count > 1 then
+			wanted[#wanted + 1] = {
+				told = auction.count,
+				{ "itemID", auction.id },
+				{ "quantity", auction.count },
+				{ "buyoutAmount(stack)", auction.buyout },
+			}
+		end
+--- new

@@ -1,0 +1,39 @@
+#!/bin/sh
+# The gate, before anything is written down as done.
+#
+# **Read the exit status, never the FAIL lines.** A harness that dies half way prints no FAIL
+# line at all and its last words are an `ok` - which is exactly how a commit went in on a red
+# gate on 2026-09-12, with a stale backup having quietly reverted one line of the change
+# (L-067). Every rule this project keeps about that lives in prose, where it depends on the
+# reader remembering it. This one does not.
+#
+# It runs the working tree rather than the index, because the working tree is what was just
+# read and what the next command will push. A partial `git add` can therefore pass here and
+# still be broken at HEAD; that is the trade for a hook that takes six seconds instead of
+# stashing.
+#
+# `git commit --no-verify` skips it, which is right for a commit that deliberately records a
+# broken state - and is the sort of thing to say out loud when it is used.
+
+root=$(git rev-parse --show-toplevel) || exit 1
+cd "$root" || exit 1
+
+if [ ! -f tests/Harness.lua ]; then
+	echo "pre-commit: tests/Harness.lua is not here - not checking anything" >&2
+	exit 0
+fi
+
+out=$(lua5.1 tests/Harness.lua . 2>&1)
+status=$?
+
+if [ $status -ne 0 ]; then
+	echo "$out" | grep -E '^  FAIL' | head -20
+	echo "$out" | tail -3
+	echo ""
+	echo "pre-commit: the gate exited $status. Nothing committed." >&2
+	echo "pre-commit: --no-verify skips this, and is worth saying out loud when it is used." >&2
+	exit 1
+fi
+
+echo "$out" | grep -c '^  ok' | sed 's/^/pre-commit: /;s/$/ checks passed/'
+exit 0

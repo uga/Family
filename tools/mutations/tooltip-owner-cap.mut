@@ -1,0 +1,6 @@
+name: the possessions block draws every owner, however many there are
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local shown = UI:ShowAtMost(#owners, OWNER_CAP)
+--- new
+	local shown = #owners

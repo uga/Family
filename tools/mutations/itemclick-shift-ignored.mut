@@ -1,0 +1,6 @@
+name: the item click fires while shift is held, which the game uses for chat links
+file: addons/Family_UI/ItemClick.lua
+--- old
+	if control and alt and not shift and type(link) == "string" then
+--- new
+	if control and alt and type(link) == "string" then

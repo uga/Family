@@ -1,0 +1,6 @@
+name: a page of the walk is settled twice
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		if walk.settledFor == walk.page then return end
+		walk.settledFor = walk.page
+--- new

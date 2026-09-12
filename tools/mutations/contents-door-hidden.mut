@@ -1,0 +1,7 @@
+name: the possessions door does not open the window
+file: addons/Family_UI/Contents.lua
+--- old
+	UI:Show()
+	UI:ShowTab("contents")
+--- new
+	UI:ShowTab("contents")
