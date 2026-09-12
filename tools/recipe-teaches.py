@@ -51,11 +51,11 @@ PRIMARY_CATEGORY = "11"
 # table below is the one that has to reach them, so it asks both.
 PROFESSION_CATEGORIES = {"9", "11"}
 
-# ...and it is emitted for Classic Era alone, because it is the only client that needs it. A
-# trade skill record there carries the product's item id and no spell (DATASOURCES section 2),
-# while Mists answers with both - measured, 8 smelting recipes with a spell id and an item id
-# each - and Burning Crusade behaves as Mists does. Emitting all three would be 130 KB to say
-# something two of them already say.
+# ...and it is emitted for Classic Era alone. A trade skill record there carries the product's
+# item id and no spell (DATASOURCES section 2), while Mists answers with both - measured, 8
+# smelting recipes with a spell id and an item id each. The claim that Burning Crusade behaves
+# as Mists does was measured on smelting and is wrong for enchanting; the RecipeProducts lane
+# below answers on every build, and MadeBy reads it backwards, so this table stays as it was.
 MADE_BY_BUILDS = {"Classic Era"}
 
 # The number Capabilities derives from the interface version.
@@ -107,7 +107,8 @@ def read(table, build):
 
 
 def build():
-    teaches, makes, madeby = {}, {}, {}
+    teaches, makes, madeby, spell_makes = {}, {}, {}, {}
+    shared = 0
 
     for game, build_id in BUILDS.items():
         skill_lines = read("SkillLine", build_id)
@@ -148,6 +149,27 @@ def build():
                         here = madeby.setdefault(EXPANSION[game], {})
                         if product not in here or spell < here[product]:
                             here[product] = spell
+
+        # **The spell a recipe row holds -> the item it makes**, on every build.
+        #
+        # Read from play 2026-09-12 on Burning Crusade: an enchanting recipe that makes a thing -
+        # Lesser Magic Wand - showed as a spell, so none of Family's blocks about the thing
+        # appeared: who holds one, what it takes, what it is worth. The row had the spell and no
+        # item, which is what the Craft frame gives. The comment beside MADE_BY_BUILDS says
+        # Burning Crusade records carry both ids; for enchanting they plainly do not, and that
+        # claim was measured on smelting.
+        #
+        # So this lane is emitted for all three, from the same rows as the one below it. Only
+        # spells a profession teaches, as there. **A spell that creates more than one thing is
+        # left out** rather than given one of them: it has no single product, and the build is
+        # not refused over it either, because it says nothing about any other spell.
+        for spell, things in made.items():
+            if spell not in craftable:
+                continue
+            if len(things) != 1:
+                shared += 1
+                continue
+            spell_makes.setdefault(EXPANSION[game], {})[spell] = next(iter(things))
 
         # Two shapes, and only one of them was handled at first - which is why two builds out
         # of three came back with nothing at all.
@@ -266,9 +288,9 @@ def build():
         "-- and it asks the **secondary** skill lines as well - Cooking and First Aid are",
         "-- category 9, and every other table here reads category 11.",
         "--",
-        "-- Classic Era only, because it is the only client that needs it: Mists answers with",
-        "-- both ids and Burning Crusade behaves as Mists does. All three would be 130 KB to say",
-        "-- something two of them already say.",
+        "-- Classic Era only. The other two builds are answered by RecipeProducts at the end of",
+        "-- this file, read backwards: the claim that they carry both ids on every record was",
+        "-- measured on smelting and is wrong for enchanting (DATASOURCES, 2026-09-12).",
         "Family.RecipeMadeBy = {",
     ]
     for xpac in sorted(EXPANSION.values()):
@@ -280,6 +302,29 @@ def build():
         lines.append("\t},")
     lines += ["}", ""]
 
+    lines += [
+        "-- the spell a recipe is -> the one item it makes",
+        "--",
+        "-- On every build. An enchanting recipe that makes a thing - a wand, a rod, an oil - is",
+        "-- recorded from the Craft frame with its spell and no item, on Burning Crusade as well as",
+        "-- on Era: read from play 2026-09-12, where Lesser Magic Wand showed as a spell and so",
+        "-- carried none of what Family says about a thing. This names the thing. A spell that",
+        "-- creates more than one item is not in it, having no single product to name.",
+        "Family.RecipeProducts = {",
+    ]
+    for xpac in sorted(EXPANSION.values()):
+        if xpac not in spell_makes:
+            continue
+        lines.append("\t[%d] = {" % xpac)
+        for spell in sorted(spell_makes[xpac]):
+            lines.append("\t\t[%d] = %d," % (spell, spell_makes[xpac][spell]))
+        lines.append("\t},")
+    lines += ["}", ""]
+
+    if not spell_makes:
+        sys.exit("no spell named a product - CREATE_ITEM or a column has moved, and an empty "
+                 "table would look like a quiet success")
+
     with open(OUT, "w", encoding="utf-8") as handle:
         handle.write("\n".join(lines))
 
@@ -288,6 +333,9 @@ def build():
              sum(len(v) for v in makes.values())))
     print("  %d products naming what makes them, on %d build(s)"
           % (sum(len(v) for v in madeby.values()), len(madeby)))
+    print("  %d recipe spells naming the one thing they make, on %d build(s); %d making more "
+          "than one thing, left out" % (sum(len(v) for v in spell_makes.values()), len(spell_makes),
+                                       shared))
 
 
 if __name__ == "__main__":

@@ -222,6 +222,7 @@ end
 --
 -- Where two patterns make the same thing the lower id wins, so two draws of one page agree.
 local madeBy = {}
+local productOf = {}
 
 function Recipes:MadeBy(itemID)
 	if not itemID then return nil end
@@ -232,6 +233,24 @@ function Recipes:MadeBy(itemID)
 	local shipped = (Family.RecipeMadeBy or {})[expansion]
 	local direct = shipped and shipped[itemID]
 	if direct then return direct end
+
+	-- **Then `RecipeProducts` read backwards, on every build.** Measured 2026-09-12 against the
+	-- generated tables: the composition below reached no spell at all for **760** craftable
+	-- products on Burning Crusade and **2,483** on Mists - every recipe a trainer teaches, Lesser
+	-- Magic Wand and Runed Copper Rod among them - so *Made with* and its prices could never
+	-- appear on them. Found through a report of the wand's recipe row, which was the smaller half.
+	-- The lowest spell id where two make one thing, as the shipped table does, so two draws agree.
+	local fromSpells = productOf[expansion]
+	if not fromSpells then
+		fromSpells = {}
+		productOf[expansion] = fromSpells
+		for spell, product in pairs((Family.RecipeProducts or {})[expansion] or {}) do
+			if fromSpells[product] == nil or spell < fromSpells[product] then
+				fromSpells[product] = spell
+			end
+		end
+	end
+	if fromSpells[itemID] then return fromSpells[itemID] end
 
 	local known = madeBy[expansion]
 	if not known then
@@ -252,6 +271,25 @@ function Recipes:MadeBy(itemID)
 	end
 
 	return known[itemID]
+end
+
+-- **The one item a recipe spell makes**, where it makes one.
+--
+-- Read from play 2026-09-12 on Burning Crusade: an enchanting recipe that makes a thing - Lesser
+-- Magic Wand - was recorded from the Craft frame with its spell and no item, so its row described
+-- the spell, and nothing Family says about a thing was on it: who holds one, what it takes, what
+-- it is worth. `RecipeProducts` is SpellEffect's CREATE_ITEM read from the spell's end, for every
+-- build, and a spell that creates more than one thing is not in it.
+--
+-- Nil for a spell that makes no item, which is every enchant applied to something - and that is
+-- an answer, not a failure: the spell is then the only thing there is to describe.
+function Recipes:Product(spellID)
+	if not spellID then return nil end
+
+	local expansion = Family.Capabilities and Family.Capabilities.expansion
+	local here = expansion and (Family.RecipeProducts or {})[expansion]
+
+	return here and here[spellID] or nil
 end
 
 -- Whether this item is the one that teaches that recipe.

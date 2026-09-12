@@ -83,6 +83,12 @@ picks itself up where it left off.
 
 ### Extras
 
+- **Wands, rods and oils an enchanter makes are shown as the thing itself** on the Professions
+  panel, with who holds one and what it takes to make.
+
+- **What a thing is made of now appears on far more items on Burning Crusade and Mists** — every
+  recipe a trainer teaches was missing it.
+
 - **Prices on item tooltips are written in full**, gold, silver and copper, so a column of them
   lines up.
 

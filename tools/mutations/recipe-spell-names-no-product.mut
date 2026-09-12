@@ -1,0 +1,8 @@
+name: a recipe spell never names the thing it makes
+file: addons/Family/Recipes.lua
+--- old
+	return here and here[spellID] or nil
+end
+--- new
+	return nil
+end

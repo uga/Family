@@ -877,8 +877,14 @@ local function build(frame)
 		-- So the item, which carries everything CTRL means elsewhere - the family's lot and what
 		-- it is worth, and the materials under *Made with*. An enchant makes no item and keeps
 		-- its spell, which is the only thing there is to describe.
+		--
+		-- **And "makes one" is asked of the recipe, not only of the record.** An enchanting
+		-- recipe that makes a thing arrives from the Craft frame with a spell and no item, on
+		-- Burning Crusade as on Era - reported from play with Lesser Magic Wand, whose row
+		-- showed the spell and so carried none of what Family says about the wand.
 		UI:AttachTooltip(r, function(self)
-			if self.itemID then return "item", self.itemID, self.fallback end
+			local made = self.itemID or Family.Recipes:Product(self.spellID)
+			if made then return "item", made, self.fallback end
 			if self.spellID then return "spell", self.spellID, self.fallback end
 			if self.fallback then return nil, nil, self.fallback end
 			return nil

@@ -10156,6 +10156,11 @@ if professionsEveryone then
 							{ name = "Enchant Bracer - Minor Health", profession = 333,
 							spellID = 7418,
 							members = { { key = "Maker1-FireMaw", name = "Maker1",
+								classFile = "MAGE", rank = 300 } }, guild = {} },
+							-- An enchanting recipe that makes a thing, recorded the way the
+							-- Craft frame records it: the spell, and no item.
+							{ name = "Lesser Magic Wand", profession = 333, spellID = 14293,
+							members = { { key = "Maker1-FireMaw", name = "Maker1",
 								classFile = "MAGE", rank = 300 } }, guild = {} } }
 					end
 					Family.UI:Refresh()
@@ -10167,11 +10172,12 @@ if professionsEveryone then
 						return GameTooltip.__shownAs
 					end
 
-					local gloves, enchant = nil, nil
-					for index = 1, 4 do
+					local gloves, enchant, wand = nil, nil, nil
+					for index = 1, 6 do
 						local r = Family.UI.__recipeRowFor(index)
 						if r.itemID == 4307 then gloves = index end
 						if r.spellID == 7418 and not r.itemID then enchant = index end
+						if r.spellID == 14293 and not r.itemID then wand = index end
 					end
 
 					_G.IsControlKeyDown = function() return true end
@@ -10187,7 +10193,50 @@ if professionsEveryone then
 						spell ~= nil and spell.kind == "spell",
 						tostring(enchant) .. " " .. tostring(spell and spell.kind))
 
+					-- **An enchanting recipe that makes a thing describes the thing.** Reported
+					-- from play on Burning Crusade: Lesser Magic Wand showed as a spell, so
+					-- nothing Family says about a wand was on it - who holds one, what it
+					-- takes, what it is worth. The row has the spell and no item, which is
+					-- what the Craft frame gives, and the product is asked of the recipe.
+					local made = wand and hovered(wand)
+					check("an enchanting recipe that makes a thing describes the thing it makes",
+						made ~= nil and made.kind == "item" and made.id == 11287,
+						tostring(wand) .. " " .. tostring(made and made.kind) .. " "
+							.. tostring(made and made.id))
+
 					_G.IsControlKeyDown = heldKey
+				end)()
+
+				-- **And only one that makes a thing.** Most enchanting recipes are applied to
+				-- something and make nothing; they have an ENCHANT_ITEM effect and no
+				-- CREATE_ITEM one, so they are not in the table at all - which is the whole of
+				-- what keeps the rule to wands, rods and oils. Asked for in so many words:
+				-- *applica questa cosa solo alle ricette di enchanting che producono un oggetto.*
+				check("a recipe spell names the one thing it makes",
+					Family.Recipes:Product(14293) == 11287,
+					tostring(Family.Recipes:Product(14293)))
+				check("and an enchant applied to something names nothing",
+					Family.Recipes:Product(7418) == nil and Family.Recipes:Product(7443) == nil,
+					tostring(Family.Recipes:Product(7418)))
+
+				-- **And the thing names what makes it, on every build** - which is what *Made
+				-- with* and its prices are built from. Measured against the generated tables:
+				-- before this, 760 craftable products on Burning Crusade and 2,483 on Mists had
+				-- no spell `MadeBy` could reach, every trainer's recipe among them. Asked for
+				-- by build, Mists included, *per tranquillita*.
+				;(function()
+					local heldExpansion = Family.Capabilities.expansion
+					local said = {}
+					for _, build in ipairs { 1, 2, 5 } do
+						Family.Capabilities.expansion = build
+						said[#said + 1] = build .. ":" .. tostring(Family.Recipes:MadeBy(11287))
+							.. "/" .. tostring(Family.Recipes:MadeBy(6218))
+							.. "/" .. tostring(Family.Recipes:Product(14293))
+					end
+					Family.Capabilities.expansion = heldExpansion
+					check("a wand and a rod name the spell that makes them on all three builds",
+						table.concat(said, " ") == "1:14293/7421/11287 2:14293/7421/11287 "
+							.. "5:14293/7421/11287", table.concat(said, " "))
 				end)()
 
 				-- Put the short-named nine back and leave the row open, because the

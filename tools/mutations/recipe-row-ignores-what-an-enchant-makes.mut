@@ -1,0 +1,6 @@
+name: an enchanting recipe that makes a thing is described as the spell, with nothing about the thing
+file: addons/Family_UI/Professions.lua
+--- old
+			local made = self.itemID or Family.Recipes:Product(self.spellID)
+--- new
+			local made = self.itemID

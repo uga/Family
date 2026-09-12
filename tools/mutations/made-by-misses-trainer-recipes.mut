@@ -1,0 +1,6 @@
+name: a thing a trainer's recipe makes names no spell outside Classic Era
+file: addons/Family/Recipes.lua
+--- old
+	if fromSpells[itemID] then return fromSpells[itemID] end
+--- new
+	local _ = fromSpells

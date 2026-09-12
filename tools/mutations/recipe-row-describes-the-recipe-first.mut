@@ -1,8 +1,8 @@
 name: a recipe row that makes an item describes the recipe instead
 file: addons/Family_UI/Professions.lua
 --- old
-			if self.itemID then return "item", self.itemID, self.fallback end
+			if made then return "item", made, self.fallback end
 			if self.spellID then return "spell", self.spellID, self.fallback end
 --- new
 			if self.spellID then return "spell", self.spellID, self.fallback end
-			if self.itemID then return "item", self.itemID, self.fallback end
+			if made then return "item", made, self.fallback end
