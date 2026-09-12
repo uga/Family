@@ -148,9 +148,17 @@ local function possessionLines(tooltip, itemID)
 		--
 		-- Both names come from the same table the panel draws its own from, so the note is in
 		-- the reader's language and says what is actually written on the screen.
-		lines[#lines + 1] = { string.format(
-			L["|cff888888the whole list is on Family's %s page, under %s|r"],
-			L["Possessions"], L["Whole family"]), "", 0.5, 0.5, 0.5 }
+		-- **The shortest way there, where this client offers one.** A modified click on the
+		-- item opens exactly that page already filtered to it (ItemClick.lua), which is worth
+		-- saying instead of the directions - and where the hook could not be installed, the
+		-- directions are still true.
+		local note = UI.ItemClickArmed and UI:ItemClickArmed()
+			and L["|cff888888hold CTRL and ALT and click for the whole list|r"]
+			or string.format(
+				L["|cff888888the whole list is on Family's %s page, under %s|r"],
+				L["Possessions"], L["Whole family"])
+
+		lines[#lines + 1] = { note, "", 0.5, 0.5, 0.5 }
 	end
 
 	-- The guild banks under them, capped the same way and by the same reasoning: a family

@@ -820,6 +820,7 @@ Family.locales.esES = {
 	["%s |cff66bbff(guild)|r"] = "%s |cff66bbff(hermandad)|r",
 	["|cff66bbffguild|r |cff888888%s|r"] = "|cff66bbffhermandad|r |cff888888%s|r",
 	["|cff888888and %d more|r"] = "|cff888888y %d más|r",
+	["|cff888888hold CTRL and ALT and click for the whole list|r"] = "|cff888888mantén CTRL y ALT y haz clic para la lista completa|r",
 	["  looking for your own auctions in the replicated list:"] = "  buscando tus propias subastas en la lista replicada:",
 	["what a modified click on an item hands over"] = "qué entrega un clic modificado sobre un objeto",
 	["this client has no crossroads for a modified click on an item"] = "este cliente no tiene un cruce para un clic modificado sobre un objeto",

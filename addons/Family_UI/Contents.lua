@@ -577,6 +577,11 @@ local function build(frame)
 	-- rather than the variable behind them, because a button is what a player has.
 	UI.__contentsSort = { bar = sortBar, note = sortNote, buttons = sortButtons }
 
+	-- Reachable for the same reason the sort bar is: a check drives what a player drives, and
+	-- the door a modified click comes through (`UI:SearchPossessions`) has to be seen to put
+	-- the term where a player would have typed it.
+	UI.__contentsSearch = search
+
 	local everyone = CreateFrame("Button", "FamilyContentsEveryone", frame, "UIPanelButtonTemplate")
 	everyone:SetSize(120, 22)
 	everyone:SetPoint("TOPRIGHT", -4, -2)
@@ -791,6 +796,20 @@ local function build(frame)
 	--
 	-- Registered rather than declared here, for the reason written beside the professions
 	-- one: the door has to exist before this panel has ever been opened.
+	-- **The whole family, filtered to one thing**, which is the door a modified click on an
+	-- item comes through (ItemClick.lua). The switch does what its own button does - clears the
+	-- filters, because a filter means a different thing either side of it - and then the term
+	-- goes in instead of the focus, since the caller has already said what to look for.
+	UI.__searchContents = function(term)
+		wholeFamily = true
+		if memberFilters and memberFilters.Reset then memberFilters:Reset() end
+		if search then
+			search:SetText(tostring(term or ""))
+			search:ClearFocus()
+		end
+		frame:Refresh()
+	end
+
 	UI.__selectContents = function(key)
 		for _, entry in ipairs(membersWithContents()) do
 			if entry.key == key then
@@ -1360,6 +1379,14 @@ end
 function UI:ShowContentsFor(key)
 	UI:ShowTab("contents")
 	if UI.__selectContents then UI.__selectContents(key) end
+end
+
+-- The same door, opened on a search across everybody rather than on one member. At file scope
+-- for the reason above: the panel is built the first time it is looked at, so a caller from
+-- outside cannot reach anything declared inside the builder.
+function UI:SearchPossessions(term)
+	UI:ShowTab("contents")
+	if UI.__searchContents then UI.__searchContents(term) end
 end
 
 UI:RegisterTab("contents", L["Possessions"], build)

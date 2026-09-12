@@ -945,6 +945,12 @@ hooksecurefunc = function(name, hook)
 	end
 end
 
+-- The client's crossroads for a modified click on an item. Present on all three clients
+-- (measured 2026-09-12), and it is what Family hooks so a modified click can open the family's
+-- copies of that item. A plain function here, because the hook runs after whatever the real one
+-- does and cannot change it.
+HandleModifiedItemClick = function() end
+
 -- The class pictures live in one file with a set of coordinates per class, and a class with
 -- no coordinates is drawn as a question mark rather than as a corner of somebody else's.
 CLASS_ICON_TCOORDS = {
@@ -31926,31 +31932,108 @@ print("a family bigger than a tooltip")
 	-- The two names are read out of the same table the panel labels itself from, so a check
 	-- that looked for the English would pass on a note pointing at a page that does not exist
 	-- under that name in the reader's language.
-	local pointer
-	local seenHeader = false
-	for _, line in ipairs(GameTooltip.__lines) do
-		local left = type(line[1]) == "string" and line[1] or ""
-		if left:find("Family possessions", 1, true) then seenHeader = true
-		elseif seenHeader and left:find(Family.L["Whole family"], 1, true) then
-			pointer = left
-			break
+	local function noteAfterHeader(needle)
+		local seenHeader = false
+		for _, line in ipairs(GameTooltip.__lines) do
+			local left = type(line[1]) == "string" and line[1] or ""
+			if left:find("Family possessions", 1, true) then seenHeader = true
+			elseif seenHeader and left:find(needle, 1, true) then return left end
 		end
 	end
 
-	check("and a contracted list says where the whole of it lives",
+	-- **Where this client can catch a modified click, the shortcut is the note.** Measured on
+	-- Burning Crusade 2026-09-12: the crossroads fires from a bag slot, both modifiers reach it
+	-- and the first argument is the link. Directions to a panel are worse than a gesture that
+	-- opens it.
+	check("and a contracted list offers the shortcut where a click can be caught",
+		Family.UI:ItemClickArmed() == true
+			and noteAfterHeader("CTRL") ~= nil, tostring(noteAfterHeader("CTRL")))
+
+	-- **And where it cannot, the directions are still true.** A client with no crossroads must
+	-- not be promised a gesture that will never happen.
+	local realArmed = Family.UI.ItemClickArmed
+	Family.UI.ItemClickArmed = function() return false end
+	withOwners(210)
+	local pointer = noteAfterHeader(Family.L["Whole family"])
+	check("while a client that cannot catch one still gets the directions",
 		pointer ~= nil and pointer:find(Family.L["Possessions"], 1, true) ~= nil,
 		tostring(pointer))
+	Family.UI.ItemClickArmed = realArmed
 
 	-- And only where it was contracted: a note under a list that is all there is noise.
 	withOwners(11)
 	local strayed = false
 	for _, line in ipairs(GameTooltip.__lines) do
 		local left = type(line[1]) == "string" and line[1] or ""
-		if left:find(Family.L["Whole family"], 1, true) then strayed = true end
+		if left:find("CTRL", 1, true)
+			or left:find(Family.L["Whole family"], 1, true) then strayed = true end
 	end
 	check("while a list drawn whole is not sent anywhere else", not strayed)
 
 	Family.Index.Owners = realOwners
+end)()
+
+print()
+print("a modified click on an item")
+;(function()
+	-- Measured on Burning Crusade 2026-09-12 with `/family itemclick` armed and an item clicked
+	-- in the bags: control true, shift false, alt true, and the first argument the link. So the
+	-- crossroads fires from a bag slot, both modifiers reach it, and the link is what it hands
+	-- over - the three things presence could not say.
+	local opened
+	local realSearch = Family.UI.SearchPossessions
+	Family.UI.SearchPossessions = function(_, term) opened = term end
+
+	local link = "|cffffffff|Hitem:7973:0:0:0|h[Wicked Claw]|h|r"
+
+	local realCtrl, realAlt, realShift = _G.IsControlKeyDown, _G.IsAltKeyDown, _G.IsShiftKeyDown
+	local ctrl, alt, shift = false, false, false
+	_G.IsControlKeyDown = function() return ctrl end
+	_G.IsAltKeyDown = function() return alt end
+	_G.IsShiftKeyDown = function() return shift end
+
+	HandleModifiedItemClick(link)
+	check("a plain click on an item opens nothing", opened == nil, tostring(opened))
+
+	-- **The name out of the link, not an id looked up.** It is already the client's own word
+	-- for the item, in the language the search box matches on - so a German client searches
+	-- for what a German player sees, with no name table shipped anywhere.
+	ctrl, alt = true, true
+	HandleModifiedItemClick(link)
+	check("while CTRL and ALT open the family's copies of it",
+		opened == "Wicked Claw", tostring(opened))
+
+	-- **Shift has to be up.** It is the game's own key for putting a link in the chat box, and
+	-- a shortcut that fires while somebody is doing that is one they turn off.
+	opened = nil
+	shift = true
+	HandleModifiedItemClick(link)
+	check("and shift, which the game already uses, is left alone", opened == nil,
+		tostring(opened))
+
+	-- **Counted whether or not anybody was listening**, which is what tells *the hook does not
+	-- fire here* apart from *the hook was never installed*. Both are silence otherwise.
+	check("and every one of them is counted", Family.UI:ItemClicksSeen() >= 3,
+		tostring(Family.UI:ItemClicksSeen()))
+
+	_G.IsControlKeyDown, _G.IsAltKeyDown, _G.IsShiftKeyDown = realCtrl, realAlt, realShift
+	Family.UI.SearchPossessions = realSearch
+
+	-- **And the door it goes through really opens.** Everything above stands in for the panel,
+	-- so without this the click could be arriving perfectly and landing nowhere - which is what
+	-- taking the switch out of the door proved: nothing failed.
+	Family.UI:SearchPossessions("Linen")
+	check("the door puts the term where a player would have typed it",
+		Family.UI.__contentsSearch and Family.UI.__contentsSearch:GetText() == "Linen",
+		tostring(Family.UI.__contentsSearch and Family.UI.__contentsSearch:GetText()))
+
+	-- Whole family switched on with it, or the term filters one character and the answer is
+	-- the wrong list quietly.
+	check("and switches the panel to the whole family",
+		Family.UI.__contentsSort and Family.UI.__contentsSort.bar
+			and Family.UI.__contentsSort.bar.__shown == true,
+		tostring(Family.UI.__contentsSort and Family.UI.__contentsSort.bar
+			and Family.UI.__contentsSort.bar.__shown))
 end)()
 
 print()

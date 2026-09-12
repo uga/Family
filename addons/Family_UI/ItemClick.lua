@@ -17,7 +17,19 @@
 -- worth block works only because the bag addon re-shows its own tooltip when a modifier changes.
 -- A player on the stock interface would get nothing. A click does not depend on any of that.
 --
--- **And why this is a probe and not the feature.** `HandleModifiedItemClick` is the client's own
+-- **What it turned into.** Read from play on Burning Crusade 2026-09-12, with `/family
+-- itemclick` armed and an item clicked in the bags:
+--
+--     control    true
+--     shift      false
+--     alt        true
+--     1          [Wicked Claw]
+--
+-- So the crossroads does fire from a bag slot, both modifiers reach it, and the first argument
+-- is the link. That is the three things presence could not say, and the feature is built on
+-- them rather than on the shape of the call.
+--
+-- **Why a probe first.** `HandleModifiedItemClick` is the client's own
 -- crossroads for a modified click, and it is present on Mists (measured 2026-09-12, with
 -- `IsModifiedClick`, `ChatEdit_InsertLink` and `SetItemRef` beside it). Present is not the
 -- question. Whether it fires from a **bag slot**, what it is handed, and which modifiers reach it
@@ -52,8 +64,43 @@ local function packOf(...)
 	return { n = select("#", ...), ... }
 end
 
-local function heard(...)
+-- Whether a modified click can reach Family at all on this client, which is what decides
+-- whether a tooltip may offer the shortcut. The hook is installed or it is not; nothing here
+-- guesses from a build number.
+local armed = false
+
+function UI:ItemClickArmed()
+	return armed
+end
+
+-- **The combination, and why these two.** Alberto's suggestion, and it read as free on Burning
+-- Crusade: held together, nothing else happened. Shift has to be **up** - it is the game's own
+-- key for putting a link in the chat box, and a shortcut that fires while somebody is doing that
+-- is a shortcut they turn off.
+local function wanted()
+	return (Family:TryCall(IsControlKeyDown)) and true or false,
+		(Family:TryCall(IsAltKeyDown)) and true or false,
+		(Family:TryCall(IsShiftKeyDown)) and true or false
+end
+
+local function heard(link, ...)
 	seen = seen + 1
+
+	local control, alt, shift = wanted()
+
+	-- **The whole family's copies of this item, in one gesture.** The tooltip already says who
+	-- has one and stops at ten of them, because a family can be bigger than a tooltip - this is
+	-- where the rest of that list lives, and getting to it used to mean opening the window,
+	-- finding the panel, pressing Whole family and typing the name back in.
+	--
+	-- The name is taken out of the link rather than looked up: it is already the client's own
+	-- word for the item, in the language the search box matches on.
+	if control and alt and not shift and type(link) == "string" then
+		local name = link:match("%[(.-)%]")
+		if name and name ~= "" and UI.SearchPossessions then
+			UI:SearchPossessions(name)
+		end
+	end
 
 	if not tellNextClick then return end
 
@@ -63,14 +110,14 @@ local function heard(...)
 	-- **The modifiers as they are now**, which is the moment the click happened - this runs
 	-- inside the call, before anything has had a chance to let go of a key.
 	local held = {
-		{ "control", tostring((Family:TryCall(IsControlKeyDown)) and true or false) },
-		{ "shift", tostring((Family:TryCall(IsShiftKeyDown)) and true or false) },
-		{ "alt", tostring((Family:TryCall(IsAltKeyDown)) and true or false) },
+		{ "control", tostring(control) },
+		{ "shift", tostring(shift) },
+		{ "alt", tostring(alt) },
 	}
 
 	-- And everything the client handed over, by position. Which argument is the link is not
 	-- something to write down from memory on three clients at once.
-	local got = packOf(...)
+	local got = packOf(link, ...)
 	for index = 1, got.n do
 		held[#held + 1] = { tostring(index), tostring(got[index]) }
 	end
@@ -87,4 +134,5 @@ Family:OnDatabaseReady("ui.itemclick", function()
 	if type(_G.HandleModifiedItemClick) ~= "function" then return end
 
 	Family:TryCall(_G.hooksecurefunc, "HandleModifiedItemClick", heard)
+	armed = true
 end)

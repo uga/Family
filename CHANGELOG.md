@@ -87,8 +87,9 @@ picks itself up where it left off.
   holding the most and counts the rest, with how many they hold between them so the total at the
   top still adds up. Guild banks the same.
 
-- **And it says where the whole list is** — Family's Possessions page, under Whole family — so a
-  contracted list is a signpost rather than a dead end.
+- **Hold CTRL and ALT and click an item** — in your bags, in chat, anywhere the game lets a
+  modified click through — and Family opens on every character who has one. The tooltip says so
+  when it has had to shorten the list.
 
 ### Shorter lists stay whole
 
