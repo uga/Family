@@ -1213,15 +1213,28 @@ local function build(frame)
 						line.text:SetText("        " .. L["|cff66bbffMade with|r"])
 					end
 
+					-- **Only the ones the folded row could not fit.**
+					--
+					-- Asked 2026-09-12: *perche ripetere i primi 4?* It listed everybody,
+					-- so the four already on the row above were said twice and a reader had
+					-- to work out which four those were. The row says four and then **+9**;
+					-- the nine are what opening it is for, and they carry on in the same
+					-- order because it is the same list.
+					--
+					-- The caps are the ones the row itself used a few lines up: four of ours
+					-- shown beside three of the guild's, which is what `spare` and the
+					-- guild's own three were counted against.
 					local everybody = {}
 
-					for _, who in ipairs(recipe.members) do
+					for index = 5, #recipe.members do
+						local who = recipe.members[index]
 						everybody[#everybody + 1] = { label = who.label or who.name,
 							classFile = who.classFile, familyName = who.familyName,
 							rank = who.rank, cooldown = who.cooldown }
 					end
 
-					for _, who in ipairs(recipe.guild or {}) do
+					for index = 4, #(recipe.guild or {}) do
+						local who = recipe.guild[index]
 						local character = tostring(who.name or who.key or "?")
 						everybody[#everybody + 1] = {
 							label = character:match("^([^%-]+)") or character,

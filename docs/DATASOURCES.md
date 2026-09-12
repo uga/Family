@@ -2088,6 +2088,17 @@ enchantment ids rather than readable values, so there is nothing to append to a 
 *of Restoration* apart at a glance. The tooltip does it - each row hovers on its own stored item
 string and shows its own stats - and the list does not.
 
+**Confirmed from play the same day**, by the two tooltips themselves. Alberto read them as
+identical; they are not, and the difference is one line:
+
+    Milionario's       48 Armor, +10 Stamina, +22 Healing Spells, +4 mana every 5 sec.
+    Nervina's          48 Armor, +11 Stamina, +22 Healing Spells, +4 mana every 5 sec.
+
+Ten stamina against eleven, everything else alike. So the split is right, each row really does
+hover as itself, and each tooltip's possessions block names only the people holding **that** one -
+Milionario on the first, Nervina and Tossica on the second. What it is not is *legible*: one digit
+is the whole of the difference, and nothing on the row carries it.
+
 **`ItemSparse.BuyPrice` is not *what a vendor charges*, and cannot stand in for it.** Asked
 2026-09-12 - a recipe read *Leaded Vial: unknown*, and Alberto pointed out that vendors sell them,
 so Family ought to have the price. The client does carry a buy price and it is exact:

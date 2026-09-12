@@ -9405,7 +9405,7 @@ if professionsEveryone then
 
 			-- Counted off the rows the panel drew, and by what is *on* them: a line with
 			-- four names is one line whatever the code meant to do.
-			local lines, names = 0, 0
+			local lines, names, said = 0, 0, {}
 			for index = 2, 14 do
 				local r = Family.UI.__recipeRowFor(index)
 				local text = r.note and r.note.__text or ""
@@ -9413,12 +9413,19 @@ if professionsEveryone then
 					lines = lines + 1
 					local _, commas = text:gsub(",", "")
 					names = names + commas + 1
+					said[#said + 1] = text
 				end
 			end
+			said = table.concat(said, " / ")
 
-			check("nine crafters unfold onto three lines rather than nine",
-				lines == 3 and names == 9,
-				lines .. " line(s), " .. names .. " name(s)")
+			-- **The five the row could not fit, on two lines.** Asked 2026-09-12 - *perche
+			-- ripetere i primi 4?* - after the first writing listed everybody, so the four
+			-- already on the row were said twice and a reader had to work out which four.
+			check("nine crafters put five under the row rather than all nine again",
+				lines == 2 and names == 5, lines .. " line(s), " .. names .. " name(s)")
+			check("and the four the row already showed are not among them",
+				said:find("Maker1", 1, true) == nil and said:find("Maker5", 1, true) ~= nil
+					and said:find("Maker9", 1, true) ~= nil, said)
 
 			row1.__scripts.OnClick(row1)
 			Family.Recipes.Search = realSearch

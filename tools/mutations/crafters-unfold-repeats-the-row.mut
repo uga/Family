@@ -1,0 +1,6 @@
+name: an unfolded recipe repeats the crafters the row already showed
+file: addons/Family_UI/Professions.lua
+--- old
+					for index = 5, #recipe.members do
+--- new
+					for index = 1, #recipe.members do
