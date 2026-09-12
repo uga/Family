@@ -4055,6 +4055,14 @@ the key by suffix later would change which heading they sit under and nothing ab
 
 Any change here that reaches the **payload** is out of scope and is a fault, not a simplification.
 
+**One name can belong to several suffixes**, which shows up in a list rather than in the filing.
+`ItemRandomProperties` carries *of Restoration* under seven ids - the tiers of the same suffix -
+so a possessions search shows two blocks with the same words on them and nothing saying why. They
+really are two items, at different magnitudes, and the tooltip tells them apart because each row
+hovers on its own item string. Telling them apart **in the list** would need the tier's numbers,
+which that table does not carry in readable form. Not solved, and written down so the next person
+seeing it does not read it as a fault.
+
 **And the lookup has to ask what the filing asked**, or a split is worse than a collapse: a bag item
 looked up under a key nothing was ever filed under reads as *nobody has one*, which is a confident
 wrong answer where today there is a slightly blunt right one.

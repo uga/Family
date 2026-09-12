@@ -2067,6 +2067,27 @@ Tables that earned their keep:
 | `ChrClasses` | `ID`, `Filename` — the class file string `UnitClass` answers with |
 | `ChrRaces` | `ID`, `Name_lang`, `Name_female_lang`, `ClientFileString`, `PlayableRaceBit` |
 
+**One suffix name, several suffix ids** - which is why two rows of a possessions search can read
+alike and be filed apart. Asked 2026-09-12: *perche i primi due items sono presentati come diversi
+tra Milionario e Nervina?* Both said *Abyssal Cloth Handwraps of Restoration*.
+
+Because they are not the same thing. Random suffixes come in tiers, and each tier is its own id
+with the same word on it. Counted at build 2.5.6.69110:
+
+| Table | Rows | Names carried by more than one id |
+|---|---|---|
+| `ItemRandomSuffix` (negative ids) | 75 | 9 — *of the Bear* is 7 and 68, *of the Whale* is 8 and 81 |
+| `ItemRandomProperties` (positive ids) | 2,012 | 43 — ***of Restoration* is 2146, 2147, 2148, 2153, 2156, 2160 and 2162** |
+
+So *of Restoration* at +4 mana every five seconds and *of Restoration* at +8 are two items with one
+name, and Family files them apart because they **are** apart - which is Alberto's own rule for
+backlog 67, stated of *of the Bear* against *of the Whale* and true a level down as well.
+
+**What the game does not give cheaply is the tier's numbers.** `ItemRandomProperties` carries
+enchantment ids rather than readable values, so there is nothing to append to a row to tell two
+*of Restoration* apart at a glance. The tooltip does it - each row hovers on its own stored item
+string and shows its own stats - and the list does not.
+
 **`ItemSparse.BuyPrice` is not *what a vendor charges*, and cannot stand in for it.** Asked
 2026-09-12 - a recipe read *Leaded Vial: unknown*, and Alberto pointed out that vendors sell them,
 so Family ought to have the price. The client does carry a buy price and it is exact:
