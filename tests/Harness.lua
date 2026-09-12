@@ -5479,6 +5479,41 @@ do
 				before ~= nil and kept ~= nil and kept.at == before.at and before.at > 0,
 				tostring(before and before.at) .. " then " .. tostring(kept and kept.at))
 
+			-- **But a short answer that never recovers is given up on, by the clock.**
+			--
+			-- The first writing simply stopped ticking and waited for a later update to pick
+			-- the read up again. The updates stop when the other addon finishes, so a short
+			-- answer arriving last would leave a read alive, doing nothing, with nothing
+			-- watching it - which is L-083 written this morning and put straight back in a
+			-- different place.
+			advance(40)
+			check("and a short answer that never recovers is given up on rather than left alive",
+				Family.Auctions:BigListReading() == nil,
+				tostring(Family.Auctions:BigListReading()))
+
+			-- **An empty list is not waited for at all**: the window has been left or the
+			-- list thrown away, and there is nothing to come back to.
+			Family.Auctions:StopBigListRead()
+			LIST = {}
+			for index = 1, 4000 do
+				LIST[index] = { id = 600000 + index, count = 1, buyout = 700 }
+			end
+			Family.Auctions:ReadPrices()
+			advance(0.2)
+			check("a read of a loaded list is running before the list is thrown away",
+				Family.Auctions:BigListReading() ~= nil)
+			LIST = {}
+			advance(0.2)
+			check("and an emptied list drops it at once rather than waiting for it to return",
+				Family.Auctions:BigListReading() == nil)
+
+			LIST = {}
+			for index = 1, 4000 do
+				LIST[index] = { id = 200000 + index, count = 1, buyout = 700 }
+			end
+			Family.Auctions:ReadPrices()
+			advance(0.2)
+
 			-- **And a loaded list shorter than the row already reached is a different one**,
 			-- where that row means nothing, so it begins again. This is where the hazard the
 			-- withdrawn rule was aimed at actually lives.

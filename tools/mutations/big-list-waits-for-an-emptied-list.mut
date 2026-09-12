@@ -1,0 +1,5 @@
+name: an emptied list is waited out instead of dropped
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		if count <= 0 then bigRead = nil return end
+--- new

@@ -1,0 +1,12 @@
+name: a short answer that never recovers leaves the read alive and doing nothing
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		if now and bigRead.shortFrom and (now - bigRead.shortFrom) > SHORT_PATIENCE then
+			bigRead = nil
+			return
+		end
+
+		return Family:After(0.05, "auctions.biglist", bigReadTick)
+--- new
+		bigRead.ticking = nil
+		return

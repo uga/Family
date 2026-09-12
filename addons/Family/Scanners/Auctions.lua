@@ -768,6 +768,12 @@ local READ_QUIET = 30
 -- beside the walk, because a second constant meaning *a page* is two numbers to keep in step.
 local PAGE_ROWS = 50
 
+-- How long a loaded-list read waits for a list that has gone short to come back before giving up
+-- on it. A whole-house delivery answers fifty to some of its updates while it arrives, so a short
+-- answer is not the end of anything; a short answer that is the *last* one would strand the read
+-- for ever if it simply stopped ticking.
+local SHORT_PATIENCE = 30
+
 local reading
 
 function Auctions:ReplicateReading()
@@ -1096,9 +1102,30 @@ bigReadTick = function()
 	-- So the tick reads nothing and keeps its place; the next update that says the list is long
 	-- again picks it up where it was.
 	if count < bigRead.at then
-		bigRead.ticking = nil
-		return
+		-- **Waited out, not stopped.** Setting the ticking down here and trusting a later
+		-- update to pick it up again is a read that is alive and doing nothing, with nothing
+		-- watching it - which is L-083 exactly, written this morning and put straight back in
+		-- a different place. The updates stop when the other addon finishes, so a short answer
+		-- arriving last would strand the read wherever it had got to.
+		--
+		-- An empty list is different: the window has been left or the list thrown away, and
+		-- there is nothing to come back to.
+		if count <= 0 then bigRead = nil return end
+
+		-- Patience in seconds, because the interval below is a decision and the patience is
+		-- not - the same shape the walk's refusals were given (`REFUSAL_PATIENCE`).
+		local now = tonumber((Family:TryCall(GetTime)))
+		bigRead.shortFrom = bigRead.shortFrom or now
+
+		if now and bigRead.shortFrom and (now - bigRead.shortFrom) > SHORT_PATIENCE then
+			bigRead = nil
+			return
+		end
+
+		return Family:After(0.05, "auctions.biglist", bigReadTick)
 	end
+
+	bigRead.shortFrom = nil
 
 	bigRead.count = count
 
