@@ -4232,6 +4232,78 @@ bag; the geometry and scale are settings and therefore belong wherever the Extra
 them; and a bag Family draws has to keep working while another bag addon is installed, because
 the person most likely to try this is running one.
 
+---
+
+### The specification, dictated 2026-09-12
+
+Written down as given, with what is already answerable marked as such. **This is not the
+Possessions panel**: that one draws what forty characters are *recorded* as holding, and this one
+draws the containers of the character being played, live - which is why its slots can be used,
+and why an item's quality and its quest flag can be asked of the client at the moment of drawing
+rather than stored.
+
+**The border of a slot**, each independently:
+
+- colour it by the quality of what is in it
+- colour quest items
+- mark grey items
+
+**The background of an empty slot**, by what kind of bag it is - *p. es. le soul bag dei warlock
+= viola* - and only for the kinds a given expansion has.
+
+**Where the bags open by themselves.** All on by default except the last:
+
+| on opening | the event |
+|---|---|
+| the bank | `BANKFRAME_OPENED` |
+| the guild bank | `GUILDBANKFRAME_OPENED` |
+| the auction house | `AUCTION_HOUSE_SHOW` |
+| a vendor | `MERCHANT_SHOW` |
+| the mailbox | `MAIL_SHOW` |
+| a trade with another player | `TRADE_SHOW` |
+| a profession window with recipes in it | `TRADE_SKILL_SHOW`, and the older craft frame |
+| the character sheet | **no event** - a frame being shown, so a hook rather than a listener |
+
+The one defaulted off is also the only one with nothing to listen to, which is worth noticing
+before anybody treats the list as eight of a kind.
+
+**Configurable, and the bag window and the bank window independently of each other:**
+
+- enable or disable individual bags
+- show or hide the character's money
+- number of columns
+- the gap between columns
+- the scale of one slot
+- the gap between slots
+- one section per bag, the way the Possessions panel already draws them - or no division at all,
+  everything as a single very large bag
+
+**Special bags are never merged into the general ones**, and the keyring never at all. Two bags
+of the *same* special kind may be merged with each other: two enchanting bags shown as one bag
+twice the size.
+
+### What of this is already recorded, and what is not
+
+**Answerable today, from what `Scanners/Bags.lua` already writes.** Each bag record carries
+`size`, `free`, **`bagType`**, **`special`**, its own `itemID` and its slots. So *special bags
+apart* is `special`; *two enchanting bags may be merged with each other* is two bags with the same
+`bagType`; *the background by kind of bag* is `bagType` again; and the keyring is already special
+by container number, with a comment explaining that the client will happily answer nonsense about
+it if asked the wrong question.
+
+**Not recorded, and does not need to be.** Quality and the quest flag are properties of the item
+in front of the player, and this window is the played character's own live containers - so they
+come from the client at draw time like every other picture in Family.
+
+**The number of settings is itself a design problem.** Seven per window, times two windows, plus
+eight auto-open switches, plus three border options is more than twenty controls - which is more
+than the Extras panel should grow by, and probably belongs on the bag window itself the way the
+addons this replaces do it. Not decided.
+
+**And none of it moves the question at the top of this entry.** All of the above is decoration on
+a slot, and what a slot *is* - a real `ContainerFrameItemButton` moved, or a button of ours that
+proxies one - is still the reading nobody has taken.
+
 ## 71. What a craftable thing costs to make — **done 2026-09-12**
 
 **Alberto, 2026-09-12.** *Considerato che conosciamo le ricette di tutti gli oggetti craftabili, e
