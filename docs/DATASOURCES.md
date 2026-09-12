@@ -3676,10 +3676,17 @@ together, which is why CTRL and ALT works at all and why both of its halves fire
 Confirmed on Era and Mists 2026-09-12: **bag slots, chat links and the inspect window of another
 player** all route through `HandleModifiedItemClick`.
 
-**The player's own character sheet does not.** With the probe armed, a CTRL and ALT click on a
-worn piece printed nothing at all and `modified clicks heard since login` stayed at nought - a
-counter that rises for every modified click whether or not anybody is listening. So the crossroads
-is never reached there, rather than reached and refused.
+**The player's own character sheet does, on a client where nothing is in the way.** Confirmed on
+Mists 2026-09-12, where ItemRack is not installed: a CTRL and ALT click on a worn piece opens the
+family's copies exactly as a bag slot does.
+
+This paragraph said the opposite for an hour, on the strength of the Era reading below, and the
+claim was wrong. With the probe armed **on Era**, the same click printed nothing at all and
+`modified clicks heard since login` stayed at nought - a counter that rises for every modified
+click whether or not anybody is listening - so the crossroads really was never reached **there**.
+What was not controlled is that the Era client has ItemRack on it and the Mists one does not, and
+the conclusion credited the difference to the client. What Era without ItemRack does is still
+unread (L-082).
 
 (The `clicked` line of that probe, which was blank on Mists, was written down here as a reading.
 It was not. Measured on Classic Era 2026-09-12: **`GetMouseFocus` is nil and `GetMouseFoci` is a

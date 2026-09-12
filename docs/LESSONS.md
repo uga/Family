@@ -3000,3 +3000,36 @@ its name.
 **The general rule: when a line both decides whether to ask and reports the answer, it will report
 the deciding.** Anything whose second return matters gets called on its own line.
 
+---
+
+## L-082 — Two clients, two addon sets, one conclusion about the client
+
+Twice in one evening, the same mistake in the same place: something an addon did was written down
+as something the client does.
+
+The first was small. A bar of item buttons appeared when alt-clicking worn armour, the client's
+own list of modified-click actions had `SHOWITEMFLYOUT ALT` in it, and this repository recorded
+the one as the other. Alberto identified the bar as **ItemRack**. The list says which keys are
+spoken for; it does not say who acted on any particular press.
+
+The second was not small, because it closed a question. On Era, a CTRL and ALT click on a worn
+piece never reached `HandleModifiedItemClick` - the probe was silent and the click counter stayed
+at nought, which is good evidence and was read correctly. From it, DATASOURCES concluded that
+**the character sheet does not route through the crossroads**, an entry ended with *nothing is
+built until that is known*, and the next step became hooking the paper doll's slot buttons.
+
+Then Alberto tried it on Mists, where he has no ItemRack, and it worked.
+
+The two readings differ in **two** things - the client and the addon set - and the conclusion
+named only one of them. A single measurement on a live machine is never of the client alone; it is
+of the client with everything else that machine is running, and the write-up has to say so or the
+next reader inherits an invention.
+
+**What now catches it.** Nothing automatic can: the harness has one client and no addons. What
+catches it is the wording. A reading taken on one machine describes that machine, and a sentence
+about *the client* needs either a second machine that differs in nothing else, or the word
+**there**.
+
+**The general rule: name what varied.** If a conclusion cannot survive somebody listing what else
+was installed, it was never about the client.
+
