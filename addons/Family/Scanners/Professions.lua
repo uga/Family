@@ -338,6 +338,49 @@ local function restoreRows(collapsed, rows, headerAt, collapse)
 	end
 end
 
+-- **What the window was showing when a record shrank**, kept beside the record it explains.
+--
+-- Every one of these is a way for a trade skill window to list less than the character knows, and
+-- the file's own section header a few hundred lines down says the rule they are all instances of:
+-- *a recipe window lists what it shows, not what the character knows.* Family guards one of them,
+-- the collapsed sub-class header, and none of the rest.
+--
+-- Read rather than assumed, and by existence: these calls are not all on all three clients, and
+-- which of them this one has is part of the answer. Nothing here changes a filter.
+local function windowState(was, now)
+	local rows = Family:TryCall(GetNumTradeSkills) or 0
+	local headers, listed = 0, 0
+	for index = 1, rows do
+		local _, kind = Family:TryCall(GetTradeSkillInfo, index)
+		if kind == "header" then headers = headers + 1
+		elseif kind then listed = listed + 1 end
+	end
+
+	local box = _G.TradeSkillFrameAvailableFilterCheckButton
+		or (_G.TradeSkillFrame and _G.TradeSkillFrame.FilterButton)
+	local search = _G.TradeSkillFrameSearchBox
+		or (_G.TradeSkillFrame and _G.TradeSkillFrame.SearchBox)
+
+	local low, high
+	if GetTradeSkillItemLevelFilter then
+		low, high = Family:TryCall(GetTradeSkillItemLevelFilter)
+	end
+
+	return {
+		at = time(),
+		was = was,
+		now = now,
+		rows = rows,
+		headers = headers,
+		listed = listed,
+		materials = box and ((Family:TryCall(box.GetChecked, box)) and true or false) or nil,
+		named = GetTradeSkillItemNameFilter
+			and tostring((Family:TryCall(GetTradeSkillItemNameFilter))) or nil,
+		box = search and tostring((Family:TryCall(search.GetText, search))) or nil,
+		levels = low and (tostring(low) .. "-" .. tostring(high)) or nil,
+	}
+end
+
 local function tradeSkillRows() return Family:TryCall(GetNumTradeSkills) or 0 end
 
 local function tradeSkillHeaderAt(index)
@@ -1230,6 +1273,30 @@ function Professions:ScanNow(includeRecipes)
 				-- until somebody caught them mid-transmute.
 				recipe.hasCooldown = true
 			end
+		end
+
+		-- **When a record shrinks a long way, write down what the window looked like.**
+		--
+		-- Reported 2026-09-12: a character at Cooking 372/375 recorded as knowing **one**
+		-- recipe, thirteen days old, and opening the window again put seventy-five back. Two
+		-- explanations fit - a filter the window was showing a fraction through, or a window
+		-- read before it had finished filling - and telling them apart needs somebody to be
+		-- looking at the moment it happens. *Purtroppo nel frattempo ho riletto la
+		-- professione quindi l'anomalia e sparita, devo aspettare se/che si ripresenti.*
+		--
+		-- So the trap arms itself. This **changes nothing about what is stored**: the small
+		-- record goes in exactly as it did, because a rule refusing it is L-086's shape - a
+		-- player really can unlearn a profession. It only remembers the circumstance, which
+		-- is the thing that was missing.
+		--
+		-- The threshold decides what is written **down**, never what is written. Half of ten
+		-- or more: below that, ordinary churn - a recipe learnt, a window part-filled by one
+		-- row - would fill the record with noise nobody would read.
+		local was = entry.recipes and #entry.recipes or 0
+		if was >= 10 and #recipes * 2 < was then
+			entry.shrank = windowState(was, #recipes)
+			Family:Debug("professions: %s went from %d recipes to %d - window state kept",
+				tostring(recipeName), was, #recipes)
 		end
 
 		entry.recipes = recipes

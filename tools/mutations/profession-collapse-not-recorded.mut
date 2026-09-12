@@ -1,0 +1,6 @@
+name: a profession record that collapses keeps no record of the window that did it
+file: addons/Family/Scanners/Professions.lua
+--- old
+		if was >= 10 and #recipes * 2 < was then
+--- new
+		if false then

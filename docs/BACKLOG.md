@@ -1947,7 +1947,7 @@ record, not about whose it is.
   the check for a warm client asking for nothing already pins.
 ---
 
-## 28. Shipping the item names instead of learning them — measured, not built
+## 28. Shipping the item names instead of learning them — CLOSED 2026-09-06, measured and recommended against
 
 **Asked out of curiosity 2026-09-06**: why not ship a table of every translation and skip the
 learning entirely? Measured rather than guessed, so that nobody has to derive it twice.
@@ -4137,6 +4137,15 @@ written for a case that cannot happen breaking one that does has cost this proje
 one week. Whichever of the two it turns out to be has its own fix - clearing the filters and putting
 them back, the way the headers already are; or waiting for the window to settle - and both are
 mechanical once the reading says which.
+
+**And the trap arms itself now, 2026-09-12**, because the reading cannot be arranged: *purtroppo nel
+frattempo ho riletto la professione quindi l'anomalia e sparita, devo aspettare se/che si
+ripresenti.* When a stored record of ten or more recipes is replaced by fewer than half as many,
+the scanner keeps what the window was showing at that moment - rows, headers, listed recipes, the
+Have Materials tick, the name filter, the search box and the item-level range - and `/family
+recipes` prints it. **It changes nothing about what is stored**, which is the whole point: the small
+record goes in exactly as before. The threshold decides what is written *down*, never what is
+written.
 
 ## 69. Recipe materials on the Professions panel — **done 2026-09-12**
 

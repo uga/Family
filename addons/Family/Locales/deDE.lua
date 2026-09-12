@@ -915,4 +915,7 @@ Family.locales.deDE = {
 	["Say what a craftable item is made with"] = "Sagen, woraus ein herstellbarer Gegenstand besteht",
 	["|cff66bbffMade with|r"] = "|cff66bbffHergestellt aus|r",
 	[" |cff66bbff(guild)|r"] = " |cff66bbff(Gilde)|r",
+	["    |cffffaa00this record collapsed|r %s: %d recipe(s) -> %d"] = "    |cffffaa00dieser Eintrag brach ein|r %s: %d Rezept(e) -> %d",
+	["      the window showed %d row(s): %d header(s), %d recipe(s)"] = "      das Fenster zeigte %d Zeile(n): %d Überschrift(en), %d Rezept(e)",
+	["      have materials: %s, name filter: %s, search box: %s, levels: %s"] = "      Material vorhanden: %s, Namensfilter: %s, Suchfeld: %s, Stufen: %s",
 }

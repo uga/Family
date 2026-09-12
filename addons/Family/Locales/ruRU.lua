@@ -915,4 +915,7 @@ Family.locales.ruRU = {
 	["Say what a craftable item is made with"] = "Сообщать, из чего сделан изготавливаемый предмет",
 	["|cff66bbffMade with|r"] = "|cff66bbffИзготовлено из|r",
 	[" |cff66bbff(guild)|r"] = " |cff66bbff(гильдия)|r",
+	["    |cffffaa00this record collapsed|r %s: %d recipe(s) -> %d"] = "    |cffffaa00эта запись обрушилась|r %s: рецептов %d -> %d",
+	["      the window showed %d row(s): %d header(s), %d recipe(s)"] = "      окно показывало строк - %d: заголовков - %d, рецептов - %d",
+	["      have materials: %s, name filter: %s, search box: %s, levels: %s"] = "      есть материалы: %s, фильтр по названию: %s, поле поиска: %s, уровни: %s",
 }

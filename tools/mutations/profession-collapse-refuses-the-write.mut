@@ -1,0 +1,8 @@
+name: a collapsed record is refused rather than stored, which unlearning a profession cannot survive
+file: addons/Family/Scanners/Professions.lua
+--- old
+		entry.recipes = recipes
+		entry.recipesSeen = time()
+--- new
+		if not (was >= 10 and #recipes * 2 < was) then entry.recipes = recipes end
+		entry.recipesSeen = time()

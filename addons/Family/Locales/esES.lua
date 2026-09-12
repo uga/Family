@@ -915,4 +915,7 @@ Family.locales.esES = {
 	["Say what a craftable item is made with"] = "Decir de qué está hecho un objeto fabricable",
 	["|cff66bbffMade with|r"] = "|cff66bbffHecho con|r",
 	[" |cff66bbff(guild)|r"] = " |cff66bbff(hermandad)|r",
+	["    |cffffaa00this record collapsed|r %s: %d recipe(s) -> %d"] = "    |cffffaa00este registro se desplomó|r %s: %d receta(s) -> %d",
+	["      the window showed %d row(s): %d header(s), %d recipe(s)"] = "      la ventana mostraba %d fila(s): %d encabezado(s), %d receta(s)",
+	["      have materials: %s, name filter: %s, search box: %s, levels: %s"] = "      con materiales: %s, filtro de nombre: %s, caja de búsqueda: %s, niveles: %s",
 }

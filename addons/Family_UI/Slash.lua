@@ -83,6 +83,22 @@ add("recipes", L["why a recipe is in the wrong language: /family recipes"], func
 			tostring(Family:ProfessionName(id, record.name)), #recipes, spells, items,
 			tostring(record.locale or "?"), tostring(Family.locale))
 
+		-- **And if this profession has ever collapsed, what the window looked like when it
+		-- did.** The trap arms itself in the scanner and this is where it is read back: the
+		-- anomaly it exists for cannot be reproduced on demand, so nobody can be standing
+		-- there with a probe when it happens.
+		local shrank = record.shrank
+		if shrank then
+			Family:Print(L["    |cffffaa00this record collapsed|r %s: %d recipe(s) -> %d"],
+				UI:Ago(shrank.at), shrank.was or 0, shrank.now or 0)
+			Family:Print(L["      the window showed %d row(s): %d header(s), %d recipe(s)"],
+				shrank.rows or 0, shrank.headers or 0, shrank.listed or 0)
+			Family:Print(L["      have materials: %s, name filter: %s, search box: %s, "
+				.. "levels: %s"],
+				tostring(shrank.materials), tostring(shrank.named),
+				tostring(shrank.box), tostring(shrank.levels))
+		end
+
 		-- Three of them in full, because a count says how many are missing an id and not
 		-- what the client says about the ones that have one.
 		for index = 1, math.min(3, #recipes) do
@@ -1681,13 +1697,27 @@ add("ah", L["what this client offers on the auction house"], function(argument)
 			tostring((Family:TryCall(UnitIsFriend, "player", name))))
 	end
 
+	-- **And what the rate actually is**, which is the half of this that was left unread.
+	--
+	-- Printing that the call exists says nothing: it exists at every auction house. The
+	-- neutral one takes a different cut, so the **number** would name it without anybody
+	-- recognising a goblin by name (§2.1) - and until 2026-09-12 the probe never asked for it.
+	--
+	-- Only the one that takes no arguments. `GetAuctionDeposit` wants a run time and a stack
+	-- size, and a probe that made them up would be measuring its own guesses.
 	for _, name in ipairs { "GetAuctionHouseDepositRate", "GetAuctionDeposit",
 		"C_AuctionHouse.GetAuctionHouseDepositRate" } do
 		local fn = rawget(_G, name)
 		if not fn and _G.C_AuctionHouse then
 			fn = C_AuctionHouse[(name:gsub("^C_AuctionHouse%.", ""))]
 		end
-		Family:Print("    %-38s |cff888888%s|r", name, type(fn))
+
+		local says = ""
+		if type(fn) == "function" and name ~= "GetAuctionDeposit" then
+			says = " -> " .. tostring((Family:TryCall(fn)))
+		end
+
+		Family:Print("    %-38s |cff888888%s%s|r", name, type(fn), says)
 	end
 
 	local prices, oldest, newest, held = Family.Auctions:Prices(), nil, nil, 0

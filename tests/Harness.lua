@@ -3011,6 +3011,75 @@ check("and one that makes an oil has both",
 check("opening a window marks it as a profession",
 	FamilyDB.professionNames["Enchantement"] == true)
 
+-- **A record that collapses writes down what the window looked like when it did.**
+--
+-- Reported 2026-09-12: Cooking 372/375 stored as knowing **one** recipe, thirteen days old, and
+-- opening the window again put seventy-five back. Two explanations fit - a filter, or a window
+-- read before it had finished filling - and telling them apart needs somebody looking at the
+-- moment it happens, which nobody was: *purtroppo nel frattempo ho riletto la professione quindi
+-- l'anomalia e sparita, devo aspettare se/che si ripresenti.*
+--
+-- **It changes nothing about what is stored.** The small record goes in exactly as before, because
+-- a rule refusing it is L-086's shape - a player really can unlearn a profession. What is new is
+-- that the circumstance is kept.
+do
+	local held = TRADE_RECIPES
+	local wasOpen = TRADE_SKILL_OPEN
+	local key = Family:CurrentMember()
+
+	-- A block above this one left the window shut, and `GetTradeSkillLine` answers UNKNOWN
+	-- there - so the reader bails and the old record survives, which is what this checked
+	-- first time round without noticing.
+	TRADE_SKILL_OPEN = true
+
+	-- Twenty recipes, so there is something to collapse from.
+	TRADE_RECIPES = { { "Header", "header" } }
+	for index = 1, 20 do
+		TRADE_RECIPES[#TRADE_RECIPES + 1] = { "Thing " .. index, "optimal", 0,
+			"|cffffd000|Hspell:" .. (800000 + index) .. "|h[Thing]|h|r" }
+	end
+	Family.Professions:Scan(true)
+
+	local before = Family.Database:Payload(key).professions[SKILL.blacksmithing]
+	check("twenty recipes are stored before anything collapses",
+		before and #before.recipes == 20 and before.shrank == nil,
+		before and tostring(#before.recipes) or "no record")
+
+	-- And now the window shows one of them, which is what was reported.
+	TRADE_RECIPES = { { "Header", "header" },
+		{ "Thing 1", "optimal", 0, "|cffffd000|Hspell:800001|h[Thing]|h|r" } }
+	Family.Professions:Scan(true)
+
+	local after = Family.Database:Payload(key).professions[SKILL.blacksmithing]
+	check("the small record is stored, because a player really can unlearn a profession",
+		after and #after.recipes == 1, after and tostring(#after.recipes) or "no record")
+	check("and what the window was showing is kept beside it",
+		after and after.shrank ~= nil and after.shrank.was == 20 and after.shrank.now == 1,
+		after and after.shrank and (after.shrank.was .. " -> " .. after.shrank.now)
+			or "nothing kept")
+	check("with the row count the window actually answered",
+		after and after.shrank and after.shrank.listed == 1 and after.shrank.rows == 2,
+		after and after.shrank and (after.shrank.rows .. " row(s), "
+			.. after.shrank.listed .. " recipe(s)") or "nothing kept")
+
+	-- **Ordinary churn is not a collapse.** A record that noted every recipe learnt would be a
+	-- record nobody reads, and the threshold is what decides what is written *down* rather than
+	-- what is written.
+	local wasShrank = after and after.shrank
+	TRADE_RECIPES = { { "Header", "header" },
+		{ "Thing 1", "optimal", 0, "|cffffd000|Hspell:800001|h[Thing]|h|r" },
+		{ "Thing 2", "optimal", 0, "|cffffd000|Hspell:800002|h[Thing]|h|r" } }
+	Family.Professions:Scan(true)
+	local grown = Family.Database:Payload(key).professions[SKILL.blacksmithing]
+	check("while a record that grows notes nothing new",
+		grown and grown.shrank == wasShrank,
+		tostring(grown and grown.shrank ~= wasShrank))
+
+	TRADE_RECIPES = held
+	Family.Professions:Scan(true)
+	TRADE_SKILL_OPEN = wasOpen
+end
+
 -- A window whose sub-class headers are collapsed
 --
 -- The window lists what it *shows*: a collapsed header hides every row under it, and the
