@@ -5,7 +5,7 @@ file: addons/Family/Recipes.lua
 			row.each, row.from = each, from
 			row.total = each * part.count
 			out.total = out.total + row.total
-		elseif self:BoundReagent(part.item) then
+		else
 --- new
 		if self:BoundReagent(part.item) then
 			row.bound = true
@@ -15,4 +15,4 @@ file: addons/Family/Recipes.lua
 			row.each, row.from = each, from
 			row.total = each * part.count
 			out.total = out.total + row.total
-		elseif false then
+		else

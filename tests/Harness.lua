@@ -5605,6 +5605,232 @@ do
 		GameTooltip.__owner = nil
 	end
 
+	-- **The same multiplication on an auction row**, which backlog 62 held back for two days
+	-- because away from the bags there seemed to be nothing to check a count against - and
+	-- Alberto's report was made with Auctionator loaded, so the row is a frame Family neither
+	-- drew nor knows. The reading taken 2026-09-12 settled it, and settled it twice: with
+	-- Auctionator and without, the owner is `BrowseButtonNItem` with an id of nought, its
+	-- parent is `BrowseButtonN` with id N, and the browse list at N names the tooltip's item.
+	do
+		-- The chain the reading found: a texture with no id of its own inside a button that
+		-- carries the **slot on the screen**. The slot is not the row - see below.
+		local browseButton = { __id = 5 }
+		function browseButton:GetID() return self.__id end
+
+		local rowTexture = { __id = 0 }
+		function rowTexture:GetID() return self.__id end
+		function rowTexture:GetParent() return browseButton end
+
+		-- Identity is what the panel tests, so the fixture has to answer as the client does:
+		-- `_G["BrowseButton5"]` is this very table and not one that looks like it.
+		-- A second button and a second texture, because in the game every row is its own
+		-- pair of frames - the pointer moving to the next row hands the tooltip a different
+		-- owner. A fixture with one texture whose parent's number is edited between hovers
+		-- models something the client never does, and cannot see the guard this block is
+		-- about.
+		local nextButton = { __id = 6 }
+		function nextButton:GetID() return self.__id end
+		local nextTexture = { GetID = function() return 0 end,
+			GetParent = function() return nextButton end }
+
+		local realButtons, realOffset, realScroll = {}, FauxScrollFrame_GetOffset,
+			_G.BrowseScrollFrame
+		local scrolledBy = 0
+		local function placeButton()
+			for slot = 1, 15 do
+				realButtons[slot] = realButtons[slot] or _G["BrowseButton" .. slot]
+				_G["BrowseButton" .. slot] = nil
+			end
+			_G["BrowseButton" .. browseButton.__id] = browseButton
+			_G["BrowseButton" .. nextButton.__id] = nextButton
+		end
+		placeButton()
+		_G.BrowseScrollFrame = { __name = "BrowseScrollFrame" }
+		FauxScrollFrame_GetOffset = function(frame)
+			return frame == _G.BrowseScrollFrame and scrolledBy or nil
+		end
+
+		GameTooltip.__owner = rowTexture
+		GameTooltip.GetOwner = function(self) return self.__owner end
+
+		-- Nothing in any bag, so the only thing that can answer is the browse list. Without
+		-- this the bag branch could answer first and the whole block would be testing the
+		-- case it already tests above.
+		local realSlot = Family.Bags.SlotContents
+		Family.Bags.SlotContents = function() return nil end
+
+		local realBrowse = BROWSE
+		local realInfo = GetAuctionItemInfo
+
+		-- **A page of one item**, which is what a browse list actually is: somebody searching
+		-- for Linen Cloth is looking at twenty rows of Linen Cloth. Every row answers with the
+		-- same link and a different count, which is precisely the shape that made the old
+		-- check worthless - the wrong row passed it.
+		local rowLink = "|Hitem:2880|h[Weak Flux]|h"
+		local counts = { 12, 3, 7, 5, 20, 2, 9, 4, 6, 11, 15, 8 }
+		local function rowAt(index)
+			return counts[index] and { link = rowLink, count = counts[index] } or nil
+		end
+		GetAuctionItemInfo = function(which, index)
+			if which ~= "list" then return nil end
+			local row = rowAt(index)
+			return row and "Weak Flux" or nil, nil, row and row.count or nil
+		end
+		BROWSE = setmetatable({}, { __index = function(_, index) return rowAt(index) end })
+
+		FamilyDB.prices = true
+		local realCtrl = IsControlKeyDown
+
+		IsControlKeyDown = function() return false end
+		check("an auction row is offered the key rather than the answer",
+			priceLine(2880, "CTRL") ~= nil and priceLine(2880, "Stack of") == nil)
+
+		IsControlKeyDown = function() return true end
+		-- Slot 5 of an unscrolled list is row 5, which holds twenty. 25c each.
+		check("and holding it multiplies the auction row the way it multiplies the bag slot",
+			plain(priceLine(2880, "Stack of 20")) == "5s",
+			plain(priceLine(2880, "Stack of 20")))
+
+		-- **The reading that broke the first version.** Reported from play 2026-09-12: *se
+		-- scrollo la finestra il CTRL sbaglia, crede di avere sotto uno stack da 10 quando
+		-- sono sopra uno stack da 5.* The client names its fifteen browse buttons once and
+		-- never renumbers them, so slot 5 of a list scrolled by three is showing row 8.
+		--
+		-- **And the old guard could not see it**, which is the half worth keeping a check
+		-- for: every row on this page is the same item, so *the link at this index matches
+		-- the tooltip* was satisfied by the wrong row as readily as by the right one. A
+		-- check a sibling can satisfy is not a check (L-087).
+		scrolledBy = 3
+		check("a scrolled list is read at the row on the screen, not at the slot showing it",
+			priceLine(2880, "Stack of 4") ~= nil
+				and priceLine(2880, "Stack of 20") == nil,
+			tostring(priceLine(2880, "Stack of 4")) .. " / "
+				.. tostring(priceLine(2880, "Stack of 20")))
+		scrolledBy = 0
+
+		-- **Moving from one row to the next of the same item redraws.** The guard against
+		-- writing the block twice was keyed on the variant alone, and two rows of Linen Cloth
+		-- are one variant - so without the frame in the key the second row keeps the first
+		-- row's count on the screen, which is what a reader would describe as *CTRL continua a
+		-- leggere gli stack size della prima*. Fired without an intervening clear on purpose:
+		-- that is the case this has to survive.
+		do
+			local firstRow = priceLine(2880, "Stack of")
+
+			-- The pointer moves to the next row: a different texture, in a different
+			-- button, and **no clear in between** - which is the case that has to survive
+			-- without help from an event another addon may or may not cause to fire.
+			GameTooltip.__owner = nextTexture
+			GameTooltip.__itemLink = "|Hitem:2880|h"
+			GameTooltip.__scripts.OnTooltipSetItem(GameTooltip)
+
+			-- **The whole number, not a substring of it.** Written as a `find` for "Stack of
+			-- 2" this passed against the stale "Stack of 20" it was meant to catch, which is
+			-- the same shape of mistake as the guard it is checking.
+			local secondRow = nil
+			for _, line in ipairs(GameTooltip.__lines) do
+				if type(line[1]) == "string" then
+					secondRow = line[1]:match("Stack of (%d+)") or secondRow
+				end
+			end
+
+			check("moving to the next row of the same item does not keep the last row's count",
+				secondRow == "2",
+				tostring(firstRow) .. " then stack of " .. tostring(secondRow))
+
+			GameTooltip.__owner = rowTexture
+		end
+
+		-- **The check that makes an unknown frame safe to ask.** The rule was written into the
+		-- backlog before the reading was taken: where a count cannot be checked against the
+		-- item, the line is not drawn.
+		local realRowAt = rowAt
+		rowAt = function(index)
+			local row = realRowAt(index)
+			if row then row.link = rowLink end
+			return row
+		end
+		rowLink = "|Hitem:4306|h[Silk Cloth]|h"
+		check("while a row naming something else is not counted at all",
+			priceLine(2880, "Stack of") == nil, tostring(priceLine(2880, "Stack of")))
+
+		-- **And the check is on the variant, not on the id**, because a browse list is exactly
+		-- where two rows of one item id sit together wearing different suffixes. Comparing the
+		-- numbers would call *of the Bear* a match for *of the Whale* (backlog 67).
+		rowLink = "|cff1eff00|Hitem:2880:0:0:0:0:0:1029:0:60|h[Weak Flux of the Bear]|h|r"
+		check("nor is a row of the same item wearing a suffix the tooltip is not",
+			priceLine(2880, "Stack of") == nil, tostring(priceLine(2880, "Stack of")))
+
+		-- The other way round, which is the half that says the guard is a comparison and not a
+		-- blanket refusal of anything suffixed: ask for that variant and the row does answer.
+		check("but that same row answers for the variant it really is",
+			Family.UI.__pileCount(GameTooltip, 2880, "2880:1029") == 20,
+			tostring(Family.UI.__pileCount(GameTooltip, 2880, "2880:1029")))
+
+		rowAt = realRowAt
+		rowLink = "|Hitem:2880|h[Weak Flux]|h"
+
+		-- **Somebody else's frame is not read at all.** A frame that is not the client's own
+		-- browse button is one whose numbering Family knows nothing about, and applying this
+		-- scroll frame's offset to it would be arithmetic on a stranger. Identity is the test:
+		-- a lookalike carrying the same id is refused.
+		local impostor = { GetID = function() return 5 end }
+		local stood = _G["BrowseButton5"]
+		_G["BrowseButton5"] = impostor
+		check("a frame that is not the client's own browse button is not read as one",
+			Family.UI.__pileCount(GameTooltip, 2880, 2880) == nil,
+			tostring(Family.UI.__pileCount(GameTooltip, 2880, 2880)))
+		_G["BrowseButton5"] = stood
+
+		-- **And an offset that cannot be read means no line**, rather than a line drawn as
+		-- though the list were at the top. Being unable to place the row is exactly the case
+		-- backlog 62's rule is about.
+		local realGet = FauxScrollFrame_GetOffset
+		FauxScrollFrame_GetOffset = function() return nil end
+		check("nor is one whose scroll offset the client will not give up",
+			Family.UI.__pileCount(GameTooltip, 2880, 2880) == nil,
+			tostring(Family.UI.__pileCount(GameTooltip, 2880, 2880)))
+		FauxScrollFrame_GetOffset = realGet
+
+		-- A slot of nought is a frame that was never given one. `BrowseButton0` is not a
+		-- frame, so the identity test refuses it and no separate guard is needed - which is
+		-- why there is no longer one.
+		browseButton.__id = 0
+		check("and a chain whose id is nought asks the browse list nothing",
+			Family.UI.__pileCount(GameTooltip, 2880, 2880) == nil,
+			tostring(Family.UI.__pileCount(GameTooltip, 2880, 2880)))
+		browseButton.__id = 5
+		placeButton()
+
+		-- **And a frame with no id at all is a frame, not an error.** Plenty of addons own a
+		-- tooltip with something that answers nothing here, and the name built below would
+		-- concatenate the nil and take the whole tooltip down with it - on every hover, over
+		-- somebody else's window, for a line that was never going to be drawn.
+		do
+			local mute = { GetParent = function() return { } end }
+			GameTooltip.__owner = mute
+			local ok, err = pcall(Family.UI.__pileCount, GameTooltip, 2880, 2880)
+			check("and a frame that answers no id at all is refused rather than crashed on",
+				ok and err == nil, tostring(ok) .. " / " .. tostring(err))
+			GameTooltip.__owner = rowTexture
+		end
+
+		-- One of a thing is not a stack here either. Row 6 holds two, row 7 holds nine; the
+		-- one that holds a single is what this needs, so the page is trimmed to it.
+		counts = { [5] = 1 }
+		check("and a row holding one is neither counted nor offered the key",
+			priceLine(2880, "Stack of") == nil and priceLine(2880, "CTRL") == nil)
+
+		IsControlKeyDown = realCtrl
+		BROWSE = realBrowse
+		GetAuctionItemInfo = realInfo
+		Family.Bags.SlotContents = realSlot
+		FauxScrollFrame_GetOffset, _G.BrowseScrollFrame = realOffset, realScroll
+		for slot = 1, 15 do _G["BrowseButton" .. slot] = realButtons[slot] end
+		GameTooltip.GetOwner = nil
+		GameTooltip.__owner = nil
+	end
+
 	-- **And what the family's whole lot of it is worth**, which is the answer the key gives where
 	-- there is no pile to multiply.
 	--
@@ -9594,7 +9820,7 @@ if professionsEveryone then
 			end
 
 			local realSearch = Family.Recipes.Search
-			Family.Recipes.Search = function(_, needle)
+			local function shortNames()
 				local members = {}
 				for index = 1, 9 do
 					members[index] = { key = "Maker" .. index .. "-FireMaw",
@@ -9604,6 +9830,7 @@ if professionsEveryone then
 				return { { name = "Nine Handed Thing", profession = 164, spellID = 990001,
 					members = members, guild = {} } }
 			end
+			Family.Recipes.Search = shortNames
 			Family.UI:Refresh()
 
 			local row1 = Family.UI.__recipeRowFor(1)
@@ -9624,14 +9851,143 @@ if professionsEveryone then
 			end
 			said = table.concat(said, " / ")
 
-			-- **The five the row could not fit, on two lines.** Asked 2026-09-12 - *perche
-			-- ripetere i primi 4?* - after the first writing listed everybody, so the four
-			-- already on the row were said twice and a reader had to work out which four.
-			check("nine crafters put five under the row rather than all nine again",
-				lines == 2 and names == 5, lines .. " line(s), " .. names .. " name(s)")
-			check("and the four the row already showed are not among them",
-				said:find("Maker1", 1, true) == nil and said:find("Maker5", 1, true) ~= nil
-					and said:find("Maker9", 1, true) ~= nil, said)
+			-- **Everybody once, and nobody twice.** Asked 2026-09-12 - *perche ripetere
+			-- i primi 4?* - after the first writing listed everybody, so the names already
+			-- on the row were said again and a reader had to work out which.
+			--
+			-- Counted off the drawn text rather than against a number written here: how
+			-- many the row holds is measured now, so a check naming a figure would be a
+			-- check on this fixture's name lengths and not on the rule.
+			local onRow = row1.note and row1.note.__text or ""
+			local seen, twice, absent = {}, nil, nil
+			for index = 1, 9 do
+				local who = "Maker" .. index
+				local above = onRow:find(who .. "|", 1, true) ~= nil
+				local below = said:find(who .. "|", 1, true) ~= nil
+
+				if above and below then twice = who end
+				if not (above or below) then absent = who end
+				seen[who] = above or below
+			end
+
+			check("every crafter is named once between the row and the lines under it",
+				twice == nil and absent == nil,
+				tostring(twice or absent) .. " in " .. onRow .. " / " .. said)
+
+			-- The half the question was actually about: what is under the row is the
+			-- remainder, so the fold and the unfold cannot disagree about where it fell.
+			check("and the lines under it start where the row itself stopped",
+				said:find("Maker9", 1, true) ~= nil
+					and onRow:find("Maker1", 1, true) ~= nil, onRow .. " / " .. said)
+
+			-- **And it is a measurement, not a count.** The same nine crafters wearing
+			-- borrowed-family names - which is what put this on the list: *Spazzacamino of
+			-- Serena 74* is as wide as two ordinary names - must fit fewer on the row.
+			-- Without this the whole change could be reverted to a constant and every
+			-- check above would still pass.
+			do
+				local narrow = 0
+				for _ in onRow:gmatch("Maker") do narrow = narrow + 1 end
+
+				Family.Recipes.Search = function()
+					local members = {}
+					for index = 1, 9 do
+						members[index] = { key = "Maker" .. index .. "-FireMaw",
+							name = "Maker" .. index, label = "Maker" .. index,
+							classFile = "MAGE", rank = 300,
+							familyName = "A Very Long Borrowed Family Name" }
+					end
+					return { { name = "Nine Handed Thing", profession = 164,
+						spellID = 990001, members = members, guild = {} } }
+				end
+				Family.UI:Refresh()
+
+				local wideRow = Family.UI.__recipeRowFor(1)
+				local wide = 0
+				for _ in (wideRow.note and wideRow.note.__text or ""):gmatch("Maker") do
+					wide = wide + 1
+				end
+
+				check("a row of longer names holds fewer of them than a row of short ones",
+					wide < narrow and wide >= 1,
+					wide .. " long against " .. narrow .. " short")
+
+				-- **And the same of the lines under it**, which is a second decision in a
+				-- second place: the row's own packing could be measured while the unfolded
+				-- lines still counted to four, and every check above would pass.
+				do
+				local function firstUnfolded()
+					for index = 2, 14 do
+						local r = Family.UI.__recipeRowFor(index)
+						local text = r.note and r.note.__text or ""
+						if r.__shown == true and text ~= "" then
+							local n = 0
+							for _ in text:gmatch("Maker") do n = n + 1 end
+							return n
+						end
+					end
+					return 0
+				end
+
+				local wideUnder = firstUnfolded()
+				Family.Recipes.Search = shortNames
+				Family.UI:Refresh()
+				local narrowUnder = firstUnfolded()
+
+				check("and an unfolded line of longer names holds fewer of them too",
+					wideUnder >= 1 and wideUnder < narrowUnder,
+					wideUnder .. " long against " .. narrowUnder .. " short")
+				end
+
+				do
+
+				-- **Nothing ever drawn wider than the column it is drawn in**, marker
+				-- included. The marker's own width depends on how many were dropped, which
+				-- depends on how many fit - so it has to be measured with them rather than
+				-- appended after the decision. Swept across name lengths rather than tuned
+				-- to one, because a check pitched at a single length is a check on this
+				-- fixture and not on the rule.
+				local overflowed = nil
+				for length = 4, 40, 3 do
+					Family.Recipes.Search = function()
+						local members = {}
+						-- **The long string goes in `name` and not in `label`.** `NamesOf`
+						-- writes `label` from `name` every time it is called, so a fixture
+						-- that sets a long label hands the panel a short one - and this
+						-- whole sweep passed for weeks of nothing, measuring names six
+						-- letters long that never came near the edge of the column.
+						for index = 1, 12 do
+							members[index] = { key = "M" .. index .. "-FireMaw",
+								name = "M" .. index .. string.rep("x", length),
+								classFile = "MAGE", rank = 300 }
+						end
+						return { { name = "Nine Handed Thing", profession = 164,
+							spellID = 990001, members = members, guild = {} } }
+					end
+					Family.UI:Refresh()
+
+					for index = 1, 14 do
+						local r = Family.UI.__recipeRowFor(index)
+						if r.__shown == true and (r.note and r.note.__text or "") ~= "" then
+							local drawn = r.note:GetStringWidth() or 0
+							if drawn > 420 and not overflowed then
+								overflowed = length .. "-letter names drew "
+									.. math.floor(drawn) .. " into 420: "
+									.. r.note.__text
+							end
+						end
+					end
+				end
+
+				check("and no line is ever drawn wider than the column, marker included",
+					overflowed == nil, tostring(overflowed))
+				end
+
+				-- Put the short-named nine back and leave the row open, because the
+				-- checks below are about what this same unfolded row draws next.
+				Family.Recipes.Search = shortNames
+				Family.UI:Refresh()
+			end
 
 			-- **And the materials come after them.** Alberto's ordering: *se l'elenco dei
 			-- crafters e accorciato, allora dobbiamo anzitutto finire l'elenco dei crafters,
@@ -13340,13 +13696,42 @@ do
 			-- Shut again by the click above, which is when saying how to open it is worth
 			-- anything and the only time it is said: a panel that goes on telling you to
 			-- do what you have just done reads as though it had not noticed.
-			check("and with a family shut its line says how to open it",
-				visibleText("click the name to open"))
+			-- **The hint shows where there is room for it, and gives way where there is
+			-- not.** Reported off a screenshot 2026-09-12: the line ended *send...*, cut
+			-- mid-word, with the hint sitting to the left of the segment that was lost.
+			-- What a reader wants off this line is the state of the transfer; how to open a
+			-- row is something clicking it also answers.
+			--
+			-- Driven by widening and narrowing the panel rather than by asserting against
+			-- one width, because a check pitched at a single number is a check on this
+			-- harness's idea of how wide a letter is.
+			-- **How to open it is offered where there is room, and gives way where there is
+			-- not.** This used to be asserted here, off the drawn line - and cannot be any
+			-- more, honestly: with this fixture the line comes to 825 pixels against the
+			-- 790 the panel has, so at *this harness's* idea of how wide a letter is the
+			-- hint never fits. That is a fact about the stub's 6.5 pixels a character and
+			-- not about the game, so asserting either way from here would be checking the
+			-- stub. The rule is checked where it is made, on `UI:Shorter`, a few hundred
+			-- lines down.
+
+			-- **And the segment a transfer is read for is never the one that goes.** The
+			-- line is a row of segments and clipping takes whatever is furthest right,
+			-- which is how *sending to them, 4 pieces left* came to be drawn as *send...*
+			-- while a hint about clicking sat intact to the left of it. What is drawn now
+			-- either says the whole thing or drops the hint to make room for it.
+			--
+			-- The decision itself is `UI:Shorter` and is checked where it is made, a few
+			-- hundred lines down: driving it from here would be asserting against this
+			-- harness's idea of how wide a letter is, which is not the game's.
+			check("and the line never carries a half-written segment",
+				not visibleText("send..."))
 			check("and closing it takes both sets of column headings with it",
 				headingsShowing() == closed,
 				headingsShowing() .. " against " .. closed)
 
 			linkRow.__scripts.OnClick(linkRow)
+			-- Kept for the `open` condition itself rather than for the fit: with the row
+			-- open the hint is never built at all, so this holds at any width.
 			check("and it stops saying that once it is open",
 				visibleText("click the name to open") == false)
 			linkRow.__scripts.OnClick(linkRow)
@@ -19515,7 +19900,7 @@ print("the tab strip's pictures")
 	-- own - a deliberately broken one, and a second Talents to reload it - and a check that
 	-- accepted whatever it found would pass the day somebody deleted a real tab.
 	local WANTED = { "summary", "talents", "contents", "professions", "character",
-		"wide", "guild", "options", "about" }
+		"wide", "guild", "extras", "options", "about" }
 
 	local icons = Family.UI.TAB_ICONS
 	local missing = {}
@@ -34513,6 +34898,52 @@ print("what a craftable thing costs to make")
 end)()
 
 print()
+print("two ways of saying it, and the shorter one where the longer will not fit")
+
+-- Reported off a screenshot 2026-09-12: a Wide Family line ending *send...*, cut mid-word, with
+-- a hint about clicking sitting intact to its left. Clipping takes whatever is furthest right,
+-- which has no relation to what is worth keeping - so the caller writes the line twice and the
+-- measurement picks.
+;(function()
+	-- Six and a half pixels a character, which is what this harness's font strings answer,
+	-- reached the same way the panel reaches it rather than assumed here.
+	local box = CreateFrame("Frame")
+	local text = box:CreateFontString()
+	local ruler = Family.UI:WidthRuler(text)
+
+	check("a measuring stick can be made from a font string",
+		type(ruler) == "function" and ruler("abcd") > 0, tostring(ruler and ruler("abcd")))
+
+	-- **And making one does not change what is on the screen.** It writes into the font
+	-- string to measure it, so a stick that forgot to put the text back would blank whatever
+	-- line it was asked about.
+	text:SetText("standing")
+	ruler("something else entirely")
+	check("and measuring puts back what the font string was saying",
+		text:GetText() == "standing", tostring(text:GetText()))
+
+	local long = "you share 30 members   |||   click the name to open   |||   sending, 4 left"
+	local short = "you share 30 members   |||   sending, 4 left"
+
+	check("the long way is used where there is room for it",
+		Family.UI:Shorter(long, short, ruler(long) + 1, ruler) == long)
+	check("and the short way where there is not",
+		Family.UI:Shorter(long, short, ruler(long) - 1, ruler) == short)
+	-- Exactly filling the room is fitting, not overflowing.
+	check("and a line that exactly fills the room is not shortened",
+		Family.UI:Shorter(long, short, ruler(long), ruler) == long)
+
+	-- **Unmeasurable is not short.** A client that will not answer, or a panel whose width
+	-- has not been worked out yet, must not cost every line its last segment - that would be
+	-- a guess dressed as a measurement, and it would fire on every draw rather than once.
+	check("with no ruler at all the long way is used",
+		Family.UI:Shorter(long, short, 10, nil) == long)
+	check("and with no room worked out yet, the same",
+		Family.UI:Shorter(long, short, 0, ruler) == long
+			and Family.UI:Shorter(long, short, nil, ruler) == long)
+end)()
+
+print()
 print("what came out of the mailbox")
 
 -- **Asked for 2026-09-12.** *Quando un personaggio legge e scarica i messaggi dalla casella
@@ -34548,7 +34979,7 @@ print("what came out of the mailbox")
 	INBOX[2].items = {}
 	fire("MAIL_INBOX_UPDATE")
 	check("something leaving the inbox with nothing asked for is not reported as received",
-		saidSince(before):find("received", 1, true) == nil, saidSince(before))
+		saidSince(before):find("You receive", 1, true) == nil, saidSince(before))
 
 	-- And the comparison has kept up, so the thing that left is not blamed on the next take.
 	--
@@ -34561,8 +34992,13 @@ print("what came out of the mailbox")
 	fire("MAIL_INBOX_UPDATE")
 	local said = saidSince(before)
 	check("while a stack part taken is reported at what actually left, not at what was there",
-		said:find("received 8", 1, true) ~= nil and said:find("received 20", 1, true) == nil,
-		said)
+		said:find("x8", 1, true) ~= nil and said:find("x20", 1, true) == nil, said)
+
+	-- **And it names the item with the link the letter was holding**, which is the whole of
+	-- what a reader does with one of these lines: click it, hover it, shift-click it into
+	-- chat. A name is a string and cannot be any of those.
+	check("and the item is named by its link rather than by a string",
+		said:find("|Hitem:2589|h", 1, true) ~= nil, said)
 
 	before = #DEFAULT_CHAT_FRAME.messages
 	TakeInboxItem(1, 1)
@@ -34570,7 +35006,7 @@ print("what came out of the mailbox")
 	fire("MAIL_INBOX_UPDATE")
 	said = saidSince(before)
 	check("and the rest of it when the rest of it goes",
-		said:find("received 12", 1, true) ~= nil, said)
+		said:find("x12", 1, true) ~= nil, said)
 
 	-- **The take that the server refused.** Asked for and nothing moved, which is what a full
 	-- bag looks like from in here - and reporting it would be a line about an item the player
@@ -34579,23 +35015,29 @@ print("what came out of the mailbox")
 	TakeInboxItem(2, 1)
 	fire("MAIL_INBOX_UPDATE")
 	check("and a take the server refused says nothing at all",
-		saidSince(before):find("received", 1, true) == nil, saidSince(before))
+		saidSince(before):find("You receive", 1, true) == nil, saidSince(before))
 
 	before = #DEFAULT_CHAT_FRAME.messages
 	TakeInboxMoney(1)
 	INBOX[1].money = 0
 	fire("MAIL_INBOX_UPDATE")
 	check("money collected is reported as money rather than as an item",
-		saidSince(before):find("collected", 1, true) ~= nil, saidSince(before))
+		saidSince(before):find("You collected", 1, true) ~= nil, saidSince(before))
 
 	-- The figure somebody actually wanted: a mailbox of auction returns is forty lines and one
 	-- number.
 	before = #DEFAULT_CHAT_FRAME.messages
 	fire("MAIL_CLOSED")
 	said = saidSince(before)
-	check("and closing the mailbox totals the visit",
-		said:find("From the mailbox", 1, true) ~= nil and said:find("20 item", 1, true) ~= nil,
-		said)
+	local bare = (said:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
+	check("and closing the mailbox totals what the visit brought in",
+		bare:find("Total collected", 1, true) ~= nil and bare:find("1g 20s", 1, true) ~= nil,
+		bare)
+	-- The second line asked for, which is a different question from the first: what came in,
+	-- and what the character is worth now that it has. `GetMoney` answers for whoever is
+	-- logged in and for nobody else.
+	check("and says what this character is worth afterwards",
+		said:find("Now you own", 1, true) ~= nil, said)
 
 	-- **Nothing taken, nothing said.** A line reading *0 items, 0 copper* on every mailbox
 	-- somebody opens to check is a line they turn the feature off over.
@@ -34603,7 +35045,56 @@ print("what came out of the mailbox")
 	before = #DEFAULT_CHAT_FRAME.messages
 	fire("MAIL_CLOSED")
 	check("while a mailbox nobody took anything out of says nothing",
-		saidSince(before):find("From the mailbox", 1, true) == nil, saidSince(before))
+		saidSince(before):find("Total collected", 1, true) == nil, saidSince(before))
+
+	-- **Money the player did not take is not money the player took.** A letter can expire, or
+	-- be returned, in the same breath as another is emptied - and the inbox's total falls by
+	-- both. Capped at what the letters actually clicked were holding, for exactly the reason
+	-- the attachments above are: the letter says what it has and the inbox says what went.
+	INBOX = {
+		{ sender = "Auction House", subject = "Sold", money = 3000, cod = 0, days = 25,
+		  items = {} },
+		{ sender = "Nobody", subject = "Expiring", money = 5000, cod = 0, days = 0,
+		  items = {} },
+	}
+	fire("MAIL_SHOW")
+	before = #DEFAULT_CHAT_FRAME.messages
+	TakeInboxMoney(1)
+	INBOX = {}
+	fire("MAIL_INBOX_UPDATE")
+	said = (saidSince(before):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
+	check("money out of a letter nobody opened is not counted as money collected",
+		said:find("30s", 1, true) ~= nil and said:find("80s", 1, true) == nil, said)
+
+
+	-- **The whole letter at once**, which is the button people actually press - Postal's *open
+	-- all*, and the client's own. It is also the only route where *these attachments belong to
+	-- that letter* has to be worked out rather than handed over one argument at a time, so a
+	-- version tested only through `TakeInboxItem` is a version tested on the road nobody takes.
+	INBOX = {
+		{ sender = "Auction House", subject = "Sold", money = 3000, cod = 0, days = 25,
+		  items = { { 2589, 3 }, { 2592, 1 } } },
+	}
+	fire("MAIL_SHOW")
+	before = #DEFAULT_CHAT_FRAME.messages
+	AutoLootMailItem(1)
+	INBOX = {}
+	fire("MAIL_INBOX_UPDATE")
+	said = saidSince(before)
+	check("taking a whole letter names every attachment in it, in the order they sit",
+		said:find("|Hitem:2589|h", 1, true) ~= nil
+			and said:find("|Hitem:2592|h", 1, true) ~= nil
+			and said:find("|Hitem:2589|h", 1, true) < said:find("|Hitem:2592|h", 1, true),
+		said)
+	check("and says what that same letter was holding in money",
+		said:find("You collected", 1, true) ~= nil, said)
+	-- Every attachment of the letter, and not the first `GetInboxHeaderInfo` says there are:
+	-- a letter of ten can carry one past the tenth slot (L-044), and the count is how many
+	-- there are rather than where they are.
+	check("and it is one line an attachment rather than one line a letter",
+		select(2, said:gsub("You receive", "")) == 2,
+		tostring(select(2, said:gsub("You receive", ""))))
+
 
 	-- And off is off.
 	Family.Extras:Set("mailReport", false)
@@ -34617,9 +35108,14 @@ print("what came out of the mailbox")
 	INBOX[1].items = {}
 	fire("MAIL_INBOX_UPDATE")
 	fire("MAIL_CLOSED")
+	-- Both halves by the words they are actually said in. Written against the wording this
+	-- file used before the lines were rewritten, the item half matched nothing at all and the
+	-- mutation that switches the guard off walked straight through it - a stale needle passes
+	-- for the same reason an absent check does.
 	check("with the extra off the mailbox is emptied in silence",
-		saidSince(before):find("received", 1, true) == nil
-			and saidSince(before):find("From the mailbox", 1, true) == nil,
+		saidSince(before):find("You receive", 1, true) == nil
+			and saidSince(before):find("You collected", 1, true) == nil
+			and saidSince(before):find("Total collected", 1, true) == nil,
 		saidSince(before))
 
 	INBOX = heldInbox

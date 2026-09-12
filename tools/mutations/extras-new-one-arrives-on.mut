@@ -2,7 +2,9 @@ name: a new extra arrives switched on rather than off
 file: addons/Family/Extras.lua
 --- old
 	craftingCost = false,
+	houseWalk = true,
 	mailReport = false,
 --- new
 	craftingCost = true,
+	houseWalk = true,
 	mailReport = true,

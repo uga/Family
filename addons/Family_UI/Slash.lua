@@ -992,6 +992,25 @@ local function hoverProbe(tooltip)
 		return tonumber((Family:TryCall(frame.GetID, frame)))
 	end
 
+	-- A link printed into the chat frame has to have its pipes doubled or the frame eats it
+	-- and prints the item instead of the string, which is the one thing a probe must not do.
+	local function safe(value)
+		if type(value) ~= "string" then return tostring(value) end
+		return (value:gsub("|", "||"))
+	end
+
+	-- **Every return, numbered.** Which position of `GetMerchantItemInfo` carries the stack
+	-- size and which position of `GetLootSlotInfo` carries the quantity is precisely what this
+	-- probe exists to read, so picking one out here would be answering the question with the
+	-- guess it was sent to replace.
+	local function allOf(...)
+		local out, n = {}, select("#", ...)
+		for index = 1, n do
+			out[#out + 1] = index .. "=" .. safe((select(index, ...)))
+		end
+		return n > 0 and table.concat(out, " ") or "nothing"
+	end
+
 	local parent = owner.GetParent and (Family:TryCall(owner.GetParent, owner)) or nil
 
 	Family:Print(L["  frame %s, id %s"], named(owner), tostring(idOf(owner)))
@@ -1013,6 +1032,16 @@ local function hoverProbe(tooltip)
 				type(row) == "string" and (row:gsub("|", "||")) or tostring(row),
 				tostring(count),
 				type(sold) == "string" and (sold:gsub("|", "||")) or tostring(sold))
+
+			-- The other two places a pile sits in front of you, which backlog 62 asks about
+			-- alongside the auction row and which no reading has covered yet. Every return
+			-- is printed rather than one picked out: which position carries the quantity is
+			-- exactly the thing that must be read here rather than recalled.
+			Family:Print(L["  merchant item info: %s"],
+				allOf(Family:TryCall(GetMerchantItemInfo, id)))
+			Family:Print(L["  loot slot %d: link %s, info %s"], id,
+				safe(Family:TryCall(GetLootSlotLink, id)),
+				allOf(Family:TryCall(GetLootSlotInfo, id)))
 		end
 	end
 end
