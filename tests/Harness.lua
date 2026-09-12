@@ -18347,7 +18347,57 @@ print("what is in the post")
 			tostring(moneyed) .. " with money")
 	end
 
+	-- **Hovering a letter says it in full.** Reported from play: the subject is cut off at the
+	-- member column, and *it would be nice to add a mouseover tooltip including key info
+	-- (sender, title)*. Asked of a line the panel drew, by hovering it, not of the letter table.
+	;(function()
+		local letterLine = nil
+		for _, f in ipairs(frames) do
+			if f.__shown == true and f.__letter and f.__scripts and f.__scripts.OnEnter then
+				letterLine = letterLine or f
+			end
+		end
+		check("a letter line is there to hover", letterLine ~= nil)
+		if not letterLine then return end
+
+		wipe(GameTooltip.__lines)
+		GameTooltip.__shownAs = nil
+		letterLine.__scripts.OnEnter(letterLine)
+
+		local said = {}
+		for _, line in ipairs(GameTooltip.__lines) do
+			said[#said + 1] = tostring(line[1]) .. " | " .. tostring(line[2])
+		end
+		said = table.concat(said, " / ")
+
+		-- Against this letter's own sender and on the From line itself: the fixture's first
+		-- letter is not the one a check written for "Auction House" assumed it would be.
+		check("and hovering it names who sent it, in full",
+			said:find("From | " .. tostring(letterLine.__letter.sender), 1, true) ~= nil,
+			said)
+		check("under the subject, whole, as its title",
+			said:find("^" .. tostring(letterLine.__letter.subject) .. " | ") ~= nil, said)
+		check("with when it expires and what money is in it",
+			said:find("Expires in", 1, true) ~= nil and said:find("Money", 1, true) ~= nil,
+			said)
+
+		-- **And a member line that was a letter a moment ago is a member again.** The lines
+		-- come from one pool; one that kept its letter would describe post on a character's
+		-- own row.
+		if letterLine.__scripts.OnLeave then letterLine.__scripts.OnLeave(letterLine) end
+	end)()
+
 	armed[1].mailHit.__scripts.OnClick(armed[1].mailHit)
+
+	-- Folded again: no line still on screen carries a letter.
+	do
+		local carrying = 0
+		for _, f in ipairs(frames) do
+			if f.cells and f.__shown == true and f.__letter then carrying = carrying + 1 end
+		end
+		check("and folded, no line on screen is still carrying a letter", carrying == 0,
+			tostring(carrying))
+	end
 
 	local shut, leftBehind = 0, 0
 	for _, f in ipairs(frames) do

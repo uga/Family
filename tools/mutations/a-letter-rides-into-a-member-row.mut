@@ -1,0 +1,7 @@
+name: a pooled line keeps the letter it last showed when it is handed out again
+file: addons/Family_UI/Summary.lua
+--- old
+			row.opens = nil
+			row.__letter = nil
+--- new
+			row.opens = nil

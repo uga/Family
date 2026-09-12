@@ -2241,6 +2241,34 @@ local function makeRow(parent)
 		-- returning its own list, the second one went silent the moment the first applied -
 		-- and every check on it stayed green, because they were driving the Overview, where
 		-- it no longer is. One list, appended to by whatever applies, returned once.
+		-- **A letter, in full.** Reported from play 2026-09-12: the letter line cuts its
+		-- subject off at the member column - *Milionario Mor...* - which is no worse than any
+		-- clipped cell, and *it would be nice to add a mouseover tooltip including key info
+		-- (sender, title)*. Asked first, before the member's own fields: letter lines come out
+		-- of the same pool as member rows, and a line that was a member a moment ago can still
+		-- be carrying that member's keys.
+		local letter = self.__letter
+		if letter then
+			local said = {}
+			local subject = letter.subject ~= "" and letter.subject or nil
+
+			said[#said + 1] = { subject or tostring(letter.sender or "?") }
+			said[#said + 1] = { L["From"], tostring(letter.sender or "?"),
+				0.4, 0.73, 1, 1, 1, 1 }
+
+			local left = letter.expiresBy and (duration(letter.expiresBy - time()) or L["soon"])
+			if left then
+				said[#said + 1] = { L["Expires in"], left, 0.4, 0.73, 1, 1, 1, 1 }
+			end
+
+			local money = letterMoney(letter)
+			if money then
+				said[#said + 1] = { L["Money"], money, 0.4, 0.73, 1, 1, 1, 1 }
+			end
+
+			return nil, nil, said
+		end
+
 		local rowKey = self.__places or self.__riding or self.__stock or self.__skills
 		if not rowKey then return nil end
 
@@ -3163,6 +3191,7 @@ local function build(frame)
 				rows[used] = row
 			end
 			row.opens = nil
+			row.__letter = nil
 			-- Wiped here rather than by each caller. A row that is shown but not written
 			-- keeps whatever it last said, which is how a blank spacer came to be drawn as
 			-- a second "total" line - with the money and played figures of the column set
@@ -3367,6 +3396,7 @@ local function build(frame)
 					line.borrowed = row.borrowed
 
 					setCell(line, 1, "      " .. describeLetter(letter))
+					line.__letter = letter
 
 					-- Each letter's own expiry, under the column that says the soonest.
 					for index, column in ipairs(columns) do

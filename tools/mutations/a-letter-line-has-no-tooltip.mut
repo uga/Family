@@ -1,0 +1,6 @@
+name: a letter line cut off at the member column says nothing more when hovered
+file: addons/Family_UI/Summary.lua
+--- old
+					line.__letter = letter
+--- new
+					local _ = letter

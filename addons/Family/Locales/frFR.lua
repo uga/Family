@@ -573,6 +573,7 @@ Family.locales.frFR = {
 	-- Wide Family
 	["Mail"] = "Courrier",  -- 10
 	["Money"] = "Argent",  -- 22
+	["From"] = "De",
 	["Mount"] = "Monture",
 	["why a recipe is in the wrong language: /family recipes"] = "pourquoi une recette est dans la mauvaise langue : /family recipes",
 	["|cffffd700Recipes|r held for %s"] = "|cffffd700Recettes|r pour %s",

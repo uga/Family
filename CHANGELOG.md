@@ -83,6 +83,9 @@ picks itself up where it left off.
 
 ### Extras
 
+- **Hover a letter under a character to read it in full**: the whole subject, who sent it, when it
+  expires and the money in it.
+
 - **Wands, rods and oils an enchanter makes are shown as the thing itself** on the Professions
   panel, with who holds one and what it takes to make.
 
