@@ -1188,8 +1188,23 @@ Two more readings came with the second run, and both correct earlier notes here:
 
   The two answers **diverge in the third state and only there**: an ordinary query would be
   accepted while the second says no. So the second answer tracks the whole-house route, and the
-  quarter of an hour is the **client's**, reported by that addon rather than invented by it -
-  the opposite of what the struck-through line above concluded from the first answer alone.
+  client has an interval of its own - which the struck-through line above denied.
+
+  **There are two gates, not one, and a fourth state is what said so.** Read a few minutes later,
+  with that addon printing a *negative* countdown and still refusing: the client answered `true`
+  and `true`. So the client's interval had passed and the refusal at that moment was the addon's,
+  on arithmetic of its own that had gone wrong.
+
+  | standing at an auctioneer | first | second | who is refusing |
+  |---|---|---|---|
+  | nothing running | `true` | `true` | nobody |
+  | a whole-house read arriving | `false` | `false` | the client |
+  | that addon counting down 48 seconds | `true` | `false` | the client |
+  | that addon counting down **-2 minutes** | `true` | `true` | that addon |
+
+  Both of the single-owner conclusions written here before this - *the interval is that addon's
+  own*, then *the interval is the client's, reported by that addon* - were drawn from states
+  where the two gates agreed, and a state where two candidates agree names neither (L-085).
 
   What the second return is *called* is not established here and is not guessed at; what is
   measured is that it says no exactly while a whole-house read is not available. Family sends no

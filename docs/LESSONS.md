@@ -3101,3 +3101,35 @@ become redundant — it becomes the thing that proves the fix still holds.** Del
 mechanism is not a reason to delete the check; it is a reason to re-aim it at the new one. Ask,
 of every guard removed alongside a rewrite, what would now notice if the rewrite's premise
 stopped being true.
+
+## L-085 — a state where two things agree names neither of them
+
+Another addon holds itself back for about a quarter of an hour between whole-house auction
+scans, and the question was whose limit that is: the client's, or that addon's own policy.
+
+It was answered twice, confidently, and both answers were wrong.
+
+The first reading had the client saying a query would be accepted while that addon counted
+down, so the interval was written down as that addon's own. The second, once the probe stopped
+truncating `CanSendAuctionQuery` to one return, had the second answer going `false` during the
+countdown — so it was written down as the client's, reported rather than invented, and the
+first note was struck through.
+
+The reading that settled it came from a state nobody planned: that addon printed a **negative**
+countdown and went on refusing, and the client answered `true` to both. There are **two** gates.
+The client has an interval; that addon has another on top of it, and at that moment the second
+one was refusing on arithmetic that had gone wrong.
+
+Both wrong answers were drawn from states in which the two gates **agreed**. While they agree,
+no observation of the outcome can say which one produced it — and the confident sentence written
+from such a state is not a measurement, it is a guess wearing one's clothes.
+
+**What now catches it.** Nothing automatic: the harness has one gate and no other addons. What
+catches it is a question. Before naming what caused a refusal, ask *what else could be refusing,
+and have I seen a state where they disagree?* If the answer is no, the reading supports **that
+something refused** and nothing more, and it gets written that way.
+
+**The general rule: look for the state where the candidates disagree, and until you have one,
+name the effect rather than the cause.** It is the same fault as L-082 seen from the other side -
+there, two things varied and the conclusion named one; here, two things agreed and the conclusion
+picked one.
