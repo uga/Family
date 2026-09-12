@@ -1024,6 +1024,8 @@ local WHY = {
 	seenNothing = L["press Search on the auction house first - the read replays the client's own query rather than composing one"],
 	pageUnknown = L["press Next on the auction house once - two queries differing in one place are what says which argument is the page"],
 	newerHouse = L["this build has the newer auction house, which has no pages to walk"],
+	olderHouse = L["this build has the older auction house, which is read a page at a time"],
+	emptyList = L["the client answered no rows at all"],
 }
 
 -- **How long, in words somebody can act on.**
@@ -1047,16 +1049,60 @@ end
 -- translation gate reads and a sentence written anywhere else would be an English one wherever
 -- it was read (§2.1).
 function UI:StopHouseRead()
+	if Family.Auctions:StopReplicateRead("asked") then return true end
 	if Family.Auctions:StopWalk("asked") then return true end
 	Family:Print(L["nothing is being read"])
 	return false
 end
 
+-- **The newer house, read whole.** Not a walk: it answers its entire list to one call, so there
+-- are no pages and nothing to pace towards the server. What there is instead is forty-three
+-- thousand rows to go through without the client stopping answering its keyboard, which is why
+-- this reports its way along rather than finishing in a frame.
+local function startReplicateRead()
+	local shown = 0
+
+	local ok, why = Family.Auctions:StartReplicateRead(function(what, state, reason)
+		if what == "some" then
+			-- Every so often rather than every slice: eighty-six lines is not progress.
+			if state.done - shown >= 5000 or state.done >= state.rows then
+				shown = state.done
+				Family:Print(L["  %d of %d row(s) read, %d price(s) taken"],
+					state.done, state.rows or 0, state.kept or 0)
+			end
+			return
+		end
+
+		if what == "finished" then
+			Family:Print(L["read the whole house: %d row(s) in %s, %d price(s) taken, %d known here"],
+				state.done or 0,
+				spanOf(Family.Auctions:WalkSeconds(state) or 0),
+				state.kept or 0, Family.Auctions:PriceCount())
+			if UI.HouseReadChanged then UI:HouseReadChanged() end
+			return
+		end
+
+		Family:Print(L["stopped after %d page(s) in %s: %s"], state.done or 0,
+			spanOf(Family.Auctions:WalkSeconds(state) or 0),
+			WHY[reason] or tostring(reason))
+		if UI.HouseReadChanged then UI:HouseReadChanged() end
+	end)
+
+	if not ok then Family:Print(L["  refused: %s"], WHY[why] or tostring(why)) end
+	if UI.HouseReadChanged then UI:HouseReadChanged() end
+	return ok, why
+end
+
 function UI:StartHouseRead(everything)
-	if Family.Auctions:Walking() then
+	if Family.Auctions:Walking() or Family.Auctions:ReplicateReading() then
 		Family:Print(L["%s - /family ah scan stop ends it"], WHY.running)
 		return false, "running"
 	end
+
+	-- **Which house this is decides how it is read**, by the call being there and never by a
+	-- build number (§2.3). The newer one hands its whole list over at once; the older one is
+	-- walked a page at a time because a page is what it offers.
+	if Family.Auctions:CanReplicate() then return startReplicateRead() end
 
 	local ok, why = Family.Auctions:StartWalk(function(what, state, reason)
 		if what == "page" then
@@ -1251,6 +1297,11 @@ add("ah", L["what this client offers on the auction house"], function(argument)
 	-- Two faults look identical from the player's chair - a build without it, and one where it
 	-- was drawn somewhere nothing can be seen - and this line tells them apart: absent says the
 	-- first, a size and a corner says the second.
+	-- Which window the newer house draws, which nothing here had ever asked. The button hangs
+	-- off it, so a name that is not there and a name spelled wrong have to stop reading alike.
+	local _, found = UI.__modernAuctionWindow and UI.__modernAuctionWindow()
+	Family:Print("    %-26s |cff888888%s|r", "AuctionHouseFrame", tostring(found))
+
 	local ours = _G.FamilyReadHouseButton
 	if type(ours) == "table" then
 		-- Composed rather than written into the format, because the format is a sentence

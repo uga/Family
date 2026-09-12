@@ -732,6 +732,116 @@ function Auctions:ReplicateMatchOwned(limit)
 	return out
 end
 
+--------------------------------------------------------------------------------------------
+-- Reading the newer house whole
+--
+-- Entry 55 slice 3. The old house is walked a page at a time because a page is what it offers;
+-- this one answers its entire list to a single call, and the whole of Mists arrived in one event:
+-- **43,002 rows**, then 43,300, then 42,990 across an evening.
+--
+-- **Every position below was measured, none was guessed.** The client describes the player's own
+-- auctions a second way, through `GetOwnedAuctionInfo`, which answers named fields - so a row
+-- carrying all of an auction's values says where each one lives (`ReplicateMatchOwned`, and
+-- DATASOURCES has the readings). On Mists 2026-09-12 that came out as quantity at 3, the price
+-- at 10, the item at 17 - and the price is **for the whole lot**: an auction the named route
+-- calls twenty at 44,993 apiece arrives here as 899,860.
+--
+-- **Read in pieces.** Forty-three thousand rows in one frame is a client that has stopped
+-- answering its keyboard. The list is already in the client's hands by then, so this pacing costs
+-- the server nothing - it is not the page walk, where every step is a query.
+--------------------------------------------------------------------------------------------
+
+local REPLICATE_QUANTITY, REPLICATE_LOT, REPLICATE_ITEM = 3, 10, 17
+
+local ROWS_PER_TICK = 500
+local READ_QUIET = 30
+
+local reading
+
+function Auctions:ReplicateReading()
+	return reading
+end
+
+function Auctions:StopReplicateRead(why)
+	if not reading then return false end
+	local stopping, told = reading, reading.told
+	reading = nil
+	if told then Family:TryCall(told, "stopped", stopping, why) end
+	return true
+end
+
+-- One slice of the list, and then the next, until there is none left.
+local function readSome()
+	if not reading then return end
+
+	local prices = Auctions:Prices()
+	if not prices then return Auctions:StopReplicateRead("query") end
+
+	local now = time()
+	local last = math.min(reading.done + ROWS_PER_TICK, reading.rows)
+
+	while reading.done < last do
+		local got = packOf(Family:TryCall(C_AuctionHouse.GetReplicateItemInfo, reading.done))
+
+		if got.n > 0 then
+			reading.kept = reading.kept + Auctions:KeepPrice(prices,
+				got[REPLICATE_ITEM], got[REPLICATE_LOT], got[REPLICATE_QUANTITY], now)
+		end
+
+		reading.done = reading.done + 1
+	end
+
+	if reading.told then Family:TryCall(reading.told, "some", reading) end
+
+	if reading.done >= reading.rows then
+		local finished, told = reading, reading.told
+		reading = nil
+		if told then Family:TryCall(told, "finished", finished) end
+		return
+	end
+
+	Family:After(0.05, "auctions.replicate.read", readSome)
+end
+
+-- **The list arrived**, which is the only thing that starts the reading.
+local function replicateAnswered()
+	if not reading or reading.rows then return end
+
+	reading.rows = Auctions:ReplicateCount() or 0
+
+	-- Nought rows is an answer, and it is not the same as no answer: an empty house, or a build
+	-- that hands the list over some other way. Either is worth saying rather than looking like
+	-- a read that never started.
+	if reading.rows < 1 then return Auctions:StopReplicateRead("emptyList") end
+
+	readSome()
+end
+
+function Auctions:StartReplicateRead(told)
+	if reading then return false, "running" end
+	if not self:CanReplicate() then return false, "olderHouse" end
+
+	-- Asked **once**, by somebody who said so: this is the same call the probe sends, and the
+	-- one thing in this addon that a server may ration for the rest of an evening.
+	reading = { done = 0, kept = 0, told = told, started = time(),
+		clock = tonumber((Family:TryCall(GetTime))) }
+
+	local ok, err = self:AskReplicate()
+	if not ok then
+		reading = nil
+		return false, err == "absent" and "olderHouse" or "query"
+	end
+
+	-- **A list that never arrives ends it rather than leaving it looking alive.** Measured on
+	-- Mists 2026-09-12: two calls answered forty-three thousand rows apiece and a third,
+	-- minutes later, answered nothing - so this is not a rare case, it is the third try.
+	Family:After(READ_QUIET, "auctions.replicate.quiet", function()
+		if reading and not reading.rows then Auctions:StopReplicateRead("quiet") end
+	end)
+
+	return true, nil
+end
+
 -- **Sent once, and only by somebody asking for it in as many words.**
 --
 -- `pcall` rather than `TryCall`, because here an error is the measurement and `TryCall` throws
@@ -784,6 +894,44 @@ function Auctions:ReadModernPrices()
 end
 
 -- One page of whatever the player last searched for.
+-- **The visit rule, in one place, because two readers obeying it separately is two readers
+-- drifting apart.**
+--
+-- The freshest wins, and among the freshest the lowest: the first sighting of an item in a visit
+-- replaces whatever was there however old, and every later sighting keeps the lower. Written out
+-- at length where `seenThisVisit` is declared.
+--
+-- **The price handed in is for the whole lot** and the price of one is a division Family does -
+-- true of the old house (measured on Era 2026-09-10: three of a thing at 2g99s61c, a minimum bid
+-- that does not divide by three) and true of the newer one (measured on Mists 2026-09-12: an
+-- auction the named route calls twenty at 44,993 apiece arrives here as 899,860).
+--
+-- Rounded down rather than refused. Seven of something at five gold is 71.43 copper each, and the
+-- first writing recorded that as nothing at all. Losing a fraction of a copper is arithmetic;
+-- losing the auction is losing the reading. A lot so large that one comes to nought is still
+-- refused, because nought is not a price anybody paid.
+function Auctions:KeepPrice(prices, itemID, lot, quantity, now)
+	itemID, lot, quantity = tonumber(itemID), tonumber(lot), tonumber(quantity)
+	if not (itemID and lot and quantity) then return 0 end
+	if lot <= 0 or quantity <= 0 then return 0 end
+
+	local each = math.floor(lot / quantity)
+	if each <= 0 then return 0 end
+
+	local held = prices[itemID]
+
+	if not seenThisVisit[itemID] or type(held) ~= "table" then
+		seenThisVisit[itemID] = true
+		prices[itemID] = { p = each, at = now }
+		return 1
+	elseif each < held.p then
+		held.p, held.at = each, now
+		return 1
+	end
+
+	return 0
+end
+
 function Auctions:ReadPrices()
 	local where = market()
 	if not where then return 0 end
@@ -821,20 +969,7 @@ function Auctions:ReadPrices()
 		-- was recorded as nothing. Losing less than a copper to a division is arithmetic;
 		-- losing the auction is losing the reading. A stack so large that one of them comes to
 		-- nought is still refused, because nought is not a price anybody paid.
-		if itemID and buyout and buyout > 0 and quantity and quantity > 0
-			and math.floor(buyout / quantity) > 0 then
-			local each = math.floor(buyout / quantity)
-			local held = prices[itemID]
-
-			if not seenThisVisit[itemID] or type(held) ~= "table" then
-				seenThisVisit[itemID] = true
-				prices[itemID] = { p = each, at = now }
-				kept = kept + 1
-			elseif each < held.p then
-				held.p, held.at = each, now
-				kept = kept + 1
-			end
-		end
+		kept = kept + Auctions:KeepPrice(prices, itemID, buyout, quantity, now)
 	end
 
 	if kept > 0 then
@@ -1392,7 +1527,9 @@ Family:OnDatabaseReady("auctions", function()
 	Family:RegisterEvent("AUCTION_HOUSE_CLOSED", "auctions", function()
 		Auctions:ForgetVisit()
 		-- Walking away from the auctioneer ends the read. Everything already taken is kept:
-		-- a half-read house is a lot of prices, not a failure.
+		-- a half-read house is a lot of prices, not a failure. Both houses, because a client
+		-- has one of them and the call for the other is a shell that answers nought.
+		Auctions:StopReplicateRead("closed")
 		Auctions:StopWalk("closed")
 	end)
 
@@ -1410,6 +1547,10 @@ Family:OnDatabaseReady("auctions", function()
 	-- does not have and leaves nothing behind, so this costs Era nothing.
 	Family:RegisterEvent("REPLICATE_ITEM_LIST_UPDATE", "auctions.replicate", function()
 		replicateHeard = replicateHeard + 1
+
+		-- A read waiting on it starts here, before the probe is told: the reading is the
+		-- feature and the probe is what measured it.
+		replicateAnswered()
 
 		if not tellNextReplicate then return end
 		local told = tellNextReplicate

@@ -31974,6 +31974,102 @@ print("a family bigger than a tooltip")
 end)()
 
 print()
+print("reading the newer house whole")
+;(function()
+	-- Entry 55 slice 3. The old house is walked a page at a time; this one answers its whole
+	-- list to a single call - 43,002 rows in one event on Mists 2026-09-12 - and every position
+	-- below was measured from the client's own named description of the player's own auctions,
+	-- never read off the shape of the numbers.
+	local realHouse = _G.C_AuctionHouse
+	local rows, asked = 1200, 0
+
+	_G.C_AuctionHouse = {
+		ReplicateItems = function() asked = asked + 1 end,
+		GetNumReplicateItems = function() return asked > 0 and rows or 0 end,
+		IsThrottledMessageSystemReady = function() return true end,
+		GetReplicateItemInfo = function(index)
+			-- The one auction whose figures were measured: twenty of item 3858, which the
+			-- client's named route calls 44,993 apiece and this one calls 899,860 the lot.
+			if index == 7 then
+				return "Truesilver Bar", "t", 20, 1, true, 1, "L", 0, 0, 899860,
+					0, nil, nil, nil, nil, 0, 3858, true
+			end
+			return "Filler", "t", 1, 1, true, 1, "L", 0, 0, 5,
+				0, nil, nil, nil, nil, 0, 9000 + index, true
+		end,
+	}
+
+	Family.Auctions:ForgetVisit()
+	FamilyDB.auctionPrices = nil
+
+	local at = #DEFAULT_CHAT_FRAME.messages
+	SlashCmdList["FAMILY"]("ah scan go")
+
+	check("a build with the newer house reads its whole list instead of walking pages",
+		asked == 1 and Family.Auctions:ReplicateReading() ~= nil
+			and Family.Auctions:Walking() == nil, tostring(asked))
+
+	-- **Nothing is read until the list arrives.** The call is the asking; the event is the
+	-- answer, and reading before it would be reading whatever the last visit left behind.
+	check("and nothing is read before the list arrives",
+		(Family.Auctions:ReplicateReading() or {}).rows == nil,
+		tostring((Family.Auctions:ReplicateReading() or {}).rows))
+
+	fire("REPLICATE_ITEM_LIST_UPDATE")
+
+	-- **In slices**, because forty-three thousand rows in one frame is a client that has
+	-- stopped answering its keyboard. The list is already in the client's hands, so the pacing
+	-- costs the server nothing - this is not the page walk.
+	local afterOne = (Family.Auctions:ReplicateReading() or {}).done
+	check("the list is read in slices rather than in one frame",
+		afterOne and afterOne > 0 and afterOne < rows, tostring(afterOne))
+
+	advance(1)
+
+	check("and all of it is read",
+		Family.Auctions:ReplicateReading() == nil, "still reading")
+
+	-- **The price is for the whole lot and Family divides.** Filing 899,860 under item 3858
+	-- would say a Truesilver Bar costs twenty times what it does, and it would look right.
+	local each = Family.Auctions:PriceOf(3858)
+	check("a lot of twenty is filed at the price of one",
+		each == 44993, tostring(each))
+
+	check("and the rest of the list was taken too",
+		(Family.Auctions:PriceCount() or 0) > 100,
+		tostring(Family.Auctions:PriceCount()))
+
+	local said = table.concat(DEFAULT_CHAT_FRAME.messages, "\n", at + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("and it says so in rows, not in pages",
+		said:find("row(s) read", 1, true) ~= nil
+			and said:find("read the whole house", 1, true) ~= nil,
+		said == "" and "nothing said" or "said")
+
+	-- **Walking away ends it**, and everything already taken is kept.
+	Family.Auctions:ForgetVisit()
+	SlashCmdList["FAMILY"]("ah scan go")
+	fire("REPLICATE_ITEM_LIST_UPDATE")
+	fire("AUCTION_HOUSE_CLOSED")
+	check("closing the auction house ends a read of the newer one",
+		Family.Auctions:ReplicateReading() == nil)
+
+	-- **And a list that never arrives ends it rather than leaving it looking alive.** Measured
+	-- on Mists: two calls answered forty-three thousand rows apiece and a third, minutes later,
+	-- answered nothing at all.
+	Family.Auctions:ForgetVisit()
+	SlashCmdList["FAMILY"]("ah scan go")
+	check("a read whose list never arrives is running until it is not", 
+		Family.Auctions:ReplicateReading() ~= nil)
+	advance(31)
+	check("and a list that never arrives ends the read rather than hanging it",
+		Family.Auctions:ReplicateReading() == nil)
+
+	_G.C_AuctionHouse = realHouse
+	Family.Auctions:ForgetVisit()
+end)()
+
+print()
 print("a modified click on an item")
 ;(function()
 	-- Measured on Burning Crusade 2026-09-12 with `/family itemclick` armed and an item clicked

@@ -111,6 +111,10 @@ picks itself up where it left off.
 
 ### Reading the auction house
 
+- **On Mists of Pandaria the whole auction house is read in one go.** That version answers its
+  entire list to a single request — tens of thousands of listings at once — so there is nothing to
+  page through and nothing to wait for. The same button starts it.
+
 - **`/family ah scan go` walks every page of what the auction house last searched for** and
   remembers what everything is going for. It is off unless you ask for it, it tells you how far it
   has got, and `/family ah scan stop` ends it. On a busy realm this is thousands of pages and takes a while —

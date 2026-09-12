@@ -48,6 +48,30 @@ local NEXT_PAGE = "BrowseNextPageButton"
 -- So it hangs off a **control**, which has a size because the client gave it one and which the
 -- player can see for themselves. Reset is the one with room beside it, and it is present as a
 -- table on both clients that have this window (measured on all three, 2026-09-11).
+-- **And the newer house's window, whose name has never been read here.**
+--
+-- Measured on Mists 2026-09-12: every one of the old window's controls is nil there, and the
+-- probe has never asked what replaced them. So this is a list rather than a name, the first
+-- entry that turns out to be a real frame wins, and `/family ah` prints what it found - a
+-- candidate that is not there answers nil exactly like a misspelling, which is why the client is
+-- asked rather than trusted.
+--
+-- Anchored **outside** the window's top-right corner. Inside it, the button would sit at a
+-- coordinate of a layout nobody here has seen, which is the fault L-073 records; outside, there
+-- is nothing to be covered by.
+local MODERN = { "AuctionHouseFrame" }
+
+local function modernWindow()
+	for _, name in ipairs(MODERN) do
+		local frame = _G[name]
+		if type(frame) == "table" and type(frame.CreateFontString) == "function" then
+			return frame, name
+		end
+	end
+end
+
+UI.__modernAuctionWindow = modernWindow
+
 local BESIDE = "BrowseResetButton"
 
 -- **And the control that makes it the whole house rather than the last search.**
@@ -86,7 +110,7 @@ end
 local function refresh()
 	if not button then return end
 
-	if Family.Auctions:Walking() then
+	if Family.Auctions:Walking() or Family.Auctions:ReplicateReading() then
 		button:SetText(L["Stop"])
 	elseif waitingFor then
 		button:SetText(L["Searching..."])
@@ -162,13 +186,21 @@ heard = function()
 end
 
 local function clicked()
-	if Family.Auctions:Walking() then
+	if Family.Auctions:Walking() or Family.Auctions:ReplicateReading() then
 		UI:StopHouseRead()
 		refresh()
 		return
 	end
 
 	if waitingFor then return end
+
+	-- **The newer house has nothing to search first.** It answers its whole list to one call,
+	-- so there is no form to empty and no page to turn - the read starts on the press.
+	if Family.Auctions:CanReplicate() then
+		UI:StartHouseRead(true)
+		refresh()
+		return
+	end
 
 	-- **Always Reset, then Search - never the shortcut.** Knowing which argument is the page is
 	-- not the same as the last query being a search for everything, and this used to start the
@@ -196,13 +228,19 @@ local function clicked()
 end
 
 local function build()
-	if button or type(_G.AuctionFrameBrowse) ~= "table" then return end
+	if button then return end
+
+	-- The newer house first, because on a build that has it the old window is not there at all
+	-- and nothing below would find anything to hang off.
+	local modern = modernWindow()
+	local parent = modern or _G.AuctionFrameBrowse
+	if type(parent) ~= "table" then return end
 
 	-- Through `TryCall`, because a template this client turns out not to have would otherwise
 	-- take the auction window down with it - and a window that will not open is a worse fault
 	-- than a button that is not there.
 	button = (Family:TryCall(CreateFrame, "Button", "FamilyReadHouseButton",
-		_G.AuctionFrameBrowse, "UIPanelButtonTemplate"))
+		parent, "UIPanelButtonTemplate"))
 	if type(button) ~= "table" then
 		button = nil
 		return
@@ -210,14 +248,17 @@ local function build()
 
 	button:SetSize(120, 22)
 
-	-- Beside Reset, which is a control with a size of its own rather than a corner of a
-	-- container nothing has measured. Falling back to the panel only where that control is
-	-- missing, which no client measured so far does.
-	local beside = _G[BESIDE]
+	-- Beside Reset on the old window, which is a control with a size of its own rather than a
+	-- corner of a container nothing has measured (L-073). On the newer one there is no such
+	-- control read yet, so the button hangs just outside the window's top-right corner, where
+	-- no layout can put anything over it.
+	local beside = not modern and _G[BESIDE] or nil
 	if type(beside) == "table" then
 		button:SetPoint("LEFT", beside, "RIGHT", 8, 0)
+	elseif modern then
+		button:SetPoint("TOPLEFT", modern, "TOPRIGHT", 6, -30)
 	else
-		button:SetPoint("TOPLEFT", _G.AuctionFrameBrowse, "TOPLEFT", 20, -80)
+		button:SetPoint("TOPLEFT", parent, "TOPLEFT", 20, -80)
 	end
 
 	-- Above whatever the panel draws in that corner. A button that is there and covered reads
