@@ -3682,7 +3682,20 @@ counter that rises for every modified click whether or not anybody is listening.
 is never reached there, rather than reached and refused.
 
 (The `clicked` line of that probe, which was blank on Mists, was written down here as a reading.
-It was not: `GetMouseFocus` appears not to be on these builds at all, which is a different fact -
-see L-080. The counter above is unaffected, and it is the counter that carries the conclusion.) Anything wanting that window would have
+It was not. Measured on Classic Era 2026-09-12: **`GetMouseFocus` is nil and `GetMouseFoci` is a
+function**, answering a list - so the probe had been asking a name that build does not have, and
+its blank was a missing call rather than an empty pointer (L-080). Both probes go through one
+lookup now, which tries each. The counter above is unaffected, and it is the counter that carries
+the conclusion.)
+
+Asked the working way, the client names what it is looking at:
+
+    GetMouseFocus/Foci   nil / function
+    0  ItemRackButton4              CheckButton
+    1  UIParent                     Frame
+
+That is the bar of item buttons alt-clicking worn armour builds, named by the client rather than
+recognised by anybody: **ItemRack**, a CheckButton parented straight to `UIParent`, which is why
+it outlives the character sheet and can be dragged anywhere. Anything wanting that window would have
 to hook its slot buttons, which is a different mechanism and has had no reading taken.
 

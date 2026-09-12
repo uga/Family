@@ -86,6 +86,27 @@ function UI:ModifiedClickActions()
 	return out
 end
 
+-- **The frame the pointer is on, whichever way this client will say it.**
+--
+-- Measured on Classic Era 2026-09-12: `GetMouseFocus` is **nil** there and `GetMouseFoci` is a
+-- function answering a list. Asking only the first is how the click probe's own `clicked` line
+-- came back blank on two clients and was written down as a reading rather than as a missing call
+-- (L-080).
+--
+-- In one place because two probes asking it separately is two probes drifting, and the second of
+-- them drifted within the hour.
+function UI:FrameUnderPointer()
+	local frame = (Family:TryCall(_G.GetMouseFocus))
+	if type(frame) == "table" then return frame end
+
+	local list = (Family:TryCall(_G.GetMouseFoci))
+	if type(list) == "table" then return list[1] end
+end
+
+function UI:PointerRoutes()
+	return type(_G.GetMouseFocus), type(_G.GetMouseFoci)
+end
+
 local function packOf(...)
 	return { n = select("#", ...), ... }
 end
@@ -159,7 +180,7 @@ local function heard(link, ...)
 	held[#held + 1] = { "cursor", table.concat({ tostring(kind), tostring(one),
 		tostring(two) }, " / ") }
 
-	local focus = (Family:TryCall(GetMouseFocus))
+	local focus = UI:FrameUnderPointer()
 	local named = type(focus) == "table" and (Family:TryCall(focus.GetName, focus)) or nil
 	held[#held + 1] = { "clicked", tostring(named) }
 

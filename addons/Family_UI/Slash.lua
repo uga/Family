@@ -832,16 +832,10 @@ add("whatis", L["name the frame the pointer is resting on, five seconds from now
 		-- returns a frame, the other a list of them. Whichever answers is the one used, and
 		-- the types are printed either way, so a build with neither says **that** rather than
 		-- looking like an empty screen.
-		local one = type(_G.GetMouseFocus)
-		local many = type(_G.GetMouseFoci)
+		local one, many = UI:PointerRoutes()
 		Family:Print("    %-20s |cff888888%s / %s|r", "GetMouseFocus/Foci", one, many)
 
-		local frame = (Family:TryCall(_G.GetMouseFocus))
-
-		if type(frame) ~= "table" then
-			local list = (Family:TryCall(_G.GetMouseFoci))
-			frame = type(list) == "table" and list[1] or nil
-		end
+		local frame = UI:FrameUnderPointer()
 
 		if type(frame) ~= "table" then
 			Family:Print(L["  the client named nothing under the pointer"])

@@ -32241,11 +32241,16 @@ print("a modified click on an item")
 			and reported.clicked ~= nil,
 		tostring(reported.cursor) .. " | " .. tostring(reported["hooked by"]))
 
-	-- And with the calls there, their answers are what is printed.
-	local realCursor, realFocus, realSecure = _G.GetCursorInfo, _G.GetMouseFocus,
+	-- And with the calls there, their answers are what is printed. **Through the other name**,
+	-- because that is the one Era turned out to have: `GetMouseFocus` is nil there and
+	-- `GetMouseFoci` answers a list (measured 2026-09-12). Asking only the first is how this
+	-- probe's `clicked` line came back blank on two clients and was written down as a reading.
+	local realCursor, realFocus, realSecure = _G.GetCursorInfo, _G.GetMouseFoci,
 		_G.issecurevariable
 	_G.GetCursorInfo = function() return "item", 4242 end
-	_G.GetMouseFocus = function() return { GetName = function() return "BagnonItem7" end } end
+	_G.GetMouseFoci = function()
+		return { { GetName = function() return "BagnonItem7" end } }
+	end
 	_G.issecurevariable = function() return false, "SomeOtherAddon" end
 
 	reported = {}
@@ -32261,7 +32266,7 @@ print("a modified click on an item")
 		tostring(reported.clicked) .. " | " .. tostring(reported["hooked by"])
 			.. " | " .. tostring(reported.cursor))
 
-	_G.GetCursorInfo, _G.GetMouseFocus, _G.issecurevariable = realCursor, realFocus, realSecure
+	_G.GetCursorInfo, _G.GetMouseFoci, _G.issecurevariable = realCursor, realFocus, realSecure
 	ctrl, alt, shift = false, false, false
 
 	-- **Counted whether or not anybody was listening**, which is what tells *the hook does not
