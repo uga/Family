@@ -1,0 +1,12 @@
+name: the recipe is costed at the dearer of the two sources rather than the cheaper
+file: addons/Family/Recipes.lua
+--- old
+	if vendor and auction then
+		if auction < vendor then return auction, "auction" end
+		return vendor, "vendor"
+	end
+--- new
+	if vendor and auction then
+		if auction > vendor then return auction, "auction" end
+		return vendor, "vendor"
+	end

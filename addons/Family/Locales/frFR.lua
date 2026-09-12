@@ -901,4 +901,11 @@ Family.locales.frFR = {
 	["Say what came out of the mailbox"] = "Dire ce qui est sorti de la boîte aux lettres",
 	["A line in chat for each thing taken out of a letter and each sum collected, and a total when you close the mailbox. The game says nothing about what a mailbox full of auction returns actually came to."] = "Une ligne dans le canal de discussion pour chaque objet retiré d'une lettre et chaque somme encaissée, puis un total à la fermeture de la boîte. Le jeu ne dit rien de ce qu'a rapporté une boîte pleine de retours d'enchères.",
 	["reading prices at the auction house is switched off - turn it on under Extras"] = "la lecture des prix à l'hôtel des ventes est désactivée - activez-la dans Extras",
+	["Say what a craftable item costs to make"] = "Dire ce que coûte la fabrication d'un objet",
+	["On the tooltip of anything a profession makes: every material with what it would cost to buy, and the total. The cheapest source wins where there is more than one. A material Family has no price for is said to be unknown rather than counted as nothing, and one that binds on pickup adds nothing because no money can buy it - the total says so when it happens."] = "Sur l'infobulle de tout ce qu'un métier fabrique : chaque composant avec ce qu'il coûterait à l'achat, et le total. La source la moins chère l'emporte quand il y en a plusieurs. Un composant dont Family n'a pas le prix est dit inconnu plutôt que compté pour zéro, et un composant lié quand ramassé n'ajoute rien parce qu'aucun argent ne l'achète - le total le précise le cas échéant.",
+	["|cff66bbffCosts to make|r"] = "|cff66bbffCoût de fabrication|r",
+	["item %d"] = "objet %d",
+	["some prices are missing"] = "des prix manquent",
+	["not counting materials no money can buy"] = "hors composants qu'aucun argent n'achète",
+	["not for sale"] = "pas en vente",
 }

@@ -1,0 +1,6 @@
+name: the crafting cost is drawn on every tooltip whether or not it was asked for
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if not (Family.Extras and Family.Extras:On("craftingCost")) then return nil end
+--- new
+	if false then return nil end

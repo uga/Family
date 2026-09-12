@@ -901,4 +901,11 @@ Family.locales.ruRU = {
 	["Say what came out of the mailbox"] = "Сообщать, что пришло из почты",
 	["A line in chat for each thing taken out of a letter and each sum collected, and a total when you close the mailbox. The game says nothing about what a mailbox full of auction returns actually came to."] = "Строка в чате на каждый предмет, вынутый из письма, и на каждую полученную сумму, а при закрытии почты - итог. Игра ничего не говорит о том, сколько на самом деле принёс почтовый ящик, полный аукционных возвратов.",
 	["reading prices at the auction house is switched off - turn it on under Extras"] = "чтение аукционных цен выключено - включите его в разделе «Дополнения»",
+	["Say what a craftable item costs to make"] = "Сообщать, во сколько обходится изготовление",
+	["On the tooltip of anything a profession makes: every material with what it would cost to buy, and the total. The cheapest source wins where there is more than one. A material Family has no price for is said to be unknown rather than counted as nothing, and one that binds on pickup adds nothing because no money can buy it - the total says so when it happens."] = "В подсказке всего, что делает профессия: каждый материал с ценой покупки и итог. При нескольких источниках побеждает самый дешёвый. Материал без известной цены помечается как неизвестный, а не считается нулём, а материал, привязывающийся при получении, не добавляет ничего, потому что его не купить за деньги - итог об этом сообщает.",
+	["|cff66bbffCosts to make|r"] = "|cff66bbffСтоимость изготовления|r",
+	["item %d"] = "предмет %d",
+	["some prices are missing"] = "не хватает части цен",
+	["not counting materials no money can buy"] = "без материалов, которые не купить",
+	["not for sale"] = "не продаётся",
 }

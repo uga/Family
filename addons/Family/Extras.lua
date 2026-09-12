@@ -41,6 +41,7 @@ Family.Extras = Extras
 -- wearing the clothes of a new feature.
 local DEFAULTS = {
 	auctionPrices = true,
+	craftingCost = false,
 	mailReport = false,
 }
 

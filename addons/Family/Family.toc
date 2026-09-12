@@ -65,6 +65,7 @@ Names.lua
 Mounts.lua
 Extras.lua
 Index.lua
+RecipeReagents.lua
 Recipes.lua
 Cooldowns.lua
 Scanners\Bags.lua

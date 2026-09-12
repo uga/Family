@@ -2061,6 +2061,7 @@ Tables that earned their keep:
 | `ItemEffect` | `ParentItemID` → `SpellID`, which links a recipe item to what it teaches; and `Charges`, the maximum an item carries |
 | `SpellName`, `SkillLine` | names, `DisplayName_lang` |
 | `SpellReagents` | `SpellID`, `Reagent_0..7`, `ReagentCount_0..7` — what a recipe is made of |
+| `ItemSparse.Bonding` | 1 is bind on pickup — which materials no money can buy |
 | `Talent` | `TierID`, `ColumnIndex`, `TabID`, `ClassID`, `SpellRank_0` — the spell a talent is |
 | `TalentTab` | `ID`, `OrderIndex`, `ClassMask` — which of a class's three trees this is |
 | `ChrClasses` | `ID`, `Filename` — the class file string `UnitClass` answers with |

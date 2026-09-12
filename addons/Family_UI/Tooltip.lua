@@ -596,6 +596,81 @@ end
 -- the stack in front of you is a stack of one item. What the auction house is asking, and what
 -- the family's lot comes to, are about the thing being pointed at - and an *of the Bear* sword
 -- is not priced by an *of the Whale* one.
+-- **What this thing costs to make**, on the tooltip of anything a profession makes.
+--
+-- Asked for 2026-09-12, with three caveats that are the whole of the design:
+--
+--   1. *se un componente puo essere comprato da piu fonti, la piu economica vince*
+--   2. *se di un componente acquistabile non ho il prezzo devo indicare "sconosciuto", non
+--      zero* - which is §2.2 said again: nought is different from not read
+--   3. *componenti che sono bop drop sommano zero al totale non perche "valgano" zero, ma
+--      perche comunque non richiedono soldi per acquisirli*
+--
+-- The arithmetic is `Recipes:CostToMake` and none of it is here; this decides what is said.
+-- **A recipe with one unpriced material has no total at all** - not a total with a hole in it -
+-- and one whose materials include something nobody can buy says so under the number, because a
+-- reader comparing that figure with an auction price has to know what it leaves out.
+--
+-- Behind its own switch under Extras, and off until somebody asks for it: an eight-material
+-- recipe is nine lines, and nine lines on every craftable thing in the game is a tooltip
+-- somebody turns the whole addon off over.
+local function costLines(tooltip, itemID)
+	if not (Family.Extras and Family.Extras:On("craftingCost")) then return nil end
+
+	local cost = Family.Recipes and Family.Recipes.CostToMake
+		and Family.Recipes:CostToMake(itemID) or nil
+	if not cost or #cost.parts == 0 then return nil end
+
+	local lines = { { L["|cff66bbffCosts to make|r"], "" } }
+
+	for _, part in ipairs(cost.parts) do
+		-- The client's own name where it has met the item, and the id where it has not. A
+		-- tooltip cannot wait for a name to arrive, and a row reading `item 21877` is still
+		-- a row somebody can act on - a blank one is not.
+		local name = Family.Names:CachedItem(part.item)
+			or string.format(L["item %d"], part.item)
+
+		local said
+		if part.unknown then
+			said = "|cff9d9d9d" .. L["unknown"] .. "|r"
+		elseif part.bound then
+			-- **Not *farmed*, which was the first word here and is wrong for two thirds of
+			-- them.** Reading the generated set out on 2026-09-12 to answer *ce ne sono
+			-- anche molti altri?* showed it holds three kinds: drops a crafter goes and
+			-- gets (Skin of Shadow, Blood of Heroes), things earned rather than bought
+			-- (Primal Nether, in 114 Burning Crusade recipes), and crafted intermediates
+			-- that bind (Lionheart Blade). All three are true to *no money buys this* and
+			-- only the first is farming.
+			said = "|cff9d9d9d" .. L["not for sale"] .. "|r"
+		else
+			said = UI:Coins(part.total)
+		end
+
+		lines[#lines + 1] = { string.format("%s |cff888888x%d|r", name, part.count), said,
+			1, 1, 1, 1, 1, 1 }
+	end
+
+	-- **The total, or the reason there is not one.** A number that quietly left a material out
+	-- is worse than no number: somebody would compare it with an auction price and undercut
+	-- themselves with it.
+	if cost.total == nil then
+		lines[#lines + 1] = { L["Total"],
+			"|cffffaa00" .. L["some prices are missing"] .. "|r",
+			0.4, 0.73, 1, 1, 1, 1 }
+	else
+		lines[#lines + 1] = { L["Total"], UI:Coins(cost.total), 0.4, 0.73, 1, 1, 1, 1 }
+
+		-- Said only when it happened, and said under the number rather than beside it: it is
+		-- a qualification of the total and not another figure.
+		if cost.bound > 0 then
+			lines[#lines + 1] = { "|cff888888" .. L["not counting materials no money can buy"]
+				.. "|r" }
+		end
+	end
+
+	return lines
+end
+
 local function priceLines(tooltip, itemID, variant)
 	if not (FamilyDB and FamilyDB.prices) then return nil end
 
@@ -820,7 +895,8 @@ local function onItem(tooltip, itemID, data)
 	-- **The item id and the variant both travel**, and each block takes the one its question
 	-- is about: who owns one and what it is worth are the variant's, who can make one and what
 	-- the client will say about it are the item's. Backlog 67 is that table and nothing else.
-	for _, build in ipairs { possessionLines, crafterLines, makerBlock, priceLines } do
+	for _, build in ipairs { possessionLines, crafterLines, makerBlock, costLines,
+		priceLines } do
 		local lines = build(tooltip, itemID, variant)
 		if lines and #lines > 0 then blocks[#blocks + 1] = lines end
 	end

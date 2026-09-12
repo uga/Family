@@ -83,6 +83,12 @@ picks itself up where it left off.
 
 ### Extras
 
+- **What a craftable thing costs to make, on its tooltip.** Every material with what it would
+  cost to buy and the total underneath. The cheapest source wins where an item can be had from
+  more than one. A material Family has no price for makes the whole recipe say *some prices are
+  missing* rather than quietly totalling without it — and one that no money can buy adds nothing,
+  with the total saying so. Off until you switch it on.
+
 - **A new Extras panel, above Options**, for the jobs Family will do for you that are not what
   Family is for. Each one is off or on by itself, and a new one always arrives off.
 

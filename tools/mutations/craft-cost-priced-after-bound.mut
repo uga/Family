@@ -1,0 +1,18 @@
+name: a bound material that a vendor sells anyway is reported as costing nothing
+file: addons/Family/Recipes.lua
+--- old
+		if each then
+			row.each, row.from = each, from
+			row.total = each * part.count
+			out.total = out.total + row.total
+		elseif self:BoundReagent(part.item) then
+--- new
+		if self:BoundReagent(part.item) then
+			row.bound = true
+			row.total = 0
+			out.bound = out.bound + 1
+		elseif each then
+			row.each, row.from = each, from
+			row.total = each * part.count
+			out.total = out.total + row.total
+		elseif false then

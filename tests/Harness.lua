@@ -1973,7 +1973,7 @@ for _, file in ipairs {
 	"QuestSorts.lua",
 	"Capabilities.lua", "Codec.lua",
 	"Comm.lua", "Database.lua", "Names.lua", "Mounts.lua", "Extras.lua", "Index.lua",
-	"Recipes.lua", "Cooldowns.lua",
+	"RecipeReagents.lua", "Recipes.lua", "Cooldowns.lua",
 	"Scanners/Bags.lua", "Scanners/Talents.lua", "Scanners/Professions.lua",
 	"Scanners/Bank.lua", "Scanners/Identity.lua",
 	"Scanners/Auctions.lua", "Scanners/Mail.lua", "Scanners/Character.lua",
@@ -33747,6 +33747,169 @@ print("the button on the auction window")
 	FamilyDB.auctionPageAt = heldAt
 	_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan
 	_G.GetNumAuctionItems = realNum
+end)()
+
+print()
+print("what a craftable thing costs to make")
+
+-- **Asked for 2026-09-12, with three caveats that are the whole of the design.**
+--
+--   1. *se un componente puo essere comprato da piu fonti, la piu economica vince*
+--   2. *se di un componente acquistabile non ho il prezzo devo indicare "sconosciuto", non
+--      zero* - which is §2.2 again: nought is different from not read
+--   3. *componenti che sono bop drop sommano zero al totale non perche "valgano" zero, ma
+--      perche comunque non richiedono soldi per acquisirli*
+;(function()
+	local held = Family.Capabilities.expansion
+	Family.Capabilities.expansion = 2
+
+	-- The generated tables carry the real game; these are four recipes built to put each of
+	-- the three caveats in front of the arithmetic on its own.
+	local realReagents, realBound = Family.RecipeReagents, Family.BoundReagents
+
+	local SWORD, ROBE, CLOAK, BELT = 700101, 700102, 700103, 700104
+	--
+	-- **Two bound materials, and they are not interchangeable.** `SKIN` is the ordinary case
+	-- - binds on pickup, nobody sells it, so a crafter farms it. `SHARD` binds *and* a vendor
+	-- sells it anyway, which is the case that says whether the code asks about the price
+	-- before it asks about the binding. Written with one of these, the check for the first
+	-- passed against a fixture that was really testing the second.
+	local BAR, CLOTH, SKIN, RARE, SHARD = 700201, 700202, 700203, 700204, 700205
+
+	Family.RecipeReagents = { [2] = {
+		[900001] = { BAR, 3, CLOTH, 2 },   -- everything priced
+		[900002] = { BAR, 1, RARE, 1 },    -- one buyable thing nobody has priced
+		[900003] = { BAR, 2, SKIN, 4 },    -- one that binds on pickup
+		[900004] = { SHARD, 1 },           -- bound, and a vendor sells it anyway
+	} }
+	Family.BoundReagents = { [2] = { [SKIN] = true, [SHARD] = true } }
+
+	local realMadeBy = Family.Recipes.MadeBy
+	Family.Recipes.MadeBy = function(_, itemID)
+		return ({ [SWORD] = 900001, [ROBE] = 900002, [CLOAK] = 900003,
+			[BELT] = 900004 })[itemID]
+	end
+
+	check("a recipe's materials come back unpacked from the flat pairs they ship as",
+		#(Family.Recipes:Reagents(900001)) == 2
+			and Family.Recipes:Reagents(900001)[1].item == BAR
+			and Family.Recipes:Reagents(900001)[1].count == 3,
+		tostring(#(Family.Recipes:Reagents(900001) or {})))
+
+	check("and a material that binds on pickup is known to",
+		Family.Recipes:BoundReagent(SKIN) == true
+			and Family.Recipes:BoundReagent(BAR) == false,
+		tostring(Family.Recipes:BoundReagent(SKIN)))
+
+	----------------------------------------------------------------------------------------
+	-- The prices, and which source wins
+	----------------------------------------------------------------------------------------
+
+	local vendorPrices = { [BAR] = 500, [CLOTH] = 90, [SHARD] = 4000 }
+	local realVendor = Family.Merchant.PriceOf
+	Family.Merchant.PriceOf = function(_, itemID) return vendorPrices[itemID] end
+
+	local auctionPrices = { [BAR] = 300, [CLOTH] = 250 }
+	local realAuction = Family.Auctions.PriceOf
+	Family.Auctions.PriceOf = function(_, itemID) return auctionPrices[itemID] end
+
+	-- **The cheapest source wins**, and the fixture makes them disagree in both directions -
+	-- the bar is cheaper at the auction house, the cloth is cheaper from the vendor - so a
+	-- reader that always took one of the two would fail on exactly one of them.
+	local sword = Family.Recipes:CostToMake(SWORD)
+	check("the cheapest source of each material is the one counted",
+		sword and sword.total == 3 * 300 + 2 * 90,
+		sword and tostring(sword.total) or "nothing")
+	check("and each line says which source that was",
+		sword and sword.parts[1].from == "auction" and sword.parts[2].from == "vendor",
+		sword and (tostring(sword.parts[1].from) .. " / " .. tostring(sword.parts[2].from)))
+
+	----------------------------------------------------------------------------------------
+	-- Caveat two: unknown is not nought
+	----------------------------------------------------------------------------------------
+
+	local robe = Family.Recipes:CostToMake(ROBE)
+	check("one material nobody has priced leaves the whole recipe without a total",
+		robe and robe.total == nil and robe.missing == 1,
+		robe and tostring(robe.total) or "nothing")
+	check("and that material is marked unknown rather than counted as nothing",
+		robe and robe.parts[2].unknown == true and robe.parts[2].total == nil,
+		robe and tostring(robe.parts[2].total))
+
+	----------------------------------------------------------------------------------------
+	-- Caveat three: nought because no money buys it, which is not the same as worthless
+	----------------------------------------------------------------------------------------
+
+	local cloak = Family.Recipes:CostToMake(CLOAK)
+	check("a material no money can buy adds nothing and does not spoil the total",
+		cloak and cloak.total == 2 * 300 and cloak.bound == 1 and cloak.missing == 0,
+		cloak and tostring(cloak.total) or "nothing")
+
+	-- **Priced before bound.** A thing that binds on pickup and is sold by a vendor anyway
+	-- costs what that vendor charges, and the order of the two tests is what makes that come
+	-- out right rather than reporting it as free.
+	local belt = Family.Recipes:CostToMake(BELT)
+	check("while one that binds and is sold anyway costs what it is sold for",
+		belt and belt.total == 4000 and belt.bound == 0,
+		belt and tostring(belt.total) or "nothing")
+
+	check("and something no profession makes has no cost at all",
+		Family.Recipes:CostToMake(999333) == nil)
+
+	----------------------------------------------------------------------------------------
+	-- What the tooltip says, which is where the three caveats have to survive
+	----------------------------------------------------------------------------------------
+
+	local function hovering(itemID)
+		wipe(GameTooltip.__lines)
+		GameTooltip.__itemName = "Something"
+		GameTooltip.__itemLink = "|Hitem:" .. itemID .. "|h"
+		if GameTooltip.__scripts.OnTooltipCleared then
+			GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+		end
+		GameTooltip.__scripts.OnTooltipSetItem(GameTooltip)
+		local said = {}
+		for _, line in ipairs(GameTooltip.__lines) do
+			said[#said + 1] = tostring(line[1]) .. " | " .. tostring(line[2])
+		end
+		return table.concat(said, " / ")
+	end
+
+	-- **Off until somebody asks for it.** An eight-material recipe is nine lines, and nine
+	-- lines on every craftable thing in the game is a tooltip somebody turns the addon off
+	-- over - which is what the Extras panel is for.
+	Family.Extras:Set("craftingCost", false)
+	check("with the extra off, a craftable thing says nothing about what it costs",
+		hovering(SWORD):find("Costs to make", 1, true) == nil, hovering(SWORD))
+
+	Family.Extras:Set("craftingCost", true)
+	local drawn = hovering(SWORD)
+	check("with it on, the tooltip breaks the recipe down and totals it",
+		drawn:find("Costs to make", 1, true) ~= nil
+			and drawn:find("Total", 1, true) ~= nil, drawn)
+
+	-- Asked for in as many words: *il tooltip mi deve dettagliare il conto della ricetta cioe
+	-- stampare ogni componente con il suo costo totale.*
+	check("with a line for each material and how many of it",
+		drawn:find("x3", 1, true) ~= nil and drawn:find("x2", 1, true) ~= nil, drawn)
+
+	local missing = hovering(ROBE)
+	check("a recipe with an unpriced material says so instead of printing a total",
+		missing:find("some prices are missing", 1, true) ~= nil
+			and missing:find("unknown", 1, true) ~= nil, missing)
+
+	local farmed = hovering(CLOAK)
+	check("while one with a material no money can buy prints the total and says what it omits",
+		farmed:find("Total", 1, true) ~= nil
+			and farmed:find("not counting materials", 1, true) ~= nil, farmed)
+	check("and a recipe with nothing of the sort says no such thing",
+		hovering(SWORD):find("not counting materials", 1, true) == nil, hovering(SWORD))
+
+	Family.Extras:Set("craftingCost", false)
+	Family.Merchant.PriceOf, Family.Auctions.PriceOf = realVendor, realAuction
+	Family.Recipes.MadeBy = realMadeBy
+	Family.RecipeReagents, Family.BoundReagents = realReagents, realBound
+	Family.Capabilities.expansion = held
 end)()
 
 print()

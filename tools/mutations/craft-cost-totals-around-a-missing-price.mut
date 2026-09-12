@@ -1,0 +1,6 @@
+name: a recipe with an unpriced material still prints a total, quietly leaving it out
+file: addons/Family/Recipes.lua
+--- old
+	if out.missing > 0 then out.total = nil end
+--- new
+	if false then out.total = nil end

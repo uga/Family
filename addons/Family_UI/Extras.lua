@@ -45,6 +45,15 @@ local SWITCHES = {
 			.. "every page there is. Prices already recorded are kept either way."],
 	},
 	{
+		name = "craftingCost",
+		label = L["Say what a craftable item costs to make"],
+		note = L["On the tooltip of anything a profession makes: every material with what it "
+			.. "would cost to buy, and the total. The cheapest source wins where there is "
+			.. "more than one. A material Family has no price for is said to be unknown "
+			.. "rather than counted as nothing, and one that binds on pickup adds nothing "
+			.. "because no money can buy it - the total says so when it happens."],
+	},
+	{
 		name = "mailReport",
 		label = L["Say what came out of the mailbox"],
 		note = L["A line in chat for each thing taken out of a letter and each sum "

@@ -901,4 +901,11 @@ Family.locales.deDE = {
 	["Say what came out of the mailbox"] = "Sagen, was aus dem Briefkasten kam",
 	["A line in chat for each thing taken out of a letter and each sum collected, and a total when you close the mailbox. The game says nothing about what a mailbox full of auction returns actually came to."] = "Eine Chatzeile für jeden Gegenstand aus einem Brief und jede eingenommene Summe, dazu eine Gesamtsumme beim Schließen des Briefkastens. Das Spiel sagt nichts darüber, was ein Briefkasten voller Auktionsrückläufer tatsächlich eingebracht hat.",
 	["reading prices at the auction house is switched off - turn it on under Extras"] = "das Lesen von Auktionspreisen ist ausgeschaltet - schalte es unter Extras ein",
+	["Say what a craftable item costs to make"] = "Sagen, was ein herstellbarer Gegenstand kostet",
+	["On the tooltip of anything a profession makes: every material with what it would cost to buy, and the total. The cheapest source wins where there is more than one. A material Family has no price for is said to be unknown rather than counted as nothing, and one that binds on pickup adds nothing because no money can buy it - the total says so when it happens."] = "Im Tooltip von allem, was ein Beruf herstellt: jedes Material mit seinen Einkaufskosten und die Summe. Bei mehreren Bezugsquellen gewinnt die günstigste. Ein Material ohne bekannten Preis gilt als unbekannt statt als null, und eins, das beim Aufheben gebunden wird, zählt nichts, weil kein Geld es kaufen kann - die Summe sagt es, wenn es vorkommt.",
+	["|cff66bbffCosts to make|r"] = "|cff66bbffHerstellungskosten|r",
+	["item %d"] = "Gegenstand %d",
+	["some prices are missing"] = "einige Preise fehlen",
+	["not counting materials no money can buy"] = "ohne Materialien, die kein Geld kaufen kann",
+	["not for sale"] = "nicht käuflich",
 }

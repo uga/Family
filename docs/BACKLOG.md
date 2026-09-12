@@ -4120,7 +4120,7 @@ one week. Whichever of the two it turns out to be has its own fix - clearing the
 them back, the way the headers already are; or waiting for the window to settle - and both are
 mechanical once the reading says which.
 
-## 69. Recipe materials on the Professions panel
+## 69. Recipe materials on the Professions panel — **the data landed 2026-09-12, the panel has not**
 
 **Asked for 2026-09-12.** Each recipe line carries what it needs, on the right of the row:
 
@@ -4164,11 +4164,18 @@ recipes use all eight. On Burning Crusade: 744 recipes need one reagent, 514 two
 four, 232 five, 65 six, 7 seven, 9 eight. So a row sized for three would truncate a third of the
 list, and one sized for five would truncate 81 recipes of 2,655.
 
-**What is still open**, and none of it is about where the data comes from any more:
+~~**What is still open**, and none of it is about where the data comes from any more:~~
 
-1. Whether to ship all three builds' tables or only the reagents for spells Family can actually
-   meet - the Mists table is two and a half times the others and most of it is spells no recipe
-   window lists.
+**The data landed 2026-09-12.** `tools/recipe-reagents.py` generates
+`addons/Family/RecipeReagents.lua` - 1,674 recipes on Era, 2,304 on Burning Crusade, 5,333 on
+Mists, 300 KB - narrowed to the spells a trade skill teaches, and `Recipes:Reagents(spellID)`
+unpacks it. Per expansion, because 475 spells carry different reagents on different builds and one
+merged table would be 219 KB against 344 and wrong about every one of them. The first consumer was
+backlog 71, which needed the same table; **this panel is still not drawn.**
+
+What is left is all drawing:
+
+1. ~~Whether to ship all three builds' tables.~~ All three, per expansion, for the reason above.
 2. The row: eight icons against a row that currently holds an icon and a name, and what happens on
    the narrow end of the panel.
 3. Whether the quantity is drawn on the icon, as asked, or beside it - a number over a 16-pixel
@@ -4203,6 +4210,14 @@ have is the one bag, the geometry and the scale.
 answers *who in this family has one of these* across every member, every container, mail and
 auctions - which is exactly what the other addons cannot reach.
 
+**And it is a window rather than a page in the strip.** Alberto, the same day: *deve essere
+spostabile in giro per lo schermo come vogliamo; deve stare su uno strato molto alto, e tra loro
+(personaggio, banca e gbank) si devono poter sovrapporre.* So three frames rather than one panel,
+each dragged where the player wants it, each remembering where that was, on a high strata - and
+overlapping each other freely, which means none of them may be a child of another and the one
+being dragged has to come to the front. Family already has a strata setting and a movable window,
+so neither of those is new ground; three of them at once is.
+
 **None of it is designed here, and one thing has to be settled before any of it is.** A
 consolidated bag is not a list of items: it is a grid of the player's own live containers that
 things are dragged out of, right-clicked, split and sold from. Every one of those is a secure
@@ -4216,3 +4231,55 @@ onwards and is the guild's rather than a character's, so it is a third section a
 bag; the geometry and scale are settings and therefore belong wherever the Extras panel keeps
 them; and a bag Family draws has to keep working while another bag addon is installed, because
 the person most likely to try this is running one.
+
+## 71. What a craftable thing costs to make — **done 2026-09-12**
+
+**Alberto, 2026-09-12.** *Considerato che conosciamo le ricette di tutti gli oggetti craftabili, e
+leggiamo la AH, potremmo aggiungere ad ogni oggetto craftabile il costo di produzione e mostrarlo
+nel tooltip.* Three caveats came with it and they are the whole of the design:
+
+1. *Se un componente puo essere comprato da piu fonti, la piu economica vince.*
+2. *Se di un componente acquistabile non ho il prezzo devo indicare "sconosciuto", non zero.*
+3. *Componenti che sono bop drop sommano zero al totale non perche "valgano" zero, ma perche
+   comunque non richiedono soldi per acquisirli.*
+
+Built as `Recipes:CostToMake` plus a tooltip block behind an Extras switch, off by default: an
+eight-material recipe is nine lines, and nine lines on every craftable thing in the game is a
+tooltip somebody turns the addon off over.
+
+**Two sources, and what a vendor *pays* is not one of them.** The cheapest of what a vendor was
+seen charging (`Merchant:PriceOf`) and what the auction house was last asking. The sell price the
+game states for nearly everything is the price of *selling* one, and using it here would cost a
+whole recipe at a quarter of what it takes.
+
+**Priced before bound**, which is what makes caveat 3 come out right: a material that binds on
+pickup and is nonetheless sold by a vendor costs what that vendor charges.
+
+**What is still open, and it is a real question rather than a loose end.**
+
+Reading the generated bind-on-pickup set out - 16 materials on Era, 44 on Burning Crusade, 43 on
+Mists - shows it holds **three kinds of thing**, not one:
+
+- drops a crafter goes and gets: Skin of Shadow, Blood of Heroes, Ogre Tannin. Alberto's case
+  exactly.
+- things earned rather than bought: **Primal Nether**, which is a reagent of 114 Burning Crusade
+  recipes, and Nether Vortex.
+- **crafted intermediates that bind**: Lionheart Blade, Drakefist Hammer, the Runed rods. These
+  have recipes of their own, and therefore costs of their own.
+
+All three are true to *no money buys this*, which is why the line says **not for sale** rather
+than *farmed* - the first word written there, and wrong for two thirds of them.
+
+But the third kind could be costed properly by recursing: a Lionheart Champion's cost is the cost
+of a Lionheart Blade's materials plus its own. Nothing here does that, and it is not obvious it
+should - a recursion needs a depth limit, a cycle guard, and a decision about what to say when a
+sub-recipe is itself short of prices. Written down rather than done.
+
+A worry that the **rods** were polluting the set as tools nobody consumes was checked and is
+unfounded: Runed Copper Rod is a reagent of exactly one recipe, the one that consumes it to make
+the next rod up.
+
+One thing left unverified: the Era bind-on-pickup set contains eight items with ids above 200,000
+- *Crate of Tainted Gniodine Solution*, *Inert Mantle of Nightmares*, *Shard of the Void* and five
+others. They are in `ItemSparse` at the pinned Era build and are presumably seasonal content, but
+nobody here has confirmed they are reachable on a live Era realm.

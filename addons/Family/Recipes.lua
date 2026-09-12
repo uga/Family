@@ -946,3 +946,134 @@ function Recipes:Crafters(profession, itemName, required, minLevel, itemID)
 
 	return found
 end
+
+--------------------------------------------------------------------------------------------
+-- What a recipe is made of, and what that comes to
+--
+-- Asked for 2026-09-12: *considerato che conosciamo le ricette di tutti gli oggetti craftabili,
+-- e leggiamo la AH, potremmo aggiungere ad ogni oggetto craftabile il costo di produzione e
+-- mostrarlo nel tooltip.*
+--
+-- The materials are generated (`RecipeReagents.lua`) because the client will only answer for a
+-- window that is open on the character who knows the recipe, and this addon exists to answer
+-- about the other forty. The prices come from what Family already keeps: what a vendor was seen
+-- charging, and what the auction house was last asking.
+--------------------------------------------------------------------------------------------
+
+-- Which expansion's tables this client reads. Its own function because three things below ask,
+-- and a nil expansion has to mean *nothing to say* rather than an index into nil.
+local function expansionHere()
+	return Family.Capabilities and Family.Capabilities.expansion or nil
+end
+
+-- **What a recipe is made of**, as a list of `{ item =, count = }`.
+--
+-- The shipped table is flat pairs - `{ itemID, count, itemID, count }` - because it is three
+-- hundred kilobytes and a table constructor per reagent would be a good deal more. Unpacked
+-- here so that nothing above ever has to know that.
+function Recipes:Reagents(spellID)
+	spellID = tonumber(spellID)
+	local expansion = expansionHere()
+	if not (spellID and expansion) then return nil end
+
+	local shipped = (Family.RecipeReagents or {})[expansion]
+	local flat = shipped and shipped[spellID]
+	if not flat then return nil end
+
+	local out = {}
+	for index = 1, #flat - 1, 2 do
+		out[#out + 1] = { item = flat[index], count = flat[index + 1] }
+	end
+
+	return #out > 0 and out or nil
+end
+
+-- **Whether no money can buy this material.**
+--
+-- Alberto, 2026-09-12: *componenti che sono bop drop (es Skin of Shadow, e altri non tradabili,
+-- cioè tali che lo debba farmare esclusivamente il crafter) sommano zero al totale non perché
+-- "valgano" zero, ma perché comunque non richiedono soldi per acquisirli.* Bind on pickup, read
+-- off `ItemSparse.Bonding` at generation time - Skin of Shadow is 12753 and reads 1.
+function Recipes:BoundReagent(itemID)
+	itemID = tonumber(itemID)
+	local expansion = expansionHere()
+	if not (itemID and expansion) then return false end
+
+	local here = (Family.BoundReagents or {})[expansion]
+	return (here and here[itemID]) == true
+end
+
+-- **The cheapest way to come by one of a thing**, and where that price came from.
+--
+-- Alberto's first caveat: *se un componente può essere comprato da più fonti, la più economica
+-- vince.* Two sources are known here - a vendor Family has actually seen selling it, and the
+-- auction house - and neither is assumed. What a vendor *pays* is not a source: that is the
+-- price of selling one, not of buying one, and using it here would price a whole recipe at a
+-- quarter of what it costs.
+local function cheapest(itemID)
+	local vendor = Family.Merchant and Family.Merchant:PriceOf(itemID) or nil
+	local auction = Family.Auctions and Family.Auctions:PriceOf(itemID) or nil
+
+	if vendor and auction then
+		if auction < vendor then return auction, "auction" end
+		return vendor, "vendor"
+	end
+
+	if vendor then return vendor, "vendor" end
+	if auction then return auction, "auction" end
+	return nil, nil
+end
+
+-- **What it costs to make one of this item**, or nothing where this item is not made.
+--
+--     { spell =, parts = { { item =, count =, each =, total =, from =, bound =, unknown = } },
+--       total =, missing =, bound = }
+--
+-- `total` is **nil where anything is unpriced**, which is the second caveat and the rule §2.2
+-- states for the whole addon: *nought is different from not read.* A recipe with one unknown
+-- material has an unknown cost, and a number under it that quietly left that material out is
+-- the confident wrong answer this repository keeps being caught by.
+--
+-- **A bind-on-pickup material adds nought and says so.** It is not worth nothing - it is worth
+-- whatever farming it costs somebody - but no money changes hands for it, so it does not belong
+-- in a sum of money. `bound` counts them so the reader can be told the total is short of them.
+--
+-- **Priced before bound.** A material that binds on pickup and is nonetheless sold by a vendor
+-- costs exactly what that vendor charges, and the order here is what makes that come out right.
+function Recipes:CostToMake(itemID)
+	itemID = tonumber(itemID)
+	if not itemID then return nil end
+
+	local spell = self:MadeBy(itemID)
+	if not spell then return nil end
+
+	local parts = self:Reagents(spell)
+	if not parts then return nil end
+
+	local out = { spell = spell, parts = {}, total = 0, missing = 0, bound = 0 }
+
+	for _, part in ipairs(parts) do
+		local each, from = cheapest(part.item)
+		local row = { item = part.item, count = part.count }
+
+		if each then
+			row.each, row.from = each, from
+			row.total = each * part.count
+			out.total = out.total + row.total
+		elseif self:BoundReagent(part.item) then
+			row.bound = true
+			row.total = 0
+			out.bound = out.bound + 1
+		else
+			row.unknown = true
+			out.missing = out.missing + 1
+		end
+
+		out.parts[#out.parts + 1] = row
+	end
+
+	-- Said as *nothing* rather than as a number that left something out.
+	if out.missing > 0 then out.total = nil end
+
+	return out
+end
