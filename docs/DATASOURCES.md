@@ -2067,6 +2067,26 @@ Tables that earned their keep:
 | `ChrClasses` | `ID`, `Filename` — the class file string `UnitClass` answers with |
 | `ChrRaces` | `ID`, `Name_lang`, `Name_female_lang`, `ClientFileString`, `PlayableRaceBit` |
 
+**`ItemSparse.BuyPrice` is not *what a vendor charges*, and cannot stand in for it.** Asked
+2026-09-12 - a recipe read *Leaded Vial: unknown*, and Alberto pointed out that vendors sell them,
+so Family ought to have the price. The client does carry a buy price and it is exact:
+
+    Leaded Vial   3372   BuyPrice 200    VendorStackCount 5
+    Bruiseweed    2453   BuyPrice 100    VendorStackCount 1
+    Arcanite Bar  12360  BuyPrice 20000  VendorStackCount 1
+
+But it is on **nearly everything**, including a herb somebody picks and a bar somebody smelts. No
+vendor sells Bruiseweed or Arcanite Bars, and pricing a recipe off those figures would invent a
+source and quietly cost a whole recipe at prices nobody can pay. `VendorStackCount` does not
+separate them either: it is 5 on the vials because that is the stack a vendor sells, and 1 on both
+Coarse Thread, which vendors do sell, and Black Dragonscale, which they do not.
+
+So the missing fact is *which vendor stocks what*, and it is the same gap already recorded above:
+nothing wago serves maps a vendor to its stock. What Family has instead is `Scanners/Merchant.lua`,
+which reads a merchant's window while it is open and keeps the **highest** price ever seen, because
+a reputation discount only ever moves it down. One visit to an alchemy supplier teaches it Leaded
+Vial for the whole account, for good.
+
 **Disenchanting: wago has the bucket and not the results.** Asked 2026-09-12 - *ha una tabella che
 dice il tale oggetto quando disincantato può dare 1 x questa polvere al 50%, 2 x questa shard al
 35%?* - and answered by fetching rather than by reasoning. The only disenchant table wago serves is

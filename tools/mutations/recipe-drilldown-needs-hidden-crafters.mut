@@ -1,0 +1,6 @@
+name: a recipe can only be opened where crafters are hidden, so its materials are unreachable
+file: addons/Family_UI/Professions.lua
+--- old
+				if hidden > 0 or madeOf or UI.__openCrafters == key then
+--- new
+				if hidden > 0 or UI.__openCrafters == key then

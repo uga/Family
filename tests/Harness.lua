@@ -9346,6 +9346,40 @@ if professionsEveryone then
 				#left == 0, table.concat(left, " "))
 		end
 
+		-- **They reach this list by drill-down instead.** Asked for 2026-09-12, once the row
+		-- was shown to have no room for them: *usiamo il metodo drill-down: click sulla
+		-- ricetta, e appare una riga sotto con i materiali (a destra).*
+		do
+			local realReagents = Family.Recipes.Reagents
+			Family.Recipes.Reagents = function(_, spell)
+				return spell and { { item = 2589, count = 3 }, { item = 2592, count = 1 } }
+					or nil
+			end
+			Family.UI:Refresh()
+
+			-- The first row of the list, which the search above put a recipe on.
+			local first = Family.UI.__recipeRowFor(1)
+			check("a recipe with materials is one a click can open, crafters or no crafters",
+				first.expandKey ~= nil, tostring(first.expandKey))
+
+			first.__scripts.OnClick(first)
+
+			local withStrip = 0
+			for index = 1, 12 do
+				local r = Family.UI.__recipeRowFor(index)
+				for slot = 1, 8 do
+					if r.mats[slot].icon:IsShown() then withStrip = withStrip + 1 break end
+				end
+			end
+			check("and opening it puts a line underneath carrying the materials",
+				withStrip == 1, tostring(withStrip) .. " line(s) with a strip")
+
+			-- Closed again, or the row above stays open into every check below this one.
+			first.__scripts.OnClick(first)
+			Family.Recipes.Reagents = realReagents
+			Family.UI:Refresh()
+		end
+
 		choose("crafters")
 		check("by how many of the family can make it, most first",
 			page() == "Silver Rod | Runed Copper Breastplate | Wizard Oil", page())

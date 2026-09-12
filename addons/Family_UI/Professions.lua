@@ -1173,11 +1173,46 @@ local function build(frame)
 				-- Three of the guild's are shown beside four of ours; the rest are the fold.
 				local hidden = spare + math.max(0, #guild - 3)
 
-				if hidden > 0 or UI.__openCrafters == key then
+				-- **What it is made of is a reason to open a row too**, which is how the
+				-- materials reach this list at all: they will not fit on the row - eight
+				-- pictures against a recipe, its own picture and four characters with their
+				-- ranks - so they go on a line of their own underneath. Asked for 2026-09-12:
+				-- *usiamo il metodo drill-down: click sulla ricetta, e appare una riga sotto
+				-- con i materiali (a destra).*
+				local madeOf = Family.Recipes:Reagents(recipe.spellID
+					or (recipe.itemID and Family.Recipes:MadeBy(recipe.itemID)))
+
+				if hidden > 0 or madeOf or UI.__openCrafters == key then
 					r.expandKey = key
 				end
 
 				if UI.__openCrafters == key then
+					-- **The materials first**, because *what does this take* is a question
+					-- about the recipe and everything under it is about people.
+					if madeOf then
+						used = used + 1
+						local line = row(used)
+						line:SetPoint("TOPLEFT", 0, -y)
+						line:SetPoint("TOPRIGHT", 0, -y)
+						line:SetHeight(ROW)
+						line:Show()
+						y = y + ROW
+
+						line.spellID, line.itemID = nil, nil
+						line.memberKey, line.profession, line.recipeName = nil, nil, nil
+						line.canOpen, line.expandKey = false, nil
+						line.fallback = nil
+						line.icon:SetTexture(nil)
+						line.note:SetText("")
+
+						-- Hard against the right-hand edge: this line carries nothing
+						-- else, so there is no column to keep clear of.
+						showMaterials(line, recipe, MATERIAL_INSET_BARE)
+						line.text:SetWidth(math.max(60,
+							UI:ListWidth(scroll) - ROW - 20 - MATERIAL_ROOM))
+						line.text:SetText("        " .. L["|cff66bbffMade with|r"])
+					end
+
 					local everybody = {}
 
 					for _, who in ipairs(recipe.members) do

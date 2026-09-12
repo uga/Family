@@ -1,0 +1,8 @@
+name: opening a recipe on the whole-family list shows the crafters and not the materials
+file: addons/Family_UI/Professions.lua
+--- old
+					if madeOf then
+						used = used + 1
+--- new
+					if false then
+						used = used + 1
