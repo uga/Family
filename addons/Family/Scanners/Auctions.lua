@@ -1219,6 +1219,12 @@ local function askPage(page)
 		-- Measured on Burning Crusade 2026-09-12, twenty-seven pages: three seconds waiting
 		-- for the server, three of Family's own settle, and **fifty-eight here**. The house
 		-- is not slow to answer; the client will not let the question out.
+		--
+		-- **And measured again on the same client and the same twenty-seven pages once the
+		-- interval below came down: fifty.** So eight of those fifty-eight seconds were this
+		-- timer rather than the throttle, about three tenths of a second a page, and the
+		-- one-point-eight seconds a page that are left belong to the server. That is the
+		-- reading that says there is nothing more to win here.
 		local now = tonumber((Family:TryCall(GetTime)))
 		walk.heldFrom = walk.heldFrom or now
 
