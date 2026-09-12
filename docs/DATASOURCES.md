@@ -2067,6 +2067,24 @@ Tables that earned their keep:
 | `ChrClasses` | `ID`, `Filename` — the class file string `UnitClass` answers with |
 | `ChrRaces` | `ID`, `Name_lang`, `Name_female_lang`, `ClientFileString`, `PlayableRaceBit` |
 
+**Disenchanting: wago has the bucket and not the results.** Asked 2026-09-12 - *ha una tabella che
+dice il tale oggetto quando disincantato può dare 1 x questa polvere al 50%, 2 x questa shard al
+35%?* - and answered by fetching rather than by reasoning. The only disenchant table wago serves is
+`ItemDisenchantLoot`, on every build, and its whole column set is:
+
+    ID, Class, Subclass, Quality, MinLevel, MaxLevel, SkillRequired, ExpansionID
+
+74 rows on Burning Crusade, 116 on Mists. So it says which **loot group** an item of a given class,
+quality and item-level range falls into, and what enchanting skill it asks for. It does **not**
+carry the dusts, essences or shards, and it does not carry a probability: those live in the
+server's loot template and are not client data at all. Nothing else wago lists matches
+*disenchant*, *loot*, *milling* or *prospect* - the index page was searched, and the only other
+hit, `ItemSalvageLoot`, is 404 on both of these builds.
+
+So a *what does this disenchant into* feature cannot be generated the way the reagents were. It
+needs either a new data source, which is reserved, or Family watching it happen and learning -
+which needs no source at all and is worth considering on its own terms.
+
 **`SpellReagents` is served for all three pinned builds** and was read on 2026-09-12, against a
 recipe somebody named rather than against nothing: `29360` Smelt Felsteel gives `23445` ×3 and
 `23447` ×2 — Fel Iron Bar and Eternium Bar, which is what the game's own window shows. Era 2,305
