@@ -1,0 +1,6 @@
+name: the materials strip is drawn on the whole-family list, over the crafter names
+file: addons/Family_UI/Professions.lua
+--- old
+				showMaterials(r, nil)
+--- new
+				showMaterials(r, recipe)

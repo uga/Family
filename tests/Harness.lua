@@ -7890,6 +7890,43 @@ print("what a recipe is made of, beside the recipe")
 	check("while a recipe with no materials at all leaves an empty strip behind it",
 		shown == 0, tostring(shown) .. " still shown: " .. counts)
 
+	-- **The strip takes the note's room only where there is no note.**
+	--
+	-- Asked for 2026-09-12 - *perche non sposti la colonna dei materiali ancora piu a destra?*
+	-- The space was the note column, *can make 4* or *ready in 3h*, reserved on every row and
+	-- empty on most of them. So the strip takes it when there is nothing in it and gives it back
+	-- when there is, and the anchor is what says which - read off the offset the panel actually
+	-- set, because the alternative is asserting that the code meant to.
+	do
+		local function edge()
+			local at = strip.mats[8].icon.__offsets
+			return at and at.RIGHT and at.RIGHT.x or nil
+		end
+
+		-- **The decision, asked directly.** Written as an expression in the draw loop it could
+		-- only be reached by driving a whole panel, and the check written that way passed an
+		-- inset in by hand - which tests that the strip honours the number it is given and
+		-- never that the right number is chosen. The mutation walked straight through it.
+		local withNote = Family.UI.__materialInsetFor("|cff40bf40can make 4|r")
+		local without = Family.UI.__materialInsetFor("")
+		check("a row with a note keeps the strip clear of it",
+			withNote > without and without <= 8,
+			tostring(withNote) .. " against " .. tostring(without))
+		check("and a row with none is the same as a row with an empty one",
+			Family.UI.__materialInsetFor(nil) == without,
+			tostring(Family.UI.__materialInsetFor(nil)))
+
+		-- And the strip honours whichever it is handed, which is the other half.
+		Family.UI.__showRecipeMaterials(strip, { spellID = 910001 }, without)
+		local bare = edge()
+		Family.UI.__showRecipeMaterials(strip, { spellID = 910001 }, withNote)
+		local beside = edge()
+
+		check("with the strip actually drawn where it was told to be",
+			bare ~= nil and beside ~= nil and bare > beside,
+			tostring(bare) .. " against " .. tostring(beside))
+	end
+
 	Family.Recipes.MadeBy = realMadeBy
 
 	Family.RecipeReagents, Family.Capabilities.expansion = heldReagents, held
@@ -9280,6 +9317,34 @@ if professionsEveryone then
 		searchFor("er")
 		check("by name, which is the order the search itself answers in",
 			page() == "Runed Copper Breastplate | Silver Rod | Wizard Oil", page())
+
+		-- **No materials strip on this list**, which is two faults reported together off one
+		-- screenshot: *accorci la prima colonna e non gestisce l'overflow dell'ultima.* The
+		-- strip took room from the recipe's name, cutting it to *Black Ma...*, and it was
+		-- drawn inside the crafters column - which is 420 pixels wide and right-justified -
+		-- so the names ran underneath the pictures.
+		--
+		-- Clearing the names column would not have been the answer either. This row already
+		-- carries a recipe, a picture and up to four characters with their ranks; eight more
+		-- pictures is more than it has. The question this list answers is *who can make one*,
+		-- and what a thing is made of is the member list's question, where the row has room.
+		--
+		-- Read off the pooled rows rather than off the code, because the fault was that a row
+		-- **kept** a strip: the rows are shared between the two lists and one filled by the
+		-- member list would follow a recipe here that has nothing to do with it.
+		do
+			local left = {}
+			for index = 1, 12 do
+				local r = Family.UI.__recipeRowFor(index)
+				for slot = 1, 8 do
+					if r.mats[slot].icon:IsShown() then
+						left[#left + 1] = index .. ":" .. slot
+					end
+				end
+			end
+			check("and no row on it carries a materials strip, its own or a borrowed one",
+				#left == 0, table.concat(left, " "))
+		end
 
 		choose("crafters")
 		check("by how many of the family can make it, most first",

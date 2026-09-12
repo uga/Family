@@ -1,0 +1,6 @@
+name: the materials strip sits in the note's room whether or not there is a note
+file: addons/Family_UI/Professions.lua
+--- old
+	return (note ~= nil and note ~= "") and MATERIAL_INSET or MATERIAL_INSET_BARE
+--- new
+	return MATERIAL_INSET_BARE

@@ -61,9 +61,27 @@ local MATERIAL_GAP = 4
 local MATERIALS_MAX = 8
 local MATERIAL_ROOM = MATERIALS_MAX * (MATERIAL_ICON + MATERIAL_GAP)
 
--- Where the strip's right-hand edge sits: clear of the note column, which is the one that says
--- *can make 4* or *ready in 3h*.
-local MATERIAL_INSET = 164
+-- **Where the strip's right-hand edge sits, and it is not one number.**
+--
+-- Asked 2026-09-12: *perche non sposti la colonna dei materiali ancora piu a destra?* The space
+-- he was pointing at is the note column - *can make 4*, *ready in 3h* - which is reserved on every
+-- row and empty on most of them. So the strip takes it when there is nothing in it and gives it
+-- back when there is, which is the whole of the room going spare and none of the room in use.
+--
+-- Two numbers because there are two states: a row with a note and a row without one.
+local NOTE_ROOM = 150
+local MATERIAL_INSET_BARE = 8
+local MATERIAL_INSET = MATERIAL_INSET_BARE + NOTE_ROOM + 6
+
+-- **A function rather than an expression in the draw loop**, so the decision can be asked
+-- directly. Written inline, the only way to reach it was to drive a whole panel draw, and the
+-- check written that way passed an inset in by hand - which tested that the strip honours the
+-- number it is given and never that the right number is chosen.
+local function insetFor(note)
+	return (note ~= nil and note ~= "") and MATERIAL_INSET or MATERIAL_INSET_BARE
+end
+
+UI.__materialInsetFor = insetFor
 
 -- The profession buttons along the top. Wider than they were by what a picture takes, so that
 -- "Leatherworking 375" lost no room to it - the same trade the tab strip made.
@@ -687,7 +705,10 @@ local function build(frame)
 	-- The spell is what the table is keyed on. A Classic Era trade skill record carries the
 	-- product and no spell at all (DATASOURCES §2), so where there is no spell the item is asked
 	-- what makes it - which is the same fallback `Recipes:MadeBy` exists for.
-	local function showMaterials(r, recipe)
+	-- Called with no recipe to put the strip away, which is what the whole-family list does.
+	local function showMaterials(r, recipe, inset)
+		recipe = recipe or {}
+		inset = inset or MATERIAL_INSET
 		local spell = recipe.spellID
 			or (recipe.itemID and Family.Recipes:MadeBy(recipe.itemID)) or nil
 		local parts = spell and Family.Recipes:Reagents(spell) or nil
@@ -703,6 +724,13 @@ local function build(frame)
 			local at = slot - (MATERIALS_MAX - shown)
 			local part = at >= 1 and parts and parts[from + at - 1] or nil
 			local cell = r.mats[slot]
+
+			-- Re-anchored on every draw, because the inset is a property of what else is on
+			-- this row rather than of the row: a strip that kept the place it was first given
+			-- would sit under the note the moment one appeared.
+			cell.icon:ClearAllPoints()
+			cell.icon:SetPoint("RIGHT", r, "RIGHT",
+				-(inset + (MATERIALS_MAX - slot) * (MATERIAL_ICON + MATERIAL_GAP)), 0)
 
 			if part then
 				cell.icon:SetTexture(Family:TryCall(GetItemIcon, part.item)
@@ -796,7 +824,7 @@ local function build(frame)
 		r.text:SetJustifyH("LEFT")
 		r.note = r:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		r.note:SetPoint("RIGHT", -8, 0)
-		r.note:SetWidth(150)
+		r.note:SetWidth(NOTE_ROOM)
 		r.note:SetJustifyH("RIGHT")
 
 		-- The materials strip, built once and hidden until a row has something to put in it.
@@ -806,8 +834,6 @@ local function build(frame)
 		for slot = 1, MATERIALS_MAX do
 			local icon = r:CreateTexture(nil, "ARTWORK")
 			icon:SetSize(MATERIAL_ICON, MATERIAL_ICON)
-			icon:SetPoint("RIGHT", r, "RIGHT",
-				-(MATERIAL_INSET + (MATERIALS_MAX - slot) * (MATERIAL_ICON + MATERIAL_GAP)), 0)
 			icon:Hide()
 
 			-- **On the picture, as asked**, which is what the game does with a stack size and
@@ -1038,9 +1064,21 @@ local function build(frame)
 				-- **Written here too, and not because this list was asked for.** Rows are
 				-- pooled between the two lists, so a strip left on one by the member list
 				-- would follow a recipe in the search that has nothing to do with it.
-				local hasMaterials = showMaterials(r, recipe)
-				r.text:SetWidth(math.max(60, UI:ListWidth(scroll) - NOTE_WIDTH - 10 - ROW
-					- (hasMaterials and MATERIAL_ROOM or 0)))
+				-- **No strip on this list at all**, and the row is put away rather than
+				-- merely not filled: rows are pooled between the two lists, so one left over
+				-- from the member list would follow a recipe here that has nothing to do
+				-- with it.
+				--
+				-- It was drawn here for one draw and reported from play at once, with a
+				-- screenshot: the strip went straight through the column of crafter names
+				-- and the recipe names were cut to *Black Ma...*. Clearing the names column
+				-- was not the answer either - this row already carries a recipe, a picture,
+				-- and up to four characters with their ranks, and eight more pictures is
+				-- more than it has. **The question this list answers is who can make a
+				-- thing**; what it is made of is the member list's question, and there the
+				-- row has the room.
+				showMaterials(r, nil)
+				r.text:SetWidth(math.max(60, UI:ListWidth(scroll) - NOTE_WIDTH - 10 - ROW))
 
 				-- Highest skill first, then by name. The line is capped, so the order
 				-- decides which four survive it - alphabetical made "+14" hide fourteen
@@ -1588,11 +1626,27 @@ local function build(frame)
 			-- The name gives up the room the materials take, and takes it back on a recipe
 			-- that has none - an enchant applied to something makes no item and lists no
 			-- strip, and a name cut short to leave space for nothing is a name cut short.
-			local hasMaterials = showMaterials(r, recipe)
+			-- **The note is worked out before the strip is placed**, because where the strip
+			-- goes depends on whether there is one. A cooldown outranks how many can be made:
+			-- a transmute you cannot do for another six hours is not one you can make,
+			-- whatever the reagents say.
+			local note = ""
+			if recipe.readyAt and recipe.readyAt > time() then
+				note = string.format(L["|cffff8040ready %s|r"], UI:In(recipe.readyAt))
+			elseif recipe.readyAt then
+				note = L["|cff40bf40ready now|r"]
+			elseif recipe.available and recipe.available > 0 then
+				note = string.format(L["|cff40bf40can make %s|r"], recipe.available)
+			end
+			r.note:SetText(note)
+
+			local inset = insetFor(note)
+			local hasMaterials = showMaterials(r, recipe, inset)
+
 			-- A floor, because the strip grew to the size of the recipe's own picture and a
 			-- narrow window can now ask for a negative width - which the client takes as
 			-- *as wide as the text needs* and draws straight through everything to its right.
-			r.text:SetWidth(math.max(60, UI:ListWidth(scroll) - 170 - ROW
+			r.text:SetWidth(math.max(60, UI:ListWidth(scroll) - ROW - 20 - inset
 				- (hasMaterials and MATERIAL_ROOM or 0)))
 
 			-- Whatever the client said this row's icon was, recorded at scan time. Failing
@@ -1634,17 +1688,6 @@ local function build(frame)
 			end
 			r.icon:SetTexture(icon or "Interface\\Icons\\INV_Misc_QuestionMark")
 
-			-- A cooldown outranks how many can be made: a transmute you cannot do for
-			-- another six hours is not one you can make, whatever the reagents say.
-			if recipe.readyAt and recipe.readyAt > time() then
-				r.note:SetText(string.format(L["|cffff8040ready %s|r"], UI:In(recipe.readyAt)))
-			elseif recipe.readyAt then
-				r.note:SetText(L["|cff40bf40ready now|r"])
-			elseif recipe.available and recipe.available > 0 then
-				r.note:SetText(string.format(L["|cff40bf40can make %s|r"], recipe.available))
-			else
-				r.note:SetText("")
-			end
 		end
 
 		for index = used + 1, #rows do rows[index]:Hide() end
