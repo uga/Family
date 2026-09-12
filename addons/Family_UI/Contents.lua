@@ -1385,6 +1385,12 @@ end
 -- for the reason above: the panel is built the first time it is looked at, so a caller from
 -- outside cannot reach anything declared inside the builder.
 function UI:SearchPossessions(term)
+	-- **The window first**, which `ShowTab` does not do and had no reason to: every other
+	-- caller is already inside it - a profession clicked on the summary, a member clicked on a
+	-- panel - so selecting a tab was the whole job. This one is called from a bag slot with
+	-- Family shut, and reported from play on Mists 2026-09-12: CTRL and ALT and a click did
+	-- nothing at all. It was doing everything except being visible.
+	UI:Show()
 	UI:ShowTab("contents")
 	if UI.__searchContents then UI.__searchContents(term) end
 end

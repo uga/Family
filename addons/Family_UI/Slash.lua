@@ -950,8 +950,8 @@ local function replicateOnce()
 		Family:Print(L["  looking for your own auctions in the replicated list:"])
 
 		local map = Family.Auctions:ReplicateMatchOwned()
-		Family:Print("    %-10s |cff888888%s / %s|r", "owned/scanned",
-			tostring(map.owned), tostring(map.scanned))
+		Family:Print("    %-14s |cff888888%s / %s / %s|r", "owned/stacks/scanned",
+			tostring(map.owned), tostring(map.stacks), tostring(map.scanned))
 
 		for _, match in ipairs(map.matches) do
 			for _, field in ipairs(match.at) do

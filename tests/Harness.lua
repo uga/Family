@@ -32022,7 +32022,16 @@ print("a modified click on an item")
 	-- **And the door it goes through really opens.** Everything above stands in for the panel,
 	-- so without this the click could be arriving perfectly and landing nowhere - which is what
 	-- taking the switch out of the door proved: nothing failed.
+	-- **Shut first**, because that is how a bag slot finds Family: every other caller of a
+	-- panel door is already inside the window, so `ShowTab` never had to open it. Reported from
+	-- play on Mists 2026-09-12 - the click did everything except become visible.
+	if Family.UI:IsShown() then Family.UI:Toggle() end
+
 	Family.UI:SearchPossessions("Linen")
+
+	check("the door opens the window, which a bag slot finds shut",
+		Family.UI:IsShown() == true, tostring(Family.UI:IsShown()))
+
 	check("the door puts the term where a player would have typed it",
 		Family.UI.__contentsSearch and Family.UI.__contentsSearch:GetText() == "Linen",
 		tostring(Family.UI.__contentsSearch and Family.UI.__contentsSearch:GetText()))
@@ -32152,6 +32161,54 @@ print("asking the newer house for its whole list")
 	local byStack = {}
 	for _, match in ipairs(Family.Auctions:ReplicateMatchOwned().matches) do
 		for _, field in ipairs(match.at) do byStack[field[1]] = field[2] end
+	end
+
+	-- **A listing of one settles nothing, and the walk must not stop on one.** Four singles
+	-- would satisfy a rule that counts matches, and the walk would halt just short of the
+	-- listing that could have answered. Two owned here: a single first, a stack after it.
+	_G.C_AuctionHouse.GetNumOwnedAuctions = function() return 2 end
+	_G.C_AuctionHouse.GetOwnedAuctionInfo = function(index)
+		if index == 1 then
+			return { itemKey = { itemID = 4242 }, quantity = 1, buyoutAmount = 11,
+				minBid = 0, bidAmount = 0, timeLeftSeconds = 3600 }
+		end
+		return { itemKey = { itemID = 3858 }, quantity = 101, buyoutAmount = 44993,
+			minBid = 0, bidAmount = 0, timeLeftSeconds = 3600 }
+	end
+
+	-- **The single's row comes first**, which is the whole point: left at index nought, the
+	-- stack is found immediately and a walk that stops at the first match looks identical to
+	-- one that keeps going. It survived a mutation that way.
+	local realRows = _G.C_AuctionHouse.GetReplicateItemInfo
+	_G.C_AuctionHouse.GetNumReplicateItems = function() return 4 end
+	_G.C_AuctionHouse.GetReplicateItemInfo = function(index)
+		if index == 0 then
+			return "Something Else", "t", 1, 1, true, 1, "L", 0, 0, 11,
+				0, nil, nil, nil, nil, 0, 4242, true
+		end
+		if index == 2 then
+			return "Truesilver Bar", "t", 101, 1, true, 1, "L", 0, 0, 44993,
+				0, nil, nil, nil, nil, 0, 3858, true
+		end
+		return "Filler", "t", 5, 1, true, 1, "L", 0, 0, 7,
+			0, nil, nil, nil, nil, 0, 9999, true
+	end
+
+	local both = Family.Auctions:ReplicateMatchOwned()
+	local settled = false
+	for _, match in ipairs(both.matches) do
+		if (match.quantity or 1) > 1 then settled = true end
+	end
+
+	check("a listing of one does not stop the walk short of one that settles it",
+		settled and both.stacks == 1, tostring(settled) .. ", stacks " .. tostring(both.stacks))
+
+	_G.C_AuctionHouse.GetReplicateItemInfo = realRows
+	_G.C_AuctionHouse.GetNumReplicateItems = function() return 3 end
+	_G.C_AuctionHouse.GetNumOwnedAuctions = function() return 1 end
+	_G.C_AuctionHouse.GetOwnedAuctionInfo = function()
+		return { itemKey = { itemID = 3858 }, quantity = 101, buyoutAmount = 44993,
+			minBid = 0, bidAmount = 0, timeLeftSeconds = 3600 }
 	end
 
 	check("and a house that prices by the lot is read as pricing by the lot",

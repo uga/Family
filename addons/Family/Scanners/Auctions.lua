@@ -645,6 +645,14 @@ function Auctions:ReplicateMatchOwned(limit)
 	out.owned = #mine
 	if #mine == 0 then return out end
 
+	-- **How many of them could settle anything.** A listing of one prices the same whichever
+	-- way the house counts, so a player whose auctions are all singles can run this all day and
+	-- learn nothing - and *no answer* and *no listing that could answer* must not read alike.
+	for _, auction in ipairs(mine) do
+		if (auction.count or 1) > 1 then out.stacks = (out.stacks or 0) + 1 end
+	end
+	out.stacks = out.stacks or 0
+
 	-- What to look for: every value one of these auctions is described by, and the name the
 	-- **other** route gave it. `buyoutAmount` is per item there and the reader above multiplies
 	-- it out, so both forms are looked for rather than one being assumed.
@@ -706,14 +714,19 @@ function Auctions:ReplicateMatchOwned(limit)
 			end
 		end
 
-		-- **A match on a stack is worth more than a match on a single**, so the walk does not
-		-- stop at the first one it finds if that one settled nothing.
-		local settled = 0
+		-- **Stopped only by a match that settles something**, which is a match on a listing of
+		-- more than one. A count of matches was the first stopping rule and it was wrong the
+		-- way silence is wrong: four listings of one apiece would satisfy it and answer
+		-- nothing, and the walk would stop just short of the auction that could have.
+		--
+		-- Otherwise it reads the list out - forty-three thousand rows on Mists, and it did
+		-- that once already without anybody noticing the wait.
+		local settled = false
 		for _, match in ipairs(out.matches) do
-			if (match.quantity or 1) > 1 then settled = settled + 1 end
+			if (match.quantity or 1) > 1 then settled = true end
 		end
 
-		if settled >= 1 or #out.matches >= 4 then break end
+		if settled then break end
 	end
 
 	return out

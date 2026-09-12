@@ -2915,3 +2915,30 @@ two checks: the label after the end, and the label during the run.
 arrange that nothing else does.** A fixture that keeps the ordinary traffic flowing tests the
 ordinary traffic.
 
+---
+
+## L-079 — Every caller was already inside the room, so the door never had to open it
+
+`UI:ShowTab` selects a panel, builds it the first time, and redraws it. It does not show the
+window, and for its whole life it never needed to: every caller was already inside one. A
+profession clicked on the summary, a member clicked on a panel, a tab clicked on the tab strip -
+the window is open by definition in all three.
+
+Then a modified click on a bag slot became a caller, and reported from play on Mists 2026-09-12:
+**CTRL and ALT and a click did nothing at all.** It was doing everything except being visible -
+the tab selected, the whole-family switch thrown, the search term typed into a box nobody could
+see.
+
+**Why the checks were quiet.** They drove the door and then read the panel: the term is in the
+search box, the sort bar is shown, whole family is on. All true, all invisible. The harness has no
+window to look at, and *shown* is the one property a panel's state cannot imply - a frame reports
+itself shown whether or not anything above it is.
+
+**What now catches it.** The door calls `UI:Show` before `ShowTab`, and the check shuts the window
+first and then asserts it is open - which is the only order that can tell the fix from the
+fixture's starting state.
+
+**The general rule: when an existing entry point gets its first caller from outside, list what
+every previous caller had already done for it.** The work it never had to do is exactly the work
+it will now be missing, and it will be missing it silently.
+
