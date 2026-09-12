@@ -35280,6 +35280,45 @@ print("what a craftable thing costs to make")
 	check("and a recipe with nothing of the sort says no such thing",
 		hovering(SWORD):find("not counting materials", 1, true) == nil, hovering(SWORD))
 
+	-- **An enchant's own tooltip carries Made with too.** Asked for off *Enchant Bracer - Minor
+	-- Health*, which said who could make it and nothing about Strange Dust: *nel tooltip di un
+	-- enchant ci va Can make it come c'e adesso ma anche Made With, con il conteggio.* An enchant
+	-- makes no item, so the thing-shaped route never reached it. Spell 900002 is priced in part,
+	-- so this is also the partial case on a spell's tooltip: the list, the counts, and a total
+	-- that says a price is missing rather than one that quietly left something out.
+	;(function()
+		local function spellSaid(spellID)
+			wipe(GameTooltip.__lines)
+			if GameTooltip.__scripts.OnTooltipCleared then
+				GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+			end
+			GameTooltip.__spellID = spellID
+			GameTooltip.__scripts.OnTooltipSetSpell(GameTooltip)
+			GameTooltip.__spellID = nil
+			local said = {}
+			for _, line in ipairs(GameTooltip.__lines) do
+				said[#said + 1] = tostring(line[1]) .. " | " .. tostring(line[2])
+			end
+			return table.concat(said, " / ")
+		end
+
+		local whole = spellSaid(900001)
+		check("an enchant's tooltip says what it is made of, with how many of each",
+			whole:find("Made with", 1, true) ~= nil and whole:find("x3", 1, true) ~= nil
+				and whole:find("x2", 1, true) ~= nil and whole:find("Total", 1, true) ~= nil,
+			whole)
+
+		local partial = spellSaid(900002)
+		check("and one with a price nobody has says so rather than totalling what it knows",
+			partial:find("Made with", 1, true) ~= nil
+				and partial:find("some prices are missing", 1, true) ~= nil, partial)
+
+		Family.Extras:Set("craftingCost", false)
+		check("and with the extra off it says nothing about materials",
+			spellSaid(900001):find("Made with", 1, true) == nil, spellSaid(900001))
+		Family.Extras:Set("craftingCost", true)
+	end)()
+
 	-- **Every figure in the one g-s-c form, down the whole column.** The report this answers was
 	-- a *Made with* block reading *87s 92c* over *95s* over *147g 9s 36c*: three shapes in one
 	-- right-aligned column, so the units never lined up. Every money figure on the tooltip is

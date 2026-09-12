@@ -86,6 +86,9 @@ picks itself up where it left off.
 - **Wands, rods and oils an enchanter makes are shown as the thing itself** on the Professions
   panel, with who holds one and what it takes to make.
 
+- **An enchant's tooltip says what it is made of**, with how many of each and what that costs,
+  under who in the family can do it.
+
 - **What a thing is made of now appears on far more items on Burning Crusade and Mists** — every
   recipe a trainer teaches was missing it.
 

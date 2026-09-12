@@ -1,0 +1,6 @@
+name: an enchant's own tooltip says who can make it and nothing about what it takes
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local cost = spellCostLines(spellID)
+--- new
+	local cost = nil

@@ -806,11 +806,7 @@ end
 -- Behind its own switch under Extras, and off until somebody asks for it: an eight-material
 -- recipe is nine lines, and nine lines on every craftable thing in the game is a tooltip
 -- somebody turns the whole addon off over.
-local function costLines(tooltip, itemID)
-	if not (Family.Extras and Family.Extras:On("craftingCost")) then return nil end
-
-	local cost = Family.Recipes and Family.Recipes.CostToMake
-		and Family.Recipes:CostToMake(itemID) or nil
+local function madeWith(cost)
 	if not cost or #cost.parts == 0 then return nil end
 
 	local lines = { { L["|cff66bbffMade with|r"], "" } }
@@ -861,6 +857,20 @@ local function costLines(tooltip, itemID)
 	end
 
 	return lines
+end
+
+local function costLines(tooltip, itemID)
+	if not (Family.Extras and Family.Extras:On("craftingCost")) then return nil end
+	return madeWith(Family.Recipes and Family.Recipes.CostToMake
+		and Family.Recipes:CostToMake(itemID) or nil)
+end
+
+-- The same block for a recipe that makes nothing, asked of the spell. One function draws both, so
+-- an enchant's *Made with* and a sword's cannot come to word or count it differently.
+local function spellCostLines(spellID)
+	if not (Family.Extras and Family.Extras:On("craftingCost")) then return nil end
+	return madeWith(Family.Recipes and Family.Recipes.CostOfSpell
+		and Family.Recipes:CostOfSpell(spellID) or nil)
 end
 
 local function priceLines(tooltip, itemID, variant)
@@ -1048,17 +1058,38 @@ local function onSpell(tooltip, spellID)
 		and Family.Guild:CraftersOf(spellID, nil, nil) or {}
 
 	local lines = makerLines(ours, theirs)
-	if not lines then return end
 
-	tooltip:AddLine(" ")
-	for index, line in ipairs(lines) do
-		if index == 1 then
-			tooltip:AddDoubleLine(line[1], line[2], 0.4, 0.73, 1, 0.53, 0.53, 0.53)
-		else
-			tooltip:AddDoubleLine(line[1], line[2], line[3] or 1, line[4] or 1,
-				line[5] or 1, line[6] or 0.61, line[7] or 0.61, line[8] or 0.61)
+	-- **And what it is made of, counted and priced.** Asked for off the tooltip of an enchant,
+	-- which said who can make it and nothing about what it takes: an enchant makes no item, so
+	-- the thing-shaped route never reached it, and it has a bill of materials all the same. Drawn
+	-- with the item route's own function, as its own block after the crafters.
+	local cost = spellCostLines(spellID)
+	if not lines and not cost then return end
+
+	if lines then
+		tooltip:AddLine(" ")
+		for index, line in ipairs(lines) do
+			if index == 1 then
+				tooltip:AddDoubleLine(line[1], line[2], 0.4, 0.73, 1, 0.53, 0.53, 0.53)
+			else
+				tooltip:AddDoubleLine(line[1], line[2], line[3] or 1, line[4] or 1,
+					line[5] or 1, line[6] or 0.61, line[7] or 0.61, line[8] or 0.61)
+			end
 		end
 	end
+
+	if cost then
+		tooltip:AddLine(" ")
+		for _, line in ipairs(cost) do
+			if line[2] then
+				tooltip:AddDoubleLine(line[1], line[2], line[3], line[4], line[5],
+					line[6], line[7], line[8])
+			else
+				tooltip:AddLine(line[1])
+			end
+		end
+	end
+
 	tooltip:AddLine(" ")
 	tooltip:Show()
 end

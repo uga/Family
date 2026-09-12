@@ -1126,19 +1126,36 @@ function Recipes:CostToMake(itemID, depth, branch, budget)
 	itemID = tonumber(itemID)
 	if not itemID then return nil end
 
+	local spell = self:MadeBy(itemID)
+	if not spell then return nil end
+
+	return self:CostOfSpell(spell, depth, branch, budget, itemID)
+end
+
+-- **What a recipe costs, asked of the recipe itself.**
+--
+-- `CostToMake` above starts from a thing and finds the recipe that makes it. An enchant makes
+-- nothing, so there is no thing to start from - and it still has a bill of materials worth adding
+-- up. Asked for from play 2026-09-12 off the tooltip of *Enchant Bracer - Minor Health*, which
+-- said who can make it and nothing about Strange Dust: *nel tooltip di un enchant ci va Can make it
+-- come c'e adesso ma anche Made With, con il conteggio.*
+--
+-- `itemID`, where there is one, is only what the recursion marks on its branch to stop a cycle; a
+-- recipe that makes nothing cannot be its own material, so it has nothing to mark.
+function Recipes:CostOfSpell(spell, depth, branch, budget, itemID)
+	spell = tonumber(spell)
+	if not spell then return nil end
+
 	depth = depth or 1
 	branch = branch or {}
 	budget = budget or { left = MAX_RECIPES }
-
-	local spell = self:MadeBy(itemID)
-	if not spell then return nil end
 
 	local parts = self:Reagents(spell)
 	if not parts then return nil end
 
 	local out = { spell = spell, parts = {}, total = 0, missing = 0, bound = 0, made = 0 }
 
-	branch[itemID] = true
+	if itemID then branch[itemID] = true end
 
 	for _, part in ipairs(parts) do
 		local each, from = cheapest(part.item)
@@ -1176,7 +1193,7 @@ function Recipes:CostToMake(itemID, depth, branch, budget)
 		out.parts[#out.parts + 1] = row
 	end
 
-	branch[itemID] = nil
+	if itemID then branch[itemID] = nil end
 
 	-- Said as *nothing* rather than as a number that left something out.
 	if out.missing > 0 then out.total = nil end
