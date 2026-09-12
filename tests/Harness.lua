@@ -10004,6 +10004,12 @@ if professionsEveryone then
 				check("a row of longer names holds fewer of them than a row of short ones",
 					wide < narrow and wide >= 1,
 					wide .. " long against " .. narrow .. " short")
+				-- **And short ones are not held to four.** The comparison above passes as well
+				-- when the row takes a fixed four and gives some up for long names, which is half
+				-- of the rule and the half that was already there. Nine names of ten characters
+				-- are sixty-five pixels each against a column of four hundred and twenty.
+				check("and a row of short names holds more than the four it used to",
+					narrow > 4, tostring(narrow))
 
 				-- **And the same of the lines under it**, which is a second decision in a
 				-- second place: the row's own packing could be measured while the unfolded
@@ -10111,6 +10117,11 @@ if professionsEveryone then
 
 					check("the count of who is not shown is the last thing on the line",
 						count ~= nil, bare)
+					-- **And the only one.** A line with the members' count in the middle and a
+					-- total at the end would pass the check above - which is exactly the line
+					-- that was reported, with a second number bolted on.
+					check("and it is the only count on the line",
+						select(2, bare:gsub("%+%d+", "")) == 1, bare)
 					check("and it counts both groups, which is what opening the row lists",
 						count == (11 - shownMembers) + (8 - shownGuild) and shownGuild < 8,
 						tostring(count) .. " against " .. shownMembers .. " and "
@@ -35223,179 +35234,179 @@ print("two ways of saying it, and the shorter one where the longer will not fit"
 end)()
 
 print()
-print("what came out of the mailbox")
+print("the money that came out of the mailbox")
 
--- **Asked for 2026-09-12.** *Quando un personaggio legge e scarica i messaggi dalla casella
--- postale, stampiamo una riga in chat per ogni oggetto scaricato, e per ogni somma incassata.
--- Alla chiusura della casella, stampiamo il totale.*
+-- **Asked for 2026-09-12, and reshaped twice from play the same day.** The last word, with
+-- Postal off and the client's own *Open All*: *dobbiamo evitare di duplicare i messaggi del client
+-- standard - il client STAMPA gli allegati ricevuti, e li stampa giusti; concentriamoci solo sui
+-- soldi: stampiamo solo quelli, mentre arrivano, e il totale in fondo.*
 --
 -- **Read from what left the inbox, and only where a take was asked for.** Either half alone is
--- wrong: the hook's arguments announce a stack the server refused - and bags are full exactly
--- when a mailbox of auction returns is being emptied - while a diff with no hook reports a letter
--- the player *returned to sender* as something they received.
+-- wrong: the hook's arguments announce money the server has not handed over, and a comparison
+-- with no hook behind it reports the money in a letter returned to its sender as money collected.
 ;(function()
 	local heldExtras = FamilyDB.extras
 	local heldInbox = INBOX
 
 	local function saidSince(from)
-		return table.concat(DEFAULT_CHAT_FRAME.messages, "\n", from + 1,
-			#DEFAULT_CHAT_FRAME.messages)
+		return (table.concat(DEFAULT_CHAT_FRAME.messages, "\n", from + 1,
+			#DEFAULT_CHAT_FRAME.messages):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
+	end
+
+	local function letters(list)
+		INBOX = list
+		fire("MAIL_SHOW")
+		return #DEFAULT_CHAT_FRAME.messages
 	end
 
 	Family.Extras:Set("mailReport", true)
 
-	INBOX = {
-		{ sender = "Auction House", subject = "Sold", money = 12000, cod = 0, days = 25,
-		  items = { { 2589, 20 } } },
+	-- **Nothing of ours beside the client's own line.** Taking an item already prints *You
+	-- receive item*, with the count, and prints it right; two lines for one item was the reason
+	-- for the rewrite.
+	local before = letters {
 		{ sender = "Deiana", subject = "Wool", money = 0, cod = 0, days = 20,
 		  items = { { 2592, 5 } } },
 	}
-	fire("MAIL_SHOW")
-
-	-- **Something left, and nobody asked for it.** A letter returned to sender leaves the inbox
-	-- exactly as a taken one does, and reporting it as received is the fault this half guards.
-	local before = #DEFAULT_CHAT_FRAME.messages
-	INBOX[2].items = {}
-	fire("MAIL_INBOX_UPDATE")
-	check("something leaving the inbox with nothing asked for is not reported as received",
-		saidSince(before):find("You receive", 1, true) == nil, saidSince(before))
-
-	-- And the comparison has kept up, so the thing that left is not blamed on the next take.
-	--
-	-- **Part of a stack**, which is what makes this a comparison rather than a repetition of
-	-- the hook's arguments. Written with the whole stack leaving, *what left* and *what was
-	-- there* are the same number and the mutation reporting the second walked through it.
-	before = #DEFAULT_CHAT_FRAME.messages
-	TakeInboxItem(1, 1)
-	INBOX[1].items = { { 2589, 12 } }
-	fire("MAIL_INBOX_UPDATE")
-	local said = saidSince(before)
-	check("while a stack part taken is reported at what actually left, not at what was there",
-		said:find("x8", 1, true) ~= nil and said:find("x20", 1, true) == nil, said)
-
-	-- **And it names the item with the link the letter was holding**, which is the whole of
-	-- what a reader does with one of these lines: click it, hover it, shift-click it into
-	-- chat. A name is a string and cannot be any of those.
-	check("and the item is named by its link rather than by a string",
-		said:find("|Hitem:2589|h", 1, true) ~= nil, said)
-
-	before = #DEFAULT_CHAT_FRAME.messages
 	TakeInboxItem(1, 1)
 	INBOX[1].items = {}
 	fire("MAIL_INBOX_UPDATE")
-	said = saidSince(before)
-	check("and the rest of it when the rest of it goes",
-		said:find("x12", 1, true) ~= nil, said)
+	check("an item taken from a letter is left to the client's own line",
+		saidSince(before) == "", saidSince(before))
 
-	-- **The take that the server refused.** Asked for and nothing moved, which is what a full
-	-- bag looks like from in here - and reporting it would be a line about an item the player
-	-- has not got.
-	before = #DEFAULT_CHAT_FRAME.messages
-	TakeInboxItem(2, 1)
-	fire("MAIL_INBOX_UPDATE")
-	check("and a take the server refused says nothing at all",
-		saidSince(before):find("You receive", 1, true) == nil, saidSince(before))
-
-	before = #DEFAULT_CHAT_FRAME.messages
+	-- **The money, as it arrives.**
+	before = letters {
+		{ sender = "Auction House", subject = "Sold", money = 12000, cod = 0, days = 25,
+		  items = {} },
+	}
 	TakeInboxMoney(1)
 	INBOX[1].money = 0
 	fire("MAIL_INBOX_UPDATE")
-	check("money collected is reported as money rather than as an item",
-		saidSince(before):find("You collected", 1, true) ~= nil, saidSince(before))
+	check("money taken from a letter is said as it arrives",
+		saidSince(before):find("You collected: 1g 20s", 1, true) ~= nil, saidSince(before))
 
-	-- The figure somebody actually wanted: a mailbox of auction returns is forty lines and one
-	-- number.
-	before = #DEFAULT_CHAT_FRAME.messages
-	fire("MAIL_CLOSED")
-	said = saidSince(before)
-	local bare = (said:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
-	check("and closing the mailbox totals what the visit brought in",
-		bare:find("Total collected", 1, true) ~= nil and bare:find("1g 20s", 1, true) ~= nil,
-		bare)
-	-- The second line asked for, which is a different question from the first: what came in,
-	-- and what the character is worth now that it has. `GetMoney` answers for whoever is
-	-- logged in and for nobody else.
-	check("and says what this character is worth afterwards",
-		said:find("Now you own", 1, true) ~= nil, said)
+	-- **Money leaving that nobody asked for is not money collected.** A letter returned to its
+	-- sender takes its gold with it, exactly as a taken one does.
+	before = letters {
+		{ sender = "Nobody", subject = "Back you go", money = 3000, cod = 0, days = 10,
+		  items = {} },
+	}
+	INBOX = {}
+	fire("MAIL_INBOX_UPDATE")
+	check("money leaving the inbox with nothing asked for is not reported",
+		saidSince(before):find("collected", 1, true) == nil, saidSince(before))
 
-	-- **Nothing taken, nothing said.** A line reading *0 items, 0 copper* on every mailbox
-	-- somebody opens to check is a line they turn the feature off over.
-	fire("MAIL_SHOW")
-	before = #DEFAULT_CHAT_FRAME.messages
-	fire("MAIL_CLOSED")
-	check("while a mailbox nobody took anything out of says nothing",
-		saidSince(before):find("Total collected", 1, true) == nil, saidSince(before))
+	-- **The server answers a take in more than one update.** Read from play with *Open All*:
+	-- two letters with money and not one line. The first update after the take is often only
+	-- the letter being marked read, and what had been asked for was dropped on it.
+	--
+	-- This fault was named out loud before it was found in play, with a promise of exactly this
+	-- check, and the check was not written (L-091).
+	before = letters {
+		{ sender = "Auction House", subject = "Sold", money = 4500, cod = 0, days = 25,
+		  items = { { 21877, 15 } } },
+	}
+	AutoLootMailItem(1)
+	fire("MAIL_INBOX_UPDATE")
+	INBOX = {}
+	fire("MAIL_INBOX_UPDATE")
+	check("money answered one update late is still said when it arrives",
+		saidSince(before):find("You collected: 45s", 1, true) ~= nil, saidSince(before))
 
-	-- **Money the player did not take is not money the player took.** A letter can expire, or
-	-- be returned, in the same breath as another is emptied - and the inbox's total falls by
-	-- both. Capped at what the letters actually clicked were holding, for exactly the reason
-	-- the attachments above are: the letter says what it has and the inbox says what went.
-	INBOX = {
+	-- **Said once, not again.** Money that has arrived is no longer waited for, or the next
+	-- letter to leave for any reason could be claimed against it.
+	before = letters {
+		{ sender = "Auction House", subject = "Sold", money = 3000, cod = 0, days = 25,
+		  items = {} },
+		{ sender = "Nobody", subject = "Expiring", money = 3000, cod = 0, days = 0,
+		  items = {} },
+	}
+	TakeInboxMoney(1)
+	INBOX[1].money = 0
+	fire("MAIL_INBOX_UPDATE")
+	INBOX = { INBOX[1] }
+	fire("MAIL_INBOX_UPDATE")
+	check("money said once is not waited for again",
+		select(2, saidSince(before):gsub("You collected", "")) == 1, saidSince(before))
+
+	-- **Capped at what the clicked letter held.** Another letter can expire in the same breath,
+	-- and the inbox's total falls by both.
+	before = letters {
 		{ sender = "Auction House", subject = "Sold", money = 3000, cod = 0, days = 25,
 		  items = {} },
 		{ sender = "Nobody", subject = "Expiring", money = 5000, cod = 0, days = 0,
 		  items = {} },
 	}
-	fire("MAIL_SHOW")
-	before = #DEFAULT_CHAT_FRAME.messages
 	TakeInboxMoney(1)
 	INBOX = {}
 	fire("MAIL_INBOX_UPDATE")
-	said = (saidSince(before):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
-	check("money out of a letter nobody opened is not counted as money collected",
-		said:find("30s", 1, true) ~= nil and said:find("80s", 1, true) == nil, said)
+	check("money out of a letter nobody opened is not counted with it",
+		saidSince(before):find("30s", 1, true) ~= nil
+			and saidSince(before):find("80s", 1, true) == nil, saidSince(before))
 
-
-	-- **The whole letter at once**, which is the button people actually press - Postal's *open
-	-- all*, and the client's own. It is also the only route where *these attachments belong to
-	-- that letter* has to be worked out rather than handed over one argument at a time, so a
-	-- version tested only through `TakeInboxItem` is a version tested on the road nobody takes.
-	INBOX = {
-		{ sender = "Auction House", subject = "Sold", money = 3000, cod = 0, days = 25,
-		  items = { { 2589, 3 }, { 2592, 1 } } },
-	}
-	fire("MAIL_SHOW")
-	before = #DEFAULT_CHAT_FRAME.messages
-	AutoLootMailItem(1)
-	INBOX = {}
-	fire("MAIL_INBOX_UPDATE")
-	said = saidSince(before)
-	check("taking a whole letter names every attachment in it, in the order they sit",
-		said:find("|Hitem:2589|h", 1, true) ~= nil
-			and said:find("|Hitem:2592|h", 1, true) ~= nil
-			and said:find("|Hitem:2589|h", 1, true) < said:find("|Hitem:2592|h", 1, true),
-		said)
-	check("and says what that same letter was holding in money",
-		said:find("You collected", 1, true) ~= nil, said)
-	-- Every attachment of the letter, and not the first `GetInboxHeaderInfo` says there are:
-	-- a letter of ten can carry one past the tenth slot (L-044), and the count is how many
-	-- there are rather than where they are.
-	check("and it is one line an attachment rather than one line a letter",
-		select(2, said:gsub("You receive", "")) == 2,
-		tostring(select(2, said:gsub("You receive", ""))))
-
-
-	-- And off is off.
-	Family.Extras:Set("mailReport", false)
-	INBOX = {
+	-- **The way out.** A mailbox of auction returns is forty letters and one number.
+	fire("MAIL_CLOSED")
+	before = letters {
+		{ sender = "Auction House", subject = "Sold", money = 12000, cod = 0, days = 25,
+		  items = {} },
 		{ sender = "Auction House", subject = "Sold", money = 500, cod = 0, days = 25,
-		  items = { { 2589, 3 } } },
+		  items = {} },
 	}
-	fire("MAIL_SHOW")
-	before = #DEFAULT_CHAT_FRAME.messages
+	TakeInboxMoney(1)
+	INBOX[1].money = 0
+	fire("MAIL_INBOX_UPDATE")
+	TakeInboxMoney(2)
+	INBOX[2].money = 0
+	fire("MAIL_INBOX_UPDATE")
+	fire("MAIL_CLOSED")
+	local said = saidSince(before)
+	check("closing the mailbox totals the visit",
+		said:find("Total collected: 1g 25s", 1, true) ~= nil, said)
+	-- `GetMoney` answers for whoever is logged in and for nobody else.
+	check("and says what this character now owns",
+		said:find("Now you own", 1, true) ~= nil, said)
+
+	-- **Nothing collected, nothing said.** A line reading *0c* on every mailbox somebody opens
+	-- to look at is a line they switch the feature off over - and an item taken is not money.
+	before = letters {
+		{ sender = "Deiana", subject = "Wool", money = 0, cod = 0, days = 20,
+		  items = { { 2592, 5 } } },
+	}
 	TakeInboxItem(1, 1)
 	INBOX[1].items = {}
 	fire("MAIL_INBOX_UPDATE")
 	fire("MAIL_CLOSED")
-	-- Both halves by the words they are actually said in. Written against the wording this
-	-- file used before the lines were rewritten, the item half matched nothing at all and the
-	-- mutation that switches the guard off walked straight through it - a stale needle passes
-	-- for the same reason an absent check does.
+	check("while a visit that collected no money says nothing on the way out",
+		saidSince(before):find("Total collected", 1, true) == nil, saidSince(before))
+
+	-- **A request left unanswered is let go of when the mailbox closes.** Kept across updates is
+	-- what the late answer needs, and kept across visits is how it could come to be matched
+	-- against money that left for another reason next time.
+	before = letters {
+		{ sender = "Nobody", subject = "Later", money = 2000, cod = 0, days = 20, items = {} },
+	}
+	TakeInboxMoney(1)
+	fire("MAIL_INBOX_UPDATE")
+	fire("MAIL_CLOSED")
+	letters(INBOX)
+	INBOX = {}
+	fire("MAIL_INBOX_UPDATE")
+	check("and a request left unanswered in one visit is not claimed in the next",
+		saidSince(before):find("collected", 1, true) == nil, saidSince(before))
+	fire("MAIL_CLOSED")
+
+	-- And off is off.
+	Family.Extras:Set("mailReport", false)
+	before = letters {
+		{ sender = "Auction House", subject = "Sold", money = 500, cod = 0, days = 25,
+		  items = {} },
+	}
+	TakeInboxMoney(1)
+	INBOX[1].money = 0
+	fire("MAIL_INBOX_UPDATE")
+	fire("MAIL_CLOSED")
 	check("with the extra off the mailbox is emptied in silence",
-		saidSince(before):find("You receive", 1, true) == nil
-			and saidSince(before):find("You collected", 1, true) == nil
-			and saidSince(before):find("Total collected", 1, true) == nil,
-		saidSince(before))
+		saidSince(before):find("collected", 1, true) == nil, saidSince(before))
 
 	INBOX = heldInbox
 	FamilyDB.extras = heldExtras

@@ -3324,3 +3324,61 @@ there is none, the check is about an arrangement that never occurs, and passing 
 opposite of what it says. L-088 was a fixture writing a field the code *overwrites*; this is a
 fixture writing a field the code *never* writes. The first gave a vacuous check; this one gave a
 dead feature with a green light over it for a week.
+
+---
+
+## L-091 — the risk was named, the check was promised, and neither happened
+
+**2026-09-12.** When the mail report was rewritten to read each letter at the moment of the click,
+I told Alberto in so many words what could still go wrong: *if the server delivers one letter's
+contents in two `MAIL_INBOX_UPDATE`s, the second half arrives after what was asked for has been
+used up, and is never reported.* I said it was verifiable in the harness in five minutes and that I
+would check it once the tree was free.
+
+The tree came free, other things arrived, and the check was never written. Alberto then emptied
+four letters with the client's own *Open All*, two of them carrying money, and got **not one**
+money line and no line for a stack of fifteen. It was exactly the named case: the first update after
+a take is often only the letter being marked read, and what had been asked for was dropped on it.
+
+**The lesson is not the bug.** A risk said out loud reads like a risk handled - it is in the
+conversation, it sounds careful, and the person hearing it reasonably assumes it will be dealt
+with. It is worse than an unnoticed risk, because it has spent the other person's attention and
+bought nothing.
+
+**What now catches it.** The check exists: a take, an update in which nothing has moved, then the
+update in which it has - and the money must be reported. It failed on the old code with an empty
+result, exactly as in play.
+
+**The general rule: a risk named is a check owed.** Write it before the next thing, or write it
+down as open in the backlog in the same turn. Never leave it only in the conversation.
+
+---
+
+## L-092 — the optimisation copied a tree while something was writing to it
+
+**2026-09-12.** `tools/mutate.py` was rewritten the same afternoon to work in copies and in
+parallel, and then made cheaper: rather than prove every worker's copy with a clean gate, prove the
+first and copy the others from it. Same bytes, one gate instead of eight.
+
+Worker 0 began mutating the first tree at once. The other workers copied it from inside their own
+threads - while worker 0 had a case standing in it. A copy taken at that moment carried the mutation
+in permanently, and every case run in that copy afterwards came back **caught**, whatever the
+checks did.
+
+Found because a mail mutation that survived three gates by hand was reported caught, and the
+explanation *the clock must have ticked* was not available for it. Once every copy was made before
+any worker started, the true answer came back at once: two of that batch survived, and a full run
+turned up **two more that every run since the optimisation had reported as caught**.
+
+So several "all caught" results in the commit history of that afternoon said less than they
+appeared to. None of them was false about a mutation that was *recorded* as caught and genuinely
+was; the damage is to the ones that were not.
+
+**What now catches it.** All trees are made, from the proved one, before any worker starts. And
+the reason it surfaced is the check: when the tool and a hand run disagree, the tool is the suspect,
+not the hand.
+
+**The general rule: an optimisation that shares state between a reader and a writer is not an
+optimisation until it has been shown the writer cannot be seen.** This is the third tool fault in
+this repository in one day, and each of them was a tool reporting success: a copy red before any
+mutation (96 of 96 in fourteen seconds), a wait loop matching itself (L-089), and this.

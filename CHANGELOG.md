@@ -94,11 +94,10 @@ picks itself up where it left off.
   names as will actually fit, so a borrowed family's character carrying their family name with
   them no longer costs a whole row.
 
-- **What came out of the mailbox, in chat.** A line naming each thing you took, then what that
-  letter was holding in money — and, when you close the mailbox, what the visit came to and what
-  you are carrying now. The game says nothing about what a mailbox full of auction returns
-  actually came to. Nothing is claimed that did not arrive, so a take your bags were too full for
-  is not reported. Off until you switch it on.
+- **The money that came out of the mailbox, in chat.** A line for each sum as it arrives, and,
+  when you close the mailbox, what the visit came to and what you are carrying now. The game
+  already tells you about items; it says nothing about the gold in a mailbox full of auction
+  sales. Works with the game's own Open All and with mail addons. Off until you switch it on.
 
 - **Reading prices and reading the whole house are two separate switches.** Using an auction house
   fills Family in, and so does the full scan of an addon like Auctionator — Family listens and
