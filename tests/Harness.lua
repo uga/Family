@@ -32556,6 +32556,26 @@ print("the button on the auction window")
 	check("and one is built on the window that is there",
 		button ~= nil and button.__parent == _G.AuctionFrameBrowse)
 
+	-- **And the probe names the window it found.** Reported from play on Mists 2026-09-12 as a
+	-- contradiction: the line said `AuctionHouseFrame nil` while the button was sitting on that
+	-- very frame. `a and f()` in a multiple assignment keeps one value, so the name was thrown
+	-- away before it was printed - the line was reporting the guard, not the answer.
+	do
+		local realModern = _G.AuctionHouseFrame
+		_G.AuctionHouseFrame = CreateFrame("Frame", "AuctionHouseFrame", UIParent)
+
+		local before = #DEFAULT_CHAT_FRAME.messages
+		SlashCmdList["FAMILY"]("ah")
+		local said = table.concat(DEFAULT_CHAT_FRAME.messages, "\n", before + 1,
+			#DEFAULT_CHAT_FRAME.messages)
+
+		check("and the probe names the newer window where there is one",
+			said:find("AuctionHouseFrame", 1, true) ~= nil
+				and not said:find("AuctionHouseFrame%s+|cff888888nil"), said:sub(1, 200))
+
+		_G.AuctionHouseFrame = realModern
+	end
+
 	check("and it hangs off a control of the client's own, not a corner of the panel",
 		button and button.__anchoredTo and button.__anchoredTo[_G.BrowseResetButton] == true
 			and not (button.__anchoredTo[_G.AuctionFrameBrowse]),

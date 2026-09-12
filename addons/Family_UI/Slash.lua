@@ -1351,7 +1351,18 @@ add("ah", L["what this client offers on the auction house"], function(argument)
 	-- first, a size and a corner says the second.
 	-- Which window the newer house draws, which nothing here had ever asked. The button hangs
 	-- off it, so a name that is not there and a name spelled wrong have to stop reading alike.
-	local _, found = UI.__modernAuctionWindow and UI.__modernAuctionWindow()
+	-- **Called on its own line, because a guard and a call on one line lose the second answer.**
+	--
+	-- `a and f()` in a multiple assignment is truncated to one value, so `found` was nil however
+	-- the call answered. Reported from play on Mists 2026-09-12 as a contradiction: this line
+	-- said the window was not there while the button was sitting on it, anchored by the very
+	-- branch that needs it. The same shape as parenthesising a `TryCall` before `type()`.
+	local found
+	if UI.__modernAuctionWindow then
+		local _, name = UI.__modernAuctionWindow()
+		found = name
+	end
+
 	Family:Print("    %-26s |cff888888%s|r", "AuctionHouseFrame", tostring(found))
 
 	local ours = _G.FamilyReadHouseButton

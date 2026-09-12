@@ -3699,3 +3699,19 @@ recognised by anybody: **ItemRack**, a CheckButton parented straight to `UIParen
 it outlives the character sheet and can be dragged anywhere. Anything wanting that window would have
 to hook its slot buttons, which is a different mechanism and has had no reading taken.
 
+#### What the whole read costs on Mists
+
+Measured from play 2026-09-12, the finished read of a live house:
+
+    43130 of 43130 row(s) read, 21265 price(s) taken
+    read the whole house: 43130 row(s) in 7 second(s), 21265 price(s) taken, 9739 known here
+
+**Seven seconds for the whole house.** The old house on the same evening took five minutes for
+394 pages, and 3,605 pages would be about forty-three minutes - so the two houses are not the
+same job done twice, they are different jobs. Nothing is paced towards the server here: the list
+is already in the client's hands when the reading starts, and the slicing is only so the client
+keeps answering its keyboard.
+
+Prices checked on common goods afterwards and correct, which is the reading that says the division
+by quantity is right way round.
+

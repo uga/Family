@@ -2971,3 +2971,32 @@ built has it.** A rule about telling absence from emptiness has to be applied at
 can be absent - and the moment to check is while writing the sentence that reports the silence,
 because that sentence is where the two cases get merged.
 
+---
+
+## L-081 — A guard and a call on one line keep one answer between them
+
+The probe line that says which window the newer auction house draws was written like this:
+
+    local _, found = UI.__modernAuctionWindow and UI.__modernAuctionWindow()
+
+In Lua an expression is truncated to a single value unless it is the last thing in the list, and
+`a and f()` is an expression. So `found` was nil however the call answered - the line was
+reporting the guard, not the answer.
+
+It arrived from play as a contradiction, which is the only reason it was caught at all. On Mists
+2026-09-12 the probe said **`AuctionHouseFrame nil`** while Family's own button was sitting on that
+very frame, anchored by the branch that exists only when the frame is there. Two lines of one
+report disagreeing is a fault somewhere; a single line quietly saying *nothing found* is a
+Tuesday.
+
+This is the same shape as the rule this repository already keeps about `TryCall`: parenthesise the
+result before `type()` or `tostring()`, because a call returning **no** values and a call returning
+nil are different things and the arithmetic of a value list hides the difference. Here it is the
+truncation rather than the emptiness, and the fix is the same - give the call a line of its own.
+
+**What now catches it.** A check gives the client that window and fails unless the probe prints
+its name.
+
+**The general rule: when a line both decides whether to ask and reports the answer, it will report
+the deciding.** Anything whose second return matters gets called on its own line.
+
