@@ -1100,6 +1100,28 @@ end
 -- (Auctions.lua). The words live here whichever pressed it, because this is the file the
 -- translation gate reads and a sentence written anywhere else would be an English one wherever
 -- it was read (§2.1).
+-- **Where a read's time actually went**, which is the only thing that can answer *why is this
+-- slower here than there*. Reported from play 2026-09-12: 0.72 seconds a page on Era and 2.4 on
+-- Burning Crusade, three times over, and nothing on either run said which of the three parts had
+-- grown.
+--
+-- Waiting is the server answering. *Would not send* is `CanSendAuctionQuery` refusing, which is
+-- the server's throttle arriving through the client. What is left is Family's own settle, and it
+-- is the only one of the three anybody here decides.
+--
+-- **Declared above both readers that call it.** Written below them it was a global there and nil,
+-- and the walk's callback runs inside `TryCall` - so the error was swallowed and the line simply
+-- did not appear, which is the quietest possible way for a diagnostic to fail (L-069).
+local function whereTheTimeWent(state, took)
+	local waited = Family.Auctions:WalkWaiting(state)
+	if not waited then return end
+
+	local held = Family.Auctions:WalkHeld(state) or 0
+
+	Family:Print(L["  %s waiting for the server, %s while it would not send, %s of Family's own pacing"],
+		spanOf(waited), spanOf(held), spanOf(math.max(0, took - waited - held)))
+end
+
 function UI:StopHouseRead()
 	if Family.Auctions:StopReplicateRead("asked") then return true end
 	if Family.Auctions:StopWalk("asked") then return true end
@@ -1211,22 +1233,23 @@ function UI:StartHouseRead(everything)
 			-- throttle, arriving as `CanSendAuctionQuery` saying no and being waited out
 			-- half a second at a time. Calling the remainder *ours* put somebody else's
 			-- limit under our name and pointed the only tuning decision at the wrong knob.
-			local waited = Family.Auctions:WalkWaiting(state)
-			local held = Family.Auctions:WalkHeld(state) or 0
-			if waited then
-				Family:Print(L["  %s waiting for the server, %s while it would not send, %s of Family's own pacing"],
-					spanOf(waited), spanOf(held),
-					spanOf(math.max(0, took - waited - held)))
-			end
+			whereTheTimeWent(state, took)
 
 			if UI.HouseReadChanged then UI:HouseReadChanged() end
 			return
 		end
 
 		-- Everything already taken is kept. A half-read house is a lot of prices.
+		-- **On the way out as well as at the end.** Reported from play on Burning Crusade
+		-- 2026-09-12: three and a half thousand pages at two and a half seconds each is two
+		-- and a half hours, so a read like that is stopped rather than finished - and the one
+		-- line that says where the time is going only existed on the path nobody takes.
+		local took = Family.Auctions:WalkSeconds(state) or 0
+
 		Family:Print(L["stopped after %d page(s) in %s: %s"], state.done or 0,
-			spanOf(Family.Auctions:WalkSeconds(state) or 0),
-			WHY[reason] or tostring(reason))
+			spanOf(took), WHY[reason] or tostring(reason))
+
+		whereTheTimeWent(state, took)
 
 		if UI.HouseReadChanged then UI:HouseReadChanged() end
 	end, everything)

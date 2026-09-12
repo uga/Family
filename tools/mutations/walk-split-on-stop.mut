@@ -1,0 +1,10 @@
+name: a read that is stopped does not say where its time went
+file: addons/Family_UI/Slash.lua
+--- old
+		whereTheTimeWent(state, took)
+
+		if UI.HouseReadChanged then UI:HouseReadChanged() end
+	end, everything)
+--- new
+		if UI.HouseReadChanged then UI:HouseReadChanged() end
+	end, everything)

@@ -31851,6 +31851,26 @@ print("how long a read of the auction house takes")
 	check("and a read stopped part way says how long that was",
 		tonumber(stopped:match("in (%d+) second")) ~= nil, stopped)
 
+	-- **And where that time went, on the way out as well as at the end.** Reported from play on
+	-- Burning Crusade 2026-09-12: three and a half thousand pages at two and a half seconds
+	-- each is two and a half hours, so a read that size is stopped rather than finished - and
+	-- the one line that says which of the three parts has grown existed only on the path
+	-- nobody takes. He stopped one at 103 pages and got no answer.
+	local at = 0
+	for index = #DEFAULT_CHAT_FRAME.messages, 1, -1 do
+		if DEFAULT_CHAT_FRAME.messages[index] == stopped then at = index break end
+	end
+
+	local afterStop
+	for index = at, #DEFAULT_CHAT_FRAME.messages do
+		if DEFAULT_CHAT_FRAME.messages[index]:find("waiting for the server", 1, true) then
+			afterStop = DEFAULT_CHAT_FRAME.messages[index]
+		end
+	end
+
+	check("and says where that time went, which is why anybody stops one",
+		afterStop ~= nil, tostring(afterStop))
+
 	_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan
 	_G.GetNumAuctionItems = realNum
 end)()
