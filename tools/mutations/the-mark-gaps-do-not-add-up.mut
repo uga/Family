@@ -1,0 +1,12 @@
+name: the two reasons a member is not unchanged are counted as one
+file: addons/Family/Wide.lua
+--- old
+            if mark == nil then
+                unmarkable = unmarkable + 1
+            elseif (link.sent or {})[memberKey] ~= mark then
+                unsent = unsent + 1
+            end
+--- new
+            if mark == nil then
+                unmarkable = unmarkable + 1
+            end

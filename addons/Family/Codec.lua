@@ -169,6 +169,18 @@ function Codec:Fingerprint(data)
     return tostring(mark(0, data, 0))
 end
 
+-- **How long this is once serialised and before it is squeezed.**
+--
+-- The denominator for any claim about compression, and it has to come from the same serialiser
+-- the wire form uses or the ratio is between two different things. Nil where the libraries are
+-- not here, which is the same answer `ToWire` gives and for the same reason.
+function Codec:SerialisedLength(data)
+    if not self:CanTalk() then return nil end
+
+    local ok, length = pcall(function() return #LibSerialize:Serialize(data) end)
+    return ok and length or nil
+end
+
 -- `level` is deflate's, and it is the caller's business because the trade is theirs.
 --
 -- Measured 2026-09-08 on a bundle of seventy shared characters: level 5 costs 577 ms to pack

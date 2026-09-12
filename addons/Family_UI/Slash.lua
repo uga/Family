@@ -1899,6 +1899,18 @@ add("widetime", L["how long a Wide Family exchange takes on this client"], funct
 			.. "unchanged, and an unchanged member is never opened."],
 			Family.Wide:Called(link) or familyID, count, deciding, held, total)
 
+		-- **And which of the two things a nought means.** Read from play 2026-09-12: *0 of
+		-- 30 unchanged*, with the last exchange a minute earlier, and no way to tell from the
+		-- line whether nothing has been acknowledged yet or the members cannot be marked at
+		-- all. Both are honest, only one is worth doing anything about, so the line names
+		-- them rather than leaving the reader to guess between them.
+		if held < total and Family.Wide.MarkGaps then
+			local unmarkable, unsent = Family.Wide:MarkGaps(link)
+			Family:Print(L["  |cff888888Of the %d that are not: %d have nothing recorded as "
+				.. "sent yet, and %d cannot be marked at all.|r"],
+				total - held, unsent, unmarkable)
+		end
+
 		Family:Print(L["  |cff888888What it used to cost, for comparison: building %d ms, "
 			.. "fingerprinting %d ms.|r"], building, folding)
 	end
@@ -1914,6 +1926,65 @@ end)
 -- Diagnostic rather than a feature. Working out which shape of the talent call a build wants
 -- has needed a round trip through a real client every single time, and this is what makes
 -- that one round trip instead of five.
+-- **What an exchange puts on the wire, weighed without sending it.**
+--
+-- Backlog 41, open since 2026-09-08 on one figure nobody could take: the `have` list goes at
+-- every exchange and there is one at every login, it is about 6.5 KB counted for two hundred
+-- and ten members, and *what it compresses to* was written down as unmeasured. The probe the
+-- entry describes wanted the other side online and somebody watching a queue.
+--
+-- It does not. The payload is built entirely on this side, so it can be built and weighed here
+-- with nothing sent and nobody anywhere.
+--
+-- **The same table the sender uses**, asked for by name. A probe that assembled its own copy
+-- would drift from the real one and then be quoted confidently for years, which is the shape
+-- of every wrong measurement in this repository.
+add("widecost", L["what an exchange would put on the wire, without sending it"], function()
+    if not Family.Wide:Enabled() then
+        Family:Print(L["Wide Family is switched off, so there is nothing to weigh."])
+        return
+    end
+
+    if not Family.Codec:CanTalk() then
+        Family:Print(L["|cffffaa00LibSerialize and LibDeflate are not loaded|r, so nothing "
+            .. "here can be weighed the way it would really go."])
+        return
+    end
+
+    local links = 0
+
+    for familyID, link in pairs(Family.Wide:Links()) do
+        links = links + 1
+
+        local payload = Family.Wide:WantPayload(link)
+        local held = 0
+        for _ in pairs(payload.have or {}) do held = held + 1 end
+
+        -- Both figures from the codec, so the ratio is between two forms of one thing. A
+        -- compressed length set against a Lua table printed out would be two different
+        -- measurements with a saving invented between them.
+        local wire = Family.Codec:ToWire(payload)
+        local before = Family.Codec:SerialisedLength(payload)
+
+        if not wire then
+            Family:Print(L["|cffffd700%s|r: the payload could not be encoded."],
+                tostring(Family.Wide:Called(link) or familyID))
+        else
+            Family:Print(L["|cffffd700%s|r: %d mark(s) held of theirs, %s on the wire, "
+                .. "%s before compression."],
+                tostring(Family.Wide:Called(link) or familyID), held,
+                UI:Bytes(#wire), before and UI:Bytes(before) or L["an unknown amount"])
+        end
+    end
+
+    if links == 0 then
+        Family:Print(L["no links, so there is nothing to weigh."])
+        return
+    end
+
+    Family:Print(L["|cff888888Nothing was sent, and nobody had to be online.|r"])
+end)
+
 add("talentprobe", L["what this client answers when asked about a talent"], function()
 	if Family.Capabilities:Has("talentTrees") then
 		Family:Print(L["this client uses talent trees; the probe is for the choices clients."])

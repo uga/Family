@@ -443,6 +443,19 @@ function UI:FitNames(pieces, limit, widthOf, markerFor)
 	return math.max(count, 1)
 end
 
+-- **A count of bytes, in the unit a reader can hold in their head.**
+--
+-- Bytes below a kilobyte, because 812 is a number somebody can compare with the next one; above
+-- it, kilobytes to one place, because 6.5 KB is a size and 6,656 bytes is a digit-counting
+-- exercise. A thousand and twenty-four rather than a thousand: this measures what a client
+-- packed, not what a disk was sold as.
+function UI:Bytes(count)
+	count = tonumber(count)
+	if not count then return UI.UNKNOWN end
+	if count < 1024 then return string.format(L["%d bytes"], count) end
+	return string.format(L["%.1f KB"], count / 1024)
+end
+
 -- **Two ways of saying it, and the shorter one where the longer will not fit.**
 --
 -- Reported off a screenshot 2026-09-12: a Wide Family line ending *send...*, cut mid-word. That

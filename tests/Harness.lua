@@ -5821,6 +5821,99 @@ do
 		check("and a row holding one is neither counted nor offered the key",
 			priceLine(2880, "Stack of") == nil and priceLine(2880, "CTRL") == nil)
 
+		-- **A merchant's row and a loot window's**, the other two places backlog 62 names.
+		-- Both were read from play 2026-09-12 rather than recalled, and all three turned out
+		-- to differ - which is why none of them was written before its hover.
+		--
+		--   auction   BrowseButtonNItem id 0, inside BrowseButtonN id N
+		--   merchant  MerchantItemNItemButton id N, inside MerchantItemN id 0
+		--   loot      LootButtonN id N, inside LootFrame id 0
+		--
+		-- And the quantity sits in a different return in each: the third of
+		-- `GetAuctionItemInfo`, the **fourth** of `GetMerchantItemInfo`, the **third** of
+		-- `GetLootSlotInfo`.
+		do
+			local realMerchLink, realMerchInfo = GetMerchantItemLink, GetMerchantItemInfo
+			local realLootLink, realLootInfo = GetLootSlotLink, GetLootSlotInfo
+			local realPerPage, realLootButtons = _G.MERCHANT_ITEMS_PER_PAGE,
+				_G.LOOTFRAME_NUMBUTTONS
+
+			local sellerButton = { GetID = function() return 8 end }
+			local sellerRow = { GetID = function() return 0 end,
+				GetParent = function() return sellerButton end }
+
+			_G.MERCHANT_ITEMS_PER_PAGE = 12
+			_G["MerchantItem8ItemButton"] = sellerButton
+			GetMerchantItemLink = function(index)
+				return index == 8 and "|Hitem:2880|h[Weak Flux]|h" or nil
+			end
+			-- Name, texture, price, quantity, how many are left, and three flags, in the
+			-- order the client printed them.
+			GetMerchantItemInfo = function(index)
+				if index ~= 8 then return nil end
+				return "Weak Flux", 134949, 1839, 5, -1, false, false, false
+			end
+
+			GameTooltip.__owner = sellerButton
+			check("a merchant's row is multiplied by what one purchase hands over",
+				Family.UI.__pileCount(GameTooltip, 2880, 2880) == 5,
+				tostring(Family.UI.__pileCount(GameTooltip, 2880, 2880)))
+
+			-- The number is on the button here and on the parent at an auction house, so
+			-- the walk has to try both ends and this is the end the other case does not use.
+			GameTooltip.__owner = sellerRow
+			check("and reached whether the number is on the button or on the row around it",
+				Family.UI.__pileCount(GameTooltip, 2880, 2880) == 5,
+				tostring(Family.UI.__pileCount(GameTooltip, 2880, 2880)))
+
+			-- A vendor's own frames and nothing else, for the reason the browse list gives.
+			_G["MerchantItem8ItemButton"] = { GetID = function() return 8 end }
+			GameTooltip.__owner = sellerButton
+			check("while a frame that is not one of the vendor's own buttons is refused",
+				Family.UI.__pileCount(GameTooltip, 2880, 2880) == nil,
+				tostring(Family.UI.__pileCount(GameTooltip, 2880, 2880)))
+			_G["MerchantItem8ItemButton"] = sellerButton
+
+			-- And the row has to hold the item being described, the same guard again.
+			GetMerchantItemLink = function() return "|Hitem:4306|h[Silk Cloth]|h" end
+			check("and a vendor's row naming something else is not counted",
+				Family.UI.__pileCount(GameTooltip, 2880, 2880) == nil,
+				tostring(Family.UI.__pileCount(GameTooltip, 2880, 2880)))
+
+			GetMerchantItemLink, GetMerchantItemInfo = realMerchLink, realMerchInfo
+			_G["MerchantItem8ItemButton"] = nil
+			_G.MERCHANT_ITEMS_PER_PAGE = realPerPage
+
+			-- **The loot window**, whose quantity is the third return and not the fourth.
+			local lootButton = { GetID = function() return 2 end }
+			_G.LOOTFRAME_NUMBUTTONS = 4
+			_G["LootButton2"] = lootButton
+			GetLootSlotLink = function(index)
+				return index == 2 and "|Hitem:2880|h[Weak Flux]|h" or nil
+			end
+			GetLootSlotInfo = function(index)
+				if index ~= 2 then return nil end
+				return 133754, "Weak Flux", 7
+			end
+
+			GameTooltip.__owner = lootButton
+			check("a loot row is multiplied by what is lying in that slot",
+				Family.UI.__pileCount(GameTooltip, 2880, 2880) == 7,
+				tostring(Family.UI.__pileCount(GameTooltip, 2880, 2880)))
+
+			-- Reading the fourth return here would answer nil and quietly draw no line,
+			-- which is the failure a recalled position gives and a read one does not.
+			GetLootSlotInfo = function() return 133754, "Weak Flux", 7, nil, 1 end
+			check("and it is the third return that carries it, not the fourth",
+				Family.UI.__pileCount(GameTooltip, 2880, 2880) == 7,
+				tostring(Family.UI.__pileCount(GameTooltip, 2880, 2880)))
+
+			GetLootSlotLink, GetLootSlotInfo = realLootLink, realLootInfo
+			_G["LootButton2"] = nil
+			_G.LOOTFRAME_NUMBUTTONS = realLootButtons
+			GameTooltip.__owner = rowTexture
+		end
+
 		IsControlKeyDown = realCtrl
 		BROWSE = realBrowse
 		GetAuctionItemInfo = realInfo
@@ -13263,6 +13356,71 @@ do
 			-- printed line names all three whatever it measured.
 			check("and says what the cheap answer to the same question would cost",
 				said:find("marking", 1, true) ~= nil, said)
+
+			-- **What an exchange would put on the wire, weighed without sending it.**
+			--
+			-- Backlog 41 has been open since 2026-09-08 on one figure: the `have` list goes
+			-- at every exchange, there is an exchange at every login, and what it compresses
+			-- to had never been read. The entry's own probe wanted the other side online and
+			-- somebody watching a queue; the payload is built entirely on this side, so it
+			-- can be built and weighed with nothing sent.
+			do
+				local from = #DEFAULT_CHAT_FRAME.messages
+				local weighed = pcall(SlashCmdList["FAMILY"], "widecost")
+				local heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+					#DEFAULT_CHAT_FRAME.messages)
+
+				check("/family widecost says what an exchange would weigh",
+					weighed and heard:find("on the wire", 1, true) ~= nil, heard)
+				check("and says what it was before it was squeezed",
+					heard:find("before compression", 1, true) ~= nil, heard)
+				-- **And nothing went.** A probe that measured by sending would be a probe
+				-- nobody could run twice, and this one is offered as costing nothing.
+				check("and sends nothing to do it",
+					heard:find("Nothing was sent", 1, true) ~= nil, heard)
+
+				-- **The table it weighs is the one the sender sends.** Asked of the same
+				-- function rather than assembled here: a probe with its own copy of the
+				-- payload drifts from the real one and is then quoted for years.
+				local link = nil
+				for _, one in pairs(Family.Wide:Links()) do link = link or one end
+				if link then
+					local payload = Family.Wide:WantPayload(link)
+					check("and the payload it weighs carries the marks and says whose it is",
+						type(payload) == "table" and type(payload.have) == "table"
+							and payload.family ~= nil and payload.schema ~= nil,
+						tostring(payload and payload.family))
+				end
+			end
+
+			-- **And which of the two things a nought means**, which the line could not say
+			-- when it was read from play: nothing acknowledged yet, or a member that cannot
+			-- be marked at all. Both honest, only one worth acting on.
+			do
+				local link = nil
+				for _, one in pairs(Family.Wide:Links()) do link = link or one end
+				if link then
+					local unmarkable, unsent = Family.Wide:MarkGaps(link)
+					local total, kept = Family.Wide:MarkCost(link)
+					check("the two reasons a member is not counted unchanged add up to the gap",
+						unmarkable + unsent == total - kept,
+						unmarkable .. " + " .. unsent .. " against " .. (total - kept))
+				end
+			end
+
+			-- **Bytes in the unit a reader can hold in their head.**
+			check("a size under a kilobyte is said in bytes",
+				Family.UI:Bytes(812):find("812", 1, true) ~= nil, Family.UI:Bytes(812))
+			check("and above one, in kilobytes to a place",
+				Family.UI:Bytes(6656):find("6.5", 1, true) ~= nil, Family.UI:Bytes(6656))
+			-- 1024 and not 1000: this measures what a client packed, not what a disk was
+			-- sold as, and the boundary is where the unit changes.
+			check("and the boundary is a kibibyte rather than a thousand",
+				Family.UI:Bytes(1000):find("1000", 1, true) ~= nil
+					and Family.UI:Bytes(1024):find("1.0", 1, true) ~= nil,
+				Family.UI:Bytes(1000) .. " / " .. Family.UI:Bytes(1024))
+			check("and nothing counted is said as nothing known",
+				Family.UI:Bytes(nil) == Family.UI.UNKNOWN, tostring(Family.UI:Bytes(nil)))
 			-- And what deciding costs *today*, which is a different question from the three
 			-- timings: those measure the road an exchange used to take. Without this the
 			-- diagnostic reads exactly the same after the fix as before it, which is how it

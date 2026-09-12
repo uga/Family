@@ -957,6 +957,50 @@ local function heldMarks(link)
     return have
 end
 
+-- **What the second half of an exchange puts on the wire**, as its own function so that
+-- something other than the sender can ask for it.
+--
+-- Backlog 41 has been open since 2026-09-08 on one unmeasured figure: the `have` list is one
+-- entry per member of theirs this side holds, it goes at every exchange and there is one at
+-- every login, and what it *compresses* to has never been read. Counted it is about 6.5 KB for
+-- two hundred and ten members; a list of similar strings is the best case for deflate, so the
+-- real figure was expected to be a fraction of that - and expected is not measured.
+--
+-- Settling it needed the other side online and somebody watching a queue. It does not: the
+-- payload is built entirely on this side, so it can be built and weighed without sending a byte.
+-- What matters is that the probe weighs **this** table and not a hand-made copy of it, which is
+-- why the sender above now asks for it here too. A copy would drift and then be measured
+-- confidently for years.
+function Wide:WantPayload(link)
+    return envelope({ have = heldMarks(link) })
+end
+
+-- **Why a member is not counted as unchanged**, which is a different question from how many are.
+--
+-- `MarkCost` answers *N of M unchanged* and `/family widetime` prints it, and a reading of *0 of
+-- 30* came back from play with no way to tell which of two things it meant: nothing has been
+-- acknowledged yet, so there is no recorded send to compare against; or the member cannot be
+-- marked at all, which is what a character with no `seen` is - its entry would carry a fresh
+-- `time()` and differ from itself on every exchange, so it goes every time and always did.
+--
+-- Both are honest and only one is worth doing anything about, so the figure names them.
+function Wide:MarkGaps(link)
+    local unmarkable, unsent = 0, 0
+
+    for memberKey in pairs(link.grants or {}) do
+        local mark, isOffered = sendingMark(link, memberKey)
+        if isOffered then
+            if mark == nil then
+                unmarkable = unmarkable + 1
+            elseif (link.sent or {})[memberKey] ~= mark then
+                unsent = unsent + 1
+            end
+        end
+    end
+
+    return unmarkable, unsent
+end
+
 -- `full` sends everything whether or not it has changed; `ask` sends the second half of the
 -- exchange, the request for theirs.
 --
@@ -1011,7 +1055,7 @@ function Wide:ExchangeWith(familyID, why, options)
     -- message until the character has proved they are there. Sent eagerly, it went out
     -- beside the canary and cost a second refusal from the client for somebody who was not
     -- online - which is the whole of what the canary is for.
-    if ask then send(link, "want", envelope({ have = heldMarks(link) }), true) end
+    if ask then send(link, "want", Wide:WantPayload(link), true) end
 
     link.lastAsked = time()
     Family:Debug("wide: exchanged with %s (%d offered, %d sent, %d unchanged, %s)",
