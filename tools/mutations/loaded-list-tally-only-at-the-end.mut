@@ -4,8 +4,8 @@ file: addons/Family/Scanners/Auctions.lua
 	local tally = bigRead.tally
 	if tally then
 		Auctions.lastLoadedList = {
-			rows = tally.rows, items = tally.items, priced = tally.priced,
-			variants = tally.variants, at = time(),
+			rows = tally.rows, blank = tally.blank, items = tally.items,
+			priced = tally.priced, variants = tally.variants, at = time(),
 		}
 	end
 

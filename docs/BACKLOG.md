@@ -3995,11 +3995,20 @@ recorded.
 
 **What still has to be settled, and neither is a matter of opinion.**
 
-1. **How much of anything is suffixed at all.** If it is two hundred items of six thousand in a
-   house, and a handful across a family, this is a correctness fix with no visible effect; if it is
-   thousands, it is most of the value of the price feature and a visible change to every
-   possessions block. The loaded list makes the house side cheap to count - a second tally beside
-   the one already counting distinct base ids, over full item strings rather than ids.
+1. ~~How much of anything is suffixed at all.~~ **Counted 2026-09-12, and it is not a footnote.**
+   Burning Crusade, a whole-house list read through as another addon delivered it:
+
+       125,310 rows  ->  4,607 items  ->  10,494 once the suffix tells two apart
+
+   **Two and a quarter times as many things.** Of the 4,607 base items, 4,595 have a buyout, so
+   nothing here is about auctions with no price; the multiplication is variants alone. Today every
+   one of those 10,494 is priced at whichever of its siblings is cheapest.
+
+   It also closes the question this whole thread started from - why that addon reported about
+   16,000 items where Family holds about 6,800. That was 70% of the house; the variant count
+   extrapolates towards its 16,133, and the base-item count towards Family's 6,877. **The two were
+   never counting the same thing**, and neither was wrong. No bid-only auctions, no unread rows:
+   the whole gap is the suffix collapse.
 2. ~~Whether an enchant is a variant.~~ **Settled by Alberto, 2026-09-12: only the suffix is.**
    *Incantesimi (gemme etc): per il momento non consideriamoli varianti.* So the key is not
    `ItemString`, which answers for any of enchant, gems or suffix - it is the **base id plus the

@@ -1024,8 +1024,19 @@ local function readRows(where, from, to, tally)
 		-- the gap is either auctions with no buyout - which are no price at all (§2.2) - or
 		-- that addon counting something other than this house. `items` against `priced`
 		-- says which, and neither has ever been counted anywhere.
-		if tally and itemID then
+		-- **Every row looked at, and how many of them the client would not describe.**
+		--
+		-- Reported from play on Burning Crusade 2026-09-12, twice and hours apart: a read
+		-- 43,500 rows along had counted 29,110 of them. A third of a loaded list gives back
+		-- no link at all, so `GetAuctionItemLink` answers nothing and there is no item to
+		-- file. Whether that is a third of the house going unread or a third of it being
+		-- rows nothing could have been taken from is not something to be reasoned out.
+		if tally then
 			tally.rows = tally.rows + 1
+			if not itemID then tally.blank = tally.blank + 1 end
+		end
+
+		if tally and itemID then
 
 			if not tally.seen[itemID] then
 				tally.seen[itemID] = true
@@ -1159,8 +1170,8 @@ bigReadTick = function()
 	local tally = bigRead.tally
 	if tally then
 		Auctions.lastLoadedList = {
-			rows = tally.rows, items = tally.items, priced = tally.priced,
-			variants = tally.variants, at = time(),
+			rows = tally.rows, blank = tally.blank, items = tally.items,
+			priced = tally.priced, variants = tally.variants, at = time(),
 		}
 	end
 
@@ -1206,7 +1217,7 @@ function Auctions:ReadPrices()
 		-- row means nothing in it, so that read begins again.
 		if not bigRead or count < bigRead.at then
 			bigRead = { at = 0, count = count, kept = 0,
-				tally = { rows = 0, items = 0, priced = 0, variants = 0,
+				tally = { rows = 0, blank = 0, items = 0, priced = 0, variants = 0,
 					seen = {}, pricedSeen = {}, variantSeen = {} } }
 		else
 			bigRead.count = count

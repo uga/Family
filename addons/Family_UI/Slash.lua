@@ -1467,8 +1467,12 @@ add("ah", L["what this client offers on the auction house"], function(argument)
 	-- it is counted as the rows go by rather than by walking them twice.
 	local last = Family.Auctions.lastLoadedList
 	if last then
-		Family:Print(L["  the last loaded list: %d row(s), %d item(s), %d with a price"],
-			last.rows or 0, last.items or 0, last.priced or 0)
+		-- **Rows looked at and rows the client would not describe**, side by side. A read
+		-- 43,500 rows along had counted 29,110 of them, twice and hours apart, and a third of
+		-- a list going unread and a third of it being rows nothing could be taken from are very
+		-- different things to be told.
+		Family:Print(L["  the last loaded list: %d row(s), %d with no item, %d item(s), %d with a price"],
+			last.rows or 0, last.blank or 0, last.items or 0, last.priced or 0)
 
 		-- **And the same items counted again with the suffix kept apart**, which is the whole
 		-- of backlog 67's open question: a price is filed under the base id and the lowest

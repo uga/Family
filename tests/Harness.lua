@@ -5268,6 +5268,10 @@ do
 		GetAuctionItemLink = function(which, i)
 			local row = which == "list" and LIST[i]
 			if not row then return nil end
+			-- A row the client will not describe. Measured from play: a third of a loaded
+			-- list answers nothing here, and until this fixture could be one, no check could
+			-- tell a read that skipped those from a read that never met one.
+			if row.nolink then return nil end
 			return row.link or ("|Hitem:" .. row.id .. "|h")
 		end
 		GetAuctionItemInfo = function(which, i)
@@ -5552,6 +5556,31 @@ do
 			fire("AUCTION_HOUSE_CLOSED")
 			check("and closing the auction house ends it",
 				Family.Auctions:BigListReading() == nil)
+
+			-- **Rows the client will not describe are counted, not passed over in silence.**
+			--
+			-- Reported from play on Burning Crusade 2026-09-12, twice and hours apart: a read
+			-- 43,500 rows along had counted 29,110 of them. A third of a loaded list gives
+			-- back no link, so there is no item to file - and a third of a house going unread
+			-- and a third of it being rows nothing could have been taken from are very
+			-- different things to be told. The counter says which without anybody reasoning.
+			Family.Auctions:ForgetVisit()
+			Family.Auctions:StopBigListRead()
+			Family.Auctions.lastLoadedList = nil
+			LIST = {}
+			for index = 1, 100 do
+				LIST[index] = { id = 800000 + index, count = 1, buyout = 900,
+					nolink = index % 10 < 3 }
+			end
+			Family.Auctions:ReadPrices()
+			advance(1)
+
+			local silent = Family.Auctions.lastLoadedList
+			check("rows the client will not describe are counted rather than passed over",
+				silent ~= nil and silent.rows == 100 and silent.blank == 30
+					and silent.items == 70,
+				silent and (silent.rows .. " row(s), " .. silent.blank .. " blank, "
+					.. silent.items .. " item(s)") or "nothing counted")
 
 			-- **One base item wearing three suffixes is three things, and an enchant is not
 			-- a variant.**

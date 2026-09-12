@@ -1,0 +1,12 @@
+name: rows the client will not describe are passed over instead of counted
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		if tally then
+			tally.rows = tally.rows + 1
+			if not itemID then tally.blank = tally.blank + 1 end
+		end
+
+		if tally and itemID then
+--- new
+		if tally and itemID then
+			tally.rows = tally.rows + 1
