@@ -1,6 +1,6 @@
-name: taking a whole letter looks at its first attachment and stops
+name: taking a whole letter at once is not watched for the money in it
 file: addons/Family_UI/MailReport.lua
 --- old
-			for attachment = 1, slots do noteAttachment(index, attachment) end
+	for _, name in ipairs { "TakeInboxMoney", "AutoLootMailItem" } do
 --- new
-			noteAttachment(index, 1)
+	for _, name in ipairs { "TakeInboxMoney" } do

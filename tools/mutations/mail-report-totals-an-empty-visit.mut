@@ -1,6 +1,6 @@
-name: closing a mailbox nobody touched still prints a total of nothing
+name: closing a mailbox nobody collected money from still prints a total of nothing
 file: addons/Family_UI/MailReport.lua
 --- old
-	if wanted() and (visitItems > 0 or visitMoney > 0) then
+	if wanted() and visitMoney > 0 then
 --- new
 	if wanted() then

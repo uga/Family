@@ -1,0 +1,6 @@
+name: money reported as collected is still waited for, so it can be claimed again
+file: addons/Family_UI/MailReport.lua
+--- old
+			waiting = waiting - coin
+--- new
+			local _ = coin

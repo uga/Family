@@ -2,11 +2,11 @@ name: the mailbox is narrated whether or not anybody asked for it
 file: addons/Family_UI/MailReport.lua
 --- old
 		if not wanted() then
-			held, heldMoney, pending = nil, nil, nil
+			heldMoney, waiting = nil, 0
 			return
 		end
 --- new
 		if false then
-			held, heldMoney, pending = nil, nil, nil
+			heldMoney, waiting = nil, 0
 			return
 		end

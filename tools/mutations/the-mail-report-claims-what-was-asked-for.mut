@@ -1,6 +1,8 @@
-name: the mailbox reports what a take asked for rather than what actually arrived
+name: a clicked letter's money is read from the wrong return of its header
 file: addons/Family_UI/MailReport.lua
 --- old
-			local arrived = math.min(row.count or 0, left)
+		local _, _, _, _, letterMoney = Family:TryCall(GetInboxHeaderInfo, index)
+		letterMoney = tonumber(letterMoney) or 0
 --- new
-			local arrived = row.count or 0
+		local _, _, _, letterMoney = Family:TryCall(GetInboxHeaderInfo, index)
+		letterMoney = tonumber(letterMoney) or 0

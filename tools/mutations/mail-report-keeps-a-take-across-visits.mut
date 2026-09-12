@@ -1,0 +1,6 @@
+name: money asked for and never answered is carried into the next visit to the mailbox
+file: addons/Family_UI/MailReport.lua
+--- old
+	heldMoney, waiting, visitMoney = nil, 0, 0
+--- new
+	heldMoney, visitMoney = nil, 0
