@@ -32746,6 +32746,42 @@ print("the button on the auction window")
 		_G.AuctionHouseFrame = realModern
 	end
 
+	-- **Every answer `CanSendAuctionQuery` gives, and not only the first.** It was read into a
+	-- single local, which keeps one value however many the client hands back - the truncation
+	-- that had this same probe reporting a window as missing while Family's button sat on it
+	-- (L-081). Worth asking because another addon's whole-house scan holds itself back for
+	-- fifteen minutes with the query never leaving the machine, and a second answer here would
+	-- say whether the client knows about that limit or that addon invented it.
+	do
+		local realCanTwo = _G.CanSendAuctionQuery
+		_G.CanSendAuctionQuery = function() return true, false end
+
+		local before = #DEFAULT_CHAT_FRAME.messages
+		SlashCmdList["FAMILY"]("ah")
+		local said = table.concat(DEFAULT_CHAT_FRAME.messages, "\n", before + 1,
+			#DEFAULT_CHAT_FRAME.messages)
+
+		check("the probe prints every answer the client gives about sending a query",
+			said:find("accepted now", 1, true) ~= nil
+				and said:find("answer 2", 1, true) ~= nil
+				and said:find("answer 2%s+|cff888888false") ~= nil,
+			said:sub(1, 300))
+
+		-- And says nothing extra where there is nothing extra, or the line above is furniture
+		-- every client draws whatever it answered.
+		_G.CanSendAuctionQuery = function() return true end
+		before = #DEFAULT_CHAT_FRAME.messages
+		SlashCmdList["FAMILY"]("ah")
+		said = table.concat(DEFAULT_CHAT_FRAME.messages, "\n", before + 1,
+			#DEFAULT_CHAT_FRAME.messages)
+
+		check("and prints no second answer where the client gives one",
+			said:find("accepted now", 1, true) ~= nil
+				and said:find("answer 2", 1, true) == nil, said:sub(1, 300))
+
+		_G.CanSendAuctionQuery = realCanTwo
+	end
+
 	check("and it hangs off a control of the client's own, not a corner of the panel",
 		button and button.__anchoredTo and button.__anchoredTo[_G.BrowseResetButton] == true
 			and not (button.__anchoredTo[_G.AuctionFrameBrowse]),

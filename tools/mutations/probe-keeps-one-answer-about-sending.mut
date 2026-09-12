@@ -1,0 +1,6 @@
+name: the probe reads a single value from CanSendAuctionQuery again
+file: addons/Family_UI/Slash.lua
+--- old
+	local answers = packed(Family:TryCall(CanSendAuctionQuery))
+--- new
+	local answers = { n = 1, (Family:TryCall(CanSendAuctionQuery)) }

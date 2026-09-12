@@ -1416,8 +1416,29 @@ add("ah", L["what this client offers on the auction house"], function(argument)
 	Family:Print(L["  prices on tooltips are switched: |cffffd700%s|r"],
 		FamilyDB.prices and L["on"] or L["off"])
 
-	local askable = Family:TryCall(CanSendAuctionQuery)
-	Family:Print(L["  a query would be accepted now: |cffffd700%s|r"], tostring(askable))
+	-- **Every answer it gives, not the first one.**
+	--
+	-- `local askable = Family:TryCall(...)` keeps one value, so a second return has never been
+	-- read here in the life of this probe - the same truncation that made this file report a
+	-- window as missing while Family's own button was sitting on it (L-081).
+	--
+	-- What makes it worth asking now: measured on Burning Crusade 2026-09-12, another addon's
+	-- whole-house scan holds itself back for fifteen minutes and the query never leaves the
+	-- machine - `/family ah watch` was armed for the second press and printed nothing. That says
+	-- how it stops and not why, and two readings still fit: an interval that addon invented, or
+	-- a limit the client knows about and it is reporting. If the client hands back a second
+	-- answer about the whole-house route, this is where it will show, and it settles which.
+	--
+	-- Numbered rather than named, because nothing here knows what a second answer would mean and
+	-- inventing a label for it is how a reading becomes an invention.
+	local function packed(...) return { n = select("#", ...), ... } end
+	local answers = packed(Family:TryCall(CanSendAuctionQuery))
+
+	Family:Print(L["  a query would be accepted now: |cffffd700%s|r"], tostring(answers[1]))
+	for index = 2, answers.n do
+		Family:Print("    %-26s |cff888888%s|r", "answer " .. index,
+			tostring(answers[index]))
+	end
 
 	-- All three lists rather than the one Family reads, because *nought on the browse list* and
 	-- *nought everywhere* are different faults and only one of them is about the selector.
