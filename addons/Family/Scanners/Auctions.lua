@@ -549,6 +549,90 @@ end
 -- Both routes are registered on every client and neither is gated: the old one reads a list that
 -- answers nought on Mists, the newer one reads a call that does not exist on Era, and each is
 -- silent where it does not apply. Nothing has to decide which house this is.
+--------------------------------------------------------------------------------------------
+-- The newer house's whole-list read, asked about rather than used
+--
+-- Entry 55 slice 3. The old house is walked a page at a time because a page is what it offers.
+-- The newer one offers a single call that asks the server for its entire list, and Mists has it:
+-- measured 2026-09-11, `ReplicateItems`, `GetNumReplicateItems`, `GetReplicateItemInfo` and
+-- `IsThrottledMessageSystemReady` are all present there and all absent on Era.
+--
+-- **Presence is not behaviour.** What that call answers, how much arrives, in how many pieces,
+-- whether the rows are numbered from nought or from one, and what the throttle does are five
+-- things nothing here knows. And it is the same family of call as the one that crawled a live
+-- client for minutes - so nothing is built on it until it has been run once and the answers
+-- written down, which is why everything below reads and nothing acts.
+--------------------------------------------------------------------------------------------
+
+local tellNextReplicate
+local replicateHeard = 0
+
+function Auctions:TellNextReplicate(fn)
+	tellNextReplicate = type(fn) == "function" and fn or nil
+end
+
+function Auctions:ReplicateHeard()
+	return replicateHeard
+end
+
+-- Whether this build offers it at all, which is what decides whether the probe has anything to
+-- do - and it is the call being there, never the build number.
+function Auctions:CanReplicate()
+	return (_G.C_AuctionHouse and type(C_AuctionHouse.ReplicateItems) == "function") or false
+end
+
+function Auctions:ThrottleReady()
+	if not _G.C_AuctionHouse then return nil end
+	if type(C_AuctionHouse.IsThrottledMessageSystemReady) ~= "function" then return nil end
+	return (Family:TryCall(C_AuctionHouse.IsThrottledMessageSystemReady))
+end
+
+function Auctions:ReplicateCount()
+	if not _G.C_AuctionHouse then return nil end
+	if type(C_AuctionHouse.GetNumReplicateItems) ~= "function" then return nil end
+	return tonumber((Family:TryCall(C_AuctionHouse.GetNumReplicateItems)))
+end
+
+-- Every return of a row, by **position**, with a trailing nothing kept as part of the shape.
+local function packOf(...)
+	return { n = select("#", ...), ... }
+end
+
+-- **A row of the replicated list, at the index it was asked for.**
+--
+-- The indices are asked for rather than iterated, and nought is among them, because whether this
+-- list is numbered from nought or from one is one of the things unknown - and a loop written from
+-- either guess would answer with the guess. Nothing here names a return either: which position
+-- holds what is the reading, and a table of names written now would be the same mistake wearing
+-- a different coat (L-071).
+function Auctions:ReplicateSample(indices)
+	local rows = {}
+	if not _G.C_AuctionHouse then return rows end
+	if type(C_AuctionHouse.GetReplicateItemInfo) ~= "function" then return rows end
+
+	for _, index in ipairs(indices or { 0, 1 }) do
+		local got = packOf(Family:TryCall(C_AuctionHouse.GetReplicateItemInfo, index))
+
+		local said = {}
+		for position = 1, got.n do said[position] = tostring(got[position]) end
+		rows[#rows + 1] = { index = index, n = got.n, values = said }
+	end
+
+	return rows
+end
+
+-- **Sent once, and only by somebody asking for it in as many words.**
+--
+-- `pcall` rather than `TryCall`, because here an error is the measurement and `TryCall` throws
+-- the words away - the same reason `ReplayQuery` uses one.
+function Auctions:AskReplicate()
+	if not self:CanReplicate() then return false, "absent" end
+
+	local ok, err = pcall(C_AuctionHouse.ReplicateItems)
+	if not ok then return false, tostring(err) end
+	return true, nil
+end
+
 function Auctions:ReadModernPrices()
 	if not C_AuctionHouse then return 0 end
 
@@ -1187,6 +1271,18 @@ Family:OnDatabaseReady("auctions", function()
 			modernHeard[event] = (modernHeard[event] or 0) + 1
 		end)
 	end
+
+	-- **And the whole-list read answering, where this build has one.** Its own key, and
+	-- registered on every client - `Family:RegisterEvent` answers false for an event a client
+	-- does not have and leaves nothing behind, so this costs Era nothing.
+	Family:RegisterEvent("REPLICATE_ITEM_LIST_UPDATE", "auctions.replicate", function()
+		replicateHeard = replicateHeard + 1
+
+		if not tellNextReplicate then return end
+		local told = tellNextReplicate
+		tellNextReplicate = nil
+		Family:TryCall(told)
+	end)
 
 	-- The newer house's own way of saying the same thing. `..._ADDED` is here because it is
 	-- how further results arrive where they arrive in pieces, and it costs nothing on a

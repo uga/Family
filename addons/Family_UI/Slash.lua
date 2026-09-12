@@ -862,6 +862,79 @@ local function askOnce(page)
 	end)
 end
 
+-- **Asking the newer auction house for its whole list, once.**
+--
+-- Entry 55 slice 3. Mists has no pages to walk - `AUCTION_ITEM_LIST_UPDATE` never fires there and
+-- the browse panel does not exist - but it has a call that asks the server for every listing at
+-- once. Whether that call answers, how much of it arrives, in how many pieces, whether the rows
+-- are numbered from nought or from one, and what the throttle does are five things nothing in
+-- this repository knows.
+--
+-- It is the same family of call as the one that crawled a live client for minutes, so it is sent
+-- **once**, by a word nobody types by accident, and it is locked while it is in the air. A probe
+-- that offers a second try is a probe that will be tried twice (L-070), and this is the one place
+-- in the addon where that costs somebody their evening.
+local replicating = nil
+
+local function replicateOnce()
+	if not Family.Auctions:CanReplicate() then
+		Family:Print(L["this build has no whole-list read on the auction house"])
+		return
+	end
+
+	if replicating and (time() - replicating) < 60 then
+		Family:Print(L["a query sent %d second(s) ago has not answered yet - nothing more is sent"],
+			time() - replicating)
+		return
+	end
+
+	-- Read before, so that *the throttle was not ready* and *the call did nothing* stop being
+	-- the same silence.
+	Family:Print(L["  the throttled message system is ready: |cffffd700%s|r"],
+		tostring(Family.Auctions:ThrottleReady()))
+	Family:Print(L["  it holds %s replicated row(s) before asking"],
+		tostring(Family.Auctions:ReplicateCount()))
+
+	local answered = false
+
+	Family.Auctions:TellNextReplicate(function()
+		answered = true
+		replicating = nil
+
+		Family:Print(L["  it holds %s replicated row(s) now, after %d answer(s)"],
+			tostring(Family.Auctions:ReplicateCount()),
+			Family.Auctions:ReplicateHeard())
+
+		-- **Printed by position, never by name.** Which return holds what is the whole of
+		-- what is being asked, and nought is among the indices because whether this list
+		-- starts there is one of the unknowns.
+		for _, row in ipairs(Family.Auctions:ReplicateSample { 0, 1 }) do
+			Family:Print("    %-3s |cff888888%s|r", tostring(row.index), tostring(row.n))
+			for position, value in ipairs(row.values) do
+				Family:Print("      %-3s |cff888888%s|r", position, value)
+			end
+		end
+	end)
+
+	replicating = time()
+
+	local ok, err = Family.Auctions:AskReplicate()
+	if not ok then
+		replicating = nil
+		Family.Auctions:TellNextReplicate(nil)
+		Family:Print(L["  refused: %s"], tostring(err))
+		return
+	end
+
+	Family:Print(L["  asked for the whole list once - nothing else will be sent"])
+
+	Family:After(30, "auctions.replicate.probe", function()
+		if answered then return end
+		Family.Auctions:TellNextReplicate(nil)
+		Family:Print(L["  nothing answered within %d seconds"], 30)
+	end)
+end
+
 -- **Reading the whole house, which is what all of the above was for.**
 --
 -- Off by default and started by a word nobody types by accident. Measured on Burning Crusade
@@ -1051,6 +1124,8 @@ end
 -- now, and that answer is the difference between a scanner that is safe and one that is not.
 add("ah", L["what this client offers on the auction house"], function(argument)
 	if argument == "watch" then return watchOne() end
+
+	if argument == "replicate" then return replicateOnce() end
 
 	local scanning = type(argument) == "string" and argument:match("^scan%s*(%a*)$")
 	if scanning then return scan(scanning) end

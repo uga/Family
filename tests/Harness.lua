@@ -31820,6 +31820,61 @@ print("how long a read of the auction house takes")
 end)()
 
 print()
+print("asking the newer house for its whole list")
+;(function()
+	-- **Sent once, by a word nobody types by accident, and locked while it is in the air.**
+	--
+	-- Entry 55 slice 3 is unbuilt and this is the probe that has to come first. It is the same
+	-- family of call as the one that crawled a live client for minutes, so the property that
+	-- matters is not what it reads back but that a second press sends nothing (L-070).
+	local realHouse = _G.C_AuctionHouse
+
+	_G.C_AuctionHouse = nil
+	local at = #DEFAULT_CHAT_FRAME.messages
+	SlashCmdList["FAMILY"]("ah replicate")
+	check("a build with no whole-list read says so and sends nothing",
+		#DEFAULT_CHAT_FRAME.messages > at, "nothing said")
+
+	local asked = 0
+	_G.C_AuctionHouse = {
+		ReplicateItems = function() asked = asked + 1 end,
+		GetNumReplicateItems = function() return asked > 0 and 4 or 0 end,
+		IsThrottledMessageSystemReady = function() return true end,
+		-- Numbered from nought on this fake, which is a shape and not a claim: the probe asks
+		-- for both nought and one precisely because which it is has not been read anywhere.
+		GetReplicateItemInfo = function(index)
+			if index ~= 0 then return end
+			return "Linen Cloth", "texture", 20, nil, 1000
+		end,
+	}
+
+	SlashCmdList["FAMILY"]("ah replicate")
+	check("and where there is one it is asked exactly once", asked == 1, tostring(asked))
+
+	SlashCmdList["FAMILY"]("ah replicate")
+	check("while a second press sends nothing while the first is unanswered",
+		asked == 1, tostring(asked))
+
+	-- What came back, printed by position and with nought among the indices - both of those
+	-- are the reading, and a probe that named the returns would be answering with its guess.
+	at = #DEFAULT_CHAT_FRAME.messages
+	fire("REPLICATE_ITEM_LIST_UPDATE")
+
+	local said = table.concat(DEFAULT_CHAT_FRAME.messages, "\n", at + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("and the answer is read back by position, asking from nought as well as from one",
+		said:find("Linen Cloth", 1, true) ~= nil and said:find("20", 1, true) ~= nil,
+		said == "" and "nothing printed" or said)
+
+	-- **And the answer frees it**, or one visit would be all anybody ever got.
+	SlashCmdList["FAMILY"]("ah replicate")
+	check("while an answer frees it to be asked again", asked == 2, tostring(asked))
+
+	Family.Auctions:TellNextReplicate(nil)
+	_G.C_AuctionHouse = realHouse
+end)()
+
+print()
 print("the button on the auction window")
 ;(function()
 	-- **It presses the window's own buttons, and that is the whole point.** Family composes no
