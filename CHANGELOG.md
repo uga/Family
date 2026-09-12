@@ -131,6 +131,9 @@ picks itself up where it left off.
   it has already read rather than from a guess, so you can decide whether to wait for it. When it
   finishes it says how much of that was waiting for the server.
 
+- **A read that stops getting answers now ends itself** instead of sitting there looking busy.
+  Whatever it has already taken is kept, and it says why it stopped and where the time went.
+
 - **If it will not start, it now says which button to press.** Search the auction house once and
   turn one page, and the read has everything it needs: it replays the search you made rather than
   inventing one of its own.

@@ -31895,6 +31895,58 @@ print("how long a read of the auction house takes")
 	check("and says where that time went, which is why anybody stops one",
 		afterStop ~= nil, tostring(afterStop))
 
+	-- **A walk that stops moving is stopped, and until now nothing here had ever run the guard
+	-- that was supposed to do it.**
+	--
+	-- There was one: a page asked for and never answered ended the walk after thirty seconds.
+	-- It compared `time()`, which this harness does not stub - so it is the wall clock, which is
+	-- very nearly a constant for the length of a run, and the condition inside that guard was
+	-- `0 >= 30` in every check ever run here. Thirty seconds of it had never been executed by
+	-- the gate. Reported from play on Burning Crusade 2026-09-12: one page read, the auction
+	-- window frozen on it, and thirty-five seconds that ended only because Alberto pressed Stop.
+	--
+	-- The walk is timed by `GetTime` now, which is the clock every other figure about it is
+	-- measured with and the one that moves here (L-083).
+	--
+	-- A house big enough that forty pages do not finish it, because a walk that ends by getting
+	-- to the last page passes a check about watchdogs without one ever running.
+	pages = 400
+	Family.Auctions:ForgetVisit()
+	_G.CanSendAuctionQuery = function() return true end
+	SlashCmdList["FAMILY"]("ah scan go")
+	advance(1)
+	fire("AUCTION_ITEM_LIST_UPDATE")
+	advance(1)
+	check("a read that is being answered goes on running",
+		Family.Auctions:Walking() ~= nil)
+
+	-- **And it keeps running for longer than the guard's own patience**, which is the half a
+	-- one-shot timer cannot promise. Armed once per query, the guard was gone as soon as a page
+	-- arrived and had to be armed again by the next send; armed for the life of the walk, it has
+	-- to ask again every second or it stops a read that is working perfectly well.
+	for _ = 1, 40 do
+		advance(1)
+		fire("AUCTION_ITEM_LIST_UPDATE")
+	end
+	check("and is not stopped by its own watchdog while pages keep arriving",
+		Family.Auctions:Walking() ~= nil, "the watchdog stopped a walk that was moving")
+
+	local before = #DEFAULT_CHAT_FRAME.messages
+	advance(45)
+	local wentQuiet
+	for index = before + 1, #DEFAULT_CHAT_FRAME.messages do
+		if DEFAULT_CHAT_FRAME.messages[index]:find("stopped after", 1, true) then
+			wentQuiet = DEFAULT_CHAT_FRAME.messages[index]
+		end
+	end
+	check("and a page asked for and never answered ends the read rather than leaving it alive",
+		Family.Auctions:Walking() == nil and wentQuiet ~= nil
+			and wentQuiet:find("never arrived", 1, true) ~= nil,
+		Family.Auctions:Walking() and "still walking after forty-five silent seconds"
+			or tostring(wentQuiet))
+
+	pages = 4
+
 	_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan
 	_G.GetNumAuctionItems = realNum
 end)()

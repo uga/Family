@@ -1222,6 +1222,10 @@ local function askPage(page)
 		local now = tonumber((Family:TryCall(GetTime)))
 		walk.heldFrom = walk.heldFrom or now
 
+		-- Being refused is the walk doing something, so the watchdog below is content.
+		-- What it is there for is a walk that is doing nothing at all.
+		walk.stirredAt = now or walk.stirredAt
+
 		if now and walk.heldFrom and (now - walk.heldFrom) > REFUSAL_PATIENCE then
 			return Auctions:StopWalk("refusing")
 		end
@@ -1242,22 +1246,15 @@ local function askPage(page)
 	end
 
 	walk.page = page
-	walk.sentAt = time()
 
 	-- **When this one went out**, so that what the server took can be told apart from what
 	-- Family's own pacing took. Asked from play: could a read be made faster? Only the second
 	-- half is ours to decide, and until now nothing said how big it was.
 	walk.sentClock = tonumber((Family:TryCall(GetTime)))
+	walk.stirredAt = walk.sentClock or walk.stirredAt
 
 	local ok = Auctions:ReplayQuery(page)
 	if not ok then return Auctions:StopWalk("query") end
-
-	-- A page that never arrives ends the walk rather than leaving it looking alive.
-	Family:After(QUIET_SECONDS, "auctions.walk.quiet", function()
-		if walk and walk.sentAt and (time() - walk.sentAt) >= QUIET_SECONDS then
-			Auctions:StopWalk("quiet")
-		end
-	end)
 end
 
 -- What arrived, and then the next one. Called from the scanner's own list handler, after the
@@ -1286,8 +1283,8 @@ local function walkHeard(kept)
 	-- Seen in play on Classic Era 2026-09-11: *page 25 of 537* printed six times, *page 75*
 	-- six more. The duplicated lines were the harmless half; the duplicated queries were not.
 	--
-	-- Not waiting for anything now, which is what the quiet timeout reads.
-	walk.sentAt = nil
+	-- The walk has just done something, which is what the watchdog reads.
+	walk.stirredAt = tonumber((Family:TryCall(GetTime))) or walk.stirredAt
 
 	-- And the round trip goes on the pile, once per page rather than once per answer: the
 	-- clock is cleared with the flag above it, so the five answers that follow add nothing.
@@ -1353,6 +1350,48 @@ end
 -- whoever pressed Reset is the only thing that knows. Reported from play 2026-09-11 - a walk of
 -- sixty-eight pages announced as *the whole house* on a house this repository had already
 -- measured at three and a half thousand.
+-- **A walk that has stopped moving is stopped, whatever stopped it.**
+--
+-- There was a guard here before and it watched one thing: a page asked for and never answered.
+-- It had two faults, and each on its own was enough.
+--
+-- It read the wrong clock. The timer that carried it counts frames, and the comparison inside it
+-- was `time()`, which is whole seconds of wall clock - so a check written against it would have
+-- been a check about two clocks agreeing. **No check was written against it at all**: `time()` is
+-- not stubbed in the harness, so it is a constant for the length of a run, and the condition was
+-- `0 >= 30` in every check this repository has ever run. Thirty seconds of that guard had never
+-- once been executed by the gate (L-083).
+--
+-- And it watched too little. It was armed only when a query went out, so a walk that was not
+-- waiting for anything - the retry chain lost, a settle that returned without asking for the next
+-- page - was a walk nothing was looking at. Reported from play on Burning Crusade 2026-09-12: one
+-- page read, the auction window frozen on it, and thirty-five seconds that ended only because
+-- Alberto pressed Stop. Neither of the two things that should have ended it did, and the whole of
+-- that time landed in the read's *own pacing* column, which is the remainder and not a
+-- measurement (L-077).
+--
+-- So this one is armed for the life of the walk rather than for the life of a query, it asks
+-- again every second instead of being a single shot that can miss, and it subtracts `GetTime` -
+-- the clock the walk's own elapsed figure is built from, and the one that moves under a harness.
+-- Anything the walk does stirs it: a page sent, a refusal heard, a page arriving.
+local function watchForSilence()
+	if not walk then return end
+
+	local now = tonumber((Family:TryCall(GetTime)))
+	local since = now and walk.stirredAt and (now - walk.stirredAt)
+
+	-- One reason, because only one state is reachable: every path out of `askPage` either
+	-- sends, schedules another try, or stops the walk, and the settle's every call is under
+	-- `TryCall`. A second reason for *stopped moving with nothing outstanding* was written here
+	-- and taken out again - no check could construct that state, and a branch no check can hold
+	-- is a branch that will be wrong when it finally runs.
+	if since and since >= QUIET_SECONDS then
+		return Auctions:StopWalk("quiet")
+	end
+
+	Family:After(1, "auctions.walk.quiet", watchForSilence)
+end
+
 function Auctions:StartWalk(told, everything)
 	-- **A code, never a sentence.** These are said to the player, and a sentence written here
 	-- would be an English one wherever it was read (§2.1). The words live in `Slash.lua`, where
@@ -1378,6 +1417,8 @@ function Auctions:StartWalk(told, everything)
 	walk = { page = 0, done = 0, started = time(), told = told,
 		everything = everything and true or false,
 		clock = tonumber((Family:TryCall(GetTime))) }
+	walk.stirredAt = walk.clock
+	watchForSilence()
 	askPage(0)
 	return true, nil
 end

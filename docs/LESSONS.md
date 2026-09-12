@@ -3033,3 +3033,39 @@ about *the client* needs either a second machine that differs in nothing else, o
 **The general rule: name what varied.** If a conclusion cannot survive somebody listing what else
 was installed, it was never about the client.
 
+
+## L-083 — a guard the gate had never once executed
+
+A walk of the auction house had a watchdog: a page asked for and never answered ended the read
+after thirty seconds. It was written early, it read correctly, and on Burning Crusade
+2026-09-12 it did not fire. Alberto got one page, an auction window frozen on it, and
+thirty-five seconds that ended only because he pressed Stop. The read then reported all
+thirty-five of them as *Family's own pacing*, which is the remainder and not a measurement
+(L-077), so even the report said nothing.
+
+The guard compared `time()`. Everything else about a walk is measured with `GetTime`, and the
+file's own comment two hundred lines below says why: *`GetTime` is the one to subtract for how
+long it has been going, and it is the one that moves under a harness.* The watchdog was the one
+place that did not follow it.
+
+**And that is exactly why no check ever caught it.** `time()` is not stubbed in the harness — it
+is Lua's wall clock, near enough a constant for the length of a run — so the condition inside
+that guard was `0 >= 30` in every check this repository has ever run. Not a check that passed
+for the wrong reason: *no* check. Thirty seconds of behaviour had never been executed by the
+gate at all, in any run, since the day it was written.
+
+The second half was smaller and worse. The guard was armed by a query going out, so the one
+state it could not see was a walk that had stopped asking for anything. A walk waiting for
+nothing was a walk nothing was watching.
+
+**What now catches it.** The watchdog is armed for the life of the walk rather than the life of
+a query, it asks again every second instead of being a single shot, and it subtracts `GetTime`.
+Three checks stand over it — a read being answered goes on running, it survives forty seconds of
+that without its own watchdog stopping it, and a page never answered ends it — and two recorded
+mutations, `walk-quiet-on-the-wall-clock.mut` and `walk-quiet-fired-once.mut`, both caught. The
+first of those is the one that matters: put `time()` back and the gate goes red, which it could
+not have done yesterday.
+
+**The general rule: a clock the harness does not move is a clock no check can reach.** Before
+trusting a timeout, ask what the fixture does to the thing it subtracts. If the answer is
+nothing, the timeout is prose.

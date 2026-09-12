@@ -1,0 +1,7 @@
+name: the walk's watchdog is a single shot rather than one that asks again
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	Family:After(1, "auctions.walk.quiet", watchForSilence)
+end
+--- new
+end

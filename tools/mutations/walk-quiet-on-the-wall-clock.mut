@@ -1,0 +1,8 @@
+name: the walk's watchdog reads the wall clock instead of the frame clock
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	local now = tonumber((Family:TryCall(GetTime)))
+	local since = now and walk.stirredAt and (now - walk.stirredAt)
+--- new
+	local now = time()
+	local since = now and walk.stirredAt and (now - walk.stirredAt)
