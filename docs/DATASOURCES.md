@@ -1079,6 +1079,39 @@ query*, and the client is whatever last called that function. For as long as thi
 one, a walk would have replayed `getAll` with the page changed. It now refuses any query
 carrying a `true` in an argument it does not change — see `docs/LESSONS.md` L-084.
 
+#### What `CanSendAuctionQuery` answers, and what it does not, measured 2026-09-12
+
+One value, on Burning Crusade Anniversary, in both states that were read:
+
+| standing at an auctioneer | answer |
+|---|---|
+| browse list holding 50 rows, nothing running | `true`, and nothing after it |
+| another addon's whole-house read arriving, 72,704 rows on the list | `false`, and nothing after it |
+
+The probe prints **every** return, so the absence of a second one is a reading rather than a
+gap: it was read into a single local before 2026-09-12 and could not have shown one (L-081).
+
+So the client says whether a query would go out **now**, and nothing about the whole-house route
+having its own interval. The fifteen minutes another addon holds itself back for does not come
+from here. What has **not** been read is this call during that countdown, with no scan running -
+so *the arity never changes* is an assumption and is written down as one.
+
+#### Where a whole-house read lands, measured 2026-09-12
+
+The important half. While another addon's full scan was arriving on Burning Crusade, the probe
+read the **browse list** - the same list Family already takes prices off, through
+`GetNumAuctionItems("list")` and `GetAuctionItemInfo("list", index)`:
+
+    list     72704
+    the browse list holds 72704 row(s), of 72704 on sale in all
+
+Not a list private to that addon: the client's own, and both returns grow together as it
+arrives. A house Family measured at 178,128 auctions was on its way into the list Family reads.
+
+**And `AUCTION_ITEM_LIST_UPDATE` had not fired once.** The probe's counter stood at 43 with
+72,704 rows already there, last one showing 50 - so the list fills in silence, and whether
+anything is said at the end is unread.
+
 #### What a full read still needs, and why it is not built yet
 
 Written 2026-09-10, when slice 3 was picked up. Three things are still unmeasured, and the first
