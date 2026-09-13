@@ -179,7 +179,7 @@ function Auctions:Scan()
 		bidding = bidding,
 		seen = time(),
 	}
-	Family.Database:SetPayload(key, payload)
+	Family.Database:SetPayload(key, payload, "auctions")
 
 	Family.Database:SetMeta(key, {
 		auctionsSelling = #selling,

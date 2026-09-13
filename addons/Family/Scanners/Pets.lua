@@ -272,7 +272,7 @@ function Pets:Scan()
 	record.seen = time()
 
 	payload.pets = record
-	Family.Database:SetPayload(key, payload)
+	Family.Database:SetPayload(key, payload, "pets")
 
 	local count = 0
 	for _ in pairs(known) do count = count + 1 end

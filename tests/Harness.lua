@@ -2161,9 +2161,12 @@ function RUN.holdRecords(except)
 end
 do
 	local realSetPayload = Family.Database.SetPayload
-	Family.Database.SetPayload = function(self, key, data)
+	-- Every argument handed on: a scanner names the part it wrote in the third, and a stand-in
+	-- that dropped it made every write in this file fold every part (found by a mutation of
+	-- step 6 of the data-path review surviving).
+	Family.Database.SetPayload = function(self, key, data, ...)
 		RUN.holdRecords(key)
-		realSetPayload(self, key, data)
+		realSetPayload(self, key, data, ...)
 		if key ~= nil and type(data) == "table" then
 			RUN.written[key] = { data = data, fold = Family.Codec:Fingerprint(data) }
 		end
@@ -14261,6 +14264,43 @@ do
 		end
 		check("but the summary's own members are untouched by any of it", own == true)
 	end)
+
+	-- **The age of a member they hold back still reaches us** (data-path review, step 6). The mark
+	-- carries no clock any more, so a member whose record did not change is not sent - and the
+	-- stamp beside the offering says when they were last looked at.
+	do
+		-- Brought level first: the checks above wrote this member's record since it was sent, so
+		-- one exchange carries it, and their acknowledgement comes back, so that this side knows
+		-- the member is on their disk and has a reason to hold it back.
+		sent = {}
+		ours = wearing(ours, function() Family.Wide:ExchangeWith(ourLinkID, "level") end)
+		theirs = wearing(theirs, function() deliver("Tester") end)
+		ours = wearing(ours, function() deliver("Faraway") end)
+		local heldPayload, seenBefore
+		theirs = wearing(theirs, function()
+			local borrowed = Family.Wide:BorrowedMembers()[1]
+			heldPayload, seenBefore = borrowed and borrowed.payload, borrowed and borrowed.seen
+		end)
+		local realTime = time
+		time = function() return realTime() + 600 end
+		sent = {}
+		ours = wearing(ours, function()
+			-- Money, which a possessions grant does not carry: only the moment moves.
+			Family.Database:SetMeta(key, { money = 4321 })
+			Family.Wide:ExchangeWith(ourLinkID, "an hour on, nothing shared has changed")
+		end)
+		local stamp = Family.Database:Meta(key).lastSeen
+		time = realTime
+		theirs = wearing(theirs, function()
+			deliver("Tester")
+			local borrowed = Family.Wide:BorrowedMembers()[1]
+			check("a member held back arrives with nothing but a newer age",
+				borrowed and borrowed.payload == heldPayload and seenBefore ~= nil
+					and borrowed.seen == stamp and stamp > seenBefore,
+				tostring(seenBefore) .. " then " .. tostring(borrowed and borrowed.seen)
+					.. ", payload kept: " .. tostring(borrowed and borrowed.payload == heldPayload))
+		end)
+	end
 
 	print()
 	print("  taking it back")
@@ -28048,6 +28088,7 @@ print("an exchange carries what changed, not everything again")
 			for _, memberKey in ipairs((body or {}).offering or {}) do
 				carried.__offering[memberKey] = true
 			end
+			carried.__body = body
 		end
 		return true
 	end
@@ -28107,6 +28148,46 @@ print("an exchange carries what changed, not everything again")
 	check("while still saying they are offered, so nobody is forgotten",
 		carried ~= nil and carried.__offering[key] == true,
 		tostring(carried and carried.__offering[key]))
+
+	-- **A Family from before step 6 of the data-path review reads the same message and loses
+	-- nothing.** Its `onData`, as it was: whole members merged in, and anybody missing from the
+	-- `offering` list forgotten. The clocks travel in a field of their own, which it never looks
+	-- at, so a held-back member is kept whole, with every category it arrived with.
+	do
+		local oldLink = { members = {} }
+		local function oldOnData(body)
+			for memberKey, entry in pairs(body.members or {}) do
+				if type(entry) == "table" and type(entry.meta) == "table" then
+					oldLink.members[memberKey] = entry
+				end
+			end
+			if type(body.offering) == "table" then
+				local still = {}
+				for _, memberKey in ipairs(body.offering) do still[memberKey] = true end
+				for memberKey in pairs(oldLink.members) do
+					if not still[memberKey] then oldLink.members[memberKey] = nil end
+				end
+			end
+		end
+
+		Family.Database:SetMeta(key, { level = 60 })
+		carried = nil
+		Family.Wide:ExchangeWith("thrifty", "sent whole, to an old Family", { full = true })
+		local whole = carried and carried.__body
+		carried = nil
+		Family.Wide:ExchangeWith("thrifty", "held back, to an old Family")
+		local heldBack = carried and carried.__body
+
+		if whole then oldOnData(whole) end
+		if heldBack then oldOnData(heldBack) end
+		local kept = oldLink.members[key]
+		check("a Family too old to know the clocks keeps a held-back member whole",
+			whole ~= nil and heldBack ~= nil and heldBack.members[key] == nil
+				and kept ~= nil and kept.meta and kept.meta.name == "Shared"
+				and type(kept.granted) == "table" and kept.granted[1] == "possessions"
+				and type(heldBack.offeringSeen) == "table",
+			tostring(kept) .. " / " .. tostring(heldBack and heldBack.members[key]))
+	end
 
 	-- **Something the grant actually carries changes**, and they go again.
 	--
@@ -36396,9 +36477,10 @@ print("a record from before backlog 74 keeps its mark when it is rewritten plain
 
 	-- The mark a link would have sent the member with, taken the way an exchange takes it.
 	local link = { grants = { [key] = { possessions = true } }, sent = {} }
-	local realPrint, lastMark = Family.Codec.Fingerprint, nil
-	Family.Codec.Fingerprint = function(this, data)
-		local answer = realPrint(this, data)
+	-- Through the stable fold, which is what a sending mark is made with since step 6.
+	local realPrint, realStable, lastMark = Family.Codec.Fingerprint, Family.Codec.StableFingerprint, nil
+	Family.Codec.StableFingerprint = function(this, data)
+		local answer = realStable(this, data)
 		if type(data) == "table" and data.granted ~= nil then lastMark = answer end
 		return answer
 	end
@@ -36442,7 +36524,7 @@ print("a record from before backlog 74 keeps its mark when it is rewritten plain
 	check("so a link that had sent them holds them back rather than sending them again",
 		total == 1 and held == 1 and changedSince == 0,
 		held .. " of " .. total .. " held, " .. changedSince .. " changed")
-	Family.Codec.Fingerprint = realPrint
+	Family.Codec.StableFingerprint = realStable
 
 	-- **The walk.** The second record is walked the old way first: its mark learnt against the
 	-- string, as the last session before the update would have. Then it is rewritten plain, and
@@ -36470,46 +36552,42 @@ print("a record from before backlog 74 keeps its mark when it is rewritten plain
 	check("and the recipe-name walk steps past a member it had read before the rewrite",
 		walked == 0, tostring(walked) .. " reads in " .. rounds .. " rounds")
 
-	-- **New writes.** Stamped, different each time, and different across sessions and across a
-	-- record forgotten and written again in the same second.
+	-- **New writes.** Since step 6 of the data-path review a mark is made of what the record holds,
+	-- part by part: the same contents mark the same, different contents do not, and a record this
+	-- version writes leaves behind the mark it came with.
 	Family.Database:SetPayload(key, read)
-	local first = FamilyDB.members[key].mark
+	local first = Family.Database:PayloadMark(key)
 	Family.Database:SetPayload(key, read)
-	local second = FamilyDB.members[key].mark
-	check("a write stamps a mark, and the next write a different one",
-		type(first) == "string" and first ~= oldFold and second ~= first,
+	local second = Family.Database:PayloadMark(key)
+	check("a write marks the record by what it holds, so the same contents twice mark the same",
+		type(first) == "string" and first ~= oldFold and second == first,
 		tostring(first) .. " / " .. tostring(second))
 
-	Family.Database:Forget(key)
-	Family.Database:SetMeta(key, meta)
-	Family.Database:SetPayload(key, read)
-	check("a record forgotten and written again in the same second has a mark of its own",
-		FamilyDB.members[key].mark ~= second and FamilyDB.members[key].mark ~= first,
-		tostring(FamilyDB.members[key].mark))
+	local changedRead = {}
+	for part, value in pairs(read) do changedRead[part] = value end
+	changedRead.bags = { [0] = { size = 12, free = 10, slots = { { id = 2589, count = 5 } } } }
+	Family.Database:SetPayload(key, changedRead, "bags")
+	check("and different contents mark differently",
+		Family.Database:PayloadMark(key) ~= first, tostring(Family.Database:PayloadMark(key)))
 
-	-- Two sessions: the count starts again, and only the nonce keeps them apart.
-	Family.Database:__resetStamps("aaaa")
-	Family.Database:SetPayload(key, read)
-	local sessionOne = FamilyDB.members[key].mark
-	Family.Database:__resetStamps("bbbb")
-	Family.Database:SetPayload(key, read)
-	check("and two sessions writing in the same second with the same count stamp two marks",
-		sessionOne ~= FamilyDB.members[key].mark,
-		tostring(sessionOne) .. " / " .. tostring(FamilyDB.members[key].mark))
-
-	-- A plain record with no mark at all, as the fallback wrote them before stamps.
+	-- A plain record with no mark at all, as the fallback wrote them before marks.
 	Family.Database:Forget(walker)
 	FamilyDB.members[walker] = { meta = walkerMeta, codec = "plain", payload = { bags = {} } }
-	local stampedNow = Family.Database:PayloadMark(walker)
-	check("a plain record with no mark is stamped the first time it is asked, and keeps it",
-		type(stampedNow) == "string" and FamilyDB.members[walker].mark == stampedNow
-			and Family.Database:PayloadMark(walker) == stampedNow, tostring(stampedNow))
+	local markedNow = Family.Database:PayloadMark(walker)
+	check("a plain record with no mark has its parts marked the first time it is asked, and keeps it",
+		type(markedNow) == "string" and (FamilyDB.members[walker].partMarks or {}).bags ~= nil
+			and Family.Database:PayloadMark(walker) == markedNow, tostring(markedNow))
 
-	-- And the mark is saved with the record: through the saved shape and back.
+	-- And the part marks are saved with the record: through the saved shape and back, read as a
+	-- record no cache of this session has seen.
 	local serialiser = LibStub:GetLibrary("LibSerialize")
 	local _, back = serialiser:Deserialize(serialiser:Serialize(FamilyDB.members[key]))
-	check("the mark travels with the record through the saved shape",
-		back and back.mark == FamilyDB.members[key].mark, tostring(back and back.mark))
+	FamilyDB.members["Migrant3-FireMaw"] = back
+	check("the part marks travel with the record through the saved shape, and mark it the same",
+		back and back.partMarks and back.partMarks.bags == FamilyDB.members[key].partMarks.bags
+			and Family.Database:PayloadMark("Migrant3-FireMaw") == Family.Database:PayloadMark(key),
+		tostring(back and back.partMarks and back.partMarks.bags))
+	FamilyDB.members["Migrant3-FireMaw"] = nil
 
 	-- And `/family status` says how many are left the old way.
 	FamilyDB.members[walker] = { meta = walkerMeta, codec = "ld1", payload = text }
@@ -37622,6 +37700,107 @@ print("the recipe index")
 
 	Family.Database:Forget("Indexone-FireMaw")
 	Family.Database:Forget("Indextwo-FireMaw")
+end)()
+
+print()
+print("a member's mark stays still when nothing changed")
+
+-- **Step 6 of the data-path review, on Alberto's yes to change what leaves the machine.** A login
+-- rewrites the parts its scanners read with the moment they were read, and every member touched
+-- used to go to every linked family again. Marks are made of what the parts hold without their
+-- clocks, and the clocks travel beside the offering.
+;(function()
+	local heldWide, heldSend, heldSettle = FamilyDB.wide, Family.Comm.Send, Family.Wide.GRANT_SETTLE
+	local key = Family:CurrentMember()
+	FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {}, auto = false,
+		links = { ["still"] = { name = "Still waters", grants = {}, siblings = {}, members = {} } } }
+	local link = Family.Wide:Links()["still"]
+	Family.Wide.GRANT_SETTLE = 0
+	Family.Comm.Send = function(_, _kind, _text, _channel, _target, _bulk, onSent)
+		if onSent then onSent() end
+		return true
+	end
+	for _, category in ipairs(Family.Wide.CATEGORIES) do
+		Family.Wide:Grant("still", key, category.id, true)
+	end
+	advance(0.5)
+	-- A login first, at the clocks as they stand: this file freezes `time` and lets the frame
+	-- clock run, so what earlier blocks recorded carries deadlines the clocks no longer agree with.
+	-- The relog below is then measured against a login, as it is in the game.
+	fire("PLAYER_ENTERING_WORLD")
+	for _ = 1, 30 do advance(0.5) end
+	Family.Wide:ExchangeWith("still", "first")
+	local total, held = Family.Wide:MarkCost(link)
+	check("a member just sent is held back by the next exchange", total == 1 and held == 1,
+		held .. " of " .. total)
+
+	local function markOf() return Family.Database:PayloadMark(key) end
+	local function parts() return FamilyDB.members[key].partMarks or {} end
+
+	-- **An idle relog**: an hour later, every login scanner runs again.
+	local realTime = time
+	local before, questsSeenBefore = markOf(), (Family.Database:Payload(key).quests or {}).seen
+	-- Both clocks: `time` for the moments things are stamped with, and the frame clock the
+	-- client's cooldowns count down on - move only the first and every cooldown's deadline moves
+	-- by the hour, which in the game it does not.
+	time = function() return realTime() + 3600 end
+	FAKE_CLOCK = FAKE_CLOCK + 3600
+	fire("PLAYER_ENTERING_WORLD")
+	for _ = 1, 30 do advance(0.5) end
+	local questsSeenAfter = (Family.Database:Payload(key).quests or {}).seen
+	check("an idle relog rewrites the login scanners' parts with new moments",
+		questsSeenBefore ~= nil and questsSeenAfter ~= questsSeenBefore,
+		tostring(questsSeenBefore) .. " then " .. tostring(questsSeenAfter))
+	check("and moves no member's mark", markOf() == before,
+		tostring(before) .. " then " .. tostring(markOf()))
+	total, held = Family.Wide:MarkCost(link)
+	check("so the member is still held back from the link", total == 1 and held == 1,
+		held .. " of " .. total)
+
+	local from = #DEFAULT_CHAT_FRAME.messages
+	pcall(SlashCmdList["FAMILY"], "widetime")
+	local heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+		#DEFAULT_CHAT_FRAME.messages):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+	check("/family widetime after an idle relog says every member is unchanged and none changed",
+		heard:find("1 of 1 unchanged", 1, true) ~= nil
+			and heard:find("changed since they were sent", 1, true) == nil, heard)
+
+	-- **A loot**: bags move, and only bags.
+	local partsBefore = {}
+	for part, value in pairs(parts()) do partsBefore[part] = value end
+	BAGS[1].items[9] = { 2589, 3 }
+	BAGS[1].free = BAGS[1].free - 1
+	fire("BAG_UPDATE_DELAYED")
+	advance(1)
+	local moved = {}
+	for part, value in pairs(parts()) do
+		if partsBefore[part] ~= value then moved[#moved + 1] = part end
+	end
+	table.sort(moved)
+	check("a loot moves the mark of bags and of no other part", table.concat(moved, ",") == "bags",
+		table.concat(moved, ","))
+	total, held = Family.Wide:MarkCost(link)
+	check("and the member is sent again", total == 1 and held == 0, held .. " of " .. total)
+	BAGS[1].items[9] = nil
+	BAGS[1].free = BAGS[1].free + 1
+	fire("BAG_UPDATE_DELAYED")
+	advance(1)
+
+	-- **A deadline**: seconds of jitter are the same fact, minutes are not.
+	local payload = Family.Database:Payload(key)
+	local minute = math.floor(realTime() / 60) * 60 + 600
+	payload.mail = { letters = { { sender = "Somebody", expiresBy = minute + 5, attachments = {} } } }
+	Family.Database:SetPayload(key, payload, "mail")
+	local mailMark = parts().mail
+	payload.mail = { letters = { { sender = "Somebody", expiresBy = minute + 40, attachments = {} } } }
+	Family.Database:SetPayload(key, payload, "mail")
+	check("a deadline read seconds apart does not move the mark", parts().mail == mailMark)
+	payload.mail = { letters = { { sender = "Somebody", expiresBy = minute + 185, attachments = {} } } }
+	Family.Database:SetPayload(key, payload, "mail")
+	check("and one that moved by minutes does", parts().mail ~= mailMark)
+
+	time = realTime
+	FamilyDB.wide, Family.Comm.Send, Family.Wide.GRANT_SETTLE = heldWide, heldSend, heldSettle
 end)()
 
 print()

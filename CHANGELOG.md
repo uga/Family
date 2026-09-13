@@ -172,6 +172,10 @@ picks itself up where it left off.
 
 ### Wide Family
 
+- **Logging in no longer sends your whole family to everybody you share with.** A character goes
+  again when something about them changed, not because you logged in; how long ago they were seen
+  still updates on the other side. The first exchange after updating sends everyone once more.
+
 - **Exchanges only send the characters that changed.** They were meant to from the start and were
   sending everybody every time. On a link of thirty characters that is most of every exchange.
 

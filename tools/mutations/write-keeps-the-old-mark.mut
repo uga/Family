@@ -1,7 +1,11 @@
-name: a write leaves the record's mark as it was
+name: a write leaves the record's mark as it was held this session
 file: addons/Family/Database.lua
 --- old
-	entry.mark = newMark()
 	decoded[key] = data
+	marks[key] = nil
+
+	-- Anything derived from what a member owns is now wrong for that member. Told here
 --- new
 	decoded[key] = data
+
+	-- Anything derived from what a member owns is now wrong for that member. Told here

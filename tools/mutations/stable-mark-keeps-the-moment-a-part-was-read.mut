@@ -1,0 +1,6 @@
+name: a part's mark keeps the moment it was read, so an idle relog moves it
+file: addons/Family/Codec.lua
+--- old
+local CLOCKS = { seen = true, recipesSeen = true, at = true }
+--- new
+local CLOCKS = { recipesSeen = true, at = true }

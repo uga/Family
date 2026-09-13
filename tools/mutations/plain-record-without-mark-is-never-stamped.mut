@@ -1,11 +1,6 @@
-name: a plain record with no mark is never stamped
+name: a part no write of this version has marked is never marked when the mark is asked for
 file: addons/Family/Database.lua
 --- old
-	if type(entry.payload) == "table" then
-		entry.mark = newMark()
-		return entry.mark
-	end
+		if parts[part] == nil then parts[part] = Family.Codec:StableFingerprint(value) end
 --- new
-	if type(entry.payload) == "table" then
-		return newMark()
-	end
+		if false then parts[part] = Family.Codec:StableFingerprint(value) end

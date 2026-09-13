@@ -1308,7 +1308,7 @@ function Professions:ScanNow(includeRecipes)
 	end
 
 	payload.professions = stored
-	Family.Database:SetPayload(key, payload)
+	Family.Database:SetPayload(key, payload, { "professions", "crafts" })
 
 	-- The summary wants ranks without decoding anybody's recipe list, so they go in meta.
 	local summary = {}

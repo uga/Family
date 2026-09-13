@@ -138,7 +138,23 @@ local function fold(sum, text)
     return sum
 end
 
-local function mark(sum, value, depth)
+-- **What a stable fold leaves out, and what it rounds** (backlog 72's inventory, read scanner by
+-- scanner 2026-09-13; data-path review step 6). A login rewrites parts whose contents did not
+-- change except for the moment they were read, and a mark that moves with that moment sends every
+-- member again after every login.
+--
+-- *Left out*: when something was looked at - `seen` (bank, mail, quests, talents, pets,
+-- achievements, a craft), `recipesSeen` (each profession), `at` (the window-state trap on a list
+-- that shrank, a letter posted from here).
+--
+-- *Rounded to the minute*: deadlines worked out from time left, which are real data - a letter
+-- that expires does expire - and which jitter by the seconds between two readings: `expiresBy`
+-- (mail, auctions), `readyAt` (a recipe's or an item's cooldown), `mailExpiresBy` (meta). A jitter
+-- that crosses a minute boundary still moves the mark; that is a member sent once more.
+local CLOCKS = { seen = true, recipesSeen = true, at = true }
+local DEADLINES = { expiresBy = true, readyAt = true, mailExpiresBy = true }
+
+local function mark(sum, value, depth, stable)
     local kind = type(value)
 
     if kind == "table" then
@@ -160,8 +176,14 @@ local function mark(sum, value, depth)
 
         sum = fold(sum, "{")
         for _, key in ipairs(keys) do
-            sum = fold(sum, type(key) .. ":" .. tostring(key) .. "=")
-            sum = mark(sum, value[key], depth + 1)
+            local inner = value[key]
+            if not (stable and CLOCKS[key]) then
+                if stable and DEADLINES[key] and type(inner) == "number" then
+                    inner = math.floor(inner / 60)
+                end
+                sum = fold(sum, type(key) .. ":" .. tostring(key) .. "=")
+                sum = mark(sum, inner, depth + 1, stable)
+            end
         end
         return fold(sum, "}")
     end
@@ -171,6 +193,12 @@ end
 
 function Codec:Fingerprint(data)
     return tostring(mark(0, data, 0))
+end
+
+-- The same fold with the clocks left out and the deadlines rounded, for a mark that has to stay
+-- still across a login where nothing was done (see `CLOCKS` above).
+function Codec:StableFingerprint(data)
+    return tostring(mark(0, data, 0, true))
 end
 
 -- **How long this is once serialised and before it is squeezed.**

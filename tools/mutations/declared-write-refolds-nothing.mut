@@ -1,0 +1,7 @@
+name: a write that names its part leaves that part's mark as it was
+file: addons/Family/Database.lua
+--- old
+				entry.partMarks[part] = data[part] ~= nil
+					and Family.Codec:StableFingerprint(data[part]) or nil
+--- new
+				entry.partMarks[part] = entry.partMarks[part]

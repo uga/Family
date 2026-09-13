@@ -379,7 +379,7 @@ function Quests:ScanNow()
 
 	payload.quests = { entries = entries, seen = time(), zones = named }
 	payload.questObjectives = objectives
-	Family.Database:SetPayload(key, payload)
+	Family.Database:SetPayload(key, payload, { "quests", "questObjectives" })
 
 	Family.Database:SetMeta(key, {
 		questCount = #entries,

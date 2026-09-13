@@ -1,0 +1,6 @@
+name: the sending mark carries the meta fields that are moments, bagsSeen and the rest
+file: addons/Family/Wide.lua
+--- old
+        or (type(field) == "string" and field:find("Seen$") ~= nil)
+--- new
+        and (type(field) == "string" and field:find("Seen$") ~= nil)

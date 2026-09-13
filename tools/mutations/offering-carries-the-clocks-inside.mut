@@ -1,0 +1,6 @@
+name: the clocks go in the offering list itself, which an older Family reads as a list of keys
+file: addons/Family/Wide.lua
+--- old
+        offering = Wide:GrantedKeys(link),
+--- new
+        offering = Wide:OfferingSeen(link),

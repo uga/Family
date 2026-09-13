@@ -530,7 +530,8 @@ function Character:ScanNow()
 	local achievements = self:ReadAchievements()
 	if achievements then payload.achievements = achievements end
 
-	Family.Database:SetPayload(key, payload)
+	Family.Database:SetPayload(key, payload,
+		{ "equipment", "reputations", "spells", "achievements" })
 
 	-- How fast this character can travel, worked out from what was just written. Both
 	-- scanners that can change the answer call it, so whichever ran last leaves it right -

@@ -390,7 +390,7 @@ function Bags:Scan()
 	-- Payload is everything that grows: one entry per occupied slot.
 	local payload = Family.Database:Payload(key) or {}
 	payload.bags = bags
-	Family.Database:SetPayload(key, payload)
+	Family.Database:SetPayload(key, payload, "bags")
 
 	-- How fast this character can travel, worked out from what was just written. Both
 	-- scanners that can change the answer call it, so whichever ran last leaves it right -

@@ -588,7 +588,7 @@ function Talents:Scan()
 		groupCount = count,
 		groups = groups,
 	}
-	Family.Database:SetPayload(key, payload)
+	Family.Database:SetPayload(key, payload, "talents")
 
 	-- Small enough for meta, and it is what a summary column would want: the points per
 	-- tree for the live specialisation, or its specialisation id on Mists.

@@ -1,0 +1,9 @@
+name: the sending mark carries when the member was last seen
+file: addons/Family/Wide.lua
+--- old
+        granted = ids,
+    }), true
+--- new
+        granted = ids,
+        lastSeen = meta.lastSeen,
+    }), true

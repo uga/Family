@@ -4589,7 +4589,15 @@ that realm Family is right for them for nothing.
 
 ---
 
-## 72. Send a changed member's changed categories, not the whole member — DEFERRED 2026-09-13
+## 72. Send a changed member's changed categories, not the whole member — DEFERRED 2026-09-13; points 1 and 2 built 2026-09-13
+
+**Built 2026-09-13 as step 6 of the data-path review, on Alberto's yes**: point 1 (a mark per part,
+made when the part is written, with the moments left out and the deadlines rounded to the minute)
+and point 2 (the clocks travel beside the offering, as `offeringSeen`, and a held-back member's age
+is brought forward on the far side). The sending mark carries no clock. **Still deferred**: points
+3 to 6 - sending only the categories whose mark moved, the receiver merging them, a partial member
+only to a link that has shown it merges, per-category marks in `have`. A member whose mark moves
+still goes whole. `docs/WIDE-TRANSFER.md` §4 says what a mark is made of now.
 
 **Deferred by Alberto, 2026-09-13**, with the measurements below in hand: *teniamo da parte questa
 sezione di possibile ottimizzazione per il momento. Osserviamo come va Family su una famiglia più

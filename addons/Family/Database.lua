@@ -240,20 +240,27 @@ end
 -- decoding - a member the other side already has. Both used to answer it the expensive way and
 -- both answer it here now.
 --
--- **Stamped as the record is written, since backlog 74.** A plain record has no string to fold,
--- and folding the table costs about 35 ms a record on Alberto's clients (`/family paycost`,
--- backlog 72) - more than either caller saves, at every exchange. So `SetPayload` writes
--- `entry.mark`: the second, a nonce drawn once a session, and this session's count of stamps.
--- Different for any two writes - two in one second differ by the count, two sessions by the
--- nonce, a record forgotten and written again by both - it costs nothing, and it is saved beside
--- the record. It cannot tell *changed back to what it was* from changed, so a record written
--- again with the same contents counts as changed: a member sent again, the safe direction, and
--- backlog 72's business.
+-- **Made of what the record holds, part by part, since 2026-09-13** (data-path review, step 6).
+-- Each part of a payload - `bags`, `quests`, `professions` and the rest - has its own mark, a
+-- stable fold of that part (`Codec:StableFingerprint`: the moments things were looked at left
+-- out, deadlines rounded to the minute), kept beside the record in `entry.partMarks`. The record's
+-- mark is a fold of those. A scanner says which part it wrote, and only that part is folded again:
+-- a loot pays for `bags`, about 3 ms, not for the whole record's 35 (`/family paycost`, backlog 72).
+-- A write that names no part folds them all. A part no write of this version has marked yet is
+-- folded the first time the mark is asked for, once.
+--
+-- **Why content and not a stamp.** Backlog 74 stamped every write, and a login rewrites the parts
+-- its scanners read, so an idle relog moved the mark and sent the member to every linked family
+-- again - read on the client as `ld1:7510:2347148292` against `ld1:7510:1867974627` before stamps,
+-- and certain with them. A mark made of contents without their clocks stays still when nothing
+-- changed, and moves with the part that did.
+--
+-- **A record this version has never written keeps the mark it had** - the fold of the string it
+-- was stored as, or a 74 stamp - until its first write here. Only characters actually played get
+-- a new mark, so an update does not resend a family's thirty alts nobody logged in.
 --
 -- **A record still stored as a string** is folded as before; that fold becomes its `mark` when it
--- is rewritten plain (`Payload`). A plain record with no mark - written by the fallback on a
--- client without the libraries, before stamps existed - is stamped the first time it is asked:
--- sent once more, and stable after that.
+-- is rewritten plain (`Payload`).
 --
 -- **Every byte of a string, and the first version of this read only the ends.** Folding a 30 KB record
 -- costs 1.0 ms in lua5.1 on the machine this was written on and folding its first and last 256
@@ -267,22 +274,19 @@ end
 -- cap instead. At 1.0 ms a record, twenty of them is 20 ms on a tick that today decodes a whole
 -- member - which is far more than 20 ms - so the cap is less work than the walk already does on
 -- every tick, and a family of any size is spread rather than folded at once.
--- Drawn once a session, so that two sessions writing in the same second with the same count
--- cannot stamp the same mark. `math.random` on these clients is seeded by the game; where it is
--- not, the clock's fraction of a millisecond still separates two logins.
-local nonce = string.format("%x", (math.random(0, 0x7fffffff)
-	+ math.floor(((type(_G.debugprofilestop) == "function" and _G.debugprofilestop()) or 0) * 1000))
-	% 0x7fffffff)
-local stamped = 0
-
-local function newMark()
-	stamped = stamped + 1
-	return string.format("w%d.%s.%d", time(), nonce, stamped)
-end
-
--- Reachable so a check can stand in a second session without reloading the file.
-function Database:__resetStamps(newNonce)
-	nonce, stamped = newNonce or nonce, 0
+-- The record's mark out of its part marks, folding any part not marked yet. Answers nil for a
+-- payload that is not a table.
+local function composeMark(entry)
+	if type(entry.payload) ~= "table" then return nil end
+	entry.partMarks = entry.partMarks or {}
+	local parts = entry.partMarks
+	for part, value in pairs(entry.payload) do
+		if parts[part] == nil then parts[part] = Family.Codec:StableFingerprint(value) end
+	end
+	for part in pairs(parts) do
+		if entry.payload[part] == nil then parts[part] = nil end
+	end
+	return "p" .. Family.Codec:Fingerprint(parts)
 end
 
 function Database:PayloadMark(key)
@@ -306,12 +310,10 @@ function Database:ReadPayloadMark(key)
 	-- the same answer, which made every such member look changed on every comparison.
 	if entry.payload == nil then return "none" end
 
-	if type(entry.mark) == "string" then return entry.mark end
+	-- Never written by this version: the mark it came with, as long as it has one.
+	if entry.partMarks == nil and type(entry.mark) == "string" then return entry.mark end
 
-	if type(entry.payload) == "table" then
-		entry.mark = newMark()
-		return entry.mark
-	end
+	if type(entry.payload) == "table" then return composeMark(entry) end
 
 	if type(entry.payload) ~= "string" then return nil end
 
@@ -335,7 +337,9 @@ local lastParts = {}
 
 function Database:Writes() return writes end
 
-function Database:SetPayload(key, data)
+-- `parts`, where given, is the name of the part this write replaced or a list of them. Given by
+-- every scanner; a write without it folds every part again.
+function Database:SetPayload(key, data, parts)
 	local entry = record(key, true)
 	if not entry then return end
 
@@ -351,10 +355,35 @@ function Database:SetPayload(key, data)
 		lastParts[key] = now
 	end
 
-	-- Stored as the table itself (backlog 74), and stamped as it is written.
+	-- Stored as the table itself (backlog 74), and its part marks brought up to date.
 	entry.codec = PLAIN
 	entry.payload = data
-	entry.mark = newMark()
+	entry.mark = nil
+	if type(data) == "table" then
+		if type(parts) == "string" then parts = { parts } end
+		if type(parts) == "table" and entry.partMarks then
+			for _, part in ipairs(parts) do
+				entry.partMarks[part] = data[part] ~= nil
+					and Family.Codec:StableFingerprint(data[part]) or nil
+			end
+		else
+			-- The first write this version makes of a record, or one that names no part.
+			entry.partMarks = {}
+			if type(parts) == "table" then
+				for _, part in ipairs(parts) do
+					if data[part] ~= nil then
+						entry.partMarks[part] = Family.Codec:StableFingerprint(data[part])
+					end
+				end
+			else
+				for part, value in pairs(data) do
+					entry.partMarks[part] = Family.Codec:StableFingerprint(value)
+				end
+			end
+		end
+	else
+		entry.partMarks = nil
+	end
 	decoded[key] = data
 	marks[key] = nil
 

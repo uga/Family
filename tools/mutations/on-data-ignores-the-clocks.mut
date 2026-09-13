@@ -1,0 +1,6 @@
+name: an arriving message's clocks are not taken for the members held back
+file: addons/Family/Wide.lua
+--- old
+    if type(body.offeringSeen) == "table" then
+--- new
+    if false then

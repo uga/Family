@@ -700,6 +700,14 @@ end
 -- Nothing about the wire changes. The same members are offered and the same ones are held back;
 -- what changes is that deciding costs a fold of a few hundred bytes rather than a decode and a
 -- walk of the whole record.
+-- **The meta fields that are moments, left out of a sending mark.** `lastSeen` (every write),
+-- `played` and `rested` (they move with time played and time away), and every `*Seen` stamp
+-- (`bagsSeen`, `bankSeen`, `questsSeen` and the rest: backlog 72's inventory).
+local function isClock(field)
+    return field == "lastSeen" or field == "played" or field == "playedSeen" or field == "rested"
+        or (type(field) == "string" and field:find("Seen$") ~= nil)
+end
+
 local function sendingMark(link, memberKey)
     local granted = grantsFor(link, memberKey)
     if not granted or not next(granted) then return nil, false end
@@ -727,7 +735,9 @@ local function sendingMark(link, memberKey)
     for _, category in ipairs(CATEGORIES) do
         if granted[category.id] then
             ids[#ids + 1] = category.id
-            for _, field in ipairs(category.meta or {}) do fields[field] = meta[field] end
+            for _, field in ipairs(category.meta or {}) do
+                if not isClock(field) then fields[field] = meta[field] end
+            end
             if category.payload then wantsPayload = true end
         end
     end
@@ -740,11 +750,16 @@ local function sendingMark(link, memberKey)
 
     -- Small: a payload mark is one short string however big the record behind it is, and the
     -- meta fields are numbers and words. This is the fold the timings above call *marking*.
-    return Family.Codec:Fingerprint({
+    --
+    -- **No clock in it, since 2026-09-13** (data-path review, step 6, on Alberto's yes to change
+    -- what leaves the machine). `lastSeen` was in it, and every scan writes `lastSeen`, so a login
+    -- doing nothing sent every member it touched to every linked family. The clocks go beside the
+    -- offering instead (`offeringSeen` in `postBatch`), and the stable fold rounds the deadlines
+    -- still in the meta fields (`mailExpiresBy`, the `readyAt` of each item cooldown).
+    return Family.Codec:StableFingerprint({
         payload = payloadMark,
         meta = fields,
         granted = ids,
-        seen = meta.lastSeen,
     }), true
 end
 
@@ -865,6 +880,11 @@ local function postBatch(job, familyID)
         -- here and not carried above is *unchanged*, which is a different sentence from
         -- *withdrawn* and has to stay one.
         offering = Wide:GrantedKeys(link),
+        -- **And when each of them was last looked at**, held back or not, since the mark no
+        -- longer says so. A separate field rather than a change to `offering`: a Family too old
+        -- to know it reads `offering` exactly as before and ignores this, and receives whole
+        -- members as it always did.
+        offeringSeen = Wide:OfferingSeen(link),
     }), true, BULK_LEVEL, function()
         -- Every piece of this batch has been taken by the client. Now, and not before.
         --
@@ -1386,6 +1406,16 @@ function Wide:GrantedKeys(link)
     return keys
 end
 
+-- When each member this link is offered was last seen, by key.
+function Wide:OfferingSeen(link)
+    local seen = {}
+    for _, memberKey in ipairs(self:GrantedKeys(link)) do
+        local meta = Family.Database:Meta(memberKey)
+        if meta and type(meta.lastSeen) == "number" then seen[memberKey] = meta.lastSeen end
+    end
+    return seen
+end
+
 function Wide:ExchangeAll(why)
     local asked = 0
     for familyID in pairs(self:Links()) do
@@ -1711,6 +1741,21 @@ local function onData(_, text, sender)
         if type(entry) == "table" and type(entry.meta) == "table" then
             link.members[memberKey] = entry
             arrived = arrived + 1
+        end
+    end
+
+    -- **The age of what we hold, brought forward for members they held back.** An unchanged
+    -- member is not sent, and its record here keeps the `seen` it arrived with; the stamp beside
+    -- the offering says when they last looked. Only the stamp is taken - the record and its mark
+    -- are left exactly as they arrived - and only forward, so an out-of-order batch cannot make a
+    -- member look older than it is.
+    if type(body.offeringSeen) == "table" then
+        for memberKey, stamp in pairs(body.offeringSeen) do
+            local entry = link.members[memberKey]
+            if type(entry) == "table" and type(stamp) == "number"
+                and stamp > (tonumber(entry.seen) or 0) then
+                entry.seen = stamp
+            end
         end
     end
 

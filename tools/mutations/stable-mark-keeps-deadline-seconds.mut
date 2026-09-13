@@ -1,0 +1,6 @@
+name: a deadline is marked to the second, so a few seconds of jitter move the mark
+file: addons/Family/Codec.lua
+--- old
+                    inner = math.floor(inner / 60)
+--- new
+                    inner = inner

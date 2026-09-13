@@ -1,6 +1,6 @@
 name: a record stored plain answers no mark
 file: addons/Family/Database.lua
 --- old
-	if type(entry.mark) == "string" then return entry.mark end
+	if type(entry.payload) == "table" then return composeMark(entry) end
 --- new
-	if type(entry.mark) == "string" then return nil end
+	if type(entry.payload) == "table" then return nil end

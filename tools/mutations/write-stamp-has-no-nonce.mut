@@ -1,6 +1,5 @@
-name: the write stamp leaves the session's nonce out
+name: a record this version has never written loses the mark it came with (recorded under the name of the 74 nonce case it replaced)
 file: addons/Family/Database.lua
 --- old
-	return string.format("w%d.%s.%d", time(), nonce, stamped)
+	if entry.partMarks == nil and type(entry.mark) == "string" then return entry.mark end
 --- new
-	return string.format("w%d.%d", time(), stamped)

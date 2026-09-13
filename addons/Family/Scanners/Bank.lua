@@ -213,7 +213,7 @@ function Bank:Scan()
 
 	local payload = Family.Database:Payload(key) or {}
 	payload.bank = { containers = containers, seen = time() }
-	Family.Database:SetPayload(key, payload)
+	Family.Database:SetPayload(key, payload, "bank")
 
 	Family.Database:SetMeta(key, {
 		bankSlots = slots,

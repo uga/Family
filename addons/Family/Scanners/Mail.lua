@@ -116,7 +116,7 @@ function Mail:Scan()
 
 	local payload = Family.Database:Payload(key) or {}
 	payload.mail = { letters = letters, seen = now }
-	Family.Database:SetPayload(key, payload)
+	Family.Database:SetPayload(key, payload, "mail")
 
 	Family.Database:SetMeta(key, {
 		mailCount = #letters,
@@ -226,7 +226,7 @@ local function addLetter(key, letter)
 	payload.mail.letters = payload.mail.letters or {}
 
 	table.insert(payload.mail.letters, letter)
-	Family.Database:SetPayload(key, payload)
+	Family.Database:SetPayload(key, payload, "mail")
 
 	local inPost = 0
 	local soonest = meta.mailExpiresBy

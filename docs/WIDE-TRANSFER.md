@@ -119,7 +119,7 @@ Three other things start an exchange, and nothing else does:
 ```mermaid
 flowchart TD
     G["grants, as they stand right now"] --> W{"worthSending"}
-    D["Database:PayloadMark - the record as it sits on disk, not decoded"] --> W
+    D["Database:PayloadMark - a fold of each part's mark, made when the part was written"] --> W
     H["link.sent - what we believe they hold"] --> W
     W -->|"unchanged"| X["held back, but still named in the offering list"]
     W -->|"changed, or not knowable"| P["built, packed, queued in batches of twelve"]
@@ -142,6 +142,32 @@ wrong about:
 4. **The side that has the records is the side that says what it holds.** Every member goes out
    carrying its mark; the next `want` hands the marks back; the answer is the difference. So
    nothing depends on this side's bookkeeping being right about a transfer that stopped.
+
+### What a mark is made of, since 2026-09-13
+
+Step 6 of the data-path review, on Alberto's yes to change what leaves the machine.
+
+- **One mark per part of a record**, written when that part is written. Each scanner tells
+  `Database:SetPayload` which part it replaced (`bags`, `quests` and `questObjectives`,
+  `professions` and `crafts`, and so on), and only that part is folded again, with
+  `Codec:StableFingerprint`: `seen`, `recipesSeen` and `at` left out, `expiresBy`, `readyAt` and
+  `mailExpiresBy` rounded to the minute. A write naming no part folds them all. The marks are kept
+  beside the record, in `entry.partMarks`.
+- **The record's mark** is a fold of its part marks. A record this version has never written keeps
+  the mark it came with until its first write.
+- **The sending mark** (`sendingMark`) is that record mark, the identity and granted meta fields
+  without the moments (`lastSeen`, `played`, `playedSeen`, `rested`, every `*Seen`), and the
+  granted category ids.
+- **The moments travel beside the offering.** Every `data` message carries `offeringSeen`, the
+  `lastSeen` of every member offered, held back or not, and `onData` moves the `seen` of a member
+  it holds forward to it without touching anything else. A Family too old to know the field ignores
+  it; `offering` is still the list of keys it always was, and members still go whole.
+
+So a login where nothing was done rewrites parts with new moments and moves no mark; a loot moves
+the mark of `bags`, and the member goes again, whole. **The first exchange after updating sends
+every member whose mark was made the new way once**, because the recipe for a mark changed.
+Nothing about limits, cadence or `Comm` changed, and members are not sent by category: that is
+backlog 72, still deferred.
 
 ---
 
