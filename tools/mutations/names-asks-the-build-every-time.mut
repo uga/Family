@@ -1,0 +1,6 @@
+name: every item name looked up asks the client for its build again
+file: addons/Family/Names.lua
+--- old
+	local at = sessionBuild()
+--- new
+	local at = clientBuild()

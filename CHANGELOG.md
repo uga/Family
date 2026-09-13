@@ -263,6 +263,10 @@ picks itself up where it left off.
   blocks used to show three and then *and 1 more*, which hides a name to save a line it then
   spends saying so. Reported by a French player.
 
+- **Searching recipes across the whole family could stop with *script ran too long*** on Classic
+  Era, where most recipes are named through the item they make. Looking up each name asked the game
+  for its version again; it now asks once.
+
 - **And a list is only contracted when the page cannot hold it.** Where every block on the page fits,
   nothing folds, however long a block is. Where they do not, every block folds by the same amount -
   as little as brings the page back to one screen, and never below three.

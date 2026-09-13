@@ -35868,6 +35868,53 @@ print("two ways of saying it, and the shorter one where the longer will not fit"
 end)()
 
 print()
+print("a whole-family recipe search does not ask the client for its build per recipe")
+
+-- **Reported from play 2026-09-13**: *script ran too long*, inside `Names.lua`, under
+-- `Recipes:Search` from the professions panel's search box. On Classic Era a recipe carries its
+-- item and no spell, so a search names most recipes of every character through the item - and each
+-- of those asked the client for its build twice, through a protected call and a new string, on
+-- every letter typed. A client's build does not change while it runs.
+;(function()
+	local realBuild, realInfo, realItem = GetBuildInfo, GetItemInfo, C_Item and C_Item.GetItemInfo
+	local asked = 0
+
+	-- Names the store holds and this session has not seen yet, which is every name at the start
+	-- of a session after the first: each one is read off the disk, and reading the disk is where
+	-- the build was being asked for.
+	local store = Family.Names:ItemStore()
+	local recipes = {}
+	for index = 1, 60 do
+		local id = 880500 + index
+		recipes[#recipes + 1] = { name = "Searchable Thing " .. index, itemID = id }
+		store[id] = "Searchable Thing " .. index
+	end
+	for index = 1, 3 do
+		local key = "Searcher" .. index .. "-FireMaw"
+		Family.Database:SetMeta(key, { name = "Searcher" .. index, realm = "FireMaw",
+			faction = "Alliance", classFile = "MAGE", level = 60 })
+		-- No language on the record, which is what an older record or one read elsewhere has,
+		-- so the reader's own fast path does not answer and the item's name is asked for.
+		Family.Database:SetPayload(key, { professions = { [197] = { recipes = recipes } } })
+	end
+
+	-- The client has not loaded any of them, so the store is the only answer.
+	GetItemInfo = function() return nil end
+	if C_Item then C_Item.GetItemInfo = function() return nil end end
+	GetBuildInfo = function(...) asked = asked + 1 return realBuild(...) end
+
+	local found = Family.Recipes:Search("searchable")
+	check("the fixture's recipes are found by the names the store holds for what they make",
+		#found == 60, tostring(#found))
+	check("and the search asks the client for its build no more than once",
+		asked <= 1, tostring(asked) .. " times for 180 recipe lines")
+
+	GetBuildInfo, GetItemInfo = realBuild, realInfo
+	if C_Item then C_Item.GetItemInfo = realItem end
+	for index = 1, 3 do Family.Database:Forget("Searcher" .. index .. "-FireMaw") end
+end)()
+
+print()
 print("the money that came out of the mailbox")
 
 -- **Asked for 2026-09-12, and reshaped twice from play the same day.** The last word, with

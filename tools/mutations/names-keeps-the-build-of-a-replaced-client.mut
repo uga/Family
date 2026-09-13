@@ -1,0 +1,6 @@
+name: the build is kept after the call that answered it has been replaced
+file: addons/Family/Names.lua
+--- old
+	if buildWas and buildAsked == asking then return buildWas end
+--- new
+	if buildWas then return buildWas end

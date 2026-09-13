@@ -67,13 +67,31 @@ local function clientBuild()
 	return version .. "." .. tostring(build or "?")
 end
 
+-- **The build, asked once.** Reported from play 2026-09-13 as *script ran too long* in the recipe
+-- search, stopped inside this file: every item name looked up asked the client for its build twice
+-- - once to read the store and once to write to it - through a protected call and a string built
+-- each time, and a whole-family search on Classic Era looks up an item name for most recipes of
+-- every character, on every letter typed. A client's build cannot change while it is running.
+--
+-- Kept against the function that answered rather than for good, so that something replacing
+-- `GetBuildInfo` - the harness does, to stand in for another client - is asked again. An answer of
+-- nothing is not kept either: that is a client too early to say, and it will say later.
+local buildAsked, buildWas
+
+local function sessionBuild()
+	local asking = _G.GetBuildInfo
+	if buildWas and buildAsked == asking then return buildWas end
+	buildAsked, buildWas = asking, clientBuild()
+	return buildWas
+end
+
 local function itemRecord()
 	if type(_G.FamilyDB) ~= "table" then return nil end
 
 	-- No build, no trust. A client that will not say what it is cannot be checked against
 	-- what was written down, and showing a name from an unknown build is exactly the fossil
 	-- above.
-	local at = clientBuild()
+	local at = sessionBuild()
 	if not at then return nil end
 
 	FamilyDB.itemNames = FamilyDB.itemNames or {}
