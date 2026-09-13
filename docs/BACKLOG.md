@@ -4567,3 +4567,55 @@ the same 1.15 client, is where Alberto plays, and is very much in perimeter. A f
 real recipes to save four per cent of a file is the trade this project keeps getting caught by.
 Left in, inert: a recipe nobody on this realm knows is never looked up, and if somebody does play
 that realm Family is right for them for nothing.
+
+---
+
+## 72. Send a changed member's changed categories, not the whole member
+
+**Asked 2026-09-13**, by Alberto, off `/family widetime` on Serena's side: *se un personaggio con
+200 slot di borse e 600 ricette si sposta solo di zona rimandiamo anche tutte le borse e le
+ricette?* Yes, today.
+
+**Today.** A member has one mark (`sendingMark`, `Family/Wide.lua`): identity, the meta fields of
+every granted category, the granted ids, `lastSeen`, and `Database:PayloadMark` - which is a mark of
+**the whole encoded payload**, not of the granted parts of it. When that mark moves, `offering`
+builds everything granted - bags and bank, equipment, professions with every recipe, talents,
+quests, mail, auctions, reputations - and the far side's `onData` replaces the member outright
+(`link.members[memberKey] = entry`). So a zone change, two coins or a quest ticked resend all of it.
+
+**Found while answering, and it is the part that matters first: a login alone moves the mark.**
+`Database:SetMeta` writes `lastSeen = time()` on every scan; `played`, `rested`, `bagsSeen` and the
+other `*Seen` stamps move with a login; and **timestamps live inside the payload too** - the quest
+scanner writes `quests.seen = time()` (`Scanners/Quests.lua`), the spellbook scanner a `seen` of its
+own (`Scanners/Character.lua`) - so a rescan at login rewrites the payload string and moves the one
+payload mark whatever was granted. Whether an identical rescan even produces identical bytes is not
+measured: `LibSerialize` walks tables with `pairs`. The reading that settles it is written below.
+
+**What it would take.**
+
+1. **A mark per category, made when the record is written.** `Database:SetPayload` holds the decoded
+   table at that moment, so fingerprinting each payload key there - with the `seen` stamps left out
+   - costs nothing an exchange has to pay, and the exchange stays the cheap fold it became on
+   2026-09-08. Meta fields that are clocks (`lastSeen`, `played`, `rested`, the `*Seen` fields) are
+   left out of the marks the same way.
+2. **The clocks go separately.** The far side shows *seen 12h ago*, and those values are small: they
+   travel beside the offering list for members whose record did not change, so a login refreshes
+   the age without resending the record.
+3. **The sender sends only the categories whose mark moved**, and says which it sent.
+4. **The receiver merges** the categories that arrived into the member it holds rather than replacing
+   it, and keeps the rest. Absent-because-unchanged and absent-because-withdrawn are told apart by
+   `granted`, which already travels with every member.
+5. **An older receiver replaces**, and would lose every category not in the message. So partial
+   members go only to a link that has shown it merges, learned the way `link.acks` is learned from a
+   first `got`; everyone else gets whole members as today.
+6. **The `have` list** carries per-category marks, or a member with any category missing is resent
+   whole - the second is simpler and costs little, since repair is rare.
+
+**The reading first**, because points 1 and 2 are worth building alone if the payload turns out to be
+stable and point 1 is needed whatever it turns out to be. On a shared character: log in, wait for
+the scans, `/run print(Family.Database:PayloadMark(Family:CurrentMember()))`; log out, log in doing
+nothing, wait, run it again. Same number: the payload is stable and only the meta clocks move. A
+different number: the payload's own stamps, or its byte order, move it at every login.
+
+**How big it is worth.** Unmeasured: what one whole member weighs on the wire. Backlog 41's probe
+weighs the `have` list; the same approach on `offering` would give the number this entry needs.
