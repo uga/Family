@@ -263,6 +263,10 @@ picks itself up where it left off.
   blocks used to show three and then *and 1 more*, which hides a name to save a line it then
   spends saying so. Reported by a French player.
 
+- **And a list is only contracted when the page cannot hold it.** Where every block on the page fits,
+  nothing folds, however long a block is. Where they do not, every block folds by the same amount -
+  as little as brings the page back to one screen, and never below three.
+
 ### What a character is wearing counts as theirs
 
 - **Gear is part of possessions now.** Hover a sword one character keeps in the bank and another

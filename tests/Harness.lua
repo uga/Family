@@ -2064,6 +2064,59 @@ Family.UI.CRAFTING_PEOPLE = 3
 Family.UI.FACTION_PEOPLE = 3
 Family.UI.BLOCK_LINES = 3
 
+-- **And a page with no room**, so that those folds still happen: since backlog 64 a page folds
+-- only when its blocks overflow it, and a fixture of five fits any page. The rule itself is
+-- checked on its own further down, with the real measurement put back.
+Family.UI.__realRowsThatFit = Family.UI.RowsThatFit
+Family.UI.RowsThatFit = function() return 0 end
+
+-- **Backlog 64: fold only what does not fit.** Alberto, 2026-09-12: *pieghiamo solo se, non
+-- piegando, sforiamo la capienza della pagina; poi la piega minima che lascia 10 visibili per
+-- sottoelenco e la massima che ne lascia 3; se sfora comunque, resta cosi.* One depth per page.
+;(function()
+	local UI = Family.UI
+	local function depth(sizes, other, fit) return UI:FoldDepth(sizes, other, fit, 10) end
+
+	check("a page whose blocks all fit folds nothing",
+		depth({ 15, 15 }, 0, 30) == nil, tostring(depth({ 15, 15 }, 0, 30)))
+	check("one that overflows folds as little as returns it under the page, ten first",
+		depth({ 15, 15 }, 0, 22) == 10, tostring(depth({ 15, 15 }, 0, 22)))
+	check("and deeper where ten is not enough, every block to the same depth",
+		depth({ 15, 15 }, 0, 16) == 7, tostring(depth({ 15, 15 }, 0, 16)))
+	check("and no deeper than three, even where three still overflows",
+		depth({ 15, 15 }, 0, 5) == 3, tostring(depth({ 15, 15 }, 0, 5)))
+	-- One over a cap is drawn whole (UI:ShowAtMost), so eleven at ten costs eleven rows - the same
+	-- as folding it would, which is why no mutation can tell the two apart and none is recorded.
+	check("a block one over the depth costs its own length",
+		depth({ 11, 15 }, 0, 22) == 10 and depth({ 11, 15 }, 0, 21) == 9,
+		tostring(depth({ 11, 15 }, 0, 22)) .. "/" .. tostring(depth({ 11, 15 }, 0, 21)))
+	check("the page's headings count against the room",
+		depth({ 15, 15 }, 2, 30) == 10 and depth({ 15, 15 }, 0, 30) == nil,
+		tostring(depth({ 15, 15 }, 2, 30)))
+	check("and a page whose height is not known yet folds as it always did",
+		depth({ 4, 5 }, 0, nil) == 10, tostring(depth({ 4, 5 }, 0, nil)))
+
+	-- **The room is read off the scroll frame**, and an unmeasured one asks to be drawn again.
+	local measure = UI.__realRowsThatFit
+	check("a list's rows are its scroll frame's height over the row height",
+		measure(UI, { GetHeight = function() return 410 end }, 20) == 20,
+		tostring(measure(UI, { GetHeight = function() return 410 end }, 20)))
+
+	local realRefresh, redrawn = UI.Refresh, 0
+	UI.Refresh = function() redrawn = redrawn + 1 end
+	local unmeasured = { GetHeight = function() return 0 end }
+	-- Apart in time, because two asks in one instant share one pending redraw whatever the
+	-- rule is - which is how the first writing of this check passed with the rule removed.
+	local first = measure(UI, unmeasured, 20)
+	advance(0.3)
+	measure(UI, unmeasured, 20)
+	advance(0.3)
+	check("an unmeasured list answers unknown and is drawn again once, not every frame",
+		first == nil and redrawn == 1, tostring(first) .. ", redrawn " .. redrawn)
+	measure(UI, { GetHeight = function() return 410 end }, 20)
+	UI.Refresh = realRefresh
+end)()
+
 -- But the tab is there. It used to appear only once the feature was on, so the only way to
 -- learn Wide Family existed was to read a manual - and a choice nobody can find is not a
 -- choice anybody has made. Both sharing features ship off and both panels are in the list
@@ -12034,6 +12087,18 @@ print("everybody's quests at once")
 
 		local more = foldRow(string.format(Family.L["|cff888888and %d more|r"], 2))
 		check("and the rest offered rather than dropped", more ~= nil)
+
+		-- **And not at all on a page with room for everyone** (backlog 64). The same quest and
+		-- the same five, with the page measured at fifty rows instead of none.
+		Family.UI.RowsThatFit = function() return 50 end
+		Family.UI:Refresh()
+		check("on a page with room for all of them nobody is folded away",
+			shownSaying("Qfour") ~= nil
+				and foldRow(string.format(Family.L["|cff888888and %d more|r"], 2)) == nil)
+		Family.UI.RowsThatFit = function() return 0 end
+		Family.UI:Refresh()
+		quest = rowSaying(shared.title)
+		more = foldRow(string.format(Family.L["|cff888888and %d more|r"], 2))
 
 		if more then
 			more.__scripts.OnClick(more)
@@ -29461,6 +29526,25 @@ print("filtering the summary's crafting by which cooldown")
 		check("the fold says how many are left", foldRow
 			and foldRow.two:find("3", 1, true) ~= nil, foldRow and foldRow.two)
 
+		-- **And none of it on a page with room for all six** (backlog 64).
+		Family.UI.RowsThatFit = function() return 1000 end
+		Family.UI:Refresh()
+		do
+			local roomy, from = page(), nil
+			for index, row in ipairs(roomy) do
+				if row.one:find(alchemy, 1, true) then from = from or index end
+			end
+			local whole = 0
+			for index = from or 1, #roomy do
+				if index > (from or 1) and roomy[index].one ~= "" then break end
+				whole = whole + 1
+			end
+			check("on a page with room for every crafter the timer is not folded",
+				from ~= nil and whole == 6, tostring(whole))
+		end
+		Family.UI.RowsThatFit = function() return 0 end
+		Family.UI:Refresh()
+
 		-- **And how many can be done now, on the timer's own line**, which is what a fold
 		-- otherwise hides: three names showing and no way to tell whether the fourth was
 		-- ready or four days out. Asked for from play in those words.
@@ -30290,6 +30374,26 @@ print("an alias for a linked family")
 			check("and clicking it again folds them away", closedBlock == 4,
 				tostring(closedBlock))
 
+			-- **Folded only where the page has no room** (backlog 64). The same nine holders,
+			-- with the page measured at a thousand rows: all ten, and no line offering more.
+			Family.UI.RowsThatFit = function() return 1000 end
+			Family.UI:Refresh()
+			local roomy = page()
+			local roomyBlock = 0
+			for _, row in ipairs(roomy) do
+				if row.item == "Ingot of Proof Mark II" then break end
+				roomyBlock = roomyBlock + 1
+			end
+			local offered = false
+			for index = 1, (Family.UI.__contentsShown or 0) do
+				if Family.UI.__contentsRows[index].expandBlock then offered = true end
+			end
+			Family.UI.RowsThatFit = function() return 0 end
+			Family.UI:Refresh()
+			check("on a page with room for all nine holders none is folded away",
+				roomyBlock == 9 and not offered, roomyBlock .. " drawn, offered: "
+					.. tostring(offered))
+
 			-- Asked again now that row six has been a holder's line and been handed
 			-- back: a pooled row that kept the item it last carried offers a tooltip
 			-- about an item this line says nothing about. Asked before the block was
@@ -30987,6 +31091,7 @@ print("the family's reputations, as factions rather than as members")
 	check("and the rest are offered rather than dropped", more ~= nil,
 		more and more.middle.__text)
 
+
 	if more then
 		more.__scripts.OnClick(more)
 
@@ -31076,6 +31181,24 @@ print("the family's reputations, as factions rather than as members")
 	check("a faction only one member has is listed too", #zandalar == 1, tostring(#zandalar))
 	check("with nothing offered to unfold, because there is nothing behind it",
 		zandalar[1] and zandalar[1].expandFaction == nil)
+
+	-- **And nobody folded away on a page with room for everyone** (backlog 64). Asked last, and
+	-- the section asked for by name, because the checks above leave the panel wherever their
+	-- clicks took it and the pooled rows in whatever order they were made.
+	do
+		Family.UI.RowsThatFit = function() return 1000 end
+		clickButton("Reputations")
+		if not wholeFamilyShowing() then clickButton("Whole family") end
+		-- Twice, for the pool's sake: a row made for the first time is last in `frames`.
+		Family.UI:Refresh()
+		Family.UI:Refresh()
+		local roomy = rowSaying("Thorium Brotherhood")
+		check("on a page with room for all of a faction's people none is folded away",
+			roomy[1] ~= nil and saidUnder(roomy[1], "Repfour") ~= nil
+				and saidUnder(roomy[1], moreSaid) == nil)
+		Family.UI.RowsThatFit = function() return 0 end
+		Family.UI:Refresh()
+	end
 
 	-- The filter box, and **not** the one the global happens to hold.
 	--

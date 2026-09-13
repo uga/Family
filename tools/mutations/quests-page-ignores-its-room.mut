@@ -1,0 +1,12 @@
+name: the whole-family quests page folds at its old depth whatever room it has
+file: addons/Family_UI/Character.lua
+--- old
+			-- **How deep this page folds** (backlog 64), as the reputations page does.
+			local sizes = {}
+			for _, group in ipairs(categories) do
+				for _, row in ipairs(byCategory[group]) do sizes[#sizes + 1] = #row.people end
+			end
+			local cap = UI:FoldDepth(sizes, #categories, UI:RowsThatFit(scroll, height),
+				UI.FACTION_PEOPLE)
+--- new
+			local cap = UI.FACTION_PEOPLE

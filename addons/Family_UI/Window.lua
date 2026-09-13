@@ -1271,6 +1271,70 @@ function UI:ShowAtMost(total, cap)
 	return cap
 end
 
+-- **How deep a page folds: not at all where everything fits, and as little as it can where not.**
+--
+-- Backlog 64, in Alberto's words of 2026-09-12: *pieghiamo i risultati multipli solo se, non
+-- piegando, sforiamo la capienza nativa della pagina. Se il numero di righe espanse e > max
+-- applichiamo le pieghe, calcolando quanto ci serve piegare per tornare sotto il limite - pero con
+-- la piega minima che lascia per ogni sottoelenco multiplo 10 unita visibili, e la piega massima
+-- che ne lascia solo 3. Se nonostante le pieghe massime l'elenco sfora, resta cosi.*
+--
+-- **One depth for the whole page**, which is what keeps it from being arbitrary: no block folds
+-- because of its own length, so there is nothing to explain about why one is open and another is
+-- not. `sizes` is each block's length, `other` the rows on the page that are not in any block
+-- (headings), `fit` how many rows the page has, and `most` the depth a page folds to first. The
+-- answer is a cap for `UI:ShowAtMost`, or nil for *nothing folds*. One over a cap is still drawn
+-- whole, so the rows a block costs are worked out through that same rule.
+UI.FOLD_LEAST = UI.FOLD_LEAST or 3
+
+function UI:FoldDepth(sizes, other, fit, most)
+	local least = math.min(UI.FOLD_LEAST, most)
+
+	local function rows(cap)
+		local total = other or 0
+		for _, held in ipairs(sizes) do
+			if cap and UI:ShowAtMost(held, cap) < held then
+				total = total + cap + 1
+			else
+				total = total + held
+			end
+		end
+		return total
+	end
+
+	-- Not known how many fit: fold as the page always did, rather than guess a height.
+	if not fit then return most end
+
+	if rows(nil) <= fit then return nil end
+	for cap = most, least, -1 do
+		if rows(cap) <= fit then return cap end
+	end
+	return least
+end
+
+-- **How many rows a list has room for**, asked of its scroll frame at the moment it is drawn.
+--
+-- The window is not resizable, so this is one measurement - but it is a measurement, and on a
+-- first draw the frame has not been laid out and answers nought (`UI:ListWidth` met the same).
+-- Unknown is answered as unknown, which `UI:FoldDepth` takes as *fold as before*, and the page is
+-- drawn once more a moment later when there is a height to read. Once, and not again until a
+-- reading succeeds: a list that never gets a height must not redraw itself every frame.
+local remeasuring = false
+
+function UI:RowsThatFit(scroll, rowHeight)
+	local room = scroll and scroll.GetHeight and scroll:GetHeight()
+	if type(room) == "number" and room >= 100 and (tonumber(rowHeight) or 0) > 0 then
+		remeasuring = false
+		return math.floor(room / rowHeight)
+	end
+
+	if not remeasuring then
+		remeasuring = true
+		Family:After(0.05, "ui.fold.measure", function() UI:Refresh() end)
+	end
+	return nil
+end
+
 function UI:HeldWhere(owner)
 	local parts = {}
 	if (owner.bags or 0) > 0 then parts[#parts + 1] = string.format(L["%d bags"], owner.bags) end

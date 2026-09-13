@@ -1024,6 +1024,24 @@ local function build(frame)
 			local groupColumn = grouping and grouping.column or nil
 			local at = 1
 
+			-- **How deep this page folds**, decided for the whole page before a block is
+			-- drawn (backlog 64). The blocks are the same runs the loop below cuts; a line
+			-- of its own is a block of one and never folds.
+			local sizes = {}
+			do
+				local from = 1
+				while from <= #lines do
+					local key = groupOn and lines[from][groupOn] or nil
+					local to = from
+					if key then
+						while to < #lines and lines[to + 1][groupOn] == key do to = to + 1 end
+					end
+					sizes[#sizes + 1] = to - from + 1
+					from = to + 1
+				end
+			end
+			local cap = UI:FoldDepth(sizes, 0, UI:RowsThatFit(scroll, 20), UI.BLOCK_LINES)
+
 			while at <= #lines do
 				-- Where there is no grouping, every line is its own block of one and says
 				-- all three things - which is what the "How many" order wants.
@@ -1041,8 +1059,8 @@ local function build(frame)
 				-- character whose key happens to read the same.
 				local block = key and (tostring(groupColumn) .. "\1" .. key) or nil
 				local open = block ~= nil and UI.__openContents == block
-				local foldable = block ~= nil and UI:ShowAtMost(held, UI.BLOCK_LINES) < held
-				local limit = (foldable and not open) and UI.BLOCK_LINES or held
+				local foldable = block ~= nil and cap ~= nil and UI:ShowAtMost(held, cap) < held
+				local limit = (foldable and not open) and cap or held
 
 				for offset = 0, limit - 1 do
 					local line = lines[at + offset]

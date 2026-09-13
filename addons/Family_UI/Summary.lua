@@ -2033,6 +2033,10 @@ end
 -- glance. It is a layout choice rather than a measurement, and it is written once here so that
 -- changing one's mind is one line.
 --
+-- **Since backlog 64 this is the shallowest a page folds, not the fold.** A page whose blocks all fit
+-- folds nothing; one that does not folds every block to the deepest of ten down to three that
+-- brings it back under the page (`UI:FoldDepth`, `Window.lua`).
+--
 -- The harness sets these to small numbers where it drives the folding itself, so a fixture does
 -- not need twelve members to exercise a fold.
 -- Kept if something already set it, so a second load of this file does not put a layout
@@ -3603,6 +3607,12 @@ local function build(frame)
 				return tostring(a.label) < tostring(b.label)
 			end)
 
+			-- **How deep this page folds** (backlog 64): one depth for every timer on it.
+			local sizes = {}
+			for _, group in ipairs(order) do sizes[#sizes + 1] = #group.people end
+			local cap = UI:FoldDepth(sizes, 0, UI:RowsThatFit(scroll, currentSet.rowHeight),
+				UI.CRAFTING_PEOPLE or 3)
+
 			for _, group in ipairs(order) do
 				-- Ready first, because that is what anybody opened this for, then soonest
 				-- back, then by name.
@@ -3618,10 +3628,8 @@ local function build(frame)
 				end)
 
 				local open = UI.__openCrafting == group.label
-				local foldable = UI:ShowAtMost(#group.people, UI.CRAFTING_PEOPLE or 3)
-					< #group.people
-				local limit = (foldable and not open) and (UI.CRAFTING_PEOPLE or 3)
-					or #group.people
+				local foldable = cap ~= nil and UI:ShowAtMost(#group.people, cap) < #group.people
+				local limit = (foldable and not open) and cap or #group.people
 
 				local function toggle()
 					UI.__openCrafting = (UI.__openCrafting ~= group.label)

@@ -3924,7 +3924,18 @@ asked about and whatever was recorded when they scanned is all there will ever b
 
 ---
 
-## 64. Fold only what does not fit on the page
+## 64. Fold only what does not fit on the page — DONE 2026-09-13
+
+**Built 2026-09-13, to Alberto's rule of 2026-09-12 below.** `UI:FoldDepth` (`Window.lua`) takes the
+length of every block on a page, the rows that are in no block, the rows the page has, and the depth
+the page folds to first (the old caps, ten): nothing folds where everything fits; otherwise every
+block folds to the deepest depth from ten down to three that brings the page back under its rows;
+three where nothing does. The four lists that fold use it - the possessions search, the
+whole-family reputations and quests, and the crafting set. **The room is measured, not derived**:
+`UI:RowsThatFit` asks the list's scroll frame for its height and divides by the panel's row height.
+An unmeasured frame answers *unknown*, which folds as before, and asks for one redraw a moment later.
+So the screenshot this entry owed is no longer what the number rests on; it is still the way to
+confirm it in play.
 
 **Half of it landed 2026-09-12 without being called that**: the crafter rows now fit *as many
 names as the line will take* rather than a constant four, measured with `UI:FitNames`. That is

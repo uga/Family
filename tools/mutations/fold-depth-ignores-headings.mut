@@ -1,0 +1,6 @@
+name: the rows that are not in any block are left out of what a page has to hold
+file: addons/Family_UI/Window.lua
+--- old
+		local total = other or 0
+--- new
+		local total = 0

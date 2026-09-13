@@ -1,0 +1,6 @@
+name: a page whose blocks all fit is folded anyway
+file: addons/Family_UI/Window.lua
+--- old
+	if rows(nil) <= fit then return nil end
+--- new
+	if false then return nil end

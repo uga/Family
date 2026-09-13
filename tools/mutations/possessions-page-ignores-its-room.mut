@@ -1,0 +1,6 @@
+name: the possessions search folds at its old depth whatever room the page has
+file: addons/Family_UI/Contents.lua
+--- old
+			local cap = UI:FoldDepth(sizes, 0, UI:RowsThatFit(scroll, 20), UI.BLOCK_LINES)
+--- new
+			local cap = UI.BLOCK_LINES

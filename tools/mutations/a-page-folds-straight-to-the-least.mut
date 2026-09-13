@@ -1,0 +1,6 @@
+name: a page that overflows folds straight to three rather than as little as it needs
+file: addons/Family_UI/Window.lua
+--- old
+	for cap = most, least, -1 do
+--- new
+	for cap = least, least, -1 do

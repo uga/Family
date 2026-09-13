@@ -1,0 +1,8 @@
+name: a list with no height yet asks to be redrawn on every draw
+file: addons/Family_UI/Window.lua
+--- old
+	if not remeasuring then
+		remeasuring = true
+--- new
+	if true then
+		remeasuring = true

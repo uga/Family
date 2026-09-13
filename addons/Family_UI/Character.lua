@@ -1161,6 +1161,15 @@ local function build(frame)
 
 			table.sort(categories)
 
+			-- **How deep this page folds** (backlog 64): one depth for every faction on it,
+			-- counted with a heading row for each category.
+			local sizes = {}
+			for _, group in ipairs(categories) do
+				for _, row in ipairs(byCategory[group]) do sizes[#sizes + 1] = #row.people end
+			end
+			local cap = UI:FoldDepth(sizes, #categories, UI:RowsThatFit(scroll, height),
+				UI.FACTION_PEOPLE)
+
 			-- Whose name goes on a line: the realm where they are not on ours, and the
 			-- family where they are not ours, exactly as every other panel says it.
 			for _, group in ipairs(categories) do
@@ -1204,11 +1213,11 @@ local function build(frame)
 					end)
 
 					local open = UI.__openFaction == row.id
-					local foldable = UI:ShowAtMost(#row.people, UI.FACTION_PEOPLE) < #row.people
+					local foldable = cap ~= nil and UI:ShowAtMost(#row.people, cap) < #row.people
 					-- The cap applies only where the list is really being contracted. Read
 					-- the other way round it drew the cap and no *and 1 more* line, which
 					-- silently loses whoever was one over it.
-					local limit = (foldable and not open) and UI.FACTION_PEOPLE or #row.people
+					local limit = (foldable and not open) and cap or #row.people
 
 					for index = 1, limit do
 						local person = row.people[index]
@@ -1370,6 +1379,14 @@ local function build(frame)
 
 			table.sort(categories)
 
+			-- **How deep this page folds** (backlog 64), as the reputations page does.
+			local sizes = {}
+			for _, group in ipairs(categories) do
+				for _, row in ipairs(byCategory[group]) do sizes[#sizes + 1] = #row.people end
+			end
+			local cap = UI:FoldDepth(sizes, #categories, UI:RowsThatFit(scroll, height),
+				UI.FACTION_PEOPLE)
+
 			-- How far one of them is, in the words the per-member reading uses.
 			local function progressOf(person)
 				if not person.objectives or person.objectives <= 0 then return "" end
@@ -1419,11 +1436,11 @@ local function build(frame)
 					end)
 
 					local open = UI.__openQuest == row.id
-					local foldable = UI:ShowAtMost(#row.people, UI.FACTION_PEOPLE) < #row.people
+					local foldable = cap ~= nil and UI:ShowAtMost(#row.people, cap) < #row.people
 					-- The cap applies only where the list is really being contracted. Read
 					-- the other way round it drew the cap and no *and 1 more* line, which
 					-- silently loses whoever was one over it.
-					local limit = (foldable and not open) and UI.FACTION_PEOPLE or #row.people
+					local limit = (foldable and not open) and cap or #row.people
 
 					for index = 1, limit do
 						local person = row.people[index]
