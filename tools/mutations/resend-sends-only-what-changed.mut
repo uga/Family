@@ -1,0 +1,6 @@
+name: /family wide resend sends only what changed, like Update now
+file: addons/Family_UI/Slash.lua
+--- old
+	local ok, count, went = Family.Wide:ExchangeWith(familyID, "resend", { full = true })
+--- new
+	local ok, count, went = Family.Wide:ExchangeWith(familyID, "resend")

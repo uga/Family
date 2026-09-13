@@ -1,0 +1,13 @@
+name: an exchange a person asked for is refused while automatic exchange is switched off
+file: addons/Family/Wide.lua
+--- old
+    local link = self:Links()[familyID]
+    if not link then return false, L["no such link"] end
+
+    local full = options ~= nil and options.full == true
+--- new
+    local link = self:Links()[familyID]
+    if not link then return false, L["no such link"] end
+    if not self:AutoUpdate() then return false, L["no such link"] end
+
+    local full = options ~= nil and options.full == true

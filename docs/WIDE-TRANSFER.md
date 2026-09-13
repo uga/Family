@@ -136,7 +136,8 @@ Three other things start an exchange, and nothing else does:
 |---|---|---|---|
 | a login announcement heard | 2–5 s | yes | no, only what changed |
 | a grant ticked or unticked | 3 s after the last click | **no** — it is telling, not asking | no |
-| *Update now* on the panel | at once | yes | **yes**, whatever the marks say |
+| *Update now* on the panel | at once | yes | no, only what changed - and says *nothing to send* when that is nobody (since 2026-09-13; it sent everything before) |
+| `/family wide resend <family>` | at once | yes | **yes**, whatever the marks say - the one caller of `full` |
 
 ---
 
@@ -358,6 +359,16 @@ its marks are taken at once and the answer waits until the link has nothing in f
 once however many requests came in meanwhile. Backlog 46.
 
 ### Getting it moving
+
+**Since 2026-09-13 the escape hatch is `/family wide resend <family>`, not the button.** *Update
+now* sends what changed and says *nothing to send* when that is nobody; `resend` is the one caller
+of `full`, and says before it starts how many members, about how many KB and how long, at the 3.7
+KB a member and 2.2 KB a second measured in §2. It refuses while this link's own transfer is still
+going, as the button does. The panel names it on the line under an open link. The reason: the
+`have` list already makes the other side the authority on what it holds, so the difference repairs
+everything but a record spoiled under a right mark - and case 1 above, on a link that does not
+acknowledge - while a press made out of caution at 210 members cost six minutes of wire. What
+follows was the button's, and is `resend`'s now:
 
 **The escape hatch exists, and it is the button.** *Update now* is the one caller that asks for
 `full`: it ignores every mark and sends the whole offering, whatever this side believes the other

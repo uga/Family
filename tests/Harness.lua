@@ -15046,9 +15046,14 @@ do
 			local realInFlight = Family.Wide.InFlight
 			local asked = 0
 			local realExchange = Family.Wide.ExchangeWith
-			Family.Wide.ExchangeWith = function(this, ...)
+			-- `pretend`, when set, is the exchange's answer - offered, went, held - so the
+			-- sentence the panel chooses can be driven without a family to fill it.
+			local pretend, lastOptions
+			Family.Wide.ExchangeWith = function(this, id, why, options)
 				asked = asked + 1
-				return realExchange(this, ...)
+				lastOptions = options
+				if pretend then return true, pretend[1], pretend[2], pretend[3] end
+				return realExchange(this, id, why, options)
 			end
 
 			local function saidBy(act)
@@ -15124,6 +15129,7 @@ do
 			-- `full` - the way out of a transfer that has gone wrong. One that refuses for an
 			-- hour and a half on another link's behalf is the wrong way out.
 			Family.Wide.InFlight = function() return 0 end
+			pretend = { 3, 3, 0 }
 			said = saidBy(function() fireClick(update) end)
 
 			check("a queue busy with another link does not refuse this one", asked == 1,
@@ -15141,6 +15147,28 @@ do
 			check("and says so without mentioning a queue nobody is in",
 				said:find(sentWord, 1, true) ~= nil and said:find("42", 1, true) == nil,
 				said)
+
+			-- **Since 2026-09-13 the button asks for the difference**, never for everything:
+			-- `/family wide resend` is the one caller of `full`.
+			check("Update now asks the exchange for what changed, not for everything",
+				lastOptions == nil or lastOptions.full ~= true,
+				tostring(lastOptions and lastOptions.full))
+
+			-- **And when nothing goes, it says so and says why**, in chat and on the panel,
+			-- rather than "Sent 0" or nothing at all.
+			pretend = { 3, 0, 3 }
+			said = saidBy(function() fireClick(update) end)
+			local nothingTail =
+				Family.L["Nothing to send to %s: %d unchanged. Asked for theirs."]:match("%%d(.*)$")
+			check("with nothing to send it says nothing to send, and how many were unchanged",
+				said:find("3" .. nothingTail, 1, true) ~= nil
+					and said:find(sentWord, 1, true) == nil,
+				said)
+			Family.UI:Refresh()
+			check("and the panel says it under the link",
+				visibleText(string.format(
+					Family.L["|cffffd700nothing to send, %d unchanged|r"], 3)))
+			pretend = nil
 
 			Family.Comm.Pending = realPending
 			Family.Wide.InFlight = realInFlight
@@ -28432,6 +28460,116 @@ print("an exchange carries what changed, not everything again")
 
 	Family.Comm.Send = realSend
 	Family.Database:Forget(key)
+	FamilyDB.wide = held
+end)()
+
+print()
+print("Update now sends what changed, and resend sends everything")
+
+-- **Update now is the difference since 2026-09-13**, and `/family wide resend` is the one caller
+-- of `full`. Their `have` list says what they hold (2026-09-08), so resending everything repaired
+-- only a record spoiled under a right mark, and cost six minutes of wire at 210 members (backlog
+-- 77). The button's own wiring - no `full`, and the sentence when nothing goes - is checked on
+-- the panel above; what the exchange it starts puts on the wire is checked here, on a real one.
+;(function()
+	local held = FamilyDB.wide
+	local one, two = "Uno-Fire Maw", "Due-Fire Maw"
+
+	FamilyDB.wide = {
+		enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { ["pressed"] = { name = "Pressed lot", grants = {}, siblings = {},
+			members = {} } },
+	}
+
+	for _, memberKey in ipairs({ one, two }) do
+		Family.Database:SetMeta(memberKey, { name = memberKey:match("^(%a+)"), realm = "Fire Maw",
+			classFile = "MAGE", level = 30, faction = "Alliance" })
+		Family.Wide:Grant("pressed", memberKey, "possessions", true)
+	end
+
+	local carried, body
+	local realSend = Family.Comm.Send
+	-- Answering true and calling `onSent`, as the thrifty block explains: a mark is written when
+	-- the client has taken every piece.
+	Family.Comm.Send = function(_, kind, text, _channel, _target, _bulk, onSent)
+		if onSent then onSent() end
+		if kind == "data" then
+			body = Family.Codec:FromWire(text)
+			for memberKey in pairs((body or {}).members or {}) do carried[memberKey] = true end
+		end
+		return true
+	end
+
+	local function press()
+		carried, body = {}, nil
+		return Family.Wide:ExchangeWith("pressed", "asked for")
+	end
+
+	-- Level first: everything they are offered goes once.
+	press()
+	check("a first exchange sends both members", carried[one] and carried[two])
+
+	local ok, offered, went, unchanged = press()
+	check("with nothing changed, Update now's exchange sends no member at all",
+		ok == true and next(carried) == nil and went == 0,
+		tostring(ok) .. " " .. tostring(went))
+	check("and answers how many it held back as unchanged, which is what the panel says",
+		offered == 2 and unchanged == 2, tostring(offered) .. " offered, "
+			.. tostring(unchanged) .. " unchanged")
+	check("while still naming both as offered, so nothing is forgotten over there",
+		body ~= nil and #(body.offering or {}) == 2)
+
+	Family.Database:SetMeta(two, { level = 31 })
+	ok, offered, went = press()
+	check("with one member changed, it sends that member and only that one",
+		carried[two] == true and carried[one] == nil and went == 1, tostring(went))
+
+	-- **Automation off does not stop a person's press.**
+	local realAuto = FamilyDB.wide.auto
+	Family.Wide:SetAutoUpdate(false)
+	Family.Database:SetMeta(one, { level = 31 })
+	ok, offered, went = press()
+	check("with automatic exchange switched off, Update now still sends what changed",
+		ok == true and carried[one] == true and went == 1, tostring(ok) .. " " .. tostring(went))
+	FamilyDB.wide.auto = realAuto
+
+	-- **resend sends everybody**, typed with the family's name, whatever changed.
+	carried, body = {}, nil
+	SlashCmdList["FAMILY"]("wide resend pressed lot")
+	check("/family wide resend sends every member again, with nothing changed",
+		carried[one] == true and carried[two] == true)
+	local whole = body
+
+	-- **A Family from before this reads what the button sends exactly as before**: whole members,
+	-- and the offering list naming everybody, so a member held back is kept. Its `onData` as it
+	-- was, fed the resend and then a press with nothing changed.
+	press()
+	local nothing = body
+	local oldMembers = {}
+	local function oldOnData(message)
+		for memberKey, entry in pairs(message.members or {}) do
+			if type(entry) == "table" and type(entry.meta) == "table" then
+				oldMembers[memberKey] = entry
+			end
+		end
+		if type(message.offering) == "table" then
+			local still = {}
+			for _, memberKey in ipairs(message.offering) do still[memberKey] = true end
+			for memberKey in pairs(oldMembers) do
+				if not still[memberKey] then oldMembers[memberKey] = nil end
+			end
+		end
+	end
+	if whole then oldOnData(whole) end
+	if nothing then oldOnData(nothing) end
+	check("an older Family keeps both members whole after a press that sent nothing",
+		whole ~= nil and nothing ~= nil and oldMembers[one] ~= nil and oldMembers[two] ~= nil
+			and type(oldMembers[one].granted) == "table"
+			and oldMembers[one].granted[1] == "possessions")
+
+	Family.Comm.Send = realSend
+	Family.Database:Forget(one)
+	Family.Database:Forget(two)
 	FamilyDB.wide = held
 end)()
 

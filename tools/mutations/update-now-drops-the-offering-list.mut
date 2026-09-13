@@ -1,0 +1,6 @@
+name: a data message stops naming the whole offering, so an older Family forgets the members held back
+file: addons/Family/Wide.lua
+--- old
+        offering = Wide:GrantedKeys(link),
+--- new
+        offering = {},

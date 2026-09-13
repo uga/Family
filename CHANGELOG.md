@@ -179,6 +179,12 @@ picks itself up where it left off.
 - **Exchanges only send the characters that changed.** They were meant to from the start and were
   sending everybody every time. On a link of thirty characters that is most of every exchange.
 
+- **Update now sends what changed, not your whole family again.** It asks for theirs and sends what
+  is new, even with automatic exchange off, and when nothing has changed it says *nothing to send*
+  and how many are unchanged. Sending everybody again is still there, as **`/family wide resend
+  <family>`**, which tells you first how much it will send and how long it will take - about six
+  minutes for two hundred characters.
+
 - **`/family decodecost`** says what every character's record weighs, how many are still saved the
   old way, and which recipe lists are in another language, naming each character's lists that are.
   A measurement; it changes nothing.

@@ -1,0 +1,7 @@
+name: the Update now button asks the exchange for everything again, as it did before 2026-09-13
+file: addons/Family_UI/Wide.lua
+--- old
+                local ok, count, went, held = Family.Wide:ExchangeWith(entry.id, "asked for")
+--- new
+                local ok, count, went, held = Family.Wide:ExchangeWith(entry.id, "asked for",
+                    { full = true })

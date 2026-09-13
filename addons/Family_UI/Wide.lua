@@ -182,6 +182,9 @@ end
 
 local function build(frame)
     local chosen                     -- which link's grid is open, by family id
+    -- Family id -> how many were unchanged, for the last *Update now* that had nothing to send.
+    -- This session only: it is the answer to a press, not a fact about the link.
+    local nothingToSend = {}
     local rows, cells, buttons = {}, {}, {}
 
     local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
@@ -715,23 +718,32 @@ local function build(frame)
                 -- minute is the same lie in a smaller size.
                 local elsewhere = Family.Comm:Pending()
 
-                -- **Everything**, whether or not this side thinks they already have it.
-                -- This is the button somebody presses when something looks wrong, and one
-                -- that answered "nothing has changed" would be no use to them. Every other
-                -- exchange sends what has changed since the last one (backlog 31).
-                local ok, count = Family.Wide:ExchangeWith(entry.id, "asked for",
-                    { full = true })
+                -- **What has changed, and asked for theirs** - since 2026-09-13, not
+                -- everything. Their `have` says what they hold (2026-09-08), so the difference
+                -- is the update; resending everything cost six minutes of wire at 210 members
+                -- for a press made out of caution, and it is `/family wide resend` now, named
+                -- on the line under this link. Whether automation is on does not matter here:
+                -- a person pressed it.
+                local ok, count, went, held = Family.Wide:ExchangeWith(entry.id, "asked for")
+                nothingToSend[entry.id] = nil
                 -- "Could not: none of their six characters are online" reads as a sentence
                 -- with its verb missing, and it was one. What could not be done is the
                 -- update this button offers, and the reason that follows is a clause of its
                 -- own - so the two need joining rather than running together.
-                if ok and elsewhere > 0 then
+                --
+                -- **And nothing to send is said**, on the panel and here, rather than a
+                -- "Sent 0" or a silence that reads as a button that did nothing.
+                if ok and went == 0 then
+                    nothingToSend[entry.id] = held
+                    Family:Print(L["Nothing to send to %s: %d unchanged. Asked for theirs."],
+                        tostring(Family.Wide:Called(link)), held)
+                elseif ok and elsewhere > 0 then
                     Family:Print(L["Sent %d member(s) and asked for theirs. It goes out "
                         .. "behind %d piece(s) Family was already sending to somebody "
-                        .. "else."], count, elsewhere)
+                        .. "else."], went, elsewhere)
                 else
                     Family:Print(ok and L["Sent %d member(s) and asked for theirs."]
-                        or L["Could not update: %s"], count)
+                        or L["Could not update: %s"], ok and went or count)
                 end
                 frame:Refresh()
             end)
@@ -810,11 +822,16 @@ local function build(frame)
             local queued = Family.Wide:InFlight(entry.id)
             local confirmed, offered = Family.Wide:Confirmed(entry.id)
 
-            if not link.problem and (queued > 0 or offered > 0) then
+            local nothing = queued == 0 and nothingToSend[entry.id] or nil
+
+            if not link.problem and (queued > 0 or offered > 0 or nothing) then
                 local parts = {}
                 if queued > 0 then
                     parts[#parts + 1] = string.format(
                         L["|cffffd700sending to them, %d pieces left|r"], queued)
+                elseif nothing then
+                    parts[#parts + 1] = string.format(
+                        L["|cffffd700nothing to send, %d unchanged|r"], nothing)
                 end
                 if offered > 0 then
                     parts[#parts + 1] = string.format(
@@ -824,6 +841,17 @@ local function build(frame)
                 local transfer = nextRow()
                 transfer.text:SetPoint("RIGHT", -RIGHT_INSET, 0)
                 transfer.text:SetText(table.concat(parts, "   |cff888888|||r   "))
+            end
+
+            -- **Everything again, and what it costs**, under the button that no longer does
+            -- it. Only on the open link: fifteen links would otherwise carry fifteen copies of
+            -- one sentence.
+            if open and not link.problem then
+                local resend = nextRow()
+                resend.text:SetPoint("RIGHT", -RIGHT_INSET, 0)
+                resend.text:SetText(string.format(L["|cff888888Update now sends what changed. "
+                    .. "To send every member again, whatever they hold: /family wide resend "
+                    .. "%s|r"], tostring(Family.Wide:Called(link))))
             end
 
             if open then

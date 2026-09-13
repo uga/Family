@@ -1109,14 +1109,21 @@ end
 -- default of *send everything* would have left the largest and most frequent case exactly as
 -- expensive as before. The marks exist so that catching up and resending are different things.
 --
--- `full` is for the *Update now* button, and only that: it is what somebody presses when a
--- thing looks wrong, and a button that answers "nothing has changed" is no use to them. A link
+-- `full` is for `/family wide resend`, and only that, since 2026-09-13. It was the *Update now*
+-- button's, on the argument that a button answering "nothing has changed" is no use to somebody
+-- who thinks a thing looks wrong. Since the `have` list (2026-09-08) the other side says what it
+-- holds, so sending the difference already repairs everything but a record spoiled under a right
+-- mark - and at 210 members a press made out of caution cost six minutes of wire (backlog 77).
+-- So the button sends the difference and says when that is nothing; resending everything is a
+-- command somebody types knowing what it costs. A link
 -- being made or remade is covered instead by forgetting the marks, which is a truer statement
 -- of the same idea - we do not know what they hold, rather than we insist on resending.
 --
 -- The one caller that wants neither is a grant settling: that is us telling them a decision we
 -- took, and asking for their whole offering because one of our own flags moved was the other
 -- half of the waste this is about.
+-- Answers true, how many members were offered, how many of them went and how many were held back
+-- as unchanged - or false and why not.
 function Wide:ExchangeWith(familyID, why, options)
     if not self:Enabled() then return false, L["Wide Family is not switched on"] end
 
@@ -1162,7 +1169,7 @@ function Wide:ExchangeWith(familyID, why, options)
         tostring(Wide:Called(link)), count, count - held, held,
         tostring(why or "on request"))
 
-    return true, count
+    return true, count, count - held, held
 end
 
 -- Trying the next of their characters, cheaply.

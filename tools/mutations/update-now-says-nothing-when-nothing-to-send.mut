@@ -1,0 +1,6 @@
+name: Update now with nothing to send stays silent in chat instead of saying so
+file: addons/Family_UI/Wide.lua
+--- old
+                    Family:Print(L["Nothing to send to %s: %d unchanged. Asked for theirs."],
+                        tostring(Family.Wide:Called(link)), held)
+--- new

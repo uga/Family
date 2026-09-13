@@ -357,8 +357,73 @@ add("guild", L["guild share on, off, test, log or names: /family guild test"], f
 	UI:Refresh()
 end)
 
+-- **Every member again, to one linked family, whatever they hold.** The one caller of `full`
+-- since 2026-09-13, when *Update now* became the difference (`Wide:ExchangeWith`). Kept for the
+-- one case the `have` list cannot see - a record spoiled on their side under a mark that is still
+-- right - and typed rather than clicked, with what it costs said first.
+--
+-- **What it costs is the measurement, not a weighing**: `/family widecost` weighs the `have` list,
+-- not an offering, and weighing every member here would build and pack the whole offering once
+-- for the sentence and again for the send. 3.7 KB a member and 2.2 KB a second are the 210-member
+-- transfer of 2026-09-13 (docs/WIDE-TRANSFER.md §2); a family of lighter characters goes faster.
+local RESEND_KB_PER_MEMBER = 3.7
+local RESEND_KB_PER_SECOND = 2.2
+
+local function resend(named)
+	if not Family.Wide:Enabled() then
+		Family:Print(L["Could not update: %s"], L["Wide Family is not switched on"])
+		return
+	end
+
+	local wanted = (named or ""):lower()
+	local known, familyID, link = {}, nil, nil
+	for id, candidate in pairs(Family.Wide:Links()) do
+		local called = tostring(Family.Wide:Called(candidate) or id)
+		known[#known + 1] = called
+		if wanted ~= "" and (called:lower() == wanted
+			or tostring(candidate.name or ""):lower() == wanted) then
+			familyID, link = id, candidate
+		end
+	end
+
+	if not link then
+		if #known == 0 then
+			Family:Print(L["Could not update: %s"], L["no such link"])
+			return
+		end
+		table.sort(known)
+		Family:Print(L["Which family? /family wide resend <family>. Linked: %s."],
+			table.concat(known, ", "))
+		return
+	end
+
+	local called = tostring(Family.Wide:Called(link))
+
+	local queued = Family.Wide:InFlight(familyID)
+	if queued > 0 then
+		Family:Print(L["Still sending to %s: %d piece(s) still to go. Nothing "
+			.. "was added, because what you are asking for is already on its "
+			.. "way."], called, queued)
+		return
+	end
+
+	local members = #Family.Wide:GrantedKeys(link)
+	local kilobytes = members * RESEND_KB_PER_MEMBER
+	Family:Print(L["Sending every member again to %s, whatever they already hold: %d member(s), "
+		.. "about %d KB and %s on the wire. Update now sends only what changed."],
+		called, members, math.floor(kilobytes + 0.5),
+		UI:Span(kilobytes / RESEND_KB_PER_SECOND))
+
+	local ok, count, went = Family.Wide:ExchangeWith(familyID, "resend", { full = true })
+	Family:Print(ok and L["Sent %d member(s) and asked for theirs."]
+		or L["Could not update: %s"], ok and went or count)
+end
+
 add("wide", L["Wide Family, which is off by default: /family wide on"],
 	function(argument)
+		local verb, rest = (argument or ""):match("^%s*(%S*)%s*(.-)%s*$")
+		if (verb or ""):lower() == "resend" then return resend(rest) end
+
 		local wanted = (argument or ""):lower():match("^%S*")
 
 		if wanted ~= "on" and wanted ~= "off" then
@@ -369,6 +434,8 @@ add("wide", L["Wide Family, which is off by default: /family wide on"],
 				.. "is off until you say otherwise rather than on until you notice."])
 			Family:Print(L["|cffffd700/family wide on|r to switch it on, "
 				.. "|cffffd700/family wide off|r to switch it back off."])
+			Family:Print(L["|cffffd700/family wide resend <family>|r sends every member "
+				.. "to that family again, whatever they hold."])
 			return
 		end
 

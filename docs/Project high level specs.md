@@ -682,6 +682,13 @@ neither happens and no exchange is ever begun by anything but a
 person: the panel's *Update now* remains, and **on demand is never switched off with it**, because it
 is the floor the whole feature stands on rather than a convenience on top of it.
 
+**What *Update now* sends, since 2026-09-13: what changed.** It asks for theirs and sends the
+members of ours that changed since they last said what they hold, whether automatic exchange is on
+or off and however long since anybody logged in; when nothing has changed it says so - *nothing to
+send*, and how many are unchanged - rather than sending everybody again. Sending every member again
+whatever they hold is `/family wide resend <family>`, which says first how much it will put on the
+wire and for how long, and which the panel names beside the button.
+
 One thing crosses the switch, and it crosses it deliberately: **withdrawing a grant is still
 sent at once.** Automatic update is a convenience, and a player who does not want their
 evening interrupted by transfers is entitled to switch it off. Telling somebody to forget
