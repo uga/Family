@@ -4970,7 +4970,7 @@ be any of them:
 
 ---
 
-## 77. A family of two hundred, read in the game
+## 77. A family of two hundred, read in the game — DONE 2026-09-13
 
 **Asked by Alberto 2026-09-13.** Every number about a large family so far is arithmetic from 31
 characters: the loading screen's *about 340 ms at two hundred* (backlog 74), and the six minutes of
@@ -5103,6 +5103,9 @@ expects.
 
 **Cost.** Either is small: `addons/Family_UI/Wide.lua` (1) or `addons/Family/Wide.lua` (2), the
 locales, `tests/Harness.lua`, a mutation, and `docs/WIDE-TRANSFER.md` §5 for (2).
+
+**Chosen by Alberto 2026-09-13: the first way**, the line in the panel, when this is built. No
+`hello` on switching the feature on.
 
 ---
 
