@@ -23,11 +23,13 @@
 
 local ROOT = arg[1] or "."
 
--- **Which way records are stored for this run.** The gate runs everything twice: first as the
--- addon stores records today, compressed, and then - from the end of this file, as a second
--- process - with `plain`, the codec that backlog 74 makes the only one. Until 2026-09-13 no
--- check had ever run on it: the libraries below are always stood in, so `Codec.compressing` was
--- true in every run and the path 74 builds on had no coverage at all (data-path review, step 3).
+-- **Which pass this is.** The gate runs everything twice: first with the compression libraries
+-- reporting themselves loaded, and then - from the end of this file, as a second process - with
+-- `plain`, which sets `Codec.compressing` false. Added 2026-09-13 (data-path review, step 3)
+-- because no check had ever run on plain storage, which backlog 74 was about to make the only
+-- storage there is. **Since 74 both passes store plain**, and the second differs only in what
+-- the addon believes about its libraries: what `/family status` and the panels say, and nothing
+-- about how a record is written.
 -- A global, like `LOADED_HERE`: the main chunk is at Lua 5.1's limit of two hundred locals.
 RUN = { storage = arg[2] == "plain" and "plain" or "compressed", written = {} }
 
@@ -1904,37 +1906,7 @@ end
 
 local failures = 0
 
--- **Checks that cannot pass on plain storage until backlog 74 is built**, by label, and nothing
--- else. Every one is about a record's mark: `Database:PayloadMark` folds the stored *string*
--- and answers nothing for a plain record, so a plain run marks nobody, and the walk and a Wide
--- Family exchange treat everybody as changed. That is today's behaviour on a client without the
--- libraries, and it is exactly what 74 has to supply. A check on this list that passes is a
--- failure, so the list cannot outlive the reason for it.
-RUN.plainUntil74 = {
-	["a member sent and changed since is counted as changed, by name"] = true,
-	["and not as one never sent"] = true,
-	["/family widetime names who changed since they were sent"] = true,
-	["and who was never confirmed as sent, when nothing is recorded for them"] = true,
-	["and the walk after it reads none of them"] = true,
-	["and the ones beside it are still stepped past"] = true,
-	["and every answer is the same one"] = true,
-	["and answers about what was written, not about what was there before"] = true,
-	["the cap steps past exactly what it is set to"] = true,
-	["and reads nothing on a call that filled it"] = true,
-	["a second exchange carries none of them again"] = true,
-}
-
 local function check(label, condition, detail)
-	if RUN.storage == "plain" and RUN.plainUntil74[label] then
-		if condition then
-			failures = failures + 1
-			print(string.format("  FAIL  %s  -> passes on plain storage; take it off PLAIN_UNTIL_74",
-				label))
-		else
-			print(string.format("  known %s  (plain storage, backlog 74)", label))
-		end
-		return
-	end
 	if condition then
 		print(string.format("  ok    %s", label))
 	else
@@ -2046,10 +2018,10 @@ print("startup")
 _G.debugprofilestop = function() return 1250 end
 fire("ADDON_LOADED", "Family")
 _G.debugprofilestop = nil
-print("  records stored " .. RUN.storage)
+print("  pass: " .. RUN.storage)
 if RUN.storage == "plain" then
-	-- The libraries stay: the wire needs them whatever the storage does, and 74 keeps them for
-	-- it. Only what a write stores changes.
+	-- The libraries stay: the wire needs them, and the first pass's fixtures would otherwise
+	-- lose every Wide Family check. Only what the addon believes about them changes.
 	Family.Codec.compressing = false
 end
 
@@ -36094,17 +36066,19 @@ print("records are unpacked a little at a time after logging in, not all at the 
 -- question reads them all. The recipe-name walk used to decode one a second as a side effect, and
 -- stopped when it learned to step past members it had already read (L-094).
 ;(function()
-	local keys = {}
+	local keys, strings = {}, {}
 	for index = 1, 4 do
 		local key = "Unpacked" .. index .. "-FireMaw"
 		keys[#keys + 1] = key
 		-- Each different, so a decode can be told apart from the others by what it was handed.
-		local codec, stored = Family.Codec:Encode({ bags = { [0] = { size = 10 + index,
-			slots = {} } } })
+		-- In the stored form from before backlog 74 - `ld1`, the same serialise, deflate and
+		-- print encoding the wire uses - since nothing writes that form any more.
+		strings[key] = Family.Codec:ToWire({ bags = { [0] = { size = 10 + index, slots = {} } } }, 5)
 		-- Written straight to the saved variables, as a record from an earlier session is: on disk
 		-- and not yet decoded by this one.
 		FamilyDB.members[key] = { meta = { name = "Unpacked" .. index, realm = "FireMaw",
-			faction = "Alliance", classFile = "MAGE", level = 60 }, codec = codec, payload = stored }
+			faction = "Alliance", classFile = "MAGE", level = 60 }, codec = "ld1",
+			payload = strings[key] }
 	end
 
 	local realDecode, decodes = Family.Codec.Decode, {}
@@ -36113,12 +36087,13 @@ print("records are unpacked a little at a time after logging in, not all at the 
 		return realDecode(self, codec, value)
 	end
 
-	local function stored(key) return FamilyDB.members[key].payload end
 	local function times(key)
 		local count = 0
-		for _, value in ipairs(decodes) do if value == stored(key) then count = count + 1 end end
+		for _, value in ipairs(decodes) do if value == strings[key] then count = count + 1 end end
 		return count
 	end
+	check("a record from before backlog 74 is counted as still compressed",
+		Family.Database:StillCompressed() >= #keys, tostring(Family.Database:StillCompressed()))
 
 	-- One record a step, not all of them.
 	Family.Database:WarmPayloads()
@@ -36141,8 +36116,181 @@ print("records are unpacked a little at a time after logging in, not all at the 
 	check("so the first question that reads them decodes nothing",
 		#decodes == 0, tostring(#decodes))
 
+	-- **And each was rewritten plain, so the next session has nothing to unpack.**
+	local plain = 0
+	for _, key in ipairs(keys) do
+		local entry = FamilyDB.members[key]
+		if entry.codec == "plain" and type(entry.payload) == "table" then plain = plain + 1 end
+	end
+	check("and every one of them is stored plain afterwards", plain == #keys,
+		tostring(plain) .. " of " .. #keys)
+	check("so none is counted as still compressed", Family.Database:StillCompressed() == 0,
+		tostring(Family.Database:StillCompressed()))
+	decodes = {}
+	check("and a warm-up in the next session finds nothing to do and decodes nothing",
+		Family.Database:WarmPayloads() == false and #decodes == 0, tostring(#decodes))
+
 	Family.Codec.Decode = realDecode
 	for _, key in ipairs(keys) do Family.Database:Forget(key) end
+end)()
+
+print()
+print("a record from before backlog 74 keeps its mark when it is rewritten plain")
+
+-- **The two checks that decide whether updating costs anything.** A record's mark is what a Wide
+-- Family link compares with what it last sent, and what the recipe-name walk compares with what it
+-- last read. Rewriting two hundred records plain with new marks would send every member to every
+-- linked family again and walk every record again, on the first login after the update.
+;(function()
+	local key, walker = "Migrant-FireMaw", "Migrant2-FireMaw"
+	local nameID = 774101
+	ITEM_NAMES[nameID] = "Migrant Thing"
+	local before = { bags = { [0] = { size = 12, free = 11, slots = { { id = 2589, count = 4 } } } },
+		professions = { [164] = { recipesSeen = time(), locale = "frFR",
+			recipes = { { itemID = nameID } } } } }
+	for _, who in ipairs { key, walker } do
+		Family.Database:SetMeta(who, { name = who:match("^(%a+%d?)"), realm = "FireMaw",
+			faction = "Alliance", classFile = "MAGE", level = 60 })
+		-- On disk the old way, with nothing of this session holding it.
+		Family.Database:Forget(who)
+	end
+	local meta = { name = "Migrant", realm = "FireMaw", faction = "Alliance", classFile = "MAGE",
+		level = 60, lastSeen = time() - 600, bagSlots = 12, bagFree = 11 }
+	local text = Family.Codec:ToWire(before, 5)
+	FamilyDB.members[key] = { meta = meta, codec = "ld1", payload = text }
+	local walkerMeta = {}
+	for field, value in pairs(meta) do walkerMeta[field] = value end
+	walkerMeta.name = "Migrant2"
+	FamilyDB.members[walker] = { meta = walkerMeta, codec = "ld1", payload = text }
+
+	-- The mark a link would have sent the member with, taken the way an exchange takes it.
+	local link = { grants = { [key] = { possessions = true } }, sent = {} }
+	local realPrint, lastMark = Family.Codec.Fingerprint, nil
+	Family.Codec.Fingerprint = function(this, data)
+		local answer = realPrint(this, data)
+		if type(data) == "table" and data.granted ~= nil then lastMark = answer end
+		return answer
+	end
+	Family.Wide:MarkCost(link)
+	local markBefore = lastMark
+	link.sent[key] = markBefore
+	local oldFold = Family.Database:ReadPayloadMark(key)
+
+	-- Read once, which is what rewrites it - watched for anything that says it changed.
+	local writes, changed, invalidated = 0, 0, 0
+	local realSet, realInvalidate = Family.Database.SetPayload, Family.Index.Invalidate
+	Family.Database.SetPayload = function(...) writes = writes + 1 return realSet(...) end
+	Family.Index.Invalidate = function(...) invalidated = invalidated + 1 return realInvalidate(...) end
+	Family.Database:OnChanged("harness.migration", function() changed = changed + 1 end)
+
+	local read = Family.Database:Payload(key)
+
+	Family.Database:OnChanged("harness.migration", nil)
+	Family.Database.SetPayload, Family.Index.Invalidate = realSet, realInvalidate
+
+	local entry = FamilyDB.members[key]
+	check("a record from before 74, read once, is stored as a table afterwards",
+		entry.codec == "plain" and type(entry.payload) == "table" and entry.payload == read,
+		tostring(entry.codec) .. " " .. type(entry.payload))
+	check("holding exactly what the string held",
+		realPrint(Family.Codec, read) == realPrint(Family.Codec, Family.Codec:FromWire(text)))
+	check("and keeping the fold of that string as its mark", oldFold ~= nil
+		and entry.mark == oldFold and Family.Database:PayloadMark(key) == oldFold,
+		tostring(entry.mark) .. " against " .. tostring(oldFold))
+	check("without a write, a change announced or the index told",
+		writes == 0 and changed == 0 and invalidated == 0,
+		writes .. " writes, " .. changed .. " changes, " .. invalidated .. " invalidations")
+
+	lastMark = nil
+	Family.Wide:MarkCost(link)
+	check("a member's sending mark is the same before and after its record is rewritten plain",
+		markBefore ~= nil and lastMark == markBefore,
+		tostring(markBefore) .. " then " .. tostring(lastMark))
+	local total, held = Family.Wide:MarkCost(link)
+	local _, _, changedSince = Family.Wide:MarkGaps(link)
+	check("so a link that had sent them holds them back rather than sending them again",
+		total == 1 and held == 1 and changedSince == 0,
+		held .. " of " .. total .. " held, " .. changedSince .. " changed")
+	Family.Codec.Fingerprint = realPrint
+
+	-- **The walk.** The second record is walked the old way first: its mark learnt against the
+	-- string, as the last session before the update would have. Then it is rewritten plain, and
+	-- the next walk has to step past it.
+	FamilyDB.itemNames = nil
+	Family.Names:ItemStore()
+	Family.Names:LearnItem(nameID, "Migrant Thing")
+	Family.Names:LearnItemWalk(walker, Family.Database:ReadPayloadMark(walker))
+	Family.Database:Payload(walker)
+	check("a second record rewritten plain", type(FamilyDB.members[walker].payload) == "table")
+
+	local walked = 0
+	local realPayload = Family.UI.Payload
+	Family.UI.Payload = function(self, who)
+		if who == walker then walked = walked + 1 end
+		return realPayload(self, who)
+	end
+	Family.UI:ForgetRecipeWarmUp()
+	local rounds = 0
+	repeat
+		local _, finished = Family.UI:WarmRecipeNames(50)
+		rounds = rounds + 1
+	until finished or rounds > 900
+	Family.UI.Payload = realPayload
+	check("and the recipe-name walk steps past a member it had read before the rewrite",
+		walked == 0, tostring(walked) .. " reads in " .. rounds .. " rounds")
+
+	-- **New writes.** Stamped, different each time, and different across sessions and across a
+	-- record forgotten and written again in the same second.
+	Family.Database:SetPayload(key, read)
+	local first = FamilyDB.members[key].mark
+	Family.Database:SetPayload(key, read)
+	local second = FamilyDB.members[key].mark
+	check("a write stamps a mark, and the next write a different one",
+		type(first) == "string" and first ~= oldFold and second ~= first,
+		tostring(first) .. " / " .. tostring(second))
+
+	Family.Database:Forget(key)
+	Family.Database:SetMeta(key, meta)
+	Family.Database:SetPayload(key, read)
+	check("a record forgotten and written again in the same second has a mark of its own",
+		FamilyDB.members[key].mark ~= second and FamilyDB.members[key].mark ~= first,
+		tostring(FamilyDB.members[key].mark))
+
+	-- Two sessions: the count starts again, and only the nonce keeps them apart.
+	Family.Database:__resetStamps("aaaa")
+	Family.Database:SetPayload(key, read)
+	local sessionOne = FamilyDB.members[key].mark
+	Family.Database:__resetStamps("bbbb")
+	Family.Database:SetPayload(key, read)
+	check("and two sessions writing in the same second with the same count stamp two marks",
+		sessionOne ~= FamilyDB.members[key].mark,
+		tostring(sessionOne) .. " / " .. tostring(FamilyDB.members[key].mark))
+
+	-- A plain record with no mark at all, as the fallback wrote them before stamps.
+	Family.Database:Forget(walker)
+	FamilyDB.members[walker] = { meta = walkerMeta, codec = "plain", payload = { bags = {} } }
+	local stampedNow = Family.Database:PayloadMark(walker)
+	check("a plain record with no mark is stamped the first time it is asked, and keeps it",
+		type(stampedNow) == "string" and FamilyDB.members[walker].mark == stampedNow
+			and Family.Database:PayloadMark(walker) == stampedNow, tostring(stampedNow))
+
+	-- And the mark is saved with the record: through the saved shape and back.
+	local serialiser = LibStub:GetLibrary("LibSerialize")
+	local _, back = serialiser:Deserialize(serialiser:Serialize(FamilyDB.members[key]))
+	check("the mark travels with the record through the saved shape",
+		back and back.mark == FamilyDB.members[key].mark, tostring(back and back.mark))
+
+	-- And `/family status` says how many are left the old way.
+	FamilyDB.members[walker] = { meta = walkerMeta, codec = "ld1", payload = text }
+	local from = #DEFAULT_CHAT_FRAME.messages
+	pcall(SlashCmdList["FAMILY"], "status")
+	local heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("/family status says how many records are still stored compressed",
+		heard:find(Family.Database:StillCompressed() .. " still compressed", 1, true) ~= nil, heard)
+
+	Family.Database:Forget(key)
+	Family.Database:Forget(walker)
 end)()
 
 print()
@@ -36822,9 +36970,8 @@ print("records are changed only by writing them, and the saved data's read is ti
 	-- Said first, or a pass meant for plain storage could be running compressed and every
 	-- check below would be about the wrong path.
 	local stored = FamilyDB.members[key]
-	check("records written in this run are stored " .. RUN.storage,
-		RUN.storage == "plain" and (stored.codec == "plain" and type(stored.payload) == "table")
-			or RUN.storage == "compressed" and type(stored.payload) == "string",
+	check("records written in this run are stored plain, on either pass",
+		stored.codec == "plain" and type(stored.payload) == "table",
 		tostring(stored.codec) .. " " .. type(stored.payload))
 
 	local read = Family.Database:Payload(key)
@@ -36869,6 +37016,10 @@ print("records are changed only by writing them, and the saved data's read is ti
 		#DEFAULT_CHAT_FRAME.messages)
 	check("/family status says how long the saved data took to read at login",
 		heard:find("saved data read at login in 250 ms", 1, true) ~= nil, heard)
+	-- What the second pass is for since backlog 74: an addon that believes its libraries are
+	-- missing says so, and one that has them does not.
+	check("and says the sharing libraries are missing exactly when they are",
+		(heard:find("are not installed", 1, true) ~= nil) == (RUN.storage == "plain"), heard)
 
 	local heldFrom, heldTo = Family.filesLoadedAt, Family.savedReadAt
 	Family.filesLoadedAt, Family.savedReadAt = 2000, 1500
@@ -36898,17 +37049,15 @@ end)()
 ;(function()
 if RUN.storage ~= "compressed" then return end
 	print()
-	print("the same checks, with records stored plain")
+	print("the same checks, with compression switched off")
 	local out = os.tmpname()
 	local status = os.execute(string.format("%s %s %s plain > %s 2>&1",
 		arg[-1] or "lua5.1", arg[0] or "tests/Harness.lua", ROOT, out))
-	local known, passed, last = 0, 0, ""
+	local passed, last = 0, ""
 	local handle = io.open(out, "r")
 	for line in (handle and handle:lines() or function() return nil end) do
 		if line:find("^  ok") then
 			passed = passed + 1
-		elseif line:find("^  known") then
-			known = known + 1
 		elseif line:find("^  FAIL") then
 			print(line)
 		end
@@ -36916,8 +37065,7 @@ if RUN.storage ~= "compressed" then return end
 	end
 	if handle then handle:close() end
 	os.remove(out)
-	print(string.format("  %d passed on plain storage, %d known to wait for backlog 74; %s",
-		passed, known, last))
+	print(string.format("  %d passed with compression switched off; %s", passed, last))
 	RUN.plainPassed = passed
 	check("the plain storage pass exits cleanly", status == 0, tostring(status))
 end)()

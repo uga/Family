@@ -1,0 +1,6 @@
+name: a record rewritten plain is given a new mark instead of the fold of its string
+file: addons/Family/Database.lua
+--- old
+		entry.mark = entry.mark or oldMark
+--- new
+		entry.mark = "w" .. time()

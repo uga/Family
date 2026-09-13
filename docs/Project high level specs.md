@@ -192,10 +192,13 @@ throws — which is why the table above is the authority and the client is not.
 inside one of those two. There is one saved variable, `FamilyDB`, carrying a schema version
 and a migration path that runs on load.
 
-Member records are stored serialized and compressed, and decoded on demand for the member
-actually being looked at — not all of them, at every login, whether or not you open the
-window. On an account with forty members that is the largest single cost there is, and it is
-designed out rather than optimised later.
+Member records are stored as plain tables, and nothing is decoded to read one. Whole-family
+questions - the recipe search, a tooltip's crafters and owners, the whole-family panels - read
+every member, and must not stall the game the first time they are asked in a session; the cost
+of reading the saved data belongs at the loading screen, and `/family status` says what it was.
+A record written compressed by an earlier version is read once and rewritten plain, keeping the
+mark that says whether it has changed, so updating sends nobody again and re-reads nothing. The
+compression libraries remain for what goes over the wire.
 
 ### 2.5 One phase. Family reports; it does not advise
 

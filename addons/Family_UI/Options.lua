@@ -331,7 +331,7 @@ local function build(frame)
 			L["|cff888888Family %s on %s   |||   tooltips hooked: %s   |||   storage: %s|r"],
 			Family.version, Family.Capabilities.name,
 			Family.tooltipRoute or L["not hooked"],
-			Family.Codec.compressing and L["compressed"] or L["uncompressed"]))
+			Family.Codec.compressing and L["plain"] or L["plain, no sharing"]))
 	end
 end
 

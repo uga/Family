@@ -396,9 +396,14 @@ add("status", L["what Family knows, and how it is storing it"], function()
 	Family:Print(L["version %s on %s"], Family.version, Family.Capabilities.name)
 	Family:Print(members == 1 and L["%d member recorded"] or L["%d members recorded"],
 		members)
-	Family:Print(L["storage: %s"], Family.Codec.compressing
-		and "compressed"
-		or L["|cffffaa00uncompressed|r - LibSerialize and LibDeflate are not installed"])
+	-- Records are stored plain since backlog 74. What is left to say is how many are still in
+	-- the old compressed form, which each loses the first time it is read, and whether the
+	-- libraries are here: sharing needs them, and so does reading one of those.
+	Family:Print(L["storage: plain, %d still compressed from an earlier version"],
+		Family.Database:StillCompressed())
+	if not Family.Codec.compressing then
+		Family:Print(L["|cffffaa00LibSerialize and LibDeflate are not installed|r - nothing can be shared, and a record still compressed cannot be read"])
+	end
 
 	-- Which tooltip route took, because the answer differs per client and a missing
 	-- possessions block is otherwise indistinguishable from owning nothing.
@@ -2563,13 +2568,15 @@ function UI:WarmRecipeNames(budget)
 	-- last walk marked is on disk beside the names it learned.
 	--
 	-- **Several per call rather than one**, because the reason members are taken one at a time
-	-- is the decode, and a skip has none: a mark is a fold over the ends of a string the client
-	-- already holds. Stepping past them one a second would leave the cost exactly where it
-	-- was. Capped all the same, so that no family size can be a stall.
+	-- is reading them, and a skip reads nothing: a mark is a stamp written beside the record, or
+	-- for a record from before backlog 74 the fold of the string it was stored as, which it keeps
+	-- when it is rewritten plain - so a member read before the update is still stepped past after
+	-- it. Stepping past them one a second would leave the cost exactly where it was. Capped all
+	-- the same, so that no family size can be a stall.
 	--
 	-- **A borrowed member is never skipped**, because they have no mark. Their payload arrived
-	-- over the wire as a table and was never encoded, so there is no decode to save - the same
-	-- reason they were cheap enough to add to this queue in the first place.
+	-- over the wire as a table and lives outside `FamilyDB.members` - cheap to read, which is
+	-- the reason they were added to this queue in the first place.
 	local skipped, capped = 0, false
 	while #warmPending == 0 and warmAt <= #warmQueue do
 		if skipped >= (self.WARM_SKIPS or 20) then
@@ -2588,8 +2595,8 @@ function UI:WarmRecipeNames(budget)
 		skipped = skipped + 1
 	end
 
-	-- One member's payload per call. `Database:Payload` decodes and then caches for the
-	-- session, so this is the decode being spread rather than a second one being paid.
+	-- One member's payload per call. Since backlog 74 there is no decode behind it, except once
+	-- for a record still stored the old way; what is spread now is the naming that follows.
 	if not capped and #warmPending == 0 and warmAt <= #warmQueue then
 		-- The mark is read before the record, and it is the record as it sits on disk now.
 		-- Taken afterwards it could be a mark for a scan that landed while this call was

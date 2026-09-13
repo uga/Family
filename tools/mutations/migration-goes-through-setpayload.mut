@@ -1,0 +1,8 @@
+name: a record from before 74 is rewritten plain through SetPayload
+file: addons/Family/Database.lua
+--- old
+		entry.mark = entry.mark or oldMark
+		entry.codec = PLAIN
+		entry.payload = data
+--- new
+		self:SetPayload(key, data)

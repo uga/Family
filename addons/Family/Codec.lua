@@ -15,9 +15,13 @@
 --
 -- The libraries are optional on purpose. They are third-party, they are fetched from their
 -- own upstreams rather than vendored (HANDOFF §2), and Family has to be developable and
--- runnable before somebody has done that. Without them "plain" is used: the table is handed
--- to the game's own saved-variables writer as a table. It stores and reads back correctly at
--- full size - the record is intact, and only the compression is missing.
+-- runnable before somebody has done that.
+--
+-- **Since backlog 74 no record is written compressed**, with or without them: `Database` hands
+-- the game's saved-variables writer the table itself, which is what "plain" means. What the
+-- libraries are still needed for is the wire below, and `Decode` for a record written by an
+-- earlier version, which is read once and rewritten plain. `Encode` is kept for the harness,
+-- which checks the round trip the wire relies on through it; nothing in the addon calls it.
 
 local _, Family = ...
 

@@ -15,22 +15,25 @@
 --     members = {
 --       ["Alberta-Firemaw"] = {
 --         meta    = { ... },              -- small, plain, always loaded
---         codec   = "ld1",                -- how payload was written
---         payload = "<encoded>",          -- everything bulky, decoded on demand
+--         codec   = "plain",              -- how payload was written
+--         payload = { ... },              -- everything bulky, as the table itself
+--         mark    = "w1789000000.3f2a9c1.12", -- moves when payload is written, and only then
 --       },
 --     },
 --   }
+--
+-- **Payload was stored compressed until backlog 74** (codec `"ld1"`, a string) and decoded on
+-- demand. Why that stopped is in the section on unpacking at the end of this file. A record still
+-- stored the old way is read, and rewritten plain, the first time anything reads it.
 --
 -- The split between meta and payload is the whole architecture in one line. The summary is
 -- the screen that reads every member at once, and it only ever needs the handful of values
 -- in meta - money, level, free slots, when we last saw them. Those stay plain and small.
 -- Everything that grows with what a character owns - the item in every bag slot - goes in
--- payload, which is decoded for the one member actually being looked at and never for the
--- other thirty-nine.
+-- payload, which the summary never touches.
 --
--- Get that split wrong and lazy decoding buys nothing, because the summary forces every
--- record open at login anyway. It is not an optimisation to be added later; it is a decision
--- about which field a value lives in.
+-- The split was first argued as what made lazy decoding worth anything. There is no decoding
+-- now, and the split still decides what the one screen that reads everybody has to walk.
 
 local _, Family = ...
 
@@ -40,6 +43,10 @@ local Database = {}
 Family.Database = Database
 
 local SCHEMA = 1
+
+-- How a record written by this version is stored: the table itself, handed to the game's own
+-- saved-variables writer. `Codec:Decode` answers it unchanged.
+local PLAIN = "plain"
 
 --------------------------------------------------------------------------------------------
 -- Migrations
@@ -107,9 +114,11 @@ function Database:Initialise()
 	Family.Codec:Initialise()
 
 	-- Said once, at login, because it changes what the addon can do and the player should
-	-- not have to deduce it from a panel being empty.
+	-- not have to deduce it from a panel being empty. Records are stored plain either way; what
+	-- the libraries are missed for is sharing, and reading a record still stored compressed.
 	if not Family.Codec.compressing then
-		Family:Debug("LibSerialize/LibDeflate not present - storing records uncompressed")
+		Family:Debug("LibSerialize/LibDeflate not present - no sharing, and records still "
+			.. "stored compressed cannot be read")
 	end
 end
 
@@ -163,21 +172,23 @@ function Database:SetMeta(key, fields)
 	Database:Changed(key)
 end
 
--- The expensive read, and the reason payload exists. Decoded results are cached in memory
--- for the session, keyed by member, and dropped when that member is written again.
+-- The bulky read. Held for the session, keyed by member, and replaced when that member is
+-- written again. Since backlog 74 the table held is the stored table itself; it was a decoded
+-- copy while records were stored compressed, and a record still stored that way is decoded here
+-- once and rewritten plain.
 local decoded = {}
 
 -- And the mark of the same record, kept beside it for the same reason and dropped at the same
--- moment. The mark is a fold of the stored string, so it cannot change while that string does
--- not - and both callers ask for it far more often than the record changes.
+-- moment. The mark cannot change while the record is not written - and both callers ask for it
+-- far more often than the record changes.
 --
 -- **It is the multiplication that made this worth having.** A Wide Family exchange marks the
 -- members one link was granted, and a family with fifteen links marks the same member fifteen
 -- times in the same second: two hundred and ten members over fifteen links is three thousand
 -- one hundred and fifty folds at every login, of two hundred and ten different records. False
 -- means *asked and there is no mark to be had*, which is a different answer from *not asked*
--- and is worth caching too: it is the answer for a record stored plain, and it would otherwise
--- be recomputed as often as the rest.
+-- and is worth caching too; since stamps, only a payload that is neither a table nor a string
+-- answers it.
 local marks = {}
 
 function Database:Payload(key)
@@ -186,16 +197,42 @@ function Database:Payload(key)
 	local entry = record(key, false)
 	if not entry or entry.payload == nil then return nil end
 
+	-- Stored plain, which is every record written since backlog 74: nothing to undo.
+	if type(entry.payload) == "table" then
+		decoded[key] = entry.payload
+		return entry.payload
+	end
+
+	-- **A record from before 74: its mark first, while the string it is a fold of still exists.**
+	local oldMark = self:ReadPayloadMark(key)
+
 	local data, reason = Family.Codec:Decode(entry.codec, entry.payload)
 	if data == nil then
 		return nil, reason
+	end
+
+	-- **And then rewritten plain, straight into the entry and not through `SetPayload`.** The
+	-- data has not changed, so neither may anything that says it has: the mark stays the fold
+	-- of the old string, so a Wide Family link that sent this member holds it back and the name
+	-- walk steps past it; no new stamp, no `Changed`, nothing invalidated in the index. A write
+	-- would have done all three, and on the first exchange after updating every member of every
+	-- family would have gone again.
+	--
+	-- Only a table is written back; anything else a string could decode to is left where it is.
+	if type(data) == "table" then
+		entry.mark = entry.mark or oldMark
+		entry.codec = PLAIN
+		entry.payload = data
+		-- Asked again of the entry from here on, as the next session will ask it: an answer held
+		-- from the string would hide a rewrite that got the mark wrong until the next login.
+		marks[key] = nil
 	end
 
 	decoded[key] = data
 	return data
 end
 
--- A short mark of the record as it sits on disk, made without decoding it.
+-- A short mark of the record as it sits on disk, made without reading it.
 --
 -- Two readers, and they ask the same question of it: *has this member changed since I last
 -- looked?* The login walk asks so that it can skip a member whose item names it has already
@@ -203,13 +240,22 @@ end
 -- decoding - a member the other side already has. Both used to answer it the expensive way and
 -- both answer it here now.
 --
--- **Only where the record is a string**, which is the compressed path and the one that has a
--- decode worth skipping. Stored plain - the fallback when the compression libraries are not
--- loaded - the payload *is* the table, `Codec:Decode` hands it straight back, and folding it
--- would cost more than either caller saves. No mark means *not known*, and both callers do the
--- expensive thing rather than guess, which is §2.2 pointed at our own bookkeeping.
+-- **Stamped as the record is written, since backlog 74.** A plain record has no string to fold,
+-- and folding the table costs about 35 ms a record on Alberto's clients (`/family paycost`,
+-- backlog 72) - more than either caller saves, at every exchange. So `SetPayload` writes
+-- `entry.mark`: the second, a nonce drawn once a session, and this session's count of stamps.
+-- Different for any two writes - two in one second differ by the count, two sessions by the
+-- nonce, a record forgotten and written again by both - it costs nothing, and it is saved beside
+-- the record. It cannot tell *changed back to what it was* from changed, so a record written
+-- again with the same contents counts as changed: a member sent again, the safe direction, and
+-- backlog 72's business.
 --
--- **Every byte, and the first version of this read only the ends.** Folding a 30 KB record
+-- **A record still stored as a string** is folded as before; that fold becomes its `mark` when it
+-- is rewritten plain (`Payload`). A plain record with no mark - written by the fallback on a
+-- client without the libraries, before stamps existed - is stamped the first time it is asked:
+-- sent once more, and stable after that.
+--
+-- **Every byte of a string, and the first version of this read only the ends.** Folding a 30 KB record
 -- costs 1.0 ms in lua5.1 on the machine this was written on and folding its first and last 256
 -- bytes costs 0.017 ms, so the ends looked like sixty times the walk for the same answer. They
 -- are not the same answer: a record whose length does not change and whose ends do not change
@@ -221,6 +267,24 @@ end
 -- cap instead. At 1.0 ms a record, twenty of them is 20 ms on a tick that today decodes a whole
 -- member - which is far more than 20 ms - so the cap is less work than the walk already does on
 -- every tick, and a family of any size is spread rather than folded at once.
+-- Drawn once a session, so that two sessions writing in the same second with the same count
+-- cannot stamp the same mark. `math.random` on these clients is seeded by the game; where it is
+-- not, the clock's fraction of a millisecond still separates two logins.
+local nonce = string.format("%x", (math.random(0, 0x7fffffff)
+	+ math.floor(((type(_G.debugprofilestop) == "function" and _G.debugprofilestop()) or 0) * 1000))
+	% 0x7fffffff)
+local stamped = 0
+
+local function newMark()
+	stamped = stamped + 1
+	return string.format("w%d.%s.%d", time(), nonce, stamped)
+end
+
+-- Reachable so a check can stand in a second session without reloading the file.
+function Database:__resetStamps(newNonce)
+	nonce, stamped = newNonce or nonce, 0
+end
+
 function Database:PayloadMark(key)
 	local held = marks[key]
 	if held ~= nil then
@@ -241,6 +305,13 @@ function Database:ReadPayloadMark(key)
 	-- a mark rather than the nil that means *this cannot be worked out*. The two used to be
 	-- the same answer, which made every such member look changed on every comparison.
 	if entry.payload == nil then return "none" end
+
+	if type(entry.mark) == "string" then return entry.mark end
+
+	if type(entry.payload) == "table" then
+		entry.mark = newMark()
+		return entry.mark
+	end
 
 	if type(entry.payload) ~= "string" then return nil end
 
@@ -280,18 +351,27 @@ function Database:SetPayload(key, data)
 		lastParts[key] = now
 	end
 
-	local codec, encoded = Family.Codec:Encode(data)
-	entry.codec = codec
-	entry.payload = encoded
+	-- Stored as the table itself (backlog 74), and stamped as it is written.
+	entry.codec = PLAIN
+	entry.payload = data
+	entry.mark = newMark()
 	decoded[key] = data
-	-- The mark is of the string that has just been replaced, so it goes with it. Dropped
-	-- rather than recomputed: whoever asks next will pay for it, and nobody may ask at all.
 	marks[key] = nil
 
 	-- Anything derived from what a member owns is now wrong for that member. Told here
 	-- rather than by each scanner, so a scanner added later cannot forget to say so.
 	if Family.Index then Family.Index:Invalidate(key) end
 	Database:Changed(key)
+end
+
+-- **How many records are still stored the old way**, for `/family status`: nought once every
+-- record has been read once since backlog 74.
+function Database:StillCompressed()
+	local count = 0
+	for _, entry in pairs(self:Members()) do
+		if type(entry) == "table" and type(entry.payload) == "string" then count = count + 1 end
+	end
+	return count
 end
 
 function Database:Forget(key)
@@ -334,7 +414,7 @@ function Database:Changed(key)
 end
 
 --------------------------------------------------------------------------------------------
--- Unpacking the records a little at a time after logging in
+-- Unpacking the records still stored compressed, a little at a time after logging in
 --
 -- **Reported from play 2026-09-13 as *script ran too long*, twice**, under the recipe search and
 -- under a recipe tooltip's *who can make it*, each at the first whole-family question after
@@ -348,10 +428,18 @@ end
 -- the point of it, and stepping past a member also meant never decoding it. From the second
 -- session on nothing was decoded ahead of time at all (L-094).
 --
--- So decoding is its own job now, and it asks one thing only: is this record decoded yet. One
--- record a step, a moment apart, from a little after arrival until none is left; a scan that
--- writes a record leaves it decoded, so those are passed over for nothing. A borrowed record
--- arrived as a table and has nothing to decode.
+-- So decoding became its own job, one record a step, a moment apart. **Then backlog 74 took the
+-- reason for it away.** Alberto: *abbiamo utenti con 200++ alt; non è accettabile un crash perché
+-- facciamo una ricerca prima di aver finito di decomprimere* - and at two hundred records the steps
+-- take a minute, inside which the crash is still there. Readings taken with every record decoded
+-- put the search and the tooltip's question at milliseconds and the decode at over half a second
+-- (DECISIONS, 2026-09-13), so the decode was the cost, and records are stored plain. Memory was
+-- never an argument for compressing: a decoded record weighs what a plain one does, and the
+-- whole-family questions hold every record decoded.
+--
+-- What is left for this job is the records written before that, **once each**: it reads the next
+-- one still stored as a string, and `Payload` rewrites it plain. The character being played
+-- first. From the next session there is nothing left, and it finds that in one look.
 --------------------------------------------------------------------------------------------
 
 Database.WARM_STEP = Database.WARM_STEP or 0.3
@@ -360,14 +448,13 @@ Database.WARM_STEP = Database.WARM_STEP or 0.3
 -- answers nil for them exactly as it always has.
 local undecodable = {}
 
--- Decodes the next record not yet decoded. Answers whether any were left to do.
+-- Unpacks the next record still stored compressed. Answers whether any were left to do.
 function Database:WarmPayloads()
 	if not self.usable or type(FamilyDB) ~= "table" then return false end
 
 	local keys = {}
 	for key, entry in pairs(FamilyDB.members or {}) do
-		if decoded[key] == nil and not undecodable[key] and type(entry) == "table"
-			and entry.payload ~= nil then
+		if not undecodable[key] and type(entry) == "table" and type(entry.payload) == "string" then
 			keys[#keys + 1] = key
 		end
 	end
@@ -382,8 +469,8 @@ function Database:WarmPayloads()
 	end
 
 	local _, reason = self:Payload(pick)
-	-- A record that will not decode stays undecoded, and must not be picked again every step.
-	if decoded[pick] == nil then
+	-- A record that will not decode stays as it is, and must not be picked again every step.
+	if type(FamilyDB.members[pick].payload) == "string" then
 		undecodable[pick] = true
 		Family:Debug("could not decode %s: %s", tostring(pick), tostring(reason))
 	end
@@ -398,8 +485,8 @@ Family:OnDatabaseReady("database.warm", function()
 				Family:After(Database.WARM_STEP, "database.warm", step)
 			end
 		end
-		-- After the client's own arrival and the first scans, which leave their own records
-		-- decoded; before the recipe-name walk, which would otherwise pay these one a second.
+		-- After the client's own arrival and the first scans, which rewrite their own records
+		-- plain; before the recipe-name walk, which would otherwise pay these one a second.
 		Family:After(3, "database.warm", step)
 	end)
 end)

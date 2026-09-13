@@ -1,0 +1,6 @@
+name: /family status counts no record as still compressed
+file: addons/Family/Database.lua
+--- old
+		if type(entry) == "table" and type(entry.payload) == "string" then count = count + 1 end
+--- new
+		if false then count = count + 1 end

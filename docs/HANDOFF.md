@@ -55,11 +55,19 @@ framework and no module-registration plumbing to write.
 **One SavedVariables, with a schema version and a real migration path.** Not a format that
 silently breaks between versions.
 
-**Lazy, compressed storage.** Character records are stored serialized and compressed
-(LibSerialize + LibDeflate) and decoded **on demand**, for the character actually being
-looked at. On an account with forty alts, parsing every record at every login is the single
-largest cost there is, and nearly all of it is spent on characters nobody is about to look
-at.
+**Plain storage, nothing to decode.** Character records are stored as the tables they are, in
+`FamilyDB`, and read back by the game with the rest of the saved variables at the loading
+screen. They were stored serialized and compressed and decoded on demand until backlog 74
+(2026-09-13): too many questions ask about every character at once - the recipe search, *who can
+make it*, the possessions index behind tooltips, the whole-family panels - and the first of them
+in a session decoded every record in one frame, 521-524 ms for 31 records on Alberto's Era client,
+which the client stopped as *script ran too long*. With every record decoded the same search
+cost 10-15 ms and the tooltip's question 1-2 ms. Memory was never the argument for compressing:
+a decoded record weighs what a plain one does. The price is paid at the loading screen, where no
+script limit applies; its baseline is *34 ms* and *28 ms* for the saved data compressed, read with
+`/family status`. A record written by an earlier version is read once and rewritten plain.
+**LibSerialize and LibDeflate stay**: the wire - Wide Family, the guild share - still carries
+strings, and reading an old record needs them once.
 
 **An index, not a scan.** Search builds an inverted index once and invalidates it per
 character when that character changes. Query cost stops growing with the number of alts.

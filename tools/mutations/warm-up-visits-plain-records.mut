@@ -1,0 +1,6 @@
+name: the warm-up visits records that are already plain
+file: addons/Family/Database.lua
+--- old
+		if not undecodable[key] and type(entry) == "table" and type(entry.payload) == "string" then
+--- new
+		if not undecodable[key] and type(entry) == "table" and entry.payload ~= nil then

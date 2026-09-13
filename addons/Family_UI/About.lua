@@ -270,8 +270,9 @@ local function build(frame)
 		version:SetText(string.format(L["%sversion %s   |||   %s   |||   %s|r"],
 			GREY, tostring(Family.version),
 			Family.Capabilities and Family.Capabilities.name or L["unknown client"],
-			Family.Codec and Family.Codec.compressing and L["compressed storage"]
-				or L["uncompressed storage"]))
+			-- Plain since backlog 74 whatever the libraries; what they still decide is sharing.
+			Family.Codec and Family.Codec.compressing and L["plain storage"]
+				or L["plain storage, no sharing"]))
 	end
 end
 

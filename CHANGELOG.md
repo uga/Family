@@ -34,6 +34,13 @@ stabled pet and summoned demon with what each one can do, down to what its abili
 training points. Sharing with another family is faster, no longer freezes the game, and now
 picks itself up where it left off.
 
+### No more *script ran too long* on the first search of a session
+
+- **Searching recipes or pointing at a recipe right after logging in no longer stops the game.**
+  Family now keeps your characters' data ready to read instead of unpacking all of it the first
+  time you ask about the whole family. The first login after updating converts what is saved, a
+  little at a time, and nothing is sent again to families you share with.
+
 ### Fixed on Mists of Pandaria
 
 - **What a character has up for sale was always empty.** Family was asking that version of the game
@@ -164,8 +171,8 @@ picks itself up where it left off.
   each character's lists that are. Only lists that hold recipes are counted. A measurement for a
   slowdown being looked into; it changes nothing.
 
-- **`/family status` says how long your saved Family data took to read when you logged in.** A
-  measurement taken before and after a change to how characters are stored; it changes nothing.
+- **`/family status` says how long your saved Family data took to read when you logged in**, and
+  how many characters are still saved the old way. A measurement; it changes nothing.
 
 - **`/family paycost`** says how many times this session wrote a character's record and which
   parts, and what marking each part of the current character's record takes on your client. A

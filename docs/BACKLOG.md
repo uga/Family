@@ -4758,7 +4758,7 @@ session and came first.
 
 ---
 
-## 74. Whole-family questions decode every record, and some families have two hundred alts
+## 74. Whole-family questions decode every record, and some families have two hundred alts — BUILT 2026-09-13, awaiting the loading reading
 
 **Way 1 chosen by Alberto, 2026-09-13**: *l'unica strada logica che vedo è la 1. Capisco il costo in
 disco (non è un problema) e potenzialmente di RAM - tuttavia anche se tenessimo compresso e
@@ -4819,3 +4819,32 @@ old string before replacing it and writing `entry.mark` without going through `S
 Before it, the review's step 3: the harness covers the `plain` codec, which it has never run, and
 `/family status` prints Family's load time for a reading before and after. Step 4 waits for
 Alberto's *procedi con il 4*. Not measured: names not yet known at the first question of a session.
+
+**Baseline for the loading screen, read by Alberto 2026-09-13** on Classic Era, 31 characters,
+records stored compressed (163.7 KB): `/family status` after two full logins said *saved data read
+at login in 34 ms* and *28 ms*. The same line is read again after 74 is deployed, on the same
+account.
+
+**Built 2026-09-13, on Alberto's *procedi con il 4*.** The checks that close the slice, written
+before the code:
+
+1. A write stores the table itself (`codec = "plain"`) and stamps `entry.mark`; two writes give two
+   marks; two sessions writing in the same second with the same count give two marks (the nonce).
+2. A record forgotten and written again in the same second has a different mark.
+3. A record still stored as a string, read once, is stored as the same table afterwards, with
+   `entry.mark` equal to the fold of the string taken before it was replaced; the read calls no
+   `SetPayload`, announces no change and invalidates nothing in the index.
+4. **`sendingMark` of a member is identical before and after its record is migrated**: a link that
+   had sent the member holds it back afterwards (`Wide:MarkCost`, `Wide:MarkGaps`).
+5. **The recipe-name walk steps past a migrated member it had already read.**
+6. A plain record with no mark is stamped at the first `PayloadMark`, and answers the same mark
+   after that; the mark survives a round trip through the saved shape.
+7. `WarmPayloads` visits only records still stored as strings, and finds nothing once none are left.
+8. `/family status` says how many records are still stored compressed.
+9. The eleven checks in `RUN.plainUntil74` pass on the plain pass, and the list is gone.
+
+All nine are in `tests/Harness.lua` (the blocks *records are unpacked a little at a time after
+logging in* and *a record from before backlog 74 keeps its mark when it is rewritten plain*); the
+gate and the mutation run are in DECISIONS. **Left open**: the same `/family status` line read after
+deploy on the same account, against 34 and 28 ms; and spec §10 item 12 still says *lazy, compressed
+storage* - outside this slice's list, waiting for Alberto.

@@ -1,0 +1,6 @@
+name: the write stamp leaves the session's nonce out
+file: addons/Family/Database.lua
+--- old
+	return string.format("w%d.%s.%d", time(), nonce, stamped)
+--- new
+	return string.format("w%d.%d", time(), stamped)

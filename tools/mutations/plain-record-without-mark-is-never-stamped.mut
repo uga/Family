@@ -1,0 +1,11 @@
+name: a plain record with no mark is never stamped
+file: addons/Family/Database.lua
+--- old
+	if type(entry.payload) == "table" then
+		entry.mark = newMark()
+		return entry.mark
+	end
+--- new
+	if type(entry.payload) == "table" then
+		return newMark()
+	end

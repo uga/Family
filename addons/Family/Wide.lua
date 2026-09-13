@@ -690,9 +690,12 @@ end
 -- that need not have been, and that is the safe direction to be wrong in.
 --
 -- **What cannot be worked out means send**, which is the §2.2 shape pointed at our own
--- bookkeeping. Three things reach that: a record whose payload is not a string, a member with no
--- `seen` at all - whose built offering carries `time()` and so differs on every exchange anyway,
--- which is exactly today's behaviour kept - and anything else that answers nothing.
+-- bookkeeping. Two things reach that: a member with no `seen` at all - whose built offering
+-- carries `time()` and so differs on every exchange anyway, which is exactly today's behaviour
+-- kept - and anything else that answers nothing. A record's payload mark is no longer one of
+-- them: since backlog 74 records are stored plain and stamped as they are written, and a record
+-- from before that keeps the fold of its old string as its mark (`Database:Payload`), so this
+-- mark does not move when a record is rewritten plain.
 --
 -- Nothing about the wire changes. The same members are offered and the same ones are held back;
 -- what changes is that deciding costs a fold of a few hundred bytes rather than a decode and a

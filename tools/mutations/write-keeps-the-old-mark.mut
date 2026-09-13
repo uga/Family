@@ -1,0 +1,7 @@
+name: a write leaves the record's mark as it was
+file: addons/Family/Database.lua
+--- old
+	entry.mark = newMark()
+	decoded[key] = data
+--- new
+	decoded[key] = data
