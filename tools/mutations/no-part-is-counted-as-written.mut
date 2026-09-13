@@ -1,0 +1,6 @@
+name: a write is counted but the part it replaced is not
+file: addons/Family/Database.lua
+--- old
+				writes.parts[part] = (writes.parts[part] or 0) + 1
+--- new
+				local _ = part

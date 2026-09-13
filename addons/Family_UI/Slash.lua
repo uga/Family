@@ -1951,6 +1951,54 @@ end)
 -- **The same table the sender uses**, asked for by name. A probe that assembled its own copy
 -- would drift from the real one and then be quoted confidently for years, which is the shape
 -- of every wrong measurement in this repository.
+-- **What marking each part of a record would cost, on this client, and how often it would be paid.**
+--
+-- Backlog 72. The plan is a mark per part of a record, made when the record is written, so that a
+-- character who only logged in is not resent whole. Its price is one fold of the part written, on
+-- every write - and Alberto, 2026-09-13: *in una sessione di gioco le borse cambiano spessissimo
+-- (tutte le volte che looti!)*. So the two numbers the decision needs, read on a real client: how
+-- many writes a session makes and of which parts, and what folding each part of the character being
+-- played costs. Each part is folded a few times and the mean is printed, because one fold of a
+-- small part is under the clock's resolution.
+add("paycost", L["what marking each part of this character's record would cost"], function()
+	local key = Family:CurrentMember()
+	local payload = key and Family.Database:Payload(key)
+	if type(payload) ~= "table" then
+		Family:Print(L["Nothing is recorded for this character yet, so there is nothing to time."])
+		return
+	end
+
+	local clock = _G.debugprofilestop
+	local function now()
+		if clock then return (Family:TryCall(clock)) or 0 end
+		return ((Family:TryCall(GetTime)) or 0) * 1000
+	end
+
+	local REPEAT = 5
+	local writes = Family.Database:Writes()
+	local minutes = math.floor((time() - (writes.since or time())) / 60)
+
+	Family:Print(L["This session, %d minutes: %d record writes."], minutes, writes.total)
+
+	local parts = {}
+	for part in pairs(payload) do parts[#parts + 1] = part end
+	table.sort(parts, function(a, b) return tostring(a) < tostring(b) end)
+
+	local whole = now()
+	for _ = 1, REPEAT do Family.Codec:Fingerprint(payload) end
+	whole = (now() - whole) / REPEAT
+
+	for _, part in ipairs(parts) do
+		local at = now()
+		for _ = 1, REPEAT do Family.Codec:Fingerprint(payload[part]) end
+		Family:Print(L["  |cffffd700%s|r: written %d times, marking it takes %.1f ms."],
+			tostring(part), writes.parts[part] or 0, (now() - at) / REPEAT)
+	end
+
+	Family:Print(L["  Marking the whole record takes %.1f ms."], whole)
+	Family:Print(L["|cff888888Nothing was changed.|r"])
+end)
+
 add("widecost", L["what an exchange would put on the wire, without sending it"], function()
     if not Family.Wide:Enabled() then
         Family:Print(L["Wide Family is switched off, so there is nothing to weigh."])

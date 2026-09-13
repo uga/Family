@@ -248,9 +248,34 @@ function Database:ReadPayloadMark(key)
 		Family.Codec:Fingerprint(entry.payload))
 end
 
+-- **How often records are written this session, and which parts each write replaced.**
+--
+-- Asked for by backlog 72, which wants to mark each part of a record at the moment it is written
+-- and so pays that cost on every write - and a bag scan is a write, after every loot. A part counts
+-- as replaced when the write carries a different table for it than the last write of that member
+-- did: every scanner builds its own part afresh and leaves the others as they were, so that is the
+-- part it wrote. A part changed in place without a new table is missed, so the counts are a floor.
+-- Nothing here is saved; it is a reading of one session.
+local writes = { total = 0, since = time(), parts = {} }
+local lastParts = {}
+
+function Database:Writes() return writes end
+
 function Database:SetPayload(key, data)
 	local entry = record(key, true)
 	if not entry then return end
+
+	writes.total = writes.total + 1
+	if type(data) == "table" then
+		local before, now = lastParts[key] or {}, {}
+		for part, value in pairs(data) do
+			if before[part] ~= value then
+				writes.parts[part] = (writes.parts[part] or 0) + 1
+			end
+			now[part] = value
+		end
+		lastParts[key] = now
+	end
 
 	local codec, encoded = Family.Codec:Encode(data)
 	entry.codec = codec

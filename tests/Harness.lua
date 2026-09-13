@@ -13767,6 +13767,42 @@ do
 				end
 			end
 
+			-- **Backlog 72's two numbers**: how often a record is written, and what marking each
+			-- part of it costs. A bag scan after every loot is the write the plan pays on, so the
+			-- count has to name the part that was written and not the ones carried along.
+			do
+				local me = Family:CurrentMember()
+				local mine = Family.Database:Payload(me) or {}
+				mine.quests = { entries = {} }
+				Family.Database:SetPayload(me, mine)
+				local writes = Family.Database:Writes()
+				local total, bagsBefore = writes.total, writes.parts.bags or 0
+				local questsBefore = writes.parts.quests or 0
+
+				mine.bags = { [0] = { size = 16, free = 16, slots = {} } }
+				Family.Database:SetPayload(me, mine)
+
+				check("a record write is counted", writes.total == total + 1,
+					tostring(writes.total - total))
+				check("and the part a scan replaced is counted as written",
+					(writes.parts.bags or 0) == bagsBefore + 1,
+					tostring((writes.parts.bags or 0) - bagsBefore))
+				check("while a part carried along unchanged is not",
+					(writes.parts.quests or 0) == questsBefore,
+					tostring((writes.parts.quests or 0) - questsBefore))
+
+				local from = #DEFAULT_CHAT_FRAME.messages
+				local ran = pcall(SlashCmdList["FAMILY"], "paycost")
+				local heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+					#DEFAULT_CHAT_FRAME.messages):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+				check("/family paycost says how many writes this session made",
+					ran and heard:find("record writes", 1, true) ~= nil, heard)
+				check("and what marking each part costs, with how often it was written",
+					heard:find("bags: written " .. writes.parts.bags .. " times", 1, true) ~= nil,
+					heard)
+				check("and changes nothing", heard:find("Nothing was changed", 1, true) ~= nil, heard)
+			end
+
 			-- **Bytes in the unit a reader can hold in their head.**
 			check("a size under a kilobyte is said in bytes",
 				Family.UI:Bytes(812):find("812", 1, true) ~= nil, Family.UI:Bytes(812))

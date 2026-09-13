@@ -159,6 +159,10 @@ picks itself up where it left off.
 - **Exchanges only send the characters that changed.** They were meant to from the start and were
   sending everybody every time. On a link of thirty characters that is most of every exchange.
 
+- **`/family paycost`** says how many times this session wrote a character's record and which
+  parts, and what marking each part of the current character's record takes on your client. A
+  measurement for a change still being designed; it changes nothing.
+
 - **`/family widetime` says which characters are waiting to go, and why.** Changed since they were
   sent - which is what playing one does - is counted apart from never confirmed as sent, and
   each group is named.

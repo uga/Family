@@ -4619,3 +4619,45 @@ different number: the payload's own stamps, or its byte order, move it at every 
 
 **How big it is worth.** Unmeasured: what one whole member weighs on the wire. Backlog 41's probe
 weighs the `have` list; the same approach on `offering` would give the number this entry needs.
+
+### The reading, and the inventory, 2026-09-13
+
+**The reading came back different**: `ld1:7510:2347148292` before an idle relog and
+`ld1:7510:1867974627` after. Same codec, same length to the character, different bytes - which is
+what a `time()` of the same number of digits looks like, more than a change of key order would
+(deflate rarely lands on the same length twice); suggestive, not proven. Either way the payload
+moves at a login where nothing was done, so point 1 is needed before anything else is worth it.
+**Key order does not matter to it**: `Codec:Fingerprint` sorts keys before folding (`Codec.lua`),
+so a mark made from the decoded data is stable where the serialised string may not be.
+
+**Every write of the payload**, read scanner by scanner. Each one reads the whole payload, replaces
+its own key and writes the whole thing back through `Database:SetPayload`.
+
+| Payload key | Written by, and when | Moves without anything changing |
+|---|---|---|
+| `bags` | `Bags:Scan`, 3 s after entering the world and 0.5 s after every `BAG_UPDATE_DELAYED` - **every loot** | none found inside the key |
+| `bank` | `Bank:Scan`, when the bank is open | `bank.seen = time()` |
+| `mail` | `Mail:Scan` at the mailbox; `addLetter` on posting or winning | `mail.seen`; each letter's `expiresBy = now + daysLeft` - a deadline worked out from time left, so it jitters by the seconds between two readings |
+| `auctions` | `Auctions:Scan` at the auction house | `auctions.seen`; each auction's `expiresBy = time() + left` - same jitter |
+| `quests`, `questObjectives` | `Quests:Scan`, 4 s after entering the world and on quest events | `quests.seen = time()` - **at every login** |
+| `talents` | `Talents:Scan`, 3 s after entering the world | `talents.seen = time()` - **at every login** |
+| `equipment`, `reputations`, `spells`, `achievements` | `Character:ScanNow`, 6 s after entering the world and on its events | `achievements.seen = time()` - **at every login**, on clients with achievements |
+| `pets` | `Pets:Scan`, 5 s after entering the world, hunters and warlocks | `pets.seen = time()` - **at every login** |
+| `professions` | `Professions:Scan`, on skill changes and recipe windows | each profession's `recipesSeen`; each recipe's `readyAt = time() + cooldown` - jitter |
+| `crafts` | the Craft frame (Beast Training) | `crafts[id].seen = time()` |
+
+**Four keys are in the payload and in no category** - `questObjectives`, `crafts`, `pets`,
+`achievements` - so they are never shared and yet move the one payload mark every member is judged
+by. A hunter's pet scan at login is enough to resend that hunter to a link that was granted only
+their bags.
+
+**Meta clocks** that move with a login or with time alone: `lastSeen` (every `SetMeta`), `played`
+and `playedSeen`, `rested`, `bagsSeen` (every bag scan), `questsSeen`, `bankSeen`, `mailSeen`,
+`auctionsSeen`, `currenciesSeen`, `specsSeen`; and the deadlines `mailExpiresBy` and
+`itemCooldowns`, worked out from time left like the ones above.
+
+**What that means for the design.** Leaving `seen` out is not enough: the deadlines worked out from
+time left jitter too, and they are real data - a letter that expires is a letter that expires. They
+need rounding before they are marked (to the minute is far finer than anything shown), not
+removing. And since `bags` is rewritten on every loot, point 1 costs whatever folding `bags` costs,
+times every loot of a session - which is the measurement below.

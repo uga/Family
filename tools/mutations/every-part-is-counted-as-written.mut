@@ -1,0 +1,6 @@
+name: every part of a record is counted as written, whichever part the scan replaced
+file: addons/Family/Database.lua
+--- old
+			if before[part] ~= value then
+--- new
+			if true then
