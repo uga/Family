@@ -91,6 +91,15 @@ The same is true one step further out. A character a linked family shares with y
 >
 > Everything else in 2.0.0 draws what was already there and needs nothing.
 
+> **Upgrading to 3.0.0.** Nothing needs a login on every character this time, and three things
+> happen once by themselves. **Your saved data is converted** a little at a time in the first
+> seconds after the first login, and from then on nothing is unpacked when you ask about the whole
+> family. **The first Wide Family exchange sends every shared character once**, because the way a
+> character is marked as unchanged is new; after that only what changed goes. And **an item with a
+> random suffix** — *of the Bear*, *of the Whale* — **has no auction price until your next visit to
+> the auction house**, because each version is now priced on its own; anything without a suffix
+> keeps the price it had.
+
 ---
 
 ## 2. Opening Family
@@ -121,6 +130,9 @@ somewhere different depending on what you did last is not an entry point.
 
 Hovering the minimap button or the broker gives the whole family at a glance: every realm,
 every member with their level and item level, the money, and anything ready or expiring.
+Crafting cooldowns that are ready are **counted** there — *44 members* — rather than named: a list
+of names grows with the family until the tooltip runs off the screen, and **Summary / Crafting**
+(§10) already lists who.
 
 **It fits your screen, however many characters you have.** The realm totals, the grand total
 and the warnings are always drawn; the list of characters takes whatever room is left, and says
@@ -147,13 +159,13 @@ The buttons across the top change **which columns** are shown rather than which 
 
 | Set | Answers |
 |---|---|
-| **Overview** | level, item level, rested experience, money, time played, when last seen |
+| **Overview** | level, item level, rested experience, money, **worth**, time played, when last seen |
 | **Bags** | free and total slots, in bags and in the bank, and when each was last seen |
 | **Activity** | mail, mail on its way, when it expires, auctions, what is bid and what is asked |
 | **Professions** | every profession and its rank, primaries first |
 | **Currencies** | honor, arena points, and whatever else this client calls a currency |
 | **Crafting** | every crafting cooldown the family has: available, or when it comes back |
-| **Miscellaneous** | guild, hearthstone, race, class, world buffs banked in a Chronoboon |
+| **Miscellaneous** | race, guild, where they logged out, hearthstone, mount, world buffs banked in a Chronoboon |
 
 A realm with characters on **both sides is split into them**, with a subtotal under each.
 Two characters on one realm on opposite sides share nothing this table is asked about —
@@ -174,6 +186,7 @@ they were letters until the banners were verified, and "A" and "H" are the initi
 English words and of nothing else.
 
 - **Left-click a profession** to open that member's recipes.
+- **Left-click a member on Bags** to open their possessions.
 - **Left-click the letters figure** on Activity to unfold that member's post — one line per
   letter, with its sender, what is attached and when it expires.
 - **Left-click the Chrono figure** on Miscellaneous to unfold what their Chronoboon is
@@ -197,6 +210,15 @@ on, after your own members, in a small section under the name of the family they
 They are never added to the totals — the money on the totals line is your money. Right-click
 does not offer to remove them, because they are not yours to remove; untick them on the Wide
 Family panel instead.
+
+**Worth** is what everything that character holds comes to, in gold — the same figure as the line
+on their Possessions page (§15, *What is all my stuff worth?*). Hover the row for the exact figure
+and how much of it came from auction prices and how much from what a vendor pays. It adds up per
+realm and per side like the money beside it, and a character nothing could be priced for is blank
+rather than nought, because that is Family not knowing rather than them owning nothing.
+
+**A character's class is on every row**, in the colour of their name, and spelled out in the row's
+tooltip.
 
 Two notes the panel gives you where they matter. Free and total slots **leave out** quivers,
 soul bags and the like — their slots are not room for anything else. And the currencies
@@ -230,6 +252,14 @@ listed too, under *In the stable*, with nothing claimed about what it can do, be
 been seen. The abilities themselves are named by your own client, in your own language, whoever
 recorded the creature.
 
+**Training points add up.** Each ability carries what it cost, and the creature says how much of
+what it has spent that accounts for — *273 of 273 Training Points accounted for*. What a pet has
+**left to spend** is in green on its row, the number you would go to a trainer about; a freshly
+tamed pet, which owes points until it is loyal, says so in red. The **Beast Training** list says
+each line's rank, cost and the level the pet needs, with the game's own tooltip on it. The trainer's
+window only prices what the creature you have out can learn, so open it once on each hunter, and
+each visit fills in what the last one could not see.
+
 Talents are named by your own client, whoever recorded the character and whatever language
 they were playing in.
 
@@ -262,6 +292,11 @@ the guild bank tabs you have actually opened. Nothing else can say: no call the 
 tells an addon how many charges are left on an item, so this is read off the item's own
 tooltip, and an item the client has not finished loading is read again when it has.
 
+**Soulbound means soulbound here too.** Your own gear and bags are described by the slot they are
+in, so a shield you wore once reads *Soulbound* on this page exactly as it does in your bag, rather
+than *binds when equipped*. **Hover a letter** under a character to read it in full: the whole
+subject, who sent it, when it expires and the money in it.
+
 Mail and the auction house are drawn as containers too. They are not bags and do not pretend
 to be — but *where is that thing* is one question, and answering it in two shapes on one panel
 would be answering it twice.
@@ -291,6 +326,15 @@ Sort by:
 
 Recipes are coloured as the game colours them — orange, yellow, green, grey — and the counts
 along the top say how many of each there are.
+
+**Every recipe row says what it is made of**: the materials, with how many of each, on the right of
+the recipe's own line — for every character, not only the one whose window is open. **Can make**
+counts what that character had in their bags and bank the last time they logged in. Wands, rods
+and oils an enchanter makes are shown as **the thing itself**, with its own picture, who holds one
+and what it takes to make.
+
+**Hold CTRL over a recipe** and its tooltip adds up what the family holds of what the recipe makes,
+and what that is worth — what CTRL does over an item everywhere else (§15).
 
 **Clicking a recipe** finds it in the open profession window. If no window is open, the recipe
 is remembered and the panel says which button will open it; clicking that button opens the
@@ -364,7 +408,23 @@ This is the half of Family that gets used most, and it needs no window open.
 
 Hover **any item anywhere** — a vendor, the auction house, the floor, somebody's trade window —
 and Family adds who in the family has one and where it is: bags, bank, mail, auctions, guild
-bank.
+bank, and what they are wearing.
+
+**The ten holding the most are named**, and the rest are counted with how many they hold between
+them, so the total at the top still adds up — an item nearly all of two hundred characters carry
+would otherwise fill the screen. Guild banks are cut the same way. **Hold CTRL and ALT and click the
+item** — in your bags, in chat, anywhere the game lets a modified click through — and Family opens
+on the whole-family search for it, with every character who has one; the tooltip says so when it
+has had to shorten the list.
+
+**Which of your *other* characters' copies are soulbound** is said too, in the game's own word —
+nothing else can tell you, because their copy is not on the machine the game is asking. For the
+character you are playing the game already says it, and Family does not repeat it.
+
+**Random-suffix items are counted one version at a time.** A Superior Sword *of the Bear* and one
+*of the Whale* share an item number and nothing else, so hovering the Bear one says how many of
+*those* the family has and what a Bear one is going for. Enchants and gems do not make versions:
+two of one sword with different enchants are two of one thing.
 
 ![An item's own tooltip in the game, with Family's block added to it](images/tooltip-item.png)
 
@@ -381,6 +441,10 @@ language. The word is still read for the few recipes neither number is known for
 
 Both blocks name the realm on a member only when two members with the same name are listed,
 and mark anybody on the opposing faction.
+
+**What a thing is made of** — every material and how many of it, under who can make it, with what
+it all costs where Family has prices — on anything a profession makes and on an enchant, is one of
+the Extras, off until you switch it on (§13, *Extras*).
 
 Turn either off in Options.
 
@@ -415,8 +479,17 @@ search.
 
 On Possessions the answers come out grouped: the item once, then whoever has some of it
 underneath, most first, with how many and where they are keeping it. Sort by character instead
-and it is the same list the other way up. More than three holders and the rest fold behind a
-line you can click.
+and it is the same list the other way up. Each version of a random-suffix item (§8) is a line of
+its own, named and drawn as itself.
+
+On Professions, **click a recipe** and its materials appear on a line underneath, and the people
+who can make it are listed several to a line rather than one per row, so a dozen crafters do not
+push the recipe's own name off the top. The search waits for you to stop typing before it looks.
+
+**Long lists fold only when the page cannot hold them.** A list of ten or fewer is always drawn
+whole. Where every block on the page fits, nothing folds however long a block is; where they do
+not, every block folds by the same amount — as little as brings the page back to one screen, and
+never below three — behind a line you can click.
 
 Only items the client has named can be matched. An item nobody has looked at since the last
 patch has no name yet, and Family says so rather than letting a search quietly answer for less
@@ -445,7 +518,7 @@ and a transmute you used two hours ago is neither.
 
 Beside the cooldown's name is **how many of your characters can do it right now**, so a list
 that has folded away its fourth and fifth crafter still tells you how many are waiting for you.
-More than three and the rest fold behind a line you can click, the same as the reputations list;
+A long list folds behind a line you can click by the rule in §9, the same as the reputations list;
 clicking the cooldown's own name opens and closes it too.
 
 Thirty alchemy transmutes share one timer, so they are one line called *Alchemy* rather than
@@ -478,7 +551,7 @@ showing fewer rows.
 **Columns are named in your language**, whichever client recorded the cooldown. A mooncloth
 scanned on a French character is not headed *Étoffe lunaire* on an English one.
 
-What is ready is on the broker tooltip and is announced when you log in. Turn the
+What is ready is counted on the broker tooltip (§2) and is announced when you log in. Turn the
 announcement off in Options. `/family ready` lists them by name, which is how you check what
 a message is actually about.
 
@@ -517,9 +590,13 @@ rather than *no cooldown*.
 A family need not be one account. You can add another player's characters as members of yours,
 and they can add yours.
 
-**Any realm.** They do not have to play where you play, share a guild with you, or be in a
-group with you — only be online and running Family at the moment you ask. Tested between two
-families on unrelated realms.
+**Your realm, or one connected to it.** They do not have to share a guild with you or be in a
+group with you — only be online, running Family, and on a realm your character can whisper at the
+moment you ask. A whisper reaches your own realm and the realms connected to it, and a link travels
+by whisper, so that is as far as it goes: on Classic Era, Pyrewood Village reaches Nethergarde Keep
+and Mirage Raceway and does not reach Soulseeker. When every character of a linked family is out
+of reach, the panel says that none of them is on a realm this character can reach, rather than
+calling them offline.
 
 > *A picture of this is still to be taken: `docs/images/wide-family.png`.*
 
@@ -564,13 +641,17 @@ Click a link to open its grid: your members down one side, categories across the
 | Category | What it carries |
 |---|---|
 | Possessions | bags and bank, and the slot counts |
-| Professions | recipes, and the ranks |
+| Equipment | what they are wearing, and their item level |
+| Professions | recipes, ranks, specialisations and cooldowns |
 | Talents | talent trees and the spellbook |
 | Quests | the active log |
-| Mail | what is waiting |
+| Mail | what is waiting, and when it expires |
 | Auctions | what is listed |
 | Reputations | standings |
 | Money | money |
+| Character | time played, rested experience, guild, hearthstone, where they are, mount |
+| Currencies | currencies |
+| World buffs | the buffs they carry and what is banked in a Chronoboon |
 
 **The grid starts with nothing ticked.** There is no *share everything* — a default is not a
 decision. Offering a member at all shares who they are: name, realm, class, race, level and
@@ -583,7 +664,9 @@ side. Nothing else moves without a tick.
 - **When a linked family comes online.** Each side announces itself on login and whoever
   hears it exchanges. Neither of you has to remember anything.
 - **When you change what is shared**, immediately.
-- **When you press Update now.**
+- **When you press Update now.** It asks for theirs and sends what changed since they last said
+  what they hold — and when nothing has, it says *nothing to send* and how many are unchanged,
+  in chat and on the line under the family.
 
 **Nothing is sent as you log out.** By the time an addon knows it is logging out the client is
 already leaving, and a message posted then does not arrive. The login exchange covers the same
@@ -591,7 +674,22 @@ ground honestly: the next time either of you plays, both sides are brought up to
 
 The first two are one tick box on the panel — **Exchange automatically** — and you can turn it
 off. Off means nothing happens without somebody asking for it: no announcement on login and no
-answer to anybody else's. *Update now* stays, and always will.
+answer to anybody else's. *Update now* stays, and always will, and works the same with the box
+unticked.
+
+**Sending everybody again**, whatever they already hold, is a command rather than the button:
+`/family wide resend <family>`, with the family's name as the panel shows it. It says first how
+many characters it will send, about how much and for how long — about six minutes for two hundred
+characters — and the panel names it on the line under a family you have opened. It is for the rare
+case where something on their side looks wrong although nothing changed on yours; *Update now*
+already repairs everything else, because each side tells the other what it holds.
+
+**A share that stops part way picks up where it stopped.** Logging out, closing the game or the
+other person going offline no longer leaves characters Family believes it has sent: each side
+tells the other what it already holds, and the other side **confirms** what it stored, so the line
+under a family counts *confirmed* rather than *sent*. Anything never confirmed is sent again next
+time. While a share is going out, the same line says how many pieces are left, and the count moves
+as you watch.
 
 One thing crosses that switch on purpose. **Unticking a box is still sent at once**, whether
 automatic exchange is on or off. Automatic update is a convenience and it is yours to switch
@@ -649,7 +747,7 @@ first whisper, and it stops there rather than complaining several hundred times.
 
 Click a linked family's line and it opens on both halves of the link. Underneath *What they
 may see of your characters* is the grid you tick. Underneath *What ... shares with you* is
-everyone they have given you, and against each one the same nine columns — greyed, because that is their decision being reported
+everyone they have given you, and against each one the same columns — greyed, because that is their decision being reported
 rather than yours to take. Read the two together and you have both halves of the link: what
 they see of yours, and what you see of theirs.
 
@@ -775,15 +873,75 @@ guild while the others are fine, this is why.
 | Setting | What it does |
 |---|---|
 | Show the minimap button | and it remembers where you dragged it |
+| Always open Family on one panel | a star beside each panel locks Family to it; on the summary it takes the set of columns too |
 | Add Family to item tooltips | §8 above |
-| Say what is ready when you log in | cooldown announcements |
+| Show prices on item tooltips | what a vendor pays and charges, and the auction house's last price (§15) |
+| Say whose mail is running out when you log in | with how many days' warning you want |
+| Say which crafting cooldowns are ready when you log in | cooldown announcements (§10) |
 | Share gear and talents with your guild | §12 above, both ways at once |
+| Share with families you link to | Wide Family, §11 above |
+| Say in chat how a Wide Family update went | whether a linked family had anybody online to talk to |
 | Narrate what the scanners are doing | chat messages while recording; for working out faults |
 | How far in front the window sits | raise it if another addon draws over Family |
 
 The line at the bottom says which version is running, which client it thinks this is, which
-tooltip route it hooked and whether storage is compressed. It is the first thing worth
-reading when something is wrong, and the first thing to quote in a fault report.
+tooltip route it hooked and how storage is kept — *plain*, or *plain, no sharing* on a copy without
+the libraries Wide Family and Guild share need. It is the first thing worth reading when something
+is wrong, and the first thing to quote in a fault report.
+
+### Extras
+
+The panel above Options holds **jobs Family will do for you that are not what Family is for**. Each
+is switched on or off by itself.
+
+| Extra | Starts | What it does |
+|---|---|---|
+| Read prices at the auction house | on | whatever the auction window shows is read for prices, including another addon's whole-house scan |
+| Let Family read the whole auction house itself | on | a **Family** tab on the auction window, with a button that reads every page |
+| Say what a craftable item is made with | off | every material and how many, on the tooltip of anything a profession makes and of an enchant, totalled where Family has prices |
+| Say what came out of the mailbox | off | a line in chat for each sum and item taken out of a letter, and what the visit came to |
+
+**Reading prices off** means Family values what your characters hold at what a vendor pays, reads
+nothing at an auction house, and puts no tab on that window. Prices already recorded are kept, so
+switching it back on finds them.
+
+**Made with.** A material that is itself made follows its own recipe — a Lionheart Champion needs a
+Lionheart Blade, so its cost is what the Blade's materials come to, as deep as the chain goes — and
+where somebody is selling a part, what they ask wins over what making it would cost. A material
+with no price makes the total say *some prices are missing* rather than quietly leaving it out, and
+one no money can buy adds nothing, with the total saying so.
+
+**What came out of the mailbox** works with the game's own Open All and with mail addons, and the
+total arrives as soon as there is nothing left to take, or when you close the mailbox if that comes
+first.
+
+### The auction house
+
+**Prices come from what you look at.** Family reads the list the auction window is showing — your
+own searches, and the whole-house scan of an addon like Auctionator, which fills the same prices in
+one go and for nothing. It never sends a request of its own unless you ask it to read the whole
+house. Prices are kept per realm and per side; a price read at a **goblin** auction house counts
+for both sides of that realm, because it is one market, and your own side's house still wins where
+it has a price.
+
+**The Family tab** on the auction window carries the *Read it all* button and a line saying how far
+a read has got: pages done, prices taken, and roughly how long is left, worked out from the pages
+already read. The button clears the search, searches, and walks every page there is; pressed again
+it stops, and whatever was read is kept. It says when somebody else's scan is filling your prices.
+Where the tab cannot be built, the button sits beside *Reset* on the Browse panel instead.
+
+**It takes minutes, and that is the server.** A whole Classic Era house is about 584 pages in five
+minutes, most of it the game refusing to let the next question out until the last has been
+answered. If you already run an auction addon, its own full scan is faster and Family hears it. On
+**Mists of Pandaria** the whole house answers one request, so the same button reads it in one go.
+
+A read that stops getting answers ends itself and says why. If it will not start, search the
+auction house once and turn one page: the read replays that search rather than inventing one. It
+also refuses to reuse a request another addon made for the entire house at once.
+
+`/family ah scan go` and `/family ah scan stop` do the same as the button, typed.
+
+**Random-suffix items are priced one version at a time** (§8).
 
 ---
 
@@ -841,26 +999,27 @@ price beside them is one whose Beast Training window you have opened with that c
 dash means Family has no price for that ability, which is not the same as it being free.
 
 **"What is all my stuff worth?"** It is on the character's own **Possessions** page, under the
-line that says how recently each part of the list was seen — bags, bank, mail and auctions, which
-is also exactly what the figure covers. Not the guild bank, which is the guild's, and not the
-keyring, which is worth nothing anyway.
+line that says how recently each part of the list was seen — what they are wearing, bags, bank,
+mail and auctions, which is also exactly what the figure covers — and in the **Worth** column of the
+summary's Overview (§3). Not the guild bank, which is the guild's, and not the keyring, which is
+worth nothing anyway.
 
 Each thing is valued at what the auction house was last seen asking for it, and where Family has
 never seen one, at what a vendor pays — which the game knows for nearly everything, and is what
 makes the figure cover a whole bank alt rather than the few dozen things you happened to search
-for.
+for. **Something soulbound is always valued at what a vendor pays**: what is on sale at the auction
+house is the unbound version, and a sword you have worn cannot be listed at any price.
 
 The line never gives a total on its own. It says how much came from auction prices and how much
 from vendor prices, because those are two very different numbers, and how many things it had no
 price for at all — which is only what your client has never seen named.
 
-**"Can Family show vendor prices?"** Yes, and it is off until you turn it on — *Show vendor prices
-on item tooltips*, in Options. Two lines appear on an item's tooltip:
+**"Can Family show vendor prices?"** Yes, and it is off until you turn it on — *Show prices on item
+tooltips*, in Options. These lines appear on an item's tooltip:
 
 **Sell price** is what a vendor pays you. The game knows it for every item and Family simply says
-it, everywhere, straight away. Prices here name only the coins they have something in — *7c*,
-*2s 8c*, *19g 12s 99c* — unlike the columns in Family's own window, where the noughts are what keep
-gold under gold and silver under silver down the page.
+it, everywhere, straight away. Prices are written in full — gold, silver and copper — so the lines
+under one another end at the same edge.
 
 **Vendor price** is what a vendor charges, and it appears only for items Family has actually seen
 on a merchant's list. Open a merchant and Family reads the shelf and remembers it, so the price is
@@ -868,8 +1027,8 @@ there afterwards wherever you meet the item — in your bags, in the auction hou
 item you have never seen for sale gets no such line, because Family would be guessing that anybody
 sells it at all.
 
-**Auction** is what the auction house was last asking, with how long ago that was beside it —
-*4g 20s, 3d ago*. Family reads it from the list you are already looking at while you search; it
+**Auction** is what the auction house was last asking, with how long ago that was in front of it —
+*(3d ago) 4g 20s 00c*. Family reads it from the list you are already looking at while you search; it
 never asks the auction house for anything on its own. Prices are kept per realm and per side,
 because they are not the same market. Among everything on show in one visit the cheapest wins,
 since that is what you would actually pay; your next visit replaces it whatever it says, because
@@ -890,10 +1049,9 @@ Each character is valued at their own realm's market, not at yours, and the age 
 reading that went into the figure sits beside it. The guild bank is counted on its own line above
 and is left out of this one: it is the guild's, not yours to spend.
 
-There is no *stack of* line away from your bags, and that is not an oversight. An auction row is
-drawn by whoever wrote the auction house you are using, and a count read off somebody else's frame
-could not be checked against the item you are hovering — so it would sometimes be a wrong number
-that reads exactly like a right one. Family would rather answer a different question correctly.
+**The stack line works away from your bags too**: over an auction row, whichever row you are
+pointing at and however far the list has scrolled, on a vendor's shelf and over a loot window. When
+both answers apply, the hint says both. An item the game will not pay a copper for offers neither.
 
 If two characters see different prices for one thing, the higher is kept: a reputation discount
 only ever makes a vendor cheaper, so the highest price anyone was quoted is the closest thing to
@@ -915,18 +1073,24 @@ each specialisation, listing everything that specialisation can ever do; those a
 character's abilities and Family says so rather than recording them.
 
 **"The game stops for a moment when Wide Family is on."** Type `/family widetime`. It says, per
-link, how many members are shared, how long building and fingerprinting them takes, and what the
-much marking them costs and how many of them come back as *nothing to do* — that is what an
-exchange spends today. Underneath, in grey, is what the same exchange used to cost before this
-version, which is there to be compared against and is not what anything spends any more. It
-measures and sends nothing, and nobody has to be online — a link and what it shares are
-remembered whether or not the other person is playing.
+link, how many members are shared, how long deciding which of them changed takes, and how many are
+unchanged — an unchanged character is never opened and never sent. Where some are not, it says why
+and names them: **changed since they were sent**, which is what playing a character does, or
+**never confirmed as sent**, which is the one to look into. Underneath, in grey, is what the same
+exchange used to cost, there to be compared against. It measures and sends nothing, and nobody has
+to be online.
 
-Run it twice in a row. Family decodes each record once per session, so the first run of a login
-pays for that and the second does not, and the difference between the two is exactly what a
-login is spending. The automatic exchange does the same decoding by itself about ten seconds
-after you enter the world, so a first run that is genuinely cold means either being quick or
-turning the automatic update off on the Wide Family panel first.
+**"How much would an exchange send?"** `/family widecost` weighs what asking a linked family for
+theirs puts on the wire, without sending it. Sending everybody again is `/family wide resend
+<family>` (§11), which says what it will cost before it starts.
+
+**"Family is slow to load, or I have a great many characters."** `/family status` says how long your
+saved Family data took to read at the loading screen and how many characters are still saved the
+old way — none, once the first login after updating to 3.0.0 has converted them. `/family
+decodecost` says what every character's record weighs and which recipe lists were recorded in
+another language, naming each character's lists that are. `/family paycost` says how many times
+this session wrote a character's record, which parts, and what marking each part takes. All three
+are measurements: they change nothing and send nothing.
 
 **Something errored.** Turn on *Narrate what the scanners are doing* in Options, reproduce it,
 and report the message together with the line at the bottom of the Options panel. It says
