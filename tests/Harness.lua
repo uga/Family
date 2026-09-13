@@ -15207,6 +15207,47 @@ do
 					Family.L["|cffffd700nothing to send, %d unchanged|r"], 3)))
 			pretend = nil
 
+			-- **A second into a transfer, the count moves and nothing is laid out again**
+			-- (backlog 78). The tick used to call `Refresh`, which sets every row, cell and tick
+			-- box: at 210 members granted the game stuttered while the panel was open. Laying
+			-- out is counted by `UI:ListWidth`, which `Refresh` asks first and the tick never.
+			-- The tick is taken from the timer it is armed on and run by hand, so no other
+			-- timer in the harness fires with it.
+			Family.Wide.InFlight = function() return 42 end
+			Family.Comm.Pending = function() return 42 end
+			local armed
+			local realAfter = Family.After
+			Family.After = function(this, delay, key, fn)
+				if key == "wide.queue" then armed = fn return end
+				return realAfter(this, delay, key, fn)
+			end
+			Family.UI:Refresh()
+			local layouts = 0
+			local realListWidth = Family.UI.ListWidth
+			Family.UI.ListWidth = function(...)
+				layouts = layouts + 1
+				return realListWidth(...)
+			end
+			Family.Wide.InFlight = function() return 41 end
+			local first = armed
+			armed = nil
+			if first then first() end
+			check("a second into a transfer the panel's count has moved",
+				first ~= nil and visibleText(string.format(
+					Family.L["|cffffd700sending to them, %d pieces left|r"], 41)))
+			check("and the panel was not laid out again to move it", layouts == 0,
+				tostring(layouts) .. " layouts")
+			Family.Wide.InFlight = function() return 40 end
+			local second = armed
+			armed = nil
+			if second then second() end
+			check("and it goes on moving while the queue drains, still without a layout",
+				second ~= nil and visibleText(string.format(
+					Family.L["|cffffd700sending to them, %d pieces left|r"], 40))
+					and layouts == 0, tostring(layouts) .. " layouts")
+			Family.UI.ListWidth = realListWidth
+			Family.After = realAfter
+
 			Family.Comm.Pending = realPending
 			Family.Wide.InFlight = realInFlight
 			Family.Wide.ExchangeWith = realExchange

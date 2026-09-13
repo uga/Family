@@ -211,6 +211,10 @@ picks itself up where it left off.
   reach your own realm and the realms connected to it; Family now says that none of their characters
   is on a realm this character can reach.
 
+- **The Wide Family page no longer makes the game stutter while a large family is being sent.**
+  With two hundred characters going out and the page open, it redrew every character and tick box
+  once a second to move one count; now it moves the count and leaves the rest alone.
+
 - **Their Update now no longer slows down what you are already sending them.** Pressed while a
   transfer to them was under way, it queued the rest of that transfer a second time. The request
   is now answered once, as soon as what was in flight has gone.

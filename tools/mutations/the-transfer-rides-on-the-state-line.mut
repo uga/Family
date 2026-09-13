@@ -3,7 +3,7 @@ file: addons/Family_UI/Wide.lua
 --- old
                 local transfer = nextRow()
                 transfer.text:SetPoint("RIGHT", -RIGHT_INSET, 0)
-                transfer.text:SetText(table.concat(parts, "   |cff888888|||r   "))
+                transfer.text:SetText(transferWords)
+                transferLines[entry.id] = transfer.text
 --- new
-                state.text:SetText((state.text:GetText() or "") .. "   "
-                    .. table.concat(parts, "   |cff888888|||r   "))
+                state.text:SetText((state.text:GetText() or "") .. "   " .. transferWords)

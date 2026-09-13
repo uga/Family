@@ -341,8 +341,78 @@ local function build(frame)
 
     ----------------------------------------------------------------------------------------
 
+    -- **The transfer line's words, for one link**, or nil where the link has no such line.
+    --
+    -- One place, because two callers draw it: `Refresh`, which lays out the whole panel, and the
+    -- one-second tick below, which only rewrites these lines while a queue drains.
+    --
+    -- What is still going out **to them**: `Wide:InFlight` counts the pieces queued for the
+    -- character this link would be whispered, plus the batches still to post, so the number
+    -- belongs to this family and not to the channel.
+    --
+    -- And **what they have confirmed**, said only where they answer at all: against a Family too
+    -- old to acknowledge, what this side records is what its own client took rather than what
+    -- theirs stored, and nothing is drawn rather than a nought that would read as *they have
+    -- none of it*.
+    local function transferText(familyID, link)
+        if link.problem then return nil end
+
+        local queued = Family.Wide:InFlight(familyID)
+        local confirmed, offered = Family.Wide:Confirmed(familyID)
+        local nothing = queued == 0 and nothingToSend[familyID] or nil
+
+        if not (queued > 0 or offered > 0 or nothing) then return nil end
+
+        local parts = {}
+        if queued > 0 then
+            parts[#parts + 1] = string.format(
+                L["|cffffd700sending to them, %d pieces left|r"], queued)
+        elseif nothing then
+            parts[#parts + 1] = string.format(
+                L["|cffffd700nothing to send, %d unchanged|r"], nothing)
+        end
+        if offered > 0 then
+            parts[#parts + 1] = string.format(
+                L["|cff888888%d of %d confirmed|r"], confirmed, offered)
+        end
+        return table.concat(parts, "   |cff888888|||r   ")
+    end
+
+    -- Family id -> the font string its transfer line was drawn in, by the last `Refresh`.
+    local transferLines = {}
+
+    -- **Once a second while anything is queued: the transfer lines, and nothing else**
+    -- (backlog 78).
+    --
+    -- A queue draining changes no record, so nothing else repaints the count - which is why a
+    -- timer exists at all (*a count that stands still is worse than no count*, 2026-09-08). It
+    -- used to call `Refresh`, which lays out every row, cell and tick box of the panel: with 210
+    -- members granted that was about 2,500 widgets set once a second for the six and a half
+    -- minutes of a transfer, and the game stuttered while the panel was open and not while it was
+    -- closed (read from play 2026-09-13). The grid does not move while pieces leave; the lines do.
+    --
+    -- **Whole again only where the shape changes**: a link gaining a transfer line it did not
+    -- have, or losing one it had, moves every row under it, which a text change cannot do. A
+    -- record arriving or a confirmation repaints the panel through `Database:Changed` as before.
+    local tick
+    tick = function()
+        if not frame:IsShown() then return end
+
+        for familyID, link in pairs(Family.Wide:Links()) do
+            local text, line = transferText(familyID, link), transferLines[familyID]
+            if (text == nil) ~= (line == nil) then
+                frame:Refresh()
+                return
+            end
+            if line then line:SetText(text) end
+        end
+
+        if Family.Comm:Pending() > 0 then Family:After(1, "wide.queue", tick) end
+    end
+
     function frame:Refresh()
         local usedRows, usedCells, usedButtons = 0, 0, 0
+        wipe(transferLines)
         local y = 0
 
         list:SetWidth(UI:ListWidth(scroll))
@@ -809,38 +879,15 @@ local function build(frame)
             -- after that line had been taught to drop its hint to make room. The segments there
             -- are the standing state of the link; these two are the one thing on the panel that
             -- changes while somebody watches it, which is a different kind of fact and a reason
-            -- to give it a place of its own rather than another pixel of somebody else's.
-            --
-            -- What is still going out **to them**: `Wide:InFlight` counts the pieces queued for
-            -- the character this link would be whispered, plus the batches still to post, so
-            -- the number belongs to this family and not to the channel.
-            --
-            -- And **what they have confirmed**, said only where they answer at all: against a
-            -- Family too old to acknowledge, what this side records is what its own client
-            -- took rather than what theirs stored, and nothing is drawn rather than a nought
-            -- that would read as *they have none of it*.
-            local queued = Family.Wide:InFlight(entry.id)
-            local confirmed, offered = Family.Wide:Confirmed(entry.id)
-
-            local nothing = queued == 0 and nothingToSend[entry.id] or nil
-
-            if not link.problem and (queued > 0 or offered > 0 or nothing) then
-                local parts = {}
-                if queued > 0 then
-                    parts[#parts + 1] = string.format(
-                        L["|cffffd700sending to them, %d pieces left|r"], queued)
-                elseif nothing then
-                    parts[#parts + 1] = string.format(
-                        L["|cffffd700nothing to send, %d unchanged|r"], nothing)
-                end
-                if offered > 0 then
-                    parts[#parts + 1] = string.format(
-                        L["|cff888888%d of %d confirmed|r"], confirmed, offered)
-                end
-
+            -- to give it a place of its own rather than another pixel of somebody else's. Its
+            -- words are `transferText`'s, and the tick rewrites them without laying anything
+            -- out.
+            local transferWords = transferText(entry.id, link)
+            if transferWords then
                 local transfer = nextRow()
                 transfer.text:SetPoint("RIGHT", -RIGHT_INSET, 0)
-                transfer.text:SetText(table.concat(parts, "   |cff888888|||r   "))
+                transfer.text:SetText(transferWords)
+                transferLines[entry.id] = transfer.text
             end
 
             -- **Everything again, and what it costs**, under the button that no longer does
@@ -1201,11 +1248,11 @@ local function build(frame)
         -- is a wrong number rather than an old one.
         --
         -- Re-armed only while there is something left and the panel is on screen, so it
-        -- stops on its own the moment the queue empties or the player looks elsewhere.
+        -- stops on its own the moment the queue empties or the player looks elsewhere. What
+        -- it runs is `tick`, which rewrites the transfer lines and lays out nothing (backlog
+        -- 78).
         if Family.Comm:Pending() > 0 and frame:IsShown() then
-            Family:After(1, "wide.queue", function()
-                if frame:IsShown() then frame:Refresh() end
-            end)
+            Family:After(1, "wide.queue", tick)
         end
     end
 end

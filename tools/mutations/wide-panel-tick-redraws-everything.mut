@@ -1,0 +1,11 @@
+name: the Wide panel's one-second tick lays out the whole panel again, as it did before backlog 78
+file: addons/Family_UI/Wide.lua
+--- old
+        if not frame:IsShown() then return end
+
+        for familyID, link in pairs(Family.Wide:Links()) do
+--- new
+        if not frame:IsShown() then return end
+        if true then return frame:Refresh() end
+
+        for familyID, link in pairs(Family.Wide:Links()) do

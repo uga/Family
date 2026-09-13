@@ -5052,7 +5052,7 @@ on (79); the broker's bar text wraps and its tooltip runs off the screen (80).
 
 ---
 
-## 78. The Wide Family panel stutters the game while a large transfer is going out
+## 78. The Wide Family panel stutters the game while a large transfer is going out — DONE 2026-09-13
 
 **Reported by Alberto 2026-09-13**, reading backlog 77: with 210 members going to Serena, the game
 stuttered while the Wide Family panel was open; with it closed, everything was normal.
@@ -5075,6 +5075,18 @@ one-second tick touches no grid cell while a transfer is in flight and the statu
 with its mutation. Reading after: the same 210 transfer with the panel open, stutter or none.
 Not measured: how long one `Refresh` takes at 210; a `debugprofilestop` around it would say before
 anything is changed.
+
+**Built 2026-09-13, as written.** The transfer line's words are one function, `transferText`, drawn
+by `Refresh` and rewritten by the one-second tick, which lays nothing out: it sets the text of the
+lines the last `Refresh` drew, and calls `Refresh` only where a link gains or loses a line, which
+moves the rows under it. Records arriving and confirmations still repaint through
+`Database:Changed`. **Not measured before building**, against what this entry proposed: no
+`debugprofilestop` reading of one `Refresh` at 210 was taken, so that the stutter is this timer is
+still the reading from play (open, stutter; closed, none) and the code. **Checked**: with a transfer
+in flight the tick, run from the timer it was armed on, moves the count from 42 to 41 to 40 with no
+layout (`UI:ListWidth`, which `Refresh` asks first, never called); mutation
+`wide-panel-tick-redraws-everything`. Not checked: the fallback to `Refresh` when a line appears or
+goes. **Reading to take**: the 210 transfer with the panel open - stutter or none.
 
 ---
 
