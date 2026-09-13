@@ -2606,6 +2606,15 @@ theirs, 236 bytes on the wire, 264 bytes before compression*. About 53 bytes a m
 and deflate saving a tenth - which is what it does to a few hundred bytes and says little about
 what it does to eleven thousand. The question needs a link with a large family behind it.
 
+**A second reading, 2026-09-13, from Serena's side** of the same link with Alberto offline: *30
+marks held of theirs, 727 bytes on the wire, 1.1 KB before compression*. Two points now: 5 marks
+at 236 bytes and 30 at 727, so about **20 bytes on the wire for each member held**, and deflate
+saving about a third once the list is long enough to repeat itself. Carried straight on - which a
+list of similar strings should at least match - two hundred and ten members is about 4 KB, a
+couple of seconds at the rate `Comm` sends. Still arithmetic past the largest list read, so the
+entry stays open for a reading on a family that size; it no longer looks like a cost to design
+around.
+
 
 
 **Asked:** 2026-09-08, by this session rather than by a player, as the one loose end of the
