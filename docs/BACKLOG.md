@@ -4758,7 +4758,7 @@ session and came first.
 
 ---
 
-## 74. Whole-family questions decode every record, and some families have two hundred alts — BUILT 2026-09-13, awaiting the loading reading
+## 74. Whole-family questions decode every record, and some families have two hundred alts — DONE 2026-09-13
 
 **Way 1 chosen by Alberto, 2026-09-13**: *l'unica strada logica che vedo è la 1. Capisco il costo in
 disco (non è un problema) e potenzialmente di RAM - tuttavia anche se tenessimo compresso e
@@ -4845,6 +4845,26 @@ before the code:
 
 All nine are in `tests/Harness.lua` (the blocks *records are unpacked a little at a time after
 logging in* and *a record from before backlog 74 keeps its mark when it is rewritten plain*); the
-gate and the mutation run are in DECISIONS. **Left open**: the same `/family status` line read after
-deploy on the same account, against 34 and 28 ms; and spec §10 item 12 still says *lazy, compressed
-storage* - outside this slice's list, waiting for Alberto.
+gate and the mutation run are in DECISIONS. Spec §10 item 12 was aligned afterwards (`17086f6`).
+
+**Read after the deploy of `1f55abc`, by Alberto 2026-09-13**, same Classic Era account, 31
+characters, `/family status`, the saved file backed up first:
+
+| When | Still compressed | Saved data read at login |
+|---|---|---|
+| Baseline, before 74, two logins | all | 34 ms, 28 ms |
+| First login after the deploy, just after arriving | 19 | 28 ms |
+| Same login, about ten seconds later | **0** | 28 ms (the same login's figure) |
+| Second login | **0** | **53 ms** |
+
+Straight after the second login, without waiting: a search for *ar* on the Professions panel and
+the tooltip on an enchanter's wand or rod row - **no error**. So the conditions for closing are met.
+
+**What it cost.** The first login still read the compressed file (28 ms, within the baseline). The
+second read the same family stored plain: **53 ms, 19 to 25 ms more than the baseline's 34 and 28,
+about 1.6 to 1.9 times** - one reading, at the loading screen, where no script limit applies,
+against 521-524 ms that the first whole-family question used to spend in one frame. Carried
+straight to two hundred characters that is about 340 ms; arithmetic on one reading, not a
+measurement. **19 still compressed rather than 31** at the first look is not explained by a reading:
+the warm-up starts three seconds after arrival and takes one record every 0.3 s, which would have
+rewritten twelve about seven seconds in - consistent, not checked.

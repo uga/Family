@@ -64,8 +64,10 @@ in a session decoded every record in one frame, 521-524 ms for 31 records on Alb
 which the client stopped as *script ran too long*. With every record decoded the same search
 cost 10-15 ms and the tooltip's question 1-2 ms. Memory was never the argument for compressing:
 a decoded record weighs what a plain one does. The price is paid at the loading screen, where no
-script limit applies; its baseline is *34 ms* and *28 ms* for the saved data compressed, read with
-`/family status`. A record written by an earlier version is read once and rewritten plain.
+script limit applies. Read with `/family status` on Alberto's 31-character Era account: *34 ms*
+and *28 ms* with the saved data compressed, **53 ms** stored plain - 19 to 25 ms more, one
+reading, against 521-524 ms in one frame before. A record written by an earlier version is read
+once and rewritten plain.
 **LibSerialize and LibDeflate stay**: the wire - Wide Family, the guild share - still carries
 strings, and reading an old record needs them once.
 
