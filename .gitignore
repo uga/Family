@@ -42,3 +42,9 @@ CLAUDE.md
 docs/EFFORT.md
 docs/effort/
 tools/effort.py
+
+# Saved data copied off two real accounts, for tools/grow-family.lua to build a large family
+# from. It holds characters' names, guilds, letters and auctions - other people's among them -
+# and was never meant to be published. The files stay on this machine and out of every clone;
+# what the tool writes goes beside them, under the same rule.
+tools/live/
