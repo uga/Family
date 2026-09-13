@@ -1,0 +1,12 @@
+name: the member's own recipe list draws the recorded picture, not what the recipe makes
+file: addons/Family_UI/Professions.lua
+--- old
+				{ chosen, style.label and ("|cff888888" .. style.label .. "|r") or "" },
+			}
+
+			r.icon:SetTexture(recipeIcon(recipe))
+--- new
+				{ chosen, style.label and ("|cff888888" .. style.label .. "|r") or "" },
+			}
+
+			r.icon:SetTexture(recipe.icon)

@@ -1,0 +1,6 @@
+name: a recipe row's picture takes what the window recorded before what the recipe makes
+file: addons/Family_UI/Professions.lua
+--- old
+	local icon = made and Family:TryCall(GetItemIcon, made) or recipe.icon
+--- new
+	local icon = recipe.icon or (made and Family:TryCall(GetItemIcon, made))

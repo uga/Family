@@ -1,0 +1,8 @@
+name: a recipe row's picture ignores what the recipe makes and draws the Craft frame's
+file: addons/Family_UI/Professions.lua
+--- old
+	local made = recipe.itemID or Family.Recipes:Product(recipe.spellID)
+	local icon = made and Family:TryCall(GetItemIcon, made) or recipe.icon
+--- new
+	local made = recipe.itemID
+	local icon = made and Family:TryCall(GetItemIcon, made) or recipe.icon

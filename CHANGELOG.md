@@ -90,7 +90,8 @@ picks itself up where it left off.
   expires and the money in it.
 
 - **Wands, rods and oils an enchanter makes are shown as the thing itself** on the Professions
-  panel, with who holds one and what it takes to make.
+  panel, with who holds one and what it takes to make - and with their own picture on the row
+  rather than enchanting's.
 
 - **An enchant's tooltip says what it is made of**, with how many of each and what that costs,
   under who in the family can do it.

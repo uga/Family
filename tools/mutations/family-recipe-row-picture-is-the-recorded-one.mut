@@ -1,0 +1,10 @@
+name: the whole-family recipe list draws the recorded picture, not what the recipe makes
+file: addons/Family_UI/Professions.lua
+--- old
+				r.fallback = { { recipe.name or "?" }, { profession } }
+
+				r.icon:SetTexture(recipeIcon(recipe))
+--- new
+				r.fallback = { { recipe.name or "?" }, { profession } }
+
+				r.icon:SetTexture(recipe.icon)

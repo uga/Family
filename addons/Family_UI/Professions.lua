@@ -183,6 +183,21 @@ local ORDERS = {
 	},
 }
 
+-- **A row's picture: what the recipe makes, where it makes something.** Reported from play on
+-- Era, 2026-09-13: Lesser Magic Wand, Runed Copper Rod and the oils drawn with enchanting's own
+-- pictures. Their rows come from the Craft frame, which records the spell and an icon of its
+-- choosing and no item; the product is asked of the recipe, as the tooltip already does
+-- (`Recipes:Product`), and its picture of the client by id. Then what the window recorded, then
+-- the spell's own - which is right for an enchant that makes nothing.
+local function recipeIcon(recipe)
+	local made = recipe.itemID or Family.Recipes:Product(recipe.spellID)
+	local icon = made and Family:TryCall(GetItemIcon, made) or recipe.icon
+	if not icon and recipe.spellID then
+		icon = select(2, Family.Names:Spell(recipe.spellID))
+	end
+	return icon or "Interface\\Icons\\INV_Misc_QuestionMark"
+end
+
 --------------------------------------------------------------------------------------------
 -- And the orders for the list that is about everybody
 --
@@ -1056,11 +1071,7 @@ local function build(frame)
 
 				r.fallback = { { recipe.name or "?" }, { profession } }
 
-				local icon = recipe.icon
-				if not icon and recipe.itemID then
-					icon = Family:TryCall(GetItemIcon, recipe.itemID)
-				end
-				r.icon:SetTexture(icon or "Interface\\Icons\\INV_Misc_QuestionMark")
+				r.icon:SetTexture(recipeIcon(recipe))
 
 				r.text:SetText(string.format("%s   |cff888888%s|r", recipe.name or "?",
 					profession))
@@ -1832,14 +1843,7 @@ local function build(frame)
 				{ chosen, style.label and ("|cff888888" .. style.label .. "|r") or "" },
 			}
 
-			local icon = recipe.icon
-			if not icon and recipe.itemID then
-				icon = Family:TryCall(GetItemIcon, recipe.itemID)
-			end
-			if not icon and recipe.spellID then
-				icon = select(2, Family.Names:Spell(recipe.spellID))
-			end
-			r.icon:SetTexture(icon or "Interface\\Icons\\INV_Misc_QuestionMark")
+			r.icon:SetTexture(recipeIcon(recipe))
 
 		end
 

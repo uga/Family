@@ -9503,6 +9503,33 @@ end)()
 	check("the recipe row says what the character can make from what they hold", drew)
 end)()
 
+-- **And the member's own list draws what a recipe makes, where it makes something.** The rows
+-- of a Craft frame carry the spell and the frame's own picture; reported from play on Era
+-- 2026-09-13 as the wands and rods drawn with enchanting's pictures. Every row with a spell is
+-- made to make one thing here, so each has to wear that thing's picture or its own item's.
+;(function()
+	local realProduct = Family.Recipes.Product
+	Family.Recipes.Product = function(_, spell) return spell and 990001 or nil end
+	Family.UI:Refresh()
+
+	local seen, wrong = 0, {}
+	for index = 1, 30 do
+		local r = Family.UI.__recipeRowFor(index)
+		if r and r:IsShown() and r.spellID then
+			seen = seen + 1
+			local want = "Interface\\Icons\\Item_" .. tostring(r.itemID or 990001)
+			if r.icon:GetTexture() ~= want then
+				wrong[#wrong + 1] = tostring(r.spellID) .. "=" .. tostring(r.icon:GetTexture())
+			end
+		end
+	end
+
+	Family.Recipes.Product = realProduct
+	Family.UI:Refresh()
+	check("a member's recipe row wears the picture of what it makes",
+		seen > 0 and #wrong == 0, seen .. " rows, wrong: " .. table.concat(wrong, " "))
+end)()
+
 -- **And a row that has only the item**, which on Classic Era is every trade skill row there is:
 -- that client's records carry an item id on every recipe and a spell id on none (DATASOURCES §2).
 -- So the swap had nothing to swap to on that whole client, said nothing about it, and was
@@ -10252,6 +10279,7 @@ if professionsEveryone then
 							-- An enchanting recipe that makes a thing, recorded the way the
 							-- Craft frame records it: the spell, and no item.
 							{ name = "Lesser Magic Wand", profession = 333, spellID = 14293,
+							icon = "Interface\\Icons\\Craft_Enchanting",
 							members = { { key = "Maker1-FireMaw", name = "Maker1",
 								classFile = "MAGE", rank = 300 } }, guild = {} } }
 					end
@@ -10295,6 +10323,19 @@ if professionsEveryone then
 						made ~= nil and made.kind == "item" and made.id == 11287,
 						tostring(wand) .. " " .. tostring(made and made.kind) .. " "
 							.. tostring(made and made.id))
+
+					-- **And its picture is the wand's**, not the one the Craft frame recorded.
+					-- Reported from play on Era, 2026-09-13: the wands, rods and oils drawn
+					-- with enchanting's own pictures.
+					local wandRow = wand and Family.UI.__recipeRowFor(wand)
+					check("an enchanting recipe that makes a thing wears the thing's picture",
+						wandRow ~= nil and wandRow.icon:GetTexture() == "Interface\\Icons\\Item_11287",
+						tostring(wandRow and wandRow.icon:GetTexture()))
+					local enchantRow = enchant and Family.UI.__recipeRowFor(enchant)
+					check("while an enchant that makes nothing keeps a picture of its own",
+						enchantRow ~= nil and enchantRow.icon:GetTexture() ~= nil
+							and not tostring(enchantRow.icon:GetTexture()):find("Item_", 1, true),
+						tostring(enchantRow and enchantRow.icon:GetTexture()))
 
 					_G.IsControlKeyDown = heldKey
 				end)()
