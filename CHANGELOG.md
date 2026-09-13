@@ -29,6 +29,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 3.0.0 — 2026-09-13
+
 **Pets, and a Wide Family that keeps up.** Hunters and warlocks get a Pets page listing every
 stabled pet and summoned demon with what each one can do, down to what its abilities cost in
 training points. Sharing with another family is faster, no longer freezes the game, and now
