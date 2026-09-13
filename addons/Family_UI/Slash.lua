@@ -403,6 +403,18 @@ add("status", L["what Family knows, and how it is storing it"], function()
 	-- Which tooltip route took, because the answer differs per client and a missing
 	-- possessions block is otherwise indistinguishable from owning nothing.
 	Family:Print(L["tooltips: %s"], Family.tooltipRoute or L["|cffffaa00not hooked|r"])
+
+	-- **How long the client took to read Family's saved data at login**: from the end of the
+	-- last file the .toc loads to `ADDON_LOADED` (`Loaded.lua`, `Database:Initialise`). Read
+	-- before and after records are stored plain (backlog 74), on the same account. Another
+	-- addon calling `debugprofilestart` in between would reset the clock, and a negative span
+	-- is what that looks like, so it is said rather than printed as a time.
+	local from, to = Family.filesLoadedAt, Family.savedReadAt
+	if type(from) == "number" and type(to) == "number" and to >= from then
+		Family:Print(L["saved data read at login in %.0f ms"], to - from)
+	else
+		Family:Print(L["saved data read at login: not measured on this client"])
+	end
 end)
 
 add("tooltiptest", L["check the possessions block for an item: /family tooltiptest 2589"],

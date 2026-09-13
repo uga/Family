@@ -1,0 +1,6 @@
+name: the saved data's read is never stamped at ADDON_LOADED
+file: addons/Family/Database.lua
+--- old
+	if type(_G.debugprofilestop) == "function" then Family.savedReadAt = _G.debugprofilestop() end
+--- new
+	if false then Family.savedReadAt = _G.debugprofilestop() end

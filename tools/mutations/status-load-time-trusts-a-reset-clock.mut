@@ -1,0 +1,6 @@
+name: /family status prints a negative span as a time
+file: addons/Family_UI/Slash.lua
+--- old
+	if type(from) == "number" and type(to) == "number" and to >= from then
+--- new
+	if type(from) == "number" and type(to) == "number" then

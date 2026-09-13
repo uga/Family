@@ -1,0 +1,8 @@
+name: the stamp before the saved data is not the last file the .toc loads
+file: addons/Family/Family.toc
+--- old
+Guild.lua
+Loaded.lua
+--- new
+Loaded.lua
+Guild.lua

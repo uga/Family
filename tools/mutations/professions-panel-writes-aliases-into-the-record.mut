@@ -1,0 +1,9 @@
+name: the professions panel files a word-keyed profession under its id inside the record it draws
+file: addons/Family_UI/Professions.lua
+--- old
+				local view = {}
+				for key, record in pairs(stored) do view[key] = record end
+				for id, record in pairs(resolved) do view[id] = record end
+				stored = view
+--- new
+				for id, record in pairs(resolved) do stored[id] = record end

@@ -23,6 +23,14 @@
 
 local ROOT = arg[1] or "."
 
+-- **Which way records are stored for this run.** The gate runs everything twice: first as the
+-- addon stores records today, compressed, and then - from the end of this file, as a second
+-- process - with `plain`, the codec that backlog 74 makes the only one. Until 2026-09-13 no
+-- check had ever run on it: the libraries below are always stood in, so `Codec.compressing` was
+-- true in every run and the path 74 builds on had no coverage at all (data-path review, step 3).
+-- A global, like `LOADED_HERE`: the main chunk is at Lua 5.1's limit of two hundred locals.
+RUN = { storage = arg[2] == "plain" and "plain" or "compressed", written = {} }
+
 --------------------------------------------------------------------------------------------
 -- Frames
 --------------------------------------------------------------------------------------------
@@ -1895,7 +1903,38 @@ end
 --------------------------------------------------------------------------------------------
 
 local failures = 0
+
+-- **Checks that cannot pass on plain storage until backlog 74 is built**, by label, and nothing
+-- else. Every one is about a record's mark: `Database:PayloadMark` folds the stored *string*
+-- and answers nothing for a plain record, so a plain run marks nobody, and the walk and a Wide
+-- Family exchange treat everybody as changed. That is today's behaviour on a client without the
+-- libraries, and it is exactly what 74 has to supply. A check on this list that passes is a
+-- failure, so the list cannot outlive the reason for it.
+RUN.plainUntil74 = {
+	["a member sent and changed since is counted as changed, by name"] = true,
+	["and not as one never sent"] = true,
+	["/family widetime names who changed since they were sent"] = true,
+	["and who was never confirmed as sent, when nothing is recorded for them"] = true,
+	["and the walk after it reads none of them"] = true,
+	["and the ones beside it are still stepped past"] = true,
+	["and every answer is the same one"] = true,
+	["and answers about what was written, not about what was there before"] = true,
+	["the cap steps past exactly what it is set to"] = true,
+	["and reads nothing on a call that filled it"] = true,
+	["a second exchange carries none of them again"] = true,
+}
+
 local function check(label, condition, detail)
+	if RUN.storage == "plain" and RUN.plainUntil74[label] then
+		if condition then
+			failures = failures + 1
+			print(string.format("  FAIL  %s  -> passes on plain storage; take it off PLAIN_UNTIL_74",
+				label))
+		else
+			print(string.format("  known %s  (plain storage, backlog 74)", label))
+		end
+		return
+	end
 	if condition then
 		print(string.format("  ok    %s", label))
 	else
@@ -1993,14 +2032,61 @@ for _, file in ipairs {
 	"Scanners/Merchant.lua",
 	"Wide.lua",
 	"Guild.lua",
+	"Loaded.lua",
 } do
+	-- A clock that reads 1000 while the files load and 1250 once they have, so the span
+	-- `/family status` prints is known here. The game's own stands between the two.
+	_G.debugprofilestop = function() return 1000 end
 	LOADED_HERE[#LOADED_HERE + 1] = file
 	load("addons/Family/" .. file, "Family", FamilyPrivate)
 end
 
 print()
 print("startup")
+_G.debugprofilestop = function() return 1250 end
 fire("ADDON_LOADED", "Family")
+_G.debugprofilestop = nil
+print("  records stored " .. RUN.storage)
+if RUN.storage == "plain" then
+	-- The libraries stay: the wire needs them whatever the storage does, and 74 keeps them for
+	-- it. Only what a write stores changes.
+	Family.Codec.compressing = false
+end
+
+-- **Every record write, remembered with a fold of what was written**, so that the end of the run
+-- can say whether anything changed a record without writing it. On plain storage the stored
+-- payload *is* the table the reader holds, so a change made in place is saved at logout without a
+-- write, without a new mark and without the index hearing of it.
+--
+-- **Held at every write, not only at the end.** A change made in place and then carried into a
+-- later write of the same record is folded into that write and invisible afterwards: the first
+-- version of this looked only at the end, and a panel adding a field to the record it drew
+-- survived its mutation, because a scan wrote the same table a moment later. So each write
+-- first holds every *other* record to its own last write; the record being written is the one
+-- place a change is allowed to have been made.
+RUN.touched = {}
+
+function RUN.holdRecords(except)
+	for written, held in pairs(RUN.written) do
+		if written ~= except and FamilyDB.members[written]
+			and Family.Database:Payload(written) == held.data
+			and Family.Codec:Fingerprint(held.data) ~= held.fold then
+			RUN.touched[written] = true
+			-- Once per change: the fold is taken again, so the next write does not report it.
+			held.fold = Family.Codec:Fingerprint(held.data)
+		end
+	end
+end
+do
+	local realSetPayload = Family.Database.SetPayload
+	Family.Database.SetPayload = function(self, key, data)
+		RUN.holdRecords(key)
+		realSetPayload(self, key, data)
+		if key ~= nil and type(data) == "table" then
+			RUN.written[key] = { data = data, fold = Family.Codec:Fingerprint(data) }
+		end
+	end
+end
 
 -- Wide Family ships switched off until it has been tested against a real server, so a fresh
 -- database has it off and the rest of this file has to turn it on the way a player would.
@@ -9134,9 +9220,12 @@ check("one that does keeps its button", professionButtonNamed("Blacksmithing") ~
 -- from inside it. What the harness holds is that the probe reports what is really there, and
 -- that it is told once.
 do
-	for _, record in pairs(Family.Database:Payload(key).professions or {}) do
+	local mine = Family.Database:Payload(key)
+	for _, record in pairs(mine.professions or {}) do
 		if type(record) == "table" then record.openWith = "Blacksmithing" end
 	end
+	-- Written, because on plain storage the table changed above is the saved record.
+	Family.Database:SetPayload(key, mine)
 	Family.UI:ShowProfessionFor(key, "Blacksmithing")
 
 	local button = professionButtonNamed("Blacksmithing")
@@ -9237,10 +9326,23 @@ check("and the ones left out are named, with the reason", visibleText("Herbalism
 -- somebody hunting a fault in Family for an evening.
 local testerSkills = Family.Database:Meta(key).skills
 testerSkills.Tailoring = { rank = 40, maxRank = 75 }
-Family.Database:Payload(key).professions.Tailoring = { recipesSeen = time(), recipes = {} }
+do
+	-- Written, because on plain storage the table changed here is the saved record.
+	local testerPayload = Family.Database:Payload(key)
+	testerPayload.professions.Tailoring = { recipesSeen = time(), recipes = {} }
+	Family.Database:SetPayload(key, testerPayload)
+end
+RUN.foldBeforeDrawing = Family.Codec:Fingerprint(Family.Database:Payload(key))
 Family.UI:ShowProfessionFor(key, "Blacksmithing")
 check("a window opened and found empty says so",
 	visibleText("Tailoring opened, and listed nothing"))
+-- **Drawn under its id without the record learning the id.** Tailoring is filed under its word
+-- here, the shape records had before professions were keyed by skill line; the panel finds it
+-- under 197 and used to write 197 into the record to do so, which the next bag scan saved (L-096).
+check("a profession filed under a word is drawn under its id without the record changing",
+	Family.Database:Payload(key).professions[197] == nil
+		and Family.Codec:Fingerprint(Family.Database:Payload(key)) == RUN.foldBeforeDrawing,
+	tostring(Family.Database:Payload(key).professions[197]))
 check("and names the likeliest reason beside it",
 	visibleText("another addon filtering or replacing that window"))
 check("and one never opened says that instead",
@@ -9291,7 +9393,12 @@ testerSkills[633] = nil
 
 Family.UI:ShowProfessionFor(key, "Blacksmithing")
 testerSkills.Tailoring = nil
-Family.Database:Payload(key).professions.Tailoring = nil
+do
+	-- Written, because on plain storage the table changed here is the saved record.
+	local testerPayload = Family.Database:Payload(key)
+	testerPayload.professions.Tailoring = nil
+	Family.Database:SetPayload(key, testerPayload)
+end
 
 Family.UI:ShowProfessionFor(key, "Blacksmithing")
 
@@ -18621,6 +18728,9 @@ print("what is in the post")
 		for _, letter in ipairs((payload.mail or {}).letters or {}) do
 			letter.money = 12345
 		end
+		-- Written, not only changed where it lies: on plain storage the table changed here
+		-- is the saved record, and the end of this file holds every record to its last write.
+		Family.Database:SetPayload(armed[1].memberKey, payload)
 	end
 
 	armed[1].mailHit.__scripts.OnClick(armed[1].mailHit)
@@ -36690,6 +36800,133 @@ print("a Family tab on the auction window")
 
 	_G.QueryAuctionItems, _G.CanSendAuctionQuery = realQuery, realCan
 end)()
+
+print()
+print("records are changed only by writing them, and the saved data's read is timed")
+
+;(function()
+	-- **A record holding what a saved-variables file is worst at**: a numeric key, an array
+	-- with a hole in it, and a `false`. Written, read back by a reader, and read again after a
+	-- round trip through the shape the game saves in - explicit keys, one value each.
+	local key = "Holey-FireMaw"
+	Family.Database:SetMeta(key, { name = "Holey", realm = "FireMaw", faction = "Alliance",
+		classFile = "MAGE", level = 60 })
+	local slots = {}
+	slots[1] = { id = 2589, count = 1 }
+	slots[3] = { id = 2589, count = 2 }
+	Family.Database:SetPayload(key, {
+		bags = { [0] = { size = 16, free = 14, slots = slots } },
+		professions = { [185] = { name = "Cooking", rank = 1, secondary = true, class = false } },
+	})
+
+	-- Said first, or a pass meant for plain storage could be running compressed and every
+	-- check below would be about the wrong path.
+	local stored = FamilyDB.members[key]
+	check("records written in this run are stored " .. RUN.storage,
+		RUN.storage == "plain" and (stored.codec == "plain" and type(stored.payload) == "table")
+			or RUN.storage == "compressed" and type(stored.payload) == "string",
+		tostring(stored.codec) .. " " .. type(stored.payload))
+
+	local read = Family.Database:Payload(key)
+	check("a record with a numeric key, a hole and a false reads back with all three",
+		read and read.bags[0].slots[3].count == 2 and read.bags[0].slots[2] == nil
+			and read.professions[185].class == false,
+		tostring(read and read.bags and read.bags[0] and #read.bags[0].slots))
+
+	Family.Index:Invalidate(key)
+	local holding = Family.Index:HeldBy(key, 2589)
+	check("and a reader counts what is past the hole", type(holding) == "table"
+		and holding.bags == 3, tostring(holding and holding.bags))
+
+	-- The stand-in serialiser writes every key explicitly, `[k]=v`, which is the shape the
+	-- game's saved-variables file takes; reading it back is a Lua chunk, as the game's is.
+	local serialiser = LibStub:GetLibrary("LibSerialize")
+	local _, back = serialiser:Deserialize(serialiser:Serialize(FamilyDB.members[key]))
+	Family.Database:Forget(key)
+	FamilyDB.members[key] = back
+	local again = Family.Database:Payload(key)
+	check("and again after a round trip through the saved shape",
+		again ~= nil and again.bags[0].slots[3].count == 2 and again.bags[0].slots[2] == nil
+			and again.professions[185].class == false
+			and Family.Codec:Fingerprint(again) == Family.Codec:Fingerprint(read))
+	Family.Database:Forget(key)
+
+	-- **Nothing changed a record except by writing it.** Every record written this run, held
+	-- against the fold taken as it was written; one replaced wholesale by a fixture, or
+	-- forgotten, is not the same record and is passed over.
+	RUN.holdRecords(nil)
+	local touched = {}
+	for written in pairs(RUN.touched) do touched[#touched + 1] = tostring(written) end
+	table.sort(touched)
+	check("no record was changed in place by anything but a write of it, after every scanner "
+		.. "and reader in this run", #touched == 0, table.concat(touched, ", "))
+
+	-- **The saved data's read, as `/family status` prints it**, from the two stamps the harness
+	-- clock set at load: the end of the last file and `ADDON_LOADED`.
+	local from = #DEFAULT_CHAT_FRAME.messages
+	pcall(SlashCmdList["FAMILY"], "status")
+	local heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("/family status says how long the saved data took to read at login",
+		heard:find("saved data read at login in 250 ms", 1, true) ~= nil, heard)
+
+	local heldFrom, heldTo = Family.filesLoadedAt, Family.savedReadAt
+	Family.filesLoadedAt, Family.savedReadAt = 2000, 1500
+	from = #DEFAULT_CHAT_FRAME.messages
+	pcall(SlashCmdList["FAMILY"], "status")
+	heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1, #DEFAULT_CHAT_FRAME.messages)
+	check("and says it was not measured when the clock ran backwards between the two",
+		heard:find("not measured on this client", 1, true) ~= nil, heard)
+	Family.filesLoadedAt, Family.savedReadAt = heldFrom, heldTo
+
+	-- Last in the .toc, or the files after it are counted as saved data.
+	local lastFile
+	local tocFile = io.open(ROOT .. "/addons/Family/Family.toc", "r")
+	local tocText = tocFile and tocFile:read("*a") or ""
+	if tocFile then tocFile:close() end
+	for line in tocText:gmatch("[^\r\n]+") do
+		local file = line:match("^%s*([%w_\\/]+%.lua)%s*$")
+		if file then lastFile = file end
+	end
+	check("and the stamp before the saved data is the last file the .toc loads",
+		lastFile == "Loaded.lua", tostring(lastFile))
+end)()
+
+-- **The second pass, on plain storage**, as its own process: everything above loads the addon
+-- once and cannot load it again cleanly. Its passes are not printed; its failures, the checks it
+-- knows cannot pass until 74, and its last line are. Read by exit status (L-067).
+;(function()
+if RUN.storage ~= "compressed" then return end
+	print()
+	print("the same checks, with records stored plain")
+	local out = os.tmpname()
+	local status = os.execute(string.format("%s %s %s plain > %s 2>&1",
+		arg[-1] or "lua5.1", arg[0] or "tests/Harness.lua", ROOT, out))
+	local known, passed, last = 0, 0, ""
+	local handle = io.open(out, "r")
+	for line in (handle and handle:lines() or function() return nil end) do
+		if line:find("^  ok") then
+			passed = passed + 1
+		elseif line:find("^  known") then
+			known = known + 1
+		elseif line:find("^  FAIL") then
+			print(line)
+		end
+		if line ~= "" then last = line end
+	end
+	if handle then handle:close() end
+	os.remove(out)
+	print(string.format("  %d passed on plain storage, %d known to wait for backlog 74; %s",
+		passed, known, last))
+	RUN.plainPassed = passed
+	check("the plain storage pass exits cleanly", status == 0, tostring(status))
+end)()
+
+-- Outside the pass's own function, so that a pass never started is a failure and not silence.
+if RUN.storage == "compressed" then
+	check("and the plain storage pass ran the checks rather than none of them",
+		(RUN.plainPassed or 0) > 3000, tostring(RUN.plainPassed))
+end
 
 print()
 if failures == 0 then

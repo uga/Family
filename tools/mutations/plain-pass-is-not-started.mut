@@ -1,0 +1,6 @@
+name: the gate never starts the plain storage pass
+file: tests/Harness.lua
+--- old
+if RUN.storage ~= "compressed" then return end
+--- new
+do return end

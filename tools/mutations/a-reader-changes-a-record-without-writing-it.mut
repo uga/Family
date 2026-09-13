@@ -1,0 +1,9 @@
+name: the professions panel changes the record it reads without writing it
+file: addons/Family_UI/Professions.lua
+--- old
+		local payload = UI:Payload(member.key) or {}
+		local stored = payload.professions or {}
+--- new
+		local payload = UI:Payload(member.key) or {}
+		payload.drawnBy = "professions"
+		local stored = payload.professions or {}

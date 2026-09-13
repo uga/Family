@@ -3434,3 +3434,32 @@ too large to believe, which is the only reason it was looked at.
 harness gives it a skill with no recipes and a list with no language, and a recorded mutation of each
 is caught. And the rule: **before explaining a count, open one of the things it counted**. A
 denominator nobody has looked inside is a guess with a number on it.
+
+## L-096 — a panel wrote into the record it was drawing, and the next bag scan saved it
+
+**Found 2026-09-13**, by the first check that holds every record to its last write. The
+professions panel resolves records *filed under a word* - the shape professions had before they
+were keyed by skill line - by adding each skill line id beside its word. It added them inside
+`payload.professions`, which is the table `Database:Payload` hands out and keeps: not a copy.
+Nothing wrote that change, and on compressed storage that looked harmless, because the cache is
+not the disk. It was not harmless. A bag scan reads the same cached payload, replaces `bags` and
+writes the whole payload back (`Scanners/Bags.lua`, the end of `Bags:Scan`), so on the character
+being played the next bag scan after the panel was drawn - the next loot - saved the alias to disk
+beside the word: one profession stored twice. Other characters' records only ever held it in the
+session's cache. It was only reachable through records old enough to be filed under a word, which
+is why nobody saw it; on plain storage (backlog 74) every panel draw would have changed the saved
+record directly.
+
+The harness had drawn that panel on such a record since the resolution was added (`b3e1907`, 2026-08-28). No check asked whether drawing changed
+the record, because reading was assumed not to write.
+
+**What now catches it.** `tests/Harness.lua` wraps `Database:SetPayload`, folds what each write
+wrote, and at every later write holds every other record to that fold, then does the same at the
+end of the run; the gate runs this on compressed and on plain storage. *A profession filed under a
+word is drawn under its id without the record changing* checks the panel directly, and two recorded
+mutations - the alias written back into the record, and a panel adding a field to what it draws -
+are caught. The same check found three harness fixtures changing records in place without writing
+them, which now write. **Its limit**: a change made in place and then written by a write of the same
+record, with no other record written in between, is absorbed into that write; the direct check
+above is what covers that shape for this panel. And the rule: **a reader that needs a different
+shape of the data builds its own table**.

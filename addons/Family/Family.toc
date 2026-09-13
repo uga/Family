@@ -82,3 +82,4 @@ Scanners\Pets.lua
 Scanners\Merchant.lua
 Wide.lua
 Guild.lua
+Loaded.lua

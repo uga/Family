@@ -91,6 +91,9 @@ end
 --------------------------------------------------------------------------------------------
 
 function Database:Initialise()
+	-- The other end of the saved data's parse; the first is taken in `Loaded.lua`.
+	if type(_G.debugprofilestop) == "function" then Family.savedReadAt = _G.debugprofilestop() end
+
 	if type(FamilyDB) ~= "table" then
 		FamilyDB = { schema = SCHEMA, members = {} }
 	end

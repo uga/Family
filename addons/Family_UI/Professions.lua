@@ -1458,6 +1458,11 @@ local function build(frame)
 		-- Resolved here so their recipes are found: the alternative is telling somebody a
 		-- profession was never opened, or was written in another language, while holding
 		-- every one of its recipes (L-015).
+		--
+		-- **Into a table of the panel's own, never into the record.** This added each id beside
+		-- its word inside the member's payload, which is the table the database holds: the next
+		-- bag scan wrote the whole payload back and the alias went to disk with it. Found on
+		-- 2026-09-13 by the harness check that holds every record to its last write (L-096).
 		do
 			local resolved
 			for key, record in pairs(stored) do
@@ -1468,7 +1473,10 @@ local function build(frame)
 				end
 			end
 			if resolved then
-				for id, record in pairs(resolved) do stored[id] = record end
+				local view = {}
+				for key, record in pairs(stored) do view[key] = record end
+				for id, record in pairs(resolved) do view[id] = record end
+				stored = view
 			end
 		end
 

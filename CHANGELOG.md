@@ -164,6 +164,9 @@ picks itself up where it left off.
   each character's lists that are. Only lists that hold recipes are counted. A measurement for a
   slowdown being looked into; it changes nothing.
 
+- **`/family status` says how long your saved Family data took to read when you logged in.** A
+  measurement taken before and after a change to how characters are stored; it changes nothing.
+
 - **`/family paycost`** says how many times this session wrote a character's record and which
   parts, and what marking each part of the current character's record takes on your client. A
   measurement for a change still being designed; it changes nothing.
