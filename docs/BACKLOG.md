@@ -4806,3 +4806,16 @@ carry no language at all* - every one of the 31 `frFR`, spread over twelve chara
 second opinion (`docs/REVIEW-DATA-BRIEF.md`), which also asks whether decoding is the cause of the
 crashes at all: 31 French lists mean most recipe names on that client are asked of the client
 during a first whole-family pass.
+
+**The review came back, and three readings answer that question** (`docs/REVIEW-DATA-HANDOFF.md`).
+Taken by Alberto 2026-09-13 on the same client once everything was decoded:
+`Family.Database:WarmPayloads()` printed `false`; `Family.Recipes:KnowersOf(nil, 0, "Lesser Magic
+Wand")` answered 3 in 1 ms, then 2 ms; `Family.Recipes:Search("ar")` answered 149 in 15 ms, then
+10 ms. Warm, the walk and the names cost milliseconds; decoding the 31 records costs over half a
+second in one frame. **So way 1 is the fix for the crash**, and it stays chosen. The plan is
+amended by the review's step 4: a per-session nonce in the write stamp, the migration folding the
+old string before replacing it and writing `entry.mark` without going through `SetPayload`,
+`WarmPayloads` visiting only records still stored as strings, and no per-part marks in this slice.
+Before it, the review's step 3: the harness covers the `plain` codec, which it has never run, and
+`/family status` prints Family's load time for a reading before and after. Step 4 waits for
+Alberto's *procedi con il 4*. Not measured: names not yet known at the first question of a session.
