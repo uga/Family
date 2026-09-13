@@ -1870,6 +1870,11 @@ fault would have bitten identically on Era. See L-031.
 and `GetNormalizedRealmName` always do, and the roster always qualifies a name - two entries
 here, both carrying a realm, on a realm with no partners at all.
 
+**And on Classic Era from Soulseeker, 2026-09-13** (`/family guild names` on Uga): `GetRealmName`
+and `GetNormalizedRealmName` both `Soulseeker`, and `GetAutoCompleteRealms() -> 1:{}(table)` - no
+connected realms. The same day a whisper from there to Malachia on Pyrewood Village, both Alliance,
+was refused, by Wide Family and by hand: the empty list and the refusal agree.
+
 **`GetAutoCompleteRealms` answers an empty table, not nothing.** The call is present and the
 list is empty, which is what a realm outside a connected group returns. That is a different case
 from the call being absent and `SameRealmGroup` has to narrow to an exact match for both - an

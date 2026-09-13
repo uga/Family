@@ -1236,7 +1236,9 @@ Recorded so the project can be measured against it.
    the client reports it (`GetAutoCompleteRealms`, DATASOURCES), is Pyrewood Village, Nethergarde
    Keep and Mirage Raceway; Soulseeker is not in it. So a whisper, and with it a Wide Family link,
    reaches **the character's own connected realm group** and not further, as far as anything here
-   has measured. The 1.0.0 pair was most likely two realms of one group. What Family should say
+   has measured. **And inside the group it does**: the same evening a new character on Nethergarde
+   Keep, added to Alberto's family, exchanged both ways with Malachia on Pyrewood Village at once.
+   The 1.0.0 pair was most likely two realms of one group. What Family should say
    when a link's characters are all on a realm it cannot reach is backlog 73.
 2. ~~**A generated talent table.**~~ Done: `addons/Family/TalentSpells.lua`, from `Talent`
    and `TalentTab` via `tools/talents.py`. A talent's position maps to the spell id of its

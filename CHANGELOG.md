@@ -159,6 +159,10 @@ picks itself up where it left off.
 - **Exchanges only send the characters that changed.** They were meant to from the start and were
   sending everybody every time. On a link of thirty characters that is most of every exchange.
 
+- **`/family decodecost`** says how long it takes this client to unpack every character's record,
+  the slowest three, and how many recipe lists are in another language. A measurement for a slowdown
+  being looked into; it changes nothing.
+
 - **`/family paycost`** says how many times this session wrote a character's record and which
   parts, and what marking each part of the current character's record takes on your client. A
   measurement for a change still being designed; it changes nothing.

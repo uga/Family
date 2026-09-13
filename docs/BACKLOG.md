@@ -4739,3 +4739,7 @@ they are - a family is still linked, and the next login on a reachable realm exc
 **Before building, one reading** to confirm the call answers what the group actually delivers to, on
 the client where it was found: on Uga, `/family guild names`, which prints `GetAutoCompleteRealms`.
 Soulseeker's group should not contain Pyrewood Village.
+
+**Read the same hour**: `GetAutoCompleteRealms() -> 1:{}(table)` on Uga - no connected realms at all,
+which agrees with the refusal. Not built yet: two *script ran too long* reports arrived in the same
+session and came first.

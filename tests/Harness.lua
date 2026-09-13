@@ -13868,6 +13868,26 @@ do
 				check("and changes nothing", heard:find("Nothing was changed", 1, true) ~= nil, heard)
 			end
 
+			-- **What decoding every record costs**, asked after two *script ran too long* reports
+			-- under whole-family questions. Decoded straight off the disk, so the session's cache
+			-- is neither used nor filled, and a second run measures the same thing as the first.
+			do
+				local from = #DEFAULT_CHAT_FRAME.messages
+				local ran = pcall(SlashCmdList["FAMILY"], "decodecost")
+				local heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+					#DEFAULT_CHAT_FRAME.messages):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+				local counted = tonumber(heard:match("Decoding (%d+) records"))
+				local members = 0
+				for _, entry in pairs(Family.Database:Members()) do
+					if entry.payload ~= nil then members = members + 1 end
+				end
+				check("/family decodecost times every stored record",
+					ran and counted == members and members > 0,
+					tostring(counted) .. " of " .. members .. ": " .. heard)
+				check("and says how many recipe lists are in another language",
+					heard:find("recipe lists were read", 1, true) ~= nil, heard)
+			end
+
 			-- **Bytes in the unit a reader can hold in their head.**
 			check("a size under a kilobyte is said in bytes",
 				Family.UI:Bytes(812):find("812", 1, true) ~= nil, Family.UI:Bytes(812))

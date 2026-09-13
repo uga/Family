@@ -1,0 +1,6 @@
+name: /family decodecost decodes the records but does not count them
+file: addons/Family_UI/Slash.lua
+--- old
+			timings[#timings + 1] = { key = key, ms = took,
+--- new
+			local _ = { key = key, ms = took,

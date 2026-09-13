@@ -1960,6 +1960,55 @@ end)
 -- many writes a session makes and of which parts, and what folding each part of the character being
 -- played costs. Each part is folded a few times and the mean is printed, because one fold of a
 -- small part is under the clock's resolution.
+-- **What a first whole-family question costs on this client, in its biggest part.**
+--
+-- Reported from play 2026-09-13, twice in one session and on a character just logged in: *script
+-- ran too long* under the recipe search and under a recipe tooltip's *who can make it*. Both walk
+-- every character's record, and a record is stored compressed; the first walk of a session decodes
+-- all of them in one go, which the login warm-up exists to spread out. Both errors stopped inside
+-- `Names`, which is where the client's patience ran out and not necessarily where the time went.
+-- So this decodes each record straight off the disk - not through the session's cache, which it
+-- would otherwise fill and so measure once - and says what that costs, and how many recipe lists
+-- are in a language other than this client's, since those are named recipe by recipe.
+add("decodecost", L["what decoding every character's record costs on this client"], function()
+	local clock = _G.debugprofilestop
+	local function now()
+		if clock then return (Family:TryCall(clock)) or 0 end
+		return ((Family:TryCall(GetTime)) or 0) * 1000
+	end
+
+	local timings, total, foreign, lists = {}, 0, 0, 0
+	for key, entry in pairs(Family.Database:Members()) do
+		if type(entry) == "table" and entry.payload ~= nil then
+			local at = now()
+			local data = Family.Codec:Decode(entry.codec, entry.payload)
+			local took = now() - at
+			total = total + took
+			timings[#timings + 1] = { key = key, ms = took,
+				size = type(entry.payload) == "string" and #entry.payload or 0 }
+
+			for _, record in pairs(type(data) == "table" and data.professions or {}) do
+				if type(record) == "table" then
+					lists = lists + 1
+					if record.locale ~= Family.locale then foreign = foreign + 1 end
+				end
+			end
+		end
+	end
+
+	table.sort(timings, function(a, b) return a.ms > b.ms end)
+
+	Family:Print(L["Decoding %d records took %.0f ms."], #timings, total)
+	for index = 1, math.min(3, #timings) do
+		local one = timings[index]
+		Family:Print(L["  |cffffd700%s|r: %.1f ms, %s stored."], one.key, one.ms,
+			UI:Bytes(one.size))
+	end
+	Family:Print(L["  %d of %d recipe lists were read in a language other than this client's."],
+		foreign, lists)
+	Family:Print(L["|cff888888Nothing was changed.|r"])
+end)
+
 add("paycost", L["what marking each part of this character's record would cost"], function()
 	local key = Family:CurrentMember()
 	local payload = key and Family.Database:Payload(key)
