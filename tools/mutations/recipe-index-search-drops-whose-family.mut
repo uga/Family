@@ -1,0 +1,17 @@
+name: the indexed recipe search leaves off whose family a sibling belongs to
+file: addons/Family/Recipes.lua
+--- old
+							faction = meta.faction,
+							familyName = who.familyName,
+							rank = (meta.skills or {})[profession]
+								and meta.skills[profession].rank or nil,
+							cooldown = cooldown,
+						}
+						row.listed[key] = member
+--- new
+							faction = meta.faction,
+							rank = (meta.skills or {})[profession]
+								and meta.skills[profession].rank or nil,
+							cooldown = cooldown,
+						}
+						row.listed[key] = member

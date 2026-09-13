@@ -1,0 +1,10 @@
+name: the recipe index rebuilds our members' parts on every question
+file: addons/Family/RecipeIndex.lua
+--- old
+	local part = parts[key]
+	if not part then
+		part = build(meta, Family.Database:Payload(key))
+--- new
+	local part = nil
+	if not part then
+		part = build(meta, Family.Database:Payload(key))

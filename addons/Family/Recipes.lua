@@ -427,7 +427,7 @@ local function everybody()
 	return searched
 end
 
-function Recipes:KnowersOf(spellID, itemID, itemName)
+function Recipes:ScanKnowersOf(spellID, itemID, itemName)
 	-- Where the caller has only the item, the client's tables often know which spell it
 	-- teaches - and an id settles it where a name cannot.
 	spellID = spellID or self:TaughtBy(itemID)
@@ -702,9 +702,10 @@ end
 
 -- Every recipe anybody in the family knows whose name matches, and who knows it.
 --
--- This reads payloads, unlike most things - there is no index of recipes and building one
--- would be a copy of what is already stored. It is only ever done in answer to somebody
--- typing, so the cost lands where it was asked for.
+-- This reads payloads, unlike most things. It said there was no index of recipes and that
+-- building one would be a copy of what is stored; since 2026-09-13 there is one
+-- (`RecipeIndex.lua`), because this walk named every recipe again on every keystroke. This is now
+-- the walk the indexed `Recipes:Search` at the end of the file is held to, and nothing else reads it.
 --
 -- **Siblings too**, since 2026-09-05. This walked `Database:Members` alone, which has never
 -- heard of a borrowed key, so a linked family's characters could not appear in the search
@@ -715,7 +716,7 @@ end
 -- Siblings and not everyone a link shares, which is the same population every other whole-family
 -- list uses: a sibling is the decision that somebody belongs in my lists beside my own (§6), and
 -- this is a list. `Family/Index.lua` already reaches for them the same way from this layer.
-function Recipes:Search(needle, limit)
+function Recipes:ScanSearch(needle, limit)
 	if type(needle) ~= "string" or needle == "" then return {} end
 
 	needle = needle:lower()
@@ -888,7 +889,7 @@ end
 -- `required` is the skill the recipe needs, read off the item's own tooltip, and may be nil -
 -- in which case nobody is told they cannot learn it yet, because nothing is known about what
 -- it would take. Guessing there would be worse than the gap.
-function Recipes:Crafters(profession, itemName, required, minLevel, itemID)
+function Recipes:ScanCrafters(profession, itemName, required, minLevel, itemID)
 	local found = {}
 
 	-- Which branch this recipe belongs to, if any. Nil for the great majority of recipes,
@@ -1236,4 +1237,283 @@ function Recipes:CostOfSpell(spell, depth, branch, budget, itemID)
 	if out.missing > 0 then out.total = nil end
 
 	return out
+end
+
+--------------------------------------------------------------------------------------------
+-- The three readers, from the recipe index
+--
+-- **The walks above are kept, renamed `Scan...`, and read by nothing in the addon.** They are
+-- what these answers are held to: the harness asks both, over every needle, spell, item and
+-- profession its fixtures name, and requires the same answer row for row (data-path review, step
+-- 5; Alberto: *le risposte devono essere le stesse di oggi, riga per riga*). So each reader below
+-- is its walk with two things taken out - the record read and the recipe named - and nothing else
+-- changed, down to the order members, lists and recipes are visited in.
+--------------------------------------------------------------------------------------------
+
+-- The index builds with this, so which lists count is decided once per member rather than on
+-- every question.
+function Recipes:StillHeld(meta, profession)
+	return stillHeld(meta, profession)
+end
+
+local function cooldownOf(entry)
+	if not entry.hasCooldown then return nil end
+	local ready = not entry.readyAt or entry.readyAt <= time()
+	return { ready = ready, readyAt = (not ready) and entry.readyAt or nil }
+end
+
+function Recipes:KnowersOf(spellID, itemID, itemName)
+	spellID = spellID or self:TaughtBy(itemID)
+
+	if not ((spellID and spellID ~= 0) or (itemID and itemID ~= 0) or itemName) then
+		return {}
+	end
+
+	local byName = itemName and not (spellID and spellID ~= 0)
+	local found, best = {}, {}
+
+	local function better(new_, old_)
+		if not old_ then return true end
+		local newTimer = new_.cooldown and 1 or 0
+		local oldTimer = old_.cooldown and 1 or 0
+		if newTimer ~= oldTimer then return newTimer > oldTimer end
+		return (new_.rank or 0) > (old_.rank or 0)
+	end
+
+	for _, who in ipairs(Family.RecipeIndex:Everybody()) do
+		local key, meta = who.key, who.meta
+
+		for _, list in ipairs(who.part.lists) do
+			local profession = list.profession
+			for _, recipe in ipairs(list.held and list.recipes or {}) do
+				local matched = (spellID and spellID ~= 0 and recipe.spellID == spellID)
+					or (itemID and itemID ~= 0 and recipe.itemID == itemID)
+
+				if not matched and byName and not recipe.itemID then
+					matched = teaches(itemName, recipe.name)
+				end
+
+				if matched then
+					local candidate = {
+						key = key,
+						name = meta.name or key,
+						classFile = meta.classFile,
+						realm = meta.realm,
+						faction = meta.faction,
+						rank = (meta.skills or {})[profession]
+							and meta.skills[profession].rank or nil,
+						cooldown = cooldownOf(recipe),
+						familyName = who.familyName,
+					}
+
+					if better(candidate, best[key]) then best[key] = candidate end
+					break
+				end
+			end
+		end
+	end
+
+	for _, who in pairs(best) do found[#found + 1] = who end
+
+	table.sort(found, function(a, b)
+		local aWaiting = (a.cooldown and not a.cooldown.ready) and 1 or 0
+		local bWaiting = (b.cooldown and not b.cooldown.ready) and 1 or 0
+		if aWaiting ~= bWaiting then return aWaiting < bWaiting end
+
+		if aWaiting == 1 and (a.cooldown.readyAt or 0) ~= (b.cooldown.readyAt or 0) then
+			return (a.cooldown.readyAt or 0) < (b.cooldown.readyAt or 0)
+		end
+
+		if (a.rank or 0) ~= (b.rank or 0) then return (a.rank or 0) > (b.rank or 0) end
+		return tostring(a.name) < tostring(b.name)
+	end)
+
+	return found
+end
+
+function Recipes:Search(needle, limit)
+	if type(needle) ~= "string" or needle == "" then return {} end
+
+	needle = needle:lower()
+	limit = limit or 200
+
+	local byName, order = {}, {}
+
+	for _, who in ipairs(Family.RecipeIndex:Everybody()) do
+		local key, meta = who.key, who.meta
+
+		for _, list in ipairs(who.part.lists) do
+			local profession = list.profession
+			for _, recipe in ipairs(list.held and list.recipes or {}) do
+				local name, was = recipe.name, recipe.was
+				if name and (name:lower():find(needle, 1, true)
+					or (was and was:lower():find(needle, 1, true))) then
+					local id = recipe.spellID and ("spell:" .. recipe.spellID)
+						or recipe.itemID and ("item:" .. recipe.itemID)
+						or (profession .. "\0" .. name)
+
+					if byName[id] and type(byName[id].profession) ~= "number"
+						and type(profession) == "number" then
+						byName[id].profession = profession
+					end
+
+					if not byName[id] then
+						byName[id] = {
+							name = name,
+							id = recipe.spellID,
+							profession = profession,
+							icon = recipe.icon,
+							spellID = recipe.spellID,
+							itemID = recipe.itemID,
+							members = {},
+							listed = {},
+						}
+						order[#order + 1] = byName[id]
+					end
+
+					local cooldown = cooldownOf(recipe)
+					local row = byName[id]
+					local already = row.listed[key]
+
+					if already then
+						if cooldown and (not already.cooldown
+							or (already.cooldown.ready and not cooldown.ready)) then
+							already.cooldown = cooldown
+						end
+					else
+						local member = {
+							key = key,
+							name = meta.name or key,
+							classFile = meta.classFile,
+							realm = meta.realm,
+							faction = meta.faction,
+							familyName = who.familyName,
+							rank = (meta.skills or {})[profession]
+								and meta.skills[profession].rank or nil,
+							cooldown = cooldown,
+						}
+						row.listed[key] = member
+						table.insert(row.members, member)
+					end
+				end
+			end
+		end
+	end
+
+	guildCrafters(byName, order, needle, limit)
+
+	for _, found in ipairs(order) do
+		table.sort(found.members, function(a, b)
+			local aWaiting = (a.cooldown and not a.cooldown.ready) and 1 or 0
+			local bWaiting = (b.cooldown and not b.cooldown.ready) and 1 or 0
+			if aWaiting ~= bWaiting then return aWaiting < bWaiting end
+
+			if aWaiting == 1
+				and (a.cooldown.readyAt or 0) ~= (b.cooldown.readyAt or 0) then
+				return (a.cooldown.readyAt or 0) < (b.cooldown.readyAt or 0)
+			end
+
+			return a.name < b.name
+		end)
+	end
+
+	table.sort(order, function(a, b)
+		if a.name ~= b.name then return a.name < b.name end
+		return tostring(a.profession) < tostring(b.profession)
+	end)
+
+	while #order > limit do table.remove(order) end
+	return order
+end
+
+function Recipes:Crafters(profession, itemName, required, minLevel, itemID)
+	local found = {}
+
+	local needs = itemID and (Family.RecipeNeeds or {})[itemID] or nil
+	local taught = self:TaughtBy(itemID)
+	local made = self:Makes(itemID)
+	local wanted = Family:SkillLineFor(profession) or profession
+
+	for _, member in ipairs(Family.RecipeIndex:Everybody()) do
+		local key, meta = member.key, member.meta
+		local skill = (meta.skills or {})[wanted]
+
+		if skill then
+			local list = member.part.byProfession[wanted]
+			local recipes = list and list.recipes
+
+			local knows = false
+			if recipes then
+				for _, recipe in ipairs(recipes) do
+					if taught and recipe.spellID == taught then
+						knows = true
+						break
+					end
+
+					if made and recipe.itemID == made then
+						knows = true
+						break
+					end
+
+					if teaches(itemName, recipe.name) then
+						knows = true
+						break
+					end
+				end
+			end
+
+			local onBranch = true
+			if needs then
+				if not meta.specsSeen then
+					onBranch = nil
+				else
+					onBranch = false
+					for _, spell in ipairs(meta.specs or {}) do
+						if spell == needs then onBranch = true break end
+					end
+				end
+			end
+
+			local state
+			if knows then
+				state = "knows"
+			elseif not recipes then
+				state = "unknown"
+			elseif onBranch == nil then
+				state = "unknown"
+			elseif onBranch == false then
+				state = "branch"
+			elseif required and (skill.rank or 0) < required then
+				state = "later"
+			elseif minLevel and minLevel > 0 and (meta.level or 0) < minLevel then
+				state = "level"
+			else
+				state = "can"
+			end
+
+			found[#found + 1] = {
+				key = key,
+				name = meta.name or key,
+				classFile = meta.classFile,
+				realm = meta.realm,
+				faction = meta.faction,
+				rank = skill.rank,
+				maxRank = skill.maxRank,
+				level = meta.level,
+				state = state,
+				needs = needs,
+				familyName = member.familyName,
+			}
+		end
+	end
+
+	local ORDER = { knows = 1, can = 2, later = 3, level = 4, unknown = 5, branch = 6 }
+
+	table.sort(found, function(a, b)
+		if a.state ~= b.state then return (ORDER[a.state] or 99) < (ORDER[b.state] or 99) end
+		if (a.rank or 0) ~= (b.rank or 0) then return (a.rank or 0) > (b.rank or 0) end
+		return a.name < b.name
+	end)
+
+	return found
 end

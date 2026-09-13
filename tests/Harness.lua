@@ -1932,6 +1932,91 @@ local function check(label, condition, detail)
 	end
 end
 
+-- **The three recipe readers, answered by the index and by the walk it replaced, compared row by
+-- row.** Written before the index took over `Search`, `KnowersOf` and `Crafters`, and kept: the
+-- walks stay in `Recipes.lua` as `ScanSearch`, `ScanKnowersOf` and `ScanCrafters` for exactly this.
+-- Asked on whatever family the fixtures hold at the moment it is called, with every needle, spell,
+-- item and profession that family's records name, so a difference cannot hide in a question
+-- nobody thought to ask.
+function RUN.dumpAnswer(value, seen)
+	local kind = type(value)
+	if kind ~= "table" then return kind .. ":" .. tostring(value) end
+	seen = seen or {}
+	if seen[value] then return "<again>" end
+	seen[value] = true
+	local keys = {}
+	for key in pairs(value) do keys[#keys + 1] = key end
+	table.sort(keys, function(a, b)
+		if type(a) ~= type(b) then return type(a) < type(b) end
+		return tostring(a) < tostring(b)
+	end)
+	local out = {}
+	for _, key in ipairs(keys) do
+		out[#out + 1] = tostring(key) .. "=" .. RUN.dumpAnswer(value[key], seen)
+	end
+	seen[value] = nil
+	return "{" .. table.concat(out, ",") .. "}"
+end
+
+function RUN.compareRecipeReaders(label)
+	local Recipes = Family.Recipes
+	local families = {}
+	for key, entry in pairs(Family.Database:Members()) do
+		families[#families + 1] = { meta = entry.meta or {}, payload = Family.Database:Payload(key) }
+	end
+	for _, sibling in ipairs(Family.Wide and Family.Wide:Siblings() or {}) do
+		families[#families + 1] = { meta = sibling.meta or {}, payload = sibling.payload }
+	end
+
+	local spells, items, words, professions = {}, {}, {}, {}
+	for _, one in ipairs(families) do
+		for profession, record in pairs((one.payload or {}).professions or {}) do
+			professions[tostring(Family:ProfessionName(profession) or profession)] = true
+			for _, recipe in ipairs(type(record) == "table" and record.recipes or {}) do
+				if recipe.spellID then spells[recipe.spellID] = true end
+				if recipe.itemID then items[recipe.itemID] = true end
+				if type(recipe.name) == "string" then
+					words[recipe.name] = true
+					for pair in recipe.name:lower():gmatch("%a%a") do words[pair] = true end
+				end
+			end
+		end
+	end
+
+	local asked, differ = 0, {}
+	local function same(what, new, old)
+		asked = asked + 1
+		local a, b = RUN.dumpAnswer(new), RUN.dumpAnswer(old)
+		if a ~= b and #differ < 3 then differ[#differ + 1] = what .. "\n    new " .. a .. "\n    old " .. b end
+	end
+
+	for word in pairs(words) do
+		same("Search " .. word, Recipes:Search(word), Recipes:ScanSearch(word))
+	end
+	for spell in pairs(spells) do
+		same("KnowersOf spell " .. spell, Recipes:KnowersOf(spell), Recipes:ScanKnowersOf(spell))
+	end
+	for item in pairs(items) do
+		local name = ITEM_NAMES[item]
+		same("KnowersOf item " .. item, Recipes:KnowersOf(nil, item, name),
+			Recipes:ScanKnowersOf(nil, item, name))
+		for profession in pairs(professions) do
+			same("Crafters " .. profession .. " " .. item,
+				Recipes:Crafters(profession, name, 50, 10, item),
+				Recipes:ScanCrafters(profession, name, 50, 10, item))
+		end
+	end
+	for word in pairs(words) do
+		if #word > 2 then
+			same("KnowersOf name " .. word, Recipes:KnowersOf(nil, 0, word),
+				Recipes:ScanKnowersOf(nil, 0, word))
+		end
+	end
+
+	check("the recipe index answers " .. label .. " exactly as the walk it replaced, over "
+		.. asked .. " questions", asked > 20 and #differ == 0, table.concat(differ, "\n  "))
+end
+
 -- Asked by the check below that the stop at the first failure really stops: a failure here, and
 -- a line after it that only a run carrying on would print.
 if arg[3] == "fail-first" then
@@ -2019,7 +2104,7 @@ for _, file in ipairs {
 	"QuestSorts.lua",
 	"Capabilities.lua", "Codec.lua",
 	"Comm.lua", "Database.lua", "Names.lua", "Mounts.lua", "Extras.lua", "Index.lua",
-	"RecipeReagents.lua", "Recipes.lua", "Cooldowns.lua",
+	"RecipeReagents.lua", "Recipes.lua", "RecipeIndex.lua", "Cooldowns.lua",
 	"Scanners/Bags.lua", "Scanners/Talents.lua", "Scanners/Professions.lua",
 	"Scanners/Bank.lua", "Scanners/Identity.lua",
 	"Scanners/Auctions.lua", "Scanners/Mail.lua", "Scanners/Character.lua",
@@ -10637,6 +10722,7 @@ if professionsEveryone then
 		-- Blacksmithing, Enchanting, Tailoring - the words. By the skill line ids behind
 		-- them it would be 164, 197, 333, which puts the tailor in the middle: the one
 		-- fixture arrangement that tells the two apart.
+		RUN.compareRecipeReaders("the family behind the whole-family search")
 		check("and by profession, which is the word rather than the key behind it",
 			page() == "Runed Copper Breastplate | Ench. de plastron (Vie majeure) | "
 				.. "Stitched Cloak", page())
@@ -22713,6 +22799,7 @@ print("the recipe names, asked for before anybody clicks")
 
 			-- And a shared list already in the reader's own language is skipped, the same
 			-- way ours is: the rule is about the record, not about whose it is.
+			RUN.compareRecipeReaders("a family with a linked family's lists in it")
 			link.members["Etranger-FireMaw"].payload.professions[197].locale = Family.locale
 			Family.UI:ForgetRecipeWarmUp()
 			for index = #asked, 1, -1 do asked[index] = nil end
@@ -36240,9 +36327,15 @@ print("records are unpacked a little at a time after logging in, not all at the 
 	check("a warm-up step decodes one record, not every record at once",
 		afterOne <= 1, tostring(afterOne))
 
-	-- Driven by logging in, a step at a time, until none is left.
+	-- Driven by logging in, a step at a time, until none is left. The recipe index's own warm-up
+	-- is held off meanwhile: it reads every record after login too, so it would rewrite these
+	-- itself and this would pass with the database's warm-up gone (found by that mutation
+	-- surviving once the index existed).
+	local realRecipeWarm = Family.RecipeIndex.WarmStep
+	Family.RecipeIndex.WarmStep = function() return false end
 	fire("PLAYER_ENTERING_WORLD")
 	for _ = 1, 20 do advance(0.5) end
+	Family.RecipeIndex.WarmStep = realRecipeWarm
 	local each = {}
 	for _, key in ipairs(keys) do each[#each + 1] = times(key) end
 	check("after logging in every stored record is decoded once, a little at a time",
@@ -37238,15 +37331,22 @@ print("a tooltip and a one-member page ask about no more than they show")
 		} } } })
 	Family.Index:Invalidate()
 
+	-- Since the recipe index (step 5) names each recipe once, when a member's part is built, the
+	-- part is built first: what is held to nought here is the hover itself.
+	ITEM_NAMES[11287] = ITEM_NAMES[11287] or "Lesser Magic Wand"
+	Family.RecipeIndex:Everybody()
 	local spells = 0
-	local realSpell = Family.Names.Spell
+	local realSpell, realRecipe = Family.Names.Spell, Family.Names.Recipe
 	Family.Names.Spell = function(...)
 		spells = spells + 1
 		return realSpell(...)
 	end
-	ITEM_NAMES[11287] = ITEM_NAMES[11287] or "Lesser Magic Wand"
+	Family.Names.Recipe = function(...)
+		spells = spells + 1
+		return realRecipe(...)
+	end
 	tooltipFor(11287)
-	Family.Names.Spell = realSpell
+	Family.Names.Spell, Family.Names.Recipe = realSpell, realRecipe
 
 	local named = false
 	for _, line in ipairs(GameTooltip.__lines) do
@@ -37256,6 +37356,15 @@ print("a tooltip and a one-member page ask about no more than they show")
 		Family.Recipes:MadeBy(11287) == 14293 and named, tostring(Family.Recipes:MadeBy(11287)))
 	check("without a spell name asked of the client for any recipe on the way",
 		spells == 0, tostring(spells) .. " spell names asked")
+
+	-- **What that gives up**, said as a check so it is a choice and not an accident: once a table
+	-- has named the spell, a recipe recorded with neither id is not matched by its name.
+	Family.Database:SetPayload(maker, { professions = { [333] = { locale = Family.locale,
+		recipes = { { name = "Lesser Magic Wand" } } } } })
+	local byWordOnly = Family.Recipes:KnowersOf(Family.Recipes:MadeBy(11287), 11287,
+		"Lesser Magic Wand")
+	check("once a table names the spell, a recipe carrying neither id is not matched by name",
+		#byWordOnly == 0, tostring(#byWordOnly))
 
 	-- **Point 2: a page about one member reads that member.** `CanMake` asks the index once a
 	-- recipe row, and the index used to build itself whole to answer - every member's record read
@@ -37301,6 +37410,116 @@ print("a tooltip and a one-member page ask about no more than they show")
 	Family.Database:Forget(maker)
 	Family.Database:Forget(page)
 	Family.Index:Invalidate()
+end)()
+
+print()
+print("the recipe index")
+
+;(function()
+	local function listed(name, spell, locale)
+		return { professions = { [164] = { locale = locale or "frFR", recipesSeen = time(),
+			recipes = { { name = name, spellID = spell } } } } }
+	end
+	local skills = { [164] = { name = "Blacksmithing", rank = 150, maxRank = 300 } }
+	local function member(key, name, spell)
+		Family.Database:SetMeta(key, { name = key:match("^(%a+)"), realm = "FireMaw",
+			faction = "Alliance", classFile = "WARRIOR", level = 60, skills = skills })
+		Family.Database:SetPayload(key, listed(name, spell))
+	end
+	member("Indexone-FireMaw", "Plastron runique", 2667)
+	member("Indextwo-FireMaw", "Barre d'argent", 3339)
+
+	-- **A write changes only the writer's part.**
+	Family.RecipeIndex:Everybody()
+	check("after a question every member has a part in the recipe index",
+		Family.RecipeIndex:Built("Indexone-FireMaw") and Family.RecipeIndex:Built("Indextwo-FireMaw"))
+	Family.Database:SetPayload("Indexone-FireMaw", listed("Plastron runique", 2667))
+	check("a member's record written drops that member's part and no other",
+		not Family.RecipeIndex:Built("Indexone-FireMaw")
+			and Family.RecipeIndex:Built("Indextwo-FireMaw"))
+
+	-- **The tooltip reads no record once the index is built.**
+	Family.RecipeIndex:Everybody()
+	local reads = 0
+	local realPayload = Family.Database.Payload
+	Family.Database.Payload = function(...)
+		reads = reads + 1
+		return realPayload(...)
+	end
+	local knowers = Family.Recipes:KnowersOf(2667)
+	local crafters = Family.Recipes:Crafters("Blacksmithing", "Plans: Silver Rod", 100, 10, 3608)
+	Family.Database.Payload = realPayload
+	local knew = false
+	for _, who in ipairs(knowers) do if who.key == "Indexone-FireMaw" then knew = true end end
+	check("a tooltip's questions read no record once the recipe index is built",
+		reads == 0 and knew and #crafters > 0,
+		reads .. " records read, " .. #knowers .. " knowers, " .. #crafters .. " crafters")
+
+	-- **A two-letter search names no recipe.**
+	Family.Recipes:Search("ar")
+	local naming = 0
+	local realRecipe = Family.Names.Recipe
+	Family.Names.Recipe = function(...)
+		naming = naming + 1
+		return realRecipe(...)
+	end
+	local rows = Family.Recipes:Search("ar")
+	Family.Names.Recipe = realRecipe
+	check("a two-letter search over a built index names no recipe", naming == 0 and #rows > 0,
+		naming .. " recipes named, " .. #rows .. " rows")
+
+	-- **A member forgotten is gone from every answer**, and one made again under the same key
+	-- answers with what they now hold, not with what the forgotten one knew.
+	Family.Database:Forget("Indextwo-FireMaw")
+	Family.Database:SetMeta("Indextwo-FireMaw", { name = "Indextwo", realm = "FireMaw",
+		faction = "Alliance", classFile = "WARRIOR", level = 60, skills = skills })
+	local stillThere = false
+	for _, who in ipairs(Family.Recipes:KnowersOf(3339)) do
+		if who.key == "Indextwo-FireMaw" then stillThere = true end
+	end
+	check("a member forgotten is gone from the recipe answers, key and all", not stillThere)
+
+	-- **A sibling that arrives from the wire is answered about.** Stored the way `onData` stores
+	-- an arriving member, and announced the way it announces one.
+	local wasEnabled = Family.Wide:Enabled()
+	Family.Wide:SetEnabled(true)
+	local wide = Family.Wide:Store()
+	wide.links["fam-recipes"] = { name = "Ricettari", grants = {}, siblings = {}, members = {
+		["Cugino-Auberdine"] = { meta = { name = "Cugino", realm = "Auberdine", classFile = "MAGE",
+			level = 60, skills = skills }, payload = listed("Tige en argent", 3339), seen = time() },
+	} }
+	Family.Wide:SetSibling("fam-recipes", "Cugino-Auberdine", true)
+	local function siblingKnows(spell)
+		for _, who in ipairs(Family.Recipes:KnowersOf(spell)) do
+			if who.familyName == "Ricettari" then return true end
+		end
+		return false
+	end
+	check("a sibling's recipes are answered about", siblingKnows(3339))
+	wide.links["fam-recipes"].members["Cugino-Auberdine"] = { meta = { name = "Cugino",
+		realm = "Auberdine", classFile = "MAGE", level = 60, skills = skills },
+		payload = listed("Plastron runique", 2667), seen = time() }
+	Family.Database:Changed("wide")
+	check("and what arrives for them next is what is answered",
+		siblingKnows(2667) and not siblingKnows(3339))
+	RUN.compareRecipeReaders("a family with a sibling in it")
+	wide.links["fam-recipes"] = nil
+	Family.Database:Changed("wide")
+	Family.Wide:SetEnabled(wasEnabled)
+
+	-- **Built a member a step after logging in**, without anybody asking.
+	Family.RecipeIndex:Invalidate()
+	fire("PLAYER_ENTERING_WORLD")
+	for _ = 1, 80 do advance(0.5) end
+	local unbuilt = {}
+	for key in pairs(Family.Database:Members()) do
+		if not Family.RecipeIndex:Built(key) then unbuilt[#unbuilt + 1] = key end
+	end
+	check("after logging in every member's part is built a step at a time, before any question",
+		#unbuilt == 0, table.concat(unbuilt, ", "))
+
+	Family.Database:Forget("Indexone-FireMaw")
+	Family.Database:Forget("Indextwo-FireMaw")
 end)()
 
 print()

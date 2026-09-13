@@ -1,0 +1,6 @@
+name: the recipe search names each recipe again when it reads the index
+file: addons/Family/Recipes.lua
+--- old
+				local name, was = recipe.name, recipe.was
+--- new
+				local name, was = Family.Names:Recipe(recipe) or recipe.name, recipe.was

@@ -67,6 +67,7 @@ Extras.lua
 Index.lua
 RecipeReagents.lua
 Recipes.lua
+RecipeIndex.lua
 Cooldowns.lua
 Scanners\Bags.lua
 Scanners\Talents.lua

@@ -73,6 +73,11 @@ strings, and reading an old record needs them once.
 
 **An index, not a scan.** Search builds an inverted index once and invalidates it per
 character when that character changes. Query cost stops growing with the number of alts.
+Two of them, both kept in memory and never saved: **possessions** (`Index.lua`: who holds which
+item) and, since 2026-09-13, **recipes** (`RecipeIndex.lua`: who knows which recipe, each name
+resolved for the reader once, built a member a step after login). The recipe search, a
+tooltip's *who can make it* and a pattern's crafters read the second instead of walking every
+record and naming every recipe on each keystroke and hover.
 
 **Sharing keyed by name, and versioned.** The account-sharing payload identifies each table
 by name and carries a schema version, so two players on different versions degrade to

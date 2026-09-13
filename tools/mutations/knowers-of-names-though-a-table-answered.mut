@@ -2,5 +2,7 @@ name: KnowersOf matches by name even where a table named the spell
 file: addons/Family/Recipes.lua
 --- old
 	local byName = itemName and not (spellID and spellID ~= 0)
+	local found, best = {}, {}
 --- new
 	local byName = itemName
+	local found, best = {}, {}

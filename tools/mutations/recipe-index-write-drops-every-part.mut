@@ -1,0 +1,8 @@
+name: a member written drops every member's part of the recipe index
+file: addons/Family/RecipeIndex.lua
+--- old
+	if key then
+		parts[key] = nil
+--- new
+	if key then
+		wipe(parts)

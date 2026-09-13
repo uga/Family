@@ -47,6 +47,9 @@ picks itself up where it left off.
 - **Pointing at a wand, rod or oil no longer looks up every recipe name in the family**, and
   opening one character's professions reads that character alone instead of everybody.
 
+- **Recipe search and *who can make it* answer straight away**, from a list Family keeps ready
+  after you log in instead of reading every character again each time.
+
 ### Fixed on Mists of Pandaria
 
 - **What a character has up for sale was always empty.** Family was asking that version of the game

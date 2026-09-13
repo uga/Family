@@ -1,0 +1,6 @@
+name: the recipe index keeps a member's part through a change or a Forget
+file: addons/Family/RecipeIndex.lua
+--- old
+	elseif key ~= nil then
+--- new
+	elseif false then

@@ -1,0 +1,6 @@
+name: the recipe index answers about our own members and leaves siblings out
+file: addons/Family/RecipeIndex.lua
+--- old
+	for _, sibling in ipairs(Family.Wide and Family.Wide:Siblings() or {}) do
+--- new
+	for _, sibling in ipairs({}) do

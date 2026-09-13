@@ -1,0 +1,5 @@
+name: logging in builds nothing of the recipe index ahead of the first question
+file: addons/Family/RecipeIndex.lua
+--- old
+		Family:After(5, "recipeindex.warm", step)
+--- new
