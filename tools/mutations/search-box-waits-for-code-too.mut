@@ -1,0 +1,6 @@
+name: the recipe search box waits even when the text was set from code
+file: addons/Family_UI/Professions.lua
+--- old
+		if userInput then
+--- new
+		if true then

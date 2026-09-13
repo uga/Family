@@ -10079,10 +10079,16 @@ if professionsEveryone then
 				and sort.buttons.skill:IsShown() == false
 				and sort.buttons.itemlevel:IsShown() == false)
 
+		-- **The words the rows draw**, which is `name` on each and what the orders sort on since
+		-- 2026-09-13. This read `Names:Recipe` of each row, which is what the name order used to
+		-- ask on every comparison; it gave *Wizard Oil* for a row that draws *Huile de sorcier*,
+		-- because this fixture's lists are labelled with the reader's language and carry some
+		-- French words - a shape a real client cannot record, where the drawn word and the sort
+		-- key now agree.
 		local function page()
 			local out = {}
 			for _, recipe in ipairs(Family.UI.__professionsFound or {}) do
-				out[#out + 1] = tostring(Family.Names:Recipe(recipe) or recipe.name)
+				out[#out + 1] = tostring(recipe.name)
 			end
 			return table.concat(out, " | ")
 		end
@@ -10099,7 +10105,60 @@ if professionsEveryone then
 		choose("recipename")
 		searchFor("er")
 		check("by name, which is the order the search itself answers in",
-			page() == "Runed Copper Breastplate | Silver Rod | Wizard Oil", page())
+			page() == "Huile de sorcier | Runed Copper Breastplate | Silver Rod", page())
+
+		-- **Putting the page in order names nothing.** Every row already carries the name the
+		-- search resolved; the order used to ask `Names:Recipe` again on each comparison, which
+		-- on Era is an item name asked of the client and a store read on a miss, N log N a
+		-- keystroke. Counted from the moment the search has answered to the end of the redraw:
+		-- the rows are drawn from `name` too, so anything named in that span is the sort's.
+		do
+			local realSearch, realRecipe = Family.Recipes.Search, Family.Names.Recipe
+			local searched, named = false, 0
+			Family.Recipes.Search = function(...)
+				local answer = realSearch(...)
+				searched = true
+				return answer
+			end
+			Family.Names.Recipe = function(...)
+				if searched then named = named + 1 end
+				return realRecipe(...)
+			end
+			for _, id in ipairs { "recipename", "recipeprofession", "crafters" } do
+				searched = false
+				choose(id)
+			end
+			Family.Recipes.Search, Family.Names.Recipe = realSearch, realRecipe
+			choose("recipename")
+			check("putting the family's page in any of its orders names no recipe again",
+				named == 0, tostring(named) .. " names asked")
+		end
+
+		-- **A search a moment after the last key, not one a key.** Three keys typed inside the
+		-- wait run one search, after it; text set from code still redraws at once, which is
+		-- what every other check in this file does.
+		do
+			local box = _G.FamilyProfessionsSearch
+			local realSearch, searches = Family.Recipes.Search, 0
+			Family.Recipes.Search = function(...)
+				searches = searches + 1
+				return realSearch(...)
+			end
+			local settle = Family.UI.SEARCH_SETTLE or 0
+			for _, text in ipairs { "S", "Si", "Sil" } do
+				box:SetText(text, true)
+				box.__scripts.OnTextChanged(box, true)
+				advance(settle / 4)
+			end
+			local whileTyping = searches
+			advance(settle)
+			local afterwards = searches
+			Family.Recipes.Search = realSearch
+			check("three keys typed inside the wait search nothing while the keys are coming",
+				settle > 0 and whileTyping == 0, tostring(whileTyping) .. " with a wait of " .. settle)
+			check("and search once when they stop", afterwards == 1, tostring(afterwards))
+			searchFor("er")
+		end
 
 		-- **No materials strip on this list**, which is two faults reported together off one
 		-- screenshot: *accorci la prima colonna e non gestisce l'overflow dell'ultima.* The
@@ -10541,14 +10600,14 @@ if professionsEveryone then
 
 		choose("crafters")
 		check("by how many of the family can make it, most first",
-			page() == "Silver Rod | Runed Copper Breastplate | Wizard Oil", page())
+			page() == "Silver Rod | Runed Copper Breastplate | Huile de sorcier", page())
 
 		-- The pair the professions disagree with the names about, which is the only place
 		-- the profession order can be read at all.
 		searchFor("st")
 		choose("recipename")
 		check("by name again, on three the professions put another way",
-			page() == "Enchant Chest - Major Health | Runed Copper Breastplate | "
+			page() == "Ench. de plastron (Vie majeure) | Runed Copper Breastplate | "
 				.. "Stitched Cloak", page())
 
 		choose("recipeprofession")
@@ -10556,7 +10615,7 @@ if professionsEveryone then
 		-- them it would be 164, 197, 333, which puts the tailor in the middle: the one
 		-- fixture arrangement that tells the two apart.
 		check("and by profession, which is the word rather than the key behind it",
-			page() == "Runed Copper Breastplate | Enchant Chest - Major Health | "
+			page() == "Runed Copper Breastplate | Ench. de plastron (Vie majeure) | "
 				.. "Stitched Cloak", page())
 
 		-- And the bar holds whichever caption is on it, asked of all three for the reason
@@ -24260,6 +24319,34 @@ print("what each client calls a recipe")
 	-- other - and an item name is in the reader's language where the recorded word is in
 	-- whoever scanned it.
 	ITEM_NAMES[20749] = "Wizard Oil"
+	-- Said by the client, as it is when an item loads: a name that turns up with no event is not
+	-- one the game delivers, and `Names:CachedItem` remembers the miss until the event comes.
+	fire("GET_ITEM_INFO_RECEIVED", 20749, true)
+
+	-- **An item nobody can name is asked of the client once a session, not once a call.** Until the
+	-- client says it has arrived, which forgets the miss.
+	do
+		local unknown, asked = 776001, 0
+		local realInfo, realItemInfo = C_Item.GetItemInfo, GetItemInfo
+		local function counting(id)
+			if id == unknown then asked = asked + 1 end
+			return realInfo(id)
+		end
+		C_Item.GetItemInfo, GetItemInfo = counting, counting
+		Family.Names:CachedItem(unknown)
+		Family.Names:CachedItem(unknown)
+		Family.Names:CachedItem(unknown)
+		check("an item no one can name is asked of the client once, however often it is wanted",
+			asked == 1, tostring(asked) .. " asks")
+		ITEM_NAMES[unknown] = "Late Arrival"
+		fire("GET_ITEM_INFO_RECEIVED", unknown, true)
+		check("and named once the client says it has arrived",
+			Family.Names:CachedItem(unknown) == "Late Arrival",
+			tostring(Family.Names:CachedItem(unknown)))
+		C_Item.GetItemInfo, GetItemInfo = realInfo, realItemInfo
+		ITEM_NAMES[unknown] = nil
+	end
+
 	check("a recipe with no spell id is named by what it makes",
 		Family.Names:Recipe { name = "Huile de sorcier", itemID = 20749 } == "Wizard Oil",
 		tostring(Family.Names:Recipe { name = "Huile de sorcier", itemID = 20749 }))

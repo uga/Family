@@ -1,0 +1,6 @@
+name: the recipe search box searches on every key typed
+file: addons/Family_UI/Professions.lua
+--- old
+		if userInput then
+--- new
+		if false then

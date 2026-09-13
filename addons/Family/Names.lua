@@ -27,6 +27,9 @@ local Names = {}
 Family.Names = Names
 
 local cache = {}      -- itemID -> name, for this session. Backed by the store below.
+
+-- Items `Names:CachedItem` could not name, this session. See there.
+local missed = {}
 local waiting = {}    -- itemID -> { [key] = callback }
 
 -- **What this account has already been told an item is called**, kept on disk between sessions.
@@ -646,17 +649,32 @@ end
 -- The login warm-up uses this to skip what it does not need to ask for, so reading the disk
 -- here is what turns the second session's warm-up into nothing: the queue drains without a
 -- single request.
+--
+-- **A miss is remembered for the session** (`missed`), the way `recipeNames` remembers *the
+-- client would not say*. An item neither the client nor the store could name was asked of the
+-- client again on every call, and a whole-family search on Era names most recipes through their
+-- item - so the same unanswered ids were asked, and the store read after each, on every
+-- keystroke. Nothing has to forget it: the session's names are asked first, and the client saying
+-- the item has arrived (`GET_ITEM_INFO_RECEIVED`, below) puts the name there.
 function Names:CachedItem(id)
 	if not id then return nil end
 
-	local name = cache[id] or getItemName(id)
+	local name = cache[id]
+	if name then return name end
+	if missed[id] then return nil end
+
+	name = getItemName(id)
 	if name then
 		self:LearnItem(id, name)
 		return name
 	end
 
 	local remembered = storedItem(id)
-	if remembered then cache[id] = remembered end
+	if remembered then
+		cache[id] = remembered
+	else
+		missed[id] = true
+	end
 	return remembered
 end
 

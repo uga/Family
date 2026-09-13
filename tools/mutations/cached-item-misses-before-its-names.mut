@@ -1,0 +1,10 @@
+name: Names:CachedItem answers a remembered miss before the names it has learnt since
+file: addons/Family/Names.lua
+--- old
+	local name = cache[id]
+	if name then return name end
+	if missed[id] then return nil end
+--- new
+	if missed[id] then return nil end
+	local name = cache[id]
+	if name then return name end

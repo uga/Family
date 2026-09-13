@@ -41,6 +41,9 @@ picks itself up where it left off.
   time you ask about the whole family. The first login after updating converts what is saved, a
   little at a time, and nothing is sent again to families you share with.
 
+- **The whole-family recipe search waits for you to stop typing**, and puts its results in order
+  without looking every name up again - lighter on every key, most of all on Classic Era.
+
 ### Fixed on Mists of Pandaria
 
 - **What a character has up for sale was always empty.** Family was asking that version of the game

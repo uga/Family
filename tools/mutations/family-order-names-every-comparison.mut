@@ -1,0 +1,8 @@
+name: the family's name order asks Names:Recipe on every comparison again
+file: addons/Family_UI/Professions.lua
+--- old
+	local first = tostring(a.name or "")
+	local second = tostring(b.name or "")
+--- new
+	local first = tostring(Family.Names:Recipe(a) or a.name or "")
+	local second = tostring(Family.Names:Recipe(b) or b.name or "")

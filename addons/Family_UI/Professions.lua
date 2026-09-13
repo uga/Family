@@ -214,13 +214,23 @@ end
 -- twice.
 --------------------------------------------------------------------------------------------
 
+-- How long typed text in the recipe search waits for the next key before searching.
+UI.SEARCH_SETTLE = 0.2
+
 local function byRecipeName(a, b)
 	-- The name the reader sees, not the one the record was written under. A family holds
 	-- lists read on other people's clients, and sorting on what was recorded puts a page in
-	-- an order that is alphabetical in a language nobody at this keyboard is reading. The
-	-- `skill` order above already asks the same way.
-	local first = tostring(Family.Names:Recipe(a) or a.name or "")
-	local second = tostring(Family.Names:Recipe(b) or b.name or "")
+	-- an order that is alphabetical in a language nobody at this keyboard is reading.
+	--
+	-- **Which is `name` on the row**: `Recipes:Search` fills it with the name it resolved for
+	-- the reader, and the row draws exactly that. This asked `Names:Recipe` again on every
+	-- comparison, without the list's language, so on Era - where a recipe carries an item and
+	-- no spell - every comparison asked the client for an item name, and read the item store
+	-- on a miss: N log N of them a keystroke, for a word already on the row. One of the two
+	-- *script ran too long* reports of 2026-09-13 stopped in that store read (data-path
+	-- review, `docs/REVIEW-DATA-HANDOFF.md` §0 and §3 step 1).
+	local first = tostring(a.name or "")
+	local second = tostring(b.name or "")
 	if first ~= second then return first < second end
 	-- Two professions can hold a recipe of one name, and "who can make this" is a different
 	-- answer for each of them - which is why the search keys them apart in the first place.
@@ -499,7 +509,19 @@ local function build(frame)
 	search:SetSize(200, 20)
 	search:SetAutoFocus(false)
 	UI:ReleaseFocusOnClick(search)
-	search:SetScript("OnTextChanged", function() frame:Refresh() end)
+	-- **A moment after the last key, not on every key.** A whole-family search walks every
+	-- recipe of every character, and typing *arcanite* ran it eight times in a row for the one
+	-- answer anybody reads. Typed text waits until the keys stop for `UI.SEARCH_SETTLE`, under
+	-- one `Family:After` key so each keystroke restarts the wait; text set from code - the
+	-- escape key's clearing, a panel opened on a search - redraws at once, because nobody is
+	-- still typing.
+	search:SetScript("OnTextChanged", function(_, userInput)
+		if userInput then
+			Family:After(UI.SEARCH_SETTLE, "ui.professions.search", function() frame:Refresh() end)
+		else
+			frame:Refresh()
+		end
+	end)
 	search:SetScript("OnEscapePressed", function(self)
 		self:SetText("")
 		self:ClearFocus()
