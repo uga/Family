@@ -4570,7 +4570,13 @@ that realm Family is right for them for nothing.
 
 ---
 
-## 72. Send a changed member's changed categories, not the whole member
+## 72. Send a changed member's changed categories, not the whole member — DEFERRED 2026-09-13
+
+**Deferred by Alberto, 2026-09-13**, with the measurements below in hand: *teniamo da parte questa
+sezione di possibile ottimizzazione per il momento. Osserviamo come va Family su una famiglia più
+grossa così com'è adesso, poi vediamo se val la pena di implementare.* Nothing of it is built except
+the probe, `/family paycost`, which stays. The reading that would reopen it is a large family
+exchanging as it is today: `/family widetime`, which now names who changed, and backlog 41.
 
 **Asked 2026-09-13**, by Alberto, off `/family widetime` on Serena's side: *se un personaggio con
 200 slot di borse e 600 ricette si sposta solo di zona rimandiamo anche tutte le borse e le
