@@ -4661,3 +4661,34 @@ time left jitter too, and they are real data - a letter that expires is a letter
 need rounding before they are marked (to the minute is far finer than anything shown), not
 removing. And since `bags` is rewritten on every loot, point 1 costs whatever folding `bags` costs,
 times every loot of a session - which is the measurement below.
+
+### What marking a part costs, read on two clients, 2026-09-13
+
+`/family paycost`, read by Alberto just after login (so the counts are a login's, not a session of
+play's):
+
+| Part | Eccebombo, Burning Crusade, 70 | Malachia, Era, 55 |
+|---|---|---|
+| `bags` | 2.4 ms | 3.0 ms |
+| `bank` | 2.0-2.7 ms | - |
+| `equipment` | 0.7-1.0 ms | 0.8 ms |
+| `mail` | 0.0 ms | - |
+| `professions` | 13.5-15.7 ms | 9.2 ms |
+| `questObjectives` | 0.2 ms | 0.3 ms |
+| `quests` | 0.7 ms | 0.9 ms |
+| `reputations` | 1.5-2.5 ms | 0.8 ms |
+| `spells` | 1.6-1.7 ms | 0.6 ms |
+| `talents` | 12.2-12.7 ms | 3.9 ms |
+| whole record | 37.2-37.3 ms | 34.7 ms |
+
+A login wrote 5 to 8 times, and opening the bank added one write, of `bank` alone - which is the
+part counter reading what it was built to read.
+
+**What it says.** The write that happens all session, `bags`, costs about three milliseconds to mark,
+a fifth of a frame, and only when a loot actually moved something. The two expensive parts,
+`professions` and `talents`, are written at login and when a window is opened, not while playing.
+Folding only the part a write replaced - which the counter already tells apart - keeps the price of
+a loot at the price of `bags`, where marking the whole record on every write would be over 35 ms,
+two frames, every loot. So point 1 is affordable in the shape of *mark the part replaced*, and not in
+the shape of *mark the record*. Not measured: what the write already costs before any mark is added,
+since `SetPayload` serialises and deflates the whole record each time.
