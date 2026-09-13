@@ -32,7 +32,7 @@ do either: kill this at any moment and the repository is exactly as it was.
 
     tools/mutate.py                 every case in tools/mutations
     tools/mutate.py one.mut two.mut just those
-    tools/mutate.py --changed       only cases whose file: is in `git diff --name-only HEAD`
+    tools/mutate.py --changed       only cases whose file: is changed since HEAD or not yet tracked
     tools/mutate.py --jobs 1        one at a time, for when a failure needs watching
 
 **A case's gate is a shorter gate**, asked for 2026-09-13 when a full run took 15 min 25 s on a
@@ -202,12 +202,20 @@ def run(path, where):
 
 
 def changed_files():
-    """What `git diff --name-only HEAD` names, as repository paths."""
-    out = subprocess.run(["git", "diff", "--name-only", "HEAD"], cwd=ROOT, capture_output=True,
-                         text=True)
-    if out.returncode != 0:
-        return None
-    return set(line.strip() for line in out.stdout.split("\n") if line.strip())
+    """What `git diff --name-only HEAD` names, and every file git does not track yet.
+
+    **The second half was missing, and cost a slice its cases.** A file added in the working tree
+    is not in the diff against HEAD, so the cases recorded on `RecipeIndex.lua` while it was being
+    written were never picked, and had to be run by name (DECISIONS, 2026-09-13).
+    """
+    files = set()
+    for command in (["git", "diff", "--name-only", "HEAD"],
+                    ["git", "ls-files", "--others", "--exclude-standard"]):
+        out = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+        if out.returncode != 0:
+            return None
+        files.update(line.strip() for line in out.stdout.split("\n") if line.strip())
+    return files
 
 
 def main(argv):
@@ -235,7 +243,7 @@ def main(argv):
     if only_changed:
         files = changed_files()
         if files is None:
-            print("git diff --name-only HEAD did not answer, so nothing can be picked by it")
+            print("git did not say what has changed, so nothing can be picked by it")
             return 1
         paths = [p for p in paths if parse(p)[1] in files]
         if not paths:
@@ -281,6 +289,11 @@ def main(argv):
         return 1
 
     if jobs is None:
+        # **Eight, not every core, and measured rather than assumed.** Lifting the cap to
+        # `os.cpu_count()` was asked for on 2026-09-13 when a full run of 204 cases took 3 min 20 s;
+        # on the twelve-thread machine that asked, twelve jobs took 3 min 35 s and 3 min 37 s against
+        # 3 min 20 s and 3 min 23 s for eight - slower, since the gate is CPU-bound and the threads
+        # are not all cores. DATASOURCES §4 has the readings.
         jobs = min(8, len(paths), os.cpu_count() or 1)
     jobs = max(1, min(jobs, len(paths)))
 

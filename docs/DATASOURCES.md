@@ -2409,6 +2409,12 @@ cost about 7 CPU-seconds a case against 4.5 alone, so the cores do not scale lin
 gate, `lua5.1 tests/Harness.lua .`, went from about 15 s to 10.6 s with the same two rewrites.
 `--changed` on a diff touching the harness and the tool: 4 cases, 26 s.
 
+**Eight jobs or twelve, measured 2026-09-13** on the same machine, 204 cases, `time python3
+tools/mutate.py --jobs N`, two runs each: eight took **3 min 20.8 s** and **3 min 23.4 s**; twelve took
+**3 min 35.5 s** and **3 min 37.6 s** - about fifteen seconds slower, with user time from about 25 to
+about 40 CPU-minutes. `lscpu` reports 12 CPUs at two threads per core: the gate is CPU-bound, and
+the extra jobs share cores rather than adding them. The cap stays at eight.
+
 ### What a shared recipe list weighs, `tools/wire-size.lua`
 
 Not from the client's tables but from the libraries the addon channel is fed through, and
