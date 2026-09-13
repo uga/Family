@@ -27,6 +27,11 @@
 -- names a row first. The readers in `Recipes.lua` walk the parts in exactly that order; they only
 -- stop reading records and naming recipes to do it.
 --
+-- **A name the client learns after a part is built** reaches it through the recipe-name walk
+-- (`Family_UI/Slash.lua`), which drops a member's part when it has read them and when a name it
+-- asked for arrives. Not through a callback here: that would ask the client for every recipe of
+-- every list in another language in one step, which is what the walk exists to spread.
+--
 -- **Built a member a step after logging in**, the way `Database:WarmPayloads` spread its decoding,
 -- and completed on the spot at the first question for whoever the steps have not reached - which
 -- since backlog 74 is reading tables, not decoding anything.

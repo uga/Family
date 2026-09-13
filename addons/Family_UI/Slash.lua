@@ -2511,6 +2511,16 @@ local function rememberWalk()
 	if walking.key and walking.mark and not walking.missed then
 		Family.Names:LearnItemWalk(walking.key, walking.mark)
 	end
+
+	-- **And the recipe index forgets that member's part**, so the next question builds it with
+	-- whatever the client can name by now. The index names each recipe once, when a part is
+	-- built, and asks the client for nothing - a request for every recipe of every foreign list in
+	-- one step is what this walk exists to spread - so a name learnt after the build would never
+	-- reach it for the session (Alberto, 2026-09-13: the first session after a new client build,
+	-- 31 French lists of 49). A name that has not arrived yet when this runs is caught by the
+	-- callback on the ask below.
+	if walking.key and Family.RecipeIndex then Family.RecipeIndex:Invalidate(walking.key) end
+
 	walking.key, walking.mark, walking.missed = nil, nil, nil
 end
 
@@ -2654,7 +2664,13 @@ function UI:WarmRecipeNames(budget)
 		-- Already named costs nothing and is not work: counting it would let a warm
 		-- client report a full budget while asking for nothing.
 		if not Family.Names:CachedItem(id) then
-			local _, known = Family.Names:Item(id)
+			-- With a callback that drops the member's recipe index part when the name lands:
+			-- the ask is the same one it always was, and the part is rebuilt at the next
+			-- question with the name in it rather than the recorded word.
+			local who = walking.key
+			local _, known = Family.Names:Item(id, "recipeindex:" .. tostring(who), function()
+				if Family.RecipeIndex then Family.RecipeIndex:Invalidate(who) end
+			end)
 			if not known then walking.missed = true end
 			asked = asked + 1
 		end

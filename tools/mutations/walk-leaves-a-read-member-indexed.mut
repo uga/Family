@@ -1,0 +1,5 @@
+name: the recipe-name walk leaves a member it has read in the recipe index
+file: addons/Family_UI/Slash.lua
+--- old
+	if walking.key and Family.RecipeIndex then Family.RecipeIndex:Invalidate(walking.key) end
+--- new

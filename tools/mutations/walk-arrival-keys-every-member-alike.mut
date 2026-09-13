@@ -1,0 +1,6 @@
+name: the walk's name callbacks share one key, so only the last member waiting is updated
+file: addons/Family_UI/Slash.lua
+--- old
+			local _, known = Family.Names:Item(id, "recipeindex:" .. tostring(who), function()
+--- new
+			local _, known = Family.Names:Item(id, "recipeindex", function()

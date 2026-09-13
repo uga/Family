@@ -37508,15 +37508,117 @@ print("the recipe index")
 	Family.Wide:SetEnabled(wasEnabled)
 
 	-- **Built a member a step after logging in**, without anybody asking.
+	-- The recipe-name walk is held off: it drops a member's part once it has read them, so that a
+	-- name learnt since reaches the index, and that is a check of its own below.
 	Family.RecipeIndex:Invalidate()
+	local realWalk = Family.UI.WarmRecipeNames
+	Family.UI.WarmRecipeNames = function() return 0, true end
 	fire("PLAYER_ENTERING_WORLD")
 	for _ = 1, 80 do advance(0.5) end
+	Family.UI.WarmRecipeNames = realWalk
 	local unbuilt = {}
 	for key in pairs(Family.Database:Members()) do
 		if not Family.RecipeIndex:Built(key) then unbuilt[#unbuilt + 1] = key end
 	end
 	check("after logging in every member's part is built a step at a time, before any question",
 		#unbuilt == 0, table.concat(unbuilt, ", "))
+
+	-- **A name the client learns after a part is built reaches the next answer**, through the
+	-- recipe-name walk. An Era-shaped list - items, no spells - recorded in French, whose item the
+	-- client cannot name when the part is built: the part carries the recorded word. The walk
+	-- then asks for the item, and the name arrives a moment later, after the walk has moved on.
+	do
+		local late = 776201
+		ITEM_NAMES[late] = nil
+		Family.Database:SetMeta("Indexlate-FireMaw", { name = "Indexlate", realm = "FireMaw",
+			faction = "Alliance", classFile = "WARRIOR", level = 60, skills = skills })
+		Family.Database:SetPayload("Indexlate-FireMaw", { professions = { [164] = {
+			locale = "frFR", recipesSeen = time(),
+			recipes = { { name = "Cuirasse tardive", itemID = late } } } } })
+
+		local function named(word)
+			for _, row in ipairs(Family.Recipes:Search("tardi")) do
+				if row.name == word then return true end
+			end
+			for _, row in ipairs(Family.Recipes:Search("late")) do
+				if row.name == word then return true end
+			end
+			return false
+		end
+		check("a part built before the client can name an item carries the recorded word",
+			named("Cuirasse tardive"))
+
+		FamilyDB.itemNames = nil
+		Family.UI:ForgetRecipeWarmUp()
+		local rounds = 0
+		repeat
+			local _, finished = Family.UI:WarmRecipeNames(50)
+			rounds = rounds + 1
+		until finished or rounds > 900
+		-- Built again before the name lands, as a question asked in that moment would.
+		check("and a question asked before the name has arrived still has the recorded word",
+			named("Cuirasse tardive"))
+
+		ITEM_NAMES[late] = "Late Cuirass"
+		fire("GET_ITEM_INFO_RECEIVED", late, true)
+		check("and once the client names it, the next answer has the name",
+			named("Late Cuirass") and not named("Cuirasse tardive"))
+		Family.Database:Forget("Indexlate-FireMaw")
+		ITEM_NAMES[late] = nil
+	end
+
+	-- **Two members waiting on the same item are both brought up to date.** `Names:Item` keeps
+	-- one callback per item and key, so a key shared by the walk's asks would keep only the last
+	-- member's.
+	do
+		local shared = 776202
+		ITEM_NAMES[shared] = nil
+		for _, who in ipairs { "Indexpair1-FireMaw", "Indexpair2-FireMaw" } do
+			Family.Database:SetMeta(who, { name = who:match("^(%a+%d)"), realm = "FireMaw",
+				faction = "Alliance", classFile = "WARRIOR", level = 60, skills = skills })
+			Family.Database:SetPayload(who, { professions = { [164] = { locale = "frFR",
+				recipesSeen = time(), recipes = { { name = "Heaume jumeau", itemID = shared } } } } })
+		end
+		FamilyDB.itemNames = nil
+		Family.UI:ForgetRecipeWarmUp()
+		local rounds = 0
+		repeat
+			local _, finished = Family.UI:WarmRecipeNames(50)
+			rounds = rounds + 1
+		until finished or rounds > 900
+		Family.RecipeIndex:Everybody()
+		ITEM_NAMES[shared] = "Twin Helm"
+		fire("GET_ITEM_INFO_RECEIVED", shared, true)
+		local holders = 0
+		for _, row in ipairs(Family.Recipes:Search("twin")) do
+			holders = holders + #(row.members or {})
+		end
+		check("two members waiting on the same item both answer with its name once it arrives",
+			holders == 2, tostring(holders))
+		Family.Database:Forget("Indexpair1-FireMaw")
+		Family.Database:Forget("Indexpair2-FireMaw")
+		ITEM_NAMES[shared] = nil
+	end
+
+	-- **And a member the walk has read is built again**, for a name learnt some other way between
+	-- the part and the walk.
+	do
+		Family.Database:SetMeta("Indexread-FireMaw", { name = "Indexread", realm = "FireMaw",
+			faction = "Alliance", classFile = "WARRIOR", level = 60, skills = skills })
+		Family.Database:SetPayload("Indexread-FireMaw", listed("Plastron runique", 2667))
+		Family.RecipeIndex:Everybody()
+		local seenBuilt = Family.RecipeIndex:Built("Indexread-FireMaw")
+		FamilyDB.itemNames = nil
+		Family.UI:ForgetRecipeWarmUp()
+		local rounds = 0
+		repeat
+			local _, finished = Family.UI:WarmRecipeNames(50)
+			rounds = rounds + 1
+		until finished or rounds > 900
+		check("a member the recipe-name walk has read is dropped from the recipe index",
+			seenBuilt and not Family.RecipeIndex:Built("Indexread-FireMaw"))
+		Family.Database:Forget("Indexread-FireMaw")
+	end
 
 	Family.Database:Forget("Indexone-FireMaw")
 	Family.Database:Forget("Indextwo-FireMaw")

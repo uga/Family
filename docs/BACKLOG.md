@@ -4868,3 +4868,13 @@ straight to two hundred characters that is about 340 ms; arithmetic on one readi
 measurement. **19 still compressed rather than 31** at the first look is not explained by a reading:
 the warm-up starts three seconds after arrival and takes one record every 0.3 s, which would have
 rewritten twelve about seven seconds in - consistent, not checked.
+
+## 75. After the first release with the recipe index, take out the walks it replaced
+
+**Asked by Alberto 2026-09-13.** `Recipes:ScanSearch`, `Recipes:ScanKnowersOf` and
+`Recipes:ScanCrafters` stay in `addons/Family/Recipes.lua` only so that the harness can hold the
+indexed `Search`, `KnowersOf` and `Crafters` to them row for row (`RUN.compareRecipeReaders` in
+`tests/Harness.lua`, called at three points). Once a release carrying `RecipeIndex.lua` has been
+played without a difference reported, the three walks and the comparison go, together: the
+comparison asks nothing without them, and they are read by nothing else. Removing code from the
+tree is Alberto's to authorise when the time comes.

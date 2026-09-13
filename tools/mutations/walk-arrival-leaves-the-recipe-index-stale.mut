@@ -1,0 +1,6 @@
+name: a name the walk asked for arrives and the recipe index keeps the recorded word
+file: addons/Family_UI/Slash.lua
+--- old
+				if Family.RecipeIndex then Family.RecipeIndex:Invalidate(who) end
+--- new
+				local _ = who
