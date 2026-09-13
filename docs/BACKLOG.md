@@ -4726,6 +4726,27 @@ two frames, every loot. So point 1 is affordable in the shape of *mark the part 
 the shape of *mark the record*. Not measured: what the write already costs before any mark is added,
 since `SetPayload` serialises and deflates the whole record each time.
 
+### Points 1 and 2 read in the game, 2026-09-13
+
+Read by Alberto and Serena after deploying `d7b7319` on both accounts, each at *0 still compressed*
+before starting. **Done here**: points 1 and 2 behave in the game as the harness says they do.
+**Still deferred**: points 3 to 6, unchanged by these readings.
+
+- **First exchange after updating**: Alberto *31 offered, 31 sent, 0 unchanged*; Serena *5 offered,
+  5 sent*. Every member once, as `docs/WIDE-TRANSFER.md` §4 says the recipe change makes it.
+- **`/family widetime` straight after**: Alberto *31 of 31 unchanged, marking 25 ms*, against
+  *fingerprinting 421 ms* for the old road on the same line; Serena *4 of 5 unchanged, changed since
+  sent: Malachia* - the character in play on that side, so a change after the exchange and not a
+  fault. Which part moved is not named by the command and was not looked into: backlog 76.
+- **Idle relog of Hooga on Alberto's side**: Alberto *31 of 31 unchanged*, and the answer to Serena
+  *31 offered, 0 sent, 31 they already had*. Serena *5 of 5 unchanged*, after sending Malachia once
+  more. **Hooga's age on Serena's panel moved forward with nothing resent** - `offeringSeen` doing
+  what point 2 is for.
+- **Reading the saved data** (`/family status`): Serena 34 ms on 5 members; Alberto 74 ms on 31,
+  against 53 ms read after 74 (backlog 74). **Not explained**; to be read again at two logins at
+  another time before anything is concluded. Step 6 added `partMarks` to every record written since,
+  which is one candidate and is not measured.
+
 ---
 
 ## 73. A link to a family on a realm this character cannot reach says *nobody is online* — DONE 2026-09-13
@@ -4886,3 +4907,63 @@ indexed `Search`, `KnowersOf` and `Crafters` to them row for row (`RUN.compareRe
 played without a difference reported, the three walks and the comparison go, together: the
 comparison asks nothing without them, and they are read by nothing else. Removing code from the
 tree is Alberto's to authorise when the time comes.
+
+---
+
+## 76. `/family widetime` names what moved for a member it counts as changed
+
+**Asked by Alberto 2026-09-13**, off Serena's reading *4 of 5 unchanged, changed since sent:
+Malachia* (backlog 72, *Points 1 and 2 read in the game*). Malachia was the character in play, so the
+change was taken as legitimate - but that was inferred from who was playing, not read. The line
+should say what moved - `bags`, `zone`, the grants - so that a *changed* is read rather than guessed.
+Not built; what follows is the cost, read from `addons/Family/Wide.lua` and
+`addons/Family/Database.lua` on the day.
+
+**Why it cannot be worked out from what is kept today.** `link.sent[memberKey]` is one opaque string,
+the sending mark as it went out. Nothing of what was folded into it is kept, so the command can say
+*different* and nothing more. What was folded (`sendingMark`) is three things, and the answer can
+be any of them:
+
+1. **The record mark**, a fold of `entry.partMarks` - **every part of the record, granted or not**,
+   including the four parts in no category (`questObjectives`, `crafts`, `pets`, `achievements`).
+   So a *changed* can come from a part the link is never sent; naming it would show that plainly.
+2. **The identity fields and the granted meta fields without the clocks**: 7 identity fields and 31
+   more across the categories, counted from `IDENTITY` and `CATEGORIES` - `zone`, `money`, `level`,
+   `skills` and the rest. A character in play most likely moves one of these, not a part.
+3. **The granted category ids**: a grant changed on this side.
+
+**What it would take.**
+
+- **Kept at build time, on this side only**: beside `job.marks[memberKey]` in `worthSending`, a copy
+  of the member's part marks as they were folded, a small fold per meta field (or per category's
+  meta fields), and the granted ids - saved in the link as, for instance,
+  `link.sentParts[memberKey] = { mark = ..., parts = {...}, meta = {...}, ids = {...} }`.
+- **Not inside `link.sent`**: that table is replaced outright by the far side's `have` (`onWant`)
+  and written from their `got` (`onGot`), and the far side holds only the opaque string. Putting the
+  parts inside the mark would change what leaves the machine, and is not what is asked. So the
+  shadow table is trusted only while its `mark` equals `link.sent[memberKey]`; where they differ
+  (a repair from `have`, a `got` for a batch built in an earlier session) the command says *part not
+  known* rather than guessing.
+- **Kept in step with `link.sent`**: dropped where `forgetWhatTheyHold` drops it, and pruned where
+  the two forget loops over `link.sent` prune members no longer offered.
+- `Wide:MarkGaps` compares the shadow against a fresh `sendingMark` broken into the same pieces and
+  returns the names; `/family widetime` prints them after each name on *Changed since sent*, which
+  is one more string in four locales.
+
+**Cost.**
+
+- **Saved data**: at most 14 part marks, 38 meta folds and the ids per member per link; each a
+  number of up to ten digits and a key. About 1.5 KB a member at worst, so about 45 KB for Alberto's
+  31 on one link - estimated from those counts, not measured. One fold per category's meta fields
+  instead of per field brings it to about 28 entries a member, and names *character* rather than
+  *zone*.
+- **Load time**: that is more saved data read at every login, on the reading that 74 ms against
+  53 ms is not yet explained (backlog 72). It should be read with `/family status` before and after.
+- **At an exchange**: the part marks are already computed and are copied; the meta folds are small
+  and made only for members actually built, never for a member held back. Not measured.
+- **Checks**: a loot names `bags`; a zone change names the zone field (or *character*); a grant
+  change names the grants; a record part in no category is named; a shadow whose mark no longer
+  equals `link.sent` says *not known*; the shadow is dropped with `link.sent`. Each with a mutation.
+- **Files it would touch**: `addons/Family/Wide.lua`, `addons/Family_UI/Slash.lua`, four locales,
+  `tests/Harness.lua`, new `tools/mutations/*.mut`, `docs/WIDE-TRANSFER.md` §4.
+- **Nothing on the wire changes**: no field added to a message, no limit, no cadence.

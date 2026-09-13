@@ -170,6 +170,12 @@ marks of characters not played since are kept, but the sending mark folds them d
 Nothing about limits, cadence or `Comm` changed, and members are not sent by category: that is
 backlog 72, still deferred.
 
+**Read in the game, 2026-09-13**, by Alberto and Serena on `d7b7319`: the first exchange sent 31 of 31
+and 5 of 5; after an idle relog of one character Alberto's side answered *31 offered, 0 sent, 31 they
+already had*, `/family widetime` said *31 of 31 unchanged* on one side and *5 of 5* on the other, and
+the relogged character's age moved forward on the far panel with nothing resent. The full readings
+are in backlog 72.
+
 ---
 
 ## 5. What each way of ending a session costs
