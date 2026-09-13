@@ -149,8 +149,65 @@ members).
 **Reach.** A whisper reaches only the connected-realm group (spec §11.1, corrected 2026-09-13;
 backlog 73).
 
-## 5. What Alberto would like an opinion on
+## 5. Is the crash really about decoding?
 
+Alberto asks for this to be judged on its own, before anything above is built on it. It is not
+proven.
+
+**What was reported.** Two *script ran too long* errors on 2026-09-13, each at the first
+whole-family question after logging a character in.
+
+- **First:** stopped at `Names.lua:132`, under `Recipes:Search` from the professions search box.
+  - It was read as the item-name store asking `GetBuildInfo` on every name (`DECISIONS.md`, row
+    *The item-name store asks the client for its build once*).
+  - That fix went in (`1d8dea7`).
+  - The row itself says it does not establish that the search now finishes in time: *the search
+    still walks every recipe of every character on each keystroke*.
+- **Second:** with that fix deployed, stopped at `Names.lua:280`, under `Recipes:KnowersOf` from a
+  recipe tooltip.
+  - In today's file that line is in `Names:Recipe`, straight after `Names:Spell(id)`, which calls
+    `GetSpellInfo` / `C_Spell.GetSpellInfo`.
+  - Check that the numbering matches the deployed file (`git log -- addons/Family/Names.lua`).
+
+**What was measured.** Only the decode: 31 records, 524 ms, taken straight off the disk by
+`/family decodecost`. The search and the tooltip were **not** timed with the records already
+decoded. Nobody has checked whether the errors stop once `Database:WarmPayloads` has finished.
+
+**What else fits the same evidence.**
+
+- *script ran too long* names the line where the client's budget ran out, not where the time
+  went (L-094). Both errors stopped in naming code, not in `Codec:Decode`.
+- `Names:Recipe` only takes its fast path when the list was recorded in the reader's language.
+  - Otherwise it asks the client for the spell's name, once per spell id per session, memoised
+    in `recipeNames`.
+  - A first whole-family pass can therefore make one client call for every recipe of every
+    foreign or unlabelled list.
+  - `Recipes.lua` calls it at lines 480 and 931 (matching *who teaches / can make*) and at 735
+    (the search).
+- How many lists really are foreign or unlabelled is unknown. The probe's *271 of 289* was wrong
+  (L-095); the corrected `/family decodecost` names them, and no reading has been taken yet.
+- The search runs on every keystroke and walks every recipe of every character, siblings
+  included.
+- **Why only now.** The missing pre-decode dates from `db45d3d` (2026-09-06). Work on 2026-09-12
+  added to the same code paths: recipe row icons, *Can make it*, tooltip crafters. Neither cause
+  is established.
+
+**Readings that would tell them apart**, for Alberto to take in game. Say which you would take and
+in what order:
+
+- repeat the tooltip and the search after the warm-up has had time to finish (200 × 0.3 s is the
+  upper bound; 31 × 0.3 s on his family);
+- time `Recipes:Search` and `Recipes:KnowersOf` on their own, with every record already decoded;
+- the corrected `/family decodecost`, for how many lists fall off the fast path.
+
+If decoding turns out not to be the main cost, plain storage does not fix the crash, and the
+opinion on §6's questions changes with it.
+
+## 6. What Alberto would like an opinion on
+
+0. **Is decoding the cause of the two crashes**, or one cost among several? Is naming recipes that
+   fall off the fast path, or the per-keystroke walk, a better explanation? Which readings settle
+   it first (§5)?
 1. **Storage.**
    - Is stopping compression (74 way 1) right for families of 200+?
    - Or is there a better shape: plain storage with persisted derived indices, per-category
