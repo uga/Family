@@ -165,7 +165,8 @@ Step 6 of the data-path review, on Alberto's yes to change what leaves the machi
 
 So a login where nothing was done rewrites parts with new moments and moves no mark; a loot moves
 the mark of `bags`, and the member goes again, whole. **The first exchange after updating sends
-every member whose mark was made the new way once**, because the recipe for a mark changed.
+every member once**, because the recipe for a sending mark changed for all of them - the record
+marks of characters not played since are kept, but the sending mark folds them differently.
 Nothing about limits, cadence or `Comm` changed, and members are not sent by category: that is
 backlog 72, still deferred.
 
