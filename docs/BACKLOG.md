@@ -5019,3 +5019,110 @@ grants all 50 of hers.
 
 What crosses the wire is Alberto's to choose in the grid, after block 1 has been read with the
 family standing still.
+
+### The readings, all taken in the game, 2026-09-13
+
+**DONE 2026-09-13.** Six full characters, five medium and seven bank alts real, the rest copies.
+
+**1. Two hundred, Wide Family off.** Alberto, 210 members, 7.29 MB of saved data: two logins, *0
+still compressed*, *saved data read at login* **255 ms and 258 ms**, against 74 ms at 31;
+`GetAddOnMemoryUsage` **37,704 KB**. Twenty seconds after logging in, the search and the tooltip
+gave no error; with the warm-up finished, `Search("ar")` **145 rows in 30 ms** and `KnowersOf` for
+the wand **19 in 7 ms**. Serena, 55 members: **82 ms**. No Lua error and no lag at login on either.
+The *about 340 ms at two hundred* of backlog 74 was straight-line arithmetic and came in high.
+
+**2. Wide Family, 73 against 55** (members granted on Alberto's side and on Serena's). `/family widetime`: Alberto *73 of 73 unchanged, marking 72 ms*, the old road's fingerprinting
+1232 ms; Serena *55 of 55 unchanged, 43 ms*, old road 789 ms.
+
+**3. Wide Family, 210 against 55**, read on Alberto's side only: *210 offered, 210 sent*, then
+*210 of 210 unchanged, marking 169 ms*, old road 2897 ms. Searches, folds and tooltips across the
+whole enlarged family were instant, runed rods included. `/family widecost`: *55 marks held, 1.1 KB
+on the wire*. The transfer itself, timed with `Comm:Pending` - **6 min 34 s** from *Update now*,
+9.3 messages a second throughout, *8142 x number 0* - is written in `docs/WIDE-TRANSFER.md` §2 with
+what that answer does and does not say, and why a first reading by eye of 15-20 minutes was the
+reason to time it.
+
+**The offering's weight**, worked out off the game with the real libraries on the files in
+`tools/live/`, batches of twelve at level 1: 31 members 128 KB (4.1 KB a member), 210 members
+771 KB (3.7 KB), 55 members 161 KB (2.9 KB).
+
+**Found at that size**, each its own entry: the Wide panel open during the 210 transfer makes the
+game stutter (78); grants ticked with Wide Family off do not start an exchange when it is switched
+on (79); the broker's bar text wraps and its tooltip runs off the screen (80).
+
+---
+
+## 78. The Wide Family panel stutters the game while a large transfer is going out
+
+**Reported by Alberto 2026-09-13**, reading backlog 77: with 210 members going to Serena, the game
+stuttered while the Wide Family panel was open; with it closed, everything was normal.
+
+**Why, from the code.** While anything is queued and the panel is shown, `frame:Refresh()` re-arms
+itself once a second (`Family_UI/Wide.lua`, the block under *A count that stands still is worse
+than no count*, from `3c4275a`, 2026-09-08). It exists to keep the queue's count moving, and it
+redraws the whole panel to do it: every member row of the open link and a tick box per category -
+210 rows and twelve categories, about 2,500 cells, laid out, resized and set once a second for the
+six and a half minutes of the transfer. At 31 members that was invisible.
+
+**What it would take.** Redraw only what a draining queue changes - the link's status line with the
+count of what is still going out and the confirmed count - on the one-second timer, and leave the grid to the
+repaints caused by a record or a grant changing. The count and the lines it sits in are already
+worked out in one place (`Wide:InFlight`, `Wide:Confirmed`), so the change is to split that line's
+drawing out of `Refresh` into something the timer can call alone.
+
+**Cost.** One file, `addons/Family_UI/Wide.lua`, plus a check in `tests/Harness.lua` that the
+one-second tick touches no grid cell while a transfer is in flight and the status line still moves,
+with its mutation. Reading after: the same 210 transfer with the panel open, stutter or none.
+Not measured: how long one `Refresh` takes at 210; a `debugprofilestop` around it would say before
+anything is changed.
+
+---
+
+## 79. Grants ticked with Wide Family off do not go when it is switched on
+
+**Reported by Alberto 2026-09-13**, reading backlog 77: ticking grants in the grid while Wide
+Family was switched off, then switching it on, started no exchange; *Update now* was needed.
+
+**Why, from the code.** A grant ticked asks for an exchange three seconds after the last click
+(`docs/WIDE-TRANSFER.md` §3), and `Wide:ExchangeWith` refuses while the feature is off
+(`Wide.lua`, *Wide Family is not switched on*), so those requests go nowhere. Switching the feature
+on (`Wide:SetEnabled`) only stores the flag. What announces on being switched on is the other
+switch, *Exchange automatically* (§5, *The switch governs what begins*, backlog 47). So the
+behaviour is consistent with what is written; it is not what somebody who has just ticked the grid
+expects.
+
+**Two ways out, Alberto's to choose.**
+
+1. **Say it**: with the feature off, a line under the grid that grants ticked now go when it is
+   switched on and *Update now* is pressed. One locale string in four languages, one check that the
+   line shows only while off. Nothing leaves the machine differently.
+2. **Change it**: switching the feature from off to on sends a `hello` per link, as switching
+   automation on already does, so the other side answers and the grants go. A change to what leaves
+   the machine at that moment - one short message per link - and one check with its mutation that
+   the switch sends once per link and never when it was already on.
+
+**Cost.** Either is small: `addons/Family_UI/Wide.lua` (1) or `addons/Family/Wide.lua` (2), the
+locales, `tests/Harness.lua`, a mutation, and `docs/WIDE-TRANSFER.md` §5 for (2).
+
+---
+
+## 80. The broker wraps in the bar and its tooltip runs off the screen at two hundred
+
+**Reported by Alberto 2026-09-13**, reading backlog 77, on his side only, at 210 members.
+
+1. **The bar text wraps** onto two lines in the top bar: *210 62482g 83s / 21c*.
+2. **The tooltip grows wider than the screen.** `Family_UI/Broker.lua:407-408` puts the names of
+   every member with a crafting cooldown ready into one right-hand cell, joined with commas - 44
+   names in this family. The trimming that keeps the tooltip on screen (`budget` at `:288`) counts
+   rows, not width, so it does not see it. The money column ends at the right edge and the names
+   are off the screen.
+
+**Proposed cure, from Alberto**: the count on that line, with the list left to the Cooldowns
+panel; or `UI:ShowAtMost` (`Family_UI/Window.lua`) on the names, *and N more*.
+
+**Cost.** A small slice: `addons/Family_UI/Broker.lua`, a locale string for *N members* or *and N
+more* if the existing ones do not fit, `tests/Harness.lua` and a mutation. **Its check: the width of
+that line does not grow with the number of members** - the same tooltip drawn at 5 and at 50 members
+with cooldowns ready gives a line of the same length. The bar text's wrap is a separate question
+- what the broker display does with a long text is the display addon's - and needs a reading of
+which display it was before anything is changed.

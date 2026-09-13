@@ -68,6 +68,12 @@ script limit applies. Read with `/family status` on Alberto's 31-character Era a
 and *28 ms* with the saved data compressed, **53 ms** stored plain - 19 to 25 ms more, one
 reading, against 521-524 ms in one frame before. A record written by an earlier version is read
 once and rewritten plain.
+**At two hundred, measured 2026-09-13** on Alberto's account grown to 210 members with
+`tools/grow-family.lua` (six full characters, five medium and seven bank alts real, the rest copies;
+7.29 MB of saved data): **255 ms and 258 ms** at two logins, *0 still compressed*, against 74 ms for
+the same account at 31 that day; `GetAddOnMemoryUsage` 37,704 KB; no Lua error and no lag at login.
+The recipe search for *ar* 30 ms and the wand's *who can make it* 7 ms once warm, and no error at
+twenty seconds, before the index had finished. Serena's account at 55 members: 82 ms. Backlog 77.
 **LibSerialize and LibDeflate stay**: the wire - Wide Family, the guild share - still carries
 strings, and reading an old record needs them once.
 

@@ -68,6 +68,7 @@ of all of them (`Wide.lua`). So:
 | one member | 3.8 KB | 1.6 s |
 | a batch of twelve | 46 KB | 20 s |
 | 210 members, one link | 780 KB | **about 6 minutes** |
+| 210 members, one link, **measured 2026-09-13** | 771 KB offered; 3,493 messages queued | **6 min 34 s** from *Update now* |
 | 210 members, fifteen links | 11.7 MB | **about 90 minutes** |
 
 The last row is the case Alberto asked about, and the ninety minutes is the sum rather than the
@@ -78,6 +79,31 @@ queued every second (`BATCH_GAP`), so all 210 members are in the queue within ei
 while the wire needs six minutes to carry them. Until 2026-09-08 a member was marked as sent when
 its batch was *queued* — so half a minute into a six-minute transfer, this side had marked all 210
 and delivered about 18. See §5.
+
+**Measured for the first time 2026-09-13, and the table holds.** Alberto's account grown to 210
+members with `tools/grow-family.lua` (backlog 77), all granted to Serena's side, *Update now*
+pressed once. The transfer was timed with the queue itself, typed into chat while it ran:
+
+    /run print(date("%H:%M:%S"), Family.Comm:Pending())
+
+`Comm:Pending` answers how many messages are still in the outgoing queue (`Comm.lua`). It read
+**3,493 at 22:01:13**, the queue full, and **0 at 22:07:27**: 6 min 14 s to drain, **6 min 34 s from
+*Update now***. Every interval between readings went at the same **9.3 messages a second**, about
+**2.2 KB a second** at 234 bytes of payload each, against the 10 and 2.3 worked out above. Serena's
+side confirmed twelve members about every 30 seconds, a batch's worth. The offering weighed off the
+game with the real LibSerialize and LibDeflate, on the same files, in batches of twelve at level 1:
+**771 KB for 210 members, 3.7 KB a member** (128 KB, 4.1 KB a member, at 31; 161 KB, 2.9 KB, for
+Serena's 55), against the 3.8 KB estimated above. `Family.Comm:Answers()` straight after: *8142 x
+number 0*, the one answer the client gave to every piece handed to it that session, so nothing was
+refused. What 0 is: `Comm.lua` records the client's return verbatim and decodes it against no table,
+on purpose (the comment above `noteAnswer`); what is known of it is `docs/DATASOURCES.md`'s - *number
+0* is what the client answers both to a message that arrives and to a `GUILD` message from Zinetta's
+realm that never existed. So it says the client **took** every piece, not that any arrived; arrival is
+what Serena's confirmations say.
+
+**Why it was measured rather than read off the panel**: a first reading of the same transfer, taken
+by eye, put it at 15-20 minutes, and was wrong. `Pending` with the time beside it is how to time a
+transfer from now on.
 
 ---
 
