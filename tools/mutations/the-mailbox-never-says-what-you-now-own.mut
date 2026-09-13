@@ -1,7 +1,7 @@
-name: closing the mailbox says what came in and not what the character is now worth
+name: the mail total goes on to say what the character now owns, which was asked to be taken out
 file: addons/Family_UI/MailReport.lua
 --- old
-		Family:Print(L["|cff66bbffNow you own:|r %s"],
-			UI:Coins(tonumber((Family:TryCall(GetMoney))) or 0))
+		Family:Print(L["|cff66bbffTotal collected:|r %s"], UI:Coins(visitMoney))
 --- new
-		local _ = nil
+		Family:Print(L["|cff66bbffTotal collected:|r %s"], UI:Coins(visitMoney))
+		Family:Print("Now you own: %s", UI:Coins(tonumber((Family:TryCall(GetMoney))) or 0))

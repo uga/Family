@@ -35873,9 +35873,10 @@ print("the money that came out of the mailbox")
 	local said = saidSince(before)
 	check("closing the mailbox totals the visit",
 		said:find("Total collected: 1g 25s", 1, true) ~= nil, said)
-	-- `GetMoney` answers for whoever is logged in and for nobody else.
-	check("and says what this character now owns",
-		said:find("Now you own", 1, true) ~= nil, said)
+	-- And nothing after it. It also said what the character now owns, until Alberto asked for that
+	-- line gone on 2026-09-13.
+	check("and does not go on to say what this character now owns",
+		said:find("Now you own", 1, true) == nil, said)
 
 	-- **The total the moment there is nothing left to take, or on closing - whichever first.**
 	-- Alberto, 2026-09-12: *il totale va stampato quando svuoto la casella o quando chiudo la
@@ -35899,7 +35900,7 @@ print("the money that came out of the mailbox")
 	said = saidSince(before)
 	check("emptying the mailbox says the total there and then, with the box still open",
 		said:find("Total collected: 2g", 1, true) ~= nil
-			and said:find("Now you own", 1, true) ~= nil, said)
+			and said:find("Now you own", 1, true) == nil, said)
 
 	-- Once. Closing straight after has nothing new to add.
 	before = #DEFAULT_CHAT_FRAME.messages

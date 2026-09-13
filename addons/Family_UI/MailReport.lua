@@ -125,16 +125,15 @@ local function sayWhatCameIn()
 	end
 end
 
--- **The way out**: what the visit brought in, and what this character now owns. `GetMoney`
--- answers for whoever is logged in and for nobody else; the family's total is the summary's job.
+-- **The way out**: what the visit brought in. It said what the character now owns as well, until
+-- Alberto read it from play on 2026-09-13 with everything else working and asked for it gone:
+-- *togliamo il "now you own" alla fine*. The money is on the bags and in the summary already.
 --
 -- **The one place a request is let go of.** Opening the mailbox used to clear it as well, and with
 -- two places doing it neither was load-bearing - the recorded mutation removing either survived.
 function sayTheTotal(stillOpen)
 	if wanted() and visitMoney > 0 then
 		Family:Print(L["|cff66bbffTotal collected:|r %s"], UI:Coins(visitMoney))
-		Family:Print(L["|cff66bbffNow you own:|r %s"],
-			UI:Coins(tonumber((Family:TryCall(GetMoney))) or 0))
 	end
 
 	-- Emptied with the box still open: the visit's sum has been said and starts again from

@@ -912,7 +912,6 @@ Family.locales.esES = {
 	["letting Family read the whole house itself is switched off - turn it on under Extras, or use your auction addon's own full scan and Family will hear it"] = "dejar que Family lea toda la casa por su cuenta está desactivado - actívalo en Extras, o usa el escaneo completo de tu addon de subastas y Family lo oirá",
 	["You collected: %s"] = "Has cobrado: %s",
 	["|cff66bbffTotal collected:|r %s"] = "|cff66bbffTotal cobrado:|r %s",
-	["|cff66bbffNow you own:|r %s"] = "|cff66bbffAhora tienes:|r %s",
 	["Say what a craftable item is made with"] = "Decir de qué está hecho un objeto fabricable",
 	["|cff66bbffMade with|r"] = "|cff66bbffHecho con|r",
 	[" |cff66bbff(guild)|r"] = " |cff66bbff(hermandad)|r",

@@ -912,7 +912,6 @@ Family.locales.ruRU = {
 	["letting Family read the whole house itself is switched off - turn it on under Extras, or use your auction addon's own full scan and Family will hear it"] = "чтение всего аукциона силами Family выключено - включите его в разделе «Дополнения» или запустите полное сканирование своего аукционного аддона, Family услышит",
 	["You collected: %s"] = "Вы получили: %s",
 	["|cff66bbffTotal collected:|r %s"] = "|cff66bbffВсего получено:|r %s",
-	["|cff66bbffNow you own:|r %s"] = "|cff66bbffТеперь у вас:|r %s",
 	["Say what a craftable item is made with"] = "Сообщать, из чего сделан изготавливаемый предмет",
 	["|cff66bbffMade with|r"] = "|cff66bbffИзготовлено из|r",
 	[" |cff66bbff(guild)|r"] = " |cff66bbff(гильдия)|r",

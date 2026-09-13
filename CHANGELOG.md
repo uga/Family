@@ -119,7 +119,7 @@ picks itself up where it left off.
 
 - **The money that came out of the mailbox, in chat.** A line for each sum as it arrives, and,
   as soon as there is nothing left to take - or when you close the mailbox, if that comes first -
-  what the visit came to and what you are carrying now - a moment after the last letter, so it
+  what the visit came to - a moment after the last letter, so it
   lands below the game's own line for what was in it. The game
   already tells you about items; it says nothing about the gold in a mailbox full of auction
   sales. Works with the game's own Open All and with mail addons. Off until you switch it on.
