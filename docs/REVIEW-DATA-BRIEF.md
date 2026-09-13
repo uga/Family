@@ -83,10 +83,21 @@ after login, under the recipe search and under a recipe tooltip.
 in memory anyway, so compression saves no RAM. It only saves disk, which he does not mind. **The
 build is paused** until this opinion is in.
 
-**Not measured yet**:
-- what the records weigh uncompressed (`/family decodecost` now prints it, but no reading is
-  recorded);
-- what parsing a plain `FamilyDB` of 200 characters costs at the loading screen.
+**Read by Alberto 2026-09-13**, Era client in English, after the probe was corrected
+(`/family decodecost`): *31 records, 521 ms*; *Stored: 163.7 KB. Uncompressed they would be about
+267.2 KB*; slowest Deiana 53.4 ms (11.7 KB stored), Verysolid 41.4 ms (10.9 KB), Nervina 32.4 ms
+(11.5 KB); *Of 49 recipe lists, 31 were read in a language other than this client's (enUS) and 0
+carry no language at all* - every one of the 31 `frFR`, spread over twelve characters.
+
+What that says, and what it does not:
+- compression as stored saves about 1.6 times (the stored figure includes the printable
+  encoding), about 8.6 KB a character serialised; 200 characters at that average is about
+  1.7 MB - arithmetic, and the saved-variables text of the same tables is larger than the
+  serialiser's length;
+- 521 ms against 524 ms the first time: the decode cost is repeatable.
+
+**Not measured yet**: what parsing a plain `FamilyDB` of 200 characters costs at the loading
+screen.
 
 ## 3. The plan for 74 as it stood when paused
 
@@ -184,8 +195,11 @@ decoded. Nobody has checked whether the errors stop once `Database:WarmPayloads`
     foreign or unlabelled list.
   - `Recipes.lua` calls it at lines 480 and 931 (matching *who teaches / can make*) and at 735
     (the search).
-- How many lists really are foreign or unlabelled is unknown. The probe's *271 of 289* was wrong
-  (L-095); the corrected `/family decodecost` names them, and no reading has been taken yet.
+- **31 of 49 recipe lists on the crashing client are in French** (reading in §2; the old *271 of
+  289* was the probe counting skills, L-095). So most recipes in a first whole-family pass on that
+  client fall off `Names:Recipe`'s fast path, and this explanation is live, not hypothetical.
+  Their profession names print in English because the skill entry's `name` is rewritten at every
+  scan while `recipes` and `locale` are rewritten only when the window is opened.
 - The search runs on every keystroke and walks every recipe of every character, siblings
   included.
 - **Why only now.** The missing pre-decode dates from `db45d3d` (2026-09-06). Work on 2026-09-12
@@ -198,7 +212,9 @@ in what order:
 - repeat the tooltip and the search after the warm-up has had time to finish (200 × 0.3 s is the
   upper bound; 31 × 0.3 s on his family);
 - time `Recipes:Search` and `Recipes:KnowersOf` on their own, with every record already decoded;
-- the corrected `/family decodecost`, for how many lists fall off the fast path.
+- ~~the corrected `/family decodecost`, for how many lists fall off the fast path~~ - taken: 31 of
+  49 (§2); re-reading those lists on an English client would put them back on the fast path, which
+  is itself a test of this explanation.
 
 If decoding turns out not to be the main cost, plain storage does not fix the crash, and the
 opinion on §6's questions changes with it.

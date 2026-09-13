@@ -4797,3 +4797,12 @@ size, and the crash stays possible inside that minute. It is a stopgap, not the 
 
 **The number that decides between 1 and 2**: what the records weigh uncompressed.
 `/family decodecost` now prints it beside what they weigh stored.
+
+**Read by Alberto 2026-09-13**, Era client in English, after the probe was corrected
+(`/family decodecost`): *31 records, 521 ms*; *Stored: 163.7 KB. Uncompressed they would be about
+267.2 KB*; slowest Deiana 53.4 ms (11.7 KB stored), Verysolid 41.4 ms (10.9 KB), Nervina 32.4 ms
+(11.5 KB); *Of 49 recipe lists, 31 were read in a language other than this client's (enUS) and 0
+carry no language at all* - every one of the 31 `frFR`, spread over twelve characters. Compression as stored saves about 1.6 times. The build is paused for a
+second opinion (`docs/REVIEW-DATA-BRIEF.md`), which also asks whether decoding is the cause of the
+crashes at all: 31 French lists mean most recipe names on that client are asked of the client
+during a first whole-family pass.
