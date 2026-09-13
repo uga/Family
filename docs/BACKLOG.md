@@ -4760,6 +4760,12 @@ session and came first.
 
 ## 74. Whole-family questions decode every record, and some families have two hundred alts
 
+**Way 1 chosen by Alberto, 2026-09-13**: *l'unica strada logica che vedo è la 1. Capisco il costo in
+disco (non è un problema) e potenzialmente di RAM - tuttavia anche se tenessimo compresso e
+decomprimessimo a runtime, dopo la decompressione avremmo lo stesso uso di RAM, quindi il problema
+per un utente con molti personaggi resta invariato.* Not built yet; the plan is agreed before the
+migration, because it rewrites every record on every player's disk.
+
 **Raised by Alberto 2026-09-13**, after `/family decodecost` read 31 records at 524 ms: *perché
 comprimiamo i dati? Ricordati che abbiamo utenti con 200++ alt. Non è accettabile un crash perché
 facciamo una ricerca prima di aver finito di decomprimere.*
