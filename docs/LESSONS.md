@@ -3418,3 +3418,19 @@ every stored record is decoded once, a step at a time, and the first question de
 it no longer rides on a walk whose purpose is something else. And the general rule: **when a change
 makes a loop do less, list what the skipped work was doing besides its purpose**; and *script ran
 too long* names the line where time ran out, so measure before fixing the line.
+
+## L-095 — a probe's number was explained instead of being checked against what it counted
+
+**2026-09-13.** `/family decodecost` printed *271 of 289 recipe lists were read in a language other
+than this client's*. The number was handed to Alberto with an explanation - an Era client switched
+between English and French, and older records without a language - and the explanation went into
+the decisions log beside it. Neither was measured. The probe was counting every entry in a
+character's professions part, and that part holds one for every skill on the sheet; only the
+professions whose window was read carry recipes, and only those carry a language. Alberto found it
+too large to believe, which is the only reason it was looked at.
+
+**What now catches it.** The probe counts lists that hold recipes, keeps *no language* apart from
+*another language*, and names what it counted, so a surprising number can be read line by line; the
+harness gives it a skill with no recipes and a list with no language, and a recorded mutation of each
+is caught. And the rule: **before explaining a count, open one of the things it counted**. A
+denominator nobody has looked inside is a guess with a number on it.

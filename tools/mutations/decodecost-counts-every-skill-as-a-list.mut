@@ -1,0 +1,7 @@
+name: /family decodecost counts a skill with no recipes as a recipe list
+file: addons/Family_UI/Slash.lua
+--- old
+				if type(record) == "table" and type(record.recipes) == "table"
+					and #record.recipes > 0 then
+--- new
+				if type(record) == "table" then

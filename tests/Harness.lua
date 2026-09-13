@@ -13885,7 +13885,32 @@ do
 					ran and counted == members and members > 0,
 					tostring(counted) .. " of " .. members .. ": " .. heard)
 				check("and says how many recipe lists are in another language",
-					heard:find("recipe lists were read", 1, true) ~= nil, heard)
+					heard:find("were read in a language other than", 1, true) ~= nil, heard)
+
+				-- **Lists that hold recipes, and nothing else.** The professions part carries an
+				-- entry for every skill on the sheet, and counting those read as 271 of 289 lists
+				-- in another language on a client where very few were.
+				local me = Family:CurrentMember()
+				local mine = Family.Database:Payload(me) or {}
+				local heldProfessions = mine.professions
+				mine.professions = {
+					[9001] = { name = "Sabrecraft", rank = 1 },
+					Mixology = { name = "Mixology", locale = Family.locale, recipes = { { spellID = 1 } } },
+					Couture = { name = "Couture", locale = "frFR", recipes = { { spellID = 2 } } },
+					Oldcraft = { name = "Oldcraft", recipes = { { spellID = 3 } } },
+				}
+				Family.Database:SetPayload(me, mine)
+				from = #DEFAULT_CHAT_FRAME.messages
+				pcall(SlashCmdList["FAMILY"], "decodecost")
+				heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+					#DEFAULT_CHAT_FRAME.messages):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+				check("/family decodecost names a list read in another language, with its language",
+					heard:find(me .. ": Couture (frFR), Oldcraft (?)", 1, true) ~= nil, heard)
+				check("and does not count a skill with no recipes as a list at all",
+					heard:find("Sabrecraft", 1, true) == nil
+						and heard:find("Mixology", 1, true) == nil, heard)
+				mine.professions = heldProfessions
+				Family.Database:SetPayload(me, mine)
 				-- Where the libraries are loaded the harness has them; the number is the point.
 				check("and what the records weigh stored and uncompressed",
 					heard:find("Stored:", 1, true) ~= nil

@@ -1977,7 +1977,8 @@ add("decodecost", L["what decoding every character's record costs on this client
 		return ((Family:TryCall(GetTime)) or 0) * 1000
 	end
 
-	local timings, total, foreign, lists, stored, unpacked = {}, 0, 0, 0, 0, 0
+	local timings, total, foreign, unmarked, lists, stored, unpacked = {}, 0, 0, 0, 0, 0, 0
+	local named = {}
 	for key, entry in pairs(Family.Database:Members()) do
 		if type(entry) == "table" and entry.payload ~= nil then
 			local at = now()
@@ -1994,11 +1995,32 @@ add("decodecost", L["what decoding every character's record costs on this client
 			unpacked = unpacked + ((type(data) == "table" and Family.Codec:SerialisedLength(data))
 				or 0)
 
-			for _, record in pairs(type(data) == "table" and data.professions or {}) do
-				if type(record) == "table" then
+			-- **Only the lists that hold recipes.** The professions part keeps an entry for every
+			-- skill on the character's sheet, and most of those - weapon skills, languages, a
+			-- profession never opened - carry a rank and no recipes and so no language either.
+			-- Counted as lists, they read as 271 of 289 in a language other than this client's
+			-- (Alberto, 2026-09-13: *mi sembrano un'enormità*), which said nothing about recipes.
+			-- A list with no language beside it was read before the language was written down,
+			-- and is told apart from one read in another language, because only the second
+			-- is known to be foreign.
+			local odd = {}
+			for skill, record in pairs(type(data) == "table" and data.professions or {}) do
+				if type(record) == "table" and type(record.recipes) == "table"
+					and #record.recipes > 0 then
 					lists = lists + 1
-					if record.locale ~= Family.locale then foreign = foreign + 1 end
+					local label = tostring(record.name or skill)
+					if record.locale == nil then
+						unmarked = unmarked + 1
+						odd[#odd + 1] = label .. " (?)"
+					elseif record.locale ~= Family.locale then
+						foreign = foreign + 1
+						odd[#odd + 1] = label .. " (" .. tostring(record.locale) .. ")"
+					end
 				end
+			end
+			if #odd > 0 then
+				table.sort(odd)
+				named[#named + 1] = { key = key, lists = table.concat(odd, ", ") }
 			end
 		end
 	end
@@ -2013,8 +2035,12 @@ add("decodecost", L["what decoding every character's record costs on this client
 		Family:Print(L["  |cffffd700%s|r: %.1f ms, %s stored."], one.key, one.ms,
 			UI:Bytes(one.size))
 	end
-	Family:Print(L["  %d of %d recipe lists were read in a language other than this client's."],
-		foreign, lists)
+	Family:Print(L["  Of %d recipe lists, %d were read in a language other than this client's (%s) and %d carry no language at all."],
+		lists, foreign, tostring(Family.locale), unmarked)
+	table.sort(named, function(a, b) return a.key < b.key end)
+	for _, one in ipairs(named) do
+		Family:Print("    |cffffd700%s|r: %s", one.key, one.lists)
+	end
 	Family:Print(L["|cff888888Nothing was changed.|r"])
 end)
 
