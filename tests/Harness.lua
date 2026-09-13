@@ -28009,6 +28009,30 @@ print("a transfer that stopped half way is picked up, not believed")
 	check("and nothing is left waiting to answer them", Family.Wide:InFlight("theirs") == 0,
 		tostring(Family.Wide:InFlight("theirs")))
 
+	-- **One of the requests from a Family too old to send a list** is owed everything, and the
+	-- one answer made for all of them has to keep that - whichever arrived last. The old client
+	-- goes first here, so an answer that only remembered the last request would send one member.
+	link.sent = nil
+	sent = {}
+	Family.Wide:ExchangeWith("theirs", "another transfer under way", { full = true })
+	before46 = #sent
+	Family.Comm:Receive("1\0011\0011\001want\001" .. Family.Codec:ToWire({ family = "theirs",
+		schema = 1 }), "Them-Fire Maw", "WHISPER")
+	Family.Comm:Receive("1\0011\0011\001want\001" .. Family.Codec:ToWire({ family = "theirs",
+		schema = 1, have = missing }), "Them-Fire Maw", "WHISPER")
+	for _ = 1, 6 do advance(1.1) end
+
+	local answeredWith = {}
+	for index = before46 + 1, #sent do
+		-- The transfer's own last batch goes too; the answer is what comes after it drained.
+		if index > before46 + 1 then
+			for memberKey in pairs(sent[index].members or {}) do answeredWith[memberKey] = true end
+		end
+	end
+	check("and an old client among the waiting requests is answered with the whole offering",
+		howMany(answeredWith) == 15, tostring(howMany(answeredWith)) .. " of 15 in the answer, "
+			.. tostring(#sent - before46) .. " messages after the requests")
+
 	-- **And the client's own refusal reaches the transfer**, not only the queue.
 	--
 	-- `Comm` empties what was queued for a name it has just been told is not there. What it

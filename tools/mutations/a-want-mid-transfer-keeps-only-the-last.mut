@@ -1,0 +1,6 @@
+name: of the requests waiting for a transfer to drain, only the last decides whether to answer in full
+file: addons/Family/Wide.lua
+--- old
+        due.full = due.full or have == nil
+--- new
+        due.full = have == nil

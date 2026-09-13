@@ -1,0 +1,6 @@
+name: a waiting request from a client with no list is answered from the others' lists, not in full
+file: addons/Family/Wide.lua
+--- old
+        due.full = due.full or have == nil
+--- new
+        due.full = false
