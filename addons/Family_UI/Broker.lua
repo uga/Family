@@ -395,17 +395,19 @@ local function describe(tooltip)
 
 	-- What is ready now. The one thing on this tooltip that changes while nobody is looking,
 	-- which is what makes it worth putting where it will be seen without being asked for.
+	--
+	-- **How many, not who** (backlog 80). It named every member with something ready, joined
+	-- into one right-hand cell - 44 names at 210 members, read from play 2026-09-13 - and the
+	-- trimming above counts rows, not width, so the tooltip grew past the right edge of the
+	-- screen with the money column on the border and the names off it. The count is the same
+	-- width at any size, said the way the mail line under it says its count; who they are is
+	-- the Cooldowns panel's, which lists them already.
 	local waiting = Family.Cooldowns:Ready()
 	if #waiting > 0 then
-		local names = {}
-		for _, member in ipairs(waiting) do
-			names[#names + 1] = member.count > 1
-				and string.format("%s (%d)", member.name, member.count) or member.name
-		end
-
 		tooltip:AddLine(" ")
 		tooltip:AddDoubleLine(L["|cff40bf40Crafting cooldowns ready|r"],
-			"|cff888888" .. table.concat(names, ", ") .. "|r")
+			"|cff888888" .. string.format(#waiting == 1 and L["%d member"] or L["%d members"],
+				#waiting) .. "|r")
 	end
 
 	if needsAttention > 0 then

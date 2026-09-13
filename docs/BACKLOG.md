@@ -5109,7 +5109,7 @@ locales, `tests/Harness.lua`, a mutation, and `docs/WIDE-TRANSFER.md` §5 for (2
 
 ---
 
-## 80. The broker wraps in the bar and its tooltip runs off the screen at two hundred
+## 80. The broker wraps in the bar and its tooltip runs off the screen at two hundred — DONE 2026-09-13 for the tooltip; the bar stays a note
 
 **Reported by Alberto 2026-09-13**, reading backlog 77, on his side only, at 210 members.
 
@@ -5129,3 +5129,19 @@ that line does not grow with the number of members** - the same tooltip drawn at
 with cooldowns ready gives a line of the same length. The bar text's wrap is a separate question
 - what the broker display does with a long text is the display addon's - and needs a reading of
 which display it was before anything is changed.
+
+**Built 2026-09-13, point 2 of the entry: the count.** The *Crafting cooldowns ready* line says
+*44 members*, with the same singular and plural strings as the mail line under it, and the list is
+left to the Cooldowns panel. Checked in `tests/Harness.lua`: with 12 and with 44 members ready the
+line and the widest line of the tooltip are the same number of visible characters, and no name is on
+it; mutation `broker-cooldowns-lists-every-name`. Chosen over `UI:ShowAtMost` on the names because
+ten names are still ten widths of whatever those names are, so the tooltip would still widen with
+long names; a count does not.
+
+**Point 1, the bar text wrapping, stays a note.** The broker display is **Arkana** (formerly
+ChocolateBar), Alberto 2026-09-13. The text is `%d  %s` - members, two spaces, `UI:Money`
+(`Family_UI/Broker.lua`, `UI:UpdateBroker`) - and it did not wrap at 31 members; 210 is one character
+more. Moving the count out, or dropping silver and copper above 10,000 gold, gains about as much.
+How Arkana sizes a plugin's text is not read here, so no cure is written for it; if it wraps again
+at a width Family controls, that is the reading that reopens this.
+

@@ -12681,6 +12681,43 @@ end
 
 local brokerText = brokerTooltipText()
 
+-- **The cooldown line says how many, and is as wide at 44 as at 12** (backlog 80). It named
+-- everybody with something ready in one cell, 44 names at 210 members, and the tooltip ran off
+-- the screen - the row trimming counts rows, not width. Widths are compared in visible
+-- characters with the colour codes taken out, at two counts of the same number of digits.
+;(function()
+	local realReady = Family.Cooldowns.Ready
+	local function readyFor(count)
+		Family.Cooldowns.Ready = function()
+			local members = {}
+			for index = 1, count do
+				members[index] = { key = "Crafter" .. index .. "-Fire Maw",
+					name = "Crafterwithalongname" .. index, count = 2 }
+			end
+			return members
+		end
+		local text = brokerTooltipText()
+		Family.Cooldowns.Ready = realReady
+
+		local line, widest = nil, 0
+		for each in (text .. "\n"):gmatch("([^\n]*)\n") do
+			local visible = each:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+			if #visible > widest then widest = #visible end
+			if each:find("Crafting cooldowns ready", 1, true) then line = visible end
+		end
+		return line, widest
+	end
+
+	local fewLine, fewWidest = readyFor(12)
+	local manyLine, manyWidest = readyFor(44)
+	check("the ready cooldowns line is there, with the count",
+		manyLine ~= nil and manyLine:find("44", 1, true) ~= nil
+			and manyLine:find("Crafterwithalongname", 1, true) == nil, tostring(manyLine))
+	check("and the tooltip is no wider with 44 members ready than with 12",
+		fewLine ~= nil and #manyLine == #fewLine and manyWidest == fewWidest,
+		tostring(fewWidest) .. " against " .. tostring(manyWidest))
+end)()
+
 check("the broker tooltip names every realm",
 	brokerText:find("Fire Maw", 1, true) ~= nil
 		and brokerText:find("Auberdine", 1, true) ~= nil, brokerText)

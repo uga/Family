@@ -1,0 +1,11 @@
+name: the broker tooltip's ready cooldowns line joins every member's name again, and grows with the family
+file: addons/Family_UI/Broker.lua
+--- old
+			"|cff888888" .. string.format(#waiting == 1 and L["%d member"] or L["%d members"],
+				#waiting) .. "|r")
+--- new
+			"|cff888888" .. (function()
+				local names = {}
+				for _, member in ipairs(waiting) do names[#names + 1] = member.name end
+				return table.concat(names, ", ")
+			end)() .. "|r")

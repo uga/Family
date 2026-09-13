@@ -274,6 +274,10 @@ picks itself up where it left off.
 
 ### A family bigger than a tooltip
 
+- **The minimap and broker tooltip no longer runs off the screen when many characters have a
+  crafting cooldown ready.** It named every one of them on one line - 44 in a family of two hundred
+  - and now says how many; the Cooldowns page lists who.
+
 - **An item nearly all your characters carry no longer fills the screen.** With two hundred
   characters holding a Runecloth Bag, its tooltip listed every one of them. It now names the ten
   holding the most and counts the rest, with how many they hold between them so the total at the
