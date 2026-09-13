@@ -1,0 +1,5 @@
+name: under the mutator a failing check does not end the run
+file: tests/Harness.lua
+--- old
+		if RUN.mutating then os.exit(1) end
+--- new

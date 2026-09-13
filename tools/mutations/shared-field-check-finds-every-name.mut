@@ -1,0 +1,6 @@
+name: the shared-field check finds any name it is asked about
+file: tests/Harness.lua
+--- old
+		return words[field] == true
+--- new
+		return true

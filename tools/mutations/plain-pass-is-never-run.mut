@@ -1,5 +1,6 @@
 name: the harness's plain storage pass stores records compressed like the first
 file: tests/Harness.lua
+pass: both
 --- old
 	Family.Codec.compressing = false
 --- new

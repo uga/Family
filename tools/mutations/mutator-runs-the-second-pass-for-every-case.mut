@@ -1,0 +1,6 @@
+name: under the mutator the second pass runs for every case, asked for or not
+file: tests/Harness.lua
+--- old
+	return not mutating or both
+--- new
+	return true

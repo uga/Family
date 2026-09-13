@@ -32,7 +32,16 @@ do either: kill this at any moment and the repository is exactly as it was.
 
     tools/mutate.py                 every case in tools/mutations
     tools/mutate.py one.mut two.mut just those
+    tools/mutate.py --changed       only cases whose file: is in `git diff --name-only HEAD`
     tools/mutate.py --jobs 1        one at a time, for when a failure needs watching
+
+**A case's gate is a shorter gate**, asked for 2026-09-13 when a full run took 15 min 25 s on a
+twelve-core machine. Each case is gated with `FAMILY_MUTATING=1` in the environment: the harness
+stops at its first failure, which is all a case needs to be caught, and skips its second pass
+(compression switched off) unless the case file says `pass: both` - the few cases only that pass
+can catch. The gate that proves a copy green, and the gate on the repository before anything is
+run, are the whole gate. `--changed` is for the working loop; the full run is still the one
+required before a commit.
 
 Exit is non-zero if any mutation survived, any anchor has gone, or any gate hung.
 """
@@ -66,8 +75,9 @@ SKIP = ("*-cache", ".git", "__pycache__", "*.pyc")
 
 
 def parse(path):
-    """A case file: `name:` and `file:` headers, then --- old and --- new blocks."""
+    """A case file: `name:`, `file:` and optional `pass:` headers, then --- old and --- new."""
     name, target, blocks, current = None, None, {"old": [], "new": []}, None
+    passes = "first"
 
     with open(path, encoding="utf-8") as handle:
         for line in handle.read().split("\n"):
@@ -75,6 +85,8 @@ def parse(path):
                 name = line[5:].strip()
             elif current is None and line.startswith("file:"):
                 target = line[5:].strip()
+            elif current is None and line.startswith("pass:"):
+                passes = line[5:].strip()
             elif line.rstrip() == "--- old":
                 current = "old"
             elif line.rstrip() == "--- new":
@@ -88,10 +100,10 @@ def parse(path):
         blocks["new"].pop()
 
     return name or os.path.basename(path), target, "\n".join(blocks["old"]), \
-        "\n".join(blocks["new"])
+        "\n".join(blocks["new"]), passes
 
 
-def gate(where, seconds=None):
+def gate(where, seconds=None, case=None):
     """The gate, with a clock on it. Answers a return code, or None if it never finished.
 
     **A mutation can make the harness spin.** Take the bound off a loop, or the exit off a
@@ -103,9 +115,17 @@ def gate(where, seconds=None):
     a survivor - the code plainly broke - and calling it caught would be claiming a check saw
     something when nothing was ever read back.
     """
+    # `case` is None for the whole gate, and a case's `pass:` value for the shorter one.
+    environment = dict(os.environ)
+    environment.pop("FAMILY_MUTATING", None)
+    environment.pop("FAMILY_PASSES", None)
+    if case is not None:
+        environment["FAMILY_MUTATING"] = "1"
+        if case == "both":
+            environment["FAMILY_PASSES"] = "both"
     try:
         return subprocess.run(GATE, cwd=where, capture_output=True, text=True,
-                              timeout=seconds).returncode
+                              timeout=seconds, env=environment).returncode
     except subprocess.TimeoutExpired:
         return None
 
@@ -142,7 +162,7 @@ def prove(where):
 
 def run(path, where):
     """One case, in one worker's copy. Answers (caught, line to print)."""
-    name, target, old, new = parse(path)
+    name, target, old, new, passes = parse(path)
 
     if not target or not old:
         return False, "  BROKEN   %s - no file: or no --- old block" % name
@@ -167,7 +187,7 @@ def run(path, where):
         with open(full, "w", encoding="utf-8") as handle:
             handle.write(held.replace(old, new, 1))
 
-        answered = gate(where, TIMEOUT)
+        answered = gate(where, TIMEOUT, passes)
         if answered is None:
             return True, "  HUNG     %s - the gate ran past %d seconds" % (name, TIMEOUT)
         if answered != 0:
@@ -181,13 +201,25 @@ def run(path, where):
             handle.write(held)
 
 
+def changed_files():
+    """What `git diff --name-only HEAD` names, as repository paths."""
+    out = subprocess.run(["git", "diff", "--name-only", "HEAD"], cwd=ROOT, capture_output=True,
+                         text=True)
+    if out.returncode != 0:
+        return None
+    return set(line.strip() for line in out.stdout.split("\n") if line.strip())
+
+
 def main(argv):
     jobs = None
     rest = []
+    only_changed = False
     argv = list(argv)
     while argv:
         arg = argv.pop(0)
-        if arg == "--jobs":
+        if arg == "--changed":
+            only_changed = True
+        elif arg == "--jobs":
             jobs = int(argv.pop(0)) if argv else None
         elif arg.startswith("--jobs="):
             jobs = int(arg.split("=", 1)[1])
@@ -200,6 +232,17 @@ def main(argv):
         paths = sorted(os.path.join(CASES, f) for f in os.listdir(CASES)
                        if f.endswith(".mut"))
 
+    if only_changed:
+        files = changed_files()
+        if files is None:
+            print("git diff --name-only HEAD did not answer, so nothing can be picked by it")
+            return 1
+        paths = [p for p in paths if parse(p)[1] in files]
+        if not paths:
+            print("no recorded mutation names a file changed since HEAD - the full run is "
+                  "still the one before a commit")
+            return 0
+
     if not paths:
         print("no mutations recorded in %s" % CASES)
         return 1
@@ -207,12 +250,33 @@ def main(argv):
     # The gate has to be green first, or every mutation below "catches" something that was
     # already broken and the whole run says nothing. Run against the repository itself, since
     # this is the one gate of the lot that is about the code as it actually stands.
+    #
+    # **Beside the first copy's own proving gate, not before it.** Both are whole gates, sixteen
+    # seconds each on the machine this was tuned on, and neither needs the other's answer to
+    # start; one after the other they were half a minute of every run before any case began.
+    # The run still stops on either answer before a case is applied.
+    holding = tempfile.mkdtemp(prefix="family-mutate-")
+    early = {}
+
+    def prepare():
+        try:
+            early["first"] = copy_tree(os.path.join(holding, "w0"))
+            early["wrong"] = prove(early["first"])
+        except Exception as trouble:        # noqa: BLE001 - reported, not swallowed
+            early["trouble"] = trouble
+
+    preparing = threading.Thread(target=prepare)
+    preparing.start()
     standing = gate(ROOT, TIMEOUT)
+    preparing.join()
+
     if standing is None:
+        shutil.rmtree(holding, ignore_errors=True)
         print("the gate did not finish in %d seconds before any mutation was applied - "
               "that is the thing to look at" % TIMEOUT)
         return 1
     if standing != 0:
+        shutil.rmtree(holding, ignore_errors=True)
         print("the gate is red before any mutation - fix that first")
         return 1
 
@@ -223,16 +287,13 @@ def main(argv):
     print("%d mutation(s), %d at a time" % (len(paths), jobs))
     sys.stdout.flush()
 
-    holding = tempfile.mkdtemp(prefix="family-mutate-")
     results = [None] * len(paths)
 
-    try:
-        first = copy_tree(os.path.join(holding, "w0"))
-        wrong = prove(first)
-    except Exception as trouble:            # noqa: BLE001 - reported, not swallowed
+    if "trouble" in early:
         shutil.rmtree(holding, ignore_errors=True)
-        print("the copy could not be made: %s" % trouble)
+        print("the copy could not be made: %s" % early["trouble"])
         return 1
+    first, wrong = early["first"], early["wrong"]
 
     if wrong:
         shutil.rmtree(holding, ignore_errors=True)

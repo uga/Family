@@ -2392,6 +2392,23 @@ re-derive them.
 | Craft-level recipes | Era 1536, TBC +956, MoP +2804 = 5048 |
 | Era items whose reputation requirement the client states outright | 418 |
 
+### How long the mutation run takes, `tools/mutate.py`, measured 2026-09-13
+
+On the development machine (12 logical cores), 187 to 190 recorded cases, eight at a time, with
+`time python3 tools/mutate.py`:
+
+| | Full run | One case's gate |
+|---|---|---|
+| Before: every case gated with both harness passes, to the end | **15 min 25 s** | about 16 s |
+| After: `FAMILY_MUTATING=1`, second pass only for `pass: both`, stop at the first failure; the two whole gates at the start run side by side; two slow harness blocks rewritten | **2 min 52 s** | 4.5 s alone, first pass |
+
+A case's gate took 7.6 s alone with only the pass skipped; the two harness blocks that were most of
+the rest were a font-string walk asked once a frame inside a loop (about two seconds) and a
+frontier pattern searched file by file once a field (about half a second). Eight parallel gates
+cost about 7 CPU-seconds a case against 4.5 alone, so the cores do not scale linearly. The plain
+gate, `lua5.1 tests/Harness.lua .`, went from about 15 s to 10.6 s with the same two rewrites.
+`--changed` on a diff touching the harness and the tool: 4 cases, 26 s.
+
 ### What a shared recipe list weighs, `tools/wire-size.lua`
 
 Not from the client's tables but from the libraries the addon channel is fed through, and

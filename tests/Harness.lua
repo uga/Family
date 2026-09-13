@@ -35,6 +35,19 @@ local ROOT = arg[1] or "."
 -- A global, like `LOADED_HERE`: the main chunk is at Lua 5.1's limit of two hundred locals.
 RUN = { storage = arg[2] == "plain" and "plain" or "compressed", written = {} }
 
+-- **Run by `tools/mutate.py`**, which says so in the environment. A mutation gate asks one
+-- question - does anything go red - so it stops at the first failure and, unless the case says
+-- `pass: both`, skips the second pass. Measured 2026-09-13: the full run went from 15 min 25 s
+-- to the figure in DECISIONS once both were in. Outside the mutator nothing here changes.
+RUN.mutating = os.getenv("FAMILY_MUTATING") == "1"
+RUN.bothPasses = os.getenv("FAMILY_PASSES") == "both"
+
+-- Whether the second pass runs: always for the gate, and under the mutator only for a case that
+-- asks for it.
+function RUN.wantsSecondPass(mutating, both)
+	return not mutating or both
+end
+
 --------------------------------------------------------------------------------------------
 -- Frames
 --------------------------------------------------------------------------------------------
@@ -1914,7 +1927,17 @@ local function check(label, condition, detail)
 	else
 		failures = failures + 1
 		print(string.format("  FAIL  %s%s", label, detail and ("  -> " .. detail) or ""))
+		-- A mutation caught once is caught; the rest of the run would only say so again.
+		if RUN.mutating then os.exit(1) end
 	end
+end
+
+-- Asked by the check below that the stop at the first failure really stops: a failure here, and
+-- a line after it that only a run carrying on would print.
+if arg[3] == "fail-first" then
+	check("the harness was told to fail here", false)
+	print("ran on past a failure")
+	os.exit(0)
 end
 
 --------------------------------------------------------------------------------------------
@@ -17970,11 +17993,15 @@ print("guild share")
 		-- "Blacksmithing" and inside the note naming what could not be offered, and the note
 		-- has its mouse switched off for its own reasons - so a looser needle found that row
 		-- instead and passed whatever this panel did.
+		-- The list asked for once, not once a frame: `guildList` walks every font string there is,
+		-- and asked inside these two loops it made them the slowest lines in the harness - two
+		-- seconds of a seven-second gate (measured 2026-09-13, tuning `tools/mutate.py`).
+		local theList = guildList()
 		local nameRow
 		for _, f in ipairs(fontStrings) do
 			local parent = type(f.__parent) == "table" and f.__parent or nil
 			if type(f.__text) == "string" and f.__text:find("Smith|r  |cff888888", 1, true)
-				and parent and parent.text == f and parent.__parent == guildList() then
+				and parent and parent.text == f and parent.__parent == theList then
 				nameRow = parent
 			end
 		end
@@ -17989,7 +18016,7 @@ print("guild share")
 		-- blank row that highlights is wrong on any panel and for any reason.
 		local liveBlank = 0
 		for _, f in ipairs(frames) do
-			if f.__parent == guildList() and f.__shown == true and takesMouse(f)
+			if f.__parent == theList and f.__shown == true and takesMouse(f)
 				and type(f.text) == "table" and (f.text.__text or "") == "" then
 				liveBlank = liveBlank + 1
 			end
@@ -29992,12 +30019,19 @@ print("what Wide Family shares is what Family records")
 	check("with enough of them for the question to mean anything",
 		#sources > 20, tostring(#sources))
 
+	-- Every whole word in the sources, gathered in one pass and then looked up: the same answer
+	-- as a frontier pattern searched file by file, which cost most of a second a gate and ran
+	-- once for every field (measured 2026-09-13, tuning `tools/mutate.py`). A field name is
+	-- letters, digits and underscores, and so is every word this gathers.
+	local words
 	local function namedSomewhere(field)
-		local pattern = "%f[%w_]" .. field .. "%f[^%w_]"
-		for _, text in ipairs(sources) do
-			if text:find(pattern) then return true end
+		if not words then
+			words = {}
+			for _, text in ipairs(sources) do
+				for word in text:gmatch("[%w_]+") do words[word] = true end
+			end
 		end
-		return false
+		return words[field] == true
 	end
 
 	local wide = slurp("addons/Family/Wide.lua") or ""
@@ -30018,6 +30052,10 @@ print("what Wide Family shares is what Family records")
 
 	check("no field is shared under a name nothing in Family writes",
 		#orphans == 0, table.concat(orphans, ", "))
+	-- And the word list can say no: a whole word no source holds, and part of one that does.
+	check("and a name no source holds is found nowhere, nor is part of a word",
+		not namedSomewhere("fieldNoFamilyFileWrites") and not namedSomewhere("astSee")
+			and namedSomewhere("lastSeen"))
 end)()
 
 --------------------------------------------------------------------------------------------
@@ -37148,6 +37186,10 @@ end)()
 -- knows cannot pass until 74, and its last line are. Read by exit status (L-067).
 ;(function()
 if RUN.storage ~= "compressed" then return end
+	if not RUN.wantsSecondPass(RUN.mutating, RUN.bothPasses) then
+		RUN.secondPassSkipped = true
+		return
+	end
 	print()
 	print("the same checks, with compression switched off")
 	local out = os.tmpname()
@@ -37171,9 +37213,42 @@ if RUN.storage ~= "compressed" then return end
 end)()
 
 -- Outside the pass's own function, so that a pass never started is a failure and not silence.
-if RUN.storage == "compressed" then
+if RUN.storage == "compressed" and not RUN.secondPassSkipped then
 	check("and the plain storage pass ran the checks rather than none of them",
 		(RUN.plainPassed or 0) > 3000, tostring(RUN.plainPassed))
+end
+
+print()
+print("the gate run by the mutator")
+
+-- **Point 1: under the mutator the second pass is skipped unless a case asks for both.**
+check("the gate runs the second pass, and under the mutator only for a case that asks for both",
+	RUN.wantsSecondPass(false, false) == true and RUN.wantsSecondPass(true, true) == true
+		and RUN.wantsSecondPass(true, false) == false)
+
+-- **Point 3: under the mutator the harness stops at the first failure with a non-zero status,
+-- and outside it carries on as it always has.** Asked of the harness itself, started twice with a
+-- first check that fails; it stops before loading the addon, so this costs a few milliseconds.
+if RUN.storage == "compressed" then
+	local function started(environment)
+		local out = os.tmpname()
+		local status = os.execute(string.format("%s %s %s %s compressed fail-first > %s 2>&1",
+			environment, arg[-1] or "lua5.1", arg[0] or "tests/Harness.lua", ROOT, out))
+		local handle = io.open(out, "r")
+		local text = handle and handle:read("*a") or ""
+		if handle then handle:close() end
+		os.remove(out)
+		return status, text
+	end
+	local stoppedStatus, stoppedText = started("env FAMILY_MUTATING=1")
+	check("under the mutator a failing check ends the run there, with a non-zero status",
+		stoppedStatus ~= 0 and stoppedText:find("FAIL", 1, true) ~= nil
+			and stoppedText:find("ran on past a failure", 1, true) == nil,
+		tostring(stoppedStatus) .. ": " .. stoppedText)
+	local goneOnStatus, goneOnText = started("env -u FAMILY_MUTATING")
+	check("and outside it the run carries on past a failure as before",
+		goneOnStatus == 0 and goneOnText:find("ran on past a failure", 1, true) ~= nil,
+		tostring(goneOnStatus) .. ": " .. goneOnText)
 end
 
 print()
