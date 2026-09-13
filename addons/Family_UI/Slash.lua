@@ -1904,11 +1904,23 @@ add("widetime", L["how long a Wide Family exchange takes on this client"], funct
 		-- line whether nothing has been acknowledged yet or the members cannot be marked at
 		-- all. Both are honest, only one is worth doing anything about, so the line names
 		-- them rather than leaving the reader to guess between them.
+		--
+		-- **And "not sent" split in two, with the names.** Sent and changed since is what
+		-- playing a character does to it; never sent is the one to look into - and a count
+		-- of either left the reader asking which characters, with no way to find out.
 		if held < total and Family.Wide.MarkGaps then
-			local unmarkable, unsent = Family.Wide:MarkGaps(link)
-			Family:Print(L["  |cff888888Of the %d that are not: %d have nothing recorded as "
-				.. "sent yet, and %d cannot be marked at all.|r"],
-				total - held, unsent, unmarkable)
+			local unmarkable, neverSent, changed, named = Family.Wide:MarkGaps(link)
+			Family:Print(L["  |cff888888Of the %d that are not: %d changed since they were sent, "
+				.. "%d never confirmed as sent, and %d cannot be marked at all.|r"],
+				total - held, changed, neverSent, unmarkable)
+			if changed > 0 then
+				Family:Print(L["  |cff888888Changed since sent: %s|r"],
+					table.concat(named.changed, ", "))
+			end
+			if neverSent > 0 then
+				Family:Print(L["  |cff888888Never confirmed as sent: %s|r"],
+					table.concat(named.neverSent, ", "))
+			end
 		end
 
 		Family:Print(L["  |cff888888What it used to cost, for comparison: building %d ms, "

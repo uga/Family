@@ -159,6 +159,10 @@ picks itself up where it left off.
 - **Exchanges only send the characters that changed.** They were meant to from the start and were
   sending everybody every time. On a link of thirty characters that is most of every exchange.
 
+- **`/family widetime` says which characters are waiting to go, and why.** Changed since they were
+  sent - which is what playing one does - is counted apart from never confirmed as sent, and
+  each group is named.
+
 - **A shared character shows when it was last seen**, not when it was last sent. Every one of them
   used to look freshly updated after each exchange, whatever its real age.
 

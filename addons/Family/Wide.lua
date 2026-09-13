@@ -1006,21 +1006,44 @@ end
 -- `time()` and differ from itself on every exchange, so it goes every time and always did.
 --
 -- Both are honest and only one is worth doing anything about, so the figure names them.
+--
+-- **And "not sent" is two things, not one.** Read from Serena's side 2026-09-13: *2 have nothing
+-- recorded as sent yet*, on a link that had exchanged in full after the last deploy. The count was
+-- `sent ~= mark`, which is just as true of a member sent and **changed since** - played, which moves
+-- its record and so its mark - as of one never sent at all. The first is the ordinary state of any
+-- character logged in since the other side was last online; the second is the thing to look into.
+-- So they are counted apart, and each group comes back by name, because *which two* is the
+-- question a reader asks next and the one nobody can answer from a number.
 function Wide:MarkGaps(link)
-    local unmarkable, unsent = 0, 0
+    local unmarkable, neverSent, changed = 0, 0, 0
+    local named = { unmarkable = {}, neverSent = {}, changed = {} }
+
+    local function note(group, memberKey)
+        local meta = Family.Database:Meta(memberKey)
+        local list = named[group]
+        list[#list + 1] = (meta and meta.name) or memberKey
+    end
 
     for memberKey in pairs(link.grants or {}) do
         local mark, isOffered = sendingMark(link, memberKey)
         if isOffered then
+            local recorded = (link.sent or {})[memberKey]
             if mark == nil then
                 unmarkable = unmarkable + 1
-            elseif (link.sent or {})[memberKey] ~= mark then
-                unsent = unsent + 1
+                note("unmarkable", memberKey)
+            elseif recorded == nil then
+                neverSent = neverSent + 1
+                note("neverSent", memberKey)
+            elseif recorded ~= mark then
+                changed = changed + 1
+                note("changed", memberKey)
             end
         end
     end
 
-    return unmarkable, unsent
+    for _, list in pairs(named) do table.sort(list) end
+
+    return unmarkable, neverSent, changed, named
 end
 
 -- `full` sends everything whether or not it has changed; `ask` sends the second half of the

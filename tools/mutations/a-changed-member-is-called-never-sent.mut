@@ -1,0 +1,6 @@
+name: a member sent and changed since is counted as never sent
+file: addons/Family/Wide.lua
+--- old
+            elseif recorded == nil then
+--- new
+            elseif recorded ~= mark then

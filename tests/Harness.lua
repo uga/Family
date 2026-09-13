@@ -13718,11 +13718,50 @@ do
 					local heldSent = link.sent
 					link.sent = {}
 
-					local unmarkable, unsent = Family.Wide:MarkGaps(link)
+					local unmarkable, neverSent, changed = Family.Wide:MarkGaps(link)
 					local total, kept = Family.Wide:MarkCost(link)
-					check("the two reasons a member is not counted unchanged add up to the gap",
-						total > kept and unmarkable + unsent == total - kept,
-						unmarkable .. " + " .. unsent .. " against " .. (total - kept))
+					check("the reasons a member is not counted unchanged add up to the gap",
+						total > kept and unmarkable + neverSent + changed == total - kept,
+						unmarkable .. " + " .. neverSent .. " + " .. changed .. " against "
+							.. (total - kept))
+
+					-- **Sent and changed since is not never sent.** Read from Serena's side
+					-- 2026-09-13 as *2 have nothing recorded as sent yet* on a link that had
+					-- exchanged in full: a character played since the last exchange has a new
+					-- mark, and the one count said something untrue about it.
+					local someone = nil
+					for memberKey in pairs(link.grants or {}) do
+						someone = someone or memberKey
+					end
+					link.sent = { [someone] = "a mark from before it was played" }
+					local _, never2, changed2, named = Family.Wide:MarkGaps(link)
+					local meta = Family.Database:Meta(someone)
+					local who = (meta and meta.name) or someone
+					check("a member sent and changed since is counted as changed, by name",
+						changed2 == 1 and named.changed[1] == who,
+						tostring(changed2) .. " " .. tostring(named.changed[1]) .. " for " .. who)
+					check("and not as one never sent",
+						never2 == neverSent - 1 and not table.concat(named.neverSent, "|")
+							:find(who, 1, true),
+						tostring(never2) .. " against " .. tostring(neverSent - 1))
+
+					-- And the slash command says both, with the names.
+					local from = #DEFAULT_CHAT_FRAME.messages
+					pcall(SlashCmdList["FAMILY"], "widetime")
+					local heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+						#DEFAULT_CHAT_FRAME.messages)
+					check("/family widetime names who changed since they were sent",
+						heard:find("Changed since sent: " .. who, 1, true) ~= nil, heard)
+
+					-- The same member with nothing recorded at all is the other group.
+					link.sent = {}
+					from = #DEFAULT_CHAT_FRAME.messages
+					pcall(SlashCmdList["FAMILY"], "widetime")
+					heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+						#DEFAULT_CHAT_FRAME.messages)
+					check("and who was never confirmed as sent, when nothing is recorded for them",
+						heard:find("Never confirmed as sent: " .. who, 1, true) ~= nil
+							and heard:find("Changed since sent", 1, true) == nil, heard)
 
 					link.sent = heldSent
 				end
