@@ -1210,8 +1210,9 @@ Recorded so the project can be measured against it.
     a family of modules with a format that can break silently between versions.
 11. **Sharing that fails visibly.** Named tables and versioned payloads, so a version
     mismatch is a message rather than a corrupted record.
-12. **Lazy, compressed storage.** Member records decoded on demand rather than every record
-    parsed at every login.
+12. **Plain storage, nothing to decode.** Member records kept as tables and read with the
+    saved data at the loading screen, so a question about the whole family never stalls the
+    game unpacking them (§2.4).
 13. **Stated staleness everywhere** (§2.2).
 
 ---

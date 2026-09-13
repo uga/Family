@@ -1,0 +1,6 @@
+name: /family decodecost reads a record still compressed through the database, which rewrites it
+file: addons/Family_UI/Slash.lua
+--- old
+				data = Family.Codec:Decode(entry.codec, entry.payload)
+--- new
+				data = Family.Database:Payload(key)

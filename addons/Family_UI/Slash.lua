@@ -1977,40 +1977,41 @@ end)
 -- many writes a session makes and of which parts, and what folding each part of the character being
 -- played costs. Each part is folded a few times and the mean is printed, because one fold of a
 -- small part is under the clock's resolution.
--- **What a first whole-family question costs on this client, in its biggest part.**
+-- **What every character's record weighs, and which recipe lists are in another language.**
 --
--- Reported from play 2026-09-13, twice in one session and on a character just logged in: *script
--- ran too long* under the recipe search and under a recipe tooltip's *who can make it*. Both walk
--- every character's record, and a record is stored compressed; the first walk of a session decodes
--- all of them in one go, which the login warm-up exists to spread out. Both errors stopped inside
--- `Names`, which is where the client's patience ran out and not necessarily where the time went.
--- So this decodes each record straight off the disk - not through the session's cache, which it
--- would otherwise fill and so measure once - and says what that costs, and how many recipe lists
--- are in a language other than this client's, since those are named recipe by recipe.
-add("decodecost", L["what decoding every character's record costs on this client"], function()
+-- Written 2026-09-13 as a decode timer, after two *script ran too long* reports at the first
+-- whole-family question of a session: 31 records took 521-524 ms to decode on Alberto's Era
+-- client, and that reading is what moved records to plain storage (backlog 74). **Since then a
+-- record has nothing to decode**, so timing it would print nought and look like a result. What
+-- is left worth reading: how many records are still in the old compressed form, and what
+-- decoding those costs until each is read once; what the records weigh, since that is now what
+-- the loading screen reads; and the recipe lists in another language, which are the ones named
+-- recipe by recipe. A record still compressed is decoded straight off the disk and left as it
+-- is, so running this changes nothing - the rewrite happens when the addon itself reads it.
+add("decodecost", L["what every character's record weighs, and which recipe lists are in another language"], function()
 	local clock = _G.debugprofilestop
 	local function now()
 		if clock then return (Family:TryCall(clock)) or 0 end
 		return ((Family:TryCall(GetTime)) or 0) * 1000
 	end
 
-	local timings, total, foreign, unmarked, lists, stored, unpacked = {}, 0, 0, 0, 0, 0, 0
-	local named = {}
+	local records, compressed, decoding, foreign, unmarked, lists, weight = 0, 0, 0, 0, 0, 0, 0
+	local sizes, named = {}, {}
 	for key, entry in pairs(Family.Database:Members()) do
 		if type(entry) == "table" and entry.payload ~= nil then
-			local at = now()
-			local data = Family.Codec:Decode(entry.codec, entry.payload)
-			local took = now() - at
-			total = total + took
-			timings[#timings + 1] = { key = key, ms = took,
-				size = type(entry.payload) == "string" and #entry.payload or 0 }
-			stored = stored + timings[#timings].size
-			-- And what it would weigh uncompressed, for the question of whether to compress at
-			-- all (Alberto, 2026-09-13, with families of two hundred alts in mind). The
-			-- serialiser's own length, which is close to - and smaller than - the saved-variables
-			-- text the same table would be written out as.
-			unpacked = unpacked + ((type(data) == "table" and Family.Codec:SerialisedLength(data))
-				or 0)
+			records = records + 1
+			local data = entry.payload
+			if type(data) == "string" then
+				compressed = compressed + 1
+				local at = now()
+				data = Family.Codec:Decode(entry.codec, entry.payload)
+				decoding = decoding + (now() - at)
+			end
+			-- The serialiser's own length, which is close to - and smaller than - the
+			-- saved-variables text the same table is written out as.
+			local size = (type(data) == "table" and Family.Codec:SerialisedLength(data)) or 0
+			weight = weight + size
+			sizes[#sizes + 1] = { key = key, size = size }
 
 			-- **Only the lists that hold recipes.** The professions part keeps an entry for every
 			-- skill on the character's sheet, and most of those - weapon skills, languages, a
@@ -2042,15 +2043,17 @@ add("decodecost", L["what decoding every character's record costs on this client
 		end
 	end
 
-	table.sort(timings, function(a, b) return a.ms > b.ms end)
+	table.sort(sizes, function(a, b) return a.size > b.size end)
 
-	Family:Print(L["Decoding %d records took %.0f ms."], #timings, total)
-	Family:Print(L["  Stored: %s. Uncompressed they would be about %s."], UI:Bytes(stored),
-		UI:Bytes(unpacked))
-	for index = 1, math.min(3, #timings) do
-		local one = timings[index]
-		Family:Print(L["  |cffffd700%s|r: %.1f ms, %s stored."], one.key, one.ms,
-			UI:Bytes(one.size))
+	Family:Print(L["%d records: %d stored plain, %d still compressed from an earlier version."],
+		records, records - compressed, compressed)
+	if compressed > 0 then
+		Family:Print(L["  Decoding the ones still compressed took %.0f ms; each is rewritten plain the first time Family reads it."],
+			decoding)
+	end
+	Family:Print(L["  They weigh about %s serialised."], UI:Bytes(weight))
+	for index = 1, math.min(3, #sizes) do
+		Family:Print(L["  |cffffd700%s|r: about %s."], sizes[index].key, UI:Bytes(sizes[index].size))
 	end
 	Family:Print(L["  Of %d recipe lists, %d were read in a language other than this client's (%s) and %d carry no language at all."],
 		lists, foreign, tostring(Family.locale), unmarked)

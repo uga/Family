@@ -27,9 +27,11 @@ local ROOT = arg[1] or "."
 -- reporting themselves loaded, and then - from the end of this file, as a second process - with
 -- `plain`, which sets `Codec.compressing` false. Added 2026-09-13 (data-path review, step 3)
 -- because no check had ever run on plain storage, which backlog 74 was about to make the only
--- storage there is. **Since 74 both passes store plain**, and the second differs only in what
--- the addon believes about its libraries: what `/family status` and the panels say, and nothing
--- about how a record is written.
+-- storage there is. **That reason is spent: since 74 both passes store plain.** The second pass
+-- stays for a client without the libraries (Alberto, 2026-09-13) - what the addon says and does
+-- when it believes they are missing. Only in part: the stood-in libraries stay loaded underneath,
+-- because every Wide Family and guild check needs them, so a sharing path that refuses without
+-- them is not exercised here.
 -- A global, like `LOADED_HERE`: the main chunk is at Lua 5.1's limit of two hundred locals.
 RUN = { storage = arg[2] == "plain" and "plain" or "compressed", written = {} }
 
@@ -13947,22 +13949,35 @@ do
 				check("and changes nothing", heard:find("Nothing was changed", 1, true) ~= nil, heard)
 			end
 
-			-- **What decoding every record costs**, asked after two *script ran too long* reports
-			-- under whole-family questions. Decoded straight off the disk, so the session's cache
-			-- is neither used nor filled, and a second run measures the same thing as the first.
+			-- **What every record weighs, and what is left compressed.** Written as a decode timer
+			-- after two *script ran too long* reports, and reworded once backlog 74 left nothing to
+			-- decode but the records an earlier version wrote. One of those is put on disk here:
+			-- counted, timed, and left exactly as it was found.
 			do
+				local old = "Oldform-FireMaw"
+				local text = Family.Codec:ToWire({ bags = { [0] = { size = 8, slots = {} } } }, 5)
+				FamilyDB.members[old] = { meta = { name = "Oldform", realm = "FireMaw" },
+					codec = "ld1", payload = text }
 				local from = #DEFAULT_CHAT_FRAME.messages
 				local ran = pcall(SlashCmdList["FAMILY"], "decodecost")
 				local heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
 					#DEFAULT_CHAT_FRAME.messages):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
-				local counted = tonumber(heard:match("Decoding (%d+) records"))
-				local members = 0
+				local counted, plain, still = heard:match("(%d+) records: (%d+) stored plain, (%d+) still")
+				local members, strings = 0, 0
 				for _, entry in pairs(Family.Database:Members()) do
 					if entry.payload ~= nil then members = members + 1 end
+					if type(entry.payload) == "string" then strings = strings + 1 end
 				end
-				check("/family decodecost times every stored record",
-					ran and counted == members and members > 0,
-					tostring(counted) .. " of " .. members .. ": " .. heard)
+				check("/family decodecost counts every stored record, plain and still compressed",
+					ran and tonumber(counted) == members and tonumber(still) == strings
+						and tonumber(plain) == members - strings and strings > 0,
+					tostring(counted) .. "/" .. tostring(plain) .. "/" .. tostring(still)
+						.. " against " .. members .. "/" .. strings .. ": " .. heard)
+				check("and times decoding only the ones still compressed",
+					heard:find("Decoding the ones still compressed took", 1, true) ~= nil, heard)
+				check("and leaves a record still compressed exactly as it found it",
+					FamilyDB.members[old].payload == text)
+				FamilyDB.members[old] = nil
 				check("and says how many recipe lists are in another language",
 					heard:find("were read in a language other than", 1, true) ~= nil, heard)
 
@@ -13990,10 +14005,8 @@ do
 						and heard:find("Mixology", 1, true) == nil, heard)
 				mine.professions = heldProfessions
 				Family.Database:SetPayload(me, mine)
-				-- Where the libraries are loaded the harness has them; the number is the point.
-				check("and what the records weigh stored and uncompressed",
-					heard:find("Stored:", 1, true) ~= nil
-						and heard:find("Uncompressed they would be about", 1, true) ~= nil, heard)
+				check("and what the records weigh",
+					heard:find("They weigh about", 1, true) ~= nil, heard)
 			end
 
 			-- **Bytes in the unit a reader can hold in their head.**
