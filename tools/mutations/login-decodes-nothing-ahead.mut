@@ -1,0 +1,6 @@
+name: logging in decodes no record ahead of the first whole-family question
+file: addons/Family/Database.lua
+--- old
+		Family:After(3, "database.warm", step)
+--- new
+		local _ = step

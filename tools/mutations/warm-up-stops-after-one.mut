@@ -1,0 +1,8 @@
+name: the warm-up stops after its first record
+file: addons/Family/Database.lua
+--- old
+	return #keys > 1
+end
+--- new
+	return false
+end

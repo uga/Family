@@ -35888,6 +35888,65 @@ print("two ways of saying it, and the shorter one where the longer will not fit"
 end)()
 
 print()
+print("records are unpacked a little at a time after logging in, not all at the first question")
+
+-- **Reported from play 2026-09-13**: *script ran too long* at the first whole-family question after
+-- logging in. Measured on that client, 31 records took 524 ms to decode, and every whole-family
+-- question reads them all. The recipe-name walk used to decode one a second as a side effect, and
+-- stopped when it learned to step past members it had already read (L-094).
+;(function()
+	local keys = {}
+	for index = 1, 4 do
+		local key = "Unpacked" .. index .. "-FireMaw"
+		keys[#keys + 1] = key
+		-- Each different, so a decode can be told apart from the others by what it was handed.
+		local codec, stored = Family.Codec:Encode({ bags = { [0] = { size = 10 + index,
+			slots = {} } } })
+		-- Written straight to the saved variables, as a record from an earlier session is: on disk
+		-- and not yet decoded by this one.
+		FamilyDB.members[key] = { meta = { name = "Unpacked" .. index, realm = "FireMaw",
+			faction = "Alliance", classFile = "MAGE", level = 60 }, codec = codec, payload = stored }
+	end
+
+	local realDecode, decodes = Family.Codec.Decode, {}
+	Family.Codec.Decode = function(self, codec, value)
+		decodes[#decodes + 1] = value
+		return realDecode(self, codec, value)
+	end
+
+	local function stored(key) return FamilyDB.members[key].payload end
+	local function times(key)
+		local count = 0
+		for _, value in ipairs(decodes) do if value == stored(key) then count = count + 1 end end
+		return count
+	end
+
+	-- One record a step, not all of them.
+	Family.Database:WarmPayloads()
+	local afterOne = 0
+	for _, key in ipairs(keys) do afterOne = afterOne + times(key) end
+	check("a warm-up step decodes one record, not every record at once",
+		afterOne <= 1, tostring(afterOne))
+
+	-- Driven by logging in, a step at a time, until none is left.
+	fire("PLAYER_ENTERING_WORLD")
+	for _ = 1, 20 do advance(0.5) end
+	local each = {}
+	for _, key in ipairs(keys) do each[#each + 1] = times(key) end
+	check("after logging in every stored record is decoded once, a little at a time",
+		table.concat(each, ",") == "1,1,1,1", table.concat(each, ","))
+
+	-- And the first whole-family question then decodes nothing.
+	decodes = {}
+	for _, key in ipairs(keys) do Family.Database:Payload(key) end
+	check("so the first question that reads them decodes nothing",
+		#decodes == 0, tostring(#decodes))
+
+	Family.Codec.Decode = realDecode
+	for _, key in ipairs(keys) do Family.Database:Forget(key) end
+end)()
+
+print()
 print("a whole-family recipe search does not ask the client for its build per recipe")
 
 -- **Reported from play 2026-09-13**: *script ran too long*, inside `Names.lua`, under

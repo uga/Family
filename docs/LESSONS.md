@@ -3398,3 +3398,23 @@ for two weeks, in `DATASOURCES.md`, which realms Pyrewood Village is grouped wit
 **What now catches it.** A claim that generalises from a reading carries the instance beside it -
 here, the two realms and the client - or it is written as the instance and not as the rule. A
 reader who meets *any realm* with no realms named has found this lesson, and asks.
+
+## L-094 — an optimisation removed a side effect nobody had written down
+
+**2026-09-06 to 2026-09-13.** The login walk over recipe names read one member a second through
+`Database:Payload`, which decodes and caches. Backlog 25 taught it to step past members whose names
+it already had - the right thing for names, and the walk's comments are all about names. Nothing
+said that the same read was also what kept the first whole-family question of a session from
+decoding every record at once. From the second session on it did: 31 records, 524 ms in one frame,
+reported from play a week later as *script ran too long* inside `Names.lua`, where the client's
+patience ran out rather than where the time went.
+
+The first fix went where the error pointed, removed a real but minor cost, and was deployed before
+the second report showed it was not the cause. Measuring the decode on the client found it in one
+reading.
+
+**What now catches it.** Decoding ahead of time is its own job with its own check - after logging in
+every stored record is decoded once, a step at a time, and the first question decodes nothing - so
+it no longer rides on a walk whose purpose is something else. And the general rule: **when a change
+makes a loop do less, list what the skipped work was doing besides its purpose**; and *script ran
+too long* names the line where time ran out, so measure before fixing the line.

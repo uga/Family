@@ -1660,6 +1660,12 @@ would otherwise be made twice.
 
 ## 25. The login warm-up walks every character, however many there are — DONE 2026-09-06
 
+**A cost this entry did not see, found 2026-09-13.** Stepping past a member also meant never
+decoding it, and the walk had been the only thing decoding records ahead of time. From the second
+session on, the first whole-family question decoded every record in one frame - 31 records, 524 ms,
+measured with `/family decodecost` after two *script ran too long* reports. Decoding is now its own
+login job in `Database.lua` (L-094).
+
 **Found 2026-09-06**, answering Alberto's question about a user with **210 characters** - three
 realms at seventy each. It is not the item name store that suffers; it is the walk that fills
 it, and this was true before that store existed.

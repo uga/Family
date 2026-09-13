@@ -1,0 +1,7 @@
+name: a warm-up step decodes every record in one go
+file: addons/Family/Database.lua
+--- old
+	local _, reason = self:Payload(pick)
+--- new
+	for _, key in ipairs(keys) do self:Payload(key) end
+	local _, reason = self:Payload(pick)

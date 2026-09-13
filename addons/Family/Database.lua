@@ -329,3 +329,74 @@ function Database:Changed(key)
 		end
 	end
 end
+
+--------------------------------------------------------------------------------------------
+-- Unpacking the records a little at a time after logging in
+--
+-- **Reported from play 2026-09-13 as *script ran too long*, twice**, under the recipe search and
+-- under a recipe tooltip's *who can make it*, each at the first whole-family question after
+-- logging a character in. Measured on that client with `/family decodecost`: **31 records, 524 ms
+-- to decode**, the largest 35 to 50 ms each. Every whole-family question reads every record, so
+-- the first one of a session paid all of that in one frame.
+--
+-- It used not to, and not by design. The recipe-name warm-up at login read one member a second
+-- through `Payload`, which decodes and caches - so the decoding was spread out as a side effect.
+-- Backlog 25 then taught that walk to step past members whose names it already had, which was
+-- the point of it, and stepping past a member also meant never decoding it. From the second
+-- session on nothing was decoded ahead of time at all (L-094).
+--
+-- So decoding is its own job now, and it asks one thing only: is this record decoded yet. One
+-- record a step, a moment apart, from a little after arrival until none is left; a scan that
+-- writes a record leaves it decoded, so those are passed over for nothing. A borrowed record
+-- arrived as a table and has nothing to decode.
+--------------------------------------------------------------------------------------------
+
+Database.WARM_STEP = Database.WARM_STEP or 0.3
+
+-- Records that would not decode this session, kept apart from the cache so that `Payload` still
+-- answers nil for them exactly as it always has.
+local undecodable = {}
+
+-- Decodes the next record not yet decoded. Answers whether any were left to do.
+function Database:WarmPayloads()
+	if not self.usable or type(FamilyDB) ~= "table" then return false end
+
+	local keys = {}
+	for key, entry in pairs(FamilyDB.members or {}) do
+		if decoded[key] == nil and not undecodable[key] and type(entry) == "table"
+			and entry.payload ~= nil then
+			keys[#keys + 1] = key
+		end
+	end
+	if #keys == 0 then return false end
+
+	-- The character being played first: theirs is the record somebody is about to open.
+	table.sort(keys)
+	local playing = Family:CurrentMember()
+	local pick = keys[1]
+	for _, key in ipairs(keys) do
+		if key == playing then pick = key break end
+	end
+
+	local _, reason = self:Payload(pick)
+	-- A record that will not decode stays undecoded, and must not be picked again every step.
+	if decoded[pick] == nil then
+		undecodable[pick] = true
+		Family:Debug("could not decode %s: %s", tostring(pick), tostring(reason))
+	end
+
+	return #keys > 1
+end
+
+Family:OnDatabaseReady("database.warm", function()
+	Family:RegisterEvent("PLAYER_ENTERING_WORLD", "database.warm", function()
+		local function step()
+			if Database:WarmPayloads() then
+				Family:After(Database.WARM_STEP, "database.warm", step)
+			end
+		end
+		-- After the client's own arrival and the first scans, which leave their own records
+		-- decoded; before the recipe-name walk, which would otherwise pay these one a second.
+		Family:After(3, "database.warm", step)
+	end)
+end)
