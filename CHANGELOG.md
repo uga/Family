@@ -402,8 +402,6 @@ picks itself up where it left off.
   per realm and per side, because those are not the same market. The cheapest on show in one visit
   wins; your next visit replaces it, because a fortnight-old price is a photograph.
 
-- **Prices on a tooltip name only the coins they need** — *7c*, *2s 8c*, *19g 12s 99c*.
-
 - **The higher price wins** when two of your characters see different ones, because a reputation
   discount only ever makes a vendor cheaper.
 
