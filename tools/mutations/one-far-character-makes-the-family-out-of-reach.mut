@@ -1,0 +1,6 @@
+name: a family with one character within reach is still said to be out of reach
+file: addons/Family/Wide.lua
+--- old
+        if not realm or Family.Guild:SameRealmGroup(realm, ours) then return false end
+--- new
+        if not realm then return false end

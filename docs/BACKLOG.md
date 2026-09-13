@@ -4720,7 +4720,13 @@ since `SetPayload` serialises and deflates the whole record each time.
 
 ---
 
-## 73. A link to a family on a realm this character cannot reach says *nobody is online*
+## 73. A link to a family on a realm this character cannot reach says *nobody is online* — DONE 2026-09-13
+
+**Built 2026-09-13, sentence only.** Where every character a link could whisper carries a realm outside
+this character's group (`Guild:SameRealmGroup`), both the exchange's answer and the end of a walk say
+*none of their characters is on a realm this character can reach* instead of *offline*; the walk's
+line is said whatever the reports switch says. The whispers still go, so a wrong answer from
+`GetAutoCompleteRealms` costs a sentence and never a link. A name with no realm counts as reachable.
 
 **Found from play 2026-09-13.** Alberto logged in on Uga (Soulseeker, Alliance) with Serena online
 on Malachia (Pyrewood Village, Alliance). The login walk probed all five of Serena's characters,
@@ -4749,3 +4755,39 @@ Soulseeker's group should not contain Pyrewood Village.
 **Read the same hour**: `GetAutoCompleteRealms() -> 1:{}(table)` on Uga - no connected realms at all,
 which agrees with the refusal. Not built yet: two *script ran too long* reports arrived in the same
 session and came first.
+
+---
+
+## 74. Whole-family questions decode every record, and some families have two hundred alts
+
+**Raised by Alberto 2026-09-13**, after `/family decodecost` read 31 records at 524 ms: *perché
+comprimiamo i dati? Ricordati che abbiamo utenti con 200++ alt. Non è accettabile un crash perché
+facciamo una ricerca prima di aver finito di decomprimere.*
+
+**Why records are compressed.** `HANDOFF.md`, *Lazy, compressed storage*: the client parses every
+saved variable at login, and on forty alts parsing every record was the largest single cost -
+spent on characters nobody was about to look at. A compressed string loads almost for free and
+is decoded only for the character being looked at.
+
+**Why that premise no longer holds.** Many readers ask about everybody at once and decode every
+record to answer: the recipe search, *who can make it* and *Can make it* (`Recipes.lua`), the
+possessions index behind item tooltips (`Index.lua`), the whole-family gear, reputation and quest
+views (`Character.lua`), the summary's sets, the guild share. At the measured rate, two hundred
+alts is about three and a half seconds in the first such question of a session. The step-at-a-time
+decode added the same day (`Database:WarmPayloads`) spreads it but needs about a minute at that
+size, and the crash stays possible inside that minute. It is a stopgap, not the answer.
+
+**Three ways, not chosen.**
+
+1. **Stop compressing.** Records stored as tables, as borrowed members already are. No decode ever.
+   The cost moves to the loading screen - a larger file to parse - where it cannot trip *script ran
+   too long*; memory is what whole-family questions already fill. Existing records would be decoded
+   once and rewritten, a step at a time.
+2. **Keep compressing; add small uncompressed summaries** per member (recipe ids, item counts, and so
+   on) written when the record is written, and read by every whole-family question. Every reader
+   above changes, and each summary is a second place the same fact lives.
+3. **Spread decoding across frames** and answer partially while it runs (*still reading 40
+   characters*). No crash; an incomplete tooltip at exactly the moment it is looked at.
+
+**The number that decides between 1 and 2**: what the records weigh uncompressed.
+`/family decodecost` now prints it beside what they weigh stored.

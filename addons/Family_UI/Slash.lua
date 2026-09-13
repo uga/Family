@@ -1977,7 +1977,7 @@ add("decodecost", L["what decoding every character's record costs on this client
 		return ((Family:TryCall(GetTime)) or 0) * 1000
 	end
 
-	local timings, total, foreign, lists = {}, 0, 0, 0
+	local timings, total, foreign, lists, stored, unpacked = {}, 0, 0, 0, 0, 0
 	for key, entry in pairs(Family.Database:Members()) do
 		if type(entry) == "table" and entry.payload ~= nil then
 			local at = now()
@@ -1986,6 +1986,13 @@ add("decodecost", L["what decoding every character's record costs on this client
 			total = total + took
 			timings[#timings + 1] = { key = key, ms = took,
 				size = type(entry.payload) == "string" and #entry.payload or 0 }
+			stored = stored + timings[#timings].size
+			-- And what it would weigh uncompressed, for the question of whether to compress at
+			-- all (Alberto, 2026-09-13, with families of two hundred alts in mind). The
+			-- serialiser's own length, which is close to - and smaller than - the saved-variables
+			-- text the same table would be written out as.
+			unpacked = unpacked + ((type(data) == "table" and Family.Codec:SerialisedLength(data))
+				or 0)
 
 			for _, record in pairs(type(data) == "table" and data.professions or {}) do
 				if type(record) == "table" then
@@ -1999,6 +2006,8 @@ add("decodecost", L["what decoding every character's record costs on this client
 	table.sort(timings, function(a, b) return a.ms > b.ms end)
 
 	Family:Print(L["Decoding %d records took %.0f ms."], #timings, total)
+	Family:Print(L["  Stored: %s. Uncompressed they would be about %s."], UI:Bytes(stored),
+		UI:Bytes(unpacked))
 	for index = 1, math.min(3, #timings) do
 		local one = timings[index]
 		Family:Print(L["  |cffffd700%s|r: %.1f ms, %s stored."], one.key, one.ms,

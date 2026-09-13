@@ -478,6 +478,33 @@ local function characterCount(link)
     return #candidates(link)
 end
 
+-- **Whether every one of their characters is on a realm this character cannot whisper.**
+--
+-- Backlog 73. Read from play 2026-09-13: Uga on Soulseeker and Malachia on Pyrewood Village, both
+-- Alliance. Every whisper was refused as *not playing*, one typed by hand as well, and Family said
+-- the other family was offline while they sat there. A whisper reaches this character's own realm
+-- and the realms connected to it, and the client says which those are - `GetAutoCompleteRealms`,
+-- asked through `Guild:SameRealmGroup`, which narrows an empty or absent answer to this realm
+-- alone. Measured: Pyrewood Village answers its group of three, Soulseeker an empty table; and a
+-- character on Nethergarde Keep, in Pyrewood Village's group, exchanged with Malachia at once.
+--
+-- **Only the sentence changes.** The whispers still go: the list is the client's word for which
+-- realms autocomplete, and a link that works is worth more than a few whispers saved on the day
+-- that word turns out not to mean *reachable*. A name that carries no realm is taken as reachable,
+-- because nothing says otherwise.
+local function outOfReach(link)
+    local ours = (Family:CurrentMember() or ""):match("%-(.+)$")
+    if not ours or not (Family.Guild and Family.Guild.SameRealmGroup) then return false end
+
+    local any = false
+    for _, entry in ipairs(candidates(link)) do
+        local realm = tostring(entry.name):match("%-(.+)$")
+        if not realm or Family.Guild:SameRealmGroup(realm, ours) then return false end
+        any = true
+    end
+    return any
+end
+
 -- Why there is nobody to whisper, said the same way wherever it is asked.
 --
 -- Two callers now: `send`, which finds out as it goes, and the exchange, which asks before it
@@ -497,6 +524,11 @@ local function nobodyThere(link, anyKnown, shadowed)
 
         return string.format(L["%d of %s's characters share a name with one just tried, so "
             .. "Family is waiting a moment to tell the client's answers apart."], shadowed, who)
+    end
+
+    if anyKnown and outOfReach(link) then
+        return string.format(L["none of %s's characters is on a realm this character can reach"],
+            tostring(Wide:Called(link)))
     end
 
     if anyKnown then
@@ -1209,6 +1241,17 @@ tryNext = function(familyID, link)
     -- family whose one character is rarely on, the automatic update produces this every time
     -- and the answer stops being news. It still goes to the narration, so switching it off
     -- loses the interruption and not the fact.
+    -- Not *offline* where they cannot be reached from here at all (backlog 73): that sentence
+    -- sends somebody to wait for a person who is sitting there. Said whatever the reports switch
+    -- says, because it is not news about an exchange - it is why no exchange can happen from this
+    -- character, and it stays true every login until they play on a reachable realm.
+    if outOfReach(link) then
+        Family:Print(L["|cffffaa00None of %s's characters is on a realm this character can "
+            .. "reach.|r Nothing was sent. A whisper reaches your own realm and the realms "
+            .. "connected to it."], tostring(Wide:Called(link)))
+        return false
+    end
+
     if Wide:Reports() then
         Family:Print(count == 1
             and L["|cffffaa00None of %s's %d character is online.|r Nothing was sent. Try "

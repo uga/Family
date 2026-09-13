@@ -1,0 +1,6 @@
+name: a family on realms out of reach is said to be offline
+file: addons/Family/Wide.lua
+--- old
+    if anyKnown and outOfReach(link) then
+--- new
+    if false then

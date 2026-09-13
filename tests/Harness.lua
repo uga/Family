@@ -13886,6 +13886,10 @@ do
 					tostring(counted) .. " of " .. members .. ": " .. heard)
 				check("and says how many recipe lists are in another language",
 					heard:find("recipe lists were read", 1, true) ~= nil, heard)
+				-- Where the libraries are loaded the harness has them; the number is the point.
+				check("and what the records weigh stored and uncompressed",
+					heard:find("Stored:", 1, true) ~= nil
+						and heard:find("Uncompressed they would be about", 1, true) ~= nil, heard)
 			end
 
 			-- **Bytes in the unit a reader can hold in their head.**
@@ -20257,6 +20261,12 @@ print("a family is a person with several characters")
 -- ago and is very often not the one they are playing now - so being told that name is not
 -- there eliminates a candidate rather than answering the question.
 ;(function()
+	-- Their realm is one this character can whisper, as a connected realm is: what these checks
+	-- are about is a family whose characters are offline, and a family on a realm out of reach
+	-- is a different sentence (backlog 73), checked on its own below.
+	local heldRealms = _G.GetAutoCompleteRealms
+	_G.GetAutoCompleteRealms = function() return { "FireMaw", "Thunderstrike" } end
+
 	local sent = {}
 	C_ChatInfo = {
 		RegisterAddonMessagePrefix = function() return true end,
@@ -20590,6 +20600,59 @@ print("a family is a person with several characters")
 		again == false and type(why) == "string"
 			and why:find("Grella-Thunderstrike", 1, true) ~= nil, tostring(why))
 
+	-- **A family on a realm this character cannot whisper is not offline** (backlog 73). Read from
+	-- play: Uga on Soulseeker, whose client lists no connected realms, and Malachia on Pyrewood
+	-- Village - every whisper refused, one typed by hand too, and Family said they were offline.
+	do
+		_G.GetAutoCompleteRealms = function() return {} end
+
+		local _, far = Family.Wide:ExchangeWith("theirs", "from a realm out of reach")
+		check("a family whose characters are all on realms out of reach is said to be so",
+			type(far) == "string"
+				and far:find("realm this character can reach", 1, true) ~= nil
+				and far:find("online", 1, true) == nil, tostring(far))
+
+		-- And at the end of a walk, whatever the reports switch says: it is not news about an
+		-- exchange but why none can happen from here.
+		Family.Wide:SetReports(false)
+		local link = Family.Wide:Links()["theirs"]
+		link.characters["Grellaccia-Thunderstrike"] = time() + 120
+		Family.Wide:ExchangeWith("theirs", "another go")
+		advance(0.4)
+		local from = #DEFAULT_CHAT_FRAME.messages
+		notFound("Grellaccia")
+		local realmLines, offlineLines = 0, 0
+		for index = from + 1, #DEFAULT_CHAT_FRAME.messages do
+			local line = DEFAULT_CHAT_FRAME.messages[index]
+			if line:find("realm this character can reach", 1, true) then
+				realmLines = realmLines + 1
+			end
+			if line:find("None of", 1, true) and line:find("online", 1, true) then
+				offlineLines = offlineLines + 1
+			end
+		end
+		link.characters["Grellaccia-Thunderstrike"] = nil
+		Family.Wide:SetReports(true)
+		check("and a walk that ends there says it once, in place of offline",
+			realmLines == 1 and offlineLines == 0,
+			realmLines .. " about realms, " .. offlineLines .. " about being offline")
+
+		-- One character on a realm within reach and the family is only offline, as before.
+		-- Refused like the rest, so that nobody is left to try and the sentence is chosen. A name no
+		-- other character in this fixture carries, or the refusal could not be placed.
+		link.characters["Zuccone-FireMaw"] = time() + 60
+		Family.Wide:ExchangeWith("theirs", "one of them is near")
+		advance(0.4)
+		notFound("Zuccone")
+		local _, near = Family.Wide:ExchangeWith("theirs", "one of them is near, and out")
+		link.characters["Zuccone-FireMaw"] = nil
+		check("while one of their characters within reach keeps it a matter of being offline",
+			type(near) == "string" and near:find("online", 1, true) ~= nil
+				and near:find("realm this character can reach", 1, true) == nil, tostring(near))
+
+		_G.GetAutoCompleteRealms = function() return { "FireMaw", "Thunderstrike" } end
+	end
+
 	-- Hearing from any one of them puts the family back within reach.
 	Family.Comm:Receive("1\0011\0011\001hello\001hi", "Grellina-Thunderstrike", "WHISPER")
 	sent = {}
@@ -20598,6 +20661,7 @@ print("a family is a person with several characters")
 
 	FamilyDB.wide = before
 	Family.Comm:Abandon()
+	_G.GetAutoCompleteRealms = heldRealms
 end)()
 
 print()

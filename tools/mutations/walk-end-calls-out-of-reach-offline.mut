@@ -1,0 +1,8 @@
+name: a walk that ends on realms out of reach says the family is offline
+file: addons/Family/Wide.lua
+--- old
+    if outOfReach(link) then
+        Family:Print(L["|cffffaa00None of %s's characters is on a realm this character can "
+--- new
+    if false then
+        Family:Print(L["|cffffaa00None of %s's characters is on a realm this character can "
