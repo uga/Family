@@ -436,6 +436,12 @@ function Recipes:KnowersOf(spellID, itemID, itemName)
 		return {}
 	end
 
+	-- **The name is the last resort, and only where no table named the spell.** Matching by name
+	-- asks the client to name every recipe of every list in another language, one spell at a
+	-- time; with the spell in hand the ids answer, and a recipe recorded with neither id is the
+	-- one thing given up - records old enough to carry neither.
+	local byName = itemName and not (spellID and spellID ~= 0)
+
 	local found = {}
 
 	-- One line per member, not one per profession that can make it.
@@ -476,7 +482,7 @@ function Recipes:KnowersOf(spellID, itemID, itemName)
 						and recipe.spellID == spellID)
 					or (itemID and itemID ~= 0 and recipe.itemID == itemID)
 
-				if not matched and itemName and not recipe.itemID then
+				if not matched and byName and not recipe.itemID then
 					matched = teaches(itemName, Family.Names:Recipe(recipe, nil, nil,
 						record.locale))
 				end

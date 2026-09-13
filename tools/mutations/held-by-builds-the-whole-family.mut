@@ -1,0 +1,8 @@
+name: a question about one member's holdings builds the whole family's index
+file: addons/Family/Index.lua
+--- old
+	-- Built already, by a question about everybody: answered from it, as before.
+	if entries then
+--- new
+	if not entries then refresh() end
+	if entries then

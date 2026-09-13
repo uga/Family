@@ -44,6 +44,9 @@ picks itself up where it left off.
 - **The whole-family recipe search waits for you to stop typing**, and puts its results in order
   without looking every name up again - lighter on every key, most of all on Classic Era.
 
+- **Pointing at a wand, rod or oil no longer looks up every recipe name in the family**, and
+  opening one character's professions reads that character alone instead of everybody.
+
 ### Fixed on Mists of Pandaria
 
 - **What a character has up for sale was always empty.** Family was asking that version of the game

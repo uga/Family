@@ -531,7 +531,12 @@ local function makerBlock(_, itemID)
 
 	local itemName = Family.Names:CachedItem(itemID)
 
-	local ours = Family.Recipes:KnowersOf(nil, itemID, itemName)
+	-- **The spell that makes it, from the shipped tables, before any name.** Without it a wand -
+	-- whose recipes on Burning Crusade and Mists carry the spell and not the item - was matched
+	-- by name against every recipe of every list not in the reader's language, asking the client
+	-- for a spell name each time; one of the two *script ran too long* reports of 2026-09-13
+	-- stopped exactly there (data-path review, §1 and §3 step 2).
+	local ours = Family.Recipes:KnowersOf(Family.Recipes:MadeBy(itemID), itemID, itemName)
 	local theirs = (Family.Guild and Family.Guild:Enabled())
 		and Family.Guild:CraftersOf(nil, itemID, itemName) or {}
 

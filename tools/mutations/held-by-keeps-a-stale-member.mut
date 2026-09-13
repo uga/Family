@@ -1,0 +1,7 @@
+name: a member written again keeps the part of the index built for them alone
+file: addons/Family/Index.lua
+--- old
+		stale[key] = true
+		partial[key] = nil
+--- new
+		stale[key] = true

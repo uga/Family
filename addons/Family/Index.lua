@@ -195,11 +195,19 @@ end
 
 --------------------------------------------------------------------------------------------
 
+-- **One member's part, for a question about one member**, kept while the whole index has not
+-- been built. `HeldBy` is asked once a recipe row by a page about a single character, and it used
+-- to build the whole index to answer - decoding, and later reading, every member the first time a
+-- one-member page was opened (data-path review, §1; L-097). key -> variant -> record.
+local partial = {}
+
 local function rebuild()
 	entries = {}
 	variantStrings = {}
 	wipe(variantNames)
 	wipe(stale)
+	-- The whole index answers for everybody from here, so the parts are no longer asked.
+	wipe(partial)
 
 	for key in pairs(Family.Database:Members()) do
 		addMember(key)
@@ -246,8 +254,10 @@ end)
 function Index:Invalidate(key)
 	if key then
 		stale[key] = true
+		partial[key] = nil
 	else
 		entries = nil
+		wipe(partial)
 	end
 end
 
@@ -384,8 +394,26 @@ end
 -- record the possessions search and the tooltip read, so the three cannot disagree about a count.
 function Index:HeldBy(key, variant)
 	if not (key and variant) then return nil end
-	refresh()
-	return (entries[variant] or {})[key]
+
+	-- Built already, by a question about everybody: answered from it, as before.
+	if entries then
+		refresh()
+		return (entries[variant] or {})[key]
+	end
+
+	-- Otherwise that member alone, into tables of its own. `addMember` writes into `entries`
+	-- and `variantStrings`, so both are stood in for while it runs and put back as they were -
+	-- which is nil, since a built index took the branch above.
+	local mine = partial[key]
+	if not mine then
+		local heldStrings = variantStrings
+		entries, variantStrings = {}, heldStrings or {}
+		addMember(key)
+		mine = entries
+		entries, variantStrings = nil, heldStrings
+		partial[key] = mine
+	end
+	return (mine[variant] or {})[key]
 end
 
 -- How many the whole family holds, across everybody and everywhere.

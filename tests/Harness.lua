@@ -37219,6 +37219,91 @@ if RUN.storage == "compressed" and not RUN.secondPassSkipped then
 end
 
 print()
+print("a tooltip and a one-member page ask about no more than they show")
+
+;(function()
+	-- **Point 1: a product's makers found through the spell the shipped tables name.** Lesser
+	-- Magic Wand, item 11287, is made by spell 14293 in `RecipeProducts`. An enchanter whose list
+	-- carries that spell and no item, recorded in another language beside recipes that are not
+	-- it, used to be matched by name - a spell name asked of the client for every one of them.
+	local maker = "Wandwright-FireMaw"
+	Family.Database:SetMeta(maker, { name = "Wandwright", realm = "FireMaw", faction = "Alliance",
+		classFile = "MAGE", level = 60,
+		skills = { [333] = { name = "Enchanting", rank = 100, maxRank = 300 } } })
+	Family.Database:SetPayload(maker, { professions = { [333] = { locale = "frFR",
+		recipes = {
+			{ name = "Ench. de bracelets", spellID = 7418 },
+			{ name = "Ench. de plastron", spellID = 7443 },
+			{ name = "Baguette magique inférieure", spellID = 14293 },
+		} } } })
+	Family.Index:Invalidate()
+
+	local spells = 0
+	local realSpell = Family.Names.Spell
+	Family.Names.Spell = function(...)
+		spells = spells + 1
+		return realSpell(...)
+	end
+	ITEM_NAMES[11287] = ITEM_NAMES[11287] or "Lesser Magic Wand"
+	tooltipFor(11287)
+	Family.Names.Spell = realSpell
+
+	local named = false
+	for _, line in ipairs(GameTooltip.__lines) do
+		if type(line[1]) == "string" and line[1]:find("Wandwright", 1, true) then named = true end
+	end
+	check("a product whose spell the shipped tables name is drawn with its maker",
+		Family.Recipes:MadeBy(11287) == 14293 and named, tostring(Family.Recipes:MadeBy(11287)))
+	check("without a spell name asked of the client for any recipe on the way",
+		spells == 0, tostring(spells) .. " spell names asked")
+
+	-- **Point 2: a page about one member reads that member.** `CanMake` asks the index once a
+	-- recipe row, and the index used to build itself whole to answer - every member's record read
+	-- the first time anybody opened a one-member page.
+	local page = "Onesmith-FireMaw"
+	Family.Database:SetMeta(page, { name = "Onesmith", realm = "FireMaw", faction = "Alliance",
+		classFile = "WARRIOR", level = 60,
+		skills = { [164] = { name = "Blacksmithing", rank = 100, maxRank = 300 } } })
+	Family.Database:SetPayload(page, {
+		bags = { [0] = { size = 16, free = 14, slots = { { id = 2840, count = 24 } } } },
+		professions = { [164] = { locale = Family.locale, recipesSeen = time(),
+			recipes = { { name = "Runed Copper Breastplate", spellID = 2667 } } } } })
+	Family.Index:Invalidate()
+
+	local others, held = {}, 0
+	local realPayload, realHeld = Family.Database.Payload, Family.Index.HeldBy
+	Family.Database.Payload = function(this, key)
+		if key ~= page then others[key] = true end
+		return realPayload(this, key)
+	end
+	Family.Index.HeldBy = function(...)
+		held = held + 1
+		return realHeld(...)
+	end
+	Family.UI:ShowProfessionFor(page, "Blacksmithing")
+	Family.Database.Payload, Family.Index.HeldBy = realPayload, realHeld
+
+	local read = {}
+	for key in pairs(others) do read[#read + 1] = key end
+	table.sort(read)
+	check("opening one member's professions page reads that member's record and no other",
+		held > 0 and #read == 0, held .. " index questions; also read: " .. table.concat(read, ", "))
+
+	-- And the part built for one member is dropped when that member is written, like the rest.
+	local before = Family.Index:HeldBy(page, 2840)
+	Family.Database:SetPayload(page, {
+		bags = { [0] = { size = 16, free = 15, slots = { { id = 2840, count = 3 } } } } })
+	local after = Family.Index:HeldBy(page, 2840)
+	check("and what it holds is answered afresh once that member is written",
+		before and before.bags == 24 and after and after.bags == 3,
+		tostring(before and before.bags) .. " then " .. tostring(after and after.bags))
+
+	Family.Database:Forget(maker)
+	Family.Database:Forget(page)
+	Family.Index:Invalidate()
+end)()
+
+print()
 print("the gate run by the mutator")
 
 -- **Point 1: under the mutator the second pass is skipped unless a case asks for both.**

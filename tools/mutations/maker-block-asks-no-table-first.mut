@@ -1,0 +1,6 @@
+name: the makers block on a tooltip asks no shipped table for the spell before matching by name
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local ours = Family.Recipes:KnowersOf(Family.Recipes:MadeBy(itemID), itemID, itemName)
+--- new
+	local ours = Family.Recipes:KnowersOf(nil, itemID, itemName)

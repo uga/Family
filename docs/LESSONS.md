@@ -3463,3 +3463,22 @@ them, which now write. **Its limit**: a change made in place and then written by
 record, with no other record written in between, is absorbed into that write; the direct check
 above is what covers that shape for this panel. And the rule: **a reader that needs a different
 shape of the data builds its own table**.
+
+## L-097 — a helper turned a page about one member into a question about the whole family
+
+**2026-09-12 to 2026-09-13.** `aba1a49` (2026-09-12 22:44) taught each recipe row on a member's
+professions page to say how many that character can make, from what they hold: `Recipes:CanMake`
+asks `Index:HeldBy`, which is the right record to ask. `HeldBy` began with `refresh()`, and on an
+index not built yet `refresh()` builds all of it - every member's record read, and on the storage
+of the time decoded, to answer about one. A page that had read one member now read the family the
+first time it was opened in a session, and nothing on the page, in the helper's name or in its
+checks said so: every check asked whether the number was right, and it was. It is L-094's class -
+a change whose purpose was elsewhere changed how much is read - and it fed the *script ran too long*
+reports of the next day beside the name-matching path (data-path review, §1).
+
+**What now catches it.** `HeldBy` builds only the asking member's part while no whole index exists,
+and drops it when that member is written. *Opening one member's professions page reads that
+member's record and no other* counts every `Database:Payload` read while the page opens on an index
+nobody has built, and a recorded mutation that lets `HeldBy` build the whole index is caught. And the
+rule: **a helper added to something drawn per member is asked how much it reads, not only what it
+answers.**
