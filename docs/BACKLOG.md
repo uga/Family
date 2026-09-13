@@ -2767,8 +2767,10 @@ confirmation could do nothing and still pass.
 **Asked:** 2026-09-09, out of the same question. Reach was the one thing `WIDE-TRANSFER.md` §7
 said was uncertain, and it named the wrong uncertainty.
 
-**What is settled:** realm is not a boundary. Specification §11.1 was closed by the 1.0.0 pass -
-two families on unrelated realms exchanged - and the one measured failure in this area is a
+**What was taken as settled, and is not (corrected 2026-09-13):** realm is a boundary after all -
+Soulseeker and Pyrewood Village refuse each other's whispers, same faction, typed by hand too; see
+specification §11.1 and backlog 73. The 1.0.0 pass that said otherwise did not record its realms.
+The other measured failure in this area is a
 different one: a character on a partner realm cannot **send** on the `GUILD` addon channel
 (DATASOURCES, measured on Mists 2026-08-30), which is Guild share's opening and not a whisper.
 
@@ -4709,3 +4711,31 @@ a loot at the price of `bags`, where marking the whole record on every write wou
 two frames, every loot. So point 1 is affordable in the shape of *mark the part replaced*, and not in
 the shape of *mark the record*. Not measured: what the write already costs before any mark is added,
 since `SetPayload` serialises and deflates the whole record each time.
+
+---
+
+## 73. A link to a family on a realm this character cannot reach says *nobody is online*
+
+**Found from play 2026-09-13.** Alberto logged in on Uga (Soulseeker, Alliance) with Serena online
+on Malachia (Pyrewood Village, Alliance). The login walk probed all five of Serena's characters,
+the client refused each as *not playing*, and Family said *None of Serena's 5 characters are
+online. Nothing was sent.* A whisper typed by hand to Malachia was refused too. Specification §11.1
+had said a realm is not a boundary; it is (corrected there the same day).
+
+**Two faults, one cause.** The sentence is about the other person - *not online* - when the truth is
+about where this character stands. And five whispers go to realms the client could have said in
+advance it will not deliver to.
+
+**What the client already knows.** `GetAutoCompleteRealms` answers this character's connected group
+(measured on Era from Pyrewood Village: Pyrewood Village, Nethergarde Keep, Mirage Raceway; an empty
+table on a realm with no partners). `Guild:SameRealmGroup` already asks it that way, with an empty
+or absent answer narrowed to the exact realm.
+
+**The shape it would take.** Candidates for a whisper are only characters in this character's group;
+the others are not tried. Where that leaves none, the sentence says so: *none of Serena's characters
+is on a realm this character can reach*, not that they are offline. The link and the panel stay as
+they are - a family is still linked, and the next login on a reachable realm exchanges as usual.
+
+**Before building, one reading** to confirm the call answers what the group actually delivers to, on
+the client where it was found: on Uga, `/family guild names`, which prints `GetAutoCompleteRealms`.
+Soulseeker's group should not contain Pyrewood Village.

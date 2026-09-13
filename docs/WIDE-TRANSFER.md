@@ -345,9 +345,11 @@ Nothing accumulates, and nothing is held waiting for them.
   says *sent* means *queued and taken*. Backlog 43 is the short `got` message that would close
   that, and what it still would not promise. §7 case 1 is the one shape in which even the lazy
   acknowledgement never fires.
-- **Reach across realms is settled and is not the open question.** Specification §11.1 was closed
-  by the 1.0.0 pass — two families on unrelated realms exchanged — so a realm is not a boundary,
-  and the one measured failure nearby is a different one: a character on a partner realm cannot
+- **Reach across realms was taken as settled, and is not.** Specification §11.1 was closed by the
+  1.0.0 pass on *two families on unrelated realms*, without the realms written down. Reopened
+  2026-09-13: Soulseeker and Pyrewood Village, same faction, refuse each other's whispers, typed by
+  hand as well - a link reaches the character's own connected realm group. Backlog 73. A second
+  measured failure nearby is a different one: a character on a partner realm cannot
   *send* on the `GUILD` addon channel, which is Guild share's opening rather than a whisper. §6's
   own paragraph on this is older than §11.1 and reads as vaguer than what is now known.
 - **Faction is the boundary nothing here has measured.** A whisper between Alliance and Horde is

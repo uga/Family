@@ -3382,3 +3382,19 @@ not the hand.
 optimisation until it has been shown the writer cannot be seen.** This is the third tool fault in
 this repository in one day, and each of them was a tool reporting success: a copy red before any
 mutation (96 of 96 in fourteen seconds), a wait loop matching itself (L-089), and this.
+
+## L-093 — a measurement written down without what it measured became a rule
+
+**2026-08-28 to 2026-09-13.** The 1.0.0 pass linked two families and they exchanged. It was recorded
+as *two families on unrelated realms*, and from there as **any realm**, in the specification, in
+`WIDE-TRANSFER.md`, in backlog 44 and in a decisions row that said, of all things, *recorded as a
+measurement, not an expectation*. The realms were never named. `SMOKE.md` had gained a line asking
+for them precisely because the pass before had not recorded them either.
+
+On 2026-09-13 two Alliance characters on Soulseeker and Pyrewood Village could not whisper each
+other at all, and Wide Family told Alberto the other family was offline. The client had been saying
+for two weeks, in `DATASOURCES.md`, which realms Pyrewood Village is grouped with.
+
+**What now catches it.** A claim that generalises from a reading carries the instance beside it -
+here, the two realms and the client - or it is written as the instance and not as the rule. A
+reader who meets *any realm* with no realms named has found this lesson, and asks.

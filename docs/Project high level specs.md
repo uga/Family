@@ -1228,11 +1228,16 @@ Recorded so the project can be measured against it.
    directions, and nothing but class, level, gear and talent shape crosses. The consent
    argument that gates §6.0 never applied here, because everything it carries is what Inspect
    already gives away.
-1. ~~**Cross-realm addon messaging.**~~ Settled by the 1.0.0 pass: **any realm**. Two families
-   on unrelated realms exchanged, so Wide Family reaches as far as two people who both run it,
-   and a realm is not a boundary. Established by testing rather than assumed, which is what
-   this question was asked for — the beta.2 pass had linked two families without recording
-   which realms, and `SMOKE.md` gained the line that asks.
+1. **Cross-realm addon messaging - reopened 2026-09-13.** The 1.0.0 pass recorded **any realm**:
+   two families *on unrelated realms* exchanged. Which realms was never written down, and on
+   2026-09-13 it was contradicted from play on Classic Era: Uga on Soulseeker and Malachia on
+   Pyrewood Village, both Alliance, could not reach each other - Wide Family's whisper was refused
+   as *not playing*, and so was a whisper typed by hand. Pyrewood Village's connected group, as
+   the client reports it (`GetAutoCompleteRealms`, DATASOURCES), is Pyrewood Village, Nethergarde
+   Keep and Mirage Raceway; Soulseeker is not in it. So a whisper, and with it a Wide Family link,
+   reaches **the character's own connected realm group** and not further, as far as anything here
+   has measured. The 1.0.0 pair was most likely two realms of one group. What Family should say
+   when a link's characters are all on a realm it cannot reach is backlog 73.
 2. ~~**A generated talent table.**~~ Done: `addons/Family/TalentSpells.lua`, from `Talent`
    and `TalentTab` via `tools/talents.py`. A talent's position maps to the spell id of its
    first rank and the reader's own client names it, so talent names work in every language
