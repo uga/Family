@@ -4967,3 +4967,55 @@ be any of them:
 - **Files it would touch**: `addons/Family/Wide.lua`, `addons/Family_UI/Slash.lua`, four locales,
   `tests/Harness.lua`, new `tools/mutations/*.mut`, `docs/WIDE-TRANSFER.md` §4.
 - **Nothing on the wire changes**: no field added to a message, no limit, no cadence.
+
+---
+
+## 77. A family of two hundred, read in the game
+
+**Asked by Alberto 2026-09-13.** Every number about a large family so far is arithmetic from 31
+characters: the loading screen's *about 340 ms at two hundred* (backlog 74), and the six minutes of
+wire for 210 members in `docs/WIDE-TRANSFER.md` §2. This entry is the readings that replace them,
+taken on a family built with `tools/grow-family.lua` (`docs/DATASOURCES.md` §4 says how to run it).
+
+**What the family is: six full characters, five medium and seven bank alts are real, the rest
+copies.** Each copy is one of those eighteen records, faithful, under a new name on Pyrewood
+Village, Nethergarde Keep or Mirage Raceway. Alberto's account goes from 31 members to 210 (179
+copies), Serena's from 5 to 55 (50 copies). Copies carry no mark, so the first question that needs
+one pays for making it, and no Wide grant, so nothing is shared until granted in the grid.
+
+**Putting the files in place is Alberto's**: each account's `Family.lua` backed up, then replaced by
+`Family-grown.lua` from `tools/live/<account>/`, renamed; the backups are what puts both accounts
+back afterwards.
+
+### Readings to take
+
+**1. Two hundred, with Wide Family switched off.** On Alberto's account.
+
+- `/family status` at two logins in a row: the time to read the saved data, and *still
+  compressed* (expected 0: the copies are stored plain).
+- `/run UpdateAddOnMemoryUsage() print(GetAddOnMemoryUsage("Family").." KB")` on the original
+  file before the swap and on the grown one after.
+- **Twenty seconds after logging in**, before the recipe index has finished its steps (one member
+  every 0.3 s from five seconds in, so about 60 s for 210): a two-letter search, and the tooltip
+  of an enchanting product, timed with the commands of 2026-09-13
+  (`docs/REVIEW-DATA-HANDOFF.md` §2):
+  `/run local c=debugprofilestop local t=c() local r=Family.Recipes:Search("ar") print(#r, math.floor(c()-t).." ms")`
+  `/run local c=debugprofilestop local t=c() local r=Family.Recipes:KnowersOf(nil, 0, "Lesser Magic Wand") print(#r, math.floor(c()-t).." ms")`
+- **The same two once the warm-up has finished**, each twice in a row.
+- Any error, freeze or crash, with when it happened.
+
+**2. Wide Family, fifty against fifty.** Alberto grants Serena's side 50 of his copies, Serena
+grants all 50 of hers.
+
+- `/family widetime` on both sides before the exchange.
+- The transfer line on both sides (*N offered, N sent, ...*), and how long from start to the last
+  member arriving.
+- `/family widetime` on both sides after it.
+
+**3. Wide Family, two hundred against fifty.** Alberto grants all 210 members.
+
+- The same readings as block 2. The transfer time is the *210 members, one link, about 6
+  minutes* row of `docs/WIDE-TRANSFER.md` §2, measured for the first time.
+
+What crosses the wire is Alberto's to choose in the grid, after block 1 has been read with the
+family standing still.

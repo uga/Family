@@ -2441,6 +2441,69 @@ spell ids saves a further sixth, because LibSerialize spends one byte on a small
 three on a large one. Item ids are left absolute: they travel in spell order and so are in no
 order of their own, and delta-encoding an unsorted run makes it bigger.
 
+### A family of two hundred, built from real records, `tools/grow-family.lua`, 2026-09-13
+
+Not a measurement but the thing measurements are taken on: a saved-data file extended with copies
+of real characters, so the loading screen, the recipe index, the search, the tooltip and Wide
+Family can be read at the size Alberto's crash reports were about. Asked by Alberto 2026-09-13;
+the readings to take are backlog 77.
+
+**Where the records come from.** `tools/live/Alberto/Family.lua` and `tools/live/Serena/Family.lua`,
+the SavedVariables of two real accounts copied onto the development machine. `tools/live/` is in
+`.gitignore` and nothing under it leaves the machine: names, guilds, mail and auctions are in those
+files. The harness checks the tool on small invented fixtures and never reads `tools/live/`.
+
+**What the tool does.** `lua5.1`, from the repository root. It reads the file named by `--into` and
+every `--read`, adds copies to the first, and writes the result to `--out` - never over an input.
+The profile is the arguments: `--tier name=count:key,key,...` once per tier (the donors named by
+member key, taken in turn within the tier) and `--realm "Realm Name=count"` once per destination.
+Tiers are interleaved so each realm receives its share of each.
+
+- **A copy is its donor's record, faithful**: payload and meta copied whole, and only the key,
+  `meta.name` and `meta.realm` new. The key is written as `Family:MemberKey` writes it
+  (`Name-MirageRaceway`), the realm with its spaces as the client gives it. No `mark` and no
+  `partMarks`: the addon makes them at the first request, so the test measures that too.
+- **Names** come from syllables in a fixed order - two runs of one profile write the same file -
+  and none is the name of a member of any file read, on any realm, or of another copy.
+- **Alliance donors only.** A Horde donor is refused by key and nothing is written; a copy is
+  never moved to another faction.
+- **Nothing else changes**: the original members, `wide` with its grants, `itemNames`, `quests`,
+  `areas`, `guild`, `prices` and every other field are written back as they were read. No copy
+  is granted to a linked family. The layout is the tool's own (sorted keys, one entry a line), so
+  the tool prints the input written back unchanged beside the result, and the two weights compare
+  like with like.
+- It prints how many copies went to each tier and each realm, and the file's weight before and
+  after.
+
+**The two runs asked for**, the same donors, all on Pyrewood Village: *full* Deiana, Eccebombo,
+Hooga, Nervina, Okkio, Verysolid; *medium* Ermete, Gulliwer (Alberto's file), Malachia, Barolo,
+Parrinu (Serena's); *bank* Deposito, Fiori, Milionario, Pellame, Pietre, Questitems, Tessuti
+(Alberto's). Both files are read in both runs.
+
+    lua5.1 tools/grow-family.lua --into tools/live/Alberto/Family.lua \
+        --read tools/live/Serena/Family.lua --out tools/live/Alberto/Family-grown.lua \
+        --tier full=35:Deiana-PyrewoodVillage,Eccebombo-PyrewoodVillage,Hooga-PyrewoodVillage,Nervina-PyrewoodVillage,Okkio-PyrewoodVillage,Verysolid-PyrewoodVillage \
+        --tier medium=50:Ermete-PyrewoodVillage,Gulliwer-PyrewoodVillage,Malachia-PyrewoodVillage,Barolo-PyrewoodVillage,Parrinu-PyrewoodVillage \
+        --tier bank=94:Deposito-PyrewoodVillage,Fiori-PyrewoodVillage,Milionario-PyrewoodVillage,Pellame-PyrewoodVillage,Pietre-PyrewoodVillage,Questitems-PyrewoodVillage,Tessuti-PyrewoodVillage \
+        --realm "Pyrewood Village=40" --realm "Nethergarde Keep=69" --realm "Mirage Raceway=70"
+
+    lua5.1 tools/grow-family.lua --into tools/live/Serena/Family.lua \
+        --read tools/live/Alberto/Family.lua --out tools/live/Serena/Family-grown.lua \
+        --tier full=4:<the same six keys> --tier medium=12:<the same five> --tier bank=34:<the same seven> \
+        --realm "Nethergarde Keep=25" --realm "Mirage Raceway=25"
+
+**Tried on the real files 2026-09-13**, output written outside the repository and removed:
+
+| | Members | Copies by tier | Copies by realm | Weight before (tool's layout) | After |
+|---|---|---|---|---|---|
+| Alberto | 31 → 210 | 35 / 50 / 94 | Pyrewood Village 40, Nethergarde Keep 69, Mirage Raceway 70 | 1,620,233 B (1,587,568) | 7,290,361 B |
+| Serena | 5 → 55 | 4 / 12 / 34 | Nethergarde Keep 25, Mirage Raceway 25 | 1,135,712 B (1,135,327) | 2,430,642 B |
+
+Under a second each. Read back, the originals and every other field were identical to the input and
+every copy was Alliance, unmarked, and keyed from its name and realm. **Alberto's file holds 27
+characters on Pyrewood Village (15 Alliance, 12 Horde), not the 30 the profile was written from**,
+so that realm ends at 67, under the game's 70; on Nethergarde Keep it holds one, and ends at 70.
+
 ### What a large family costs to share, measured 2026-09-08
 
 Asked because a player with two accounts reported the game pausing at every login with Wide

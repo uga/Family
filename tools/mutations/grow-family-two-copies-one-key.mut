@@ -1,0 +1,10 @@
+name: tools/grow-family.lua lets two copies take the same key, and the second overwrites the first
+file: tools/grow-family.lua
+--- old
+		local name = nextName()
+		local key = Grow.memberKey(name, realm)
+		if members[key] or keysMade[key] then
+--- new
+		local name = made[1] and made[1].name or nextName()
+		local key = Grow.memberKey(name, realm)
+		if members[key] then

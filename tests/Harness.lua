@@ -37837,6 +37837,172 @@ if RUN.storage == "compressed" then
 end
 
 print()
+print("a large family grown from real records, tools/grow-family.lua")
+
+-- **On two small invented files, never on `tools/live/`.** The tool is run the way Alberto runs it,
+-- through its command line, into a temporary file that is then read back the way the client would
+-- read it. Once per gate: the tool does not depend on the storage pass.
+if RUN.storage == "compressed" then (function()
+	local Grow = dofile(ROOT .. "/tools/grow-family.lua")
+
+	local function same(a, b)
+		if type(a) ~= type(b) then return false end
+		if type(a) ~= "table" then return a == b end
+		for key, value in pairs(a) do if not same(value, b[key]) then return false end end
+		for key in pairs(b) do if a[key] == nil then return false end end
+		return true
+	end
+
+	local function written(text)
+		local path = os.tmpname()
+		local handle = assert(io.open(path, "w"))
+		handle:write(text)
+		handle:close()
+		return path
+	end
+
+	-- `Aladan` is the first name the tool would make, and is a real member of the second file, on
+	-- another realm and of the other faction: no copy may take it.
+	local ours = written([[
+FamilyDB = {
+	members = {
+		["Anna-TestRealm"] = { codec = "plain", mark = "old", meta = { name = "Anna",
+			realm = "Test Realm", faction = "Alliance", level = 60, money = 12345 },
+			payload = { bags = { { size = 16, items = { [3] = { id = 2589, count = 4 } } } },
+				note = "a \"quoted\"\nline", ratio = 0.1 } },
+		["Bruno-TestRealm"] = { codec = "plain", partMarks = { bags = "1" }, meta = { name = "Bruno",
+			realm = "Test Realm", faction = "Alliance", level = 12 },
+			payload = { bank = { { id = 4306, count = 20 } } } },
+		["Orco-TestRealm"] = { codec = "plain", meta = { name = "Orco", realm = "Test Realm",
+			faction = "Horde", level = 30 }, payload = { bags = {} } },
+	},
+	wide = { links = { fam1 = { grants = { ["Anna-TestRealm"] = { possessions = true } },
+		sent = { ["Anna-TestRealm"] = "123" } } } },
+	itemNames = { frFR = { [2589] = "Etoffe de lin" } },
+	quests = { frFR = { [7] = "Au loup" } },
+	areas = { [12] = "Elwynn" },
+	guild = { name = "Invented" },
+	prices = true,
+}
+]])
+	local theirs = written([[
+FamilyDB = {
+	members = {
+		["Carla-OtherRealm"] = { codec = "plain", mark = "p9", meta = { name = "Carla",
+			realm = "Other Realm", faction = "Alliance", level = 40 },
+			payload = { professions = { [197] = { recipes = { { spellID = 3915 } } } } } },
+		["Aladan-OtherRealm"] = { codec = "plain", meta = { name = "Aladan", realm = "Other Realm",
+			faction = "Horde" }, payload = {} },
+	},
+}
+]])
+	local out = os.tmpname()
+	os.remove(out)
+
+	local argv = { "--into", ours, "--read", theirs, "--out", out,
+		"--tier", "full=3:Anna-TestRealm,Carla-OtherRealm", "--tier", "bank=2:Bruno-TestRealm",
+		"--realm", "Test Realm=2", "--realm", "Mirage Raceway=3" }
+
+	-- The same profile, grown in memory, says which donor each copy came from.
+	local before = assert(Grow.readSaved(ours))
+	local donorsFile = assert(Grow.readSaved(theirs))
+	local profile = { tiers = {
+		{ name = "full", count = 3, donors = { "Anna-TestRealm", "Carla-OtherRealm" } },
+		{ name = "bank", count = 2, donors = { "Bruno-TestRealm" } } },
+		realms = { { name = "Test Realm", count = 2 }, { name = "Mirage Raceway", count = 3 } } }
+	local made = Grow.grow(assert(Grow.readSaved(ours)), { assert(Grow.readSaved(ours)), donorsFile },
+		profile) or {}
+
+	local status = Grow.run(argv)
+	local after = Grow.readSaved(out)
+	check("the grown file is written and reads back in lua5.1", status == 0 and after ~= nil,
+		tostring(status))
+	after = after or { FamilyDB = { members = {} } }
+	local members = after.FamilyDB.members
+
+	local count, copies, names = 0, 0, {}
+	local keysRight, namesUnique = true, true
+	for key, entry in pairs(members) do
+		count = count + 1
+		local name = entry.meta.name:lower()
+		if names[name] then namesUnique = false end
+		names[name] = true
+		if Grow.memberKey(entry.meta.name, entry.meta.realm) ~= key then keysRight = false end
+		if not before.FamilyDB.members[key] then copies = copies + 1 end
+	end
+	check("it holds the original members and every copy asked for", count == 8 and copies == 5,
+		count .. " members, " .. copies .. " copies")
+	check("every key is unique, written as Family:MemberKey writes it, and every name is unique",
+		keysRight and namesUnique and #made == 5)
+
+	local faithful, alliance, unmarked, tiers, realms = true, true, true, {}, {}
+	for _, one in ipairs(made) do
+		local entry = members[one.key]
+		local donor = before.FamilyDB.members[one.donor] or donorsFile.FamilyDB.members[one.donor]
+		if not (entry and donor) then
+			faithful = false
+		else
+			local meta = {}
+			for field, value in pairs(donor.meta) do meta[field] = value end
+			meta.name, meta.realm = entry.meta.name, one.realm
+			if not (same(entry.payload, donor.payload) and same(entry.meta, meta)
+				and entry.codec == donor.codec) then faithful = false end
+			if entry.meta.faction ~= "Alliance" then alliance = false end
+			if entry.mark ~= nil or entry.partMarks ~= nil then unmarked = false end
+		end
+		tiers[one.tier] = (tiers[one.tier] or 0) + 1
+		realms[one.realm] = (realms[one.realm] or 0) + 1
+	end
+	check("every copy holds its donor's payload and meta, with only the key, name and realm new",
+		faithful and #made == 5)
+	check("every copy is Alliance, and carries neither mark nor part marks", alliance and unmarked)
+	check("copies go to the tiers and realms the profile asks for, donors taken in turn",
+		tiers.full == 3 and tiers.bank == 2 and realms["Test Realm"] == 2
+			and realms["Mirage Raceway"] == 3
+			and made[1] and made[1].donor == "Anna-TestRealm")
+	check("no copy takes the name of a real member of either file, whatever its realm",
+		not members["Aladan-TestRealm"] and not members["Aladan-MirageRaceway"]
+			and not members["Anna-MirageRaceway"])
+
+	local untouched = true
+	for key, entry in pairs(before.FamilyDB.members) do
+		if not same(entry, members[key]) then untouched = false end
+	end
+	for field, value in pairs(before.FamilyDB) do
+		if field ~= "members" and not same(value, after.FamilyDB[field]) then untouched = false end
+	end
+	local granted = false
+	for _, link in pairs((after.FamilyDB.wide or {}).links or {}) do
+		for _, one in ipairs(made) do
+			if (link.grants or {})[one.key] then granted = true end
+		end
+	end
+	check("the original members and every other field are as they were, a float and a quoted "
+		.. "line among them", untouched)
+	check("no copy is granted to any linked family", not granted and after.FamilyDB.wide ~= nil)
+
+	local refusedOut = os.tmpname()
+	os.remove(refusedOut)
+	local printed = {}
+	local realPrint = print
+	print = function(text) printed[#printed + 1] = tostring(text) end
+	local refused = Grow.run({ "--into", ours, "--read", theirs, "--out", refusedOut,
+		"--tier", "full=1:Orco-TestRealm", "--realm", "Mirage Raceway=1" })
+	print = realPrint
+	local wroteAnyway = io.open(refusedOut, "r")
+	if wroteAnyway then wroteAnyway:close() end
+	check("a Horde donor is refused by name and nothing is written",
+		refused ~= 0 and not wroteAnyway
+			and table.concat(printed, "\n"):find("Orco-TestRealm is Horde", 1, true) ~= nil,
+		table.concat(printed, "\n"))
+
+	os.remove(ours)
+	os.remove(theirs)
+	os.remove(out)
+	os.remove(refusedOut)
+end)() end
+
+print()
 if failures == 0 then
 	print("all checks passed")
 else
