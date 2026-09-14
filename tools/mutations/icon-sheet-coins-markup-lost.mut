@@ -1,0 +1,6 @@
+name: the money fit test writes the letters where the coins should be
+file: tools/FamilyIconSheet/IconSheet.lua
+--- old
+	return string.format("|T%s:0:0:%d:0|t", path, nudge)
+--- new
+	return "g"

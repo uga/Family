@@ -15361,6 +15361,56 @@ print("the icon contact sheet")
 	check("printing the choices does not depend on anything being chosen",
 		pcall(SlashCmdList["FAMILYICONSHEET"], "print"))
 
+	-- **The coins, asked for 2026-09-14 in place of g, s and c.** The sheet is what decides
+	-- whether they go in, so what has to hold here is that it draws all three as cells, writes
+	-- them into a figure the way a price would carry them, and measures that figure against
+	-- the column it would have to fit - with a verdict that follows the measurement.
+	check("the three coins are drawn as candidates",
+		drawn("Interface\\MoneyFrame\\UI-GoldIcon")
+			and drawn("Interface\\MoneyFrame\\UI-SilverIcon")
+			and drawn("Interface\\MoneyFrame\\UI-CopperIcon"))
+	check("and inside a figure, as the markup a price would carry",
+		visibleText("|TInterface\\MoneyFrame\\UI-GoldIcon:0:0:2:0|t")
+			and visibleText("|TInterface\\MoneyFrame\\UI-CopperIcon:0:0:2:0|t"))
+	-- A Summary cell's font is gold, so a figure left uncoloured is gold and not white: the
+	-- first screenshot of this sheet showed its "white" row in yellow (L-098). White and gold
+	-- are both written out, or the sheet is judging a colour nobody will ship.
+	check("the white figures and the gold ones are both coloured explicitly",
+		visibleText("|cffffffff354|r|TInterface\\MoneyFrame\\UI-GoldIcon:0:0:2:0|t")
+			and visibleText("|cffffd700354|r|TInterface\\MoneyFrame\\UI-GoldIcon:0:0:2:0|t"))
+	-- "354g 00s 39c" is twelve characters to this harness, 78 pixels, in a 106 column that
+	-- leaves a cell 98. The verdict has to agree with that, and it is the one row whose
+	-- numbers are known here without asking the sheet.
+	check("the money fit test measures a figure against the cell its column leaves",
+		visibleText("78 of 98 px - fits"))
+	check("and every verdict on the sheet agrees with its own measurement",
+		(function()
+			local verdicts = 0
+			for _, f in ipairs(fontStrings) do
+				if type(f.__text) == "string" and f.__text:find(" px - ", 1, true) then
+					-- Colour codes out first: "|cff888888" ends in digits, and would be read
+					-- as the front of the width.
+					local bare = f.__text:gsub("|c%x%x%x%x%x%x%x%x", "")
+					local drawnWidth, room = bare:match("(%d+) of (%d+) px")
+					local says = bare:find("CLIPS", 1, true) ~= nil
+					if (tonumber(drawnWidth) > tonumber(room)) ~= says then return false end
+					verdicts = verdicts + 1
+				end
+			end
+			return verdicts > 0
+		end)())
+
+	-- What the client carries for writing money is read, never assumed: missing, it says
+	-- so; present, it shows the raw string so a screenshot can be pasted from.
+	check("a client string the harness does not carry is reported as missing",
+		visibleText("GOLD_AMOUNT_TEXTURE - not on this client"))
+	_G.GOLD_AMOUNT_TEXTURE = "%d|TInterface\\MoneyFrame\\UI-GoldIcon:%d:%d:2:0|t"
+	sheet:Rebuild()
+	check("and one it does carry is shown raw, escapes and all",
+		visibleText("GOLD_AMOUNT_TEXTURE|r  %d||TInterface\\MoneyFrame\\UI-GoldIcon"))
+	_G.GOLD_AMOUNT_TEXTURE = nil
+	sheet:Rebuild()
+
 	sheet:Hide()
 end)()
 

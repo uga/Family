@@ -1,0 +1,6 @@
+name: the white figures on the money fit test are left in the font's own gold
+file: tools/FamilyIconSheet/IconSheet.lua
+--- old
+	coinStyle("coins, white", "|cffffffff", 2),
+--- new
+	coinStyle("coins, white", nil, 2),

@@ -1,0 +1,6 @@
+name: a client money string is shown drawn rather than raw
+file: tools/FamilyIconSheet/IconSheet.lua
+--- old
+	return (tostring(value):gsub("|", "||"))
+--- new
+	return tostring(value)

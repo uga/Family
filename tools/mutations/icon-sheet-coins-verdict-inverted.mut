@@ -1,0 +1,6 @@
+name: the money fit test calls every figure that fits a clip
+file: tools/FamilyIconSheet/IconSheet.lua
+--- old
+				local fits = drawn <= room
+--- new
+				local fits = drawn >= room

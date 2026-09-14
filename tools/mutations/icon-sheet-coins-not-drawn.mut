@@ -1,0 +1,6 @@
+name: the coins are left off the contact sheet
+file: tools/FamilyIconSheet/IconSheet.lua
+--- old
+			{ COIN_GOLD, "gold" },
+--- new
+			{ "Interface\\Icons\\INV_Misc_QuestionMark", "gold" },

@@ -3483,6 +3483,21 @@ nobody has built, and a recorded mutation that lets `HeldBy` build the whole ind
 rule: **a helper added to something drawn per member is asked how much it reads, not only what it
 answers.**
 
+## L-098 — a colour left out was read as white, and the font it fell back to is gold
+
+**2026-09-14.** The icon sheet's money fit test offered the coins with *white* figures, the way the
+auction house writes them, and got white by writing no colour at all. The figures are drawn in
+`GameFontNormal`, the font a Summary cell uses, and that font is gold: the screenshot showed the
+*white* rows in yellow, indistinguishable from the coloured ones, and a round trip to the client
+was spent learning what the sheet was meant to show. Nothing checked the colour, because every
+check read the figure and the coin and none read what came before the figure.
+
+**What now catches it.** Every style on the sheet writes its colour out, and *the white figures
+and the gold ones are both coloured explicitly* reads the `|cffffffff` and the `|cffffd700` in front
+of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white and is caught. And
+the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
+when white is meant.**
+
 ---
 
 ### L-016 — a sanitisation cleans the past; only a gate keeps the future clean

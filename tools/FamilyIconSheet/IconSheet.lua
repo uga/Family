@@ -63,6 +63,13 @@ local TAB_TEXT_INSET = 22          -- icon plus a gap, taken off the front of th
 
 local GOLD, GREY, RED, GREEN = "|cffffd700", "|cff888888", "|cffff5555", "|cff55ff55"
 
+-- The three coins the game draws beside its own prices, asked for 2026-09-14 in place of the
+-- letters g, s and c. Written once because the grid draws them as cells and the money fit test
+-- draws them inside a line of text, and the two must be judging the same three paths.
+local COIN_GOLD = "Interface\\MoneyFrame\\UI-GoldIcon"
+local COIN_SILVER = "Interface\\MoneyFrame\\UI-SilverIcon"
+local COIN_COPPER = "Interface\\MoneyFrame\\UI-CopperIcon"
+
 --------------------------------------------------------------------------------------------
 -- The candidates
 --
@@ -430,6 +437,19 @@ local GROUPS = {
 	},
 
 	{
+		title = "Money - the coins, in place of g, s and c",
+		note = "The paths the game's own money frames draw. A price is text, so a coin goes "
+			.. "into it as markup rather than as a texture of its own: this grid says whether "
+			.. "the file exists, and the money fit test at the bottom says what it looks like "
+			.. "inside a figure and whether that figure still fits its column.",
+		icons = {
+			{ COIN_GOLD, "gold" },
+			{ COIN_SILVER, "silver" },
+			{ COIN_COPPER, "copper" },
+		},
+	},
+
+	{
 		title = "The minimap tracking set",
 		note = "Flat monochrome symbols on transparency. They read better at 18 pixels than "
 			.. "icon art does, and they are the most likely to differ between clients.",
@@ -456,6 +476,68 @@ local TAB_LABELS = {
 	"Summary", "Abilities & Talents", "Possessions", "Professions",
 	"Character", "Wide Family", "Guild", "Options", "About",
 }
+
+-- The Summary's money columns at their English widths, from the column table in
+-- Family_UI/Summary.lua; a cell gets its column less 8 pixels. Another language can widen a
+-- column to hold its heading, never narrow it, so a figure that fits here fits everywhere.
+-- Each is tried with an ordinary amount and with one far richer than most members are.
+--
+-- Bid value is tried twice. The first run (2026-09-14) found coins clip it by 22 pixels, and
+-- the Activity set spends its whole row budget, so the second try is gold and silver only - the
+-- way Worth is already written for the same reason.
+local MONEY_COLUMNS = {
+	{ label = "Money", width = 106, copper = true, amounts = { 3540039, 99999999 } },
+	{ label = "Worth", width = 88, copper = false, amounts = { 2060000, 99999999 } },
+	{ label = "Bid value", width = 93, copper = true, amounts = { 12345678, 99999999 } },
+	{ label = "Bid value, no c", width = 93, copper = false, amounts = { 12345678, 99999999 } },
+}
+
+-- What the client itself carries for writing money. None of these is assumed to exist: each is
+-- read with type() and the sheet says what it found, so a screenshot answers whether Family can
+-- ask the client for its coins rather than naming a path of its own.
+local CLIENT_COIN_STRINGS = {
+	"GOLD_AMOUNT_TEXTURE", "SILVER_AMOUNT_TEXTURE", "COPPER_AMOUNT_TEXTURE",
+	"GOLD_AMOUNT_SYMBOL", "SILVER_AMOUNT_SYMBOL", "COPPER_AMOUNT_SYMBOL",
+}
+
+local function coinMarkup(path, nudge)
+	-- Nought for the size is the height of the text it sits in, which is what a coin in a
+	-- line of prose should be; the nudge moves it off the figure before it.
+	return string.format("|T%s:0:0:%d:0|t", path, nudge)
+end
+
+local function coinStyle(name, figure, nudge)
+	return { name = name, figure = figure, gold = coinMarkup(COIN_GOLD, nudge),
+		silver = coinMarkup(COIN_SILVER, nudge), copper = coinMarkup(COIN_COPPER, nudge) }
+end
+
+-- The ways a figure could be written. All of them pad silver and copper to two digits, as
+-- UI:Money does for a column.
+--
+-- **Every colour is written out.** The first run of this sheet had a style that left the
+-- figures uncoloured to get white, and a Summary cell's font is GameFontNormal, which is gold:
+-- the screenshot showed "white" in yellow (docs/LESSONS.md L-098). Asked for on seeing it, the
+-- auction house's look: white figures on a single row, gold figures on a total.
+local MONEY_STYLES = {
+	{ name = "letters", gold = "g", silver = "s", copper = "c" },
+	coinStyle("coins, white", "|cffffffff", 2),
+	coinStyle("coins, gold", "|cffffd700", 2),
+	coinStyle("coins, white, no nudge", "|cffffffff", 0),
+}
+
+local function moneyIn(style, amount, withCopper)
+	local function part(colour, figure, unit)
+		return (style.figure or colour) .. figure .. "|r" .. unit
+	end
+
+	local text = part("|cffffd700", string.format("%d", math.floor(amount / 10000)), style.gold)
+		.. " " .. part("|cffc7c7cf", string.format("%02d", math.floor((amount % 10000) / 100)),
+			style.silver)
+	if withCopper then
+		text = text .. " " .. part("|cffeda55f", string.format("%02d", amount % 100), style.copper)
+	end
+	return text
+end
 
 --------------------------------------------------------------------------------------------
 -- Small helpers
@@ -760,6 +842,121 @@ local function newFitButton(index)
 end
 
 --------------------------------------------------------------------------------------------
+-- The money fit test
+--
+-- The same kind of measurement for the coins: every money column of the Summary, a figure
+-- written each way it could be, in the font a Summary cell uses, and the client asked how
+-- wide it came out. A coin is roughly twice the width of the letter it replaces, and the
+-- widths were set with a few pixels to spare, so this is asked rather than hoped.
+--
+-- Beneath it, what the client offers of its own for writing money - found or not found.
+--------------------------------------------------------------------------------------------
+
+local moneyTexts = {}
+
+local function moneyText(index, template)
+	local text = moneyTexts[index]
+	if not text then
+		text = list:CreateFontString(nil, "ARTWORK", template)
+		text:SetJustifyH("LEFT")
+		if type(text.SetWordWrap) == "function" then text:SetWordWrap(false) end
+		moneyTexts[index] = text
+	end
+	text:ClearAllPoints()
+	text:Show()
+	return text
+end
+
+-- The raw string, with its escapes made visible, so that a screenshot shows what the client
+-- carries rather than only what it draws.
+local function raw(value)
+	return (tostring(value):gsub("|", "||"))
+end
+
+function sheet:LayOutMoney(width, y)
+	local used = 0
+	local function nextText(template)
+		used = used + 1
+		return moneyText(used, template)
+	end
+
+	local heading = nextText("GameFontNormal")
+	heading:SetPoint("TOPLEFT", 2, -y)
+	heading:SetText(GOLD .. "Does the money still fit?|r")
+	y = y + 18
+
+	local note = nextText("GameFontDisableSmall")
+	note:SetPoint("TOPLEFT", 2, -y)
+	note:SetWidth(width - 4)
+	if type(note.SetWordWrap) == "function" then note:SetWordWrap(true) end
+	note:SetText("Each Summary money column at its English width, less the 8 pixels a cell "
+		.. "gives up, in the Summary's own font. Look at the coins: a coin that is a flat "
+		.. "square or nothing at all is a path this client does not have.")
+	y = y + math.max(note:GetStringHeight() or 10, 10) + 8
+
+	for _, column in ipairs(MONEY_COLUMNS) do
+		local room = column.width - 8
+		for _, amount in ipairs(column.amounts) do
+			for _, style in ipairs(MONEY_STYLES) do
+				local label = nextText("GameFontDisableSmall")
+				label:SetPoint("TOPLEFT", 2, -y)
+				label:SetText(string.format("%s, %s", column.label, style.name))
+
+				local figure = nextText("GameFontNormal")
+				figure:SetPoint("TOPLEFT", 150, -y)
+				figure:SetText(moneyIn(style, amount, column.copper))
+
+				local drawn = figure:GetStringWidth() or 0
+				local fits = drawn <= room
+				local verdict = nextText("GameFontDisableSmall")
+				verdict:SetPoint("TOPLEFT", 330, -y)
+				verdict:SetText(string.format("%s%.0f of %d px%s|r", fits and GREY or RED,
+					drawn, room, fits and " - fits" or " - CLIPS"))
+
+				y = y + 18
+			end
+			y = y + 4
+		end
+	end
+
+	y = y + 8
+	local offered = nextText("GameFontNormal")
+	offered:SetPoint("TOPLEFT", 2, -y)
+	offered:SetText(GOLD .. "What this client offers for writing money|r")
+	y = y + 18
+
+	for _, name in ipairs(CLIENT_COIN_STRINGS) do
+		local value = _G[name]
+		local line = nextText("GameFontDisableSmall")
+		line:SetPoint("TOPLEFT", 2, -y)
+		if type(value) == "string" then
+			line:SetText(string.format("%s%s|r  %s", GREEN, name, raw(value)))
+		else
+			line:SetText(string.format("%s%s - not on this client|r", GREY, name))
+		end
+		y = y + 16
+	end
+
+	local coinString = nextText("GameFontNormal")
+	coinString:SetPoint("TOPLEFT", 2, -y)
+	if type(GetCoinTextureString) == "function" then
+		local ok, answer = pcall(GetCoinTextureString, 3540039)
+		if ok and type(answer) == "string" then
+			coinString:SetText(string.format("%sGetCoinTextureString|r  %s   %s%s|r", GREEN,
+				answer, GREY, raw(answer)))
+		else
+			coinString:SetText(RED .. "GetCoinTextureString is here and failed|r")
+		end
+	else
+		coinString:SetText(GREY .. "GetCoinTextureString - not on this client|r")
+	end
+	y = y + 18
+
+	for index = used + 1, #moneyTexts do moneyTexts[index]:Hide() end
+	return y
+end
+
+--------------------------------------------------------------------------------------------
 -- Laying it out
 --------------------------------------------------------------------------------------------
 
@@ -881,6 +1078,8 @@ function sheet:Rebuild()
 
 		y = y + TAB_H + 4
 	end
+
+	y = self:LayOutMoney(width, y + 12)
 
 	self:RefreshFit()
 
