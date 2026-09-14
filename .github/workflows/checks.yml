@@ -41,5 +41,10 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq lua5.1
 
+      # The harness sweeps the tree for words that must never appear in it. The list is not in
+      # the repository - the tree would then carry the words - so it comes from a secret. With
+      # the secret unset the harness is red on purpose: a sweep with no list is no sweep.
       - name: Run the harness
+        env:
+          FAMILY_WORDS: ${{ secrets.FAMILY_WORDS }}
         run: lua5.1 tests/Harness.lua .

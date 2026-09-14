@@ -1,0 +1,6 @@
+name: the banned-word sweep reads no file
+file: tests/Harness.lua
+--- old
+		if path ~= "" then kept[#kept + 1] = path end
+--- new
+		if path == "" then kept[#kept + 1] = path end

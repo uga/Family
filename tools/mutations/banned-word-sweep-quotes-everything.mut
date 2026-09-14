@@ -1,0 +1,6 @@
+name: the banned-word sweep takes every line for a quotation
+file: tests/Harness.lua
+--- old
+								if line:find(fragment, 1, true) then quoted = true end
+--- new
+								quoted = true

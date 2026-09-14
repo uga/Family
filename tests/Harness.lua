@@ -38052,6 +38052,88 @@ if RUN.storage == "compressed" then
 		tostring(goneOnStatus) .. ": " .. goneOnText)
 end
 
+-- **The mutator's report names only what needs looking at, unless asked for all of it.** Asked
+-- of `tools/mutate.py`'s own `report` through python on made-up results, so no gate runs and
+-- this costs milliseconds. A line that says caught is left out; a survivor, a hung gate and the
+-- count are not; `--all` puts every line back (DECISIONS, 2026-09-14).
+if RUN.storage == "compressed" then
+	local function reported(everything)
+		local script, out = os.tmpname(), os.tmpname()
+		local handle = io.open(script, "w")
+		handle:write(table.concat({
+			"import sys",
+			"sys.path.insert(0, sys.argv[1] + '/tools')",
+			"import mutate",
+			"results = [(True, '  caught   one'), (False, '  SURVIVED two'),",
+			"           (False, '  HUNG     three - the gate ran past 120 seconds'),",
+			"           (True, '  caught   four')]",
+			"lines, bad = mutate.report(results, " .. (everything and "True" or "False") .. ")",
+			"print('\\n'.join(lines))",
+			"print('bad', bad)",
+		}, "\n"))
+		handle:close()
+		os.execute(string.format("python3 %s %s > %s 2>&1", script, ROOT, out))
+		handle = io.open(out, "r")
+		local text = handle and handle:read("*a") or ""
+		if handle then handle:close() end
+		os.remove(script)
+		os.remove(out)
+		return text
+	end
+	local quiet = reported(false)
+	check("the mutator's report leaves out the lines that say caught",
+		quiet:find("caught   one", 1, true) == nil and quiet:find("caught   four", 1, true) == nil,
+		quiet)
+	check("and keeps the survivor, the hung gate and the count",
+		quiet:find("SURVIVED two", 1, true) ~= nil and quiet:find("HUNG     three", 1, true) ~= nil
+			and quiet:find("2 caught, 2 not", 1, true) ~= nil and quiet:find("bad 2", 1, true) ~= nil,
+		quiet)
+	local whole = reported(true)
+	check("and --all puts every case back, in the order recorded",
+		whole:find("caught   one", 1, true) ~= nil
+			and whole:find("caught   one", 1, true) < whole:find("SURVIVED two", 1, true)
+			and whole:find("SURVIVED two", 1, true) < whole:find("caught   four", 1, true)
+			and whole:find("2 caught, 2 not", 1, true) ~= nil,
+		whole)
+end
+
+-- **A hung gate is not caught.** Nothing was read back, so no check can be said to have seen
+-- the mutation, and the run has to fail on it - which it did not until 2026-09-14: `run`
+-- answered True for a hang, and the exit status stayed green while the docstring promised
+-- otherwise. Asked of `run` itself on a made-up tree whose gate never answers, with the clock
+-- set to one second, so this costs a second and no real gate.
+if RUN.storage == "compressed" then
+	local script, out = os.tmpname(), os.tmpname()
+	local handle = io.open(script, "w")
+	handle:write(table.concat({
+		"import os, sys, tempfile",
+		"sys.path.insert(0, sys.argv[1] + '/tools')",
+		"import mutate",
+		"tree = tempfile.mkdtemp(prefix='family-hang-')",
+		"os.mkdir(os.path.join(tree, 'tests'))",
+		"open(os.path.join(tree, 'tests', 'Harness.lua'), 'w').write('while true do end\\n')",
+		"open(os.path.join(tree, 'Spinning.lua'), 'w').write('local bound = 10\\n')",
+		"case = os.path.join(tree, 'spin.mut')",
+		"open(case, 'w').write('name: spin\\nfile: Spinning.lua\\n--- old\\nbound = 10\\n--- new\\nbound = nil\\n')",
+		"mutate.TIMEOUT = 1",
+		"caught, line = mutate.run(case, tree)",
+		"print('caught', caught)",
+		"print(line)",
+		"print('restored', open(os.path.join(tree, 'Spinning.lua')).read().strip() == 'local bound = 10')",
+	}, "\n"))
+	handle:close()
+	os.execute(string.format("python3 %s %s > %s 2>&1", script, ROOT, out))
+	handle = io.open(out, "r")
+	local text = handle and handle:read("*a") or ""
+	if handle then handle:close() end
+	os.remove(script)
+	os.remove(out)
+	check("a case whose gate never answers is reported hung and not caught, and its file restored",
+		text:find("caught False", 1, true) ~= nil and text:find("HUNG     spin", 1, true) ~= nil
+			and text:find("restored True", 1, true) ~= nil,
+		text)
+end
+
 print()
 print("a large family grown from real records, tools/grow-family.lua")
 
@@ -38217,6 +38299,124 @@ FamilyDB = {
 	os.remove(out)
 	os.remove(refusedOut)
 end)() end
+
+print()
+print("no word from the list outside the tree appears inside it")
+
+-- **The guard the sanitisation of 2026-08-26 never had.** That day cleaned the tree and seeded
+-- the public repository from an orphan commit; nothing after it looked for the words again, and
+-- on 2026-09-04 a session copied one into `docs/BACKLOG.md` while transcribing a user's report.
+-- That copy was ruled legitimate - the words were the user's, not ours - and stays; what was
+-- missing was the gate on everything else (DECISIONS and L-016, 2026-09-14).
+--
+-- The list is not in the tree, or the tree would carry the words in the check that bans them:
+-- `FAMILY_WORDS` holds its contents (CI's secret), else ~/.config/family/words. Missing is red.
+-- The files are what git tracks or would add; a copy gated by the mutator has no `.git`, so
+-- `tools/mutate.py` hands the list it read in the repository through `FAMILY_TRACKED`.
+;(function()
+	local function lines(text)
+		local out = {}
+		for line in (text .. "\n"):gmatch("(.-)\n") do out[#out + 1] = line end
+		return out
+	end
+
+	local source = os.getenv("FAMILY_WORDS")
+	local where = "FAMILY_WORDS"
+	if not source or source == "" then
+		where = (os.getenv("HOME") or "") .. "/.config/family/words"
+		local handle = io.open(where, "r")
+		if handle then
+			source = handle:read("*a")
+			handle:close()
+		end
+	end
+	check("the words list is there, outside the tree", source ~= nil and source ~= "",
+		"nothing in FAMILY_WORDS and no file at " .. where)
+	if not source or source == "" then return end
+
+	local banned, allowed = {}, {}
+	for _, line in ipairs(lines(source)) do
+		local word = line:match("^ban%s+(.-)%s*$")
+		local fragment = line:match("^allow%s+(.-)%s*$")
+		if word and word ~= "" then banned[#banned + 1] = word:lower() end
+		if fragment and fragment ~= "" then allowed[#allowed + 1] = fragment end
+	end
+	check("and it bans at least one word", #banned > 0, where)
+
+	-- Every line of every file, lowered, against every banned word. A line carrying an allowed
+	-- fragment is a quotation from outside and passes; the fragment is matched as written.
+	local function sweep(files, read)
+		local hits = {}
+		for _, path in ipairs(files) do
+			local text = read(path)
+			if text then
+				local number = 0
+				for _, line in ipairs(lines(text)) do
+					number = number + 1
+					local lowered = line:lower()
+					for _, word in ipairs(banned) do
+						if lowered:find(word, 1, true) then
+							local quoted = false
+							for _, fragment in ipairs(allowed) do
+								if line:find(fragment, 1, true) then quoted = true end
+							end
+							if not quoted then hits[#hits + 1] = path .. ":" .. number end
+						end
+					end
+				end
+			end
+		end
+		return hits
+	end
+
+	-- **It can say no**, on made-up files, before it is trusted on the real ones. The word is
+	-- taken from the list and never written here; a failure prints paths, not words.
+	local madeUp = {
+		["a.lua"] = "-- fine\nlocal x = 1 -- " .. banned[1]:upper() .. "\n",
+		["b.md"] = "nothing here\n",
+	}
+	local found = sweep({ "a.lua", "b.md" }, function(path) return madeUp[path] end)
+	check("the sweep finds a banned word in a made-up file, whatever its case",
+		#found == 1 and found[1] == "a.lua:2", table.concat(found, " "))
+	if #allowed > 0 then
+		local quoted = { ["c.md"] = "somebody else wrote: " .. allowed[1] .. "\n" }
+		check("and lets a line carrying an allowed fragment through",
+			#sweep({ "c.md" }, function(path) return quoted[path] end) == 0)
+	end
+
+	local listed = os.getenv("FAMILY_TRACKED")
+	local files = {}
+	if listed and listed ~= "" then
+		local handle = io.open(listed, "r")
+		if handle then
+			files = lines(handle:read("*a"))
+			handle:close()
+		end
+	else
+		local handle = io.popen("git -C " .. ROOT .. " ls-files --cached --others --exclude-standard 2>/dev/null")
+		if handle then
+			files = lines(handle:read("*a"))
+			handle:close()
+		end
+	end
+	local kept, seenSelf = {}, false
+	for _, path in ipairs(files) do
+		if path ~= "" then kept[#kept + 1] = path end
+		if path == "tests/Harness.lua" then seenSelf = true end
+	end
+	files = kept
+	check("the sweep covers the tracked tree, this file among it", seenSelf and #files > 1,
+		#files .. " files listed")
+	local hits = sweep(files, function(path)
+		local handle = io.open(ROOT .. "/" .. path, "r")
+		if not handle then return nil end
+		local text = handle:read("*a")
+		handle:close()
+		return text
+	end)
+	check("and no tracked file carries a banned word outside a quotation (" .. #files .. " files)",
+		#hits == 0, table.concat(hits, " "))
+end)()
 
 print()
 if failures == 0 then

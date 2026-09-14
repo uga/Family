@@ -1,0 +1,6 @@
+name: the banned-word sweep matches nothing
+file: tests/Harness.lua
+--- old
+						if lowered:find(word, 1, true) then
+--- new
+						if false then

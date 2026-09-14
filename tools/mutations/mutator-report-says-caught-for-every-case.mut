@@ -1,0 +1,8 @@
+name: the mutator's report prints every case whether asked to or not
+file: tools/mutate.py
+--- old
+        if everything or not caught:
+            lines.append(line)
+--- new
+        if True:
+            lines.append(line)

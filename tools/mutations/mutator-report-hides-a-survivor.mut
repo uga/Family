@@ -1,0 +1,8 @@
+name: the mutator's report leaves the survivors out with the caught
+file: tools/mutate.py
+--- old
+        if everything or not caught:
+            lines.append(line)
+--- new
+        if everything:
+            lines.append(line)

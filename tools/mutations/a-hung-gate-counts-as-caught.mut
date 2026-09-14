@@ -1,0 +1,6 @@
+name: a hung gate is counted as caught and leaves the run green
+file: tools/mutate.py
+--- old
+            return False, "  HUNG     %s - the gate ran past %d seconds" % (name, TIMEOUT)
+--- new
+            return True, "  HUNG     %s - the gate ran past %d seconds" % (name, TIMEOUT)

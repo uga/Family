@@ -34,9 +34,16 @@ do either: kill this at any moment and the repository is exactly as it was.
     tools/mutate.py one.mut two.mut just those
     tools/mutate.py --changed       only cases whose file: is changed since HEAD or not yet tracked
     tools/mutate.py --jobs 1        one at a time, for when a failure needs watching
+    tools/mutate.py --all           print every case, not only the ones that need looking at
+
+**The report names only what needs looking at.** A full run is over two hundred lines and on a
+good day every one of them says caught. The reader - a person, or a session whose every later
+turn re-reads what once landed in its context - needs the survivors, the moved anchors, the hung
+gates and the count; the lines that say caught are what `--all` is for (DECISIONS, 2026-09-14).
 
 **A case's gate is a shorter gate**, asked for 2026-09-13 when a full run took 15 min 25 s on a
-twelve-core machine. Each case is gated with `FAMILY_MUTATING=1` in the environment: the harness
+twelve-core machine, and brought it to 2 min 52 s the same day (190 cases; 3 min 32 s at 219 cases,
+measured 2026-09-14). Each case is gated with `FAMILY_MUTATING=1` in the environment: the harness
 stops at its first failure, which is all a case needs to be caught, and skips its second pass
 (compression switched off) unless the case file says `pass: both` - the few cases only that pass
 can catch. The gate that proves a copy green, and the gate on the repository before anything is
@@ -72,6 +79,10 @@ TIMEOUT = 120
 # The caches are the only thing here worth excluding, and only for size: 476 MB of downloaded
 # game data against about 10 MB of everything else.
 SKIP = ("*-cache", ".git", "__pycache__", "*.pyc")
+
+# The files git tracks or would add, written once per run for the harness's sweep of banned
+# words: a copy has no `.git` to ask, so the list read here goes to it as `FAMILY_TRACKED`.
+TRACKED = None
 
 
 def parse(path):
@@ -123,6 +134,8 @@ def gate(where, seconds=None, case=None):
         environment["FAMILY_MUTATING"] = "1"
         if case == "both":
             environment["FAMILY_PASSES"] = "both"
+    if TRACKED:
+        environment["FAMILY_TRACKED"] = TRACKED
     try:
         return subprocess.run(GATE, cwd=where, capture_output=True, text=True,
                               timeout=seconds, env=environment).returncode
@@ -189,7 +202,10 @@ def run(path, where):
 
         answered = gate(where, TIMEOUT, passes)
         if answered is None:
-            return True, "  HUNG     %s - the gate ran past %d seconds" % (name, TIMEOUT)
+            # Not caught: nothing was read back, so no check can be said to have seen it.
+            # Until 2026-09-14 this answered True, and a hung gate left the exit status green
+            # while the docstring promised otherwise (DECISIONS, that day).
+            return False, "  HUNG     %s - the gate ran past %d seconds" % (name, TIMEOUT)
         if answered != 0:
             return True, "  caught   %s" % name
 
@@ -199,6 +215,27 @@ def run(path, where):
         # tree, and a case left patched would make every case after it meaningless.
         with open(full, "w", encoding="utf-8") as handle:
             handle.write(held)
+
+
+def report(results, everything=False):
+    """The lines to print for a finished run, and how many cases were not caught.
+
+    In the order they were recorded, whatever order they finished in: a report that shuffles
+    itself between runs cannot be compared with the last one.
+
+    A case that was caught is left out unless `everything` is asked for; a survivor, a moved
+    anchor and a hung gate are what the run is for, and every one of them fails it.
+    """
+    lines = []
+    bad = 0
+    for caught, line in results:
+        if not caught:
+            bad += 1
+        if everything or not caught:
+            lines.append(line)
+    lines.append("")
+    lines.append("%d caught, %d not" % (len(results) - bad, bad))
+    return lines, bad
 
 
 def changed_files():
@@ -222,6 +259,7 @@ def main(argv):
     jobs = None
     rest = []
     only_changed = False
+    everything = False
     argv = list(argv)
     while argv:
         arg = argv.pop(0)
@@ -231,6 +269,8 @@ def main(argv):
             jobs = int(argv.pop(0)) if argv else None
         elif arg.startswith("--jobs="):
             jobs = int(arg.split("=", 1)[1])
+        elif arg == "--all":
+            everything = True
         else:
             rest.append(arg)
 
@@ -265,6 +305,14 @@ def main(argv):
     # The run still stops on either answer before a case is applied.
     holding = tempfile.mkdtemp(prefix="family-mutate-")
     early = {}
+
+    global TRACKED
+    listed = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+                            cwd=ROOT, capture_output=True, text=True)
+    if listed.returncode == 0:
+        TRACKED = os.path.join(holding, "tracked")
+        with open(TRACKED, "w", encoding="utf-8") as handle:
+            handle.write(listed.stdout)
 
     def prepare():
         try:
@@ -337,6 +385,8 @@ def main(argv):
         print("the copy could not be made: %s" % trouble)
         return 1
 
+    progress = sys.stderr.isatty()
+
     def worker(slot):
         where = trees[slot]
 
@@ -350,11 +400,14 @@ def main(argv):
 
             # Progress goes to stderr so that stdout stays the report and nothing else -
             # a run this long with no sign of life is one somebody kills, which is exactly
-            # what happened before it had any.
+            # what happened before it had any. Only to a terminal: captured, the carriage
+            # returns do not overwrite and the count lands as one line of every step, which
+            # is the noise the report just stopped making (DECISIONS, 2026-09-14).
             with counting:
                 done[0] += 1
-                sys.stderr.write("\r  %d/%d" % (done[0], len(paths)))
-                sys.stderr.flush()
+                if progress:
+                    sys.stderr.write("\r  %d/%d" % (done[0], len(paths)))
+                    sys.stderr.flush()
 
     try:
         threads = [threading.Thread(target=worker, args=(slot,)) for slot in range(jobs)]
@@ -365,20 +418,14 @@ def main(argv):
     finally:
         shutil.rmtree(holding, ignore_errors=True)
 
-    sys.stderr.write("\r          \r")
-    sys.stderr.flush()
+    if progress:
+        sys.stderr.write("\r          \r")
+        sys.stderr.flush()
 
 
-    # In the order they were recorded, whatever order they finished in: a report that shuffles
-    # itself between runs cannot be compared with the last one.
-    bad = 0
-    for caught, line in results:
+    lines, bad = report(results, everything)
+    for line in lines:
         print(line)
-        if not caught:
-            bad += 1
-
-    print("")
-    print("%d caught, %d not" % (len(paths) - bad, bad))
     return 1 if bad else 0
 
 

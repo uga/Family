@@ -3482,3 +3482,35 @@ member's record and no other* counts every `Database:Payload` read while the pag
 nobody has built, and a recorded mutation that lets `HeldBy` build the whole index is caught. And the
 rule: **a helper added to something drawn per member is asked how much it reads, not only what it
 answers.**
+
+---
+
+### L-016 — a sanitisation cleans the past; only a gate keeps the future clean
+
+On 2026-08-26 this repository was seeded from an orphan commit after a removal list had been
+applied to the tree: the retired repository's name for another addon, and everything from it,
+was gone from every file and from the whole history. The decisions of that day record how
+publication happened. None of them says what happens *after*.
+
+On 2026-09-04 a session transcribed eight user requests from a screenshot into
+`docs/BACKLOG.md`. One quoted another addon author's complaint, which listed which addons
+registered their minimap buttons properly - by name. The name went in, and sat through two
+releases, because nothing was looking: no gate read the tree for it, and the one guardrail
+in `.claude/hooks/` was written to refuse *opening the old tree*, with a comment saying the
+word itself in Family's documents "has to keep working" - and was registered nowhere anyway.
+
+**Bitten:** ten days, two published tags, and an afternoon of measuring a history rewrite
+before the line was ruled legitimate - it was the user's words, quoted, not ours.
+
+**Why it was invisible:** the ban lived in people's heads and in a one-off sweep. A rule
+that is not in `CLAUDE.md` is not read by a session, and a sweep run once catches nothing
+written afterwards. L-007 had already said *caught by: nothing automatic*, about the same
+sweep, and was read as a caveat rather than as a gap.
+
+**The check that now catches it:** the harness's last section reads a list of banned words
+from outside the tree (`~/.config/family/words`, or `FAMILY_WORDS` on CI), proves on a
+made-up file that it can say no, then sweeps every file git tracks or would add and fails on
+any hit that is not on an `allow` line. A missing list is a red gate, not a skipped one.
+Mutations `banned-word-sweep-never-says-no`, `banned-word-sweep-quotes-everything`,
+`banned-word-sweep-covers-nothing`. The rule is in `CLAUDE.md`, and adding an `allow` line
+is on the reserved list.
