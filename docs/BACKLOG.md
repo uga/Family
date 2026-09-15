@@ -5158,7 +5158,7 @@ How Arkana sizes a plugin's text is not read here, so no cure is written for it;
 at a width Family controls, that is the reading that reopens this.
 
 
-## 81. An audit of the auction prices Family has collected: list, sort, delete, and keep an item out — BUILT 2026-09-15, not yet seen in game
+## 81. An audit of the auction prices Family has collected: list, sort, delete, and keep an item out — DONE 2026-09-15, seen in game on TBC and Mists
 
 Asked by Alberto 2026-09-15, from play on Mists. Two members' Worth came to 921,865g and
 1,150,577g. It was not arithmetic: a couple of items had been recorded at a *huge* price of one,
@@ -5250,7 +5250,7 @@ folds* when off, so the four callers change together and none is missed. Open: w
 Options or Extras, whether it is one switch or per list, and whether it is remembered - Family's
 rule elsewhere is that a preference is remembered and a question asked once is not.
 
-## 83. The audit page: pick an auction house category and subcategory — BUILT 2026-09-15, not yet seen in game
+## 83. The audit page: pick an auction house category and subcategory — DONE 2026-09-15, seen in game on Mists
 
 Asked by Alberto 2026-09-15, from the first look at backlog 81's page: a picker for the auction
 house's categories and subcategories, **listed in the same order the auction house lists them**.
