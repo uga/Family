@@ -11447,6 +11447,109 @@ print("a panel can be opened on a member before it has ever been built")
 end)()
 
 print()
+print("Possessions: the carried bags as one block and the bank as another (backlog 85)")
+
+-- **Asked for 2026-09-15**, behind an Options switch: the backpack and every carried bag as one
+-- run of slots titled Bags, the bank and its bags as one titled Bank, no boundary between bags,
+-- and the keyring, mail and guild tabs as they were.
+;(function()
+	local me = Family:CurrentMember()
+	local payload = Family.Database:Payload(me) or {}
+	local heldBags, heldBank, heldEquipment = payload.bags, payload.bank, payload.equipment
+	local heldOption = FamilyDB.consolidateBags
+	local KEYS = _G.KEYRING_CONTAINER or -2
+	local BANKC = _G.BANK_CONTAINER or -1
+
+	payload.equipment = nil
+	payload.bags = {
+		[0] = { size = 4, free = 2, slots = { [1] = { id = 2589, count = 5 }, [3] = { id = 4306, count = 1 } } },
+		[1] = { size = 4, free = 3, itemID = 4496, slots = { [2] = { id = 2592, count = 1 } } },
+		[KEYS] = { size = 2, free = 2, slots = {} },
+	}
+	payload.bank = { containers = {
+		[BANKC] = { size = 6, free = 6, slots = {} },
+		[5] = { size = 4, free = 3, itemID = 4496, slots = { [4] = { id = 2770, count = 10 } } },
+	} }
+
+	local function kinds() return table.concat(Family.UI.__contentsBlocks or {}, ",") end
+	local function blocksDrawn()
+		local out = {}
+		for _, f in ipairs(frames) do
+			if f.__shown ~= false and f.__familyTooltip and f.slotIndex and type(f.block) == "table" then
+				out[f.block] = out[f.block] or {}
+				out[f.block][f.slotIndex] = f
+			end
+		end
+		return out
+	end
+
+	FamilyDB.consolidateBags = nil
+	Family.UI:ShowTab("contents")
+	Family.UI:ShowContentsFor(me)
+	check("switched off, every bag is a block of its own, as it always was",
+		kinds():find("^bags,bags,bags,bank,bank") ~= nil, kinds())
+
+	FamilyDB.consolidateBags = true
+	Family.UI:ShowContentsFor(me)
+	check("switched on, the carried bags are one block, the keyring its own, and the bank one",
+		kinds():find("^bags,bags,bank") ~= nil and kinds():find("^bags,bags,bank,bank") == nil, kinds())
+
+	local merged, bank
+	for block in pairs(blocksDrawn()) do
+		if block.merged and block.where == "bags" then merged = block end
+		if block.merged and block.where == "bank" then bank = block end
+	end
+	check("the carried block runs every carried bag's slots together, and adds up their room",
+		merged and merged.size == 8 and merged.free == 5 and merged.slots[6]
+			and merged.slots[6].id == 2592,
+		merged and tostring(merged.size) or "no merged block")
+	check("the bank block holds the bank's window and its bags",
+		bank and bank.size == 10 and bank.slots[10] and bank.slots[10].id == 2770,
+		bank and tostring(bank.size) or "no bank block")
+
+	-- A slot keeps the bag and slot it is really in, so the tooltip asks the client about that.
+	local sixth = merged and blocksDrawn()[merged] and blocksDrawn()[merged][6]
+	local kind, where = nil, nil
+	if sixth then kind, where = sixth.__familyTooltip(sixth) end
+	check("a slot in the carried block is described by the bag and slot it is really in",
+		kind == "bagslot" and type(where) == "table" and where.bag == 1 and where.slot == 2,
+		tostring(kind) .. " " .. tostring(where and where.bag) .. "/" .. tostring(where and where.slot))
+
+	check("the blocks are titled Bags and Bank",
+		merged and bank and (function()
+			local titles = {}
+			for _, f in ipairs(frames) do
+				if f.__shown ~= false and type(f.lines) == "table" and f.lines[1] then
+					titles[#titles + 1] = tostring(f.lines[1][1])
+				end
+			end
+			local all = table.concat(titles, "|")
+			return all:find("Bags", 1, true) ~= nil and all:find("Bank", 1, true) ~= nil
+		end)())
+
+	-- The pictures already looked at on all three clients: the backpack's, and the bank's own.
+	local pictures = {}
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and type(f.lines) == "table" and f.lines[1] and type(f.texture) == "table" then
+			pictures[tostring(f.lines[1][1])] = f.texture.__texture
+		end
+	end
+	check("drawn with the backpack's picture and the bank's",
+		pictures["Bags"] == "Interface\\Buttons\\Button-Backpack-Up"
+			and pictures[_G.BANK or "Bank"] == "Interface\\MINIMAP\\TRACKING\\Banker",
+		tostring(pictures["Bags"]) .. " / " .. tostring(pictures[_G.BANK or "Bank"]))
+
+	Family.UI:ShowTab("options")
+	check("and the switch is on the Options panel",
+		visibleText("Draw the carried bags as one block, and the bank as another"))
+	Family.UI:ShowTab("contents")
+
+	FamilyDB.consolidateBags = heldOption
+	payload.bags, payload.bank, payload.equipment = heldBags, heldBank, heldEquipment
+	Family.UI:ShowContentsFor(me)
+end)()
+
+print()
 print("clicking a Bags row opens that character's possessions")
 
 -- Asked for 2026-09-10, from the same instinct that already put the professions one there: a

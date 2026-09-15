@@ -192,12 +192,40 @@ local function containersOf(payload, meta)
 		end
 	end
 
+	-- **One block for every bag carried, and one for the bank and its bags** (backlog 85), where
+	-- the Options switch asks for it. Alberto, 2026-09-15: the backpack and every carried bag as
+	-- one continuous run of slots with the backpack's picture, titled *Bags*; the bank the same
+	-- with the bank's picture, titled *Bank*; no boundary between the bags inside the run; the
+	-- keyring kept as its own block. Every slot keeps the bag and the slot it is really in, so a
+	-- tooltip still asks the client about that slot and a click still opens that bag.
+	local function merge(from, where)
+		if #blocks < from then return end
+		local merged = { where = where, bag = where == "bank" and BANK or BACKPACK, merged = true,
+			size = 0, free = 0, slots = {}, real = {} }
+		for index = from, #blocks do
+			local entry = blocks[index]
+			for slot = 1, entry.size or 0 do
+				merged.size = merged.size + 1
+				merged.slots[merged.size] = entry.slots[slot]
+				merged.real[merged.size] = { bag = entry.bag, slot = slot }
+			end
+			merged.free = merged.free + (entry.free or 0)
+			blocks[index] = nil
+		end
+		blocks[from] = merged
+	end
+	local together = FamilyDB and FamilyDB.consolidateBags
+
 	-- The carried bags first, then the keyring after them. The game numbers it below the
 	-- backpack, but nobody thinks of their keys as the first thing they carry: it is a
 	-- drawer at the end of the row, and it is drawn where it is thought of.
+	local from = #blocks + 1
 	addRange(payload and payload.bags, "bags", BACKPACK, 11)
+	if together then merge(from, "bags") end
 	addRange(payload and payload.bags, "bags", KEYRING, KEYRING)
+	from = #blocks + 1
 	addRange(payload and payload.bank and payload.bank.containers, "bank", BANK, 11)
+	if together then merge(from, "bank") end
 
 	-- Mail: one block, its attachments in the order the letters are in. Nothing is dropped
 	-- for being an odd shape - a letter with three things on it is three slots.
@@ -663,12 +691,13 @@ local function build(frame)
 			local block = self.block
 			local mine = self.memberKey == Family:CurrentMember()
 
-			if block and mine and self.slotIndex and block.bag
+			local bag, slot = self.realBag or block and block.bag, self.realSlot or self.slotIndex
+			if block and mine and slot and bag
 				and (block.where == "bags"
 					or (block.where == "bank" and Family.Bank:IsOpen())) then
 				-- With the item alongside, because a container the client will not
 				-- describe leaves the row silent otherwise (Tooltip.lua).
-				return "bagslot", { bag = block.bag, slot = self.slotIndex,
+				return "bagslot", { bag = bag, slot = slot,
 					link = self.itemLink, id = self.itemID }
 			end
 
@@ -686,7 +715,10 @@ local function build(frame)
 
 		button:RegisterForClicks("LeftButtonUp")
 		button:SetScript("OnClick", function(self)
-			if self.block then openContainer(self.block, self.memberKey) end
+			-- A merged block's slot opens the bag that slot is really in.
+			local block = self.block
+			if block and self.realBag then block = { where = block.where, bag = self.realBag } end
+			if block then openContainer(block, self.memberKey) end
 		end)
 
 		block.slots[index] = button
@@ -1293,6 +1325,8 @@ local function build(frame)
 			elseif container.where == "guild" then
 				title = string.format(L["%s |cff888888tab %d|r"], LABEL.guild,
 					container.bag or 0)
+			elseif container.merged then
+				title = container.where == "bank" and (_G.BANK or L["Bank"]) or L["Bags"]
 			else
 				title = containerName(container, container.bag, container.where)
 				if container.where == "bank" then
@@ -1312,7 +1346,7 @@ local function build(frame)
 			if container.where == "bags" or container.where == "bank" then
 				lines[#lines + 1] = { string.format(L["|cff888888%d of %d free|r"],
 					container.free or 0, container.size or 0) }
-				if container.special then
+				if container.special and not container.merged then
 					-- §3: a quiver's free slots are not room for anything else, and this
 					-- is the one place that fact has anywhere left to be said.
 					lines[#lines + 1] = { L["|cffffaa00only its own kind of thing fits "
@@ -1339,6 +1373,10 @@ local function build(frame)
 
 				button.block = container
 				button.slotIndex = slot
+				-- Where a merged block's slot really is; nil on a block that is one bag.
+				local real = container.real and container.real[slot]
+				button.realBag = real and real.bag or nil
+				button.realSlot = real and real.slot or nil
 				button.invSlot = item and item.invSlot or nil
 				button.memberKey = member.key
 				button.itemID = item and item.id or nil

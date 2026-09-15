@@ -62,6 +62,19 @@ local SWITCHES = {
 		get = function() return FamilyDB.prices and true or false end,
 		set = function(on) FamilyDB.prices = on and true or nil end,
 	},
+	-- Backlog 85, Alberto 2026-09-15. Off unless ticked: the panel a player already knows stays
+	-- as it is.
+	{
+		label = L["Draw the carried bags as one block, and the bank as another"],
+		note = L["On the Possessions panel: the backpack and every bag you carry become one run "
+			.. "of slots called Bags, and the bank with its bags one called Bank. The keyring, "
+			.. "the mail and each guild bank tab stay as they are."],
+		get = function() return FamilyDB.consolidateBags and true or false end,
+		set = function(on)
+			FamilyDB.consolidateBags = on and true or nil
+			UI:Refresh()
+		end,
+	},
 	{
 		label = L["Say whose mail is running out when you log in"],
 		note = L["Names the characters holding letters that have expired or are about to. "

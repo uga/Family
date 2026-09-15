@@ -416,6 +416,12 @@ current each part of the list is. The perimeter is bags, bank, unexpired mail, l
 **what they are wearing** - not the guild bank, which belongs to the guild, and not the keyring,
 which is worth nothing.
 
+Each container is a block of its own unless an Option says otherwise: with it ticked, the backpack
+and every carried bag are drawn as **one run of slots titled Bags** with the backpack's picture, and
+the bank's window and its bags as **one titled Bank** with the bank's picture, with no boundary
+between bags inside either. The keyring, the mail, the auctions and each guild bank tab stay blocks
+of their own. A slot in a merged block is still described, and opens, as the bag and slot it is in.
+
 Worn gear is part of what somebody has, on the page and in the figure alike. It is drawn as its
 own block, first, because it is on the character rather than in anything they carry; it is counted
 on an item's tooltip as *equipped*, named last among the places because everything before it is

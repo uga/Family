@@ -5344,7 +5344,7 @@ line of their own, each opening a list in the house's order; the page is 18 rows
 *auditing the auction prices Family collected*, mutations `price-audit-category-*`. **Owed: a look in
 the game** on each client, and the lists' length on Mists (Weapons has seventeen subcategories).
 
-## 85. An Options switch: Possessions draws the bags as one block, and the bank as one block
+## 85. An Options switch: Possessions draws the bags as one block, and the bank as one block — BUILT 2026-09-15, not yet seen in game
 
 Asked by Alberto 2026-09-15. A switch under Options, *consolidate Possessions bags*. When ticked, the
 Possessions panel shows:

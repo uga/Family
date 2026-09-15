@@ -1,0 +1,6 @@
+name: the consolidation switch merges nothing
+file: addons/Family_UI/Contents.lua
+--- old
+	if together then merge(from, "bags") end
+--- new
+	if false then merge(from, "bags") end

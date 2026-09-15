@@ -1,0 +1,6 @@
+name: a merged block is titled like the first bag in it
+file: addons/Family_UI/Contents.lua
+--- old
+				title = container.where == "bank" and (_G.BANK or L["Bank"]) or L["Bags"]
+--- new
+				title = containerName(container, container.bag, container.where)

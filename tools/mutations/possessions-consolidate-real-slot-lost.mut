@@ -1,0 +1,6 @@
+name: a merged block's slot is described by its place in the run
+file: addons/Family_UI/Contents.lua
+--- old
+		local bag, slot = self.realBag or block and block.bag, self.realSlot or self.slotIndex
+--- new
+		local bag, slot = block and block.bag, self.slotIndex

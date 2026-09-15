@@ -48,6 +48,12 @@ is a decision rather than an afternoon of archaeology.
   so a total it inflated goes back to normal. Family keeps reading the item's price while it is
   banned: tick *Bans only* after your next scan, and lift the ban once the prices look right.
 
+### Possessions
+
+- **An option to draw all your bags as one block, and the bank as another.** Tick *Draw the
+  carried bags as one block, and the bank as another* under Options: Possessions then shows one
+  run of slots called Bags and one called Bank. The keyring, mail and guild bank tabs are unchanged.
+
 ### Money in coins
 
 - **A Worth of a million gold or more is written in millions** on the Summary, like *1,23M* with the

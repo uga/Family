@@ -1,0 +1,10 @@
+name: the keyring is merged into the carried block
+file: addons/Family_UI/Contents.lua
+--- old
+	addRange(payload and payload.bags, "bags", BACKPACK, 11)
+	if together then merge(from, "bags") end
+	addRange(payload and payload.bags, "bags", KEYRING, KEYRING)
+--- new
+	addRange(payload and payload.bags, "bags", BACKPACK, 11)
+	addRange(payload and payload.bags, "bags", KEYRING, KEYRING)
+	if together then merge(from, "bags") end
