@@ -4183,6 +4183,11 @@ do
 	local realInGuild, realGuildInfo = IsInGuild, GetGuildInfo
 	IsInGuild = function() return true end
 	GetNumGuildBankTabs = function() return 1 end
+	-- The client's answer for a tab: its name first, then the rest this scanner does not read.
+	GetGuildBankTabInfo = function(tab)
+		if tab == 1 then return "Mats", "icon", true, true, 0, 0 end
+		return nil
+	end
 	GetGuildBankItemLink = function(tab, slot)
 		if tab == 1 and slot == 1 then return "|Hitem:2589:0:0:0|h[Linen Cloth]|h" end
 		-- Charged, and reached by link like everything else in here - which is exactly why
@@ -4260,6 +4265,11 @@ do
 		vault and vault.tabs[1] and vault.tabs[1].slots[1]
 			and tostring(vault.tabs[1].slots[1].id))
 
+	-- **And the tab's own name** (backlog 86), which nothing asked for until it was reported.
+	check("and the tab's own name, as the guild bank gave it",
+		vault and vault.tabs[1] and vault.tabs[1].name == "Mats",
+		vault and vault.tabs[1] and tostring(vault.tabs[1].name))
+
 	-- And with how many charges are left on the one that has any.
 	local oil = vault and vault.tabs[1] and vault.tabs[1].slots[2]
 	check("and how many charges are left on a charged one", oil and oil.charges == 3,
@@ -4308,9 +4318,18 @@ do
 	check("a character with no guild reads no guild bank and breaks nothing",
 		FamilyDB.guilds["Late Night Raiders-Fire Maw"].seen == before)
 
+	-- A tab the client will not name keeps the number it was drawn by.
+	IsInGuild = function() return true end
+	GetGuildBankTabInfo = function() return "" end
+	Family.Bank:ScanGuildBank()
+	check("a tab the client gives no name is recorded without one, not with an empty one",
+		FamilyDB.guilds["Late Night Raiders-Fire Maw"].tabs[1].name == nil,
+		tostring(FamilyDB.guilds["Late Night Raiders-Fire Maw"].tabs[1].name))
+
 	Family.Capabilities.Has = realHas
 	IsInGuild, GetGuildInfo = realInGuild, realGuildInfo
 	GetNumGuildBankTabs, GetGuildBankItemLink, GetGuildBankItemInfo = nil, nil, nil
+	GetGuildBankTabInfo = nil
 	FamilyDB.guilds = nil
 end
 
@@ -11538,6 +11557,30 @@ print("Possessions: the carried bags as one block and the bank as another (backl
 		pictures["Bags"] == "Interface\\Buttons\\Button-Backpack-Up"
 			and pictures[_G.BANK or "Bank"] == "Interface\\MINIMAP\\TRACKING\\Banker",
 		tostring(pictures["Bags"]) .. " / " .. tostring(pictures[_G.BANK or "Bank"]))
+
+	-- **A guild bank tab is titled by its own name where one was read** (backlog 86), and by its
+	-- number where none was.
+	do
+		local meta = Family.Database:Meta(me) or {}
+		local heldGuild, heldGuilds = meta.guild, FamilyDB.guilds
+		meta.guild = "Late Night Raiders"
+		FamilyDB.guilds = { ["Late Night Raiders-" .. tostring(meta.realm)] = { tabs = {
+			[1] = { slots = { [1] = { id = 2589, count = 1 } }, name = "Mats" },
+			[2] = { slots = { [1] = { id = 2589, count = 1 } } },
+		} } }
+		Family.UI:ShowContentsFor(me)
+		local titles = {}
+		for _, f in ipairs(frames) do
+			if f.__shown ~= false and type(f.lines) == "table" and f.lines[1] then
+				titles[#titles + 1] = tostring(f.lines[1][1])
+			end
+		end
+		titles = table.concat(titles, " | ")
+		check("a guild bank tab is titled by its own name, and one with none by its number",
+			titles:find("|cff888888Mats|r", 1, true) ~= nil and titles:find("tab 2", 1, true) ~= nil,
+			titles)
+		meta.guild, FamilyDB.guilds = heldGuild, heldGuilds
+	end
 
 	Family.UI:ShowTab("options")
 	check("and the switch is on the Options panel",

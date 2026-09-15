@@ -50,6 +50,9 @@ is a decision rather than an afternoon of archaeology.
 
 ### Possessions
 
+- **Guild bank tabs are titled by their own names** on Possessions, instead of by number. A tab is
+  named the next time you open the guild bank.
+
 - **An option to draw all your bags as one block, and the bank as another.** Tick *Draw the
   carried bags as one block, and the bank as another* under Options: Possessions then shows one
   run of slots called Bags and one called Bank. The keyring, mail and guild bank tabs are unchanged.

@@ -5365,7 +5365,7 @@ sheet. Open before building: whether the keyring joins the carried block or stay
 consolidated block's title says (it is no longer one bag's name), and whether a bag's own boundary is
 still marked in the run of slots.
 
-## 86. A guild bank tab's own name is not read
+## 86. A guild bank tab's own name is not read — BUILT 2026-09-15, not yet seen in game
 
 Reported by Alberto 2026-09-15: Family fails to read the name of a guild bank tab.
 
@@ -5380,3 +5380,10 @@ record.
 1. **The keyring stays its own block**; it does not join the carried one.
 2. **The merged blocks are titled *Bags* and *Bank*.**
 3. **No boundary between bags** inside the run of slots: one continuous block.
+
+**86, built 2026-09-15 without a separate probe:** `Bank:ScanGuildBank` asks `GetGuildBankTabInfo(tab)`
+for every tab whose slots it reads and keeps the first answer as `tabs[tab].name` only when it is a
+non-empty string, so a client that answers nothing leaves the tab titled by its number as before.
+What the client gave is narrated under *Narrate what the scanners are doing*, which is the reading to
+take on TBC and Mists: whether the name is there when the tab is read, and for tabs other than the one
+open. Checks under the guild bank scanner and under backlog 85's section; mutations `guild-tab-*`.

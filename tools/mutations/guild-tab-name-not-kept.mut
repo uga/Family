@@ -1,0 +1,6 @@
+name: a guild bank tab's name is never kept
+file: addons/Family/Scanners/Bank.lua
+--- old
+			if type(name) == "string" and name ~= "" then contents[tab].name = name end
+--- new
+			if false then contents[tab].name = name end

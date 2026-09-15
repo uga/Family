@@ -277,7 +277,7 @@ local function containersOf(payload, meta)
 			end
 
 			blocks[#blocks + 1] = { where = "guild", bag = tab, size = size,
-				free = 0, slots = contents.slots or {} }
+				free = 0, slots = contents.slots or {}, name = contents.name }
 		end
 	end
 
@@ -1323,8 +1323,14 @@ local function build(frame)
 			elseif container.where == "equipped" then
 				title = LABEL.equipped
 			elseif container.where == "guild" then
-				title = string.format(L["%s |cff888888tab %d|r"], LABEL.guild,
-					container.bag or 0)
+				-- By the tab's own name where the guild bank gave one (backlog 86), and by its
+				-- number where it did not.
+				if container.name then
+					title = LABEL.guild .. " |cff888888" .. container.name .. "|r"
+				else
+					title = string.format(L["%s |cff888888tab %d|r"], LABEL.guild,
+						container.bag or 0)
+				end
 			elseif container.merged then
 				title = container.where == "bank" and (_G.BANK or L["Bank"]) or L["Bags"]
 			else

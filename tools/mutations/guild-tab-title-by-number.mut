@@ -1,0 +1,6 @@
+name: a guild bank tab is titled by its number even when it has a name
+file: addons/Family_UI/Contents.lua
+--- old
+				if container.name then
+--- new
+				if false then

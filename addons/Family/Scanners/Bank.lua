@@ -333,6 +333,15 @@ function Bank:ScanGuildBank()
 		if seen then
 			known = known + 1
 			contents[tab] = { slots = slots, seen = time() }
+
+			-- **The tab's own name** (backlog 86, reported 2026-09-15: *we are currently failing
+			-- to read the Guild bank slot name*). Nothing asked for it, so every tab was drawn
+			-- by its number. Asked of the client when the tab's slots are, and kept only when it
+			-- answers with a name: an empty answer is not a name, and the number is still there
+			-- to draw. Narrated, so a debug run on a real bank says what the client gave.
+			local name = Family:TryCall(GetGuildBankTabInfo, tab)
+			Family:Debug("guild bank tab %d is called %s", tab, tostring(name))
+			if type(name) == "string" and name ~= "" then contents[tab].name = name end
 		end
 	end
 

@@ -1,0 +1,6 @@
+name: an empty answer is kept as a guild bank tab's name
+file: addons/Family/Scanners/Bank.lua
+--- old
+			if type(name) == "string" and name ~= "" then contents[tab].name = name end
+--- new
+			if type(name) == "string" then contents[tab].name = name end
