@@ -1,0 +1,6 @@
+name: the audit's tooltip leaves out the reading under the item
+file: addons/Family_UI/PriceAudit.lua
+--- old
+			return "item", id, fallback, nil, lines
+--- new
+			return "item", id, fallback, nil, nil

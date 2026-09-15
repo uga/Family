@@ -37561,6 +37561,21 @@ print("auditing the auction prices Family collected (backlog 81)")
 			and listed[5].alert.__visible == false,
 		tostring(listed[2].alert.__visible) .. " / " .. tostring(listed[5] and listed[5].alert.__visible))
 
+	-- **Pointing at a row describes the item**, asked for from the first screenshot of this page:
+	-- a price is only worth judging with the thing in front of you. The reading goes under it.
+	wipe(GameTooltip.__lines)
+	listed[2].__scripts.OnEnter(listed[2])
+	local said = {}
+	for _, line in ipairs(GameTooltip.__lines) do said[#said + 1] = tostring(line[1]) end
+	said = table.concat(said, " / ")
+	check("pointing at a row shows that item's own tooltip",
+		GameTooltip.__shownAs and GameTooltip.__shownAs.kind == "item"
+			and GameTooltip.__shownAs.id == 1003, said)
+	check("with its market and why it is marked written under it",
+		said:find("Fire Maw, Alliance", 1, true) ~= nil
+			and said:find("other markets", 1, true) ~= nil, said)
+	listed[2].__scripts.OnLeave(listed[2])
+
 	local priceHeading = buttonLabelled("Price of one")
 	fireClick(priceHeading)
 	listed = auditRows()
@@ -37602,9 +37617,9 @@ print("auditing the auction prices Family collected (backlog 81)")
 	for id = 2000, 2040 do FamilyDB.auctionPrices[A][id] = { p = id, at = now } end
 	fireClick(views.prices)
 	check("a long list is drawn a page at a time and says where it is",
-		#auditRows() == 17 and visibleText("1-17 of 47"), tostring(#auditRows()))
+		#auditRows() == 19 and visibleText("1-19 of 47"), tostring(#auditRows()))
 	fireClick(buttonLabelled(">"))
-	check("and the next page carries on from it", visibleText("18-34 of 47"))
+	check("and the next page carries on from it", visibleText("20-38 of 47"))
 
 	fireClick(views.switches)
 	check("the switches come back", visibleText("Read prices at the auction house")

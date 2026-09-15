@@ -30,16 +30,19 @@ local L = Family.L
 local Auctions = Family.Auctions
 
 local ROW_HEIGHT = 20
-local PAGE_ROWS = 17
+-- Nineteen: seventeen left two rows of room at the bottom of the page, seen on TBC 2026-09-15.
+local PAGE_ROWS = 19
 local WHEEL_ROWS = 3
 
 -- Item, market, the price of one, the price it replaced, when it was read, then the two buttons.
--- 786 is UI.CONTENT_W at the window's 966; the columns take 680 and the buttons the rest.
+-- 656 for the columns: at 680 the Ban buttons stood past the window's right edge on TBC
+-- 2026-09-15, and Market and Replaced had the room to give - "Thunderstrike, Alliance" is the
+-- longest a market reads, and a price of one is never wider than the column beside it.
 local COLUMNS = {
 	{ key = "item", label = L["Item"], width = 230, justify = "LEFT" },
-	{ key = "market", label = L["Market"], width = 140, justify = "LEFT" },
+	{ key = "market", label = L["Market"], width = 128, justify = "LEFT" },
 	{ key = "price", label = L["Price of one"], width = 122, justify = "RIGHT" },
-	{ key = "was", label = L["Replaced"], width = 122, justify = "RIGHT" },
+	{ key = "was", label = L["Replaced"], width = 110, justify = "RIGHT" },
 	{ key = "seen", label = L["Seen"], width = 66, justify = "RIGHT" },
 }
 local BUTTON_W = 50
@@ -183,10 +186,14 @@ function UI:BuildPriceAudit(frame)
 		row.ban:SetPoint("LEFT", row.forget, "RIGHT", 2, 0)
 		row.ban:SetText(L["Ban"])
 
+		-- **The item's own tooltip, with the audit's reading under it.** A price is only worth
+		-- judging when the thing it is for is in front of you. A suffixed variant is drawn from
+		-- an item string carrying its suffix in the field `Family:ItemSuffix` reads it from, so
+		-- "of the Bear" is described as the Bear and not as the plain item.
 		UI:AttachTooltip(row, function(self)
 			local entry = self.entry
 			if not entry then return nil end
-			local lines = { { marketLabel(entry.market) } }
+			local lines = { { "|cff66bbff" .. marketLabel(entry.market) .. "|r" } }
 			if entry.banned then
 				lines[#lines + 1] = { string.format(L["Banned %s"], UI:Ago(entry.banned)) }
 			elseif entry.suspect == "replaced" then
@@ -197,7 +204,17 @@ function UI:BuildPriceAudit(frame)
 					L["Ten times or more what it costs on the other markets, %s"],
 					UI:Money(math.floor(entry.elsewhere))) }
 			end
-			return nil, nil, lines
+
+			-- The name alone if the client will not describe the item, and the reading either way.
+			local id = Family:BaseItem(entry.variant)
+			local fallback = { { (Family.Names:Item(id)) } }
+			local suffix = type(entry.variant) == "string"
+				and tonumber(entry.variant:match(":(%-?%d+)$")) or nil
+			if suffix then
+				return "itemlink", string.format("item:%d:0:0:0:0:0:%d", id, suffix), fallback, nil,
+					lines
+			end
+			return "item", id, fallback, nil, lines
 		end)
 
 		row.index = index

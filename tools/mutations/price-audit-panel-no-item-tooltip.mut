@@ -1,0 +1,6 @@
+name: a row of the audit describes no item
+file: addons/Family_UI/PriceAudit.lua
+--- old
+			return "item", id, fallback, nil, lines
+--- new
+			return nil, nil, fallback, nil, lines
