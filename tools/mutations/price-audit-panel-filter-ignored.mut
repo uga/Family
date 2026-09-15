@@ -1,6 +1,6 @@
 name: the market filter lets every market through
 file: addons/Family_UI/PriceAudit.lua
 --- old
-		if (not wantedMarket or entry.market == wantedMarket) then
+			if (not wantedMarket or entry.market == wantedMarket)
 --- new
-		if true then
+			if true

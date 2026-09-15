@@ -3498,6 +3498,20 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-099 — a red mutation run was piped through `tail`, and the commit chained on it went ahead
+
+**2026-09-15.** `python3 tools/mutate.py 2>&1 | tail -3 && git add ... && git commit` committed
+`a6ca24e` with the run reporting `254 caught, 1 not`: a recorded mutation's anchor had moved when the
+line it named was split in two. A pipeline's exit status is its last command's, and `tail` succeeds,
+so the `&&` read green. The commit hook runs the harness and not the mutations, so nothing else
+stood between the red run and the history. Fixed in the next commit by re-anchoring
+`price-audit-panel-filter-ignored`, with the full run seen to exit 0.
+
+**What now catches it: nothing automatic** - the hook does not run `mutate.py`, on purpose, for its
+four minutes. The rule: **a gate whose exit status decides the next command is never piped**; run it
+under `set -o pipefail`, or on its own and read `echo $?`. And a report that says `N not` is red
+whatever the line after it does.
+
 ---
 
 ### L-016 — a sanitisation cleans the past; only a gate keeps the future clean
