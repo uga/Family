@@ -1,6 +1,6 @@
-name: a banned item is filed like any other
-file: addons/Family/Scanners/Auctions.lua
+name: a price banned in its market still values what a member holds
+file: addons/Family/Index.lua
 --- old
-		if here and here[variant] ~= nil then return 0 end
+	if type(held) == "table" and not (pair.mineBans and pair.mineBans[variant] ~= nil) then
 --- new
-		if false then return 0 end
+	if type(held) == "table" then

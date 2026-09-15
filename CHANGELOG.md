@@ -40,8 +40,9 @@ is a decision rather than an afternoon of archaeology.
   price could make a character look worth a million gold; now you can see which item did it.
 
 - **Delete a price, or ban an item on one market.** A deleted price is read again on your next
-  visit. A ban clears the price straight away, so a total it inflated goes back to normal, and keeps
-  that item's price out until you lift the ban.
+  visit. A ban takes the item's price on that market out of Worth and recipe costs straight away,
+  so a total it inflated goes back to normal. Family keeps reading the item's price while it is
+  banned: tick *Bans only* after your next scan, and lift the ban once the prices look right.
 
 ### Money in coins
 

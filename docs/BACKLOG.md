@@ -5226,7 +5226,8 @@ reading is. How many listings a reading was taken from would need counting as it
 `Auctions:Audit` (`Family/Scanners/Auctions.lua`). Suspect: ten times the price replaced, or ten times
 the median of the same item in the other markets. Delete, Ban (clears the price) and Lift, per market;
 both filing routes refuse a banned item. Checked in `tests/Harness.lua` under *auditing the auction
-prices Family collected*, with mutations `price-audit-*`. **Owed: a look at it in the game** - the
+prices Family collected*, with mutations `price-audit-*`. **Changed the same day**: a ban keeps
+the price out of Worth and recipe costs and no longer stops readings (DECISIONS). **Owed: a look at it in the game** - the
 page's widths in five languages, and a real store of thousands of prices paging and sorting without a
 stall.
 

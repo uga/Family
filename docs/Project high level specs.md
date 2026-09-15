@@ -532,8 +532,9 @@ can be audited** on the Extras page: every price from every market in one list, 
 market or by item name, sorted by the price of one, highest first. A price ten times or more the one
 it replaced, or ten times the same item's median on the other markets Family has read, is marked in
 red. A price can be deleted, and the next visit reads a new one; an item can be **banned in one
-market**, which clears its price there and keeps the auction house from filing it until the ban is
-lifted by hand. Holding **CTRL** over a stack in your bags adds what
+market**, which keeps its price there out of every figure Family works out - Worth, and what a recipe
+costs - until the ban is lifted by hand. Readings of a banned item go on being taken and are listed
+beside the ban, which is how somebody tells when it can be lifted; the page can show the bans alone. Holding **CTRL** over a stack in your bags adds what
 the whole stack sells for; the count comes
 from the slot the pointer is on, and is used only where that slot really holds the item the
 tooltip is describing.

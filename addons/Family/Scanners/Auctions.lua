@@ -442,11 +442,6 @@ function Auctions:NeutralPrices(where)
 	return shared and self:Prices(shared) or nil
 end
 
--- Which market a prices table is, so the filing below can ask about bans without every reader
--- having to hand the market in beside the table it already hands in. Weak, because a table
--- nobody holds any more is not a market anybody is filing into.
-local marketOfTable = setmetatable({}, { __mode = "k" })
-
 function Auctions:Prices(where)
 	if type(_G.FamilyDB) ~= "table" then return {} end
 	FamilyDB.auctionPrices = FamilyDB.auctionPrices or {}
@@ -455,7 +450,6 @@ function Auctions:Prices(where)
 	if not where then return {} end
 
 	FamilyDB.auctionPrices[where] = FamilyDB.auctionPrices[where] or {}
-	marketOfTable[FamilyDB.auctionPrices[where]] = where
 	return FamilyDB.auctionPrices[where]
 end
 
@@ -470,8 +464,14 @@ end
 -- misleading everybody are gone.
 --
 -- **Per market, all of it.** A price is realm and side, and so is a lie about one: a troll on one
--- house says nothing about another. A ban **clears the price already held** - Alberto: *required
--- to fix existing rogued totals* - and is lifted only by hand.
+-- house says nothing about another.
+--
+-- **A ban keeps the price out of every figure Family works out, and nothing else.** First built
+-- to clear the price and refuse new ones; changed the same day, Alberto: *how do I see if I can
+-- lift a ban? By searching the AH of course. So a Ban should not avoid collecting the price from
+-- the AH, it should only avoid using it in Worth calculations.* Readings go on being filed, the
+-- audit page shows the newest beside the ban, and whoever put it on decides from that when to
+-- lift it. `ValueOf` and the index's own lookup are what obey it; `PriceOf` is the reading.
 --------------------------------------------------------------------------------------------
 
 local function normalVariant(variant)
@@ -516,7 +516,6 @@ function Auctions:Ban(where, variant)
 	FamilyDB.auctionBans = FamilyDB.auctionBans or {}
 	FamilyDB.auctionBans[where] = FamilyDB.auctionBans[where] or {}
 	FamilyDB.auctionBans[where][variant] = time()
-	self:Forget(where, variant)
 	return true
 end
 
@@ -589,11 +588,20 @@ function Auctions:Audit()
 		end
 	end
 
+	-- A ban sits on the price's own row, so the newest reading is beside it; one on an item with
+	-- no price in that market - deleted, or never read there - has a row of its own.
 	local bans = type(FamilyDB.auctionBans) == "table" and FamilyDB.auctionBans or {}
 	for where, list in pairs(bans) do
 		if type(list) == "table" then
+			local prices = type(store[where]) == "table" and store[where] or {}
 			for variant, since in pairs(list) do
-				rows[#rows + 1] = { market = where, variant = variant, banned = since }
+				local onRow = false
+				for _, entry in ipairs(byVariant[variant] or {}) do
+					if entry.market == where then entry.banned = since; onRow = true end
+				end
+				if not onRow and prices[variant] == nil then
+					rows[#rows + 1] = { market = where, variant = variant, banned = since }
+				end
 			end
 		end
 	end
@@ -607,8 +615,13 @@ function Auctions:AuditMarkets()
 	if type(_G.FamilyDB) ~= "table" then return out end
 	for _, store in ipairs { FamilyDB.auctionPrices, FamilyDB.auctionBans } do
 		if type(store) == "table" then
-			for where in pairs(store) do
-				if not seen[where] then seen[where] = true; out[#out + 1] = where end
+			-- A market with nothing in it - its last price deleted, or only ever asked for - is
+			-- not a market anybody can narrow the page to.
+			for where, held in pairs(store) do
+				if not seen[where] and type(held) == "table" and next(held) ~= nil then
+					seen[where] = true
+					out[#out + 1] = where
+				end
 			end
 		end
 	end
@@ -657,6 +670,33 @@ function Auctions:PriceOf(variant)
 
 	if type(held) ~= "table" then return nil end
 	return held.p, held.at
+end
+
+-- **The price to value something at**: `PriceOf`, less a price banned in its market (backlog 81).
+-- A ban on your own side falls back to the neutral house, which is another market with its own
+-- bans. What recipe costs are worked out from; the index asks the same of its own tables.
+function Auctions:ValueOf(variant)
+	if not self:PricesWanted() then return nil end
+	variant = normalVariant(variant)
+	if variant == nil then return nil end
+
+	local here = market()
+	local held = here and not self:IsBanned(here, variant) and self:Prices(here)[variant] or nil
+	if type(held) ~= "table" then
+		local shared = neutralMarket()
+		held = shared and not self:IsBanned(shared, variant) and self:Prices(shared)[variant] or nil
+	end
+
+	if type(held) ~= "table" then return nil end
+	return held.p, held.at
+end
+
+-- The bans for the market an index lookup is for, and for that realm's neutral house, beside the
+-- two price tables `MarketPrices` and `NeutralPrices` hand it.
+function Auctions:MarketBans(where) return self:Bans(where) end
+function Auctions:NeutralBans(where)
+	local shared = neutralMarket(where)
+	return shared and self:Bans(shared) or nil
 end
 
 function Auctions:ForgetVisit()
@@ -1297,14 +1337,6 @@ function Auctions:KeepEach(prices, variant, each, now)
 	if type(variant) == "string" then variant = tonumber(variant) or variant end
 	if not (type(variant) == "number" or type(variant) == "string") then return 0 end
 	if not each then return 0 end
-
-	-- **A banned item is not filed**, in this market, until the ban is lifted by hand (backlog 81).
-	local where = marketOfTable[prices]
-	if where then
-		local bans = FamilyDB.auctionBans
-		local here = bans and bans[where]
-		if here and here[variant] ~= nil then return 0 end
-	end
 
 	local held = prices[variant]
 

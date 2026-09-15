@@ -1088,7 +1088,8 @@ end
 -- quarter of what it costs.
 local function cheapest(itemID)
 	local vendor = Family.Merchant and Family.Merchant:PriceOf(itemID) or nil
-	local auction = Family.Auctions and Family.Auctions:PriceOf(itemID) or nil
+	-- `ValueOf`, not `PriceOf`: a price banned in its market prices no recipe (backlog 81).
+	local auction = Family.Auctions and Family.Auctions:ValueOf(itemID) or nil
 
 	if vendor and auction then
 		if auction < vendor then return auction, "auction" end

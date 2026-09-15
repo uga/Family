@@ -1,0 +1,11 @@
+name: a ban stops readings being filed
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	local held = prices[variant]
+
+	if not seenThisVisit[variant] or type(held) ~= "table" then
+--- new
+	if FamilyDB.auctionBans then for _, list in pairs(FamilyDB.auctionBans) do if list[variant] then return 0 end end end
+	local held = prices[variant]
+
+	if not seenThisVisit[variant] or type(held) ~= "table" then

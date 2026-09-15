@@ -1,6 +1,6 @@
 name: the suspects-only box lets every row through
 file: addons/Family_UI/PriceAudit.lua
 --- old
-				and (not suspectsOnly or entry.suspect ~= nil) then
+				and (not suspectsOnly or entry.suspect ~= nil)
 --- new
-				and true then
+				and true

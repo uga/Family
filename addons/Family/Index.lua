@@ -472,12 +472,20 @@ end
 -- Two tables rather than a call per item. This runs for every item every member holds, on every
 -- draw of the summary, and a function call in that loop is the sort of thing the auction reader
 -- had to have taken back out of it for costing too much.
+--
+-- **A banned price is passed over** (backlog 81): banned on your own side, the neutral house is
+-- asked; banned there too, there is no auction price and Worth falls to what a vendor pays.
 local function priceIn(pair, variant)
 	if not pair then return nil end
 	local held = pair.mine and pair.mine[variant]
-	if type(held) == "table" then return held end
+	if type(held) == "table" and not (pair.mineBans and pair.mineBans[variant] ~= nil) then
+		return held
+	end
 	held = pair.shared and pair.shared[variant]
-	return type(held) == "table" and held or nil
+	if type(held) == "table" and not (pair.sharedBans and pair.sharedBans[variant] ~= nil) then
+		return held
+	end
+	return nil
 end
 
 local function marketPair(market)
@@ -486,6 +494,8 @@ local function marketPair(market)
 		mine = Family.Auctions:MarketPrices(market) or nil,
 		shared = Family.Auctions.NeutralPrices
 			and Family.Auctions:NeutralPrices(market) or nil,
+		mineBans = Family.Auctions.MarketBans and Family.Auctions:MarketBans(market) or nil,
+		sharedBans = Family.Auctions.NeutralBans and Family.Auctions:NeutralBans(market) or nil,
 	}
 end
 

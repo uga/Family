@@ -1,0 +1,6 @@
+name: a banned price still prices a recipe
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	local held = here and not self:IsBanned(here, variant) and self:Prices(here)[variant] or nil
+--- new
+	local held = here and self:Prices(here)[variant] or nil

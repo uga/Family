@@ -6279,6 +6279,19 @@ do
 			tostring(priceLine(2880, "at auction prices")) .. " / " ..
 				tostring(priceLine(2880, "at vendor prices")))
 
+		-- **A ban keeps that market's price out of Worth** (backlog 81), for the lot on this
+		-- tooltip and for the member's row on the Summary alike, while the reading stays filed.
+		Family.Auctions:Ban(market, 2880)
+		local lot, member = Family.Index:WorthOfItem(2880), Family.Index:WorthOf(here)
+		check("a price banned in its market values nothing, on the lot or on the member",
+			lot and lot.atMarket == 0 and member and member.atMarket == 0
+				and FamilyDB.auctionPrices[market][2880] ~= nil,
+			tostring(lot and lot.atMarket) .. " / " .. tostring(member and member.atMarket))
+		Family.Auctions:Unban(market, 2880)
+		check("and lifting the ban puts it back",
+			Family.Index:WorthOfItem(2880).atMarket == 12,
+			tostring(Family.Index:WorthOfItem(2880).atMarket))
+
 		-- The guild bank is counted on its own line above and is nobody's to spend, so it is
 		-- outside this arithmetic here exactly as it is outside `Worth`.
 		FamilyDB.guilds = FamilyDB.guilds or {}
@@ -7269,14 +7282,17 @@ do
 			check("the newer house keeps the price a reading replaced",
 				here ~= nil and FamilyDB.auctionPrices[here][2589].was == 300,
 				tostring(here and FamilyDB.auctionPrices[here][2589].was))
+			-- A ban does not stop a reading: it is how whoever banned it sees when it can be lifted.
 			Family.Auctions:Ban(here, 2589)
 			Family.Auctions:ForgetVisit()
+			RESULTS = { { itemKey = { itemID = 2589 }, minPrice = 950 } }
 			Family.Auctions:ReadModernPrices()
-			check("and files nothing for an item banned in this market",
-				(Family.Auctions:PriceOf(2589)) == nil,
+			check("and still files a reading for an item banned in this market",
+				(Family.Auctions:PriceOf(2589)) == 950,
 				tostring((Family.Auctions:PriceOf(2589))))
 			Family.Auctions:Unban(here, 2589)
 			Family.Auctions:ForgetVisit()
+			RESULTS = { { itemKey = { itemID = 2589 }, minPrice = 900 } }
 			Family.Auctions:ReadModernPrices()
 
 			-- **Neither route is gated and both are registered everywhere.** The old one reads
@@ -36476,8 +36492,11 @@ print("what a craftable thing costs to make")
 	Family.Merchant.PriceOf = function(_, itemID) return vendorPrices[itemID] end
 
 	local auctionPrices = { [BAR] = 300, [CLOTH] = 250 }
-	local realAuction = Family.Auctions.PriceOf
+	-- Recipe costs value a material through `ValueOf`, which is `PriceOf` less a banned price
+	-- (backlog 81); both are stood in for, so the tooltip's own auction line reads the same.
+	local realAuction, realValue = Family.Auctions.PriceOf, Family.Auctions.ValueOf
 	Family.Auctions.PriceOf = function(_, itemID) return auctionPrices[itemID] end
+	Family.Auctions.ValueOf = Family.Auctions.PriceOf
 
 	-- **The cheapest source wins**, and the fixture makes them disagree in both directions -
 	-- the bar is cheaper at the auction house, the cloth is cheaper from the vendor - so a
@@ -36626,8 +36645,10 @@ print("what a craftable thing costs to make")
 	-- material of still lists its materials - what is known is the recipe.
 	do
 		local realVendorAll, realAuctionAll = Family.Merchant.PriceOf, Family.Auctions.PriceOf
+		local realValueAll = Family.Auctions.ValueOf
 		Family.Merchant.PriceOf = function() return nil end
 		Family.Auctions.PriceOf = function() return nil end
+		Family.Auctions.ValueOf = Family.Auctions.PriceOf
 
 		local bare = hovering(SWORD)
 		check("and a recipe with no prices at all still says what it is made of",
@@ -36635,6 +36656,7 @@ print("what a craftable thing costs to make")
 			bare)
 
 		Family.Merchant.PriceOf, Family.Auctions.PriceOf = realVendorAll, realAuctionAll
+		Family.Auctions.ValueOf = realValueAll
 	end
 
 	-- **Under who can make it and above what it sells for**, which is the order asked for.
@@ -36726,6 +36748,7 @@ print("what a craftable thing costs to make")
 
 	Family.Extras:Set("craftingCost", false)
 	Family.Merchant.PriceOf, Family.Auctions.PriceOf = realVendor, realAuction
+	Family.Auctions.ValueOf = realValue
 	Family.Recipes.MadeBy = realMadeBy
 	Family.RecipeReagents, Family.BoundReagents = realReagents, realBound
 	Family.Capabilities.expansion = held
@@ -37486,17 +37509,18 @@ print("auditing the auction prices Family collected (backlog 81)")
 	check("a new visit keeps the price it replaced beside the new one",
 		a[2589].p == 1000 and a[2589].was == 100, tostring(a[2589].was))
 
-	-- **A ban clears the price already held** - *required to fix existing rogued totals* - and
-	-- stops the next reading of that market from filing it.
+	-- **A ban keeps the price out of every figure, and goes on collecting readings.** Changed the
+	-- day it was built: *how do I see if I can lift a ban? By searching the AH of course.*
 	Family.Auctions:Ban(A, 2589)
-	check("banning an item clears its price in that market",
-		a[2589] == nil and Family.Auctions:IsBanned(A, 2589), tostring(a[2589]))
+	check("banning an item keeps its price, so the reading stays in view",
+		a[2589] ~= nil and a[2589].p == 1000 and Family.Auctions:IsBanned(A, 2589), tostring(a[2589]))
 	Family.Auctions:ForgetVisit()
-	check("and a reading of that market files nothing for it",
-		Family.Auctions:KeepEach(a, 2589, 50, now) == 0 and a[2589] == nil, tostring(a[2589]))
+	check("and a reading of that market is still filed for it",
+		Family.Auctions:KeepEach(a, 2589, 50, now) == 1 and a[2589].p == 50,
+		tostring(a[2589] and a[2589].p))
 
 	-- **Per market**, because a price is realm and side and so is a lie about one.
-	check("while the same item is still filed in another market",
+	check("while the same item in another market is not banned",
 		Family.Auctions:KeepEach(b, 2589, 60, now) == 1 and b[2589].p == 60
 			and not Family.Auctions:IsBanned(B, 2589), tostring(b[2589]))
 
@@ -37504,10 +37528,8 @@ print("auditing the auction prices Family collected (backlog 81)")
 	check("a ban asked with the id as a string is the same ban",
 		Family.Auctions:IsBanned(A, "2589"))
 
-	check("lifting the ban lets the item be filed again",
-		Family.Auctions:Unban(A, 2589) and not Family.Auctions:IsBanned(A, 2589)
-			and Family.Auctions:KeepEach(a, 2589, 70, now) == 1 and a[2589].p == 70,
-		tostring(a[2589] and a[2589].p))
+	check("and a ban can be lifted",
+		Family.Auctions:Unban(A, 2589) and not Family.Auctions:IsBanned(A, 2589))
 	check("and the last lifted ban leaves no empty market behind",
 		FamilyDB.auctionBans == nil or FamilyDB.auctionBans[A] == nil)
 
@@ -37555,6 +37577,41 @@ print("auditing the auction prices Family collected (backlog 81)")
 		found[B .. "/1005"] and found[B .. "/1005"].banned == now and found[B .. "/1005"].p == nil)
 	check("and every market with a price or a ban is offered to the filter",
 		#Family.Auctions:AuditMarkets() == 3, tostring(#Family.Auctions:AuditMarkets()))
+
+	-- A ban on an item that has a price sits on that price's row, with the reading beside it.
+	FamilyDB.auctionBans[A] = { [1004] = now - 60 }
+	local onRow, rows = nil, 0
+	for _, row in ipairs(Family.Auctions:Audit()) do
+		rows = rows + 1
+		if row.market == A and row.variant == 1004 then onRow = row end
+	end
+	check("a ban on a priced item is marked on that price's row rather than beside it",
+		onRow and onRow.banned == now - 60 and onRow.p == 4000 and rows == 8, tostring(rows))
+	FamilyDB.auctionBans[A] = nil
+
+	----------------------------------------------------------------------------------------
+	-- What a ban keeps a price out of: Worth, through the index, and recipe costs, through
+	-- `ValueOf`. The reading itself, `PriceOf`, is left alone.
+	----------------------------------------------------------------------------------------
+	do
+		local realMarketFn = Family.Auctions.PriceOf
+		local here = nil
+		-- The market this client is in, found the way the store files it.
+		local probe = Family.Auctions:Prices()
+		for where, t in pairs(FamilyDB.auctionPrices) do if t == probe then here = where end end
+		probe[3001] = { p = 777, at = now }
+		check("unbanned, a price is both the reading and the value",
+			(Family.Auctions:PriceOf(3001)) == 777 and (Family.Auctions:ValueOf(3001)) == 777)
+		Family.Auctions:Ban(here, 3001)
+		check("banned, it is still the reading but no longer a value",
+			(Family.Auctions:PriceOf(3001)) == 777 and (Family.Auctions:ValueOf(3001)) == nil,
+			tostring((Family.Auctions:ValueOf(3001))))
+		Family.Auctions:Unban(here, 3001)
+		probe[3001] = nil
+		check("and a market left with nothing in it is not offered to the filter",
+			#Family.Auctions:AuditMarkets() == 3, tostring(#Family.Auctions:AuditMarkets()))
+		Family.Auctions.PriceOf = realMarketFn
+	end
 
 	----------------------------------------------------------------------------------------
 	-- The panel: an Extras page, every market, sorted by price, with delete, ban and lift.
@@ -37643,7 +37700,8 @@ print("auditing the auction prices Family collected (backlog 81)")
 	end
 	check("the market filter shows one market at a time",
 		#listed > 0 and #listed < 8 and oneMarket, tostring(#listed))
-	for _ = 1, 3 do fireClick(buttonLabelled(", ")) end
+	-- The market button itself: found by its text, any other button with a comma in it will do.
+	for _ = 1, 3 do fireClick(audit.__marketButton) end
 	check("and steps back round to all of them",
 		#auditRows() == 8 and buttonLabelled("All markets") ~= nil, tostring(#auditRows()))
 
@@ -37657,20 +37715,44 @@ print("auditing the auction prices Family collected (backlog 81)")
 	check("Delete takes that price out of the store and off the list",
 		FamilyDB.auctionPrices[A][1002] == nil and rowFor(A, 1002) == nil)
 	fireClick(rowFor(A, 1001).ban)
-	check("Ban clears the price and lists the item as banned in that market",
-		FamilyDB.auctionPrices[A][1001] == nil and Family.Auctions:IsBanned(A, 1001)
-			and rowFor(A, 1001) ~= nil and rowFor(A, 1001).entry.banned ~= nil)
-	fireClick(rowFor(A, 1001).forget)
-	check("and Lift on a banned row lifts the ban",
-		not Family.Auctions:IsBanned(A, 1001) and rowFor(A, 1001) == nil)
+	local banned = rowFor(A, 1001)
+	check("Ban bans the item in that market and keeps its reading on the row",
+		FamilyDB.auctionPrices[A][1001] ~= nil and Family.Auctions:IsBanned(A, 1001)
+			and banned ~= nil and banned.entry.banned ~= nil and banned.entry.p == 1000)
+	check("drawn blue, with Lift where Ban was",
+		banned and banned.ban.__text == "Lift" and banned.alert.__visible == true
+			and banned.alert.__colour and banned.alert.__colour[3] > banned.alert.__colour[1],
+		banned and tostring(banned.ban.__text))
+
+	-- **Bans only**: after reading the house again, the rows to decide about.
+	local bansBox = _G.FamilyPriceAuditBans
+	bansBox:SetChecked(true)
+	fireClick(bansBox)
+	listed = auditRows()
+	check("the bans-only box leaves the banned rows and nothing else",
+		#listed == 2 and listed[1].entry.banned ~= nil and listed[2].entry.banned ~= nil,
+		tostring(#listed))
+	check("with the ban that has a reading before the one that has none",
+		listed[1].entry.p == 1000 and listed[2].entry.p == nil)
+	-- The second is no suspect - it has no price to be one - so only the ban can colour it.
+	check("and a ban is marked whether or not it is also a suspect",
+		listed[2].entry.suspect == nil and listed[2].alert.__visible == true,
+		tostring(listed[2].alert.__visible))
+	bansBox:SetChecked(false)
+	fireClick(bansBox)
+
+	fireClick(rowFor(A, 1001).ban)
+	check("and Lift lifts the ban, leaving the price where it was",
+		not Family.Auctions:IsBanned(A, 1001) and rowFor(A, 1001) ~= nil
+			and rowFor(A, 1001).entry.banned == nil)
 
 	-- A page is a handful of rows, and the rest are reached rather than drawn.
 	for id = 2000, 2040 do FamilyDB.auctionPrices[A][id] = { p = id, at = now } end
 	fireClick(views.prices)
 	check("a long list is drawn a page at a time and says where it is",
-		#auditRows() == 19 and visibleText("1-19 of 47"), tostring(#auditRows()))
+		#auditRows() == 19 and visibleText("1-19 of 48"), tostring(#auditRows()))
 	fireClick(buttonLabelled(">"))
-	check("and the next page carries on from it", visibleText("20-38 of 47"))
+	check("and the next page carries on from it", visibleText("20-38 of 48"))
 
 	-- **Moving through the list draws; it does not choose the rows again.** Every notch of the
 	-- wheel used to filter and sort the whole store, which on 6,898 prices was lag you could feel
@@ -37679,7 +37761,7 @@ print("auditing the auction prices Family collected (backlog 81)")
 	audit.__scripts.OnMouseWheel(audit, -1)
 	fireClick(buttonLabelled("<"))
 	check("scrolling and paging redraw the page without sorting the store again",
-		audit.__rebuilds == rebuilt and visibleText("4-22 of 47"),
+		audit.__rebuilds == rebuilt and visibleText("4-22 of 48"),
 		tostring(audit.__rebuilds - rebuilt) .. " rebuild(s)")
 
 	-- **The scroll bar**, where the client has the template the browse list is built on. Modelled
@@ -37702,17 +37784,17 @@ print("auditing the auction prices Family collected (backlog 81)")
 		withBar:Reload()
 		local bar = withBar.__bar
 		check("where the client has the browse list's scroll template, the page has a bar",
-			bar ~= nil and bar.__fauxTotal == 47, tostring(bar and bar.__fauxTotal))
+			bar ~= nil and bar.__fauxTotal == 48, tostring(bar and bar.__fauxTotal))
 		if bar then
 			bar.__scripts.OnVerticalScroll(bar, 28 * 20)
 			local says
 			for _, f in ipairs(fontStrings) do
-				if f.__parent == withBar and type(f.__text) == "string" and f.__text:find(" of 47", 1, true) then
+				if f.__parent == withBar and type(f.__text) == "string" and f.__text:find(" of 48", 1, true) then
 					says = f.__text
 				end
 			end
 			check("and dragging it moves the page to where it was dragged",
-				says == "29-47 of 47", tostring(says))
+				says == "29-47 of 48", tostring(says))
 		end
 
 		Family.UI.__priceAudit = heldPanel

@@ -69,6 +69,16 @@ local function storedName(variant)
 	return type(store) == "table" and store[id] or nil
 end
 
+-- A flat colour, by whichever name this client has for it.
+local function paintAlert(texture, r, g, b, a)
+	texture.__colour = { r, g, b, a }
+	if texture.SetColorTexture then
+		texture:SetColorTexture(r, g, b, a)
+	else
+		texture:SetTexture(r, g, b, a)
+	end
+end
+
 function UI:BuildPriceAudit(frame)
 	local rowsData, shown = {}, {}
 	local offset = 0
@@ -87,8 +97,9 @@ function UI:BuildPriceAudit(frame)
 	if blurb.SetWordWrap then blurb:SetWordWrap(true) end
 	blurb:SetText(L["Every price Family has taken from an auction house. Red is a price ten times "
 		.. "or more the one it replaced, or ten times what the same item costs on the other "
-		.. "markets. Deleting a price lets the next visit read a new one; banning an item clears "
-		.. "its price in that market and keeps it out until the ban is lifted."])
+		.. "markets. Deleting a price lets the next visit read a new one. Banning an item keeps "
+		.. "its price in that market out of Worth and recipe costs, while new readings are still "
+		.. "taken and shown here - lift the ban when they look right again."])
 
 	-- The market filter: one button that steps through every market there is, and back to all.
 	local marketButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
@@ -116,8 +127,20 @@ function UI:BuildPriceAudit(frame)
 	suspectsLabel:SetPoint("LEFT", suspectsBox, "RIGHT", 2, 0)
 	suspectsLabel:SetText(L["Suspects only"])
 
+	-- **Bans only**, asked for the same day with the change to what a ban does: after reading the
+	-- house again, the bans are the rows to look at, newest reading beside each, to decide which
+	-- can be lifted.
+	local bansOnly = false
+	local bansBox = CreateFrame("CheckButton", "FamilyPriceAuditBans", panel, "UICheckButtonTemplate")
+	bansBox:SetSize(24, 24)
+	bansBox:SetPoint("LEFT", suspectsLabel, "RIGHT", 12, 0)
+	local bansLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	bansLabel:SetPoint("LEFT", bansBox, "RIGHT", 2, 0)
+	bansLabel:SetText(L["Bans only"])
+
+	-- On the headings' line, over the buttons, where the filter row has run out of room.
 	local count = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-	count:SetPoint("TOPRIGHT", -70, -38)
+	count:SetPoint("TOPRIGHT", -8 - BAR_ROOM, -62)
 	count:SetJustifyH("RIGHT")
 
 	local previous = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
@@ -195,11 +218,6 @@ function UI:BuildPriceAudit(frame)
 		-- the figures are white on every row in Family, and a suspect is a fact about the row.
 		row.alert = row:CreateTexture(nil, "BACKGROUND")
 		row.alert:SetAllPoints()
-		if row.alert.SetColorTexture then
-			row.alert:SetColorTexture(0.8, 0.1, 0.1, 0.25)
-		else
-			row.alert:SetTexture(0.8, 0.1, 0.1, 0.25)
-		end
 		row.alert:Hide()
 
 		row.cells = {}
@@ -217,6 +235,7 @@ function UI:BuildPriceAudit(frame)
 		row.forget = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
 		row.forget:SetSize(BUTTON_W, 18)
 		row.forget:SetPoint("LEFT", cx + 4, 0)
+		row.forget:SetText(L["Delete"])
 
 		row.ban = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
 		row.ban:SetSize(BUTTON_W, 18)
@@ -233,7 +252,8 @@ function UI:BuildPriceAudit(frame)
 			local lines = { { "|cff66bbff" .. marketLabel(entry.market) .. "|r" } }
 			if entry.banned then
 				lines[#lines + 1] = { string.format(L["Banned %s"], UI:Ago(entry.banned)) }
-			elseif entry.suspect == "replaced" then
+			end
+			if entry.suspect == "replaced" then
 				lines[#lines + 1] = { string.format(L["Ten times or more the price it replaced, %s"],
 					UI:Money(entry.was)) }
 			elseif entry.suspect == "markets" then
@@ -290,7 +310,8 @@ function UI:BuildPriceAudit(frame)
 		shown = {}
 		for _, entry in ipairs(rowsData) do
 			if (not wantedMarket or entry.market == wantedMarket)
-				and (not suspectsOnly or entry.suspect ~= nil) then
+				and (not suspectsOnly or entry.suspect ~= nil)
+				and (not bansOnly or entry.banned ~= nil) then
 				local keep = true
 				if needle ~= "" then
 					local name = storedName(entry.variant)
@@ -301,10 +322,12 @@ function UI:BuildPriceAudit(frame)
 		end
 
 		-- **Bans first, whatever the order**, because a ban is a thing somebody did and will
-		-- come back to lift; then by the price of one, highest first unless turned round.
+		-- come back to lift; then by the price of one, highest first unless turned round. A ban
+		-- with no reading yet has no price, and goes after the bans that have one.
 		table.sort(shown, function(a, b)
 			if (a.banned ~= nil) ~= (b.banned ~= nil) then return a.banned ~= nil end
-			if a.banned then return tostring(a.variant) < tostring(b.variant) end
+			if (a.p ~= nil) ~= (b.p ~= nil) then return a.p ~= nil end
+			if not a.p then return tostring(a.variant) < tostring(b.variant) end
 			if a.p ~= b.p then
 				if ascending then return a.p < b.p end
 				return a.p > b.p
@@ -346,21 +369,28 @@ function UI:BuildPriceAudit(frame)
 				row.cells[1]:SetText(name)
 				row.cells[2]:SetText(marketLabel(entry.market))
 
-				if entry.banned then
-					row.cells[3]:SetText("|cffff5555" .. L["banned"] .. "|r")
-					row.cells[4]:SetText("")
-					row.cells[5]:SetText(UI:Ago(entry.banned))
-					row.forget:SetText(L["Lift"])
-					row.ban:Hide()
-				else
+				-- **A banned row shows its newest reading**: the ban keeps the price out of Worth
+				-- and recipe costs, and what the house is asking now is how to tell it can go.
+				if entry.p then
 					row.cells[3]:SetText(UI:Money(entry.p))
 					row.cells[4]:SetText(entry.was and UI:Money(entry.was) or UI.UNKNOWN)
 					row.cells[5]:SetText(UI:Ago(entry.at))
-					row.forget:SetText(L["Delete"])
-					row.ban:Show()
+					row.forget:Show()
+				else
+					row.cells[3]:SetText("|cffff5555" .. L["banned"] .. "|r")
+					row.cells[4]:SetText("")
+					row.cells[5]:SetText(UI:Ago(entry.banned))
+					row.forget:Hide()
 				end
+				row.ban:SetText(entry.banned and L["Lift"] or L["Ban"])
 
-				row.alert:SetShown(entry.suspect ~= nil)
+				-- Blue behind a ban, red behind a suspect; a banned suspect is a ban.
+				if entry.banned then
+					paintAlert(row.alert, 0.15, 0.35, 0.9, 0.3)
+				elseif entry.suspect then
+					paintAlert(row.alert, 0.8, 0.1, 0.1, 0.25)
+				end
+				row.alert:SetShown(entry.banned ~= nil or entry.suspect ~= nil)
 				row:Show()
 			end
 		end
@@ -377,18 +407,18 @@ function UI:BuildPriceAudit(frame)
 	for index, row in ipairs(rows) do
 		row.forget:SetScript("OnClick", function()
 			local entry = row.entry
-			if not entry then return end
-			if entry.banned then
-				Auctions:Unban(entry.market, entry.variant)
-			else
-				Auctions:Forget(entry.market, entry.variant)
-			end
+			if not entry or not entry.p then return end
+			Auctions:Forget(entry.market, entry.variant)
 			changed()
 		end)
 		row.ban:SetScript("OnClick", function()
 			local entry = row.entry
-			if not entry or entry.banned then return end
-			Auctions:Ban(entry.market, entry.variant)
+			if not entry then return end
+			if entry.banned then
+				Auctions:Unban(entry.market, entry.variant)
+			else
+				Auctions:Ban(entry.market, entry.variant)
+			end
 			changed()
 		end)
 	end
@@ -410,6 +440,12 @@ function UI:BuildPriceAudit(frame)
 
 	suspectsBox:SetScript("OnClick", function(self)
 		suspectsOnly = self:GetChecked() and true or false
+		offset = 0
+		panel:Refresh()
+	end)
+
+	bansBox:SetScript("OnClick", function(self)
+		bansOnly = self:GetChecked() and true or false
 		offset = 0
 		panel:Refresh()
 	end)
@@ -449,6 +485,7 @@ function UI:BuildPriceAudit(frame)
 		end)
 	end
 	panel.__bar = bar
+	panel.__marketButton = marketButton
 
 	panel:EnableMouseWheel(true)
 	panel:SetScript("OnMouseWheel", function(_, delta)
