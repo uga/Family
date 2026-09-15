@@ -1,0 +1,6 @@
+name: the broker bar starts on the whole family rather than on this character
+file: addons/Family_UI/Broker.lua
+--- old
+local SCOPES = { "character", "all", "realm" }
+--- new
+local SCOPES = { "all", "character", "realm" }

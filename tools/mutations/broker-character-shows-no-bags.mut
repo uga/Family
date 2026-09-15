@@ -1,0 +1,6 @@
+name: the broker bar on this character never shows its bags
+file: addons/Family_UI/Broker.lua
+--- old
+		if meta.bagSlots and meta.bagSlots > 0 then
+--- new
+		if false then

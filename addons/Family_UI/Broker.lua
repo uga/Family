@@ -53,7 +53,11 @@ local RADIUS = 80
 --
 -- Three, not two, because the total this shipped with is somebody's answer already and taking
 -- it away would be answering a question nobody asked.
-local SCOPES = { "all", "realm", "character" }
+--
+-- **This character first, since 2026-09-15** (backlog 87, Alberto): the default is what is in
+-- this pocket and how much room is left in these bags, and a click goes on to the whole family
+-- and then to this side of this realm. A scope already chosen and saved is left as it was.
+local SCOPES = { "character", "all", "realm" }
 
 function UI:BrokerScope()
 	local wanted = FamilyDB and FamilyDB.ui and FamilyDB.ui.brokerScope
@@ -433,8 +437,10 @@ local function describe(tooltip)
 	local ours = (mine and mine.meta) or {}
 
 	local on
+	local shows = L["|cff888888the bar shows money on|r"]
 	if scope == "character" then
 		on = ours.name or L["this character"]
+		shows = L["|cff888888the bar shows money and bags on|r"]
 	elseif scope == "realm" then
 		on = string.format("%s |cff888888(%s)|r", tostring(ours.realm or "?"),
 			tostring(ours.faction or UI.UNKNOWN_SIDE))
@@ -443,7 +449,7 @@ local function describe(tooltip)
 	end
 
 	tooltip:AddLine(" ")
-	tooltip:AddDoubleLine(L["|cff888888the bar shows money on|r"], on)
+	tooltip:AddDoubleLine(shows, on)
 
 	tooltip:AddLine(" ")
 	tooltip:AddLine(L["|cff888888Left-click for the family. Right-click for the options. "
@@ -511,11 +517,34 @@ local function createBroker()
 	return object
 end
 
+-- **What the first figure counts, said with a picture in front of it** (backlog 87, Alberto): on
+-- one character it is bag slots and everywhere else it is characters, and a bare number in the
+-- same place meant two things. Sized to the text it sits in. The group is the Wide Family tab's
+-- own icon, already drawn on every client; the bag is on tools/FamilyIconSheet and first used here.
+local BAGS_ICON = "|TInterface\\Icons\\INV_Misc_Bag_08:0|t "
+local MEMBERS_ICON = "|TInterface\\Icons\\INV_Misc_GroupNeedMore:0|t "
+
 function UI:UpdateBroker()
 	if not self.broker then return end
 
 	local members, money = summary()
-	self.broker.text = string.format("%d  %s", members, UI:Money(money, true))
+
+	-- One character is one member, so the count gives way to the bags: free of total, the
+	-- general slots only, which is the figure the summary's bag column gives (backlog 87).
+	-- Left off rather than written as 0/0 until the bags have been read once.
+	if self:BrokerScope() == "character" then
+		local mine = Family.Database:Members()[Family:CurrentMember()]
+		local meta = (mine and mine.meta) or {}
+		if meta.bagSlots and meta.bagSlots > 0 then
+			self.broker.text = string.format("%s%d/%d  %s", BAGS_ICON, meta.bagFree or 0,
+				meta.bagSlots, UI:Money(money, true))
+		else
+			self.broker.text = UI:Money(money, true)
+		end
+		return
+	end
+
+	self.broker.text = string.format("%s%d  %s", MEMBERS_ICON, members, UI:Money(money, true))
 end
 
 --------------------------------------------------------------------------------------------

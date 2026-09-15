@@ -1,0 +1,6 @@
+name: the broker tooltip does not say the bar shows bags on this character
+file: addons/Family_UI/Broker.lua
+--- old
+		shows = L["|cff888888the bar shows money and bags on|r"]
+--- new
+		shows = shows

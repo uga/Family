@@ -820,6 +820,7 @@ Family.locales.frFR = {
 	["|cff40bf40Crafting cooldowns ready|r"] = "|cff40bf40Temps de recharge d'artisanat prêts|r",
 	["|cff888888Left-click for the family. Right-click for the options. Shift-click to change what the money counts.|r"] = "|cff888888Clic gauche pour la famille. Clic droit pour les options. Maj+clic pour changer ce que compte l'argent.|r",
 	["|cff888888the bar shows money on|r"] = "|cff888888la barre affiche l'argent de|r",
+	["|cff888888the bar shows money and bags on|r"] = "|cff888888la barre affiche l'argent et les sacs de|r",
 	["all family"] = "toute la famille",
 	["this character"] = "ce personnage",
 

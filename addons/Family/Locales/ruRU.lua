@@ -820,6 +820,7 @@ Family.locales.ruRU = {
 	["|cff40bf40Crafting cooldowns ready|r"] = "|cff40bf40Ремесленные восстановления готовы|r",
 	["|cff888888Left-click for the family. Right-click for the options. Shift-click to change what the money counts.|r"] = "|cff888888Левый щелчок - семья. Правый - настройки. Shift+щелчок меняет то, что считают деньги.|r",
 	["|cff888888the bar shows money on|r"] = "|cff888888на панели деньги|r",
+	["|cff888888the bar shows money and bags on|r"] = "|cff888888на панели деньги и сумки|r",
 	["all family"] = "всей семьи",
 	["this character"] = "этот персонаж",
 

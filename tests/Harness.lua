@@ -13196,14 +13196,19 @@ do
 		-- and then to this character's own pocket, and comes back round.
 		local held = FamilyDB.ui and FamilyDB.ui.brokerScope
 
-		check("the bar counts the whole family until asked otherwise",
-			Family.UI:BrokerScope() == "all", tostring(Family.UI:BrokerScope()))
+		-- This character until asked otherwise, since backlog 87: what is in this pocket and
+		-- how much room is left in these bags. Asked with nothing saved, which is what a player
+		-- who never clicked has.
+		FamilyDB.ui.brokerScope = nil
+		check("the bar counts this character until asked otherwise",
+			Family.UI:BrokerScope() == "character", tostring(Family.UI:BrokerScope()))
+		check("and cycling goes the whole family, then the realm, then back",
+			Family.UI:CycleBrokerScope() == "all"
+				and Family.UI:CycleBrokerScope() == "realm"
+				and Family.UI:CycleBrokerScope() == "character")
 
+		Family.UI:CycleBrokerScope()
 		local wide = Family.UI.broker.text
-		check("and cycling goes realm, then character, then back",
-			Family.UI:CycleBrokerScope() == "realm"
-				and Family.UI:CycleBrokerScope() == "character"
-				and Family.UI:CycleBrokerScope() == "all")
 
 		-- The tooltip is the whole-family view and does not narrow with the bar. What it must
 		-- never do is narrow *half* of itself: it used to list every member of every realm and
@@ -13237,7 +13242,7 @@ do
 		-- And it still says which narrower thing the bar is counting, which is what explains
 		-- the bar and the tooltip disagreeing on purpose.
 		check("and still names what the bar shows money on",
-			scoped:find("the bar shows money on", 1, true) ~= nil, scoped)
+			scoped:find("the bar shows money and bags on", 1, true) ~= nil, scoped)
 
 		Family.UI:CycleBrokerScope()
 
@@ -13255,15 +13260,38 @@ do
 		Family.UI:CycleBrokerScope()
 		local realmText = Family.UI.broker.text
 		check("the realm scope counts this side of this realm and not the other side of it",
-			tonumber((realmText:match("^(%d+)"))) == 2, realmText)
+			tonumber((realmText:match("^|T[^|]*GroupNeedMore:0|t (%d+)  "))) == 2, realmText)
 		check("and still warns about mail on a character it is no longer counting",
 			brokerTooltipText():find("Mail expiring soon", 1, true) ~= nil,
 			"narrowing what the bar counts must not narrow what it warns about")
 
 		Family.UI:CycleBrokerScope()
-		local charText = Family.UI.broker.text
-		check("and the character scope counts exactly one",
-			tonumber((charText:match("^(%d+)"))) == 1, charText)
+		-- One character is one member, so the bar says the bags in the count's place: free
+		-- of total, the general slots the summary's bag column counts. Values put on the
+		-- played character for this and given back, whatever the fixture held.
+		;(function()
+			local current = Family:CurrentMember()
+			local meta = Family.Database:Meta(current) or {}
+			local heldFree, heldSlots = meta.bagFree, meta.bagSlots
+			Family.Database:SetMeta(current, { bagFree = 7, bagSlots = 64 })
+			local charText = Family.UI.broker.text
+			check("and the character scope shows its bags free of total, then its money",
+				charText:find("^|T[^|]*INV_Misc_Bag_08:0|t 7/64  ") ~= nil
+					and charText:find(Family.UI:Money(meta.money or 0, true), 1, true) ~= nil,
+				charText)
+			check("and says on hover that the bar shows money and bags on this character",
+				brokerTooltipText():find("the bar shows money and bags on", 1, true) ~= nil)
+
+			-- Never read yet: the money alone, rather than a 0/0 that looks like full bags.
+			Family.Database:SetMeta(current, { bagFree = Family.CLEAR, bagSlots = Family.CLEAR })
+			check("and only its money while its bags have never been read",
+				Family.UI.broker.text == Family.UI:Money(meta.money or 0, true),
+				Family.UI.broker.text)
+
+			Family.Database:SetMeta(current, {
+				bagFree = heldFree == nil and Family.CLEAR or heldFree,
+				bagSlots = heldSlots == nil and Family.CLEAR or heldSlots })
+		end)()
 
 		Family.Database:SetMeta("Other-FireMaw", { faction = Family.CLEAR })
 		Family.Database:SetMeta("Formulaic-FireMaw", { faction = Family.CLEAR })
@@ -13314,8 +13342,8 @@ do
 			narrowed ~= wide, tostring(wide) .. " -> " .. tostring(narrowed))
 
 		-- Both numbers together, or "29 members, 4200g" is a puzzle rather than a sentence.
-		local mine = tonumber((narrowed:match("^(%d+)")))
-		local all = tonumber((wide:match("^(%d+)")))
+		local mine = tonumber((narrowed:match("^|T[^|]*GroupNeedMore:0|t (%d+)  ")))
+		local all = tonumber((wide:match("^|T[^|]*GroupNeedMore:0|t (%d+)  ")))
 		check("with the member count narrowed alongside the money",
 			mine ~= nil and all ~= nil and mine < all,
 			tostring(all) .. " members -> " .. tostring(mine))
@@ -13336,15 +13364,15 @@ do
 			for each in (brokerTooltipText() .. "\n"):gmatch("([^\n]*)\n") do
 				if each:find("the bar shows money on", 1, true) then found = each end
 			end
-			check("the default mode says the bar shows money on the whole family",
+			check("the whole-family mode says the bar shows money on the whole family",
 				found ~= nil and found:find("all family", 1, true) ~= nil, tostring(found))
 		end)()
 
 		-- An unknown value on disk - an older version, or a hand-edited file - must read as
-		-- the whole family rather than as nothing at all.
+		-- the default, this character, rather than as nothing at all.
 		FamilyDB.ui.brokerScope = "whatever"
-		check("and a scope it does not recognise reads as the whole family",
-			Family.UI:BrokerScope() == "all")
+		check("and a scope it does not recognise reads as this character",
+			Family.UI:BrokerScope() == "character")
 
 		FamilyDB.ui.brokerScope = held
 		Family.UI:UpdateBroker()
@@ -13354,11 +13382,18 @@ do
 	check("the broker bar is brought up to date when the database changes",
 		text ~= before, tostring(before) .. " -> " .. tostring(text))
 
-	-- The same sum, said twice, which is the fault as a player meets it.
+	-- The same sum, said twice, which is the fault as a player meets it. Asked of the whole
+	-- family, which is the scope the tooltip's total is; the default is one character now.
+	local heldScope = FamilyDB.ui.brokerScope
+	FamilyDB.ui.brokerScope = "all"
+	Family.UI:UpdateBroker()
+	text = Family.UI.broker.text
 	local shown
 	for line in (brokerTooltipText() .. "\n"):gmatch("([^\n]*)\n") do
 		if line:find("All realms", 1, true) then shown = line:match("|r  (.+)$") end
 	end
+	FamilyDB.ui.brokerScope = heldScope
+	Family.UI:UpdateBroker()
 	check("and says the same total the tooltip under it says",
 		shown ~= nil and text ~= nil and text:find(shown, 1, true) ~= nil,
 		tostring(text) .. " vs " .. tostring(shown))

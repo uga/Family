@@ -1,0 +1,6 @@
+name: the broker bar's character count has no icon saying what it counts
+file: addons/Family_UI/Broker.lua
+--- old
+	self.broker.text = string.format("%s%d  %s", MEMBERS_ICON, members, UI:Money(money, true))
+--- new
+	self.broker.text = string.format("%d  %s", members, UI:Money(money, true))

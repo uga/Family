@@ -5414,3 +5414,63 @@ mailbox, or ten seconds with the letter still there, lets it go. There is no eve
 worked, so the letter leaving the inbox is taken as that. Narrated in the debug stream. Checks under
 *mail posted to another member*; mutations `mail-return-*`. **Owed:** a return on a live client, with
 debug on - the hook firing, the count dropping, and the row reading *In post* for the sender.
+
+---
+
+## 87. The broker bar: this character's money and bags by default — DONE 2026-09-15, not yet seen in game
+
+**Asked by Alberto 2026-09-15**, as the last thing before 3.1: *in the broker bar I want to add bag
+free/total slots (for current char only), and change the default of money to current character.*
+Clicking goes on to the whole family and then to this realm and faction, neither with bags.
+
+**What existed, read 2026-09-15.** `addons/Family_UI/Broker.lua` had three scopes, `all`, `realm`,
+`character`, in that order, `all` the default and anything unrecognised read as it. The bar said
+`members  money` in every scope. Shift-left and the middle button cycle; plain left opens Family
+and right opens Options. The bags scanner writes `meta.bagFree` and `meta.bagSlots`, the general
+slots only, which the summary's bag column reads.
+
+**The click stays Shift-left**, Alberto's answer when asked: the request said *left-click*, and a
+plain left-click is what opens Family from the bar and from the minimap button.
+
+**Built.** The order is now `character`, `all`, `realm`; `character` is the default and what an
+unrecognised value reads as, and a scope already saved is kept. On one character the bar says
+`free/total  money`, and the money alone until the bags have been read once, rather than a `0/0`
+that reads as full bags. The tooltip says *the bar shows money and bags on* in that scope. Checks
+in `tests/Harness.lua` beside *the bar counts this character until asked otherwise*; four new
+mutations `broker-defaults-to-the-whole-family`, `broker-character-shows-no-bags`,
+`broker-character-shows-unread-bags-as-empty`, `broker-tooltip-says-money-only-on-a-character`,
+and `broker-line-hidden-in-the-default-mode` re-anchored on the tooltip's new line.
+
+**An icon before the first figure, the same day**, Alberto off the build: a bare number meaning bag
+slots in one scope and characters in the other two is misleading. `INV_Misc_Bag_08` before the bags,
+`INV_Misc_GroupNeedMore` before the count in both other scopes, each sized to the text. Both paths
+were chosen by Alberto off `tools/FamilyIconSheet/`, which is where a texture is seen rather than
+assumed; the group is also the Wide Family tab's icon. The checks match the icon in front of each
+figure; mutations `broker-bags-drawn-with-the-group-icon` and `broker-count-without-an-icon`, both
+caught.
+
+---
+
+## 88. Money figures line up by gold, silver and copper, wherever money is shown
+
+**Reported by Alberto 2026-09-15**, off a Summary screenshot: Milionario's *4151g 91s 23c* sits out of
+line with the rows around it. Then: *work on a per level basis, and right align golds with golds,
+silvers with silvers and coppers with coppers (like the game actually does), without changing the
+width each column has*, and *it should also show up on the tooltips, and in general wherever there is
+a money display*.
+
+**Why, read from the code 2026-09-15, not measured in the game.** `UI:Money`
+(`addons/Family_UI/Window.lua`) returns one string, and every money cell is one right-justified font
+string. The game font's digits are not all one width - a *1* is narrow - so a narrow figure in the
+copper or silver place moves every coin to the left of it.
+
+**Two mechanisms, because there are two kinds of place money is drawn.** A table cell
+(Summary's Money, Worth, Bid value, Buyout; the price audit) can be three font strings: silver and
+copper each a fixed place measured as their widest two digits and coin, gold right-justified in what
+is left of the same width. A tooltip line, the broker text and a chat line are one font string each,
+so there the places can only be held by padding a figure with an empty picture of a measured width,
+measured in the font it is drawn in. That picture is a texture and goes through
+`tools/FamilyIconSheet/` on Era, TBC and Mists before anything is built on it.
+
+**Deferred to 3.2, as its first slice** - Alberto's choice 2026-09-15, of three ways put to him: 3.1
+ships with 79 and 87, and this is built whole rather than cells now and tooltips later.

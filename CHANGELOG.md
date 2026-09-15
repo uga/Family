@@ -68,6 +68,13 @@ is a decision rather than an afternoon of archaeology.
   to see every name in every group, on Possessions search, reputations, quests and Crafting, and
   scroll instead.
 
+### The broker bar
+
+- **The bar starts on this character: its money, and its bags as free of total**, behind a bag icon.
+  Shift-click goes on to the whole family and then to this realm and faction, as before, and those
+  two show the number of characters behind a group icon instead. If you had already picked one, it
+  stays picked.
+
 ### Wide Family
 
 - **The Wide Family page says when a tick will not be sent.** With Wide Family switched off, a line

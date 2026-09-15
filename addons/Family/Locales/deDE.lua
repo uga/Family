@@ -820,6 +820,7 @@ Family.locales.deDE = {
 	["|cff40bf40Crafting cooldowns ready|r"] = "|cff40bf40Herstellungs-Abklingzeiten bereit|r",
 	["|cff888888Left-click for the family. Right-click for the options. Shift-click to change what the money counts.|r"] = "|cff888888Linksklick für die Familie. Rechtsklick für die Optionen. Umschalt+Klick, um zu ändern, was das Geld zählt.|r",
 	["|cff888888the bar shows money on|r"] = "|cff888888die Leiste zeigt das Geld von|r",
+	["|cff888888the bar shows money and bags on|r"] = "|cff888888die Leiste zeigt Geld und Taschen von|r",
 	["all family"] = "die ganze Familie",
 	["this character"] = "dieser Charakter",
 

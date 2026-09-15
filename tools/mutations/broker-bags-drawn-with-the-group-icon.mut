@@ -1,0 +1,6 @@
+name: the broker bar puts the characters icon in front of this character's bags
+file: addons/Family_UI/Broker.lua
+--- old
+			self.broker.text = string.format("%s%d/%d  %s", BAGS_ICON, meta.bagFree or 0,
+--- new
+			self.broker.text = string.format("%s%d/%d  %s", MEMBERS_ICON, meta.bagFree or 0,

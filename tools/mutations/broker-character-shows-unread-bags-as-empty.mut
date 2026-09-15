@@ -1,0 +1,10 @@
+name: the broker bar writes 0/0 for bags that have never been read
+file: addons/Family_UI/Broker.lua
+--- old
+		if meta.bagSlots and meta.bagSlots > 0 then
+			self.broker.text = string.format("%s%d/%d  %s", BAGS_ICON, meta.bagFree or 0,
+				meta.bagSlots, UI:Money(money, true))
+--- new
+		if true then
+			self.broker.text = string.format("%s%d/%d  %s", BAGS_ICON, meta.bagFree or 0,
+				meta.bagSlots or 0, UI:Money(money, true))
