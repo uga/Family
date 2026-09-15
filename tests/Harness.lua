@@ -328,6 +328,7 @@ function frameMethods:IsEnabled() return self.__enabled ~= false end
 function frameMethods:LockHighlight() self.__highlighted = true end
 function frameMethods:UnlockHighlight() self.__highlighted = false end
 function frameMethods:GetFontString() return self.__fontString end
+function frameMethods:SetFontString(fs) self.__fontString = fs end
 
 -- Recorded, because which frame a scroller scrolls is the whole of whether content past the
 -- bottom of a panel can be reached at all - and there is no other way to ask from outside.
@@ -2225,7 +2226,7 @@ local UI_FILES = { "Window.lua", "MemberPicker.lua", "ChoicePicker.lua", "Member
 	"Summary.lua", "Talents.lua",
 	"Contents.lua", "Professions.lua", "Character.lua", "Quests.lua",
 	"Wide.lua", "Guild.lua",
-	"Broker.lua", "Extras.lua", "MailReport.lua", "Options.lua", "About.lua", "Auctions.lua", "ItemClick.lua",
+	"Broker.lua", "PriceAudit.lua", "Extras.lua", "MailReport.lua", "Options.lua", "About.lua", "Auctions.lua", "ItemClick.lua",
 	"Slash.lua" }
 
 for _, file in ipairs(UI_FILES) do
@@ -37518,6 +37519,96 @@ print("auditing the auction prices Family collected (backlog 81)")
 		found[B .. "/1005"] and found[B .. "/1005"].banned == now and found[B .. "/1005"].p == nil)
 	check("and every market with a price or a ban is offered to the filter",
 		#Family.Auctions:AuditMarkets() == 3, tostring(#Family.Auctions:AuditMarkets()))
+
+	----------------------------------------------------------------------------------------
+	-- The panel: an Extras page, every market, sorted by price, with delete, ban and lift.
+	----------------------------------------------------------------------------------------
+	if not Family.UI.window:IsShown() then Family.UI:Toggle() end
+	Family.UI:ShowTab("extras")
+	local views = Family.UI.__extrasViews
+	check("the Extras page offers the auction prices beside the switches",
+		views ~= nil and views.prices ~= nil and views.switches ~= nil)
+	fireClick(views.prices)
+
+	local audit = Family.UI.__priceAudit
+	local function auditRows()
+		local out = {}
+		for _, f in ipairs(frames) do
+			if rawget(f, "alert") and rawget(f, "cells") and f.__parent and f.__parent.__parent == audit
+				and f.__shown ~= false and rawget(f, "entry") then
+				out[#out + 1] = f
+			end
+		end
+		table.sort(out, function(x, y) return rawget(x, "index") < rawget(y, "index") end)
+		return out
+	end
+
+	check("opening it shows the prices and hides the switches",
+		audit.__shown ~= false and buttonLabelled("Price of one") ~= nil
+			and not visibleText("Read prices at the auction house"),
+		tostring(audit.__shown) .. " / " .. tostring(visibleText("Read prices at the auction house")))
+
+	local listed = auditRows()
+	check("every price and ban in every market is listed",
+		#listed == 8, tostring(#listed))
+	check("a ban comes first, whatever the order, so it can be found and lifted",
+		listed[1] and listed[1].entry.banned ~= nil, tostring(listed[1] and listed[1].entry.variant))
+	check("then the prices, highest first",
+		listed[2] and listed[2].entry.p == 5000 and listed[8] and listed[8].entry.p == 400,
+		tostring(listed[2] and listed[2].entry.p) .. " .. " .. tostring(listed[8] and listed[8].entry.p))
+	check("a suspect row is marked and an ordinary one is not",
+		listed[2].alert.__visible == true and listed[5] and listed[5].entry.p == 900
+			and listed[5].alert.__visible == false,
+		tostring(listed[2].alert.__visible) .. " / " .. tostring(listed[5] and listed[5].alert.__visible))
+
+	local priceHeading = buttonLabelled("Price of one")
+	fireClick(priceHeading)
+	listed = auditRows()
+	check("pressing the price heading turns the order round",
+		listed[2] and listed[2].entry.p == 400, tostring(listed[2] and listed[2].entry.p))
+	fireClick(priceHeading)
+
+	-- The filter steps through the markets; the first in sorted order is the goblin house.
+	fireClick(buttonLabelled("All markets"))
+	listed = auditRows()
+	local oneMarket = true
+	for _, row in ipairs(listed) do
+		if row.entry.market ~= listed[1].entry.market then oneMarket = false end
+	end
+	check("the market filter shows one market at a time",
+		#listed > 0 and #listed < 8 and oneMarket, tostring(#listed))
+	for _ = 1, 3 do fireClick(buttonLabelled(", ")) end
+	check("and steps back round to all of them",
+		#auditRows() == 8 and buttonLabelled("All markets") ~= nil, tostring(#auditRows()))
+
+	-- Delete, ban and lift, pressed as a player presses them.
+	local function rowFor(where, variant)
+		for _, row in ipairs(auditRows()) do
+			if row.entry.market == where and row.entry.variant == variant then return row end
+		end
+	end
+	fireClick(rowFor(A, 1002).forget)
+	check("Delete takes that price out of the store and off the list",
+		FamilyDB.auctionPrices[A][1002] == nil and rowFor(A, 1002) == nil)
+	fireClick(rowFor(A, 1001).ban)
+	check("Ban clears the price and lists the item as banned in that market",
+		FamilyDB.auctionPrices[A][1001] == nil and Family.Auctions:IsBanned(A, 1001)
+			and rowFor(A, 1001) ~= nil and rowFor(A, 1001).entry.banned ~= nil)
+	fireClick(rowFor(A, 1001).forget)
+	check("and Lift on a banned row lifts the ban",
+		not Family.Auctions:IsBanned(A, 1001) and rowFor(A, 1001) == nil)
+
+	-- A page is a handful of rows, and the rest are reached rather than drawn.
+	for id = 2000, 2040 do FamilyDB.auctionPrices[A][id] = { p = id, at = now } end
+	fireClick(views.prices)
+	check("a long list is drawn a page at a time and says where it is",
+		#auditRows() == 17 and visibleText("1-17 of 47"), tostring(#auditRows()))
+	fireClick(buttonLabelled(">"))
+	check("and the next page carries on from it", visibleText("18-34 of 47"))
+
+	fireClick(views.switches)
+	check("the switches come back", visibleText("Read prices at the auction house")
+		and audit.__shown == false)
 
 	Family.Auctions:ForgetVisit()
 	FamilyDB.auctionPrices, FamilyDB.auctionBans = heldPrices, heldBans

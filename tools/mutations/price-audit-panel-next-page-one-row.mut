@@ -1,0 +1,6 @@
+name: the next page moves one row instead of a page
+file: addons/Family_UI/PriceAudit.lua
+--- old
+		offset = offset + PAGE_ROWS
+--- new
+		offset = offset + 1

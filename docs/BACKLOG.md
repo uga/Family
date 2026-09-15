@@ -5158,7 +5158,7 @@ How Arkana sizes a plugin's text is not read here, so no cure is written for it;
 at a width Family controls, that is the reading that reopens this.
 
 
-## 81. An audit of the auction prices Family has collected: list, sort, delete, and keep an item out
+## 81. An audit of the auction prices Family has collected: list, sort, delete, and keep an item out — BUILT 2026-09-15, not yet seen in game
 
 Asked by Alberto 2026-09-15, from play on Mists. Two members' Worth came to 921,865g and
 1,150,577g. It was not arithmetic: a couple of items had been recorded at a *huge* price of one,
@@ -5221,6 +5221,14 @@ cheaper was listed in that visit: in exactly the case that matters there are no 
 reading to average. Two signals the store does hold without new data: the same item's price in the
 **other markets** Family has read (the other side, the goblin house, other realms), and how old the
 reading is. How many listings a reading was taken from would need counting as it is filed.
+
+**Built 2026-09-15.** Extras gains an *Auction prices* view (`Family_UI/PriceAudit.lua`) over
+`Auctions:Audit` (`Family/Scanners/Auctions.lua`). Suspect: ten times the price replaced, or ten times
+the median of the same item in the other markets. Delete, Ban (clears the price) and Lift, per market;
+both filing routes refuse a banned item. Checked in `tests/Harness.lua` under *auditing the auction
+prices Family collected*, with mutations `price-audit-*`. **Owed: a look at it in the game** - the
+page's widths in five languages, and a real store of thousands of prices paging and sorting without a
+stall.
 
 ## 82. A switch to turn the folding of long lists off
 

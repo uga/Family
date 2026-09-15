@@ -1,0 +1,6 @@
+name: opening the prices leaves the switches on screen
+file: addons/Family_UI/Extras.lua
+--- old
+		scroll:SetShown(not auditWanted)
+--- new
+		scroll:SetShown(true)

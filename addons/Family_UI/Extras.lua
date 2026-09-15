@@ -138,10 +138,43 @@ local function build(frame)
 	list:SetWidth(math.max(room, 1))
 	list:SetHeight(math.max(y, 1))
 
+	-- **Two views of one page**: the switches, and every auction price Family has collected
+	-- (backlog 81, `PriceAudit.lua`). Alberto put the audit here, on 2026-09-15, beside the switch
+	-- that fills it. Opens on the switches every time, by the rule the Summary's filters follow: a
+	-- preference is remembered and a detour is not.
+	local audit = UI:BuildPriceAudit(frame)
+	local showingAudit = false
+
+	local switchesButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+	local pricesButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+	switchesButton:SetText(L["Switches"])
+	pricesButton:SetText(L["Auction prices"])
+	switchesButton:SetSize(110, 20)
+	pricesButton:SetSize(130, 20)
+	pricesButton:SetPoint("TOPRIGHT", -8, -4)
+	switchesButton:SetPoint("RIGHT", pricesButton, "LEFT", -4, 0)
+
+	local function show(auditWanted)
+		showingAudit = auditWanted
+		blurb:SetShown(not auditWanted)
+		scroll:SetShown(not auditWanted)
+		audit:SetShown(auditWanted)
+		if auditWanted then audit:Reload() end
+		UI:MarkSelected(switchesButton, not auditWanted)
+		UI:MarkSelected(pricesButton, auditWanted)
+	end
+	switchesButton:SetScript("OnClick", function() show(false) end)
+	pricesButton:SetScript("OnClick", function() show(true) end)
+	frame:SetScript("OnHide", function() show(false) end)
+	show(false)
+
+	UI.__extrasViews = { switches = switchesButton, prices = pricesButton }
+
 	function frame:Refresh()
 		for index, switch in ipairs(SWITCHES) do
 			checkboxes[index]:SetChecked(Extras:On(switch.name))
 		end
+		if showingAudit then audit:Refresh() end
 	end
 end
 

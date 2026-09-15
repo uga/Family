@@ -1,0 +1,6 @@
+name: the audit opens cheapest first
+file: addons/Family_UI/PriceAudit.lua
+--- old
+	local ascending = false
+--- new
+	local ascending = true

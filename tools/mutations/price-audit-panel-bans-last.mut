@@ -1,0 +1,6 @@
+name: bans sort among the prices instead of first
+file: addons/Family_UI/PriceAudit.lua
+--- old
+			if (a.banned ~= nil) ~= (b.banned ~= nil) then return a.banned ~= nil end
+--- new
+			if (a.banned ~= nil) ~= (b.banned ~= nil) then return b.banned ~= nil end

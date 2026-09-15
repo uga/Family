@@ -1,0 +1,6 @@
+name: the Ban button only deletes the price
+file: addons/Family_UI/PriceAudit.lua
+--- old
+			Auctions:Ban(entry.market, entry.variant)
+--- new
+			Auctions:Forget(entry.market, entry.variant)

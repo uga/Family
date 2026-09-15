@@ -527,7 +527,13 @@ A third line says what the **auction house** was last asking, with the age of th
 it — read from the browse list the player is already looking at, never queried for, and kept per
 realm and per faction because a price is not an account-wide fact. Within one visit to an auction
 house the lowest buyout seen wins; the next visit replaces it whatever it says, because a market
-moves and the freshest reading is the truth. Holding **CTRL** over a stack in your bags adds what
+moves and the freshest reading is the truth. A reading keeps the price it replaced beside it. **What was collected
+can be audited** on the Extras page: every price from every market in one list, narrowed to one
+market or by item name, sorted by the price of one, highest first. A price ten times or more the one
+it replaced, or ten times the same item's median on the other markets Family has read, is marked in
+red. A price can be deleted, and the next visit reads a new one; an item can be **banned in one
+market**, which clears its price there and keeps the auction house from filing it until the ban is
+lifted by hand. Holding **CTRL** over a stack in your bags adds what
 the whole stack sells for; the count comes
 from the slot the pointer is on, and is used only where that slot really holds the item the
 tooltip is describing.

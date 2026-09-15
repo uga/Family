@@ -29,6 +29,19 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Auction prices you can check
+
+- **Extras has an Auction prices page** listing every price Family has collected, from every
+  auction house, highest first. Narrow it to one market or search by item name.
+
+- **Prices that look wrong are marked in red**: ten times or more the price they replaced, or ten
+  times what the same item costs on your other markets. Somebody listing an item at an absurd
+  price could make a character look worth a million gold; now you can see which item did it.
+
+- **Delete a price, or ban an item on one market.** A deleted price is read again on your next
+  visit. A ban clears the price straight away, so a total it inflated goes back to normal, and keeps
+  that item's price out until you lift the ban.
+
 ### Money in coins
 
 - **Money is written with the game's own gold, silver and copper coins**, the way the auction house
