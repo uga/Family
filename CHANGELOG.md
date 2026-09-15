@@ -34,8 +34,9 @@ is a decision rather than an afternoon of archaeology.
 - **Extras has an Auction prices page** listing every price Family has collected, from every
   auction house, highest first. Narrow it to one market or search by item name.
 
-- **Prices that look wrong are marked in red**: ten times or more the price they replaced, or ten
-  times what the same item costs on your other markets. Somebody listing an item at an absurd
+- **Prices that look wrong are marked in red**, and a *Suspects only* box shows just those: ten
+  times or more the price they replaced, or ten times what the same item costs on your other
+  markets. Somebody listing an item at an absurd
   price could make a character look worth a million gold; now you can see which item did it.
 
 - **Delete a price, or ban an item on one market.** A deleted price is read again on your next

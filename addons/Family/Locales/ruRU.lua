@@ -906,6 +906,7 @@ Family.locales.ruRU = {
 	["reading a list somebody else loaded: %d of %d row(s)"] = "читаю список, загруженный кем-то другим: %d из %d строк(и)",
 	["reading the whole list: %d of %d row(s), %d price(s) taken"] = "читаю весь список: %d из %d строк(и), взято цен: %d",
 	["Extras"] = "Дополнения",
+	["Suspects only"] = "Только подозрительные",
 	["Switches"] = "Переключатели",
 	["Auction prices"] = "Цены аукциона",
 	["All markets"] = "Все рынки",

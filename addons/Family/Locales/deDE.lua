@@ -906,6 +906,7 @@ Family.locales.deDE = {
 	["reading a list somebody else loaded: %d of %d row(s)"] = "lese eine von jemand anderem geladene Liste: %d von %d Zeile(n)",
 	["reading the whole list: %d of %d row(s), %d price(s) taken"] = "lese die ganze Liste: %d von %d Zeile(n), %d Preis(e) übernommen",
 	["Extras"] = "Extras",
+	["Suspects only"] = "Nur Verdächtige",
 	["Switches"] = "Schalter",
 	["Auction prices"] = "Auktionspreise",
 	["All markets"] = "Alle Märkte",

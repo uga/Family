@@ -906,6 +906,7 @@ Family.locales.frFR = {
 	["reading a list somebody else loaded: %d of %d row(s)"] = "lecture d'une liste chargée par quelqu'un d'autre : %d ligne(s) sur %d",
 	["reading the whole list: %d of %d row(s), %d price(s) taken"] = "lecture de la liste entière : %d ligne(s) sur %d, %d prix relevé(s)",
 	["Extras"] = "Extras",
+	["Suspects only"] = "Suspects seuls",
 	["Switches"] = "Fonctions",
 	["Auction prices"] = "Prix des enchères",
 	["All markets"] = "Tous les marchés",

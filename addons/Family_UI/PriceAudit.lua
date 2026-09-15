@@ -99,6 +99,17 @@ function UI:BuildPriceAudit(frame)
 	search:SetAutoFocus(false)
 	UI:ReleaseFocusOnClick(search)
 
+	-- **Suspects only**, asked for 2026-09-15 on the first look at a store of 6,898 prices: red
+	-- rows are what somebody comes here for, and on a real store they are pages apart.
+	local suspectsOnly = false
+	local suspectsBox = CreateFrame("CheckButton", "FamilyPriceAuditSuspects", panel,
+		"UICheckButtonTemplate")
+	suspectsBox:SetSize(24, 24)
+	suspectsBox:SetPoint("LEFT", search, "RIGHT", 12, 0)
+	local suspectsLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	suspectsLabel:SetPoint("LEFT", suspectsBox, "RIGHT", 2, 0)
+	suspectsLabel:SetText(L["Suspects only"])
+
 	local count = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 	count:SetPoint("TOPRIGHT", -70, -38)
 	count:SetJustifyH("RIGHT")
@@ -252,7 +263,8 @@ function UI:BuildPriceAudit(frame)
 		local needle = (search:GetText() or ""):lower()
 		shown = {}
 		for _, entry in ipairs(rowsData) do
-			if (not wantedMarket or entry.market == wantedMarket) then
+			if (not wantedMarket or entry.market == wantedMarket)
+				and (not suspectsOnly or entry.suspect ~= nil) then
 				local keep = true
 				if needle ~= "" then
 					local name = storedName(entry.variant)
@@ -358,6 +370,12 @@ function UI:BuildPriceAudit(frame)
 			end
 		end
 		wantedMarket = nextOne
+		offset = 0
+		panel:Refresh()
+	end)
+
+	suspectsBox:SetScript("OnClick", function(self)
+		suspectsOnly = self:GetChecked() and true or false
 		offset = 0
 		panel:Refresh()
 	end)

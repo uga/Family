@@ -37583,6 +37583,21 @@ print("auditing the auction prices Family collected (backlog 81)")
 		listed[2] and listed[2].entry.p == 400, tostring(listed[2] and listed[2].entry.p))
 	fireClick(priceHeading)
 
+	-- **Suspects only**: the two red rows and nothing else, bans included.
+	local suspectsBox = _G.FamilyPriceAuditSuspects
+	suspectsBox:SetChecked(true)
+	fireClick(suspectsBox)
+	listed = auditRows()
+	local allSuspect = #listed > 0
+	for _, row in ipairs(listed) do
+		if row.entry.suspect == nil then allSuspect = false end
+	end
+	check("the suspects-only box leaves the marked rows and nothing else",
+		#listed == 2 and allSuspect, tostring(#listed))
+	suspectsBox:SetChecked(false)
+	fireClick(suspectsBox)
+	check("and unticking it brings every row back", #auditRows() == 8, tostring(#auditRows()))
+
 	-- The filter steps through the markets; the first in sorted order is the goblin house.
 	fireClick(buttonLabelled("All markets"))
 	listed = auditRows()
