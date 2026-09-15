@@ -1166,8 +1166,21 @@ end
 -- **Gold and silver, for Worth.** A stock of thousands is priced to the gold and the coppers
 -- are noise; the column's own tooltip says the rest. Padded like UI:Money, because it is a
 -- column too. The one money column without copper, by Alberto's ruling of 2026-09-14.
+--
+-- **A million gold and over is written in millions**, two decimals and the gold coin, no silver:
+-- Alberto 2026-09-15, *1234500 G 44 S = 1,23M G* and *2896848 G 51 S = 2,90M G*. Seven figures on
+-- Mists cut the column off, and a figure that size is read for its size. Rounded to the nearest
+-- hundredth, which is what both examples do. The separator is the reader's language's, so it
+-- is a sentence to translate. The tooltips carry the whole figure, through `UI:Money`.
 function UI:GoldAndSilver(copper, total)
 	if copper == nil then return UI.UNKNOWN end
+
+	local gold = math.floor(copper / 10000)
+	if gold >= 1000000 then
+		local hundredths = math.floor(gold / 10000 + 0.5)
+		return unitText("gold", string.format(L["%d.%02dM"], math.floor(hundredths / 100),
+			hundredths % 100), total)
+	end
 
 	return unitText("gold", string.format("%d", math.floor(copper / 10000)), total)
 		.. " " .. unitText("silver", string.format("%02d", math.floor((copper % 10000) / 100)),

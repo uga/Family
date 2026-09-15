@@ -1,0 +1,6 @@
+name: Worth in millions is cut down rather than rounded
+file: addons/Family_UI/Window.lua
+--- old
+		local hundredths = math.floor(gold / 10000 + 0.5)
+--- new
+		local hundredths = math.floor(gold / 10000)

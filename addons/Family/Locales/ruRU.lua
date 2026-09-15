@@ -213,6 +213,7 @@ Family.locales.ruRU = {
 	["what this client can do, and how Family worked it out"] = "что умеет этот клиент и как Family это определил",
 	["which crafting cooldowns have come back, and for whom"] = "какие ремесленные восстановления вернулись и у кого",
 	["how long a Wide Family exchange takes on this client"] = "сколько занимает обмен Широкой семьи на этом клиенте",
+	["%d.%02dM"] = "%d,%02dM",
 	["Worth"] = "Стоимость",
 	["at auction prices"] = "по ценам аукциона",
 	["at vendor prices"] = "по ценам торговцев",

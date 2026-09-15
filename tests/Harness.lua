@@ -5811,6 +5811,27 @@ do
 				.. " |cffffffff45|r" .. SILVER_COIN,
 		Family.UI:Coins(208, true) .. " / " .. Family.UI:GoldAndSilver(1234567))
 
+	-- **Worth at a million gold and over is millions, two decimals, and the gold coin** -
+	-- Alberto's two examples, 2026-09-15 - and the whole figure below that.
+	check("coins: Worth over a million gold is written as millions, rounded, with the gold coin",
+		Family.UI:GoldAndSilver(1234500 * 10000 + 4400) == "|cffffffff1.23M|r" .. GOLD_COIN
+			and Family.UI:GoldAndSilver(2896848 * 10000 + 5100, true) == "|cffffd7002.90M|r" .. GOLD_COIN,
+		Family.UI:GoldAndSilver(1234500 * 10000 + 4400) .. " / "
+			.. Family.UI:GoldAndSilver(2896848 * 10000 + 5100, true))
+	do
+		local wasLocale = Family.locale
+		Family.locale = "frFR"
+		local french = Family.UI:GoldAndSilver(1234500 * 10000)
+		Family.locale = wasLocale
+		check("coins: with the decimal separator of the reader's language",
+			french == "|cffffffff1,23M|r" .. GOLD_COIN, french)
+	end
+	check("coins: and just under a million keeps its gold and silver",
+		Family.UI:GoldAndSilver(999999 * 10000 + 9900):find("999999", 1, true) ~= nil
+			and Family.UI:GoldAndSilver(999999 * 10000 + 9900):find(SILVER_COIN, 1, true) ~= nil)
+	check("coins: a Money figure is never shortened, however large",
+		Family.UI:Money(2896848 * 10000):find("2896848", 1, true) ~= nil)
+
 	-- A client that does not carry the string, or carries one of another shape, is not handed
 	-- a coin Family made up: it keeps the letters in the colours they always had.
 	do

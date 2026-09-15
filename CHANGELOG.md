@@ -46,6 +46,9 @@ is a decision rather than an afternoon of archaeology.
 
 ### Money in coins
 
+- **A Worth of a million gold or more is written in millions** on the Summary, like *1,23M* with the
+  gold coin, so it fits its column. The tooltips still give the whole figure.
+
 - **Money is written with the game's own gold, silver and copper coins**, the way the auction house
   writes it: white figures for one character or one item, gold figures for a total. Everywhere
   Family shows money - the Summary, item tooltips, the minimap button and the mailbox report.

@@ -213,6 +213,7 @@ Family.locales.frFR = {
 	["what this client can do, and how Family worked it out"] = "ce que ce client sait faire, et comment Family l'a déterminé",
 	["which crafting cooldowns have come back, and for whom"] = "quels temps de recharge d'artisanat sont revenus, et pour qui",
 	["how long a Wide Family exchange takes on this client"] = "combien de temps prend un échange Grande Famille sur ce client",
+	["%d.%02dM"] = "%d,%02dM",
 	["Worth"] = "Valeur",
 	["at auction prices"] = "aux prix de l'hôtel des ventes",
 	["at vendor prices"] = "aux prix marchands",

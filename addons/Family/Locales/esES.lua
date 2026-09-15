@@ -213,6 +213,7 @@ Family.locales.esES = {
 	["what this client can do, and how Family worked it out"] = "qué puede hacer este cliente, y cómo lo ha averiguado Family",
 	["which crafting cooldowns have come back, and for whom"] = "qué tiempos de reutilización de creación han vuelto, y de quién",
 	["how long a Wide Family exchange takes on this client"] = "cuánto tarda un intercambio de Familia Amplia en este cliente",
+	["%d.%02dM"] = "%d,%02dM",
 	["Worth"] = "Valor",
 	["at auction prices"] = "a precios de subasta",
 	["at vendor prices"] = "a precios de vendedor",

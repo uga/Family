@@ -1,0 +1,6 @@
+name: Worth over a million gold is written in full
+file: addons/Family_UI/Window.lua
+--- old
+	if gold >= 1000000 then
+--- new
+	if false then
