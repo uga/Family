@@ -5277,7 +5277,7 @@ store, how many it classed, how long that took in milliseconds, and five samples
 `id=classID/subClassID`. **To be run on all three clients, once with the auction window closed and
 once with it open**, since the categories may belong to the window's own addon.
 
-## 84. Mail returned to a family member is not counted as in post — BUILT 2026-09-15, not yet seen in game
+## 84. Mail returned to a family member is not counted as in post — DONE 2026-09-15, seen working on TBC
 
 Reported by Alberto 2026-09-15: when a character **returns** a letter it received from another
 character, the returned letter is not counted under *In post* for the character it goes back to.
