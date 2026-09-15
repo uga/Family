@@ -1,0 +1,10 @@
+name: the release workflow runs the harness without the banned-words list
+file: .github/workflows/release.yml
+--- old
+        env:
+          FAMILY_WORDS: ${{ secrets.FAMILY_WORDS }}
+        run: |
+          sudo apt-get update -qq
+--- new
+        run: |
+          sudo apt-get update -qq

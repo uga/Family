@@ -49,6 +49,12 @@ jobs:
           fetch-depth: 0
 
       - name: Run the checks before publishing anything
+        # The harness sweeps the tree for banned words, and the list is the FAMILY_WORDS
+        # secret here, as in checks.yml. Without it the harness is red on purpose, and v4.0.0's
+        # first run stopped on exactly that: the sweep was given to checks.yml and not to this
+        # file (docs/LESSONS.md L-101).
+        env:
+          FAMILY_WORDS: ${{ secrets.FAMILY_WORDS }}
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq lua5.1

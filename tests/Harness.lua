@@ -21900,6 +21900,34 @@ print("the release workflow may create the release it uploads")
 	check("release.yml opens the zip it built and looks for the libraries in it",
 		yml:match("Look inside the zip") ~= nil and yml:match("zipfile") ~= nil,
 		"the built artifact is the only place a wrong external destination is visible")
+
+	-- Every workflow that runs the harness hands it the words list, or its sweep is red on
+	-- purpose and the workflow stops. release.yml ran it without, and v4.0.0's first run
+	-- stopped there (L-101). Asked of each step that runs the harness, in both files.
+	for _, name in ipairs({ "release.yml", "checks.yml" }) do
+		local handle = io.open(ROOT .. "/.github/workflows/" .. name)
+		local text = handle and handle:read("*a") or ""
+		if handle then handle:close() end
+		local steps, bare = 0, 0
+		local pieces, from = {}, 1
+		while true do
+			local at = text:find("\n      - name:", from, true)
+			pieces[#pieces + 1] = text:sub(from, (at or #text + 1) - 1)
+			if not at then break end
+			from = at + 1
+		end
+		for _, step in ipairs(pieces) do
+			if step:find("tests/Harness.lua", 1, true) then
+				steps = steps + 1
+				if not step:find("FAMILY_WORDS: ${{ secrets.FAMILY_WORDS }}", 1, true) then
+					bare = bare + 1
+				end
+			end
+		end
+		check(name .. " hands the words list to every step that runs the harness",
+			steps > 0 and bare == 0,
+			steps .. " steps run the harness, " .. bare .. " without FAMILY_WORDS")
+	end
 end)()
 
 --------------------------------------------------------------------------------------------

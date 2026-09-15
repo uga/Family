@@ -3498,6 +3498,22 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-101 — a secret the harness needs was given to one of the two workflows that run it
+
+**2026-09-15.** `a915c2a` made the harness sweep the tree for banned words, read from the
+`FAMILY_WORDS` secret on CI, and red on purpose when the list is missing. It set the secret on the
+harness step in `checks.yml` and not in `release.yml`, which runs the same harness before packaging.
+Checks stayed green on every push, and the first tag since, `v4.0.0`, stopped at *the words list is
+there, outside the tree* in both passes. Nothing was uploaded, since the packaging step comes after,
+but the tag had been pushed onto a commit whose workflow could not pass, and a tag's run uses the
+workflow file of the commit it names.
+
+**What now catches it.** The harness reads both workflow files and fails unless every step that runs
+`tests/Harness.lua` sets `FAMILY_WORDS: ${{ secrets.FAMILY_WORDS }}`; mutation
+`release-workflow-runs-the-harness-without-the-words`. The rule: **anything the harness needs from its
+environment is given to every workflow that runs it, and checked there**, not only in the one that
+runs on every push.
+
 ## L-100 — an event fired in one check scheduled a scan that ran in somebody else's
 
 **2026-09-15.** The checks for a returned letter fired `MAIL_INBOX_UPDATE` and `MAIL_CLOSED` to drive
