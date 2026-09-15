@@ -442,6 +442,11 @@ function Auctions:NeutralPrices(where)
 	return shared and self:Prices(shared) or nil
 end
 
+-- Which market a prices table is, so the filing below can ask about bans without every reader
+-- having to hand the market in beside the table it already hands in. Weak, because a table
+-- nobody holds any more is not a market anybody is filing into.
+local marketOfTable = setmetatable({}, { __mode = "k" })
+
 function Auctions:Prices(where)
 	if type(_G.FamilyDB) ~= "table" then return {} end
 	FamilyDB.auctionPrices = FamilyDB.auctionPrices or {}
@@ -450,7 +455,165 @@ function Auctions:Prices(where)
 	if not where then return {} end
 
 	FamilyDB.auctionPrices[where] = FamilyDB.auctionPrices[where] or {}
+	marketOfTable[FamilyDB.auctionPrices[where]] = where
 	return FamilyDB.auctionPrices[where]
+end
+
+--------------------------------------------------------------------------------------------
+-- Auditing what was collected (backlog 81)
+--
+-- Asked for 2026-09-15, from play on Mists: two members' Worth came to a million gold each, and
+-- it was not arithmetic. A couple of items had been read at a price of one somebody - a player
+-- or a bot - had listed far above the market, and the visit rule filed it, because nothing
+-- cheaper was listed that visit. *There is I guess no way to prevent this*; what can be had is a
+-- place to see every price, delete one that is wrong, and keep an item out until the listings
+-- misleading everybody are gone.
+--
+-- **Per market, all of it.** A price is realm and side, and so is a lie about one: a troll on one
+-- house says nothing about another. A ban **clears the price already held** - Alberto: *required
+-- to fix existing rogued totals* - and is lifted only by hand.
+--------------------------------------------------------------------------------------------
+
+local function normalVariant(variant)
+	if type(variant) == "string" then variant = tonumber(variant) or variant end
+	if type(variant) == "number" or type(variant) == "string" then return variant end
+	return nil
+end
+
+-- `FamilyDB.auctionBans[market][variant]` is when the ban was put on. Its own table rather than a
+-- mark inside the prices, because everything that counts or walks a market's prices would then
+-- have to know to step over it.
+function Auctions:Bans(where)
+	if type(_G.FamilyDB) ~= "table" or type(where) ~= "string" then return nil end
+	local bans = FamilyDB.auctionBans
+	return type(bans) == "table" and bans[where] or nil
+end
+
+function Auctions:IsBanned(where, variant)
+	local bans = self:Bans(where)
+	variant = normalVariant(variant)
+	return bans ~= nil and variant ~= nil and bans[variant] ~= nil
+end
+
+-- **Deleting one price.** The next visit that sees the item files a new one, which is the point:
+-- this is for a reading that was wrong once, and a ban is for listings that are still up.
+function Auctions:Forget(where, variant)
+	variant = normalVariant(variant)
+	if type(where) ~= "string" or variant == nil then return false end
+	if type(_G.FamilyDB) ~= "table" or type(FamilyDB.auctionPrices) ~= "table" then return false end
+
+	local prices = FamilyDB.auctionPrices[where]
+	if type(prices) ~= "table" or prices[variant] == nil then return false end
+	prices[variant] = nil
+	return true
+end
+
+function Auctions:Ban(where, variant)
+	variant = normalVariant(variant)
+	if type(where) ~= "string" or variant == nil then return false end
+	if type(_G.FamilyDB) ~= "table" then return false end
+
+	FamilyDB.auctionBans = FamilyDB.auctionBans or {}
+	FamilyDB.auctionBans[where] = FamilyDB.auctionBans[where] or {}
+	FamilyDB.auctionBans[where][variant] = time()
+	self:Forget(where, variant)
+	return true
+end
+
+function Auctions:Unban(where, variant)
+	local bans = self:Bans(where)
+	variant = normalVariant(variant)
+	if not bans or variant == nil or bans[variant] == nil then return false end
+
+	bans[variant] = nil
+	if next(bans) == nil then FamilyDB.auctionBans[where] = nil end
+	return true
+end
+
+-- **Ten times, both ways of asking.** Alberto's starting point, 2026-09-15: *many times (like 10X
+-- or more) the price it replaced*, or many times what the other listings go for. The second as he
+-- put it has nothing to work on - a visit keeps only its lowest listing, so a troll price is filed
+-- exactly when there was no other listing - so the listings it is compared with are **the same
+-- item's price in the other markets Family has read**, their median, which needs no new data.
+Auctions.SUSPECT_RATIO = 10
+
+local function median(list)
+	table.sort(list)
+	local n = #list
+	if n == 0 then return nil end
+	if n % 2 == 1 then return list[(n + 1) / 2] end
+	return (list[n / 2] + list[n / 2 + 1]) / 2
+end
+
+-- **Every price and every ban, in every market, one row each.** The panel sorts and filters; this
+-- only says what is there and which rows look wrong. A banned item has a row of its own with no
+-- price, so it can be found and lifted.
+--
+-- `suspect` is "replaced" or "markets" when a row passes one of the two tests, and `elsewhere` the
+-- median it was compared with.
+function Auctions:Audit()
+	local rows = {}
+	if type(_G.FamilyDB) ~= "table" then return rows end
+
+	local store = type(FamilyDB.auctionPrices) == "table" and FamilyDB.auctionPrices or {}
+	local byVariant = {}
+
+	for where, prices in pairs(store) do
+		if type(prices) == "table" then
+			for variant, row in pairs(prices) do
+				if type(row) == "table" and tonumber(row.p) then
+					local entry = { market = where, variant = variant, p = row.p, at = row.at,
+						was = tonumber(row.was) }
+					rows[#rows + 1] = entry
+					byVariant[variant] = byVariant[variant] or {}
+					table.insert(byVariant[variant], entry)
+				end
+			end
+		end
+	end
+
+	local ratio = self.SUSPECT_RATIO
+	for _, entry in ipairs(rows) do
+		if entry.was and entry.was > 0 and entry.p >= ratio * entry.was then
+			entry.suspect = "replaced"
+		end
+
+		local others = {}
+		for _, sibling in ipairs(byVariant[entry.variant]) do
+			if sibling ~= entry then others[#others + 1] = sibling.p end
+		end
+		entry.elsewhere = median(others)
+		if not entry.suspect and entry.elsewhere and entry.elsewhere > 0
+			and entry.p >= ratio * entry.elsewhere then
+			entry.suspect = "markets"
+		end
+	end
+
+	local bans = type(FamilyDB.auctionBans) == "table" and FamilyDB.auctionBans or {}
+	for where, list in pairs(bans) do
+		if type(list) == "table" then
+			for variant, since in pairs(list) do
+				rows[#rows + 1] = { market = where, variant = variant, banned = since }
+			end
+		end
+	end
+
+	return rows
+end
+
+-- Every market there is a price or a ban for, sorted, for the panel's filter.
+function Auctions:AuditMarkets()
+	local seen, out = {}, {}
+	if type(_G.FamilyDB) ~= "table" then return out end
+	for _, store in ipairs { FamilyDB.auctionPrices, FamilyDB.auctionBans } do
+		if type(store) == "table" then
+			for where in pairs(store) do
+				if not seen[where] then seen[where] = true; out[#out + 1] = where end
+			end
+		end
+	end
+	table.sort(out)
+	return out
 end
 
 -- The price and when it was seen, for the market this character is in. Two returns rather than
@@ -1061,17 +1224,9 @@ function Auctions:ReadModernPrices()
 		local itemID = type(key) == "table" and tonumber(key.itemID) or nil
 		local each = type(entry) == "table" and tonumber(entry.minPrice) or nil
 
+		-- Through the one filing rule, so a ban and the price it replaced are kept here too.
 		if itemID and each and each > 0 then
-			local held = prices[itemID]
-
-			if not seenThisVisit[itemID] or type(held) ~= "table" then
-				seenThisVisit[itemID] = true
-				prices[itemID] = { p = each, at = now }
-				kept = kept + 1
-			elseif each < held.p then
-				held.p, held.at = each, now
-				kept = kept + 1
-			end
+			kept = kept + self:KeepEach(prices, itemID, each, now)
 		end
 	end
 
@@ -1143,11 +1298,22 @@ function Auctions:KeepEach(prices, variant, each, now)
 	if not (type(variant) == "number" or type(variant) == "string") then return 0 end
 	if not each then return 0 end
 
+	-- **A banned item is not filed**, in this market, until the ban is lifted by hand (backlog 81).
+	local where = marketOfTable[prices]
+	if where then
+		local bans = FamilyDB.auctionBans
+		local here = bans and bans[where]
+		if here and here[variant] ~= nil then return 0 end
+	end
+
 	local held = prices[variant]
 
 	if not seenThisVisit[variant] or type(held) ~= "table" then
 		seenThisVisit[variant] = true
-		prices[variant] = { p = each, at = now }
+		-- **The price this one replaces, kept beside it**, so a reading ten times the last can
+		-- be pointed at (backlog 81). Only the previous one: a history is a different feature.
+		prices[variant] = { p = each, at = now,
+			was = type(held) == "table" and tonumber(held.p) or nil }
 		return 1
 	elseif each < held.p then
 		held.p, held.at = each, now

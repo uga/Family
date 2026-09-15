@@ -1,0 +1,6 @@
+name: a new reading forgets the price it replaced
+file: addons/Family/Scanners/Auctions.lua
+--- old
+			was = type(held) == "table" and tonumber(held.p) or nil }
+--- new
+			was = nil }

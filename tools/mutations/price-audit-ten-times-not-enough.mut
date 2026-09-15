@@ -1,0 +1,6 @@
+name: exactly ten times the price replaced is not suspect
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		if entry.was and entry.was > 0 and entry.p >= ratio * entry.was then
+--- new
+		if entry.was and entry.was > 0 and entry.p > ratio * entry.was then

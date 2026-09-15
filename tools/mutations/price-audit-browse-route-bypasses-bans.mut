@@ -1,0 +1,7 @@
+name: the newer house files around the filing rule
+file: addons/Family/Scanners/Auctions.lua
+--- old
+			kept = kept + self:KeepEach(prices, itemID, each, now)
+--- new
+			prices[itemID] = { p = each, at = now }
+			kept = kept + 1

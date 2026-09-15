@@ -7258,6 +7258,26 @@ do
 				(Family.Auctions:PriceOf(2589)) == 900,
 				tostring((Family.Auctions:PriceOf(2589))))
 
+			-- **Backlog 81, on this route too**: the price a reading replaced is kept beside it,
+			-- and a banned item is not filed. Found by the price rather than by the market's name,
+			-- which this lane does not otherwise need to know.
+			local here
+			for where, prices in pairs(FamilyDB.auctionPrices or {}) do
+				if type(prices[2589]) == "table" and prices[2589].p == 900 then here = where end
+			end
+			check("the newer house keeps the price a reading replaced",
+				here ~= nil and FamilyDB.auctionPrices[here][2589].was == 300,
+				tostring(here and FamilyDB.auctionPrices[here][2589].was))
+			Family.Auctions:Ban(here, 2589)
+			Family.Auctions:ForgetVisit()
+			Family.Auctions:ReadModernPrices()
+			check("and files nothing for an item banned in this market",
+				(Family.Auctions:PriceOf(2589)) == nil,
+				tostring((Family.Auctions:PriceOf(2589))))
+			Family.Auctions:Unban(here, 2589)
+			Family.Auctions:ForgetVisit()
+			Family.Auctions:ReadModernPrices()
+
 			-- **Neither route is gated and both are registered everywhere.** The old one reads
 			-- a list that answers nought on Mists, the newer one a call Era has not got, and
 			-- each is silent where it does not apply - so nothing has to decide which house
@@ -37405,6 +37425,102 @@ print("Extras: jobs Family is not for, each switched by itself")
 	_G.GetNumAuctionItems, _G.GetAuctionItemInfo = realNum, realInfo
 	_G.GetAuctionItemLink = realLink
 	FamilyDB.extras = held
+end)()
+
+print()
+print("auditing the auction prices Family collected (backlog 81)")
+
+-- **Asked for 2026-09-15, from Mists**: a million gold of Worth that was a couple of items read at a
+-- price somebody listed far above the market. The store has to be able to lose one price, keep an
+-- item out of one market until that is lifted by hand, and say which prices look wrong.
+;(function()
+	local heldPrices, heldBans = FamilyDB.auctionPrices, FamilyDB.auctionBans
+	FamilyDB.auctionPrices, FamilyDB.auctionBans = {}, nil
+	local A, B = "Fire Maw\30Alliance", "Fire Maw\30*"
+	local now = time()
+
+	local a = Family.Auctions:Prices(A)
+	local b = Family.Auctions:Prices(B)
+
+	Family.Auctions:ForgetVisit()
+	Family.Auctions:KeepEach(a, 2589, 100, now)
+	Family.Auctions:ForgetVisit()
+	Family.Auctions:KeepEach(a, 2589, 1000, now)
+	check("a new visit keeps the price it replaced beside the new one",
+		a[2589].p == 1000 and a[2589].was == 100, tostring(a[2589].was))
+
+	-- **A ban clears the price already held** - *required to fix existing rogued totals* - and
+	-- stops the next reading of that market from filing it.
+	Family.Auctions:Ban(A, 2589)
+	check("banning an item clears its price in that market",
+		a[2589] == nil and Family.Auctions:IsBanned(A, 2589), tostring(a[2589]))
+	Family.Auctions:ForgetVisit()
+	check("and a reading of that market files nothing for it",
+		Family.Auctions:KeepEach(a, 2589, 50, now) == 0 and a[2589] == nil, tostring(a[2589]))
+
+	-- **Per market**, because a price is realm and side and so is a lie about one.
+	check("while the same item is still filed in another market",
+		Family.Auctions:KeepEach(b, 2589, 60, now) == 1 and b[2589].p == 60
+			and not Family.Auctions:IsBanned(B, 2589), tostring(b[2589]))
+
+	-- A numeric string is the same item as the number, or a ban could miss its own item.
+	check("a ban asked with the id as a string is the same ban",
+		Family.Auctions:IsBanned(A, "2589"))
+
+	check("lifting the ban lets the item be filed again",
+		Family.Auctions:Unban(A, 2589) and not Family.Auctions:IsBanned(A, 2589)
+			and Family.Auctions:KeepEach(a, 2589, 70, now) == 1 and a[2589].p == 70,
+		tostring(a[2589] and a[2589].p))
+	check("and the last lifted ban leaves no empty market behind",
+		FamilyDB.auctionBans == nil or FamilyDB.auctionBans[A] == nil)
+
+	check("deleting one price takes that price and no other",
+		Family.Auctions:Forget(A, 2589) and a[2589] == nil and b[2589].p == 60,
+		tostring(a[2589]))
+	check("and deleting what is not there says so",
+		Family.Auctions:Forget(A, 2589) == false)
+
+	----------------------------------------------------------------------------------------
+	-- Which prices look wrong: ten times the price replaced, or ten times the same item's
+	-- median in the other markets.
+	----------------------------------------------------------------------------------------
+	FamilyDB.auctionPrices = {
+		[A] = {
+			[1001] = { p = 1000, at = now, was = 100 },   -- ten times what it replaced
+			[1002] = { p = 900, at = now, was = 100 },    -- nine times: not
+			[1003] = { p = 5000, at = now },              -- ten times the other markets
+			[1004] = { p = 4000, at = now },              -- eight times: not
+		},
+		[B] = { [1003] = { p = 400, at = now }, [1004] = { p = 500, at = now } },
+		["Other\30Horde"] = { [1003] = { p = 600, at = now } },
+	}
+	FamilyDB.auctionBans = { [B] = { [1005] = now } }
+
+	local found = {}
+	for _, row in ipairs(Family.Auctions:Audit()) do
+		found[row.market .. "/" .. tostring(row.variant)] = row
+	end
+
+	check("a price ten times the one it replaced is suspect",
+		found[A .. "/1001"] and found[A .. "/1001"].suspect == "replaced",
+		tostring(found[A .. "/1001"] and found[A .. "/1001"].suspect))
+	check("and nine times is not",
+		found[A .. "/1002"] and found[A .. "/1002"].suspect == nil,
+		tostring(found[A .. "/1002"] and found[A .. "/1002"].suspect))
+	check("a price ten times the same item's median in the other markets is suspect",
+		found[A .. "/1003"] and found[A .. "/1003"].suspect == "markets"
+			and found[A .. "/1003"].elsewhere == 500,
+		tostring(found[A .. "/1003"] and found[A .. "/1003"].elsewhere))
+	check("and eight times is not, nor is the cheap market it is compared with",
+		found[A .. "/1004"] and found[A .. "/1004"].suspect == nil
+			and found[B .. "/1003"] and found[B .. "/1003"].suspect == nil)
+	check("a banned item has a row of its own, with no price, so it can be found and lifted",
+		found[B .. "/1005"] and found[B .. "/1005"].banned == now and found[B .. "/1005"].p == nil)
+	check("and every market with a price or a ban is offered to the filter",
+		#Family.Auctions:AuditMarkets() == 3, tostring(#Family.Auctions:AuditMarkets()))
+
+	Family.Auctions:ForgetVisit()
+	FamilyDB.auctionPrices, FamilyDB.auctionBans = heldPrices, heldBans
 end)()
 
 print()

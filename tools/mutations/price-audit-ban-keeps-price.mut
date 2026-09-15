@@ -1,0 +1,7 @@
+name: a ban leaves the price it was put on for
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	FamilyDB.auctionBans[where][variant] = time()
+	self:Forget(where, variant)
+--- new
+	FamilyDB.auctionBans[where][variant] = time()

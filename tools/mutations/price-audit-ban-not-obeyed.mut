@@ -1,0 +1,6 @@
+name: a banned item is filed like any other
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		if here and here[variant] ~= nil then return 0 end
+--- new
+		if false then return 0 end

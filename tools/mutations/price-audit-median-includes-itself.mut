@@ -1,0 +1,6 @@
+name: a price is compared with a median that includes itself
+file: addons/Family/Scanners/Auctions.lua
+--- old
+			if sibling ~= entry then others[#others + 1] = sibling.p end
+--- new
+			others[#others + 1] = sibling.p
