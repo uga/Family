@@ -5417,7 +5417,7 @@ debug on - the hook firing, the count dropping, and the row reading *In post* fo
 
 ---
 
-## 87. The broker bar: this character's money and bags by default — DONE 2026-09-15, not yet seen in game
+## 87. The broker bar: this character's money and bags by default — DONE 2026-09-15, seen working in game
 
 **Asked by Alberto 2026-09-15**, as the last thing before 3.1: *in the broker bar I want to add bag
 free/total slots (for current char only), and change the default of money to current character.*

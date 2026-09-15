@@ -411,6 +411,9 @@ take these with it.
 | v3.0.0 | Anniversary | 13/9/26 | Alberto | Pass |
 | v3.0.0 | Era | 13/9/26 | Alberto | Pass |
 | v3.0.0 | Mists | 13/9/26 | Alberto | Pass |
+| v4.0.0 | Anniversary | 15/9/26 | Alberto | Pass |
+| v4.0.0 | Era | 15/9/26 | Alberto | Pass |
+| v4.0.0 | Mists | 15/9/26 | Alberto | Pass |
 
 *Client* is `Era`, `Anniversary` or `Mists` — the three the `.toc` names. *Result* is `pass`, or what was not run and
 why — the sections needing a guildmate or a second family are the ones that will honestly say
