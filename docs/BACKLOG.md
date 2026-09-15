@@ -5157,3 +5157,46 @@ more. Moving the count out, or dropping silver and copper above 10,000 gold, gai
 How Arkana sizes a plugin's text is not read here, so no cure is written for it; if it wraps again
 at a width Family controls, that is the reading that reopens this.
 
+
+## 81. An audit of the auction prices Family has collected: list, sort, delete, and keep an item out
+
+Asked by Alberto 2026-09-15, from play on Mists. Two members' Worth came to 921,865g and
+1,150,577g. It was not arithmetic: a couple of items had been recorded at a *huge* price of one,
+from listings somebody - a player or a bot - had put up far above the market. Once the auction house
+was looked at again and showed normal listings, the recalculated Worth was reasonable. *There is I
+guess no way to prevent this*; what is wanted is a place to see it and correct it.
+
+**What is asked for.** A panel listing every auction price collected; filtered by item; sorted by
+price, up and down; an entry that looks false can be **deleted**; and an item can be **banned from
+acquisition** - no price taken for it from the auction house - until it is lifted by hand, once the
+misleading listings are seen to be gone.
+
+**What exists today, read 2026-09-15.**
+- The store is `FamilyDB.auctionPrices[market][variant] = { p = <copper for one>, at = <time> }`
+  (`Auctions:Prices`, `addons/Family/Scanners/Auctions.lua`). A market is realm and faction, and a
+  goblin house is a market of its own that both sides of the realm are valued from, their own side
+  first (`priceIn`, `addons/Family/Index.lua`). A variant is an item id, or `"id:suffix"` for a
+  random enchantment.
+- Filled by two routes: the browse list on the modern client, taking `minPrice` as the price of one,
+  and the list reader, dividing a stack's buyout by its quantity. Both keep the lowest price seen in
+  one visit and replace the old reading on the next (`Auctions:KeepEach`; the specification's
+  vendor-and-auction-prices paragraph). So a lone inflated listing wins whenever nothing undercuts it
+  in that visit, and stays until the next visit that sees the item.
+- Nothing lists the store, nothing deletes from it, and nothing refuses an item. The only control is
+  the Extras switch `auctionPrices`, which is all or nothing. Worth already falls back to what a vendor
+  pays for a copy with no auction price, so a deleted or banned price has somewhere honest to go.
+- The auction window already has a Family tab (3.0.0), with *Read it all* and the read's progress on
+  it.
+
+**Open questions before anything is built.**
+1. Where the panel lives: the Family tab on the auction window, a tab in the Family window, or an
+   Extras page.
+2. Which markets it shows: the one you are standing in, or every market with a selector.
+3. Whether a ban also clears the price already held, or only stops new ones.
+4. Whether a ban is per market or for the item everywhere.
+5. Whether the list should point at likely false positives on its own - a price of one many times
+   what a vendor pays, or many times the reading it replaced - or stay a plain list sorted by price.
+
+**Cost, roughly.** One domain end to end: the ban list and a delete in `Auctions.lua` and the store,
+the filing routes refusing a banned item, the panel in `Family_UI`, locale strings in five languages,
+`tests/Harness.lua` and mutations. The specification's paragraph on auction prices gains the ban.
