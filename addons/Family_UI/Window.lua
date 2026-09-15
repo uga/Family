@@ -1356,6 +1356,10 @@ end
 UI.FOLD_LEAST = UI.FOLD_LEAST or 3
 
 function UI:FoldDepth(sizes, other, fit, most)
+	-- Backlog 82: a player can switch folding off under Options, and then nothing folds on any
+	-- page, measured or not. Read here so the four lists that fold cannot disagree about it.
+	if FamilyDB and FamilyDB.foldLists == false then return nil end
+
 	local least = math.min(UI.FOLD_LEAST, most)
 
 	local function rows(cap)

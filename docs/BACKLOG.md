@@ -5231,7 +5231,7 @@ the price out of Worth and recipe costs and no longer stops readings (DECISIONS)
 page's widths in five languages, and a real store of thousands of prices paging and sorting without a
 stall.
 
-## 82. A switch to turn the folding of long lists off
+## 82. A switch to turn the folding of long lists off — built 2026-09-15, not yet seen in game
 
 Asked 2026-09-14 by a user, relayed by Alberto: *the system works very well*, but the user wants to
 be able to turn it off when they feel like it.
@@ -5249,6 +5249,12 @@ calls), and the Crafting set (`Family_UI/Summary.lua`, `UI.CRAFTING_PEOPLE`). A 
 folds* when off, so the four callers change together and none is missed. Open: whether it lives in
 Options or Extras, whether it is one switch or per list, and whether it is remembered - Family's
 rule elsewhere is that a preference is remembered and a question asked once is not.
+
+**Built 2026-09-15.** One switch under Options, *Fold long lists to fit the page*, ticked unless
+unticked and remembered as `FamilyDB.foldLists` (`false` is off, unset folds as before). `UI:FoldDepth`
+answers *nothing folds* when it is off, measured page or not, so the four lists follow it together.
+Checks under backlog 64's section, the quests page and backlog 85's Options check; mutations
+`fold-switch-*`. **Owed:** a look in the game with it unticked, on a long reputations or Crafting page.
 
 ## 83. The audit page: pick an auction house category and subcategory — DONE 2026-09-15, seen in game on Mists
 

@@ -62,6 +62,12 @@ is a decision rather than an afternoon of archaeology.
   carried bags as one block, and the bank as another* under Options: Possessions then shows one
   run of slots called Bags and one called Bank. The keyring, mail and guild bank tabs are unchanged.
 
+### Long lists
+
+- **An option to stop long lists folding.** Untick *Fold long lists to fit the page* under Options
+  to see every name in every group, on Possessions search, reputations, quests and Crafting, and
+  scroll instead.
+
 ### Money in coins
 
 - **A Worth of a million gold or more is written in millions** on the Summary, like *1,23M* with the

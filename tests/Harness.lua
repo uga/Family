@@ -2289,6 +2289,18 @@ Family.UI.RowsThatFit = function() return 0 end
 	check("and a page whose height is not known yet folds as it always did",
 		depth({ 4, 5 }, 0, nil) == 10, tostring(depth({ 4, 5 }, 0, nil)))
 
+	-- **Backlog 82: folding can be switched off**, and then nothing folds, measured or not. Unset
+	-- is on, which is how every saved variables file written before the switch reads.
+	local heldFold = FamilyDB.foldLists
+	FamilyDB.foldLists = false
+	check("switched off, a page that overflows folds nothing, and one not yet measured neither",
+		depth({ 15, 15 }, 0, 5) == nil and depth({ 4, 5 }, 0, nil) == nil,
+		tostring(depth({ 15, 15 }, 0, 5)) .. "/" .. tostring(depth({ 4, 5 }, 0, nil)))
+	FamilyDB.foldLists = nil
+	check("and a file that never set it folds as before",
+		depth({ 15, 15 }, 0, 22) == 10, tostring(depth({ 15, 15 }, 0, 22)))
+	FamilyDB.foldLists = heldFold
+
 	-- **The room is read off the scroll frame**, and an unmeasured one asks to be drawn again.
 	local measure = UI.__realRowsThatFit
 	check("a list's rows are its scroll frame's height over the row height",
@@ -11586,6 +11598,35 @@ print("Possessions: the carried bags as one block and the bank as another (backl
 	Family.UI:ShowTab("options")
 	check("and the switch is on the Options panel",
 		visibleText("Draw the carried bags as one block, and the bank as another"))
+
+	-- **Backlog 82's switch, clicked** rather than set: found through the label anchored to it,
+	-- ticked by default, and unticking it is what stores *off*.
+	do
+		local heldFold = FamilyDB.foldLists
+		FamilyDB.foldLists = nil
+		Family.UI:Refresh()
+		local box
+		for _, f in ipairs(fontStrings) do
+			if f.__text == Family.L["Fold long lists to fit the page"] then
+				for target in pairs(f.__anchoredTo or {}) do
+					if target.__kind == "CheckButton" then box = target end
+				end
+			end
+		end
+		check("the folding switch is on the Options panel, ticked when nothing was ever set",
+			box ~= nil and box:GetChecked() == true, box and tostring(box:GetChecked()))
+		if box then
+			box:SetChecked(false)
+			box.__scripts.OnClick(box)
+			check("and unticking it switches folding off", FamilyDB.foldLists == false,
+				tostring(FamilyDB.foldLists))
+			box:SetChecked(true)
+			box.__scripts.OnClick(box)
+			check("and ticking it again switches it back on", FamilyDB.foldLists == true,
+				tostring(FamilyDB.foldLists))
+		end
+		FamilyDB.foldLists = heldFold
+	end
 	Family.UI:ShowTab("contents")
 
 	FamilyDB.consolidateBags = heldOption
@@ -12624,6 +12665,15 @@ print("everybody's quests at once")
 			shownSaying("Qfour") ~= nil
 				and foldRow(string.format(Family.L["|cff888888and %d more|r"], 2)) == nil)
 		Family.UI.RowsThatFit = function() return 0 end
+
+		-- **Nor with folding switched off** (backlog 82), on the page with no room at all.
+		local heldFold = FamilyDB.foldLists
+		FamilyDB.foldLists = false
+		Family.UI:Refresh()
+		check("with folding switched off, a page with no room shows all five and no fold line",
+			shownSaying("Qfour") ~= nil
+				and foldRow(string.format(Family.L["|cff888888and %d more|r"], 2)) == nil)
+		FamilyDB.foldLists = heldFold
 		Family.UI:Refresh()
 		quest = rowSaying(shared.title)
 		more = foldRow(string.format(Family.L["|cff888888and %d more|r"], 2))

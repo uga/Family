@@ -1,0 +1,6 @@
+name: switching folding off under Options is ignored
+file: addons/Family_UI/Window.lua
+--- old
+	if FamilyDB and FamilyDB.foldLists == false then return nil end
+--- new
+	if false then return nil end

@@ -509,6 +509,9 @@ A cooldown appears only if it was seen (§2.2).
 - **Wide Family** — links, what each link may see, who is a sibling, and whether exchanges
   happen automatically. See §6.
 - **Guild share** — on or off, in both directions at once. See §7.
+- **Folding long lists** — on unless unticked. A list longer than its page shows each group's
+  first few names and a line saying how many more; switched off, nothing folds anywhere and the
+  page scrolls. One switch for every list that folds, remembered.
 
 ---
 

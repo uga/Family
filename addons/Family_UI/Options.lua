@@ -75,6 +75,18 @@ local SWITCHES = {
 			UI:Refresh()
 		end,
 	},
+	-- Backlog 82, asked by a user 2026-09-14. On unless unticked: folding is how every long list
+	-- has behaved since backlog 64, and it is one switch for all of them.
+	{
+		label = L["Fold long lists to fit the page"],
+		note = L["Where a list is longer than the page, each group shows its first few names and "
+			.. "a line saying how many more. Untick it to see every name, and scroll."],
+		get = function() return FamilyDB.foldLists ~= false end,
+		set = function(on)
+			FamilyDB.foldLists = on and true or false
+			UI:Refresh()
+		end,
+	},
 	{
 		label = L["Say whose mail is running out when you log in"],
 		note = L["Names the characters holding letters that have expired or are about to. "

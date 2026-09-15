@@ -1,0 +1,6 @@
+name: the folding switch stores nothing when unticked
+file: addons/Family_UI/Options.lua
+--- old
+			FamilyDB.foldLists = on and true or false
+--- new
+			FamilyDB.foldLists = on and true or nil

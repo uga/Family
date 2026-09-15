@@ -1,0 +1,6 @@
+name: the folding switch reads as off when never set
+file: addons/Family_UI/Options.lua
+--- old
+		get = function() return FamilyDB.foldLists ~= false end,
+--- new
+		get = function() return FamilyDB.foldLists == true end,
