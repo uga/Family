@@ -961,6 +961,21 @@ local function build(frame)
                     .. "unticking tells them to forget it. Click a category's name to tick "
                     .. "or clear that column for everybody at once.|r"])
 
+                -- Ticked while the feature is off, a box is kept and sent nowhere: the
+                -- exchange a tick asks for is refused while off, and switching the feature
+                -- on only stores the flag. Backlog 79, and Alberto's choice of the two ways
+                -- out: say so rather than send anything on the switch. Above the grid and
+                -- not under it (Alberto, from the first screenshot), so it is read before
+                -- the ticking rather than after.
+                if not on then
+                    local pending = nextRow(ROW * 2)
+                    pending.text:SetPoint("RIGHT", -RIGHT_INSET, 0)
+                    pending.text:SetWordWrap(true)
+                    pending.text:SetText(L["|cffffaa00Wide Family is switched off, so what "
+                        .. "you tick here is kept and not sent. It goes once the feature is "
+                        .. "switched on and you press Update now.|r"])
+                end
+
                 local everyMember = ourMembers()
 
                 local labels = nextRow()
@@ -1023,6 +1038,7 @@ local function build(frame)
                         end
                     end
                 end
+
 
                 ----------------------------------------------------------------------------
                 -- What they share with us

@@ -1,0 +1,8 @@
+name: the grid says ticks go nowhere even with Wide Family switched on
+file: addons/Family_UI/Wide.lua
+--- old
+                if not on then
+                    local pending = nextRow(ROW * 2)
+--- new
+                if true then
+                    local pending = nextRow(ROW * 2)

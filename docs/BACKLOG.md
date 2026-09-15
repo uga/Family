@@ -5090,7 +5090,7 @@ goes. **Reading to take**: the 210 transfer with the panel open - stutter or non
 
 ---
 
-## 79. Grants ticked with Wide Family off do not go when it is switched on
+## 79. Grants ticked with Wide Family off do not go when it is switched on — DONE 2026-09-15, seen working in game
 
 **Reported by Alberto 2026-09-13**, reading backlog 77: ticking grants in the grid while Wide
 Family was switched off, then switching it on, started no exchange; *Update now* was needed.
@@ -5118,6 +5118,18 @@ locales, `tests/Harness.lua`, a mutation, and `docs/WIDE-TRANSFER.md` §5 for (2
 
 **Chosen by Alberto 2026-09-13: the first way**, the line in the panel, when this is built. No
 `hello` on switching the feature on.
+
+**Built 2026-09-15, the first way, confirmed again that day.** While the feature is off,
+`addons/Family_UI/Wide.lua` draws one line in the open family's section of what they may see: what
+is ticked is kept and not sent, and goes once the feature is switched on and *Update now* is
+pressed. Switching the feature on still sends nothing. The string is in the four locales.
+
+**Moved above the grid the same day**, on Alberto's screenshot of it drawn under the grid: under it,
+the line is read after the ticking it is about. It now sits between *Nothing is ticked to begin
+with* and the column labels. Four checks in `tests/Harness.lua` beside *and does not claim to be a
+lock*: absent while on, present when switched off, above the labels row, gone when switched back
+on. Three mutations, all caught: `ticks-while-off-are-never-explained`,
+`ticks-while-off-explained-while-on` and `ticks-while-off-explained-under-the-labels`.
 
 ---
 

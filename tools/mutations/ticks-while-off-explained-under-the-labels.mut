@@ -1,0 +1,30 @@
+name: the line about ticks made while Wide Family is off is drawn under the column labels
+file: addons/Family_UI/Wide.lua
+--- old
+                if not on then
+                    local pending = nextRow(ROW * 2)
+                    pending.text:SetPoint("RIGHT", -RIGHT_INSET, 0)
+                    pending.text:SetWordWrap(true)
+                    pending.text:SetText(L["|cffffaa00Wide Family is switched off, so what "
+                        .. "you tick here is kept and not sent. It goes once the feature is "
+                        .. "switched on and you press Update now.|r"])
+                end
+
+                local everyMember = ourMembers()
+
+                local labels = nextRow()
+                labels.text:SetText(L["|cffffd700Member|r"])
+--- new
+                local everyMember = ourMembers()
+
+                local labels = nextRow()
+                labels.text:SetText(L["|cffffd700Member|r"])
+
+                if not on then
+                    local pending = nextRow(ROW * 2)
+                    pending.text:SetPoint("RIGHT", -RIGHT_INSET, 0)
+                    pending.text:SetWordWrap(true)
+                    pending.text:SetText(L["|cffffaa00Wide Family is switched off, so what "
+                        .. "you tick here is kept and not sent. It goes once the feature is "
+                        .. "switched on and you press Update now.|r"])
+                end

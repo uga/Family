@@ -14913,6 +14913,42 @@ do
 				visibleText("Nothing is ticked to begin with"))
 			check("and does not claim to be a lock", visibleText("not a lock"))
 
+			-- Backlog 79: a box ticked while the feature is off is kept and sent nowhere, and
+			-- switching the feature on sends nothing either. The grid says so, only while off.
+			check("the open grid says nothing about ticks going nowhere while on",
+				not visibleText("what you tick here is kept and not sent"))
+			do
+				local wasOn = Family.Wide:Enabled()
+				Family.Wide:SetEnabled(false)
+				Family.UI:Refresh()
+				check("and says, switched off, that ticks wait for it and for Update now",
+					visibleText("what you tick here is kept and not sent"))
+
+				-- Above the grid it is about, so it is read before the ticking: a row nearer
+				-- the top of the list than the row of column labels the tick boxes hang under.
+				local function rowTop(needle)
+					for _, f in ipairs(fontStrings) do
+						local parent = type(f.__parent) == "table" and f.__parent or nil
+						if type(f.__text) == "string" and f.__visible ~= false
+							and parent and parent.__shown ~= false
+							and parent.__parent == wideList
+							and f.__text:find(needle, 1, true) then
+							return parent.__offsets and parent.__offsets.TOPLEFT
+								and parent.__offsets.TOPLEFT.y
+						end
+					end
+				end
+				local lineTop = rowTop("what you tick here is kept and not sent")
+				local labelsTop = rowTop("|cffffd700Member|r")
+				check("and says it above the grid rather than under it",
+					lineTop ~= nil and labelsTop ~= nil and lineTop > labelsTop,
+					tostring(lineTop) .. " against the labels at " .. tostring(labelsTop))
+				Family.Wide:SetEnabled(wasOn)
+				Family.UI:Refresh()
+				check("and stops saying it once switched back on",
+					not visibleText("what you tick here is kept and not sent"))
+			end
+
 			local open = headingsShowing()
 			-- Both grids, because opening a family now shows both halves of the link:
 			-- what they may see of ours, and what they share of theirs. Two sets of the

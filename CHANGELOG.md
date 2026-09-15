@@ -68,6 +68,12 @@ is a decision rather than an afternoon of archaeology.
   to see every name in every group, on Possessions search, reputations, quests and Crafting, and
   scroll instead.
 
+### Wide Family
+
+- **The Wide Family page says when a tick will not be sent.** With Wide Family switched off, a line
+  above a family's grid says that what you tick is kept, and goes once you switch it on and press
+  *Update now*.
+
 ### Money in coins
 
 - **A Worth of a million gold or more is written in millions** on the Summary, like *1,23M* with the
