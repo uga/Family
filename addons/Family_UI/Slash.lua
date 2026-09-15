@@ -1709,6 +1709,43 @@ local function auctionCategories()
 	-- The time in milliseconds, from `debugprofilestop`, with no unit word in the format.
 	Family:Print("    %d / %d  |cff888888%s|r  %s", answered, #ids,
 		took and string.format("%.1f", took) or "?", table.concat(samples, " "))
+
+	-- **Slots**, the second read (2026-09-15). Armor's subcategories filter on the slot as a
+	-- number, and `GetItemInfoInstant` answers the slot as a word (`INVTYPE_CLOAK`). So: every
+	-- filter Armor's subcategories carry, whole; and whether the client offers a number for an
+	-- item's slot, or a table from the word to the number, to compare them with.
+	if type(list) == "table" then
+		for _, category in ipairs(list) do
+			for _, sub in ipairs(type(category.subCategories) == "table" and category.subCategories or {}) do
+				local slots = {}
+				for _, filter in ipairs(type(sub.filters) == "table" and sub.filters or {}) do
+					if filter.inventoryType ~= nil then slots[#slots + 1] = tostring(filter.inventoryType) end
+				end
+				if #slots > 0 then
+					Family:Print("    %s > %s  |cff888888%s|r", tostring(category.name), tostring(sub.name),
+						table.concat(slots, " "))
+				end
+			end
+		end
+	end
+
+	local byID = C_Item and type(C_Item.GetItemInventoryTypeByID) == "function"
+		and C_Item.GetItemInventoryTypeByID or nil
+	local enum = type(_G.Enum) == "table" and type(_G.Enum.InventoryType) == "table"
+		and _G.Enum.InventoryType or nil
+	Family:Print("    %-26s |cff888888%s|r", "C_Item.GetItemInventoryTypeByID", byID and "function" or "nil")
+	Family:Print("    %-26s |cff888888%s|r", "Enum.InventoryType",
+		enum and tostring(enum.IndexCloakType) .. " " .. tostring(enum.IndexChestType) or "nil")
+
+	local shown = 0
+	for _, id in ipairs(ids) do
+		local ok, _, _, _, equip, _, classID = pcall(instant, id)
+		if ok and classID == 4 and type(equip) == "string" and equip ~= "" and shown < 6 then
+			shown = shown + 1
+			Family:Print("    %d %s |cff888888%s|r", id, equip,
+				byID and tostring((Family:TryCall(byID, id))) or "-")
+		end
+	end
 end
 
 add("ah", L["what this client offers on the auction house"], function(argument)

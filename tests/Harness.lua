@@ -36247,6 +36247,10 @@ print("the button on the auction window")
 					subCategories = { { name = "Head" }, { name = "Chest" } } },
 			} },
 			{ name = "Consumables", filters = { { classID = 0 } } },
+			{ name = "Armor", filters = { { classID = 4 } }, subCategories = {
+				{ name = "Cloth", filters = { { classID = 4, subClassID = 1, inventoryType = 1 },
+					{ classID = 4, subClassID = 1, inventoryType = 5 } } },
+			} },
 		}
 		_G.GetItemInfoInstant = function(id)
 			if id == 2589 then return id, "Trade Goods", "Cloth", "", 1, 7, 5 end
@@ -36266,6 +36270,9 @@ print("the button on the auction window")
 		check("and says how many stored items the client could class, and which",
 			said:find("1 / 2", 1, true) ~= nil and said:find("2589=7/5", 1, true) ~= nil,
 			said:sub(1, 400))
+		-- Slots: a filter's number, printed whole, to be compared with the word an item answers.
+		check("and prints every slot a subcategory filters on",
+			said:find("Armor > Cloth  |cff8888881 5|r", 1, true) ~= nil, said:sub(1, 600))
 
 		_G.AuctionCategories, _G.GetItemInfoInstant = realCats, realInstant
 		FamilyDB.auctionPrices = realPrices

@@ -5310,3 +5310,22 @@ against.
   been opened, to see whether the list exists without it; the third level now printed; and how an
   item's slot (`GetItemInfoInstant` answers `INVTYPE_*` words) is compared with a filter's numeric
   `inventoryType`.
+
+**83, the probe read on Era and TBC, 2026-09-15** (each once with the auction window closed and once
+open):
+- **Closed, there is no list.** `Blizzard_AuctionUI` false and `AuctionCategories` nil on both; opened,
+  `Blizzard_AuctionUI` true and the table is there - 11 categories on Era, 12 on TBC. So the list exists
+  only once the auction window's own addon has loaded. (Mists's two runs both had it loaded.)
+- **Era**: Weapons, Armor, Container, Consumable, Trade Goods, Projectile, Quiver, Recipe, Reagent,
+  Miscellaneous, WoW Token (China Only). Consumable, Trade Goods, Reagent and Miscellaneous have **no
+  subcategories** on Era.
+- **TBC**: Weapons, Armor, Container, Consumable, Trade Goods, Projectile, Quiver, Recipe, Gems,
+  Miscellaneous, Quest Items, WoW Token (China Only), all but the last four with subcategories.
+- The order and the names differ by client (Mists has Glyphs and Battle Pets and no Projectile or
+  Quiver), which is the case for asking rather than shipping a table.
+- `GetItemInfoInstant` classed every stored item on both: 4,883 in 35.8 and 30.3 ms on Era, 7,143 in
+  44.2 and 50.6 ms on TBC.
+- **Still to read, with the probe as of this commit:** every slot number Armor's subcategories filter
+  on, and whether the client offers `C_Item.GetItemInventoryTypeByID` or `Enum.InventoryType` to turn
+  an item's `INVTYPE_*` word into that number. The third-level count is no longer needed for a
+  two-level picker.
