@@ -5343,3 +5343,35 @@ the page is drawn with the list loaded; `Auctions:Categories` reads it back. `Au
 line of their own, each opening a list in the house's order; the page is 18 rows since. Checks under
 *auditing the auction prices Family collected*, mutations `price-audit-category-*`. **Owed: a look in
 the game** on each client, and the lists' length on Mists (Weapons has seventeen subcategories).
+
+## 85. An Options switch: Possessions draws the bags as one block, and the bank as one block
+
+Asked by Alberto 2026-09-15. A switch under Options, *consolidate Possessions bags*. When ticked, the
+Possessions panel shows:
+- **Equipped**: unchanged.
+- **Carried**: the backpack and every bag the character carries as **one continuous block of item
+  slots**, with the backpack's picture.
+- **Bank**: the same consolidation, the bank's window and every bank bag as one block, with the bank's
+  picture.
+- **Mail**: unchanged.
+- **Guild bank**: unchanged - one block per tab.
+
+**What exists today, read 2026-09-15.** `addons/Family_UI/Contents.lua` draws one block per container,
+each with its own picture and name: `containerIcon` gives the backpack button, the keyring's picture,
+`Interface\MINIMAP\TRACKING\Banker` for the bank's own window (looked at on all three clients), and a
+bought bag its own item icon; `containerName` names the backpack, keyring, bank and each bag. Both
+pictures the consolidated blocks want are already in `CONTAINER_ICON`, so no new texture needs the icon
+sheet. Open before building: whether the keyring joins the carried block or stays its own, what the
+consolidated block's title says (it is no longer one bag's name), and whether a bag's own boundary is
+still marked in the run of slots.
+
+## 86. A guild bank tab's own name is not read
+
+Reported by Alberto 2026-09-15: Family fails to read the name of a guild bank tab.
+
+**What exists today, read 2026-09-15.** `Bank:ScanGuildBank` (`addons/Family/Scanners/Bank.lua`) records
+each tab's slots under `FamilyDB.guilds[guild-realm].tabs[tab]` and never asks the tab's name: nothing
+in the tree calls `GetGuildBankTabInfo`. `Contents.lua` titles a guild block `%s tab %d`, the tab's
+number. To read first, on the clients that have guild banks: what `GetGuildBankTabInfo` answers and
+when - whether a tab's name is there before that tab has been clicked - before it is written into the
+record.
