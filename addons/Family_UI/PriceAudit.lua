@@ -230,7 +230,15 @@ function UI:BuildPriceAudit(frame)
 		return list
 	end
 
+	-- **Two halves: choosing the rows, and drawing a page of them.** Refresh filters and sorts the
+	-- whole store, which on a read house is thousands of prices; Draw fills nineteen rows. They
+	-- were one function, and every notch of the wheel sorted 6,898 prices again to move three
+	-- rows - reported as lag from TBC 2026-09-15. Moving through the list now only draws.
+	panel.__rebuilds = 0
+
 	function panel:Refresh()
+		panel.__rebuilds = panel.__rebuilds + 1
+
 		-- Which market the filter is on, said on its button; a market that has gone since it
 		-- was chosen - its last price deleted - puts the filter back on all of them.
 		local known = markets()
@@ -267,7 +275,10 @@ function UI:BuildPriceAudit(frame)
 		end)
 
 		headings.price:SetText(COLUMNS[3].label .. (ascending and " ^" or " v"))
+		panel:Draw()
+	end
 
+	function panel:Draw()
 		local total = #shown
 		if offset > math.max(total - PAGE_ROWS, 0) then offset = math.max(total - PAGE_ROWS, 0) end
 		if offset < 0 then offset = 0 end
@@ -284,7 +295,7 @@ function UI:BuildPriceAudit(frame)
 			else
 				local id = Family:BaseItem(entry.variant)
 				local name = Family.Names:Item(id, "priceAudit" .. index, function()
-					panel:Refresh()
+					panel:Draw()
 				end)
 				row.cells[1]:SetText(name)
 				row.cells[2]:SetText(marketLabel(entry.market))
@@ -368,17 +379,17 @@ function UI:BuildPriceAudit(frame)
 
 	previous:SetScript("OnClick", function()
 		offset = offset - PAGE_ROWS
-		panel:Refresh()
+		panel:Draw()
 	end)
 	following:SetScript("OnClick", function()
 		offset = offset + PAGE_ROWS
-		panel:Refresh()
+		panel:Draw()
 	end)
 
 	panel:EnableMouseWheel(true)
 	panel:SetScript("OnMouseWheel", function(_, delta)
 		offset = offset - delta * WHEEL_ROWS
-		panel:Refresh()
+		panel:Draw()
 	end)
 
 	-- Read afresh each time the view is opened, by whoever opens it rather than on OnShow: the

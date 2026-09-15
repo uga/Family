@@ -37621,6 +37621,16 @@ print("auditing the auction prices Family collected (backlog 81)")
 	fireClick(buttonLabelled(">"))
 	check("and the next page carries on from it", visibleText("20-38 of 47"))
 
+	-- **Moving through the list draws; it does not choose the rows again.** Every notch of the
+	-- wheel used to filter and sort the whole store, which on 6,898 prices was lag you could feel
+	-- (TBC, 2026-09-15).
+	local rebuilt = audit.__rebuilds
+	audit.__scripts.OnMouseWheel(audit, -1)
+	fireClick(buttonLabelled("<"))
+	check("scrolling and paging redraw the page without sorting the store again",
+		audit.__rebuilds == rebuilt and visibleText("4-22 of 47"),
+		tostring(audit.__rebuilds - rebuilt) .. " rebuild(s)")
+
 	fireClick(views.switches)
 	check("the switches come back", visibleText("Read prices at the auction house")
 		and audit.__shown == false)

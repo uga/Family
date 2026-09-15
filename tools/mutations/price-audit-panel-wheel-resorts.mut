@@ -1,0 +1,8 @@
+name: scrolling the audit sorts the whole store again
+file: addons/Family_UI/PriceAudit.lua
+--- old
+		offset = offset - delta * WHEEL_ROWS
+		panel:Draw()
+--- new
+		offset = offset - delta * WHEEL_ROWS
+		panel:Refresh()

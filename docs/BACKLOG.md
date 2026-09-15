@@ -5248,3 +5248,40 @@ calls), and the Crafting set (`Family_UI/Summary.lua`, `UI.CRAFTING_PEOPLE`). A 
 folds* when off, so the four callers change together and none is missed. Open: whether it lives in
 Options or Extras, whether it is one switch or per list, and whether it is remembered - Family's
 rule elsewhere is that a preference is remembered and a question asked once is not.
+
+## 83. The audit page: pick an auction house category and subcategory
+
+Asked by Alberto 2026-09-15, from the first look at backlog 81's page: a picker for the auction
+house's categories and subcategories, **listed in the same order the auction house lists them**.
+
+**What exists today, read 2026-09-15.** The price store keeps `{ p, at, was }` per market and variant
+and nothing about what kind of item it is (`Auctions:KeepEach`, `addons/Family/Scanners/Auctions.lua`).
+The page narrows by market and by a name already written down, nothing else
+(`addons/Family_UI/PriceAudit.lua`). The one place Family asks an item's class is
+`addons/Family/Recipes.lua`, from `GetItemInfo`, falling back to `GetItemInfoInstant` where the client
+has it.
+
+**Not read yet, and the first thing to read:** where each client keeps the auction house's own list of
+categories and their order - the older house's browse filters on Era and TBC and the newer house's on
+Mists are different interfaces - and whether an item's class and subclass can be had for thousands of
+items without asking the client in the way backlog 22 measured as a ten-second freeze.
+`GetItemInfoInstant` is the candidate, to be probed on all three clients before anything is built on
+it.
+
+## 84. Mail returned to a family member is not counted as in post
+
+Reported by Alberto 2026-09-15: when a character **returns** a letter it received from another
+character, the returned letter is not counted under *In post* for the character it goes back to.
+
+**What exists today, read 2026-09-15.** *In post* is `Family.Mail:InPost` over letters marked `inPost`
+(`addons/Family/Scanners/Mail.lua`, and `CELL.inpost` in `addons/Family_UI/Summary.lua`). Two things
+write such a letter: a letter this client sends, recorded against the recipient on
+`MAIL_SEND_SUCCESS` after the `SendMail` hook, and an auction won (`Mail:CommitWon`). Nothing in
+`Mail.lua` refers to `ReturnInboxItem`, so a letter sent back is recorded nowhere until its sender
+opens their own mailbox.
+
+**To find out before building:** what the client says when a letter is returned - whether
+`ReturnInboxItem` can be hooked on all three clients, which event confirms it, and what is still
+readable about the letter (sender, money, attachments) at that moment, since the letter leaves the
+inbox. And whether the sender is a family member, which decides whether there is anyone to record it
+against.
