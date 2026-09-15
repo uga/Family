@@ -29,6 +29,16 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Money in coins
+
+- **Money is written with the game's own gold, silver and copper coins**, the way the auction house
+  writes it: white figures for one character or one item, gold figures for a total. Everywhere
+  Family shows money - the Summary, item tooltips, the minimap button and the mailbox report.
+
+- **The Family window is a little wider**, so that the Summary's money columns hold the coins: a
+  purse of thousands of gold, a family total of tens of thousands, and on Mists of Pandaria a
+  *Worth* running to seven figures, which was being cut off.
+
 ## 3.0.0 — 2026-09-13
 
 **Pets, and a Wide Family that keeps up.** Hunters and warlocks get a Pets page listing every

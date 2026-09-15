@@ -25,7 +25,11 @@ Family.UI = UI
 -- said so at once: the side filters at the right-hand end of its top row began touching the
 -- last set button. Shaving the buttons would have been treating the symptom on one panel and
 -- leaving the other five quietly tighter than they were designed to be.
-local WIDTH, HEIGHT = 924, 560
+--
+-- And wider again, by 42, on 2026-09-15: money is written with the game's coins, a coin is wider
+-- than the letter it replaced, and Bid value and Buyout on the Summary's Activity set needed 21
+-- pixels each that no other column there had to give. The Summary's ROW_BUDGET moved with it.
+local WIDTH, HEIGHT = 966, 560
 
 --------------------------------------------------------------------------------------------
 -- The pictures on the tab strip
@@ -1104,7 +1108,46 @@ end
 -- file, because "we were never told" has to look the same everywhere or it reads as a value.
 UI.UNKNOWN = "|cff9d9d9d-|r"
 
-function UI:Money(copper)
+-- **The game's own coins, asked of the client.** Asked for 2026-09-14, for the look of the
+-- auction house: white figures on a single row, gold figures on a total, each beside its coin.
+--
+-- The coin is the client's answer and not a path Family names. Era, TBC and Mists all carry
+-- GOLD_AMOUNT_TEXTURE and its two siblings as "%d" followed by the coin's markup, and all three
+-- were looked at on tools/FamilyIconSheet before this was written (docs/DECISIONS.md). What
+-- follows the "%d" is taken, given nought for its size - the height of the text it sits in, as
+-- the sheet measured it - and a client without the string, or with one of another shape, keeps
+-- the letters in the colours they always had.
+local COIN_STRING = {
+	gold = "GOLD_AMOUNT_TEXTURE", silver = "SILVER_AMOUNT_TEXTURE",
+	copper = "COPPER_AMOUNT_TEXTURE",
+}
+local LETTER = { gold = "g", silver = "s", copper = "c" }
+local LETTER_COLOUR = { gold = "|cffffd700", silver = "|cffc7c7cf", copper = "|cffeda55f" }
+
+-- Written out, both of them. A money cell's font is gold, so a figure left uncoloured is a
+-- gold figure and not a white one (docs/LESSONS.md L-098).
+local ROW_FIGURE, TOTAL_FIGURE = "|cffffffff", "|cffffd700"
+
+local function coinMarkup(unit)
+	local format = _G[COIN_STRING[unit]]
+	if type(format) ~= "string" then return nil end
+
+	local after = format:match("^%%d(|T.-|t)$")
+	if not after then return nil end
+
+	local ok, markup = pcall(string.format, after, 0, 0)
+	return ok and markup or nil
+end
+
+local function unitText(unit, figure, total)
+	local coin = coinMarkup(unit)
+	if not coin then return LETTER_COLOUR[unit] .. figure .. "|r" .. LETTER[unit] end
+	return (total and TOTAL_FIGURE or ROW_FIGURE) .. figure .. "|r" .. coin
+end
+
+-- `total` is true for a figure that adds others up - a totals row, a realm, the family - and
+-- turns its figures gold.
+function UI:Money(copper, total)
 	-- Nought copper is a fact about somebody who is broke. Nothing is a fact about us, and
 	-- the two must not print the same (§2.2). This used to answer "0g 00s 00c" for both,
 	-- which is how a linked family's members - whose money nobody had agreed to share -
@@ -1115,8 +1158,20 @@ function UI:Money(copper)
 	local silver = math.floor((copper % 10000) / 100)
 	local bronze = copper % 100
 
-	return string.format("|cffffd700%d|rg |cffc7c7cf%02d|rs |cffeda55f%02d|rc",
-		gold, silver, bronze)
+	return unitText("gold", string.format("%d", gold), total)
+		.. " " .. unitText("silver", string.format("%02d", silver), total)
+		.. " " .. unitText("copper", string.format("%02d", bronze), total)
+end
+
+-- **Gold and silver, for Worth.** A stock of thousands is priced to the gold and the coppers
+-- are noise; the column's own tooltip says the rest. Padded like UI:Money, because it is a
+-- column too. The one money column without copper, by Alberto's ruling of 2026-09-14.
+function UI:GoldAndSilver(copper, total)
+	if copper == nil then return UI.UNKNOWN end
+
+	return unitText("gold", string.format("%d", math.floor(copper / 10000)), total)
+		.. " " .. unitText("silver", string.format("%02d", math.floor((copper % 10000) / 100)),
+			total)
 end
 
 -- **The same money, without the places nothing is standing in.**
@@ -1131,7 +1186,7 @@ end
 --
 -- Only the units that have something in them, highest first, and *0c* where the answer really is
 -- nothing - which is a fact about a price and must not print as the blank that means nobody looked.
-function UI:Coins(copper)
+function UI:Coins(copper, total)
 	if copper == nil then return UI.UNKNOWN end
 
 	local gold = math.floor(copper / 10000)
@@ -1139,10 +1194,10 @@ function UI:Coins(copper)
 	local bronze = copper % 100
 
 	local parts = {}
-	if gold > 0 then parts[#parts + 1] = string.format("|cffffd700%d|rg", gold) end
-	if silver > 0 then parts[#parts + 1] = string.format("|cffc7c7cf%d|rs", silver) end
+	if gold > 0 then parts[#parts + 1] = unitText("gold", tostring(gold), total) end
+	if silver > 0 then parts[#parts + 1] = unitText("silver", tostring(silver), total) end
 	if bronze > 0 or #parts == 0 then
-		parts[#parts + 1] = string.format("|cffeda55f%d|rc", bronze)
+		parts[#parts + 1] = unitText("copper", tostring(bronze), total)
 	end
 
 	return table.concat(parts, " ")

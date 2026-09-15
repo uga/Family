@@ -127,8 +127,14 @@ fontMeta.__index = function(_, key)
 			text = text:gsub("|T(.-)|t", function(inside)
 				local fields = {}
 				for field in inside:gmatch("[^:]+") do fields[#fields + 1] = field end
-				local height = tonumber(fields[2]) or 0
-				pixels = pixels + (tonumber(fields[3]) or height)
+					local height = tonumber(fields[2]) or 0
+				local width = tonumber(fields[3]) or height
+				-- **Nought is the height of the text**, in the game, for both. The coins are
+				-- written that way, and the icon sheet measured one at twelve pixels in a
+				-- Summary cell on all three clients - which counted as nothing here would
+				-- have let every money column pass with a coin's worth of room it lacks.
+				if width == 0 then width = height ~= 0 and height or 12 end
+				pixels = pixels + width
 				return ""
 			end)
 
@@ -863,6 +869,20 @@ RAID_CLASS_COLORS = { MAGE = { r = 0.41, g = 0.8, b = 0.94 } }
 -- placeholder and all: Family builds a pattern out of this global rather than out of the
 -- English, and a harness that invented a friendlier sentence would be testing the invention.
 ERR_CHAT_PLAYER_NOT_FOUND_S = "No player named '%s' is currently playing."
+-- The coin strings, as Era, TBC and Mists all answered them on the icon sheet on 2026-09-14.
+-- Money is written with the coins wherever the client carries these, and all three do, so a
+-- harness without them would be checking the letters nobody sees any more.
+GOLD_AMOUNT_TEXTURE = "%d|TInterface\\MoneyFrame\\UI-GoldIcon:%d:%d:2:0|t"
+SILVER_AMOUNT_TEXTURE = "%d|TInterface\\MoneyFrame\\UI-SilverIcon:%d:%d:2:0|t"
+COPPER_AMOUNT_TEXTURE = "%d|TInterface\\MoneyFrame\\UI-CopperIcon:%d:%d:2:0|t"
+
+-- A coin read back as the letter it replaced, so a check about the *shape* of a figure - which
+-- units it has, how many digits - can go on saying "1g 20s". The coins themselves are checked
+-- where money is written (the "coins" checks beside UI:Coins); everywhere else this is reading.
+function coinsAsLetters(text)
+	return (tostring(text):gsub("|T[^|]*UI%-GoldIcon[^|]*|t", "g")
+		:gsub("|T[^|]*UI%-SilverIcon[^|]*|t", "s"):gsub("|T[^|]*UI%-CopperIcon[^|]*|t", "c"))
+end
 
 NUM_BAG_SLOTS = 4
 KEYRING_CONTAINER = -2
@@ -5757,7 +5777,7 @@ do
 	-- there it is *0g 00s 25c* so that three units land under three units on the row above.
 	-- Asked for 2026-09-10 with these three shapes.
 	local function plain(text)
-		return (tostring(text):gsub("|c%\x%\x%\x%\x%\x%\x%\x%\x", ""):gsub("|r", ""))
+		return (coinsAsLetters(text):gsub("|c%\x%\x%\x%\x%\x%\x%\x%\x", ""):gsub("|r", ""))
 	end
 	check("a price says only the units it has something in",
 		plain(Family.UI:Coins(7)) == "7c" and plain(Family.UI:Coins(208)) == "2s 8c"
@@ -5769,6 +5789,42 @@ do
 	check("while nothing at all is still told apart from nothing being known",
 		plain(Family.UI:Coins(0)) == "0c" and Family.UI:Coins(nil) == Family.UI.UNKNOWN,
 		plain(Family.UI:Coins(0)))
+
+	-- **The coins, asked for 2026-09-14 for the look of the auction house**: white figures on a
+	-- single row, gold figures on a total, the coin taken from the client's own string.
+	local GOLD_COIN = "|TInterface\\MoneyFrame\\UI-GoldIcon:0:0:2:0|t"
+	local SILVER_COIN = "|TInterface\\MoneyFrame\\UI-SilverIcon:0:0:2:0|t"
+	local COPPER_COIN = "|TInterface\\MoneyFrame\\UI-CopperIcon:0:0:2:0|t"
+	check("coins: a single figure is written in white beside the client's own coins",
+		Family.UI:Money(1234567) == "|cffffffff123|r" .. GOLD_COIN .. " |cffffffff45|r"
+			.. SILVER_COIN .. " |cffffffff67|r" .. COPPER_COIN,
+		Family.UI:Money(1234567))
+	check("coins: a total is written in gold",
+		Family.UI:Money(1234567, true) == "|cffffd700123|r" .. GOLD_COIN .. " |cffffd70045|r"
+			.. SILVER_COIN .. " |cffffd70067|r" .. COPPER_COIN,
+		Family.UI:Money(1234567, true))
+	check("coins: the short form and Worth's gold and silver take the same coins and colours",
+		Family.UI:Coins(208, true) == "|cffffd7002|r" .. SILVER_COIN .. " |cffffd7008|r"
+			.. COPPER_COIN
+			and Family.UI:GoldAndSilver(1234567) == "|cffffffff123|r" .. GOLD_COIN
+				.. " |cffffffff45|r" .. SILVER_COIN,
+		Family.UI:Coins(208, true) .. " / " .. Family.UI:GoldAndSilver(1234567))
+
+	-- A client that does not carry the string, or carries one of another shape, is not handed
+	-- a coin Family made up: it keeps the letters in the colours they always had.
+	do
+		local carried = GOLD_AMOUNT_TEXTURE
+		GOLD_AMOUNT_TEXTURE = nil
+		local without = Family.UI:Money(1234567)
+		GOLD_AMOUNT_TEXTURE = "%d gold"
+		local odd = Family.UI:Money(1234567)
+		GOLD_AMOUNT_TEXTURE = carried
+		check("coins: a client without the gold coin's string keeps the letter g",
+			without:find("|cffffd700123|rg ", 1, true) == 1
+				and without:find(SILVER_COIN, 1, true) ~= nil, without)
+		check("coins: and so does one whose string is not a figure followed by a coin",
+			odd:find("|cffffd700123|rg ", 1, true) == 1, odd)
+	end
 
 	FamilyDB.prices = true
 	-- **Every money figure on a tooltip is in the one g-s-c form.** Asked for 2026-09-12 off a
@@ -11759,8 +11815,23 @@ print("the Stock column")
 	-- line, which says the same thing when one member is the only priced one - so a mutation
 	-- that changed only the cell came back clean against a check that was reading the total.
 	check("the cell says what it comes to, in gold and silver",
-		Family.UI.__cellStock == "|cffffd700206|rg |cffc7c7cf00|rs",
+		Family.UI.__cellStock == "|cffffffff206|r|TInterface\\MoneyFrame\\UI-GoldIcon:0:0:2:0|t "
+			.. "|cffffffff00|r|TInterface\\MoneyFrame\\UI-SilverIcon:0:0:2:0|t",
 		tostring(Family.UI.__cellStock))
+
+	-- **And the totals line in gold**, the auction house's other half: white for a member, gold
+	-- for what adds members up. Worth's total is the same 206 here, and Money's total is the one
+	-- gold figure on the panel that carries copper.
+	check("coins: the summary's totals are written in gold, Worth's and Money's both",
+		drawnText("|cffffd700206|r|TInterface\\MoneyFrame\\UI-GoldIcon")
+			and (function()
+				for _, f in ipairs(fontStrings) do
+					if type(f.__text) == "string" and onScreen(f) and f.__text:find(
+						"^|cffffd700%d+|r|TInterface\\MoneyFrame\\UI%-GoldIcon.-UI%-CopperIcon")
+					then return true end
+				end
+				return false
+			end)())
 
 	-- **A member nothing could be priced for gets the blank that means nobody looked.** A
 	-- nought there would say the character owns nothing, which is a different claim (§2.2).
@@ -11775,7 +11846,7 @@ print("the Stock column")
 	-- gold is what a Money cell says for anybody broke, and a needle that matches it tests
 	-- the wrong column. The same trap as looking for "0 priced," inside "20 priced,".
 	check("while a member nothing could be priced for is blank, not nought",
-		not drawnText("206|rg |cffc7c7cf00|rs"))
+		not drawnText("206|r|TInterface\\MoneyFrame\\UI-GoldIcon"))
 	-- And said of the cell itself, because *the number is gone* is also what a cell reading
 	-- nought would look like from outside, and nought is a claim that character owns nothing.
 	check("and the cell says so with the blank that means nobody looked",
@@ -12905,8 +12976,8 @@ do
 		end
 
 		check("the tooltip's total is the whole family, not what the bar narrowed to",
-			grand ~= nil and grand:find(Family.UI:Money(everyone), 1, true) ~= nil,
-			tostring(grand) .. " wanted " .. tostring(Family.UI:Money(everyone)))
+			grand ~= nil and grand:find(Family.UI:Money(everyone, true), 1, true) ~= nil,
+			tostring(grand) .. " wanted " .. tostring(Family.UI:Money(everyone, true)))
 
 		-- And it still says which narrower thing the bar is counting, which is what explains
 		-- the bar and the tooltip disagreeing on purpose.
@@ -13247,7 +13318,43 @@ end
 		end
 	end
 
+	-- **The figures the money columns were sized for, whatever the fixture holds.** The members
+	-- above carry small sums, so a column one coin too narrow for a rich one passed every check
+	-- here. Sized 2026-09-15 on the icon sheet's measurements: four figures of gold on a row,
+	-- five on a total, and for Worth seven, which is where Mists already is.
 	Family.locale = wasLocale
+	do
+		local function roomFor(set, key)
+			clickLastButton(set)
+			for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+				if column.key == key then return (column.drawWidth or column.width) - 8 end
+			end
+		end
+		local function fits(set, key, text)
+			local room = roomFor(set, key)
+			measureColumns:SetText(text)
+			local wide = measureColumns:GetStringWidth() or 0
+			return room ~= nil and wide <= room, string.format("%s %s: %s > %s", set, key,
+				tostring(wide), tostring(room))
+		end
+		local checks = {
+			{ "Overview", "money", Family.UI:Money(999999999, true) },
+			{ "Overview", "stock", Family.UI:GoldAndSilver(99999999999, true) },
+			{ "Activity", "bids", Family.UI:Money(99999999) },
+			{ "Activity", "buyouts", Family.UI:Money(99999999) },
+		}
+		-- Worth nothing if a coin measures as nothing, which it did before the model knew that
+		-- a size of nought is the height of the text.
+		measureColumns:SetText("|TInterface\\MoneyFrame\\UI-GoldIcon:0:0:2:0|t")
+		check("coins: a coin at the text's own height is measured as twelve pixels",
+			measureColumns:GetStringWidth() == 12, tostring(measureColumns:GetStringWidth()))
+		for _, case in ipairs(checks) do
+			local ok, detail = fits(case[1], case[2], case[3])
+			check("coins: " .. case[1]:lower() .. "'s " .. case[2]
+				.. " column holds the largest figure it was sized for", ok, detail)
+		end
+	end
+
 	Family.UI:Refresh()
 	Family.Database:Forget("Busy-FireMaw")
 	Family.Database:Forget("Soon-FireMaw")
@@ -15378,11 +15485,11 @@ print("the icon contact sheet")
 	check("the white figures and the gold ones are both coloured explicitly",
 		visibleText("|cffffffff354|r|TInterface\\MoneyFrame\\UI-GoldIcon:0:0:2:0|t")
 			and visibleText("|cffffd700354|r|TInterface\\MoneyFrame\\UI-GoldIcon:0:0:2:0|t"))
-	-- "354g 00s 39c" is twelve characters to this harness, 78 pixels, in a 106 column that
-	-- leaves a cell 98. The verdict has to agree with that, and it is the one row whose
+	-- "354g 00s 39c" is twelve characters to this harness, 78 pixels, in the 122 column Money
+	-- has had since the coins went in, which leaves a cell 114. The verdict has to agree with that, and it is the one row whose
 	-- numbers are known here without asking the sheet.
 	check("the money fit test measures a figure against the cell its column leaves",
-		visibleText("78 of 98 px - fits"))
+		visibleText("78 of 114 px - fits"))
 	check("and every verdict on the sheet agrees with its own measurement",
 		(function()
 			local verdicts = 0
@@ -15402,13 +15509,16 @@ print("the icon contact sheet")
 
 	-- What the client carries for writing money is read, never assumed: missing, it says
 	-- so; present, it shows the raw string so a screenshot can be pasted from.
-	check("a client string the harness does not carry is reported as missing",
+	local carried = _G.GOLD_AMOUNT_TEXTURE
+	_G.GOLD_AMOUNT_TEXTURE = nil
+	sheet:Rebuild()
+	check("a client string this client does not carry is reported as missing",
 		visibleText("GOLD_AMOUNT_TEXTURE - not on this client"))
 	_G.GOLD_AMOUNT_TEXTURE = "%d|TInterface\\MoneyFrame\\UI-GoldIcon:%d:%d:2:0|t"
 	sheet:Rebuild()
 	check("and one it does carry is shown raw, escapes and all",
 		visibleText("GOLD_AMOUNT_TEXTURE|r  %d||TInterface\\MoneyFrame\\UI-GoldIcon"))
-	_G.GOLD_AMOUNT_TEXTURE = nil
+	_G.GOLD_AMOUNT_TEXTURE = carried
 	sheet:Rebuild()
 
 	sheet:Hide()
@@ -33315,9 +33425,9 @@ print("how a professions row is laid out")
 
 	check("a member has a line on the professions panel", first ~= nil)
 
-	-- **Seven columns, and they fit.** ROW_BUDGET less MEMBER_COLUMN.width is 584 and
-	-- MAX_BUILT_COLUMNS is 7, so seven is both what the row holds and the most a built set
-	-- may ask for. Measured off the row that was actually drawn rather than off the column
+	-- **Seven columns, and they fit.** ROW_BUDGET less MEMBER_COLUMN.width is 626 (584 until the
+	-- window grew for the coins) and MAX_BUILT_COLUMNS is 7, so seven is the most a built set
+	-- may ask for and the row still holds them. Measured off the row that was actually drawn rather than off the column
 	-- list, because the list is a local in Summary.lua and because what a reader sees is the
 	-- row: `FitColumns` can hand a column less than it asked for and that is still the truth
 	-- about the panel.
@@ -36519,6 +36629,9 @@ print("what a craftable thing costs to make")
 		end
 
 		local whole = spellSaid(900001)
+		-- Raw here, colours and all: the total is gold and a single figure white.
+		check("coins: a crafted thing's total is written in gold",
+			whole:find("Total | |cffffd700", 1, true) ~= nil, whole)
 		check("an enchant's tooltip says what it is made of, with how many of each",
 			whole:find("Made with", 1, true) ~= nil and whole:find("x3", 1, true) ~= nil
 				and whole:find("x2", 1, true) ~= nil and whole:find("Total", 1, true) ~= nil,
@@ -36540,7 +36653,7 @@ print("what a craftable thing costs to make")
 	-- right-aligned column, so the units never lined up. Every money figure on the tooltip is
 	-- found and each must carry all three units, silver and copper two digits wide.
 	do
-		local text = hovering(SWORD):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+		local text = coinsAsLetters(hovering(SWORD)):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
 		local figures, odd = 0, nil
 		-- A figure is a run of units ending in c, s or g with digits in front; the whole run
 		-- is taken so that "95s" is seen as a figure missing its gold and copper.
@@ -36931,8 +37044,8 @@ print("the money that came out of the mailbox")
 	local heldInbox = INBOX
 
 	local function saidSince(from)
-		return (table.concat(DEFAULT_CHAT_FRAME.messages, "\n", from + 1,
-			#DEFAULT_CHAT_FRAME.messages):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
+		return (coinsAsLetters(table.concat(DEFAULT_CHAT_FRAME.messages, "\n", from + 1,
+			#DEFAULT_CHAT_FRAME.messages)):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
 	end
 
 	local function letters(list)

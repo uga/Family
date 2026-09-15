@@ -366,7 +366,7 @@ local function describe(tooltip)
 		local here = realms[realm]
 
 		tooltip:AddLine(" ")
-		tooltip:AddDoubleLine("|cff88bbff" .. realm .. "|r", UI:Money(here.money))
+		tooltip:AddDoubleLine("|cff88bbff" .. realm .. "|r", UI:Money(here.money, true))
 
 		if knownSides(here) > 1 then
 			for _, side in ipairs(here.sides) do
@@ -376,7 +376,7 @@ local function describe(tooltip)
 				tooltip:AddDoubleLine(
 					string.format(L["  %s |cff888888(%d)|r"],
 						UI:SideName(side), #group.members),
-					UI:Money(group.money),
+					UI:Money(group.money, true),
 					colour[1], colour[2], colour[3], 0.8, 0.8, 0.8)
 
 				drawGroup(group.members, "    ")
@@ -390,7 +390,7 @@ local function describe(tooltip)
 	-- grand total is the realm total, written twice.
 	if #order > 1 then
 		tooltip:AddLine(" ")
-		tooltip:AddDoubleLine(L["|cffffd700All realms|r"], UI:Money(total))
+		tooltip:AddDoubleLine(L["|cffffd700All realms|r"], UI:Money(total, true))
 	end
 
 	-- What is ready now. The one thing on this tooltip that changes while nobody is looking,
@@ -515,7 +515,7 @@ function UI:UpdateBroker()
 	if not self.broker then return end
 
 	local members, money = summary()
-	self.broker.text = string.format("%d  %s", members, UI:Money(money))
+	self.broker.text = string.format("%d  %s", members, UI:Money(money, true))
 end
 
 --------------------------------------------------------------------------------------------

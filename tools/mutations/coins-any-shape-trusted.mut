@@ -1,0 +1,6 @@
+name: a coin string of any shape is trusted
+file: addons/Family_UI/Window.lua
+--- old
+	local after = format:match("^%%d(|T.-|t)$")
+--- new
+	local after = format:match("^%%d(.*)$")

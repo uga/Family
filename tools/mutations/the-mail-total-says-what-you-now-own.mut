@@ -1,7 +1,7 @@
 name: the mail total goes on to say what the character now owns, which was asked to be taken out
 file: addons/Family_UI/MailReport.lua
 --- old
-		Family:Print(L["|cff66bbffTotal collected:|r %s"], UI:Coins(visitMoney))
+		Family:Print(L["|cff66bbffTotal collected:|r %s"], UI:Coins(visitMoney, true))
 --- new
-		Family:Print(L["|cff66bbffTotal collected:|r %s"], UI:Coins(visitMoney))
+		Family:Print(L["|cff66bbffTotal collected:|r %s"], UI:Coins(visitMoney, true))
 		Family:Print("Now you own: %s", UI:Coins(tonumber((Family:TryCall(GetMoney))) or 0))

@@ -1,0 +1,6 @@
+name: the summary's money total is written in white
+file: addons/Family_UI/Summary.lua
+--- old
+	money = function(members) return UI:Money(sumOf(members, "money"), true) end,
+--- new
+	money = function(members) return UI:Money(sumOf(members, "money")) end,

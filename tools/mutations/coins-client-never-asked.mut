@@ -1,0 +1,6 @@
+name: the client's coin strings are never asked, so money keeps the letters
+file: addons/Family_UI/Window.lua
+--- old
+	if type(format) ~= "string" then return nil end
+--- new
+	do return nil end

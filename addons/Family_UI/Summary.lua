@@ -87,6 +87,8 @@ end
 -- The arithmetic: a row has ROW_BUDGET pixels, the member's name takes MEMBER_COLUMN.width of
 -- them, and MAX_BUILT_COLUMNS is the most a built set may ask for - so 714 - 130 = 584 to
 -- divide, and seven is both what fits and the ceiling. 7 x 83 = 581, three pixels under.
+-- (The row is 756 since 2026-09-15, which the coins widened it to; seven is still the ceiling,
+-- now with room to spare.)
 -- An icon is fourteen and the widest thing that follows it is "287/375", so 83 is room and
 -- not a squeeze.
 --
@@ -235,7 +237,7 @@ local SETS = {
 			{ key = "level",  label = L["Level"],     width = 50,  justify = "RIGHT" },
 			{ key = "ilvl",   label = L["Item lvl"],  width = 70,  justify = "RIGHT" },
 			{ key = "xp",     label = L["Rest XP"],   width = 90,  justify = "RIGHT" },
-			{ key = "money",  label = L["Money"],     width = 106, justify = "RIGHT" },
+			{ key = "money",  label = L["Money"],     width = 122, justify = "RIGHT" },
 			-- **What everything this character is holding comes to**, beside what they
 			-- carry in coin, which is the other half of the same question.
 			--
@@ -250,7 +252,7 @@ local SETS = {
 			-- **Called Worth**, which is what the tooltip on an item has called the same
 			-- figure since it was built. Asked for 2026-09-12: *piu esatto, e coerente con
 			-- il tooltip*. Stock is a count of things and this is money.
-			{ key = "stock",  label = L["Worth"],     width = 88,  justify = "RIGHT" },
+			{ key = "stock",  label = L["Worth"],     width = 104, justify = "RIGHT" },
 			{ key = "played", label = L["Played"],    width = 85,  justify = "RIGHT" },
 			{ key = "seen",   label = L["Last seen"], width = 95,  justify = "RIGHT" },
 		},
@@ -298,8 +300,8 @@ local SETS = {
 			{ key = "mailexp",  label = L["Expires in"], width = 67,  justify = "RIGHT" },
 			{ key = "mailseen", label = L["Mail seen"],  width = 75,  justify = "RIGHT" },
 			{ key = "auctions", label = L["Auctions"],   width = 61,  justify = "RIGHT" },
-			{ key = "bids",     label = L["Bid value"],  width = 93,  justify = "RIGHT" },
-			{ key = "buyouts",  label = L["Buyout"],     width = 93,  justify = "RIGHT" },
+			{ key = "bids",     label = L["Bid value"],  width = 114, justify = "RIGHT" },
+			{ key = "buyouts",  label = L["Buyout"],     width = 114, justify = "RIGHT" },
 			{ key = "aucseen",  label = L["AH seen"],    width = 74,  justify = "RIGHT" },
 		},
 	},
@@ -618,7 +620,9 @@ local FOOTER_MARGIN = 8
 local CAPTION_GAP = 4
 local TABLE_GAP = 8
 
-local ROW_BUDGET = 714
+-- 756 since 2026-09-15: the window grew by the 42 pixels the coins cost Bid value and Buyout on
+-- the Activity set, whose other columns were already at their contents (docs/DECISIONS.md).
+local ROW_BUDGET = 756
 
 -- The most columns a set built at draw time may ask for. Rows are built once with enough
 -- cells for the widest set there is, so a set that grows its own columns has to have a
@@ -992,8 +996,7 @@ CELL.stock = function(_, key)
 	if not row or (row.atMarket + row.atVendor) == 0 then
 		answer = UNKNOWN
 	else
-		answer = string.format("|cffffd700%d|rg |cffc7c7cf%02d|rs",
-			math.floor(row.worth / 10000), math.floor((row.worth % 10000) / 100))
+		answer = UI:GoldAndSilver(row.worth)
 	end
 
 	if key == Family:CurrentMember() then UI.__cellStock = answer end
@@ -1400,7 +1403,7 @@ local function sumOf(members, field)
 end
 
 local TOTAL = {
-	money = function(members) return UI:Money(sumOf(members, "money")) end,
+	money = function(members) return UI:Money(sumOf(members, "money"), true) end,
 
 	-- Added up like the money beside it, over whoever the row covers - a faction, a realm, or
 	-- everybody. A member nothing could be priced for contributes nothing and is not counted
@@ -1415,8 +1418,7 @@ local TOTAL = {
 			end
 		end
 		if not any then return UNKNOWN end
-		return string.format("|cffffd700%d|rg |cffc7c7cf%02d|rs",
-			math.floor(sum / 10000), math.floor((sum % 10000) / 100))
+		return UI:GoldAndSilver(sum, true)
 	end,
 
 	played = function(members)
@@ -1443,7 +1445,7 @@ local TOTAL = {
 			local _, bid = auctionTotals(member.meta, member.key)
 			total = total + (bid or 0)
 		end
-		return UI:Money(total)
+		return UI:Money(total, true)
 	end,
 
 	buyouts = function(members)
@@ -1452,7 +1454,7 @@ local TOTAL = {
 			local _, _, buyout = auctionTotals(member.meta, member.key)
 			total = total + (buyout or 0)
 		end
-		return UI:Money(total)
+		return UI:Money(total, true)
 	end,
 }
 
@@ -3967,7 +3969,7 @@ local function build(frame)
 					.. "|cff888888|||r   %d of %d bag slots free   |cff888888|||r   "
 					.. "|cff888888right-click a member to remove them|r"],
 				totals.members,
-				UI:Money(totals.money), totals.free, totals.slots))
+				UI:Money(totals.money, true), totals.free, totals.slots))
 		end
 
 		-- The footer and the note above it are as tall as the language makes them. English

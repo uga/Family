@@ -133,7 +133,7 @@ end
 -- two places doing it neither was load-bearing - the recorded mutation removing either survived.
 function sayTheTotal(stillOpen)
 	if wanted() and visitMoney > 0 then
-		Family:Print(L["|cff66bbffTotal collected:|r %s"], UI:Coins(visitMoney))
+		Family:Print(L["|cff66bbffTotal collected:|r %s"], UI:Coins(visitMoney, true))
 	end
 
 	-- Emptied with the box still open: the visit's sum has been said and starts again from

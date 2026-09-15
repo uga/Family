@@ -486,10 +486,10 @@ local TAB_LABELS = {
 -- the Activity set spends its whole row budget, so the second try is gold and silver only - the
 -- way Worth is already written for the same reason.
 local MONEY_COLUMNS = {
-	{ label = "Money", width = 106, copper = true, amounts = { 3540039, 99999999 } },
-	{ label = "Worth", width = 88, copper = false, amounts = { 2060000, 99999999 } },
-	{ label = "Bid value", width = 93, copper = true, amounts = { 12345678, 99999999 } },
-	{ label = "Bid value, no c", width = 93, copper = false, amounts = { 12345678, 99999999 } },
+	{ label = "Money", width = 122, copper = true, amounts = { 3540039, 99999999 } },
+	{ label = "Worth", width = 104, copper = false, amounts = { 2060000, 99999999 } },
+	{ label = "Bid value", width = 114, copper = true, amounts = { 12345678, 99999999 } },
+	{ label = "Bid value, no c", width = 114, copper = false, amounts = { 12345678, 99999999 } },
 }
 
 -- What the client itself carries for writing money. None of these is assumed to exist: each is

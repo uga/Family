@@ -1,0 +1,6 @@
+name: a total is written in white like a single row
+file: addons/Family_UI/Window.lua
+--- old
+	return (total and TOTAL_FIGURE or ROW_FIGURE) .. figure .. "|r" .. coin
+--- new
+	return ROW_FIGURE .. figure .. "|r" .. coin

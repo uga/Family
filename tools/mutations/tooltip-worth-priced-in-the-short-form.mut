@@ -1,6 +1,6 @@
 name: what the family's lot is worth is written in the short form
 file: addons/Family_UI/Tooltip.lua
 --- old
-		local figure = UI:Money(held.worth)
+		local figure = UI:Money(held.worth, true)
 --- new
-		local figure = UI:Coins(held.worth)
+		local figure = UI:Coins(held.worth, true)

@@ -1,0 +1,6 @@
+name: the harness counts a coin drawn at the text's height as no width at all
+file: tests/Harness.lua
+--- old
+				if width == 0 then width = height ~= 0 and height or 12 end
+--- new
+

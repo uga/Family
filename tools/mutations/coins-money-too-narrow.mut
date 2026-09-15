@@ -1,0 +1,6 @@
+name: Money keeps the width it had before the coins
+file: addons/Family_UI/Summary.lua
+--- old
+			{ key = "money",  label = L["Money"],     width = 122, justify = "RIGHT" },
+--- new
+			{ key = "money",  label = L["Money"],     width = 106, justify = "RIGHT" },

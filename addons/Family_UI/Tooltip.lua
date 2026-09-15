@@ -851,7 +851,7 @@ local function madeWith(cost)
 			"|cffffaa00" .. L["some prices are missing"] .. "|r",
 			0.4, 0.73, 1, 1, 1, 1 }
 	else
-		lines[#lines + 1] = { L["Total"], UI:Money(cost.total), 0.4, 0.73, 1, 1, 1, 1 }
+		lines[#lines + 1] = { L["Total"], UI:Money(cost.total, true), 0.4, 0.73, 1, 1, 1, 1 }
 
 		-- Said only when it happened, and said under the number rather than beside it: it is
 		-- a qualification of the total and not another figure.
@@ -977,7 +977,7 @@ local function priceLines(tooltip, itemID, variant)
 		-- The age leads here too, for the reason the auction line above gives: these two are
 		-- the figures somebody reads down, and only one of them carrying a tail is what put
 		-- them out of line.
-		local figure = UI:Money(held.worth)
+		local figure = UI:Money(held.worth, true)
 		if held.oldest then
 			figure = string.format("|cff888888(%s)|r %s", UI:Ago(held.oldest), figure)
 		end
