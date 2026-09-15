@@ -37863,13 +37863,28 @@ print("auditing the auction prices Family collected (backlog 81)")
 		not Family.Auctions:IsBanned(A, 1001) and rowFor(A, 1001) ~= nil
 			and rowFor(A, 1001).entry.banned == nil)
 
+	-- **Two lines to an item**: on one, six figures of gold and a long realm ran out of their
+	-- columns on Mists. Measured here the way every cell-fits check in this file measures.
+	FamilyDB.auctionPrices["Mirage Raceway\30Alliance"] = {
+		[1008] = { p = 999999 * 10000 + 9999, at = now, was = 999999 * 10000 + 9999 } }
+	fireClick(views.prices)
+	local wide = rowFor("Mirage Raceway\30Alliance", 1008)
+	local function fitsCell(cell)
+		return cell and (cell:GetStringWidth() or 0) <= (cell.__width or 0)
+	end
+	check("a six-figure price, its replaced price and a long market each fit their own cell",
+		wide and fitsCell(wide.cells[2]) and fitsCell(wide.cells[3]) and fitsCell(wide.cells[4]),
+		wide and string.format("%s / %s / %s", tostring(wide.cells[2]:GetStringWidth()),
+			tostring(wide.cells[3]:GetStringWidth()), tostring(wide.cells[3].__width)))
+	FamilyDB.auctionPrices["Mirage Raceway\30Alliance"] = nil
+
 	-- A page is a handful of rows, and the rest are reached rather than drawn.
 	for id = 2000, 2040 do FamilyDB.auctionPrices[A][id] = { p = id, at = now } end
 	fireClick(views.prices)
 	check("a long list is drawn a page at a time and says where it is",
-		#auditRows() == 18 and visibleText("1-18 of 48"), tostring(#auditRows()))
+		#auditRows() == 10 and visibleText("1-10 of 48"), tostring(#auditRows()))
 	fireClick(buttonLabelled(">"))
-	check("and the next page carries on from it", visibleText("19-36 of 48"))
+	check("and the next page carries on from it", visibleText("11-20 of 48"))
 
 	-- **Moving through the list draws; it does not choose the rows again.** Every notch of the
 	-- wheel used to filter and sort the whole store, which on 6,898 prices was lag you could feel
@@ -37878,7 +37893,7 @@ print("auditing the auction prices Family collected (backlog 81)")
 	audit.__scripts.OnMouseWheel(audit, -1)
 	fireClick(buttonLabelled("<"))
 	check("scrolling and paging redraw the page without sorting the store again",
-		audit.__rebuilds == rebuilt and visibleText("4-21 of 48"),
+		audit.__rebuilds == rebuilt and visibleText("3-12 of 48"),
 		tostring(audit.__rebuilds - rebuilt) .. " rebuild(s)")
 
 	-- **The scroll bar**, where the client has the template the browse list is built on. Modelled
@@ -37903,7 +37918,7 @@ print("auditing the auction prices Family collected (backlog 81)")
 		check("where the client has the browse list's scroll template, the page has a bar",
 			bar ~= nil and bar.__fauxTotal == 48, tostring(bar and bar.__fauxTotal))
 		if bar then
-			bar.__scripts.OnVerticalScroll(bar, 28 * 20)
+			bar.__scripts.OnVerticalScroll(bar, 28 * 34)
 			local says
 			for _, f in ipairs(fontStrings) do
 				if f.__parent == withBar and type(f.__text) == "string" and f.__text:find(" of 48", 1, true) then
@@ -37911,7 +37926,7 @@ print("auditing the auction prices Family collected (backlog 81)")
 				end
 			end
 			check("and dragging it moves the page to where it was dragged",
-				says == "29-46 of 48", tostring(says))
+				says == "29-38 of 48", tostring(says))
 		end
 
 		Family.UI.__priceAudit = heldPanel

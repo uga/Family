@@ -29,29 +29,29 @@ local Family = _G.Family
 local L = Family.L
 local Auctions = Family.Auctions
 
-local ROW_HEIGHT = 20
--- Nineteen after seventeen left two rows of room at the bottom of the page, seen on TBC 2026-09-15;
--- eighteen since the category pickers took a line of their own above the headings (backlog 83).
-local PAGE_ROWS = 18
-local WHEEL_ROWS = 3
-
--- Item, market, the price of one, the price it replaced, when it was read, then the two buttons,
--- then the scroll bar.
+-- **Two lines to an item**, Alberto 2026-09-15: *I'm afraid we need to dedicate 2 lines to each item
+-- on that panel*, off a Mists screenshot where six figures of gold ran out of *Price of one* and
+-- *Mirage Raceway, Alliance* out of Market. One line of seven columns could not hold a long item
+-- name, a long realm and three money figures at once; on two, every one of them has room. Scrolling
+-- is fast enough since the page stopped sorting on the wheel, so ten items a page reads well.
 --
--- Measured off two screenshots from TBC, 2026-09-15. At 680 for the columns the Ban buttons stood
--- past the window's right edge; at 656, with Market cut to 128, *Thunderstrike, Alliance* was cut
--- off. So Market goes back to 140, and the room for it and for a scroll bar comes out of the price
--- columns - this page draws its figures in the small font, where five figures of gold take about
--- a hundred pixels, not the hundred and fourteen the Summary's larger one needs - out of the
--- buttons, and twelve out of Item, whose longest names the tooltip carries whole.
+-- The first line names the thing and where it was read; the second is the reading - the price of
+-- one, the price it replaced, when - and the buttons that act on it.
+local ROW_HEIGHT = 34
+local LINE_TWO = -17
+local PAGE_ROWS = 10
+local WHEEL_ROWS = 2
+
+-- `line` and `x` place a column on its line; widths from a row of 746, the content less the margins
+-- and the scroll bar. A six-figure price with its silver and copper is some 125 pixels in this font.
 local COLUMNS = {
-	{ key = "item", label = L["Item"], width = 216, justify = "LEFT" },
-	{ key = "market", label = L["Market"], width = 140, justify = "LEFT" },
-	{ key = "price", label = L["Price of one"], width = 110, justify = "RIGHT" },
-	{ key = "was", label = L["Replaced"], width = 110, justify = "RIGHT" },
-	{ key = "seen", label = L["Seen"], width = 66, justify = "RIGHT" },
+	{ key = "item", label = L["Item"], line = 1, x = 0, width = 440, justify = "LEFT" },
+	{ key = "market", label = L["Market"], line = 1, x = 440, width = 300, justify = "LEFT" },
+	{ key = "price", label = L["Price of one"], line = 2, x = 0, width = 160, justify = "RIGHT" },
+	{ key = "was", label = L["Replaced"], line = 2, x = 160, width = 160, justify = "RIGHT" },
+	{ key = "seen", label = L["Seen"], line = 2, x = 320, width = 90, justify = "RIGHT" },
 }
-local BUTTON_W = 45
+local BUTTON_W = 60
 local BAR_ROOM = 24
 
 local function marketLabel(where)
@@ -143,7 +143,7 @@ function UI:BuildPriceAudit(frame)
 
 	-- On the headings' line, over the buttons, where the filter row has run out of room.
 	local count = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-	count:SetPoint("TOPRIGHT", -8 - BAR_ROOM, -86)
+	count:SetPoint("TOPRIGHT", -8 - BAR_ROOM, -86 + LINE_TWO)
 	count:SetJustifyH("RIGHT")
 
 	-- **The auction house's categories and subcategories, in its own order** (backlog 83). Two
@@ -206,9 +206,10 @@ function UI:BuildPriceAudit(frame)
 	following:SetText(">")
 
 	-- Headings. The price heading is a button, and pressing it turns the order round.
-	local x = 8
 	local headings = {}
 	for _, column in ipairs(COLUMNS) do
+		local x = 8 + column.x
+		local y = column.line == 1 and -84 or -84 + LINE_TWO
 		local heading
 		if column.key == "price" then
 			heading = CreateFrame("Button", nil, panel)
@@ -223,20 +224,19 @@ function UI:BuildPriceAudit(frame)
 			heading.text:SetJustifyH(column.justify)
 		end
 		local anchor = heading.SetPoint and heading or heading.text
-		anchor:SetPoint("TOPLEFT", x + 4, -84)
+		anchor:SetPoint("TOPLEFT", x + 4, y)
 		if heading.SetText then heading:SetText(column.label) else heading.text:SetText(column.label) end
 		headings[column.key] = heading
-		x = x + column.width
 	end
 
 	local empty = panel:CreateFontString(nil, "ARTWORK", "GameFontDisable")
-	empty:SetPoint("TOPLEFT", 12, -108)
+	empty:SetPoint("TOPLEFT", 12, -124)
 	empty:SetText(L["No auction prices collected yet."])
 
 	-- The rows in a frame of their own. A row takes the mouse for its tooltip and spans the width,
 	-- and one sharing a parent with the heading and the page buttons would sit over them.
 	local body = CreateFrame("Frame", nil, panel)
-	body:SetPoint("TOPLEFT", 8, -104)
+	body:SetPoint("TOPLEFT", 8, -120)
 	body:SetPoint("BOTTOMRIGHT", -8, 0)
 
 	-- **The game's own scroll bar**, asked for 2026-09-15: on thousands of prices the wheel takes
@@ -268,31 +268,36 @@ function UI:BuildPriceAudit(frame)
 
 		-- **Red behind a row that looks wrong**, rather than a colour on one of its numbers:
 		-- the figures are white on every row in Family, and a suspect is a fact about the row.
-		row.alert = row:CreateTexture(nil, "BACKGROUND")
+		-- Every other item faintly lit, so the two lines of one read as one thing.
+		row.stripe = row:CreateTexture(nil, "BACKGROUND")
+		row.stripe:SetAllPoints()
+		paintAlert(row.stripe, 1, 1, 1, 0.05)
+		row.stripe:SetShown(index % 2 == 0)
+
+		row.alert = row:CreateTexture(nil, "BORDER")
 		row.alert:SetAllPoints()
 		row.alert:Hide()
 
 		row.cells = {}
-		local cx = 0
 		for c, column in ipairs(COLUMNS) do
 			local cell = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-			cell:SetPoint("LEFT", cx + 4, 0)
+			cell:SetPoint("TOPLEFT", column.x + 4, column.line == 1 and -3 or -3 + LINE_TWO)
 			cell:SetWidth(column.width - 8)
 			cell:SetJustifyH(column.justify)
 			if cell.SetWordWrap then cell:SetWordWrap(false) end
 			row.cells[c] = cell
-			cx = cx + column.width
 		end
 
-		row.forget = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-		row.forget:SetSize(BUTTON_W, 18)
-		row.forget:SetPoint("LEFT", cx + 4, 0)
-		row.forget:SetText(L["Delete"])
-
+		-- On the second line, at the row's right-hand end, beside the reading they act on.
 		row.ban = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-		row.ban:SetSize(BUTTON_W, 18)
-		row.ban:SetPoint("LEFT", row.forget, "RIGHT", 2, 0)
+		row.ban:SetSize(BUTTON_W, 16)
+		row.ban:SetPoint("TOPRIGHT", -2, LINE_TWO)
 		row.ban:SetText(L["Ban"])
+
+		row.forget = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+		row.forget:SetSize(BUTTON_W, 16)
+		row.forget:SetPoint("RIGHT", row.ban, "LEFT", -4, 0)
+		row.forget:SetText(L["Delete"])
 
 		-- **The item's own tooltip, with the audit's reading under it.** A price is only worth
 		-- judging when the thing it is for is in front of you. A suffixed variant is drawn from
