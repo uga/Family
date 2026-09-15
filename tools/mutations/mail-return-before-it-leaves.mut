@@ -1,0 +1,6 @@
+name: a returned letter is recorded while it is still in the inbox
+file: addons/Family/Scanners/Mail.lua
+--- old
+	if letters >= letter.letters then
+--- new
+	if false then

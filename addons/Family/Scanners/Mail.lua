@@ -305,6 +305,85 @@ function Mail:CommitSend()
 	return true
 end
 
+-- **A letter sent back to one of ours** (backlog 84, reported 2026-09-15: *when a character
+-- "returns" mail received from another character, the return email is NOT counted under In
+-- Post*). The same claim as a letter posted, made the same way: what is in the letter is read
+-- the instant Return is pressed, while it is still in the inbox, and written against the member it
+-- goes back to once the inbox shows it gone.
+--
+-- **Gone is the confirmation**, because the client has no event that says a return worked: the
+-- letter leaves the inbox when the server takes it, and a refused return leaves it where it was.
+-- A return still waiting after ten seconds is let go of. Returning a letter from somebody who is
+-- not a member records nothing, and neither does sending one back to yourself.
+local returned
+
+function Mail:NoteReturn(index)
+	returned = nil
+	local _, _, sender, subject, money = Family:TryCall(GetInboxHeaderInfo, index)
+	local key = memberNamed(sender)
+	Family:Debug("mail: returning letter %s from %s (%s)", tostring(index), tostring(sender),
+		tostring(key))
+	if not key or key == Family:CurrentMember() then return nil end
+
+	-- Every slot, for the reason `Scan` gives (L-044).
+	local attachments = {}
+	for attachment = 1, tonumber(_G.ATTACHMENTS_MAX_RECEIVE) or 16 do
+		local link = Family:TryCall(GetInboxItemLink, index, attachment)
+		local _, itemID, _, quantity = Family:TryCall(GetInboxItem, index, attachment)
+		itemID = tonumber(itemID) or (link and tonumber(link:match("item:(%d+)")))
+		if itemID then
+			attachments[#attachments + 1] = { id = itemID, count = tonumber(quantity) or 1,
+				item = Family:ItemString(link) }
+		end
+	end
+
+	returned = {
+		key = key,
+		subject = subject,
+		money = tonumber(money) or 0,
+		attachments = attachments,
+		letters = tonumber((Family:TryCall(GetInboxNumItems))) or 0,
+		at = time(),
+	}
+	return key
+end
+
+-- Closing the mailbox ends the wait: a letter still in the inbox then was not returned.
+function Mail:ForgetReturn() returned = nil end
+
+function Mail:CommitReturn()
+	local letter = returned
+	if not letter then return false end
+
+	local letters = tonumber((Family:TryCall(GetInboxNumItems))) or 0
+	if letters >= letter.letters then
+		if time() - letter.at > 10 then returned = nil end
+		return false
+	end
+	returned = nil
+
+	if not Family.Database:Meta(letter.key) then return false end
+	local from = Family.Database:Meta(Family:CurrentMember())
+
+	addLetter(letter.key, {
+		sender = (from and from.name) or Family:CurrentMember(),
+		subject = letter.subject,
+		money = letter.money,
+		-- A returned letter carries no cash on delivery: the game drops it on the way back.
+		cod = 0,
+		expiresBy = letter.at + RETURNS_AFTER,
+		read = false,
+		inPost = true,
+		returned = true,
+		sentAt = letter.at,
+		attachments = letter.attachments,
+	})
+
+	Family:Debug("mail: returned to %s: %d attachment(s), %d copper", letter.key,
+		#letter.attachments, letter.money)
+	return true
+end
+
 -- An auction won, which the server sends as mail to whoever won it.
 --
 -- The same claim as a letter posted to an alt and made the same way: something is on its way
@@ -427,6 +506,7 @@ Family:OnDatabaseReady("mail", function()
 	-- the record too.
 	Family:RegisterEvent("MAIL_CLOSED", "mail", function()
 		Mail:Scan()
+		Mail:ForgetReturn()
 	end)
 
 	-- Watching the outgoing letter go.
@@ -449,4 +529,17 @@ Family:OnDatabaseReady("mail", function()
 	Family:RegisterEvent("MAIL_SEND_SUCCESS", "mail", function()
 		Mail:CommitSend()
 	end)
+
+	-- A letter sent back (backlog 84): noted as Return is pressed, written once the inbox has
+	-- lost it. Under its own key, so it runs beside the inbox scan on the same event.
+	if type(_G.hooksecurefunc) == "function" and type(_G.ReturnInboxItem) == "function" then
+		Family:TryCall(_G.hooksecurefunc, "ReturnInboxItem", function(index)
+			Mail:NoteReturn(index)
+		end)
+		Family:RegisterEvent("MAIL_INBOX_UPDATE", "mail.return", function()
+			Mail:CommitReturn()
+		end)
+	else
+		Family:Debug("no way to watch a letter being returned on this client")
+	end
 end)

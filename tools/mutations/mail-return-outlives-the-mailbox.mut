@@ -1,0 +1,7 @@
+name: closing the mailbox keeps waiting for a return
+file: addons/Family/Scanners/Mail.lua
+--- old
+		Mail:Scan()
+		Mail:ForgetReturn()
+--- new
+		Mail:Scan()

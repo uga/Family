@@ -3498,6 +3498,20 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-100 — an event fired in one check scheduled a scan that ran in somebody else's
+
+**2026-09-15.** The checks for a returned letter fired `MAIL_INBOX_UPDATE` and `MAIL_CLOSED` to drive
+the real wiring. The mail scanner answers `MAIL_INBOX_UPDATE` by scheduling a scan of the character
+being played half a second later, and nothing in that section advanced the clock - so the scan ran
+much later, inside another section's `advance`, against that section's inbox, and gave the played
+character a letter expiring in twelve hours. The failure was reported as a login notice with one line
+too many, three thousand lines away. Four fixes were tried on the wrong member before the timer was
+found; advancing the clock to flush it broke six guild checks that were counting on their own timers.
+
+**What now catches it.** The section plays a throwaway member, and before it ends replaces the
+pending `"mail"` timer with nothing under the same key. The rule: **a check that fires an event must
+account for every timer that event starts** - flush it inside the section, or cancel it by its key.
+
 ## L-099 — a red mutation run was piped through `tail`, and the commit chained on it went ahead
 
 **2026-09-15.** `python3 tools/mutate.py 2>&1 | tail -3 && git add ... && git commit` committed

@@ -1365,6 +1365,7 @@ end
 TakeInboxItem = function() end
 TakeInboxMoney = function() end
 AutoLootMailItem = function() end
+ReturnInboxItem = function() end
 
 -- Enchanting is behind the Craft frame, not the trade skill one. Most of its recipes create
 -- no item at all - an enchant is a spell applied to something - and a few make oils and rods.
@@ -15783,6 +15784,71 @@ print("mail posted to another member")
 
 	check("the recipient's own mailbox replaces the guess when they open it",
 		(Family.Database:Meta(recipient) or {}).mailInPost == nil)
+
+	-- **A letter sent back to one of ours** (backlog 84): counted as in the post for them, once
+	-- the inbox has lost it, and not before. A member of its own, forgotten afterwards, so
+	-- nothing here reaches the checks that count members' mail.
+	local back = "Returner-FireMaw"
+	Family.Database:SetMeta(back, { name = "Returner", realm = "Fire Maw" })
+	local function backLetters()
+		return ((Family.Database:Payload(back) or {}).mail or {}).letters or {}
+	end
+
+	-- Played by a throwaway member too: the events below make the mailbox scan the character
+	-- being played, and that scan must land on nobody the later checks count.
+	local mailman = "Mailman-FireMaw"
+	Family.Database:SetMeta(mailman, { name = "Mailman", realm = "Fire Maw" })
+	local wasPlaying = Family.currentMember
+	Family.currentMember = mailman
+
+	local heldInbox = INBOX
+	INBOX = {
+		{ sender = "Returner", subject = "Wrong alt", money = 3000, cod = 500, days = 20,
+		  items = { { 2589, 10 } } },
+		{ sender = "Stranger", subject = "Hi", money = 0, cod = 0, days = 20, items = {} },
+	}
+	ReturnInboxItem(1)
+	check("returning a letter records nothing while it is still in the inbox",
+		(Family.Database:Meta(back) or {}).mailInPost == nil)
+	table.remove(INBOX, 1)
+	fire("MAIL_INBOX_UPDATE")
+	local letter = backLetters()[#backLetters()]
+	check("and once it is gone, it is in the post for the member it went back to",
+		((Family.Database:Meta(back) or {}).mailInPost or 0) == 1 and letter
+			and letter.returned == true and letter.inPost == true,
+		tostring((Family.Database:Meta(back) or {}).mailInPost))
+	check("with its money and its attachments, and no cash on delivery",
+		letter and letter.money == 3000 and letter.cod == 0
+			and #letter.attachments == 1 and letter.attachments[1].id == 2589)
+
+	-- Returned to somebody who is not one of ours: nothing, anywhere.
+	ReturnInboxItem(1)
+	table.remove(INBOX, 1)
+	fire("MAIL_INBOX_UPDATE")
+	check("a letter returned to somebody who is not a member records nothing",
+		Family.Database:Meta("Stranger-FireMaw") == nil)
+
+	-- A return the server did not take leaves the letter where it was, and nothing is written.
+	INBOX = { { sender = "Returner", subject = "Again", money = 0, cod = 0, days = 20, items = {} } }
+	local before = #backLetters()
+	ReturnInboxItem(1)
+	fire("MAIL_INBOX_UPDATE")
+	check("a return the inbox still holds writes nothing", #backLetters() == before)
+
+	-- And closing the mailbox gives up on it, so a later update cannot claim it.
+	fire("MAIL_CLOSED")
+	INBOX = {}
+	fire("MAIL_INBOX_UPDATE")
+	check("and closing the mailbox lets it go, so no later change to the inbox writes it",
+		#backLetters() == before)
+
+	-- The inbox scans those events asked for are still waiting on the clock; replaced with
+	-- nothing under the same key, so they cannot run later against another test's inbox.
+	Family:After(0.5, "mail", function() end)
+	INBOX = heldInbox
+	Family.currentMember = wasPlaying
+	Family.Database:Forget(back)
+	Family.Database:Forget(mailman)
 end)()
 
 --------------------------------------------------------------------------------------------

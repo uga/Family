@@ -5277,7 +5277,7 @@ store, how many it classed, how long that took in milliseconds, and five samples
 `id=classID/subClassID`. **To be run on all three clients, once with the auction window closed and
 once with it open**, since the categories may belong to the window's own addon.
 
-## 84. Mail returned to a family member is not counted as in post
+## 84. Mail returned to a family member is not counted as in post — BUILT 2026-09-15, not yet seen in game
 
 Reported by Alberto 2026-09-15: when a character **returns** a letter it received from another
 character, the returned letter is not counted under *In post* for the character it goes back to.
@@ -5365,7 +5365,7 @@ sheet. Open before building: whether the keyring joins the carried block or stay
 consolidated block's title says (it is no longer one bag's name), and whether a bag's own boundary is
 still marked in the run of slots.
 
-## 86. A guild bank tab's own name is not read — BUILT 2026-09-15, not yet seen in game
+## 86. A guild bank tab's own name is not read — DONE 2026-09-15, seen working on TBC and Mists
 
 Reported by Alberto 2026-09-15: Family fails to read the name of a guild bank tab.
 
@@ -5387,3 +5387,12 @@ non-empty string, so a client that answers nothing leaves the tab titled by its 
 What the client gave is narrated under *Narrate what the scanners are doing*, which is the reading to
 take on TBC and Mists: whether the name is there when the tab is read, and for tabs other than the one
 open. Checks under the guild bank scanner and under backlog 85's section; mutations `guild-tab-*`.
+
+**84, built 2026-09-15:** `hooksecurefunc("ReturnInboxItem")` (where the client has it) reads the letter
+at that index - sender, subject, money, every attachment slot - and holds it when the sender is a member
+other than the one playing. The first `MAIL_INBOX_UPDATE` with fewer letters writes it against the
+sender as in the post, `returned = true`, cash on delivery nought, expiring thirty days on; closing the
+mailbox, or ten seconds with the letter still there, lets it go. There is no event saying a return
+worked, so the letter leaving the inbox is taken as that. Narrated in the debug stream. Checks under
+*mail posted to another member*; mutations `mail-return-*`. **Owed:** a return on a live client, with
+debug on - the hook firing, the count dropping, and the row reading *In post* for the sender.

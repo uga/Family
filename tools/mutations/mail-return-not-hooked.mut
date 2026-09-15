@@ -1,0 +1,8 @@
+name: returning a letter is never watched
+file: addons/Family/Scanners/Mail.lua
+--- old
+		Family:TryCall(_G.hooksecurefunc, "ReturnInboxItem", function(index)
+			Mail:NoteReturn(index)
+		end)
+--- new
+		Family:TryCall(_G.hooksecurefunc, "ReturnInboxItem", function(index) end)

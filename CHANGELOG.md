@@ -48,6 +48,11 @@ is a decision rather than an afternoon of archaeology.
   so a total it inflated goes back to normal. Family keeps reading the item's price while it is
   banned: tick *Bans only* after your next scan, and lift the ban once the prices look right.
 
+### Mail
+
+- **A letter you send back to another of your characters now counts as In post for them** on the
+  Summary, the way a letter you post to them already did.
+
 ### Possessions
 
 - **Guild bank tabs are titled by their own names** on Possessions, instead of by number. A tab is

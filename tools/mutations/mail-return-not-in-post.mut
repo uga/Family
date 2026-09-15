@@ -1,0 +1,8 @@
+name: a returned letter is not counted as in the post
+file: addons/Family/Scanners/Mail.lua
+--- old
+		inPost = true,
+		returned = true,
+--- new
+		inPost = false,
+		returned = true,
