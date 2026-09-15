@@ -5375,3 +5375,8 @@ in the tree calls `GetGuildBankTabInfo`. `Contents.lua` titles a guild block `%s
 number. To read first, on the clients that have guild banks: what `GetGuildBankTabInfo` answers and
 when - whether a tab's name is there before that tab has been clicked - before it is written into the
 record.
+
+**85, answered by Alberto 2026-09-15:**
+1. **The keyring stays its own block**; it does not join the carried one.
+2. **The merged blocks are titled *Bags* and *Bank*.**
+3. **No boundary between bags** inside the run of slots: one continuous block.
