@@ -5200,3 +5200,24 @@ misleading listings are seen to be gone.
 **Cost, roughly.** One domain end to end: the ban list and a delete in `Auctions.lua` and the store,
 the filing routes refusing a banned item, the panel in `Family_UI`, locale strings in five languages,
 `tests/Harness.lua` and mutations. The specification's paragraph on auction prices gains the ban.
+
+**Answered by Alberto 2026-09-15.**
+1. **An Extras page.**
+2. **One list of every market's prices**, with a filter to show one market at a time.
+3. **A ban clears the price already held** - *required to fix existing rogued totals*.
+4. **A ban is per market.** The store is already keyed that way (`FamilyDB.auctionPrices[market][variant]`),
+   so a ban sits beside the price it refuses. Worth knowing when it is built: a member is valued from
+   their own side's market first and the goblin house's second (`priceIn`), so banning an item in one
+   leaves the other's price for it in play until that one is banned too.
+5. **Sorted by price by default, with likely troll prices highlighted.** Not *many times what a vendor
+   pays*. A start: **ten times or more the price it replaced**, or **many times the average of the
+   other listings**.
+
+**What the store can and cannot say about point 5, read 2026-09-15.** `KeepEach` keeps `{ p, at }` and
+nothing else: the price a reading replaced is overwritten, so *ten times the price it replaced* needs
+the previous price kept beside the new one from now on - nothing already collected can be judged that
+way. And within one visit the lowest listing wins, so an inflated price is only ever filed when nothing
+cheaper was listed in that visit: in exactly the case that matters there are no other listings in that
+reading to average. Two signals the store does hold without new data: the same item's price in the
+**other markets** Family has read (the other side, the goblin house, other realms), and how old the
+reading is. How many listings a reading was taken from would need counting as it is filed.
