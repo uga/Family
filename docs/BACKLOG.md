@@ -5268,6 +5268,14 @@ items without asking the client in the way backlog 22 measured as a ten-second f
 `GetItemInfoInstant` is the candidate, to be probed on all three clients before anything is built on
 it.
 
+**The probe, 2026-09-15: `/family ah categories`** (`addons/Family_UI/Slash.lua`). It prints whether
+`Blizzard_AuctionUI` and `Blizzard_AuctionHouseUI` are loaded; `AuctionCategories`, and for each
+category in its order its name, the first filter as `classID/subClassID/inventoryType (count)` and
+its subcategories the same way; whether `GetItemInfoInstant` exists; and, over every item in the price
+store, how many it classed, how long that took in milliseconds, and five samples as
+`id=classID/subClassID`. **To be run on all three clients, once with the auction window closed and
+once with it open**, since the categories may belong to the window's own addon.
+
 ## 84. Mail returned to a family member is not counted as in post
 
 Reported by Alberto 2026-09-15: when a character **returns** a letter it received from another

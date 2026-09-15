@@ -36197,6 +36197,42 @@ print("the button on the auction window")
 		_G.CanSendAuctionQuery = realCanTwo
 	end
 
+	-- **Backlog 83's first question, asked of the client**: the house's categories in its own
+	-- order, and whether a stored item can be classed without asking the server. Modelled on the
+	-- shape the auction window's code keeps them in; what a real client holds is the probe's
+	-- answer to give, not this fixture's.
+	do
+		local realCats, realInstant, realPrices = _G.AuctionCategories, _G.GetItemInfoInstant,
+			FamilyDB.auctionPrices
+		_G.AuctionCategories = {
+			{ name = "Weapons", filters = { { classID = 2 } }, subCategories = {
+				{ name = "One-Handed Axes", filters = { { classID = 2, subClassID = 0 } } },
+			} },
+			{ name = "Consumables", filters = { { classID = 0 } } },
+		}
+		_G.GetItemInfoInstant = function(id)
+			if id == 2589 then return id, "Trade Goods", "Cloth", "", 1, 7, 5 end
+			return nil
+		end
+		FamilyDB.auctionPrices = { ["Fire Maw\30Alliance"] = {
+			[2589] = { p = 10, at = 1 }, ["6339:-7"] = { p = 20, at = 1 } } }
+
+		local before = #DEFAULT_CHAT_FRAME.messages
+		SlashCmdList["FAMILY"]("ah categories")
+		local said = table.concat(DEFAULT_CHAT_FRAME.messages, "\n", before + 1,
+			#DEFAULT_CHAT_FRAME.messages)
+
+		check("the category probe lists the house's categories in the client's order",
+			said:find("1 Weapons", 1, true) ~= nil and said:find("2 Consumables", 1, true) ~= nil
+				and said:find("One-Handed Axes 2/0/nil (1)", 1, true) ~= nil, said:sub(1, 400))
+		check("and says how many stored items the client could class, and which",
+			said:find("1 / 2", 1, true) ~= nil and said:find("2589=7/5", 1, true) ~= nil,
+			said:sub(1, 400))
+
+		_G.AuctionCategories, _G.GetItemInfoInstant = realCats, realInstant
+		FamilyDB.auctionPrices = realPrices
+	end
+
 	check("and it hangs off a control of the client's own, not a corner of the panel",
 		button and button.__anchoredTo and button.__anchoredTo[_G.BrowseResetButton] == true
 			and not (button.__anchoredTo[_G.AuctionFrameBrowse]),

@@ -1623,8 +1623,94 @@ end
 -- Symbols are reported as present or absent rather than called, except the one whose whole
 -- purpose is to be asked - `CanSendAuctionQuery` says whether a query would be accepted right
 -- now, and that answer is the difference between a scanner that is safe and one that is not.
+-- **What the auction house calls its categories, and whether an item can be put in one**, asked
+-- before backlog 83 builds anything on either. Alberto wants the audit page narrowed by category
+-- and subcategory *in the same order as on the AH*, and that order is the client's, not ours.
+--
+-- Two questions, answered by the client:
+--   1. Is there a list of the house's categories, in its order, with what each filters on? The
+--      candidate is `AuctionCategories`, which the auction window's own code keeps - so it may be
+--      there only once that window has been opened, and whether the addon holding it is loaded
+--      is printed beside it.
+--   2. Can a stored price's item be given a class and subclass without asking the server?
+--      `GetItemInfoInstant` is the candidate; backlog 22 measured what asking the server for
+--      thousands of items costs. Every item in the store is asked, and the time it took printed.
+--
+-- Printed as names and numbers only: nothing here is a sentence, so nothing needs translating.
+local function auctionCategories()
+	local loaded
+	if C_AddOns and type(C_AddOns.IsAddOnLoaded) == "function" then
+		loaded = C_AddOns.IsAddOnLoaded
+	elseif type(_G.IsAddOnLoaded) == "function" then
+		loaded = _G.IsAddOnLoaded
+	end
+	for _, name in ipairs { "Blizzard_AuctionUI", "Blizzard_AuctionHouseUI" } do
+		Family:Print("    %-26s |cff888888%s|r", name,
+			loaded and tostring((Family:TryCall(loaded, name))) or "?")
+	end
+
+	local list = _G.AuctionCategories
+	Family:Print("    %-26s |cff888888%s %s|r", "AuctionCategories", type(list),
+		type(list) == "table" and tostring(#list) or "")
+
+	local function filterOf(category)
+		local filters = type(category) == "table" and category.filters
+		local first = type(filters) == "table" and filters[1]
+		if type(first) ~= "table" then return "-" end
+		return string.format("%s/%s/%s (%d)", tostring(first.classID), tostring(first.subClassID),
+			tostring(first.inventoryType), #filters)
+	end
+
+	if type(list) == "table" then
+		for index, category in ipairs(list) do
+			local subs = type(category.subCategories) == "table" and category.subCategories or {}
+			local names = {}
+			for _, sub in ipairs(subs) do
+				names[#names + 1] = tostring(sub.name) .. " " .. filterOf(sub)
+			end
+			Family:Print("    %2d %s |cff888888%s|r  %s", index, tostring(category.name),
+				filterOf(category), table.concat(names, ", "))
+		end
+	end
+
+	local instant = (C_Item and type(C_Item.GetItemInfoInstant) == "function"
+		and C_Item.GetItemInfoInstant) or (type(_G.GetItemInfoInstant) == "function"
+		and _G.GetItemInfoInstant) or nil
+	Family:Print("    %-26s |cff888888%s|r", "GetItemInfoInstant", instant and "function" or "nil")
+	if not instant then return end
+
+	local ids, seen = {}, {}
+	for _, prices in pairs(type(FamilyDB) == "table" and FamilyDB.auctionPrices or {}) do
+		for variant in pairs(type(prices) == "table" and prices or {}) do
+			local id = Family:BaseItem(variant)
+			if id and not seen[id] then seen[id] = true; ids[#ids + 1] = id end
+		end
+	end
+
+	local clock = type(_G.debugprofilestop) == "function" and _G.debugprofilestop or nil
+	local started = clock and clock() or 0
+	local answered, samples = 0, {}
+	for _, id in ipairs(ids) do
+		local ok, _, _, _, _, _, classID, subClassID = pcall(instant, id)
+		if ok and classID then
+			answered = answered + 1
+			if #samples < 5 then
+				samples[#samples + 1] = string.format("%d=%s/%s", id, tostring(classID),
+					tostring(subClassID))
+			end
+		end
+	end
+	local took = clock and (clock() - started) or nil
+
+	-- The time in milliseconds, from `debugprofilestop`, with no unit word in the format.
+	Family:Print("    %d / %d  |cff888888%s|r  %s", answered, #ids,
+		took and string.format("%.1f", took) or "?", table.concat(samples, " "))
+end
+
 add("ah", L["what this client offers on the auction house"], function(argument)
 	if argument == "watch" then return watchOne() end
+
+	if argument == "categories" then return auctionCategories() end
 
 	if argument == "replicate" then return replicateOnce() end
 

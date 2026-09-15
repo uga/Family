@@ -1,0 +1,6 @@
+name: the category probe never lists the categories
+file: addons/Family_UI/Slash.lua
+--- old
+		for index, category in ipairs(list) do
+--- new
+		for index, category in ipairs({}) do

@@ -1,0 +1,6 @@
+name: the category probe counts no item as classed
+file: addons/Family_UI/Slash.lua
+--- old
+		if ok and classID then
+--- new
+		if false then
