@@ -5221,3 +5221,22 @@ cheaper was listed in that visit: in exactly the case that matters there are no 
 reading to average. Two signals the store does hold without new data: the same item's price in the
 **other markets** Family has read (the other side, the goblin house, other realms), and how old the
 reading is. How many listings a reading was taken from would need counting as it is filed.
+
+## 82. A switch to turn the folding of long lists off
+
+Asked 2026-09-14 by a user, relayed by Alberto: *the system works very well*, but the user wants to
+be able to turn it off when they feel like it.
+
+**What exists today, read 2026-09-15.** Folding is entry 64's rule: `UI:FoldDepth`
+(`addons/Family_UI/Window.lua`) folds nothing where a page fits, and otherwise folds every block on
+the page to the deepest depth from ten down to three (`UI.FOLD_LEAST`) that brings it back under the
+rows `UI:RowsThatFit` measures. Four lists call it: the possessions search
+(`Family_UI/Contents.lua`), the whole-family reputations and quests (`Family_UI/Character.lua`, two
+calls), and the Crafting set (`Family_UI/Summary.lua`, `UI.CRAFTING_PEOPLE`). A folded block ends in
+*and N more* through `UI:ShowAtMost`. There is no setting for it: nothing in Options or Extras reaches
+`FoldDepth`.
+
+**The natural shape**, not yet decided: one option read inside `UI:FoldDepth`, answering *nothing
+folds* when off, so the four callers change together and none is missed. Open: whether it lives in
+Options or Extras, whether it is one switch or per list, and whether it is remembered - Family's
+rule elsewhere is that a preference is remembered and a question asked once is not.
