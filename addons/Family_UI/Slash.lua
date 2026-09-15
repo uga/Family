@@ -1666,7 +1666,11 @@ local function auctionCategories()
 			local subs = type(category.subCategories) == "table" and category.subCategories or {}
 			local names = {}
 			for _, sub in ipairs(subs) do
+				-- A third level, where there is one, as a count in brackets: Mists answered
+				-- Armor > Cloth with eleven filters, which reads like one per slot beneath it.
+				local deeper = type(sub.subCategories) == "table" and #sub.subCategories or 0
 				names[#names + 1] = tostring(sub.name) .. " " .. filterOf(sub)
+					.. (deeper > 0 and (" [" .. deeper .. "]") or "")
 			end
 			Family:Print("    %2d %s |cff888888%s|r  %s", index, tostring(category.name),
 				filterOf(category), table.concat(names, ", "))

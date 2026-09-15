@@ -5294,3 +5294,19 @@ opens their own mailbox.
 readable about the letter (sender, money, attachments) at that moment, since the letter leaves the
 inbox. And whether the sender is a family member, which decides whether there is anyone to record it
 against.
+
+**83, the probe read on Mists, 2026-09-15** (two runs, pasted by Alberto):
+- `Blizzard_AuctionUI` false, `Blizzard_AuctionHouseUI` true; `AuctionCategories` a table of **12**, in
+  the house's order: Weapons, Armor, Container, Consumable, Glyphs, Trade Goods, Recipe, Gems,
+  Miscellaneous, Quest Items, Battle Pets, WoW Token.
+- Each category and subcategory carries `filters` of `classID/subClassID/inventoryType`. A category's
+  filters are its subcategories' together (Weapons 17, seventeen subcategories). Armor's subcategories
+  carry several each - Cloth 11, Leather 10, Mail 10, Plate 10, Miscellaneous 6 with inventory type 1 -
+  which reads as a third level of slots; the probe now prints a third level's count in brackets.
+  WoW Token has no filters. Companion Pets sits under Battle Pets with the filter `15/2`, a
+  Miscellaneous class, so a category is not always one class.
+- `GetItemInfoInstant` classed **11,050 of 11,050** stored items, in **47.5 ms** and **56.3 ms**.
+- **Still to read:** Era and TBC; a Mists run straight after logging in, before the auction window has
+  been opened, to see whether the list exists without it; the third level now printed; and how an
+  item's slot (`GetItemInfoInstant` answers `INVTYPE_*` words) is compared with a filter's numeric
+  `inventoryType`.

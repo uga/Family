@@ -36243,7 +36243,8 @@ print("the button on the auction window")
 			FamilyDB.auctionPrices
 		_G.AuctionCategories = {
 			{ name = "Weapons", filters = { { classID = 2 } }, subCategories = {
-				{ name = "One-Handed Axes", filters = { { classID = 2, subClassID = 0 } } },
+				{ name = "One-Handed Axes", filters = { { classID = 2, subClassID = 0 } },
+					subCategories = { { name = "Head" }, { name = "Chest" } } },
 			} },
 			{ name = "Consumables", filters = { { classID = 0 } } },
 		}
@@ -36261,7 +36262,7 @@ print("the button on the auction window")
 
 		check("the category probe lists the house's categories in the client's order",
 			said:find("1 Weapons", 1, true) ~= nil and said:find("2 Consumables", 1, true) ~= nil
-				and said:find("One-Handed Axes 2/0/nil (1)", 1, true) ~= nil, said:sub(1, 400))
+				and said:find("One-Handed Axes 2/0/nil (1) [2]", 1, true) ~= nil, said:sub(1, 400))
 		check("and says how many stored items the client could class, and which",
 			said:find("1 / 2", 1, true) ~= nil and said:find("2589=7/5", 1, true) ~= nil,
 			said:sub(1, 400))
