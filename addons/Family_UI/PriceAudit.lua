@@ -34,18 +34,24 @@ local ROW_HEIGHT = 20
 local PAGE_ROWS = 19
 local WHEEL_ROWS = 3
 
--- Item, market, the price of one, the price it replaced, when it was read, then the two buttons.
--- 656 for the columns: at 680 the Ban buttons stood past the window's right edge on TBC
--- 2026-09-15, and Market and Replaced had the room to give - "Thunderstrike, Alliance" is the
--- longest a market reads, and a price of one is never wider than the column beside it.
+-- Item, market, the price of one, the price it replaced, when it was read, then the two buttons,
+-- then the scroll bar.
+--
+-- Measured off two screenshots from TBC, 2026-09-15. At 680 for the columns the Ban buttons stood
+-- past the window's right edge; at 656, with Market cut to 128, *Thunderstrike, Alliance* was cut
+-- off. So Market goes back to 140, and the room for it and for a scroll bar comes out of the price
+-- columns - this page draws its figures in the small font, where five figures of gold take about
+-- a hundred pixels, not the hundred and fourteen the Summary's larger one needs - out of the
+-- buttons, and twelve out of Item, whose longest names the tooltip carries whole.
 local COLUMNS = {
-	{ key = "item", label = L["Item"], width = 230, justify = "LEFT" },
-	{ key = "market", label = L["Market"], width = 128, justify = "LEFT" },
-	{ key = "price", label = L["Price of one"], width = 122, justify = "RIGHT" },
+	{ key = "item", label = L["Item"], width = 216, justify = "LEFT" },
+	{ key = "market", label = L["Market"], width = 140, justify = "LEFT" },
+	{ key = "price", label = L["Price of one"], width = 110, justify = "RIGHT" },
 	{ key = "was", label = L["Replaced"], width = 110, justify = "RIGHT" },
 	{ key = "seen", label = L["Seen"], width = 66, justify = "RIGHT" },
 }
-local BUTTON_W = 50
+local BUTTON_W = 45
+local BAR_ROOM = 24
 
 local function marketLabel(where)
 	local realm, side = tostring(where):match("^(.-)\30(.*)$")
@@ -131,14 +137,14 @@ function UI:BuildPriceAudit(frame)
 		local heading
 		if column.key == "price" then
 			heading = CreateFrame("Button", nil, panel)
-			heading:SetSize(column.width, 18)
+			heading:SetSize(column.width - 8, 18)
 			heading.text = heading:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 			heading.text:SetAllPoints()
 			heading.text:SetJustifyH(column.justify)
 			heading:SetFontString(heading.text)
 		else
 			heading = { text = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall") }
-			heading.text:SetSize(column.width, 18)
+			heading.text:SetSize(column.width - 8, 18)
 			heading.text:SetJustifyH(column.justify)
 		end
 		local anchor = heading.SetPoint and heading or heading.text
@@ -158,12 +164,32 @@ function UI:BuildPriceAudit(frame)
 	body:SetPoint("TOPLEFT", 8, -80)
 	body:SetPoint("BOTTOMRIGHT", -8, 0)
 
+	-- **The game's own scroll bar**, asked for 2026-09-15: on thousands of prices the wheel takes
+	-- a long time to reach the middle or the end. `FauxScrollFrameTemplate` is the bar the client's
+	-- own browse list is built on (`BrowseScrollFrame`, backlog 62), so it is the client drawing
+	-- its own textures and not a path Family asserts. It scrolls nothing itself; it holds the
+	-- offset, and the page is drawn from it. Made before the rows so the rows, which stop short of
+	-- it, sit above it; and only where the client has the template and its three functions -
+	-- without them the wheel and the arrows are the whole of it, as they were.
+	local bar
+	if type(_G.FauxScrollFrame_Update) == "function"
+		and type(_G.FauxScrollFrame_GetOffset) == "function"
+		and type(_G.FauxScrollFrame_OnVerticalScroll) == "function" then
+		local ok, made = pcall(CreateFrame, "ScrollFrame", "FamilyPriceAuditScroll", body,
+			"FauxScrollFrameTemplate")
+		if ok then bar = made end
+	end
+	if bar then
+		bar:SetPoint("TOPLEFT", 0, 0)
+		bar:SetPoint("BOTTOMRIGHT", body, "TOPRIGHT", -BAR_ROOM, -PAGE_ROWS * ROW_HEIGHT)
+	end
+
 	local rows = {}
 	for index = 1, PAGE_ROWS do
 		local row = CreateFrame("Frame", nil, body)
 		row:SetHeight(ROW_HEIGHT)
 		row:SetPoint("TOPLEFT", 0, -(index - 1) * ROW_HEIGHT)
-		row:SetPoint("RIGHT", body, "RIGHT", 0, 0)
+		row:SetPoint("RIGHT", body, "RIGHT", -BAR_ROOM, 0)
 
 		-- **Red behind a row that looks wrong**, rather than a colour on one of its numbers:
 		-- the figures are white on every row in Family, and a suspect is a fact about the row.
@@ -295,6 +321,14 @@ function UI:BuildPriceAudit(frame)
 		if offset > math.max(total - PAGE_ROWS, 0) then offset = math.max(total - PAGE_ROWS, 0) end
 		if offset < 0 then offset = 0 end
 
+		-- The bar is told how long the list is and where the page stands in it.
+		if bar then
+			Family:TryCall(FauxScrollFrame_Update, bar, total, PAGE_ROWS, ROW_HEIGHT)
+			if (tonumber((Family:TryCall(FauxScrollFrame_GetOffset, bar))) or 0) ~= offset then
+				Family:TryCall(bar.SetVerticalScroll, bar, offset * ROW_HEIGHT)
+			end
+		end
+
 		empty:SetShown(total == 0)
 		count:SetText(total == 0 and "" or string.format(L["%d-%d of %d"], offset + 1,
 			math.min(offset + PAGE_ROWS, total), total))
@@ -403,6 +437,18 @@ function UI:BuildPriceAudit(frame)
 		offset = offset + PAGE_ROWS
 		panel:Draw()
 	end)
+
+	-- Dragging the bar, or its own arrows, moves the page. The template works the offset out from
+	-- where it was dragged to; the page is drawn from that.
+	if bar then
+		bar:SetScript("OnVerticalScroll", function(self, value)
+			FauxScrollFrame_OnVerticalScroll(self, value, ROW_HEIGHT, function()
+				offset = tonumber((Family:TryCall(FauxScrollFrame_GetOffset, self))) or 0
+				panel:Draw()
+			end)
+		end)
+	end
+	panel.__bar = bar
 
 	panel:EnableMouseWheel(true)
 	panel:SetScript("OnMouseWheel", function(_, delta)

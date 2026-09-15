@@ -37646,6 +37646,44 @@ print("auditing the auction prices Family collected (backlog 81)")
 		audit.__rebuilds == rebuilt and visibleText("4-22 of 47"),
 		tostring(audit.__rebuilds - rebuilt) .. " rebuild(s)")
 
+	-- **The scroll bar**, where the client has the template the browse list is built on. Modelled
+	-- as the client's own FrameXML behaves: the offset lives on the frame, dragging sets it from
+	-- the value divided by the row height, and the update is told the list's length.
+	do
+		local realUpdate, realGet, realOn = _G.FauxScrollFrame_Update, _G.FauxScrollFrame_GetOffset,
+			_G.FauxScrollFrame_OnVerticalScroll
+		_G.FauxScrollFrame_Update = function(f, total) f.__fauxTotal = total end
+		_G.FauxScrollFrame_GetOffset = function(f) return rawget(f, "offset") or 0 end
+		_G.FauxScrollFrame_OnVerticalScroll = function(f, value, height, update)
+			f.offset = math.floor(value / height + 0.5)
+			update(f)
+		end
+
+		local heldPanel = Family.UI.__priceAudit
+		local host = CreateFrame("Frame", nil, UIParent)
+		local withBar = Family.UI:BuildPriceAudit(host)
+		withBar:Show()
+		withBar:Reload()
+		local bar = withBar.__bar
+		check("where the client has the browse list's scroll template, the page has a bar",
+			bar ~= nil and bar.__fauxTotal == 47, tostring(bar and bar.__fauxTotal))
+		if bar then
+			bar.__scripts.OnVerticalScroll(bar, 28 * 20)
+			local says
+			for _, f in ipairs(fontStrings) do
+				if f.__parent == withBar and type(f.__text) == "string" and f.__text:find(" of 47", 1, true) then
+					says = f.__text
+				end
+			end
+			check("and dragging it moves the page to where it was dragged",
+				says == "29-47 of 47", tostring(says))
+		end
+
+		Family.UI.__priceAudit = heldPanel
+		_G.FauxScrollFrame_Update, _G.FauxScrollFrame_GetOffset = realUpdate, realGet
+		_G.FauxScrollFrame_OnVerticalScroll = realOn
+	end
+
 	fireClick(views.switches)
 	check("the switches come back", visibleText("Read prices at the auction house")
 		and audit.__shown == false)

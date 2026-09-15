@@ -1,0 +1,6 @@
+name: the audit's scroll bar is never told how long the list is
+file: addons/Family_UI/PriceAudit.lua
+--- old
+			Family:TryCall(FauxScrollFrame_Update, bar, total, PAGE_ROWS, ROW_HEIGHT)
+--- new
+			Family:TryCall(FauxScrollFrame_Update, bar, 0, PAGE_ROWS, ROW_HEIGHT)
