@@ -37734,6 +37734,94 @@ print("auditing the auction prices Family collected (backlog 81)")
 	check("and steps back round to all of them",
 		#auditRows() == 8 and buttonLabelled("All markets") ~= nil, tostring(#auditRows()))
 
+	----------------------------------------------------------------------------------------
+	-- Backlog 83: the auction house's categories, written down when the client has them and
+	-- matched by class, subclass and slot, as all three clients answered on 2026-09-15.
+	----------------------------------------------------------------------------------------
+	do
+		local realCats, realInstant, realItem = _G.AuctionCategories, _G.GetItemInfoInstant, _G.C_Item
+		local heldCats = FamilyDB.auctionCategories
+		FamilyDB.auctionCategories = nil
+
+		fireClick(views.prices)
+		check("with no auction house opened on this client, the category picker says there is no list",
+			audit.__categoryButton.__text == "No categories yet"
+				and audit.__categoryButton:IsEnabled() == false,
+			tostring(audit.__categoryButton.__text))
+
+		local CLASS = { [1001] = { 4, 1, 16 }, [1002] = { 4, 2, 5 }, [1003] = { 2, 7, 13 },
+			[1004] = { 0, 5, 0 }, [1006] = { 4, 1, 1 } }
+		_G.GetItemInfoInstant = function(id)
+			local c = CLASS[id]
+			if not c then return nil end
+			return id, "type", "sub", "INVTYPE", 1, c[1], c[2]
+		end
+		_G.C_Item = { GetItemInventoryTypeByID = function(id) return CLASS[id] and CLASS[id][3] end }
+		_G.AuctionCategories = {
+			{ name = "Weapons", filters = { { classID = 2 } }, subCategories = {
+				{ name = "One-Handed Swords", filters = { { classID = 2, subClassID = 7 } } },
+				{ name = "Daggers", filters = { { classID = 2, subClassID = 15 } } },
+			} },
+			{ name = "Armor", filters = { { classID = 4 } }, subCategories = {
+				{ name = "Cloth", filters = { { classID = 4, subClassID = 1, inventoryType = 5 },
+					{ classID = 4, subClassID = 1, inventoryType = 16 } } },
+				{ name = "Leather", filters = { { classID = 4, subClassID = 2, inventoryType = 5 } } },
+			} },
+			{ name = "Consumable", filters = { { classID = 0 } } },
+		}
+
+		check("the client's list is written down for this client and language, in its order",
+			Family.Auctions:RememberCategories() and #Family.Auctions:Categories() == 3
+				and Family.Auctions:Categories()[2].name == "Armor"
+				and Family.Auctions:Categories()[2].subs[1].name == "Cloth")
+		_G.AuctionCategories = nil
+		check("and read back when the auction window's addon is not loaded",
+			Family.Auctions:Categories() ~= nil and Family.Auctions:Categories()[1].name == "Weapons")
+
+		local cloth = Family.Auctions:Categories()[2].subs[1].filters
+		local leather = Family.Auctions:Categories()[2].subs[2].filters
+		check("an item is in a subcategory when its class, subclass and slot match one filter",
+			Family.Auctions:InCategory(1001, cloth) and not Family.Auctions:InCategory(1002, cloth)
+				and Family.Auctions:InCategory(1002, leather))
+		-- Cloth by class and subclass, but a slot this fixture's Cloth does not list.
+		check("and not when only the slot differs",
+			not Family.Auctions:InCategory(1006, cloth))
+
+		local function menuPick(label)
+			for _, f in ipairs(frames) do
+				if f.__parent == audit.__menu and f.__text == label and f.__shown ~= false then
+					fireClick(f)
+					return true
+				end
+			end
+			return false
+		end
+
+		fireClick(views.prices)
+		fireClick(audit.__categoryButton)
+		check("the category button lists the categories, all of them first",
+			audit.__menu.__shown ~= false and menuPick("Armor"))
+		listed = auditRows()
+		check("choosing a category leaves only its items",
+			#listed == 2 and audit.__subButton.__shown ~= false, tostring(#listed))
+		fireClick(audit.__subButton)
+		menuPick("Cloth")
+		listed = auditRows()
+		check("and a subcategory narrows it to that one",
+			#listed == 1 and listed[1].entry.variant == 1001, tostring(#listed))
+		fireClick(audit.__categoryButton)
+		menuPick("Weapons")
+		listed = auditRows()
+		check("choosing another category starts its subcategory over",
+			#listed == 3 and audit.__subButton.__text == "All subcategories", tostring(#listed))
+		fireClick(audit.__categoryButton)
+		menuPick("All categories")
+		check("and all categories brings every row back", #auditRows() == 8, tostring(#auditRows()))
+
+		_G.AuctionCategories, _G.GetItemInfoInstant, _G.C_Item = realCats, realInstant, realItem
+		FamilyDB.auctionCategories = heldCats
+	end
+
 	-- Delete, ban and lift, pressed as a player presses them.
 	local function rowFor(where, variant)
 		for _, row in ipairs(auditRows()) do
@@ -37779,9 +37867,9 @@ print("auditing the auction prices Family collected (backlog 81)")
 	for id = 2000, 2040 do FamilyDB.auctionPrices[A][id] = { p = id, at = now } end
 	fireClick(views.prices)
 	check("a long list is drawn a page at a time and says where it is",
-		#auditRows() == 19 and visibleText("1-19 of 48"), tostring(#auditRows()))
+		#auditRows() == 18 and visibleText("1-18 of 48"), tostring(#auditRows()))
 	fireClick(buttonLabelled(">"))
-	check("and the next page carries on from it", visibleText("20-38 of 48"))
+	check("and the next page carries on from it", visibleText("19-36 of 48"))
 
 	-- **Moving through the list draws; it does not choose the rows again.** Every notch of the
 	-- wheel used to filter and sort the whole store, which on 6,898 prices was lag you could feel
@@ -37790,7 +37878,7 @@ print("auditing the auction prices Family collected (backlog 81)")
 	audit.__scripts.OnMouseWheel(audit, -1)
 	fireClick(buttonLabelled("<"))
 	check("scrolling and paging redraw the page without sorting the store again",
-		audit.__rebuilds == rebuilt and visibleText("4-22 of 48"),
+		audit.__rebuilds == rebuilt and visibleText("4-21 of 48"),
 		tostring(audit.__rebuilds - rebuilt) .. " rebuild(s)")
 
 	-- **The scroll bar**, where the client has the template the browse list is built on. Modelled
@@ -37823,7 +37911,7 @@ print("auditing the auction prices Family collected (backlog 81)")
 				end
 			end
 			check("and dragging it moves the page to where it was dragged",
-				says == "29-47 of 48", tostring(says))
+				says == "29-46 of 48", tostring(says))
 		end
 
 		Family.UI.__priceAudit = heldPanel

@@ -1,6 +1,6 @@
 name: the bans-only box lets every row through
 file: addons/Family_UI/PriceAudit.lua
 --- old
-				and (not bansOnly or entry.banned ~= nil) then
+				and (not bansOnly or entry.banned ~= nil)
 --- new
-				and true then
+				and true

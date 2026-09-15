@@ -1,0 +1,6 @@
+name: choosing a category narrows nothing
+file: addons/Family_UI/PriceAudit.lua
+--- old
+				and (not wantedFilters or Auctions:InCategory(entry.variant, wantedFilters)) then
+--- new
+				and true then

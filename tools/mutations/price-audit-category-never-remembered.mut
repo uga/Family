@@ -1,0 +1,6 @@
+name: the auction house's categories are never written down
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	if type(live) ~= "table" or #live == 0 or type(_G.FamilyDB) ~= "table" then return false end
+--- new
+	do return false end

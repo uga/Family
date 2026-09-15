@@ -30,8 +30,9 @@ local L = Family.L
 local Auctions = Family.Auctions
 
 local ROW_HEIGHT = 20
--- Nineteen: seventeen left two rows of room at the bottom of the page, seen on TBC 2026-09-15.
-local PAGE_ROWS = 19
+-- Nineteen after seventeen left two rows of room at the bottom of the page, seen on TBC 2026-09-15;
+-- eighteen since the category pickers took a line of their own above the headings (backlog 83).
+local PAGE_ROWS = 18
 local WHEEL_ROWS = 3
 
 -- Item, market, the price of one, the price it replaced, when it was read, then the two buttons,
@@ -83,6 +84,8 @@ function UI:BuildPriceAudit(frame)
 	local rowsData, shown = {}, {}
 	local offset = 0
 	local wantedMarket = nil
+	local wantedCategory, wantedSub = nil, nil
+	local categories = nil
 	local ascending = false
 
 	local panel = CreateFrame("Frame", nil, frame)
@@ -140,8 +143,57 @@ function UI:BuildPriceAudit(frame)
 
 	-- On the headings' line, over the buttons, where the filter row has run out of room.
 	local count = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-	count:SetPoint("TOPRIGHT", -8 - BAR_ROOM, -62)
+	count:SetPoint("TOPRIGHT", -8 - BAR_ROOM, -86)
 	count:SetJustifyH("RIGHT")
+
+	-- **The auction house's categories and subcategories, in its own order** (backlog 83). Two
+	-- buttons on a line of their own; each opens a list of what there is to choose from, the way
+	-- the house's own sidebar reads, and the second follows the first.
+	local categoryButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+	categoryButton:SetSize(220, 20)
+	categoryButton:SetPoint("TOPLEFT", 8, -58)
+
+	local subButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+	subButton:SetSize(220, 20)
+	subButton:SetPoint("LEFT", categoryButton, "RIGHT", 8, 0)
+
+	-- One list for both, drawn over the rows and closed by choosing or by pressing its button again.
+	local menu = CreateFrame("Frame", nil, panel)
+	menu:SetFrameStrata("DIALOG")
+	menu:Hide()
+	local menuBack = menu:CreateTexture(nil, "BACKGROUND")
+	menuBack:SetAllPoints()
+	paintAlert(menuBack, 0, 0, 0, 0.92)
+	local menuButtons = {}
+	local menuFor = nil
+
+	local function openMenu(owner, choices, pick)
+		if menu:IsShown() and menuFor == owner then
+			menu:Hide()
+			return
+		end
+		menuFor = owner
+		menu:ClearAllPoints()
+		menu:SetPoint("TOPLEFT", owner, "BOTTOMLEFT", 0, -2)
+		menu:SetSize(220, #choices * 18 + 4)
+		for index, choice in ipairs(choices) do
+			local button = menuButtons[index]
+			if not button then
+				button = CreateFrame("Button", nil, menu, "UIPanelButtonTemplate")
+				button:SetSize(216, 18)
+				button:SetPoint("TOPLEFT", 2, -2 - (index - 1) * 18)
+				menuButtons[index] = button
+			end
+			button:SetText(choice.label)
+			button:SetScript("OnClick", function()
+				menu:Hide()
+				pick(choice.value)
+			end)
+			button:Show()
+		end
+		for index = #choices + 1, #menuButtons do menuButtons[index]:Hide() end
+		menu:Show()
+	end
 
 	local previous = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
 	previous:SetSize(28, 20)
@@ -171,20 +223,20 @@ function UI:BuildPriceAudit(frame)
 			heading.text:SetJustifyH(column.justify)
 		end
 		local anchor = heading.SetPoint and heading or heading.text
-		anchor:SetPoint("TOPLEFT", x + 4, -60)
+		anchor:SetPoint("TOPLEFT", x + 4, -84)
 		if heading.SetText then heading:SetText(column.label) else heading.text:SetText(column.label) end
 		headings[column.key] = heading
 		x = x + column.width
 	end
 
 	local empty = panel:CreateFontString(nil, "ARTWORK", "GameFontDisable")
-	empty:SetPoint("TOPLEFT", 12, -84)
+	empty:SetPoint("TOPLEFT", 12, -108)
 	empty:SetText(L["No auction prices collected yet."])
 
 	-- The rows in a frame of their own. A row takes the mouse for its tooltip and spans the width,
 	-- and one sharing a parent with the heading and the page buttons would sit over them.
 	local body = CreateFrame("Frame", nil, panel)
-	body:SetPoint("TOPLEFT", 8, -80)
+	body:SetPoint("TOPLEFT", 8, -104)
 	body:SetPoint("BOTTOMRIGHT", -8, 0)
 
 	-- **The game's own scroll bar**, asked for 2026-09-15: on thousands of prices the wheel takes
@@ -306,12 +358,36 @@ function UI:BuildPriceAudit(frame)
 		if not stillThere then wantedMarket = nil end
 		marketButton:SetText(wantedMarket and marketLabel(wantedMarket) or L["All markets"])
 
+		-- The categories this client has written down, and which one is chosen. A list that has
+		-- changed under a choice - another client, another language - puts the choice back on all.
+		categories = Auctions:Categories()
+		local category = categories and wantedCategory and categories[wantedCategory] or nil
+		if not category then wantedCategory, wantedSub = nil, nil end
+		local subcategory = category and wantedSub and category.subs[wantedSub] or nil
+		if not subcategory then wantedSub = nil end
+
+		-- None written down yet: the list exists only once an auction window has been opened on
+		-- this client and language, and this says so in the few words a button holds.
+		if not categories then
+			categoryButton:SetText(L["No categories yet"])
+			categoryButton:Disable()
+		else
+			categoryButton:SetText(category and category.name or L["All categories"])
+			categoryButton:Enable()
+		end
+		subButton:SetText(subcategory and subcategory.name or L["All subcategories"])
+		subButton:SetShown(category ~= nil and #category.subs > 0)
+
+		local wantedFilters = subcategory and subcategory.filters or category and category.filters
+			or nil
+
 		local needle = (search:GetText() or ""):lower()
 		shown = {}
 		for _, entry in ipairs(rowsData) do
 			if (not wantedMarket or entry.market == wantedMarket)
 				and (not suspectsOnly or entry.suspect ~= nil)
-				and (not bansOnly or entry.banned ~= nil) then
+				and (not bansOnly or entry.banned ~= nil)
+				and (not wantedFilters or Auctions:InCategory(entry.variant, wantedFilters)) then
 				local keep = true
 				if needle ~= "" then
 					local name = storedName(entry.variant)
@@ -423,6 +499,34 @@ function UI:BuildPriceAudit(frame)
 		end)
 	end
 
+	categoryButton:SetScript("OnClick", function()
+		if not categories then return end
+		local choices = { { label = L["All categories"], value = false } }
+		for index, category in ipairs(categories) do
+			choices[#choices + 1] = { label = category.name, value = index }
+		end
+		openMenu(categoryButton, choices, function(value)
+			wantedCategory = value or nil
+			wantedSub = nil
+			offset = 0
+			panel:Refresh()
+		end)
+	end)
+
+	subButton:SetScript("OnClick", function()
+		local category = categories and wantedCategory and categories[wantedCategory]
+		if not category then return end
+		local choices = { { label = L["All subcategories"], value = false } }
+		for index, sub in ipairs(category.subs) do
+			choices[#choices + 1] = { label = sub.name, value = index }
+		end
+		openMenu(subButton, choices, function(value)
+			wantedSub = value or nil
+			offset = 0
+			panel:Refresh()
+		end)
+	end)
+
 	marketButton:SetScript("OnClick", function()
 		local known = markets()
 		local nextOne = nil
@@ -486,6 +590,7 @@ function UI:BuildPriceAudit(frame)
 	end
 	panel.__bar = bar
 	panel.__marketButton = marketButton
+	panel.__categoryButton, panel.__subButton, panel.__menu = categoryButton, subButton, menu
 
 	panel:EnableMouseWheel(true)
 	panel:SetScript("OnMouseWheel", function(_, delta)

@@ -39,6 +39,10 @@ is a decision rather than an afternoon of archaeology.
   markets. Somebody listing an item at an absurd
   price could make a character look worth a million gold; now you can see which item did it.
 
+- **Pick an auction house category and subcategory** to narrow the list, in the same order as the
+  auction house shows them. The list comes from the game itself, so open an auction house once on
+  each game version before it appears.
+
 - **Delete a price, or ban an item on one market.** A deleted price is read again on your next
   visit. A ban takes the item's price on that market out of Worth and recipe costs straight away,
   so a total it inflated goes back to normal. Family keeps reading the item's price while it is

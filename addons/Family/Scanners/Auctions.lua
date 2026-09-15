@@ -609,6 +609,114 @@ function Auctions:Audit()
 	return rows
 end
 
+--------------------------------------------------------------------------------------------
+-- The auction house's own categories (backlog 83)
+--
+-- Asked for 2026-09-15: a picker on the audit page for categories and subcategories, *listed in
+-- the same order as on the AH*. Read on all three clients the same day with `/family ah categories`:
+--
+--   * `AuctionCategories` is the house's list in its order, each category and subcategory carrying
+--     filters of classID / subClassID / inventoryType. Its names and order differ by client (Mists
+--     has Glyphs and Battle Pets, Era and TBC Projectile and Quiver), so nothing is shipped.
+--   * On Era and TBC it is nil until the auction window's own addon has loaded. So what it said is
+--     **written down** per client build and language, and read from there when it is not there -
+--     the arrangement the item-name store has. Family does not load that addon itself.
+--   * `GetItemInfoInstant` classed every stored item on all three clients in under 62 ms, and
+--     `C_Item.GetItemInventoryTypeByID` answers the slot as the number Armor's filters use.
+--------------------------------------------------------------------------------------------
+
+local function clientKey()
+	local _, _, _, interface = GetBuildInfo()
+	return tostring(interface) .. "/" .. tostring(Family.locale or "enUS")
+end
+
+local function copyFilters(filters)
+	local out = {}
+	for _, filter in ipairs(type(filters) == "table" and filters or {}) do
+		if type(filter) == "table" and filter.classID ~= nil then
+			out[#out + 1] = { c = filter.classID, s = filter.subClassID, i = filter.inventoryType }
+		end
+	end
+	return out
+end
+
+-- Copies the live list, when there is one, into `FamilyDB.auctionCategories[client]`. Only the two
+-- levels the picker has, names and filters: the client's own table carries functions and a third
+-- level nothing here reads.
+function Auctions:RememberCategories()
+	local live = _G.AuctionCategories
+	if type(live) ~= "table" or #live == 0 or type(_G.FamilyDB) ~= "table" then return false end
+
+	local list = {}
+	for _, category in ipairs(live) do
+		if type(category) == "table" and category.name then
+			local entry = { name = tostring(category.name), filters = copyFilters(category.filters),
+				subs = {} }
+			for _, sub in ipairs(type(category.subCategories) == "table" and category.subCategories or {}) do
+				if type(sub) == "table" and sub.name then
+					entry.subs[#entry.subs + 1] = { name = tostring(sub.name),
+						filters = copyFilters(sub.filters) }
+				end
+			end
+			list[#list + 1] = entry
+		end
+	end
+
+	FamilyDB.auctionCategories = FamilyDB.auctionCategories or {}
+	FamilyDB.auctionCategories[clientKey()] = list
+	return true
+end
+
+-- The list for this client and language: the live one written down first, so a list the client
+-- has changed is taken up the moment it is seen.
+function Auctions:Categories()
+	self:RememberCategories()
+	local held = type(_G.FamilyDB) == "table" and FamilyDB.auctionCategories
+	return type(held) == "table" and held[clientKey()] or nil
+end
+
+-- What kind of item a variant is, asked once a session each. Neither call waits on the server.
+local classCache = {}
+
+function Auctions:ClassOf(variant)
+	local id = Family:BaseItem(variant)
+	if not id then return nil end
+	local held = classCache[id]
+	if held then return held[1], held[2], held[3] end
+
+	local instant = (C_Item and type(C_Item.GetItemInfoInstant) == "function"
+		and C_Item.GetItemInfoInstant) or (type(_G.GetItemInfoInstant) == "function"
+		and _G.GetItemInfoInstant) or nil
+	if not instant then return nil end
+
+	local ok, _, _, _, _, _, classID, subClassID = pcall(instant, id)
+	if not ok or classID == nil then return nil end
+
+	local slot
+	if C_Item and type(C_Item.GetItemInventoryTypeByID) == "function" then
+		slot = tonumber((Family:TryCall(C_Item.GetItemInventoryTypeByID, id)))
+	end
+
+	classCache[id] = { classID, subClassID, slot }
+	return classID, subClassID, slot
+end
+
+-- Whether an item is in a category or subcategory: any one of its filters, where a filter with no
+-- subclass or no slot takes any.
+function Auctions:InCategory(variant, filters)
+	if type(filters) ~= "table" or #filters == 0 then return false end
+	local classID, subClassID, slot = self:ClassOf(variant)
+	if classID == nil then return false end
+
+	for _, filter in ipairs(filters) do
+		if filter.c == classID and (filter.s == nil or filter.s == subClassID)
+			and (filter.i == nil or filter.i == slot) then
+			return true
+		end
+	end
+	return false
+end
+
 -- Every market there is a price or a ban for, sorted, for the panel's filter.
 function Auctions:AuditMarkets()
 	local seen, out = {}, {}
@@ -2307,6 +2415,10 @@ end
 Family:OnDatabaseReady("auctions", function()
 	Family:RegisterEvent("AUCTION_HOUSE_SHOW", "auctions", function()
 		Auctions:ForgetVisit()
+
+		-- The window's own addon loads as it opens; its categories are written down a moment
+		-- later, once they are there (backlog 83).
+		Family:After(1, "auctions.categories", function() Auctions:RememberCategories() end)
 
 		-- Asking is what makes the answer arrive; reading without asking gets whatever
 		-- the last visit left behind. The newer house wants the same asking under another

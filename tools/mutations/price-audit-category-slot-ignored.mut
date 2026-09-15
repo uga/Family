@@ -1,0 +1,6 @@
+name: an item's slot is not compared with a filter's
+file: addons/Family/Scanners/Auctions.lua
+--- old
+			and (filter.i == nil or filter.i == slot) then
+--- new
+			then

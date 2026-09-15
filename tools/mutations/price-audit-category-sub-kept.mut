@@ -1,0 +1,7 @@
+name: a new category keeps the old category's subcategory
+file: addons/Family_UI/PriceAudit.lua
+--- old
+			wantedCategory = value or nil
+			wantedSub = nil
+--- new
+			wantedCategory = value or nil

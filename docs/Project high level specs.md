@@ -534,7 +534,10 @@ it replaced, or ten times the same item's median on the other markets Family has
 red. A price can be deleted, and the next visit reads a new one; an item can be **banned in one
 market**, which keeps its price there out of every figure Family works out - Worth, and what a recipe
 costs - until the ban is lifted by hand. Readings of a banned item go on being taken and are listed
-beside the ban, which is how somebody tells when it can be lifted; the page can show the bans alone. Holding **CTRL** over a stack in your bags adds what
+beside the ban, which is how somebody tells when it can be lifted; the page can show the bans alone.
+It can also be narrowed to one of the auction house's own categories and subcategories, listed in
+the house's order and named as that client names them; the list is the client's, remembered from
+the last time an auction window was opened on that client and language. Holding **CTRL** over a stack in your bags adds what
 the whole stack sells for; the count comes
 from the slot the pointer is on, and is used only where that slot really holds the item the
 tooltip is describing.

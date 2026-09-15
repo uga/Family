@@ -5250,7 +5250,7 @@ folds* when off, so the four callers change together and none is missed. Open: w
 Options or Extras, whether it is one switch or per list, and whether it is remembered - Family's
 rule elsewhere is that a preference is remembered and a question asked once is not.
 
-## 83. The audit page: pick an auction house category and subcategory
+## 83. The audit page: pick an auction house category and subcategory — BUILT 2026-09-15, not yet seen in game
 
 Asked by Alberto 2026-09-15, from the first look at backlog 81's page: a picker for the auction
 house's categories and subcategories, **listed in the same order the auction house lists them**.
@@ -5329,3 +5329,17 @@ open):
   on, and whether the client offers `C_Item.GetItemInventoryTypeByID` or `Enum.InventoryType` to turn
   an item's `INVTYPE_*` word into that number. The third-level count is no longer needed for a
   two-level picker.
+
+**83, the slots, read on all three clients 2026-09-15:** Armor's subcategories filter on the same slot
+numbers everywhere (Miscellaneous 1 2 4 11 12 23; Cloth 1 3 5 6 7 8 9 10 16 20; Leather, Mail and
+Plate the same without 16), and all three offer `C_Item.GetItemInventoryTypeByID`, whose answers
+matched the `INVTYPE_*` words (feet 8, wrist 9, chest 5, hand 10, neck 2, head 1, shoulder 3, waist 6).
+
+**Built 2026-09-15.** `Auctions:RememberCategories` writes the two levels of `AuctionCategories` into
+`FamilyDB.auctionCategories[interface/locale]` a second after the auction window opens and whenever
+the page is drawn with the list loaded; `Auctions:Categories` reads it back. `Auctions:ClassOf` asks
+`GetItemInfoInstant` and `C_Item.GetItemInventoryTypeByID` once a session per item, and
+`Auctions:InCategory` matches any one filter. The page has a category and a subcategory button on a
+line of their own, each opening a list in the house's order; the page is 18 rows since. Checks under
+*auditing the auction prices Family collected*, mutations `price-audit-category-*`. **Owed: a look in
+the game** on each client, and the lists' length on Mists (Weapons has seventeen subcategories).
