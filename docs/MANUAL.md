@@ -111,13 +111,16 @@ The same is true one step further out. A character a linked family shares with y
 | **minimap button**, left-click | opens Family on the summary |
 | **minimap button**, right-click | opens the options |
 | **minimap button**, drag | moves it around the edge of the minimap |
-| any **data broker** bar | the same, with the family's money on it |
-| **shift-click** the button or the broker | changes what the money counts |
+| any **data broker** bar | the same, with money and bag space on it |
+| **shift-click** the button or the broker | changes what the bar counts |
 
-The money **shift-click** cycles through three answers: the whole family, everybody on this
-side of this realm, and the character you are playing. The member count beside it narrows with
-it, and the tooltip says which of the three you are looking at whenever it is not the whole
-family. A middle click does the same, for the hands that prefer it.
+The bar starts on **the character you are playing**: a bag icon with their bag space as free
+of total, *16/76*, then their money. The bag figure counts ordinary bag slots, the same ones as
+the summary's bag columns, and it appears once their bags have been read. **Shift-click** goes on
+to **the whole family**, then to **everybody on this side of this realm**, then back to the
+character. Those two show a group icon and the number of characters counted, in place of the
+bags. The tooltip always says which of the three the bar is showing. A middle click does the
+same as shift-click, for the hands that prefer it; whichever you leave it on is remembered.
 
 Three rather than two, because a grand total across every realm is a number nobody can spend:
 two sides of one realm share no bank, no mailbox and no auction house. The warning about mail
