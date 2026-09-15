@@ -29,6 +29,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 4.0.0 — 2026-09-15
+
 ### Auction prices you can check
 
 - **Extras has an Auction prices page** listing every price Family has collected, from every
