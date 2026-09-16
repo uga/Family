@@ -966,10 +966,24 @@ function sheet:LayOutMoney(width, y)
 	local silverWidest = widest("|cffffffff", SILVER_COIN)
 	local copperWidest = widest("|cffffffff", COPPER_COIN)
 
+	-- What a hundred pixels of picture actually draws here, which on Era is 94.5 of them. The
+	-- padding asks for what it wants divided by this, or every place comes out a twentieth
+	-- short - the fault this section was written to find, and found.
+	local ratio = (widthOf("|cffffffff88|r" .. string.format("|T%s:1:100|t", SPACER))
+		- widthOf("|cffffffff88|r")) / 100
+	if not (ratio > 0.5 and ratio < 2) then ratio = 1 end
+
+	local ratioLine = nextText("GameFontDisableSmall")
+	ratioLine:SetPoint("TOPLEFT", 2, -y)
+	ratioLine:SetText(string.format("%sa picture draws |r%s%.3f|r%s of the width it is asked "
+		.. "for, so the padding asks for what it wants divided by that|r",
+		GREY, GREEN, ratio, GREY))
+	y = y + 18
+
 	local function piece(colour, figure, coin, holdAt, pad)
 		local text = string.format("%s%s|r%s", colour, figure, coin)
 		if not pad then return text end
-		local short = math.floor(holdAt - widthOf(text))
+		local short = math.floor(((holdAt - widthOf(text)) / ratio) + 0.5)
 		if short >= 1 then
 			return string.format("|T%s:1:%d|t", SPACER, short) .. text
 		end

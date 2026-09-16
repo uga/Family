@@ -139,7 +139,23 @@ fontMeta.__index = function(_, key)
 				-- written that way, and the icon sheet measured one at twelve pixels in a
 				-- Summary cell on all three clients - which counted as nothing here would
 				-- have let every money column pass with a coin's worth of room it lacks.
-				if width == 0 then width = height ~= 0 and height or 12 end
+				-- **A width asked for is not the width drawn**, measured on Era through the
+				-- icon sheet 2026-09-16: a picture asked for twenty pixels came back as 18.9,
+				-- in every shape of the markup that works at all. A stub that drew exactly what
+				-- it was asked could not tell a padding that asks this client what it really
+				-- draws from one that trusts the number - and trusting it is what put the
+				-- padded column out of line in the game (backlog 88).
+				--
+				-- Only where a width is named, because that is the case that was measured. A
+				-- picture given no width is square at the height of the text, and the sheet
+				-- measured one of those at twelve pixels in a Summary cell on all three
+				-- clients - the assumption the line below has always carried.
+				if width == 0 then
+					width = height ~= 0 and height or 12
+				else
+					width = width * 0.945
+				end
+
 				pixels = pixels + width
 				return ""
 			end)
@@ -24659,6 +24675,35 @@ print("money lines up by gold, silver and copper")
 	check("the picture is Family's own, and a pixel tall so no line grows",
 		paddedNarrow:find("|TInterface\\AddOns\\Family_UI\\Textures\\Spacer:1:",
 			1, true) ~= nil, paddedNarrow)
+
+	-- **The width asked for is not the width drawn, and the padding knows it.** Measured on
+	-- Era: a picture asked for 20 pixels draws 18.9. So the markup has to ask for more than the
+	-- place is short by, and exactly enough more. Worked out here from the same measurements
+	-- rather than read back from the thing under test; a padding that trusted the number would
+	-- be short by a twentieth of every pad, which is what Alberto saw on the sheet.
+	local asked = tonumber(paddedNarrow:match("Textures\\Spacer:1:(%d+)|t"))
+	measure:SetText(Family.UI:Money(41519123):match("^[^ ]+ ([^ ]+) ") or "")
+	local silverHas = measure:GetStringWidth() or 0
+	measure:SetText("|cffffffff88|r"
+		.. (Family.UI:Money(0):match("(|T[^|]*SilverIcon[^|]*|t)") or ""))
+	local silverWidest = measure:GetStringWidth() or 0
+	local shortBy = silverWidest - silverHas
+
+	check("the padding asks for more than the place is short by, since the client draws less",
+		asked ~= nil and asked == math.floor((shortBy / 0.945) + 0.5) and asked > shortBy,
+		tostring(asked) .. " asked for a shortfall of " .. string.format("%.2f", shortBy))
+
+	-- And what the padding does with an answer it cannot use. A client that draws nothing for a
+	-- picture would otherwise be divided by nought, and one that answers ten times what was
+	-- asked would blow every figure out; both are left at 1, which writes money as it always
+	-- was. The game cannot be made to answer either, so the reading is turned into the number
+	-- in a function of its own and the function is asked here.
+	local ratioFrom = Family.UI.__SpacerRatioFrom
+	check("a client that answers sensibly is believed, and one that does not is left alone",
+		ratioFrom(94.5, 100) == 0.945 and ratioFrom(0, 100) == 1
+			and ratioFrom(1000, 100) == 1 and ratioFrom(-5, 100) == 1,
+		table.concat({ ratioFrom(94.5, 100), ratioFrom(0, 100), ratioFrom(1000, 100),
+			ratioFrom(-5, 100) }, " | "))
 
 	check("and anything that is not money comes back as it was",
 		Family.UI:MoneyPadded("max level") == "max level"

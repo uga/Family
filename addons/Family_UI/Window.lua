@@ -1401,6 +1401,43 @@ local SPACER = "Interface\\AddOns\\Family_UI\\Textures\\Spacer"
 
 local tooltipMeasure, tooltipWidest = nil, {}
 
+-- **How much of a width asked for is a width drawn.** Measured on Era 2026-09-16 through the
+-- icon sheet: a picture asked for twenty pixels drew 18.9 of them, every time and in three of
+-- the four shapes the markup takes - a constant, and nothing to do with the picture. So a place
+-- padded by the figure it was short by came out short by a twentieth of it, which is what
+-- Alberto saw on the sheet: *the padded column is NOT well ligned up*.
+--
+-- Asked rather than assumed, and asked of this client: the ratio is whatever this one answers,
+-- and a client that answers honestly gets 1. The one shape not used is a height of nought - the
+-- text's own height, which every other picture in Family asks for - because there the width
+-- field means something else: twenty came back as 236.6 pixels.
+local spacerScale
+
+-- The reading, turned into the number the padding multiplies by. A client that draws nothing
+-- for a picture, or answers something wild, is left alone at 1 rather than made to divide by
+-- nought: the figures are then written exactly as they were before any of this.
+--
+-- Its own function so that it can be asked the questions the game cannot be made to ask - what
+-- happens when the answer is nought, or ten times what was requested.
+local function ratioFrom(drawn, asked)
+	if drawn > asked * 0.5 and drawn < asked * 2 then return drawn / asked end
+	return 1
+end
+
+UI.__SpacerRatioFrom = ratioFrom
+
+local function spacerRatio(ruler)
+	if spacerScale then return spacerScale end
+
+	local bare = ruler("|cffffffff88|r") or 0
+	local asked = 100
+	local drawn = (ruler("|cffffffff88|r" .. string.format("|T%s:1:%d|t", SPACER, asked)) or 0)
+		- bare
+
+	spacerScale = ratioFrom(drawn, asked)
+	return spacerScale
+end
+
 -- A ruler in the tooltip's own font, made once. Hidden, and parented to nothing that is drawn:
 -- it exists to be measured and never to be read.
 local function tooltipRuler()
@@ -1437,7 +1474,13 @@ function UI:MoneyPadded(text)
 			tooltipWidest[key] = widest
 		end
 
-		local pad = math.floor(tooltipWidest[key] - (ruler(pieces[index]) or 0))
+		-- What the place is short by, then what to ask for so that much is drawn: the client
+		-- draws a fraction of what the markup names, and the fraction is this client's own.
+		-- Rounded to the nearest pixel rather than down - a width is whole pixels, and always
+		-- truncating loses most of one on every place.
+		local short = tooltipWidest[key] - (ruler(pieces[index]) or 0)
+		local pad = math.floor((short / spacerRatio(ruler)) + 0.5)
+
 		out = out .. " "
 			.. (pad >= 1 and string.format("|T%s:1:%d|t", SPACER, pad) or "")
 			.. pieces[index]

@@ -5520,6 +5520,22 @@ check reads a figure's shape as before. Mutations `money-string-places-never-pad
 `money-spacer-as-tall-as-the-text`, all caught; five older `tooltip-*` and `coins-tooltip-*` cases
 re-anchored on the new call.
 
+**The padding is calibrated against the client, 2026-09-16.** The first build asked for exactly the
+width a place was short by, and Alberto read the sheet on Era: *the padded column is NOT well ligned
+up*. The sheet, rewritten to measure instead of to show, gave the reason - **a picture asked for 20
+pixels draws 18.9**, 0.945 on every shape of the markup that works - and also ruled out the
+text-height form, where 20 came back as 236.6. So `spacerRatio` reads a hundred pixels of picture
+back once per session and the padding asks for what it wants divided by that, rounded to the nearest
+pixel rather than down. `UI.__SpacerRatioFrom` turns a reading into that number on its own so the
+answers the game cannot be made to give - nought, ten times what was asked - can be checked; both are
+left at 1, which writes money exactly as it was written before. The harness stub now draws 0.945 of
+any width it is named, measured on Era, so a padding that trusts its own number is caught. L-103.
+
+**Seen working in the game 2026-09-16, on Era**, after the anchoring fix: the summary's Money and
+Worth, the Activity set's Bid value and Buyout, the Extras auction prices page, and an item tooltip's
+*Made with*, *Total*, *Sell price* and *Auction*. (*Sell price* had looked missing; the prices switch
+was off.)
+
 **Owed, and the one thing no check can answer: a screenshot.** `/iconsheet` on Era, TBC and Mists, at
 *The spacer: do the padded coins line up, and is it invisible?* - four figures drawn padded and then
 plain. What it has to show: nothing visible where the spacer is, no green marker, and the padded

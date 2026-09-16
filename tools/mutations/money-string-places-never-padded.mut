@@ -1,6 +1,6 @@
 name: a money figure drawn as one string is written without its places held apart
 file: addons/Family_UI/Window.lua
 --- old
-		local pad = math.floor(tooltipWidest[key] - (ruler(pieces[index]) or 0))
+		local short = tooltipWidest[key] - (ruler(pieces[index]) or 0)
 --- new
-		local pad = 0
+		local short = 0

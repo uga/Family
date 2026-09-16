@@ -1,0 +1,6 @@
+name: the padding trusts the width it asks for rather than what the client draws
+file: addons/Family_UI/Window.lua
+--- old
+		local pad = math.floor((short / spacerRatio(ruler)) + 0.5)
+--- new
+		local pad = math.floor(short)

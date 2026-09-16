@@ -1,0 +1,7 @@
+name: a client that draws nothing for a picture is taken at its word and the figures widen
+file: addons/Family_UI/Window.lua
+--- old
+	if drawn > asked * 0.5 and drawn < asked * 2 then return drawn / asked end
+	return 1
+--- new
+	return drawn / asked

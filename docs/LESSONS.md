@@ -3498,6 +3498,27 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-103 — a width asked for in markup is not the width the client draws
+
+**2026-09-16.** Backlog 88 holds a money place inside a tooltip line with a picture of the missing
+width: `|TSpacer:1:9|t` for nine pixels. Alberto read the icon sheet on Era and said the padded
+column was not lined up, and the sheet - made to measure rather than to show - answered why: **a
+picture asked for twenty pixels draws 18.9 of them**, a constant 0.945 on every shape of the markup
+that works at all. Every place was therefore a twentieth of its padding short. The same reading found
+that a picture given a height of nought - the text's own height, which every other picture in Family
+asks for - treats the width field as something else entirely: twenty came back as 236.6 pixels.
+
+**What now catches it.** The padding measures the client once - a hundred pixels of picture, read
+back - and asks for what it wants divided by that; the harness stub draws 0.945 of any width it is
+named, so a padding that trusts the number is caught, and a check reads the number out of the markup
+and compares it with the shortfall. Mutations `money-padding-trusts-the-width-it-asks-for` and
+`money-padding-calibrated-on-nothing`.
+
+**The rule, which is this project's own rule wearing a new hat: a number handed to the client is a
+request, not a measurement.** Ask what came of it and read the answer back. Where the client cannot
+be asked at all - whether a texture exists - the icon sheet and an eye; where it can, as here, the
+sheet should print the number rather than invite a judgement about a column of coins.
+
 ## L-102 — every width was right and every place was drawn in the wrong spot
 
 **2026-09-16.** Backlog 88 gave a money figure's silver and copper a font string apiece, pinned to
