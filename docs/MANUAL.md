@@ -1047,7 +1047,9 @@ unusual bag addon costs you the line rather than a wrong number.
 **Over an action bar slot, press CTRL first.** Pressing it while the tooltip is already up does
 nothing there: action bar addons — Dominos, Bartender, and the game's own bars — use shift, control
 and alt to give a slot a second and third binding, so the key belongs to the bar. Hold it before the
-pointer arrives and the tooltip is built with it down.
+pointer arrives and the tooltip is built with it down. Family does not offer you the key there,
+since pressing it would do nothing; everywhere else — bags, the auction house, a vendor, a link in
+chat — the offer appears as it always did.
 
 **Hold CTRL anywhere else** — at the auction house, at a vendor, over a link somebody posted in
 chat — and Family answers a question nothing else can: *what is everything my characters are

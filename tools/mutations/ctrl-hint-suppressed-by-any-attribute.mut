@@ -1,0 +1,7 @@
+name: any frame carrying attributes at all is taken for an action bar slot
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if (Family:TryCall(owner.GetAttribute, owner, "action")) ~= nil then return true end
+	return (Family:TryCall(owner.GetAttribute, owner, "type")) == "action"
+--- new
+	return true

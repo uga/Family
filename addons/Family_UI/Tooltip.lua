@@ -127,6 +127,32 @@ end
 --
 -- **Declared above the first block that uses one**, which is the rule this file already carries for
 -- its caps: written below, a local is a global there and a global is nil (L-069).
+-- **Whether the key this hint offers can reach Family at all on this tooltip.**
+--
+-- Asked by Alberto 2026-09-16, having found the hint offered where it does nothing: *would it be
+-- possible to avoid printing the dim CTRL hint when hovering over unsupported slots?*
+--
+-- An action bar slot is the case. Family cannot repaint a tooltip it does not own, so the key works
+-- only where the frame's owner re-shows the tooltip when a modifier changes - a bag addon does
+-- (Bagnon was read doing it on Era), and a bar does not, because every action bar addon takes
+-- control, shift and alt for a slot's second and third binding. The hint is drawn for a reader, and
+-- a reader who presses the key there is told nothing at all.
+--
+-- **Read off the frame rather than by the addon's name.** A slot on any bar - Dominos, Bartender,
+-- the game's own - is a secure action button, and a secure action button is the one thing here that
+-- can be asked what it is: it carries the `action` attribute the client casts from. Nothing is
+-- assumed about which addon drew it.
+--
+-- The answer only ever removes the offer. With the key already held, the lines it asks for are
+-- drawn exactly as they are anywhere else - which is what a reader who holds it first sees.
+local function ownerKeepsModifiers(tooltip)
+	local owner = tooltip and tooltip.GetOwner and (Family:TryCall(tooltip.GetOwner, tooltip))
+	if not (owner and owner.GetAttribute) then return false end
+
+	if (Family:TryCall(owner.GetAttribute, owner, "action")) ~= nil then return true end
+	return (Family:TryCall(owner.GetAttribute, owner, "type")) == "action"
+end
+
 local function roomFor(tooltip, cap)
 	local used = tonumber((Family:TryCall(tooltip and tooltip.NumLines, tooltip))) or 0
 	return UI:TooltipCap(cap, used)
@@ -1024,7 +1050,7 @@ local function priceLines(tooltip, itemID, variant)
 	-- play 2026-09-12 in exactly those terms: *the family's lot comment already appears but
 	-- only on stacks of 1 items only.* Promising less than a key does is not modesty, it is a
 	-- reader never finding out the answer is there.
-	if not down then
+	if not down and not ownerKeepsModifiers(tooltip) then
 		if count and held then
 			lines[#lines + 1] =
 				{ L["|cff888888CTRL: what the stack and the family's lot is worth|r"] }

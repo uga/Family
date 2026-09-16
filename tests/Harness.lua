@@ -6003,6 +6003,14 @@ do
 		local bagButton = { __id = 3 }
 		function bagButton:GetID() return self.__id end
 		function bagButton:GetParent() return { GetID = function() return 0 end } end
+		-- Every frame in the game answers GetAttribute; a bag slot answers nothing for the ones
+		-- an action bar slot carries. Written out because the difference between "has no
+		-- attributes" and "is not an action button" is what decides whether the CTRL hint is
+		-- offered here, and a fixture without the call could not tell the two apart.
+		function bagButton:GetAttribute(name)
+			if name == "type" then return "item" end
+			return nil
+		end
 		GameTooltip.__owner = bagButton
 		GameTooltip.GetOwner = function(self) return self.__owner end
 
@@ -6564,6 +6572,42 @@ do
 					and plain(priceLine(2880, "Worth")):find("1g 21s", 1, true) ~= nil,
 				tostring(priceLine(2880, "Stack of 12")) .. " / " ..
 					plain(priceLine(2880, "Worth")))
+
+			-- **And on a bar slot the offer is not made at all.** Alberto, 2026-09-16, having
+			-- found it offered where it does nothing: Family cannot repaint a tooltip it does
+			-- not own, and an action bar takes control, shift and alt for a slot's other
+			-- bindings, so the key never reaches us there. Read off the frame - a secure action
+			-- button carries the `action` attribute - rather than by naming an addon.
+			do
+				local realOwner = GameTooltip.__owner
+				local barButton = { __id = 3 }
+				function barButton:GetID() return self.__id end
+				function barButton:GetParent() return { GetID = function() return 0 end } end
+				function barButton:GetAttribute(name)
+					if name == "action" then return 7 end
+					if name == "type" then return "action" end
+				end
+				GameTooltip.__owner = barButton
+
+				IsControlKeyDown = function() return false end
+				check("a bar slot is offered no key, because the bar keeps it",
+					hintLine(2880) == nil, tostring(hintLine(2880)))
+
+				-- And the answer itself is unchanged: somebody who holds the key before the
+				-- pointer arrives gets what they would get anywhere else.
+				IsControlKeyDown = function() return true end
+				check("and the key held before the pointer arrives still answers there",
+					plain(priceLine(2880, "Worth")):find("1g 21s", 1, true) ~= nil,
+					tostring(plain(priceLine(2880, "Worth"))))
+
+				GameTooltip.__owner = realOwner
+				IsControlKeyDown = function() return false end
+				check("while the bag slot beside it is offered the key as before",
+					hintLine(2880)
+						== "|cff888888CTRL: what the stack and the family's lot is worth|r",
+					tostring(hintLine(2880)))
+				IsControlKeyDown = function() return true end
+			end
 
 			Family.Bags.SlotContents = realSlot
 			GameTooltip.GetOwner = nil

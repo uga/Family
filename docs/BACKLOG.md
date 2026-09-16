@@ -5608,3 +5608,29 @@ now answers a screen height a check can set - it always said 500, so *what happe
 screen* could not be asked and one mutation survived on that. Mutations `tooltip-cap-*`, all caught.
 
 **Owed: a look in the game**, with the switch off, at an item a large family owns.
+
+---
+
+## 90. The CTRL hint is offered where the key cannot reach Family — DONE 2026-09-16, not yet seen in game
+
+**Asked by Alberto 2026-09-16**, from play on Era, after establishing the limitation in entry 89's
+wake: *would it be possible to avoid printing the dim CTRL hint when hovering over unsupported
+slots?* The hint is drawn for a reader, and a reader who takes it up on an action bar slot is told
+nothing at all.
+
+**What he read in the game that day, on Era**: CTRL works on Family's own panels and on a bag slot,
+Bagnon included; it does nothing on a Dominos bar; and held **before** the pointer arrives it answers
+there like anywhere else. That is the whole shape of it - the key works wherever the frame's owner
+re-shows the tooltip on a modifier, and an action bar takes the modifiers for a slot's second and
+third binding instead.
+
+**Built.** `ownerKeepsModifiers` reads the tooltip's owner and asks the frame what it is: a slot on
+any bar - Dominos, Bartender, the game's own - is a secure action button and carries the `action`
+attribute the client casts from. No addon is named and none is guessed at. The offer is dropped
+there; everything else is untouched, and the key held first draws exactly what it draws elsewhere.
+
+Three checks beside the stack hint: a bar slot is offered no key, the key held first still answers
+there, and the bag slot beside it is offered the key as before. **The bag fixture was given a
+`GetAttribute`** that answers nothing for `action`, because every frame in the game answers that call
+- without it, *has no attributes* and *is not an action button* could not be told apart, and the
+mutation that takes any frame for a bar slot survived on exactly that. Mutations `ctrl-hint-*`.

@@ -1,0 +1,6 @@
+name: no slot at all is offered the CTRL hint, bags included
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if not (owner and owner.GetAttribute) then return false end
+--- new
+	if not (owner and owner.GetAttribute) then return true end

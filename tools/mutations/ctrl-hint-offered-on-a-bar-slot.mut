@@ -1,0 +1,6 @@
+name: the CTRL hint is offered on an action bar slot, where the key never reaches Family
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if not down and not ownerKeepsModifiers(tooltip) then
+--- new
+	if not down then
