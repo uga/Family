@@ -895,7 +895,13 @@ COPPER_AMOUNT_TEXTURE = "%d|TInterface\\MoneyFrame\\UI-CopperIcon:%d:%d:2:0|t"
 -- units it has, how many digits - can go on saying "1g 20s". The coins themselves are checked
 -- where money is written (the "coins" checks beside UI:Coins); everywhere else this is reading.
 function coinsAsLetters(text)
-	return (tostring(text):gsub("|T[^|]*UI%-GoldIcon[^|]*|t", "g")
+	-- The spacer goes first, and goes to nothing. It is Family's own wholly transparent file,
+	-- put in front of a silver or a copper to hold that place at the width of its widest two
+	-- digits inside a single string (backlog 88) - width rather than content, so a check about
+	-- the shape of a figure should not see it. Where it *is* the thing under test, the checks
+	-- beside UI:MoneyPadded read the markup itself.
+	return (tostring(text):gsub("|T[^|]*Textures\\Spacer[^|]*|t", "")
+		:gsub("|T[^|]*UI%-GoldIcon[^|]*|t", "g")
 		:gsub("|T[^|]*UI%-SilverIcon[^|]*|t", "s"):gsub("|T[^|]*UI%-CopperIcon[^|]*|t", "c"))
 end
 
@@ -24577,6 +24583,56 @@ print("money lines up by gold, silver and copper")
 	Family.UI:MoneyCell(cell, Family.UI.UNKNOWN)
 	check("and so does the mark for a figure nobody ever read",
 		cell:GetWidth() == FULL and cell.__text == Family.UI.UNKNOWN)
+
+	------------------------------------------------------------------------------------
+	-- The same three places inside one string
+	--
+	-- A tooltip line is one string and cannot be given a font string per place, so the width
+	-- is carried by a picture of nothing in front of each place. Asked of the markup here,
+	-- because the markup is the mechanism; everywhere else the harness reads a figure with
+	-- the spacer already taken out (coinsAsLetters).
+	------------------------------------------------------------------------------------
+
+	local measure = CreateFrame("Frame"):CreateFontString(nil, "ARTWORK", "GameTooltipText")
+	local function tailWidth(text)
+		measure:SetText((text:gsub("^[^ ]+ ", "")))
+		return measure:GetStringWidth() or 0
+	end
+
+	local paddedNarrow = Family.UI:MoneyLine(41519123)   -- 91s 23c, the narrow silver
+	local paddedWide = Family.UI:MoneyLine(12357780)     -- 77s 80c, the widest digits here
+
+	check("a figure drawn as one string holds its places with a picture of nothing",
+		paddedNarrow:find("Textures\\Spacer", 1, true) ~= nil, paddedNarrow)
+
+	-- The claim: from the silver onwards, two figures take the same room, so a column of them
+	-- in a tooltip lines up however narrow the digits are.
+	--
+	-- **To the pixel, and not past it.** A picture's width in this markup is a whole number of
+	-- pixels, so a place can be held to within one and no closer; the cells above, which own
+	-- their width outright, are exact. Said with the unpadded figures beside it so that the
+	-- tolerance cannot quietly swallow the fault: those differ by more than the padded ones do.
+	local paddedApart = math.abs(tailWidth(paddedNarrow) - tailWidth(paddedWide))
+	local bareApart = math.abs(tailWidth(Family.UI:Money(41519123))
+		- tailWidth(Family.UI:Money(12357780)))
+	check("and two figures take the same room from the silver onwards, to the pixel",
+		paddedApart <= 1 and bareApart > paddedApart,
+		paddedApart .. " apart padded, " .. bareApart .. " apart written plainly")
+
+	-- Nothing is spent where nothing is needed: the widest digits need no picture at all.
+	check("and a figure already at the widest digits carries no picture",
+		paddedWide:find("Textures\\Spacer", 1, true) == nil, paddedWide)
+
+	-- **Family's own file, and one pixel tall.** A path this client does not have draws the
+	-- green missing-texture marker in the middle of every money line, and no client can be
+	-- asked which paths it has; a picture as tall as the text would make the line taller.
+	check("the picture is Family's own, and a pixel tall so no line grows",
+		paddedNarrow:find("|TInterface\\AddOns\\Family_UI\\Textures\\Spacer:1:",
+			1, true) ~= nil, paddedNarrow)
+
+	check("and anything that is not money comes back as it was",
+		Family.UI:MoneyPadded("max level") == "max level"
+			and Family.UI:MoneyPadded(Family.UI.UNKNOWN) == Family.UI.UNKNOWN)
 end)()
 
 print("columns that hold their own headings")

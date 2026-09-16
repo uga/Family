@@ -347,7 +347,7 @@ local function describe(tooltip)
 		end
 
 		tooltip:AddDoubleLine(indent .. (meta.name or member.key) .. detail,
-			UI:Money(meta.money), r, g, b, 1, 1, 1)
+			UI:MoneyLine(meta.money), r, g, b, 1, 1, 1)
 	end
 
 	-- Whatever room this group was given, and a line saying what was left out. A family that
@@ -370,7 +370,7 @@ local function describe(tooltip)
 		local here = realms[realm]
 
 		tooltip:AddLine(" ")
-		tooltip:AddDoubleLine("|cff88bbff" .. realm .. "|r", UI:Money(here.money, true))
+		tooltip:AddDoubleLine("|cff88bbff" .. realm .. "|r", UI:MoneyLine(here.money, true))
 
 		if knownSides(here) > 1 then
 			for _, side in ipairs(here.sides) do
@@ -380,7 +380,7 @@ local function describe(tooltip)
 				tooltip:AddDoubleLine(
 					string.format(L["  %s |cff888888(%d)|r"],
 						UI:SideName(side), #group.members),
-					UI:Money(group.money, true),
+					UI:MoneyLine(group.money, true),
 					colour[1], colour[2], colour[3], 0.8, 0.8, 0.8)
 
 				drawGroup(group.members, "    ")
@@ -394,7 +394,7 @@ local function describe(tooltip)
 	-- grand total is the realm total, written twice.
 	if #order > 1 then
 		tooltip:AddLine(" ")
-		tooltip:AddDoubleLine(L["|cffffd700All realms|r"], UI:Money(total, true))
+		tooltip:AddDoubleLine(L["|cffffd700All realms|r"], UI:MoneyLine(total, true))
 	end
 
 	-- What is ready now. The one thing on this tooltip that changes while nobody is looking,

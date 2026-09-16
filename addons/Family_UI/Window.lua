@@ -1380,6 +1380,78 @@ function UI:MoneyCell(cell, text, r, g, b)
 	return true
 end
 
+--------------------------------------------------------------------------------------------
+-- The same three places, inside one string
+--
+-- A table cell can hold its places apart with a font string apiece (above). A tooltip line
+-- cannot: `AddDoubleLine` takes one string and draws it as one string, and so does a line of
+-- chat. The only width a string can carry is a picture's, so the places are held by putting a
+-- picture of the missing width in front of each of them - `|T...:1:9|t` is nine pixels of
+-- nothing, one pixel tall so that it cannot make the line any taller.
+--
+-- **The picture is Family's own file.** A path this client does not have draws the green
+-- missing-texture marker, and no client can be asked which paths it has - it echoes back
+-- whatever it was handed (tools/FamilyIconSheet). The one path Family can be sure of is one it
+-- ships, so tools/GenerateIcon.py writes a four-pixel square of nothing beside the icon.
+--
+-- **Measured in the font the line is drawn in.** A tooltip is not drawn in a panel's font, and
+-- padding worked out in the wrong font is padding that does not line up.
+--------------------------------------------------------------------------------------------
+
+local SPACER = "Interface\\AddOns\\Family_UI\\Textures\\Spacer"
+
+local tooltipMeasure, tooltipWidest = nil, {}
+
+-- A ruler in the tooltip's own font, made once. Hidden, and parented to nothing that is drawn:
+-- it exists to be measured and never to be read.
+local function tooltipRuler()
+	if not tooltipMeasure then
+		local host = CreateFrame("Frame")
+		host:Hide()
+		tooltipMeasure = host:CreateFontString(nil, "ARTWORK", "GameTooltipText")
+	end
+	return UI:WidthRuler(tooltipMeasure)
+end
+
+-- **A figure whose silver and copper stand in places of their own, inside one string.** Handed
+-- back unchanged when the text is not money, when the client cannot measure, or when there is
+-- nothing to pad - a figure already holding the widest digits needs no picture at all.
+function UI:MoneyPadded(text)
+	local pieces, units = self:MoneyPieces(text)
+	if not pieces then return text end
+
+	local ruler = tooltipRuler()
+	if not ruler then return text end
+
+	local out = pieces[1]
+	for index = 2, #pieces do
+		local unit = units[index]
+		local total = text:find(TOTAL_FIGURE, 1, true) ~= nil
+		local key = unit .. (total and ".total" or "")
+
+		if not tooltipWidest[key] then
+			local widest = 0
+			for digit = 0, 9 do
+				local pair = string.format("%d%d", digit, digit)
+				widest = math.max(widest, ruler(unitText(unit, pair, total)) or 0)
+			end
+			tooltipWidest[key] = widest
+		end
+
+		local pad = math.floor(tooltipWidest[key] - (ruler(pieces[index]) or 0))
+		out = out .. " "
+			.. (pad >= 1 and string.format("|T%s:1:%d|t", SPACER, pad) or "")
+			.. pieces[index]
+	end
+
+	return out
+end
+
+-- The figure a tooltip line, a chat line or anything else drawn as one string should carry.
+function UI:MoneyLine(copper, total)
+	return self:MoneyPadded(self:Money(copper, total))
+end
+
 -- A member named somewhere that is not about them alone: a search result, a tooltip, a
 -- broker line. Two things can need saying, and only when they need saying.
 --

@@ -919,6 +919,88 @@ function sheet:LayOutMoney(width, y)
 		end
 	end
 
+	--------------------------------------------------------------------------------------
+	-- The spacer, which is a width and not a picture
+	--
+	-- Backlog 88: money is lined up by giving silver and copper a place of a fixed width. In a
+	-- table cell each place is a font string, which needs no texture at all; in a tooltip line,
+	-- which is one string, the width is carried by a picture of nothing - Family's own wholly
+	-- transparent file, written by tools/GenerateIcon.py.
+	--
+	-- **A transparent texture cannot be told from a missing one in the grid above**: both leave
+	-- a cell of flat backing. So it is tested where it is used instead. Four figures are drawn
+	-- twice, right-aligned, padded and plain. What the screenshot has to show: nothing visible
+	-- where the spacer is, no green marker, and the padded coins standing in a column where the
+	-- plain ones wander.
+	--------------------------------------------------------------------------------------------
+
+	y = y + 12
+	local spacerHead = nextText("GameFontNormal")
+	spacerHead:SetPoint("TOPLEFT", 2, -y)
+	spacerHead:SetText(GOLD .. "The spacer: do the padded coins line up, and is it invisible?|r")
+	y = y + 18
+
+	local SPACER = "Interface\\AddOns\\Family_UI\\Textures\\Spacer"
+	local ruler = nextText("GameTooltipText")
+	ruler:Hide()
+
+	local function widthOf(text)
+		ruler:SetText(text)
+		return ruler:GetStringWidth() or 0
+	end
+
+	-- The widest two digits of a unit, in the font the figures below are drawn in, which is
+	-- what a place is held at.
+	local function widest(colour, coin)
+		local most = 0
+		for digit = 0, 9 do
+			most = math.max(most, widthOf(string.format("%s%d%d|r%s", colour, digit, digit, coin)))
+		end
+		return most
+	end
+
+	local GOLD_COIN = coinMarkup(COIN_GOLD, 2)
+	local SILVER_COIN = coinMarkup(COIN_SILVER, 2)
+	local COPPER_COIN = coinMarkup(COIN_COPPER, 2)
+
+	local silverWidest = widest("|cffffffff", SILVER_COIN)
+	local copperWidest = widest("|cffffffff", COPPER_COIN)
+
+	local function piece(colour, figure, coin, holdAt, pad)
+		local text = string.format("%s%s|r%s", colour, figure, coin)
+		if not pad then return text end
+		local short = math.floor(holdAt - widthOf(text))
+		if short >= 1 then
+			return string.format("|T%s:1:%d|t", SPACER, short) .. text
+		end
+		return text
+	end
+
+	local function figureFor(amount, pad)
+		return string.format("|cffffffff%d|r%s", math.floor(amount / 10000), GOLD_COIN)
+			.. " " .. piece("|cffffffff", string.format("%02d",
+				math.floor((amount % 10000) / 100)), SILVER_COIN, silverWidest, pad)
+			.. " " .. piece("|cffffffff", string.format("%02d", amount % 100),
+				COPPER_COIN, copperWidest, pad)
+	end
+
+	for _, pass in ipairs({ { label = "padded", pad = true }, { label = "plain", pad = false } }) do
+		local head = nextText("GameFontDisableSmall")
+		head:SetPoint("TOPLEFT", 2, -y)
+		head:SetText(GREY .. pass.label .. "|r")
+		y = y + 16
+
+		for _, amount in ipairs({ 41519123, 12357780, 11111111, 447788 }) do
+			local line = nextText("GameTooltipText")
+			line:SetPoint("TOPLEFT", 60, -y)
+			line:SetWidth(240)
+			line:SetJustifyH("RIGHT")
+			line:SetText(figureFor(amount, pass.pad))
+			y = y + 16
+		end
+		y = y + 6
+	end
+
 	y = y + 8
 	local offered = nextText("GameFontNormal")
 	offered:SetPoint("TOPLEFT", 2, -y)

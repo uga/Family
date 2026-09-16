@@ -187,6 +187,32 @@ def write_tga(path, pixels, size):
         handle.write(body)
 
 
+def write_spacer(path, size=4):
+    """A wholly transparent square, which is a measuring stick rather than a picture.
+
+    Backlog 88: money is lined up by giving silver and copper a place of a fixed width. A
+    table cell can do that with a font string apiece, but a tooltip line is one string, and
+    the only way to hold a width inside a string is to put a picture of that width in it -
+    `|Tpath:1:9|t` is nine pixels of nothing. It has to be Family's own file: a path the
+    client does not have draws the green missing-texture marker, and the client cannot be
+    asked whether it has one (it echoes back whatever path it was handed), so the only path
+    Family can be sure of is one it ships.
+
+    Four pixels square because the game wants sides that are powers of two, and every pixel
+    of it is alpha nought, so what it draws is nothing at whatever width it is given.
+    """
+    header = struct.pack(
+        "<BBBHHBHHHHBB",
+        0, 0, 2, 0, 0, 0, 0, 0, size, size, 32, 0x28,
+    )
+    body = struct.pack("<BBBB", 0, 0, 0, 0) * (size * size)
+
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb") as handle:
+        handle.write(header)
+        handle.write(body)
+
+
 def chunk(kind, payload):
     """One PNG chunk: length, type, payload, and a CRC over the type and the payload."""
     return (struct.pack(">I", len(payload)) + kind + payload
@@ -216,9 +242,14 @@ def write_png(path, pixels, size):
         handle.write(chunk(b"IEND", b""))
 
 
+SPACER = os.path.join(HERE, os.pardir, "addons", "Family_UI", "Textures", "Spacer.tga")
+
 if __name__ == "__main__":
     write_tga(OUT, render(SIZE, SUPERSAMPLE), SIZE)
     print("wrote %s (%d x %d)" % (os.path.normpath(OUT), SIZE, SIZE))
+
+    write_spacer(SPACER)
+    print("wrote %s (4 x 4, wholly transparent)" % os.path.normpath(SPACER))
 
     # Two samples a pixel rather than four: at 400px one finished pixel is a sixth of a
     # texture pixel, so the edges are already six times smoother than the case the

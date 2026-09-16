@@ -1,0 +1,6 @@
+name: the padding picture is a path the client may not have rather than Family's own file
+file: addons/Family_UI/Window.lua
+--- old
+local SPACER = "Interface\\AddOns\\Family_UI\\Textures\\Spacer"
+--- new
+local SPACER = "Interface\\Common\\spacer"

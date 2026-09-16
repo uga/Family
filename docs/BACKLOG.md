@@ -5474,3 +5474,56 @@ measured in the font it is drawn in. That picture is a texture and goes through
 
 **Deferred to 3.2, as its first slice** - Alberto's choice 2026-09-15, of three ways put to him: 3.1
 ships with 79 and 87, and this is built whole rather than cells now and tooltips later.
+
+**The cells built 2026-09-16** (`a2a5af0`). `UI:MoneyCell` (`addons/Family_UI/Window.lua`) splits a
+figure into its pieces, draws silver and copper in font strings of their own pinned to the right-hand
+end of the cell, and right-justifies the head of the figure - the gold, or a millions figure with no
+other places - into what is left. A place is as wide as the **widest** two digits of that unit in the
+cell's own font plus the gap before it, measured once per cell and remembered; that is what makes two
+rows land in the same three places. The cell gives back what it took the moment it holds something
+that is not money, so a word column reusing a pooled row loses nothing. Used by the summary's Money,
+Worth, Bid value and Buyout (`Summary.lua`, in `setCell`, with the width said in `layOut`) and by the
+price audit's two price columns.
+
+**The harness font stub now draws a narrow `1`**, at seven tenths of a character: with every
+character one width, a place held at the widest pair and a place measured on the digits in hand
+measure the same, and the mutation restoring the fault would have passed. Nine checks under *money
+lines up by gold, silver and copper*; five mutations, `money-places-measured-on-the-digits-in-hand`,
+`money-places-widen-the-column`, `money-cell-keeps-the-last-rows-places`,
+`money-cell-never-gives-the-width-back`, `money-cell-keeps-a-spare-place-showing`, all caught.
+
+**The single strings built the same day.** `UI:MoneyPadded` puts a picture of nothing in front of
+each place - `|T...:1:9|t` is nine pixels wide and one pixel tall, so it cannot make a line taller -
+and `UI:MoneyLine(copper, total)` is the figure a line drawn as one string should carry. The widths
+are measured in a ruler of the **tooltip's** own font, since a tooltip is not drawn in a panel's
+font. Used by the broker tooltip (member, side, realm and *All realms*) and by the item tooltip's
+figures: a material's price, *Total*, *Sell price*, *Vendor price*, the auction reading and *Worth*.
+
+**The picture is Family's own file**, `addons/Family_UI/Textures/Spacer.tga`, four pixels square and
+wholly transparent, written by `tools/GenerateIcon.py` beside the icon. A Blizzard path cannot be
+used here: a path this client does not have draws the green missing-texture marker in the middle of
+every money line, and no client can be asked which paths it has.
+
+**To the pixel and no closer.** A picture's width in that markup is a whole number of pixels, so a
+place inside a string is held to within one; a table cell, which owns its width outright, is exact.
+
+**The broker bar itself is deliberately left alone.** Its text is drawn by whichever display addon
+the player runs, in that addon's font, which Family cannot measure - and nothing is stacked under it
+to line up with. One figure on a bar has no column.
+
+**Checks for the strings**, in the same section: the padded figure carries the picture, two figures
+take the same room from the silver onwards while the plain ones do not, a figure already at the
+widest digits carries no picture at all, the path is Family's own and a pixel tall, and anything that
+is not money comes back unchanged. `coinsAsLetters` in the harness drops the spacer, so every other
+check reads a figure's shape as before. Mutations `money-string-places-never-padded`,
+`money-string-padded-to-one-pair`, `money-spacer-is-a-blizzard-path`,
+`money-spacer-as-tall-as-the-text`, all caught; five older `tooltip-*` and `coins-tooltip-*` cases
+re-anchored on the new call.
+
+**Owed, and the one thing no check can answer: a screenshot.** `/iconsheet` on Era, TBC and Mists, at
+*The spacer: do the padded coins line up, and is it invisible?* - four figures drawn padded and then
+plain. What it has to show: nothing visible where the spacer is, no green marker, and the padded
+coins standing in a column where the plain ones wander. **Until that is seen, that half is built and
+unproven.**
+
+**Also owed: a look in the game** at the Summary's Money and Worth columns and at the price audit.

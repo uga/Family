@@ -1,6 +1,6 @@
 name: a material's price on a tooltip drops the units nothing is standing in
 file: addons/Family_UI/Tooltip.lua
 --- old
-			said = UI:Money(part.total)
+			said = UI:MoneyLine(part.total)
 --- new
 			said = UI:Coins(part.total)

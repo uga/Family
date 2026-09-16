@@ -1,0 +1,6 @@
+name: the padding picture is as tall as the text and can make a line taller
+file: addons/Family_UI/Window.lua
+--- old
+			.. (pad >= 1 and string.format("|T%s:1:%d|t", SPACER, pad) or "")
+--- new
+			.. (pad >= 1 and string.format("|T%s:0:%d|t", SPACER, pad) or "")

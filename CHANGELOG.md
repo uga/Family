@@ -29,6 +29,16 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Money that lines up
+
+- **Gold under gold, silver under silver, copper under copper.** A money column used to put its
+  coins wherever the digits ended, so a figure with a narrow `1` in it sat out of line with the rows
+  around it. Every figure now has the same three places, whatever is in them, and the columns are no
+  wider than they were.
+
+- **The same on tooltips.** The broker tooltip's realms and members, and an item's prices, hold their
+  silver and copper in the same places down the column.
+
 ## 4.0.0 — 2026-09-15
 
 ### Auction prices you can check
