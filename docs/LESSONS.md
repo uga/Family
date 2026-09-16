@@ -3498,6 +3498,30 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-102 — every width was right and every place was drawn in the wrong spot
+
+**2026-09-16.** Backlog 88 gave a money figure's silver and copper a font string apiece, pinned to
+the right-hand end of the cell. They were pinned *by their own right edges* to the cell's right edge,
+which draws each of them back over the cell and over the column to its left. Fourteen checks passed -
+the widths were right, the places held the right pieces, the three added up to the column - and the
+summary was unreadable in the game: *1502* over *24 17 0*, the Worth column written over itself.
+Alberto found it in one screenshot, an hour after the harness went green.
+
+**Why nothing saw it.** The harness has no geometry: a frame answers that it is shown and an anchor
+is recorded rather than resolved, so *drawn on top of* is not a question it can be asked. What it
+could always be asked is the structure - and the structure was never asserted. The stub also kept
+only the anchor's target, not which end of the target, so even a check reading the anchors could not
+have told the two apart.
+
+**What now catches it.** `recordAnchor` keeps the relative point as well as the target
+(`__relative[point] = { to, point }`), and the money checks describe the chain: the silver place
+pinned by its own left edge to the cell's right edge, the copper to the silver's right edge, and
+neither pinned by its right edge at all. Mutation `money-places-laid-back-over-the-cell`.
+
+**The rule: a change that positions something is checked by its anchors, not by its sizes.** Widths
+that add up are not a layout. Where the harness cannot resolve geometry, assert the shape - which
+edge of what is pinned to which edge of what - and say so in the check's own words.
+
 ## L-101 — a secret the harness needs was given to one of the two workflows that run it
 
 **2026-09-15.** `a915c2a` made the harness sweep the tree for banned words, read from the

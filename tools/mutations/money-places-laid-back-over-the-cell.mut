@@ -1,0 +1,6 @@
+name: a money place is pinned by its right edge and drawn back over the cell
+file: addons/Family_UI/Window.lua
+--- old
+		place:SetPoint("LEFT", anchor or cell, "RIGHT", 0, 0)
+--- new
+		place:SetPoint("RIGHT", anchor or cell, "RIGHT", 0, 0)

@@ -1346,19 +1346,18 @@ function UI:MoneyCell(cell, text, r, g, b)
 
 	local total = text:find(TOTAL_FIGURE, 1, true) ~= nil
 
-	-- From the right: the last piece is pinned to the cell's right-hand end, the one before it
-	-- to the left of that, and so on. What is left of the width holds the head of the figure.
+	-- **Left to right, each place beginning where the one before it ends**, and the first of
+	-- them where the narrowed cell ends. Pinned by its own left edge to the other's right edge:
+	-- pinning a place's *right* edge to the cell's right edge lays it back over the cell and
+	-- over whatever column stands to the left of it, which is what shipped for an hour on
+	-- 2026-09-16 and is what the anchor checks below now describe (docs/LESSONS.md L-102).
 	local taken, anchor = 0, nil
-	for index = #pieces, 2, -1 do
+	for index = 2, #pieces do
 		local place = places[index - 1]
 		local wide = placeWidth(cell, units[index], total) or 0
 
 		place:ClearAllPoints()
-		if anchor then
-			place:SetPoint("RIGHT", anchor, "LEFT", 0, 0)
-		else
-			place:SetPoint("RIGHT", cell, "RIGHT", 0, 0)
-		end
+		place:SetPoint("LEFT", anchor or cell, "RIGHT", 0, 0)
 		place:SetWidth(wide)
 		place:SetText(pieces[index])
 		place:SetTextColor(r or 1, g or 1, b or 1)

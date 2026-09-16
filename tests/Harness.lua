@@ -768,6 +768,14 @@ function recordAnchor(self, point, a, b, c, d)
 		a.__anchoredBy[self] = true
 		self.__anchoredTo = self.__anchoredTo or {}
 		self.__anchoredTo[a] = true
+
+		-- **And which end of it.** "Anchored to that" is not the same fact as "anchored to
+		-- the right-hand end of that": a money place pinned by its right edge to the cell's
+		-- right edge is drawn back over the cell, and a stub that kept only the target could
+		-- not tell that from the same place pinned by its left edge, which is what the fault
+		-- of 2026-09-16 turned on (docs/LESSONS.md L-102).
+		self.__relative = self.__relative or {}
+		self.__relative[point] = { to = a, point = type(b) == "string" and b or nil }
 	end
 end
 
@@ -24560,6 +24568,28 @@ print("money lines up by gold, silver and copper")
 	check("and is the widest two digits of that unit and the gap before it, to the pixel",
 		silverWide == math.ceil(widest + gap),
 		silverWide .. " against " .. math.ceil(widest + gap))
+
+	-- **Where each place is pinned, and by which of its own edges.** Widths alone cannot see
+	-- the fault that shipped on 2026-09-16: the places were pinned by their right edges to the
+	-- cell's right edge, so each was drawn back over the cell and over the column to its left,
+	-- and every width check passed while the summary was unreadable (L-102). The chain has to
+	-- run left to right - the silver beginning where the narrowed cell ends, the copper where
+	-- the silver ends.
+	local first, second = places[1], places[2]
+	check("the silver place begins where the cell ends, by its own left edge",
+		first.__relative and first.__relative.LEFT
+			and first.__relative.LEFT.to == cell and first.__relative.LEFT.point == "RIGHT",
+		tostring(first.__relative and first.__relative.LEFT
+			and first.__relative.LEFT.point))
+	check("and the copper place begins where the silver ends",
+		second.__relative and second.__relative.LEFT
+			and second.__relative.LEFT.to == first
+			and second.__relative.LEFT.point == "RIGHT",
+		tostring(second.__relative and second.__relative.LEFT
+			and second.__relative.LEFT.point))
+	check("and nothing is pinned by its right edge, which would lay it back over the cell",
+		first.__points and not first.__points.RIGHT
+			and second.__points and not second.__points.RIGHT)
 
 	check("and each place holds its own unit's figure",
 		places[1].__text == (wide:match("^[^ ]+ ([^ ]+) ") or "?")
