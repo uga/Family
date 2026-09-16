@@ -1,0 +1,8 @@
+name: a bid value is written with its copper and is cut off in its column
+file: addons/Family_UI/Summary.lua
+--- old
+	local _, bid = auctionTotals(meta, key)
+	return UI:GoldAndSilver(bid or 0)
+--- new
+	local _, bid = auctionTotals(meta, key)
+	return UI:Money(bid or 0)

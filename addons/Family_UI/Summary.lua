@@ -1118,16 +1118,26 @@ CELL.auctions = function(meta, key)
 	return tostring(count or 0)
 end
 
+-- **Gold and silver, and no copper**, which is what Worth beside them already does. Alberto's
+-- choice of three ways, 2026-09-16, off the icon sheet's own measurement on Era: with the coins and
+-- the copper, a four-figure bid draws 108 pixels into a column that has 106 and is cut. The set
+-- adds up to `ROW_BUDGET` exactly and every column beside these two is at its own contents, so the
+-- pixels could only have come from a wider window. A lot on sale is read for what it is worth to
+-- the gold, and the coppers of an auction total are noise - the same argument the Worth column was
+-- given when it was built.
+--
+-- The copper is then shown nowhere for these two, which is the price of the choice and is worth
+-- saying plainly.
 CELL.bids = function(meta, key)
 	if not meta.auctionsSeen then return UNKNOWN end
 	local _, bid = auctionTotals(meta, key)
-	return UI:Money(bid or 0)
+	return UI:GoldAndSilver(bid or 0)
 end
 
 CELL.buyouts = function(meta, key)
 	if not meta.auctionsSeen then return UNKNOWN end
 	local _, _, buyout = auctionTotals(meta, key)
-	return UI:Money(buyout or 0)
+	return UI:GoldAndSilver(buyout or 0)
 end
 
 CELL.aucseen = function(meta)
@@ -1459,7 +1469,7 @@ local TOTAL = {
 			local _, bid = auctionTotals(member.meta, member.key)
 			total = total + (bid or 0)
 		end
-		return UI:Money(total, true)
+		return UI:GoldAndSilver(total, true)
 	end,
 
 	buyouts = function(members)
@@ -1468,7 +1478,7 @@ local TOTAL = {
 			local _, _, buyout = auctionTotals(member.meta, member.key)
 			total = total + (buyout or 0)
 		end
-		return UI:Money(total, true)
+		return UI:GoldAndSilver(total, true)
 	end,
 }
 

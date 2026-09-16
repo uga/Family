@@ -13783,8 +13783,12 @@ end
 		local checks = {
 			{ "Overview", "money", Family.UI:Money(999999999, true) },
 			{ "Overview", "stock", Family.UI:GoldAndSilver(99999999999, true) },
-			{ "Activity", "bids", Family.UI:Money(99999999) },
-			{ "Activity", "buyouts", Family.UI:Money(99999999) },
+			-- **Gold and silver, since 2026-09-16.** With the copper on them these two drew 108
+			-- pixels into 106 and were cut, which the icon sheet measured on Era; the set is at
+			-- the row's budget and its other columns are at their contents, so the choice was
+			-- this or a wider window (Alberto took this).
+			{ "Activity", "bids", Family.UI:GoldAndSilver(99999999) },
+			{ "Activity", "buyouts", Family.UI:GoldAndSilver(99999999) },
 		}
 		-- Worth nothing if a coin measures as nothing, which it did before the model knew that
 		-- a size of nought is the height of the text.
@@ -13795,6 +13799,50 @@ end
 			local ok, detail = fits(case[1], case[2], case[3])
 			check("coins: " .. case[1]:lower() .. "'s " .. case[2]
 				.. " column holds the largest figure it was sized for", ok, detail)
+		end
+
+		-- **And the two of them really are written without copper.** The check above only says
+		-- the column holds what it was sized for; this says what the cell puts in it, which is
+		-- the decision - a lot on sale read to the gold, as Worth beside it already is.
+		do
+			local written = { bids = nil, buyouts = nil }
+			clickLastButton("Activity")
+			Family.UI:Refresh()
+			local at = {}
+			for index, column in ipairs(Family.UI.__summaryColumns or {}) do
+				if column.key == "bids" or column.key == "buyouts" then
+					at[column.key] = index
+				end
+			end
+			-- **Read across the places, not off the cell.** Since backlog 88 a figure is drawn
+			-- as places: the cell holds the head - the gold - and each place below it holds one
+			-- unit. So the whole figure is the cell's text followed by whatever places are
+			-- showing, and a column without copper is one whose places stop at the silver.
+			local function figureOf(cell)
+				if not cell then return nil end
+				local whole = tostring(cell.__text or "")
+				for _, place in ipairs(cell.__moneyPlaces or {}) do
+					if place.__visible ~= false then whole = whole .. " " .. tostring(place.__text) end
+				end
+				return whole
+			end
+
+			for _, frame in ipairs(frames) do
+				if frame.cells and frame.__shown == true and frame.memberKey then
+					for key, index in pairs(at) do
+						local whole = figureOf(frame.cells[index])
+						if whole and whole:find("GoldIcon", 1, true) then written[key] = whole end
+					end
+				end
+			end
+			check("coins: a bid value is written in gold and silver, with no copper",
+				written.bids ~= nil and written.bids:find("SilverIcon", 1, true) ~= nil
+					and written.bids:find("CopperIcon", 1, true) == nil,
+				tostring(written.bids))
+			check("coins: and so is a buyout",
+				written.buyouts ~= nil and written.buyouts:find("SilverIcon", 1, true) ~= nil
+					and written.buyouts:find("CopperIcon", 1, true) == nil,
+				tostring(written.buyouts))
 		end
 	end
 

@@ -1,6 +1,6 @@
-name: Bid value keeps the width it had before the coins
+name: Bid value is left too narrow for the coins it now carries
 file: addons/Family_UI/Summary.lua
 --- old
 			{ key = "bids",     label = L["Bid value"],  width = 114, justify = "RIGHT" },
 --- new
-			{ key = "bids",     label = L["Bid value"],  width = 93,  justify = "RIGHT" },
+			{ key = "bids",     label = L["Bid value"],  width = 70,  justify = "RIGHT" },
