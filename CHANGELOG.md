@@ -29,6 +29,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 4.1.0 — 2026-09-16
+
 ### On the game's tooltips
 
 - **No CTRL hint where the key cannot work.** An action bar uses CTRL, shift and alt for a slot's
