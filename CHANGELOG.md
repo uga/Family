@@ -29,6 +29,13 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### On the game's tooltips
+
+- **No CTRL hint where the key cannot work.** An action bar uses CTRL, shift and alt for a slot's
+  other bindings, so pressing CTRL over a bar slot with the tooltip already up does nothing — and
+  Family no longer offers it there. Hold CTRL before the pointer arrives and the answer appears as
+  it does anywhere else.
+
 ### Long lists
 
 - **Turning off *Fold long lists to fit the page* now turns it off on tooltips too.** An item's
