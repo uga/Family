@@ -236,8 +236,15 @@ local SETS = {
 		columns = {
 			{ key = "level",  label = L["Level"],     width = 50,  justify = "RIGHT" },
 			{ key = "ilvl",   label = L["Item lvl"],  width = 70,  justify = "RIGHT" },
-			{ key = "xp",     label = L["Rest XP"],   width = 90,  justify = "RIGHT" },
-			{ key = "money",  label = L["Money"],     width = 122, justify = "RIGHT" },
+			{ key = "xp",     label = L["Rest XP"],   width = 86,  justify = "RIGHT" },
+			-- **Eight pixels wider since 2026-09-16**, and the four the Rest XP column gave
+			-- up are part of them. A figure is drawn as places now (backlog 88, UI:MoneyCell)
+			-- and a place is held at the *widest* two digits of its unit, where the old single
+			-- string took only the digits in hand - so a cell needs a few pixels more than it
+			-- did, and on Era a four-figure gold was being cut to "1126...". Alberto's choice
+			-- of three ways, 2026-09-16: widen the money columns rather than let the places
+			-- give way on a wide row.
+			{ key = "money",  label = L["Money"],     width = 130, justify = "RIGHT" },
 			-- **What everything this character is holding comes to**, beside what they
 			-- carry in coin, which is the other half of the same question.
 			--
@@ -252,7 +259,7 @@ local SETS = {
 			-- **Called Worth**, which is what the tooltip on an item has called the same
 			-- figure since it was built. Asked for 2026-09-12: *piu esatto, e coerente con
 			-- il tooltip*. Stock is a count of things and this is money.
-			{ key = "stock",  label = L["Worth"],     width = 104, justify = "RIGHT" },
+			{ key = "stock",  label = L["Worth"],     width = 110, justify = "RIGHT" },
 			{ key = "played", label = L["Played"],    width = 85,  justify = "RIGHT" },
 			{ key = "seen",   label = L["Last seen"], width = 95,  justify = "RIGHT" },
 		},
@@ -300,6 +307,13 @@ local SETS = {
 			{ key = "mailexp",  label = L["Expires in"], width = 67,  justify = "RIGHT" },
 			{ key = "mailseen", label = L["Mail seen"],  width = 75,  justify = "RIGHT" },
 			{ key = "auctions", label = L["Auctions"],   width = 61,  justify = "RIGHT" },
+			-- **Left at 114 when Money grew on 2026-09-16**, and it is a decision rather than
+			-- an oversight: this set adds up to the row's budget exactly and every column
+			-- beside these two is already at its own contents - "maintenant" and "только что"
+			-- fill the *seen* columns to the pixel, which the fit check said the moment the
+			-- pixels were taken from them. Paying for it would mean widening the window, as
+			-- 2026-09-15 did for these same two columns. Worth doing if a bid value is ever
+			-- reported cut here; nothing has been.
 			{ key = "bids",     label = L["Bid value"],  width = 114, justify = "RIGHT" },
 			{ key = "buyouts",  label = L["Buyout"],     width = 114, justify = "RIGHT" },
 			{ key = "aucseen",  label = L["AH seen"],    width = 74,  justify = "RIGHT" },

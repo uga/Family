@@ -3498,6 +3498,26 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-104 — the stub's font fits everything, so a layout that turns on font metrics is unchecked
+
+**2026-09-16.** Backlog 88 gave each money figure three places of a fixed width, the head taking what
+was left of the cell. In the game on Era the gold came out cut - *1126...*, *206...* - because the
+widest two digits of silver and copper, reserved on every row, left the head less room than the old
+single string had used. Nothing in the harness could see it: the stub gives every character 6.5
+pixels, so the head always fits there, and the cell-fits-its-column check passed on all five
+languages while the summary was being cut in the client.
+
+**What now catches it: nothing automatic, and that is the finding.** The check that a cell fits its
+column is only as true as the stub's idea of a font, which is a flat number and not Friz Quadrata.
+What *did* catch it was a screenshot, and what made the fix safe was the same check in the other
+direction: taking pixels from the neighbouring columns failed at once on *maintenant* and *только
+что*, which is the case a person with an English client would never have seen.
+
+**The rule: a layout change that reserves room by measuring text is not proven by the harness.** Say
+so when it lands, ask for a look in the client before it is called done, and prefer a rule that
+cannot cut anything - give the flexible part what it needs first - over one that divides a fixed
+width up and hopes.
+
 ## L-103 — a width asked for in markup is not the width the client draws
 
 **2026-09-16.** Backlog 88 holds a money place inside a tooltip line with a picture of the missing

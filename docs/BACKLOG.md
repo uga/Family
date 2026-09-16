@@ -5542,4 +5542,20 @@ plain. What it has to show: nothing visible where the spacer is, no green marker
 coins standing in a column where the plain ones wander. **Until that is seen, that half is built and
 unproven.**
 
+**The money columns widened 2026-09-16**, after Alberto read the deployed build on Era: *worse than
+before* - the gold cut to *1126...* and the total to *206...*. A place reserves the **widest** two
+digits of its unit on every row where the old single string took the digits in hand, so a cell needs
+a few pixels more than it did and the head is what gives. Alberto's choice of three ways: widen the
+columns rather than let the places give way on a wide row. Money 122 to 130 and Worth 104 to 110 on
+the Overview, the four pixels over the set's slack taken from Rest XP.
+
+**The Activity set's Bid value and Buyout stay at 114**, and that is a decision: the set adds up to
+`ROW_BUDGET` exactly and every column beside them is already at its own contents - the fit check went
+red on *maintenant* and *только что* the moment pixels were taken from the two *seen* columns. Paying
+for it there means widening the window, as 2026-09-15 did for those same two columns. Worth doing if
+a bid value is ever reported cut; none has been.
+
+**The harness cannot see this class of fault** (L-104): its stub gives every character one width, so
+the head always fits there. A look in the client is part of the work, not a courtesy.
+
 **Also owed: a look in the game** at the Summary's Money and Worth columns and at the price audit.
