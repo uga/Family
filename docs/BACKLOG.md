@@ -5599,7 +5599,7 @@ the head always fits there. A look in the client is part of the work, not a cour
 
 ---
 
-## 89. Switching folding off should reach the tooltips too — DONE 2026-09-16, not yet seen in game
+## 89. Switching folding off should reach the tooltips too — DONE 2026-09-16, seen working in game
 
 **Asked by a user through Alberto 2026-09-16**, off backlog 82: the Options switch turns the folding
 of long lists off on Family's own pages, and they would like it to turn it off on the tooltips too.
@@ -5637,11 +5637,11 @@ owners: switched off it names far more than ten and still stops short. The harne
 now answers a screen height a check can set - it always said 500, so *what happens on a short
 screen* could not be asked and one mutation survived on that. Mutations `tooltip-cap-*`, all caught.
 
-**Owed: a look in the game**, with the switch off, at an item a large family owns.
+**Seen working in the game 2026-09-16, on Era**, with the switch off, on an item a large family owns.
 
 ---
 
-## 90. The CTRL hint is offered where the key cannot reach Family — DONE 2026-09-16, not yet seen in game
+## 90. The CTRL hint is offered where the key cannot reach Family — DONE 2026-09-16, seen working in game
 
 **Asked by Alberto 2026-09-16**, from play on Era, after establishing the limitation in entry 89's
 wake: *would it be possible to avoid printing the dim CTRL hint when hovering over unsupported
