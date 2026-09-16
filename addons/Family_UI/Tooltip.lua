@@ -115,6 +115,23 @@ end
 -- Two numbers because the questions are different sizes. *Who can make this* is answered by a
 -- handful of names; *who has one* can be answered by a whole family, and the owners block is the
 -- one somebody reads on an item two hundred characters happen to carry.
+-- How many names a block may list on *this* tooltip: its own cap while folding is on, and what
+-- the screen has left when it is off.
+--
+-- **What the tooltip already holds is asked of the tooltip**, not guessed: the item's own text and
+-- whatever every other addon put there before Family was called. Alberto, 2026-09-16, asked the
+-- question that decides the shape of this - *IF Family is the last one building something.
+-- Otherwise how can you know it?* - and the answer is that Family cannot: an addon whose hook runs
+-- after ours adds lines nothing here can see, and no call reports them. So this number is a floor
+-- and is treated as one, which is what the ceiling inside `UI:TooltipCap` is for.
+--
+-- **Declared above the first block that uses one**, which is the rule this file already carries for
+-- its caps: written below, a local is a global there and a global is nil (L-069).
+local function roomFor(tooltip, cap)
+	local used = tonumber((Family:TryCall(tooltip and tooltip.NumLines, tooltip))) or 0
+	return UI:TooltipCap(cap, used)
+end
+
 local OWNER_CAP = 10
 local GUILD_CAP = 5
 
@@ -151,7 +168,7 @@ local function possessionLines(tooltip, itemID, variant)
 	-- The count the hidden ones hold goes in the right-hand column, where every other line in
 	-- this block already carries a count - so the header's total still adds up, which is the
 	-- whole reason somebody reads this block on an item they own hundreds of.
-	local shown = UI:ShowAtMost(#owners, OWNER_CAP)
+	local shown = UI:ShowAtMost(#owners, roomFor(tooltip, OWNER_CAP))
 	local named = labelled(owners)
 
 	for index = 1, shown do
@@ -193,7 +210,7 @@ local function possessionLines(tooltip, itemID, variant)
 
 	-- The guild banks under them, capped the same way and by the same reasoning: a family
 	-- this size has more than one guild, and this block is already the longest on the tooltip.
-	local guildsShown = UI:ShowAtMost(#guilds, GUILD_CAP)
+	local guildsShown = UI:ShowAtMost(#guilds, roomFor(tooltip, GUILD_CAP))
 
 	for index = 1, guildsShown do
 		local guild = guilds[index]
@@ -316,7 +333,7 @@ local function crafterLines(tooltip, itemID)
 
 		-- One over the cap is drawn whole: a line reading "and 1 more" costs the line the
 		-- name would have cost (UI:ShowAtMost).
-		local shown = UI:ShowAtMost(#theirs, GUILD_CAP)
+		local shown = UI:ShowAtMost(#theirs, roomFor(tooltip, GUILD_CAP))
 
 		for index = 1, shown do
 			local who = theirs[index]
@@ -383,7 +400,7 @@ local function readyText(cooldown)
 	return string.format(L["|cffff8040ready %s|r"], UI:In(cooldown.readyAt))
 end
 
-local function makerLines(ours, theirs)
+local function makerLines(tooltip, ours, theirs)
 	local total = #ours + #theirs
 	if total == 0 then return nil end
 
@@ -391,7 +408,7 @@ local function makerLines(ours, theirs)
 		string.format("|cff888888%d|r", total) } }
 	-- One over the cap is drawn whole, here as everywhere: the contraction line costs the
 	-- line the name would have cost (UI:ShowAtMost).
-	local shown = UI:ShowAtMost(total, GUILD_CAP)
+	local shown = UI:ShowAtMost(total, roomFor(tooltip, GUILD_CAP))
 	local room = shown
 
 	for index = 1, math.min(room, #ours) do
@@ -516,7 +533,7 @@ local function makersOwned(itemID)
 	return found
 end
 
-local function makerBlock(_, itemID)
+local function makerBlock(tooltip, itemID)
 	-- Not on a pattern. A profession window lists the crafting *spells* a character has
 	-- learnt, and a pattern in a bag or an auction house is the book that teaches one - two
 	-- different things, and two different questions. Hovering the plans asks who knows the
@@ -549,7 +566,7 @@ local function makerBlock(_, itemID)
 		if not seen[who.key] then ours[#ours + 1] = who end
 	end
 
-	return makerLines(ours, theirs)
+	return makerLines(tooltip, ours, theirs)
 end
 
 -- **What a vendor pays, and what a vendor charges.** Off unless asked for.
@@ -1062,7 +1079,7 @@ local function onSpell(tooltip, spellID)
 	local theirs = (Family.Guild and Family.Guild:Enabled())
 		and Family.Guild:CraftersOf(spellID, nil, nil) or {}
 
-	local lines = makerLines(ours, theirs)
+	local lines = makerLines(tooltip, ours, theirs)
 
 	-- **And what it is made of, counted and priced.** Asked for off the tooltip of an enchant,
 	-- which said who can make it and nothing about what it takes: an enchant makes no item, so

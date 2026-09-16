@@ -1,0 +1,6 @@
+name: a block ignores the lines already on the tooltip and claims the whole screen
+file: addons/Family_UI/Window.lua
+--- old
+	local left = self:TooltipRows() - (tonumber(used) or 0) - RESERVED_LINES
+--- new
+	local left = self:TooltipRows() - RESERVED_LINES

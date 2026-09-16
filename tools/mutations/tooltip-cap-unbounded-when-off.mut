@@ -1,0 +1,7 @@
+name: folding switched off lets a tooltip list a whole family and run off the screen
+file: addons/Family_UI/Window.lua
+--- old
+	local left = self:TooltipRows() - (tonumber(used) or 0) - RESERVED_LINES
+	return math.max(cap, math.floor(left * BLOCK_SHARE))
+--- new
+	return math.huge

@@ -29,6 +29,13 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Long lists
+
+- **Turning off *Fold long lists to fit the page* now turns it off on tooltips too.** An item's
+  tooltip then names as many of your characters as the screen has room for, instead of stopping at
+  ten. It still stops before the tooltip would run off the screen, and leaves room for whatever
+  other addons add to it.
+
 ### Money that lines up
 
 - **Gold under gold, silver under silver, copper under copper.** A money column used to put its

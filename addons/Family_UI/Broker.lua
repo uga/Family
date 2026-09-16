@@ -195,31 +195,9 @@ local function knownSides(here)
 	return known
 end
 
--- How many lines this screen has room for.
---
--- A tooltip does not scroll and is not clipped politely: a family of thirty runs off the top
--- and the bottom at once, and what goes off the bottom is the grand total and the warnings -
--- the answers, while the detail survives. Reported with a screenshot of exactly that.
---
--- Derived rather than chosen. A constant that fits one screen is wrong on a laptop at 0.8 UI
--- scale and wasteful on a tall one, and the client knows the height of its own screen and the
--- size of its own font. Nine tenths, because a tooltip anchored to a minimap button does not
--- start at the top of the screen.
-local MINIMUM_ROWS = 6
-local SAFE_FRACTION = 0.9
-local FALLBACK_FONT = 12
-local LINE_PADDING = 2.5
-
-local function rowsOnScreen()
-	local parent = _G.UIParent
-	local height = tonumber((Family:TryCall(parent and parent.GetHeight, parent))) or 768
-
-	local font = _G.GameTooltipText
-	local size = font and select(2, Family:TryCall(font.GetFont, font))
-	local line = (tonumber(size) or FALLBACK_FONT) + LINE_PADDING
-
-	return math.max(math.floor(height * SAFE_FRACTION / line), MINIMUM_ROWS)
-end
+-- How many lines this screen has room for: `UI:TooltipRows`, in Window.lua. It was written
+-- here, for this tooltip, and moved out when the item tooltip came to need the same number
+-- (backlog 89) - a screen height that two files work out is a height they will disagree about.
 
 -- A tooltip has two columns and no more, so level and item level ride with the name on the
 -- left and money holds the right on its own. That is the one column where alignment earns
@@ -289,7 +267,7 @@ local function describe(tooltip)
 	local members = 0
 	for _, group in ipairs(groups) do members = members + #group.list end
 
-	local budget = rowsOnScreen() - structure
+	local budget = UI:TooltipRows() - structure
 	local trimming = members > budget
 
 	-- Nothing changes at all for a family that fits, which is nearly everybody: same order,

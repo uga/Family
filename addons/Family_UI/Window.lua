@@ -1662,6 +1662,75 @@ function UI:FoldDepth(sizes, other, fit, most)
 	return least
 end
 
+-- **How many lines this screen has room for**, for the things that are drawn on a tooltip.
+--
+-- A tooltip does not scroll and is not clipped politely: a family of thirty runs off the top and
+-- the bottom at once, and what goes off the bottom is the grand total and the warnings - the
+-- answers, while the detail survives. Reported with a screenshot of exactly that.
+--
+-- Derived rather than chosen. A constant that fits one screen is wrong on a laptop at 0.8 UI
+-- scale and wasteful on a tall one, and the client knows the height of its own screen and the
+-- size of its own font. Nine tenths, because a tooltip anchored to a minimap button does not
+-- start at the top of the screen.
+--
+-- Written for the broker tooltip and moved here when the item tooltip needed the same number
+-- (backlog 89).
+local MINIMUM_ROWS = 6
+local SAFE_FRACTION = 0.9
+local FALLBACK_FONT = 12
+local LINE_PADDING = 2.5
+
+function UI:TooltipRows()
+	local parent = _G.UIParent
+	local height = tonumber((Family:TryCall(parent and parent.GetHeight, parent))) or 768
+
+	local font = _G.GameTooltipText
+	local size = font and select(2, Family:TryCall(font.GetFont, font))
+	local line = (tonumber(size) or FALLBACK_FONT) + LINE_PADDING
+
+	return math.max(math.floor(height * SAFE_FRACTION / line), MINIMUM_ROWS)
+end
+
+-- **What a tooltip block lists before it starts counting instead**, which is its own cap until
+-- the player switches folding off.
+--
+-- Backlog 89, asked by a user through Alberto: the Options switch of backlog 82 turns folding off
+-- on Family's own pages and does nothing to the tooltips, where the caps are fixed numbers - ten
+-- owners, five crafters. Switched off, a block now lists as many as the screen will hold.
+--
+-- **Off does not mean unbounded**, and that is Alberto's call of 2026-09-16 rather than a
+-- liberty taken here: a tooltip has no scrollbar, so an uncapped list on a family of two hundred
+-- runs off the screen and takes the item's own text with it - which is the fault backlog 80 fixed
+-- for the other tooltip. What is left over from the screen is the cap instead.
+--
+-- **What is already on the tooltip is counted, not guessed.** Asked by Alberto 2026-09-16: the
+-- item writes its own lines, and so does every other addon the player runs - an auction price, an
+-- item level, a source. A constant allowance for all that would be wrong on the machine it matters
+-- on, which is the one with five addons on the same tooltip. So the caller hands over what the
+-- tooltip says it already holds (`NumLines`), and the room is what is left of the screen.
+--
+-- `RESERVED_LINES` covers only what cannot be counted that way: Family's own heading and
+-- contraction line, its other block below this one, and anything an addon adds *after* us.
+--
+-- **And a ceiling, because the count is a floor.** Alberto, 2026-09-16: *IF Family is the last one
+-- building something. Otherwise how can you know it?* An addon whose hook runs after Family's adds
+-- lines that no call reports and nothing here can count, so filling the screen exactly - on a
+-- measurement that is only true until the next addon draws - is how a tooltip ends up off the
+-- screen anyway. A block may take two thirds of what is left and no more, which leaves a third of
+-- the screen standing for whoever writes after us.
+--
+-- It only ever makes the cap smaller than the screen, and never smaller than the block's own cap,
+-- so the worst it can do is fold a little sooner than it had to.
+local RESERVED_LINES = 6
+local BLOCK_SHARE = 2 / 3
+
+function UI:TooltipCap(cap, used)
+	if not (FamilyDB and FamilyDB.foldLists == false) then return cap end
+
+	local left = self:TooltipRows() - (tonumber(used) or 0) - RESERVED_LINES
+	return math.max(cap, math.floor(left * BLOCK_SHARE))
+end
+
 -- **How many rows a list has room for**, asked of its scroll frame at the moment it is drawn.
 --
 -- The window is not resizable, so this is one measurement - but it is a measurement, and on a

@@ -5559,3 +5559,45 @@ a bid value is ever reported cut; none has been.
 the head always fits there. A look in the client is part of the work, not a courtesy.
 
 **Also owed: a look in the game** at the Summary's Money and Worth columns and at the price audit.
+
+---
+
+## 89. Switching folding off should reach the tooltips too — DONE 2026-09-16, not yet seen in game
+
+**Asked by a user through Alberto 2026-09-16**, off backlog 82: the Options switch turns the folding
+of long lists off on Family's own pages, and they would like it to turn it off on the tooltips too.
+
+**And the question underneath it, asked by Alberto and answered from the code that day:** the
+adaptive depth - fewer rows shown as a list grows - **has never applied to a tooltip**. There are
+three foldings in Family, and they are different mechanisms. `UI:FoldDepth` is the adaptive one and
+its callers are three panels: Possessions, the summary and Character. An item tooltip folds at
+**fixed caps** - `OWNER_CAP = 10`, `GUILD_CAP = 5` in `addons/Family_UI/Tooltip.lua`, through
+`UI:ShowAtMost` at four places. The broker tooltip does neither: it trims by the rows the screen
+holds (backlog 80). So the switch of backlog 82, read inside `UI:FoldDepth` and nowhere else, did
+nothing whatever to any tooltip.
+
+**Built, on Alberto's choice of four ways: one switch, with a cap.** `UI:TooltipCap(cap, used)` in
+`Window.lua` returns the block's own cap while folding is on, and what the screen has left when it is
+off. Off does not mean unbounded: a tooltip has no scrollbar, so an uncapped list on a family of two
+hundred takes the item's own text off the screen with it - the fault backlog 80 fixed for the other
+tooltip.
+
+**What is already on the tooltip is counted, not guessed.** Alberto asked the question that shaped
+this - *did you consider other addons may also add stuff to the tooltip?* - so the caller hands over
+`NumLines`, which is the item's own text plus whatever every other addon wrote before Family was
+called. And then: *IF Family is the last one building something. Otherwise how can you know it?* It
+cannot. An addon whose hook runs after ours writes lines nothing can count and no call reports. So
+the count is treated as a floor and a block may take **two thirds** of what is left, leaving a third
+standing for whoever draws next; `RESERVED_LINES` covers Family's own heading and contraction line.
+
+`UI:TooltipRows` moved out of `Broker.lua` into `Window.lua` so that the two tooltips work from one
+screen height rather than two.
+
+**Checks**: with folding on a block lists what it always did; off it lists more, the same for every
+block, never fewer than folding on would however short the screen, less when lines are already on
+the tooltip, and only part of what is left. End to end on the owners block at two hundred and ten
+owners: switched off it names far more than ten and still stops short. The harness stub's `UIParent`
+now answers a screen height a check can set - it always said 500, so *what happens on a short
+screen* could not be asked and one mutation survived on that. Mutations `tooltip-cap-*`, all caught.
+
+**Owed: a look in the game**, with the switch off, at an item a large family owns.

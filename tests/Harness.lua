@@ -857,6 +857,12 @@ function CreateFrame(kind, name, parent, template)
 end
 
 UIParent = CreateFrame("Frame", "UIParent")
+
+-- **The screen's own height, which a check may change.** Every other frame answers the constant
+-- `frameMethods:GetHeight` returns, and the scroll frames rely on that - but the screen is the one
+-- height the tooltips work from (`UI:TooltipRows`), and *what happens on a short screen* is a
+-- question worth asking. Left at the same 500 until a check says otherwise, so nothing else moves.
+function UIParent:GetHeight() return self.__screenHeight or 500 end
 UISpecialFrames = {}
 
 GameTooltip = CreateFrame("GameTooltip", "GameTooltip")
@@ -2343,6 +2349,54 @@ Family.UI.RowsThatFit = function() return 0 end
 	FamilyDB.foldLists = nil
 	check("and a file that never set it folds as before",
 		depth({ 15, 15 }, 0, 22) == 10, tostring(depth({ 15, 15 }, 0, 22)))
+	FamilyDB.foldLists = heldFold
+
+	-- **Backlog 89: the same switch reaches the tooltips**, where the caps are fixed numbers and
+	-- the adaptive depth above has never applied. Switched on - or never set - a block lists what
+	-- it always did; switched off it lists as many as the screen has room for, and no more,
+	-- because a tooltip has no scrollbar and an uncapped list takes the item's own text off the
+	-- screen with it (backlog 80 fixed that once already, for the other tooltip).
+	FamilyDB.foldLists = nil
+	check("with folding on, a tooltip block lists what it always did",
+		UI:TooltipCap(10) == 10 and UI:TooltipCap(5) == 5,
+		UI:TooltipCap(10) .. "/" .. UI:TooltipCap(5))
+
+	FamilyDB.foldLists = false
+	local roomy = UI:TooltipCap(10)
+	check("switched off, it lists as many as the screen holds rather than ten",
+		roomy > 10 and roomy < UI:TooltipRows(),
+		roomy .. " against a screen of " .. UI:TooltipRows() .. " lines")
+	check("and the same room whichever block asks, since the screen is the same screen",
+		UI:TooltipCap(5) == roomy, UI:TooltipCap(5) .. " against " .. roomy)
+
+	-- A short screen must not give a block *less* than it had: the cap is the block's own or the
+	-- room, whichever is larger, so switching folding off can only ever show more.
+	do
+		local heldHeight = UIParent.__screenHeight
+		UIParent.__screenHeight = 200
+		check("a short screen leaves less room, which is the point of measuring it",
+			UI:TooltipRows() < 20, tostring(UI:TooltipRows()))
+		check("and never fewer names than folding on would have listed",
+			UI:TooltipCap(10) >= 10 and UI:TooltipCap(5) >= 5,
+			UI:TooltipCap(10) .. "/" .. UI:TooltipCap(5))
+		UIParent.__screenHeight = heldHeight
+	end
+
+	-- **What the tooltip already holds is taken off the room**, and that is the item's own text
+	-- plus whatever every other addon wrote before Family was called.
+	check("lines already on the tooltip are taken off the room a block may use",
+		UI:TooltipCap(10, 20) < UI:TooltipCap(10, 0)
+			and UI:TooltipCap(10, 20) >= 10,
+		UI:TooltipCap(10, 0) .. " with an empty tooltip, " .. UI:TooltipCap(10, 20)
+			.. " with twenty lines on it")
+
+	-- **And a block takes only part of what is left.** Alberto: *IF Family is the last one building
+	-- something. Otherwise how can you know it?* An addon whose hook runs after ours writes lines
+	-- nothing can count, so a block that filled the screen exactly would put the tooltip off it
+	-- anyway. Two thirds, leaving a third standing for whoever writes next.
+	check("and a block claims only part of what is left, for whoever draws after us",
+		UI:TooltipCap(10, 0) < UI:TooltipRows() - 6,
+		UI:TooltipCap(10, 0) .. " of " .. (UI:TooltipRows() - 6) .. " left")
 	FamilyDB.foldLists = heldFold
 
 	-- **The room is read off the scroll frame**, and an unmeasured one asks to be drawn again.
@@ -36088,6 +36142,33 @@ print("a family bigger than a tooltip")
 	check("while two hundred and ten do not fill the screen",
 		drawn == 10 and contraction ~= nil, drawn .. " drawn, contracted: "
 			.. tostring(contraction ~= nil))
+
+	-- **Backlog 89: switching folding off reaches this block too.** Asked by a user through
+	-- Alberto: the switch of backlog 82 turns folding off on Family's own pages and did nothing
+	-- here, where the cap is a fixed ten. Off, the block lists as many as the screen holds - and
+	-- **still not two hundred and ten**, which is Alberto's call: a tooltip has no scrollbar, so
+	-- an uncapped list takes the item's own text off the screen with it.
+	do
+		local heldFold = FamilyDB.foldLists
+
+		FamilyDB.foldLists = false
+		local offDrawn, offContraction = withOwners(210)
+		check("switched off, the block names far more than ten of them",
+			offDrawn > 10 and offDrawn == Family.UI:TooltipCap(10),
+			offDrawn .. " drawn against a cap of " .. Family.UI:TooltipCap(10))
+		check("and still stops before the tooltip runs off the screen",
+			offDrawn < 210 and offContraction ~= nil,
+			offDrawn .. " drawn, contracted: " .. tostring(offContraction ~= nil))
+
+		FamilyDB.foldLists = true
+		local onDrawn = withOwners(210)
+		check("and switched back on it names ten again",
+			onDrawn == 10, tostring(onDrawn))
+
+		FamilyDB.foldLists = heldFold
+	end
+
+	drawn, contraction = withOwners(210)
 
 	-- **And the ones not drawn are still counted**, or the total in the header stops adding up -
 	-- which is the one thing somebody reads this block for on an item they own hundreds of.

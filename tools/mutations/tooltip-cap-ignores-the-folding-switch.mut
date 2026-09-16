@@ -1,0 +1,6 @@
+name: switching folding off leaves the tooltips folding at their fixed caps
+file: addons/Family_UI/Window.lua
+--- old
+	if not (FamilyDB and FamilyDB.foldLists == false) then return cap end
+--- new
+	if true then return cap end
