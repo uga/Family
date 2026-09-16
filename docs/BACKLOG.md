@@ -5559,8 +5559,19 @@ the Overview, the four pixels over the set's slack taken from Rest XP.
 **The Activity set's Bid value and Buyout stay at 114**, and that is a decision: the set adds up to
 `ROW_BUDGET` exactly and every column beside them is already at its own contents - the fit check went
 red on *maintenant* and *только что* the moment pixels were taken from the two *seen* columns. Paying
-for it there means widening the window, as 2026-09-15 did for those same two columns. Worth doing if
-a bid value is ever reported cut; none has been.
+for it there means widening the window, as 2026-09-15 did for those same two columns.
+
+**And they were being cut, measured on Era the same day.** Alberto's icon sheet reading: *Bid value,
+coins* draws **108 pixels into 106** and says CLIPS, at four figures of gold and at 9999g 99s 99c.
+Not the places' doing - the sheet draws those figures the old way, so it has been so since the coins
+landed on 2026-09-15. Of three ways put to Alberto - a wider window, leaving it, or dropping the
+copper as Worth already does - he took the third. Both cells and both totals are `UI:GoldAndSilver`
+now, which the sheet measures at 77 of the 106. **The copper of those two figures is then shown
+nowhere**, which is the price of it; an auction total read to the gold is the argument Worth was
+built on. Two checks that the cells carry silver and no copper - read across the places, since a cell
+holds only the head of a figure now - and mutations `bid-value-written-with-copper` and
+`buyout-written-with-copper`. `coins-bid-value-too-narrow` was re-pointed: the width it guarded
+against, the one from before the coins, is wide enough for a figure with no copper in it.
 
 **The harness cannot see this class of fault** (L-104): its stub gives every character one width, so
 the head always fits there. A look in the client is part of the work, not a courtesy.

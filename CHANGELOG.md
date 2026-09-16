@@ -45,6 +45,9 @@ is a decision rather than an afternoon of archaeology.
 
 ### Money that lines up
 
+- **Bid value and Buyout are written in gold and silver**, like Worth beside them. With the coppers
+  on them a four-figure bid did not fit its column and was cut off.
+
 - **Gold under gold, silver under silver, copper under copper.** A money column used to put its
   coins wherever the digits ended, so a figure with a narrow `1` in it sat out of line with the rows
   around it. Every figure now has the same three places, whatever is in them, and the columns are no
