@@ -984,6 +984,40 @@ function sheet:LayOutMoney(width, y)
 				COPPER_COIN, copperWidest, pad)
 	end
 
+	-- **Measured, not eyeballed.** Alberto read the first version of this section on Era and
+	-- said the padded column was not lined up. Whether a width asked for in the markup is the
+	-- width the client draws is a question the client can answer - GetStringWidth is a reading,
+	-- not a guess - so it is asked here in the three shapes the markup takes, and the answers
+	-- are printed. A spacer that draws narrower than it was asked for cannot hold a place.
+	local baseline = widthOf("|cffffffff88|r")
+	for _, shape in ipairs({
+		{ label = "|T...:1:20|t  a pixel tall, 20 wide", markup = "|T%s:1:20|t" },
+		{ label = "|T...:0:20|t  text height, 20 wide", markup = "|T%s:0:20|t" },
+		{ label = "|T...:12:20|t 12 tall, 20 wide", markup = "|T%s:12:20|t" },
+		{ label = "|T...:1:20:0:0|t with offsets", markup = "|T%s:1:20:0:0|t" },
+	}) do
+		local drawn = widthOf("|cffffffff88|r" .. string.format(shape.markup, SPACER)) - baseline
+		local line = nextText("GameFontDisableSmall")
+		line:SetPoint("TOPLEFT", 2, -y)
+		line:SetText(string.format("%s%s|r   %s%.1f px|r of the 20 asked for",
+			GREY, shape.label, (drawn >= 19.5 and drawn <= 20.5) and GREEN or RED, drawn))
+		y = y + 16
+	end
+
+	-- And what the padding is actually doing to these four figures: the room each takes from
+	-- the silver onwards, padded against plain. Padded, the four should read the same number.
+	y = y + 6
+	for _, amount in ipairs({ 41519123, 12357780, 11111111, 447788 }) do
+		local paddedTail = widthOf((figureFor(amount, true):gsub("^[^ ]+ ", "")))
+		local plainTail = widthOf((figureFor(amount, false):gsub("^[^ ]+ ", "")))
+		local line = nextText("GameFontDisableSmall")
+		line:SetPoint("TOPLEFT", 2, -y)
+		line:SetText(string.format("%s%d|r   padded tail %s%.1f|r px, plain tail %s%.1f|r px",
+			GREY, amount, GREEN, paddedTail, GREY, plainTail))
+		y = y + 16
+	end
+	y = y + 8
+
 	for _, pass in ipairs({ { label = "padded", pad = true }, { label = "plain", pad = false } }) do
 		local head = nextText("GameFontDisableSmall")
 		head:SetPoint("TOPLEFT", 2, -y)
