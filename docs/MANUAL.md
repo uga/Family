@@ -494,6 +494,11 @@ whole. Where every block on the page fits, nothing folds however long a block is
 not, every block folds by the same amount — as little as brings the page back to one screen, and
 never below three — behind a line you can click.
 
+**Unless you turn it off.** Untick *Fold long lists to fit the page* under Options and every name in
+every group is drawn, on Family's own pages and on the game's tooltips alike; the page scrolls
+instead. A tooltip has no scrollbar, so there it still stops before it would run off your screen,
+and leaves room for whatever other addons write on the same tooltip.
+
 Only items the client has named can be matched. An item nobody has looked at since the last
 patch has no name yet, and Family says so rather than letting a search quietly answer for less
 than it searched.
@@ -884,6 +889,8 @@ guild while the others are fine, this is why.
 | Share gear and talents with your guild | §12 above, both ways at once |
 | Share with families you link to | Wide Family, §11 above |
 | Say in chat how a Wide Family update went | whether a linked family had anybody online to talk to |
+| Fold long lists to fit the page | on; untick it to see every name in every group, on Family's pages and on the game's tooltips |
+| Draw the carried bags as one block, and the bank as another | Possessions then shows one run of slots for the bags and one for the bank |
 | Narrate what the scanners are doing | chat messages while recording; for working out faults |
 | How far in front the window sits | raise it if another addon draws over Family |
 
