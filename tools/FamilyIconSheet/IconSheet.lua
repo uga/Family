@@ -1018,8 +1018,11 @@ function sheet:LayOutMoney(width, y)
 		y = y + 16
 	end
 
-	-- And what the padding is actually doing to these four figures: the room each takes from
-	-- the silver onwards, padded against plain. Padded, the four should read the same number.
+	-- And what the padding is doing to these four figures, place by place. The tails should read
+	-- one number; Alberto's reading of 2026-09-16 says they do not - 66.7, 64.7, 66.9, 64.7 - and
+	-- a tail is a sum, so it cannot say which step is wrong. These are the steps: what the piece
+	-- measures, what its place is held at, what that leaves it short by, and what the markup was
+	-- asked for. A place that comes out right reads `short` as nearly nought after padding.
 	y = y + 6
 	for _, amount in ipairs({ 41519123, 12357780, 11111111, 447788 }) do
 		local paddedTail = widthOf((figureFor(amount, true):gsub("^[^ ]+ ", "")))
@@ -1029,6 +1032,29 @@ function sheet:LayOutMoney(width, y)
 		line:SetText(string.format("%s%d|r   padded tail %s%.1f|r px, plain tail %s%.1f|r px",
 			GREY, amount, GREEN, paddedTail, GREY, plainTail))
 		y = y + 16
+
+		for _, place in ipairs({
+			{ label = "silver", figure = string.format("%02d",
+				math.floor((amount % 10000) / 100)), coin = SILVER_COIN, holdAt = silverWidest },
+			{ label = "copper", figure = string.format("%02d", amount % 100),
+				coin = COPPER_COIN, holdAt = copperWidest },
+		}) do
+			local bare = string.format("|cffffffff%s|r%s", place.figure, place.coin)
+			local short = place.holdAt - widthOf(bare)
+			local asked = math.floor((short / ratio) + 0.5)
+			local drawn = widthOf(piece("|cffffffff", place.figure, place.coin,
+				place.holdAt, true))
+			local over = drawn - place.holdAt
+
+			local row = nextText("GameFontDisableSmall")
+			row:SetPoint("TOPLEFT", 20, -y)
+			row:SetText(string.format(
+				"%s%s|r piece %.1f, place %.1f, short %.1f, asked %d, drawn %.1f, out by %s%.1f|r",
+				GREY, place.label, widthOf(bare), place.holdAt, short, asked, drawn,
+				(over > -0.6 and over < 0.6) and GREEN or RED, over))
+			y = y + 14
+		end
+		y = y + 4
 	end
 	y = y + 8
 

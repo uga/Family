@@ -5536,6 +5536,13 @@ Worth, the Activity set's Bid value and Buyout, the Extras auction prices page, 
 *Made with*, *Total*, *Sell price* and *Auction*. (*Sell price* had looked missing; the prices switch
 was off.)
 
+**Still out by about two pixels between rows, 2026-09-16.** Alberto's reading after the calibration
+landed: padded tails 66.7, 64.7, 66.9, 64.7 where they should be one number, and the figures with no
+`1` in them gain 2.0 pixels of padding all the same. A tail is a sum and cannot say which step is
+wrong, so the sheet now prints the steps for each place - what the piece measures, what its place is
+held at, what it is short by, what the markup was asked for, what it drew, and how far out that
+leaves it. **Not yet read.**
+
 **Owed, and the one thing no check can answer: a screenshot.** `/iconsheet` on Era, TBC and Mists, at
 *The spacer: do the padded coins line up, and is it invisible?* - four figures drawn padded and then
 plain. What it has to show: nothing visible where the spacer is, no green marker, and the padded
