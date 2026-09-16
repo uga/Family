@@ -5549,6 +5549,10 @@ measured one at a time, so the two need not agree to the pixel: what the client 
 next to a picture is its own business. Left as it is, and written down rather than chased: the thing
 the reader sees is the column, and the column is straight.
 
+**The broker tooltip seen working 2026-09-16, on Era**, after the calibration: its coins line up down
+the column. Alberto had read the build before it as *slight misalignment of silver and gold coin
+icons*, which was the padding asking for widths the client drew short of.
+
 **The old note, kept for the record:**
 
 **Still out by about two pixels between rows, 2026-09-16.** Alberto's reading after the calibration
