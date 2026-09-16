@@ -1,0 +1,7 @@
+name: a cell that stops holding money is never given its whole width back
+file: addons/Family_UI/Window.lua
+--- old
+		if full then cell:SetWidth(full) end
+		cell:SetText(text or "")
+--- new
+		cell:SetText(text or "")

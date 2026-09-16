@@ -1216,6 +1216,170 @@ function UI:Coins(copper, total)
 	return table.concat(parts, " ")
 end
 
+--------------------------------------------------------------------------------------------
+-- A money figure drawn as places, so a column of them lines up
+--
+-- **The fault, reported off a screenshot 2026-09-15** (backlog 88): *4151g 91s 23c* sat out of
+-- line with the rows above it. `UI:Money` pads the figures - two digits of silver and two of
+-- copper on every row - but the game's font does not draw two digits at one width: a *1* is
+-- narrower than a *4*. One right-justified string therefore lands its coins wherever the digits
+-- to their right happen to end, and the narrower the copper the further right the gold sits.
+--
+-- **So the places are held apart rather than written together.** Silver and copper each get a
+-- font string of their own, as wide as the widest two digits of that unit plus its coin, pinned
+-- to the right-hand end of the cell; the figure's head - the gold, or a millions figure that has
+-- no other places - keeps the cell itself and is right-justified into what is left. The column
+-- is not made wider by any of it: the three add up to the width the cell already had.
+--
+-- The widest two digits are measured rather than guessed, in the cell's own font, because that
+-- is the only thing that knows how wide a digit is on this client at this scale.
+--------------------------------------------------------------------------------------------
+
+local COIN_UNITS = { GoldIcon = "gold", SilverIcon = "silver", CopperIcon = "copper" }
+
+-- Which unit one piece of a figure is, by its coin or - on a client with no coin strings - by
+-- the letter `unitText` falls back to. Nil for anything that is not a unit at all, which is how
+-- a cell holding a sentence with spaces in it is told from a cell holding money.
+local function pieceUnit(piece)
+	local picture = piece:match("|T(.-)|t")
+	if picture then
+		for name, unit in pairs(COIN_UNITS) do
+			if picture:find(name, 1, true) then return unit end
+		end
+		return nil
+	end
+
+	local letter = piece:match("|r(%a)$")
+	for unit, mark in pairs(LETTER) do
+		if letter == mark then return unit end
+	end
+end
+
+-- The pieces of a money figure, in the order they are written, each with its unit - or nothing
+-- at all if this text is not a money figure. Asked of the text rather than of the caller so that
+-- one cell renderer can serve a money column and a word column without being told which is which.
+function UI:MoneyPieces(text)
+	if type(text) ~= "string" or not text:find(" ", 1, true) then return nil end
+
+	local pieces, units = {}, {}
+	for piece in text:gmatch("[^ ]+") do
+		local unit = pieceUnit(piece)
+		if not unit then return nil end
+		pieces[#pieces + 1] = piece
+		units[#units + 1] = unit
+	end
+
+	if #pieces < 2 then return nil end
+	return pieces, units
+end
+
+-- How wide a place has to be to hold any two digits of this unit, its coin, and the space that
+-- separates it from the place before it. Measured once per font string and remembered on it:
+-- the answer cannot change while the client runs, and measuring ten strings on every row of
+-- every draw would be paid for on every scroll.
+--
+-- The widest pair rather than the pair in hand, because that is the whole point: a place that is
+-- as wide as its own digits is what put the rows out of line to begin with.
+local function placeWidth(cell, unit, total)
+	cell.__moneyWidths = cell.__moneyWidths or {}
+	local held = cell.__moneyWidths[unit .. (total and ".total" or "")]
+	if held then return held end
+
+	local ruler = UI:WidthRuler(cell)
+	if not ruler then return nil end
+
+	local widest = 0
+	for digit = 0, 9 do
+		local pair = string.format("%d%d", digit, digit)
+		widest = math.max(widest, ruler(unitText(unit, pair, total)) or 0)
+	end
+
+	local wide = math.ceil(widest + (ruler(" ") or 0))
+	cell.__moneyWidths[unit .. (total and ".total" or "")] = wide
+	return wide
+end
+
+-- The extra font strings one cell needs, made when it first holds money and kept with it. The
+-- template is the caller's, because a place drawn in another font than the figure it belongs to
+-- would line up with the rows and not with itself.
+local function placesFor(cell, count)
+	cell.__moneyPlaces = cell.__moneyPlaces or {}
+
+	for index = 1, count do
+		if not cell.__moneyPlaces[index] then
+			local parent = cell.GetParent and cell:GetParent()
+			if not (parent and parent.CreateFontString) then return nil end
+
+			local place = parent:CreateFontString(nil, "ARTWORK",
+				cell.__moneyTemplate or "GameFontNormal")
+			place:SetJustifyH("RIGHT")
+			UI:NoWrap(place)
+			cell.__moneyPlaces[index] = place
+		end
+	end
+
+	return cell.__moneyPlaces
+end
+
+-- **What a cell's width means here.** The caller sizes its cells and says so by setting
+-- `__moneyWidth` on each; this hands part of that width to the places and gives it back whole
+-- the moment the cell holds something that is not money. Read from the caller rather than from
+-- `GetWidth`, which would already be the narrowed width on the second draw of a pooled row.
+function UI:MoneyCell(cell, text, r, g, b)
+	if not (cell and cell.SetText) then return false end
+
+	local pieces, units = self:MoneyPieces(text)
+	local full = cell.__moneyWidth
+	local places = pieces and full and placesFor(cell, #pieces - 1)
+
+	-- Not money, or nowhere to put the places: the cell holds the whole string, as it always
+	-- did. Said first so that a column that stops being a money column leaves nothing behind.
+	if not places then
+		if cell.__moneyPlaces then
+			for _, place in ipairs(cell.__moneyPlaces) do place:Hide() end
+		end
+		if full then cell:SetWidth(full) end
+		cell:SetText(text or "")
+		cell:SetTextColor(r or 1, g or 1, b or 1)
+		return false
+	end
+
+	local total = text:find(TOTAL_FIGURE, 1, true) ~= nil
+
+	-- From the right: the last piece is pinned to the cell's right-hand end, the one before it
+	-- to the left of that, and so on. What is left of the width holds the head of the figure.
+	local taken, anchor = 0, nil
+	for index = #pieces, 2, -1 do
+		local place = places[index - 1]
+		local wide = placeWidth(cell, units[index], total) or 0
+
+		place:ClearAllPoints()
+		if anchor then
+			place:SetPoint("RIGHT", anchor, "LEFT", 0, 0)
+		else
+			place:SetPoint("RIGHT", cell, "RIGHT", 0, 0)
+		end
+		place:SetWidth(wide)
+		place:SetText(pieces[index])
+		place:SetTextColor(r or 1, g or 1, b or 1)
+		place:Show()
+
+		taken = taken + wide
+		anchor = place
+	end
+
+	for index = #pieces, #cell.__moneyPlaces do
+		if cell.__moneyPlaces[index] then cell.__moneyPlaces[index]:Hide() end
+	end
+
+	-- The cell keeps its own left-hand edge and gives up the right of itself, so the head of
+	-- the figure is right-justified where the first place begins. The column is not widened.
+	cell:SetWidth(math.max(1, full - taken))
+	cell:SetText(pieces[1])
+	cell:SetTextColor(r or 1, g or 1, b or 1)
+	return true
+end
+
 -- A member named somewhere that is not about them alone: a search result, a tooltip, a
 -- broker line. Two things can need saying, and only when they need saying.
 --

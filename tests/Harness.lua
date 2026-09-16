@@ -73,6 +73,12 @@ fontMeta.__index = function(_, key)
 	if key == "ClearAllPoints" then
 		return function(self) forgetAnchors(self) end
 	end
+	-- Whose it is. A region has this on all three clients, and a money cell asks so that it
+	-- can make the two extra font strings its places need on the row it is drawn in itself
+	-- (backlog 88) rather than being handed a frame it would have to be told about twice.
+	if key == "GetParent" then
+		return function(self) return self.__parent end
+	end
 	-- How wide somebody asked this to be, which matters because these are pooled: a font
 	-- string given a narrow column by one row carries it to whatever the row is used for
 	-- next unless somebody puts it back. Nought is the game's own word for "as wide as the
@@ -138,8 +144,16 @@ fontMeta.__index = function(_, key)
 				return ""
 			end)
 
+			-- **A digit is not every digit's width.** The game's font draws a "1" narrower
+			-- than the other figures, which is the whole of backlog 88: a money figure
+			-- written as one right-justified string lands its coins wherever its own digits
+			-- end, so a column of them does not line up. A stub that gave every character
+			-- one width could not tell a place held at the widest two digits from a place
+			-- measured on the digits in hand - the mutation restoring the fault would pass.
 			local n = 0
-			for _ in text:gmatch("[^\128-\191]") do n = n + 1 end
+			for character in text:gmatch("[^\128-\191]") do
+				n = n + (character == "1" and 0.7 or 1)
+			end
 			return n * 6.5 + pixels
 		end
 	end
@@ -12068,15 +12082,26 @@ print("the Stock column")
 	-- **And the totals line in gold**, the auction house's other half: white for a member, gold
 	-- for what adds members up. Worth's total is the same 206 here, and Money's total is the one
 	-- gold figure on the panel that carries copper.
+	-- **Asked of the places, since backlog 88.** A figure is no longer one font string: its
+	-- silver and copper are drawn in places of their own so that a column of them lines up, so
+	-- the copper of the Money total is its own string and the gold is the head of the cell.
+	-- What is still being asked is the colour - white for a member, gold for what adds members
+	-- up - on both halves of a total that carries copper.
 	check("coins: the summary's totals are written in gold, Worth's and Money's both",
 		drawnText("|cffffd700206|r|TInterface\\MoneyFrame\\UI-GoldIcon")
 			and (function()
+				local head, copper = false, false
 				for _, f in ipairs(fontStrings) do
-					if type(f.__text) == "string" and onScreen(f) and f.__text:find(
-						"^|cffffd700%d+|r|TInterface\\MoneyFrame\\UI%-GoldIcon.-UI%-CopperIcon")
-					then return true end
+					if type(f.__text) == "string" and onScreen(f) then
+						if f.__text:find(
+							"^|cffffd700%d+|r|TInterface\\MoneyFrame\\UI%-GoldIcon")
+						then head = true end
+						if f.__text:find(
+							"^|cffffd700%d+|r|TInterface\\MoneyFrame\\UI%-CopperIcon")
+						then copper = true end
+					end
 				end
-				return false
+				return head and copper
 			end)())
 
 	-- **A member nothing could be priced for gets the blank that means nobody looked.** A
@@ -24471,6 +24496,89 @@ end)()
 --------------------------------------------------------------------------------------------
 
 print()
+print("money lines up by gold, silver and copper")
+;(function()
+	-- Backlog 88, off a screenshot: *4151g 91s 23c* sat out of line with the rows above it,
+	-- because one right-justified string ends where its own digits end and a "1" is narrow.
+	-- So silver and copper are drawn in places of a fixed width, measured at the widest two
+	-- digits of that unit, and the head of the figure takes what is left of the same cell.
+	local row = CreateFrame("Frame")
+	local cell = row:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+	local ruler = CreateFrame("Frame"):CreateFontString(nil, "ARTWORK", "GameFontNormal")
+
+	local FULL = 114
+	cell.__moneyWidth = FULL
+	cell.__moneyTemplate = "GameFontNormal"
+
+	local narrow = Family.UI:Money(41519123)     -- 4151g 91s 23c, the row that was reported
+	local wide = Family.UI:Money(12357780)       -- 1235g 77s 80c, a row it has to line up with
+
+	Family.UI:MoneyCell(cell, narrow)
+	local places = cell.__moneyPlaces
+	check("a money figure is drawn as its places, silver and copper in their own",
+		places ~= nil and places[1] ~= nil and places[2] ~= nil
+			and places[1].__visible ~= false and places[2].__visible ~= false)
+
+	local silverWide, copperWide = places[1]:GetWidth(), places[2]:GetWidth()
+	local head = cell:GetWidth()
+	check("and the three of them add up to the width the column gave the cell, not a pixel more",
+		head + silverWide + copperWide == FULL,
+		head .. " + " .. silverWide .. " + " .. copperWide .. " against " .. FULL)
+
+	-- The claim itself: the same places whatever digits are in them.
+	Family.UI:MoneyCell(cell, wide)
+	check("and the next row's figure gets places of exactly the same width",
+		places[1]:GetWidth() == silverWide and places[2]:GetWidth() == copperWide,
+		places[1]:GetWidth() .. "/" .. places[2]:GetWidth()
+			.. " against " .. silverWide .. "/" .. copperWide)
+
+	-- And not vacuously: a place measured on the digits in hand would be narrower than this
+	-- for the figure that was reported, which is exactly how its coins came to sit elsewhere.
+	ruler:SetText((Family.UI:Money(41519123):gsub("^[^ ]+ ", ""):gsub(" .*$", "")))
+	check("which is wider than the silver it holds, or the rows would not line up",
+		silverWide > (ruler:GetStringWidth() or 0),
+		silverWide .. " against the 91 itself at " .. tostring(ruler:GetStringWidth()))
+
+	-- **And exactly the widest two digits of that unit, plus the gap.** Wider than the figure
+	-- in hand is not enough: a place measured on some other pair would still be wider than a
+	-- 91 and still put a column of rows out of line. Worked out here from the same font, over
+	-- every pair, rather than read back from the thing under test.
+	local widest, gap = 0, nil
+	for digit = 0, 9 do
+		ruler:SetText(string.format("|cffffffff%d%d|r%s", digit, digit,
+			Family.UI:Money(0):match("(|T[^|]*SilverIcon[^|]*|t)") or ""))
+		widest = math.max(widest, ruler:GetStringWidth() or 0)
+	end
+	ruler:SetText(" ")
+	gap = ruler:GetStringWidth() or 0
+	check("and is the widest two digits of that unit and the gap before it, to the pixel",
+		silverWide == math.ceil(widest + gap),
+		silverWide .. " against " .. math.ceil(widest + gap))
+
+	check("and each place holds its own unit's figure",
+		places[1].__text == (wide:match("^[^ ]+ ([^ ]+) ") or "?")
+			and places[2].__text == (wide:match(" ([^ ]+)$") or "?"),
+		tostring(places[1].__text) .. " | " .. tostring(places[2].__text))
+
+	-- Worth is gold and silver and no copper: one place, and the other put away rather than
+	-- left holding the last row's coppers.
+	Family.UI:MoneyCell(cell, Family.UI:GoldAndSilver(12357780))
+	check("a figure with no copper uses one place and puts the other away",
+		places[1].__visible ~= false and places[2].__visible == false)
+
+	-- Anything that is not money is the string itself, in the whole width of the cell.
+	Family.UI:MoneyCell(cell, "max level")
+	check("a cell that is not money keeps the whole width and shows no places",
+		cell:GetWidth() == FULL and places[1].__visible == false
+			and places[2].__visible == false,
+		cell:GetWidth() .. " against " .. FULL)
+
+	-- What Family says about a member whose money it was never told, which is not a figure.
+	Family.UI:MoneyCell(cell, Family.UI.UNKNOWN)
+	check("and so does the mark for a figure nobody ever read",
+		cell:GetWidth() == FULL and cell.__text == Family.UI.UNKNOWN)
+end)()
+
 print("columns that hold their own headings")
 ;(function()
 	local measure = CreateFrame("Frame"):CreateFontString()

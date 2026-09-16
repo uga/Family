@@ -2518,6 +2518,13 @@ local function layOut(cells, columns)
 			cell:SetWidth(width - 8)
 			cell:SetJustifyH(column.justify)
 
+			-- What this cell is worth in width, said here because here is where it is
+			-- decided. A money figure hands part of it to the places that hold its silver
+			-- and copper apart (backlog 88, UI:MoneyCell), and the width it hands out has
+			-- to be this one rather than whatever a pooled row was narrowed to last time.
+			cell.__moneyWidth = width - 8
+			cell.__moneyTemplate = "GameFontNormal"
+
 			-- Whether this column's cell may run onto a second line.
 			--
 			-- Set on every row rather than once when the cell was made, because rows come
@@ -2536,8 +2543,10 @@ end
 local function setCell(row, index, text, r, g, b)
 	local cell = row.cells[index]
 	if not cell then return end
-	cell:SetText(text or "")
-	cell:SetTextColor(r or 1, g or 1, b or 1)
+
+	-- Money is drawn place by place so that a column of figures lines up; anything else is
+	-- the string itself, and puts the cell back to its whole width (backlog 88).
+	UI:MoneyCell(cell, text, r, g, b)
 end
 
 --------------------------------------------------------------------------------------------

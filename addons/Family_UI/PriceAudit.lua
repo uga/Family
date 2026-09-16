@@ -284,6 +284,12 @@ function UI:BuildPriceAudit(frame)
 			cell:SetPoint("TOPLEFT", column.x + 4, column.line == 1 and -3 or -3 + LINE_TWO)
 			cell:SetWidth(column.width - 8)
 			cell:SetJustifyH(column.justify)
+
+			-- The width a money figure has to share out between its gold, its silver and its
+			-- copper so that a column of prices lines up (backlog 88, UI:MoneyCell). Said
+			-- where the width is decided, so the two cannot come to disagree.
+			cell.__moneyWidth = column.width - 8
+			cell.__moneyTemplate = "GameFontHighlightSmall"
 			if cell.SetWordWrap then cell:SetWordWrap(false) end
 			row.cells[c] = cell
 		end
@@ -453,13 +459,14 @@ function UI:BuildPriceAudit(frame)
 				-- **A banned row shows its newest reading**: the ban keeps the price out of Worth
 				-- and recipe costs, and what the house is asking now is how to tell it can go.
 				if entry.p then
-					row.cells[3]:SetText(UI:Money(entry.p))
-					row.cells[4]:SetText(entry.was and UI:Money(entry.was) or UI.UNKNOWN)
+					UI:MoneyCell(row.cells[3], UI:Money(entry.p))
+					UI:MoneyCell(row.cells[4],
+						entry.was and UI:Money(entry.was) or UI.UNKNOWN)
 					row.cells[5]:SetText(UI:Ago(entry.at))
 					row.forget:Show()
 				else
-					row.cells[3]:SetText("|cffff5555" .. L["banned"] .. "|r")
-					row.cells[4]:SetText("")
+					UI:MoneyCell(row.cells[3], "|cffff5555" .. L["banned"] .. "|r")
+					UI:MoneyCell(row.cells[4], "")
 					row.cells[5]:SetText(UI:Ago(entry.banned))
 					row.forget:Hide()
 				end

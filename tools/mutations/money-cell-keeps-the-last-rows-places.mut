@@ -1,0 +1,10 @@
+name: a cell that is not money leaves the last figure's places on the row
+file: addons/Family_UI/Window.lua
+--- old
+		if cell.__moneyPlaces then
+			for _, place in ipairs(cell.__moneyPlaces) do place:Hide() end
+		end
+--- new
+		if cell.__moneyPlaces then
+			for _, place in ipairs(cell.__moneyPlaces) do place:Show() end
+		end

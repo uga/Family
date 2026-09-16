@@ -1,0 +1,12 @@
+name: a money place is as wide as one pair of digits rather than the widest
+file: addons/Family_UI/Window.lua
+--- old
+	for digit = 0, 9 do
+		local pair = string.format("%d%d", digit, digit)
+		widest = math.max(widest, ruler(unitText(unit, pair, total)) or 0)
+	end
+--- new
+	for digit = 1, 1 do
+		local pair = string.format("%d%d", digit, digit)
+		widest = math.max(widest, ruler(unitText(unit, pair, total)) or 0)
+	end
