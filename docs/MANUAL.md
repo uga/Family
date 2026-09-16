@@ -1044,6 +1044,11 @@ on its own never mentions it. Family works out how many are there from the slot 
 is on, and says nothing at all unless that slot really holds the item being described, so an
 unusual bag addon costs you the line rather than a wrong number.
 
+**Over an action bar slot, press CTRL first.** Pressing it while the tooltip is already up does
+nothing there: action bar addons — Dominos, Bartender, and the game's own bars — use shift, control
+and alt to give a slot a second and third binding, so the key belongs to the bar. Hold it before the
+pointer arrives and the tooltip is built with it down.
+
 **Hold CTRL anywhere else** — at the auction house, at a vendor, over a link somebody posted in
 chat — and Family answers a question nothing else can: *what is everything my characters are
 holding of this worth?* One line with the money, and under it how much of it was reached at

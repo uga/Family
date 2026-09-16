@@ -3498,6 +3498,25 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-105 — "it lost X" was chased before asking whether X had ever worked
+
+**2026-09-16.** Reported from play: the tooltips *lost CTRL dynamic behaviour* - pressing the key
+with the pointer already on the item did nothing. Three commits had landed on that file the same
+day, so the report was taken as a regression and the guard, the hooks and the history were read for
+a cause. There was none: the guard has been `variant@owner` since `93d26ee` on 2026-09-12, and the
+refresh over a *game* tooltip has never been Family's - it belongs to whichever addon owns the
+frame, which our own note in `ItemClick.lua` says. The item was on an **action bar** slot, and every
+action bar addon takes control, shift and alt for its own extra bindings, so nothing ever re-showed
+that tooltip on a key press. Alberto: *I am pretty sure it simply cannot work and never did.*
+
+**What now catches it.** The limitation is written where the other measured one already is, in the
+modifier watcher, and `MANUAL.md` tells the player to press the key before the pointer arrives on a
+bar slot.
+
+**The rule: before chasing a regression, establish that the behaviour existed.** Ask where it was
+seen working and in which build; a report says what somebody expected, which is not the same as what
+was there before. The cost here was reading three files for a cause that was never in them.
+
 ## L-104 — the stub's font fits everything, so a layout that turns on font metrics is unchecked
 
 **2026-09-16.** Backlog 88 gave each money figure three places of a fixed width, the head taking what

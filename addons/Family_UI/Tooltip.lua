@@ -1651,6 +1651,14 @@ end
 -- **the watcher was awake and the client said no key was down.** The last sample, `C.`, is the
 -- same probe seeing CTRL the instant the window had focus again.
 --
+-- **And what it cannot do on an action bar, told by Alberto 2026-09-16.** Pressing CTRL with the
+-- pointer already on a bar slot changes nothing: the bar is Dominos, and every action bar addon -
+-- the game's own included - listens to shift, control and alt to offer a second and third binding
+-- on the same slot. The key is the bar's, and the slot is not re-shown because of it. Family cannot
+-- repair that from here: it does not own that tooltip and repainting somebody else's is what the
+-- note at the top of ItemClick.lua is about. The key still works there the other way round - held
+-- before the pointer arrives, the tooltip is built with it down.
+--
 -- So the key never reaches the game, and there is nothing here to repair: `IsControlKeyDown` is
 -- the only source there is, and a key the client was never given cannot be read from it. Nor can
 -- it be worked around - knowing the window is unfocused, if it could be known, still would not
