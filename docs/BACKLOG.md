@@ -5536,6 +5536,21 @@ Worth, the Activity set's Bid value and Buyout, the Extras auction prices page, 
 *Made with*, *Total*, *Sell price* and *Auction*. (*Sell price* had looked missing; the prices switch
 was off.)
 
+**Read place by place on Era, 2026-09-16, and the padding lands.** Every place within a third of a
+pixel of what it is held at: silver 25.8 into a place of 29.0, short 3.2, asked 3, drawn 28.7, out by
+-0.3; a copper already at 29.0 asks for nothing and is out by 0.0; the widest case, 25.0 short by
+4.0, asked 4, drawn 28.9, out by -0.2. The ratio this client answered was 0.969. So in a
+right-justified line the coins stand in one column, which is what the padded block on the sheet
+shows against the plain one above it.
+
+**The tails still read about a pixel apart** - 62.8, 61.6, 62.6, 61.5 - while the places they are
+made of are right to a third of a pixel. A tail is measured as one string and the places were
+measured one at a time, so the two need not agree to the pixel: what the client charges for a space
+next to a picture is its own business. Left as it is, and written down rather than chased: the thing
+the reader sees is the column, and the column is straight.
+
+**The old note, kept for the record:**
+
 **Still out by about two pixels between rows, 2026-09-16.** Alberto's reading after the calibration
 landed: padded tails 66.7, 64.7, 66.9, 64.7 where they should be one number, and the figures with no
 `1` in them gain 2.0 pixels of padding all the same. A tail is a sum and cannot say which step is
