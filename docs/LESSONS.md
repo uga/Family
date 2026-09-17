@@ -3498,6 +3498,31 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-106 — a name that arrived with the data is in the sender's language, not the reader's
+
+**2026-09-17.** Reported by a user of 4.1.0 on a French client: CTRL and ALT and a click on a link
+in chat opened Possessions searching for *Skullflame Shield*, a name nothing on that client is
+called, and the panel answered that nobody owns one. The gesture had been built and measured on a
+**bag slot**, where the link comes from the player's own client and its words are therefore the
+player's own language - and the comment beside the code said exactly that, as the reason for reading
+the name out of the square brackets rather than looking it up.
+
+A chat link is not that. The `[name]` text is part of the chat message and is written by the client
+that sent it, so an English player's link reads English on every screen in the channel, and nothing
+in the link says which language its words are in. The **id** is in the same link and has no language
+at all; `Names:Item` turns it into the word the reading client uses. L-015 had already made this
+exact fix for recipe names, which stayed in the scanning client's language for the same reason.
+
+**What now catches it.** Four checks drive the real crossroads rather than a stand-in: a link whose
+words are in another language is searched for as this client names it; an id this client cannot name
+falls back on the link's own words; a placeholder is never typed into the search box; and a link
+with no item id in it still searches for its own words. Three mutations.
+
+**The rule: text that arrives alongside data is in the sender's language. Only an id is
+language-free.** A reading measured on one route does not carry to a second route the same value
+travels by - the bag slot and the chat link hand over the same kind of string, written by two
+different clients.
+
 ## L-105 — "it lost X" was chased before asking whether X had ever worked
 
 **2026-09-16.** Reported from play: the tooltips *lost CTRL dynamic behaviour* - pressing the key

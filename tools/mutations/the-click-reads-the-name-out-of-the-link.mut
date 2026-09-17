@@ -1,0 +1,6 @@
+name: the click takes the name from the link's own words again, whoever wrote them
+file: addons/Family_UI/ItemClick.lua
+--- old
+	local id = tonumber(link:match("|Hitem:(%d+)"))
+--- new
+	local id = nil

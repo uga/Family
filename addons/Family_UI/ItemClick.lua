@@ -130,6 +130,37 @@ local function wanted()
 		(Family:TryCall(IsShiftKeyDown)) and true or false
 end
 
+-- **What to call the item, in the language of whoever clicked it.**
+--
+-- Reported by a user of 4.1.0 on a French client, 2026-09-17: CTRL-ALT on a link in chat opened
+-- the panel searching *Skullflame Shield*, which nothing on that client is called, and the page
+-- came back saying nobody owns one.
+--
+-- This used to read the name out of the square brackets, on the reasoning written here that it is
+-- already the client's own word in the language the search box matches on. **That is true of a bag
+-- slot and false of a chat link**: the text between the brackets travels inside the chat message,
+-- written by the client that sent it, so a link posted by an English player reads as English on
+-- every screen in the channel. Nothing about the receiving client is involved, and there is
+-- nothing in the link to say which language it is in.
+--
+-- The **id** in the same link has no language at all, and `Names:Item` turns it into the word this
+-- client uses - the client asked first, its own store behind it. That is the fix L-015 already
+-- made for recipe names, which stayed in the scanning client's language for the same reason.
+--
+-- The bracket text is kept as the fallback, for an id this client has never loaded: a name in
+-- somebody else's language is a poor search and a placeholder reading `Item #12640` is not a
+-- search at all.
+local function nameFor(link)
+	local id = tonumber(link:match("|Hitem:(%d+)"))
+
+	if id and Family.Names then
+		local name, known = Family.Names:Item(id)
+		if known and type(name) == "string" and name ~= "" then return name end
+	end
+
+	return link:match("%[(.-)%]")
+end
+
 local function heard(link, ...)
 	seen = seen + 1
 
@@ -139,11 +170,8 @@ local function heard(link, ...)
 	-- has one and stops at ten of them, because a family can be bigger than a tooltip - this is
 	-- where the rest of that list lives, and getting to it used to mean opening the window,
 	-- finding the panel, pressing Whole family and typing the name back in.
-	--
-	-- The name is taken out of the link rather than looked up: it is already the client's own
-	-- word for the item, in the language the search box matches on.
 	if control and alt and not shift and type(link) == "string" then
-		local name = link:match("%[(.-)%]")
+		local name = nameFor(link)
 		if name and name ~= "" and UI.SearchPossessions then
 			UI:SearchPossessions(name)
 		end

@@ -1,0 +1,6 @@
+name: an item the client has not loaded is searched for by its placeholder
+file: addons/Family_UI/ItemClick.lua
+--- old
+		if known and type(name) == "string" and name ~= "" then return name end
+--- new
+		if type(name) == "string" and name ~= "" then return name end

@@ -29,6 +29,13 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Searching for an item
+
+- **CTRL-ALT on a link in chat now searches for the item in your own language.** A link carries the
+  words of whoever sent it, so an English player's link had a French client searching for a name
+  nothing on it is called, and the page came back empty. Family asks the game what the item is
+  called for you, and falls back on the link's own words only where your client has never loaded it.
+
 ### On the game's tooltips
 
 - **The shortcut to the whole family's copies is offered on every item somebody owns.** Holding

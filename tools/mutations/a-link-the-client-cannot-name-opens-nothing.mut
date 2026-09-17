@@ -1,0 +1,6 @@
+name: a link the client cannot name gives up instead of using the link's words
+file: addons/Family_UI/ItemClick.lua
+--- old
+	return link:match("%[(.-)%]")
+--- new
+	return nil

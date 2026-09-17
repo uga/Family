@@ -36576,13 +36576,55 @@ print("a modified click on an item")
 	HandleModifiedItemClick(link)
 	check("a plain click on an item opens nothing", opened == nil, tostring(opened))
 
-	-- **The name out of the link, not an id looked up.** It is already the client's own word
-	-- for the item, in the language the search box matches on - so a German client searches
-	-- for what a German player sees, with no name table shipped anywhere.
+	-- **The name the client uses, worked out from the id.** The link's own words are the
+	-- fallback and this id is one the client here does not know, so this is that fallback
+	-- being driven rather than a second way of saying the check below.
 	ctrl, alt = true, true
 	HandleModifiedItemClick(link)
 	check("while CTRL and ALT open the family's copies of it",
 		opened == "Wicked Claw", tostring(opened))
+
+	-- **And a link written by somebody else's client is not taken at its word.** Reported by a
+	-- user of 4.1.0 on a French client, 2026-09-17: CTRL-ALT on a link in chat searched for
+	-- *Skullflame Shield*, which nothing on that client is called, and the panel answered that
+	-- nobody owns one. The text between the brackets travels inside the chat message, written by
+	-- whoever sent it, so an English player's link reads English on every screen in the channel -
+	-- and nothing in the link says which language it is in. The id does not have one. L-015.
+	do
+		local foreign = "|cffffffff|Hitem:778899:0:0:0|h[Wicked Claw]|h|r"
+		ITEM_NAMES[778899] = "Griffe vicieuse"
+
+		opened = nil
+		HandleModifiedItemClick(foreign)
+		check("and a link in somebody else's language is searched for as this client names it",
+			opened == "Griffe vicieuse", tostring(opened))
+
+		ITEM_NAMES[778899] = nil
+	end
+
+	-- **And an item this client has never loaded still searches for something.** A name in
+	-- another language is a poor search; the placeholder `Names:Item` hands back for an unknown
+	-- id is not a search at all, and typing `Item #779900` into the box would answer nothing on
+	-- every client in the world rather than on one of them.
+	do
+		local unknown = "|cffffffff|Hitem:779900:0:0:0|h[Bouclier flamboyant]|h|r"
+
+		opened = nil
+		HandleModifiedItemClick(unknown)
+		check("while an item this client cannot name falls back on the link's own words",
+			opened == "Bouclier flamboyant", tostring(opened))
+		check("and never types a placeholder into the search box",
+			type(opened) == "string" and opened:find("#", 1, true) == nil, tostring(opened))
+	end
+
+	-- And a link that is not an item at all keeps working the way it always did: there is no id
+	-- to ask about, so the brackets are all there is and they are used.
+	do
+		opened = nil
+		HandleModifiedItemClick("|cffffffff|Hbattlepet:1234:1|h[Faucon-pêcheur]|h|r")
+		check("and a link carrying no item id is still searched for by its own words",
+			opened == "Faucon-pêcheur", tostring(opened))
+	end
 
 	-- **Shift has to be up.** It is the game's own key for putting a link in the chat box, and
 	-- a shortcut that fires while somebody is doing that is one they turn off.

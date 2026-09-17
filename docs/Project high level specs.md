@@ -528,7 +528,10 @@ off by default.
 
 **Holding CTRL and ALT and clicking the item** opens Family on the whole family's copies of it,
 already filtered to that item — in the bags, on a link in chat, on a worn piece, anywhere the
-client lets a modified click through. The tooltip offers the gesture in grey wherever it would
+client lets a modified click through. What it searches for is the name **this** client uses, worked
+out from the item's id: the words inside a chat link were written by whoever sent it and are in
+their language, not the reader's. Where the client cannot name the id at all, the link's own words
+are used rather than nothing. The tooltip offers the gesture in grey wherever it would
 work: on every item somebody in the family holds, whether or not the list of owners had to be
 shortened, and never on an action bar slot, where those two keys are the bar's own second and
 third bindings and the click never arrives. Where the client has no crossroads for a modified
