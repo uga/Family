@@ -38,6 +38,12 @@ is a decision rather than an afternoon of archaeology.
 
 ### On the game's tooltips
 
+- **What a lot is worth now says how many copies each kind of price covered, in words.** The two
+  lines under Worth count items, and they were drawn in the column that carries money — so *at
+  vendor prices 574* read as a price nobody had multiplied. The count moved into the sentence, on
+  the item tooltip and on a summary row alike. No figure changed: the stack and the worth were
+  right all along.
+
 - **The shortcut to the whole family's copies is offered on every item somebody owns.** Holding
   CTRL and ALT and clicking an item opens Family on everyone who has one, and the tooltip used to
   mention it only where the list of owners was too long to draw — so a smaller family never met

@@ -2413,13 +2413,20 @@ local function makeRow(parent)
 			local held = UI:__stockOf(rowKey)
 			if held and (held.atMarket + held.atVendor) > 0 then
 				lines[#lines + 1] = { " " }
+				-- **The counts in the words, and the right-hand column for money
+				-- alone**, for the reason written beside the item tooltip's copy of
+				-- these three lines: a bare number under a money figure, in the column
+				-- that money is drawn in, reads as money nobody multiplied. Reported on
+				-- the item tooltip 2026-09-17; this drew it the same way and off the
+				-- same three strings.
 				lines[#lines + 1] = { L["Worth"], UI:Money(held.worth) }
-				lines[#lines + 1] = { L["at auction prices"],
-					tostring(held.atMarket) }
-				lines[#lines + 1] = { L["at vendor prices"], tostring(held.atVendor) }
+				lines[#lines + 1] = {
+					string.format(L["%d at auction prices"], held.atMarket) }
+				lines[#lines + 1] = {
+					string.format(L["%d at vendor prices"], held.atVendor) }
 				if held.unpriced > 0 then
-					lines[#lines + 1] = { L["with no price"],
-						tostring(held.unpriced) }
+					lines[#lines + 1] = {
+						string.format(L["%d with no price"], held.unpriced) }
 				end
 			end
 		end

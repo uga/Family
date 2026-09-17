@@ -1049,17 +1049,32 @@ local function priceLines(tooltip, itemID, variant)
 		end
 
 		lines[#lines + 1] = { L["Worth"], figure, 0.4, 0.73, 1, 1, 1, 1 }
+
+		-- **How many copies each lane covers, counted in the words rather than in the column.**
+		--
+		-- Reported by a user of 4.1.0, 2026-09-17, as CTRL multiplying the quantities and not
+		-- the prices. Nothing was miscomputed - his own screenshot has 78 units at 37c drawn as
+		-- a stack of 28s 86c and 574 of them as a worth of 2g 12s 38c, both exact. These three
+		-- lines were the fault: `WorthOfItem` counts **items** into the three lanes, and they
+		-- were drawn on the right, which is the column every other line of this tooltip puts
+		-- money in. So *aux prix marchands 574* read as a price of 574 that nobody had
+		-- multiplied, on a tooltip whose whole subject is money.
+		--
+		-- The count goes into the sentence instead, which is how the Possessions panel has
+		-- always said the same fact - *20 at auction prices, 7 at vendor prices, 3 not priced* -
+		-- and the right-hand column is left carrying nothing but money. The strings are shared
+		-- with the summary's row tooltip, which drew the same three lines the same way.
 		if held.atMarket > 0 then
-			lines[#lines + 1] = { L["at auction prices"], tostring(held.atMarket),
-				0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
+			lines[#lines + 1] = { string.format(L["%d at auction prices"], held.atMarket),
+				"", 0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
 		end
 		if held.atVendor > 0 then
-			lines[#lines + 1] = { L["at vendor prices"], tostring(held.atVendor),
-				0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
+			lines[#lines + 1] = { string.format(L["%d at vendor prices"], held.atVendor),
+				"", 0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
 		end
 		if held.unpriced > 0 then
-			lines[#lines + 1] = { L["with no price"], tostring(held.unpriced),
-				0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
+			lines[#lines + 1] = { string.format(L["%d with no price"], held.unpriced),
+				"", 0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
 		end
 	end
 

@@ -5904,6 +5904,20 @@ do
 		return nil
 	end
 
+	-- **A lane is asked about its words and its column together**, which `priceLine` cannot do:
+	-- it answers with the right-hand column alone, and since 2026-09-17 a lane keeps its count
+	-- in the sentence and leaves that column empty. Both halves are the claim, so both are
+	-- returned and a check can say them.
+	local function laneLine(itemID, which)
+		tooltipFor(itemID)
+		for _, line in ipairs(GameTooltip.__lines) do
+			if type(line[1]) == "string" and line[1]:find(which, 1, true) then
+				return line[1], line[2]
+			end
+		end
+		return nil
+	end
+
 	-- **Money on a tooltip drops the places nothing is standing in**, which a column cannot:
 	-- there it is *0g 00s 25c* so that three units land under three units on the row above.
 	-- Asked for 2026-09-10 with these three shapes.
@@ -6438,11 +6452,21 @@ do
 		check("with the age of the oldest reading it was reached with",
 			plain(priceLine(2880, "Worth")):find("ago", 1, true) ~= nil,
 			plain(priceLine(2880, "Worth")))
+		local auctionLane, auctionColumn = laneLine(2880, "at auction prices")
+		local vendorLane, vendorColumn = laneLine(2880, "at vendor prices")
 		check("with the two lanes it was reached by, never the total on its own",
-			priceLine(2880, "at auction prices") == "12"
-				and priceLine(2880, "at vendor prices") == "4",
-			tostring(priceLine(2880, "at auction prices")) .. " / " ..
-				tostring(priceLine(2880, "at vendor prices")))
+			auctionLane == "12 at auction prices" and vendorLane == "4 at vendor prices",
+			tostring(auctionLane) .. " / " .. tostring(vendorLane))
+
+		-- **And the count is in the words rather than in the column money is drawn in.**
+		-- Reported by a user of 4.1.0, 2026-09-17, as CTRL multiplying the quantities and not
+		-- the prices: every figure was exact, and *at vendor prices 574* in the right-hand
+		-- column - where this tooltip draws the sell price, the stack and the worth - reads as
+		-- a price of 574 that nobody multiplied. The lane counts items, so it says so.
+		check("and the count is in the words, leaving that column to money",
+			(auctionColumn == nil or auctionColumn == "")
+				and (vendorColumn == nil or vendorColumn == ""),
+			tostring(auctionColumn) .. " / " .. tostring(vendorColumn))
 
 		-- **A ban keeps that market's price out of Worth** (backlog 81), for the lot on this
 		-- tooltip and for the member's row on the Summary alike, while the reading stays filed.
@@ -6507,8 +6531,8 @@ do
 			check("a lot the game will not pay a copper for draws no worth at all",
 				priceLine(999223, "Worth") == nil, tostring(priceLine(999223, "Worth")))
 			check("and none of the lanes underneath it either",
-				priceLine(999223, "at vendor prices") == nil,
-				tostring(priceLine(999223, "at vendor prices")))
+				laneLine(999223, "at vendor prices") == nil,
+				tostring(laneLine(999223, "at vendor prices")))
 
 			IsControlKeyDown = function() return false end
 			check("nor is the key offered for it, because there is nothing behind it",
@@ -12237,6 +12261,53 @@ print("the Stock column")
 				end
 				return head and copper
 			end)())
+
+	-- **And the row's own tooltip says the lanes the same way the item tooltip does.**
+	--
+	-- The two are built from one pair of strings and drew them identically: the lane on the
+	-- left, its count on the right, in the column this tooltip puts money in. The report of
+	-- 2026-09-17 was made against the item tooltip and this said it the same way, so both
+	-- moved - the count into the sentence, the column left to money. Nothing here was under
+	-- test at all before, which is how a shared string came to be drawn twice and asked about
+	-- once.
+	do
+		local lanes
+		for _, f in ipairs(frames) do
+			if lanes == nil and onScreen(f) and f.memberKey == who
+				and f.__scripts and f.__scripts.OnEnter then
+				wipe(GameTooltip.__lines)
+				f.__scripts.OnEnter(f)
+				lanes = {}
+				for _, line in ipairs(GameTooltip.__lines) do
+					local left = type(line[1]) == "string" and line[1] or ""
+					if left:find("prices", 1, true)
+						or left:find("no price", 1, true) then
+						lanes[#lanes + 1] = { left, line[2] }
+					end
+				end
+				if f.__scripts.OnLeave then f.__scripts.OnLeave(f) end
+			end
+		end
+
+		check("the summary row's tooltip counts each lane in its own words",
+			lanes ~= nil and lanes[1] and lanes[1][1] == "40 at auction prices"
+				and lanes[2] and lanes[2][1] == "6 at vendor prices"
+				and lanes[3] and lanes[3][1] == "2 with no price",
+			lanes and #lanes > 0
+				and (tostring(lanes[1] and lanes[1][1]) .. " / "
+					.. tostring(lanes[2] and lanes[2][1]) .. " / "
+					.. tostring(lanes[3] and lanes[3][1]))
+				or "no lanes on the row")
+
+		check("and leaves the column beside them empty, because it is not a price",
+			lanes ~= nil and #lanes == 3
+				and (lanes[1][2] == nil or lanes[1][2] == "")
+				and (lanes[2][2] == nil or lanes[2][2] == "")
+				and (lanes[3][2] == nil or lanes[3][2] == ""),
+			lanes and (tostring(lanes[1] and lanes[1][2]) .. " / "
+				.. tostring(lanes[2] and lanes[2][2]) .. " / "
+				.. tostring(lanes[3] and lanes[3][2])) or "no lanes on the row")
+	end
 
 	-- **A member nothing could be priced for gets the blank that means nobody looked.** A
 	-- nought there would say the character owns nothing, which is a different claim (§2.2).

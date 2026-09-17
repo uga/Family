@@ -1,0 +1,6 @@
+name: a lane says how many are held rather than how many it covers
+file: addons/Family_UI/Tooltip.lua
+--- old
+			lines[#lines + 1] = { string.format(L["%d at vendor prices"], held.atVendor),
+--- new
+			lines[#lines + 1] = { string.format(L["%d at vendor prices"], held.held),
