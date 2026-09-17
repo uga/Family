@@ -29,6 +29,14 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### On the game's tooltips
+
+- **The shortcut to the whole family's copies is offered on every item somebody owns.** Holding
+  CTRL and ALT and clicking an item opens Family on everyone who has one, and the tooltip used to
+  mention it only where the list of owners was too long to draw — so a smaller family never met
+  it. It is now said in grey under the owners on any item the family holds, and not on an action
+  bar slot, where those keys belong to the bar.
+
 ## 4.1.0 — 2026-09-16
 
 ### On the game's tooltips

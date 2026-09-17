@@ -206,6 +206,19 @@ local function possessionLines(tooltip, itemID, variant)
 		lines[#lines + 1] = { whose(owner), placesOf(owner), r, g, b, 0.8, 0.8, 0.8 }
 	end
 
+	-- **Whether the gesture is worth offering on this tooltip at all.**
+	--
+	-- Two conditions, and neither is about how long the list is. `ItemClickArmed` says the hook
+	-- is installed, so a modified click reaches Family on this client rather than on a client
+	-- somebody hopes is the same. `ownerKeepsModifiers` says the frame under the pointer is a
+	-- secure action button - an action bar slot, whoever drew it - where control and alt are the
+	-- slot's own second and third bindings and the click is a cast rather than an item click.
+	-- The CTRL hints a few hundred lines below are kept off a bar by the same test for a
+	-- different reason: there the key never arrives, here the click never routes. One offer that
+	-- does nothing is worth as little as the other.
+	local offers = UI.ItemClickArmed and UI:ItemClickArmed()
+		and not ownerKeepsModifiers(tooltip)
+
 	if shown < #owners then
 		local rest = 0
 		for index = shown + 1, #owners do rest = rest + (owners[index].total or 0) end
@@ -225,13 +238,23 @@ local function possessionLines(tooltip, itemID, variant)
 		-- item opens exactly that page already filtered to it (ItemClick.lua), which is worth
 		-- saying instead of the directions - and where the hook could not be installed, the
 		-- directions are still true.
-		local note = UI.ItemClickArmed and UI:ItemClickArmed()
-			and L["|cff888888hold CTRL and ALT and click for the whole list|r"]
+		lines[#lines + 1] = { offers and L["|cff888888(CTRL-ALT-click to open the family's list)|r"]
 			or string.format(
 				L["|cff888888the whole list is on Family's %s page, under %s|r"],
-				L["Possessions"], L["Whole family"])
+				L["Possessions"], L["Whole family"]), "", 0.5, 0.5, 0.5 }
 
-		lines[#lines + 1] = { note, "", 0.5, 0.5, 0.5 }
+	-- **And on a list drawn whole, the gesture is still worth saying.** Alberto, 2026-09-17, on
+	-- finding it mentioned nowhere but under a contraction: the click works on every one of these
+	-- tooltips and was advertised only on the ones too long to draw, so a family of four never met
+	-- it. A contraction is a reason a reader *needs* the page; it was never what makes the gesture
+	-- available, and the two had been the same line since it was built.
+	--
+	-- The directions have no second home here, which is the asymmetry and it is deliberate: where
+	-- the whole list is already on the screen there is nothing to send anybody to a panel for, so
+	-- an unarmed client draws nothing rather than a note pointing at what the reader is looking at.
+	elseif offers then
+		lines[#lines + 1] = { L["|cff888888(CTRL-ALT-click to open the family's list)|r"],
+			"", 0.5, 0.5, 0.5 }
 	end
 
 	-- The guild banks under them, capped the same way and by the same reasoning: a family

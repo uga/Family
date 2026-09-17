@@ -526,6 +526,15 @@ belonging to a linked family appear here too, marked as theirs. The breakdown ca
 to a single total for a quieter tooltip. Item identifier and item level are available and
 off by default.
 
+**Holding CTRL and ALT and clicking the item** opens Family on the whole family's copies of it,
+already filtered to that item — in the bags, on a link in chat, on a worn piece, anywhere the
+client lets a modified click through. The tooltip offers the gesture in grey wherever it would
+work: on every item somebody in the family holds, whether or not the list of owners had to be
+shortened, and never on an action bar slot, where those two keys are the bar's own second and
+third bindings and the click never arrives. Where the client has no crossroads for a modified
+click at all, a shortened list says where the rest of it lives instead, and a list drawn whole
+says nothing — there is nowhere to send a reader who is already looking at all of it.
+
 **Vendor prices, off by default.** An item tooltip can carry what a vendor pays for the thing,
 which the client states for every item, and what a vendor charges for it — but the second only for
 items Family has seen on a merchant's own list, and never otherwise. The client's own tables carry

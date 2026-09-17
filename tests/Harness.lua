@@ -6402,10 +6402,16 @@ do
 
 		-- The hint has no second column, so `priceLine` answers the *string* "nil" for it -
 		-- true enough for a condition and useless in a failure message. This says the line.
+		-- **The price block's own hint, told apart from the possessions block's.** Both are
+		-- grey and both name CTRL, and since 2026-09-17 the second rides on every tooltip the
+		-- family holds a copy for rather than only on a contracted list - so *the line
+		-- mentioning CTRL* stopped naming one line and started naming whichever came first,
+		-- which is the possessions one. The price hints are the ones that name a key and then
+		-- say what it answers, so the colon is what separates them and it is matched here.
 		local function hintLine(itemID)
 			tooltipFor(itemID)
 			for _, line in ipairs(GameTooltip.__lines) do
-				if type(line[1]) == "string" and line[1]:find("CTRL", 1, true) then
+				if type(line[1]) == "string" and line[1]:find("CTRL:", 1, true) then
 					return line[1]
 				end
 			end
@@ -36305,15 +36311,70 @@ print("a family bigger than a tooltip")
 		tostring(pointer))
 	Family.UI.ItemClickArmed = realArmed
 
-	-- And only where it was contracted: a note under a list that is all there is noise.
+	-- **And a list drawn whole carries the gesture too.** Alberto, 2026-09-17, on finding it
+	-- named nowhere else: the click works on every tooltip this block draws, and it was
+	-- advertised only under a contraction - so a family small enough to fit never met it. What a
+	-- contraction changes is whether the reader *needs* the panel, never whether the gesture is
+	-- there, and the two had been one line since it was built.
 	withOwners(11)
-	local strayed = false
-	for _, line in ipairs(GameTooltip.__lines) do
-		local left = type(line[1]) == "string" and line[1] or ""
-		if left:find("CTRL", 1, true)
-			or left:find(Family.L["Whole family"], 1, true) then strayed = true end
+
+	-- Bound before it is reported, because `noteAfterHeader` returns **no value** where it
+	-- finds nothing, and `tostring` of a call that returned nothing is an argument that is not
+	-- there rather than a nil - which takes the harness down instead of failing a check.
+	local whole = noteAfterHeader("CTRL-ALT")
+	check("a list drawn whole offers the gesture as well", whole ~= nil, tostring(whole))
+
+	-- **And is still not sent anywhere.** The directions belong to a contraction and to nothing
+	-- else: there is nowhere to walk to when the whole list is already on the screen.
+	local sent = noteAfterHeader(Family.L["Whole family"])
+	check("while a list drawn whole is still not sent to a panel", sent == nil, tostring(sent))
+
+	-- And where the click cannot be caught, a whole list says nothing at all - the directions
+	-- do not step in here the way they do under a contraction, because they would be pointing
+	-- the reader at what they are already looking at.
+	Family.UI.ItemClickArmed = function() return false end
+	withOwners(11)
+	local unarmedKey = noteAfterHeader("CTRL")
+	local unarmedPointer = noteAfterHeader(Family.L["Whole family"])
+	check("and a client that cannot catch one is told nothing under a whole list",
+		unarmedKey == nil and unarmedPointer == nil,
+		tostring(unarmedKey) .. " / " .. tostring(unarmedPointer))
+	Family.UI.ItemClickArmed = realArmed
+
+	-- **And never on an action bar slot**, where control and alt are the slot's own second and
+	-- third bindings and the click casts rather than reaching `HandleModifiedItemClick`. Read
+	-- off the frame - a secure action button carries the `action` attribute - which is the test
+	-- the CTRL hints already use for the other half of the same question (backlog 90).
+	do
+		local realOwner = GameTooltip.__owner
+		local barButton = {}
+		function barButton:GetID() return 3 end
+		function barButton:GetParent() return { GetID = function() return 0 end } end
+		function barButton:GetAttribute(name)
+			if name == "action" then return 7 end
+			if name == "type" then return "action" end
+		end
+		GameTooltip.__owner = barButton
+		GameTooltip.GetOwner = function(self) return self.__owner end
+
+		withOwners(11)
+		local onBar = noteAfterHeader("CTRL")
+		check("a bar slot is offered no click, because the bar keeps the keys",
+			onBar == nil, tostring(onBar))
+
+		-- **And a contraction there falls back on the directions rather than on silence.** The
+		-- rest of that list is still somewhere and saying where is what the line was built for;
+		-- only the shortcut is withdrawn, which is the shape backlog 90 settled for the keys.
+		withOwners(210)
+		local barPointer = noteAfterHeader(Family.L["Whole family"])
+		check("while a contraction there is still told where the rest of them are",
+			barPointer ~= nil
+				and barPointer:find(Family.L["Possessions"], 1, true) ~= nil,
+			tostring(barPointer))
+
+		GameTooltip.GetOwner = nil
+		GameTooltip.__owner = realOwner
 	end
-	check("while a list drawn whole is not sent anywhere else", not strayed)
 
 	Family.Index.Owners = realOwners
 end)()

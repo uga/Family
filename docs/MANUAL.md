@@ -417,8 +417,9 @@ bank, and what they are wearing.
 them, so the total at the top still adds up — an item nearly all of two hundred characters carry
 would otherwise fill the screen. Guild banks are cut the same way. **Hold CTRL and ALT and click the
 item** — in your bags, in chat, anywhere the game lets a modified click through — and Family opens
-on the whole-family search for it, with every character who has one; the tooltip says so when it
-has had to shorten the list.
+on the whole-family search for it, with every character who has one. The tooltip says so on any
+item somebody in the family has, in grey under the list of owners, and stays quiet on an action
+bar slot, where those two keys are the bar's own and the click never reaches Family.
 
 **Which of your *other* characters' copies are soulbound** is said too, in the game's own word —
 nothing else can tell you, because their copy is not on the machine the game is asking. For the

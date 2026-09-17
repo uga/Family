@@ -1,0 +1,9 @@
+name: the gesture is named only where the list had to be shortened
+file: addons/Family_UI/Tooltip.lua
+--- old
+	elseif offers then
+		lines[#lines + 1] = { L["|cff888888(CTRL-ALT-click to open the family's list)|r"],
+			"", 0.5, 0.5, 0.5 }
+	end
+--- new
+	end

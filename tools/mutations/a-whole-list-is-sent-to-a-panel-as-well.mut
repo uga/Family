@@ -1,0 +1,11 @@
+name: a list drawn whole is sent to the Possessions panel it is already showing
+file: addons/Family_UI/Tooltip.lua
+--- old
+	elseif offers then
+		lines[#lines + 1] = { L["|cff888888(CTRL-ALT-click to open the family's list)|r"],
+			"", 0.5, 0.5, 0.5 }
+--- new
+	elseif offers then
+		lines[#lines + 1] = { string.format(
+			L["|cff888888the whole list is on Family's %s page, under %s|r"],
+			L["Possessions"], L["Whole family"]), "", 0.5, 0.5, 0.5 }
