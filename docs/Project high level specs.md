@@ -52,7 +52,7 @@ character you are not on; everything Family knows, it learned by watching.
 | Classic Burning Crusade Anniversary | yes |
 | Classic Mists of Pandaria | yes |
 | Season of Discovery | no, and not planned |
-| Retail | no, and not planned |
+| Midnight (Retail) | in development on branch `midnight`, not yet supported |
 
 Mists is specified here as a first-class target: every feature below states what it does on
 each of the three, and the design is expansion-aware from the beginning rather than
