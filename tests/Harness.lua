@@ -8996,6 +8996,40 @@ print("what a recipe is made of, beside the recipe")
 		check("and is let go of again on the way out",
 			strip.__highlighted == false, tostring(strip.__highlighted))
 
+		-- **And the boxes meet, so there is nothing between two pictures to fall through.**
+		--
+		-- Read from play 2026-09-18: the pictures answered correctly and the strip still
+		-- flickered, because a box the size of its own picture leaves the gap between two of
+		-- them belonging to the row - so dragging the pointer along the strip went material,
+		-- crafted item, material. Two pictures are a picture and a gap apart, so a box that
+		-- reaches half the gap on each side touches its neighbour exactly.
+		--
+		-- Said in the panel's own number. Writing the four here again would pass against a
+		-- strip whose gap had been changed and whose boxes no longer met.
+		do
+			local gap = Family.UI.__materialGap
+			local hit = strip.mats[7].hit
+			local left = hit.__offsets and hit.__offsets.TOPLEFT
+			local right = hit.__offsets and hit.__offsets.BOTTOMRIGHT
+
+			check("a picture's box reaches half the gap on each side of it",
+				type(gap) == "number" and gap > 0 and left and right
+					and left.x == -gap / 2 and right.x == gap / 2,
+				tostring(left and left.x) .. " / " .. tostring(right and right.x)
+					.. " against a gap of " .. tostring(gap))
+
+			-- **And it is pinned to its own picture at both corners**, so it follows whatever
+			-- `showMaterials` decides rather than being placed by a second copy of that
+			-- arithmetic - which is the copy that goes out of step.
+			local pinned = hit.__relative or {}
+			check("and is pinned to that picture at both corners, not placed beside it",
+				pinned.TOPLEFT and pinned.TOPLEFT.to == strip.mats[7].icon
+					and pinned.BOTTOMRIGHT
+					and pinned.BOTTOMRIGHT.to == strip.mats[7].icon,
+				tostring(pinned.TOPLEFT and pinned.TOPLEFT.to)
+					.. " / " .. tostring(strip.mats[7].icon))
+		end
+
 		-- **An empty slot takes no mouse at all**, or the left-hand end of every short strip
 		-- would be an invisible patch that swallows a click on the row.
 		check("while a slot with nothing in it is not there to be hovered",

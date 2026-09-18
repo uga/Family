@@ -922,8 +922,22 @@ local function build(frame)
 			-- child hands the click back to the row's own script rather than repeating what it
 			-- does, and the row goes on highlighting while the pointer is over a picture,
 			-- because the pointer is still on the row.
+			-- **Half the gap on each side, so that neighbouring boxes meet.**
+			--
+			-- Read from play 2026-09-18, with the pictures answering correctly and the strip
+			-- still flickering: a box the size of its picture leaves the gap between two
+			-- pictures falling through to the row, so dragging the pointer along the strip
+			-- went material, crafted item, material - and on the whole-family *Made with*
+			-- line, where the row itself describes nothing, material, nothing, material.
+			--
+			-- Two pictures are `MATERIAL_ICON + MATERIAL_GAP` apart, so a box of exactly that
+			-- width leaves nothing between one and the next: each reaches half the gap and
+			-- the two edges land on the same pixel. Taken from the gap rather than written
+			-- as a number, so that moving the pictures closer or further apart keeps them
+			-- touching without anybody remembering this line.
 			local hit = CreateFrame("Button", nil, r)
-			hit:SetAllPoints(icon)
+			hit:SetPoint("TOPLEFT", icon, "TOPLEFT", -MATERIAL_GAP / 2, 0)
+			hit:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", MATERIAL_GAP / 2, 0)
 			hit:Hide()
 			hit:RegisterForClicks("LeftButtonUp")
 			hit:SetScript("OnClick", function()
@@ -982,6 +996,10 @@ local function build(frame)
 	-- table; what has to be proved is the row - that a slot with nothing in it is put away, and
 	-- that the quantity ends up on the picture.
 	UI.__recipeRowFor, UI.__showRecipeMaterials = row, showMaterials
+
+	-- The gap between two pictures, so that a check can say what *the boxes meet* means in
+	-- the panel's own number rather than in one written again beside it.
+	UI.__materialGap = MATERIAL_GAP
 
 	local function skillButton(index)
 		local existing = skillButtons[index]
