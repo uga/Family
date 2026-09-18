@@ -860,7 +860,8 @@ end
 --
 -- Read on Era 2026-09-18 by `/family ahsellers`: forty-five of fifty listings in Nethergarde
 -- Keep's house were put up on Pyrewood Village and Mirage Raceway, its connected realms
--- (DATASOURCES, *A connected group's realms share one auction house*). So a reading taken on one
+-- (DATASOURCES, *A connected group's realms share one auction house*); and on Mists an item
+-- posted on Garalon was found from Mirage Raceway, read by hand. So a reading taken on one
 -- realm of a group is a reading of the house every realm of that group uses, and a member on any
 -- of them is valued from it.
 --

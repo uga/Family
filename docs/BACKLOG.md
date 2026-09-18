@@ -5746,5 +5746,9 @@ house, then the neutral one's. **A ban on one realm holds for the group.** Worth
 auction line and what a recipe costs all read through it. The store does not move. Mists is treated
 by the same rule without a reading of its own; see the decisions log.
 
+**Mists read by hand the same day, and shared as well.** Alberto posted an item at an odd price on
+Garalon and found it from Mirage Raceway. The rule the code applies there is now a measurement,
+not an extension of Era's. What is still unread on either client is the neutral house.
+
 Checks under *the realms of one connected group are valued from one auction house*; mutations
 `realm-group-*`, and three older ones re-pinned to the new code.

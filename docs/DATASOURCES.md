@@ -1145,8 +1145,13 @@ the other open question too: **15 is filled for a seller on another realm and ni
 realm** - the five local sellers are the five named in short - which is why both earlier rows,
 read on Pyrewood Village, had nil there.
 
-What this does **not** read: Mists, whose newer house the probe cannot ask, and whether the neutral
-house follows the group as well. Family treats both as the same rule as the side's own house - a
+**Mists, read the same day by hand**, because its newer house leaves the browse list empty and the
+probe has nothing to ask: Alberto posted an item at an odd price on Garalon and found it by
+searching from Mirage Raceway, another realm of that group. **Mists' connected group shares its
+house too.**
+
+What this does **not** read: whether the neutral house follows the group as well. Family treats it
+by the same rule as the side's own house - a
 connected group is one realm to the game's systems, which is what the guild and whisper readings
 found as well (specification §11, backlog 73) - and says so where it is used (`Guild:RealmGroup`).
 
