@@ -1,0 +1,6 @@
+name: a ban holds only on the realm it was put on
+file: addons/Family/Scanners/Auctions.lua
+--- old
+			if one.bans and one.bans[variant] ~= nil then return nil end
+--- new
+			if one == side[1] and one.bans and one.bans[variant] ~= nil then return nil end

@@ -741,6 +741,60 @@ function Guild:SameRealmGroup(theirs, ours)
 	return (group[a] and group[b]) and true or false
 end
 
+Guild.RealmKey = function(_, realm) return realmKey(realm) end
+
+-- **The realms one realm is connected to, itself among them, as a set of realm keys** - for a
+-- realm that is not the one being played as well.
+--
+-- Backlog 91. The client names the group of the realm it is standing on and no other, and Worth
+-- values every member where they stand. So what the client says is written down under every realm
+-- it names, `FamilyDB.realmGroups[key]`, and a realm this account has never logged in on - nor
+-- any realm of its group - is its own group of one, which is the answer everything had before.
+--
+-- Written down only from a list that contains this realm, by the same rule as above. **An empty
+-- list takes this realm's entry away**: it is the client saying the realm stands alone - measured
+-- on Soulseeker and on Thunderstrike - and a group remembered from before would pool prices across
+-- realms that no longer share a house. No answer at all changes nothing.
+local function rememberGroup()
+	if type(_G.FamilyDB) ~= "table" then return end
+	local here = realmKey(Family:TryCall(GetRealmName))
+	local list = Family:TryCall(GetAutoCompleteRealms)
+	if not here or type(list) ~= "table" then return end
+
+	FamilyDB.realmGroups = type(FamilyDB.realmGroups) == "table" and FamilyDB.realmGroups or {}
+
+	local keys, seen = {}, {}
+	for _, name in ipairs(list) do
+		local key = realmKey(name)
+		if key and not seen[key] then seen[key] = true; keys[#keys + 1] = key end
+	end
+
+	if not seen[here] or #keys < 2 then
+		if #keys == 0 then FamilyDB.realmGroups[here] = nil end
+		return
+	end
+
+	table.sort(keys)
+	for _, key in ipairs(keys) do FamilyDB.realmGroups[key] = keys end
+end
+
+function Guild:RealmGroup(realm)
+	local key = realmKey(realm)
+	if not key then return nil end
+
+	rememberGroup()
+
+	local group = { [key] = true }
+	local stored = type(_G.FamilyDB) == "table" and type(FamilyDB.realmGroups) == "table"
+		and FamilyDB.realmGroups[key] or nil
+	if type(stored) == "table" then
+		for _, other in ipairs(stored) do
+			if type(other) == "string" then group[other] = true end
+		end
+	end
+	return group
+end
+
 function Guild:Key(name, realm)
 	if type(name) ~= "string" or name == "" then return nil end
 	if type(realm) ~= "string" or realm == "" then return nil end

@@ -1,0 +1,6 @@
+name: a stored market's realm is compared as written rather than as a key
+file: addons/Family/Scanners/Auctions.lua
+--- old
+				if otherRealm and group[guild:RealmKey(otherRealm)] then
+--- new
+				if otherRealm and group[otherRealm] then

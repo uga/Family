@@ -1,0 +1,6 @@
+name: the other side's house of a connected realm is read as your own
+file: addons/Family/Scanners/Auctions.lua
+--- old
+					if otherSide == side then
+--- new
+					if otherSide ~= NEUTRAL then

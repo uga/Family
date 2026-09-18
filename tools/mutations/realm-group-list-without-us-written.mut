@@ -1,0 +1,6 @@
+name: a list that leaves out the realm being played is written down
+file: addons/Family/Guild.lua
+--- old
+	if not seen[here] or #keys < 2 then
+--- new
+	if #keys < 2 then

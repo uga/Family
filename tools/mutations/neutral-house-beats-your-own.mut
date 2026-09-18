@@ -1,14 +1,8 @@
 name: the shared house is consulted before the reader's own
-file: addons/Family/Index.lua
+file: addons/Family/Scanners/Auctions.lua
 --- old
-	local held = pair.mine and pair.mine[variant]
-	if type(held) == "table" and not (pair.mineBans and pair.mineBans[variant] ~= nil) then
-		return held
-	end
-	held = pair.shared and pair.shared[variant]
+	return freshest(lookup.mine or {}, variant, not ignoreBans)
+		or freshest(lookup.shared or {}, variant, not ignoreBans)
 --- new
-	local held = pair.shared and pair.shared[variant]
-	if type(held) == "table" and not (pair.sharedBans and pair.sharedBans[variant] ~= nil) then
-		return held
-	end
-	held = pair.mine and pair.mine[variant]
+	return freshest(lookup.shared or {}, variant, not ignoreBans)
+		or freshest(lookup.mine or {}, variant, not ignoreBans)

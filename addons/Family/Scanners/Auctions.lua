@@ -828,12 +828,7 @@ function Auctions:PriceOf(variant)
 	if type(variant) == "string" then variant = tonumber(variant) or variant end
 	if not (type(variant) == "number" or type(variant) == "string") then return nil end
 
-	local held = self:Prices()[variant]
-	if type(held) ~= "table" then
-		local shared = neutralMarket()
-		held = shared and self:Prices(shared)[variant] or nil
-	end
-
+	local held = Auctions.Pick(self:Lookup(), variant, true)
 	if type(held) ~= "table" then return nil end
 	return held.p, held.at
 end
@@ -846,13 +841,7 @@ function Auctions:ValueOf(variant)
 	variant = normalVariant(variant)
 	if variant == nil then return nil end
 
-	local here = market()
-	local held = here and not self:IsBanned(here, variant) and self:Prices(here)[variant] or nil
-	if type(held) ~= "table" then
-		local shared = neutralMarket()
-		held = shared and not self:IsBanned(shared, variant) and self:Prices(shared)[variant] or nil
-	end
-
+	local held = Auctions.Pick(self:Lookup(), variant)
 	if type(held) ~= "table" then return nil end
 	return held.p, held.at
 end
@@ -863,6 +852,120 @@ function Auctions:MarketBans(where) return self:Bans(where) end
 function Auctions:NeutralBans(where)
 	local shared = neutralMarket(where)
 	return shared and self:Bans(shared) or nil
+end
+
+
+--------------------------------------------------------------------------------------------
+-- One house for a connected group (backlog 91)
+--
+-- Read on Era 2026-09-18 by `/family ahsellers`: forty-five of fifty listings in Nethergarde
+-- Keep's house were put up on Pyrewood Village and Mirage Raceway, its connected realms
+-- (DATASOURCES, *A connected group's realms share one auction house*). So a reading taken on one
+-- realm of a group is a reading of the house every realm of that group uses, and a member on any
+-- of them is valued from it.
+--
+-- **The store does not move.** A reading is still filed under the realm it was taken on - the
+-- audit lists it there, a ban is put on it there - and it is the *lookup* that widens: a market's
+-- key names one realm and side, and its group is every stored market of that side on a realm
+-- `Guild:RealmGroup` counts in. With no group known, that is the one market it always was.
+--------------------------------------------------------------------------------------------
+
+local function sideOf(key)
+	return key:match("^(.-)\30(.*)$")
+end
+
+-- The markets one lookup reads, its own first and the rest in a fixed order, for its side and for
+-- the realm's neutral house.
+local function groupMarkets(where)
+	local mine, shared = { where }, {}
+	local neutral = neutralMarket(where)
+	if neutral then shared[1] = neutral end
+
+	local realm, side = sideOf(where)
+	local guild = Family.Guild
+	local group = realm and guild and guild.RealmGroup and guild:RealmGroup(realm) or nil
+	if not group then return mine, shared end
+
+	local seen, extraMine, extraShared = { [where] = true }, {}, {}
+	if neutral then seen[neutral] = true end
+
+	for _, store in ipairs { FamilyDB.auctionPrices, FamilyDB.auctionBans } do
+		if type(store) == "table" then
+			for key in pairs(store) do
+				local otherRealm, otherSide
+				if type(key) == "string" and not seen[key] then otherRealm, otherSide = sideOf(key) end
+				if otherRealm and group[guild:RealmKey(otherRealm)] then
+					if otherSide == side then
+						seen[key] = true
+						extraMine[#extraMine + 1] = key
+					elseif otherSide == NEUTRAL then
+						seen[key] = true
+						extraShared[#extraShared + 1] = key
+					end
+				end
+			end
+		end
+	end
+
+	table.sort(extraMine)
+	table.sort(extraShared)
+	for _, key in ipairs(extraMine) do mine[#mine + 1] = key end
+	for _, key in ipairs(extraShared) do shared[#shared + 1] = key end
+	return mine, shared
+end
+
+-- **Everything a lookup for one market reads**, gathered once: `Worth` asks it once per market and
+-- then once per item, and the second has to be a walk over a few tables and nothing more.
+-- Nothing at all with the switch off, which is what the prices have always been then.
+function Auctions:Lookup(where)
+	if not self:PricesWanted() then return nil end
+	if type(_G.FamilyDB) ~= "table" then return nil end
+	where = where or market()
+	if type(where) ~= "string" then return nil end
+
+	local mine, shared = groupMarkets(where)
+	local function side(keys)
+		local out = {}
+		for _, key in ipairs(keys) do
+			local prices = type(FamilyDB.auctionPrices) == "table" and FamilyDB.auctionPrices[key]
+			out[#out + 1] = { market = key,
+				prices = type(prices) == "table" and prices or nil, bans = self:Bans(key) }
+		end
+		return out
+	end
+
+	return { mine = side(mine), shared = side(shared) }
+end
+
+-- **The freshest reading of one side of the house.** Every realm of the group read the same
+-- listings, so the newest is the truth, as it is within one realm (specification §5); on a tie
+-- the realm asked about comes first. **A ban anywhere in the group stands for the group**: it was
+-- put on a listing in the one house they share, and the reading from next door is the same troll's
+-- price seen from a different door.
+local function freshest(side, variant, heedBans)
+	if heedBans then
+		for _, one in ipairs(side) do
+			if one.bans and one.bans[variant] ~= nil then return nil end
+		end
+	end
+
+	local best = nil
+	for _, one in ipairs(side) do
+		local row = one.prices and one.prices[variant]
+		if type(row) == "table"
+			and (not best or (tonumber(row.at) or 0) > (tonumber(best.at) or 0)) then
+			best = row
+		end
+	end
+	return best
+end
+
+-- Your own side's house first and the neutral one second (backlog 66), each read across the group.
+-- `ignoreBans` is for the tooltip's line, which shows what was read whatever is done with it.
+function Auctions.Pick(lookup, variant, ignoreBans)
+	if type(lookup) ~= "table" or variant == nil then return nil end
+	return freshest(lookup.mine or {}, variant, not ignoreBans)
+		or freshest(lookup.shared or {}, variant, not ignoreBans)
 end
 
 function Auctions:ForgetVisit()

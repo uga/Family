@@ -475,28 +475,18 @@ end
 --
 -- **A banned price is passed over** (backlog 81): banned on your own side, the neutral house is
 -- asked; banned there too, there is no auction price and Worth falls to what a vendor pays.
+--
+-- **And each of the two is the whole connected group's** (backlog 91): the realms of a group share
+-- one house, so a member on one is valued from a reading taken on any, the freshest winning.
+-- `Auctions:Lookup` gathers those tables once per market and `Auctions.Pick` walks them.
 local function priceIn(pair, variant)
 	if not pair then return nil end
-	local held = pair.mine and pair.mine[variant]
-	if type(held) == "table" and not (pair.mineBans and pair.mineBans[variant] ~= nil) then
-		return held
-	end
-	held = pair.shared and pair.shared[variant]
-	if type(held) == "table" and not (pair.sharedBans and pair.sharedBans[variant] ~= nil) then
-		return held
-	end
-	return nil
+	return Family.Auctions.Pick(pair, variant)
 end
 
 local function marketPair(market)
-	if not (market and Family.Auctions) then return false end
-	return {
-		mine = Family.Auctions:MarketPrices(market) or nil,
-		shared = Family.Auctions.NeutralPrices
-			and Family.Auctions:NeutralPrices(market) or nil,
-		mineBans = Family.Auctions.MarketBans and Family.Auctions:MarketBans(market) or nil,
-		sharedBans = Family.Auctions.NeutralBans and Family.Auctions:NeutralBans(market) or nil,
-	}
+	if not (market and Family.Auctions and Family.Auctions.Lookup) then return false end
+	return Family.Auctions:Lookup(market) or false
 end
 
 -- **What a vendor pays, remembered account-wide.**

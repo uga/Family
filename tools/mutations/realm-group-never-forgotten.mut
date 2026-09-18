@@ -1,0 +1,6 @@
+name: a realm the client says stands alone keeps the group it had
+file: addons/Family/Guild.lua
+--- old
+		if #keys == 0 then FamilyDB.realmGroups[here] = nil end
+--- new
+		if false then FamilyDB.realmGroups[here] = nil end

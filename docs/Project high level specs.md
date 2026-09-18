@@ -439,8 +439,11 @@ never named.
 
 **Never a total on its own.** The line says how much of the sum came from auction prices and how
 much from vendor prices, because those are two very different numbers, and how much it could not
-price at all. Auction prices belong to one realm and one side, so a member is valued in the market
-they stand in.
+price at all. Auction prices belong to one side of one auction house, so a member is valued in the
+market they stand in - and **the realms of one connected group share that house** (read on Era,
+backlog 91), so a reading taken on any realm of the group values a member on every realm of it,
+the freshest winning. Which realms are connected is the client's answer, remembered per realm; a
+realm Family has never been told about is a group of one.
 
 ### 4.5 Search
 
@@ -554,7 +557,8 @@ market or by item name, sorted by the price of one, highest first. A price ten t
 it replaced, or ten times the same item's median on the other markets Family has read, is marked in
 red. A price can be deleted, and the next visit reads a new one; an item can be **banned in one
 market**, which keeps its price there out of every figure Family works out - Worth, and what a recipe
-costs - until the ban is lifted by hand. Readings of a banned item go on being taken and are listed
+costs - until the ban is lifted by hand. A ban on one realm of a connected group holds for the whole
+group, because it is one house. Readings of a banned item go on being taken and are listed
 beside the ban, which is how somebody tells when it can be lifted; the page can show the bans alone.
 It can also be narrowed to one of the auction house's own categories and subcategories, listed in
 the house's order and named as that client names them; the list is the client's, remembered from

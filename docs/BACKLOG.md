@@ -5729,3 +5729,22 @@ Checks under *whether an auction house is shared across the connected realm grou
 does not - no realm table at all at Era's build, see DATASOURCES §3 - and Family has the groups from
 the client already. What is not known is not *which realms are connected* but **whether the auction
 house follows the connection**, and no list of realms can say that. The reading above can.
+
+**Read on Era 2026-09-18: the house is shared.** Alberto, on a Nethergarde Keep character: of fifty
+listings in the Alliance house, 33 were put up on Pyrewood Village and 12 on Mirage Raceway, five
+locally (`DATASOURCES.md`, *A connected group's realms share one auction house*). Return 15 is the
+full name for a seller on another realm and nil for a local one, which is why the first two rows,
+read on Pyrewood Village, had nothing there. On Mists the probe finds the browse list empty, as
+foreseen: the newer house does not fill it.
+
+**Built the same day.** `Guild:RealmGroup` writes down what the client says under every realm it
+names (`FamilyDB.realmGroups`), so a member on a realm that is not being played is valued by its
+group too; an empty list takes a realm's entry away and a list without this realm is not written.
+`Auctions:Lookup` gathers, for one market, every stored market of the same side on a realm of the
+group and the group's neutral houses; `Auctions.Pick` takes the freshest reading of the side's own
+house, then the neutral one's. **A ban on one realm holds for the group.** Worth, the tooltip's
+auction line and what a recipe costs all read through it. The store does not move. Mists is treated
+by the same rule without a reading of its own; see the decisions log.
+
+Checks under *the realms of one connected group are valued from one auction house*; mutations
+`realm-group-*`, and three older ones re-pinned to the new code.

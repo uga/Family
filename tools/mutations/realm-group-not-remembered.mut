@@ -1,0 +1,8 @@
+name: the client's group is asked and never written down
+file: addons/Family/Guild.lua
+--- old
+	rememberGroup()
+
+	local group = { [key] = true }
+--- new
+	local group = { [key] = true }

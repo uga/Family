@@ -22458,6 +22458,133 @@ print("whether an auction house is shared across the connected realm group")
 	_G.GetNormalizedRealmName, _G.GetAutoCompleteRealms = held.normalized, held.connected
 end)()
 
+print("the realms of one connected group are valued from one auction house")
+;(function()
+	-- Backlog 91, read on Era 2026-09-18: forty-five of fifty listings in Nethergarde Keep's house
+	-- were put up on Pyrewood Village and Mirage Raceway. So a reading taken on one realm of a
+	-- group is a reading of the house the whole group uses, and Worth reads it that way - while
+	-- the store keeps every reading under the realm it was taken on.
+	local held = {
+		realm = GetRealmName, faction = UnitFactionGroup, connected = _G.GetAutoCompleteRealms,
+		prices = FamilyDB.auctionPrices, bans = FamilyDB.auctionBans, groups = FamilyDB.realmGroups,
+	}
+	local ERA = { "PyrewoodVillage", "NethergardeKeep", "MirageRaceway" }
+	local now = time()
+
+	GetRealmName = function() return "Nethergarde Keep" end
+	UnitFactionGroup = function(unit)
+		if unit == "player" then return "Alliance" end
+		return held.faction(unit)
+	end
+	_G.GetAutoCompleteRealms = function() return ERA end
+	FamilyDB.realmGroups = nil
+	FamilyDB.auctionBans = {}
+	FamilyDB.auctionPrices = {
+		["Mirage Raceway\30Alliance"] = { [2589] = { p = 500, at = now } },
+	}
+
+	local members = {
+		{ "Pyro-PyrewoodVillage", "Pyrewood Village", "Alliance" },
+		{ "Nether-NethergardeKeep", "Nethergarde Keep", "Alliance" },
+		{ "Red-PyrewoodVillage", "Pyrewood Village", "Horde" },
+		{ "Far-Soulseeker", "Soulseeker", "Alliance" },
+	}
+	for _, m in ipairs(members) do
+		Family.Database:SetMeta(m[1], { name = m[1]:match("^[^-]+"), realm = m[2],
+			faction = m[3], classFile = "MAGE", level = 60 })
+		Family.Database:SetPayload(m[1], { bags = { { slots = { { id = 2589, count = 1 } } } } })
+	end
+
+	local function valued(key)
+		Family.Index:Invalidate()
+		local row = Family.Index:WorthOf(key)
+		return row and row.atMarket == 1 and row.worth or nil
+	end
+
+	check("a member on another realm of the group is valued from a reading taken on a third",
+		valued("Pyro-PyrewoodVillage") == 500, tostring(valued("Pyro-PyrewoodVillage")))
+	check("and so is the one standing on the realm being played",
+		valued("Nether-NethergardeKeep") == 500, tostring(valued("Nether-NethergardeKeep")))
+	check("while the other side of that realm still is not: a side's house is its own",
+		valued("Red-PyrewoodVillage") == nil, tostring(valued("Red-PyrewoodVillage")))
+	check("nor is a member on a realm outside the group",
+		valued("Far-Soulseeker") == nil, tostring(valued("Far-Soulseeker")))
+
+	local p = Family.Auctions:PriceOf(2589)
+	check("the tooltip's auction line reads the group as well", p == 500, tostring(p))
+
+	check("the store is not moved: the reading stays under the realm it was taken on",
+		FamilyDB.auctionPrices["Nethergarde Keep\30Alliance"] == nil
+			and FamilyDB.auctionPrices["Pyrewood Village\30Alliance"] == nil,
+		tostring(FamilyDB.auctionPrices["Pyrewood Village\30Alliance"]))
+
+	-- **The freshest wins**, as within one realm: every realm read the same listings.
+	FamilyDB.auctionPrices["Pyrewood Village\30Alliance"] = { [2589] = { p = 300, at = now - 3600 } }
+	check("an older reading on the member's own realm gives way to a fresher one next door",
+		valued("Pyro-PyrewoodVillage") == 500, tostring(valued("Pyro-PyrewoodVillage")))
+	FamilyDB.auctionPrices["Pyrewood Village\30Alliance"][2589].at = now + 60
+	check("and a fresher one on their own realm wins over the older next door",
+		valued("Pyro-PyrewoodVillage") == 300, tostring(valued("Pyro-PyrewoodVillage")))
+
+	-- **A ban anywhere stands for the group**: it was put on a listing in the one house.
+	Family.Auctions:Ban("Mirage Raceway\30Alliance", 2589)
+	check("a ban on one realm of the group keeps the price out for every realm of it",
+		valued("Pyro-PyrewoodVillage") == nil, tostring(valued("Pyro-PyrewoodVillage")))
+	local v = Family.Auctions:ValueOf(2589)
+	check("and out of what a recipe costs", v == nil, tostring(v))
+	p = Family.Auctions:PriceOf(2589)
+	check("while the tooltip still says what was read", p == 300, tostring(p))
+	Family.Auctions:Unban("Mirage Raceway\30Alliance", 2589)
+
+	-- The neutral house, by the same rule, and still only second.
+	FamilyDB.auctionPrices["Mirage Raceway\30*"] = { [2589] = { p = 900, at = now } }
+	check("the other side is valued from a neutral reading taken elsewhere in the group",
+		valued("Red-PyrewoodVillage") == 900, tostring(valued("Red-PyrewoodVillage")))
+	check("while its own side's house still comes first",
+		valued("Pyro-PyrewoodVillage") == 300, tostring(valued("Pyro-PyrewoodVillage")))
+
+	-- **Remembered**, because the client names only the group of the realm being played.
+	GetRealmName = function() return "Soulseeker" end
+	_G.GetAutoCompleteRealms = function() return {} end
+	check("logged in elsewhere, a group read before is still the group",
+		valued("Pyro-PyrewoodVillage") == 300 and valued("Nether-NethergardeKeep") == 300,
+		tostring(valued("Nether-NethergardeKeep")))
+	check("and a realm that answers an empty list is written down as standing alone",
+		FamilyDB.realmGroups.soulseeker == nil
+			and type(FamilyDB.realmGroups.nethergardekeep) == "table",
+		tostring(FamilyDB.realmGroups.soulseeker))
+
+	-- A list that does not contain this realm is about somebody else and is not written down.
+	FamilyDB.realmGroups = nil
+	_G.GetAutoCompleteRealms = function() return ERA end
+	Family.Guild:RealmGroup("Soulseeker")
+	check("a list that leaves out the realm being played is not written down",
+		FamilyDB.realmGroups == nil or next(FamilyDB.realmGroups) == nil,
+		tostring(FamilyDB.realmGroups and next(FamilyDB.realmGroups)))
+
+	-- **An empty list takes the entry away**: the realm left its group, and pooling on the old
+	-- one would price it at a house it no longer uses.
+	GetRealmName = function() return "Nethergarde Keep" end
+	Family.Guild:RealmGroup("Nethergarde Keep")
+	_G.GetAutoCompleteRealms = function() return {} end
+	check("a realm the client now says stands alone is valued at its own house again",
+		valued("Nether-NethergardeKeep") == nil, tostring(valued("Nether-NethergardeKeep")))
+
+	-- And with no group ever read, nothing changes from what it was.
+	FamilyDB.realmGroups = nil
+	_G.GetAutoCompleteRealms = nil
+	check("where the client has no such call, a member is valued at their own realm alone",
+		valued("Pyro-PyrewoodVillage") == 300 and valued("Nether-NethergardeKeep") == nil,
+		tostring(valued("Nether-NethergardeKeep")))
+
+	for _, m in ipairs(members) do Family.Database:Forget(m[1]) end
+	GetRealmName, UnitFactionGroup, _G.GetAutoCompleteRealms = held.realm, held.faction,
+		held.connected
+	FamilyDB.auctionPrices, FamilyDB.auctionBans, FamilyDB.realmGroups = held.prices, held.bans,
+		held.groups
+	Family.Index:Invalidate()
+end)()
+
 print("the release workflow may create the release it uploads")
 ;(function()
 	local f = io.open(ROOT .. "/.github/workflows/release.yml")

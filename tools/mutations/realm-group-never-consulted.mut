@@ -1,0 +1,6 @@
+name: a member is valued at their own realm alone even where the group is known
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	if not group then return mine, shared end
+--- new
+	if true then return mine, shared end

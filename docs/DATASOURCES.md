@@ -1124,6 +1124,32 @@ nothing was named in full, rather than reporting a blind spot in the words of a 
 Two rows cannot tell those apart, and both of these sellers may simply be local. A list where 15
 is filled for some rows would settle it at once, which is what the new count makes visible.
 
+#### A connected group's realms share one auction house, read on Era 2026-09-18
+
+The reading the section above could not give, taken by Alberto on a Nethergarde Keep character in
+the Alliance house after a search for silk:
+
+    Browse list: 50 auctions, 50 with a seller named.
+      named in full on 45 of them; the rest give a short name, which carries no realm.
+    This realm: NethergardeKeep. Connected to it, as the client says: PyrewoodVillage,
+      NethergardeKeep, MirageRaceway.
+      PyrewoodVillage: 33 (connected)
+      MirageRaceway: 12 (connected)
+      NethergardeKeep: 5 (this realm)
+    1:Bolt of Silk Cloth 2:132907 3:2 4:1 5:true 6:1 7:REQ_LEVEL_ABBR 8:3704 9:0 10:3898 11:0
+      12:false 13:nil 14:Violence 15:Violence-MirageRaceway 16:0 17:4305 18:true
+
+**Forty-five of fifty listings in Nethergarde Keep's house were put up on the other two realms of
+its group.** The house is one house for the whole connected group, as Alberto believed. It settles
+the other open question too: **15 is filled for a seller on another realm and nil for one on this
+realm** - the five local sellers are the five named in short - which is why both earlier rows,
+read on Pyrewood Village, had nil there.
+
+What this does **not** read: Mists, whose newer house the probe cannot ask, and whether the neutral
+house follows the group as well. Family treats both as the same rule as the side's own house - a
+connected group is one realm to the game's systems, which is what the guild and whisper readings
+found as well (specification §11, backlog 73) - and says so where it is used (`Guild:RealmGroup`).
+
 #### Where a whole-house read lands, measured 2026-09-12
 
 The important half. While another addon's full scan was arriving on Burning Crusade, the probe

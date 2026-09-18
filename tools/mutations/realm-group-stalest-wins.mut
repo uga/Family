@@ -1,0 +1,6 @@
+name: the oldest reading in the group is taken for the price
+file: addons/Family/Scanners/Auctions.lua
+--- old
+			and (not best or (tonumber(row.at) or 0) > (tonumber(best.at) or 0)) then
+--- new
+			and (not best or (tonumber(row.at) or 0) < (tonumber(best.at) or 0)) then

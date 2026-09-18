@@ -1,6 +1,6 @@
 name: a price banned in its market still values what a member holds
 file: addons/Family/Index.lua
 --- old
-	if type(held) == "table" and not (pair.mineBans and pair.mineBans[variant] ~= nil) then
+	return Family.Auctions.Pick(pair, variant)
 --- new
-	if type(held) == "table" then
+	return Family.Auctions.Pick(pair, variant, true)
