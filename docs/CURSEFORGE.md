@@ -111,10 +111,10 @@ under it is deleted from their side the next time the two families are in contac
 players must switch it on, in **Options** or with `/family wide on`.
 
 A shared character you look at every day can be made a **sibling**. Siblings are listed
-wherever your own members are: in the summary, in the gear rows. They sit under their realm
-and their own family's name, and their gold is never added to your totals. Making someone a
-sibling changes only your screen. Nothing is sent and nobody is asked, because they had
-already chosen to share that character with you.
+wherever your own members are: in the summary, in the gear rows, on item tooltips and on the
+Wide Family panel. They sit under their realm and their own family's name, and their gold is
+never added to your totals. Making someone a sibling changes only your screen. Nothing is sent
+and nobody is asked, because they had already chosen to share that character with you.
 
 ### What to expect
 
@@ -125,7 +125,7 @@ already chosen to share that character with you.
   as not seen, never as empty.
 - **It follows your version of the game.** Classic Era has no guild bank and no currencies,
   so Family shows no panel or column for them there. The same goes for glyphs and
-  achievements before Mists.
+  achievements before Mists. Professions and reputations are the ones your version has.
 
 ### Clients and languages
 
