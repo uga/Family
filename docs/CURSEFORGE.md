@@ -84,9 +84,9 @@ members have one ready. Alchemy transmutes share one timer and appear as one coo
 
 Also:
 
-- A character sheet for any member, with enchants and gems on the gear, plus reputations,
-  quests, currencies and achievements where the game has them.
-- Both talent specialisations, glyphs and the spellbook.
+- A character sheet for any member, with the enchants and gems on their gear, their
+  reputations and their quests. Currencies from Burning Crusade on, achievements on Mists.
+- Both talent specialisations and the spellbook, with glyphs on Mists.
 - A minimap button and a data broker feed showing the family's money. Shift-click it to count
   one realm and faction, or one character.
 
@@ -110,6 +110,12 @@ grid starts empty, so nothing is shared until you tick it. Untick a box and what
 under it is deleted from their side the next time the two families are in contact. Both
 players must switch it on, in **Options** or with `/family wide on`.
 
+A shared character you look at every day can be made a **sibling**. Siblings are listed
+wherever your own members are: in the summary, in the gear rows. They sit under their realm
+and their own family's name, and their gold is never added to your totals. Making someone a
+sibling changes only your screen. Nothing is sent and nobody is asked, because they had
+already chosen to share that character with you.
+
 ### What to expect
 
 - **It starts empty and fills as you play.** Nothing is imported from any other addon.
@@ -117,6 +123,9 @@ players must switch it on, in **Options** or with `/family wide on`.
   mailbox, auction house and profession windows are recorded while they are open.
 - **Every screen says how old its information is.** Something Family has never seen is shown
   as not seen, never as empty.
+- **It follows your version of the game.** Classic Era has no guild bank and no currencies,
+  so Family shows no panel or column for them there. The same goes for glyphs and
+  achievements before Mists.
 
 ### Clients and languages
 
