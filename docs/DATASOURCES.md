@@ -1150,10 +1150,9 @@ probe has nothing to ask: Alberto posted an item at an odd price on Garalon and 
 searching from Mirage Raceway, another realm of that group. **Mists' connected group shares its
 house too.**
 
-What this does **not** read: whether the neutral house follows the group as well. Family treats it
-by the same rule as the side's own house - a
-connected group is one realm to the game's systems, which is what the guild and whisper readings
-found as well (specification §11, backlog 73) - and says so where it is used (`Guild:RealmGroup`).
+**And the neutral house follows the group as well**, read by hand the same way the same day:
+Alberto reported an item posted at a goblin auctioneer on one realm of a group turning up at a
+goblin auctioneer on another. Which client it was read on was not said.
 
 #### Where a whole-house read lands, measured 2026-09-12
 
