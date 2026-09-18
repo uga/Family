@@ -8957,6 +8957,79 @@ print("what a recipe is made of, beside the recipe")
 	check("while a recipe with no materials at all leaves an empty strip behind it",
 		shown == 0, tostring(shown) .. " still shown: " .. counts)
 
+	-- **And a picture answers about itself.**
+	--
+	-- Alberto, 2026-09-17, off a screenshot of the Alchemy list: the whole row reacts with the
+	-- tooltip of the thing being made, the materials included, and hovering a material should
+	-- describe that material. A texture has no scripts, so the strip never could - each slot
+	-- now carries a frame the size of its picture.
+	do
+		Family.UI.__showRecipeMaterials(strip, { spellID = 910001 })
+
+		local function hovering(slot)
+			local hit = strip.mats[slot].hit
+			GameTooltip.__shownAs = nil
+			hit.__scripts.OnEnter(hit)
+			return GameTooltip.__shownAs, hit
+		end
+
+		-- The strip is right-aligned, so three materials are in slots six, seven and eight in
+		-- the order they ship in. Asked of both ends rather than of one, because a slot that
+		-- described the strip's first material whichever picture was hovered would pass a
+		-- check that only ever looked at the first.
+		local said = hovering(6)
+		check("hovering a material describes that material, not the thing being made",
+			said ~= nil and said.kind == "item" and said.id == BAR,
+			tostring(said and said.kind) .. " " .. tostring(said and said.id))
+
+		said = hovering(8)
+		check("and every picture answers about its own",
+			said ~= nil and said.id == THREAD, tostring(said and said.id))
+
+		-- **The row goes on looking hovered**, because the pointer is still on the row: a
+		-- child taking the mouse takes the highlight with it, and a row that went dark under
+		-- the pointer would read as the list having lost it.
+		local _, hit = hovering(6)
+		check("and the row it sits on stays lit while the pointer is on a picture",
+			strip.__highlighted == true, tostring(strip.__highlighted))
+		hit.__scripts.OnLeave(hit)
+		check("and is let go of again on the way out",
+			strip.__highlighted == false, tostring(strip.__highlighted))
+
+		-- **An empty slot takes no mouse at all**, or the left-hand end of every short strip
+		-- would be an invisible patch that swallows a click on the row.
+		check("while a slot with nothing in it is not there to be hovered",
+			strip.mats[1].hit:IsShown() == false, tostring(strip.mats[1].hit:IsShown()))
+
+		-- **And a pooled row does not describe the recipe it held last time.** The rows are
+		-- reused down a scrolling list, which is what the strip's own empty-slot pass exists
+		-- for; the item behind each picture is written on the same draw for the same reason.
+		Family.UI.__showRecipeMaterials(strip, { spellID = 910002 })
+		said = hovering(8)
+		check("and a row drawn again describes the materials it is showing now",
+			said ~= nil and said.id == 9, tostring(said and said.id))
+
+		-- **A click on a picture is still a click on the row.** The row is a button that
+		-- selects the recipe in an open profession window, and a child that took the mouse
+		-- and kept it would have made every picture a dead patch in the middle of that row.
+		do
+			local held = Family.UI.__openCrafters
+			strip.expandKey = "some:recipe"
+			Family.UI.__openCrafters = nil
+
+			local hit = strip.mats[8].hit
+			hit.__scripts.OnClick(hit)
+			check("and clicking a picture does what clicking the row does",
+				Family.UI.__openCrafters == "some:recipe",
+				tostring(Family.UI.__openCrafters))
+
+			strip.expandKey = nil
+			Family.UI.__openCrafters = held
+		end
+
+		Family.UI.__showRecipeMaterials(strip, nil)
+	end
+
 	-- **The strip is hard against the edge, and the note sits to its left.**
 	--
 	-- Asked from play 2026-09-12 off a screenshot of *Fine Leather Belt*: *can make n should stay

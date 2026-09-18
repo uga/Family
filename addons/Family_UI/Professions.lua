@@ -781,9 +781,18 @@ local function build(frame)
 				-- One of a thing needs no number on it, the way a bag draws a single item.
 				cell.count:SetText(part.count > 1 and tostring(part.count) or "")
 				cell.count:SetShown(part.count > 1)
+
+				-- **Which material this slot is now showing**, written on every draw with
+				-- everything else on it: the rows are pooled, so a slot that kept the item it
+				-- held last time would describe the recipe above it on a scrolled list - the
+				-- fault the strip itself was given an empty-slot pass for when it was built.
+				cell.hit.itemID = part.item
+				cell.hit:Show()
 			else
 				cell.icon:Hide()
 				cell.count:Hide()
+				cell.hit.itemID = nil
+				cell.hit:Hide()
 			end
 		end
 
@@ -896,7 +905,44 @@ local function build(frame)
 			count:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", 1, 0)
 			count:Hide()
 
-			r.mats[slot] = { icon = icon, count = count }
+			-- **A picture cannot take the mouse, so a frame the size of it does.**
+			--
+			-- Alberto, 2026-09-17: the whole row answers with the tooltip of the thing being
+			-- made, materials included, and hovering a material should describe **that**
+			-- material. A texture has no scripts - it is drawn, not hovered - so the strip
+			-- could never have answered for itself.
+			--
+			-- Anchored to the picture rather than positioned beside it, so the one place that
+			-- works out where a material sits stays `showMaterials` and this follows whatever
+			-- it decides. A second copy of that arithmetic is a second copy to keep in step.
+			--
+			-- **The click still belongs to the row.** A row is a button that selects the recipe
+			-- in an open profession window, and a child taking the mouse takes its clicks with
+			-- it - so an icon would have become a dead patch in the middle of the row. The
+			-- child hands the click back to the row's own script rather than repeating what it
+			-- does, and the row goes on highlighting while the pointer is over a picture,
+			-- because the pointer is still on the row.
+			local hit = CreateFrame("Button", nil, r)
+			hit:SetAllPoints(icon)
+			hit:Hide()
+			hit:RegisterForClicks("LeftButtonUp")
+			hit:SetScript("OnClick", function()
+				local click = r:GetScript("OnClick")
+				if click then click(r) end
+			end)
+
+			-- The material and nothing else. Family's own block arrives underneath it the way
+			-- it does on any item tooltip in the game, which is the answer somebody hovering a
+			-- reagent is usually after: who already has these.
+			UI:AttachTooltip(hit, function(self)
+				if self.itemID then return "item", self.itemID end
+				return nil
+			end)
+
+			hit:HookScript("OnEnter", function() Family:TryCall(r.LockHighlight, r) end)
+			hit:HookScript("OnLeave", function() Family:TryCall(r.UnlockHighlight, r) end)
+
+			r.mats[slot] = { icon = icon, count = count, hit = hit }
 		end
 
 		UI:NoWrap(r.text, r.note)

@@ -4,6 +4,8 @@ file: addons/Family_UI/Professions.lua
 			else
 				cell.icon:Hide()
 				cell.count:Hide()
+				cell.hit.itemID = nil
+				cell.hit:Hide()
 			end
 --- new
 			end

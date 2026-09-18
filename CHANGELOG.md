@@ -29,6 +29,13 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Professions
+
+- **Hovering a material on a recipe row now describes that material.** The row shows what the
+  recipe makes, and the pictures of what it takes sat inside it answering with the same tooltip —
+  so the one thing you could not get was what a reagent is, and who already has some. Each picture
+  answers for itself now, and clicking one still does what clicking the row does.
+
 ### Searching for an item
 
 - **CTRL-ALT on a link in chat now searches for the item in your own language.** A link carries the

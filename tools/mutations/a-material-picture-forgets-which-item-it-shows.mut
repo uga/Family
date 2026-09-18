@@ -1,0 +1,6 @@
+name: a material picture is drawn without recording which item it shows
+file: addons/Family_UI/Professions.lua
+--- old
+				cell.hit.itemID = part.item
+--- new
+				cell.hit.itemID = nil

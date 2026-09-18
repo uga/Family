@@ -1,0 +1,9 @@
+name: a material picture takes the click and does not hand it back to the row
+file: addons/Family_UI/Professions.lua
+--- old
+			hit:SetScript("OnClick", function()
+				local click = r:GetScript("OnClick")
+				if click then click(r) end
+			end)
+--- new
+			hit:SetScript("OnClick", function() end)

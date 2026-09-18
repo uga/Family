@@ -1,0 +1,6 @@
+name: the row goes dark while the pointer is on one of its material pictures
+file: addons/Family_UI/Professions.lua
+--- old
+			hit:HookScript("OnEnter", function() Family:TryCall(r.LockHighlight, r) end)
+--- new
+			hit:HookScript("OnEnter", function() end)

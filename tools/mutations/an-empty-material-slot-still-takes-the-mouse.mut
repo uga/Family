@@ -1,0 +1,8 @@
+name: an empty material slot is left taking the mouse over the row
+file: addons/Family_UI/Professions.lua
+--- old
+				cell.hit.itemID = nil
+				cell.hit:Hide()
+--- new
+				cell.hit.itemID = nil
+				cell.hit:Show()

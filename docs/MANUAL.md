@@ -331,7 +331,10 @@ Recipes are coloured as the game colours them — orange, yellow, green, grey �
 along the top say how many of each there are.
 
 **Every recipe row says what it is made of**: the materials, with how many of each, on the right of
-the recipe's own line — for every character, not only the one whose window is open. **Can make**
+the recipe's own line — for every character, not only the one whose window is open. **Hover one of
+those pictures** and you get that material's own tooltip, with who in the family already has some;
+hover anywhere else on the line and you get the thing being made. Clicking a picture does what
+clicking the line does. **Can make**
 counts what that character had in their bags and bank the last time they logged in. Wands, rods
 and oils an enchanter makes are shown as **the thing itself**, with its own picture, who holds one
 and what it takes to make.

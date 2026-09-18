@@ -580,11 +580,17 @@ reputations: one line per quest with the characters who have it under it, furthe
 each with their own progress. Three at a time, with the rest a click away. The filter box acts
 on quest names and zones; the realm, class and level filters act on the characters.
 
-**A recipe row reads both ways.** A recipe is two things — the spell that makes something and
-the item it makes — and Family's own recipe rows show what it makes. Holding **CTRL** with the
-pointer on the row shows the recipe instead, and letting go puts it back, without moving the
-mouse. The row says the key is there; where only one of the two is known, nothing is offered
-and nothing is said.
+**A recipe row describes what it makes.** A recipe is two things — the spell that makes
+something and the item it makes — and Family's own recipe rows describe the item, which puts
+**CTRL** there under the same meaning it has over an item anywhere else: the family's whole lot
+of the thing and what it is worth. A recipe that makes no item — an enchant — describes its
+spell, which is the only thing there is to describe.
+
+**The materials are on the row, and each one answers for itself.** Every recipe row carries what
+it takes as pictures along its right-hand end, with the quantity printed on each. Hovering one of
+those describes **that material** — the item's own tooltip, with who in the family already has
+some underneath it — rather than the thing being made; clicking it does what clicking the row
+does, because the picture is part of the row and not a hole in it.
 
 **New mail.** Mail arriving for the member you are playing is announced in the chat frame.
 
