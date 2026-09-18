@@ -5724,3 +5724,8 @@ the stored data being moved. **Not built until the reading says so.**
 
 Checks under *whether an auction house is shared across the connected realm group*; mutations
 `ahsellers-*`.
+
+**And a list of clusters would not have answered it.** Asked 2026-09-18 whether wago offers one: it
+does not - no realm table at all at Era's build, see DATASOURCES §3 - and Family has the groups from
+the client already. What is not known is not *which realms are connected* but **whether the auction
+house follows the connection**, and no list of realms can say that. The reading above can.

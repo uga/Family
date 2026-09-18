@@ -2152,6 +2152,15 @@ which reads a merchant's window while it is open and keeps the **highest** price
 a reputation discount only ever moves it down. One visit to an alchemy supplier teaches it Leaded
 Vial for the whole account, for good.
 
+**Realms: wago has their kinds and not the realms, asked 2026-09-18.** Alberto, of backlog 91: *doesn't
+wago offer a list of realm clusters?* Fetched rather than reasoned about, at Era's pinned build
+`1.15.9.69109`: `Cfg_Regions` answers the regions (US, KR, EU...), `Cfg_Categories` the realm list's
+categories (*United States*, *Oceanic*...), `Cfg_Configs` the realm types (player killing allowed,
+roleplaying) - and `RealmList`, `Realm` and `ConnectedRealm` answer *Table not found*. The realms
+themselves, and which are connected, come from the server rather than from the client's tables.
+Family already asks the client that question live, through `GetAutoCompleteRealms` (§2), which is
+never out of date the way a shipped list would be the day realms are reconnected.
+
 **Disenchanting: wago has the bucket and not the results.** Asked 2026-09-12 - *ha una tabella che
 dice il tale oggetto quando disincantato può dare 1 x questa polvere al 50%, 2 x questa shard al
 35%?* - and answered by fetching rather than by reasoning. The only disenchant table wago serves is
