@@ -1,0 +1,6 @@
+name: the whole-family Made with line is drawn with no materials on it
+file: addons/Family_UI/Professions.lua
+--- old
+						showMaterials(line, recipe)
+--- new
+						showMaterials(line, nil)

@@ -18088,6 +18088,17 @@ print("guild share")
 				} })
 			end
 
+			-- **Materials for the recipe being searched**, so that unfolding the row draws
+			-- the *Made with* line this list puts them on. Set here rather than relied on:
+			-- what is shipped for this spell is not the claim under test, and a check that
+			-- passed only while the real table happened to carry it would go quiet the day
+			-- that table was regenerated.
+			local heldReagents = Family.RecipeReagents
+			local WHOLE_BAR, WHOLE_CLOTH = 700301, 700302
+			Family.RecipeReagents = { [Family.Capabilities.expansion] = {
+				[25128] = { WHOLE_BAR, 2, WHOLE_CLOTH, 1 },
+			} }
+
 			typed("wizard oil")
 
 			local opener
@@ -18109,6 +18120,59 @@ print("guild share")
 				check("and unfolding it names every one of them",
 					visibleText("Nervina") and visibleText("Faraway"))
 
+				-- **And the materials on the unfolded line answer for themselves here too.**
+				--
+				-- Asked for 2026-09-18, the pictures having been given their own tooltips on
+				-- the member list the day before: *check this works on whole family mode
+				-- too.* It is the same pooled row and so the same frames, which is a reason
+				-- to expect it to work and not a reading that it does - and this list reaches
+				-- the strip by a different road. A row here draws **no** materials at all
+				-- (they would run through the column of crafter names); they arrive only on
+				-- the *Made with* line that unfolding adds, built from `row()` like the rest.
+				do
+					local madeWith
+					for _, f in ipairs(frames) do
+						if madeWith == nil and f.__shown == true and f.mats
+							and type(f.text) == "table"
+							and type(f.text.__text) == "string"
+							and f.text.__text:find("Made with", 1, true) then
+							madeWith = f
+						end
+					end
+
+					check("unfolding a whole-family row draws the materials line",
+						madeWith ~= nil, tostring(madeWith ~= nil))
+
+					if madeWith then
+						-- Two materials, so slots seven and eight: the strip is
+						-- right-aligned and the counts are 2 and 1.
+						local shown = {}
+						for slot = 1, 8 do
+							if madeWith.mats[slot].hit:IsShown() then
+								shown[#shown + 1] = slot
+							end
+						end
+						check("with a picture for each of them and no more",
+							#shown == 2, tostring(#shown) .. " shown")
+
+						local said = {}
+						for _, slot in ipairs(shown) do
+							local hit = madeWith.mats[slot].hit
+							GameTooltip.__shownAs = nil
+							hit.__scripts.OnEnter(hit)
+							said[#said + 1] = GameTooltip.__shownAs
+									and GameTooltip.__shownAs.id or nil
+							hit.__scripts.OnLeave(hit)
+						end
+
+						check("and hovering each one describes that material, "
+							.. "as it does on a member's own list",
+							#said == 2 and said[1] == WHOLE_BAR
+								and said[2] == WHOLE_CLOTH,
+							tostring(said[1]) .. " / " .. tostring(said[2]))
+					end
+				end
+
 				local rowsOpen = 0
 				for _, f in ipairs(frames) do
 					if f.__shown == true and f.__parent and f.icon then
@@ -18127,6 +18191,8 @@ print("guild share")
 				check("and folding it again puts them away", rowsShut < rowsOpen,
 					tostring(rowsShut) .. " against " .. tostring(rowsOpen))
 			end
+
+			Family.RecipeReagents = heldReagents
 
 			for _, who in ipairs { "Alfa", "Bravo", "Charlie", "Delta", "Echo" } do
 				Family.Database:Forget(who .. "-FireMaw")
