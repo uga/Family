@@ -938,6 +938,12 @@ house. Prices are kept per realm and per side; a price read at a **goblin** auct
 for both sides of that realm, because it is one market, and your own side's house still wins where
 it has a price.
 
+**Connected realms share one auction house**, on Classic Era and on Mists alike, goblin houses
+included — so a price read on any realm of a connected group counts for your characters on all of
+them, the most recent reading winning, and an item banned on one is banned for the group. Family
+learns which realms are connected from the game each time you log in, so log in once on any realm
+of a group and it knows the whole group from then on.
+
 **The Family tab** on the auction window carries the *Read it all* button and a line saying how far
 a read has got: pages done, prices taken, and roughly how long is left, worked out from the pages
 already read. The button clears the search, searches, and walks every page there is; pressed again

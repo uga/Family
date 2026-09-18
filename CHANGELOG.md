@@ -31,12 +31,14 @@ is a decision rather than an afternoon of archaeology.
 
 ### Worth
 
-- **Characters on connected realms are priced from the auction house those realms share.** On
-  Classic Era the realms of one connected group trade in one auction house - read in the game,
-  where most listings in Nethergarde Keep's house came from Pyrewood Village and Mirage Raceway.
+- **Characters on connected realms are priced from the auction house those realms share.** The
+  realms of one connected group trade in one auction house, goblin houses included - read in the
+  game on Classic Era, where most listings in Nethergarde Keep's house came from Pyrewood Village and
+  Mirage Raceway, and on Mists, where an item posted on Garalon showed up from Mirage Raceway.
   Family priced each realm only from its own scans, so an alt on the second realm fell back to what
   a vendor pays. Now prices scanned on any realm of the group count for all of them, the most
-  recent winning, and an item banned on one realm is banned for the whole group.
+  recent winning, and an item banned on one realm is banned for the whole group. Family learns the
+  group from the game, so log in once on any realm of it.
 
 ### Professions
 
