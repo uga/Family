@@ -2297,6 +2297,60 @@ add("paycost", L["what marking each part of this character's record would cost"]
 	Family:Print(L["|cff888888Nothing was changed.|r"])
 end)
 
+-- **Whether this auction house is shared across the connected realm group** (backlog 91). A
+-- reading for a person, printed raw as `/family guild names` is: what it answers is a fact about
+-- the client and is only worth quoting as the client said it.
+add("ahsellers", L["whose auctions this house holds, by the seller's realm"], function()
+	local seen = Family.Auctions:SellerRealms()
+
+	if seen.rows == 0 then
+		Family:Print(L["The browse list is empty. Open the auction house, search for something "
+			.. "common - cloth, herbs - and ask again."])
+		return
+	end
+
+	Family:Print(L["Browse list: %d auctions, %d with a seller named."], seen.rows, seen.named)
+
+	local connected = Family:TryCall(GetAutoCompleteRealms)
+	local names = {}
+	if type(connected) == "table" then
+		for _, name in ipairs(connected) do names[#names + 1] = tostring(name) end
+	end
+	Family:Print(L["This realm: %s. Connected to it, as the client says: %s."], tostring(seen.here),
+		#names > 0 and table.concat(names, ", ") or L["none"])
+
+	local realms = {}
+	for realm, count in pairs(seen.tally) do realms[#realms + 1] = { realm = realm, count = count } end
+	table.sort(realms, function(a, b) return a.count > b.count end)
+
+	local elsewhere = 0
+	for _, entry in ipairs(realms) do
+		local same = Family.Guild:SameRealmGroup(entry.realm, seen.here)
+		local mine = (entry.realm:gsub("%s+", ""):lower()) == (tostring(seen.here):gsub("%s+", ""):lower())
+		local where = mine and L["this realm"] or (same and L["connected"] or L["not in this group"])
+		if same and not mine then elsewhere = elsewhere + entry.count end
+		Family:Print("  %s: %d (%s)", entry.realm, entry.count, where)
+	end
+
+	if elsewhere > 0 then
+		Family:Print(L["|cff40c040%d auctions here are from another realm of this group: this auction "
+			.. "house is shared across the group.|r"], elsewhere)
+	else
+		Family:Print(L["|cffffaa00No seller from another realm of this group on this list. That does "
+			.. "not prove the house is separate - search for something traded widely and ask "
+			.. "again.|r"])
+	end
+
+	-- The first row whole, every value with its type, so the reading says which return the
+	-- seller is at rather than this command assuming it.
+	local parts = {}
+	for index = 1, 18 do
+		local value = seen.first and seen.first[index]
+		parts[#parts + 1] = string.format("%d:%s(%s)", index, tostring(value), type(value))
+	end
+	Family:Print("Row 1: %s", table.concat(parts, " "))
+end)
+
 add("widecost", L["what an exchange would put on the wire, without sending it"], function()
     if not Family.Wide:Enabled() then
         Family:Print(L["Wide Family is switched off, so there is nothing to weigh."])

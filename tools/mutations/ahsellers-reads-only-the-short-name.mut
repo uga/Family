@@ -1,0 +1,7 @@
+name: the seller probe reads the short name, where another realm is not written
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		local seller = (type(full) == "string" and full ~= "") and full
+			or ((type(short) == "string" and short ~= "") and short or nil)
+--- new
+		local seller = (type(short) == "string" and short ~= "") and short or nil

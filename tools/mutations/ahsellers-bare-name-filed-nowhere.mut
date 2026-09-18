@@ -1,0 +1,6 @@
+name: a seller on this realm, written with no realm, is counted under no realm at all
+file: addons/Family/Scanners/Auctions.lua
+--- old
+			local realm = seller:match("^[^%-]+%-(.+)$") or here or "?"
+--- new
+			local realm = seller:match("^[^%-]+%-(.+)$") or "?"

@@ -1,0 +1,6 @@
+name: any seller from anywhere is taken as the group sharing the house
+file: addons/Family_UI/Slash.lua
+--- old
+		if same and not mine then elsewhere = elsewhere + entry.count end
+--- new
+		elsewhere = elsewhere + entry.count

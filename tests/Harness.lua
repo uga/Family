@@ -22156,6 +22156,90 @@ print("the notes CurseForge shows are this release's and not the whole history")
 end)()
 
 print()
+print("whether an auction house is shared across the connected realm group")
+;(function()
+	-- Backlog 91: Alberto believes the realms of one connected group share an auction house and
+	-- asked for it to be verified before Family values anything by it. The older house names the
+	-- seller of every listing, and one from another realm of the group in this realm's house
+	-- settles the question. This asks the reader, not the game - the game is Alberto's to ask.
+	local held = {
+		num = GetNumAuctionItems, info = GetAuctionItemInfo,
+		normalized = _G.GetNormalizedRealmName, connected = _G.GetAutoCompleteRealms,
+	}
+
+	local LIST = {}
+	local function row(seller, full)
+		-- The seller where the older house puts it: the short name at fourteen, the full one at
+		-- fifteen. The probe prints the first row whole so a live reading can say otherwise.
+		return { "Linen Cloth", nil, 20, 1, true, 5, nil, 100, 10, 2000, 0, nil, nil,
+			seller, full, 0, 2589, true }
+	end
+
+	GetNumAuctionItems = function(which) return which == "list" and #LIST or 0 end
+	GetAuctionItemInfo = function(which, index)
+		if which ~= "list" or not LIST[index] then return nil end
+		return unpack(LIST[index], 1, 18)
+	end
+	_G.GetNormalizedRealmName = function() return "PyrewoodVillage" end
+	_G.GetAutoCompleteRealms = function()
+		return { "PyrewoodVillage", "NethergardeKeep", "MirageRaceway" }
+	end
+
+	local function said(command)
+		local before = #DEFAULT_CHAT_FRAME.messages
+		SlashCmdList["FAMILY"](command)
+		local lines = {}
+		for index = before + 1, #DEFAULT_CHAT_FRAME.messages do
+			lines[#lines + 1] = DEFAULT_CHAT_FRAME.messages[index]
+		end
+		return table.concat(lines, "\n")
+	end
+
+	-- Sellers on this realm are written bare; one from another realm carries it after a hyphen.
+	LIST = {
+		row("Ann", "Ann"),
+		row("Bob-NethergardeKeep", "Bob-NethergardeKeep"),
+		row("Cid", "Cid-NethergardeKeep"),
+		row(nil, nil),
+	}
+	local seen = Family.Auctions:SellerRealms()
+	check("the probe counts every listing and every one with a seller",
+		seen.rows == 4 and seen.named == 3, seen.rows .. " rows, " .. seen.named .. " named")
+	check("and files a bare name under this realm and a qualified one under its own",
+		seen.tally.PyrewoodVillage == 1 and seen.tally.NethergardeKeep == 2,
+		tostring(seen.tally.PyrewoodVillage) .. "/" .. tostring(seen.tally.NethergardeKeep))
+	check("and prefers the full name, which is where another realm is written",
+		seen.tally.Cid == nil and seen.tally.NethergardeKeep == 2)
+
+	local text = said("ahsellers")
+	check("sellers from another realm of the group say the house is shared",
+		text:find("shared across the group", 1, true) ~= nil, text)
+	check("and the first row is printed whole, so the reading says where the seller is",
+		text:find("14:Ann(string)", 1, true) ~= nil and text:find("18:", 1, true) ~= nil, text)
+
+	-- Nobody from elsewhere is not proof of anything, and the probe must not claim it is.
+	LIST = { row("Ann", "Ann"), row("Dee", "Dee") }
+	text = said("ahsellers")
+	check("only this realm's sellers is said to prove nothing either way",
+		text:find("shared across the group", 1, true) == nil
+			and text:find("does not prove", 1, true) ~= nil, text)
+
+	-- And a realm outside the group is not taken for one inside it.
+	LIST = { row("Eve-Soulseeker", "Eve-Soulseeker") }
+	text = said("ahsellers")
+	check("a seller from a realm outside the group does not count as the group sharing",
+		text:find("shared across the group", 1, true) == nil
+			and text:find("not in this group", 1, true) ~= nil, text)
+
+	LIST = {}
+	text = said("ahsellers")
+	check("and an empty list asks for a search rather than answering",
+		text:find("browse list is empty", 1, true) ~= nil, text)
+
+	GetNumAuctionItems, GetAuctionItemInfo = held.num, held.info
+	_G.GetNormalizedRealmName, _G.GetAutoCompleteRealms = held.normalized, held.connected
+end)()
+
 print("the release workflow may create the release it uploads")
 ;(function()
 	local f = io.open(ROOT .. "/.github/workflows/release.yml")

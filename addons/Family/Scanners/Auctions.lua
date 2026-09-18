@@ -279,6 +279,48 @@ function Auctions:NoteBid(list, index)
 	return pending
 end
 
+-- **Whose auctions are in this house, counted by the seller's realm.**
+--
+-- Backlog 91, Alberto 2026-09-18: *realms of the same realm group share AH markets. I think this
+-- is true but let's verify it is.* DATASOURCES has measured the connected groups on Era and Mists
+-- - guilds span them and whispers cross them - and recorded nothing about the auction house, so
+-- the claim is not something Family may act on yet.
+--
+-- The older house names the seller of every listing, and a seller from another realm of the group
+-- showing up in this realm's house settles it: the house is shared. So the browse list the player
+-- is already looking at is read for sellers and counted by the realm written after their name. A
+-- seller on this realm is written without one. Nothing is queried and nothing is kept - this is a
+-- reading for a person, and it is read the moment it is asked for.
+--
+-- **Which return carries the seller was never recorded here**, so the first row comes back whole
+-- for the probe to print, and the choice below - the full name at fifteen, the short one at
+-- fourteen - is what that printout confirms or corrects.
+function Auctions:SellerRealms()
+	local rows = tonumber((Family:TryCall(GetNumAuctionItems, "list"))) or 0
+	local here = Family:TryCall(GetNormalizedRealmName)
+	if type(here) ~= "string" or here == "" then here = Family:TryCall(GetRealmName) end
+
+	local tally, first, named = {}, nil, 0
+	for index = 1, rows do
+		local row = { Family:TryCall(GetAuctionItemInfo, "list", index) }
+		if index == 1 then first = row end
+
+		local full, short = row[15], row[14]
+		local seller = (type(full) == "string" and full ~= "") and full
+			or ((type(short) == "string" and short ~= "") and short or nil)
+
+		if seller then
+			named = named + 1
+			-- A character's name cannot hold a hyphen, so whatever follows the first one is a
+			-- realm. No hyphen is a seller on this realm, and is counted as this realm.
+			local realm = seller:match("^[^%-]+%-(.+)$") or here or "?"
+			tally[realm] = (tally[realm] or 0) + 1
+		end
+	end
+
+	return { rows = rows, named = named, tally = tally, first = first, here = here }
+end
+
 -- The server says it was won. Now it is a fact about this character's mailbox.
 function Auctions:NoteWon()
 	local won = pending

@@ -5664,3 +5664,49 @@ there, and the bag slot beside it is offered the key as before. **The bag fixtur
 `GetAttribute`** that answers nothing for `action`, because every frame in the game answers that call
 - without it, *has no attributes* and *is not an action button* could not be told apart, and the
 mutation that takes any frame for a bar slot survived on exactly that. Mutations `ctrl-hint-*`.
+
+---
+
+## 91. Realms of one connected group may share one auction house, and Worth should read it as one
+
+**Asked by Alberto 2026-09-18**: *realms of the same realm group share AH markets. I think this is
+true but let's verify it is. If it is, Family needs to take this into consideration: if I have 2
+alts on 2 realms, and they are in the same group, then AH values stored from realm1 also apply to
+items on realm2 for the purpose of Worth.*
+
+**What is known, read 2026-09-18.** `DATASOURCES.md` has measured the connected groups on two
+clients through `GetAutoCompleteRealms`: on Era *Pyrewood Village, Nethergarde Keep, Mirage Raceway*,
+on Mists *Mirage Raceway, Shek'zeer, Garalon, Norushen, Hoptallus*; Burning Crusade's Thunderstrike
+answers an empty list. It has measured that a guild spans a group and that whispers cross one and do
+not leave it (specification §11.1, backlog 73). **It records nothing about the auction house.** So
+the claim is Alberto's belief and nobody's measurement, and Family may not value anything by it yet.
+
+**What Family does today.** A market is *realm and faction* - `market()` in
+`Scanners/Auctions.lua` files readings under the reader's own realm, `marketOf` in `Index.lua` values
+a member at their own realm's house, and the realm's neutral house is the fallback (backlog 66). An
+alt on the second realm of a group is priced only from scans taken on that second realm; with none,
+everything it holds falls to what a vendor pays.
+
+**The reading, built 2026-09-18: `/family ahsellers`.** The older house names the seller of every
+listing, and a seller from another realm of the group appearing in this realm's house settles it.
+With the browse list showing anything, the command counts the listings by the realm written after
+the seller's name - a seller on this realm is written without one - says which of those realms the
+client calls connected, and says whether any listing came from another realm of the group. It prints
+the first row whole, because **which return carries the seller was never recorded here**: the reader
+takes the full name at fifteen and the short one at fourteen, and the printout confirms or corrects
+that. Finding nobody from elsewhere is said to prove nothing, which it does not.
+
+**On Mists the reading may not be possible.** The newer house does not name sellers in its browse
+results as far as anything here has read; if the command finds none there, another reading is needed
+- two characters on two realms of the group searching the same item at the same moment.
+
+**If the house is shared, the change is small and its shape is already in the code.** A market's key
+would widen from *this realm* to *this realm's group*, asked of the client as `Guild:SameRealmGroup`
+already asks it, and falling back to the realm alone where the client answers nothing or an empty
+list - exactly as guild share does, and for the reason recorded there: an empty list read as
+*everything is connected* would pool prices across realms that share nothing. Existing readings are
+filed under the realm they were taken on, so Worth would read across the group's realms rather than
+the stored data being moved. **Not built until the reading says so.**
+
+Checks under *whether an auction house is shared across the connected realm group*; mutations
+`ahsellers-*`.
