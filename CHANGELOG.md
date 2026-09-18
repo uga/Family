@@ -29,6 +29,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 4.2.0 — 2026-09-18
+
 ### Worth
 
 - **Characters on connected realms are priced from the auction house those realms share.** The
