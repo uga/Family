@@ -1,0 +1,6 @@
+name: a seller named only in short is counted as one named in full
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		if hasFull then inFull = inFull + 1 end
+--- new
+		inFull = inFull + 1

@@ -1,0 +1,6 @@
+name: a list that names nobody in full is reported as nobody being from elsewhere
+file: addons/Family_UI/Slash.lua
+--- old
+	elseif seen.inFull == 0 then
+--- new
+	elseif false then

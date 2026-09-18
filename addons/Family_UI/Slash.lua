@@ -2311,6 +2311,13 @@ add("ahsellers", L["whose auctions this house holds, by the seller's realm"], fu
 
 	Family:Print(L["Browse list: %d auctions, %d with a seller named."], seen.rows, seen.named)
 
+	-- **And how many of those were named in full**, which is the half that decides whether the
+	-- tally below means anything. Read on Era 2026-09-18: the seller arrives as a short name and
+	-- the full one is nil, and a short name carries no realm - so a list like that files every
+	-- seller under this realm and can only ever report nobody from elsewhere.
+	Family:Print(L["  named in full on %d of them; the rest give a short name, which carries "
+		.. "no realm."], seen.inFull)
+
 	local connected = Family:TryCall(GetAutoCompleteRealms)
 	local names = {}
 	if type(connected) == "table" then
@@ -2335,6 +2342,14 @@ add("ahsellers", L["whose auctions this house holds, by the seller's realm"], fu
 	if elsewhere > 0 then
 		Family:Print(L["|cff40c040%d auctions here are from another realm of this group: this auction "
 			.. "house is shared across the group.|r"], elsewhere)
+	elseif seen.inFull == 0 then
+		-- **Nothing to conclude, said as nothing to conclude.** Where no listing was named in
+		-- full, no listing could have carried a realm, so *nobody from elsewhere* is a fact
+		-- about this client's returns and not about the auction house. Era answers this way.
+		Family:Print(L["|cffffaa00No listing here names its seller in full, and a short name "
+			.. "carries no realm - so this reading cannot settle whether the house is shared. "
+			.. "Post an item on one realm of the group and search for it at another realm's "
+			.. "house.|r"])
 	else
 		Family:Print(L["|cffffaa00No seller from another realm of this group on this list. That does "
 			.. "not prove the house is separate - search for something traded widely and ask "

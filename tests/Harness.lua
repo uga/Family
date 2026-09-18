@@ -22392,6 +22392,8 @@ print("whether an auction house is shared across the connected realm group")
 	local seen = Family.Auctions:SellerRealms()
 	check("the probe counts every listing and every one with a seller",
 		seen.rows == 4 and seen.named == 3, seen.rows .. " rows, " .. seen.named .. " named")
+	check("and counts those named in full apart from those named at all",
+		seen.inFull == 3, tostring(seen.inFull) .. " in full of " .. tostring(seen.named))
 	check("and files a bare name under this realm and a qualified one under its own",
 		seen.tally.PyrewoodVillage == 1 and seen.tally.NethergardeKeep == 2,
 		tostring(seen.tally.PyrewoodVillage) .. "/" .. tostring(seen.tally.NethergardeKeep))
@@ -22410,6 +22412,35 @@ print("whether an auction house is shared across the connected realm group")
 	check("only this realm's sellers is said to prove nothing either way",
 		text:find("shared across the group", 1, true) == nil
 			and text:find("does not prove", 1, true) ~= nil, text)
+
+	-- **A list that names nobody in full cannot settle anything, and says so.**
+	--
+	-- Read on Era 2026-09-18, twice: the seller comes back at fourteen - `Dobster`, `Onuris` -
+	-- and fifteen is nil. A short name carries no realm, so every seller on such a list is filed
+	-- under this realm however far away they really are, and the *nobody from elsewhere* line
+	-- would be printed word for word by a shared house and by a separate one. The probe had one
+	-- sentence for both, which is a blind spot wearing the clothes of a reading.
+	LIST = { row("Dobster", nil), row("Onuris", nil) }
+	seen = Family.Auctions:SellerRealms()
+	check("a list of short names has sellers but none of them named in full",
+		seen.named == 2 and seen.inFull == 0,
+		tostring(seen.named) .. " named, " .. tostring(seen.inFull) .. " in full")
+
+	text = said("ahsellers")
+	check("and the reading says it cannot settle it, rather than reporting a negative",
+		text:find("cannot settle", 1, true) ~= nil
+			and text:find("does not prove", 1, true) == nil, text)
+	check("and says how many of them were named in full, which is none",
+		text:find("named in full on 0", 1, true) ~= nil, text)
+
+	-- **And the other sentence is still there for the list that really does say nobody.** Where
+	-- the sellers *are* named in full and none of them is from elsewhere, that is a reading and
+	-- not a blind spot - a weak one, which is why it has always been said to prove nothing.
+	LIST = { row("Ann", "Ann"), row("Dee", "Dee") }
+	text = said("ahsellers")
+	check("while a list named in full and all from here is still said to prove nothing",
+		text:find("does not prove", 1, true) ~= nil
+			and text:find("cannot settle", 1, true) == nil, text)
 
 	-- And a realm outside the group is not taken for one inside it.
 	LIST = { row("Eve-Soulseeker", "Eve-Soulseeker") }

@@ -300,13 +300,28 @@ function Auctions:SellerRealms()
 	local here = Family:TryCall(GetNormalizedRealmName)
 	if type(here) ~= "string" or here == "" then here = Family:TryCall(GetRealmName) end
 
-	local tally, first, named = {}, nil, 0
+	local tally, first, named, inFull = {}, nil, 0, 0
 	for index = 1, rows do
 		local row = { Family:TryCall(GetAuctionItemInfo, "list", index) }
 		if index == 1 then first = row end
 
 		local full, short = row[15], row[14]
-		local seller = (type(full) == "string" and full ~= "") and full
+
+		-- **How many were named in full, counted apart from how many were named at all.**
+		--
+		-- Read on Era 2026-09-18, twice: the seller is at fourteen - `Dobster`, `Onuris` - and
+		-- fifteen is **nil**. A short name carries no realm and never can, so on a list where
+		-- nothing is named in full every seller is filed under this realm whatever house they
+		-- are really in, and the probe's *nobody from elsewhere* would be printed just as
+		-- readily by a shared house as by a separate one. That is a blind spot reported in the
+		-- words of a negative, which is the one thing a probe must not do.
+		--
+		-- So the two are counted separately and the command says which it had. Where nothing
+		-- was named in full there is nothing to conclude, and it says that instead.
+		local hasFull = type(full) == "string" and full ~= ""
+		if hasFull then inFull = inFull + 1 end
+
+		local seller = hasFull and full
 			or ((type(short) == "string" and short ~= "") and short or nil)
 
 		if seller then
@@ -318,7 +333,8 @@ function Auctions:SellerRealms()
 		end
 	end
 
-	return { rows = rows, named = named, tally = tally, first = first, here = here }
+	return { rows = rows, named = named, inFull = inFull, tally = tally, first = first,
+		here = here }
 end
 
 -- The server says it was won. Now it is a fact about this character's mailbox.

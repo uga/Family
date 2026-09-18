@@ -1096,6 +1096,34 @@ having its own interval. The fifteen minutes another addon holds itself back for
 from here. What has **not** been read is this call during that countdown, with no scan running -
 so *the arity never changes* is an assumption and is written down as one.
 
+#### A browse row on Era names its seller in short and not in full, read 2026-09-18
+
+Backlog 91 asks whether the realms of one connected group share an auction house, and the road
+chosen was the seller: somebody from another realm of the group appearing in this realm's browse
+list settles it. **Which return carries the seller had never been read here**, so `/family
+ahsellers` prints the first row whole. Two readings on Classic Era, Pyrewood Village's group:
+
+    1:Runecloth Gloves(string) 2:132959 3:1 4:2 5:false 6:50 7:REQ_LEVEL_ABBR(string)
+    8:28497 9:0 10:29996 11:0 12:false 13:nil 14:Dobster(string) 15:nil 16:0 17:13863 18:true
+
+    1:Bolt of Runecloth(string) 2:132904 3:1 4:1 5:true 6:1 7:REQ_LEVEL_ABBR(string)
+    8:4512 9:0 10:4749 11:0 12:false 13:nil 14:Onuris(string) 15:nil 16:0 17:14048 18:true
+
+So on this client the seller is at **14**, as a **short name with no realm on it**, and **15 is
+nil** on both. The rest of the row agrees with the shape those indices were guessed from - 8 the
+minimum bid, 10 the buyout, 17 the item id, 18 that the row is complete - so only the expectation
+about 15 was wrong.
+
+**What that costs the probe.** A short name can never carry a realm, so on a list where nothing is
+named in full every seller is filed under the reader's own realm however far away they are, and
+*nobody here is from another realm* would be printed word for word by a shared house and by a
+separate one. The command counts the two apart now and says it cannot settle the question where
+nothing was named in full, rather than reporting a blind spot in the words of a negative.
+
+**Still unread**: whether 15 is nil on Era for *every* row or only for a seller on this realm.
+Two rows cannot tell those apart, and both of these sellers may simply be local. A list where 15
+is filled for some rows would settle it at once, which is what the new count makes visible.
+
 #### Where a whole-house read lands, measured 2026-09-12
 
 The important half. While another addon's full scan was arriving on Burning Crusade, the probe

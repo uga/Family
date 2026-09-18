@@ -5696,9 +5696,23 @@ the first row whole, because **which return carries the seller was never recorde
 takes the full name at fifteen and the short one at fourteen, and the printout confirms or corrects
 that. Finding nobody from elsewhere is said to prove nothing, which it does not.
 
+**Read on Era 2026-09-18, and the probe's own assumption was wrong.** Two browse rows printed
+whole: the seller is at **14** and is a **short name with no realm**, and **15 is nil** on both
+(`DATASOURCES.md`, *A browse row on Era names its seller in short and not in full*). A short name
+can never carry a realm, so on a list like that every seller is filed under the reader's own realm
+and *nobody from elsewhere* would be printed just as readily by a shared house as by a separate
+one. The command now counts those named in full apart from those named at all, and where none was
+named in full it says the reading **cannot settle it** instead. What is still unread is whether 15
+is nil on Era for every row or only for a local seller - two rows cannot tell those apart.
+
 **On Mists the reading may not be possible.** The newer house does not name sellers in its browse
 results as far as anything here has read; if the command finds none there, another reading is needed
 - two characters on two realms of the group searching the same item at the same moment.
+
+**That second reading is now the road on Era as well**, unless a list turns up with sellers named in
+full: post something distinctive on one realm of the group and search for it at another realm's
+house. It settles the question whatever the client's returns carry, and Alberto has characters on
+all three of the Era group's realms.
 
 **If the house is shared, the change is small and its shape is already in the code.** A market's key
 would widen from *this realm* to *this realm's group*, asked of the client as `Guild:SameRealmGroup`
