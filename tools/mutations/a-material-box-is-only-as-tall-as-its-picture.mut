@@ -1,0 +1,8 @@
+name: a material box is only as tall as its picture, so the line answers above and below it
+file: addons/Family_UI/Professions.lua
+--- old
+			hit:SetPoint("TOP", r, "TOP")
+			hit:SetPoint("BOTTOM", r, "BOTTOM")
+--- new
+			hit:SetPoint("TOP", icon, "TOP")
+			hit:SetPoint("BOTTOM", icon, "BOTTOM")

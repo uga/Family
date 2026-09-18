@@ -922,22 +922,32 @@ local function build(frame)
 			-- child hands the click back to the row's own script rather than repeating what it
 			-- does, and the row goes on highlighting while the pointer is over a picture,
 			-- because the pointer is still on the row.
-			-- **Half the gap on each side, so that neighbouring boxes meet.**
+			-- **The materials end of the line belongs to the materials, edge to edge.**
 			--
 			-- Read from play 2026-09-18, with the pictures answering correctly and the strip
-			-- still flickering: a box the size of its picture leaves the gap between two
-			-- pictures falling through to the row, so dragging the pointer along the strip
-			-- went material, crafted item, material - and on the whole-family *Made with*
-			-- line, where the row itself describes nothing, material, nothing, material.
+			-- still flickering: a box the size of its picture leaves everything around it
+			-- belonging to the row, so dragging the pointer along the strip went material,
+			-- crafted item, material - and on the whole-family *Made with* line, where the
+			-- row itself describes nothing, material, nothing, material.
 			--
-			-- Two pictures are `MATERIAL_ICON + MATERIAL_GAP` apart, so a box of exactly that
-			-- width leaves nothing between one and the next: each reaches half the gap and
-			-- the two edges land on the same pixel. Taken from the gap rather than written
-			-- as a number, so that moving the pictures closer or further apart keeps them
-			-- touching without anybody remembering this line.
+			-- **Sideways**, two pictures are `MATERIAL_ICON + MATERIAL_GAP` apart, so a box of
+			-- exactly that width leaves nothing between one and the next: each reaches half
+			-- the gap and the two edges land on the same pixel. Taken from the gap rather
+			-- than written as a number, so that moving the pictures closer or further apart
+			-- keeps them touching without anybody remembering this line.
+			--
+			-- **Up and down**, the box takes the whole height of the row rather than the
+			-- height of the picture, which is Alberto's call once the sideways gaps were
+			-- closed: *once the mouse reaches the materials portion of the line, I want only
+			-- material tooltips to come up. If the user wants to see the item tooltip, he can
+			-- move back towards the left.* So the strip is a column and not a row of islands
+			-- - the two pixels over a picture and the two under it used to answer about the
+			-- thing being made, which is the same flicker one axis round.
 			local hit = CreateFrame("Button", nil, r)
-			hit:SetPoint("TOPLEFT", icon, "TOPLEFT", -MATERIAL_GAP / 2, 0)
-			hit:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", MATERIAL_GAP / 2, 0)
+			hit:SetPoint("TOP", r, "TOP")
+			hit:SetPoint("BOTTOM", r, "BOTTOM")
+			hit:SetPoint("LEFT", icon, "LEFT", -MATERIAL_GAP / 2, 0)
+			hit:SetPoint("RIGHT", icon, "RIGHT", MATERIAL_GAP / 2, 0)
 			hit:Hide()
 			hit:RegisterForClicks("LeftButtonUp")
 			hit:SetScript("OnClick", function()

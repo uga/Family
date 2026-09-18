@@ -1,7 +1,8 @@
 name: a material box is only as wide as its picture, leaving the gaps to the row
 file: addons/Family_UI/Professions.lua
 --- old
-			hit:SetPoint("TOPLEFT", icon, "TOPLEFT", -MATERIAL_GAP / 2, 0)
-			hit:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", MATERIAL_GAP / 2, 0)
+			hit:SetPoint("LEFT", icon, "LEFT", -MATERIAL_GAP / 2, 0)
+			hit:SetPoint("RIGHT", icon, "RIGHT", MATERIAL_GAP / 2, 0)
 --- new
-			hit:SetAllPoints(icon)
+			hit:SetPoint("LEFT", icon, "LEFT", 0, 0)
+			hit:SetPoint("RIGHT", icon, "RIGHT", 0, 0)

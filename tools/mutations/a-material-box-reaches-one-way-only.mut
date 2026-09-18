@@ -1,6 +1,6 @@
 name: a material box reaches into the gap on one side only, so the boxes still miss
 file: addons/Family_UI/Professions.lua
 --- old
-			hit:SetPoint("TOPLEFT", icon, "TOPLEFT", -MATERIAL_GAP / 2, 0)
+			hit:SetPoint("LEFT", icon, "LEFT", -MATERIAL_GAP / 2, 0)
 --- new
-			hit:SetPoint("TOPLEFT", icon, "TOPLEFT", 0, 0)
+			hit:SetPoint("LEFT", icon, "LEFT", 0, 0)

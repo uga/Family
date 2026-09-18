@@ -9009,8 +9009,8 @@ print("what a recipe is made of, beside the recipe")
 		do
 			local gap = Family.UI.__materialGap
 			local hit = strip.mats[7].hit
-			local left = hit.__offsets and hit.__offsets.TOPLEFT
-			local right = hit.__offsets and hit.__offsets.BOTTOMRIGHT
+			local left = hit.__offsets and hit.__offsets.LEFT
+			local right = hit.__offsets and hit.__offsets.RIGHT
 
 			check("a picture's box reaches half the gap on each side of it",
 				type(gap) == "number" and gap > 0 and left and right
@@ -9018,16 +9018,30 @@ print("what a recipe is made of, beside the recipe")
 				tostring(left and left.x) .. " / " .. tostring(right and right.x)
 					.. " against a gap of " .. tostring(gap))
 
-			-- **And it is pinned to its own picture at both corners**, so it follows whatever
+			-- **And it is pinned sideways to its own picture**, so it follows whatever
 			-- `showMaterials` decides rather than being placed by a second copy of that
 			-- arithmetic - which is the copy that goes out of step.
 			local pinned = hit.__relative or {}
-			check("and is pinned to that picture at both corners, not placed beside it",
-				pinned.TOPLEFT and pinned.TOPLEFT.to == strip.mats[7].icon
-					and pinned.BOTTOMRIGHT
-					and pinned.BOTTOMRIGHT.to == strip.mats[7].icon,
-				tostring(pinned.TOPLEFT and pinned.TOPLEFT.to)
+			check("and is pinned to that picture, not placed beside it",
+				pinned.LEFT and pinned.LEFT.to == strip.mats[7].icon
+					and pinned.RIGHT and pinned.RIGHT.to == strip.mats[7].icon,
+				tostring(pinned.LEFT and pinned.LEFT.to)
 					.. " / " .. tostring(strip.mats[7].icon))
+
+			-- **And it stands the full height of the row, not the height of the picture.**
+			--
+			-- Alberto, 2026-09-18, once the sideways gaps were closed: *once the mouse
+			-- reaches the materials portion of the line, I want only material tooltips to
+			-- come up.* The two pixels over a picture and the two under it answered about
+			-- the thing being made, which is the same flicker one axis round - so the strip
+			-- is a column of the line rather than a row of islands in it, and the item is
+			-- reached by moving back to the left where the line describes it.
+			check("and stands the whole height of the row, so its column is all materials",
+				pinned.TOP and pinned.TOP.to == strip
+					and pinned.BOTTOM and pinned.BOTTOM.to == strip,
+				tostring(pinned.TOP and pinned.TOP.to) .. " / "
+					.. tostring(pinned.BOTTOM and pinned.BOTTOM.to)
+					.. " against the row " .. tostring(strip))
 		end
 
 		-- **An empty slot takes no mouse at all**, or the left-hand end of every short strip
