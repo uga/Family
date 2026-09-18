@@ -2096,6 +2096,24 @@ being an elapsed time, watched changing rather than deduced.
 `entries: 0`, with the calls all present. So this is only ever readable about a guild you are
 currently in, which is the only case that matters.
 
+### `tools/surface.py` and `tools/FamilySurface` — what Family asks of a client, and what it answers
+
+Built on the `midnight` branch for its first step, and useful for any client Family was not
+written against. `tools/surface.py` counts what Family touches from the sources: the globals it
+reads, from `luac5.1 -l`, which sees the names the code looks up and none that a comment
+mentions. Then, from the source, the namespace members, upper-case literals and frame templates
+that the listing cannot see. On 2026-09-18, at `2d9780c`: **193 globals, 39 members,
+136 literals, 6 templates**. It writes them into `tools/FamilySurface/Surface.lua`, and
+`--check` exits 1 when that file is stale.
+
+`tools/FamilySurface` is a throwaway addon that asks a running client about each one. It records
+the type, whether the literal registers as an event, whether the template builds on its frame
+type, and for 99 hand-picked read-only calls every return or the error. Presence alone is not
+trusted, for the reasons `Capabilities.lua` gives. It was run under `lua5.1` against a stubbed
+client before it went near a real one: a throwing call, holes in a return, an absent name, a
+refused event and a template that fails were each recorded as such. What Midnight answers goes
+in `docs/MIDNIGHT.md` on the branch.
+
 ---
 
 ## 3. wago.tools — the client's own tables, out of game
