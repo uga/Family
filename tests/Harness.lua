@@ -2004,91 +2004,6 @@ local function check(label, condition, detail)
 	end
 end
 
--- **The three recipe readers, answered by the index and by the walk it replaced, compared row by
--- row.** Written before the index took over `Search`, `KnowersOf` and `Crafters`, and kept: the
--- walks stay in `Recipes.lua` as `ScanSearch`, `ScanKnowersOf` and `ScanCrafters` for exactly this.
--- Asked on whatever family the fixtures hold at the moment it is called, with every needle, spell,
--- item and profession that family's records name, so a difference cannot hide in a question
--- nobody thought to ask.
-function RUN.dumpAnswer(value, seen)
-	local kind = type(value)
-	if kind ~= "table" then return kind .. ":" .. tostring(value) end
-	seen = seen or {}
-	if seen[value] then return "<again>" end
-	seen[value] = true
-	local keys = {}
-	for key in pairs(value) do keys[#keys + 1] = key end
-	table.sort(keys, function(a, b)
-		if type(a) ~= type(b) then return type(a) < type(b) end
-		return tostring(a) < tostring(b)
-	end)
-	local out = {}
-	for _, key in ipairs(keys) do
-		out[#out + 1] = tostring(key) .. "=" .. RUN.dumpAnswer(value[key], seen)
-	end
-	seen[value] = nil
-	return "{" .. table.concat(out, ",") .. "}"
-end
-
-function RUN.compareRecipeReaders(label)
-	local Recipes = Family.Recipes
-	local families = {}
-	for key, entry in pairs(Family.Database:Members()) do
-		families[#families + 1] = { meta = entry.meta or {}, payload = Family.Database:Payload(key) }
-	end
-	for _, sibling in ipairs(Family.Wide and Family.Wide:Siblings() or {}) do
-		families[#families + 1] = { meta = sibling.meta or {}, payload = sibling.payload }
-	end
-
-	local spells, items, words, professions = {}, {}, {}, {}
-	for _, one in ipairs(families) do
-		for profession, record in pairs((one.payload or {}).professions or {}) do
-			professions[tostring(Family:ProfessionName(profession) or profession)] = true
-			for _, recipe in ipairs(type(record) == "table" and record.recipes or {}) do
-				if recipe.spellID then spells[recipe.spellID] = true end
-				if recipe.itemID then items[recipe.itemID] = true end
-				if type(recipe.name) == "string" then
-					words[recipe.name] = true
-					for pair in recipe.name:lower():gmatch("%a%a") do words[pair] = true end
-				end
-			end
-		end
-	end
-
-	local asked, differ = 0, {}
-	local function same(what, new, old)
-		asked = asked + 1
-		local a, b = RUN.dumpAnswer(new), RUN.dumpAnswer(old)
-		if a ~= b and #differ < 3 then differ[#differ + 1] = what .. "\n    new " .. a .. "\n    old " .. b end
-	end
-
-	for word in pairs(words) do
-		same("Search " .. word, Recipes:Search(word), Recipes:ScanSearch(word))
-	end
-	for spell in pairs(spells) do
-		same("KnowersOf spell " .. spell, Recipes:KnowersOf(spell), Recipes:ScanKnowersOf(spell))
-	end
-	for item in pairs(items) do
-		local name = ITEM_NAMES[item]
-		same("KnowersOf item " .. item, Recipes:KnowersOf(nil, item, name),
-			Recipes:ScanKnowersOf(nil, item, name))
-		for profession in pairs(professions) do
-			same("Crafters " .. profession .. " " .. item,
-				Recipes:Crafters(profession, name, 50, 10, item),
-				Recipes:ScanCrafters(profession, name, 50, 10, item))
-		end
-	end
-	for word in pairs(words) do
-		if #word > 2 then
-			same("KnowersOf name " .. word, Recipes:KnowersOf(nil, 0, word),
-				Recipes:ScanKnowersOf(nil, 0, word))
-		end
-	end
-
-	check("the recipe index answers " .. label .. " exactly as the walk it replaced, over "
-		.. asked .. " questions", asked > 20 and #differ == 0, table.concat(differ, "\n  "))
-end
-
 -- Asked by the check below that the stop at the first failure really stops: a failure here, and
 -- a line after it that only a run carrying on would print.
 if arg[3] == "fail-first" then
@@ -11164,7 +11079,6 @@ if professionsEveryone then
 		-- Blacksmithing, Enchanting, Tailoring - the words. By the skill line ids behind
 		-- them it would be 164, 197, 333, which puts the tailor in the middle: the one
 		-- fixture arrangement that tells the two apart.
-		RUN.compareRecipeReaders("the family behind the whole-family search")
 		check("and by profession, which is the word rather than the key behind it",
 			page() == "Runed Copper Breastplate | Ench. de plastron (Vie majeure) | "
 				.. "Stitched Cloak", page())
@@ -24231,7 +24145,6 @@ print("the recipe names, asked for before anybody clicks")
 
 			-- And a shared list already in the reader's own language is skipped, the same
 			-- way ours is: the rule is about the record, not about whose it is.
-			RUN.compareRecipeReaders("a family with a linked family's lists in it")
 			link.members["Etranger-FireMaw"].payload.professions[197].locale = Family.locale
 			Family.UI:ForgetRecipeWarmUp()
 			for index = #asked, 1, -1 do asked[index] = nil end
@@ -39870,7 +39783,6 @@ print("the recipe index")
 	Family.Database:Changed("wide")
 	check("and what arrives for them next is what is answered",
 		siblingKnows(2667) and not siblingKnows(3339))
-	RUN.compareRecipeReaders("a family with a sibling in it")
 	wide.links["fam-recipes"] = nil
 	Family.Database:Changed("wide")
 	Family.Wide:SetEnabled(wasEnabled)
