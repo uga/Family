@@ -33,98 +33,105 @@ sharing features ship on or off (both ship **off**, as of `1.0.0`), where their 
 
 **See what your other characters have, without logging into them.**
 
-In WoW Classic there is exactly one way to find out what is in your bank alt's bags, whether
-your druid ever learned that recipe, or which character is carrying the Arcanite Bars: log out,
-log in, look, log back. The server will tell you nothing about a character you are not standing
-on.
+Family records each character while you play it: what it owns, what it knows, what it wears,
+what is in its mailbox. Every other character can then see all of it, in one window. Family
+calls your characters **members**.
 
-Family watches each character as you play it — what it owns, what it knows, what it is wearing,
-what it has in the post — and shows all of it from any other character, at any time, in one
-window. It calls them **members** rather than alts, and it is built for people who have a lot
-of them.
+The game tells you nothing about a character you are not logged into. With Family you stop
+relogging to look inside a bank alt's bags.
 
-**On the game's own item tooltips.** Hover any item anywhere — a quest reward, an auction house
-listing — and Family adds who in the family owns one, how many, and **where**: bags, bank,
-guild bank, mailbox, auction house. Hover a recipe and it says who can make it, who can learn
-it today, and who is not high enough yet. You stop buying the second Thorium Lockbox because
-you had forgotten the first one is in your rogue's bank.
+**On the game's own item tooltips.** Hover any item, anywhere: a quest reward, an auction
+listing. Family adds who in the family owns one, how many, and where: bags, bank, guild bank,
+mailbox, auction house, or equipped. Hover a recipe and it names who knows it, who can learn
+it now, and who needs more skill or levels first. You stop buying a recipe your druid already
+knows. Hold CTRL and ALT and click an item, and Family opens on every copy the family holds.
 
-**The whole family on one screen.** Every character you have played, grouped by realm and
-faction, with money, bag space, professions, level and currencies, and totals per realm. A
-realm where you play both sides is split in two, because two factions share no auction house
-and no mailbox and adding their gold together would be a lie.
+**The whole family on one screen.** One row per member, grouped by realm and faction, with
+totals for each group. The columns cover level, item level, rested experience, money, bag and
+bank space, professions, mail and auctions. Play both factions on one realm and you get two
+groups. The two sides share no mailbox and no auction house, so their gold is counted apart.
 
-**Everyone's gear at once.** One row per member: their class, then every slot in the order the
-character sheet uses them, item level printed over each icon, the item's own tooltip on hover,
-and filters built from what your family actually contains. Any addon can show you a character
-sheet. This answers the question people actually have — *which of my characters is behind* —
-like the level 42 trinket your warrior is still wearing at 60.
+**Everyone's gear at once.** One row per member: the class icon, then every slot in the order
+of the character sheet. Each icon carries its item level and shows the item's own tooltip on
+hover. Filter by realm or by class. One look tells you who is behind, like the warrior still
+wearing a level 42 trinket at 60.
 
-**Possessions and professions, searchable across the whole family.** Bags, bank, guild bank and
-mailbox drawn as the containers they are rather than as a list, and every member's recipe lists,
-sortable by difficulty that orders properly *within* each colour band rather than alphabetically.
-Both carry a search that answers *who has this* and *who can make this*.
+**Bags, bank and recipes, searchable across the family.** Bags, bank, guild bank and mailbox
+are drawn as containers, the way the game draws them. Each profession lists its recipes, and
+you filter them by difficulty colour, by equipment slot or by name. One search answers *who
+has this*. Another answers *who can make this*.
 
-**Two things the client will not tell you twice.** How many charges are left on a Wizard Oil or
-a Bag of Marbles — no call in the game hands that to an addon, so Family reads it off the item
-itself and prints it in the corner of the icon, for your bags, your bank and the guild bank
-tabs you have opened. And which of your characters has world buffs banked in a **Chronoboon**,
-how many, and which ones: click the figure and they unfold as their own icons with the time
-left on each.
+**What it is all worth.** Family reads auction prices from the listings you browse. It scans
+the whole auction house only when you press **Read it all**. Each member's page says what
+their bags, bank, mail, auctions and worn gear come to, and how much of that figure is auction
+prices and how much is vendor prices. Switch on prices in **Options** and holding CTRL over
+any item shows what the family's copies of it are worth. Realms that share an auction house
+share their prices.
 
-**Mail written down as you post it.** Send gold or items to one of your own characters and it
-appears against them straight away, marked as being in the post, until that character opens
-their own mailbox and the truth replaces it. Mail approaching its return-or-destroy date is
-announced on any member — which is the whole point, since it is never the one you are playing.
+**Charges and world buffs.** The charges left on a Wizard Oil or a Bag of Marbles are printed
+in the corner of the icon, in your bags, your bank and the guild bank. The summary counts the
+world buffs each member has stored in a **Chronoboon**. Click the number and each buff appears
+as its own icon, with the time left on it.
 
-**Cooldowns that survive being logged out.** Recorded as the moment they come ready rather than
-as a duration, so they stay correct however long the client has been shut, and announced at
-login. Thirty alchemy transmutes share one timer and appear as a single column.
+**Mail recorded as you send it.** Send gold or items to one of your own characters and the
+mail shows against them at once, marked as in the post. When that character opens their
+mailbox, what is really there replaces it. Family also warns you when any member's mail is
+close to being returned or destroyed, whichever character you are playing.
 
-Also: a full character sheet for any member, with enchants, gems, reputations, quests and
-achievements; both talent specialisations, glyphs and the spellbook; and a minimap button and
-data broker feed carrying the family's money — shift-click it to count one realm's side, or
-one character, instead of everybody.
+**Cooldowns that survive logging out.** Family stores the moment a crafting cooldown comes
+ready, so it stays correct however long the game was closed. At login it tells you which
+members have one ready. Alchemy transmutes share one timer and appear as one cooldown.
+
+Also:
+
+- A character sheet for any member, with enchants and gems on the gear, plus reputations,
+  quests, currencies and achievements where the game has them.
+- Both talent specialisations, glyphs and the spellbook.
+- A minimap button and a data broker feed showing the family's money. Shift-click it to count
+  one realm and faction, or one character.
 
 ### Sharing
 
-**Guild share ships off, and one switch turns it on.** Guildmates running Family show each
-other their characters' gear and talent shape, including the offline ones once you have seen
-them. Guilds spanning **connected realms** are handled as the one guild they are. **Nothing else is shared** — no bags, no mail, no gold; all of it is what the game
-already shows anyone who inspects you. The Guild panel is in the list whether it is on or off,
-so you can read what it does before deciding, and the switch is in **Options**.
+Both sharing features are switched off when you install Family. Both switches are in
+**Options**, and neither needs a reload.
 
-**Wide Family ships switched off by default.** Linking two players' families, with per-member
-and per-category consent on a grid that starts empty, is there whenever you want it — but
-sharing is the one thing a later version cannot undo, so it waits to be asked for rather than
-arriving switched on. The switch is in **Options** beside the guild one, or `/family wide on`.
-Neither needs a reload, and both of you need to.
+**Guild share.** Guildmates who run Family see each other's characters in the guild: class,
+race, level, gear and the shape of both talent builds. All of that is what the game already
+shows anyone who inspects you. A guildmate you have seen once stays listed after they log
+off. Guilds spanning **connected realms** count as one guild. You can also offer your
+professions, one character and one profession at a time, on a grid that starts empty. Then a
+guildmate hovering an item sees which of your characters can make it, and whether its cooldown
+is ready. Bags, bank, mail and gold are **never** shared with the guild.
+
+**Wide Family.** Link your family with another player's, and each of you can see the other's
+characters. You choose what they may see, one member and one category at a time: possessions,
+equipment, professions, talents, quests, mail, auctions, reputations, money and more. The
+grid starts empty, so nothing is shared until you tick it. Untick a box and what was shared
+under it is deleted from their side the next time the two families are in contact. Both
+players must switch it on, in **Options** or with `/family wide on`.
 
 ### What to expect
 
-- **It starts empty and fills as you play.** There is no import from any other addon, ever.
-  Everything Family holds, it holds because it watched it happen.
-- **Log into each character once.** Bank, guild bank, mailbox and profession windows are
-  recorded while they are open; bags update on every change.
-- **Nothing is shown as empty when it was simply never seen**, and every screen says how old
-  what it is showing is.
+- **It starts empty and fills as you play.** Nothing is imported from any other addon.
+- **Log into each character once.** Bags update on every change. The bank, guild bank,
+  mailbox, auction house and profession windows are recorded while they are open.
+- **Every screen says how old its information is.** Something Family has never seen is shown
+  as not seen, never as empty.
 
 ### Clients and languages
 
 Classic Era, Classic Burning Crusade (Anniversary) and Classic Mists of Pandaria. Season of
 Discovery and Retail are not supported and not planned.
 
-English, German, French, Spanish and Russian, for both the interface and the recorded data —
-Family stores identifiers rather than names, so a character recorded on a German client reads
-back correctly on a French one.
+English, German, French, Spanish and Russian, for both the interface and the recorded data.
+A character recorded on a German client reads correctly on a French one.
 
-Two addons in one download: `Family` records, `Family_UI` shows. Free software under
-**GPL-3.0-or-later**, source public — nobody can take Family closed, including if this project
-is ever abandoned.
+The download contains two addons: `Family` records and `Family_UI` shows. Family is free
+software under **GPL-3.0-or-later**, and its source is public.
 
 ### The full manual
 
-Every panel, every column and what to do when something looks wrong:
+Every panel, every column, and what to do when something looks wrong:
 <https://github.com/uga/Family/blob/main/docs/MANUAL.md>
 
 Faults and suggestions: <https://github.com/uga/Family/issues>
