@@ -1,11 +1,10 @@
 # Family — the manual
 
 An alt manager for World of Warcraft Classic. It records what each of your characters owns
-and knows, and shows it to you while you are logged in on a different one.
+and knows, and shows it to you while you play a different one. Family calls your characters
+**members**.
 
-This is the long version. There is a short one inside the addon, on the **About** tab, and it
-covers enough to get started; this document is for when you want to know why something says
-what it says.
+A shorter guide is inside the addon, on the **About** tab.
 
 ---
 
@@ -27,78 +26,42 @@ what it says.
 14. [What Family will not do, and why](#14-what-family-will-not-do-and-why)
 15. [When something looks wrong](#15-when-something-looks-wrong)
 
-> **Screenshots.** These live in `docs/images/`, named for what they show rather than
-> numbered, so adding one later renumbers nothing. Two are still to be taken and the manual
-> says so where they belong, rather than showing a broken picture.
-
 ---
 
 ## 1. The five minutes that matter
 
-Three things are worth knowing before anything else, because between them they explain almost
-every question anybody asks about Family.
-
-**It starts empty, and it imports nothing.** Family records the character you are playing, as
-you play. A character appears in it the first time you log in on them. A family of ten takes
-ten logins to be complete, and then stays complete on its own. There is no import from any
-other addon and there never will be, and that is not going to change.
+**It starts empty.** Family records the character you are playing, as you play. A character
+appears the first time you log in on them. A family of ten needs ten logins, and then keeps
+itself up to date. Nothing is imported from any other addon.
 
 **It speaks your language.** Family is written in English, German, French, Spanish and
-Russian, and follows whatever your client is set to. Where the game already has a word for
-something — a gear slot, a class, a reputation standing, a profession, a race — Family uses the
-game's own word rather than one of its own, so it says what the rest of your interface says.
-Anything not yet translated appears in English rather than as a blank.
+Russian, and follows the language of your game. Where the game has its own word for something
+— a gear slot, a class, a reputation standing, a profession, a race — Family uses that word.
+Anything not yet translated appears in English.
 
-**Four things need doing once per character.** Bags, money, gear, skills, talents,
-currencies and quests are read without being asked. These four are only visible to the game
-while something of theirs is open or out, so do each of them once on each character and Family
-has them from then on:
+**Some things need doing once per character.** Bags, money, gear, skills, talents, currencies
+and quests are read without your help. The game shows the rest only while a window is open or
+a pet is out. Do each of these once on each character. After that, Family updates them every
+time you open the same window again.
 
 | Do this | To record |
 |---|---|
-| open your **bank**, at any bank | what is in it, and how many slots are free |
+| open your **bank** | what is in it, and how many slots are free |
+| open the **guild bank** (Burning Crusade and Mists) | what is in each tab you look at |
 | open your **mailbox** | what is waiting, and when it expires |
-| open each **profession** window | the recipes in it, and their difficulty |
+| open the **auction house** | your auctions and your bids |
+| open each **profession** window | its recipes, their difficulty, and its cooldowns |
 | **summon** each pet or demon | what that creature can do |
 
-**Nothing is ever reported as empty when it was simply never seen.** A bank nobody has opened
-reads *not seen*, not *0 items*. A profession cooldown that started while the window was shut
-is not known until the window is next opened, and Family says *no cooldown seen* rather than
-*no cooldown*. Every screen states how old what it is showing is.
+**Nothing is shown as empty when it was never seen.** A bank nobody has opened reads *bank not
+seen*, not *0 items*. A crafting cooldown that started while the profession window was shut is
+unknown until you open that window again. Every screen says how old its information is. If a
+number looks wrong, first check when Family last saw it. The answer is on screen.
 
-That last one is the principle the whole addon is built on. If a number looks wrong, the first
-question is nearly always *when did Family last see it* — and the answer is on screen.
-
-**And a new version only knows what it has been able to watch since.** Family reads a character
-when that character is played, so anything a version learns to record for the first time is
-blank on every alt until each of them logs in once. Nothing is lost by waiting and nothing has
-to be repaired: the empty cells say *not seen*, and they fill themselves the next time you play
-that character. There is no rescan command and there is deliberately nothing to press.
-
-The same is true one step further out. A character a linked family shares with you fills in when
-**they** log in on the new version, not when you do, because their client is what watches them.
-
-> **Upgrading to 2.0.0.** Three things are recorded for the first time in this version and so
-> want a login on each character: **where that character logged out**, **what they still have to
-> do on each quest**, and **riding among their skills** — which is what the Mount column and the
-> *May ride* line on the Overview tooltip are drawn from.
->
-> Two more were being recorded already and were being recorded wrongly. **Weapon skills on
-> Classic Era and the Burning Crusade** were dropped by the scanner on exactly the two games that
-> have them, so their ranks arrive at the next login; on Mists there are none to arrive. And a
-> profession list recorded before Family wrote down **which language it was read in** cannot use
-> the shortcut that keeps the first login quick, so a fresh read of that character settles it.
->
-> Everything else in 2.0.0 draws what was already there and needs nothing.
-
-> **Upgrading to 3.0.0.** Nothing needs a login on every character this time, and three things
-> happen once by themselves. **Your saved data is converted** a little at a time in the first
-> seconds after the first login, and from then on nothing is unpacked when you ask about the whole
-> family. **The first Wide Family exchange sends every shared character once**, because the way a
-> character is marked as unchanged is new; after that only what changed goes. And **an item with a
-> random suffix** — *of the Bear*, *of the Whale* — **has no auction price until your next visit to
-> the auction house**, because each version is now priced on its own; anything without a suffix
-> keeps the price it had.
+**After an update, new information fills in as you play.** When a new version records
+something for the first time, it is blank on each character until you log in on them once. A
+character that a linked family shares with you fills in when its owner logs in on the new
+version.
 
 ---
 
@@ -106,46 +69,44 @@ The same is true one step further out. A character a linked family shares with y
 
 | How | What it does |
 |---|---|
-| `/family` or `/fam` | opens the window |
+| `/family` or `/fam` | opens the window, or closes it if it is open |
 | `/family help` | lists everything that can be typed |
 | **minimap button**, left-click | opens Family on the summary |
 | **minimap button**, right-click | opens the options |
 | **minimap button**, drag | moves it around the edge of the minimap |
-| any **data broker** bar | the same, with money and bag space on it |
+| any **data broker** bar | the same clicks, with money and bag space on the bar |
 | **shift-click** the button or the broker | changes what the bar counts |
 
-The bar starts on **the character you are playing**: a bag icon with their bag space as free
-of total, *16/76*, then their money. The bag figure counts ordinary bag slots, the same ones as
-the summary's bag columns, and it appears once their bags have been read. **Shift-click** goes on
-to **the whole family**, then to **everybody on this side of this realm**, then back to the
-character. Those two show a group icon and the number of characters counted, in place of the
-bags. The tooltip always says which of the three the bar is showing. A middle click does the
-same as shift-click, for the hands that prefer it; whichever you leave it on is remembered.
+The bar starts on **the character you are playing**. It shows a bag icon with their free and
+total bag slots, *16/76*, then their money. The bag figure counts ordinary bag slots, like the
+summary's bag columns.
 
-Three rather than two, because a grand total across every realm is a number nobody can spend:
-two sides of one realm share no bank, no mailbox and no auction house. The warning about mail
-expiring deliberately does **not** narrow — mail rotting three realms away is precisely what
-nobody is looking at.
+**Shift-click** moves on to **the whole family**, then to **your faction on this realm**, then
+back to the character. Those two show a group icon and the number of characters counted. A
+middle click does the same as shift-click. Your choice is remembered, and the tooltip always
+says which of the three the bar is showing.
 
-Clicking for the place you are already looking at closes the window. Left-click always lands
-on the summary and right-click always lands on the options — an entry point that goes
-somewhere different depending on what you did last is not an entry point.
+The realm setting counts one faction only. Two factions on one realm share no mailbox and no
+auction house, so that figure is gold you can spend together.
 
-Hovering the minimap button or the broker gives the whole family at a glance: every realm,
-every member with their level and item level, the money, and anything ready or expiring.
-Crafting cooldowns that are ready are **counted** there — *44 members* — rather than named: a list
-of names grows with the family until the tooltip runs off the screen, and **Summary / Crafting**
-(§10) already lists who.
+Left-click always opens the summary and right-click always opens the options. Click again
+while that page is showing and the window closes.
 
-**It fits your screen, however many characters you have.** The realm totals, the grand total
-and the warnings are always drawn; the list of characters takes whatever room is left, and says
-`and 14 more` where it had to stop. Which characters survive is decided by money, richest
-first, and the realm you are standing on is served before the others. A family that already
-fitted looks exactly as it did — none of this happens until it has to.
+**Hover the minimap button or the broker** to see the whole family at a glance: every realm,
+every member with their level, item level and money, and a total for all realms. Below that:
 
-The grand total is always the sum of the realms listed above it. If you have changed what the
-**bar** counts, the tooltip still shows everybody and says near the bottom what the bar itself
-is counting, which is the one number that narrowed.
+- **Crafting cooldowns ready**, as a number of members. The **Crafting** columns of the
+  summary name them (§10).
+- **Mail expiring soon**, as a number of members with mail less than three days from being
+  returned or destroyed. This always counts the whole family, whatever the bar is set to.
+
+The tooltip always lists everybody. When the bar counts less than that, a line near the bottom
+says what the bar is counting.
+
+**A large family still fits the screen.** The realm totals, the grand total and the two
+warnings are always shown. The list of characters takes the room that is left and ends with
+*and 14 more* where it has to stop. The realm you are on gets room first, and within each
+realm the richest characters are kept.
 
 ![The minimap button hovered: every realm, every member, and the totals](images/broker-tooltip.png)
 
@@ -153,80 +114,62 @@ is counting, which is the one number that narrowed.
 
 ## 3. Summary
 
-Every member on one line, grouped by realm, with a totals line under each realm and a grand
-total under all of them when there is more than one.
+One line per member, grouped by realm. Each realm has a totals line, and a grand total follows
+when you have more than one realm. Click a column heading to sort by it.
 
 ![The summary on Overview, a family across two realms with a totals line](images/summary-overview.png)
 
-The buttons across the top change **which columns** are shown rather than which members:
+The buttons across the top choose which columns are shown:
 
-| Set | Answers |
+| Set | Columns |
 |---|---|
-| **Overview** | level, item level, rested experience, money, **worth**, time played, when last seen |
-| **Bags** | free and total slots, in bags and in the bank, and when each was last seen |
-| **Activity** | mail, mail on its way, when it expires, auctions, what is bid and what is asked |
+| **Overview** | level, item level, rested experience, money, worth, time played, last seen |
+| **Bags** | free and total slots in the bags and in the bank, and when each was last seen |
+| **Activity** | mail, mail on its way, when it expires, auctions, bid value, buyout value, and when the mailbox and the auction house were last seen |
 | **Professions** | every profession and its rank, primaries first |
-| **Currencies** | honor, arena points, and whatever else this client calls a currency |
-| **Crafting** | every crafting cooldown the family has: available, or when it comes back |
-| **Miscellaneous** | race, guild, where they logged out, hearthstone, mount, world buffs banked in a Chronoboon |
+| **Currencies** | honor, arena points, and anything else your game counts as a currency |
+| **Crafting** | every crafting cooldown in the family: ready, or when it comes back |
+| **Miscellaneous** | race, guild, where they logged out, hearthstone, mount, and world buffs stored in a Chronoboon |
 
-A realm with characters on **both sides is split into them**, with a subtotal under each.
-Two characters on one realm on opposite sides share nothing this table is asked about —
-different auction house, different mail, different everything — so the money on each subtotal
-is money that can actually reach the others on that line. A realm with one side on it is not
-split, and neither is one where you have filtered the other side away: a heading over every
-member and a subtotal identical to the total under it are two rows that say nothing.
+**A realm where you play both factions is split in two**, with a subtotal under each. The two
+sides share no mail and no auction house, so each subtotal is gold those characters can send
+one another. A realm with one faction on it is not split.
 
-A member whose side has not been recorded yet does not count as a third one. They are somebody
-Family has not finished reading, not a faction, and letting them force the division would put
-headings over a realm that has only one side on it.
+**The two banners** at the right of the buttons filter by faction. Both are on to begin with,
+and you can switch either off.
 
-The **two banners** at the right-hand end filter by side rather than choosing one: both on is
-normal, either can be turned off, and turning both off shows an empty table rather than
-quietly turning one back on. A side that is filtered away has its banner greyed, which is how
-the game says *this is off* about a picture. Hover either for the game's own name for it —
-they were letters until the banners were verified, and "A" and "H" are the initials of the
-English words and of nothing else.
+What you can click:
 
-- **Left-click a profession** to open that member's recipes.
-- **Left-click a member on Bags** to open their possessions.
-- **Left-click the letters figure** on Activity to unfold that member's post — one line per
-  letter, with its sender, what is attached and when it expires.
-- **Left-click the Chrono figure** on Miscellaneous to unfold what their Chronoboon is
-  holding — the world buffs as their own icons, with the time left written on each and the
-  game's own description when you hover one. Only the buffs still suspended, in the order the
-  game lists them.
-- **Right-click a member** to remove them. You are asked first, by name and realm.
+- **A member on Professions** opens their recipes.
+- **A member on Bags** opens their possessions.
+- **The Mail figure** on Activity unfolds that member's mail: one line per letter, with its
+  sender, what is attached and when it expires.
+- **The Chrono figure** on Miscellaneous unfolds what their Chronoboon holds: each world buff
+  as its own icon, with the time left on it and the game's own description on hover.
+- **Right-click a member** to remove them from Family. You are asked first, by name and realm.
+  This removes Family's record only, never anything in the game.
 
-The two unfolds are independent: opening one does not close the other, and each stays with the
-member it belongs to.
+The two unfolds are independent. Opening one does not close the other.
 
-**Two columns that distinguish "none" from "not known"**, because they are different facts and
-a table that draws them the same way is guessing on your behalf. **Chrono** shows how many
-buffs are trapped, a blank when the boon is empty or absent, and a dash when nobody has read
-that character's bags. **Guild** shows the guild's name, a blank for a character the game said
-is in no guild, and a dash for one nobody has scanned since — or one whose client would not
-say which guild it was. Each fills in the next time you play that character.
+**A blank and a dash mean different things.** In the **Chrono** column a number is how many
+buffs are stored, a blank means none, and a dash means Family does not know yet. In the
+**Guild** column a blank means the character is in no guild, and a dash means Family does not
+know yet. A dash fills in the next time you play that character.
 
-If you have made anyone a **sibling** (§11), they appear here too: under the realm they are
-on, after your own members, in a small section under the name of the family they belong to.
-They are never added to the totals — the money on the totals line is your money. Right-click
-does not offer to remove them, because they are not yours to remove; untick them on the Wide
-Family panel instead.
+**Worth** is what everything that character holds comes to, in gold. It is the same figure as
+the line on their Possessions page. Hover the row for the exact amount, and for how much of it
+comes from auction prices and how much from vendor prices. Worth adds up per realm and per
+faction, like money. A character with nothing priced yet is blank, not zero.
 
-**Worth** is what everything that character holds comes to, in gold — the same figure as the line
-on their Possessions page (§15, *What is all my stuff worth?*). Hover the row for the exact figure
-and how much of it came from auction prices and how much from what a vendor pays. It adds up per
-realm and per side like the money beside it, and a character nothing could be priced for is blank
-rather than nought, because that is Family not knowing rather than them owning nothing.
+**Siblings** (§11) appear here too. They sit under the realm they are on, after your own
+members, under the name of the family they belong to. They are never added to the totals.
+Right-click does not remove a sibling. Untick them on the Wide Family panel.
 
-**A character's class is on every row**, in the colour of their name, and spelled out in the row's
-tooltip.
+**Class** is the colour of each member's name, and is spelled out in the row's tooltip.
 
-Two notes the panel gives you where they matter. Free and total slots **leave out** quivers,
-soul bags and the like — their slots are not room for anything else. And the currencies
-columns are the ones your family holds most of, because a row only has so much width; the
-panel says how many were left out.
+Two limits to know. Free and total slots leave out quivers, soul bags and other special bags,
+because nothing else fits in them. The Currencies set shows the currencies your family holds
+most of, and says how many it left out.
 
 ---
 
