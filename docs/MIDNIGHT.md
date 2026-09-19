@@ -318,6 +318,13 @@ Container 12 has the same first item on both characters, which fits it being the
 **Not settled:** container 6 matches too, and a first item cannot tell a shared container from
 the same item kept in the same place. Nor does the sweep say which two are void storage.
 
+Alberto's screenshot of Mara's bank, 2026-09-19: *Tab 1* is a grid of 14 by 7, **98 slots**, the
+count the sweep gives each of 6 to 12. The window shows six character tab buttons, and *Warband
+Bank* as a separate tab along the bottom. The first slot of Tab 1, and the whole first column,
+hold an item with the same icon as the *Hexweave Bag*s of the bag screenshot. So container 6's
+first item, 114821 on both characters, is likely a spare bag kept in the same slot by both, and
+not a shared container. That rests on an icon: the id's name was not read.
+
 **Container 5 is a carried bag on Midnight: the reagent bag.** Mara's login sweep, before any
 bank, has 5 = 26 slots (Ahia has no container 5). Alberto's screenshot of Mara's bags, 2026-09-19,
 shows it as a *Gatherer's Reagent Bag*: a first row of 2 slots and six rows of 4, 26 in all,
