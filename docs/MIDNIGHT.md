@@ -529,6 +529,21 @@ from the site:
 - **Not in any namespace Family uses: the specialisations and their knowledge points.** Finding
   where they live means naming a namespace, as `C_MerchantFrame` was named.
 
+## 9. Mists checked for the same gap: none in professions
+
+Alberto, on a Mists character, 2026-09-19: professions there still work the old way. There is one
+profession with one skill value, capped at **600**, and each expansion adds or changes recipes
+within it. So Family's one-rank-per-profession model is right on Mists, and the gap in §7 is
+Midnight's alone.
+
+The one exception is cooking's six *Way of* lines, which Family set aside on purpose (backlog 24,
+*SET ASIDE 2026-09-06*). Backlog 24 measured them as **child skill lines**, `SkillLine` 975 to
+980 with `ParentSkillLineID` 185, cooking. Midnight's per-expansion lines may be the same kind of
+thing: the client offers `C_TradeSkillUI.GetChildProfessionInfos` and
+`GetProfessionChildSkillLineID` (§8). **A hypothesis**, not yet asked of either client, but if it
+holds, one model of parent and child skill lines would serve both the Way of lines on Mists and
+Midnight's tiers.
+
 ### Still to do for step 1
 
 1. ~~Where the bank is on Midnight~~: containers 6 to 11 are the character's six tabs in order,
