@@ -306,8 +306,9 @@ answered a table for item 1: `name` "Tough Hunk of Bread", `price` 20, `stackCou
 
 **Mists, the control (Duecalzini, version 3, 2026-09-19): no answer to compare.** Two seconds
 after the vendor opened, `GetMerchantNumItems()` answered 0 and every item call answered
-nothing. **The vendor did sell goods** (Alberto, 2026-09-19), so the list was either not there
-yet, or the window had already closed when the probe asked. Version 4 of the probe asks the
+nothing. **The vendor did sell goods** (Alberto, 2026-09-19): an innkeeper, reached through its
+dialog by choosing the option that opens the goods. The probe answered, so `MERCHANT_SHOW` fired,
+and the list was either not there yet or the window had already closed when the probe asked. Version 4 of the probe asks the
 merchant the moment it opens and again two seconds later, and records each time whether
 `MerchantFrame` is still shown, which is a second name taken from memory. What it does show:
 `GetMerchantItemInfo` exists on Mists, and `C_MerchantFrame` exists there with one function,
