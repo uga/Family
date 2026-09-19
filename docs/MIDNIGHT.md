@@ -335,10 +335,14 @@ sweep:
 | 3 | empty | 8: empty |
 | 4, named *Reagents* | items, first slot filled, stacks up to 1000 | 9: first item at slot 1 |
 | 5, named *Void Storage 1* | items, first slot filled | 10: first item at slot 1 |
-| 6 | not yet seen | 11: empty, **so predicted empty** |
-| Warband Bank, one tab | not yet seen | 12: first item at slot 1, the same on Ahia, **so predicted filled** |
+| 6 | empty | 11: empty |
+| Warband Bank, *Tab 1*, its only tab | items, first slot filled, 14 by 7, with a `+` to buy more | 12: first item at slot 1 |
 
-Five of seven fit, and the order is the tab order. Two are predictions until seen.
+**All seven fit, in tab order**, and the last two were predicted from the sweep before they were
+seen. **Container 12 is the warband tab**, and it is the one whose first item, 122637, was the
+same on Ahia and on Mara, as a tab shared by the account should be. Containers 6 to 11 are the
+character's six bank tabs. On Mara the fifth is named *Void Storage 1* and the fourth *Reagents*,
+which is what Alberto meant by bags and void storage.
 
 **Container 5 is a carried bag on Midnight: the reagent bag.** Mara's login sweep, before any
 bank, has 5 = 26 slots (Ahia has no container 5). Alberto's screenshot of Mara's bags, 2026-09-19,
@@ -397,8 +401,8 @@ probe; recorded as reported.
 
 ### Still to do for step 1
 
-1. ~~Where the bank is on Midnight~~: containers 6 to 12 (§6). Which of them is the warband
-   tab and which two are void storage are not settled by the sweep.
+1. ~~Where the bank is on Midnight~~: containers 6 to 11 are the character's six tabs in order,
+   and 12 is the warband tab (§6), settled against Alberto's screenshots of every tab.
 2. ~~What replaces `GetMerchantItemInfo`~~: `C_MerchantFrame.GetItemInfo` (§6).
 3. ~~A Mists vendor, as the control for the merchant calls~~: obtained with version 4 (above).
    An innkeeper's goods, reached through its dialog, answered nothing once, and why is not
