@@ -1,0 +1,6 @@
+name: the tooltip does not say a total waits on a cooldown
+file: addons/Family_UI/Tooltip.lua
+--- old
+		if cost.timed then
+--- new
+		if false then

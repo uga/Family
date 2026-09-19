@@ -346,20 +346,9 @@ local function teaches(itemName, recipeName)
 	return item:sub(-#recipe - 1, -#recipe - 1):match("[%w]") == nil
 end
 
--- Who in the family knows one particular recipe, found by its identifier and by nothing else.
---
--- `Crafters` above answers a different and larger question - who has the profession, and how
--- each of them stands with a recipe named like this - and it needs the item's name and its
--- skill requirement read off a tooltip to do it. This needs neither: given the spell, it is a
--- lookup, and the answer is a plain fact rather than a judgement.
---
--- Which is what a recipe's own tooltip wants. An enchant has no item to be named after, no
--- subtype to be recognised by and no skill line written on it, so the route that answers for
--- a crafted object cannot answer for it at all - and the panel two inches away was listing
--- the very people the tooltip left out.
 -- **Whether this member still has the profession a stored recipe list is filed under.**
 --
--- The two walks below read the payload, and the payload is never pruned: `Scanners/Professions`
+-- The recipe index reads the payload, and the payload is never pruned: `Scanners/Professions`
 -- begins each scan from what is already stored and only ever assigns into it, which is right for
 -- its own purpose - a window opened once should not be forgotten because it was not open today -
 -- and wrong here. Meta is the half that forgets: `skills` is replaced wholesale at every scan,
@@ -392,161 +381,6 @@ local function stillHeld(meta, profession)
 	end
 
 	return false
-end
-
--- Everybody a question about the family may be answered from: our own members, then the siblings
--- a linked family has shared with us.
---
--- **One gatherer, because three readers in this file were asking the same question and two of
--- them were answering it for half the family.** `Search` gained its siblings on 2026-09-05 and
--- the comment beside it says why - `Database:Members` has never heard of a borrowed key. The
--- other two, `KnowersOf` and `Crafters`, kept walking the database alone, so a tooltip listed a
--- sibling's recipes nowhere while the panel one click away listed them correctly. Reported from
--- play 2026-09-06 with two screenshots, and it is L-052's class again: a reader that knows only
--- our own records answering a question about everybody, with nothing saying it had answered half.
---
--- Siblings and not everyone a link shares, which is the population every other whole-family list
--- uses: a sibling is the decision that somebody belongs in my lists beside my own (§6).
---
--- A sibling's payload is already a table - it arrived as one and only what we store is
--- compressed - so it is read straight rather than through the database, which has never heard of
--- the key it is filed under.
-local function everybody()
-	local searched = {}
-
-	for key, entry in pairs(Family.Database:Members()) do
-		searched[#searched + 1] = { key = key, meta = entry.meta or {},
-			payload = Family.Database:Payload(key) }
-	end
-
-	for _, sibling in ipairs(Family.Wide and Family.Wide:Siblings() or {}) do
-		searched[#searched + 1] = { key = sibling.key, meta = sibling.meta or {},
-			payload = sibling.payload, familyName = sibling.familyName }
-	end
-
-	return searched
-end
-
-function Recipes:ScanKnowersOf(spellID, itemID, itemName)
-	-- Where the caller has only the item, the client's tables often know which spell it
-	-- teaches - and an id settles it where a name cannot.
-	spellID = spellID or self:TaughtBy(itemID)
-
-	if not ((spellID and spellID ~= 0) or (itemID and itemID ~= 0) or itemName) then
-		return {}
-	end
-
-	-- **The name is the last resort, and only where no table named the spell.** Matching by name
-	-- asks the client to name every recipe of every list in another language, one spell at a
-	-- time; with the spell in hand the ids answer, and a recipe recorded with neither id is the
-	-- one thing given up - records old enough to carry neither.
-	local byName = itemName and not (spellID and spellID ~= 0)
-
-	local found = {}
-
-	-- One line per member, not one per profession that can make it.
-	--
-	-- Some things are made two ways: a Truesilver Bar is smelted by a miner and transmuted by
-	-- an alchemist, and a character with both trades matched twice - the `break` below leaves
-	-- the recipe loop and the profession loop went on. The count at the top of the block
-	-- counted them twice, and since the block shows five names and then says how many more
-	-- there are, a duplicate took a visible place from somebody real. Reported from play, on a
-	-- Truesilver Bar, as alchemists missing from a list that had room for them.
-	--
-	-- Where both trades match, the entry that says more is kept: one carrying a cooldown over
-	-- one that does not, and the higher rank between two of a kind. A transmute on a timer is
-	-- the answer somebody wants; "smelts it, rank 300" is true and says less.
-	local best = {}
-
-	local function better(new_, old_)
-		if not old_ then return true end
-		local newTimer = new_.cooldown and 1 or 0
-		local oldTimer = old_.cooldown and 1 or 0
-		if newTimer ~= oldTimer then return newTimer > oldTimer end
-		return (new_.rank or 0) > (old_.rank or 0)
-	end
-
-	for _, who in ipairs(everybody()) do
-		local key, meta, payload = who.key, who.meta, who.payload
-
-		for profession, record in pairs((payload or {}).professions or {}) do
-			-- Skipped where they have unlearnt it: the list stays on the record and the
-			-- skill does not, and saying they can still make it is the one thing this
-			-- block must not do.
-			for _, recipe in ipairs(stillHeld(meta, profession) and record.recipes or {}) do
-				-- Either identifier, and the name only where neither is present -
-				-- which on Classic Era is most of enchanting. The name is this
-				-- client's word for the recipe against this client's word for the
-				-- item, so both sides are in one language (§2.1).
-				local matched = (spellID and spellID ~= 0
-						and recipe.spellID == spellID)
-					or (itemID and itemID ~= 0 and recipe.itemID == itemID)
-
-				if not matched and byName and not recipe.itemID then
-					matched = teaches(itemName, Family.Names:Recipe(recipe, nil, nil,
-						record.locale))
-				end
-
-				if matched then
-					-- Whether this one is on a timer, and whether it has come back.
-					--
-					-- A recipe carries hasCooldown only once Family has watched it
-					-- run (Scanners/Professions.lua), so its presence is what makes
-					-- "ready" sayable at all - and its absence is not a claim that
-					-- there is no cooldown, only that none has been seen. A craft
-					-- reading ready is evidence, because using one needs the window
-					-- Family scans.
-					local cooldown
-					if recipe.hasCooldown then
-						local ready = not recipe.readyAt or recipe.readyAt <= time()
-						cooldown = { ready = ready,
-							readyAt = (not ready) and recipe.readyAt or nil }
-					end
-
-					local candidate = {
-						key = key,
-						name = meta.name or key,
-						classFile = meta.classFile,
-						realm = meta.realm,
-						faction = meta.faction,
-						rank = (meta.skills or {})[profession]
-							and meta.skills[profession].rank or nil,
-						cooldown = cooldown,
-						-- Whose character it is, where it is not one of ours. The
-						-- reason is the one the item tooltip gives: a name against a
-						-- count reads as *I can go and get that*, and for somebody
-						-- else's character that is not true.
-						familyName = who.familyName,
-					}
-
-					if better(candidate, best[key]) then best[key] = candidate end
-					break
-				end
-			end
-		end
-	end
-
-	for _, who in pairs(best) do found[#found + 1] = who end
-
-	-- Whoever cannot do it yet goes last, soonest of them first, and everybody else keeps
-	-- the old order: highest skill, then by name - the same order the whole-family search
-	-- puts them in, so the two do not disagree about who to ask first. For a transmute the
-	-- rank is not the question and the timer is (§4.5), and the guild's half of this block
-	-- sorts by exactly the same rule.
-	table.sort(found, function(a, b)
-		local aWaiting = (a.cooldown and not a.cooldown.ready) and 1 or 0
-		local bWaiting = (b.cooldown and not b.cooldown.ready) and 1 or 0
-		if aWaiting ~= bWaiting then return aWaiting < bWaiting end
-
-		if aWaiting == 1 and (a.cooldown.readyAt or 0) ~= (b.cooldown.readyAt or 0) then
-			return (a.cooldown.readyAt or 0) < (b.cooldown.readyAt or 0)
-		end
-
-		if (a.rank or 0) ~= (b.rank or 0) then return (a.rank or 0) > (b.rank or 0) end
-		return tostring(a.name) < tostring(b.name)
-	end)
-
-	return found
 end
 
 -- Whether an item is the thing a recipe of this name produces, or the book that teaches it.
@@ -700,329 +534,6 @@ local function guildCrafters(byName, order, needle, limit)
 	end
 end
 
--- Every recipe anybody in the family knows whose name matches, and who knows it.
---
--- This reads payloads, unlike most things. It said there was no index of recipes and that
--- building one would be a copy of what is stored; since 2026-09-13 there is one
--- (`RecipeIndex.lua`), because this walk named every recipe again on every keystroke. This is now
--- the walk the indexed `Recipes:Search` at the end of the file is held to, and nothing else reads it.
---
--- **Siblings too**, since 2026-09-05. This walked `Database:Members` alone, which has never
--- heard of a borrowed key, so a linked family's characters could not appear in the search
--- however much they had shared and however loudly the panel said *whole family*. Reported from
--- play, and it is L-052's class for the fourth time - a reader that knows only our own records,
--- answering a question about everybody, with nothing saying it had answered half.
---
--- Siblings and not everyone a link shares, which is the same population every other whole-family
--- list uses: a sibling is the decision that somebody belongs in my lists beside my own (§6), and
--- this is a list. `Family/Index.lua` already reaches for them the same way from this layer.
-function Recipes:ScanSearch(needle, limit)
-	if type(needle) ~= "string" or needle == "" then return {} end
-
-	needle = needle:lower()
-	limit = limit or 200
-
-	local byName, order = {}, {}
-
-	-- Gathered first rather than looped over twice, because the body below is long and two
-	-- copies of it would be two answers to "who can make this" the day one of them is edited.
-	-- Which is exactly what happened to the two readers above this one, so the gathering now
-	-- lives in one place for all three.
-	for _, who in ipairs(everybody()) do
-		local key, meta, payload = who.key, who.meta, who.payload
-
-		for profession, record in pairs((payload or {}).professions or {}) do
-			-- The same skip as the crafters block above, and for the same reason: a
-			-- search that finds a recipe under somebody who has unlearnt the profession
-			-- is answering the question wrongly rather than generously.
-			for _, recipe in ipairs(stillHeld(meta, profession) and record.recipes or {}) do
-				-- The name this client uses, falling back to the one recorded. Both are
-				-- searched: a family holds lists read on other people's clients, and
-				-- somebody typing their own language should not find fewer of them.
-				local name = Family.Names:Recipe(recipe, nil, nil, record.locale)
-				local was = recipe.name
-				if name and (name:lower():find(needle, 1, true)
-					or (was and was:lower():find(needle, 1, true))) then
-					-- Keyed by the recipe's spell where it has one, so the same
-					-- enchant recorded on a French client and an English one is one
-					-- line rather than two - the id is the same in every language and
-					-- the name is not (§2.1, and the reason it matters).
-					--
-					-- Where there is no id, by recipe and profession together: two
-					-- professions can make things of the same name, and "who can make
-					-- this" is a different answer for each of them.
-					--
-					-- Or by the item it makes where the client gave no spell, which on
-					-- Classic Era is most recipes (DATASOURCES §2). Without that rung
-					-- an Era row keyed by its word could never meet a guild row keyed
-					-- by an id, and the same recipe appeared twice on one screen.
-					local id = recipe.spellID and ("spell:" .. recipe.spellID)
-						or recipe.itemID and ("item:" .. recipe.itemID)
-						or (profession .. "\0" .. name)
-					-- Where the same recipe is held under two professions - a real one
-					-- and something that is not in the client's table, like a rogue's
-					-- poisons or a death knight's runeforging - the identified one is the
-					-- better label. "Copper Chain Belt, Runeforging" is not wrong only in
-					-- a harness.
-					if byName[id] and type(byName[id].profession) ~= "number"
-						and type(profession) == "number" then
-						byName[id].profession = profession
-					end
-
-					if not byName[id] then
-						byName[id] = {
-							name = name,
-							id = recipe.spellID,
-							profession = profession,
-							icon = recipe.icon,
-							spellID = recipe.spellID,
-							itemID = recipe.itemID,
-							members = {},
-							-- Who is already on this row. One member is one answer to
-							-- "who can make this", however many times their record
-							-- happens to say so.
-							listed = {},
-						}
-						order[#order + 1] = byName[id]
-					end
-
-					-- Whether this one is on a timer, worked out exactly as
-					-- KnowersOf works it out: a recipe is marked as having a cooldown
-					-- only once Family has watched it run, and a moment that has passed
-					-- is the craft being ready rather than a gap.
-					local cooldown
-					if recipe.hasCooldown then
-						local ready = not recipe.readyAt or recipe.readyAt <= time()
-						cooldown = { ready = ready,
-							readyAt = (not ready) and recipe.readyAt or nil }
-					end
-
-					-- **Once each.** This was a plain insert, and a member whose record
-					-- holds the same recipe twice - which a stored list can, because the
-					-- scanner writes back every row the client's window listed - was
-					-- drawn twice on one line. Reported from play as "Smith, Smith" on a
-					-- transmute, with the realm on both because two identical names in
-					-- one list is exactly what makes `NamesOf` add it.
-					--
-					-- Fixed where two becomes visible rather than where two comes from:
-					-- what the client's window listed twice is a question this cannot
-					-- answer, and the scanner now says so in the debug log instead of
-					-- being made to guess.
-					local row = byName[id]
-					local already = row.listed[key]
-
-					if already then
-						-- The timer is the one thing worth taking from a second copy,
-						-- and "has a cooldown" is not the test. A record with
-						-- `hasCooldown` and no `readyAt` answers *ready*, so the first
-						-- copy already carries one and the second's real timer would be
-						-- thrown away - the row saying a transmute is ready that is
-						-- three hours off. Taken when we had none, or when what we have
-						-- claims ready and this one knows better. Never the other way:
-						-- ready must not be able to overwrite a running timer.
-						if cooldown and (not already.cooldown
-							or (already.cooldown.ready and not cooldown.ready)) then
-							already.cooldown = cooldown
-						end
-					else
-						local member = {
-							key = key,
-							name = meta.name or key,
-							classFile = meta.classFile,
-							realm = meta.realm,
-							faction = meta.faction,
-							-- Whose character it is, where it is not one of ours.
-							-- The same reason the possessions search carries it: a
-							-- name on a list of who can make something is read as
-							-- *somebody I can log in on*, and for a linked family's
-							-- character that is not true - they are somebody to ask.
-							familyName = who.familyName,
-							rank = (meta.skills or {})[profession]
-								and meta.skills[profession].rank or nil,
-							cooldown = cooldown,
-						}
-						row.listed[key] = member
-						table.insert(row.members, member)
-					end
-				end
-			end
-		end
-	end
-
-	-- The guild's answer onto the same rows, and rows of its own for anything only a
-	-- guildmate knows - which is the case the whole feature exists for.
-	guildCrafters(byName, order, needle, limit)
-
-	-- Whoever cannot do it yet last, soonest of them first: the same rule the guild half
-	-- above sorts by and the same rule both tooltip blocks sort by, so the four surfaces
-	-- that answer "who can make this" never disagree about who to ask.
-	for _, found in ipairs(order) do
-		table.sort(found.members, function(a, b)
-			local aWaiting = (a.cooldown and not a.cooldown.ready) and 1 or 0
-			local bWaiting = (b.cooldown and not b.cooldown.ready) and 1 or 0
-			if aWaiting ~= bWaiting then return aWaiting < bWaiting end
-
-			if aWaiting == 1
-				and (a.cooldown.readyAt or 0) ~= (b.cooldown.readyAt or 0) then
-				return (a.cooldown.readyAt or 0) < (b.cooldown.readyAt or 0)
-			end
-
-			return a.name < b.name
-		end)
-	end
-
-	table.sort(order, function(a, b)
-		if a.name ~= b.name then return a.name < b.name end
-		-- Two professions can hold the same word, and a guild row's profession is a skill
-		-- line while an unidentified family row's is the word the client used. Compared as
-		-- strings so that a number never meets a word in a comparison the sort cannot make.
-		return tostring(a.profession) < tostring(b.profession)
-	end)
-
-	while #order > limit do table.remove(order) end
-	return order
-end
-
--- Everybody who has the profession, and what they can do about this recipe. Only them: a
--- member without the profession has nothing to say about a pattern and is left off entirely.
---
--- `required` is the skill the recipe needs, read off the item's own tooltip, and may be nil -
--- in which case nobody is told they cannot learn it yet, because nothing is known about what
--- it would take. Guessing there would be worse than the gap.
-function Recipes:ScanCrafters(profession, itemName, required, minLevel, itemID)
-	local found = {}
-
-	-- Which branch this recipe belongs to, if any. Nil for the great majority of recipes,
-	-- which anybody with the profession can learn.
-	local needs = itemID and (Family.RecipeNeeds or {})[itemID] or nil
-
-	-- And which spell it teaches, and which item that spell makes, where the client's tables
-	-- know. An id beats every name test below it: the spell is what makes this right for
-	-- enchanting, and the product is what makes it right for a Classic Era trade skill, whose
-	-- record carries no spell to compare against at all.
-	local taught = self:TaughtBy(itemID)
-	local made = self:Makes(itemID)
-
-	-- The item's subtype is a word in this client's language; members are filed by identity.
-	-- Resolving it here is what lets a French client's Couture find a member whose window
-	-- was opened in English - which it could not do while both sides were words.
-	local wanted = Family:SkillLineFor(profession) or profession
-
-	for _, member in ipairs(everybody()) do
-		local key, meta = member.key, member.meta
-		local skill = (meta.skills or {})[wanted]
-
-		if skill then
-			local payload = member.payload
-			local record = payload and payload.professions
-				and payload.professions[wanted]
-			local recipes = record and record.recipes
-
-			local knows = false
-			if recipes then
-				for _, recipe in ipairs(recipes) do
-					if taught and recipe.spellID == taught then
-						knows = true
-						break
-					end
-
-					if made and recipe.itemID == made then
-						knows = true
-						break
-					end
-
-					-- Both sides of this in the same language. itemName comes from the
-					-- client and is therefore in the reader's, and the recorded recipe
-					-- name is in whoever scanned it - so this compared a French item
-					-- against an English recipe and matched nothing.
-					if teaches(itemName, Family.Names:Recipe(recipe, nil, nil,
-						record.locale)) then
-						knows = true
-						break
-					end
-				end
-			end
-
-			-- Whether this member is on the branch the recipe belongs to. Only asked of
-			-- recipes that have one.
-			local onBranch = true
-			if needs then
-				if not meta.specsSeen then
-					-- Never asked. Not the same as "took a different branch", and saying
-					-- so would be inventing an answer for every member recorded before
-					-- Family knew to ask (§2.2). Fills in at their next login.
-					onBranch = nil
-				else
-					onBranch = false
-					for _, spell in ipairs(meta.specs or {}) do
-						if spell == needs then onBranch = true break end
-					end
-				end
-			end
-
-			-- The order these are decided in is the order they are true in. A member who
-			-- knows it is not also short of skill; one whose recipes have never been read
-			-- is not reported as able to learn something they may have learnt years ago.
-			--
-			-- The branch sits above skill and level because it is the one that never
-			-- changes: another twenty points of blacksmithing will come, and an armoursmith
-			-- will still never make a sword.
-			local state
-			if knows then
-				state = "knows"
-			elseif not recipes then
-				state = "unknown"
-			elseif onBranch == nil then
-				state = "unknown"
-			elseif onBranch == false then
-				state = "branch"
-			elseif required and (skill.rank or 0) < required then
-				state = "later"
-			elseif minLevel and minLevel > 0 and (meta.level or 0) < minLevel then
-				state = "level"
-			else
-				state = "can"
-			end
-
-			found[#found + 1] = {
-				key = key,
-				name = meta.name or key,
-				classFile = meta.classFile,
-				realm = meta.realm,
-				faction = meta.faction,
-				rank = skill.rank,
-				maxRank = skill.maxRank,
-				level = meta.level,
-				state = state,
-				-- What they would have had to take. Carried as the spell's id; the word for
-				-- it is the client's to supply, in the language of whoever is reading.
-				needs = needs,
-				-- Whose character it is, where it is not one of ours. Same field and
-				-- same reason as `KnowersOf` above and the item tooltip beside it.
-				familyName = member.familyName,
-			}
-		end
-	end
-
-	-- Knows it, then can, then the ones that are only a matter of time, then the ones
-	-- nothing can be said about, and last the ones for whom it is never going to happen.
-	-- Highest skill first inside each, which is the order somebody deciding who to send is
-	-- reading them in.
-	--
-	-- A state missing from here sorts as nil and throws inside table.sort, which is how the
-	-- branch state announced itself the moment it was first returned. Anything added above
-	-- has to be added here.
-	local ORDER = { knows = 1, can = 2, later = 3, level = 4, unknown = 5, branch = 6 }
-
-	table.sort(found, function(a, b)
-		if a.state ~= b.state then return (ORDER[a.state] or 99) < (ORDER[b.state] or 99) end
-		if (a.rank or 0) ~= (b.rank or 0) then return (a.rank or 0) > (b.rank or 0) end
-		return a.name < b.name
-	end)
-
-	return found
-end
-
 --------------------------------------------------------------------------------------------
 -- What a recipe is made of, and what that comes to
 --
@@ -1104,7 +615,7 @@ end
 -- **What it costs to make one of this item**, or nothing where this item is not made.
 --
 --     { spell =, parts = { { item =, count =, each =, total =, from =, bound =, unknown = } },
---       total =, missing =, bound = }
+--       total =, missing =, bound =, timed =, saving =, why = { cooldown =, farming = } }
 --
 -- `total` is **nil where anything is unpriced**, which is the second caveat and the rule §2.2
 -- states for the whole addon: *nought is different from not read.* A recipe with one unknown
@@ -1147,17 +658,55 @@ end
 -- not. This is the clearest case there is for the tables being shipped per expansion: one merged
 -- table would have been wrong about all eight rods.
 --
--- **Bought before made**, which keeps caveat 1 the rule it was written as: a thing somebody is
--- selling costs what they are asking, whatever making one would come to.
+-- **Making one is a third source, and the cheapest of the three wins.** Alberto, 2026-09-19, off
+-- a Runecloth Bag whose five Bolts of Runecloth were priced at the auction house: *for each line
+-- item in its bill of material we will take the lowest of 3 possible options when they exist -
+-- vendor purchase price, AH buyout price, (recursively, up to 10 levels down as today) in-house
+-- crafting cost.* This reverses *bought before made*, under which a material anybody was selling
+-- was never costed from its recipe at all.
+--
+-- **In-house means one of our own characters knows the recipe** (`RecipeIndex:OursMake`), which
+-- Alberto chose the same day. The materials come from the shipped tables and cover every recipe
+-- in the game, so a recipe cost is always *available*; whether it is a cost anybody here could
+-- actually pay is the question. A material nobody in the family can make is bought or unknown,
+-- which also narrows the 2026-09-12 rule that costed a bound intermediate from its recipe
+-- whoever could make it. The top of the tooltip is not asked: *Made with* is drawn for anything
+-- craftable, as it was.
+--
+-- A recipe cost with a material nobody has priced is no option at all, so it simply does not
+-- compete - and where nothing else is left either, the line is unknown as it always was. **A
+-- recipe cost short of a bound material competes only where nothing is sold**: it leaves out
+-- whatever farming that material costs, so beside a real price it would always look cheaper for
+-- a reason that has nothing to do with money. Where there is no price to set it against, it is
+-- used as before and the total says it is short. A tie goes to buying, which is the simpler
+-- thing to go and do.
 --
 -- **Bounded twice, and the depth is counted rather than picked.** Ten is the deepest chain there
 -- is on Burning Crusade - a Runed Eternium Rod, through Adamantite, Fel Iron, Arcanite,
 -- Truesilver, Golden, Silver and Copper - and the first writing of this said four, which would
 -- have stopped halfway up it and reported the rest as *not for sale*. The second bound is on
--- **work**, not depth: recursion only happens where nothing is selling the material, so on a
--- client with no prices at all a wide recipe could branch further than a tooltip has any business
--- doing. And the branch's own items are remembered, because a cycle would hang the client
--- drawing a tooltip - which is the one place in this addon that must never be slow.
+-- **work**, not depth: every material with a recipe is now costed from it, whatever it sells
+-- for. And the branch's own items are remembered, because a cycle would hang the client drawing
+-- a tooltip - which is the one place in this addon that must never be slow.
+--
+-- **A slow way of making it is noted rather than counted** (Alberto, 2026-09-19, choosing it over
+-- counting the lowest number and over leaving it unsaid). The cheapest route can be one nobody can
+-- take today: a Primal Fire transmuted from a cheaper Primal Earth waits on the alchemist's daily
+-- cooldown, and gears made from a bar and five piles somebody has to farm cost the bar and a
+-- trip. *We are not counting the cost of time.* So a route that needs a crafting cooldown
+-- (`Cooldowns:Known`, from the shipped tables) or leaves out a bound material never beats a price
+-- that can be paid now; it is still used where nothing is for sale, and then `timed` says so.
+-- What it would have saved goes in `saving`, with `why` saying which of the two it takes, and the
+-- tooltip writes the total it would come to under the one counted - *Total with a crafting
+-- cooldown*.
+--
+-- **Each material is costed once a tooltip, and that is what keeps sixty enough.** Counted
+-- 2026-09-19 over every product in the shipped tables, following every material that has a
+-- recipe: at most 23 recipes on Era, 49 on Mists and **72** on Burning Crusade, where one item
+-- went past the bound - and once sixty were spent, a material with no price at all would have
+-- been left unknown so that a cheaper one could be compared. Remembering each material's answer
+-- the first time it is worked out brings the worst of the three to 34. What is remembered was
+-- worked out on whichever branch reached it first, so where a cycle was cut there, it stays cut.
 local MAX_DEPTH = 10
 local MAX_RECIPES = 60
 
@@ -1185,47 +734,141 @@ function Recipes:CostOfSpell(spell, depth, branch, budget, itemID)
 	spell = tonumber(spell)
 	if not spell then return nil end
 
+	local parts = self:Reagents(spell)
+	if not parts then return nil end
+
+	return self:CostOfParts(parts, spell, depth, branch, budget, itemID)
+end
+
+-- **Made by using an item one of ours owns**, and what that comes to, or nothing.
+--
+-- Reported from play 2026-09-19: no recipe with Refined Deeprock Salt in it ever carried the note
+-- about a cooldown, because the salt is on nobody's recipe list - it comes out of a Salt Shaker,
+-- and *Made with* only ever looked for a recipe. The generated table has carried the maker since
+-- 2026-08-31 and now carries what using it eats (`uses`), so the shaker is priced the way a recipe
+-- is: one Deeprock Salt a use.
+--
+-- **In-house the way a recipe is**: one of our own characters holds the maker and has the skill
+-- it asks for - the Salt Shaker's 250 leatherworking - which is the test the item tooltip's *Can
+-- make it* already puts. A linked family's shaker is somebody else's to ask for.
+--
+-- **Always slow.** The table holds only makers that make you wait (DATASOURCES, *Things made by
+-- using an item*), so a route through one is a route through a cooldown, and it is noted rather
+-- than counted wherever the thing can be bought.
+function Recipes:CostOfMaker(itemID, depth, branch, budget)
+	for _, maker in ipairs((Family.MadeByItem or {})[itemID] or {}) do
+		if maker.uses and #maker.uses >= 2 then
+			local members = Family.Database:Members()
+			local able = false
+			for _, owner in ipairs(Family.Index and Family.Index:Owners(maker.item) or {}) do
+				if not owner.familyName and members[owner.key] then
+					local skill = maker.skill
+						and ((Family.Database:Meta(owner.key) or {}).skills or {})[maker.skill]
+					if not maker.skill or (skill and (skill.rank or 0) >= (maker.rank or 0)) then
+						able = true
+						break
+					end
+				end
+			end
+
+			if able then
+				local parts = {}
+				for index = 1, #maker.uses - 1, 2 do
+					parts[#parts + 1] = { item = maker.uses[index], count = maker.uses[index + 1] }
+				end
+				local out = self:CostOfParts(parts, nil, depth, branch, budget, itemID)
+				if out then
+					out.maker = maker.item
+					return out
+				end
+			end
+		end
+	end
+	return nil
+end
+
+-- The arithmetic both of those share, over a list of { item, count }.
+function Recipes:CostOfParts(parts, spell, depth, branch, budget, itemID)
 	depth = depth or 1
 	branch = branch or {}
 	budget = budget or { left = MAX_RECIPES }
-
-	local parts = self:Reagents(spell)
-	if not parts then return nil end
 
 	local out = { spell = spell, parts = {}, total = 0, missing = 0, bound = 0, made = 0 }
 
 	if itemID then branch[itemID] = true end
 
+	budget.known = budget.known or {}
+	budget.ours = budget.ours
+		or (Family.RecipeIndex and Family.RecipeIndex:OursMake()) or { spells = {}, items = {} }
+
 	for _, part in ipairs(parts) do
 		local each, from = cheapest(part.item)
 		local row = { item = part.item, count = part.count }
 
-		if each then
+		-- What making one comes to, where one of ours can make it. Once a tooltip (above).
+		local spell = self:MadeBy(part.item)
+		local inHouse = spell and (budget.ours.items[part.item] or budget.ours.spells[spell])
+		local made = budget.known[part.item]
+		if made == nil and depth < MAX_DEPTH and budget.left > 0 and not branch[part.item] then
+			if inHouse then
+				budget.left = budget.left - 1
+				made = self:CostToMake(part.item, depth + 1, branch, budget) or false
+				budget.known[part.item] = made
+			elseif not spell and (Family.MadeByItem or {})[part.item] then
+				-- No recipe makes it, and an item might (`CostOfMaker`).
+				budget.left = budget.left - 1
+				made = self:CostOfMaker(part.item, depth + 1, branch, budget) or false
+				budget.known[part.item] = made
+			end
+		end
+		local madeEach = made and made.total or nil
+
+		-- **Slow**: making it waits on a crafting cooldown somewhere down the route, or leaves
+		-- out a material somebody has to farm. Neither beats a price that can be paid today;
+		-- what either would save is kept for the note under the total (above). A maker is a
+		-- cooldown by construction.
+		local timed = made and (made.timed or made.maker ~= nil
+			or (spell and Family.Cooldowns:Known(spell) ~= nil)) or false
+		local farmed = made and made.bound > 0 or false
+		local slow = timed or farmed
+
+		if madeEach and (not each or (not slow and madeEach < each)) then
+			row.each, row.from = madeEach, "crafted"
+			row.total = madeEach * part.count
+			out.total = out.total + row.total
+			out.made = out.made + 1
+			-- A sub-recipe short of a material of its own is short here too.
+			out.bound = out.bound + made.bound
+			-- And one that waits on a cooldown, where nothing was for sale to wait less.
+			out.timed = out.timed or timed
+		elseif each then
 			row.each, row.from = each, from
 			row.total = each * part.count
 			out.total = out.total + row.total
+		elseif self:BoundReagent(part.item) then
+			row.bound = true
+			row.total = 0
+			out.bound = out.bound + 1
 		else
-			-- Nobody is selling it. Making one may still have a price.
-			local made = nil
-			if depth < MAX_DEPTH and budget.left > 0 and not branch[part.item] then
-				budget.left = budget.left - 1
-				made = self:CostToMake(part.item, depth + 1, branch, budget)
-			end
+			row.unknown = true
+			out.missing = out.missing + 1
+		end
 
-			if made and made.total then
-				row.each, row.from = made.total, "crafted"
-				row.total = made.total * part.count
-				out.total = out.total + row.total
-				out.made = out.made + 1
-				-- A sub-recipe short of a material of its own is short here too.
-				out.bound = out.bound + made.bound
-			elseif self:BoundReagent(part.item) then
-				row.bound = true
-				row.total = 0
-				out.bound = out.bound + 1
-			else
-				row.unknown = true
-				out.missing = out.missing + 1
+		-- How much less the slowest way of coming by it would be than what was counted, and
+		-- why. The lowest a unit can come to is making it with every slow route inside it taken
+		-- too; where the made route was counted, only the slow routes inside it are left over.
+		if madeEach and row.each then
+			local lowest = madeEach - (made.saving or 0)
+			if lowest < row.each then
+				out.saving = (out.saving or 0) + (row.each - lowest) * part.count
+				out.why = out.why or {}
+				if row.from ~= "crafted" then
+					out.why.cooldown = out.why.cooldown or timed
+					out.why.farming = out.why.farming or farmed
+				end
+				for reason in pairs(made.why or {}) do
+					if made.why[reason] then out.why[reason] = true end
+				end
 			end
 		end
 
@@ -1243,12 +886,12 @@ end
 --------------------------------------------------------------------------------------------
 -- The three readers, from the recipe index
 --
--- **The walks above are kept, renamed `Scan...`, and read by nothing in the addon.** They are
--- what these answers are held to: the harness asks both, over every needle, spell, item and
--- profession its fixtures name, and requires the same answer row for row (data-path review, step
--- 5; Alberto: *le risposte devono essere le stesse di oggi, riga per riga*). So each reader below
--- is its walk with two things taken out - the record read and the recipe named - and nothing else
--- changed, down to the order members, lists and recipes are visited in.
+-- Each reader below was a walk over every stored record, naming every recipe again on every
+-- question, until the data-path review's step 5 (2026-09-13). They were rebuilt on the index with
+-- two things taken out - the record read and the recipe named - and nothing else changed, down to
+-- the order members, lists and recipes are visited in (Alberto: *le risposte devono essere le
+-- stesse di oggi, riga per riga*). The walks were kept beside them and the harness held the two to
+-- the same answer row for row until 4.2.0 had been played; they were taken out after (backlog 75).
 --------------------------------------------------------------------------------------------
 
 -- The index builds with this, so which lists count is decided once per member rather than on
@@ -1257,20 +900,57 @@ function Recipes:StillHeld(meta, profession)
 	return stillHeld(meta, profession)
 end
 
+-- Whether a recipe is on a timer, and whether it has come back.
+--
+-- A recipe carries hasCooldown only once Family has watched it run (Scanners/Professions.lua), so
+-- its presence is what makes "ready" sayable at all - and its absence is not a claim that there is
+-- no cooldown, only that none has been seen. A moment that has passed is the craft being ready
+-- rather than a gap: a craft reading ready is evidence, because using one needs the window Family
+-- scans.
 local function cooldownOf(entry)
 	if not entry.hasCooldown then return nil end
 	local ready = not entry.readyAt or entry.readyAt <= time()
 	return { ready = ready, readyAt = (not ready) and entry.readyAt or nil }
 end
 
+-- Who in the family knows one particular recipe, found by its identifier and by nothing else.
+--
+-- `Crafters` below answers a different and larger question - who has the profession, and how
+-- each of them stands with a recipe named like this - and it needs the item's name and its
+-- skill requirement read off a tooltip to do it. This needs neither: given the spell, it is a
+-- lookup, and the answer is a plain fact rather than a judgement.
+--
+-- Which is what a recipe's own tooltip wants. An enchant has no item to be named after, no
+-- subtype to be recognised by and no skill line written on it, so the route that answers for
+-- a crafted object cannot answer for it at all - and the panel two inches away was listing
+-- the very people the tooltip left out.
 function Recipes:KnowersOf(spellID, itemID, itemName)
+	-- Where the caller has only the item, the client's tables often know which spell it
+	-- teaches - and an id settles it where a name cannot.
 	spellID = spellID or self:TaughtBy(itemID)
 
 	if not ((spellID and spellID ~= 0) or (itemID and itemID ~= 0) or itemName) then
 		return {}
 	end
 
+	-- **The name is the last resort, and only where no table named the spell.** Matching by name
+	-- asks the client to name every recipe of every list in another language, one spell at a
+	-- time; with the spell in hand the ids answer, and a recipe recorded with neither id is the
+	-- one thing given up - records old enough to carry neither.
 	local byName = itemName and not (spellID and spellID ~= 0)
+
+	-- One line per member, not one per profession that can make it.
+	--
+	-- Some things are made two ways: a Truesilver Bar is smelted by a miner and transmuted by
+	-- an alchemist, and a character with both trades matched twice - the `break` below leaves
+	-- the recipe loop and the profession loop went on. The count at the top of the block
+	-- counted them twice, and since the block shows five names and then says how many more
+	-- there are, a duplicate took a visible place from somebody real. Reported from play, on a
+	-- Truesilver Bar, as alchemists missing from a list that had room for them.
+	--
+	-- Where both trades match, the entry that says more is kept: one carrying a cooldown over
+	-- one that does not, and the higher rank between two of a kind. A transmute on a timer is
+	-- the answer somebody wants; "smelts it, rank 300" is true and says less.
 	local found, best = {}, {}
 
 	local function better(new_, old_)
@@ -1286,7 +966,14 @@ function Recipes:KnowersOf(spellID, itemID, itemName)
 
 		for _, list in ipairs(who.part.lists) do
 			local profession = list.profession
+			-- Skipped where they have unlearnt it: the list stays on the record and the
+			-- skill does not, and saying they can still make it is the one thing this
+			-- block must not do.
 			for _, recipe in ipairs(list.held and list.recipes or {}) do
+				-- Either identifier, and the name only where neither is present -
+				-- which on Classic Era is most of enchanting. The name is this
+				-- client's word for the recipe against this client's word for the
+				-- item, so both sides are in one language (§2.1).
 				local matched = (spellID and spellID ~= 0 and recipe.spellID == spellID)
 					or (itemID and itemID ~= 0 and recipe.itemID == itemID)
 
@@ -1304,6 +991,10 @@ function Recipes:KnowersOf(spellID, itemID, itemName)
 						rank = (meta.skills or {})[profession]
 							and meta.skills[profession].rank or nil,
 						cooldown = cooldownOf(recipe),
+						-- Whose character it is, where it is not one of ours. The
+						-- reason is the one the item tooltip gives: a name against a
+						-- count reads as *I can go and get that*, and for somebody
+						-- else's character that is not true.
 						familyName = who.familyName,
 					}
 
@@ -1316,6 +1007,11 @@ function Recipes:KnowersOf(spellID, itemID, itemName)
 
 	for _, who in pairs(best) do found[#found + 1] = who end
 
+	-- Whoever cannot do it yet goes last, soonest of them first, and everybody else keeps
+	-- the old order: highest skill, then by name - the same order the whole-family search
+	-- puts them in, so the two do not disagree about who to ask first. For a transmute the
+	-- rank is not the question and the timer is (§4.5), and the guild's half of this block
+	-- sorts by exactly the same rule.
 	table.sort(found, function(a, b)
 		local aWaiting = (a.cooldown and not a.cooldown.ready) and 1 or 0
 		local bWaiting = (b.cooldown and not b.cooldown.ready) and 1 or 0
@@ -1332,6 +1028,17 @@ function Recipes:KnowersOf(spellID, itemID, itemName)
 	return found
 end
 
+-- Every recipe anybody in the family knows whose name matches, and who knows it.
+--
+-- **Siblings too**, since 2026-09-05. This walked `Database:Members` alone, which has never
+-- heard of a borrowed key, so a linked family's characters could not appear in the search
+-- however much they had shared and however loudly the panel said *whole family*. Reported from
+-- play, and it is L-052's class for the fourth time - a reader that knows only our own records,
+-- answering a question about everybody, with nothing saying it had answered half.
+--
+-- Siblings and not everyone a link shares, which is the same population every other whole-family
+-- list uses: a sibling is the decision that somebody belongs in my lists beside my own (§6), and
+-- this is a list. `RecipeIndex:Everybody` gathers them for all three readers here.
 function Recipes:Search(needle, limit)
 	if type(needle) ~= "string" or needle == "" then return {} end
 
@@ -1345,14 +1052,38 @@ function Recipes:Search(needle, limit)
 
 		for _, list in ipairs(who.part.lists) do
 			local profession = list.profession
+			-- The same skip as `KnowersOf`, and for the same reason: a search that finds a
+			-- recipe under somebody who has unlearnt the profession is answering the
+			-- question wrongly rather than generously.
 			for _, recipe in ipairs(list.held and list.recipes or {}) do
+				-- The name this client uses, falling back to the one recorded. Both are
+				-- searched: a family holds lists read on other people's clients, and
+				-- somebody typing their own language should not find fewer of them.
 				local name, was = recipe.name, recipe.was
 				if name and (name:lower():find(needle, 1, true)
 					or (was and was:lower():find(needle, 1, true))) then
+					-- Keyed by the recipe's spell where it has one, so the same
+					-- enchant recorded on a French client and an English one is one
+					-- line rather than two - the id is the same in every language and
+					-- the name is not (§2.1, and the reason it matters).
+					--
+					-- Where there is no id, by recipe and profession together: two
+					-- professions can make things of the same name, and "who can make
+					-- this" is a different answer for each of them.
+					--
+					-- Or by the item it makes where the client gave no spell, which on
+					-- Classic Era is most recipes (DATASOURCES §2). Without that rung
+					-- an Era row keyed by its word could never meet a guild row keyed
+					-- by an id, and the same recipe appeared twice on one screen.
 					local id = recipe.spellID and ("spell:" .. recipe.spellID)
 						or recipe.itemID and ("item:" .. recipe.itemID)
 						or (profession .. "\0" .. name)
 
+					-- Where the same recipe is held under two professions - a real one
+					-- and something that is not in the client's table, like a rogue's
+					-- poisons or a death knight's runeforging - the identified one is the
+					-- better label. "Copper Chain Belt, Runeforging" is not wrong only in
+					-- a harness.
 					if byName[id] and type(byName[id].profession) ~= "number"
 						and type(profession) == "number" then
 						byName[id].profession = profession
@@ -1367,16 +1098,38 @@ function Recipes:Search(needle, limit)
 							spellID = recipe.spellID,
 							itemID = recipe.itemID,
 							members = {},
+							-- Who is already on this row. One member is one answer to
+							-- "who can make this", however many times their record
+							-- happens to say so.
 							listed = {},
 						}
 						order[#order + 1] = byName[id]
 					end
 
+					-- **Once each.** This was a plain insert, and a member whose record
+					-- holds the same recipe twice - which a stored list can, because the
+					-- scanner writes back every row the client's window listed - was
+					-- drawn twice on one line. Reported from play as "Smith, Smith" on a
+					-- transmute, with the realm on both because two identical names in
+					-- one list is exactly what makes `NamesOf` add it.
+					--
+					-- Fixed where two becomes visible rather than where two comes from:
+					-- what the client's window listed twice is a question this cannot
+					-- answer, and the scanner now says so in the debug log instead of
+					-- being made to guess.
 					local cooldown = cooldownOf(recipe)
 					local row = byName[id]
 					local already = row.listed[key]
 
 					if already then
+						-- The timer is the one thing worth taking from a second copy,
+						-- and "has a cooldown" is not the test. A record with
+						-- `hasCooldown` and no `readyAt` answers *ready*, so the first
+						-- copy already carries one and the second's real timer would be
+						-- thrown away - the row saying a transmute is ready that is
+						-- three hours off. Taken when we had none, or when what we have
+						-- claims ready and this one knows better. Never the other way:
+						-- ready must not be able to overwrite a running timer.
 						if cooldown and (not already.cooldown
 							or (already.cooldown.ready and not cooldown.ready)) then
 							already.cooldown = cooldown
@@ -1388,6 +1141,11 @@ function Recipes:Search(needle, limit)
 							classFile = meta.classFile,
 							realm = meta.realm,
 							faction = meta.faction,
+							-- Whose character it is, where it is not one of ours.
+							-- The same reason the possessions search carries it: a
+							-- name on a list of who can make something is read as
+							-- *somebody I can log in on*, and for a linked family's
+							-- character that is not true - they are somebody to ask.
 							familyName = who.familyName,
 							rank = (meta.skills or {})[profession]
 								and meta.skills[profession].rank or nil,
@@ -1401,8 +1159,13 @@ function Recipes:Search(needle, limit)
 		end
 	end
 
+	-- The guild's answer onto the same rows, and rows of its own for anything only a
+	-- guildmate knows - which is the case the whole feature exists for.
 	guildCrafters(byName, order, needle, limit)
 
+	-- Whoever cannot do it yet last, soonest of them first: the same rule the guild half
+	-- above sorts by and the same rule both tooltip blocks sort by, so the four surfaces
+	-- that answer "who can make this" never disagree about who to ask.
 	for _, found in ipairs(order) do
 		table.sort(found.members, function(a, b)
 			local aWaiting = (a.cooldown and not a.cooldown.ready) and 1 or 0
@@ -1420,6 +1183,9 @@ function Recipes:Search(needle, limit)
 
 	table.sort(order, function(a, b)
 		if a.name ~= b.name then return a.name < b.name end
+		-- Two professions can hold the same word, and a guild row's profession is a skill
+		-- line while an unidentified family row's is the word the client used. Compared as
+		-- strings so that a number never meets a word in a comparison the sort cannot make.
 		return tostring(a.profession) < tostring(b.profession)
 	end)
 
@@ -1427,12 +1193,29 @@ function Recipes:Search(needle, limit)
 	return order
 end
 
+-- Everybody who has the profession, and what they can do about this recipe. Only them: a
+-- member without the profession has nothing to say about a pattern and is left off entirely.
+--
+-- `required` is the skill the recipe needs, read off the item's own tooltip, and may be nil -
+-- in which case nobody is told they cannot learn it yet, because nothing is known about what
+-- it would take. Guessing there would be worse than the gap.
 function Recipes:Crafters(profession, itemName, required, minLevel, itemID)
 	local found = {}
 
+	-- Which branch this recipe belongs to, if any. Nil for the great majority of recipes,
+	-- which anybody with the profession can learn.
 	local needs = itemID and (Family.RecipeNeeds or {})[itemID] or nil
+
+	-- And which spell it teaches, and which item that spell makes, where the client's tables
+	-- know. An id beats every name test below it: the spell is what makes this right for
+	-- enchanting, and the product is what makes it right for a Classic Era trade skill, whose
+	-- record carries no spell to compare against at all.
 	local taught = self:TaughtBy(itemID)
 	local made = self:Makes(itemID)
+
+	-- The item's subtype is a word in this client's language; members are filed by identity.
+	-- Resolving it here is what lets a French client's Couture find a member whose window
+	-- was opened in English - which it could not do while both sides were words.
 	local wanted = Family:SkillLineFor(profession) or profession
 
 	for _, member in ipairs(Family.RecipeIndex:Everybody()) do
@@ -1456,6 +1239,11 @@ function Recipes:Crafters(profession, itemName, required, minLevel, itemID)
 						break
 					end
 
+					-- Both sides of this in the same language. itemName comes from the
+					-- client and is therefore in the reader's, and the recipe name the
+					-- index holds was resolved on this client too - where the recorded
+					-- name, in whoever scanned it, compared a French item against an
+					-- English recipe and matched nothing.
 					if teaches(itemName, recipe.name) then
 						knows = true
 						break
@@ -1463,9 +1251,14 @@ function Recipes:Crafters(profession, itemName, required, minLevel, itemID)
 				end
 			end
 
+			-- Whether this member is on the branch the recipe belongs to. Only asked of
+			-- recipes that have one.
 			local onBranch = true
 			if needs then
 				if not meta.specsSeen then
+					-- Never asked. Not the same as "took a different branch", and saying
+					-- so would be inventing an answer for every member recorded before
+					-- Family knew to ask (§2.2). Fills in at their next login.
 					onBranch = nil
 				else
 					onBranch = false
@@ -1475,6 +1268,13 @@ function Recipes:Crafters(profession, itemName, required, minLevel, itemID)
 				end
 			end
 
+			-- The order these are decided in is the order they are true in. A member who
+			-- knows it is not also short of skill; one whose recipes have never been read
+			-- is not reported as able to learn something they may have learnt years ago.
+			--
+			-- The branch sits above skill and level because it is the one that never
+			-- changes: another twenty points of blacksmithing will come, and an armoursmith
+			-- will still never make a sword.
 			local state
 			if knows then
 				state = "knows"
@@ -1502,12 +1302,24 @@ function Recipes:Crafters(profession, itemName, required, minLevel, itemID)
 				maxRank = skill.maxRank,
 				level = meta.level,
 				state = state,
+				-- What they would have had to take. Carried as the spell's id; the word for
+				-- it is the client's to supply, in the language of whoever is reading.
 				needs = needs,
+				-- Whose character it is, where it is not one of ours. Same field and
+				-- same reason as `KnowersOf` above and the item tooltip beside it.
 				familyName = member.familyName,
 			}
 		end
 	end
 
+	-- Knows it, then can, then the ones that are only a matter of time, then the ones
+	-- nothing can be said about, and last the ones for whom it is never going to happen.
+	-- Highest skill first inside each, which is the order somebody deciding who to send is
+	-- reading them in.
+	--
+	-- A state missing from here sorts as nil and throws inside table.sort, which is how the
+	-- branch state announced itself the moment it was first returned. Anything added above
+	-- has to be added here.
 	local ORDER = { knows = 1, can = 2, later = 3, level = 4, unknown = 5, branch = 6 }
 
 	table.sort(found, function(a, b)

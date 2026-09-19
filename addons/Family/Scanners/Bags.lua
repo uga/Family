@@ -129,6 +129,37 @@ end
 -- for are comfortably clear of it.
 local SIX_HOURS = 6 * 60 * 60
 
+-- **Except for the things the generated table names**, which are kept down to a minute while
+-- they are running. Reported from play 2026-09-19: a Salt Shaker used on one character and a
+-- Chronoboon Displacer on another, and neither said so on its own tooltip once somebody else
+-- was being played. The shaker was recorded and not shown; the Chronoboon's hour never got past
+-- the floor above at all, so every owner of one was "ready now" to make a supercharged one.
+--
+-- The floor is about what gets *announced*, and that is not what these are for. A maker, or a
+-- thing a maker makes, is an item somebody goes to a particular character for - which is why the
+-- table exists - so its wait belongs beside that character's name wherever the item is. The
+-- hearthstone is in no such table, and a minute is still above every potion's.
+--
+-- **Marked `brief`, and kept out of everything the floor protects.** The Crafting panel and the
+-- login line already ask `IsCraftingItem`, whose own floor is six hours; the one door left is
+-- `cooldownItems`, which files an item under a profession when a recipe of ours makes it - and
+-- from there it would cross to the guild. A Super Snapper FX is exactly that shape. The
+-- profession scanner skips a brief entry when it learns, so nothing brief ever gets that far.
+local ONE_MINUTE = 60
+
+-- Every item the generated table names, as a maker or as what one makes. Built once.
+local namedByTable
+local function namedByMadeByItem(itemID)
+	if not namedByTable then
+		namedByTable = {}
+		for made, makers in pairs(Family.MadeByItem or {}) do
+			namedByTable[made] = true
+			for _, maker in ipairs(makers) do namedByTable[maker.item] = true end
+		end
+	end
+	return namedByTable[itemID] == true
+end
+
 -- Which items carry a cooldown at all, whether or not anybody has watched one run.
 --
 -- Two answers, and the second one is why this exists. **Learned**: an item Family has seen
@@ -153,10 +184,10 @@ local function itemHasCooldown(itemID, learned)
 	return Family.Cooldowns:IsCraftingItem(itemID)
 end
 
-local function itemReadyAt(bag, slot)
+local function itemReadyAt(bag, slot, floor)
 	local start, duration = Family:TryCall(GetCooldown, bag, slot)
 	if not start or start == 0 then return nil end
-	if not duration or duration < SIX_HOURS then return nil end
+	if not duration or duration < (floor or SIX_HOURS) then return nil end
 
 	local now = Family:TryCall(GetTime) or 0
 	local remaining = (start + duration) - now
@@ -322,8 +353,15 @@ function Bags:Scan()
 					-- this the Crafting panel could only ever show an item while it was
 					-- unavailable - reported from play, and fair.
 					local readyAt = itemReadyAt(bag, slot)
+					local brief = not readyAt and namedByMadeByItem(itemID)
+						and itemReadyAt(bag, slot, ONE_MINUTE)
 					if readyAt then
 						cooldowns[#cooldowns + 1] = { id = itemID, readyAt = readyAt }
+					elseif brief then
+						-- Running only. A ready one is not recorded, for the reason
+						-- `Cooldowns:For` gives: nobody watched the bag it was used from.
+						cooldowns[#cooldowns + 1] = { id = itemID, readyAt = brief,
+							brief = true }
 					elseif itemHasCooldown(itemID, knownCooldowns) then
 						cooldowns[#cooldowns + 1] = { id = itemID }
 					end

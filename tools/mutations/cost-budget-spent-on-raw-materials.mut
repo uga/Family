@@ -1,0 +1,6 @@
+name: the recipe budget is spent on materials that have no recipe
+file: addons/Family/Recipes.lua
+--- old
+		local inHouse = spell and (budget.ours.items[part.item] or budget.ours.spells[spell])
+--- new
+		local inHouse = (budget.ours.items[part.item] or budget.ours.spells[spell or 0])

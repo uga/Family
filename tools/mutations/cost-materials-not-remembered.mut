@@ -1,0 +1,6 @@
+name: each material is costed again every time it turns up on a tooltip
+file: addons/Family/Recipes.lua
+--- old
+		local made = budget.known[part.item]
+--- new
+		local made = nil

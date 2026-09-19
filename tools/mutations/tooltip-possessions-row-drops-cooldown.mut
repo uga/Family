@@ -1,0 +1,6 @@
+name: the possessions row says nothing about an owner's running cooldown
+file: addons/Family_UI/Tooltip.lua
+--- old
+		local waits = runningFor(owner.key, itemID)
+--- new
+		local waits = nil

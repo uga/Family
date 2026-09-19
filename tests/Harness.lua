@@ -170,7 +170,26 @@ fontMeta.__index = function(_, key)
 			for character in text:gmatch("[^\128-\191]") do
 				n = n + (character == "1" and 0.7 or 1)
 			end
-			return n * 6.5 + pixels
+
+			-- **And a font is not every font's size.** A tooltip is drawn in whatever font
+			-- the client, or an addon, gave it, and a width measured in another one is a
+			-- width that holds nothing: the padding is then out by the ratio between them.
+			-- A picture keeps the width it names, which is why it is added after.
+			return n * 6.5 * ((self.__fontSize or 12) / 12) + pixels
+		end
+	end
+	-- The font a region was given, remembered rather than thrown away: the money padding
+	-- measures in the font of the tooltip it is writing on, and a stub that forgot the size
+	-- could not tell that from measuring in whatever font it started with.
+	if key == "SetFont" then
+		return function(self, font, size, flags)
+			self.__font, self.__fontSize, self.__fontFlags = font, size, flags
+		end
+	end
+	if key == "GetFont" then
+		return function(self)
+			return self.__font or "Fonts\\FRIZQT__.TTF", self.__fontSize or 12,
+				self.__fontFlags
 		end
 	end
 	-- Greying a texture is how the game says "you do not have this", and the talent grid
@@ -230,7 +249,7 @@ local KNOWN = {
 	RegisterEvent = 1, UnregisterEvent = 1,
 	CreateFontString = 1, CreateTexture = 1,
 	GetWidth = 1, GetHeight = 1, GetName = 1,
-	SetText = 1, GetText = 1, SetJustifyH = 1, SetTextColor = 1, SetFont = 1,
+	SetText = 1, GetText = 1, SetJustifyH = 1, SetTextColor = 1,
 	GetStringWidth = 1, GetStringHeight = 1,
 	SetColorTexture = 1, SetTexture = 1, SetVertexColor = 1,
 	SetScrollChild = 1, GetScrollChild = 1, SetVerticalScroll = 1,
@@ -1799,7 +1818,12 @@ GetTime = function() return FAKE_CLOCK end
 -- cooldown itself. Switched on by a test rather than always, because it is a state the client
 -- passes through rather than one it stays in.
 COOLDOWN_UNSETTLED = false
+-- And any slot a test puts on a timer of its own, as { start, duration } under "bag:slot". A
+-- table rather than a replaced function, because the scanner takes the call once, at load.
+SLOT_COOLDOWNS = {}
 C_Container.GetContainerItemCooldown = function(bag, slot)
+	local set = SLOT_COOLDOWNS[bag .. ":" .. slot]
+	if set then return set[1], set[2], 1 end
 	if bag == 0 and slot == 1 then
 		if COOLDOWN_UNSETTLED then return FAKE_CLOCK + 4000000, 86400, 1 end
 		return 900, 86400, 1
@@ -2002,91 +2026,6 @@ local function check(label, condition, detail)
 		-- A mutation caught once is caught; the rest of the run would only say so again.
 		if RUN.mutating then os.exit(1) end
 	end
-end
-
--- **The three recipe readers, answered by the index and by the walk it replaced, compared row by
--- row.** Written before the index took over `Search`, `KnowersOf` and `Crafters`, and kept: the
--- walks stay in `Recipes.lua` as `ScanSearch`, `ScanKnowersOf` and `ScanCrafters` for exactly this.
--- Asked on whatever family the fixtures hold at the moment it is called, with every needle, spell,
--- item and profession that family's records name, so a difference cannot hide in a question
--- nobody thought to ask.
-function RUN.dumpAnswer(value, seen)
-	local kind = type(value)
-	if kind ~= "table" then return kind .. ":" .. tostring(value) end
-	seen = seen or {}
-	if seen[value] then return "<again>" end
-	seen[value] = true
-	local keys = {}
-	for key in pairs(value) do keys[#keys + 1] = key end
-	table.sort(keys, function(a, b)
-		if type(a) ~= type(b) then return type(a) < type(b) end
-		return tostring(a) < tostring(b)
-	end)
-	local out = {}
-	for _, key in ipairs(keys) do
-		out[#out + 1] = tostring(key) .. "=" .. RUN.dumpAnswer(value[key], seen)
-	end
-	seen[value] = nil
-	return "{" .. table.concat(out, ",") .. "}"
-end
-
-function RUN.compareRecipeReaders(label)
-	local Recipes = Family.Recipes
-	local families = {}
-	for key, entry in pairs(Family.Database:Members()) do
-		families[#families + 1] = { meta = entry.meta or {}, payload = Family.Database:Payload(key) }
-	end
-	for _, sibling in ipairs(Family.Wide and Family.Wide:Siblings() or {}) do
-		families[#families + 1] = { meta = sibling.meta or {}, payload = sibling.payload }
-	end
-
-	local spells, items, words, professions = {}, {}, {}, {}
-	for _, one in ipairs(families) do
-		for profession, record in pairs((one.payload or {}).professions or {}) do
-			professions[tostring(Family:ProfessionName(profession) or profession)] = true
-			for _, recipe in ipairs(type(record) == "table" and record.recipes or {}) do
-				if recipe.spellID then spells[recipe.spellID] = true end
-				if recipe.itemID then items[recipe.itemID] = true end
-				if type(recipe.name) == "string" then
-					words[recipe.name] = true
-					for pair in recipe.name:lower():gmatch("%a%a") do words[pair] = true end
-				end
-			end
-		end
-	end
-
-	local asked, differ = 0, {}
-	local function same(what, new, old)
-		asked = asked + 1
-		local a, b = RUN.dumpAnswer(new), RUN.dumpAnswer(old)
-		if a ~= b and #differ < 3 then differ[#differ + 1] = what .. "\n    new " .. a .. "\n    old " .. b end
-	end
-
-	for word in pairs(words) do
-		same("Search " .. word, Recipes:Search(word), Recipes:ScanSearch(word))
-	end
-	for spell in pairs(spells) do
-		same("KnowersOf spell " .. spell, Recipes:KnowersOf(spell), Recipes:ScanKnowersOf(spell))
-	end
-	for item in pairs(items) do
-		local name = ITEM_NAMES[item]
-		same("KnowersOf item " .. item, Recipes:KnowersOf(nil, item, name),
-			Recipes:ScanKnowersOf(nil, item, name))
-		for profession in pairs(professions) do
-			same("Crafters " .. profession .. " " .. item,
-				Recipes:Crafters(profession, name, 50, 10, item),
-				Recipes:ScanCrafters(profession, name, 50, 10, item))
-		end
-	end
-	for word in pairs(words) do
-		if #word > 2 then
-			same("KnowersOf name " .. word, Recipes:KnowersOf(nil, 0, word),
-				Recipes:ScanKnowersOf(nil, 0, word))
-		end
-	end
-
-	check("the recipe index answers " .. label .. " exactly as the walk it replaced, over "
-		.. asked .. " questions", asked > 20 and #differ == 0, table.concat(differ, "\n  "))
 end
 
 -- Asked by the check below that the stop at the first failure really stops: a failure here, and
@@ -4934,6 +4873,32 @@ do
 		textOf():find("ready now", 1, true) == nil, textOf())
 	check("and the owner is still named, because they are still who to ask",
 		textOf():find("Salter", 1, true) ~= nil, textOf())
+
+	-- **And on the shaker itself, beside whoever holds it.** Reported from play 2026-09-19: a
+	-- shaker used on one character said *2 Days 23 Hrs* on her own tooltip, and hovered from
+	-- another the line with her name on it said where it was and nothing about the wait.
+	local function shakerRow()
+		tooltipFor(15846)
+		for _, line in ipairs(GameTooltip.__lines) do
+			if tostring(line[1]):find("Salter", 1, true) then return tostring(line[2]) end
+		end
+	end
+	local row = shakerRow()
+	check("the shaker's own tooltip says when its owner's one comes back",
+		row ~= nil and row:find("ready in", 1, true) ~= nil, tostring(row))
+	check("after saying where it is", row ~= nil and row:find("bags", 1, true) ~= nil
+		and row:find("bags", 1, true) < (row:find("ready in", 1, true) or 0), tostring(row))
+
+	-- And not once the moment has passed: nobody watched the bag, so it is not "ready now"
+	-- either - it is simply not said.
+	do
+		local realTime = time
+		time = function() return realTime() + 2 * 86400 end
+		row = shakerRow()
+		time = realTime
+		check("a wait that has passed is not drawn at all",
+			row ~= nil and row:find("ready", 1, true) == nil, tostring(row))
+	end
 
 	-- A second owner who has the shaker and cannot use it. Reported from play, and the whole
 	-- reason the table carries the requirement rather than only the join.
@@ -11164,7 +11129,6 @@ if professionsEveryone then
 		-- Blacksmithing, Enchanting, Tailoring - the words. By the skill line ids behind
 		-- them it would be 164, 197, 333, which puts the tailor in the middle: the one
 		-- fixture arrangement that tells the two apart.
-		RUN.compareRecipeReaders("the family behind the whole-family search")
 		check("and by profession, which is the word rather than the key behind it",
 			page() == "Runed Copper Breastplate | Ench. de plastron (Vie majeure) | "
 				.. "Stitched Cloak", page())
@@ -20810,6 +20774,39 @@ print("crafting cooldowns")
 			if entry.id == 184937 then boon = true end
 		end
 		check("a Chronoboon is not a crafting cooldown", boon == false)
+
+		-- **But one counting down is recorded**, under the six hours the rest are held to.
+		-- Reported from play 2026-09-19: a Chronoboon used on one character, and hovered from
+		-- another every owner was "ready now" to make a supercharged one - its hour had never
+		-- got past the floor. Marked `brief`, which is what keeps it off everything the floor
+		-- was protecting.
+		SLOT_COOLDOWNS["0:6"] = { FAKE_CLOCK - 600, 3600 }
+		Family.Bags:Scan()
+		local running
+		for _, entry in ipairs(Family.Database:Meta(mine).itemCooldowns or {}) do
+			if entry.id == 184937 then running = entry end
+		end
+		local left = running and running.readyAt and running.readyAt - time()
+		check("a Chronoboon counting down its hour is recorded, as the moment it comes back",
+			left ~= nil and left > 2990 and left <= 3000, tostring(left))
+		check("and marked brief", running ~= nil and running.brief == true,
+			tostring(running and running.brief))
+
+		local column = false
+		for _, kind in ipairs(Family.Cooldowns:Crafting(Family.Database:Meta(mine))) do
+			if kind.item == 184937 then column = true end
+		end
+		check("and it is still no column on the Crafting panel", column == false)
+
+		-- A global cooldown is not one: every item with a use shows a second and a half of it.
+		SLOT_COOLDOWNS["0:6"] = { FAKE_CLOCK - 0.5, 1.5 }
+		Family.Bags:Scan()
+		local blip = false
+		for _, entry in ipairs(Family.Database:Meta(mine).itemCooldowns or {}) do
+			if entry.id == 184937 then blip = true end
+		end
+		check("but a second and a half of global cooldown is not recorded", blip == false)
+		SLOT_COOLDOWNS["0:6"] = nil
 		BAGS[0].items[6] = nil
 
 		-- Nor is a Super Snapper FX, which a profession *does* make. It has a cooldown and it
@@ -20836,6 +20833,27 @@ print("crafting cooldowns")
 		end
 		check("and does not invent one for an item it has never seen counting down",
 			invented == false)
+
+		-- **A brief one is never filed under a profession.** `cooldownItems` is what carries
+		-- an item's cooldown to the guild, and it is learned from any recipe of ours that
+		-- makes the item - which a Super Snapper FX has. The long one beside it is the
+		-- control: without it, a scan that learned nothing at all would pass.
+		do
+			local wasOpen, wasName = TRADE_SKILL_OPEN, TRADE_SKILL_NAME
+			TRADE_SKILL_OPEN, TRADE_SKILL_NAME = true, "Blacksmithing"
+			Family.Database:SetMeta(mine, { cooldownItems = Family.CLEAR, itemCooldowns = {
+				{ id = 2864, readyAt = time() + 86400 },
+				{ id = 6338, readyAt = time() + 600, brief = true } } })
+			Family.Professions:Scan(true)
+
+			local learnt = Family.Database:Meta(mine).cooldownItems or {}
+			check("an item a recipe of ours makes is filed under that recipe's profession",
+				learnt[2864] ~= nil, tostring(learnt[2864]))
+			check("unless its cooldown is a brief one, which would carry it to the guild",
+				learnt[6338] == nil, tostring(learnt[6338]))
+
+			TRADE_SKILL_OPEN, TRADE_SKILL_NAME = wasOpen, wasName
+		end
 
 		BAGS[0].items[3], BAGS[0].items[4] = nil, nil
 		Family.Bags:Scan()
@@ -24231,7 +24249,6 @@ print("the recipe names, asked for before anybody clicks")
 
 			-- And a shared list already in the reader's own language is skipped, the same
 			-- way ours is: the rule is about the record, not about whose it is.
-			RUN.compareRecipeReaders("a family with a linked family's lists in it")
 			link.members["Etranger-FireMaw"].payload.professions[197].locale = Family.locale
 			Family.UI:ForgetRecipeWarmUp()
 			for index = #asked, 1, -1 do asked[index] = nil end
@@ -37877,6 +37894,15 @@ print("what a craftable thing costs to make")
 			[LOOP] = 900007 })[itemID]
 	end
 
+	-- **Making a material counts only where one of ours knows the recipe** (Alberto,
+	-- 2026-09-19, *in-house*). The real set is read off the records and checked further down;
+	-- here every fixture material is one of ours to make unless a check says otherwise.
+	local realOurs = Family.RecipeIndex.OursMake
+	local NOBODY = {}
+	local everything = setmetatable({}, { __index = function(_, item) return not NOBODY[item] end })
+	local ourMakes = { spells = {}, items = everything }
+	Family.RecipeIndex.OursMake = function() return ourMakes end
+
 	check("a recipe's materials come back unpacked from the flat pairs they ship as",
 		#(Family.Recipes:Reagents(900001)) == 2
 			and Family.Recipes:Reagents(900001)[1].item == BAR
@@ -37962,15 +37988,273 @@ print("what a craftable thing costs to make")
 		champion and champion.parts[1].from == "crafted",
 		champion and tostring(champion.parts[1].from))
 
-	-- **Bought before made**, which keeps the first caveat the rule it was written as: a thing
-	-- somebody is selling costs what they are asking, whatever making one would come to.
+	-- **The cheapest of buying and making**, which replaced *bought before made* on 2026-09-19:
+	-- Alberto, *we will take the lowest of 3 possible options when they exist*. Both directions,
+	-- so a reader that always bought and one that always made each fail one of them.
 	local realBound = Family.BoundReagents
 	vendorPrices[BLADE] = 5
 	local bought = Family.Recipes:CostToMake(CHAMPION)
-	check("while one somebody is selling costs what they are asking, not what making it would",
+	check("a material sold for less than making one comes to costs what it is sold for",
 		bought and bought.total == 5 + 300 and bought.made == 0,
 		bought and tostring(bought.total) or "nothing")
+
+	vendorPrices[BLADE] = 5000
+	local madeInstead = Family.Recipes:CostToMake(CHAMPION)
+	check("and one sold for more than making it comes to costs what making it comes to",
+		madeInstead and madeInstead.total == bladeCost + 300 and madeInstead.made == 1
+			and madeInstead.parts[1].from == "crafted",
+		madeInstead and (tostring(madeInstead.total) .. " from "
+			.. tostring(madeInstead.parts[1].from)) or "nothing")
+
+	-- **Nobody in the family makes blades**: the price is the price, and without one the blade
+	-- is what it is without a recipe - bound, and counted as nothing.
+	NOBODY[BLADE] = true
+	local notOurs = Family.Recipes:CostToMake(CHAMPION)
+	check("a material nobody in the family can make is not costed from its recipe",
+		notOurs and notOurs.total == 5000 + 300 and notOurs.made == 0,
+		notOurs and tostring(notOurs.total) or "nothing")
 	vendorPrices[BLADE] = nil
+	notOurs = Family.Recipes:CostToMake(CHAMPION)
+	check("even where nobody sells it either",
+		notOurs and notOurs.total == 300 and notOurs.bound == 1 and notOurs.made == 0,
+		notOurs and tostring(notOurs.total) or "nothing")
+
+	-- Known by its spell and not its item, which is how a Burning Crusade list records most of
+	-- what it holds.
+	ourMakes.spells[900006] = true
+	local bySpell = Family.Recipes:CostToMake(CHAMPION)
+	check("and one of ours who knows the recipe by its spell alone counts",
+		bySpell and bySpell.total == bladeCost + 300 and bySpell.made == 1,
+		bySpell and tostring(bySpell.total) or "nothing")
+	ourMakes.spells[900006], NOBODY[BLADE] = nil, nil
+
+	-- **A route that waits on a crafting cooldown does not beat a price paid today**, and what
+	-- it would save is kept for the note. The blade's recipe is put on a day's timer.
+	local realKnown = Family.Cooldowns.Known
+	Family.Cooldowns.Known = function(self, spellID, ...)
+		if spellID == 900006 then return 86400 end
+		return realKnown(self, spellID, ...)
+	end
+
+	vendorPrices[BLADE] = 5000
+	local waiting = Family.Recipes:CostToMake(CHAMPION)
+	check("a material cheaper to make on a crafting cooldown is still counted at its price",
+		waiting and waiting.total == 5000 + 300 and waiting.made == 0 and not waiting.timed,
+		waiting and tostring(waiting.total) or "nothing")
+	check("and what the cooldown would save is kept, as a cooldown",
+		waiting and waiting.saving == 5000 - bladeCost and waiting.why
+			and waiting.why.cooldown == true and not waiting.why.farming,
+		waiting and tostring(waiting.saving))
+
+	-- **Passed up from a material inside a material.** A wrap made of the champion: the
+	-- champion is made, at its price-bought blade, and the blade's cooldown still saves.
+	local WRAP = 700109
+	Family.RecipeReagents[2][900012] = { CHAMPION, 1 }
+	local madeByHere = Family.Recipes.MadeBy
+	Family.Recipes.MadeBy = function(self, itemID)
+		if itemID == WRAP then return 900012 end
+		return madeByHere(self, itemID)
+	end
+	local wrap = Family.Recipes:CostToMake(WRAP)
+	check("what a slow route would save is passed up from a material inside a material",
+		wrap and wrap.total == 5000 + 300 and wrap.saving == 5000 - bladeCost
+			and wrap.why and wrap.why.cooldown == true,
+		wrap and (tostring(wrap.total) .. " / " .. tostring(wrap.saving)) or "nothing")
+	Family.Recipes.MadeBy = madeByHere
+	Family.RecipeReagents[2][900012] = nil
+
+	-- And where nothing is for sale the cooldown is the only way, so it is counted and said.
+	vendorPrices[BLADE] = nil
+	local onlyWay = Family.Recipes:CostToMake(CHAMPION)
+	check("where nothing is for sale a cooldown route is counted, and says it waits",
+		onlyWay and onlyWay.total == bladeCost + 300 and onlyWay.timed == true
+			and (onlyWay.saving or 0) == 0,
+		onlyWay and tostring(onlyWay.total) or "nothing")
+
+	-- And a wait inside a material is a wait for what is made of it.
+	Family.RecipeReagents[2][900012] = { CHAMPION, 1 }
+	Family.Recipes.MadeBy = function(self, itemID)
+		if itemID == WRAP then return 900012 end
+		return madeByHere(self, itemID)
+	end
+	local wrapWaits = Family.Recipes:CostToMake(WRAP)
+	check("and a cooldown inside a material waits for what is made of it too",
+		wrapWaits and wrapWaits.timed == true, wrapWaits and tostring(wrapWaits.timed))
+	Family.Recipes.MadeBy = madeByHere
+	Family.RecipeReagents[2][900012] = nil
+	Family.Cooldowns.Known = realKnown
+
+	-- **A material an item makes, not a recipe.** Reported from play 2026-09-19: no recipe
+	-- with Refined Deeprock Salt in it carried the note, because *Made with* only looked for a
+	-- recipe. The real generated entry: a Salt Shaker eats one Deeprock Salt a use and asks 250
+	-- leatherworking of whoever holds it.
+	do
+		local SALT, ROCK, SHAKER, CURED = 15409, 8150, 15846, 700110
+		local shaker = ((Family.MadeByItem or {})[SALT] or {})[1] or {}
+		check("the generated table says what using a shaker eats",
+			shaker.item == SHAKER and shaker.uses and shaker.uses[1] == ROCK
+				and shaker.uses[2] == 1,
+			tostring(shaker.uses and shaker.uses[1]))
+
+		local SKILLED, NOVICE = "Shaketest-FireMaw", "Shakenovice-FireMaw"
+		Family.Database:SetMeta(SKILLED, { name = "Shaketest", realm = "Fire Maw",
+			skills = { [165] = { rank = 300, maxRank = 300 } } })
+		Family.Database:SetMeta(NOVICE, { name = "Shakenovice", realm = "Fire Maw",
+			skills = { [165] = { rank = 200, maxRank = 300 } } })
+		Family.Database:SetPayload(NOVICE, { bags = { { slots = { { id = SHAKER, count = 1 } } } } })
+		Family.Index:Invalidate()
+
+		Family.RecipeReagents[2][900013] = { SALT, 2, BAR, 1 }
+		Family.Recipes.MadeBy = function(self, itemID)
+			if itemID == CURED then return 900013 end
+			return madeByHere(self, itemID)
+		end
+		auctionPrices[SALT], vendorPrices[ROCK] = 1000, 100
+
+		-- Held only by somebody who cannot use it: no route at all.
+		local unused = Family.Recipes:CostToMake(CURED)
+		check("a shaker held by somebody short of the skill it asks for is no way to make salt",
+			unused and unused.total == 2 * 1000 + 300 and (unused.saving or 0) == 0,
+			unused and tostring(unused.saving) or "nothing")
+
+		Family.Database:SetPayload(SKILLED, { bags = { { slots = { { id = SHAKER, count = 1 } } } } })
+		Family.Index:Invalidate()
+		local cured = Family.Recipes:CostToMake(CURED)
+		check("salt a shaker of ours can make is counted at its price, and the shaker noted",
+			cured and cured.total == 2 * 1000 + 300 and cured.saving == 2 * (1000 - 100)
+				and cured.why and cured.why.cooldown == true,
+			cured and (tostring(cured.total) .. " / " .. tostring(cured.saving)) or "nothing")
+
+		auctionPrices[SALT] = nil
+		local onlyShaker = Family.Recipes:CostToMake(CURED)
+		check("and where nobody sells salt it is counted from the shaker, which waits",
+			onlyShaker and onlyShaker.total == 2 * 100 + 300 and onlyShaker.timed == true,
+			onlyShaker and tostring(onlyShaker.total) or "nothing")
+
+		-- A linked family's shaker is somebody else's to ask for.
+		local realOwners = Family.Index.Owners
+		Family.Index.Owners = function(self, variant)
+			if variant == SHAKER then
+				return { { key = SKILLED, familyName = "The Neighbours", total = 1 } }, {}
+			end
+			return realOwners(self, variant)
+		end
+		local theirs = Family.Recipes:CostToMake(CURED)
+		check("and a shaker in a linked family is not one of ours",
+			theirs and theirs.total == nil and theirs.missing == 1,
+			theirs and tostring(theirs.total) or "nothing")
+		Family.Index.Owners = realOwners
+
+		vendorPrices[ROCK] = nil
+		Family.RecipeReagents[2][900013] = nil
+		Family.Recipes.MadeBy = madeByHere
+		Family.Database:Forget(SKILLED)
+		Family.Database:Forget(NOVICE)
+		Family.Index:Invalidate()
+	end
+
+	do
+		local HILT, GUARD, FILE, RASP = 700208, 700106, 700209, 700107
+		local TOP, A, B = 700108, 700300, 700400
+		local recipes = Family.RecipeReagents[2]
+		local makers = { [SWORD] = 900001, [ROBE] = 900002, [CLOAK] = 900003,
+			[BELT] = 900004, [CHAMPION] = 900005, [BLADE] = 900006, [LOOP] = 900007,
+			[HILT] = 900008, [GUARD] = 900009, [FILE] = 900010, [RASP] = 900011 }
+		recipes[900008] = { BAR, 1, SKIN, 1 }  -- made for 300, short of a bound skin
+		recipes[900009] = { HILT, 1 }
+		recipes[900010] = { RARE, 1 }          -- made of something nobody has priced
+		recipes[900011] = { FILE, 1 }
+
+		local realMade = Family.Recipes.MadeBy
+		Family.Recipes.MadeBy = function(_, itemID) return makers[itemID] end
+
+		-- **A recipe cost short of a bound material does not compete with a price.** It
+		-- leaves the skin out, so it would look cheaper than any price for a reason that is
+		-- not money.
+		vendorPrices[HILT] = 1000
+		local guard = Family.Recipes:CostToMake(GUARD)
+		check("a recipe cost short of a bound material does not undercut a real price",
+			guard and guard.total == 1000 and guard.bound == 0 and guard.made == 0,
+			guard and tostring(guard.total) or "nothing")
+		-- **And what farming it would save is kept for the note** (Alberto, 2026-09-19: *we
+		-- are not counting the cost of time*): the price less the bar.
+		check("and what farming the rest would save is kept, as farming",
+			guard and guard.saving == 700 and guard.why and guard.why.farming == true
+				and not guard.why.cooldown,
+			guard and (tostring(guard.saving) .. " " .. tostring(guard.why and guard.why.farming)))
+		vendorPrices[HILT] = nil
+		guard = Family.Recipes:CostToMake(GUARD)
+		check("and is still used, saying it is short, where nobody sells the thing",
+			guard and guard.total == 300 and guard.bound == 1,
+			guard and tostring(guard.total) or "nothing")
+
+		-- **A recipe cost that is unknown is no option**, so a price beside it is simply the
+		-- price - and without one the line is unknown, as it always was.
+		vendorPrices[FILE] = 700
+		local rasp = Family.Recipes:CostToMake(RASP)
+		check("a material whose own recipe cannot be costed is priced from what it sells for",
+			rasp and rasp.total == 700 and rasp.missing == 0,
+			rasp and tostring(rasp.total) or "nothing")
+		vendorPrices[FILE] = nil
+		rasp = Family.Recipes:CostToMake(RASP)
+		check("and is unknown where nothing sells it either",
+			rasp and rasp.total == nil and rasp.missing == 1,
+			rasp and tostring(rasp.total) or "nothing")
+
+		-- **Every material costed from its recipe as well is more work, and sixty is still
+		-- enough** because each is worked out once a tooltip. Eight intermediates, each made
+		-- of the same eight smaller ones, every one of them sold and every one cheaper to
+		-- make: seventy-two recipes followed naively, sixteen remembered.
+		local top = {}
+		for i = 1, 8 do
+			top[#top + 1], top[#top + 2] = A + i, 1
+			local inner = {}
+			for j = 1, 8 do inner[#inner + 1], inner[#inner + 2] = B + j, 1 end
+			recipes[910000 + i] = inner
+			makers[A + i] = 910000 + i
+			auctionPrices[A + i] = 100000
+		end
+		for j = 1, 8 do
+			recipes[920100 + j] = { BAR, 1 }
+			makers[B + j] = 920100 + j
+			auctionPrices[B + j] = 1000
+		end
+		recipes[910000] = top
+		makers[TOP] = 910000
+
+		local wide = Family.Recipes:CostToMake(TOP)
+		check("a wide recipe whose materials share materials is costed whole within the bound",
+			wide and wide.total == 8 * 8 * 300, wide and tostring(wide.total) or "nothing")
+
+		-- **And the bound is spent on recipes, not on materials.** Every material is now asked
+		-- whether it can be made, and most - ore, cloth, dust - cannot; counted against the
+		-- sixty, a wide tree's raw materials used it up before an intermediate nobody sells was
+		-- reached. Sixty-one priced raw materials ahead of the blade.
+		local RAW = 700600
+		local long = {}
+		for k = 1, 61 do
+			long[#long + 1], long[#long + 2] = RAW + k, 1
+			vendorPrices[RAW + k] = 1
+		end
+		long[#long + 1], long[#long + 2] = BLADE, 1
+		recipes[930000] = long
+		makers[RAW] = 930000
+
+		local reached = Family.Recipes:CostToMake(RAW)
+		check("materials with no recipe of their own do not use up the bound on recipes",
+			reached and reached.total == 61 + bladeCost,
+			reached and tostring(reached.total) or "nothing")
+
+		for k = 1, 61 do vendorPrices[RAW + k] = nil end
+		recipes[930000] = nil
+
+		for i = 1, 8 do auctionPrices[A + i], auctionPrices[B + i] = nil, nil end
+		for _, spell in ipairs({ 900008, 900009, 900010, 900011, 910000 }) do
+			recipes[spell] = nil
+		end
+		for i = 1, 8 do recipes[910000 + i], recipes[920100 + i] = nil, nil end
+		Family.Recipes.MadeBy = realMade
+	end
 
 	-- **A recipe that eats itself must not hang the client**, which is the one place in this
 	-- addon where a loop would be found by a player rather than by a check: a tooltip.
@@ -38096,6 +38380,22 @@ print("what a craftable thing costs to make")
 	-- makes no item, so the thing-shaped route never reached it. Spell 900002 is priced in part,
 	-- so this is also the partial case on a spell's tooltip: the list, the counts, and a total
 	-- that says a price is missing rather than one that quietly left something out.
+	-- How far apart the money figures on the tooltip just drawn are, measured in the tooltip font,
+	-- and how many were padded to get there (`UI:MoneyEven`).
+	local function moneySpread()
+		local ruler = Family.UI:WidthRuler(CreateFrame("Frame"):CreateFontString())
+		local least, most, count, padded = math.huge, 0, 0, 0
+		for _, line in ipairs(GameTooltip.__lines) do
+			local right = line[2]
+			if type(right) == "string" and right:find("CopperIcon", 1, true) then
+				local wide = ruler(right)
+				least, most, count = math.min(least, wide), math.max(most, wide), count + 1
+				if right:find("^|T[^|]*Spacer") then padded = padded + 1 end
+			end
+		end
+		return most - least, count, padded
+	end
+
 	;(function()
 		local function spellSaid(spellID)
 			wipe(GameTooltip.__lines)
@@ -38120,6 +38420,18 @@ print("what a craftable thing costs to make")
 			whole:find("Made with", 1, true) ~= nil and whole:find("x3", 1, true) ~= nil
 				and whole:find("x2", 1, true) ~= nil and whole:find("Total", 1, true) ~= nil,
 			whole)
+
+		-- The same one width on an enchant's tooltip, which is drawn by a path of its own.
+		do
+			local heldBar, heldBarVendor = auctionPrices[BAR], vendorPrices[BAR]
+			auctionPrices[BAR], vendorPrices[BAR] = 300000, 300000
+			spellSaid(900001)
+			auctionPrices[BAR], vendorPrices[BAR] = heldBar, heldBarVendor
+			local spread, count, padded = moneySpread()
+			check("and an enchant's money figures are drawn the same width too",
+				count >= 3 and padded >= 1 and spread < 1,
+				count .. " figures, " .. padded .. " padded, " .. spread .. " apart")
+		end
 
 		local partial = spellSaid(900002)
 		check("and one with a price nobody has says so rather than totalling what it knows",
@@ -38151,12 +38463,180 @@ print("what a craftable thing costs to make")
 			tostring(figures) .. " figures, first odd one: " .. tostring(odd) .. " in " .. text)
 	end
 
+	-- **And every figure in the column one width.** Alberto, 2026-09-19: the coins wandered by a
+	-- pixel or three, *only when the tooltip has certain widths*. A right-justified line starts at
+	-- the edge less its own width and the client rounds that to a pixel, so figures of different
+	-- widths round differently; made one width, they cannot. Measured with the stub's font, whose
+	-- 1 is narrow, so the three figures here start out different.
+	do
+		-- Thirty gold a bar, so the gold places differ: 90g, 0g and 90g once totalled.
+		local heldBar, heldBarVendor = auctionPrices[BAR], vendorPrices[BAR]
+		auctionPrices[BAR], vendorPrices[BAR] = 300000, 300000
+		hovering(SWORD)
+		auctionPrices[BAR], vendorPrices[BAR] = heldBar, heldBarVendor
+		local spread, count, padded = moneySpread()
+		check("every money figure on a tooltip is drawn the same width, to within a pixel",
+			count >= 3 and padded >= 1 and spread < 1,
+			count .. " figures, " .. padded .. " padded, " .. spread .. " apart")
+
+		-- **In the tooltip's own font.** Alberto, 2026-09-19, having read the evened figures
+		-- in the game: *money alignment grew even worse than before*. A tooltip is drawn in
+		-- whatever font it was given - a tooltip addon's, or a link tooltip's - and every
+		-- width measured in another one is out by the ratio between them, which is padding
+		-- that spoils a column rather than holding it. Here the tooltip's lines are in a font
+		-- half as big again; measured in it, the figures still come out one width.
+		local held = _G.GameTooltipTextRight2
+		_G.GameTooltipTextRight2 = CreateFrame("Frame"):CreateFontString()
+		_G.GameTooltipTextRight2:SetFont("Fonts\\FRIZQT__.TTF", 18)
+
+		auctionPrices[BAR], vendorPrices[BAR] = 300000, 300000
+		hovering(SWORD)
+		auctionPrices[BAR], vendorPrices[BAR] = heldBar, heldBarVendor
+
+		local measure = CreateFrame("Frame"):CreateFontString()
+		measure:SetFont("Fonts\\FRIZQT__.TTF", 18)
+		local ruler = Family.UI:WidthRuler(measure)
+		local least, most, seen = math.huge, 0, 0
+		for _, line in ipairs(GameTooltip.__lines) do
+			local right = line[2]
+			if type(right) == "string" and right:find("CopperIcon", 1, true) then
+				local wide = ruler(right)
+				least, most, seen = math.min(least, wide), math.max(most, wide), seen + 1
+			end
+		end
+		check("and measured in the font that tooltip is drawn in, not the one it started in",
+			seen >= 3 and most - least < 1,
+			seen .. " figures, " .. (most - least) .. " apart in the tooltip's own font")
+
+		-- And the places inside a figure are held at *that* font's widest digits. The tails -
+		-- everything from the silver on - are what a place holds, so two of them are one width
+		-- however narrow the digits in hand are. Readings taken in the font before it would
+		-- hold every place too narrow.
+		local shortest, longest, tails = math.huge, 0, 0
+		for _, line in ipairs(GameTooltip.__lines) do
+			local right = line[2]
+			if type(right) == "string" and right:find("CopperIcon", 1, true) then
+				local tail = right:match("|t (.*)$")
+				if tail then
+					local wide = ruler(tail)
+					shortest, longest = math.min(shortest, wide), math.max(longest, wide)
+					tails = tails + 1
+				end
+			end
+		end
+		-- **And the ruler is a line of the tooltip itself**, not a font string elsewhere. Read
+		-- off Era 2026-09-19: the tooltip's own lines measure wider than a ruler in the same
+		-- font, by as much as 2.8 pixels on a line carrying coins, and the wobble moves with
+		-- the window. A coin is asked for at the height of the text, and that height belongs
+		-- to the string it is drawn in.
+		local tipRuler = GameTooltip.__familyMoneyRuler
+		check("the money on a tooltip is measured on a line of that tooltip",
+			tipRuler ~= nil and tipRuler:GetParent() == GameTooltip,
+			tostring(tipRuler and tipRuler:GetParent()))
+
+		check("and the places inside each figure are held at that font's widest digits",
+			tails >= 3 and longest - shortest < 1,
+			tails .. " tails, " .. (longest - shortest) .. " apart")
+
+		_G.GameTooltipTextRight2 = held
+		Family.UI:MoneyFontFrom(GameTooltip)
+	end
+
+	-- **The notes as the tooltip writes them**, with the blade's recipe on a day's timer again.
+	do
+		local realKnown = Family.Cooldowns.Known
+		Family.Cooldowns.Known = function(self, spellID, ...)
+			if spellID == 900006 then return 86400 end
+			return realKnown(self, spellID, ...)
+		end
+
+		vendorPrices[BLADE] = 5000
+		local noted = hovering(CHAMPION)
+		-- **A second total, not the difference** - Alberto could not tell which the first
+		-- drawing's figure was. The blade made on its cooldown and the bar bought: 9s 90c.
+		local second = noted:match("Total with a crafting cooldown|r | ([^/]*)")
+		check("the tooltip says what the total would be with a crafting cooldown",
+			second ~= nil and second:find("|cffffffff09|r", 1, true) ~= nil
+				and second:find("|cffffffff90|r", 1, true) ~= nil
+				and noted:find("made with a crafting cooldown", 1, true) == nil, noted)
+
+		vendorPrices[BLADE] = nil
+		noted = hovering(CHAMPION)
+		check("and that the total waits on one where nothing was for sale",
+			noted:find("made with a crafting cooldown", 1, true) ~= nil
+				and noted:find("Total with", 1, true) == nil, noted)
+
+		Family.Cooldowns.Known = realKnown
+	end
+
 	Family.Extras:Set("craftingCost", false)
 	Family.Merchant.PriceOf, Family.Auctions.PriceOf = realVendor, realAuction
 	Family.Auctions.ValueOf = realValue
 	Family.Recipes.MadeBy = realMadeBy
+	Family.RecipeIndex.OursMake = realOurs
 	Family.RecipeReagents, Family.BoundReagents = realReagents, realBound
 	Family.Capabilities.expansion = held
+
+	-- **And the real set, read off our own records.** Silver Rod is on the blacksmith this run
+	-- plays, by its spell and by what it makes.
+	local ours = Family.RecipeIndex:OursMake()
+	check("what our own members can make is read off their recipe lists, by spell and by item",
+		ours.spells[3339] == true and ours.items[6338] == true and ours.items[999444] == nil,
+		tostring(ours.spells[3339]) .. " / " .. tostring(ours.items[6338]))
+
+	-- Dropped with the records it came from, or a recipe learnt today would not count until
+	-- the next login.
+	local mine = Family:CurrentMember()
+	local record = Family.Database:Payload(mine)
+	local smithing
+	-- Found by what it holds and whether it is still held: the run's records file professions
+	-- under skill line ids, and carry the rod on a list the character has since unlearnt too.
+	for name, profession in pairs(record.professions or {}) do
+		if Family.Recipes:StillHeld(Family.Database:Meta(mine), name) then
+			for _, recipe in ipairs(type(profession) == "table" and profession.recipes or {}) do
+				if recipe.itemID == 6338 then smithing = profession end
+			end
+		end
+	end
+	local heldRecipes = smithing and smithing.recipes
+	if smithing then
+		local more = {}
+		for index, recipe in ipairs(heldRecipes or {}) do more[index] = recipe end
+		more[#more + 1] = { name = "Learnt Today", itemID = 999444 }
+		smithing.recipes = more
+		Family.Database:SetPayload(mine, record)
+	end
+	check("and a recipe written to a record is in it at the next question",
+		Family.RecipeIndex:OursMake().items[999444] == true, tostring(smithing ~= nil))
+	if smithing then
+		smithing.recipes = heldRecipes
+		Family.Database:SetPayload(mine, record)
+	end
+
+	-- **Not a list they have unlearnt.** The record keeps it and the skill is gone, so a
+	-- recipe on it is one nobody here can make any more.
+	local dropped, droppedRecipes
+	for name, profession in pairs(record.professions or {}) do
+		if type(profession) == "table" and profession.recipes
+			and not Family.Recipes:StillHeld(Family.Database:Meta(mine), name) then
+			dropped = profession
+		end
+	end
+	if dropped then
+		droppedRecipes = dropped.recipes
+		local more = {}
+		for index, recipe in ipairs(droppedRecipes) do more[index] = recipe end
+		more[#more + 1] = { name = "Long Forgotten", itemID = 999445 }
+		dropped.recipes = more
+		Family.Database:SetPayload(mine, record)
+	end
+	check("but not one on a list the character has unlearnt",
+		dropped ~= nil and Family.RecipeIndex:OursMake().items[999445] == nil,
+		tostring(dropped ~= nil))
+	if dropped then
+		dropped.recipes = droppedRecipes
+		Family.Database:SetPayload(mine, record)
+	end
 end)()
 
 print()
@@ -39870,7 +40350,6 @@ print("the recipe index")
 	Family.Database:Changed("wide")
 	check("and what arrives for them next is what is answered",
 		siblingKnows(2667) and not siblingKnows(3339))
-	RUN.compareRecipeReaders("a family with a sibling in it")
 	wide.links["fam-recipes"] = nil
 	Family.Database:Changed("wide")
 	Family.Wide:SetEnabled(wasEnabled)

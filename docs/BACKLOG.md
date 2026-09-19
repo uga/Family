@@ -4898,7 +4898,7 @@ measurement. **19 still compressed rather than 31** at the first look is not exp
 the warm-up starts three seconds after arrival and takes one record every 0.3 s, which would have
 rewritten twelve about seven seconds in - consistent, not checked.
 
-## 75. After the first release with the recipe index, take out the walks it replaced
+## 75. After the first release with the recipe index, take out the walks it replaced — DONE 2026-09-18
 
 **Asked by Alberto 2026-09-13.** `Recipes:ScanSearch`, `Recipes:ScanKnowersOf` and
 `Recipes:ScanCrafters` stay in `addons/Family/Recipes.lua` only so that the harness can hold the
@@ -4907,6 +4907,15 @@ indexed `Search`, `KnowersOf` and `Crafters` to them row for row (`RUN.compareRe
 played without a difference reported, the three walks and the comparison go, together: the
 comparison asks nothing without them, and they are read by nothing else. Removing code from the
 tree is Alberto's to authorise when the time comes.
+
+**Done 2026-09-18, on Alberto's *lets proceed to removing*,** with 4.2.0 published and played and no
+difference reported. The three walks went from `Recipes.lua` with `everybody()`, which only they
+called, and the comparison went from the harness with `RUN.dumpAnswer`, which only it called: three
+checks fewer, every other check line the same. The walks carried the reasons - the reports from play
+behind the one-line-per-member rule, the once-each rule, the timer merge, the sort orders - and the
+indexed readers had been written bare beside them, so those comments were moved onto `KnowersOf`,
+`Search`, `Crafters` and `cooldownOf` rather than lost. Two mutation anchors split by the moved
+comments were re-anchored on the same code.
 
 ---
 
@@ -5451,7 +5460,7 @@ caught.
 
 ---
 
-## 88. Money figures line up by gold, silver and copper, wherever money is shown
+## 88. Money figures line up by gold, silver and copper, wherever money is shown — DONE 2026-09-18, seen working on Era
 
 **Reported by Alberto 2026-09-15**, off a Summary screenshot: Milionario's *4151g 91s 23c* sits out of
 line with the rows around it. Then: *work on a per level basis, and right align golds with golds,
@@ -5667,7 +5676,7 @@ mutation that takes any frame for a bar slot survived on exactly that. Mutations
 
 ---
 
-## 91. Realms of one connected group may share one auction house, and Worth should read it as one
+## 91. Realms of one connected group may share one auction house, and Worth should read it as one — DONE 2026-09-18, read on Era and Mists
 
 **Asked by Alberto 2026-09-18**: *realms of the same realm group share AH markets. I think this is
 true but let's verify it is. If it is, Family needs to take this into consideration: if I have 2

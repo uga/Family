@@ -1,0 +1,9 @@
+name: the money ruler is a font string of its own rather than a line of the tooltip
+file: addons/Family_UI/Window.lua
+--- old
+		local ok, made = pcall(tooltip.CreateFontString, tooltip, nil, "ARTWORK",
+			"GameTooltipText")
+--- new
+		local host = CreateFrame("Frame")
+		local ok, made = pcall(host.CreateFontString, host, nil, "ARTWORK",
+			"GameTooltipText")

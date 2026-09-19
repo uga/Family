@@ -1,0 +1,6 @@
+name: a material is costed from its recipe whether or not one of ours knows it
+file: addons/Family/Recipes.lua
+--- old
+			if inHouse then
+--- new
+			if spell then

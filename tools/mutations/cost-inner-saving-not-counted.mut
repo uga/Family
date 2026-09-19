@@ -1,0 +1,6 @@
+name: what a slow route inside a material would save is left out
+file: addons/Family/Recipes.lua
+--- old
+			local lowest = madeEach - (made.saving or 0)
+--- new
+			local lowest = madeEach

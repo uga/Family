@@ -1,0 +1,7 @@
+name: a short cooldown is recorded without being marked brief
+file: addons/Family/Scanners/Bags.lua
+--- old
+						cooldowns[#cooldowns + 1] = { id = itemID, readyAt = brief,
+							brief = true }
+--- new
+						cooldowns[#cooldowns + 1] = { id = itemID, readyAt = brief }

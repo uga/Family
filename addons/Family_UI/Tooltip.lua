@@ -161,6 +161,29 @@ end
 local OWNER_CAP = 10
 local GUILD_CAP = 5
 
+-- **When this owner's one can next be used**, where it is counting down.
+--
+-- Reported from play 2026-09-19: a Salt Shaker used on Deiana said *2 Days 23 Hrs* on her own
+-- tooltip, and hovered from anybody else's the line with her name on it said where it was and
+-- nothing about the wait - while the record had it all along. The same for a Chronoboon.
+--
+-- Running only, and the soonest of several: an absence is "not counting down when this member
+-- was last read" and not a claim that it is ready, for the reason `Cooldowns:For` gives - an
+-- item is used out of the bags with nothing open for Family to see. The record is keyed by the
+-- base item, so this is asked by id and not by variant.
+--
+-- Through `UI:Meta`, because the owners include a linked family's characters.
+local function runningFor(key, itemID)
+	local soonest
+	for _, entry in ipairs((UI:Meta(key) or {}).itemCooldowns or {}) do
+		if entry.id == itemID and entry.readyAt and entry.readyAt > time()
+			and (not soonest or entry.readyAt < soonest) then
+			soonest = entry.readyAt
+		end
+	end
+	return soonest
+end
+
 -- **Asked by variant** (backlog 67). Hovering a Superior Sword *of the Bear* says how many of
 -- *those* the family has, not how many swords of that id in any suffix - which is what Alberto
 -- asked for in as many words and what the collapsed key was getting wrong.
@@ -203,7 +226,12 @@ local function possessionLines(tooltip, itemID, variant)
 		-- A sibling's name carries their family. The count means something different for
 		-- them - it is not in a bag you can walk to - and a line that read the same as
 		-- your own would be inviting a trip to the wrong bank.
-		lines[#lines + 1] = { whose(owner), placesOf(owner), r, g, b, 0.8, 0.8, 0.8 }
+		local where = placesOf(owner)
+		local waits = runningFor(owner.key, itemID)
+		if waits then
+			where = where .. " " .. string.format(L["|cffff8040ready %s|r"], UI:In(waits))
+		end
+		lines[#lines + 1] = { whose(owner), where, r, g, b, 0.8, 0.8, 0.8 }
 	end
 
 	-- **Whether the gesture is worth offering on this tooltip at all.**
@@ -925,6 +953,32 @@ local function madeWith(cost)
 			lines[#lines + 1] = { "|cff888888" .. L["not counting materials no money can buy"]
 				.. "|r" }
 		end
+
+		-- **What time would buy.** Alberto, 2026-09-19: *we are totalling what is the cheapest
+		-- way to make the item, but we are not counting the cost of time.* A route that waits
+		-- on a crafting cooldown or on farming does not set the total where something can be
+		-- bought today (`Recipes:CostOfSpell`); the total it would come to instead is said here,
+		-- in the money column like every other figure. And where the total itself waits on a
+		-- cooldown, because nothing was for sale, that is said as well.
+		--
+		-- **A second total, not the difference.** The first drawing put the saving beside *less
+		-- with a crafting cooldown*, and Alberto could not tell which it was: *the money on its
+		-- right is the cost of the item using a cd, or the savings on the above cost?* A line
+		-- that reads like the Total above it, and is compared with it at a glance, needs no
+		-- arithmetic and cannot be read two ways.
+		if cost.timed then
+			lines[#lines + 1] = { "|cff888888" .. L["made with a crafting cooldown"] .. "|r" }
+		end
+
+		local why = cost.why or {}
+		if (cost.saving or 0) > 0 and (why.cooldown or why.farming) then
+			local said = (why.cooldown and why.farming)
+				and L["Total with a crafting cooldown and farming"]
+				or why.cooldown and L["Total with a crafting cooldown"]
+				or L["Total by farming"]
+			lines[#lines + 1] = { "|cff888888" .. said .. "|r",
+				UI:MoneyLine(cost.total - cost.saving), nil, nil, nil, 0.53, 0.53, 0.53 }
+		end
 	end
 
 	return lines
@@ -1143,6 +1197,8 @@ local function onSpell(tooltip, spellID)
 	local theirs = (Family.Guild and Family.Guild:Enabled())
 		and Family.Guild:CraftersOf(spellID, nil, nil) or {}
 
+	UI:MoneyFontFrom(tooltip)
+
 	local lines = makerLines(tooltip, ours, theirs)
 
 	-- **And what it is made of, counted and priced.** Asked for off the tooltip of an enchant,
@@ -1151,6 +1207,12 @@ local function onSpell(tooltip, spellID)
 	-- with the item route's own function, as its own block after the crafters.
 	local cost = spellCostLines(spellID)
 	if not lines and not cost then return end
+
+	-- The same right-hand column as an item's (`UI:MoneyEven`).
+	local all = {}
+	for _, line in ipairs(lines or {}) do all[#all + 1] = line end
+	for _, line in ipairs(cost or {}) do all[#all + 1] = line end
+	UI:MoneyEven(all, 2)
 
 	if lines then
 		tooltip:AddLine(" ")
@@ -1220,6 +1282,9 @@ local function onItem(tooltip, itemID, data)
 	--
 	-- Family is rarely the only addon writing on a tooltip. Without the closing line,
 	-- whatever is added next reads as part of this list.
+	-- Measured in this tooltip's own font, before a figure is built (`UI:MoneyFontFrom`).
+	UI:MoneyFontFrom(tooltip)
+
 	local blocks = {}
 
 	-- **The item id and the variant both travel**, and each block takes the one its question
@@ -1232,6 +1297,14 @@ local function onItem(tooltip, itemID, data)
 	end
 
 	if #blocks == 0 then return end
+
+	-- Every money figure on the tooltip one width, across the blocks, since they share one
+	-- right-hand column (`UI:MoneyEven`).
+	local all = {}
+	for _, lines in ipairs(blocks) do
+		for _, line in ipairs(lines) do all[#all + 1] = line end
+	end
+	UI:MoneyEven(all, 2)
 
 	for _, lines in ipairs(blocks) do
 		tooltip:AddLine(" ")

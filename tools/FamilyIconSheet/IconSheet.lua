@@ -1301,6 +1301,158 @@ printButton:SetScript("OnClick", printChosen)
 
 --------------------------------------------------------------------------------------------
 
+--------------------------------------------------------------------------------------------
+-- Where the coins really land, on a tooltip the game has just drawn
+--
+-- Backlog 88 lines money up by holding each place at its widest digits, and 2026-09-19 evened
+-- every figure on a tooltip to one width as well. Alberto read the result on Era: *money
+-- alignment grew even worse than before* - and the numbers behind that are ones only the client
+-- can give. Nothing here changes anything; it reads.
+--
+-- **The last tooltip is captured rather than read on demand**, because reading it on demand means
+-- typing, and typing means the pointer has left the item and the tooltip is gone. Every Show is
+-- captured; `/iconsheet tip` prints what the last one held.
+--
+-- For each right-hand line it prints the line's own right edge and width, and then where each
+-- coin sits, worked out by measuring the text up to that coin in **the font that line is drawn
+-- in**. A column that is straight has one number down each of the three coin places.
+--------------------------------------------------------------------------------------------
+
+local lastTip = nil
+local tipRuler = nil
+
+local function readTooltip(frame)
+	local name = frame and frame.GetName and frame:GetName()
+	if not name then return nil end
+
+	local lines = {}
+	local count = (frame.NumLines and frame:NumLines()) or 0
+
+	for index = 1, count do
+		local right = _G[name .. "TextRight" .. index]
+		local text = right and right.GetText and right:GetText()
+		if text and text ~= "" and right:IsShown() then
+			if not tipRuler then
+				tipRuler = CreateFrame("Frame"):CreateFontString(nil, "ARTWORK",
+					"GameTooltipText")
+				tipRuler:Hide()
+			end
+
+			-- **And a second ruler, belonging to the tooltip itself.** The first reading
+			-- said the tooltip's lines measure wider than a ruler elsewhere in the same
+			-- font, most of all where coins and spacers are, and that the wobble moves with
+			-- the size of the window - both of which point at the height a picture asked
+			-- for at *the height of the text* resolves to inside the string it sits in. If
+			-- this one agrees with the client's own width, that is the ruler to measure in.
+			if not frame.__sheetRuler then
+				local ok, made = pcall(frame.CreateFontString, frame, nil, "ARTWORK",
+					"GameTooltipText")
+				if ok and made then
+					made:Hide()
+					frame.__sheetRuler = made
+				end
+			end
+			if frame.__sheetRuler and frame.__sheetRuler.SetFont then
+				local f, sz, fl = right:GetFont()
+				if f then frame.__sheetRuler:SetFont(f, sz, fl) end
+			end
+
+			local font, size, flags = right:GetFont()
+			if font then tipRuler:SetFont(font, size, flags) end
+
+			local function widthOf(part)
+				tipRuler:SetText(part)
+				return tipRuler:GetStringWidth() or 0
+			end
+
+			local width = right:GetStringWidth() or 0
+			local edge = (right:GetRight() or 0)
+			local scale = (right.GetEffectiveScale and right:GetEffectiveScale()) or 1
+			local start = edge - width
+
+			-- Where each coin sits: the text up to and including that coin, measured.
+			local coins = {}
+			for _, coin in ipairs({ "GoldIcon", "SilverIcon", "CopperIcon" }) do
+				local at = text:find(coin, 1, true)
+				if at then
+					local ends = text:find("|t", at, true)
+					if ends then
+						coins[#coins + 1] = string.format("%s %.1f", coin:sub(1, 1),
+							(start + widthOf(text:sub(1, ends + 1))) * scale)
+					end
+				end
+			end
+
+			-- **What the line says it is against what a ruler in its own font says.**
+			--
+			-- The reading of 2026-09-19 said the figures are not one width although Family
+			-- evens them: materials at 85.1 to 86.0 screen pixels and both totals at 84.2.
+			-- The totals are the lines carrying the most padding, so either the padding is
+			-- not the width it asks for, or a string measures one way and draws another.
+			-- Both are readings this file can take, so it takes them: our own measurement,
+			-- and how many units of picture the line is carrying.
+			local mine = widthOf(text) * scale
+			local inside = mine
+			if frame.__sheetRuler then
+				frame.__sheetRuler:SetText(text)
+				inside = (frame.__sheetRuler:GetStringWidth() or 0) * scale
+			end
+			local asked = 0
+			for units in text:gmatch("Spacer:%d+:(%d+)") do
+				asked = asked + (tonumber(units) or 0)
+			end
+
+			lines[#lines + 1] = {
+				left = (_G[name .. "TextLeft" .. index] and
+					_G[name .. "TextLeft" .. index]:GetText()) or "",
+				width = width * scale,
+				mine = mine,
+				inside = inside,
+				asked = asked,
+				edge = edge * scale,
+				font = tostring(font):match("([^\\/]+)$") .. " " .. tostring(size),
+				coins = table.concat(coins, "  "),
+			}
+		end
+	end
+
+	if #lines == 0 then return nil end
+	return { name = name, scale = (frame.GetEffectiveScale and frame:GetEffectiveScale()) or 1,
+		lines = lines }
+end
+
+local function captureTooltip(frame)
+	local read = readTooltip(frame)
+	if read then lastTip = read end
+end
+
+for _, name in ipairs({ "GameTooltip", "ItemRefTooltip" }) do
+	-- Through pcall: a client that will not let this frame be hooked is a client where the
+	-- reading is not available, and this file never stops anything else from working.
+	local frame = _G[name]
+	if frame and hooksecurefunc then
+		pcall(hooksecurefunc, frame, "Show", captureTooltip)
+	end
+end
+
+local function printTooltip()
+	if not lastTip then
+		say("no tooltip read yet - hover something with money on it first.")
+		return
+	end
+
+	say("%s, scale %.3f, edges at %.1f - each line's width as the client gives it, as a ruler "
+		.. "in its own font measures it, the units of spacer it carries, and where its coins "
+		.. "land. Screen pixels.", lastTip.name, lastTip.scale, lastTip.lines[1].edge)
+	for _, line in ipairs(lastTip.lines) do
+		print(string.format("  %s%-22s|r wide %s%.1f|r out %s%.1f|r in %s%.1f|r pad %s%d|r  %s",
+			GREY, tostring(line.left):sub(1, 22), GREEN, line.width, GREEN, line.mine,
+			GREEN, line.inside, GREEN, line.asked, line.coins))
+	end
+end
+
+--------------------------------------------------------------------------------------------
+
 sheet:SetScript("OnShow", function(self) self:Rebuild() end)
 
 SLASH_FAMILYICONSHEET1 = "/iconsheet"
@@ -1313,6 +1465,12 @@ SlashCmdList["FAMILYICONSHEET"] = function(argument)
 		return
 	end
 
+	-- Where the coins landed on the last tooltip the game drew, in screen pixels.
+	if argument == "tip" then
+		printTooltip()
+		return
+	end
+
 	if sheet:IsShown() then sheet:Hide() else sheet:Show() end
 end
 
@@ -1322,5 +1480,6 @@ loader:SetScript("OnEvent", function(self, _, name)
 	if name ~= ADDON then return end
 	self:UnregisterEvent("ADDON_LOADED")
 	db()
-	say("loaded. |cffffd700/iconsheet|r opens it. Screenshot it once per client.")
+	say("loaded. |cffffd700/iconsheet|r opens it, |cffffd700/iconsheet tip|r reads the coins "
+		.. "off the last tooltip. Screenshot it once per client.")
 end)

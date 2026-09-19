@@ -1,0 +1,6 @@
+name: an enchant tooltip draws its money figures at their own widths
+file: addons/Family_UI/Tooltip.lua
+--- old
+	for _, line in ipairs(cost or {}) do all[#all + 1] = line end
+--- new
+	local _ = cost
