@@ -38,9 +38,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Crafting cost
 
-- **Each material in *Made with* is priced at the cheapest of buying it and making it.** A Bolt
-  of Runecloth is now costed from its own recipe when weaving one comes to less than the auction
-  house or a vendor asks, not only when nobody is selling any.
+- **Each material in *Made with* is priced at the cheapest of buying it and making it
+  yourself.** A Bolt of Runecloth is now costed from its own recipe when one of your characters
+  can weave it and weaving comes to less than the auction house or a vendor asks. A material
+  nobody in your family can make is priced only at what it sells for.
 
 ## 4.2.0 — 2026-09-18
 

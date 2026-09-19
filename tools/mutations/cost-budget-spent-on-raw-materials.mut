@@ -1,6 +1,6 @@
 name: the recipe budget is spent on materials that have no recipe
 file: addons/Family/Recipes.lua
 --- old
-			and not branch[part.item] and self:MadeBy(part.item) then
+		local inHouse = spell and (budget.ours.items[part.item] or budget.ours.spells[spell])
 --- new
-			and not branch[part.item] then
+		local inHouse = (budget.ours.items[part.item] or budget.ours.spells[spell or 0])

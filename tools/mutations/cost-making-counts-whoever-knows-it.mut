@@ -1,0 +1,6 @@
+name: a material is costed from its recipe whether or not one of ours knows it
+file: addons/Family/Recipes.lua
+--- old
+			and not branch[part.item] and inHouse then
+--- new
+			and not branch[part.item] and spell then

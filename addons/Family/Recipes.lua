@@ -665,6 +665,14 @@ end
 -- crafting cost.* This reverses *bought before made*, under which a material anybody was selling
 -- was never costed from its recipe at all.
 --
+-- **In-house means one of our own characters knows the recipe** (`RecipeIndex:OursMake`), which
+-- Alberto chose the same day. The materials come from the shipped tables and cover every recipe
+-- in the game, so a recipe cost is always *available*; whether it is a cost anybody here could
+-- actually pay is the question. A material nobody in the family can make is bought or unknown,
+-- which also narrows the 2026-09-12 rule that costed a bound intermediate from its recipe
+-- whoever could make it. The top of the tooltip is not asked: *Made with* is drawn for anything
+-- craftable, as it was.
+--
 -- A recipe cost with a material nobody has priced is no option at all, so it simply does not
 -- compete - and where nothing else is left either, the line is unknown as it always was. **A
 -- recipe cost short of a bound material competes only where nothing is sold**: it leaves out
@@ -727,15 +735,19 @@ function Recipes:CostOfSpell(spell, depth, branch, budget, itemID)
 	if itemID then branch[itemID] = true end
 
 	budget.known = budget.known or {}
+	budget.ours = budget.ours
+		or (Family.RecipeIndex and Family.RecipeIndex:OursMake()) or { spells = {}, items = {} }
 
 	for _, part in ipairs(parts) do
 		local each, from = cheapest(part.item)
 		local row = { item = part.item, count = part.count }
 
-		-- What making one comes to, where it can be made. Once a tooltip (above).
+		-- What making one comes to, where one of ours can make it. Once a tooltip (above).
+		local spell = self:MadeBy(part.item)
+		local inHouse = spell and (budget.ours.items[part.item] or budget.ours.spells[spell])
 		local made = budget.known[part.item]
 		if made == nil and depth < MAX_DEPTH and budget.left > 0
-			and not branch[part.item] and self:MadeBy(part.item) then
+			and not branch[part.item] and inHouse then
 			budget.left = budget.left - 1
 			made = self:CostToMake(part.item, depth + 1, branch, budget) or false
 			budget.known[part.item] = made

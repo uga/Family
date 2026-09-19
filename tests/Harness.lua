@@ -37875,6 +37875,15 @@ print("what a craftable thing costs to make")
 			[LOOP] = 900007 })[itemID]
 	end
 
+	-- **Making a material counts only where one of ours knows the recipe** (Alberto,
+	-- 2026-09-19, *in-house*). The real set is read off the records and checked further down;
+	-- here every fixture material is one of ours to make unless a check says otherwise.
+	local realOurs = Family.RecipeIndex.OursMake
+	local NOBODY = {}
+	local everything = setmetatable({}, { __index = function(_, item) return not NOBODY[item] end })
+	local ourMakes = { spells = {}, items = everything }
+	Family.RecipeIndex.OursMake = function() return ourMakes end
+
 	check("a recipe's materials come back unpacked from the flat pairs they ship as",
 		#(Family.Recipes:Reagents(900001)) == 2
 			and Family.Recipes:Reagents(900001)[1].item == BAR
@@ -37977,7 +37986,28 @@ print("what a craftable thing costs to make")
 			and madeInstead.parts[1].from == "crafted",
 		madeInstead and (tostring(madeInstead.total) .. " from "
 			.. tostring(madeInstead.parts[1].from)) or "nothing")
+
+	-- **Nobody in the family makes blades**: the price is the price, and without one the blade
+	-- is what it is without a recipe - bound, and counted as nothing.
+	NOBODY[BLADE] = true
+	local notOurs = Family.Recipes:CostToMake(CHAMPION)
+	check("a material nobody in the family can make is not costed from its recipe",
+		notOurs and notOurs.total == 5000 + 300 and notOurs.made == 0,
+		notOurs and tostring(notOurs.total) or "nothing")
 	vendorPrices[BLADE] = nil
+	notOurs = Family.Recipes:CostToMake(CHAMPION)
+	check("even where nobody sells it either",
+		notOurs and notOurs.total == 300 and notOurs.bound == 1 and notOurs.made == 0,
+		notOurs and tostring(notOurs.total) or "nothing")
+
+	-- Known by its spell and not its item, which is how a Burning Crusade list records most of
+	-- what it holds.
+	ourMakes.spells[900006] = true
+	local bySpell = Family.Recipes:CostToMake(CHAMPION)
+	check("and one of ours who knows the recipe by its spell alone counts",
+		bySpell and bySpell.total == bladeCost + 300 and bySpell.made == 1,
+		bySpell and tostring(bySpell.total) or "nothing")
+	ourMakes.spells[900006], NOBODY[BLADE] = nil, nil
 
 	do
 		local HILT, GUARD, FILE, RASP = 700208, 700106, 700209, 700107
@@ -38259,8 +38289,70 @@ print("what a craftable thing costs to make")
 	Family.Merchant.PriceOf, Family.Auctions.PriceOf = realVendor, realAuction
 	Family.Auctions.ValueOf = realValue
 	Family.Recipes.MadeBy = realMadeBy
+	Family.RecipeIndex.OursMake = realOurs
 	Family.RecipeReagents, Family.BoundReagents = realReagents, realBound
 	Family.Capabilities.expansion = held
+
+	-- **And the real set, read off our own records.** Silver Rod is on the blacksmith this run
+	-- plays, by its spell and by what it makes.
+	local ours = Family.RecipeIndex:OursMake()
+	check("what our own members can make is read off their recipe lists, by spell and by item",
+		ours.spells[3339] == true and ours.items[6338] == true and ours.items[999444] == nil,
+		tostring(ours.spells[3339]) .. " / " .. tostring(ours.items[6338]))
+
+	-- Dropped with the records it came from, or a recipe learnt today would not count until
+	-- the next login.
+	local mine = Family:CurrentMember()
+	local record = Family.Database:Payload(mine)
+	local smithing
+	-- Found by what it holds and whether it is still held: the run's records file professions
+	-- under skill line ids, and carry the rod on a list the character has since unlearnt too.
+	for name, profession in pairs(record.professions or {}) do
+		if Family.Recipes:StillHeld(Family.Database:Meta(mine), name) then
+			for _, recipe in ipairs(type(profession) == "table" and profession.recipes or {}) do
+				if recipe.itemID == 6338 then smithing = profession end
+			end
+		end
+	end
+	local heldRecipes = smithing and smithing.recipes
+	if smithing then
+		local more = {}
+		for index, recipe in ipairs(heldRecipes or {}) do more[index] = recipe end
+		more[#more + 1] = { name = "Learnt Today", itemID = 999444 }
+		smithing.recipes = more
+		Family.Database:SetPayload(mine, record)
+	end
+	check("and a recipe written to a record is in it at the next question",
+		Family.RecipeIndex:OursMake().items[999444] == true, tostring(smithing ~= nil))
+	if smithing then
+		smithing.recipes = heldRecipes
+		Family.Database:SetPayload(mine, record)
+	end
+
+	-- **Not a list they have unlearnt.** The record keeps it and the skill is gone, so a
+	-- recipe on it is one nobody here can make any more.
+	local dropped, droppedRecipes
+	for name, profession in pairs(record.professions or {}) do
+		if type(profession) == "table" and profession.recipes
+			and not Family.Recipes:StillHeld(Family.Database:Meta(mine), name) then
+			dropped = profession
+		end
+	end
+	if dropped then
+		droppedRecipes = dropped.recipes
+		local more = {}
+		for index, recipe in ipairs(droppedRecipes) do more[index] = recipe end
+		more[#more + 1] = { name = "Long Forgotten", itemID = 999445 }
+		dropped.recipes = more
+		Family.Database:SetPayload(mine, record)
+	end
+	check("but not one on a list the character has unlearnt",
+		dropped ~= nil and Family.RecipeIndex:OursMake().items[999445] == nil,
+		tostring(dropped ~= nil))
+	if dropped then
+		dropped.recipes = droppedRecipes
+		Family.Database:SetPayload(mine, record)
+	end
 end)()
 
 print()

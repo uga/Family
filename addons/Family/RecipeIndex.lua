@@ -126,7 +126,37 @@ function RecipeIndex:Built(key)
 	return parts[key] ~= nil
 end
 
+-- **What our own members can make**, as two sets: recipe spells, and the items those recipes make.
+--
+-- For the crafting cost, which counts making a material only where somebody in the family can -
+-- Alberto, 2026-09-19, *in-house crafting cost*. The bill of materials comes from the shipped
+-- tables and covers every recipe in the game, so knowing what a thing is made of says nothing
+-- about whether anybody here can make it. Our own members only, not a linked family's: theirs is
+-- somebody else's work to ask for.
+--
+-- Built once and dropped with any part, so a tooltip asking about thirty materials walks the
+-- lists once rather than thirty times.
+local makes
+
+function RecipeIndex:OursMake()
+	if makes then return makes end
+
+	makes = { spells = {}, items = {} }
+	for key, entry in pairs(Family.Database:Members()) do
+		for _, list in ipairs(ours(key, entry.meta or {}).lists) do
+			-- Not a list they have unlearnt: the record keeps it and the skill is gone.
+			for _, recipe in ipairs(list.held and list.recipes or {}) do
+				if recipe.spellID and recipe.spellID ~= 0 then makes.spells[recipe.spellID] = true end
+				if recipe.itemID and recipe.itemID ~= 0 then makes.items[recipe.itemID] = true end
+			end
+		end
+	end
+
+	return makes
+end
+
 function RecipeIndex:Invalidate(key)
+	makes = nil
 	if key then
 		parts[key] = nil
 	else
