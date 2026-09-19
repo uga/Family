@@ -170,8 +170,8 @@ priced yet is blank, not zero.
 
 **Siblings** (§11) appear here too. They sit under the realm they are on, after your own
 members, and under the name or alias of the family they belong to. They are never added to the
-grand totals. Right-click does not remove a sibling. Untick them on the Wide Family panel to
-do that.
+totals. Right-click does not remove a sibling. Untick them on the Wide Family panel to do
+that.
 
 **Class** is the colour of each member's name, and is spelled out in the row's tooltip.
 
@@ -492,7 +492,7 @@ The minimap tooltip counts them (§2), and `/family ready` lists them by name.
 **Item cooldowns are not announced when they come ready while you play.** Using a recipe needs
 the profession window open, and Family reads that window. Opening the profession window one
 minute after a cooldown became ready will give the right information, but nothing will push
-that information on the guild chat without opening the Family window first.
+that information to the game's chat without opening the Family window first.
 
 ---
 
