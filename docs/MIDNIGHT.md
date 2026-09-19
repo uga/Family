@@ -448,6 +448,87 @@ else is not seen:
 The sweep adds that no keyring container answers on Midnight (§6), which is API evidence, not
 the game's.
 
+## 8. A brief on Midnight's professions, from wow-professions.com, read 2026-09-19
+
+**Hypotheses, not evidence.** Alberto asked for the site's Midnight section to be read as
+foreknowledge to steer the probes. Nothing here enters `Capabilities.lua`, a harness stub or
+Family's data until a client has shown it. The pages read: the hub `/midnight`, each crafting
+profession's `/midnight/<profession>-guide` and `-specialization-guide-and-builds`, the herbalism
+and mining specialisation pages, `/midnight/profession-knowledge-treasure-locations`, and the
+alchemy, skinning, fishing and cooking leveling guides under `/guides/`. They agree with one
+another on everything below. Where they differ or are silent, that is said.
+
+**The account in hand cannot see most of it.** The pages describe the *Midnight* tier
+(*Midnight Alchemy 1-100*, trainers in Silvermoon City), and this account has not bought
+Midnight (§7). Its characters show *Dragon Isles* and *Khaz Algar* lines only. The probes can
+test the machinery on those tiers and cannot test the Midnight tier.
+
+### What the pages claim
+
+- **One skill line per expansion.** *Midnight Alchemy*, *Midnight Skinning* and so on, each
+  from its own trainer, each **1-100**, except **Fishing, whose cap is 300**, "same as The War
+  Within". No page says how the lines relate to one another. That agrees with the
+  *Professions* window in §7, which showed *Dragon Isles* and *Khaz Algar* lines at /100.
+- **Specialisations spent with knowledge points.** Four trees per crafting profession, unlocking
+  at skill **25, 50, 60 and 75** (stated for alchemy, inscription, jewelcrafting and
+  leatherworking). Gathering professions have two or three trees. Nodes are capped (30 points
+  on inscription, 20 to 30 on enchanting). Respec is **not covered** on any page. Names per
+  profession: Alchemy (*Potion Prowess*, *Fluent in Flasks*, *Transmutation Authority*,
+  *Alchemical Mastery*), Blacksmithing (*Craftsmithing*, *The Old Ways*, *Armorsmithing*,
+  *Weaponsmithing*), Enchanting (*Elevating Equipment*, *Transitories, Tonics, and Tools*,
+  *Disenchanting Delegate*, *Spellbound Shatterer*), Engineering (*Market Mobility*, *Combat
+  Analytics*, *Recycling*, *Bits and Bots*), Inscription (*Blueprints*, *Calm Hands*, *Perfected
+  Products*, *Darkmoon Curiosity*), Jewelcrafting (*Thoughtful Throughput*, *Glamorous Gems*,
+  *Alluring Accessories*, *Proficient Processor*), Leatherworking (*Learned Leatherworker*,
+  *Lasting Leather*, *Safeguarding Scales*, *Flawless Fortes*), Tailoring (*Sin'dorei Finery*,
+  *Nimble Needlework*, *Fabric Specialist*, *Fiber Arts*), Mining (*Meticulous Mining*,
+  *Plentiful Ores*), Herbalism (*Bountiful Harvests*, *Botany*), Skinning (*Thorough Tanning*,
+  *Gainful Gathering*, *Talented Tracker*). The Khaz Algar skinning trees in §7's screenshot are
+  *Tanning*, *Harvesting* and *Luring*, so the names change by tier.
+- **Knowledge points come from many sources.** Every profession has **8 treasures at 3 each**
+  (24), which the treasures page says are **character-specific** and **tracked by quest flags**
+  (it gives `C_QuestLog.IsQuestFlaggedCompleted` with quest 89117 for one). Every profession
+  also has a renown book (10), a weekly trainer quest (1 to 3), weekly drops (4 for crafters,
+  about 8 or 9 for gatherers), an Inscription treatise (1) and the Darkmoon Faire (3 a month,
+  and +2 skill). Crafters get patron crafting orders (about 12 a week); enchanters get
+  disenchanting drops instead (about 9); gatherers get 1 per first gather of a node type (25 for
+  mining, 34 for herbalism). "Flicker" items stand in for "Glimmer" ones as a catch-up. The
+  totals claimed are 40 to 70 on the first day and about 17 to 20 a week.
+- **Quality.** Reagents and consumables have **two** qualities, *Silver* and *Gold*, where The War
+  Within had three. Weapons, armour and profession equipment keep **5 ranks**. Concentration
+  "guarantees Gold". Its size, regeneration and cost are **not covered**.
+- **Profession stats and equipment.** *Resourcefulness*, *Multicraft*, *Ingenuity* and crafting
+  speed for crafters; *Finesse*, *Deftness* and *Perception* for gatherers. Each profession has
+  **three equipment slots**, a tool and two accessories (Cooking has two), in green, rare and a
+  new **epic** quality.
+- **A currency per profession.** *Artisan <Profession>'s Moxie*, bind-on-pickup, replacing The War
+  Within's shared *Artisan's Acuity*.
+- **Cooldowns.** Alchemy's transmutes share an **18-hour** cooldown, and its *Wondrous Synergist*
+  is daily (about 9 hours with the right nodes). Tailoring has "daily bolt cooldowns". The
+  other pages say nothing.
+- **Changes from The War Within** that touch what Family records: Bronze quality gone,
+  refining of skins gone, the engineering Invent cycle replaced by Recycling, Darkmoon cards
+  crafted again, fishing lures moved out of skinning, and new enchant slots (helm, shoulder)
+  with cloak and bracer enchants removed.
+
+### What the client already offers to test it
+
+These are all names Midnight reported in the namespace listings (probe version 2, §5), not taken
+from the site:
+
+- Per-expansion lines: `C_TradeSkillUI.GetAllProfessionTradeSkillLines`,
+  `GetProfessionInfoBySkillLineID`, `GetChildProfessionInfos`, `GetChildProfessionInfo`,
+  `GetBaseProfessionInfo`, `GetProfessionChildSkillLineID`, `GetTradeSkillLineForRecipe`.
+- Concentration: `C_TradeSkillUI.GetConcentrationCurrencyID`.
+- Profession equipment: `C_TradeSkillUI.GetProfessionSlots`, `GetProfessionInventorySlots`.
+- Cooldowns and first crafts: `C_TradeSkillUI.GetRecipeCooldown`, `IsRecipeFirstCraft`.
+- Quality: `C_TradeSkillUI.GetItemCraftedQualityInfo`, `GetItemReagentQualityInfo`,
+  `GetQualitiesForRecipe`.
+- Treasures and weeklies: `C_QuestLog.IsQuestFlaggedCompleted` and
+  `IsQuestFlaggedCompletedOnAccount`.
+- **Not in any namespace Family uses: the specialisations and their knowledge points.** Finding
+  where they live means naming a namespace, as `C_MerchantFrame` was named.
+
 ### Still to do for step 1
 
 1. ~~Where the bank is on Midnight~~: containers 6 to 11 are the character's six tabs in order,
