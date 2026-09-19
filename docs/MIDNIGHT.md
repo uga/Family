@@ -578,12 +578,37 @@ On this account, which has not bought Midnight, the *Housing Dashboard* opens it
 *Blueprints 0/50* but says *Please purchase Midnight to access Housing* (§7). How much of this a
 probe can reach here is itself a question for the probe.
 
+## 11. A brief on the Catalyst and Apex talents, read 2026-09-19
+
+**Hypotheses, not evidence**, under the decision of §8. Pages: Icy Veins, `/wow/catalyst-guide`,
+and Wowhead, `/guide/midnight/apex-talents-overview` (read with the web-read tool, whose text was
+taken from the page's own markup; the per-specialisation lists were skimmed, and the mechanics
+at the top read in full).
+
+- **Apex talents** are nodes added to the bottom of every specialisation's tree, with four
+  points over three talents in sequence, the middle one taking two. They are optional. They
+  unlock at levels **81, 84 and 90**, and only after **20 points** in the specialisation tree.
+  **The level cap rises to 90.** Midnight's `GetMaxPlayerLevel()` answered 90 in the first run
+  (§3), on this account without the expansion. That agrees, and is the client's answer, not
+  the game's.
+- **A new Demon Hunter specialisation, *Devourer***, is listed beside Havoc and Vengeance.
+  Family records the active specialisation and the build of both (specification §3). A class
+  with more than three is a question for the probe:
+  `C_SpecializationInfo.GetNumSpecializationsForClassID` is in Midnight's own list.
+- **The Catalyst** turns seasonal non-set gear into class set pieces (head, shoulder, chest,
+  hands and legs count towards set bonuses). Its **charges are a character currency**,
+  *Crystallized Venomblight Manafluxes*: one at season start, one every two weeks, one from an
+  achievement, **capped at 8** on a character, and not account-wide. Since 12.1, catalysed pieces
+  keep their secondary stats. Family records currencies (specification §3). Whether this one is
+  in the currency list is for the probe.
+
 ### Still to do for step 1
 
-**Probe version 5** tests §8 and §10: a census of every `C_` namespace, discovery in the ones
+**Probe version 6** tests §8, §10 and §11: a census of every `C_` namespace, discovery in the ones
 whose names hold a word from the briefs, every profession skill line with its concentration
 currency, and, in a profession window, the child professions, equipment slots and the first
-recipe's first-craft, cooldown and qualities. It needs a Midnight login with a profession window
+recipe's first-craft, cooldown and qualities. It also asks every class's specialisation count and reads
+the whole currency list. It needs a Midnight login with a profession window
 opened. A Mists login gives the census its control.
 
 

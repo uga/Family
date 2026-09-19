@@ -309,10 +309,11 @@ local function census()
 	return found
 end
 
--- Words taken from the two briefs (MIDNIGHT.md §8 and §10). A namespace whose own name holds one
+-- Words taken from the briefs (MIDNIGHT.md §8, §10 and §11). A namespace whose own name holds one
 -- has its functions listed, and its reads - Get, Is, Can, Has - asked with no arguments: an
 -- answer, or an error that usually says what the call wants.
-local WORDS = { "Prof", "Trade", "Craft", "Trait", "Housing", "House", "Decor", "Neighborhood" }
+local WORDS = { "Prof", "Trade", "Craft", "Trait", "Talent", "Catalyst", "Housing", "House",
+	"Decor", "Neighborhood" }
 
 local function matching(word)
 	local spaces = {}
@@ -362,6 +363,16 @@ function professionLines()
 		end
 	end
 	for index = 1, 6 do lines[#lines + 1] = ask({ "GetProfessionInfo", index }) end
+	-- How many specialisations each class has, for the Devourer the talents brief names (§11).
+	for class = 1, 14 do
+		lines[#lines + 1] = ask({ "C_SpecializationInfo.GetNumSpecializationsForClassID", class })
+	end
+	-- Every currency in the list, for the Catalyst's charges (§11). Headers included, as listed.
+	local count = _G.C_CurrencyInfo and _G.C_CurrencyInfo.GetCurrencyListSize
+	local got, size = pcall(count or function() end)
+	for index = 1, (got and type(size) == "number") and size or 0 do
+		lines[#lines + 1] = ask({ "C_CurrencyInfo.GetCurrencyListInfo", index })
+	end
 	-- The treasure quest the professions brief names, for this character and for the account.
 	lines[#lines + 1] = ask({ "C_QuestLog.IsQuestFlaggedCompleted", 89117 })
 	lines[#lines + 1] = ask({ "C_QuestLog.IsQuestFlaggedCompletedOnAccount", 89117 })
