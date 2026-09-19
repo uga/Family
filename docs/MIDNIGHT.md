@@ -300,6 +300,29 @@ so it reads none of the seven. **Not yet observed:** whether any of the seven be
 account rather than the character. That needs the bank opened on a second character, to see
 whether a container's first item repeats.
 
+**A second character, with Bagnon disabled** (Mara, probe version 4, 10:56). The same seven
+containers, 6 to 12, with 98 slots each, so Bagnon was not changing what the first run saw. The
+first item in each container, against Ahia's:
+
+| Container | Ahia | Mara |
+|---|---|---|
+| 6 | 114821 | 114821 |
+| 7, 8, 11 | empty | empty |
+| 9 | 7191 | 10940 |
+| 10 | 71325 | 18466 |
+| 12 | 122637 | 122637 |
+
+Alberto, from the game: the bank has six tabs, four of them bags and the last two void storage,
+and the warband bank has one tab, with more for sale. Six and one make the seven containers.
+Container 12 has the same first item on both characters, which fits it being the warband tab.
+**Not settled:** container 6 matches too, and a first item cannot tell a shared container from
+the same item kept in the same place. Nor does the sweep say which two are void storage.
+
+**Container 5 is a carried bag on Midnight.** Mara's login sweep, before any bank, has 5 = 26
+slots (Ahia has no container 5). `NUM_BAG_SLOTS` is absent on Midnight (§5), so Family's bag
+scanner would read 0 to 4 and miss it, and `Scanners/Bank.lua` would take 5 as the first bank
+bag.
+
 **What replaces `GetMerchantItemInfo`: `C_MerchantFrame.GetItemInfo(index)`.** At a vendor it
 answered a table for item 1: `name` "Tough Hunk of Bread", `price` 20, `stackCount` 5,
 `numAvailable` -1, `isPurchasable`, `isUsable`, `hasExtendedCost` false, `texture` 133964.
@@ -338,10 +361,20 @@ cost. Midnight's `C_MerchantFrame.GetItemInfo(1)` answers a table with `name`, `
 a list turned into a table, observed on both sides, though on different items.
 `GetMerchantItemLink` and `GetMerchantItemCostInfo` have the same shape on both clients.
 
+**On Midnight the item's name arrives after the table.** Mara, same vendor: the moment the
+window opened, `C_MerchantFrame.GetItemInfo(1)` answered 8 fields with **no `name`**. Two seconds
+later it answered 9, `name` "Tough Hunk of Bread" among them. `GetMerchantNumItems()` was 40 both
+times, and `MerchantFrame:IsShown()` was `false` then `true`. On Mists `GetMerchantItemInfo`
+carried the name at once. A merchant reader on Midnight cannot count on the name when the
+window opens.
+
+**Professions: journals.** Alberto: Midnight has profession journals too. Not observed by the
+probe; recorded as reported.
+
 ### Still to do for step 1
 
-1. ~~Where the bank is on Midnight~~: containers 6 to 12 (§6). Whether any are the account's
-   is still open.
+1. ~~Where the bank is on Midnight~~: containers 6 to 12 (§6). Which of them is the warband
+   tab and which two are void storage are not settled by the sweep.
 2. ~~What replaces `GetMerchantItemInfo`~~: `C_MerchantFrame.GetItemInfo` (§6).
 3. ~~A Mists vendor, as the control for the merchant calls~~: obtained with version 4 (above).
    An innkeeper's goods, reached through its dialog, answered nothing once, and why is not
