@@ -38065,6 +38065,75 @@ print("what a craftable thing costs to make")
 	Family.RecipeReagents[2][900012] = nil
 	Family.Cooldowns.Known = realKnown
 
+	-- **A material an item makes, not a recipe.** Reported from play 2026-09-19: no recipe
+	-- with Refined Deeprock Salt in it carried the note, because *Made with* only looked for a
+	-- recipe. The real generated entry: a Salt Shaker eats one Deeprock Salt a use and asks 250
+	-- leatherworking of whoever holds it.
+	do
+		local SALT, ROCK, SHAKER, CURED = 15409, 8150, 15846, 700110
+		local shaker = ((Family.MadeByItem or {})[SALT] or {})[1] or {}
+		check("the generated table says what using a shaker eats",
+			shaker.item == SHAKER and shaker.uses and shaker.uses[1] == ROCK
+				and shaker.uses[2] == 1,
+			tostring(shaker.uses and shaker.uses[1]))
+
+		local SKILLED, NOVICE = "Shaketest-FireMaw", "Shakenovice-FireMaw"
+		Family.Database:SetMeta(SKILLED, { name = "Shaketest", realm = "Fire Maw",
+			skills = { [165] = { rank = 300, maxRank = 300 } } })
+		Family.Database:SetMeta(NOVICE, { name = "Shakenovice", realm = "Fire Maw",
+			skills = { [165] = { rank = 200, maxRank = 300 } } })
+		Family.Database:SetPayload(NOVICE, { bags = { { slots = { { id = SHAKER, count = 1 } } } } })
+		Family.Index:Invalidate()
+
+		Family.RecipeReagents[2][900013] = { SALT, 2, BAR, 1 }
+		Family.Recipes.MadeBy = function(self, itemID)
+			if itemID == CURED then return 900013 end
+			return madeByHere(self, itemID)
+		end
+		auctionPrices[SALT], vendorPrices[ROCK] = 1000, 100
+
+		-- Held only by somebody who cannot use it: no route at all.
+		local unused = Family.Recipes:CostToMake(CURED)
+		check("a shaker held by somebody short of the skill it asks for is no way to make salt",
+			unused and unused.total == 2 * 1000 + 300 and (unused.saving or 0) == 0,
+			unused and tostring(unused.saving) or "nothing")
+
+		Family.Database:SetPayload(SKILLED, { bags = { { slots = { { id = SHAKER, count = 1 } } } } })
+		Family.Index:Invalidate()
+		local cured = Family.Recipes:CostToMake(CURED)
+		check("salt a shaker of ours can make is counted at its price, and the shaker noted",
+			cured and cured.total == 2 * 1000 + 300 and cured.saving == 2 * (1000 - 100)
+				and cured.why and cured.why.cooldown == true,
+			cured and (tostring(cured.total) .. " / " .. tostring(cured.saving)) or "nothing")
+
+		auctionPrices[SALT] = nil
+		local onlyShaker = Family.Recipes:CostToMake(CURED)
+		check("and where nobody sells salt it is counted from the shaker, which waits",
+			onlyShaker and onlyShaker.total == 2 * 100 + 300 and onlyShaker.timed == true,
+			onlyShaker and tostring(onlyShaker.total) or "nothing")
+
+		-- A linked family's shaker is somebody else's to ask for.
+		local realOwners = Family.Index.Owners
+		Family.Index.Owners = function(self, variant)
+			if variant == SHAKER then
+				return { { key = SKILLED, familyName = "The Neighbours", total = 1 } }, {}
+			end
+			return realOwners(self, variant)
+		end
+		local theirs = Family.Recipes:CostToMake(CURED)
+		check("and a shaker in a linked family is not one of ours",
+			theirs and theirs.total == nil and theirs.missing == 1,
+			theirs and tostring(theirs.total) or "nothing")
+		Family.Index.Owners = realOwners
+
+		vendorPrices[ROCK] = nil
+		Family.RecipeReagents[2][900013] = nil
+		Family.Recipes.MadeBy = madeByHere
+		Family.Database:Forget(SKILLED)
+		Family.Database:Forget(NOVICE)
+		Family.Index:Invalidate()
+	end
+
 	do
 		local HILT, GUARD, FILE, RASP = 700208, 700106, 700209, 700107
 		local TOP, A, B = 700108, 700300, 700400
@@ -38357,15 +38426,19 @@ print("what a craftable thing costs to make")
 
 		vendorPrices[BLADE] = 5000
 		local noted = hovering(CHAMPION)
-		check("the tooltip says how much less a crafting cooldown would make it, in money",
-			noted:find("less with a crafting cooldown|r | ", 1, true) ~= nil
+		-- **A second total, not the difference** - Alberto could not tell which the first
+		-- drawing's figure was. The blade made on its cooldown and the bar bought: 9s 90c.
+		local second = noted:match("Total with a crafting cooldown|r | ([^/]*)")
+		check("the tooltip says what the total would be with a crafting cooldown",
+			second ~= nil and second:find("|cffffffff09|r", 1, true) ~= nil
+				and second:find("|cffffffff90|r", 1, true) ~= nil
 				and noted:find("made with a crafting cooldown", 1, true) == nil, noted)
 
 		vendorPrices[BLADE] = nil
 		noted = hovering(CHAMPION)
 		check("and that the total waits on one where nothing was for sale",
 			noted:find("made with a crafting cooldown", 1, true) ~= nil
-				and noted:find("less with", 1, true) == nil, noted)
+				and noted:find("Total with", 1, true) == nil, noted)
 
 		Family.Cooldowns.Known = realKnown
 	end

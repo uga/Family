@@ -1,0 +1,6 @@
+name: a material an item makes is never costed from that item
+file: addons/Family/Recipes.lua
+--- old
+			elseif not spell and (Family.MadeByItem or {})[part.item] then
+--- new
+			elseif false then

@@ -697,7 +697,8 @@ end
 -- (`Cooldowns:Known`, from the shipped tables) or leaves out a bound material never beats a price
 -- that can be paid now; it is still used where nothing is for sale, and then `timed` says so.
 -- What it would have saved goes in `saving`, with `why` saying which of the two it takes, and the
--- tooltip writes it under the total - *4g less with a crafting cooldown*.
+-- tooltip writes the total it would come to under the one counted - *Total with a crafting
+-- cooldown*.
 --
 -- **Each material is costed once a tooltip, and that is what keeps sixty enough.** Counted
 -- 2026-09-19 over every product in the shipped tables, following every material that has a
@@ -733,12 +734,64 @@ function Recipes:CostOfSpell(spell, depth, branch, budget, itemID)
 	spell = tonumber(spell)
 	if not spell then return nil end
 
+	local parts = self:Reagents(spell)
+	if not parts then return nil end
+
+	return self:CostOfParts(parts, spell, depth, branch, budget, itemID)
+end
+
+-- **Made by using an item one of ours owns**, and what that comes to, or nothing.
+--
+-- Reported from play 2026-09-19: no recipe with Refined Deeprock Salt in it ever carried the note
+-- about a cooldown, because the salt is on nobody's recipe list - it comes out of a Salt Shaker,
+-- and *Made with* only ever looked for a recipe. The generated table has carried the maker since
+-- 2026-08-31 and now carries what using it eats (`uses`), so the shaker is priced the way a recipe
+-- is: one Deeprock Salt a use.
+--
+-- **In-house the way a recipe is**: one of our own characters holds the maker and has the skill
+-- it asks for - the Salt Shaker's 250 leatherworking - which is the test the item tooltip's *Can
+-- make it* already puts. A linked family's shaker is somebody else's to ask for.
+--
+-- **Always slow.** The table holds only makers that make you wait (DATASOURCES, *Things made by
+-- using an item*), so a route through one is a route through a cooldown, and it is noted rather
+-- than counted wherever the thing can be bought.
+function Recipes:CostOfMaker(itemID, depth, branch, budget)
+	for _, maker in ipairs((Family.MadeByItem or {})[itemID] or {}) do
+		if maker.uses and #maker.uses >= 2 then
+			local members = Family.Database:Members()
+			local able = false
+			for _, owner in ipairs(Family.Index and Family.Index:Owners(maker.item) or {}) do
+				if not owner.familyName and members[owner.key] then
+					local skill = maker.skill
+						and ((Family.Database:Meta(owner.key) or {}).skills or {})[maker.skill]
+					if not maker.skill or (skill and (skill.rank or 0) >= (maker.rank or 0)) then
+						able = true
+						break
+					end
+				end
+			end
+
+			if able then
+				local parts = {}
+				for index = 1, #maker.uses - 1, 2 do
+					parts[#parts + 1] = { item = maker.uses[index], count = maker.uses[index + 1] }
+				end
+				local out = self:CostOfParts(parts, nil, depth, branch, budget, itemID)
+				if out then
+					out.maker = maker.item
+					return out
+				end
+			end
+		end
+	end
+	return nil
+end
+
+-- The arithmetic both of those share, over a list of { item, count }.
+function Recipes:CostOfParts(parts, spell, depth, branch, budget, itemID)
 	depth = depth or 1
 	branch = branch or {}
 	budget = budget or { left = MAX_RECIPES }
-
-	local parts = self:Reagents(spell)
-	if not parts then return nil end
 
 	local out = { spell = spell, parts = {}, total = 0, missing = 0, bound = 0, made = 0 }
 
@@ -756,18 +809,26 @@ function Recipes:CostOfSpell(spell, depth, branch, budget, itemID)
 		local spell = self:MadeBy(part.item)
 		local inHouse = spell and (budget.ours.items[part.item] or budget.ours.spells[spell])
 		local made = budget.known[part.item]
-		if made == nil and depth < MAX_DEPTH and budget.left > 0
-			and not branch[part.item] and inHouse then
-			budget.left = budget.left - 1
-			made = self:CostToMake(part.item, depth + 1, branch, budget) or false
-			budget.known[part.item] = made
+		if made == nil and depth < MAX_DEPTH and budget.left > 0 and not branch[part.item] then
+			if inHouse then
+				budget.left = budget.left - 1
+				made = self:CostToMake(part.item, depth + 1, branch, budget) or false
+				budget.known[part.item] = made
+			elseif not spell and (Family.MadeByItem or {})[part.item] then
+				-- No recipe makes it, and an item might (`CostOfMaker`).
+				budget.left = budget.left - 1
+				made = self:CostOfMaker(part.item, depth + 1, branch, budget) or false
+				budget.known[part.item] = made
+			end
 		end
 		local madeEach = made and made.total or nil
 
 		-- **Slow**: making it waits on a crafting cooldown somewhere down the route, or leaves
 		-- out a material somebody has to farm. Neither beats a price that can be paid today;
-		-- what either would save is kept for the note under the total (above).
-		local timed = made and (made.timed or Family.Cooldowns:Known(spell) ~= nil) or false
+		-- what either would save is kept for the note under the total (above). A maker is a
+		-- cooldown by construction.
+		local timed = made and (made.timed or made.maker ~= nil
+			or (spell and Family.Cooldowns:Known(spell) ~= nil)) or false
 		local farmed = made and made.bound > 0 or false
 		local slow = timed or farmed
 

@@ -1,6 +1,6 @@
 name: a cooldown inside a material is not a wait for what is made of it
 file: addons/Family/Recipes.lua
 --- old
-		local timed = made and (made.timed or Family.Cooldowns:Known(spell) ~= nil) or false
+		local timed = made and (made.timed or made.maker ~= nil
 --- new
-		local timed = made and (Family.Cooldowns:Known(spell) ~= nil) or false
+		local timed = made and (made.maker ~= nil

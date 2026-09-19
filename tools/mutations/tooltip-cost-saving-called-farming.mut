@@ -1,6 +1,6 @@
-name: a saving through a cooldown is called farming on the tooltip
+name: a total through a cooldown is called farming on the tooltip
 file: addons/Family_UI/Tooltip.lua
 --- old
-				or why.cooldown and L["less with a crafting cooldown"]
+				or why.cooldown and L["Total with a crafting cooldown"]
 --- new
-				or why.cooldown and L["less by farming"]
+				or why.cooldown and L["Total by farming"]

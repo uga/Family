@@ -957,9 +957,15 @@ local function madeWith(cost)
 		-- **What time would buy.** Alberto, 2026-09-19: *we are totalling what is the cheapest
 		-- way to make the item, but we are not counting the cost of time.* A route that waits
 		-- on a crafting cooldown or on farming does not set the total where something can be
-		-- bought today (`Recipes:CostOfSpell`); what it would save is said here, in the money
-		-- column like every other figure. And where the total itself waits on a cooldown,
-		-- because nothing was for sale, that is said as well.
+		-- bought today (`Recipes:CostOfSpell`); the total it would come to instead is said here,
+		-- in the money column like every other figure. And where the total itself waits on a
+		-- cooldown, because nothing was for sale, that is said as well.
+		--
+		-- **A second total, not the difference.** The first drawing put the saving beside *less
+		-- with a crafting cooldown*, and Alberto could not tell which it was: *the money on its
+		-- right is the cost of the item using a cd, or the savings on the above cost?* A line
+		-- that reads like the Total above it, and is compared with it at a glance, needs no
+		-- arithmetic and cannot be read two ways.
 		if cost.timed then
 			lines[#lines + 1] = { "|cff888888" .. L["made with a crafting cooldown"] .. "|r" }
 		end
@@ -967,11 +973,11 @@ local function madeWith(cost)
 		local why = cost.why or {}
 		if (cost.saving or 0) > 0 and (why.cooldown or why.farming) then
 			local said = (why.cooldown and why.farming)
-				and L["less with a crafting cooldown and farming"]
-				or why.cooldown and L["less with a crafting cooldown"]
-				or L["less by farming"]
-			lines[#lines + 1] = { "|cff888888" .. said .. "|r", UI:MoneyLine(cost.saving),
-				nil, nil, nil, 0.53, 0.53, 0.53 }
+				and L["Total with a crafting cooldown and farming"]
+				or why.cooldown and L["Total with a crafting cooldown"]
+				or L["Total by farming"]
+			lines[#lines + 1] = { "|cff888888" .. said .. "|r",
+				UI:MoneyLine(cost.total - cost.saving), nil, nil, nil, 0.53, 0.53, 0.53 }
 		end
 	end
 

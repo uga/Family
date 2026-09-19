@@ -1,0 +1,6 @@
+name: a route through a maker is not seen as waiting on a cooldown
+file: addons/Family/Recipes.lua
+--- old
+		local timed = made and (made.timed or made.maker ~= nil
+--- new
+		local timed = made and (made.timed or false
