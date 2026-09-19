@@ -175,84 +175,74 @@ most of, and says how many it left out.
 
 ## 4. Abilities & Talents
 
-The talent trees as the game draws them: icons at the tier and column they really occupy, with
-the ones nobody has taken drawn grey rather than left out. Where the gaps are is half of what a
-tree says.
+The talent trees, drawn as the game draws them. Each icon sits at its own tier and column, and
+talents nobody has taken are drawn grey. On Mists the page shows the choice made at each tier.
 
 ![Abilities and Talents: a tree drawn as the game draws it, untaken talents greyed](images/talents.png)
 
-- Both **specialisations** where the character has two, with the active one marked.
-- **Points spent** out of points available, and how many are left to spend.
-- **Glyphs**, on the clients that have them.
-- The **spellbook**, by school, and a hunter's Beast Training with it.
-- **Pets**, for a hunter's stable and a warlock's demons: every creature Family has seen, with
-  what each of them can do.
+- Both **specialisations**, with the active one marked. A specialisation that was never
+  activated says *Never activated - nothing recorded*.
+- **Points spent** in each tree, and how many are left to spend.
+- **Glyphs**, on Mists.
+- The **spellbook**, by school, with a filter box. A hunter's Beast Training is listed with
+  it.
+- **Pets**: a hunter's stable and a warlock's demons, with what each creature can do.
 
-Hovering anything shows the game's own description of it.
+Hover anything for the game's own description of it. Talents and abilities are named by your
+own game, in your language, whoever recorded the character.
 
-**About Pets.** A hunter's four pets each know different things, and so does each of a warlock's
-demons — and the game will only say what a creature knows while that creature is out. So the page
-fills in one summon at a time, and it keeps what it has seen: a pet you summoned last month is
-still listed with its abilities today. A pet the stable names but that has never been out is
-listed too, under *In the stable*, with nothing claimed about what it can do, because nothing has
-been seen. The abilities themselves are named by your own client, in your own language, whoever
-recorded the creature.
+**Pets fill in one summon at a time.** The game says what a creature knows only while that
+creature is out. Family keeps what it has seen, so a pet you summoned last month still lists
+its abilities today. A pet that is in the stable but has never been out is listed under *In
+the stable, never summoned - nothing recorded*.
 
-**Training points add up.** Each ability carries what it cost, and the creature says how much of
-what it has spent that accounts for — *273 of 273 Training Points accounted for*. What a pet has
-**left to spend** is in green on its row, the number you would go to a trainer about; a freshly
-tamed pet, which owes points until it is loyal, says so in red. The **Beast Training** list says
-each line's rank, cost and the level the pet needs, with the game's own tooltip on it. The trainer's
-window only prices what the creature you have out can learn, so open it once on each hunter, and
-each visit fills in what the last one could not see.
-
-Talents are named by your own client, whoever recorded the character and whatever language
-they were playing in.
+**Training points.** Each ability shows what it cost. Each creature shows how many of its spent
+points Family can account for, such as *273 of 273 accounted for*. Points left to spend are in
+green on the creature's row. A freshly tamed pet owes points until it becomes loyal, and that
+figure is in red. The **Beast Training** list gives each line's rank, its cost and the level
+the pet needs. The trainer's window prices only what the pet you have out can learn, so open
+it once on each hunter. Each visit adds what the last one could not see.
 
 ---
 
 ## 5. Possessions
 
-One member's gear, bags, bank, mailbox, auctions and guild bank, drawn as the containers
-themselves.
-Where a thing sits in a bag is information — the potions are together, the third bag is the one
-that is full — and a sorted list throws all of it away.
+One member's gear, bags, bank, mailbox, auctions and guild bank, drawn as containers. Items
+sit in the slots they occupy in the game.
 
 ![Possessions: the containers themselves, one bag hovered for its tooltip](images/possessions.png)
 
-**What they are wearing comes first**, as a block of its own — it is on the character rather
-than in anything they carry. It counts as theirs everywhere else too: hover a sword one character
-has in the bank and another has on their back, and Family says *2*, one bank and one equipped.
+**The line under the member's name** says how old each part is: *bags 2 hours ago*, *bank not
+seen*. It also says what everything on the page is worth (§15).
 
-Each container is one row: the **bag itself first**, then its slots. Hovering the bag says
-which bag it is, how full it is, and whether anything else will fit in it — a quiver's free
-slots are not room for anything else, and it says so.
+**Worn gear comes first**, as a block of its own, titled *Equipped*. It counts as owned on
+tooltips too. If one character has a sword in the bank and another is wearing one, the tooltip
+says *2*: one in the bank and one equipped.
 
-**Clicking an item opens the bag it is in**, when it is the character you are playing. A bag
-of somebody else's is a picture, and clicking a picture of a bag cannot open it.
+**Each container is one row**: the bag itself, then its slots. Hover the bag to see which bag
+it is, how many slots are free, and what it is restricted to if it is a quiver, a soul bag or
+another special bag. An option draws all the bags as one block, and the bank as another (§13).
 
-**An item used a fixed number of times shows what is left of it.** A Wizard Oil with two uses
-gone reads `3` in the corner of its icon, where the game itself puts the number — Mana Oils,
-Wizard Oils, a Bag of Marbles, anything with charges. It comes from your bags, your bank and
-the guild bank tabs you have actually opened. Nothing else can say: no call the game offers
-tells an addon how many charges are left on an item, so this is read off the item's own
-tooltip, and an item the client has not finished loading is read again when it has.
+**The filter box dims everything that does not match** what you type, so the matches stand out
+where they are.
 
-**Soulbound means soulbound here too.** Your own gear and bags are described by the slot they are
-in, so a shield you wore once reads *Soulbound* on this page exactly as it does in your bag, rather
-than *binds when equipped*. **Hover a letter** under a character to read it in full: the whole
-subject, who sent it, when it expires and the money in it.
+**Clicking an item opens the bag it is in**, when it belongs to the character you are playing.
+Another character's bags cannot be opened from here.
 
-Mail and the auction house are drawn as containers too. They are not bags and do not pretend
-to be — but *where is that thing* is one question, and answering it in two shapes on one panel
-would be answering it twice.
+**Items with charges show how many are left.** A Wizard Oil with two uses gone shows `3` in
+the corner of its icon. The same goes for Mana Oils, a Bag of Marbles and anything else with
+charges, in your bags, your bank and the guild bank tabs you have opened.
 
-**Mail you posted to that member is already there**, before they have logged in. When you send
-anything to one of your own characters, Family writes the money and the attachments down
-against *them* at that moment, and the mail row says how many are still **in the post**. That
-is a claim about the post and not about their mailbox: the moment that character opens their
-own mailbox, what is really in it replaces the lot. Mail sent to somebody who is not one of
-yours is not recorded anywhere.
+**Tooltips match what you see in your own bags.** A shield you have worn reads *Soulbound*
+here, as it does in your bag.
+
+**Mail and auctions are drawn as containers too.** Hover a letter to read its subject, who
+sent it, when it expires and the money in it.
+
+**Mail you sent to a member is already there**, before they log in. When you send money or
+items to one of your own characters, Family records them against that character at once, and
+the mail row says how many letters are *in the post*. When that character opens their mailbox,
+what is really there replaces the lot. Mail sent to anybody else is not recorded.
 
 ---
 
