@@ -544,6 +544,40 @@ thing: the client offers `C_TradeSkillUI.GetChildProfessionInfos` and
 holds, one model of parent and child skill lines would serve both the Way of lines on Mists and
 Midnight's tiers.
 
+## 10. A brief on Housing, from housing.wowdb.com, read 2026-09-19
+
+**Hypotheses, not evidence**, under the same decision as §8. Pages read: the front page,
+`/progression/`, `/tools/decor-sync/`, `/neighborhoods/alliance/`, `/endeavors/`, `/vendors/` and
+`/decor/`. Most of the site is a database of decor items, and it was not read item by item.
+
+Housing is a domain Family has no part in. Whether Family should record any of it is a question
+for the specification, and so Alberto's. This brief exists so the probe can find out what the
+client offers.
+
+- **Decor collections are account-wide.** The sync tool's page: "Since decor collections are
+  account-wide in WoW, you only need to sync from one character." Family records characters,
+  so this would be a first account-wide record.
+- **An addon can read the collection.** The site syncs through an addon, *Dump Decor*, which writes
+  "owned decor items from your collection" and "currently placed decor in your house" to an
+  export string or a SavedVariables file. That shows the client exposes both lists to an addon.
+  The page names no API.
+- **House level: 12 levels** by cumulative XP, earned by "Unlock decor". Each level raises the
+  placement budget (interior 910 at level 1, 5,975 at level 12; exterior 200 at level 1) and
+  unlocks rooms and exteriors. The page says its numbers are from the test realm.
+- **Decor: 3,158 items**, each with a category (*Accents*, *Functional*, *Furnishings*, *Lighting*,
+  *Miscellaneous*, *Nature*, *Structural*), a budget cost, a size, whether it is dyeable, and
+  whether it goes indoors, outdoors or both. They are sold for gold and more than 20 other
+  currencies across every expansion's vendors, crafted, or earned.
+- **Neighbourhoods by faction**: *Founder's Point* (Alliance) and *Razorwind Shores* (Horde),
+  with plots of differing terrain. How a plot is obtained, and whether a house belongs to the
+  account or the character, is **not covered**.
+- **Endeavors**: neighbourhood tasks, 10 listed with 20 to 34 tasks each. Cadence and rewards
+  are **not covered**.
+
+On this account, which has not bought Midnight, the *Housing Dashboard* opens its catalogue and
+*Blueprints 0/50* but says *Please purchase Midnight to access Housing* (§7). How much of this a
+probe can reach here is itself a question for the probe.
+
 ### Still to do for step 1
 
 1. ~~Where the bank is on Midnight~~: containers 6 to 11 are the character's six tabs in order,
