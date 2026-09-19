@@ -23,7 +23,7 @@ A shorter guide is inside the addon, on the **About** tab.
 11. [Wide Family](#11-wide-family)
 12. [Guild share](#12-guild-share)
 13. [Options](#13-options)
-14. [What Family will not do, and why](#14-what-family-will-not-do-and-why)
+14. [What Family will not do](#14-what-family-will-not-do)
 15. [When something looks wrong](#15-when-something-looks-wrong)
 
 ---
@@ -792,162 +792,101 @@ name, or by the auction house's own categories.
 
 ---
 
-## 14. What Family will not do, and why
+## 14. What Family will not do
 
-Family **reports**. It does not advise. Specifically, it will not tell you:
+Family reports what your characters have. It does not advise. It will not tell you:
 
 - which recipes a member is still missing
 - which piece of gear to improve next
-- where in the game an item is looted, sold or rewarded
+- where an item is looted, sold or rewarded
 
-None of that is in the game client. **The client knows what a thing *is*; it does not know
-where a thing *comes from*, because that lives on the server.** An addon that answers those
-questions is reading a catalogue somebody compiled outside the game — which brings a licence
-to honour, a dataset to keep current across three clients and eleven languages, and answers
-whose staleness there would be no honest way to state.
-
-So it is not a feature that is coming later. It is the shape of the addon: everything Family
-says, it says because the client said it, or because another Family said it.
+The game tells an addon what an item is, not where it comes from. Everything Family shows
+comes from your own game, or from another player's Family.
 
 ---
 
 ## 15. When something looks wrong
 
-**"It says not seen."** That is not a fault. Open the window in question once — bank, mailbox,
-profession — and it will be recorded from then on.
+**"It says not seen."** That is not a fault. Open that window once on that character — bank,
+mailbox, auction house, profession — and it is recorded from then on.
 
 **"A number is out of date."** Every screen says when it was last seen. Bags and money are
-live for the character you are playing; everything else is as old as the last time that
-character was played, or that window opened.
+current for the character you are playing. Everything else is as old as the last time that
+character was played, or that window was opened.
 
-**"A sibling's *Last seen* says *shared*."** It is answering a different question, because it
-has to. When somebody else's character last played is not among the facts a linked family
-sends (§11); when their Family last told you about them is. So a borrowed row reads *shared 2
-h ago* — the age of what you hold, not a sighting — and your own rows stay bare. A date with
-no word beside it is your own family's; one that says *shared* came from theirs.
+**"A sibling's *Last seen* says *shared*."** A linked family does not send when its characters
+last played. A sibling's row shows *shared 2 h ago*: the age of what you hold from them. A date
+with no word beside it belongs to your own family.
 
 **"A profession has no recipes."** Its window has not been opened since Family was installed,
-or it is a gathering profession that has none. The Professions panel says which.
+or it is a gathering profession. The Professions page says which.
 
-**"A profession or its recipes are in the wrong language."** Professions and races are shown in
-your language whoever recorded them, and a recipe is named from what it makes, which your own
-client translates. A recipe list read before you changed language may take a moment to catch up
-the first time the panel is opened, while the client loads the items it has not seen this
-session.
+**"A profession or its recipes are in the wrong language."** Professions, races and recipes
+are shown in your language, whoever recorded them. After you change the game's language, a
+recipe list may take a moment to catch up the first time you open the page.
 
-**"Do my pet's training points add up?"** Type `/family pettp`. For every creature Family has a
-record of, it lists the abilities the creature knows, what the trainer's window says each of them
-costs, and what the client says the creature has spent altogether — and then it says how many
-abilities it could price and what those come to.
+**"I clicked a recipe and nothing happened."** Family selects the recipe in the game's own
+profession window. An addon that replaces that window, such as Skillet, draws its own list and
+may not show the selection.
 
-It reads what is already on disk: nothing is scanned and nothing is sent. What it can price
-depends on what the trainer's window has shown you, so a creature whose abilities all have a
-price beside them is one whose Beast Training window you have opened with that creature out. A
-dash means Family has no price for that ability, which is not the same as it being free.
+**"Do my pet's training points add up?"** Type `/family pettp`. For every creature Family has
+recorded, it lists the abilities the creature knows, what each costs, and what the creature
+has spent in all. A dash means Family has no price for that ability yet. Open the Beast
+Training window with that pet out to fill it in.
 
-**"What is all my stuff worth?"** It is on the character's own **Possessions** page, under the
-line that says how recently each part of the list was seen — what they are wearing, bags, bank,
-mail and auctions, which is also exactly what the figure covers — and in the **Worth** column of the
-summary's Overview (§3). Not the guild bank, which is the guild's, and not the keyring, which is
-worth nothing anyway.
+**"What is all my stuff worth?"** The figure is on the character's **Possessions** page, under
+the line that says how old each part is, and in the **Worth** column of the summary (§3). It
+covers worn gear, bags, bank, mail and auctions. It leaves out the guild bank, which belongs
+to the guild, and the keyring.
 
-Each thing is valued at what the auction house was last seen asking for it, and where Family has
-never seen one, at what a vendor pays — which the game knows for nearly everything, and is what
-makes the figure cover a whole bank alt rather than the few dozen things you happened to search
-for. **Something soulbound is always valued at what a vendor pays**: what is on sale at the auction
-house is the unbound version, and a sword you have worn cannot be listed at any price.
+- Each item is valued at the last auction price Family saw. Where there is none, it is valued
+  at what a vendor pays.
+- **A soulbound item is always valued at what a vendor pays**, because it cannot be sold at
+  auction.
+- The line says how much of the total came from auction prices, how much from vendor prices,
+  and how many items had no price at all.
 
-The line never gives a total on its own. It says how much came from auction prices and how much
-from vendor prices, because those are two very different numbers, and how many things it had no
-price for at all — which is only what your client has never seen named.
+**"Can Family show prices on tooltips?"** Yes. Tick *Show prices on item tooltips* in Options.
+Three lines can appear:
 
-**"Can Family show vendor prices?"** Yes, and it is off until you turn it on — *Show prices on item
-tooltips*, in Options. These lines appear on an item's tooltip:
+- **Sell price** is what a vendor pays you. The game knows it for every item.
+- **Vendor price** is what a vendor charges. It appears only for items Family has seen on a
+  merchant's list. Open a merchant and Family remembers what they sell. If two characters saw
+  different prices, the higher is kept, because a reputation discount only lowers a price.
+- **Auction** is the last auction price, with its age in front: *(3d ago) 4g 20s 00c*. Within
+  one visit the cheapest listing counts. The next visit replaces it.
 
-**Sell price** is what a vendor pays you. The game knows it for every item and Family simply says
-it, everywhere, straight away. Prices are written in full — gold, silver and copper — so the lines
-under one another end at the same edge.
+**Hold CTRL over a stack** and a line says what the whole stack sells for: *Stack of 20*, and
+the total. You can press the key with the pointer already on the stack. It works in your bags,
+on an auction row, on a vendor's list and in a loot window.
 
-**Vendor price** is what a vendor charges, and it appears only for items Family has actually seen
-on a merchant's list. Open a merchant and Family reads the shelf and remembers it, so the price is
-there afterwards wherever you meet the item — in your bags, in the auction house, on the floor. An
-item you have never seen for sale gets no such line, because Family would be guessing that anybody
-sells it at all.
+**Hold CTRL over any item** and Family says what everything your characters hold of it is
+worth, and how much of that is at auction prices and how much at vendor prices. Each character
+is valued on their own realm and faction, and the age of the oldest price used is shown beside
+the figure. The guild bank has its own line and is left out of this figure.
 
-**Auction** is what the auction house was last asking, with how long ago that was in front of it —
-*(3d ago) 4g 20s 00c*. Family reads it from the list you are already looking at while you search; it
-never asks the auction house for anything on its own. Prices are kept per realm and per side,
-because they are not the same market. Among everything on show in one visit the cheapest wins,
-since that is what you would actually pay; your next visit replaces it whatever it says, because
-a price a fortnight old is a photograph and the newest one is the truth.
+**On an action bar button, press CTRL before you point at it.** Action bars use shift, control
+and alt for their own bindings, so pressing the key while the tooltip is up does nothing there.
 
-**Hold CTRL over a stack in your bags** and a third line says what the whole stack sells for —
-*Stack of 20*, and the total. You can press the key with the pointer already on the stack; the
-tooltip fills the line in. The line offering the key appears only over a stack, so an item sitting
-on its own never mentions it. Family works out how many are there from the slot the pointer
-is on, and says nothing at all unless that slot really holds the item being described, so an
-unusual bag addon costs you the line rather than a wrong number.
+**"What can Family read at the auction house?"** Type `/family ah`. It says what this version
+of the game allows, how many rows are on show, and how many prices Family holds for your realm
+and faction, with the age of the oldest and the newest. It sends nothing to the auction house.
 
-**Over an action bar slot, press CTRL first.** Pressing it while the tooltip is already up does
-nothing there: action bar addons — Dominos, Bartender, and the game's own bars — use shift, control
-and alt to give a slot a second and third binding, so the key belongs to the bar. Hold it before the
-pointer arrives and the tooltip is built with it down. Family does not offer you the key there,
-since pressing it would do nothing; everywhere else — bags, the auction house, a vendor, a link in
-chat — the offer appears as it always did.
+**"A character's abilities look wrong."** Type `/family spellbook`. It goes through the game's
+spellbook tab by tab and says which tabs Family records, every row it would record, and how
+many rows it passed over. On Mists the spellbook has a tab for each specialisation, listing
+everything that specialisation can ever learn. Family does not record those tabs.
 
-**Hold CTRL anywhere else** — at the auction house, at a vendor, over a link somebody posted in
-chat — and Family answers a question nothing else can: *what is everything my characters are
-holding of this worth?* One line with the money, and under it how much of it was reached at
-auction prices and how much at what a vendor pays, because those are two very different numbers.
-Each character is valued at their own realm's market, not at yours, and the age of the oldest
-reading that went into the figure sits beside it. The guild bank is counted on its own line above
-and is left out of this one: it is the guild's, not yours to spend.
+**"The game stops for a moment when Wide Family is on."** Type `/family widetime`. For each
+link it says how many members are shared, how long it takes to work out which of them changed,
+and how many are unchanged. Unchanged characters are never sent. Where some have to be sent,
+it names them and says why: *changed since they were sent*, or *never confirmed as sent*. It
+sends nothing, and nobody has to be online.
 
-**The stack line works away from your bags too**: over an auction row, whichever row you are
-pointing at and however far the list has scrolled, on a vendor's shelf and over a loot window. When
-both answers apply, the hint says both. An item the game will not pay a copper for offers neither.
+**"Family is slow to load."** Type `/family status`. It says how long your saved data took to
+read at the loading screen, and how many characters it holds.
 
-If two characters see different prices for one thing, the higher is kept: a reputation discount
-only ever makes a vendor cheaper, so the highest price anyone was quoted is the closest thing to
-the real one.
+**Something errored.** Tick *Narrate what the scanners are doing* in Options and make it
+happen again. Report the message together with the line at the bottom of the Options page.
 
-**"What does my client offer at the auction house?"** Type `/family ah`. It lists the auction
-calls this version of the game has and whether one would be accepted right now, says how many rows
-are on show, and how many prices Family is holding for the realm and side you are on, with the age
-of the oldest and newest. It asks the game rather than Family's records, and it sends no query.
-
-**"A character's abilities look wrong."** Type `/family spellbook`. It walks the client's own
-spellbook in front of you and says, tab by tab, which tabs Family reads and which it leaves alone,
-every row it would record with that row's id, what is behind a button that opens into several
-spells, and how many rows it passed over and what the game called them.
-
-It asks the game, not Family's records — which is the point, because the records are the thing in
-doubt. Nothing is scanned and nothing is sent. On Mists of Pandaria the spellbook has a tab for
-each specialisation, listing everything that specialisation can ever do; those are not this
-character's abilities and Family says so rather than recording them.
-
-**"The game stops for a moment when Wide Family is on."** Type `/family widetime`. It says, per
-link, how many members are shared, how long deciding which of them changed takes, and how many are
-unchanged — an unchanged character is never opened and never sent. Where some are not, it says why
-and names them: **changed since they were sent**, which is what playing a character does, or
-**never confirmed as sent**, which is the one to look into. Underneath, in grey, is what the same
-exchange used to cost, there to be compared against. It measures and sends nothing, and nobody has
-to be online.
-
-**"How much would an exchange send?"** `/family widecost` weighs what asking a linked family for
-theirs puts on the wire, without sending it. Sending everybody again is `/family wide resend
-<family>` (§11), which says what it will cost before it starts.
-
-**"Family is slow to load, or I have a great many characters."** `/family status` says how long your
-saved Family data took to read at the loading screen and how many characters are still saved the
-old way — none, once the first login after updating to 3.0.0 has converted them. `/family
-decodecost` says what every character's record weighs and which recipe lists were recorded in
-another language, naming each character's lists that are. `/family paycost` says how many times
-this session wrote a character's record, which parts, and what marking each part takes. All three
-are measurements: they change nothing and send nothing.
-
-**Something errored.** Turn on *Narrate what the scanners are doing* in Options, reproduce it,
-and report the message together with the line at the bottom of the Options panel. It says
-which version, which client and which routes Family found, which is most of a diagnosis.
-
-Faults and suggestions: <https://github.com/uga/Family>
+Faults and suggestions: <https://github.com/uga/Family/issues>
