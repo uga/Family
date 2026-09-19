@@ -1,0 +1,6 @@
+name: a recipe one of ours knows by its spell alone does not count as in-house
+file: addons/Family/Recipes.lua
+--- old
+		local inHouse = spell and (budget.ours.items[part.item] or budget.ours.spells[spell])
+--- new
+		local inHouse = spell and budget.ours.items[part.item]

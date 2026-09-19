@@ -1,0 +1,6 @@
+name: why a material inside a material could be cheaper is left out
+file: addons/Family/Recipes.lua
+--- old
+				for reason in pairs(made.why or {}) do
+--- new
+				for reason in pairs({}) do

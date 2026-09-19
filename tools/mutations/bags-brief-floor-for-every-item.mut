@@ -1,0 +1,6 @@
+name: every item gets the brief floor, not only the ones the generated table names
+file: addons/Family/Scanners/Bags.lua
+--- old
+					local brief = not readyAt and namedByMadeByItem(itemID)
+--- new
+					local brief = not readyAt

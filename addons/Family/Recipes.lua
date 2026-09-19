@@ -615,7 +615,7 @@ end
 -- **What it costs to make one of this item**, or nothing where this item is not made.
 --
 --     { spell =, parts = { { item =, count =, each =, total =, from =, bound =, unknown = } },
---       total =, missing =, bound = }
+--       total =, missing =, bound =, timed =, saving =, why = { cooldown =, farming = } }
 --
 -- `total` is **nil where anything is unpriced**, which is the second caveat and the rule §2.2
 -- states for the whole addon: *nought is different from not read.* A recipe with one unknown
@@ -658,17 +658,55 @@ end
 -- not. This is the clearest case there is for the tables being shipped per expansion: one merged
 -- table would have been wrong about all eight rods.
 --
--- **Bought before made**, which keeps caveat 1 the rule it was written as: a thing somebody is
--- selling costs what they are asking, whatever making one would come to.
+-- **Making one is a third source, and the cheapest of the three wins.** Alberto, 2026-09-19, off
+-- a Runecloth Bag whose five Bolts of Runecloth were priced at the auction house: *for each line
+-- item in its bill of material we will take the lowest of 3 possible options when they exist -
+-- vendor purchase price, AH buyout price, (recursively, up to 10 levels down as today) in-house
+-- crafting cost.* This reverses *bought before made*, under which a material anybody was selling
+-- was never costed from its recipe at all.
+--
+-- **In-house means one of our own characters knows the recipe** (`RecipeIndex:OursMake`), which
+-- Alberto chose the same day. The materials come from the shipped tables and cover every recipe
+-- in the game, so a recipe cost is always *available*; whether it is a cost anybody here could
+-- actually pay is the question. A material nobody in the family can make is bought or unknown,
+-- which also narrows the 2026-09-12 rule that costed a bound intermediate from its recipe
+-- whoever could make it. The top of the tooltip is not asked: *Made with* is drawn for anything
+-- craftable, as it was.
+--
+-- A recipe cost with a material nobody has priced is no option at all, so it simply does not
+-- compete - and where nothing else is left either, the line is unknown as it always was. **A
+-- recipe cost short of a bound material competes only where nothing is sold**: it leaves out
+-- whatever farming that material costs, so beside a real price it would always look cheaper for
+-- a reason that has nothing to do with money. Where there is no price to set it against, it is
+-- used as before and the total says it is short. A tie goes to buying, which is the simpler
+-- thing to go and do.
 --
 -- **Bounded twice, and the depth is counted rather than picked.** Ten is the deepest chain there
 -- is on Burning Crusade - a Runed Eternium Rod, through Adamantite, Fel Iron, Arcanite,
 -- Truesilver, Golden, Silver and Copper - and the first writing of this said four, which would
 -- have stopped halfway up it and reported the rest as *not for sale*. The second bound is on
--- **work**, not depth: recursion only happens where nothing is selling the material, so on a
--- client with no prices at all a wide recipe could branch further than a tooltip has any business
--- doing. And the branch's own items are remembered, because a cycle would hang the client
--- drawing a tooltip - which is the one place in this addon that must never be slow.
+-- **work**, not depth: every material with a recipe is now costed from it, whatever it sells
+-- for. And the branch's own items are remembered, because a cycle would hang the client drawing
+-- a tooltip - which is the one place in this addon that must never be slow.
+--
+-- **A slow way of making it is noted rather than counted** (Alberto, 2026-09-19, choosing it over
+-- counting the lowest number and over leaving it unsaid). The cheapest route can be one nobody can
+-- take today: a Primal Fire transmuted from a cheaper Primal Earth waits on the alchemist's daily
+-- cooldown, and gears made from a bar and five piles somebody has to farm cost the bar and a
+-- trip. *We are not counting the cost of time.* So a route that needs a crafting cooldown
+-- (`Cooldowns:Known`, from the shipped tables) or leaves out a bound material never beats a price
+-- that can be paid now; it is still used where nothing is for sale, and then `timed` says so.
+-- What it would have saved goes in `saving`, with `why` saying which of the two it takes, and the
+-- tooltip writes the total it would come to under the one counted - *Total with a crafting
+-- cooldown*.
+--
+-- **Each material is costed once a tooltip, and that is what keeps sixty enough.** Counted
+-- 2026-09-19 over every product in the shipped tables, following every material that has a
+-- recipe: at most 23 recipes on Era, 49 on Mists and **72** on Burning Crusade, where one item
+-- went past the bound - and once sixty were spent, a material with no price at all would have
+-- been left unknown so that a cheaper one could be compared. Remembering each material's answer
+-- the first time it is worked out brings the worst of the three to 34. What is remembered was
+-- worked out on whichever branch reached it first, so where a cycle was cut there, it stays cut.
 local MAX_DEPTH = 10
 local MAX_RECIPES = 60
 
@@ -696,47 +734,141 @@ function Recipes:CostOfSpell(spell, depth, branch, budget, itemID)
 	spell = tonumber(spell)
 	if not spell then return nil end
 
+	local parts = self:Reagents(spell)
+	if not parts then return nil end
+
+	return self:CostOfParts(parts, spell, depth, branch, budget, itemID)
+end
+
+-- **Made by using an item one of ours owns**, and what that comes to, or nothing.
+--
+-- Reported from play 2026-09-19: no recipe with Refined Deeprock Salt in it ever carried the note
+-- about a cooldown, because the salt is on nobody's recipe list - it comes out of a Salt Shaker,
+-- and *Made with* only ever looked for a recipe. The generated table has carried the maker since
+-- 2026-08-31 and now carries what using it eats (`uses`), so the shaker is priced the way a recipe
+-- is: one Deeprock Salt a use.
+--
+-- **In-house the way a recipe is**: one of our own characters holds the maker and has the skill
+-- it asks for - the Salt Shaker's 250 leatherworking - which is the test the item tooltip's *Can
+-- make it* already puts. A linked family's shaker is somebody else's to ask for.
+--
+-- **Always slow.** The table holds only makers that make you wait (DATASOURCES, *Things made by
+-- using an item*), so a route through one is a route through a cooldown, and it is noted rather
+-- than counted wherever the thing can be bought.
+function Recipes:CostOfMaker(itemID, depth, branch, budget)
+	for _, maker in ipairs((Family.MadeByItem or {})[itemID] or {}) do
+		if maker.uses and #maker.uses >= 2 then
+			local members = Family.Database:Members()
+			local able = false
+			for _, owner in ipairs(Family.Index and Family.Index:Owners(maker.item) or {}) do
+				if not owner.familyName and members[owner.key] then
+					local skill = maker.skill
+						and ((Family.Database:Meta(owner.key) or {}).skills or {})[maker.skill]
+					if not maker.skill or (skill and (skill.rank or 0) >= (maker.rank or 0)) then
+						able = true
+						break
+					end
+				end
+			end
+
+			if able then
+				local parts = {}
+				for index = 1, #maker.uses - 1, 2 do
+					parts[#parts + 1] = { item = maker.uses[index], count = maker.uses[index + 1] }
+				end
+				local out = self:CostOfParts(parts, nil, depth, branch, budget, itemID)
+				if out then
+					out.maker = maker.item
+					return out
+				end
+			end
+		end
+	end
+	return nil
+end
+
+-- The arithmetic both of those share, over a list of { item, count }.
+function Recipes:CostOfParts(parts, spell, depth, branch, budget, itemID)
 	depth = depth or 1
 	branch = branch or {}
 	budget = budget or { left = MAX_RECIPES }
-
-	local parts = self:Reagents(spell)
-	if not parts then return nil end
 
 	local out = { spell = spell, parts = {}, total = 0, missing = 0, bound = 0, made = 0 }
 
 	if itemID then branch[itemID] = true end
 
+	budget.known = budget.known or {}
+	budget.ours = budget.ours
+		or (Family.RecipeIndex and Family.RecipeIndex:OursMake()) or { spells = {}, items = {} }
+
 	for _, part in ipairs(parts) do
 		local each, from = cheapest(part.item)
 		local row = { item = part.item, count = part.count }
 
-		if each then
+		-- What making one comes to, where one of ours can make it. Once a tooltip (above).
+		local spell = self:MadeBy(part.item)
+		local inHouse = spell and (budget.ours.items[part.item] or budget.ours.spells[spell])
+		local made = budget.known[part.item]
+		if made == nil and depth < MAX_DEPTH and budget.left > 0 and not branch[part.item] then
+			if inHouse then
+				budget.left = budget.left - 1
+				made = self:CostToMake(part.item, depth + 1, branch, budget) or false
+				budget.known[part.item] = made
+			elseif not spell and (Family.MadeByItem or {})[part.item] then
+				-- No recipe makes it, and an item might (`CostOfMaker`).
+				budget.left = budget.left - 1
+				made = self:CostOfMaker(part.item, depth + 1, branch, budget) or false
+				budget.known[part.item] = made
+			end
+		end
+		local madeEach = made and made.total or nil
+
+		-- **Slow**: making it waits on a crafting cooldown somewhere down the route, or leaves
+		-- out a material somebody has to farm. Neither beats a price that can be paid today;
+		-- what either would save is kept for the note under the total (above). A maker is a
+		-- cooldown by construction.
+		local timed = made and (made.timed or made.maker ~= nil
+			or (spell and Family.Cooldowns:Known(spell) ~= nil)) or false
+		local farmed = made and made.bound > 0 or false
+		local slow = timed or farmed
+
+		if madeEach and (not each or (not slow and madeEach < each)) then
+			row.each, row.from = madeEach, "crafted"
+			row.total = madeEach * part.count
+			out.total = out.total + row.total
+			out.made = out.made + 1
+			-- A sub-recipe short of a material of its own is short here too.
+			out.bound = out.bound + made.bound
+			-- And one that waits on a cooldown, where nothing was for sale to wait less.
+			out.timed = out.timed or timed
+		elseif each then
 			row.each, row.from = each, from
 			row.total = each * part.count
 			out.total = out.total + row.total
+		elseif self:BoundReagent(part.item) then
+			row.bound = true
+			row.total = 0
+			out.bound = out.bound + 1
 		else
-			-- Nobody is selling it. Making one may still have a price.
-			local made = nil
-			if depth < MAX_DEPTH and budget.left > 0 and not branch[part.item] then
-				budget.left = budget.left - 1
-				made = self:CostToMake(part.item, depth + 1, branch, budget)
-			end
+			row.unknown = true
+			out.missing = out.missing + 1
+		end
 
-			if made and made.total then
-				row.each, row.from = made.total, "crafted"
-				row.total = made.total * part.count
-				out.total = out.total + row.total
-				out.made = out.made + 1
-				-- A sub-recipe short of a material of its own is short here too.
-				out.bound = out.bound + made.bound
-			elseif self:BoundReagent(part.item) then
-				row.bound = true
-				row.total = 0
-				out.bound = out.bound + 1
-			else
-				row.unknown = true
-				out.missing = out.missing + 1
+		-- How much less the slowest way of coming by it would be than what was counted, and
+		-- why. The lowest a unit can come to is making it with every slow route inside it taken
+		-- too; where the made route was counted, only the slow routes inside it are left over.
+		if madeEach and row.each then
+			local lowest = madeEach - (made.saving or 0)
+			if lowest < row.each then
+				out.saving = (out.saving or 0) + (row.each - lowest) * part.count
+				out.why = out.why or {}
+				if row.from ~= "crafted" then
+					out.why.cooldown = out.why.cooldown or timed
+					out.why.farming = out.why.farming or farmed
+				end
+				for reason in pairs(made.why or {}) do
+					if made.why[reason] then out.why[reason] = true end
+				end
 			end
 		end
 

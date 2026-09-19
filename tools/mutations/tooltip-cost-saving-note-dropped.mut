@@ -1,0 +1,6 @@
+name: the tooltip does not say what a slow route would save
+file: addons/Family_UI/Tooltip.lua
+--- old
+		if (cost.saving or 0) > 0 and (why.cooldown or why.farming) then
+--- new
+		if false then

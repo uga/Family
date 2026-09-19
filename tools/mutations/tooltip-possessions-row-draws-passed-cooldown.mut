@@ -1,0 +1,6 @@
+name: the possessions row draws a cooldown that has already passed
+file: addons/Family_UI/Tooltip.lua
+--- old
+		if entry.id == itemID and entry.readyAt and entry.readyAt > time()
+--- new
+		if entry.id == itemID and entry.readyAt

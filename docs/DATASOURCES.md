@@ -1559,6 +1559,18 @@ demand a profession this way, and the table carries the condition beside the joi
 
 Reported from play, after the first version of this had already been written on ownership alone.
 
+**And what using it eats**, added 2026-09-19 for the crafting cost. No recipe with Refined
+Deeprock Salt in it was ever priced through the shaker, because *Made with* only looked for a
+recipe. The maker's spell has a `SpellReagents` row like any recipe's - read by the same
+columns `recipe-reagents.py` reads - and for the shaker's spell 19566 it is **one Deeprock Salt
+(8150)**, the same on all three builds:
+
+    [15409] = { { item = 15846, skill = 165, rank = 250, uses = { 8150, 1 } } },
+
+**64 makers** carry `uses`. It is written only where every build that has the maker agrees on
+it, because the table is not per expansion and a union would carry one build's reagents onto
+another's. A maker whose spell eats nothing - a Chronoboon Displacer - has none.
+
 ### Profession specialisations, and what gates a recipe, measured 2026-08-31
 
 A blacksmith is an armoursmith or a weaponsmith and cannot be both; an engineer is gnomish or

@@ -1,0 +1,7 @@
+name: what our members can make is kept after a record changes
+file: addons/Family/RecipeIndex.lua
+--- old
+	makes = nil
+	if key then
+--- new
+	if key then

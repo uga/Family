@@ -1,0 +1,8 @@
+name: a note waiting to be published is written in the words of the workshop
+file: CHANGELOG.md
+--- old
+## Unreleased
+--- new
+## Unreleased
+
+- **A thing changed.** It was counted rather than said.

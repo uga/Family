@@ -1,0 +1,6 @@
+name: money figures are evened to a width of nothing
+file: addons/Family_UI/Window.lua
+--- old
+			if widths[index] > widest then widest = widths[index] end
+--- new
+			local _ = widest

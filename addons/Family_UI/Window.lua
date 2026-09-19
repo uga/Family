@@ -1449,6 +1449,62 @@ local function tooltipRuler()
 	return UI:WidthRuler(tooltipMeasure)
 end
 
+local measuringOn, measuringFont, measuringSize
+
+-- **The ruler is a line of the tooltip being written on**, not a font string somewhere else.
+--
+-- Read off Alberto's client 2026-09-19, through `/iconsheet tip`, after the figures were evened
+-- and the column still wandered: **the tooltip's own lines measure wider than a ruler in the same
+-- font, and by different amounts** - 0.6 pixels on a line of words, 2.8 on one carrying three
+-- coins and a spacer. Evened in the ruler's numbers the figures agreed to within half a pixel;
+-- in the client's own they still differed by 1.3, which is the wobble he was seeing. He also
+-- read that it changes with the size of the game window.
+--
+-- A coin, and the spacer beside it, are asked for at *the height of the text*, and that height is
+-- the one inside the font string they are drawn in - which is a line of a frame with its own
+-- scale, not of a frame Family made and never showed. Measuring in the tooltip's own string makes
+-- the reading the drawing, which is this project's rule about numbers handed to the client (L-103)
+-- in the other direction: measure where it will be drawn.
+--
+-- Made once per tooltip, hidden, and never written on the screen. The remembered widest pairs and
+-- the spacer reading belong to whichever tooltip is being measured, so both are dropped when it
+-- changes.
+function UI:MoneyFontFrom(tooltip)
+	if not (tooltip and tooltip.CreateFontString) then return end
+
+	local ruler = tooltip.__familyMoneyRuler
+	if not ruler then
+		local ok, made = pcall(tooltip.CreateFontString, tooltip, nil, "ARTWORK",
+			"GameTooltipText")
+		if not (ok and made) then return end
+		ruler = made
+		ruler:Hide()
+		tooltip.__familyMoneyRuler = ruler
+	end
+
+	-- In the font its own right-hand lines are drawn in, since the template is only what a
+	-- tooltip starts with: a tooltip addon sets its own, and a link tooltip is not the
+	-- hovering one.
+	local name = tooltip.GetName and tooltip:GetName()
+	local sample = name and (_G[name .. "TextRight2"] or _G[name .. "TextLeft2"])
+	local font, size, flags
+	if sample and sample.GetFont then font, size, flags = sample:GetFont() end
+	if font and ruler.SetFont then ruler:SetFont(font, size, flags) end
+
+	-- The readings belong to a tooltip **and** to the font it is wearing: a tooltip addon can
+	-- change the second without the first changing, and then every remembered width is one
+	-- taken in the font before it.
+	if measuringOn == tooltip and font == measuringFont and size == measuringSize then
+		tooltipMeasure = ruler
+		return
+	end
+
+	tooltipMeasure = ruler
+	measuringOn, measuringFont, measuringSize = tooltip, font, size
+	wipe(tooltipWidest)
+	spacerScale = nil
+end
+
 -- **A figure whose silver and copper stand in places of their own, inside one string.** Handed
 -- back unchanged when the text is not money, when the client cannot measure, or when there is
 -- nothing to pad - a figure already holding the widest digits needs no picture at all.
@@ -1492,6 +1548,46 @@ end
 -- The figure a tooltip line, a chat line or anything else drawn as one string should carry.
 function UI:MoneyLine(copper, total)
 	return self:MoneyPadded(self:Money(copper, total))
+end
+
+-- **Every figure in one column the same width**, by a picture of nothing in front of the shorter.
+--
+-- Alberto, 2026-09-19, off *Made with* on a Runed Arcanite Rod: *price groups in tooltips not
+-- properly aligned vertically*, and then *this happens only when the tooltip has certain widths,
+-- not everytime*. Read off that screenshot: the gold coin at 281 pixels on five rows, 280 or 282
+-- on three, and 278 on *Total*. The places inside each figure were held; what moved was where each
+-- line starts. A right-justified line begins at the column's edge less its own width, and the
+-- client puts that on a whole pixel - so two figures of different widths, gold digits included,
+-- round two ways, and which way depends on where the edge falls, which is the tooltip's width.
+--
+-- Made the same width, every figure starts at the same fraction of a pixel and rounds the same
+-- way. What is left is the picture's own granularity, a whole unit of markup - the pixel backlog 88
+-- already wrote down as the limit of a single string.
+--
+-- `column` is which entry of each line holds the figure; lines whose entry is not money are left
+-- alone, and so is everything where the tooltip's font cannot be measured.
+function UI:MoneyEven(lines, column)
+	local ruler = tooltipRuler()
+	if not ruler then return lines end
+
+	local widths, widest = {}, 0
+	for index, line in ipairs(lines) do
+		local text = line[column]
+		if type(text) == "string" and (text:find("GoldIcon", 1, true)
+			or text:find("SilverIcon", 1, true) or text:find("CopperIcon", 1, true)) then
+			widths[index] = ruler(text) or 0
+			if widths[index] > widest then widest = widths[index] end
+		end
+	end
+
+	for index, wide in pairs(widths) do
+		local pad = math.floor(((widest - wide) / spacerRatio(ruler)) + 0.5)
+		if pad >= 1 then
+			lines[index][column] = string.format("|T%s:1:%d|t", SPACER, pad) .. lines[index][column]
+		end
+	end
+
+	return lines
 end
 
 -- A member named somewhere that is not about them alone: a search result, a tooltip, a

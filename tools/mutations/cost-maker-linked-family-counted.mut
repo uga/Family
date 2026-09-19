@@ -1,0 +1,6 @@
+name: a maker in a linked family counts as one of ours
+file: addons/Family/Recipes.lua
+--- old
+				if not owner.familyName and members[owner.key] then
+--- new
+				if members[owner.key] then

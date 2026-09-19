@@ -170,6 +170,21 @@ def build():
                     if item:
                         usedBy.setdefault(item, set()).add(spell)
 
+        # What each maker's spell consumes, for the crafting cost. A Salt Shaker eats one
+        # Deeprock Salt for each Refined Deeprock Salt, and a material made that way is priced
+        # from that the way a recipe's materials are - read out of the same table recipe-reagents.py
+        # reads, for the spells an item casts rather than the ones a trade teaches.
+        consumes = {}
+        for row in read("SpellReagents", build_id):
+            pairs = []
+            for slot in range(8):
+                item = int(row.get("Reagent_%d" % slot) or 0)
+                count = int(row.get("ReagentCount_%d" % slot) or 0)
+                if item and count > 0:
+                    pairs.append((item, count))
+            if pairs:
+                consumes[int(row["SpellID"])] = tuple(pairs)
+
         here = 0
         for row in read("ItemEffect", build_id):
             parent = int(row.get("ParentItemID") or 0)
@@ -202,7 +217,16 @@ def build():
                           int(row.get("CategoryCoolDownMSec") or 0))
             useful = (bool(craftedBy.get(parent)) and bool(elsewhere)
                       and longest >= CRAFTING_FLOOR_MS)
-            makers[made][parent] = (skill, rank, useful or bool(was and was[2]))
+            # **The same on every build, or not at all.** Unlike the crafting flag this is not
+            # per expansion in the output, so where two builds disagree about what a maker eats
+            # it is left off rather than one build's answer being carried onto another's - the
+            # union trap the Mote of Fire already taught this file.
+            uses = consumes.get(spell, ())
+            if was and was[3] is not None and was[3] != uses:
+                uses = None
+            elif was and was[3] is None:
+                uses = None
+            makers[made][parent] = (skill, rank, useful or bool(was and was[2]), uses)
 
             if useful:
                 crafting.setdefault(EXPANSION[game], set()).add(parent)
@@ -227,17 +251,21 @@ def build():
         "",
         "local _, Family = ...",
         "",
-        "-- what is made -> the items that make it, each with what it demands of its owner",
+        "-- what is made -> the items that make it, each with what it demands of its owner and,",
+        "-- as { item, count, ... }, what using it consumes where every build agrees on that",
         "Family.MadeByItem = {",
     ]
     for made in sorted(makers):
         parts = []
         for parent in sorted(makers[made]):
-            skill, rank, madeByHand = makers[made][parent]
+            skill, rank, madeByHand, uses = makers[made][parent]
             bits = ["item = %d" % parent]
             if skill:
                 bits.append("skill = %d" % skill)
                 bits.append("rank = %d" % rank)
+            if uses:
+                bits.append("uses = { %s }" % ", ".join(
+                    "%d, %d" % pair for pair in uses))
             # Whether this maker is a *crafting* cooldown is answered by the per-expansion
             # table below rather than by a flag here, because it differs by build.
             parts.append("{ %s }" % ", ".join(bits))

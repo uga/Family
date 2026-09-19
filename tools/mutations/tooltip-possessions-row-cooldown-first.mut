@@ -1,0 +1,6 @@
+name: the possessions row puts the cooldown before where the item is
+file: addons/Family_UI/Tooltip.lua
+--- old
+			where = where .. " " .. string.format(L["|cffff8040ready %s|r"], UI:In(waits))
+--- new
+			where = string.format(L["|cffff8040ready %s|r"], UI:In(waits)) .. " " .. where

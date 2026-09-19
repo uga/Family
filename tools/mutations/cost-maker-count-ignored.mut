@@ -1,0 +1,6 @@
+name: what a maker eats is counted as two of each
+file: addons/Family/Recipes.lua
+--- old
+					parts[#parts + 1] = { item = maker.uses[index], count = maker.uses[index + 1] }
+--- new
+					parts[#parts + 1] = { item = maker.uses[index], count = 2 }

@@ -1,0 +1,6 @@
+name: what our members can make includes lists they have unlearnt
+file: addons/Family/RecipeIndex.lua
+--- old
+			for _, recipe in ipairs(list.held and list.recipes or {}) do
+--- new
+			for _, recipe in ipairs(list.recipes or {}) do

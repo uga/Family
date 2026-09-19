@@ -1,0 +1,6 @@
+name: a saving through a cooldown is not said to be one
+file: addons/Family/Recipes.lua
+--- old
+					out.why.cooldown = out.why.cooldown or timed
+--- new
+					local _ = timed

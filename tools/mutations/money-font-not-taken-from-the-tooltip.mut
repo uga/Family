@@ -1,0 +1,7 @@
+name: money is measured in the font the tooltip started in, not the one it is drawn in
+file: addons/Family_UI/Tooltip.lua
+--- old
+	-- Measured in this tooltip's own font, before a figure is built (`UI:MoneyFontFrom`).
+	UI:MoneyFontFrom(tooltip)
+--- new
+	-- Measured in this tooltip's own font, before a figure is built (`UI:MoneyFontFrom`).

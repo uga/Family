@@ -1,40 +1,27 @@
-## 4.2.0 — 2026-09-18
+## 4.3.0 — 2026-09-19
 
-### Worth
+### Typing to Family
 
-- **Characters on connected realms are priced from the auction house those realms share.** The
-  realms of one connected group trade in one auction house, goblin houses included - read in the
-  game on Classic Era, where most listings in Nethergarde Keep's house came from Pyrewood Village and
-  Mirage Raceway, and on Mists, where an item posted on Garalon showed up from Mirage Raceway.
-  Family priced each realm only from its own scans, so an alt on the second realm fell back to what
-  a vendor pays. Now prices scanned on any realm of the group count for all of them, the most
-  recent winning, and an item banned on one realm is banned for the whole group. Family learns the
-  group from the game, so log in once on any realm of it.
+- **`/family help` lists the commands.** It used to answer that there was no such command and
+  then list them anyway.
 
-### Professions
+### Item cooldowns
 
-- **Hovering a material on a recipe row now describes that material.** The row shows what the
-  recipe makes, and the pictures of what it takes sat inside it answering with the same tooltip —
-  so the one thing you could not get was what a reagent is, and who already has some. Each picture
-  answers for itself now, and clicking one still does what clicking the row does.
+- **An item's tooltip says when each owner's one can be used again.** Hover a Salt Shaker or a
+  Chronoboon Displacer while playing another character, and the line with the owner's name now
+  carries the wait beside where the item is. "Can make it" no longer calls a Chronoboon used an
+  hour ago ready.
 
-### Searching for an item
+### Crafting cost
 
-- **CTRL-ALT on a link in chat now searches for the item in your own language.** A link carries the
-  words of whoever sent it, so an English player's link had a French client searching for a name
-  nothing on it is called, and the page came back empty. Family asks the game what the item is
-  called for you, and falls back on the link's own words only where your client has never loaded it.
-
-### On the game's tooltips
-
-- **What a lot is worth now says how many copies each kind of price covered, in words.** The two
-  lines under Worth count items, and they were drawn in the column that carries money — so *at
-  vendor prices 574* read as a price nobody had multiplied. The count moved into the sentence, on
-  the item tooltip and on a summary row alike. No figure changed: the stack and the worth were
-  right all along.
-
-- **The shortcut to the whole family's copies is offered on every item somebody owns.** Holding
-  CTRL and ALT and clicking an item opens Family on everyone who has one, and the tooltip used to
-  mention it only where the list of owners was too long to draw — so a smaller family never met
-  it. It is now said in grey under the owners on any item the family holds, and not on an action
-  bar slot, where those keys belong to the bar.
+- **Each material in *Made with* is priced at the cheapest of buying it and making it
+  yourself.** A Bolt of Runecloth is now costed from its own recipe when one of your characters
+  can weave it and weaving comes to less than the auction house or a vendor asks. A material
+  nobody in your family can make is priced only at what it sells for.
+- **A cheaper way that takes time is shown, not counted.** Where making a material would save
+  money but waits on a crafting cooldown such as a transmute or a Salt Shaker, or on farming,
+  the total stays at what you can buy today and a second total under it says what the slower
+  way would come to. Refined Deeprock Salt now counts as made by any of your characters with a
+  Salt Shaker and the skill to use it.
+- **Prices on item tooltips stay in one column at every tooltip width.** Gold, silver and copper
+  coins used to drift a pixel or three between rows on some tooltips and not on others.

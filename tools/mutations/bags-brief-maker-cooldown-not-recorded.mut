@@ -1,0 +1,7 @@
+name: a maker's short cooldown is never recorded
+file: addons/Family/Scanners/Bags.lua
+--- old
+						cooldowns[#cooldowns + 1] = { id = itemID, readyAt = brief,
+							brief = true }
+--- new
+						local _ = brief

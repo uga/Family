@@ -1,0 +1,6 @@
+name: a recipe cost is never compared with a price, only used where there is none
+file: addons/Family/Recipes.lua
+--- old
+		if madeEach and (not each or (not slow and madeEach < each)) then
+--- new
+		if madeEach and not each then

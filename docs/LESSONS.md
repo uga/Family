@@ -3498,6 +3498,38 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-107 — a width measured somewhere else is not the width where it will be drawn
+
+**2026-09-19.** Tooltip money is lined up by padding each place, and then each whole figure, with a
+picture of the missing width - all of it measured on a font string Family made for the purpose and
+never showed. Alberto read the result on Era: *money alignment grew even worse than before*, and
+that the wobble moved when he resized the game window. Two more rounds of reasoning from screenshots
+got no further, because the numbers that would settle it are the client's.
+
+**`/iconsheet tip` printed them**, for the last tooltip the game drew: each right-hand line's width
+as the client gives it, as a ruler elsewhere measures it, and where its three coins land. The ruler
+was **out by up to 6.2 pixels on one line** - 78.5 against the client's 84.7 - and by different
+amounts on different lines, most of all where coins and spacers sit. Every pad was therefore
+computed against a width the tooltip does not reproduce, and evening the figures spread them
+further apart rather than closer.
+
+**What now catches it.** The ruler is a hidden line created **on the tooltip being written on**, in
+that tooltip's own font (`UI:MoneyFontFrom`), and the remembered widths are dropped when either
+changes. The reading after it: the ruler agrees with the client on all thirteen lines, the figures
+are one width to within 0.4 of a pixel where they had been 1.6 apart, and the coins stand in one
+column but for a pixel or two of the client's own rounding. Checks: the ruler belongs to the
+tooltip, the figures come out one width **in that tooltip's font**, and the places inside them are
+held at that font's widest digits; the harness stub now scales its widths by the font size, since
+one that fits every font cannot tell a right measurement from a wrong one (L-104's class).
+Mutations `money-ruler-not-on-the-tooltip`, `money-ruler-font-change-ignored`,
+`money-font-not-taken-from-the-tooltip`.
+
+**The rule: measure in the thing that will draw it.** A font string's metrics belong to the frame it
+lives in - scale, font, and what *the height of the text* means to a picture - so a ruler standing
+outside is answering a different question. L-103 said a number handed to the client is a request and
+not a measurement; this is the other half, and both were found the same way, by printing what the
+client says rather than arguing about what it ought to say.
+
 ## L-106 — a name that arrived with the data is in the sender's language, not the reader's
 
 **2026-09-17.** Reported by a user of 4.1.0 on a French client: CTRL and ALT and a click on a link

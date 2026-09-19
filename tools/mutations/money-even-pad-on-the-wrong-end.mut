@@ -1,0 +1,6 @@
+name: the evening picture goes after a figure, where it moves nothing
+file: addons/Family_UI/Window.lua
+--- old
+			lines[index][column] = string.format("|T%s:1:%d|t", SPACER, pad) .. lines[index][column]
+--- new
+			lines[index][column] = lines[index][column] .. string.format("|T%s:1:%d|t", SPACER, pad)

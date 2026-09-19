@@ -1,0 +1,6 @@
+name: what our members can make holds their spells and not what those make
+file: addons/Family/RecipeIndex.lua
+--- old
+				if recipe.itemID and recipe.itemID ~= 0 then makes.items[recipe.itemID] = true end
+--- new
+				local _ = recipe

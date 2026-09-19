@@ -1369,9 +1369,11 @@ function Professions:ScanNow(includeRecipes)
 	-- than every item every profession can make.
 	local meta = Family.Database:Meta(key) or {}
 
+	-- Not the brief ones (Scanners/Bags.lua): an hour's wait is recorded to be shown beside its
+	-- owner, and filing it under a profession would carry it on to the guild.
 	local watched = {}
 	for _, entry in ipairs(meta.itemCooldowns or {}) do
-		if entry.id then watched[entry.id] = true end
+		if entry.id and not entry.brief then watched[entry.id] = true end
 	end
 
 	local cooldownItems = meta.cooldownItems or {}

@@ -1,0 +1,6 @@
+name: a recipe cost short of a bound material competes with a real price
+file: addons/Family/Recipes.lua
+--- old
+		local farmed = made and made.bound > 0 or false
+--- new
+		local farmed = false

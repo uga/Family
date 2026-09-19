@@ -1,0 +1,6 @@
+name: a maker counts whether or not its owner has the skill it asks for
+file: addons/Family/Recipes.lua
+--- old
+					if not maker.skill or (skill and (skill.rank or 0) >= (maker.rank or 0)) then
+--- new
+					if true then

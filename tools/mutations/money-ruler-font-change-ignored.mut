@@ -1,0 +1,6 @@
+name: the remembered widths survive a tooltip changing its font
+file: addons/Family_UI/Window.lua
+--- old
+	if measuringOn == tooltip and font == measuringFont and size == measuringSize then
+--- new
+	if measuringOn == tooltip then
