@@ -159,6 +159,7 @@ for run, r in pairs(FamilySurfaceDB or {}) do
         end
     end
     calls("", r.calls)
+    if r.containers then calls("[login] ", { r.containers }) end
     for window, list in pairs(r.windows or {}) do calls("[" .. window .. "] ", list) end
     for space, names in pairs(r.namespaces or {}) do out(run, "namespaces", space, names) end
     out(run, "interface", "interface", r.interface)

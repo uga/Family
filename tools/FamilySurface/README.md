@@ -21,6 +21,8 @@ So for each name it asks the question that can actually be answered:
 | 100 read-only calls at login | called, with the smallest sensible arguments | every return, tables one level deep, or the error |
 | 43 read-only calls in five windows | called two seconds after the window opens, with Family's own arguments | the same, filed under the window |
 | every `C_` namespace Family uses | its keys listed | the names of the functions it holds |
+| container ids -20 to 40 | slot count asked at login and with the bank open | which hold slots, and the first item in each |
+| `C_MerchantFrame`, named from memory | its keys listed; at a vendor, each `Get…` and `Is…` function called with 1 | the answers, filed under the merchant |
 
 The first three lists are `tools/surface.py`'s, generated from the Family sources into
 `Surface.lua`; the counts above are what it wrote on 2026-09-19. The first two runs, on

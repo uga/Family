@@ -284,6 +284,10 @@ chosen will be called in a client before it is relied on.
 
 ### Still to do for step 1
 
+Probe version 3 is built for all three: a sweep of container ids -20 to 40 at login and with the
+bank open, and `C_MerchantFrame` listed and its reads called at a vendor. One Midnight login with
+the bank and a vendor open, and a vendor on Mists.
+
 1. **Where the bank is on Midnight.** It is not a name to guess, and the probe can observe it:
    with the bank open, ask `C_Container.GetContainerNumSlots` for every container id across a
    wide range and record which ones hold slots.

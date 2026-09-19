@@ -157,6 +157,9 @@ end
 local function bank() return _G.BANK_CONTAINER or -1 end
 local function firstBankBag() return (_G.NUM_BAG_SLOTS or 4) + 1 end
 
+-- Defined below, after `ask`, and used by the windows.
+local sweep, namedReads
+
 -- Asked two seconds after the window's own event, so that what it lists has arrived. Only
 -- reads: nothing here queries the server, and the auction house calls read what the window
 -- has already loaded. Old and new calls side by side, because each client answers one set.
@@ -179,7 +182,7 @@ local WINDOWS = {
 		{ "C_AuctionHouse.GetNumReplicateItems" }, { "C_AuctionHouse.GetReplicateItemInfo", 0 },
 		{ "C_AuctionHouse.GetBrowseResults" },
 	} },
-	BANKFRAME_OPENED = { key = "bank", calls = {
+	BANKFRAME_OPENED = { key = "bank", extra = function() return { sweep() } end, calls = {
 		{ "GetNumBankSlots" },
 		{ "C_Container.GetContainerNumSlots", bank },
 		{ "C_Container.GetContainerItemInfo", bank, 1 },
@@ -193,7 +196,8 @@ local WINDOWS = {
 		{ "GetInboxNumItems" }, { "GetInboxHeaderInfo", 1 }, { "GetInboxItem", 1, 1 },
 		{ "GetInboxItemLink", 1, 1 },
 	} },
-	MERCHANT_SHOW = { key = "merchant", calls = {
+	MERCHANT_SHOW = { key = "merchant", extra = function() return namedReads("C_MerchantFrame") end,
+	calls = {
 		{ "GetMerchantNumItems" }, { "GetMerchantItemInfo", 1 }, { "GetMerchantItemLink", 1 },
 		{ "GetMerchantItemCostInfo", 1 },
 	} },
@@ -222,6 +226,57 @@ local function ask(call)
 	return name .. "(" .. shown .. ") throws " .. show(results[2], ERROR_LIMIT)
 end
 
+-- Which container ids hold slots, across a range wide enough not to need knowing where a
+-- client keeps things. Asked at login and again with the bank open: the ids that hold slots
+-- only then are the bank. Each is written with its slot count and the first item found in it.
+local SWEEP_FROM, SWEEP_TO = -20, 40
+
+function sweep()
+	local api = _G.C_Container
+	local count = api and api.GetContainerNumSlots or _G.GetContainerNumSlots
+	local info = api and api.GetContainerItemInfo
+	if type(count) ~= "function" then return "GetContainerNumSlots absent" end
+	local found = {}
+	for id = SWEEP_FROM, SWEEP_TO do
+		local ok, slots = pcall(count, id)
+		if ok and type(slots) == "number" and slots > 0 then
+			local first
+			for slot = 1, slots do
+				local got, item = pcall(info or function() end, id, slot)
+				if got and type(item) == "table" and item.itemID then
+					first = item.itemID .. " at " .. slot
+					break
+				end
+			end
+			found[#found + 1] = id .. "=" .. slots .. (first and (" (" .. first .. ")") or "")
+		end
+	end
+	return ("C_Container.GetContainerNumSlots(%d..%d) answers %s"):format(SWEEP_FROM, SWEEP_TO,
+		#found > 0 and table.concat(found, " | ") or "(nothing)")
+end
+
+-- Named from memory rather than taken from Family's sources, and recorded as such: where the
+-- merchant's GetMerchantItemInfo went on Midnight is not in any namespace Family uses, and the
+-- decision of 2026-09-19 names a namespace only when a missing call needs one. This one does.
+local NAMED = { "C_MerchantFrame" }
+
+-- Every read in a named namespace, asked with index 1 when its window is open. Found by the
+-- functions' own names - Get, Is - rather than by naming them, which would be guessing.
+function namedReads(space)
+	local api = _G[space]
+	if type(api) ~= "table" then return { space .. " absent (" .. type(api) .. ")" } end
+	local names = {}
+	for key, value in pairs(api) do
+		if type(value) == "function" and (tostring(key):find("^Get") or tostring(key):find("^Is")) then
+			names[#names + 1] = key
+		end
+	end
+	table.sort(names)
+	local lines = {}
+	for _, name in ipairs(names) do lines[#lines + 1] = ask({ space .. "." .. name, 1 }) end
+	return lines
+end
+
 local current
 
 local function probe()
@@ -248,6 +303,8 @@ local function probe()
 		end
 	end
 
+	run.containers = sweep()
+
 	-- What each namespace Family already uses holds on this client, by name. The namespaces
 	-- come from the generated list rather than from anybody's idea of what Retail has, and
 	-- what they hold is where the replacement for an absent call will be found, if anywhere.
@@ -261,6 +318,19 @@ local function probe()
 			end)
 			table.sort(names)
 			run.namespaces[name] = table.concat(names, " ")
+		end
+	end
+	for _, name in ipairs(NAMED) do
+		local space = _G[name]
+		if type(space) == "table" then
+			local names = {}
+			pcall(function()
+				for key in pairs(space) do names[#names + 1] = tostring(key) end
+			end)
+			table.sort(names)
+			run.namespaces[name .. " (named)"] = table.concat(names, " ")
+		else
+			run.namespaces[name .. " (named)"] = "absent (" .. type(space) .. ")"
 		end
 	end
 	for _, name in ipairs(Surface.members) do
@@ -314,6 +384,12 @@ local function askWindow(window)
 	if not current then probe() end
 	local answers = {}
 	for _, call in ipairs(window.calls) do answers[#answers + 1] = ask(call) end
+	if window.extra then
+		local ok, lines = pcall(window.extra)
+		for _, line in ipairs(ok and lines or { "extra throws " .. show(lines, ERROR_LIMIT) }) do
+			answers[#answers + 1] = line
+		end
+	end
 	current.windows[window.key] = answers
 	local threw = 0
 	for _, line in ipairs(answers) do
