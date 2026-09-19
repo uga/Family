@@ -780,8 +780,9 @@ cost of making it. When a material has no price, the total says *some prices are
 your characters visits a vendor who sells that item. So Family can value everything you own at
 vendor prices straight away, but at first it cannot say what a recipe costs to make. Most
 material prices come from auction house listings. Basic reagents such as vials, thread and
-flux have to be seen once at a vendor. Purchase prices are saved per faction and per server
-group.
+flux have to be seen once at a vendor. A vendor's price is the same on every realm and for
+both factions, so a price seen once counts for all your characters on that version of the
+game.
 
 **What came out of the mailbox** works with the game's own Open All and with mail addons. The
 total of the money collected from all letters appears when nothing is left to take, or when
