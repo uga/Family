@@ -319,13 +319,31 @@ container of 32 slots answers on Mists, where `Capabilities.lua` has the keyring
 in the game since 2026-08-08. That is one more case of the client's surface disagreeing with the
 game, and it changes nothing here.
 
+**Mists, the control again (Duecalzini, version 4, 2026-09-19): a plain vendor answers.**
+It had 8 items, `GetMerchantNumItems()` answered 8 both the moment the window opened and two
+seconds later, and item 1 was *Bold Tourmaline*. `MerchantFrame:IsShown()` was `false` the first
+time and `true` the second, so the list is there before the frame is drawn. **Why the
+innkeeper's goods answered nothing is not isolated**: that run did not record `IsShown`, so a
+window already closed and the dialog path cannot be told apart. Family reads a vendor on
+`MERCHANT_SHOW`, so an innkeeper's goods are worth one look when the merchant scanner is
+written.
+
+**The old call and its replacement carry the same eight facts.** Mists'
+`GetMerchantItemInfo(1)` answers `"Bold Tourmaline" | 134130 | 18000 | 1 | -1 | true | true |
+false | nil`, which is name, texture, price, quantity, available, purchasable, usable and extended
+cost. Midnight's `C_MerchantFrame.GetItemInfo(1)` answers a table with `name`, `texture`,
+`price`, `stackCount`, `numAvailable`, `isPurchasable`, `isUsable` and `hasExtendedCost`. That is
+a list turned into a table, observed on both sides, though on different items.
+`GetMerchantItemLink` and `GetMerchantItemCostInfo` have the same shape on both clients.
+
 ### Still to do for step 1
 
 1. ~~Where the bank is on Midnight~~: containers 6 to 12 (§6). Whether any are the account's
    is still open.
 2. ~~What replaces `GetMerchantItemInfo`~~: `C_MerchantFrame.GetItemInfo` (§6).
-3. A Mists vendor, as the control for the merchant calls. **Run, and not obtained**: a vendor
-   that sold goods answered no items (above). Rerun with probe version 4. Of the merchant calls Midnight still has, `GetMerchantItemLink`
+3. ~~A Mists vendor, as the control for the merchant calls~~: obtained with version 4 (above).
+   An innkeeper's goods, reached through its dialog, answered nothing once, and why is not
+   isolated. Of the merchant calls Midnight still has, `GetMerchantItemLink`
    answered an ordinary link and `GetMerchantItemCostInfo` 0 for a vendor's bread. What a
    Mists vendor with goods would add is the shape of those two on the client where Family
    already works.
