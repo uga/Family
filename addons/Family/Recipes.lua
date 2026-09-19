@@ -658,17 +658,36 @@ end
 -- not. This is the clearest case there is for the tables being shipped per expansion: one merged
 -- table would have been wrong about all eight rods.
 --
--- **Bought before made**, which keeps caveat 1 the rule it was written as: a thing somebody is
--- selling costs what they are asking, whatever making one would come to.
+-- **Making one is a third source, and the cheapest of the three wins.** Alberto, 2026-09-19, off
+-- a Runecloth Bag whose five Bolts of Runecloth were priced at the auction house: *for each line
+-- item in its bill of material we will take the lowest of 3 possible options when they exist -
+-- vendor purchase price, AH buyout price, (recursively, up to 10 levels down as today) in-house
+-- crafting cost.* This reverses *bought before made*, under which a material anybody was selling
+-- was never costed from its recipe at all.
+--
+-- A recipe cost with a material nobody has priced is no option at all, so it simply does not
+-- compete - and where nothing else is left either, the line is unknown as it always was. **A
+-- recipe cost short of a bound material competes only where nothing is sold**: it leaves out
+-- whatever farming that material costs, so beside a real price it would always look cheaper for
+-- a reason that has nothing to do with money. Where there is no price to set it against, it is
+-- used as before and the total says it is short. A tie goes to buying, which is the simpler
+-- thing to go and do.
 --
 -- **Bounded twice, and the depth is counted rather than picked.** Ten is the deepest chain there
 -- is on Burning Crusade - a Runed Eternium Rod, through Adamantite, Fel Iron, Arcanite,
 -- Truesilver, Golden, Silver and Copper - and the first writing of this said four, which would
 -- have stopped halfway up it and reported the rest as *not for sale*. The second bound is on
--- **work**, not depth: recursion only happens where nothing is selling the material, so on a
--- client with no prices at all a wide recipe could branch further than a tooltip has any business
--- doing. And the branch's own items are remembered, because a cycle would hang the client
--- drawing a tooltip - which is the one place in this addon that must never be slow.
+-- **work**, not depth: every material with a recipe is now costed from it, whatever it sells
+-- for. And the branch's own items are remembered, because a cycle would hang the client drawing
+-- a tooltip - which is the one place in this addon that must never be slow.
+--
+-- **Each material is costed once a tooltip, and that is what keeps sixty enough.** Counted
+-- 2026-09-19 over every product in the shipped tables, following every material that has a
+-- recipe: at most 23 recipes on Era, 49 on Mists and **72** on Burning Crusade, where one item
+-- went past the bound - and once sixty were spent, a material with no price at all would have
+-- been left unknown so that a cheaper one could be compared. Remembering each material's answer
+-- the first time it is worked out brings the worst of the three to 34. What is remembered was
+-- worked out on whichever branch reached it first, so where a cycle was cut there, it stays cut.
 local MAX_DEPTH = 10
 local MAX_RECIPES = 60
 
@@ -707,37 +726,41 @@ function Recipes:CostOfSpell(spell, depth, branch, budget, itemID)
 
 	if itemID then branch[itemID] = true end
 
+	budget.known = budget.known or {}
+
 	for _, part in ipairs(parts) do
 		local each, from = cheapest(part.item)
 		local row = { item = part.item, count = part.count }
 
-		if each then
+		-- What making one comes to, where it can be made. Once a tooltip (above).
+		local made = budget.known[part.item]
+		if made == nil and depth < MAX_DEPTH and budget.left > 0
+			and not branch[part.item] and self:MadeBy(part.item) then
+			budget.left = budget.left - 1
+			made = self:CostToMake(part.item, depth + 1, branch, budget) or false
+			budget.known[part.item] = made
+		end
+		local madeEach = made and made.total or nil
+		if madeEach and each and made.bound > 0 then madeEach = nil end
+
+		if madeEach and (not each or madeEach < each) then
+			row.each, row.from = madeEach, "crafted"
+			row.total = madeEach * part.count
+			out.total = out.total + row.total
+			out.made = out.made + 1
+			-- A sub-recipe short of a material of its own is short here too.
+			out.bound = out.bound + made.bound
+		elseif each then
 			row.each, row.from = each, from
 			row.total = each * part.count
 			out.total = out.total + row.total
+		elseif self:BoundReagent(part.item) then
+			row.bound = true
+			row.total = 0
+			out.bound = out.bound + 1
 		else
-			-- Nobody is selling it. Making one may still have a price.
-			local made = nil
-			if depth < MAX_DEPTH and budget.left > 0 and not branch[part.item] then
-				budget.left = budget.left - 1
-				made = self:CostToMake(part.item, depth + 1, branch, budget)
-			end
-
-			if made and made.total then
-				row.each, row.from = made.total, "crafted"
-				row.total = made.total * part.count
-				out.total = out.total + row.total
-				out.made = out.made + 1
-				-- A sub-recipe short of a material of its own is short here too.
-				out.bound = out.bound + made.bound
-			elseif self:BoundReagent(part.item) then
-				row.bound = true
-				row.total = 0
-				out.bound = out.bound + 1
-			else
-				row.unknown = true
-				out.missing = out.missing + 1
-			end
+			row.unknown = true
+			out.missing = out.missing + 1
 		end
 
 		out.parts[#out.parts + 1] = row

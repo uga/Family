@@ -1,0 +1,6 @@
+name: a recipe cost short of a bound material competes with a real price
+file: addons/Family/Recipes.lua
+--- old
+		if madeEach and each and made.bound > 0 then madeEach = nil end
+--- new
+		local _ = each

@@ -36,6 +36,12 @@ is a decision rather than an afternoon of archaeology.
   carries the wait beside where the item is. "Can make it" no longer calls a Chronoboon used an
   hour ago ready.
 
+### Crafting cost
+
+- **Each material in *Made with* is priced at the cheapest of buying it and making it.** A Bolt
+  of Runecloth is now costed from its own recipe when weaving one comes to less than the auction
+  house or a vendor asks, not only when nobody is selling any.
+
 ## 4.2.0 — 2026-09-18
 
 ### Worth

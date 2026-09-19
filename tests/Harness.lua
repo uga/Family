@@ -37960,15 +37960,121 @@ print("what a craftable thing costs to make")
 		champion and champion.parts[1].from == "crafted",
 		champion and tostring(champion.parts[1].from))
 
-	-- **Bought before made**, which keeps the first caveat the rule it was written as: a thing
-	-- somebody is selling costs what they are asking, whatever making one would come to.
+	-- **The cheapest of buying and making**, which replaced *bought before made* on 2026-09-19:
+	-- Alberto, *we will take the lowest of 3 possible options when they exist*. Both directions,
+	-- so a reader that always bought and one that always made each fail one of them.
 	local realBound = Family.BoundReagents
 	vendorPrices[BLADE] = 5
 	local bought = Family.Recipes:CostToMake(CHAMPION)
-	check("while one somebody is selling costs what they are asking, not what making it would",
+	check("a material sold for less than making one comes to costs what it is sold for",
 		bought and bought.total == 5 + 300 and bought.made == 0,
 		bought and tostring(bought.total) or "nothing")
+
+	vendorPrices[BLADE] = 5000
+	local madeInstead = Family.Recipes:CostToMake(CHAMPION)
+	check("and one sold for more than making it comes to costs what making it comes to",
+		madeInstead and madeInstead.total == bladeCost + 300 and madeInstead.made == 1
+			and madeInstead.parts[1].from == "crafted",
+		madeInstead and (tostring(madeInstead.total) .. " from "
+			.. tostring(madeInstead.parts[1].from)) or "nothing")
 	vendorPrices[BLADE] = nil
+
+	do
+		local HILT, GUARD, FILE, RASP = 700208, 700106, 700209, 700107
+		local TOP, A, B = 700108, 700300, 700400
+		local recipes = Family.RecipeReagents[2]
+		local makers = { [SWORD] = 900001, [ROBE] = 900002, [CLOAK] = 900003,
+			[BELT] = 900004, [CHAMPION] = 900005, [BLADE] = 900006, [LOOP] = 900007,
+			[HILT] = 900008, [GUARD] = 900009, [FILE] = 900010, [RASP] = 900011 }
+		recipes[900008] = { BAR, 1, SKIN, 1 }  -- made for 300, short of a bound skin
+		recipes[900009] = { HILT, 1 }
+		recipes[900010] = { RARE, 1 }          -- made of something nobody has priced
+		recipes[900011] = { FILE, 1 }
+
+		local realMade = Family.Recipes.MadeBy
+		Family.Recipes.MadeBy = function(_, itemID) return makers[itemID] end
+
+		-- **A recipe cost short of a bound material does not compete with a price.** It
+		-- leaves the skin out, so it would look cheaper than any price for a reason that is
+		-- not money.
+		vendorPrices[HILT] = 1000
+		local guard = Family.Recipes:CostToMake(GUARD)
+		check("a recipe cost short of a bound material does not undercut a real price",
+			guard and guard.total == 1000 and guard.bound == 0 and guard.made == 0,
+			guard and tostring(guard.total) or "nothing")
+		vendorPrices[HILT] = nil
+		guard = Family.Recipes:CostToMake(GUARD)
+		check("and is still used, saying it is short, where nobody sells the thing",
+			guard and guard.total == 300 and guard.bound == 1,
+			guard and tostring(guard.total) or "nothing")
+
+		-- **A recipe cost that is unknown is no option**, so a price beside it is simply the
+		-- price - and without one the line is unknown, as it always was.
+		vendorPrices[FILE] = 700
+		local rasp = Family.Recipes:CostToMake(RASP)
+		check("a material whose own recipe cannot be costed is priced from what it sells for",
+			rasp and rasp.total == 700 and rasp.missing == 0,
+			rasp and tostring(rasp.total) or "nothing")
+		vendorPrices[FILE] = nil
+		rasp = Family.Recipes:CostToMake(RASP)
+		check("and is unknown where nothing sells it either",
+			rasp and rasp.total == nil and rasp.missing == 1,
+			rasp and tostring(rasp.total) or "nothing")
+
+		-- **Every material costed from its recipe as well is more work, and sixty is still
+		-- enough** because each is worked out once a tooltip. Eight intermediates, each made
+		-- of the same eight smaller ones, every one of them sold and every one cheaper to
+		-- make: seventy-two recipes followed naively, sixteen remembered.
+		local top = {}
+		for i = 1, 8 do
+			top[#top + 1], top[#top + 2] = A + i, 1
+			local inner = {}
+			for j = 1, 8 do inner[#inner + 1], inner[#inner + 2] = B + j, 1 end
+			recipes[910000 + i] = inner
+			makers[A + i] = 910000 + i
+			auctionPrices[A + i] = 100000
+		end
+		for j = 1, 8 do
+			recipes[920100 + j] = { BAR, 1 }
+			makers[B + j] = 920100 + j
+			auctionPrices[B + j] = 1000
+		end
+		recipes[910000] = top
+		makers[TOP] = 910000
+
+		local wide = Family.Recipes:CostToMake(TOP)
+		check("a wide recipe whose materials share materials is costed whole within the bound",
+			wide and wide.total == 8 * 8 * 300, wide and tostring(wide.total) or "nothing")
+
+		-- **And the bound is spent on recipes, not on materials.** Every material is now asked
+		-- whether it can be made, and most - ore, cloth, dust - cannot; counted against the
+		-- sixty, a wide tree's raw materials used it up before an intermediate nobody sells was
+		-- reached. Sixty-one priced raw materials ahead of the blade.
+		local RAW = 700600
+		local long = {}
+		for k = 1, 61 do
+			long[#long + 1], long[#long + 2] = RAW + k, 1
+			vendorPrices[RAW + k] = 1
+		end
+		long[#long + 1], long[#long + 2] = BLADE, 1
+		recipes[930000] = long
+		makers[RAW] = 930000
+
+		local reached = Family.Recipes:CostToMake(RAW)
+		check("materials with no recipe of their own do not use up the bound on recipes",
+			reached and reached.total == 61 + bladeCost,
+			reached and tostring(reached.total) or "nothing")
+
+		for k = 1, 61 do vendorPrices[RAW + k] = nil end
+		recipes[930000] = nil
+
+		for i = 1, 8 do auctionPrices[A + i], auctionPrices[B + i] = nil, nil end
+		for _, spell in ipairs({ 900008, 900009, 900010, 900011, 910000 }) do
+			recipes[spell] = nil
+		end
+		for i = 1, 8 do recipes[910000 + i], recipes[920100 + i] = nil, nil end
+		Family.Recipes.MadeBy = realMade
+	end
 
 	-- **A recipe that eats itself must not hang the client**, which is the one place in this
 	-- addon where a loop would be found by a player rather than by a check: a tooltip.

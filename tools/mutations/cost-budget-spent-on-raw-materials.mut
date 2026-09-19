@@ -1,0 +1,6 @@
+name: the recipe budget is spent on materials that have no recipe
+file: addons/Family/Recipes.lua
+--- old
+			and not branch[part.item] and self:MadeBy(part.item) then
+--- new
+			and not branch[part.item] then
