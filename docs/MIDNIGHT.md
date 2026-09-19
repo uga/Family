@@ -318,8 +318,10 @@ Container 12 has the same first item on both characters, which fits it being the
 **Not settled:** container 6 matches too, and a first item cannot tell a shared container from
 the same item kept in the same place. Nor does the sweep say which two are void storage.
 
-**Container 5 is a carried bag on Midnight.** Mara's login sweep, before any bank, has 5 = 26
-slots (Ahia has no container 5). `NUM_BAG_SLOTS` is absent on Midnight (§5), so Family's bag
+**Container 5 is a carried bag on Midnight: the reagent bag.** Mara's login sweep, before any
+bank, has 5 = 26 slots (Ahia has no container 5). Alberto's screenshot of Mara's bags, 2026-09-19,
+shows it as a *Gatherer's Reagent Bag*: a first row of 2 slots and six rows of 4, 26 in all,
+beside four *Hexweave Bag*s, which are containers 1 to 4 at 30 each. `NUM_BAG_SLOTS` is absent on Midnight (§5), so Family's bag
 scanner would read 0 to 4 and miss it, and `Scanners/Bank.lua` would take 5 as the first bank
 bag.
 
