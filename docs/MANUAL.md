@@ -77,7 +77,7 @@ version.
 | any **data broker** bar | the same clicks, with money and bag space on the bar |
 | **shift-click** the button or the broker | changes what the bar counts |
 
-2.1 the Broker Bar
+### 2.1 The broker bar
 
 The bar starts on **the character you are playing**. It shows a bag icon with their free and
 total bag slots, then their money. The bag figure counts bag slots only.
@@ -87,13 +87,15 @@ back to the character. Those two show a group icon and the number of characters 
 middle click does the same as shift-click. Your choice is remembered, and the tooltip always
 says which of the three the bar is showing.
 
-The "your faction on this realm" setting counts one faction only. Two factions on one realm share no mailbox and no
-auction house, so merging money owned from both side would be misleading.
+The "your faction on this realm" setting counts one faction only. Two factions on one realm
+share no mailbox and no auction house, so adding up the money of both sides would be
+misleading.
 
-Left-click always opens the Family (by default on the Summary panel - unless a custom option is set) and right-click always opens the Options panel. Click again
-while that page is showing and the window closes.
+Left-click always opens Family, on the Summary panel unless you have set another one in
+Options (§13). Right-click always opens the Options panel. Click again while that page is
+showing and the window closes.
 
-2.2 the pop-up recap tooltip
+### 2.2 The recap tooltip
 
 **Hover the minimap button or the broker** to see the whole family at a glance: every realm,
 every member with their level, item level and money, and a total for all realms. Below that:
@@ -106,9 +108,9 @@ every member with their level, item level and money, and a total for all realms.
 The tooltip always lists everybody. When the bar counts less than that, a line near the bottom
 says what the bar is counting.
 
-**A large or very large family still fits the screen.** The realm totals, the grand total and the two
+**Even a very large family fits the screen.** The realm totals, the grand total and the two
 warnings are always shown. The list of characters takes the room that is left and ends with
-*and <N> more* where it has to stop to avoid filling the screen. The realm you are on gets room first, and within each
+*and N more* where it has to stop. The realm you are on gets room first, and within each
 realm the richest characters are kept.
 
 ![The minimap button hovered: every realm, every member, and the totals](images/broker-tooltip.png)
@@ -117,14 +119,15 @@ realm the richest characters are kept.
 
 ## 3. Summary
 
-This is where members are listed, grouped by realm. Where applicable each realm has a totals line, and a grand total follows
-when you have more than one realm. Click a column heading to sort by it.
+This is where your members are listed, grouped by realm. Where there is something to add up,
+each realm has a totals line, and a grand total follows when you have more than one realm.
+Click a column heading to sort by it.
 
 ![The summary on Overview, a family across two realms with a totals line](images/summary-overview.png)
 
 The buttons across the top choose which sections are shown:
 
-| Set | Columns |
+| Section | Columns |
 |---|---|
 | **Overview** | level, item level, rested experience, money, worth, time played, last seen |
 | **Bags** | free and total slots in the bags and in the bank, and when each was last seen |
@@ -132,14 +135,14 @@ The buttons across the top choose which sections are shown:
 | **Professions** | every profession known by each member and its rank, primaries first |
 | **Currencies** | honor, arena points, and anything else your game counts as a currency |
 | **Crafting** | every crafting cooldown in the family: ready, or when it comes back |
-| **Miscellaneous** | race, guild, where they logged out, hearthstone location, existing mounting skill, and world buffs stored in a Chronoboon |
+| **Miscellaneous** | race, guild, where they logged out, hearthstone location, riding skill, and world buffs stored in a Chronoboon |
 
 **A realm where you play both factions is split in two**, with a subtotal under each. The two
-sides share no mail and no auction house, so each subtotal counts gold those characters can actually send
-one another only. A realm with characters in one faction only on it is not split.
+sides share no mail and no auction house, so each subtotal counts only gold those characters
+can send one another. A realm where you play one faction is not split.
 
-**The two banners** at the right of the section buttons atop filter by faction. Both are on to begin with,
-and you can switch either off.
+**The two banners** at the right of the section buttons filter by faction. Both are on to
+begin with, and you can switch either off.
 
 What you can click:
 
@@ -148,35 +151,41 @@ What you can click:
 - **The Mail figure** on Activity unfolds that member's mail: one line per letter, with its
   sender, what is attached and when it expires.
 - **The Chrono figure** on Miscellaneous unfolds what their Chronoboon holds: each world buff
-  as its own icon, with the time left on it and the game's own description on hover. The figure itself counts how many buffs are stored in the Chrono.
-- **Right-click a member** to remove them from Family. You are asked first, by name and realm.
-  This removes Family's record only, never anything in the game.
+  as its own icon, with the time left on it and the game's own description on hover. The
+  figure itself is how many buffs the Chronoboon holds.
+- **Right-click a member** to remove them from Family. You are asked first, by name and
+  realm. This removes Family's record only, never anything in the game.
 
 **A blank and a dash mean different things.** In the **Chrono** column a number is how many
 buffs are stored, a blank means none, and a dash means Family does not know yet. In the
 **Guild** column a blank means the character is in no guild, and a dash means Family does not
 know yet. A dash fills in the next time you play that character.
 
-**Worth** is what everything that character holds comes to, in gold. The figure is obtained based on known, most recent AH buyout prices for tradable items, and on vendor sale prices on everything else. The same figure also appears as a line on their Possessions page. Hover on the row for a tooltip offering the exact amount, and a breakdown of how much of it
-comes from auction prices and how much from vendor prices. Worth adds up per realm and per
-faction, following the same logic applied to money. A character with nothing priced yet is blank, not zero.
+**Worth** is what everything that character holds comes to, in gold. Tradable items are valued
+at the most recent auction house buyout Family has seen, and everything else at what a vendor
+pays. The same figure appears as a line on their Possessions page. Hover the row for the exact
+amount, and for how much of it comes from auction prices and how much from vendor prices.
+Worth adds up per realm and per faction, the same way money does. A character with nothing
+priced yet is blank, not zero.
 
 **Siblings** (§11) appear here too. They sit under the realm they are on, after your own
-members, and under the name/alias of the family they belong to. They are never added to the grand totals.
-Right-click does not remove a sibling: untick them on the Wide Family panel to do that.
+members, and under the name or alias of the family they belong to. They are never added to the
+grand totals. Right-click does not remove a sibling. Untick them on the Wide Family panel to
+do that.
 
 **Class** is the colour of each member's name, and is spelled out in the row's tooltip.
 
-Two points of attention: Free and total slots are intended for "generic storage", so they leave out quivers, soul bags and other special bags,
-because nothing else fits in them. The Currencies set shows the currencies your family holds
-most of, and says how many it left out.
+Two things to know. Free and total slots count general storage, so they leave out quivers,
+soul bags and other special bags, because nothing else fits in them. The Currencies set shows
+the currencies your family holds most of, and says how many it left out.
 
 ---
 
 ## 4. Abilities & Talents
 
-The talent trees, drawn like the game draws them. Each icon sits at its own tier and column, and
-talents nobody has taken are drawn grey. On Mists the page shows the choice made at each tier.
+The talent trees, drawn like the game draws them. Each icon sits at its own tier and column,
+and talents nobody has taken are drawn grey. On Mists the page shows the choice made at each
+tier.
 
 ![Abilities and Talents: a tree drawn as the game draws it, untaken talents greyed](images/talents.png)
 
@@ -189,18 +198,22 @@ talents nobody has taken are drawn grey. On Mists the page shows the choice made
 - **Pets**: a hunter's stable and a warlock's demons, with what each creature can do.
 
 Hover anything for the game's own description of it. Talents and abilities are named by your
-own game, in your current language, whatever was the client's language set to when the character was recorded.
+own game, in your current language, whatever language the game was set to when the character
+was recorded.
 
-**Pets and Demons fill in one summon at a time.** The game says what a creature knows only while that
-creature is out. A hunter pet that is in the stable but has never been out is listed under *In
-the stable, never summoned - nothing recorded*.
+**Pets and demons fill in one summon at a time.** The game says what a creature knows only
+while that creature is out. A hunter pet that is in the stable but has never been out is
+listed under *In the stable, never summoned - nothing recorded*.
 
-**Hunter training points.** Each hunter pet ability shows what it cost. Each creature shows how many of its spent
-points Family can account for, such as *273 of 273 accounted for*. Points left to spend are in
-green on the creature's row. A freshly tamed pet owes points until it becomes loyal, and that
-figure is in red. The **Beast Training** list gives each line's rank, its cost and the level
-the pet needs. The hunter's window prices only what the pets you have read into Family can learn, so open
-it once on each pet. Each visit adds what the last one could not see. Pet abilities the hunter learnt for a pet class it does not own anymore will show up on the Beast Training list, but will show no TP cost until next time that hunter will tame and scan a beast capable of learning that ability.
+**Hunter training points.** Each hunter pet ability shows what it cost. Each creature shows
+how many of its spent points Family can account for, such as *273 of 273 accounted for*.
+Points left to spend are in green on the creature's row. A freshly tamed pet owes points until
+it becomes loyal, and that figure is in red. The **Beast Training** list gives each line's
+rank, its cost and the level the pet needs. The hunter's window prices only what the pets you
+have read into Family can learn, so open it once with each pet out. Each visit adds what the
+last one could not see. An ability the hunter learnt for a kind of pet they no longer own
+stays on the Beast Training list, but shows no training point cost until that hunter tames,
+and Family reads, a pet able to learn it.
 
 ---
 
@@ -215,25 +228,26 @@ sit in the slots they occupy in the game.
 seen*. It also says what everything on the page is worth (§15).
 
 **Worn gear comes first**, as a block of its own, titled *Equipped*. It counts as owned on
-tooltips too. If one character has a sword in the bank and is wearing another identical one, the tooltip
-says *2*: one in the bank and one equipped.
+tooltips too. If one character has a sword in the bank and is wearing another identical one,
+the tooltip says *2*: one in the bank and one equipped.
 
-**Each container is one row**: the backpack itself, then bags equipped in their slots. Hover the bag to see which bag
-it is, how many slots are free, and what it is restricted to if it is a quiver, a soul bag or
-another special bag. An option draws all the bags as one solid block, and the bank as another (§13) - while still leaving Keyrings separate though.
+**Each container is one row**: the backpack itself, then bags equipped in their slots. Hover
+the bag to see which bag it is, how many slots are free, and what it is restricted to if it is
+a quiver, a soul bag or another special bag. An option draws all the bags as one solid block,
+and the bank as another (§13). The keyring stays separate.
 
-**The filter box atop dims everything that does not match** what you type, so the matches stand out
-where they are.
+**The filter box at the top dims everything that does not match** what you type, so the
+matches stand out where they are.
 
 **Clicking an item opens the bag it is in**, when it belongs to the character you are playing.
-Another character's bags cannot be opened from here of course.
+Another character's bags cannot be opened from here.
 
 **Items with charges show how many are left.** A Wizard Oil with two uses gone shows `3` in
 the corner of its icon. The same goes for Mana Oils, a Bag of Marbles and anything else with
 charges, in your bags, your bank and the guild bank tabs you have opened.
 
-**Tooltips match what you see in your own bags.** A BOE shield you have worn reads *Soulbound*
-here, as it does in your bag.
+**Tooltips match what you see in your own bags.** A bind-on-equip shield you have worn reads
+*Soulbound* here, as it does in your bag.
 
 **Mail and auctions are drawn as containers too.** Hover a letter to read its subject, who
 sent it, when it expires and the money in it.
@@ -243,9 +257,7 @@ items to one of your own characters, Family records them against that character 
 the mail row says how many letters are *in the post*. When that character opens their mailbox,
 what is really there replaces the lot. Mail sent to anybody else is not recorded.
 
-
-See §9 to learn about about the Whole Family option
-
+See §9 for the **Whole family** button.
 
 ---
 
@@ -263,37 +275,43 @@ Sort by:
 | **Item level** | the hardest recipes, and within a colour the ones that make the highest-level items |
 | **Skill needed** | the lowest skill, so you see what you can make next. The skill is not known for every recipe yet |
 
-The panel shows Recipes calling them by the name of the item / spell they produce, and their names are coloured as the game colours their difficulty vs that member's current skill level: orange, yellow, green, grey. 
+Each recipe is called by the name of the item or spell it produces. The name is coloured as
+the game colours its difficulty at that member's current skill: orange, yellow, green, grey.
 
-The counts along the top say how many recipes of each current difficulty level the members owns of each. 
+The counts along the top say how many recipes of each colour the member knows.
 
-The search box finds a recipe by the name of the item / spell it produces.
+The search box finds a recipe by the name of the item or spell it produces.
 
-Hover a recipe icon or its line for the crafted item / spell original tooltip complemented with who in the family owns that crafted item already, who can craft it, and which materials are required by the recipe and their costs, if known.
+Hover a recipe's icon or its line for the game's tooltip of the item or spell. Family adds who
+in the family already owns the item, who can craft it, and which materials the recipe needs,
+with their cost where known.
 
 **Every recipe row shows its materials** as icons on the right, with the quantity on each.
-This works for every character, not only the one you are playing. Hover an icon for that material's own tooltip, with who in the family already has or can make some, and its cost (if known). 
+This works for every character, not only the one you are playing. Hover an icon for that
+material's own tooltip, with who in the family already has or can make some, and its cost
+where known.
 
-**Can make** may be printed next to some materials list saying how many times that character could make the recipe. It counts the
-materials Family last saw in that particulat member's bags and bank. Mail, auctions and worn gear are not counted.
+**Can make** appears beside the materials of some recipes, and says how many times that
+character could make the recipe. It counts the materials Family last saw in that member's bags
+and bank. Mail, auctions and worn gear are not counted.
 
 Wands, rods and oils made by an enchanter are shown as the item itself, with its own icon, who
 holds one and what it takes to make.
 
-**Hold CTRL over a recipe iten** owned by at least one family member and the tooltip adds what the family holds of the item it makes,
-and what that is worth (§15).
+**Hold CTRL over a recipe** whose item somebody in the family owns, and the tooltip adds what
+the family holds of the item it makes, and what that is worth (§15).
 
-**Click a recipe** to select it in the current member's profession window, if that window is open. If it is
-not, Family remembers the recipe and the panel highlights the relevant profession button, atop. Click that
-button and the profession window opens with the recipe selected. This exclusively works on the currently logged character's recipes.
+**Click a recipe** to select it in the current member's profession window, if that window is
+open. If it is not, Family remembers the recipe and the panel highlights that profession's
+button at the top. Click that button and the profession window opens with the recipe selected.
+This works only for the character you are playing.
 
 **Professions that make nothing are not listed here.** Herbalism, skinning and fishing have no
 recipes. They are on the summary, with their rank. A note under the buttons names any
 profession left out and says why: it makes nothing, or its window was *never opened* on that
 character.
 
-See §9 to learn about about the Whole Family option
-
+See §9 for the **Whole family** button.
 
 ---
 
@@ -325,14 +343,14 @@ currency without a cap says *no cap*. Currencies exist from Burning Crusade on.
 
 **Reputations**, by standing, with progress through the current standing.
 
-**Quests**: the quest log, by zone, in the game's difficulty colours vs the member's current level, with progress on each
-quest. **Click a quest to open it in the game's quest log**, when it belongs to the character
-you are playing. Only those rows light up on hover.
+**Quests**: the quest log, by zone, in the game's difficulty colours for that member's level,
+with progress on each quest. **Click a quest to open it in the game's quest log**, when it
+belongs to the character you are playing. Only those rows light up on hover.
 
 Reputations and Quests also have a **Whole family** view. For quests it lists each quest once,
 with the characters who have it underneath, the one furthest along first.
 
-See §9 for more about Whole Family.
+See §9 for more about **Whole family**.
 
 **Achievements**, by category, with points and the progress on unfinished ones. Mists only. On
 the other versions the section is not shown.
@@ -341,8 +359,6 @@ the other versions the section is not shown.
 a quest, or a worn item on your own character. Family is drawn above the game's panels, so the
 window you asked for would be hidden behind it. Type `/family` to bring Family back on the
 page you left.
-
-
 
 ---
 
@@ -356,29 +372,33 @@ bags, bank, mail, auctions, guild bank, and equipped.
 
 ![An item's own tooltip in the game, with Family's block added to it](images/tooltip-item.png)
 
-**The ten members (or less) holding the most are named** if the game window allows for a large enough tooltip, the rest are counted together, with how many they hold, so the total at the top still adds up. Guild banks are shortened the same way. An Option panel checkbox allows for overriding the fixed shortening thesholds and find the one still guarantees the tooltip not to overgrow the game window is present.
+**Up to ten members, those holding the most, are named**, where the screen has room for that
+many. The rest are counted together, with how many they hold, so the total at the top still
+adds up. Guild banks are shortened the same way. Untick *Fold long lists to fit the page* in
+Options and the tooltip names as many as fit on your screen.
 
-**Hold CTRL and ALT and click the item** to open Family on Possession / Wide Fanily, to show everyone who has one. It works in
-your bags, on a link in chat, and anywhere else the game passes the click on. The tooltip
-mentions the shortcut in grey, under the owners, on any item the family holds. It is left off
-action bar buttons, where those keys belong to the bar.
+**Hold CTRL and ALT and click the item** to open Family on Possessions, **Whole family**,
+showing everyone who has one. It works in your bags, on a link in chat, and anywhere else the
+game passes the click on. The tooltip mentions the shortcut in grey, under the owners, on any
+item the family holds. It is left off action bar buttons, where those keys belong to the bar.
 
 **Soulbound copies on your other characters are marked**, in the game's own word. For the
 character you are currently playing the game already says it, and Family does not repeat it.
 
-**Random-suffix items are correctly counted one version at a time.** A sword *of the Bear* and the same
-sword *of the Whale* are counted, and priced, separately. Enchants and gems make no difference though:
-two of one sword with different enchants are counted as two of the same thing.
+**Random-suffix items are counted one version at a time.** A sword *of the Bear* and the same
+sword *of the Whale* are counted, and priced, separately. Enchants and gems make no difference
+though: two of one sword with different enchants are counted as two of the same thing.
 
-**Hover a recipe item** and Family adds a **Family crafters** block. It lists who knows the recipe,
-who can learn it now, and who has the profession but needs more skill or levels. Only members
-with that profession are listed.
+**Hover a recipe item** and Family adds a **Family crafters** block. It lists who knows the
+recipe, who can learn it now, and who has the profession but needs more skill or levels. Only
+members with that profession are listed.
 
 - The recipe is recognised by what it teaches and what it makes, so it is matched correctly
-  whatever language the client used while a character was recorded in.
+  whatever language the game was in when a character was recorded.
 - **Recipes that need a specialisation.** An armoursmith cannot make a sword, and a goblin
-  engineer cannot make a gnomish device. A character on the wrong branch is not offered as able
-  to learn the recipe. The line names the branch the recipe needs, in your current client language.
+  engineer cannot make a gnomish device. A character on the wrong branch is not offered as
+  able to learn the recipe. The line names the branch the recipe needs, in your game's
+  current language.
 - A character Family has not read since it learned to check branches says *may know it*. Log
   in on them once and it fills in.
 
@@ -404,7 +424,8 @@ Possessions and Professions each have a **Whole family** button at the top right
 same button as the one on the Character page's gear section (§7).
 
 Press it and the search covers everybody, and the results say **who**: who has the mageweave,
-who can make this belt, who knows this enchant. Type at least two letters in the search field atop, then refine the list.
+who can make this belt, who knows this enchant. Type at least two letters in the search box at
+the top, then refine the list.
 
 **On Possessions** each item is listed once, with whoever has some underneath: most first,
 with how many and where they keep it. **Sort by** character and you get each character with
@@ -414,14 +435,14 @@ what they carry. Each version of a random-suffix item (§8) is a line of its own
 who can make it are listed several to a line. Guildmates who share their professions (§12) are
 listed as a second group. The search waits until you stop typing.
 
-**Long lists of owners / crafters fold only when the page cannot hold them.** Where everything fits, nothing folds.
-Where it does not, every list on the page folds by the same amount, as little as brings the
-page back to one screen. A folded list always keeps at least three names, and ends in a line
-you can click to open it.
+**Long lists of owners or crafters fold only when the page cannot hold them.** Where
+everything fits, nothing folds. Where it does not, every list on the page folds by the same
+amount, as little as brings the page back to one screen. A folded list always keeps at least
+three names, and ends in a line you can click to open it.
 
 **To stop lists folding**, untick *Fold long lists to fit the page* in Options. Every name is
-then drawn and the page scrolls (or scrolls longer). This applies to the game's tooltips too, which still stop
-before they run off your screen.
+then drawn and the page scrolls (or scrolls longer). This applies to the game's tooltips too,
+which still stop before they run off your screen.
 
 Only items your game has named can be found. An item nobody has looked at since the last patch
 has no name yet, and Family says so.
@@ -435,8 +456,8 @@ Transmutes, mooncloth, salt shakers and the rest.
 **Crafting cooldowns only.** Raid lockouts, heroic resets and daily quest resets are not
 recorded.
 
-**Family records the moment a cooldown comes ready**, not the time remaining. That's why a cooldown
-recorded three days ago is still calculated right today, however long the game was closed.
+**Family records the moment a cooldown comes ready**, not the time remaining. That is why a
+cooldown recorded three days ago is still right today, however long the game was closed.
 
 **Summary / Crafting** shows all of them at once. There is a line for each kind of cooldown,
 with everybody who has it underneath: those who can use it now first, then whoever comes back
@@ -455,21 +476,23 @@ files it under the profession whose recipe makes that item.
 
 **A transmute is listed even before you have ever used it.** Family knows from the game which
 recipes carry a cooldown, and for how long on your version of the game. Mithril to truesilver
-is two days on Classic Era and twenty hours on Burning Crusade. 
+is two days on Classic Era and twenty hours on Burning Crusade.
 
 **Only members with a crafting cooldown are listed.** Thirty members with three alchemists
-make three rows. 
+make three rows.
 
-**Cooldowns are named in your language**, whichever locale was the client on which recorded them.
+**Cooldowns are named in your language**, whatever language the game was in when they were
+recorded.
 
-**At login Family says which cooldowns are ready.** Switch that off in Options if you want. The minimap
-tooltip counts them (§2), and `/family ready` lists them by name.
+**At login Family says which cooldowns are ready.** Switch that off in Options if you want.
+The minimap tooltip counts them (§2), and `/family ready` lists them by name.
 
 **Only professions the character still has.** Drop alchemy and cooldowns stop counting.
 
-**Item cooldowns are not proactively announced when they come ready while playing.** Using a recipe needs the profession
-window open, and Family reads that window. Opening the crafting window 1 minute after a cooldown became ready will give the right information, but nothing will push that information on the guild chat without opening the Family window first.
-
+**Item cooldowns are not announced when they come ready while you play.** Using a recipe needs
+the profession window open, and Family reads that window. Opening the profession window one
+minute after a cooldown became ready will give the right information, but nothing will push
+that information on the guild chat without opening the Family window first.
 
 ---
 
@@ -480,24 +503,28 @@ yours, and they can add yours. Nothing is shared until you tick it, one member a
 category at a time.
 
 > **Wide Family is switched off until you ask for it.** The switch is in **Options**, beside
-> the one for Guild share, or type `/family wide on`. It needs no reload, and both players willing to share information 
+> the one for Guild share, or type `/family wide on`. It needs no reload, and both players
 > have to switch it on. `/family wide off` switches it
 > off again, and anything you were shown through a link stops being shown.
 
-**Who you can create a link with.** The other player must be online, running Family, and on your realm
-or a realm connected to it, and on your faction when you establish the link. You do not need to share a guild or a group. A link travels by whisper, so it reaches as far as a whisper does. When a linked family has no character within reach, the panel says that none of their characters is on a realm this character can reach.
+**Who you can link with.** The other player must be online, running Family, and on your realm
+or a realm connected to it, and on your faction when you establish the link. You do not need
+to share a guild or a group. A link travels by whisper, so it reaches as far as a whisper
+does. When a linked family has no character within reach, the panel says that none of their
+characters is on a realm this character can reach.
 
 ### Linking
 
-Type the other player's online character name on the **Wide Family** panel and press *Ask to link*.
-They see the request and press *Accept* or *Decline*. Until they accept, nothing has been
-exchanged: no member list, no names.
+Type the other player's online character name on the **Wide Family** panel and press *Ask to
+link*. They see the request and press *Accept* or *Decline*. Until they accept, nothing has
+been exchanged: no member list, no names.
 
-One established, a link is between two families, not two characters - more precisaly, an established link will show up to both users, on each of their characters when they log it. It keeps working whichever character
-either of you is playing.
+Once established, a link is between two families, not two characters. Both players see it on
+every one of their characters. It keeps working whichever character either of you is playing.
 
-Open a link and you can type a name / alias in **Call them**. That is what the family will be called on
-your screen from then on. Empty the box to get their default name back, which will be the name of the particular character the link was established with in the first place.
+Open a link and you can type a name or alias in **Call them**. That is what the family will be
+called on your screen from then on. Empty the box to get the default name back, which is the
+name of the character the link was made with.
 
 ### If nobody answers
 
@@ -585,24 +612,25 @@ will take. Use it when something looks wrong on their side although nothing chan
 
 Under *What ... shares with you* is everyone that family has given you. Beside each member are
 the same category columns, greyed, because they are the other player's choice. They show what
-that player granted. A family running an older version of Family does not report its grants, and there
-Family shows only what arrived.
+that player granted. A family running an older version of Family does not report its grants,
+and there Family shows only what arrived.
 
 **You can look at any shared character.** The member buttons on Abilities & Talents,
 Possessions, Professions and Character lists them at the bottom, under their family's name.
 
 ### Siblings
 
-Each member shared with you by the other party has a **Sibling** tick box. Tick it and that character is listed with your
-own in the Summary, under the realm they are on and the name of their family, in every column
-set. They are also in the whole-family gear rows (§7), and their possessions count on item
-tooltips, where their name carries their family's name. Click the word *Sibling* to tick the
-whole column.
+Each member shared with you by the other party has a **Sibling** tick box. Tick it and that
+character is listed with your own in the Summary, under the realm they are on and the name of
+their family, in every column set. They are also in the whole-family gear rows (§7), and their
+possessions count on item tooltips, where their name carries their family's name. Click the
+word *Sibling* to tick the whole column.
 
-Ticking a sibling sends nothing and asks nobody. Ticking a linked character into a Sibling only changes where you see its data on your end, not which data you get or don't get. You can only tick a character that the other family
-already shares with you.
+Ticking a sibling sends nothing and asks nobody. Ticking a linked character into a Sibling
+only changes where you see its data on your end, not which data you get or don't get. You can
+only tick a character that the other family already shares with you.
 
-A sibling is never added to your totals. 
+A sibling is never added to your totals.
 
 If the other player unticks that member, or either of
 you ends the link, the sibling disappears with it.
@@ -623,8 +651,8 @@ so.
 
 ## 12. Guild share
 
-Guildmates who run Family will see each other's alt characters also in the same guild (and only those), without anybody ticking
-anything. You can also tell the guild what your characters can craft.
+Guildmates who run Family see each other's characters in that guild, and only those, without
+anybody ticking anything. You can also tell the guild what your characters can craft.
 
 > **Guild share is switched off until you ask for it.** The switch is in **Options**, beside
 > the one for Wide Family, or type `/family guild on`. It needs no reload. The panel is in the
@@ -739,23 +767,34 @@ The **Extras** panel holds optional jobs. Each has its own switch.
 | Say what a craftable item is made with | off | lists every material and how many, on the tooltip of anything a profession makes and of enchants, with the total cost where Family has prices |
 | Say what came out of the mailbox | off | a chat line for each sum and item taken out of a letter, and a total for the visit |
 
-**With price reading off**, Family values everything at vendor sell-off prices, reads nothing at the
-auction house and adds no tab there. Prices already recorded are kept for however, so they will show up again (with their age) when you switch it back on.
+**With price reading off**, Family values everything at what a vendor pays, reads nothing at
+the auction house and adds no tab there. Prices already recorded are kept, so they show up
+again, with their age, when you switch it back on.
 
 **Made with.** An item that is crafted is costed through its own recipe, however
 deep the chain goes. A Lionheart Champion needs a Lionheart Blade, so it costs what the
 Blade's materials cost. Where a part is on sale, its auction price is used in place of the
 cost of making it. When a material has no price, the total says *some prices are missing*.
 
-Note: Family knows vendor sell-to prices from day 1, but does not know any vendor buy-from price until one of your characters visits a vendor offering that item. So Family is readily able to calculate all your Possessions worth at vendor sell-off prices without you having to collect any data from the world, but will initially miss all data required to price how much it will cost you to craft an item you have a recipe for. Most of the pricing for the latter are typically available in form of AH listings, while base reagent costs (e.g. vials, threads, flux, etc) will have to be "learnt" from general goods or other vendors in game. Purchase prices are saved per faction and per server group.
+**What a vendor pays is known from the first day. What a vendor charges is not**, until one of
+your characters visits a vendor who sells that item. So Family can value everything you own at
+vendor prices straight away, but at first it cannot say what a recipe costs to make. Most
+material prices come from auction house listings. Basic reagents such as vials, thread and
+flux have to be seen once at a vendor. Purchase prices are saved per faction and per server
+group.
 
 **What came out of the mailbox** works with the game's own Open All and with mail addons. The
-total of the money collected from all messages appears when nothing is left to take, or when you close the mailbox.
+total of the money collected from all letters appears when nothing is left to take, or when
+you close the mailbox.
 
 ### The auction house
 
 **Prices come from what you look at.** Family reads the list the auction window is showing:
-your own searches, and the full scan of a third party specialised addon such as Auctionator or Auctioneer. It sends no request of its own unless you press *Read it all* - which is anyhow not needed in case you scan all with other addons. Prices are kept per realm and per faction. A price read at a **goblin** auction house counts for both factions of that realm, and your own faction's auction house wins where it has a price.
+your own searches, and the full scan of a specialised addon such as Auctionator or Auctioneer.
+It sends no request of its own unless you press *Read it all*, which you do not need if you
+scan with another addon. Prices are kept per realm and per faction. A price read at a
+**goblin** auction house counts for both factions of that realm, and your own faction's
+auction house wins where it has a price.
 
 **Connected realms share one auction house**, goblin houses included. A price read on any
 realm of a connected group counts for your characters on all of them, and the most recent
@@ -769,7 +808,7 @@ panel.
 
 **A full read takes minutes on Classic Era and Burning Crusade.** The game answers one page at
 a time. If you run an auction addon, its own full scan is faster and Family reads the same
-prices from it. On **Mists of Pandaria** the whole house arrives in one answer, so in seconds.
+prices from it. On **Mists of Pandaria** the whole house arrives in one answer, within seconds.
 
 A read that stops getting answers ends and says why. If it will not start, search the auction
 house once and turn one page, then press the button again.
@@ -782,14 +821,17 @@ house once and turn one page, then press the button again.
 
 On the Extras panel, **Auction prices** lists every price Family holds: the item, the market,
 the price of one, the price it replaced and when it was seen. Filter it by market, by item
-name, or by the auction house's own categories. The main reason for this panel is finding, and managing, troll pricing.
+name, or by the auction house's own categories. The panel is mainly for finding and managing
+troll prices.
 
 - A price ten times or more the one it replaced, or ten times what the item costs on your
-  other markets, is marked in red as a Suspect. **Suspects only** shows just those.
+  other markets, is marked in red as a suspect. **Suspects only** shows just those.
 - **Delete** removes a price. Your next visit to that auction house reads a new one.
-- **Ban** keeps the price in your database but leaves it out of every figure Family works out, until you
-  press **Lift** or delete it. Family goes on showing it beside the ban. A ban on one
-  realm of a connected group covers the whole group. **Bans only** shows just the bans. Scanning the AH again updates the figures, so choosing Bans only you can quickly see which troll prices are now gone, and Lift (re-enable) the item again.
+- **Ban** keeps the price in your database but leaves it out of every figure Family works
+  out, until you press **Lift** or delete it. Family goes on showing it beside the ban. A ban
+  on one realm of a connected group covers the whole group. **Bans only** shows just the
+  bans. Scanning the auction house again updates the figures, so with **Bans only** you can
+  quickly see which troll prices are gone and **Lift** the ban.
 
 ---
 
