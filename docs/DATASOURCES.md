@@ -2114,6 +2114,12 @@ client before it went near a real one: a throwing call, holes in a return, an ab
 refused event and a template that fails were each recorded as such. What Midnight answers goes
 in `docs/MIDNIGHT.md` on the branch.
 
+`tools/surface.py --report ASKED.lua [CONTROL.lua]` reads the probe's saved variables back. It
+lists what is absent, refused, failing or throwing, each with the Family files that use it. With
+a control, it lists only what differs, including calls both clients answer in a different
+shape. The saved variables themselves stay out of the tree, because they carry a character,
+its realm, its guild and its gold.
+
 ---
 
 ## 3. wago.tools — the client's own tables, out of game

@@ -22,12 +22,16 @@ The listing cannot see three things, so each is gathered its own way:
 
     tools/surface.py             write tools/FamilySurface/Surface.lua
     tools/surface.py --check     exit 1 if that file is not what this would write
+    tools/surface.py --report ASKED.lua [CONTROL.lua]
+                                 what a client answered, from the probe's saved variables,
+                                 each name with the Family files that use it; with a
+                                 control, only where the two clients differ
 
 Re-run after every `git merge main`: a merge that brings in a new call brings in a new
 question for the client.
 """
 
-import glob, os, re, subprocess, sys
+import collections, glob, os, re, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "tools", "FamilySurface", "Surface.lua")
@@ -62,9 +66,12 @@ def uncommented(text):
     return re.sub(r"--[^\n]*", "", text)
 
 
-def measure():
+def measure(uses=None):
+    """The four lists. Given a dict, also fills it with each name's files."""
     reads, writes, members, strings, templates = set(), set(), set(), set(), set()
+    uses = uses if uses is not None else collections.defaultdict(set)
     for path in sources():
+        where = os.path.relpath(path, os.path.join(ROOT, "addons"))
         lines = listing(path)
         for index, line in enumerate(lines):
             found = GLOBAL.search(line)
@@ -72,15 +79,20 @@ def measure():
                 continue
             op, register, name = found.groups()
             (reads if op == "GETGLOBAL" else writes).add(name)
+            uses[name].add(where)
             if op == "GETGLOBAL" and NAMESPACE.match(name) and index + 1 < len(lines):
                 field = FIELD.search(lines[index + 1])
                 if field and field.group(1) == register:
                     members.add(name + "." + field.group(2))
+                    uses[name + "." + field.group(2)].add(where)
 
         text = uncommented(open(path, encoding="utf-8").read())
         for space, field in re.findall(r"\b(C_\w+|Enum|TooltipDataProcessor)\.(\w+)", text):
             members.add(space + "." + field)
-        strings.update(re.findall(r"[\"']([A-Z][A-Z0-9_]{3,})[\"']", text))
+            uses[space + "." + field].add(where)
+        for literal in re.findall(r"[\"']([A-Z][A-Z0-9_]{3,})[\"']", text):
+            strings.add(literal)
+            uses[literal].add(where)
         for kind, template in re.findall(
                 r"CreateFrame\(\s*[\"'](\w+)[\"'][^)]*?[\"'](\w*Template\w*)[\"']", text):
             templates.add(kind + ":" + template)
@@ -110,7 +122,136 @@ def render():
     )
 
 
+# The probe's saved variables are Lua, so Lua reads them. Each run comes out as tab-separated
+# lines: run, kind, name, answer.
+READER = r"""
+dofile(arg[1])
+local function out(run, kind, name, answer)
+    io.write(run, "\t", kind, "\t", name, "\t", (tostring(answer):gsub("[\t\r\n]", " ")), "\n")
+end
+for run, r in pairs(FamilySurfaceDB or {}) do
+    for _, kind in ipairs { "globals", "members", "events", "templates" } do
+        for name, answer in pairs(r[kind] or {}) do out(run, kind, name, answer) end
+    end
+    for _, line in ipairs(r.calls or {}) do
+        local name, answer = line:match("^(.-%)) (.*)$")
+        out(run, "calls", name or line, answer or "")
+    end
+    out(run, "interface", "interface", r.interface)
+end
+"""
+
+
+def answers(path):
+    run = subprocess.run(["lua5.1", "-e", READER.replace("arg[1]", repr(path))],
+                         capture_output=True, text=True)
+    if run.returncode != 0:
+        sys.exit("could not read %s:\n%s" % (path, run.stderr))
+    runs = collections.defaultdict(lambda: collections.defaultdict(dict))
+    for line in run.stdout.splitlines():
+        name, kind, key, answer = line.split("\t", 3)
+        runs[name][kind][key] = answer
+    if len(runs) != 1:
+        sys.exit("%s holds %d runs; --report reads files with exactly one" % (path, len(runs)))
+    (label, run_), = runs.items()
+    return label, run_
+
+
+def shape(answer):
+    """What a call's answer looks like, without its values: absent, throws, or the types."""
+    if answer.startswith("absent") or answer.startswith("throws"):
+        return answer.split(" ", 1)[0]
+    if not answer.startswith("answers "):
+        return answer
+    values = answer[len("answers "):]
+    if values == "(nothing)":
+        return "nothing"
+    kinds = []
+    for value in values.split(" | "):
+        if value.startswith('"'):
+            kinds.append("string")
+        elif value in ("true", "false"):
+            kinds.append("boolean")
+        elif value in ("nil", "table", "function", "userdata") or value.startswith("+"):
+            kinds.append(value)
+        else:
+            kinds.append("number")
+    return ", ".join(kinds)
+
+
+def report(asked_path, control_path=None):
+    uses = collections.defaultdict(set)
+    measure(uses)
+    label, asked = answers(asked_path)
+    control_label, control = answers(control_path) if control_path else (None, None)
+
+    def files(name):
+        found = sorted(uses.get(name, ()))
+        return ", ".join(found) if found else "(no file found)"
+
+    def section(title, rows):
+        print("\n## %s (%d)\n" % (title, len(rows)))
+        for row in rows:
+            print("- " + row)
+
+    print("# %s, interface %s" % (label, asked["interface"]["interface"]))
+    if control:
+        print("# against %s, interface %s" % (control_label, control["interface"]["interface"]))
+
+    for kind, word in (("globals", "Globals"), ("members", "Namespace members")):
+        rows = []
+        for name, answer in sorted(asked[kind].items()):
+            if answer != "nil":
+                continue
+            if control and control[kind].get(name, "nil") == "nil":
+                continue
+            rows.append("`%s` - %s" % (name, files(name)))
+        section(word + " absent" + (", present on the control" if control else ""), rows)
+
+    rows = []
+    for name, answer in sorted(asked["events"].items()):
+        if answer == "registers":
+            continue
+        if control and control["events"].get(name) != "registers":
+            continue
+        rows.append("`%s` - %s" % (name, files(name)))
+    section("Literals refused as events" + (", registered on the control" if control else ""),
+            rows)
+
+    rows = []
+    for name, answer in sorted(asked["templates"].items()):
+        if answer != "builds":
+            rows.append("`%s` - %s" % (name, answer))
+    section("Templates that do not build", rows)
+
+    rows = []
+    for name, answer in sorted(asked["calls"].items()):
+        if answer.startswith("throws"):
+            rows.append("`%s` %s" % (name, answer))
+    section("Calls that throw", rows)
+
+    if control:
+        rows = []
+        for name, answer in sorted(asked["calls"].items()):
+            other = control["calls"].get(name)
+            if other is None or answer.startswith("absent") or other.startswith("absent"):
+                continue
+            if shape(answer) != shape(other):
+                rows.append("`%s`\n  - here: %s\n  - control: %s" % (name, answer, other))
+        section("Calls both clients answer, in a different shape", rows)
+    else:
+        rows = ["`%s` %s" % (name, answer) for name, answer in sorted(asked["calls"].items())
+                if not answer.startswith("absent")]
+        section("Calls answered", rows)
+
+
 def main():
+    if "--report" in sys.argv[1:]:
+        paths = sys.argv[sys.argv.index("--report") + 1:]
+        if not 1 <= len(paths) <= 2:
+            sys.exit("--report takes the asked client's file and, optionally, a control's")
+        report(*paths)
+        return
     text = render()
     if "--check" in sys.argv[1:]:
         current = open(OUT, encoding="utf-8").read() if os.path.exists(OUT) else ""
