@@ -304,10 +304,24 @@ answered a table for item 1: `name` "Tough Hunk of Bread", `price` 20, `stackCou
 `C_MerchantFrame` holds seven functions. The five other `Get…` and `Is…` ones answered, and
 `SellAllJunkItems` was listed and not called.
 
+**Mists, the control (Duecalzini, version 3, 2026-09-19): no answer to compare.** Two seconds
+after the vendor opened, `GetMerchantNumItems()` answered 0 and every item call answered
+nothing. Either that vendor sells nothing or its list had not arrived. What it does show:
+`GetMerchantItemInfo` exists on Mists, and `C_MerchantFrame` exists there with one function,
+`GetBuybackItemID`, so `C_MerchantFrame.GetItemInfo` is Midnight's and not Mists'.
+
+The same run's login sweep, for the record: -2 = 32, -1 = 28, 0 = 20 and 1 to 4 = 12. A keyring
+container of 32 slots answers on Mists, where `Capabilities.lua` has the keyring confirmed absent
+in the game since 2026-08-08. That is one more case of the client's surface disagreeing with the
+game, and it changes nothing here.
+
 ### Still to do for step 1
 
 1. ~~Where the bank is on Midnight~~: containers 6 to 12 (§6). Whether any are the account's
    is still open.
 2. ~~What replaces `GetMerchantItemInfo`~~: `C_MerchantFrame.GetItemInfo` (§6).
-3. A Mists vendor, as the control for the merchant calls. **Waiting on the Mists version-3
-   file.**
+3. A Mists vendor, as the control for the merchant calls. **Run, and not obtained**: the vendor
+   listed no items (above). Of the merchant calls Midnight still has, `GetMerchantItemLink`
+   answered an ordinary link and `GetMerchantItemCostInfo` 0 for a vendor's bread. What a
+   Mists vendor with goods would add is the shape of those two on the client where Family
+   already works.
