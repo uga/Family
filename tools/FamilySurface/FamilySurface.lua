@@ -196,7 +196,7 @@ local WINDOWS = {
 		{ "GetInboxNumItems" }, { "GetInboxHeaderInfo", 1 }, { "GetInboxItem", 1, 1 },
 		{ "GetInboxItemLink", 1, 1 },
 	} },
-	MERCHANT_SHOW = { key = "merchant", extra = function() return namedReads("C_MerchantFrame") end,
+	MERCHANT_SHOW = { key = "merchant", shown = "MerchantFrame", atOnce = true, extra = function() return namedReads("C_MerchantFrame") end,
 	calls = {
 		{ "GetMerchantNumItems" }, { "GetMerchantItemInfo", 1 }, { "GetMerchantItemLink", 1 },
 		{ "GetMerchantItemCostInfo", 1 },
@@ -380,9 +380,19 @@ local function probe()
 end
 
 -- Into the run this login made; the latest opening of a window replaces the one before.
-local function askWindow(window)
+-- A window asked at once is filed under its key with "AtOnce" added, so the two moments sit side
+-- by side. `shown` names the window's frame where one is named - from memory, like
+-- C_MerchantFrame - and says whether it was still open when asked: a merchant list that is
+-- empty after the window closed says nothing about the client.
+local function askWindow(window, atOnce)
 	if not current then probe() end
 	local answers = {}
+	if window.shown then
+		local frame = _G[window.shown]
+		local ok, open = pcall(function() return frame and frame:IsShown() end)
+		answers[#answers + 1] = window.shown .. ":IsShown() " .. (frame == nil and "absent (nil)"
+			or ok and ("answers " .. tostring(open)) or ("throws " .. show(open, ERROR_LIMIT)))
+	end
 	for _, call in ipairs(window.calls) do answers[#answers + 1] = ask(call) end
 	if window.extra then
 		local ok, lines = pcall(window.extra)
@@ -390,12 +400,13 @@ local function askWindow(window)
 			answers[#answers + 1] = line
 		end
 	end
-	current.windows[window.key] = answers
+	local key = window.key .. (atOnce and "AtOnce" or "")
+	current.windows[key] = answers
 	local threw = 0
 	for _, line in ipairs(answers) do
 		if line:find(") throws ", 1, true) then threw = threw + 1 end
 	end
-	print(("|cff88ccffFamily Surface|r %s: %d calls asked, %d threw."):format(window.key,
+	print(("|cff88ccffFamily Surface|r %s: %d calls asked, %d threw."):format(key,
 		#answers, threw))
 end
 
@@ -406,6 +417,12 @@ frame:RegisterEvent("PLAYER_LOGIN")
 for event in pairs(WINDOWS) do pcall(frame.RegisterEvent, frame, event) end
 frame:SetScript("OnEvent", function(_, event)
 	local window = WINDOWS[event]
+	-- A Mists vendor that sold goods answered no items two seconds after opening, so the
+	-- merchant is also asked the moment it opens.
+	if window and window.atOnce then
+		local ok, problem = pcall(askWindow, window, true)
+		if not ok then print("|cff88ccffFamily Surface|r failed: " .. tostring(problem)) end
+	end
 	C_Timer.After(window and 2 or 5, function()
 		local ok, problem = pcall(window and askWindow or probe, window)
 		if not ok then print("|cff88ccffFamily Surface|r failed: " .. tostring(problem)) end

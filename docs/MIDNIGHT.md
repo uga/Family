@@ -306,7 +306,10 @@ answered a table for item 1: `name` "Tough Hunk of Bread", `price` 20, `stackCou
 
 **Mists, the control (Duecalzini, version 3, 2026-09-19): no answer to compare.** Two seconds
 after the vendor opened, `GetMerchantNumItems()` answered 0 and every item call answered
-nothing. Either that vendor sells nothing or its list had not arrived. What it does show:
+nothing. **The vendor did sell goods** (Alberto, 2026-09-19), so the list was either not there
+yet, or the window had already closed when the probe asked. Version 4 of the probe asks the
+merchant the moment it opens and again two seconds later, and records each time whether
+`MerchantFrame` is still shown, which is a second name taken from memory. What it does show:
 `GetMerchantItemInfo` exists on Mists, and `C_MerchantFrame` exists there with one function,
 `GetBuybackItemID`, so `C_MerchantFrame.GetItemInfo` is Midnight's and not Mists'.
 
@@ -320,8 +323,8 @@ game, and it changes nothing here.
 1. ~~Where the bank is on Midnight~~: containers 6 to 12 (§6). Whether any are the account's
    is still open.
 2. ~~What replaces `GetMerchantItemInfo`~~: `C_MerchantFrame.GetItemInfo` (§6).
-3. A Mists vendor, as the control for the merchant calls. **Run, and not obtained**: the vendor
-   listed no items (above). Of the merchant calls Midnight still has, `GetMerchantItemLink`
+3. A Mists vendor, as the control for the merchant calls. **Run, and not obtained**: a vendor
+   that sold goods answered no items (above). Rerun with probe version 4. Of the merchant calls Midnight still has, `GetMerchantItemLink`
    answered an ordinary link and `GetMerchantItemCostInfo` 0 for a vendor's bread. What a
    Mists vendor with goods would add is the shape of those two on the client where Family
    already works.

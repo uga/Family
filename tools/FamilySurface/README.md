@@ -23,6 +23,7 @@ So for each name it asks the question that can actually be answered:
 | every `C_` namespace Family uses | its keys listed | the names of the functions it holds |
 | container ids -20 to 40 | slot count asked at login and with the bank open | which hold slots, and the first item in each |
 | `C_MerchantFrame`, named from memory | its keys listed; at a vendor, each `Get…` and `Is…` function called with 1 | the answers, filed under the merchant |
+| the merchant, a second time | asked the moment the vendor opens as well as two seconds later, with `MerchantFrame:IsShown()` each time | filed as `merchantAtOnce` and `merchant` |
 
 The first three lists are `tools/surface.py`'s, generated from the Family sources into
 `Surface.lua`; the counts above are what it wrote on 2026-09-19. The first two runs, on
