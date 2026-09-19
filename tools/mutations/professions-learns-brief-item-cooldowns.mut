@@ -1,0 +1,6 @@
+name: the profession scanner files a brief item cooldown under a profession
+file: addons/Family/Scanners/Professions.lua
+--- old
+		if entry.id and not entry.brief then watched[entry.id] = true end
+--- new
+		if entry.id then watched[entry.id] = true end

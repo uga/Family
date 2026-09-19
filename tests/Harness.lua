@@ -1799,7 +1799,12 @@ GetTime = function() return FAKE_CLOCK end
 -- cooldown itself. Switched on by a test rather than always, because it is a state the client
 -- passes through rather than one it stays in.
 COOLDOWN_UNSETTLED = false
+-- And any slot a test puts on a timer of its own, as { start, duration } under "bag:slot". A
+-- table rather than a replaced function, because the scanner takes the call once, at load.
+SLOT_COOLDOWNS = {}
 C_Container.GetContainerItemCooldown = function(bag, slot)
+	local set = SLOT_COOLDOWNS[bag .. ":" .. slot]
+	if set then return set[1], set[2], 1 end
 	if bag == 0 and slot == 1 then
 		if COOLDOWN_UNSETTLED then return FAKE_CLOCK + 4000000, 86400, 1 end
 		return 900, 86400, 1
@@ -4849,6 +4854,32 @@ do
 		textOf():find("ready now", 1, true) == nil, textOf())
 	check("and the owner is still named, because they are still who to ask",
 		textOf():find("Salter", 1, true) ~= nil, textOf())
+
+	-- **And on the shaker itself, beside whoever holds it.** Reported from play 2026-09-19: a
+	-- shaker used on one character said *2 Days 23 Hrs* on her own tooltip, and hovered from
+	-- another the line with her name on it said where it was and nothing about the wait.
+	local function shakerRow()
+		tooltipFor(15846)
+		for _, line in ipairs(GameTooltip.__lines) do
+			if tostring(line[1]):find("Salter", 1, true) then return tostring(line[2]) end
+		end
+	end
+	local row = shakerRow()
+	check("the shaker's own tooltip says when its owner's one comes back",
+		row ~= nil and row:find("ready in", 1, true) ~= nil, tostring(row))
+	check("after saying where it is", row ~= nil and row:find("bags", 1, true) ~= nil
+		and row:find("bags", 1, true) < (row:find("ready in", 1, true) or 0), tostring(row))
+
+	-- And not once the moment has passed: nobody watched the bag, so it is not "ready now"
+	-- either - it is simply not said.
+	do
+		local realTime = time
+		time = function() return realTime() + 2 * 86400 end
+		row = shakerRow()
+		time = realTime
+		check("a wait that has passed is not drawn at all",
+			row ~= nil and row:find("ready", 1, true) == nil, tostring(row))
+	end
 
 	-- A second owner who has the shaker and cannot use it. Reported from play, and the whole
 	-- reason the table carries the requirement rather than only the join.
@@ -20724,6 +20755,39 @@ print("crafting cooldowns")
 			if entry.id == 184937 then boon = true end
 		end
 		check("a Chronoboon is not a crafting cooldown", boon == false)
+
+		-- **But one counting down is recorded**, under the six hours the rest are held to.
+		-- Reported from play 2026-09-19: a Chronoboon used on one character, and hovered from
+		-- another every owner was "ready now" to make a supercharged one - its hour had never
+		-- got past the floor. Marked `brief`, which is what keeps it off everything the floor
+		-- was protecting.
+		SLOT_COOLDOWNS["0:6"] = { FAKE_CLOCK - 600, 3600 }
+		Family.Bags:Scan()
+		local running
+		for _, entry in ipairs(Family.Database:Meta(mine).itemCooldowns or {}) do
+			if entry.id == 184937 then running = entry end
+		end
+		local left = running and running.readyAt and running.readyAt - time()
+		check("a Chronoboon counting down its hour is recorded, as the moment it comes back",
+			left ~= nil and left > 2990 and left <= 3000, tostring(left))
+		check("and marked brief", running ~= nil and running.brief == true,
+			tostring(running and running.brief))
+
+		local column = false
+		for _, kind in ipairs(Family.Cooldowns:Crafting(Family.Database:Meta(mine))) do
+			if kind.item == 184937 then column = true end
+		end
+		check("and it is still no column on the Crafting panel", column == false)
+
+		-- A global cooldown is not one: every item with a use shows a second and a half of it.
+		SLOT_COOLDOWNS["0:6"] = { FAKE_CLOCK - 0.5, 1.5 }
+		Family.Bags:Scan()
+		local blip = false
+		for _, entry in ipairs(Family.Database:Meta(mine).itemCooldowns or {}) do
+			if entry.id == 184937 then blip = true end
+		end
+		check("but a second and a half of global cooldown is not recorded", blip == false)
+		SLOT_COOLDOWNS["0:6"] = nil
 		BAGS[0].items[6] = nil
 
 		-- Nor is a Super Snapper FX, which a profession *does* make. It has a cooldown and it
@@ -20750,6 +20814,27 @@ print("crafting cooldowns")
 		end
 		check("and does not invent one for an item it has never seen counting down",
 			invented == false)
+
+		-- **A brief one is never filed under a profession.** `cooldownItems` is what carries
+		-- an item's cooldown to the guild, and it is learned from any recipe of ours that
+		-- makes the item - which a Super Snapper FX has. The long one beside it is the
+		-- control: without it, a scan that learned nothing at all would pass.
+		do
+			local wasOpen, wasName = TRADE_SKILL_OPEN, TRADE_SKILL_NAME
+			TRADE_SKILL_OPEN, TRADE_SKILL_NAME = true, "Blacksmithing"
+			Family.Database:SetMeta(mine, { cooldownItems = Family.CLEAR, itemCooldowns = {
+				{ id = 2864, readyAt = time() + 86400 },
+				{ id = 6338, readyAt = time() + 600, brief = true } } })
+			Family.Professions:Scan(true)
+
+			local learnt = Family.Database:Meta(mine).cooldownItems or {}
+			check("an item a recipe of ours makes is filed under that recipe's profession",
+				learnt[2864] ~= nil, tostring(learnt[2864]))
+			check("unless its cooldown is a brief one, which would carry it to the guild",
+				learnt[6338] == nil, tostring(learnt[6338]))
+
+			TRADE_SKILL_OPEN, TRADE_SKILL_NAME = wasOpen, wasName
+		end
 
 		BAGS[0].items[3], BAGS[0].items[4] = nil, nil
 		Family.Bags:Scan()

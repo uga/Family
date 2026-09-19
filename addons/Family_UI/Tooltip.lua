@@ -161,6 +161,29 @@ end
 local OWNER_CAP = 10
 local GUILD_CAP = 5
 
+-- **When this owner's one can next be used**, where it is counting down.
+--
+-- Reported from play 2026-09-19: a Salt Shaker used on Deiana said *2 Days 23 Hrs* on her own
+-- tooltip, and hovered from anybody else's the line with her name on it said where it was and
+-- nothing about the wait - while the record had it all along. The same for a Chronoboon.
+--
+-- Running only, and the soonest of several: an absence is "not counting down when this member
+-- was last read" and not a claim that it is ready, for the reason `Cooldowns:For` gives - an
+-- item is used out of the bags with nothing open for Family to see. The record is keyed by the
+-- base item, so this is asked by id and not by variant.
+--
+-- Through `UI:Meta`, because the owners include a linked family's characters.
+local function runningFor(key, itemID)
+	local soonest
+	for _, entry in ipairs((UI:Meta(key) or {}).itemCooldowns or {}) do
+		if entry.id == itemID and entry.readyAt and entry.readyAt > time()
+			and (not soonest or entry.readyAt < soonest) then
+			soonest = entry.readyAt
+		end
+	end
+	return soonest
+end
+
 -- **Asked by variant** (backlog 67). Hovering a Superior Sword *of the Bear* says how many of
 -- *those* the family has, not how many swords of that id in any suffix - which is what Alberto
 -- asked for in as many words and what the collapsed key was getting wrong.
@@ -203,7 +226,12 @@ local function possessionLines(tooltip, itemID, variant)
 		-- A sibling's name carries their family. The count means something different for
 		-- them - it is not in a bag you can walk to - and a line that read the same as
 		-- your own would be inviting a trip to the wrong bank.
-		lines[#lines + 1] = { whose(owner), placesOf(owner), r, g, b, 0.8, 0.8, 0.8 }
+		local where = placesOf(owner)
+		local waits = runningFor(owner.key, itemID)
+		if waits then
+			where = where .. " " .. string.format(L["|cffff8040ready %s|r"], UI:In(waits))
+		end
+		lines[#lines + 1] = { whose(owner), where, r, g, b, 0.8, 0.8, 0.8 }
 	end
 
 	-- **Whether the gesture is worth offering on this tooltip at all.**

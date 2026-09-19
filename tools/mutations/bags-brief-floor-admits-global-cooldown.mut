@@ -1,0 +1,6 @@
+name: the brief floor lets a global cooldown through
+file: addons/Family/Scanners/Bags.lua
+--- old
+local ONE_MINUTE = 60
+--- new
+local ONE_MINUTE = 1

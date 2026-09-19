@@ -29,6 +29,13 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Item cooldowns
+
+- **An item's tooltip says when each owner's one can be used again.** Hover a Salt Shaker or a
+  Chronoboon Displacer while playing another character, and the line with the owner's name now
+  carries the wait beside where the item is. "Can make it" no longer calls a Chronoboon used an
+  hour ago ready.
+
 ## 4.2.0 — 2026-09-18
 
 ### Worth
