@@ -1206,6 +1206,12 @@ local function onSpell(tooltip, spellID)
 	local cost = spellCostLines(spellID)
 	if not lines and not cost then return end
 
+	-- The same right-hand column as an item's (`UI:MoneyEven`).
+	local all = {}
+	for _, line in ipairs(lines or {}) do all[#all + 1] = line end
+	for _, line in ipairs(cost or {}) do all[#all + 1] = line end
+	UI:MoneyEven(all, 2)
+
 	if lines then
 		tooltip:AddLine(" ")
 		for index, line in ipairs(lines) do
@@ -1286,6 +1292,14 @@ local function onItem(tooltip, itemID, data)
 	end
 
 	if #blocks == 0 then return end
+
+	-- Every money figure on the tooltip one width, across the blocks, since they share one
+	-- right-hand column (`UI:MoneyEven`).
+	local all = {}
+	for _, lines in ipairs(blocks) do
+		for _, line in ipairs(lines) do all[#all + 1] = line end
+	end
+	UI:MoneyEven(all, 2)
 
 	for _, lines in ipairs(blocks) do
 		tooltip:AddLine(" ")

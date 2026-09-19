@@ -47,6 +47,8 @@ is a decision rather than an afternoon of archaeology.
   the total stays at what you can buy today and a second total under it says what the slower
   way would come to. Refined Deeprock Salt now counts as made by any of your characters with a
   Salt Shaker and the skill to use it.
+- **Prices on item tooltips stay in one column at every tooltip width.** Gold, silver and copper
+  coins used to drift a pixel or three between rows on some tooltips and not on others.
 
 ## 4.2.0 — 2026-09-18
 

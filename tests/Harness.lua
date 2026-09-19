@@ -38361,6 +38361,22 @@ print("what a craftable thing costs to make")
 	-- makes no item, so the thing-shaped route never reached it. Spell 900002 is priced in part,
 	-- so this is also the partial case on a spell's tooltip: the list, the counts, and a total
 	-- that says a price is missing rather than one that quietly left something out.
+	-- How far apart the money figures on the tooltip just drawn are, measured in the tooltip font,
+	-- and how many were padded to get there (`UI:MoneyEven`).
+	local function moneySpread()
+		local ruler = Family.UI:WidthRuler(CreateFrame("Frame"):CreateFontString())
+		local least, most, count, padded = math.huge, 0, 0, 0
+		for _, line in ipairs(GameTooltip.__lines) do
+			local right = line[2]
+			if type(right) == "string" and right:find("CopperIcon", 1, true) then
+				local wide = ruler(right)
+				least, most, count = math.min(least, wide), math.max(most, wide), count + 1
+				if right:find("^|T[^|]*Spacer") then padded = padded + 1 end
+			end
+		end
+		return most - least, count, padded
+	end
+
 	;(function()
 		local function spellSaid(spellID)
 			wipe(GameTooltip.__lines)
@@ -38385,6 +38401,18 @@ print("what a craftable thing costs to make")
 			whole:find("Made with", 1, true) ~= nil and whole:find("x3", 1, true) ~= nil
 				and whole:find("x2", 1, true) ~= nil and whole:find("Total", 1, true) ~= nil,
 			whole)
+
+		-- The same one width on an enchant's tooltip, which is drawn by a path of its own.
+		do
+			local heldBar, heldBarVendor = auctionPrices[BAR], vendorPrices[BAR]
+			auctionPrices[BAR], vendorPrices[BAR] = 300000, 300000
+			spellSaid(900001)
+			auctionPrices[BAR], vendorPrices[BAR] = heldBar, heldBarVendor
+			local spread, count, padded = moneySpread()
+			check("and an enchant's money figures are drawn the same width too",
+				count >= 3 and padded >= 1 and spread < 1,
+				count .. " figures, " .. padded .. " padded, " .. spread .. " apart")
+		end
 
 		local partial = spellSaid(900002)
 		check("and one with a price nobody has says so rather than totalling what it knows",
@@ -38414,6 +38442,23 @@ print("what a craftable thing costs to make")
 		check("every money figure on a crafted thing's tooltip is written in full g-s-c",
 			figures > 0 and odd == nil,
 			tostring(figures) .. " figures, first odd one: " .. tostring(odd) .. " in " .. text)
+	end
+
+	-- **And every figure in the column one width.** Alberto, 2026-09-19: the coins wandered by a
+	-- pixel or three, *only when the tooltip has certain widths*. A right-justified line starts at
+	-- the edge less its own width and the client rounds that to a pixel, so figures of different
+	-- widths round differently; made one width, they cannot. Measured with the stub's font, whose
+	-- 1 is narrow, so the three figures here start out different.
+	do
+		-- Thirty gold a bar, so the gold places differ: 90g, 0g and 90g once totalled.
+		local heldBar, heldBarVendor = auctionPrices[BAR], vendorPrices[BAR]
+		auctionPrices[BAR], vendorPrices[BAR] = 300000, 300000
+		hovering(SWORD)
+		auctionPrices[BAR], vendorPrices[BAR] = heldBar, heldBarVendor
+		local spread, count, padded = moneySpread()
+		check("every money figure on a tooltip is drawn the same width, to within a pixel",
+			count >= 3 and padded >= 1 and spread < 1,
+			count .. " figures, " .. padded .. " padded, " .. spread .. " apart")
 	end
 
 	-- **The notes as the tooltip writes them**, with the blade's recipe on a day's timer again.

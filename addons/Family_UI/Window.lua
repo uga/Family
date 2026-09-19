@@ -1494,6 +1494,46 @@ function UI:MoneyLine(copper, total)
 	return self:MoneyPadded(self:Money(copper, total))
 end
 
+-- **Every figure in one column the same width**, by a picture of nothing in front of the shorter.
+--
+-- Alberto, 2026-09-19, off *Made with* on a Runed Arcanite Rod: *price groups in tooltips not
+-- properly aligned vertically*, and then *this happens only when the tooltip has certain widths,
+-- not everytime*. Read off that screenshot: the gold coin at 281 pixels on five rows, 280 or 282
+-- on three, and 278 on *Total*. The places inside each figure were held; what moved was where each
+-- line starts. A right-justified line begins at the column's edge less its own width, and the
+-- client puts that on a whole pixel - so two figures of different widths, gold digits included,
+-- round two ways, and which way depends on where the edge falls, which is the tooltip's width.
+--
+-- Made the same width, every figure starts at the same fraction of a pixel and rounds the same
+-- way. What is left is the picture's own granularity, a whole unit of markup - the pixel backlog 88
+-- already wrote down as the limit of a single string.
+--
+-- `column` is which entry of each line holds the figure; lines whose entry is not money are left
+-- alone, and so is everything where the tooltip's font cannot be measured.
+function UI:MoneyEven(lines, column)
+	local ruler = tooltipRuler()
+	if not ruler then return lines end
+
+	local widths, widest = {}, 0
+	for index, line in ipairs(lines) do
+		local text = line[column]
+		if type(text) == "string" and (text:find("GoldIcon", 1, true)
+			or text:find("SilverIcon", 1, true) or text:find("CopperIcon", 1, true)) then
+			widths[index] = ruler(text) or 0
+			if widths[index] > widest then widest = widths[index] end
+		end
+	end
+
+	for index, wide in pairs(widths) do
+		local pad = math.floor(((widest - wide) / spacerRatio(ruler)) + 0.5)
+		if pad >= 1 then
+			lines[index][column] = string.format("|T%s:1:%d|t", SPACER, pad) .. lines[index][column]
+		end
+	end
+
+	return lines
+end
+
 -- A member named somewhere that is not about them alone: a search result, a tooltip, a
 -- broker line. Two things can need saying, and only when they need saying.
 --
