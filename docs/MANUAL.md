@@ -620,88 +620,87 @@ so.
 
 ## 12. Guild share
 
-A much lighter Wide Family, and the lightness is the point: it carries very little, so it can
-carry it without asking anybody anything.
+Guildmates who run Family see each other's characters in the guild, without anybody ticking
+anything. You can also tell the guild what your characters can craft.
 
-> **Switched off until you ask for it.** The panel is there either way, so you can read what
-> it does before deciding; the switch is in **Options**, beside the one for Wide Family, or
-> `/family guild on`. Neither needs a reload.
->
-> Off works in both directions at once — a Family with this switched off neither asks nor
-> answers.
+> **Guild share is switched off until you ask for it.** The switch is in **Options**, beside
+> the one for Wide Family, or type `/family guild on`. It needs no reload. The panel is in the
+> list either way. While it is off, Family neither asks the guild nor answers it.
 
-**What it carries, and nothing else:** for every guildmate running Family, and for every one
-of *their* characters who is also in this guild — class, level, **both talent
-specialisations**, and **equipped gear with its average item level**.
+**What is shared as soon as it is on:** for each of your characters in this guild, their
+class, race, level, the shape of both talent specialisations, and their equipped gear with its
+average item level. All of that is what the game already shows a guildmate who inspects you.
 
-**Never:** bags, bank, mail, quests, professions, money, auctions, reputations. Not *not yet*.
-Wanting a guildmate's bag contents is a perfectly reasonable thing to want — it is a Wide
-Family link, and it is one on purpose.
+**Never shared with the guild:** bags, bank, mail, quests, money, auctions, reputations. To
+show somebody those, link with them through Wide Family (§11).
 
-**Why there is no consent grid for this.** Everything in that list is what the game already
-shows any guildmate who targets you and presses Inspect. Family is not disclosing it; it is
-saving you both the trip, across characters who are not standing in front of you and at hours
-when neither of you is online. A dialogue asking permission for a fact the game gives away for
-free protects nobody, and teaches people to click through the dialogues that do matter.
+**Professions are shared only if you tick them** (below).
 
 ### The panel
 
-> *A picture of this is still to be taken: `docs/images/guild-share.png`.*
+The guild roster, with **Online only** or **Everyone**. Each row has a dot: filled for
+somebody running Family, grey for somebody who is not.
 
-The guild's own roster, with **Online only** or **Everyone**. Each row carries a dot: filled
-for somebody running Family, grey for somebody who is not. Most of a guild will be grey, and
-nothing on your side changes that.
+Click a guildmate with a filled dot to see their characters in the guild. Each one shows
+their gear slot by slot, with item levels and tooltips, and both specialisations. The active
+one is in gold.
 
-Click one of the filled ones to see their characters — each with their gear laid out slot by
-slot, item levels over the icons, tooltips throughout, and both specialisations beside them.
-The one in gold is the one they are actually in.
-
-Talents arrive as the **shape** of the build — which trees and how many points in each — not
-talent by talent. That is about the channel rather than about privacy: whole trees for
-everybody's alts, every time somebody logs in, is Family taking a channel it shares with every
-other addon in the guild for a picture almost nobody is looking at. Somebody's build in full
-is a Wide Family link, where it goes to the one person who asked for it.
+**Talents arrive as the shape of the build**: which trees, and how many points in each. For a
+build talent by talent, link with that player through Wide Family.
 
 **Once you have seen somebody, they are kept.** A guildmate who logged off an hour ago is
-still there, with the age of the record on the row. Nothing is fetched from somebody who is
-offline, because there is nobody there to fetch it from.
+still listed, with the age of the record on the row. Nothing can be fetched from somebody who
+is offline. **Update now** asks everybody who is online.
 
-**Alts outside the guild are not offered**, and there is no setting to add them. A scope with
-a switch to widen it is not a scope; somebody's characters elsewhere are a Wide Family link.
+**Alts outside the guild are not shown**, and there is no setting to add them.
 
-**Connected realms count as one.** Most guilds now span a group of connected realms, and your
-characters on any of them are offered to the guild — not only the ones on the realm you happen
-to be standing on. The realm test is still a real test: it is the game's own list of connected
-realms, not a name match, so a guild that shares a name with one on an unconnected realm is
-still a different guild. Anything you had already ticked for those characters was kept and
-takes effect now.
+**Connected realms count as one guild.** Your characters on any realm of the group are offered
+to the guild, not only those on the realm you are on. Family uses the game's own list of
+connected realms, so a guild with the same name on an unconnected realm stays a different
+guild.
 
-**Records from somebody nobody has heard from in a fortnight are dropped.** If a guildmate
-turns a profession off and then stops playing, the message saying so has nobody to reach, so
-what they last shared would otherwise stay answerable on your client for ever. It expires
-after two weeks and rebuilds itself the moment they come back. Your own sharing grid is never
-touched by this — what you have chosen to share is yours and does not expire.
+### Sharing what you can craft
 
-The two features know nothing about each other. Linking families with a guildmate does not
-change what the guild panel shows, and what the guild panel shows is never affected by a link.
-Two routes to the same fact would mean two places to look for it and two places to withdraw
-it.
+At the top of the panel, click **What you share with** your guild. Each of your characters in
+the guild lists its professions, each with a tick box. Nothing is ticked to begin with.
 
-Guild share needs `LibSerialize` and `LibDeflate` for the same reason Wide Family does, and
-says so plainly when they are missing.
+A tick shares three things together: the rank, what that profession can make, and its
+cooldowns. Guildmates running Family then see your character:
 
-`/family guild on` and `/family guild off` do the same as the switch in Options, and
-`/family guild` on its own says which it currently is — along with what is actually happening
-on the channel: how many addon messages your client is handing over at all, what it did with
-each thing Family gave it to send, and how many of your guildmates have answered.
+- on the tooltip of an item it can make, under the crafters from their own family, with
+  *ready now* or *ready in 4h* for anything on a cooldown;
+- in the recipe search on their Professions page, as a second group beside their own members.
 
-`/family guild test` sends one announcement and reports what became of it. The case it exists
-for is a real one and looks exactly like a bug: **a character on a realm other than the
-guild's own can hear the guild and cannot speak to it.** Guild chat works both ways, addon
-messages arrive normally, and nothing you send ever leaves — the game's doing and not Family's.
-The report says so in as many words, and says that what you share still reaches anybody who
-says hello first. If you have alts on a connected realm and one of them seems invisible to the
-guild while the others are fine, this is why.
+Each answer carries its age. It is as old as the last time you opened that profession, or the
+last time they heard from you, whichever is older. A profession you ticked but never opened
+shares only its rank, and you are listed as *may know it*.
+
+Professions that make nothing have no tick box: fishing, herbalism, skinning, first aid and
+archaeology. Mining has one, for smelting.
+
+Untick a profession and it stops being sent. What guildmates already hold is replaced the next
+time they hear from you. Records from anybody who has not been heard from for two weeks are
+dropped, and come back when that player does. Your own ticks never expire.
+
+A few recipes cannot be shared, because the game gives Family no number for them, only a name
+in one language. The panel lists them after *Not offered*.
+
+### Things to know
+
+Guild share and Wide Family are separate. Linking with a guildmate does not change what the
+Guild panel shows, and the Guild panel does not change what a link shows.
+
+Guild share needs the same two libraries as Wide Family (§11), and the panel says so when they
+are missing.
+
+`/family guild on` and `/family guild off` do the same as the switch in Options. `/family
+guild` on its own says whether it is on, how many addon messages your game is sending, and how
+many guildmates have answered.
+
+**A character on a connected realm may hear the guild and not be heard by it.** Guild chat
+works, other players' data arrives, and nothing Family sends reaches the guild. That is the
+game's doing. `/family guild test` sends one announcement and reports what happened to it.
+What you share still reaches any guildmate whose Family announces itself first.
 
 ---
 
