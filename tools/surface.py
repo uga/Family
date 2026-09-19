@@ -179,6 +179,23 @@ def shape(answer):
     return ", ".join(kinds)
 
 
+def differs(one, other):
+    """Whether two answers differ in shape rather than in what the character happens to hold.
+
+    A nil, or nothing at all, is what a client says about a character with no guild or no
+    profession, so it matches anything: the first Mists run was a level-one character outside
+    a guild, and a plain comparison of types called its empty answers a different API. What
+    is left is a different number of values, or two values in one position that are both
+    there and of different types."""
+    one, other = shape(one), shape(other)
+    if "nothing" in (one, other) or one == other:
+        return False
+    one, other = one.split(", "), other.split(", ")
+    if len(one) != len(other):
+        return True
+    return any(a != b and "nil" not in (a, b) for a, b in zip(one, other))
+
+
 def report(asked_path, control_path=None):
     uses = collections.defaultdict(set)
     measure(uses)
@@ -236,7 +253,7 @@ def report(asked_path, control_path=None):
             other = control["calls"].get(name)
             if other is None or answer.startswith("absent") or other.startswith("absent"):
                 continue
-            if shape(answer) != shape(other):
+            if differs(answer, other):
                 rows.append("`%s`\n  - here: %s\n  - control: %s" % (name, answer, other))
         section("Calls both clients answer, in a different shape", rows)
     else:

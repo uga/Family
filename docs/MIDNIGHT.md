@@ -37,9 +37,8 @@ it.
 Midnight 12.1.0, build 69875, interface 120100, on 2026-09-19: one login, an enUS level-50
 rogue in a guild, no window open. The saved variables are not in the tree, because they hold a
 character, a realm, a guild's name and notes, and gold. What follows is derived from them by
-`tools/surface.py --report`, which also names the files. **The Mists control run has not been
-done yet.** So "absent" below means absent on Midnight. Some of these names Mists lacks too,
-and there Family already copes.
+`tools/surface.py --report`, which also names the files. "Absent" below means absent on Midnight;
+§4 says which of those Mists lacks too, where Family already copes.
 
 **Nothing threw.** None of the 99 calls, and every one of the six frame templates builds on the
 frame type Family uses. The Anniversary trap, a function that exists and throws, was not seen
@@ -140,15 +139,6 @@ Present on Midnight, and only a comparison can say whether Family reads them rig
 - `GetTalentInfo`, `GetProfessions`, `GetSpecializationInfo`, `GetGuildRosterInfo` (17 values),
   `GetNumGuildMembers` (`16 | 1`) and `GetInboxNumItems` (`0 | 0`), as above.
 
-### Still to do for step 1
-
-1. The Mists run, then `tools/surface.py --report <Midnight file> <Mists file>`. That separates
-   the absences Family already copes with from the ones it has never met, and it turns the
-   answers above into same shape or different shape.
-2. Windows this login did not open: a trade skill, the auction house, the bank, a mailbox, a
-   merchant. The probe asks outside them. Whether the present calls answer inside them is a
-   separate run with each window open.
-
 ### Loading an addon without Midnight's interface number: refused, observed 2026-09-19
 
 Alberto: Midnight marks Family Surface as *incompatible* and refuses to load it. Its `.toc`
@@ -162,3 +152,60 @@ files, Midnight does not load Family at all. It does not load it and then fail.
 earlier report that 120100 was also refused is not a finding: the `.toc` sent back after it
 was byte-for-byte the repository's three-number one, so Midnight was never shown 120100 in
 that run.
+
+## 4. Against Mists, the control
+
+Mists 5.5.4, build 69585, interface 50504, on 2026-09-19. The character was **level 1 and
+not in a guild**, so its guild, profession and equipment answers are empty. `--report`
+therefore treats a `nil`, or no answer at all, as the state of the character rather than a
+different API.
+
+**What Family has never met on any client: 66 globals and 7 events.** These are the §3
+absences less seven that Mists lacks too (`GetAddOnMetadata`, `GetContainerItemID`,
+`GetCurrencyListLink`, `GetNumTalentTiers`, `ToggleKeyRing`,
+`C_AuctionHouse.GetAuctionHouseDepositRate`, `C_TradeSkillUI.GetTradeSkillLine`). The
+events are `TRADE_SKILL_UPDATE`, `CRAFT_SHOW`, `CRAFT_UPDATE`, `AUCTION_ITEM_LIST_UPDATE`,
+`AUCTION_OWNED_LIST_UPDATE`, `AUCTION_BIDDER_LIST_UPDATE` and `PLAYERBANKBAGSLOTS_CHANGED`.
+`HONOR_CURRENCY_UPDATE` and `LEARNED_SPELL_IN_TAB` are refused on Mists as well. Of these,
+the refusals cost nothing, because `Family:RegisterEvent` already answers false for an unknown
+event. The absent calls are the work.
+
+**Midnight has things Mists does not**, and they are the other half of the work:
+`GetSpecialization`, `GetSpecializationInfo`, `GetActiveSpecGroup`, `GetQuestObjectiveInfo`,
+`C_CurrencyInfo.GetCurrencyListSize`, and `C_TradeSkillUI.GetAllRecipeIDs`,
+`GetRecipeInfo` and `GetRecipeItemLink`, which is to say a recipe list that can be read.
+
+**Mists throws, Midnight does not.** `GetNumTalentGroups`, `GetNumTalentTabs` and
+`GetNumTalents(1)` exist on Mists and throw *API unsupported in this version of World of
+Warcraft*, which is the Anniversary trap again. On Midnight the same three are simply absent.
+
+**Answered in a different shape**, of the calls both clients made:
+
+- `GetBuildInfo()`: six values on Midnight, seven on Mists. Family reads only the fourth
+  (`Capabilities.lua:70`, `Scanners/Auctions.lua:687`, `Family_UI/Slash.lua:2470`), and both
+  return it, so this costs nothing.
+- `GetTalentInfo(1, 1)`: Mists puts the name first (`"Void Tendrils" | 537022 | …`) and
+  Midnight puts a number first and the name second (`22337 | "Master Poisoner" | 132108 | …`).
+  `Scanners/Talents.lua` tries several readers, `C_SpecializationInfo.GetTalentInfo` first,
+  and takes the name as the first string wherever it falls. So this may already be handled.
+  **But the probe never called `C_SpecializationInfo.GetTalentInfo`**, the reader Family
+  prefers and Midnight has. That is the gap.
+- Item links: Mists colours a link `|cffffffff|Hitem:6948:…` and Midnight writes a quality tag,
+  `|cnIQ1:|Hitem:6948:…`. The four places Family reads a link (`Core.lua:160`,
+  `Scanners/Auctions.lua:2566`, `Scanners/Character.lua:71`, `Family_UI/Slash.lua:502`) all
+  match `|H(item[%-%d:]+)|h`, and run under `lua5.1` against both clients' links it returned
+  the item string, and with `%[(.-)%]` and `item:(%d+)` the name and id, from all three
+  links tried. The one colour pattern in the tree, `|c%x%x%x%x%x%x%x%x` in `Core.lua:621`,
+  would not strip `|cnIQ1:`. It cleans Chronoboon Displacer tooltip rows, a Classic item.
+- `GetGuildRosterInfo(1)`: position 10 is `0` on Midnight and `""` on Mists. **Not
+  settled**, because the Mists character has no guild and its row 1 is empty.
+
+### Still to do for step 1
+
+1. A second Mists run on a character with a guild and professions, which settles
+   `GetGuildRosterInfo` and gives `GetProfessions` something to compare.
+2. `C_SpecializationInfo.GetTalentInfo` added to the probe's calls and asked on both clients,
+   since Family asks it first.
+3. Windows this login did not open: a trade skill, the auction house, the bank, a mailbox, a
+   merchant. The probe asks outside them, and whether the present calls answer inside them
+   is a separate run with each window open.
