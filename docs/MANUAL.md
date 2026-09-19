@@ -388,37 +388,31 @@ The possessions block and the prices are switched in **Options**.
 
 ## 9. Searching the whole family
 
-Possessions and Professions each have a **Whole family** button at the top right — the same
-button, in the same place, as the one on the Character panel's gear section (§7). Switching
-between two ways of looking is not a setting, so it is not dressed as one.
+Possessions and Professions each have a **Whole family** button at the top right. It is the
+same button as the one on the Character page's gear section (§7).
 
-Pressed, the search stops being about the member on screen and becomes about everybody — and
-the results say **who**. *Who has the mageweave. Who can make this belt. Who knows this
-enchant.* Two letters minimum, because a one-letter search across a family of forty is not a
-search.
+Press it and the search covers everybody, and the results say **who**: who has the mageweave,
+who can make this belt, who knows this enchant. Type at least two letters.
 
-On Possessions the answers come out grouped: the item once, then whoever has some of it
-underneath, most first, with how many and where they are keeping it. Sort by character instead
-and it is the same list the other way up. Each version of a random-suffix item (§8) is a line of
-its own, named and drawn as itself.
+**On Possessions** each item is listed once, with whoever has some underneath: most first,
+with how many and where they keep it. **Sort by** character and you get each character with
+what they carry. Each version of a random-suffix item (§8) is a line of its own.
 
-On Professions, **click a recipe** and its materials appear on a line underneath, and the people
-who can make it are listed several to a line rather than one per row, so a dozen crafters do not
-push the recipe's own name off the top. The search waits for you to stop typing before it looks.
+**On Professions**, click a recipe and its materials appear on a line underneath. The people
+who can make it are listed several to a line. Guildmates who share their professions (§12) are
+listed as a second group. The search waits until you stop typing.
 
-**Long lists fold only when the page cannot hold them.** A list of ten or fewer is always drawn
-whole. Where every block on the page fits, nothing folds however long a block is; where they do
-not, every block folds by the same amount — as little as brings the page back to one screen, and
-never below three — behind a line you can click.
+**Long lists fold only when the page cannot hold them.** Where everything fits, nothing folds.
+Where it does not, every list on the page folds by the same amount, as little as brings the
+page back to one screen. A folded list always keeps at least three names, and ends in a line
+you can click to open it.
 
-**Unless you turn it off.** Untick *Fold long lists to fit the page* under Options and every name in
-every group is drawn, on Family's own pages and on the game's tooltips alike; the page scrolls
-instead. A tooltip has no scrollbar, so there it still stops before it would run off your screen,
-and leaves room for whatever other addons write on the same tooltip.
+**To stop lists folding**, untick *Fold long lists to fit the page* in Options. Every name is
+then drawn and the page scrolls. This applies to the game's tooltips too, which still stop
+before they run off your screen.
 
-Only items the client has named can be matched. An item nobody has looked at since the last
-patch has no name yet, and Family says so rather than letting a search quietly answer for less
-than it searched.
+Only items your game has named can be found. An item nobody has looked at since the last patch
+has no name yet, and Family says so.
 
 ---
 
@@ -426,80 +420,53 @@ than it searched.
 
 Transmutes, mooncloth, salt shakers and the rest.
 
-**Crafting cooldowns, and nothing else.** Not raid lockouts, not heroic resets, not daily
-quest resets. Those are a different kind of thing, and Family does not record them — the name
-is spelled out everywhere it appears so that nobody has to find that out by waiting for a
-warning that was never coming.
+**Crafting cooldowns only.** Raid lockouts, heroic resets and daily quest resets are not
+recorded.
 
-Family records **the moment a cooldown comes ready**, never the time remaining. That is the
-whole trick: time remaining goes stale the second the client shuts, and a moment does not. A
-cooldown recorded three days ago is still right today.
+**Family records the moment a cooldown comes ready**, not the time remaining. A cooldown
+recorded three days ago is still right today, however long the game was closed.
 
-**Summary / Crafting** is where you look at all of them at once: a line for each kind of
-cooldown, with everybody who has it underneath — the ones who can do it now first, then whoever
-comes back soonest. Green when it is available and grey with the time when it is not. Grey
-rather than red — everywhere else in Family red means something is wrong or about to be lost,
-and a transmute you used two hours ago is neither.
+**Summary / Crafting** shows all of them at once. There is a line for each kind of cooldown,
+with everybody who has it underneath: those who can use it now first, then whoever comes back
+soonest. Ready is green. Waiting is grey, with the time left.
 
-Beside the cooldown's name is **how many of your characters can do it right now**, so a list
-that has folded away its fourth and fifth crafter still tells you how many are waiting for you.
-A long list folds behind a line you can click by the rule in §9, the same as the reputations list;
-clicking the cooldown's own name opens and closes it too.
+Beside each cooldown's name is how many of your characters can use it right now. A long list
+folds by the rule in §9. Click the cooldown's name to open or close its list.
 
-Thirty alchemy transmutes share one timer, so they are one line called *Alchemy* rather than
-thirty. **Family asks the game which cooldowns are shared** rather than working it out by
-watching — the client's own tables distinguish a recipe's own timer from one a whole category
-shares, which is what players mean by *all the transmutes share one cooldown*. It differs by
-expansion: alchemy on Classic Era, alchemy and enchanting on the Burning Crusade, enchanting on
-Mists, where Void Sphere and Prismatic Sphere are two names for one timer. A cooldown nothing
-shares keeps its own recipe's name.
+**Cooldowns that share a timer are one line.** All alchemy transmutes share one timer on
+Classic Era and Burning Crusade, so they appear as one line called *Alchemy*. Enchanting works
+the same way on Burning Crusade and Mists. A cooldown that shares nothing keeps its recipe's
+name.
 
-A **salt shaker** is in there too, under leatherworking. The cooldown is on the item, and
-nothing in the game says which profession it answers to — but Family records what each recipe
-makes, so an item on cooldown that one of your own recipes produces belongs to that recipe's
-profession.
+**A salt shaker is listed under leatherworking.** The cooldown is on the item, and Family
+files it under the profession whose recipe makes that item.
 
-**A transmute shows up before you have ever been caught doing one.** Family used to learn that
-a recipe had a cooldown only by watching one run, so an alchemist nobody had seen mid-transmute
-was simply blank. It now knows from the game's own tables which recipes carry one — and knows it
-per expansion, because the same recipe differs: mithril to truesilver is two days on Classic
-Era, twenty hours on Burning Crusade and gone on Mists, and Family says whichever of those is
-true where you are playing. Watching still fills in anything those tables have never heard of,
-and a member Family has nothing on is blank rather than shown as available, because blank is
-what is true.
+**A transmute is listed before you have ever used it.** Family knows from the game which
+recipes carry a cooldown, and for how long on your version of the game. Mithril to truesilver
+is two days on Classic Era and twenty hours on Burning Crusade. A member Family has no record
+for is blank, not shown as ready.
 
-**Only members who have a crafting cooldown are listed.** Thirty members with three alchemists
-is three rows rather than twenty-seven blank ones. The totals under the window still count
-everybody, because that line says what the family has and does not change because a panel is
-showing fewer rows.
+**Only members with a crafting cooldown are listed.** Thirty members with three alchemists
+make three rows. The totals under the window still count everybody.
 
-**Columns are named in your language**, whichever client recorded the cooldown. A mooncloth
-scanned on a French character is not headed *Étoffe lunaire* on an English one.
+**Cooldowns are named in your language**, whichever character recorded them.
 
-What is ready is counted on the broker tooltip (§2) and is announced when you log in. Turn the
-announcement off in Options. `/family ready` lists them by name, which is how you check what
-a message is actually about.
+**At login Family says which cooldowns are ready.** Switch that off in Options. The minimap
+tooltip counts them (§2), and `/family ready` lists them by name.
 
-**Only professions the character still has.** Drop alchemy and Family keeps its recipe list —
-take it up again and nothing was lost — but its cooldowns stop counting, because a reminder
-about something you can no longer do never stops arriving on its own.
+**Only professions the character still has.** Drop alchemy and Family keeps the recipe list,
+but its cooldowns stop counting.
 
-**And only cooldowns of six hours or more.** A hearthstone is on a cooldown; nobody needs
-telling about it. What this is for is the once-a-day things a character forgets precisely
-because they are on the character you are not playing.
+**Item cooldowns shorter than six hours are ignored**, so a hearthstone is never reported.
 
-**A crafting cooldown and an item's are not the same kind of fact**, and Family treats them
-differently. Using a craft needs the profession window open and Family reads that window, so a
-transmute still reading *ready* really has not been used. Using an item needs nothing open at
-all — so once an item's cooldown elapses Family knows only that it was running the last time
-anybody looked, which is not the same as *waiting for you*. Those stop being reported when
-they come ready. The panel shows them either way — ready or counting down — because a panel is
-a table you opened and are reading against the ages beside it, and a salt shaker you cannot see
-is exactly what you opened it to find.
+**Item cooldowns are not announced when they come ready.** Using a recipe needs the profession
+window open, and Family reads that window, so a transmute shown as ready really is unused. An
+item can be used with nothing open. Once its cooldown has run out, Family knows only that it
+was running the last time it looked. The Crafting columns still show it, with the age of the
+record beside it.
 
-A cooldown appears only if it was seen. One that started while the profession window was shut
-is not known until the window is next opened, and *no cooldown seen* is what Family says
-rather than *no cooldown*.
+**A cooldown appears only if it was seen.** One that started while the profession window was
+shut is unknown until you open that window again.
 
 ---
 
