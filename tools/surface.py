@@ -80,6 +80,13 @@ def measure(uses=None):
             op, register, name = found.groups()
             (reads if op == "GETGLOBAL" else writes).add(name)
             uses[name].add(where)
+            # `_G.BANK_CONTAINER` and `_G["BANK_CONTAINER"]` are a global read by another
+            # route, and Family takes it on purpose for names a client may not have.
+            if op == "GETGLOBAL" and name == "_G" and index + 1 < len(lines):
+                field = FIELD.search(lines[index + 1])
+                if field and field.group(1) == register:
+                    reads.add(field.group(2))
+                    uses[field.group(2)].add(where)
             if op == "GETGLOBAL" and NAMESPACE.match(name) and index + 1 < len(lines):
                 field = FIELD.search(lines[index + 1])
                 if field and field.group(1) == register:
@@ -90,6 +97,15 @@ def measure(uses=None):
         for space, field in re.findall(r"\b(C_\w+|Enum|TooltipDataProcessor)\.(\w+)", text):
             members.add(space + "." + field)
             uses[space + "." + field].add(where)
+        # `local container = C_Container or {}`, then `container.GetContainerNumSlots`, and
+        # `local api = _G.C_QuestLog`, then `api.GetInfo`: most scanners read their namespace
+        # through a local, and a search for the namespace's own name walks straight past
+        # every member they use (L-103).
+        for alias, space in re.findall(
+                r"\blocal\s+(\w+)\s*=\s*(?:_G\.)?(C_\w+)\s*(?:or\s*\{\s*\})?[ \t]*$", text, re.M):
+            for field in re.findall(r"\b%s\.(\w+)" % re.escape(alias), text):
+                members.add(space + "." + field)
+                uses[space + "." + field].add(where)
         for literal in re.findall(r"[\"']([A-Z][A-Z0-9_]{3,})[\"']", text):
             strings.add(literal)
             uses[literal].add(where)
@@ -97,7 +113,8 @@ def measure(uses=None):
                 r"CreateFrame\(\s*[\"'](\w+)[\"'][^)]*?[\"'](\w*Template\w*)[\"']", text):
             templates.add(kind + ":" + template)
 
-    globals_ = sorted(reads - writes - LUA)
+    # Family's own globals, and the frames it names after itself, are not the client's.
+    globals_ = sorted(name for name in reads - writes - LUA if not name.startswith("Family"))
     return globals_, sorted(members), sorted(strings), sorted(templates)
 
 
@@ -133,10 +150,15 @@ for run, r in pairs(FamilySurfaceDB or {}) do
     for _, kind in ipairs { "globals", "members", "events", "templates" } do
         for name, answer in pairs(r[kind] or {}) do out(run, kind, name, answer) end
     end
-    for _, line in ipairs(r.calls or {}) do
-        local name, answer = line:match("^(.-%)) (.*)$")
-        out(run, "calls", name or line, answer or "")
+    local function calls(prefix, list)
+        for _, line in ipairs(list or {}) do
+            local name, answer = line:match("^(.-%)) ([a-z]+ ?.*)$")
+            out(run, "calls", prefix .. (name or line), answer or "")
+        end
     end
+    calls("", r.calls)
+    for window, list in pairs(r.windows or {}) do calls("[" .. window .. "] ", list) end
+    for space, names in pairs(r.namespaces or {}) do out(run, "namespaces", space, names) end
     out(run, "interface", "interface", r.interface)
 end
 """
@@ -174,6 +196,8 @@ def shape(answer):
             kinds.append("boolean")
         elif value in ("nil", "table", "function", "userdata") or value.startswith("+"):
             kinds.append(value)
+        elif value.startswith("{"):
+            kinds.append("table")
         else:
             kinds.append("number")
     return ", ".join(kinds)
@@ -248,6 +272,31 @@ def report(asked_path, control_path=None):
     section("Calls that throw", rows)
 
     if control:
+        rows = []
+        for name, answer in sorted(asked["calls"].items()):
+            other = control["calls"].get(name)
+            if other and answer.startswith("absent") and not other.startswith("absent"):
+                rows.append("`%s` answered on the control: %s" % (name, other))
+        section("Calls absent here and answered on the control", rows)
+
+        windows = sorted({name.split("]")[0] + "]" for name in asked["calls"]
+                          if name.startswith("[")})
+        missing = sorted({name.split("]")[0] + "]" for name in control["calls"]
+                          if name.startswith("[")} - set(windows))
+        print("\n## Windows asked: %s; opened only on the control: %s" % (
+            ", ".join(windows) or "none", ", ".join(missing) or "none"))
+
+        # A file from before the probe listed namespaces says nothing about them, which is
+        # not the same as their being empty.
+        rows = []
+        listed = control.get("namespaces") or {}
+        for space, names in sorted(asked.get("namespaces", {}).items() if listed else ()):
+            theirs = set(listed.get(space, "").split())
+            new = sorted(set(names.split()) - theirs)
+            if new:
+                rows.append("`%s` (%d): %s" % (space, len(new), " ".join(new)))
+        section("Namespace functions here and not on the control", rows)
+
         rows = []
         for name, answer in sorted(asked["calls"].items()):
             other = control["calls"].get(name)

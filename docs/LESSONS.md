@@ -3583,6 +3583,29 @@ request, not a measurement.** Ask what came of it and read the answer back. Wher
 be asked at all - whether a texture exists - the icon sheet and an eye; where it can, as here, the
 sheet should print the number rather than invite a judgement about a column of coins.
 
+## L-103 — an inventory counted one way, and the code read the client three ways
+
+**2026-09-19, branch `midnight`.** `tools/surface.py` counted what Family asks of the client from
+the bytecode's `GETGLOBAL`s and from `C_Something.Member` in the source, and both Midnight and
+Mists were run against that list. Family reads the client two other ways as well. It reads
+`_G.BANK_CONTAINER`, which the generator dropped because `_G` is Lua's own. And it reads a
+namespace through a local, `local container = C_Container or {}` or
+`local api = _G.C_QuestLog`, and then `container.GetContainerNumSlots` or `api.GetInfo`, which a
+search for `C_Container.` walks past. Found when writing the bank window's calls and reading
+`Bank.lua` for its arguments. The `_G.` form of the alias was found only by doing what the rule
+below says, one step later. The list went from 193 globals and 39 members to 278 and 56. The
+whole bag and bank API, the addon channel, the quest log's replacement calls, `UnitBuff` and
+`hooksecurefunc` were among the names neither client had been asked about.
+
+**What now catches it.** Only the instance: the generator follows `_G.Name` and any local that
+holds a whole namespace, with or without `_G.` and `or {}`. **No check catches the rule.** A fourth way of reading the client would
+be missed the same way, and nothing offline can say what the list lacks, because only a client
+knows its own names.
+
+**The rule: an inventory taken by one route is checked against the code by reading it, not by
+trusting the route.** Before a list goes to a client, read the files that touch the client
+hardest, here the scanners, and look for a name the list does not carry.
+
 ## L-102 — every width was right and every place was drawn in the wrong spot
 
 **2026-09-16.** Backlog 88 gave a money figure's silver and copper a font string apiece, pinned to

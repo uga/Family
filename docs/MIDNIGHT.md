@@ -9,17 +9,23 @@ surface is not evidence about the game.
 This file lives on the branch and lands with it. At 5.0.0 what it found moves into
 `DATASOURCES.md` §2 and `Capabilities.lua`, and this file goes.
 
-## 1. What Family touches, counted 2026-09-18
+## 1. What Family touches, counted
 
-Counted by `tools/surface.py` from the sources at `2d9780c`, the compiler's bytecode listing for
-globals and the source for what the listing cannot see:
+Counted by `tools/surface.py` from the sources, the compiler's bytecode listing for globals and
+the source for what the listing cannot see. First at `2d9780c`, and again on 2026-09-19 at
+`51ca01c` after the generator was found to miss every name read through `_G.` or through a local
+alias of a namespace (L-103):
 
-| Surface | Count |
-|---|---|
-| Globals Family reads that Lua does not define | 193 |
-| Members of `C_*` namespaces, `Enum` and `TooltipDataProcessor` | 39 |
-| Upper-case string literals, asked about as events | 136 |
-| Frame templates, with the frame type each is built on | 6 |
+| Surface | 2026-09-18 | 2026-09-19 |
+|---|---|---|
+| Globals Family reads that Lua does not define | 193 | 278 |
+| Members of `C_*` namespaces, `Enum` and `TooltipDataProcessor` | 39 | 56 |
+| Upper-case string literals, asked about as events | 136 | 136 |
+| Frame templates, with the frame type each is built on | 6 | 6 |
+
+**§3 and §4 come from the first runs, which asked the 2026-09-18 list.** Nothing they say is
+wrong, but they are silent about the 85 globals and 17 members added since. That includes the
+whole bag and bank API, the addon channel and the quest log's replacement calls.
 
 The names themselves are in `tools/FamilySurface/Surface.lua`, which is generated and is the
 list. It is not copied here, so it cannot drift from a second copy. `tools/surface.py --check`
@@ -27,10 +33,13 @@ says whether it is still current. It is to be run after every `git merge main`.
 
 ## 2. How Midnight is asked
 
-`tools/FamilySurface`, a throwaway addon, run once on Midnight and once on Mists for comparison.
-It records the type of every name, whether every literal registers as an event, whether every
-template builds, and the answer or the error of 99 read-only calls. Its README says how to run
-it.
+`tools/FamilySurface`, a throwaway addon, run on Midnight and on Mists for comparison. It
+records the type of every name (and the value of a number or string), whether every literal
+registers as an event, whether every template builds, and the answer or error of 100 read-only
+calls at login and 43 more inside five windows: trade skill, auction house, bank, mailbox and
+merchant. It also records the function names in every `C_` namespace Family uses, which is where a
+replacement for an absent call would be. The first runs used version 1, with 99 calls and no
+windows. Its README says how to run it.
 
 ## 3. What Midnight answered
 
@@ -202,10 +211,16 @@ Warcraft*, which is the Anniversary trap again. On Midnight the same three are s
 
 ### Still to do for step 1
 
-1. A second Mists run on a character with a guild and professions, which settles
-   `GetGuildRosterInfo` and gives `GetProfessions` something to compare.
-2. `C_SpecializationInfo.GetTalentInfo` added to the probe's calls and asked on both clients,
-   since Family asks it first.
-3. Windows this login did not open: a trade skill, the auction house, the bank, a mailbox, a
-   merchant. The probe asks outside them, and whether the present calls answer inside them
-   is a separate run with each window open.
+One more round, with probe version 2, covers all of it. That is one run on Midnight and one on
+Mists, each opening the five windows, the Mists one on a character with a guild and a
+profession:
+
+1. The 85 globals and 17 members the first runs were never asked about (§1).
+2. `C_SpecializationInfo.GetTalentInfo`, the talent reader Family asks first, now in the login
+   calls.
+3. What the calls present on Midnight answer inside their windows: trade skill, auction house,
+   bank, mailbox, merchant.
+4. `GetGuildRosterInfo` and `GetProfessions` against a Mists character that has a guild and a
+   profession.
+5. The functions each `C_` namespace holds on Midnight and not on Mists, which is where the
+   replacements for §4's absences are to be looked for.

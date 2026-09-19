@@ -2102,13 +2102,16 @@ Built on the `midnight` branch for its first step, and useful for any client Fam
 written against. `tools/surface.py` counts what Family touches from the sources: the globals it
 reads, from `luac5.1 -l`, which sees the names the code looks up and none that a comment
 mentions. Then, from the source, the namespace members, upper-case literals and frame templates
-that the listing cannot see. On 2026-09-18, at `2d9780c`: **193 globals, 39 members,
-136 literals, 6 templates**. It writes them into `tools/FamilySurface/Surface.lua`, and
+that the listing cannot see. On 2026-09-18, at `2d9780c`: 193 globals, 39 members,
+136 literals, 6 templates. On 2026-09-19, once it also followed `_G.Name` and locals holding a
+whole namespace (L-103): **278 globals, 56 members, 136 literals, 6 templates**. It writes them into `tools/FamilySurface/Surface.lua`, and
 `--check` exits 1 when that file is stale.
 
 `tools/FamilySurface` is a throwaway addon that asks a running client about each one. It records
 the type, whether the literal registers as an event, whether the template builds on its frame
-type, and for 99 hand-picked read-only calls every return or the error. Presence alone is not
+type, and for hand-picked read-only calls every return or the error: 100 at login and 43 asked
+inside the trade skill, auction house, bank, mailbox and merchant windows as each opens. It also
+lists the function names each `C_` namespace Family uses holds on that client. Presence alone is not
 trusted, for the reasons `Capabilities.lua` gives. It was run under `lua5.1` against a stubbed
 client before it went near a real one: a throwing call, holes in a return, an absent name, a
 refused event and a template that fails were each recorded as such. What Midnight answers goes
