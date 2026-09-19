@@ -206,10 +206,26 @@ Warcraft*, which is the Anniversary trap again. On Midnight the same three are s
   the item string, and with `%[(.-)%]` and `item:(%d+)` the name and id, from all three
   links tried. The one colour pattern in the tree, `|c%x%x%x%x%x%x%x%x` in `Core.lua:621`,
   would not strip `|cnIQ1:`. It cleans Chronoboon Displacer tooltip rows, a Classic item.
-- `GetGuildRosterInfo(1)`: position 10 is `0` on Midnight and `""` on Mists. **Not
-  settled**, because the Mists character has no guild and its row 1 is empty.
+- `GetGuildRosterInfo(1)`: position 10 was `0` on Midnight and `""` on Mists. **Settled on
+  2026-09-19: the same shape.** Against a guilded Mists character (Eccebombo, a level-49 guild
+  master, probe version 2) the row reads `"Eccebombo-MirageRaceway" | "Guild Master" | 0 | 49 |
+  … | 0 | "PALADIN" | …`, with `0` at position 10 as on Midnight. The `""` was a character
+  outside a guild.
+- `GetProfessions()`: the same shape, six values on both: `7 | 8 | 10 | 9 | 6 | nil` on
+  Midnight, `7 | 9 | nil | 8 | 6 | 5` on Eccebombo.
+- `GetInventoryItemID("player", 1)`: one value on Midnight, two on Mists (`10763 | 0`). All
+  five call sites keep only the first (`Scanners/Bags.lua:253`, `Scanners/Bank.lua:142`,
+  `Scanners/Character.lua:48`, `Family_UI/Slash.lua:272` and `:915`), so this costs nothing.
+- `GetTalentInfo(1, 1)` on Eccebombo has the same layout as on Holycuw, name first
+  (`"Speed of Light" | 571558 | …`), so the difference from Midnight is the client's, not the
+  character's.
 
 ### Still to do for step 1
+
+**Mists, version 2, received 2026-09-19**: Eccebombo (auction house, bank, mailbox, trade
+skill) and Duecalzini (mailbox, trade skill), both on Mirage Raceway. Item 4 below is settled
+by it (see above). The merchant window was not opened on either, so its four calls have no Mists
+answer. **Waiting on Midnight, version 2.**
 
 One more round, with probe version 2, covers all of it. That is one run on Midnight and one on
 Mists, each opening the five windows, the Mists one on a character with a guild and a
@@ -220,7 +236,7 @@ profession:
    calls.
 3. What the calls present on Midnight answer inside their windows: trade skill, auction house,
    bank, mailbox, merchant.
-4. `GetGuildRosterInfo` and `GetProfessions` against a Mists character that has a guild and a
-   profession.
+4. ~~`GetGuildRosterInfo` and `GetProfessions` against a Mists character that has a guild and a
+   profession.~~ Settled, the same shape on both.
 5. The functions each `C_` namespace holds on Midnight and not on Mists, which is where the
    replacements for §4's absences are to be looked for.

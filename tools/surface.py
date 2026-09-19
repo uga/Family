@@ -22,10 +22,12 @@ The listing cannot see three things, so each is gathered its own way:
 
     tools/surface.py             write tools/FamilySurface/Surface.lua
     tools/surface.py --check     exit 1 if that file is not what this would write
-    tools/surface.py --report ASKED.lua [CONTROL.lua]
+    tools/surface.py --report ASKED.lua[@run] [CONTROL.lua[@run]]
                                  what a client answered, from the probe's saved variables,
                                  each name with the Family files that use it; with a
-                                 control, only where the two clients differ
+                                 control, only where the two clients differ. A file
+                                 holding several runs needs @ and part of the run's name,
+                                 `FamilySurface.lua@Eccebombo`
 
 Re-run after every `git merge main`: a merge that brings in a new call brings in a new
 question for the client.
@@ -165,6 +167,7 @@ end
 
 
 def answers(path):
+    path, _, wanted = path.partition("@")
     run = subprocess.run(["lua5.1", "-e", READER.replace("arg[1]", repr(path))],
                          capture_output=True, text=True)
     if run.returncode != 0:
@@ -173,8 +176,12 @@ def answers(path):
     for line in run.stdout.splitlines():
         name, kind, key, answer = line.split("\t", 3)
         runs[name][kind][key] = answer
+    if wanted:
+        runs = {name: run for name, run in runs.items() if wanted in name}
     if len(runs) != 1:
-        sys.exit("%s holds %d runs; --report reads files with exactly one" % (path, len(runs)))
+        sys.exit("%s holds %d runs%s; name one with @: %s" % (
+            path, len(runs), " matching " + repr(wanted) if wanted else "",
+            ", ".join(sorted(runs)) or "none"))
     (label, run_), = runs.items()
     return label, run_
 
