@@ -472,63 +472,52 @@ shut is unknown until you open that window again.
 
 ## 11. Wide Family
 
-> **Switched off until you ask for it.** The panel is there either way, so you can read what
-> it does before deciding; the switch is in **Options**, beside the one for Guild share, or
-> `/family wide on`. Neither needs a reload. Both of you need to do it. Nothing is shared with anybody until you link and tick what they may see.
-> `/family wide off` puts it back; anything already borrowed simply stops being shown.
->
-> The rest of this section describes it as it works once switched on.
+A family need not be one account. You can add another player's characters as members of
+yours, and they can add yours. Nothing is shared until you tick it, one member and one
+category at a time.
 
-A family need not be one account. You can add another player's characters as members of yours,
-and they can add yours.
+> **Wide Family is switched off until you ask for it.** The switch is in **Options**, beside
+> the one for Guild share, or type `/family wide on`. It needs no reload, and both players
+> have to switch it on. The panel is in the list either way. `/family wide off` switches it
+> off again, and anything you were shown through a link stops being shown.
 
-**Your realm, or one connected to it.** They do not have to share a guild with you or be in a
-group with you — only be online, running Family, and on a realm your character can whisper at the
-moment you ask. A whisper reaches your own realm and the realms connected to it, and a link travels
-by whisper, so that is as far as it goes: on Classic Era, Pyrewood Village reaches Nethergarde Keep
-and Mirage Raceway and does not reach Soulseeker. When every character of a linked family is out
-of reach, the panel says that none of them is on a realm this character can reach, rather than
-calling them offline.
-
-> *A picture of this is still to be taken: `docs/images/wide-family.png`.*
-
-One principle governs the whole feature: **nothing is ever visible that was not deliberately
-made visible, one member and one category at a time.**
+**Who you can link with.** The other player must be online, running Family, and on your realm
+or a realm connected to it. You do not need to share a guild or a group. A link travels by
+whisper, so it reaches as far as a whisper does. When a linked family has no character within
+reach, the panel says that none of their characters is on a realm this character can reach.
 
 ### Linking
 
 Type the other player's character name on the **Wide Family** panel and press *Ask to link*.
-They see a request and accept it. **Until they accept, nothing whatever has been exchanged** —
-not a member list, not a name, not what anybody has.
+They see the request and press *Accept* or *Decline*. Until they accept, nothing has been
+exchanged: no member list, no names.
 
-A link is between two *families*, not two characters, so it survives either of you switching
-character.
+A link is between two families, not two characters. It keeps working whichever character
+either of you is playing.
+
+Open a link and you can type a name in **Call them**. That is what the family is called on
+your screen. Empty the box to get their own name back.
 
 ### If nobody answers
 
-A request you have sent and not had answered stays on the panel under **Waiting for them to
-answer**, with how long ago you asked. After a couple of minutes it is marked *no answer*, and
-you can *Ask again* or *Forget*.
+A request with no answer stays on the panel under **Waiting for them to answer**, with how
+long ago you asked. After a couple of minutes it is marked *no answer*, and you can *Ask
+again* or *Forget*.
 
-Family says *no answer* rather than *failed*, because it genuinely cannot tell which happened.
-The game's addon channel acknowledges nothing: a message that was delivered and a message the
-server dropped look exactly alike from inside the client. So the panel names all three
-possibilities instead of picking one:
+Family cannot tell why there was no answer, so the panel lists the possible reasons:
 
 - they are offline, or not running Family
 - their Family is too old to know how to answer
 - the two of you cannot exchange addon messages at all
 
-The third is the one worth knowing about. Addon messages travel by whisper, and **a whisper
-that reaches somebody is not always a whisper that carries an addon message with it.** Two
-characters on the same realm are fine. Beyond that it depends on the client and on how the
-realms are connected, and no addon can work around it — including this one. If *Ask again*
-never produces an answer and you know they are online with Family running, that is the likely
-reason.
+The third happens between some realms. A whisper can reach somebody and still not carry an
+addon's message with it, and no addon can work around that. If *Ask again* never gets an
+answer and you know they are online with Family running, this is the likely reason.
 
 ### Saying what may be seen
 
-Click a link to open its grid: your members down one side, categories across the top.
+Click a linked family's name to open it. Under *What they may see of your characters* is a
+grid: your members down the side, categories across the top.
 
 | Category | What it carries |
 |---|---|
@@ -536,140 +525,96 @@ Click a link to open its grid: your members down one side, categories across the
 | Equipment | what they are wearing, and their item level |
 | Professions | recipes, ranks, specialisations and cooldowns |
 | Talents | talent trees and the spellbook |
-| Quests | the active log |
+| Quests | the quest log |
 | Mail | what is waiting, and when it expires |
 | Auctions | what is listed |
 | Reputations | standings |
 | Money | money |
 | Character | time played, rested experience, guild, hearthstone, where they are, mount |
 | Currencies | currencies |
-| World buffs | the buffs they carry and what is banked in a Chronoboon |
+| World buffs | the buffs they carry and what is stored in a Chronoboon |
 
-**The grid starts with nothing ticked.** There is no *share everything* — a default is not a
-decision. Offering a member at all shares who they are: name, realm, class, race, level and
-side. Nothing else moves without a tick.
+**The grid starts with nothing ticked**, and there is no *share everything*. Offering a member
+at all shares who they are: name, realm, class, race, level and faction. Nothing else is sent
+without a tick.
 
-**Unticking tells the other side to forget it, at once** — not at the next exchange.
+**Click a category's name** to tick it for every member at once. Click it again to clear the
+column. The other family is told once, not once per member.
+
+**Unticking a box tells the other side to forget what it held, at once.** This is sent even
+when automatic exchange is off.
 
 ### When data moves
 
-- **When a linked family comes online.** Each side announces itself on login and whoever
-  hears it exchanges. Neither of you has to remember anything.
-- **When you change what is shared**, immediately.
-- **When you press Update now.** It asks for theirs and sends what changed since they last said
-  what they hold — and when nothing has, it says *nothing to send* and how many are unchanged,
-  in chat and on the line under the family.
+- **When a linked family comes online.** Each side announces itself at login and the two
+  exchange.
+- **When you change what is shared**, at once.
+- **When you press Update now.** It asks for their data and sends what changed on your side.
+  When nothing changed, it says *nothing to send* and how many members are unchanged.
 
-**Nothing is sent as you log out.** By the time an addon knows it is logging out the client is
-already leaving, and a message posted then does not arrive. The login exchange covers the same
-ground honestly: the next time either of you plays, both sides are brought up to date.
+The first of these is the tick box **Exchange automatically when a linked family comes
+online**. Untick it and nothing is announced at login and nobody's announcement is answered.
+*Update now* works the same either way.
 
-The first two are one tick box on the panel — **Exchange automatically** — and you can turn it
-off. Off means nothing happens without somebody asking for it: no announcement on login and no
-answer to anybody else's. *Update now* stays, and always will, and works the same with the box
-unticked.
+**Both of you must be online at the same time**, on any character. *Update now* tries the
+character you last heard from, then the family's others, until one answers. If none does,
+Family says the family is not online and sends nothing.
 
-**Sending everybody again**, whatever they already hold, is a command rather than the button:
-`/family wide resend <family>`, with the family's name as the panel shows it. It says first how
-many characters it will send, about how much and for how long — about six minutes for two hundred
-characters — and the panel names it on the line under a family you have opened. It is for the rare
-case where something on their side looks wrong although nothing changed on yours; *Update now*
-already repairs everything else, because each side tells the other what it holds.
+**Nothing is sent as you log out.** The next login brings both sides up to date.
 
-**A share that stops part way picks up where it stopped.** Logging out, closing the game or the
-other person going offline no longer leaves characters Family believes it has sent: each side
-tells the other what it already holds, and the other side **confirms** what it stored, so the line
-under a family counts *confirmed* rather than *sent*. Anything never confirmed is sent again next
-time. While a share is going out, the same line says how many pieces are left, and the count moves
-as you watch.
+**A share that stops part way continues next time.** Each side confirms what it stored, and
+the line under a family counts *confirmed* members. Anything not confirmed is sent again at
+the next exchange. While a share is going out, the same line says how many pieces are left.
 
-One thing crosses that switch on purpose. **Unticking a box is still sent at once**, whether
-automatic exchange is on or off. Automatic update is a convenience and it is yours to switch
-off; telling somebody to forget what they may no longer see is a promise, and a promise that
-waits for you to press a button is not one.
+**To send everybody again**, type `/family wide resend <family>`, with the family's name as
+the panel shows it. Family first says how many characters it will send and about how long it
+will take. Use it when something looks wrong on their side although nothing changed on yours.
 
-During a fight, a large transfer waits for the fight to end. Sending is not forbidden in
-combat — but the channel is shared with every other addon in the raid, and they need it more
-than Family does.
+**A large transfer waits for combat to end.**
 
 ### What linked data is, and is not
 
-- **Kept separately** from your own members and always marked as another family's. Never
-  merged, never edited.
-- **A snapshot**, refreshed when exchanged. It does not subscribe — nothing either of you does
-  while playing is sent as it happens. Selling something, swapping a piece of gear, looting a
-  bag: none of it reaches the other family until the next exchange.
-- **As old as the last exchange**, and the panel says how old that is.
-- **Both of you must be online at once**, because the transport is the game's own addon
-  channel.
-
-### Siblings
-
-Under **Shared with you** at the bottom of the panel is everyone the other families have
-given you, each with a tick box. Tick one and they become a **sibling**: they appear in your
-summary, on the realm they are on, in a small section under the name of the family they belong
-to, in every column set.
-
-Ticking sends nothing and asks nobody, and that is not a shortcut. You can only tick somebody
-that family has *already* decided to share with you — the consent was given before the name
-could appear in the list. What is left is a decision about your own screen.
-
-If they later untick that member, or either of you ends the link, the sibling goes with them.
-There is nothing to tidy up.
-
-A sibling's possessions also count on item tooltips: hover anything and their name appears
-among the owners, with the family they belong to beside it.
-
-**You do not have to make somebody a sibling to look at them.** Everyone a linked family
-shares with you is offered by the member button on Abilities & Talents, Possessions,
-Professions and Character, listed at the bottom under that family's name rather than filed
-under a realm. A sibling is the stronger statement: *this one belongs in my lists, beside my
-own*. Where a whole family's worth of shared characters would only get in the way of reading
-your own summary, leave them unticked and go and look at them when you want them.
-
-An exchange happens when either of you logs in, if *Exchange automatically* is ticked, and
-whenever anybody presses **Update now**, and when a grant is ticked or unticked. That is the
-whole list. Both of you must be **online at once** for one — either of you, on any character. A
-linked family is a person, not one of their alts, so **Update now** tries whoever you heard
-from last, then the next of theirs, until one answers. Only when every one of them has been
-found offline does Family say the family is not online, and sends nothing — it finds out the only way anyone can, by the client complaining about the
-first whisper, and it stops there rather than complaining several hundred times.
+- **Kept apart** from your own members and always marked as another family's. It is never
+  merged and never edited.
+- **A snapshot.** Nothing is sent as it happens. What the other player sells, equips or loots
+  reaches you at the next exchange.
+- **As old as the last exchange.** The panel says how old that is.
 
 ### What they share with you
 
-Click a linked family's line and it opens on both halves of the link. Underneath *What they
-may see of your characters* is the grid you tick. Underneath *What ... shares with you* is
-everyone they have given you, and against each one the same columns — greyed, because that is their decision being reported
-rather than yours to take. Read the two together and you have both halves of the link: what
-they see of yours, and what you see of theirs.
+Under *What ... shares with you* is everyone that family has given you. Beside each member are
+the same category columns, greyed, because they are the other player's choice. They show what
+that player granted. A family running an older version does not report its grants, and there
+Family shows only what arrived.
 
-The marks are what they *said* they granted, not what happened to arrive. A character with an
-empty mailbox and a character whose mail was never shared send the same nothing, and Family
-will not report the first as the second. A linked family running an older version says nothing
-about its grants, and there Family shows what arrived and nothing more.
+**You can look at any shared character.** The member button on Abilities & Talents,
+Possessions, Professions and Character lists them at the bottom, under their family's name.
 
-### Ticking a lot of boxes
+### Siblings
 
-A family of eleven is eighty-eight boxes, and the decision is usually one decision taken
-eleven times. Click a linked family's name to open its grid — the line is a button, not a heading.
+Each shared member has a **Sibling** tick box. Tick it and that character is listed with your
+own: in the summary, under the realm they are on and the name of their family, in every column
+set. They are also in the whole-family gear rows (§7), and their possessions count on item
+tooltips, where their name carries their family's name. Click the word *Sibling* to tick the
+whole column.
 
-**Click a column's name** — *Equipment*, *Professions* — to grant it for every
-member at once; click it again to clear the column. The other family is told once, not once
-per member.
+Ticking a sibling sends nothing and asks nobody. You can only tick a character that family
+already shares with you.
 
-### The one thing it cannot promise
+A sibling is never added to your totals. If the other player unticks that member, or either of
+you ends the link, the sibling disappears with it.
 
-Family will not send what was not granted, and on unticking a box it asks the other side to
-forget what it has. **That last part is a request.** The other side is somebody else's
-computer running somebody else's copy, and no addon can compel it. The consent grid is a
-promise between two people that Family keeps honestly on your side; it is not a lock, and the
-panel says so rather than showing a padlock that means less than it looks like.
+### What Family cannot promise
+
+Family never sends what you did not tick. When you untick a box it asks the other side to
+delete what it has. That is a request to another player's computer, and no addon can enforce
+it there.
 
 ### If the panel says it cannot run
 
-Wide Family needs `LibSerialize` and `LibDeflate` — the addon channel carries text and nothing
-else. A copy installed from CurseForge has them. A copy built from a `git clone` does not, and
-the panel says so outright rather than offering a link that never works.
+Wide Family needs two libraries, `LibSerialize` and `LibDeflate`. A copy of Family installed
+from CurseForge includes them. A copy built from the source code does not, and the panel says
+so.
 
 ---
 
