@@ -130,7 +130,8 @@ and nobody is asked, because they had already chosen to share that character wit
 ### Clients and languages
 
 Classic Era, Classic Burning Crusade (Anniversary) and Classic Mists of Pandaria. Season of
-Discovery and Retail are not supported and not planned.
+Discovery is not supported and not planned. Retail is not supported yet; work on it has
+started.
 
 English, German, French, Spanish and Russian, for both the interface and the recorded data.
 A character recorded on a German client reads correctly on a French one.
