@@ -284,7 +284,9 @@ chosen will be called in a client before it is relied on.
 
 ## 6. The bank and the merchant (probe version 3)
 
-Midnight, Ahia, 12.1.0, 2026-09-19, with the bank and a vendor opened.
+Midnight, Ahia, 12.1.0, 2026-09-19, with the bank and a vendor opened, and with Bagnon, which
+replaces the bag and bank frames, enabled. A second character with Bagnon disabled is the next
+run.
 
 **Where the bank is: containers 6 to 12.** The sweep of ids -20 to 40:
 
