@@ -29,6 +29,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 4.3.0 — 2026-09-19
+
 ### Typing to Family
 
 - **`/family help` lists the commands.** It used to answer that there was no such command and
