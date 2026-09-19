@@ -45,3 +45,11 @@ When they arrive, this section gets four lists, each name with the Family files 
 - **Events refused** on Midnight and registered on Mists.
 
 Plus whatever the client did when asked to load an addon with no Midnight interface number.
+
+### Loading an addon without Midnight's interface number: refused, observed 2026-09-19
+
+Alberto: Midnight marks Family Surface as *incompatible* and refuses to load it. Its `.toc`
+listed `11509, 20506, 50504` and nothing for Midnight. So on Midnight the out-of-date route
+that step 2 of the probe's README relied on does not load the addon, and a probe needs the real
+number in its `.toc`. The same holds for Family: until the fourth number is in both `.toc`
+files, Midnight does not load Family at all. It does not load it and then fail.
