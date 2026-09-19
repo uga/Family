@@ -42,6 +42,9 @@ is a decision rather than an afternoon of archaeology.
   yourself.** A Bolt of Runecloth is now costed from its own recipe when one of your characters
   can weave it and weaving comes to less than the auction house or a vendor asks. A material
   nobody in your family can make is priced only at what it sells for.
+- **A cheaper way that takes time is noted, not counted.** Where making a material would save
+  money but waits on a crafting cooldown such as a transmute, or on farming, the total stays at
+  what you can buy today and a line under it says how much less the slower way would be.
 
 ## 4.2.0 — 2026-09-18
 

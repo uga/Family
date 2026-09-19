@@ -1,0 +1,6 @@
+name: a total counted through a cooldown route does not say it waits
+file: addons/Family/Recipes.lua
+--- old
+			out.timed = out.timed or timed
+--- new
+			local _ = timed

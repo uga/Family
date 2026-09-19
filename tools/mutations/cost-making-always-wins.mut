@@ -1,6 +1,6 @@
 name: a recipe cost is used whenever there is one, dearer or not
 file: addons/Family/Recipes.lua
 --- old
-		if madeEach and (not each or madeEach < each) then
+		if madeEach and (not each or (not slow and madeEach < each)) then
 --- new
 		if madeEach then

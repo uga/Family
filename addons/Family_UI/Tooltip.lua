@@ -953,6 +953,26 @@ local function madeWith(cost)
 			lines[#lines + 1] = { "|cff888888" .. L["not counting materials no money can buy"]
 				.. "|r" }
 		end
+
+		-- **What time would buy.** Alberto, 2026-09-19: *we are totalling what is the cheapest
+		-- way to make the item, but we are not counting the cost of time.* A route that waits
+		-- on a crafting cooldown or on farming does not set the total where something can be
+		-- bought today (`Recipes:CostOfSpell`); what it would save is said here, in the money
+		-- column like every other figure. And where the total itself waits on a cooldown,
+		-- because nothing was for sale, that is said as well.
+		if cost.timed then
+			lines[#lines + 1] = { "|cff888888" .. L["made with a crafting cooldown"] .. "|r" }
+		end
+
+		local why = cost.why or {}
+		if (cost.saving or 0) > 0 and (why.cooldown or why.farming) then
+			local said = (why.cooldown and why.farming)
+				and L["less with a crafting cooldown and farming"]
+				or why.cooldown and L["less with a crafting cooldown"]
+				or L["less by farming"]
+			lines[#lines + 1] = { "|cff888888" .. said .. "|r", UI:MoneyLine(cost.saving),
+				nil, nil, nil, 0.53, 0.53, 0.53 }
+		end
 	end
 
 	return lines

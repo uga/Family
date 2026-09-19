@@ -38009,6 +38009,62 @@ print("what a craftable thing costs to make")
 		bySpell and tostring(bySpell.total) or "nothing")
 	ourMakes.spells[900006], NOBODY[BLADE] = nil, nil
 
+	-- **A route that waits on a crafting cooldown does not beat a price paid today**, and what
+	-- it would save is kept for the note. The blade's recipe is put on a day's timer.
+	local realKnown = Family.Cooldowns.Known
+	Family.Cooldowns.Known = function(self, spellID, ...)
+		if spellID == 900006 then return 86400 end
+		return realKnown(self, spellID, ...)
+	end
+
+	vendorPrices[BLADE] = 5000
+	local waiting = Family.Recipes:CostToMake(CHAMPION)
+	check("a material cheaper to make on a crafting cooldown is still counted at its price",
+		waiting and waiting.total == 5000 + 300 and waiting.made == 0 and not waiting.timed,
+		waiting and tostring(waiting.total) or "nothing")
+	check("and what the cooldown would save is kept, as a cooldown",
+		waiting and waiting.saving == 5000 - bladeCost and waiting.why
+			and waiting.why.cooldown == true and not waiting.why.farming,
+		waiting and tostring(waiting.saving))
+
+	-- **Passed up from a material inside a material.** A wrap made of the champion: the
+	-- champion is made, at its price-bought blade, and the blade's cooldown still saves.
+	local WRAP = 700109
+	Family.RecipeReagents[2][900012] = { CHAMPION, 1 }
+	local madeByHere = Family.Recipes.MadeBy
+	Family.Recipes.MadeBy = function(self, itemID)
+		if itemID == WRAP then return 900012 end
+		return madeByHere(self, itemID)
+	end
+	local wrap = Family.Recipes:CostToMake(WRAP)
+	check("what a slow route would save is passed up from a material inside a material",
+		wrap and wrap.total == 5000 + 300 and wrap.saving == 5000 - bladeCost
+			and wrap.why and wrap.why.cooldown == true,
+		wrap and (tostring(wrap.total) .. " / " .. tostring(wrap.saving)) or "nothing")
+	Family.Recipes.MadeBy = madeByHere
+	Family.RecipeReagents[2][900012] = nil
+
+	-- And where nothing is for sale the cooldown is the only way, so it is counted and said.
+	vendorPrices[BLADE] = nil
+	local onlyWay = Family.Recipes:CostToMake(CHAMPION)
+	check("where nothing is for sale a cooldown route is counted, and says it waits",
+		onlyWay and onlyWay.total == bladeCost + 300 and onlyWay.timed == true
+			and (onlyWay.saving or 0) == 0,
+		onlyWay and tostring(onlyWay.total) or "nothing")
+
+	-- And a wait inside a material is a wait for what is made of it.
+	Family.RecipeReagents[2][900012] = { CHAMPION, 1 }
+	Family.Recipes.MadeBy = function(self, itemID)
+		if itemID == WRAP then return 900012 end
+		return madeByHere(self, itemID)
+	end
+	local wrapWaits = Family.Recipes:CostToMake(WRAP)
+	check("and a cooldown inside a material waits for what is made of it too",
+		wrapWaits and wrapWaits.timed == true, wrapWaits and tostring(wrapWaits.timed))
+	Family.Recipes.MadeBy = madeByHere
+	Family.RecipeReagents[2][900012] = nil
+	Family.Cooldowns.Known = realKnown
+
 	do
 		local HILT, GUARD, FILE, RASP = 700208, 700106, 700209, 700107
 		local TOP, A, B = 700108, 700300, 700400
@@ -38032,6 +38088,12 @@ print("what a craftable thing costs to make")
 		check("a recipe cost short of a bound material does not undercut a real price",
 			guard and guard.total == 1000 and guard.bound == 0 and guard.made == 0,
 			guard and tostring(guard.total) or "nothing")
+		-- **And what farming it would save is kept for the note** (Alberto, 2026-09-19: *we
+		-- are not counting the cost of time*): the price less the bar.
+		check("and what farming the rest would save is kept, as farming",
+			guard and guard.saving == 700 and guard.why and guard.why.farming == true
+				and not guard.why.cooldown,
+			guard and (tostring(guard.saving) .. " " .. tostring(guard.why and guard.why.farming)))
 		vendorPrices[HILT] = nil
 		guard = Family.Recipes:CostToMake(GUARD)
 		check("and is still used, saying it is short, where nobody sells the thing",
@@ -38283,6 +38345,29 @@ print("what a craftable thing costs to make")
 		check("every money figure on a crafted thing's tooltip is written in full g-s-c",
 			figures > 0 and odd == nil,
 			tostring(figures) .. " figures, first odd one: " .. tostring(odd) .. " in " .. text)
+	end
+
+	-- **The notes as the tooltip writes them**, with the blade's recipe on a day's timer again.
+	do
+		local realKnown = Family.Cooldowns.Known
+		Family.Cooldowns.Known = function(self, spellID, ...)
+			if spellID == 900006 then return 86400 end
+			return realKnown(self, spellID, ...)
+		end
+
+		vendorPrices[BLADE] = 5000
+		local noted = hovering(CHAMPION)
+		check("the tooltip says how much less a crafting cooldown would make it, in money",
+			noted:find("less with a crafting cooldown|r | ", 1, true) ~= nil
+				and noted:find("made with a crafting cooldown", 1, true) == nil, noted)
+
+		vendorPrices[BLADE] = nil
+		noted = hovering(CHAMPION)
+		check("and that the total waits on one where nothing was for sale",
+			noted:find("made with a crafting cooldown", 1, true) ~= nil
+				and noted:find("less with", 1, true) == nil, noted)
+
+		Family.Cooldowns.Known = realKnown
 	end
 
 	Family.Extras:Set("craftingCost", false)

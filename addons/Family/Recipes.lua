@@ -615,7 +615,7 @@ end
 -- **What it costs to make one of this item**, or nothing where this item is not made.
 --
 --     { spell =, parts = { { item =, count =, each =, total =, from =, bound =, unknown = } },
---       total =, missing =, bound = }
+--       total =, missing =, bound =, timed =, saving =, why = { cooldown =, farming = } }
 --
 -- `total` is **nil where anything is unpriced**, which is the second caveat and the rule §2.2
 -- states for the whole addon: *nought is different from not read.* A recipe with one unknown
@@ -689,6 +689,16 @@ end
 -- for. And the branch's own items are remembered, because a cycle would hang the client drawing
 -- a tooltip - which is the one place in this addon that must never be slow.
 --
+-- **A slow way of making it is noted rather than counted** (Alberto, 2026-09-19, choosing it over
+-- counting the lowest number and over leaving it unsaid). The cheapest route can be one nobody can
+-- take today: a Primal Fire transmuted from a cheaper Primal Earth waits on the alchemist's daily
+-- cooldown, and gears made from a bar and five piles somebody has to farm cost the bar and a
+-- trip. *We are not counting the cost of time.* So a route that needs a crafting cooldown
+-- (`Cooldowns:Known`, from the shipped tables) or leaves out a bound material never beats a price
+-- that can be paid now; it is still used where nothing is for sale, and then `timed` says so.
+-- What it would have saved goes in `saving`, with `why` saying which of the two it takes, and the
+-- tooltip writes it under the total - *4g less with a crafting cooldown*.
+--
 -- **Each material is costed once a tooltip, and that is what keeps sixty enough.** Counted
 -- 2026-09-19 over every product in the shipped tables, following every material that has a
 -- recipe: at most 23 recipes on Era, 49 on Mists and **72** on Burning Crusade, where one item
@@ -753,15 +763,23 @@ function Recipes:CostOfSpell(spell, depth, branch, budget, itemID)
 			budget.known[part.item] = made
 		end
 		local madeEach = made and made.total or nil
-		if madeEach and each and made.bound > 0 then madeEach = nil end
 
-		if madeEach and (not each or madeEach < each) then
+		-- **Slow**: making it waits on a crafting cooldown somewhere down the route, or leaves
+		-- out a material somebody has to farm. Neither beats a price that can be paid today;
+		-- what either would save is kept for the note under the total (above).
+		local timed = made and (made.timed or Family.Cooldowns:Known(spell) ~= nil) or false
+		local farmed = made and made.bound > 0 or false
+		local slow = timed or farmed
+
+		if madeEach and (not each or (not slow and madeEach < each)) then
 			row.each, row.from = madeEach, "crafted"
 			row.total = madeEach * part.count
 			out.total = out.total + row.total
 			out.made = out.made + 1
 			-- A sub-recipe short of a material of its own is short here too.
 			out.bound = out.bound + made.bound
+			-- And one that waits on a cooldown, where nothing was for sale to wait less.
+			out.timed = out.timed or timed
 		elseif each then
 			row.each, row.from = each, from
 			row.total = each * part.count
@@ -773,6 +791,24 @@ function Recipes:CostOfSpell(spell, depth, branch, budget, itemID)
 		else
 			row.unknown = true
 			out.missing = out.missing + 1
+		end
+
+		-- How much less the slowest way of coming by it would be than what was counted, and
+		-- why. The lowest a unit can come to is making it with every slow route inside it taken
+		-- too; where the made route was counted, only the slow routes inside it are left over.
+		if madeEach and row.each then
+			local lowest = madeEach - (made.saving or 0)
+			if lowest < row.each then
+				out.saving = (out.saving or 0) + (row.each - lowest) * part.count
+				out.why = out.why or {}
+				if row.from ~= "crafted" then
+					out.why.cooldown = out.why.cooldown or timed
+					out.why.farming = out.why.farming or farmed
+				end
+				for reason in pairs(made.why or {}) do
+					if made.why[reason] then out.why[reason] = true end
+				end
+			end
 		end
 
 		out.parts[#out.parts + 1] = row

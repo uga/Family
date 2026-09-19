@@ -1,0 +1,6 @@
+name: a recipe on a crafting cooldown is not seen as slow
+file: addons/Family/Recipes.lua
+--- old
+		local timed = made and (made.timed or Family.Cooldowns:Known(spell) ~= nil) or false
+--- new
+		local timed = made and made.timed or false
