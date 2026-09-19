@@ -254,37 +254,37 @@ What one member can make.
 
 Sort by:
 
-| Order | The question it answers |
+| Order | What comes first |
 |---|---|
-| **Difficulty** | what will skill me up |
-| **Item level** | what is worth making |
-| **Skill needed** | what will I be able to make next |
+| **Difficulty** | the hardest recipes, which are the ones that skill you up. Within a colour, the ones that took the most skill to learn |
+| **Item level** | the hardest recipes, and within a colour the ones that make the highest-level items |
+| **Skill needed** | the lowest skill, so you see what you can make next. The skill is not known for every recipe yet |
 
-Recipes are coloured as the game colours them — orange, yellow, green, grey — and the counts
-along the top say how many of each there are.
+Recipes are coloured as the game colours them: orange, yellow, green, grey. The counts along
+the top say how many there are of each. The search box finds a recipe by name.
 
-**Every recipe row says what it is made of**: the materials, with how many of each, on the right of
-the recipe's own line — for every character, not only the one whose window is open. **Hover one of
-those pictures** and you get that material's own tooltip, with who in the family already has some;
-hover anywhere else on the line and you get the thing being made. Clicking a picture does what
-clicking the line does. **Can make**
-counts what that character had in their bags and bank the last time they logged in. Wands, rods
-and oils an enchanter makes are shown as **the thing itself**, with its own picture, who holds one
-and what it takes to make.
+**Every recipe row shows its materials** as icons on the right, with the quantity on each.
+This works for every character, not only the one you are playing. Hover an icon for that
+material's own tooltip, with who in the family already has some. Hover anywhere else on the
+row for the item the recipe makes. Clicking an icon does what clicking the row does.
 
-**Hold CTRL over a recipe** and its tooltip adds up what the family holds of what the recipe makes,
-and what that is worth — what CTRL does over an item everywhere else (§15).
+**Can make** says how many times that character could make the recipe. It counts the
+materials Family last saw in their bags and bank. Mail, auctions and worn gear are not counted.
 
-**Clicking a recipe** finds it in the open profession window. If no window is open, the recipe
-is remembered and the panel says which button will open it; clicking that button opens the
-window and selects the recipe on arrival.
+Wands, rods and oils made by an enchanter are shown as the item itself, with its own icon, who
+holds one and what it takes to make.
+
+**Hold CTRL over a recipe** and the tooltip adds what the family holds of the item it makes,
+and what that is worth (§15).
+
+**Click a recipe** to select it in the profession window, if that window is open. If it is
+not, Family remembers the recipe and the panel says which button opens the window. Click that
+button and the window opens with the recipe selected.
 
 **Professions that make nothing are not listed here.** Herbalism, skinning and fishing have no
-window and no recipes, and a button leading to an empty list costs a click every time somebody
-tries it to find that out again. They are on the summary, with their rank. The note under the
-bar names anything left out and says which of the two reasons applies: *makes nothing*, or
-*never opened* — which are different facts, and Family only knows the difference by having
-seen the window.
+recipes. They are on the summary, with their rank. A note under the buttons names any
+profession left out and says why: it makes nothing, or its window was *never opened* on that
+character.
 
 ---
 
@@ -292,52 +292,44 @@ seen the window.
 
 Five sections about one member.
 
-**Equipped gear**, laid out the way the character sheet lays it out — a column down each side
-and the weapons along the bottom. An empty slot in the right place is far more obvious than a
-row saying "empty". Item level is on each piece, and the tooltip is the item as it really is,
-with its enchant, its gems and its patch.
+**Equipped gear** is laid out like the character sheet: a column down each side and the
+weapons along the bottom. Each piece shows its item level. The tooltip is the item as it
+really is, with its enchant and its gems.
 
 ![Character, Equipped gear: the paper-doll layout with item levels](images/character-gear.png)
 
-**Whole family**, the button at the top right of that section, is the same gear read the other
-way round. Everybody becomes one row: their class picture, then every slot in the same order
-the character sheet uses, with the item level written over each icon and the item's own tooltip
-on hover. Hover the class picture for who they are — name, race, class, level and average item
-level.
+**Whole family**, the button at the top right of that section, shows everybody's gear at
+once. Each member is one row: their class icon, then every slot in the order of the character
+sheet, with the item level over each icon and the item's own tooltip on hover. Hover the class
+icon for their name, race, class, level and average item level. One look tells you which of
+your characters is behind. Siblings (§11) are listed too.
 
 ![Character, Whole family: one row per member, every slot in order](images/character-gear-family.png)
 
-A character sheet tells you what one character is wearing. This tells you **which of them is
-behind**, which is the question that made you open Family, and it is not answerable one sheet
-at a time. Siblings (§11) are in it too. The two filters — **Realm** and **Class** — open a list of what
-your family actually has: a family with no warlock is not offered a warlock. *All* is the first
-entry of every list, so there is always one click back to everybody. Classes are named as your
-client names them and coloured as the game colours them.
+Two filters, **Realm** and **Class**, list only what your family has. A family with no warlock
+is not offered a warlock. *All* is the first entry of each list. Where a realm has characters
+of both factions, the rows are grouped under an Alliance and a Horde heading, as on the
+summary.
 
-Where a realm has characters on both sides, they are **grouped by side** — Alliance and Horde
-each get a heading and a count — the same way the summary groups them. A row here is a class
-picture and nineteen slots and says nothing else about whose character it is, so without the
-headings a family with one character on the other side read as a family that had lost them.
-The grouping appears only where there are two sides to tell apart; one side gets no heading it
-does not need.
+**Currencies**: everything this member holds, with each cap and how far they are from it. A
+currency without a cap says *no cap*. Currencies exist from Burning Crusade on.
 
-**Currencies**: everything this member holds, with what each is capped at and how far off it
-is. Anything uncapped says so rather than showing a ceiling of zero.
+**Reputations**, by standing, with progress through the current standing.
 
-**Reputations**, by standing, with progress through the current one.
+**Quests**: the quest log, by zone, in the game's difficulty colours, with progress on each
+quest. **Click a quest to open it in the game's quest log**, when it belongs to the character
+you are playing. Only those rows light up on hover.
 
-**Quests**: the active log, by zone, with the difficulty banding the game uses and the
-progress on each. **Clicking a quest opens it in the log**, when it is the character you are
-playing — and only those rows light up on hover, because only those do anything.
+Reputations and Quests also have a **Whole family** view. For quests it lists each quest once,
+with the characters who have it underneath, the one furthest along first.
 
-When Family opens one of the game's own windows for you — the quest log, and the character
-sheet when you click a worn item on your own paper doll — **Family closes**. It has to: Family draws above the game's panels, and
-in this game a window in a higher layer cannot be brought in front by clicking the one behind
-it, so the log you just opened would sit under Family with no way to get at it. You clicked in
-order to look at that window. `/family` brings Family back, on the tab you left it on.
+**Achievements**, by category, with points and the progress on unfinished ones. Mists only. On
+the other versions the section is not shown.
 
-**Achievements**, by category, with points and the progress on partial ones. Absent entirely
-on a client that has no achievements — absent, rather than empty.
+**Family closes when it opens one of the game's windows for you.** That happens when you click
+a quest, or a worn item on your own character. Family is drawn above the game's panels, so the
+window you asked for would be hidden behind it. Type `/family` to bring Family back on the
+page you left.
 
 ---
 
