@@ -335,66 +335,54 @@ page you left.
 
 ## 8. On the game's own tooltips
 
-This is the half of Family that gets used most, and it needs no window open.
+Family adds to the game's own tooltips, with no window open.
 
-Hover **any item anywhere** — a vendor, the auction house, the floor, somebody's trade window —
-and Family adds who in the family has one and where it is: bags, bank, mail, auctions, guild
-bank, and what they are wearing.
-
-**The ten holding the most are named**, and the rest are counted with how many they hold between
-them, so the total at the top still adds up — an item nearly all of two hundred characters carry
-would otherwise fill the screen. Guild banks are cut the same way. **Hold CTRL and ALT and click the
-item** — in your bags, in chat, anywhere the game lets a modified click through — and Family opens
-on the whole-family search for it, with every character who has one. The tooltip says so on any
-item somebody in the family has, in grey under the list of owners, and stays quiet on an action
-bar slot, where those two keys are the bar's own and the click never reaches Family.
-
-**Which of your *other* characters' copies are soulbound** is said too, in the game's own word —
-nothing else can tell you, because their copy is not on the machine the game is asking. For the
-character you are playing the game already says it, and Family does not repeat it.
-
-**Random-suffix items are counted one version at a time.** A Superior Sword *of the Bear* and one
-*of the Whale* share an item number and nothing else, so hovering the Bear one says how many of
-*those* the family has and what a Bear one is going for. Enchants and gems do not make versions:
-two of one sword with different enchants are two of one thing.
+**Hover any item, anywhere**: at a vendor, at the auction house, in a trade window. Family adds
+a **Family possessions** block: who in the family has one, how many, and where. The places are
+bags, bank, mail, auctions, guild bank, and equipped.
 
 ![An item's own tooltip in the game, with Family's block added to it](images/tooltip-item.png)
 
-Hover a **recipe** and it adds a **Family crafters** block: who already knows it, who can
-learn it today, and who has the profession but is not high enough yet. Only members with that
-profession are listed, because nobody else is an answer to the question.
+**The ten members holding the most are named.** The rest are counted together, with how many
+they hold, so the total at the top still adds up. Guild banks are shortened the same way.
 
-**A recipe is recognised by what it is, not by what it is called.** The trade skill window
-abbreviates some names and shortens others, and a family played across languages writes them
-down in whichever one scanned them — so matching on the word left an enchanter who had known a
-formula for a year being offered it as one to learn. Family matches on the recipe a book
-teaches and on the thing that recipe makes, both of which are numbers and the same in every
-language. The word is still read for the few recipes neither number is known for.
+**Hold CTRL and ALT and click the item** to open Family on everyone who has one. It works in
+your bags, on a link in chat, and anywhere else the game passes the click on. The tooltip
+mentions the shortcut in grey, under the owners, on any item the family holds. It is left off
+action bar buttons, where those keys belong to the bar.
 
-Both blocks name the realm on a member only when two members with the same name are listed,
-and mark anybody on the opposing faction.
+**Soulbound copies on your other characters are marked**, in the game's own word. For the
+character you are playing the game already says it, and Family does not repeat it.
 
-**What a thing is made of** — every material and how many of it, under who can make it, with what
-it all costs where Family has prices — on anything a profession makes and on an enchant, is one of
-the Extras, off until you switch it on (§13, *Extras*).
+**Random-suffix items are counted one version at a time.** A sword *of the Bear* and the same
+sword *of the Whale* are counted and priced separately. Enchants and gems make no difference:
+two of one sword with different enchants are two of the same thing.
 
-Turn either off in Options.
+**Hover a recipe** and Family adds a **Family crafters** block. It lists who knows the recipe,
+who can learn it now, and who has the profession but needs more skill or levels. Only members
+with that profession are listed.
 
----
+- The recipe is recognised by what it teaches and what it makes, so it is matched correctly
+  whatever language a character was recorded in.
+- **Recipes that need a specialisation.** An armoursmith cannot make a sword, and a goblin
+  engineer cannot make a gnomish device. A character on the wrong branch is not offered as able
+  to learn the recipe. The line names the branch the recipe needs, in your language.
+- A character Family has not read since it learned to check branches says *may know it*. Log
+  in on them once and it fills in.
 
-**Recipes that need a specialisation.** An armoursmith cannot make a sword and a goblin
-engineer cannot make a gnomish one. Where a recipe belongs to a branch, a character on a
-different branch is not offered as able to learn it — the line names the branch it wanted
-instead, in your language. Blacksmithing, Leatherworking and Engineering on Classic Era, those
-plus Tailoring on Burning Crusade, and Engineering alone on Mists, the rest having been removed
-from the game. A character you have not logged into since Family learned to ask says *may know
-it* rather than guessing either way; log in on them once and it fills in.
+**Items made by using another item.** Refined Deeprock Salt is on nobody's recipe list. It
+comes out of a Salt Shaker, which has a cooldown. Hover the salt and Family names whoever owns
+a shaker and has the 250 Leatherworking to use it, and says whether theirs is ready or when it
+comes back.
 
-**Things made by using an item rather than a recipe.** Refined Deeprock Salt is on nobody's
-recipe list — it comes out of a Salt Shaker, which has a four-day cooldown. Hovering the salt
-names whoever owns a shaker **and** has the profession to use it, and says whether theirs is
-ready or when it comes back. Owning one is not enough: a Salt Shaker asks 250 Leatherworking of
-whoever picks it up, so a character holding one without the skill is not listed.
+Both blocks add the realm to a name only when two listed members share that name. Members of
+the opposite faction are marked.
+
+**What an item is made of** can be added too: every material, how many, and what they cost
+where Family has prices. It appears on anything a profession makes, and on enchants. It is one
+of the Extras and is off until you switch it on (§13).
+
+The possessions block and the prices are switched in **Options**.
 
 ---
 
