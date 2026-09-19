@@ -708,84 +708,87 @@ What you share still reaches any guildmate whose Family announces itself first.
 
 | Setting | What it does |
 |---|---|
-| Show the minimap button | and it remembers where you dragged it |
-| Always open Family on one panel | a star beside each panel locks Family to it; on the summary it takes the set of columns too |
-| Add Family to item tooltips | §8 above |
+| Show the minimap button | the button remembers where you dragged it |
+| Always open Family on one panel | a star beside each panel makes Family open on it. On the summary it keeps the set of columns too |
+| Add Family to item tooltips | who owns one, and where (§8) |
 | Show prices on item tooltips | what a vendor pays and charges, and the auction house's last price (§15) |
+| Draw the carried bags as one block, and the bank as another | Possessions shows one run of slots for the bags and one for the bank |
+| Fold long lists to fit the page | on to begin with. Untick it to see every name in every group (§9) |
 | Say whose mail is running out when you log in | with how many days' warning you want |
-| Say which crafting cooldowns are ready when you log in | cooldown announcements (§10) |
-| Share gear and talents with your guild | §12 above, both ways at once |
-| Share with families you link to | Wide Family, §11 above |
-| Say in chat how a Wide Family update went | whether a linked family had anybody online to talk to |
-| Fold long lists to fit the page | on; untick it to see every name in every group, on Family's pages and on the game's tooltips |
-| Draw the carried bags as one block, and the bank as another | Possessions then shows one run of slots for the bags and one for the bank |
-| Narrate what the scanners are doing | chat messages while recording; for working out faults |
+| Say which crafting cooldowns are ready when you log in | the login message in §10 |
+| Share gear and talents with your guild | Guild share (§12), in both directions at once |
+| Share with families you link to | Wide Family (§11) |
+| Say in chat how a Wide Family update went | for example, that a linked family had nobody online |
+| Narrate what the scanners are doing | chat messages while Family records. For tracking down faults |
 | How far in front the window sits | raise it if another addon draws over Family |
 
-The line at the bottom says which version is running, which client it thinks this is, which
-tooltip route it hooked and how storage is kept — *plain*, or *plain, no sharing* on a copy without
-the libraries Wide Family and Guild share need. It is the first thing worth reading when something
-is wrong, and the first thing to quote in a fault report.
+The line at the bottom says which version of Family is running and which version of the game
+it found. Quote it when you report a fault.
 
 ### Extras
 
-The panel above Options holds **jobs Family will do for you that are not what Family is for**. Each
-is switched on or off by itself.
+The **Extras** panel holds optional jobs. Each has its own switch.
 
 | Extra | Starts | What it does |
 |---|---|---|
-| Read prices at the auction house | on | whatever the auction window shows is read for prices, including another addon's whole-house scan |
-| Let Family read the whole auction house itself | on | a **Family** tab on the auction window, with a button that reads every page |
-| Say what a craftable item is made with | off | every material and how many, on the tooltip of anything a profession makes and of an enchant, totalled where Family has prices |
-| Say what came out of the mailbox | off | a line in chat for each sum and item taken out of a letter, and what the visit came to |
+| Read prices at the auction house | on | reads prices from whatever the auction window shows, including another addon's full scan |
+| Let Family read the whole auction house itself | on | adds a **Family** tab to the auction window, with a button that reads every page |
+| Say what a craftable item is made with | off | lists every material and how many, on the tooltip of anything a profession makes and of enchants, with the total cost where Family has prices |
+| Say what came out of the mailbox | off | a chat line for each sum and item taken out of a letter, and a total for the visit |
 
-**Reading prices off** means Family values what your characters hold at what a vendor pays, reads
-nothing at an auction house, and puts no tab on that window. Prices already recorded are kept, so
-switching it back on finds them.
+**With price reading off**, Family values everything at vendor prices, reads nothing at the
+auction house and adds no tab there. Prices already recorded are kept for when you switch it
+back on.
 
-**Made with.** A material that is itself made follows its own recipe — a Lionheart Champion needs a
-Lionheart Blade, so its cost is what the Blade's materials come to, as deep as the chain goes — and
-where somebody is selling a part, what they ask wins over what making it would cost. A material
-with no price makes the total say *some prices are missing* rather than quietly leaving it out, and
-one no money can buy adds nothing, with the total saying so.
+**Made with.** A material that is itself crafted is costed through its own recipe, however
+deep the chain goes. A Lionheart Champion needs a Lionheart Blade, so it costs what the
+Blade's materials cost. Where a part is on sale, its auction price is used in place of the
+cost of making it. When a material has no price, the total says *some prices are missing*.
 
-**What came out of the mailbox** works with the game's own Open All and with mail addons, and the
-total arrives as soon as there is nothing left to take, or when you close the mailbox if that comes
-first.
+**What came out of the mailbox** works with the game's own Open All and with mail addons. The
+total appears when nothing is left to take, or when you close the mailbox.
 
 ### The auction house
 
-**Prices come from what you look at.** Family reads the list the auction window is showing — your
-own searches, and the whole-house scan of an addon like Auctionator, which fills the same prices in
-one go and for nothing. It never sends a request of its own unless you ask it to read the whole
-house. Prices are kept per realm and per side; a price read at a **goblin** auction house counts
-for both sides of that realm, because it is one market, and your own side's house still wins where
-it has a price.
+**Prices come from what you look at.** Family reads the list the auction window is showing:
+your own searches, and the full scan of an addon such as Auctionator. It sends no request of
+its own unless you press *Read it all*. Prices are kept per realm and per faction. A price
+read at a **goblin** auction house counts for both factions of that realm, and your own
+faction's auction house wins where it has a price.
 
-**Connected realms share one auction house**, on Classic Era and on Mists alike, goblin houses
-included — so a price read on any realm of a connected group counts for your characters on all of
-them, the most recent reading winning, and an item banned on one is banned for the group. Family
-learns which realms are connected from the game each time you log in, so log in once on any realm
-of a group and it knows the whole group from then on.
+**Connected realms share one auction house**, goblin houses included. A price read on any
+realm of a connected group counts for your characters on all of them, and the most recent
+reading wins. Family learns which realms are connected from the game at login. Log in once on
+any realm of a group and it knows the whole group.
 
-**The Family tab** on the auction window carries the *Read it all* button and a line saying how far
-a read has got: pages done, prices taken, and roughly how long is left, worked out from the pages
-already read. The button clears the search, searches, and walks every page there is; pressed again
-it stops, and whatever was read is kept. It says when somebody else's scan is filling your prices.
-Where the tab cannot be built, the button sits beside *Reset* on the Browse panel instead.
+**The Family tab** on the auction window has the *Read it all* button and a progress line:
+pages done, prices taken, and roughly how long is left. Press the button again to stop. What
+was read is kept. Where the tab cannot be added, the button sits beside *Reset* on the Browse
+panel.
 
-**It takes minutes, and that is the server.** A whole Classic Era house is about 584 pages in five
-minutes, most of it the game refusing to let the next question out until the last has been
-answered. If you already run an auction addon, its own full scan is faster and Family hears it. On
-**Mists of Pandaria** the whole house answers one request, so the same button reads it in one go.
+**A full read takes minutes on Classic Era and Burning Crusade.** The game answers one page at
+a time. If you run an auction addon, its own full scan is faster and Family reads the same
+prices from it. On **Mists of Pandaria** the whole house arrives in one answer.
 
-A read that stops getting answers ends itself and says why. If it will not start, search the
-auction house once and turn one page: the read replays that search rather than inventing one. It
-also refuses to reuse a request another addon made for the entire house at once.
+A read that stops getting answers ends and says why. If it will not start, search the auction
+house once and turn one page, then press the button again.
 
-`/family ah scan go` and `/family ah scan stop` do the same as the button, typed.
+`/family ah scan go` and `/family ah scan stop` do the same as the button.
 
 **Random-suffix items are priced one version at a time** (§8).
+
+### The price list
+
+On the Extras panel, **Auction prices** lists every price Family holds: the item, the market,
+the price of one, the price it replaced and when it was seen. Filter it by market, by item
+name, or by the auction house's own categories.
+
+- A price ten times or more the one it replaced, or ten times what the item costs on your
+  other markets, is marked in red. **Suspects only** shows just those.
+- **Delete** removes a price. Your next visit to that auction house reads a new one.
+- **Ban** keeps an item's price on one market out of every figure Family works out, until you
+  press **Lift**. Family goes on reading the price and shows it beside the ban. A ban on one
+  realm of a connected group covers the whole group. **Bans only** shows just the bans.
 
 ---
 
