@@ -282,16 +282,32 @@ there is no control for it.
 report prints the names. This is where the code step will look for replacements, and each one
 chosen will be called in a client before it is relied on.
 
+## 6. The bank and the merchant (probe version 3)
+
+Midnight, Ahia, 12.1.0, 2026-09-19, with the bank and a vendor opened.
+
+**Where the bank is: containers 6 to 12.** The sweep of ids -20 to 40:
+
+| When | Containers with slots |
+|---|---|
+| at login | 0 = 20, and 1, 2, 3, 4 = 30 each |
+| with the bank open | the same, and **6, 7, 8, 9, 10, 11, 12 = 98 each** |
+
+Items were found in 6, 9, 10 and 12. Family reads the bank as -1 and 5 (§5), and both answer 0,
+so it reads none of the seven. **Not yet observed:** whether any of the seven belong to the
+account rather than the character. That needs the bank opened on a second character, to see
+whether a container's first item repeats.
+
+**What replaces `GetMerchantItemInfo`: `C_MerchantFrame.GetItemInfo(index)`.** At a vendor it
+answered a table for item 1: `name` "Tough Hunk of Bread", `price` 20, `stackCount` 5,
+`numAvailable` -1, `isPurchasable`, `isUsable`, `hasExtendedCost` false, `texture` 133964.
+`C_MerchantFrame` holds seven functions. The five other `Get…` and `Is…` ones answered, and
+`SellAllJunkItems` was listed and not called.
+
 ### Still to do for step 1
 
-Probe version 3 is built for all three: a sweep of container ids -20 to 40 at login and with the
-bank open, and `C_MerchantFrame` listed and its reads called at a vendor. One Midnight login with
-the bank and a vendor open, and a vendor on Mists.
-
-1. **Where the bank is on Midnight.** It is not a name to guess, and the probe can observe it:
-   with the bank open, ask `C_Container.GetContainerNumSlots` for every container id across a
-   wide range and record which ones hold slots.
-2. **What replaces `GetMerchantItemInfo`.** It is not in any namespace Family uses, so finding it
-   means naming a namespace to look in, which the decision of 2026-09-19 leaves until a missing
-   call needs it. This one does.
-3. A Mists merchant window, as the control for the merchant calls.
+1. ~~Where the bank is on Midnight~~: containers 6 to 12 (§6). Whether any are the account's
+   is still open.
+2. ~~What replaces `GetMerchantItemInfo`~~: `C_MerchantFrame.GetItemInfo` (§6).
+3. A Mists vendor, as the control for the merchant calls. **Waiting on the Mists version-3
+   file.**
