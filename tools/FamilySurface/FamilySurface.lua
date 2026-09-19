@@ -158,13 +158,25 @@ local function bank() return _G.BANK_CONTAINER or -1 end
 local function firstBankBag() return (_G.NUM_BAG_SLOTS or 4) + 1 end
 
 -- Defined below, after `ask`, and used by the windows.
-local sweep, namedReads
+local ask, sweep, namedReads, discover, professionLines
 
 -- Asked two seconds after the window's own event, so that what it lists has arrived. Only
 -- reads: nothing here queries the server, and the auction house calls read what the window
 -- has already loaded. Old and new calls side by side, because each client answers one set.
 local WINDOWS = {
-	TRADE_SKILL_SHOW = { key = "tradeSkill", calls = {
+	TRADE_SKILL_SHOW = { key = "tradeSkill", extra = function()
+		local lines = discover("Prof")
+		for _, call in ipairs {
+			{ "C_TradeSkillUI.GetBaseProfessionInfo" }, { "C_TradeSkillUI.GetChildProfessionInfo" },
+			{ "C_TradeSkillUI.GetChildProfessionInfos" },
+			{ "C_TradeSkillUI.GetProfessionChildSkillLineID" },
+			{ "C_TradeSkillUI.GetProfessionInventorySlots" },
+			{ "C_TradeSkillUI.IsRecipeFirstCraft", firstRecipe },
+			{ "C_TradeSkillUI.GetRecipeCooldown", firstRecipe },
+			{ "C_TradeSkillUI.GetQualitiesForRecipe", firstRecipe },
+		} do lines[#lines + 1] = ask(call) end
+		return lines
+	end, calls = {
 		{ "GetProfessions" }, { "C_TradeSkillUI.GetTradeSkillLine" },
 		{ "C_TradeSkillUI.GetAllRecipeIDs" }, { "C_TradeSkillUI.GetRecipeInfo", firstRecipe },
 		{ "C_TradeSkillUI.GetRecipeItemLink", firstRecipe },
@@ -203,7 +215,7 @@ local WINDOWS = {
 	} },
 }
 
-local function ask(call)
+function ask(call)
 	local name = call[1]
 	local fn = lookup(name)
 	local args = {}
@@ -277,6 +289,85 @@ function namedReads(space)
 	return lines
 end
 
+-- Every C_ namespace this client has, with how many functions each holds. Listed rather than
+-- named: where a profession's specialisations or a house's decor live is not in any namespace
+-- Family uses, and listing them all observes where instead of guessing.
+local function census()
+	local found = {}
+	for name, space in pairs(_G) do
+		if type(name) == "string" and name:find("^C_") and type(space) == "table" then
+			local count = 0
+			pcall(function()
+				for _, value in pairs(space) do
+					if type(value) == "function" then count = count + 1 end
+				end
+			end)
+			found[#found + 1] = name .. "=" .. count
+		end
+	end
+	table.sort(found)
+	return found
+end
+
+-- Words taken from the two briefs (MIDNIGHT.md §8 and §10). A namespace whose own name holds one
+-- has its functions listed, and its reads - Get, Is, Can, Has - asked with no arguments: an
+-- answer, or an error that usually says what the call wants.
+local WORDS = { "Prof", "Trade", "Craft", "Trait", "Housing", "House", "Decor", "Neighborhood" }
+
+local function matching(word)
+	local spaces = {}
+	for name, space in pairs(_G) do
+		if type(name) == "string" and name:find("^C_") and type(space) == "table" then
+			for _, each in ipairs(word and { word } or WORDS) do
+				if name:find(each, 1, true) then spaces[#spaces + 1] = name break end
+			end
+		end
+	end
+	table.sort(spaces)
+	return spaces
+end
+
+function discover(word)
+	local lines = {}
+	for _, space in ipairs(matching(word)) do
+		local names = {}
+		for key, value in pairs(_G[space]) do
+			local text = tostring(key)
+			if type(value) == "function" and (text:find("^Get") or text:find("^Is")
+					or text:find("^Can") or text:find("^Has")) then
+				names[#names + 1] = text
+			end
+		end
+		table.sort(names)
+		for _, name in ipairs(names) do lines[#lines + 1] = ask({ space .. "." .. name }) end
+	end
+	return lines
+end
+
+-- Every skill line the client lists as a profession's, and for each its details and the
+-- currency its concentration is kept in. All names Midnight reported (MIDNIGHT.md §8).
+function professionLines()
+	local lines = {}
+	local api = _G.C_TradeSkillUI
+	lines[#lines + 1] = ask({ "C_TradeSkillUI.GetAllProfessionTradeSkillLines" })
+	local ok, ids = pcall(function() return api.GetAllProfessionTradeSkillLines() end)
+	if ok and type(ids) == "table" then
+		for _, id in ipairs(ids) do
+			lines[#lines + 1] = ask({ "C_TradeSkillUI.GetProfessionInfoBySkillLineID", id })
+			lines[#lines + 1] = ask({ "C_TradeSkillUI.GetConcentrationCurrencyID", id })
+			local got, currency = pcall(api.GetConcentrationCurrencyID, id)
+			if got and type(currency) == "number" and currency > 0 then
+				lines[#lines + 1] = ask({ "C_CurrencyInfo.GetCurrencyInfo", currency })
+			end
+		end
+	end
+	for index = 1, 6 do lines[#lines + 1] = ask({ "GetProfessionInfo", index }) end
+	-- The treasure quest the professions brief names, for this character and for the account.
+	lines[#lines + 1] = ask({ "C_QuestLog.IsQuestFlaggedCompleted", 89117 })
+	lines[#lines + 1] = ask({ "C_QuestLog.IsQuestFlaggedCompletedOnAccount", 89117 })
+	return lines
+end
+
 local current
 
 local function probe()
@@ -304,6 +395,7 @@ local function probe()
 	end
 
 	run.containers = sweep()
+	run.census = table.concat(census(), " ")
 
 	-- What each namespace Family already uses holds on this client, by name. The namespaces
 	-- come from the generated list rather than from anybody's idea of what Retail has, and
@@ -360,6 +452,18 @@ local function probe()
 
 	FamilySurfaceDB[(version or "?") .. " " .. who] = run
 	current = run
+
+	-- Filed as windows so the report reads them the same way; neither needs one open.
+	local ok, lines = pcall(professionLines)
+	run.windows.professions = ok and lines or { "professionLines throws " .. show(lines, ERROR_LIMIT) }
+	ok, lines = pcall(discover)
+	run.windows.discovery = ok and lines or { "discover throws " .. show(lines, ERROR_LIMIT) }
+	for _, space in ipairs(matching()) do
+		local names = {}
+		for key in pairs(_G[space]) do names[#names + 1] = tostring(key) end
+		table.sort(names)
+		run.namespaces[space .. " (matched)"] = table.concat(names, " ")
+	end
 
 	local counts = { absent = 0, refused = 0, throws = 0 }
 	for _, kind in pairs(run.globals) do

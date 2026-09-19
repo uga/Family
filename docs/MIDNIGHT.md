@@ -580,6 +580,13 @@ probe can reach here is itself a question for the probe.
 
 ### Still to do for step 1
 
+**Probe version 5** tests §8 and §10: a census of every `C_` namespace, discovery in the ones
+whose names hold a word from the briefs, every profession skill line with its concentration
+currency, and, in a profession window, the child professions, equipment slots and the first
+recipe's first-craft, cooldown and qualities. It needs a Midnight login with a profession window
+opened. A Mists login gives the census its control.
+
+
 1. ~~Where the bank is on Midnight~~: containers 6 to 11 are the character's six tabs in order,
    and 12 is the warband tab (§6), settled against Alberto's screenshots of every tab.
 2. ~~What replaces `GetMerchantItemInfo`~~: `C_MerchantFrame.GetItemInfo` (§6).
