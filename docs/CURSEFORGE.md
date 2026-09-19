@@ -13,7 +13,7 @@ panels people decide on, the summary and the whole-family gear grid, are much ea
 than to describe.
 
 **On the manual.** It is linked, never pasted. `MANUAL.md` is six thousand words against this
-page's eight hundred, and the length below is the whole point of the section under it — but a
+page's twelve hundred, and the length below is the whole point of the section under it — but a
 reader who wants more than this page has to have somewhere to go, and a link stays right
 without anybody re-pasting it on every revision.
 
@@ -44,7 +44,8 @@ relogging to look inside a bank alt's bags.
 listing. Family adds who in the family owns one, how many, and where: bags, bank, guild bank,
 mailbox, auction house, or equipped. Hover a recipe and it names who knows it, who can learn
 it now, and who needs more skill or levels first. You stop buying a recipe your druid already
-knows. Hold CTRL and ALT and click an item, and Family opens on every copy the family holds.
+knows. Hover an item with a cooldown, such as a Salt Shaker, and it says when each owner's one
+is ready. Hold CTRL and ALT and click an item, and Family opens on every copy the family holds.
 
 **The whole family on one screen.** One row per member, grouped by realm and faction, with
 totals for each group. The columns cover level, item level, rested experience, money, bag and

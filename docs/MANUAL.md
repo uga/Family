@@ -385,6 +385,10 @@ item the family holds. It is left off action bar buttons, where those keys belon
 **Soulbound copies on your other characters are marked**, in the game's own word. For the
 character you are currently playing the game already says it, and Family does not repeat it.
 
+**An owner's item on cooldown says when it can be used again.** Hover a Salt Shaker or a
+Chronoboon Displacer while playing another character, and the line with each owner's name
+carries *ready in 3h* beside where the item is.
+
 **Random-suffix items are counted one version at a time.** A sword *of the Bear* and the same
 sword *of the Whale* are counted, and priced, separately. Enchants and gems make no difference
 though: two of one sword with different enchants are counted as two of the same thing.
@@ -771,10 +775,17 @@ The **Extras** panel holds optional jobs. Each has its own switch.
 the auction house and adds no tab there. Prices already recorded are kept, so they show up
 again, with their age, when you switch it back on.
 
-**Made with.** An item that is crafted is costed through its own recipe, however
-deep the chain goes. A Lionheart Champion needs a Lionheart Blade, so it costs what the
-Blade's materials cost. Where a part is on sale, its auction price is used in place of the
-cost of making it. When a material has no price, the total says *some prices are missing*.
+**Made with.** An item that is crafted is costed through its own recipe, however deep the
+chain goes. A Lionheart Champion needs a Lionheart Blade, so it costs what the Blade's
+materials cost. Each material is priced at the cheapest of buying it and making it: a Bolt of
+Runecloth is costed from its own recipe when one of your characters can weave it and weaving
+comes to less than the auction house or a vendor asks. A material nobody in your family can
+make is priced at what it sells for. When a material has no price, the total says *some prices
+are missing*.
+
+Where making a material would save money but waits on a crafting cooldown, such as a transmute
+or a Salt Shaker, or on farming, the total stays at what you can buy today. A second total
+under it says what the slower way would come to.
 
 **What a vendor pays is known from the first day. What a vendor charges is not**, until one of
 your characters visits a vendor who sells that item. So Family can value everything you own at

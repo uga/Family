@@ -650,7 +650,8 @@ purpose is to hold a line does not arrive holding it on somebody's behalf — it
 asked for. That is a position rather than a caveat, and unlike a caveat it does not expire.
 
 It therefore ships **inert**: nothing sent, nothing that arrives acted on, no panel, no
-borrowed members shown. `/family wide on`, then a reload, turns it on; both players need to.
+borrowed members shown. `/family wide on`, or the switch in Options, turns it on with no
+reload (§7); both players need to.
 
 Shipping it switched on is a separate decision, reserved to the author, and a green pass does
 not take it.
