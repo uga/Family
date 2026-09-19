@@ -34,8 +34,18 @@ it.
 
 ## 3. What Midnight answered
 
-**Not yet measured.** Waiting on two files from Alberto: `FamilySurface.lua` saved variables
-from a Midnight login and from a Mists login.
+**Run once on Midnight, answers not yet read.** Waiting on two files from Alberto: the
+`FamilySurface.lua` saved variables from that Midnight login, and from a Mists login.
+
+What the chat line said, from Alberto's screenshot on 2026-09-19:
+
+    Family Surface 12.1.0 (120100): 73 names absent, 74 literals refused as events,
+    0 calls threw.
+
+Those three numbers are counts, not findings. The 73 absent names include ones Mists lacks
+too. The 74 refused literals include the ones that are not events at all, such as `TOPLEFT`.
+None of the 99 calls threw, but a call that answers differently is not visible in a count.
+The Mists run is what sorts them.
 
 When they arrive, this section gets four lists, each name with the Family files that use it:
 
@@ -53,3 +63,9 @@ listed `11509, 20506, 50504` and nothing for Midnight. So on Midnight the out-of
 that step 2 of the probe's README relied on does not load the addon, and a probe needs the real
 number in its `.toc`. The same holds for Family: until the fourth number is in both `.toc`
 files, Midnight does not load Family at all. It does not load it and then fail.
+
+**The interface number is 120100** on 12.1.0, read with `/dump select(4, GetBuildInfo())` on
+2026-09-19. With `11509, 20506, 50504, 120100` in its `.toc` the probe loaded and ran. An
+earlier report that 120100 was also refused is not a finding: the `.toc` sent back after it
+was byte-for-byte the repository's three-number one, so Midnight was never shown 120100 in
+that run.

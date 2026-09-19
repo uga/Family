@@ -33,9 +33,10 @@ looked up.
 ## Running it
 
 1. Copy the `FamilySurface` folder into `Interface/AddOns/` on the **Midnight** client.
-2. Its `.toc` carries no Midnight interface number, because none has been read off a client
-   yet. At the character screen, open *AddOns* and tick *Load out of date AddOns*. Whatever the
-   client does instead is itself worth a line in the report.
+2. Its `.toc` carries Midnight's interface number, `120100`, read off a 12.1.0 client with
+   `/dump select(4, GetBuildInfo())` on 2026-09-19. Without it Midnight marks the addon
+   incompatible and does not load it. When
+   Midnight moves to a new version, read the number again and add it here first.
 3. Log in. It prints one line in chat five seconds later; `/familysurface` runs it again.
 4. **Log out.** That is when the client writes the file.
 5. Do the same once on **Mists**, which is the Classic client whose API is nearest Midnight's
