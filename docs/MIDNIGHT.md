@@ -6,6 +6,10 @@ which it has and **throws**. Measured in a running Midnight client, never from p
 The thesis of `addons/Family/Capabilities.lua` holds here more than anywhere: the client's symbol
 surface is not evidence about the game.
 
+**Every Midnight observation here comes from an account that has not bought the Midnight
+expansion** (§7): the 12.1.0 client, on an account without the expansion. Anything the purchase
+unlocks may be absent from all of it.
+
 This file lives on the branch and lands with it. At 5.0.0 what it found moves into
 `DATASOURCES.md` §2 and `Capabilities.lua`, and this file goes.
 
@@ -398,6 +402,51 @@ window opens.
 
 **Professions: journals.** Alberto: Midnight has profession journals too. Not observed by the
 probe; recorded as reported.
+
+## 7. What the game shows, from Alberto's screenshots, 2026-09-19
+
+Seen in the Midnight client, on a level-70 warrior (Mara's bags and bank are §6). These are
+screenshots, not calls, and are recorded as what the game displays.
+
+**The account has not bought Midnight.** The *Housing Dashboard* says *Please purchase Midnight
+to access Housing*. Its catalogue still opens (a *BlizzCon Doormat*, *Vendor: World Vendors*,
+*Cost: 500* gold), as does *Blueprints 0/50*. Housing is a domain Family has no part in.
+
+**A profession has one skill line per expansion, and Family keeps one rank per profession.** The
+*Professions* window lists *Enchanting*, *Dragon Isles Enchanting 1/100*; *Skinning*, *Khaz Algar
+Skinning 8/100*; *Cooking*, *Dragon Isles Cooking 1/100*; *Fishing*, *Dragon Isles Fishing 1/100*;
+and *Archaeology*, *Draenor Master 235/700*. Each is one expansion's line, with its own cap.
+
+**Journals are a gathering profession's window.** *Skinning Journal* and *Fishing Journal* sit
+beside the profession's own spell. The skinning journal, titled *Khaz Algar Skinning*, has a
+*Journal* tab (*Skinning Details*, and under *Unlearned* the *Refinement* and *Bait Recipes*,
+with gathering details such as *Primary Reagent Difficulty*, *Skill*, *Finesse*, *Deftness* and
+*Perception*) and a *Specializations* tab (*Tanning*, *Harvesting*, *Luring*, all locked). The
+fishing journal lists fish under *General Fishing*, *Freshwater*, *Saltwater* and *Specialty
+Fishing*. A toast in the bag screenshot reads *You can now choose a new Skinning Specialization
+to unlock*. Profession specialisations exist on Midnight, and are not the Classic ones Family
+records.
+
+**Specialisation, talents, spellbook.** The *Specialization* tab shows *Arms* and *Fury*
+(*Damage*) and *Protection* (*Tank*), Fury *Active* and the other two with *Activate*. *Talents*
+shows two node trees, *Warrior 23* and *Fury 23*, *Hero Talents*, unlocked at level 71, three
+*PvP* talent slots and a *Default Loadout*. That is not the tier-and-column grid that
+`Scanners/Talents.lua` reads. The *Spellbook* has a *Warrior* tab laid out by specialisation, the
+inactive ones greyed out, and a *General* tab.
+
+**Against the features in `Capabilities.lua`**, where a screenshot shows the thing. Everything
+else is not seen:
+
+| Feature | What the game shows | Reading |
+|---|---|---|
+| `weaponSkills` | *Weapon Skills*, *Passive*, in the spellbook's General tab, with no number | no, as on Mists |
+| `flying` | *Skyriding*, *Skyriding Flight Style* and *Master Riding* in the General tab | yes, for this character |
+| `dualSpec` | three specialisations, one active, the others with *Activate* | more than one, of a kind the column's name does not describe |
+| `talentTrees` | two node trees, hero talents and loadouts | trees, but not the Classic kind the column means |
+| `glyphs`, `keyring`, `ammoBags`, `guildBank`, `achievements`, `currencies`, `dailyQuests`, `transmogrify` | not in these screenshots | not seen |
+
+The sweep adds that no keyring container answers on Midnight (§6), which is API evidence, not
+the game's.
 
 ### Still to do for step 1
 
