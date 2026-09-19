@@ -220,23 +220,74 @@ Warcraft*, which is the Anniversary trap again. On Midnight the same three are s
   (`"Speed of Light" | 571558 | …`), so the difference from Midnight is the client's, not the
   character's.
 
+## 5. Inside the windows, and what the namespaces hold (probe version 2)
+
+Midnight: Ahia, 12.1.0, all five windows opened, 2026-09-19. Mists: Eccebombo (a level-49
+guild master with professions; auction house, bank, mailbox, trade skill) and Duecalzini
+(mailbox, trade skill), both on Mirage Raceway. Read with
+`tools/surface.py --report <Midnight>@Ahia <Mists>@Eccebombo`.
+
+**The longer list adds 7 absences** to §4's 66, for 73 globals missing on Midnight and present
+on Mists: `BANK_CONTAINER`, `NUM_BANKBAGSLOTS`, `UnitBuff` (`Core.lua`), `GetRaceAtlas`
+(`Races.lua`), `LOOTFRAME_NUMBUTTONS` (`Family_UI/Tooltip.lua`), and `QueryAuctionItems` and
+`PlaceAuctionBid`, which `Scanners/Auctions.lua` hooks. No namespace member is missing on
+Midnight and present on Mists. Nothing threw on Midnight, and no call answered in a new shape
+inside a window.
+
+**The talent reader Family asks first answers the same on both.**
+`C_SpecializationInfo.GetTalentInfo{tier = 1, column = 1, groupIndex = 1, isInspect = false}`
+returns an 18-field table carrying `name` on Midnight (`"Master Poisoner"`) and on Mists
+(`"Speed of Light"`). So the different layout of the global `GetTalentInfo` in §4 probably
+does not matter: `Scanners/Talents.lua` tries this reader first. Whether it is the one chosen
+there is a question for the code, not the client.
+
+**The bank: Family's containers are empty on Midnight.** With the bank open:
+
+| | Midnight | Mists |
+|---|---|---|
+| `C_Container.GetContainerNumSlots(-1)` | 0 | 28 |
+| `C_Container.GetContainerNumSlots(5)`, Family's first bank bag | 0 | 14 |
+| `C_Container.GetContainerItemInfo(-1, 1)` | nothing | a table, `itemID=11965` |
+| `GetNumBankSlots()` | absent | `3 \| false` |
+
+`BANK_CONTAINER` and `NUM_BANKBAGSLOTS` are absent, so `Scanners/Bank.lua` falls back to -1 and
+bag 5 and reads nothing. The bank's contents are in containers Family does not ask, and which
+ones is **not yet observed**.
+
+**The trade skill: the new list reads.** `C_TradeSkillUI.GetAllRecipeIDs()` returned 454 ids.
+`GetRecipeInfo` on the first returned a 28-field table carrying `hyperlink`, and
+`GetRecipeItemLink` returned an item link. `GetProfessions()` is unchanged. On Mists the same
+window answered through the old calls (`GetNumTradeSkills()` 56, `GetTradeSkillLine()`
+`"Cooking" | 250 | 300`). What Midnight has in place of `GetTradeSkillLine` is among the 141
+`C_TradeSkillUI` functions Mists lacks, which include `GetBaseProfessionInfo`,
+`GetProfessionInfoBySkillLineID`, `GetChildProfessionInfos` and `GetTradeSkillLineForRecipe`.
+Those names were read off the client, and none has been called.
+
+**The auction house: the new API reads what Family needs.**
+`C_AuctionHouse.GetNumOwnedAuctions()` answered 1, and `GetOwnedAuctionInfo(1)` a table carrying
+`auctionID`, `buyoutAmount`, `quantity`, `status`, `timeLeftSeconds` and `itemKey`. Browse
+results and the replicate list were empty, as expected with no search and no full scan.
+
+**The mailbox: unchanged.** `GetInboxNumItems`, `GetInboxHeaderInfo`, `GetInboxItem` and
+`GetInboxItemLink` all answered with a letter from the auction house.
+
+**The merchant: one call gone and no replacement seen.** `GetMerchantNumItems` (40),
+`GetMerchantItemLink` and `GetMerchantItemCostInfo` answer. `GetMerchantItemInfo` is absent, and
+no namespace Family uses holds a replacement. The merchant window was not opened on Mists, so
+there is no control for it.
+
+**What the namespaces hold on Midnight and not on Mists**, by count: `C_TradeSkillUI` 141,
+`C_QuestLog` 80, `C_Item` 39, `C_CurrencyInfo` 34, `C_Spell` 18, `C_Container` 17,
+`C_SpecializationInfo` 17, `C_Map` 16, `C_ChatInfo` 13, `C_MountJournal` 6, `C_GuildInfo` 1. The
+report prints the names. This is where the code step will look for replacements, and each one
+chosen will be called in a client before it is relied on.
+
 ### Still to do for step 1
 
-**Mists, version 2, received 2026-09-19**: Eccebombo (auction house, bank, mailbox, trade
-skill) and Duecalzini (mailbox, trade skill), both on Mirage Raceway. Item 4 below is settled
-by it (see above). The merchant window was not opened on either, so its four calls have no Mists
-answer. **Waiting on Midnight, version 2.**
-
-One more round, with probe version 2, covers all of it. That is one run on Midnight and one on
-Mists, each opening the five windows, the Mists one on a character with a guild and a
-profession:
-
-1. The 85 globals and 17 members the first runs were never asked about (§1).
-2. `C_SpecializationInfo.GetTalentInfo`, the talent reader Family asks first, now in the login
-   calls.
-3. What the calls present on Midnight answer inside their windows: trade skill, auction house,
-   bank, mailbox, merchant.
-4. ~~`GetGuildRosterInfo` and `GetProfessions` against a Mists character that has a guild and a
-   profession.~~ Settled, the same shape on both.
-5. The functions each `C_` namespace holds on Midnight and not on Mists, which is where the
-   replacements for §4's absences are to be looked for.
+1. **Where the bank is on Midnight.** It is not a name to guess, and the probe can observe it:
+   with the bank open, ask `C_Container.GetContainerNumSlots` for every container id across a
+   wide range and record which ones hold slots.
+2. **What replaces `GetMerchantItemInfo`.** It is not in any namespace Family uses, so finding it
+   means naming a namespace to look in, which the decision of 2026-09-19 leaves until a missing
+   call needs it. This one does.
+3. A Mists merchant window, as the control for the merchant calls.
