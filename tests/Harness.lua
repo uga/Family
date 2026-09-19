@@ -170,7 +170,26 @@ fontMeta.__index = function(_, key)
 			for character in text:gmatch("[^\128-\191]") do
 				n = n + (character == "1" and 0.7 or 1)
 			end
-			return n * 6.5 + pixels
+
+			-- **And a font is not every font's size.** A tooltip is drawn in whatever font
+			-- the client, or an addon, gave it, and a width measured in another one is a
+			-- width that holds nothing: the padding is then out by the ratio between them.
+			-- A picture keeps the width it names, which is why it is added after.
+			return n * 6.5 * ((self.__fontSize or 12) / 12) + pixels
+		end
+	end
+	-- The font a region was given, remembered rather than thrown away: the money padding
+	-- measures in the font of the tooltip it is writing on, and a stub that forgot the size
+	-- could not tell that from measuring in whatever font it started with.
+	if key == "SetFont" then
+		return function(self, font, size, flags)
+			self.__font, self.__fontSize, self.__fontFlags = font, size, flags
+		end
+	end
+	if key == "GetFont" then
+		return function(self)
+			return self.__font or "Fonts\\FRIZQT__.TTF", self.__fontSize or 12,
+				self.__fontFlags
 		end
 	end
 	-- Greying a texture is how the game says "you do not have this", and the talent grid
@@ -230,7 +249,7 @@ local KNOWN = {
 	RegisterEvent = 1, UnregisterEvent = 1,
 	CreateFontString = 1, CreateTexture = 1,
 	GetWidth = 1, GetHeight = 1, GetName = 1,
-	SetText = 1, GetText = 1, SetJustifyH = 1, SetTextColor = 1, SetFont = 1,
+	SetText = 1, GetText = 1, SetJustifyH = 1, SetTextColor = 1,
 	GetStringWidth = 1, GetStringHeight = 1,
 	SetColorTexture = 1, SetTexture = 1, SetVertexColor = 1,
 	SetScrollChild = 1, GetScrollChild = 1, SetVerticalScroll = 1,
@@ -38459,6 +38478,68 @@ print("what a craftable thing costs to make")
 		check("every money figure on a tooltip is drawn the same width, to within a pixel",
 			count >= 3 and padded >= 1 and spread < 1,
 			count .. " figures, " .. padded .. " padded, " .. spread .. " apart")
+
+		-- **In the tooltip's own font.** Alberto, 2026-09-19, having read the evened figures
+		-- in the game: *money alignment grew even worse than before*. A tooltip is drawn in
+		-- whatever font it was given - a tooltip addon's, or a link tooltip's - and every
+		-- width measured in another one is out by the ratio between them, which is padding
+		-- that spoils a column rather than holding it. Here the tooltip's lines are in a font
+		-- half as big again; measured in it, the figures still come out one width.
+		local held = _G.GameTooltipTextRight2
+		_G.GameTooltipTextRight2 = CreateFrame("Frame"):CreateFontString()
+		_G.GameTooltipTextRight2:SetFont("Fonts\\FRIZQT__.TTF", 18)
+
+		auctionPrices[BAR], vendorPrices[BAR] = 300000, 300000
+		hovering(SWORD)
+		auctionPrices[BAR], vendorPrices[BAR] = heldBar, heldBarVendor
+
+		local measure = CreateFrame("Frame"):CreateFontString()
+		measure:SetFont("Fonts\\FRIZQT__.TTF", 18)
+		local ruler = Family.UI:WidthRuler(measure)
+		local least, most, seen = math.huge, 0, 0
+		for _, line in ipairs(GameTooltip.__lines) do
+			local right = line[2]
+			if type(right) == "string" and right:find("CopperIcon", 1, true) then
+				local wide = ruler(right)
+				least, most, seen = math.min(least, wide), math.max(most, wide), seen + 1
+			end
+		end
+		check("and measured in the font that tooltip is drawn in, not the one it started in",
+			seen >= 3 and most - least < 1,
+			seen .. " figures, " .. (most - least) .. " apart in the tooltip's own font")
+
+		-- And the places inside a figure are held at *that* font's widest digits. The tails -
+		-- everything from the silver on - are what a place holds, so two of them are one width
+		-- however narrow the digits in hand are. Readings taken in the font before it would
+		-- hold every place too narrow.
+		local shortest, longest, tails = math.huge, 0, 0
+		for _, line in ipairs(GameTooltip.__lines) do
+			local right = line[2]
+			if type(right) == "string" and right:find("CopperIcon", 1, true) then
+				local tail = right:match("|t (.*)$")
+				if tail then
+					local wide = ruler(tail)
+					shortest, longest = math.min(shortest, wide), math.max(longest, wide)
+					tails = tails + 1
+				end
+			end
+		end
+		-- **And the ruler is a line of the tooltip itself**, not a font string elsewhere. Read
+		-- off Era 2026-09-19: the tooltip's own lines measure wider than a ruler in the same
+		-- font, by as much as 2.8 pixels on a line carrying coins, and the wobble moves with
+		-- the window. A coin is asked for at the height of the text, and that height belongs
+		-- to the string it is drawn in.
+		local tipRuler = GameTooltip.__familyMoneyRuler
+		check("the money on a tooltip is measured on a line of that tooltip",
+			tipRuler ~= nil and tipRuler:GetParent() == GameTooltip,
+			tostring(tipRuler and tipRuler:GetParent()))
+
+		check("and the places inside each figure are held at that font's widest digits",
+			tails >= 3 and longest - shortest < 1,
+			tails .. " tails, " .. (longest - shortest) .. " apart")
+
+		_G.GameTooltipTextRight2 = held
+		Family.UI:MoneyFontFrom(GameTooltip)
 	end
 
 	-- **The notes as the tooltip writes them**, with the blade's recipe on a day's timer again.

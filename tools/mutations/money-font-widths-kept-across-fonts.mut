@@ -1,0 +1,6 @@
+name: the widest-pair readings are kept when the font changes
+file: addons/Family_UI/Window.lua
+--- old
+	wipe(tooltipWidest)
+--- new
+	local _ = tooltipWidest

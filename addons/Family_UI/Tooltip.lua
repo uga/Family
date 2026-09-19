@@ -1197,6 +1197,8 @@ local function onSpell(tooltip, spellID)
 	local theirs = (Family.Guild and Family.Guild:Enabled())
 		and Family.Guild:CraftersOf(spellID, nil, nil) or {}
 
+	UI:MoneyFontFrom(tooltip)
+
 	local lines = makerLines(tooltip, ours, theirs)
 
 	-- **And what it is made of, counted and priced.** Asked for off the tooltip of an enchant,
@@ -1280,6 +1282,9 @@ local function onItem(tooltip, itemID, data)
 	--
 	-- Family is rarely the only addon writing on a tooltip. Without the closing line,
 	-- whatever is added next reads as part of this list.
+	-- Measured in this tooltip's own font, before a figure is built (`UI:MoneyFontFrom`).
+	UI:MoneyFontFrom(tooltip)
+
 	local blocks = {}
 
 	-- **The item id and the variant both travel**, and each block takes the one its question
