@@ -156,6 +156,7 @@ Family.locales.ruRU = {
 	["tooltips: %s"] = "подсказки: %s",
 	["saved data read at login in %.0f ms"] = "сохранённые данные прочитаны при входе за %.0f мс",
 	["saved data read at login: not measured on this client"] = "сохранённые данные при входе: на этом клиенте не измерено",
+	["list everything that can be typed"] = "показать всё, что можно ввести",
 	["open the window"] = "открыть окно",
 	["scanning %s ..."] = "сканирование %s ...",
 	["|cff44dd44yes|r"] = "|cff44dd44да|r",

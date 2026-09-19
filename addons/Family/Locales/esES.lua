@@ -156,6 +156,7 @@ Family.locales.esES = {
 	["tooltips: %s"] = "descripciones: %s",
 	["saved data read at login in %.0f ms"] = "datos guardados leídos al entrar en %.0f ms",
 	["saved data read at login: not measured on this client"] = "datos guardados leídos al entrar: no medido en este cliente",
+	["list everything that can be typed"] = "listar todo lo que se puede escribir",
 	["open the window"] = "abrir la ventana",
 	["scanning %s ..."] = "escaneando %s ...",
 	["|cff44dd44yes|r"] = "|cff44dd44sí|r",

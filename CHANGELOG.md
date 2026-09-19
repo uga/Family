@@ -29,6 +29,11 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Typing to Family
+
+- **`/family help` lists the commands.** It used to answer that there was no such command and
+  then list them anyway.
+
 ### Item cooldowns
 
 - **An item's tooltip says when each owner's one can be used again.** Hover a Salt Shaker or a

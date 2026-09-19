@@ -156,6 +156,7 @@ Family.locales.frFR = {
 	["tooltips: %s"] = "infobulles : %s",
 	["saved data read at login in %.0f ms"] = "données enregistrées lues à la connexion en %.0f ms",
 	["saved data read at login: not measured on this client"] = "données enregistrées lues à la connexion : non mesuré sur ce client",
+	["list everything that can be typed"] = "lister tout ce qui peut être tapé",
 	["open the window"] = "ouvrir la fenêtre",
 	["scanning %s ..."] = "analyse de %s ...",
 	["|cff44dd44yes|r"] = "|cff44dd44oui|r",

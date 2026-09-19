@@ -156,6 +156,7 @@ Family.locales.deDE = {
 	["tooltips: %s"] = "Tooltips: %s",
 	["saved data read at login in %.0f ms"] = "gespeicherte Daten beim Einloggen in %.0f ms gelesen",
 	["saved data read at login: not measured on this client"] = "gespeicherte Daten beim Einloggen: auf diesem Client nicht gemessen",
+	["list everything that can be typed"] = "alles auflisten, was getippt werden kann",
 	["open the window"] = "das Fenster öffnen",
 	["scanning %s ..."] = "scanne %s ...",
 	["|cff44dd44yes|r"] = "|cff44dd44ja|r",

@@ -11474,6 +11474,26 @@ local before = #DEFAULT_CHAT_FRAME.messages
 SlashCmdList["FAMILY"]("status")
 check("/family status says something", #DEFAULT_CHAT_FRAME.messages > before)
 
+-- **Help is a command, and was working by accident.** Typing it reached nothing, so the
+-- dispatcher said *no command called help* and then listed the commands - which is what the
+-- manual and the help line promise, delivered with an apology in front of it.
+do
+	local at = #DEFAULT_CHAT_FRAME.messages
+	SlashCmdList["FAMILY"]("help")
+
+	local said, apologised = 0, false
+	for index = at + 1, #DEFAULT_CHAT_FRAME.messages do
+		said = said + 1
+		if DEFAULT_CHAT_FRAME.messages[index]:find("no command called") then
+			apologised = true
+		end
+	end
+
+	check("/family help lists the commands without apologising for itself",
+		said > 1 and not apologised,
+		said .. " line(s), " .. (apologised and "apologised" or "no apology"))
+end
+
 -- **The auction query is named, and one at a time.**
 --
 -- Measured on a live Burning Crusade client 2026-09-10, the day this was written: run once, it
@@ -27801,6 +27821,41 @@ print("the changelog, as release.sh will cut it")
 		#loose == 0, table.concat(loose, " | "))
 	check("and no version says the same thing twice",
 		#repeated == 0, table.concat(repeated, " | "))
+
+	-- **An Unreleased entry is public text**, and is written before anybody is thinking about
+	-- publishing it. `release.sh` copies the section onto the release page exactly as it
+	-- stands, so a sentence put there in the words this repository talks to itself in - what
+	-- the fault was, where it was found, which part of the code it lives in - is a sentence a
+	-- player reads on CurseForge. The rule is in `CLAUDE.md` under *Writing it down*, the
+	-- standard is `docs/MANUAL.md`, and the example is the 4.2.0 `RELEASE-NOTES.md`.
+	--
+	-- Only the Unreleased section: the versions below it are published and cannot be edited
+	-- now, and what they say is history.
+	--
+	-- Each formula is one this project reaches for when it is explaining itself to itself.
+	-- The banned-word sweep covers a different list - words from outside that must never enter
+	-- the tree at all - and none of these is on it, so nothing here is checked twice.
+	local inside, offenders, number = false, {}, 0
+	local formulas = { "rather than", "the whole point", "on the view that", "scanner",
+		"harness", "slice", "probe", "backlog" }
+
+	for line in (text .. "\n"):gmatch("([^\n]*)\n") do
+		number = number + 1
+		if line:match("^## ") then
+			inside = line:match("^## Unreleased") ~= nil
+		elseif inside then
+			local lower = line:lower()
+			for _, formula in ipairs(formulas) do
+				if lower:find(formula, 1, true) then
+					offenders[#offenders + 1] = string.format("%q on line %d",
+						formula, number)
+				end
+			end
+		end
+	end
+
+	check("and the notes waiting to be published are written for whoever will read them",
+		#offenders == 0, table.concat(offenders, " | "))
 end)()
 
 print()

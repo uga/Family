@@ -1,0 +1,6 @@
+name: help is not a command, and the list comes with an apology
+file: addons/Family_UI/Slash.lua
+--- old
+add("help", L["list everything that can be typed"], function() usage() end)
+--- new
+

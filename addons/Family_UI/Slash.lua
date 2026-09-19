@@ -26,6 +26,12 @@ local function add(name, help, fn)
 	tinsert(commands, { name = name, help = help, fn = fn })
 end
 
+-- **A command of its own, because it was working by accident.** `/family help` reached no
+-- command, so the dispatcher said *no command called help* and then listed the commands anyway -
+-- and the list was what the manual and the help line itself promise. The apology was the only
+-- thing wrong with it.
+add("help", L["list everything that can be typed"], function() usage() end)
+
 add("show", L["open the window"], function() UI:Show() end)
 add("hide", L["close it"], function() UI:Hide() end)
 add("toggle", L["open it if closed, close it if open"], function() UI:Toggle() end)
