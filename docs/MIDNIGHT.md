@@ -325,6 +325,21 @@ hold an item with the same icon as the *Hexweave Bag*s of the bag screenshot. So
 first item, 114821 on both characters, is likely a spare bag kept in the same slot by both, and
 not a shared container. That rests on an icon: the id's name was not read.
 
+**The containers are the tabs, in order.** Alberto's screenshots of Mara's tabs, against Mara's
+sweep:
+
+| Tab, as the game shows it | Screenshot | Container, sweep |
+|---|---|---|
+| 1 | items, first slot filled | 6: first item at slot 1 |
+| 2 | empty | 7: empty |
+| 3 | empty | 8: empty |
+| 4, named *Reagents* | items, first slot filled, stacks up to 1000 | 9: first item at slot 1 |
+| 5, named *Void Storage 1* | items, first slot filled | 10: first item at slot 1 |
+| 6 | not yet seen | 11: empty, **so predicted empty** |
+| Warband Bank, one tab | not yet seen | 12: first item at slot 1, the same on Ahia, **so predicted filled** |
+
+Five of seven fit, and the order is the tab order. Two are predictions until seen.
+
 **Container 5 is a carried bag on Midnight: the reagent bag.** Mara's login sweep, before any
 bank, has 5 = 26 slots (Ahia has no container 5). Alberto's screenshot of Mara's bags, 2026-09-19,
 shows it as a *Gatherer's Reagent Bag*: a first row of 2 slots and six rows of 4, 26 in all,
