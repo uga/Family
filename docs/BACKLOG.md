@@ -6045,8 +6045,26 @@ the line asked `call and try(call) or "absent"`, which takes the false branch on
 A reading that cannot tell *no* from *no such call* is the fault §2.2 is about, in the tool
 rather than in the addon. Fixed the same day; the test is on the function now.
 
-**The rate is still unmeasured**, and cannot be taken from the characters at the ceiling: nothing
-accumulates there. It wants a character below it, which is what any
+**The first pair of readings, and it does not separate the two rules.** The same level 1, in the
+same spot, read **4587 seconds apart** - an hour and sixteen minutes - and not resting either
+time: rested **104** at both readings, against an `xpMax` of 400.
+
+What each rule predicts over that gap, for a level whose `xpMax` is 400:
+
+| rule | per hour | over 76 minutes |
+|---|---|---|
+| 5% of a level every 8 hours, resting | 2.5 | about 3.2 |
+| 5% of a level every 32 hours, away from an inn | 0.625 | about 0.8 |
+| nothing at all away from an inn | 0 | 0 |
+
+A reading of **0** rules out the first and cannot tell the second from the third: eight tenths of
+a point is a number this figure may simply not carry. **So the gap has to be a long one** - an
+overnight would show five to eight points at the slow rate and nothing at all if there is no such
+rate, which are answers that cannot be confused. The same again for a character left in an inn
+settles the other half.
+
+**The rate is still unmeasured**, then, but the shape of the measurement that would settle it is
+now known, and so is the figure it starts from. It wants a character below it, which is what any
 character becomes as soon as it is played for a while - then two readings a few hours apart, one
 pair logged out in an inn and one pair logged out in the field.
 
