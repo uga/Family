@@ -6075,6 +6075,21 @@ rounding can hide, and an hour of nothing would refute the rule outright.
 and a number to expect: about 54 an hour in the inn, about five to eight over a night in the
 field.
 
+**A first, short reading of the inn half, 2026-09-20**: the same level 11 walked from Thelsamar
+into the Stoutlager Inn, read **214 seconds** apart, earning nothing in between. Rested **8506 ->
+8510**, up **4**.
+
+Four points in 214 seconds is about 67 an hour if the whole interval counted, against the 54 the
+rule predicts - and part of that interval was spent walking to the inn, where nothing accrues, so
+the true rate is higher still than a straight division says. On a delta of four, a figure that
+only carries whole points is uncertain by a quarter of itself. What it settles is the sign: **it
+fills while the character is logged in and resting**, which is neither nothing nor a thing that
+only happens while logged out.
+
+**The hour's reading is a prediction, not a look**: from 8510, the rule says about **8564** an
+hour later, with the ceiling at 13050 and nothing in the way. A reading near 8510 refutes it, one
+near 8564 carries it, and anything else is a rate of its own to write down.
+
 **Killing things spends it**, which is worth saying because a reading taken after a fight is a
 reading of a figure that has gone *down*: rested experience is drawn on as a bonus while the
 character earns. A measurement of the rate wants a character nobody is playing.
