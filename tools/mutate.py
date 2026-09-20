@@ -44,6 +44,11 @@ own command line* - a different fault of the same afternoon. Nothing in `LESSONS
 the mutation left standing. A number that resolves to the wrong lesson is worse than no number,
 because it reads as checked; so the number is gone and the account stays.
 
+And it does not sit still. The wrong number had been here since 2026-09-12, and on the day it
+was found a reader of this paragraph had already repeated it - citing L-089 for this episode in
+a message, from the docstring, without opening the lesson. It had propagated one hop before
+anybody checked, which is what a citation that reads as checked does for a living.
+
     tools/mutate.py                 every case in tools/mutations
     tools/mutate.py one.mut two.mut just those
     tools/mutate.py --changed       only cases whose file: is changed since HEAD or not yet tracked
