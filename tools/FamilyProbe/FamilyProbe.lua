@@ -536,9 +536,14 @@ local PROBES = {
         for index = 1, math.min(size, 16) do
             local answer = callPacked(_G.GetCurrencyListInfo, index)
             if answer and not answer[2] then
+                -- **The link, printed as it comes.** Family reads a currency's id out of one
+                -- and on Burning Crusade there was no id in the answer: either the call is
+                -- absent, or it answers something with no currency in it, and those are
+                -- different faults. Whatever comes back is shown rather than summarised.
                 local link = try(_G.GetCurrencyListLink, index)
                 local id = type(link) == "string" and link:match("currency:(%d+)") or nil
-                out[#out + 1] = "[" .. tostring(id) .. "] " .. shape(answer)
+                out[#out + 1] = "[id " .. tostring(id) .. ", link " ..
+                    (link and describe(link) or "nothing") .. "] " .. shape(answer)
             end
         end
         return how .. " -- " .. table.concat(out, " | ")

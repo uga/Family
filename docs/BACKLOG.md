@@ -6004,6 +6004,11 @@ It also means the ceiling **moves with the level**: it is a multiple of `xpMax`,
 number of points is a different fraction of a level after a ding, and an estimate that does not
 re-read `xpMax` drifts.
 
+**Five readings by the end of the day, across the three builds**: Era level 1, 600 against 400;
+Burning Crusade level 5, 4200 against 2800, and level 63, **975450 against 650300**; Mists level
+58, 248700 against 165800. Every one of them one and a half exactly, from four hundred experience
+to six hundred and fifty thousand.
+
 **And a third reading, on Era the same day**: a level 1 with `xpMax` 400 and rested **600**. One
 and a half again, so the rule holds on all three builds and at both ends of a character's life -
 the ceiling is a multiple of the level's own `xpMax`, not a number.
@@ -6012,3 +6017,36 @@ the ceiling is a multiple of the level's own `xpMax`, not a number.
 already at the ceiling, where nothing accumulates. It wants a character below it, which is what any
 character becomes as soon as it is played for a while - then two readings a few hours apart, one
 pair logged out in an inn and one pair logged out in the field.
+
+---
+
+## 95. A currency read from the older list is filed under its name, not its id
+
+**Found by the probe 2026-09-20**, while answering something else. Not asked for by anybody, and
+live on Burning Crusade today.
+
+**Today:** `Scanners/Currencies.lua` reads the currency list in whichever of two shapes the client
+answers in. The older shape - the one Burning Crusade uses - takes the id from
+`GetCurrencyListLink` alone (`readGlobalList`), and on `2.5.6` that link gave nothing at all for
+Honor Points. `entryFrom` then falls back through its own ladder and keys the entry `n:Honor
+Points`.
+
+**Why that matters, in this addon's own terms.** A name is one language. A character scanned on a
+French client files honor as `n:Points d'honneur` and one scanned here files `n:Honor Points`, and
+the two never line up in a column - which is §2.1, and is the same fault that once listed five
+French professions as never opened (L-015).
+
+**And the id was in the answer the whole time.** The row the probe printed ends with **1901**,
+which is what this build calls Honor Points. `readGlobalList` unpacks six of the twelve values and
+that one is past where it stops.
+
+**Shape.** Read the id from the row as well as from the link, preferring whichever answers, and
+keep the name fallback for a client that gives neither. The care needed is the one this file
+already documents at length: **the position is not a promise**. Twelve values on one build is not
+twelve on the next, and a value that is a number is not thereby an id - so it wants the second
+currency the probe is now asking for before anything is unpacked by position, and a check that a
+row whose last value is not an id is still filed rather than dropped.
+
+**What it would fix for a player**: honor scanned on two clients of different languages becoming
+one row on the Currencies panel rather than two. Nothing about it is visible until somebody plays
+in two languages, which is why nothing reported it.

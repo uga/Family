@@ -2946,6 +2946,33 @@ spellings to write against are `HONOR_XP_UPDATE` and no quest query at all.
 `GetPVPSessionStats` and `GetPVPYesterdayStats` are on Era too, which is where the brief expected
 them.
 
+#### Honor on Burning Crusade, read at last, 2026-09-20
+
+A character with honor on it answered where the empty ones could not. `GetCurrencyListSize` says
+**2**, one of them a header, and the row is:
+
+    "Honor Points"  false  true  false  false  1428  136998  75000  false  0  false  1901
+
+Against the positions `Scanners/Currencies.lua` reads - name, isHeader, then the sixth as the
+amount, the seventh as the icon and the eighth as the cap - that is **1428 honor held, a cap of
+75,000**, and an icon file id. So the cap this section could only describe as *approximately
+twice the most expensive reward* is a number the client will state, and the 2026-09-04 note to
+measure it rather than ship it was right.
+
+**The twelfth value is 1901**, which is what the outside world calls Honor Points on this build.
+It reads like the id, and it is the only id in the answer - see the defect below. One row is not
+a rule, so the probe now prints the link beside it and a second currency will settle it.
+
+**No arena points row.** The list held honor and a header and nothing else, on a character with
+no arena points. Whether they appear as a second row, with an id of their own, is unanswered -
+and `GetArenaCurrency`, which the brief names for them, is absent from this build.
+
+**The defect this found in Family**, which is not about honor at all: `readGlobalList` takes a
+currency's id **only from `GetCurrencyListLink`**, and on this build that link gave nothing. The
+fallback in `entryFrom` then keys the currency by its **name** - `n:Honor Points` - which is one
+language, and lining two clients up is the whole reason §2.1 exists. Burning Crusade is the build
+Family reads currencies on by the older call, so this is live, and it is backlog 95.
+
 #### Re-read this at a new build
 
 The rules above are pinned to the three builds in section 3 and to no others. They have already
