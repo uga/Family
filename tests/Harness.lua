@@ -40916,9 +40916,17 @@ if RUN.storage == "compressed" then
 		-- Contended here by a second handle in this same process rather than a second process,
 		-- and released as soon as the line appears, so it costs milliseconds and cannot hang -
 		-- the poll gives up after two seconds and the check fails rather than the gate.
-		"logged()",
+		-- **And it must name whoever holds it now, not whoever wrote last.** Read from a live
+		-- run on 2026-09-20: a session queued behind another tree was told it was waiting for
+		-- its own earlier run, finished long before, in its own directory - so it waited
+		-- correctly and blamed the wrong tree, which sends the reader off to examine their own
+		-- tools. That is the journey this lock exists to spare them. A finished run's line is
+		-- seeded here and the process really holding it writes nothing at all, so a message
+		-- naming the seeded pid is the fault exactly.
+		"logged(line(gone.pid, os.getcwd()))",
 		"first = open(mutate.LOCK, 'a+')",
 		"fcntl.flock(first, fcntl.LOCK_EX)",
+		"print('names who holds it now', mutate.holder(open(mutate.LOCK).read()) is None)",
 		"ran = []",
 		"def go():",
 		"    with mutate.only_one_run():",
@@ -40969,6 +40977,10 @@ if RUN.storage == "compressed" then
 
 	-- The thirteen minutes that were invisible: a log holding only the current holder answers
 	-- who has it now and nothing about how long anybody queued.
+	-- The log holds a finished run's line and the process actually holding it wrote nothing,
+	-- which is the shape read from a live run: naming the line would name the wrong tree.
+	check("and names whoever holds it now rather than whoever wrote last",
+		text:find("names who holds it now True", 1, true) ~= nil, text)
 	check("the waiting is written into the log and not only printed",
 		text:find("the wait is written down True", 1, true) ~= nil, text)
 	check("and the log is appended to, so a run's whole turn can be read back",

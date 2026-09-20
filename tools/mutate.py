@@ -35,8 +35,14 @@ starts doing something else, and that is how the rule above gets broken.
 file, gated, and written back. Two things went wrong with that and neither was hypothetical. A
 `git add -A` during a run once staged a mutated file. And a run killed part way through left a
 mutation standing in `Scanners/Auctions.lua` - the `finally` never reached - so the next gate was
-red for a reason that had nothing to do with anything anybody had written (L-089). A copy cannot
-do either: kill this at any moment and the repository is exactly as it was.
+red for a reason that had nothing to do with anything anybody had written. A copy cannot do
+either: kill this at any moment and the repository is exactly as it was.
+
+That second episode **is recorded here and nowhere else**, which is worth saying plainly: this
+paragraph carried a citation of L-089 until 2026-09-20, and L-089 is *the wait loop matched its
+own command line* - a different fault of the same afternoon. Nothing in `LESSONS.md` describes
+the mutation left standing. A number that resolves to the wrong lesson is worse than no number,
+because it reads as checked; so the number is gone and the account stays.
 
     tools/mutate.py                 every case in tools/mutations
     tools/mutate.py one.mut two.mut just those
@@ -308,21 +314,20 @@ def note(handle, what, extra=""):
     handle.flush()
 
 
-def others_here(text, where):
-    """Runs from this same directory that are still going, by the log and then by the system.
+def standing(text):
+    """Every run the log still shows as going, by the log and then by the system.
 
     The log says what was last written about each process; `alive` says whether that is still
     true. Both are needed: a run killed before its `finally` leaves a *holding* line behind for
-    ever, and treating that as a queue would refuse every later run from that tree.
+    ever, and reading the file alone takes that for a run in progress - which refuses every
+    later run from that tree, and names the wrong process to anybody waiting.
     """
     state = {}
     for line in text.split("\n"):
         parts = line.split("\t")
         if len(parts) < 4:
             continue
-        when, what, pid = parts[0], parts[1], parts[2]
-        if parts[3] != where:
-            continue
+        when, what, pid, where = parts[0], parts[1], parts[2], parts[3]
         try:
             pid = int(pid)
         except ValueError:
@@ -330,10 +335,34 @@ def others_here(text, where):
         if what == "released":
             state.pop(pid, None)
         else:
-            state[pid] = (what, when)
+            state[pid] = (what, when, where)
 
-    return [(pid, what, when) for pid, (what, when) in sorted(state.items())
-            if pid != os.getpid() and alive(pid)]
+    return [(pid, what, when, where) for pid, (what, when, where) in sorted(state.items())
+            if alive(pid)]
+
+
+def others_here(text, where):
+    """Runs from this same directory that are still going. Ours is not one of them."""
+    return [(pid, what, when) for pid, what, when, place in standing(text)
+            if place == where and pid != os.getpid()]
+
+
+def holder(text):
+    """Who is holding the lock **now**, which is not the same as who wrote in the file last.
+
+    Read from a live run on 2026-09-20, minutes after the line was written: a session queued
+    behind another tree's run was told it was waiting for `pid 3471174 in
+    /home/dietpi/dev/Family-retail` - its own earlier run, finished long before, while the lock
+    was held by a different process in a different tree. It waited correctly and **blamed the
+    wrong directory**, which is the worse half: somebody reading that line goes off to look at
+    their own tools, which is the exact journey this whole lock exists to spare them.
+
+    The file cannot say who holds the lock. The lock is the `flock`; the file is what the last
+    passer-by wrote in it. So the entries are filtered by whether the process is still there,
+    and where none is, this says so rather than name the most recent line.
+    """
+    live = [entry for entry in standing(text) if entry[1] == "holding"]
+    return live[-1] if live else None
 
 
 @contextlib.contextmanager
@@ -404,9 +433,11 @@ def only_one_run():
         except OSError:
             note(handle, "waiting")
             handle.seek(0)
-            holder = [line for line in handle.read().split("\n") if "\tholding\t" in line]
-            sys.stderr.write("waiting for the machine: %s\n"
-                             % (holder[-1] if holder else "a run that did not say who it was"))
+            has_it = holder(handle.read())
+            sys.stderr.write("waiting for the machine: %s\n" % (
+                "pid %d in %s, holding since %s" % (has_it[0], has_it[3], has_it[2])
+                if has_it else
+                "a run that is not in the log - killed before it could tidy up, most likely"))
             sys.stderr.flush()
             fcntl.flock(handle, fcntl.LOCK_EX)
 

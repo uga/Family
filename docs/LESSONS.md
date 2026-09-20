@@ -3542,6 +3542,42 @@ nothing about whether the work should exist, and a fix that makes a fault orderl
 better than the fault did. See [L-109](#l-109--two-sessions-one-processor-the-run-was-not-slow-it-was-killed),
 which is the first half of this one.
 
+## L-113 — the file said who wrote last, and was read as saying who holds it
+
+**2026-09-20, hours after the lock landed.** A session queued behind a run in another tree was
+told, correctly, that it was waiting - and told, wrongly, who for:
+
+    waiting for the machine: pid 3471174 in /home/dietpi/dev/Family-retail since 16:18:45
+
+`ps` at that moment showed a different process, in a different directory, holding it. 3471174
+was that session's **own** earlier run, finished long before. It read its own pid and briefly
+believed it had left a run of its own queued - the very thing it had just been corrected for.
+
+**Bitten:** nothing, this time, because the lock itself was right. The `flock` is the lock and it
+did its job: the run waited and went second. What lied was the diagnostic beside it, and a
+diagnostic that lies about **whose fault the wait is** sends the reader to examine their own
+tools - which is precisely the journey the lock was written to spare them (L-109). It was found
+by a session printing `ps` in the same command for an unrelated reason, which is to say by
+accident.
+
+**Why it was invisible.** The message was assembled from the last `holding` line in the log,
+and the log is not the lock. The lock is a `flock` held by a process; the file is what the last
+passer-by wrote in it. Those agree whenever runs are tidy and diverge the moment one is not, and
+the writing looked right because in every case anybody had tried, they agreed.
+
+**The check that now catches it.** `holder()` returns the standing entry whose **process is still
+there**, and where none is it says so - *a run that is not in the log, killed before it could
+tidy up, most likely* - instead of naming the most recent line. The check seeds a finished run's
+line into the log, has the real holder write nothing at all, and requires the answer to be
+*nobody named* rather than the seeded pid. Mutation `the-wait-names-whoever-wrote-last` puts the
+old reading back and is caught.
+
+The rule: **a record of who did something is not a statement about who is doing it.** Anything
+read out of a file about a live process wants the system asked as well, or the file will be right
+until the first time it matters. This is the twin of the fault the same lock was already guarded
+against - a killed run leaving a `holding` line and jamming its own tree shut - and the guard is
+the same one, `alive`, in a second place that was missed.
+
 ## L-110 and L-111 — not used here, and deliberately
 
 **2026-09-20.** These two numbers are left empty on this branch. It is the only thing that can
