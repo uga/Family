@@ -3498,49 +3498,51 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
-## L-112 — the lock serialised the runs, and nobody asked whether they were the same run
+## L-115 — the number was printed, and written down from memory anyway
 
-**2026-09-20, the same afternoon the lock landed.** One session made four small edits to two
-documents - 15:42, 15:42:41, 15:44:34, 15:46:36 - and started a full mutation run behind each
-one. The lock did exactly what it was written to do: it put them in a queue. The machine then
-spent **32 minutes** on four runs, from 15:42:57 to about 16:15, three of them answering about a
-tree that had already been edited again by the time the answer arrived.
+**2026-09-20, twice in two hours.** Two commit messages went in claiming the gate had passed
+**3547** and **3550** checks. It had said 3546 and 3548, both times three lines above, in the
+same terminal, seconds earlier. Nothing was estimated on purpose: the figure simply felt known,
+and a figure that feels known does not get read.
 
-**Bitten:** a second fault made visible by the fix for the first. Before the lock these four
-would have fought each other and mostly died, which is L-109 and looks like slowness. After the
-lock they queue politely, which looks like *the run takes twenty minutes* - the same wrong
-conclusion by a different road. A semaphore serialises; it has no opinion about whether the
-things it is serialising are worth doing.
+**Bitten:** a commit message cannot be corrected. Rewriting history is on this project's
+reserved list, and rightly, so both numbers are permanent - in a repository whose first rule is
+*measure rather than estimate*, and in messages whose whole subject that evening was references
+that resolve to the wrong thing.
 
-And the second and later runs were never worth doing. From one directory there are only two
-cases: the tree has not changed since the run that is going, so the queued run is that same run
-again, or it has changed, so the running one is answering about a tree nobody has any more.
-Neither is worth eight minutes of machine.
+The second is the one that matters. It was written **an hour after the first had been noticed
+and owned out loud**, in a reply that said plainly *ho scritto un numero che non avevo contato*.
+So the resolution was made, sincerely, and then did not survive one hour of ordinary work. That
+is the whole argument for the mechanism: a fault that a promise has already failed to fix is not
+going to be fixed by a firmer promise.
 
-**Why it was invisible.** Two reasons, and both are about what was not written down. The lock
-file held only its current holder, rewritten each time, so a line reading `since 15:59:01` was
-the truth about the run that wrote it and said nothing about the thirteen minutes that run had
-spent queued behind two others; putting those minutes back afterwards took the timestamps of
-unrelated files and a transcript. And the docstring said *wait for it, do not work beside it* -
-which the ten-minute ceiling on the calling tool had already pushed every session into
-disobeying, since a full run has to go in the background to finish at all, and from there to
-editing while it runs is one step nobody notices taking.
+**Why it was invisible.** Everything else in a commit message is beyond checking - why a change
+was made, what it decided not to do - so the message is read as a place where nothing is
+verifiable. One thing in it is: the count. It sat in the same class as the prose and inherited
+the prose's freedom.
 
-**The check that now catches it.** A run from the same directory as one already going, or
-already queued, is **refused** rather than queued: it exits non-zero saying to wait and then run
-once on the tree being committed. A run from a different tree still waits, because between two
-trees the queue is exactly right. Liveness is asked of the system and not only of the log, or a
-run killed before its `finally` would jam its own tree shut for ever - which is the failure this
-repair could most easily have introduced. And the log is appended to, one line per event with
-how long each run waited and held, so the next such afternoon can be read rather than
-reconstructed. Mutations `a-second-run-from-one-tree-is-queued`,
-`a-killed-run-jams-its-tree-shut`, `the-wait-is-never-written-down`,
-`the-lock-does-not-say-who-holds-it`.
+**The check that now catches it.** `tools/hooks/pre-commit` writes the count it has just made
+into `.git`, and `tools/hooks/commit-msg` refuses any message whose figure beside *checks*, or
+after *harness*, disagrees with it. It **refuses rather than correcting**: a claim quietly
+edited into truth is worse than a wrong one, because the next reader cannot tell it was ever a
+claim. Small numbers and counts of other things - *four checks*, *398 cases* - are not this
+claim and pass. Six checks, run against the hook itself rather than against its text, and
+mutations `a-wrong-check-count-is-committed` and `the-gate-counts-and-tells-nobody`.
 
-The rule, which is the part that travels: **a queue is not a plan.** Serialising work says
-nothing about whether the work should exist, and a fix that makes a fault orderly can hide it
-better than the fault did. See [L-109](#l-109--two-sessions-one-processor-the-run-was-not-slow-it-was-killed),
-which is the first half of this one.
+These are the first checks this repository has on its own hooks, which is worth noticing on its
+own: the two scripts that stand between every commit and a red gate were the only things here
+nothing was standing over.
+
+**The first message it refused was the one adding it**, which is worth recording rather than
+tidying away. That message's subject was the two wrong figures, so it said *3550 checks* while
+the gate counted 3554, and the hook stopped it. The hook cannot tell a quoted number from a
+claimed one, and it should not try: one that let a wrong figure through whenever the message
+looked like it was discussing figures would be no hook at all. The cost is that a message about
+a count writes the old numbers away from the word, which reads better in any case.
+
+The rule: **a figure that can be read should never be recalled.** If a number was printed in
+this session, quote it from where it was printed; if it was printed and scrolled away, run the
+thing again. The cost of re-reading is seconds and the cost of being wrong is permanent.
 
 ## L-114 — eight minutes a commit, insuring against something never once observed
 
@@ -3587,6 +3589,7 @@ The rule: **an insurance nobody has priced is not caution, it is habit.** Ask wh
 has ever paid out, and ask separately what it could never have been observed paying out - the
 second question is the one that decides whether cancelling it is safe.
 
+
 ## L-113 — the file said who wrote last, and was read as saying who holds it
 
 **2026-09-20, hours after the lock landed.** A session queued behind a run in another tree was
@@ -3623,6 +3626,50 @@ until the first time it matters. This is the twin of the fault the same lock was
 against - a killed run leaving a `holding` line and jamming its own tree shut - and the guard is
 the same one, `alive`, in a second place that was missed.
 
+## L-112 — the lock serialised the runs, and nobody asked whether they were the same run
+
+**2026-09-20, the same afternoon the lock landed.** One session made four small edits to two
+documents - 15:42, 15:42:41, 15:44:34, 15:46:36 - and started a full mutation run behind each
+one. The lock did exactly what it was written to do: it put them in a queue. The machine then
+spent **32 minutes** on four runs, from 15:42:57 to about 16:15, three of them answering about a
+tree that had already been edited again by the time the answer arrived.
+
+**Bitten:** a second fault made visible by the fix for the first. Before the lock these four
+would have fought each other and mostly died, which is L-109 and looks like slowness. After the
+lock they queue politely, which looks like *the run takes twenty minutes* - the same wrong
+conclusion by a different road. A semaphore serialises; it has no opinion about whether the
+things it is serialising are worth doing.
+
+And the second and later runs were never worth doing. From one directory there are only two
+cases: the tree has not changed since the run that is going, so the queued run is that same run
+again, or it has changed, so the running one is answering about a tree nobody has any more.
+Neither is worth eight minutes of machine.
+
+**Why it was invisible.** Two reasons, and both are about what was not written down. The lock
+file held only its current holder, rewritten each time, so a line reading `since 15:59:01` was
+the truth about the run that wrote it and said nothing about the thirteen minutes that run had
+spent queued behind two others; putting those minutes back afterwards took the timestamps of
+unrelated files and a transcript. And the docstring said *wait for it, do not work beside it* -
+which the ten-minute ceiling on the calling tool had already pushed every session into
+disobeying, since a full run has to go in the background to finish at all, and from there to
+editing while it runs is one step nobody notices taking.
+
+**The check that now catches it.** A run from the same directory as one already going, or
+already queued, is **refused** rather than queued: it exits non-zero saying to wait and then run
+once on the tree being committed. A run from a different tree still waits, because between two
+trees the queue is exactly right. Liveness is asked of the system and not only of the log, or a
+run killed before its `finally` would jam its own tree shut for ever - which is the failure this
+repair could most easily have introduced. And the log is appended to, one line per event with
+how long each run waited and held, so the next such afternoon can be read rather than
+reconstructed. Mutations `a-second-run-from-one-tree-is-queued`,
+`a-killed-run-jams-its-tree-shut`, `the-wait-is-never-written-down`,
+`the-lock-does-not-say-who-holds-it`.
+
+The rule, which is the part that travels: **a queue is not a plan.** Serialising work says
+nothing about whether the work should exist, and a fix that makes a fault orderly can hide it
+better than the fault did. See [L-109](#l-109--two-sessions-one-processor-the-run-was-not-slow-it-was-killed),
+which is the first half of this one.
+
 ## L-110 and L-111 — not used here, and deliberately
 
 **2026-09-20.** These two numbers are left empty on this branch. It is the only thing that can
@@ -3655,7 +3702,14 @@ refused a heading of `## L-110` would be a check on the instance, and the rule i
 *do not reuse an identifier something else already points at* - is not a thing a sweep can see.
 What holds it is this entry being in the way.
 
-**The next lesson on this branch is L-112.**
+**And the set has grown since, exactly as this entry said it would.** This branch has gone on to
+allocate L-112 to L-115, and three more Midnight commits cite those numbers meaning what are now
+L-204, L-206 and L-207: `571205c` says L-112, `f743759` says L-114, `29f7ba0` says L-115. They
+resolved to nothing when they were written and resolve to unrelated lessons today. Nothing can
+be done about them either - the numbers were spent before anybody looked - and they are listed
+here so that the count is the real one rather than the three it started at.
+
+**The next free number on this branch is L-116.**
 
 ## L-109 — two sessions, one processor: the run was not slow, it was killed
 

@@ -35,5 +35,10 @@ if [ $status -ne 0 ]; then
 	exit 1
 fi
 
-echo "$out" | grep -c '^  ok' | sed 's/^/pre-commit: /;s/$/ checks passed/'
+count=$(echo "$out" | grep -c '^  ok')
+echo "pre-commit: $count checks passed"
+
+# Left where `commit-msg` can read it, so a message claiming a different number is refused
+# rather than committed. Inside `.git`, which is not the tree and is not carried anywhere.
+echo "$count" > "$(git rev-parse --git-dir)/family-checks" 2>/dev/null || true
 exit 0

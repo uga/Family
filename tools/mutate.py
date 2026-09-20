@@ -82,10 +82,8 @@ file under `addons/` and 9 name `tests/Harness.lua`, so editing a check and comm
 ran nine cases and skipped the 376 that check stands over. `caught-by.tsv` closes it - see
 `REGISTER` below - and without that this tier would be a trade rather than a saving.
 
-`tools/release.sh` runs the full one and refuses the release on anything but green.
-
-`CLAUDE.md` still carries the older rule at the time of writing; Alberto settles that line
-himself, and until he does it is the one to follow where the two differ.
+`tools/release.sh` runs the full one and refuses the release on anything but green. `CLAUDE.md`
+carries the same rule, settled by Alberto the same day.
 
 Exit is non-zero if any mutation survived, any anchor has gone, or any gate hung.
 """
