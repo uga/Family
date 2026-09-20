@@ -6327,3 +6327,116 @@ about, on a build that was filed under the modern one. Its row has still never b
 the only Mists character asked so far has earned no currency. If that row is twelve values with
 the id last, this fix covers it; if it is any other length, honor there keeps its name and this
 entry has a second half. Either way nothing is guessed, which is what the shape check buys.
+
+---
+
+## 96. Family's possessions on a herb node's or a mining vein's tooltip
+
+**Asked 2026-09-20, by Alberto.** Hovering a Silverleaf in the world, or its dot on the minimap,
+should add Family's possessions block for Silverleaf. Hovering an Iron Deposit or a Large Thorium
+Vein should show who holds **Iron Ore and Iron Bars** - the ore and what it smelts into, not the
+ore alone.
+
+**Today, measured.** Family puts its block on a tooltip through two routes and both of them are
+about an item or a spell: `Family_UI/Tooltip.lua` hooks `OnTooltipSetItem` and `OnTooltipSetSpell`
+(`hookSetItem`, `hookSetSpell`, installed at `Tooltip.lua:1344`), and on a client that has the
+modern tooltip system it registers `TooltipDataProcessor` post-calls for
+`Enum.TooltipDataType.Item` and `Enum.TooltipDataType.Spell` and nothing else. A herb node in the
+world is neither. **So nothing Family has today fires on one**, and there is no partial version of
+this to extend.
+
+The minimap is the same answer twice over: the only minimap code in either addon is Family's own
+button (`Family_UI/Broker.lua:566`). Whether a tracking blip can be hovered at all on these
+clients, and whether it says anything when it is, has never been asked here.
+
+**The ore-and-bar half needs no table and no new data.** `Family.RecipeReagents` is spell -> the
+item ids it consumes, generated from the game's own files and with no language in it:
+`[3307]={2772,1}` is Smelt Iron taking Iron Ore. A recipe Family records carries `recipe.itemID`,
+the id of the thing it makes - `Scanners/Professions.lua:460`, and the comment at 700 says why it
+is read separately: *Smelting says "Smelt Copper" and makes a Copper Bar*. Inverted, that is
+**Iron Ore is a reagent of Smelt Iron, which makes Iron Bar**, by id, in any language. And
+`Family/Index.lua` already answers *who holds this item id* without walking anybody. Given the
+node's items, the rest of this entry is drawing.
+
+**The unmeasured half is the node itself, and it is the whole entry.** A world object hands over a
+name and, as far as anything here knows, no id at all. §2.1 is ids and not names, and a name is
+one language - so the question is not *which table* but *whether this can be asked rather than
+assumed*. Four routes, in the order of how much each promises:
+
+1. **Ask the client.** Unknown, and cheap to find out. Mists 5.5.4 runs the modern tooltip system
+   (`Family.tooltipRoute` reports `both` there), so it may carry a `TooltipDataType` for a world
+   object with an id in its data. Era and Burning Crusade almost certainly carry nothing. This is
+   a probe, exactly as honor and the currency row were, and it is the first thing to do.
+2. **Learn it from play.** Gathering a node opens a loot window, and a loot window hands over item
+   links, which carry ids. Recording *this object name yielded these item ids* is the method this
+   project already uses twice - the areas store and the quest-title store (`Family/Names.lua`) -
+   and it is by id, in the player's own language, with nothing shipped. It knows only the nodes
+   somebody has actually gathered, which is a real limit and a growing one.
+3. **Match the name against what the client has already named.** Most herb nodes are called
+   exactly what the herb is called, so the tooltip's first line could be looked up in
+   `Names:ItemStore`. It is a name match, it works for no ore at all, and it works only for items
+   already in that store - so it is a shortcut for case 2 rather than a route of its own.
+4. **A third-party data source.** Alberto's own question: *I dont know if WAGO is a source to take
+   herb and metal node names, and their associated herbs/ores. Or we have to create a table by
+   hand?* **Adopting a new data source is reserved** (`CLAUDE.md`, item 2), so it is not decided
+   here. Put to Alberto 2026-09-20 with a recommendation against, on the grounds that routes 1 and
+   2 have not been tried and that a shipped name table is five languages to keep and one more
+   thing to be wrong at the next expansion.
+
+**Shape.** A probe first - hover a herb node, a vein and a minimap dot on each client, and print
+what arrives. Nothing else is worth writing until that reading exists.
+
+---
+
+## 97. CTRL or ALT on a character's name jumps to that character's Possessions or Professions
+
+**Asked 2026-09-20, by Alberto.** CTRL-clicking a character's name on any Summary subpanel should
+open the Possessions panel with that character selected; ALT-clicking should open Professions.
+
+**Today, measured, and this one is nearly built.** Both doors exist and are already opened from
+this very panel:
+
+- `UI:ShowContentsFor(key)` - `Family_UI/Contents.lua:1447`, called from Summary's Bags set at
+  `Summary.lua:3417`.
+- `UI:ShowProfessionFor(key, profession)` - `Family_UI/Professions.lua:1969`, called from a
+  profession cell at `Summary.lua:3229`.
+
+And `ShowProfessionFor` already takes the key alone: `UI.__selectProfession` at
+`Professions.lua:1049` guards the second argument - `if profession then chosen = profession end` -
+so calling it with one argument selects the member and leaves the profession as it was. One edge:
+that function finds the member by walking `membersWithSkills()`, so a character with no
+professions recorded is not selected by it at all, and a click on such a name would open the panel
+on whoever was there before. That is the one thing this entry has to decide rather than reuse.
+
+The rows carry what is needed. `row.memberKey` is set at `Summary.lua:3316`, and the folded lines
+and extra rows carry it too (3439, 3512, 3567, 3686). There is **one** `OnClick` for a summary row,
+at `Summary.lua:2493`, and it already splits on the button: left runs `self.opens`, right offers to
+forget the member. A modifier test goes at the top of the left branch, before `self.opens`, and the
+whole feature is that test plus the two calls above.
+
+Reading the modifiers is also already solved and already careful about it. `Family_UI/ItemClick.lua`
+has `wanted()` at line 128 and, more to the point, `UI:ModifiedClickActions()` - which reads out of
+the client *which modified clicks the game has already spoken for*, rather than picking a
+combination and hoping. That list is what says whether plain CTRL and plain ALT are free on all
+three clients; on Mists, CTRL and a click was measured to open the Dressing Room, which is what
+moved the item-click gesture off CTRL-ALT in the first place.
+
+**One thing known to bite, already paid for once.** CTRL does not reach Family at all while the
+game window has lost focus - entry 90 and the measurement under entry 2350 - so a modifier-only
+gesture fails silently in exactly the case where somebody has alt-tabbed and come back. Not a
+blocker, but it belongs in the entry rather than in a surprise.
+
+**And a second one that turned out not to exist.** This entry first said plain CTRL was already
+doing something on these rows - swapping the tooltip to its worth block - and it is not. That
+block lives in `onItem` (`Tooltip.lua:1072`), which is reached from `OnTooltipSetItem` and needs
+an item id and a sell price. A Summary member row carries no item: it goes through
+`UI:AttachTooltip` and `showFor` (`Tooltip.lua:1646`), whose resolver is handed the frame alone
+and hands back plain lines, and `IsControlKeyDown` appears nowhere in `Summary.lua`. Holding CTRL
+over one of those rows re-fires the resolver and it draws the same thing. Corrected by Alberto the
+same day: *none of the rows on the various subpanels of Summary carry items*. Written down because
+the claim was made from a grep hit in a file rather than from reading which path it was on, and
+because an entry that invents an obstacle costs the same as one that hides a real one.
+
+**What it would give a player:** the summary says *this character has 14 free slots* or *this one
+is a 300 blacksmith*, and both are a reason to go and look. Today that is: find the tab, find the
+member in the picker, forty-odd members deep.

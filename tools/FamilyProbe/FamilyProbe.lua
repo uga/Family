@@ -699,6 +699,208 @@ for _, area in ipairs({ "quests", "instances", "rested", "pvp" }) do
         ask = function() return eventsFor(area) end }
 end
 
+--------------------------------------------------------------------------------------------
+-- Backlog 96: a herb node or a mining vein under the pointer
+--
+-- Family's possessions block fires on `OnTooltipSetItem` and `OnTooltipSetSpell`, and on the
+-- newer clients on `TooltipDataProcessor` post-calls for the Item and Spell types. A Silverleaf
+-- in the world is neither, so nothing Family has today fires on one.
+--
+-- Before a line of that is written there is one thing to find out, and it decides the whole
+-- shape: **does a world object arrive here carrying an id, or a name and nothing else?** A name
+-- is one language, and this project files by id (§2.1) - so a name alone means the mapping from
+-- node to item has to be learned or shipped, and an id means it does not.
+--
+-- Route 1 of the four in the backlog entry, and the cheapest: ask the client. Two static probes
+-- below answer the half that needs no hovering - which tooltip types this build knows about at
+-- all - and the watcher answers the half that does.
+--------------------------------------------------------------------------------------------
+
+-- A table's member names rather than its size. `describe` would say `table(17)` and the whole
+-- question here is *which seventeen* - whether one of them is an object.
+local function membersOf(value)
+    if type(value) ~= "table" then return "absent" end
+
+    local names = {}
+    for name in pairs(value) do names[#names + 1] = tostring(name) end
+    if #names == 0 then return "present, no members" end
+
+    table.sort(names)
+    return "(" .. #names .. ") " .. table.concat(names, " ")
+end
+
+PROBES[#PROBES + 1] = { area = "nodes", name = "Enum.TooltipDataType", ask = function()
+    local enum = _G.Enum
+    if type(enum) ~= "table" then return "no Enum on this client" end
+    return membersOf(enum.TooltipDataType)
+end }
+
+PROBES[#PROBES + 1] = { area = "nodes", name = "the modern tooltip system", ask = function()
+    local processor = _G.TooltipDataProcessor
+    return "TooltipDataProcessor=" .. type(processor)
+        .. " AddTooltipPostCall=" .. (type(processor) == "table"
+            and type(processor.AddTooltipPostCall) or "n/a")
+        .. " C_TooltipInfo=" .. membersOf(_G.C_TooltipInfo)
+end }
+
+PROBES[#PROBES + 1] = { area = "nodes", name = "the frame under the pointer", ask = function()
+    return "GetMouseFocus=" .. type(_G.GetMouseFocus)
+        .. " GetMouseFoci=" .. type(_G.GetMouseFoci)
+end }
+
+-- **What the modern system was asked about**, recorded by type rather than guessed at.
+--
+-- A post-call is registered for *every* value `Enum.TooltipDataType` carries, not for the one
+-- that looks like it means an object. Which member a world node comes through is exactly what
+-- is unknown, and a probe that registers the one it expects can only ever confirm itself.
+--
+-- Registered once and for the whole session, which a throwaway addon may do: nothing is printed
+-- unless the watcher is armed.
+local lastTypeName, lastTypeID
+local armed = false
+
+local function watchEveryTooltipType()
+    local processor = _G.TooltipDataProcessor
+    local enum = _G.Enum and _G.Enum.TooltipDataType
+
+    if type(processor) ~= "table" or type(processor.AddTooltipPostCall) ~= "function"
+        or type(enum) ~= "table" then
+        return false
+    end
+
+    for name, value in pairs(enum) do
+        if type(value) == "number" then
+            pcall(processor.AddTooltipPostCall, value, function(_, data)
+                if not armed then return end
+                lastTypeName = tostring(name)
+                lastTypeID = data and data.id or nil
+            end)
+        end
+    end
+
+    return true
+end
+
+local function pointerFrame()
+    local frame = try(there("GetMouseFocus"))
+    if type(frame) ~= "table" then
+        local list = try(there("GetMouseFoci"))
+        frame = type(list) == "table" and list[1] or nil
+    end
+    if type(frame) ~= "table" then return "nothing" end
+
+    local named = frame.GetName and try(frame.GetName, frame)
+    return tostring(named or "an unnamed frame")
+end
+
+-- Six lines is more than any node tooltip has and enough to see whether the client added
+-- anything of its own under the name.
+local function tooltipText()
+    local count = tonumber(try(GameTooltip.NumLines, GameTooltip)) or 0
+    if count == 0 then return "no lines" end
+
+    local out = {}
+    for index = 1, math.min(count, 6) do
+        local left = _G["GameTooltipTextLeft" .. index]
+        local right = _G["GameTooltipTextRight" .. index]
+        local a = left and left.GetText and try(left.GetText, left)
+        local b = right and right.GetText and try(right.GetText, right)
+        if a and a ~= "" then
+            out[#out + 1] = index .. '="' .. a .. '"' .. (b and b ~= "" and ('/"' .. b .. '"') or "")
+        end
+    end
+
+    return "(" .. count .. " lines) " .. table.concat(out, " ")
+end
+
+-- What the tooltip says it is about, asked three ways. All three answering nothing is what a
+-- world object is expected to look like, and is the reading this is here for.
+local function tooltipSubject()
+    local itemName, itemLink = try(GameTooltip.GetItem, GameTooltip)
+    local spellName, spellID = try(GameTooltip.GetSpell, GameTooltip)
+    local unitName, unitToken = try(GameTooltip.GetUnit, GameTooltip)
+
+    return "item=" .. describe(itemLink or itemName)
+        .. " spell=" .. describe(spellID or spellName)
+        .. " unit=" .. describe(unitToken or unitName)
+end
+
+local sightings = 0
+local SIGHTINGS = 3
+
+local function record(text)
+    DEFAULT_CHAT_FRAME:AddMessage("  |cffffd700nodes|r " .. text)
+
+    local locale = (GetLocale and GetLocale()) or "unknown"
+    local report = FamilyProbeDB[locale] or {}
+    FamilyProbeDB[locale] = report
+    report.apis = report.apis or {}
+    report.apis.nodes = report.apis.nodes or {}
+
+    local seen = report.apis.nodes.sightings or {}
+    seen[#seen + 1] = { says = text, at = time(),
+        who = (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?") }
+    report.apis.nodes.sightings = seen
+end
+
+local function dump()
+    record(pointerFrame() .. "  |  " .. tooltipSubject() .. "  |  " .. tooltipText()
+        .. "  |  modern=" .. (lastTypeName and (lastTypeName .. " id=" .. tostring(lastTypeID))
+            or "nothing fired"))
+
+    sightings = sightings + 1
+    if sightings >= SIGHTINGS then
+        armed = false
+        DEFAULT_CHAT_FRAME:AddMessage(
+            "|cff66bbffFamily Probe|r: that is " .. SIGHTINGS .. ", and the watcher is off again. "
+            .. "|cffffd700/familyprobe node|r arms it for three more.")
+    end
+end
+
+-- **Only a tooltip that is about none of the three**, because a bag slot, a unit frame and an
+-- action button are all things the pointer crosses on the way to a node, and a dump for each of
+-- them is a dump nobody reads. A world object is the case where the client will not say what
+-- the tooltip is about - which is the whole reason this entry exists.
+--
+-- A tick late, so that whatever `TooltipDataProcessor` was going to say has been said. The two
+-- fire in an order nothing here controls, and reading the one from the other without waiting is
+-- how a reading comes back "nothing fired" on a client where something did.
+local function onTooltipShown()
+    if not armed then return end
+
+    local itemName, itemLink = try(GameTooltip.GetItem, GameTooltip)
+    local spellName, spellID = try(GameTooltip.GetSpell, GameTooltip)
+    local unitName, unitToken = try(GameTooltip.GetUnit, GameTooltip)
+    if itemName or itemLink or spellName or spellID or unitName or unitToken then return end
+
+    if C_Timer and C_Timer.After then C_Timer.After(0, dump) else dump() end
+end
+
+local watching = false
+
+local function watchNodes()
+    if not watching then
+        local modern = watchEveryTooltipType()
+        pcall(GameTooltip.HookScript, GameTooltip, "OnShow", onTooltipShown)
+        pcall(GameTooltip.HookScript, GameTooltip, "OnHide", function()
+            lastTypeName, lastTypeID = nil, nil
+        end)
+        watching = true
+
+        DEFAULT_CHAT_FRAME:AddMessage("|cff66bbffFamily Probe|r: watching the tooltip"
+            .. (modern and ", and every tooltip type this client knows" or "")
+            .. ". Nothing is sent anywhere and nothing is changed.")
+    end
+
+    sightings = 0
+    armed = true
+
+    DEFAULT_CHAT_FRAME:AddMessage(
+        "|cff66bbffFamily Probe|r: armed. Hover a herb node, then a mining vein, then a dot on "
+        .. "the minimap - three readings and it disarms itself. A tooltip the client can name as "
+        .. "an item, a spell or a unit is skipped.")
+end
+
 local function askEverything()
     local locale = (GetLocale and GetLocale()) or "unknown"
     local report = FamilyProbeDB[locale] or {}
@@ -759,8 +961,16 @@ SlashCmdList.FAMILYPROBE = function(argument)
         return
     end
 
+    -- Backlog 96, and the one probe here that needs the player to do something: nothing can ask
+    -- a client what a herb node looks like except by pointing at one.
+    if argument == "node" or argument == "nodes" then
+        watchNodes()
+        return
+    end
+
     collect()
     DEFAULT_CHAT_FRAME:AddMessage(
         "|cff66bbffFamily Probe|r: |cffffd700/familyprobe apis|r asks what this client carries "
-        .. "for quests completed, lockouts, rested and honor.")
+        .. "for quests completed, lockouts, rested and honor. |cffffd700/familyprobe node|r "
+        .. "watches what arrives when you hover a herb node, a vein or a minimap dot.")
 end
