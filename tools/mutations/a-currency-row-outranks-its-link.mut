@@ -1,0 +1,8 @@
+name: a position is believed over the link beside it
+file: addons/Family/Scanners/Currencies.lua
+--- old
+			local id = idFromLink(Family:TryCall(GetCurrencyListLink, index))
+				or idFromRow(row, width)
+--- new
+			local id = idFromRow(row, width)
+				or idFromLink(Family:TryCall(GetCurrencyListLink, index))

@@ -101,6 +101,39 @@ local function readModernList()
 	return #found > 0 and found or nil
 end
 
+-- Every value a call answered with, and how many there were. `select` rather than the length
+-- of the table: a row with a nil in the middle has no length worth trusting, and these rows
+-- are mostly falses and noughts with the occasional nothing.
+local function rowFrom(...)
+	return { ... }, select("#", ...)
+end
+
+-- The id the older list carries in the row itself, on the one build measured to carry one.
+--
+-- Position is not a promise anywhere in this file and it is not one here. Burning Crusade
+-- 2.5.6 answers twelve values for Honor Points and the twelfth is 1901; two characters on
+-- that build, holding 1428 and 15, answered the same twelfth while the amount beside it moved
+-- (DATASOURCES, *Honor on Burning Crusade, read at last*). A number that holds still while the
+-- figure next to it moves is an identity and not a figure.
+--
+-- So this is read only where the row is exactly as long as the row that was measured, and only
+-- where the link answered nothing - which on that build is always, because `GetCurrencyListLink`
+-- there answers nothing at all. A build that hands back some other number of values is not the
+-- build this was read on, and gets the name it gets today rather than a guess wearing an id's
+-- clothes.
+local MEASURED_ROW = 12
+
+local function idFromRow(row, width)
+	if width ~= MEASURED_ROW then return nil end
+
+	-- An id is a whole number above nought. A false, a nought or a decimal in that position
+	-- says this row is not the row that was measured, whatever its length.
+	local value = tonumber(row[MEASURED_ROW])
+	if not value or value <= 0 or value ~= math.floor(value) then return nil end
+
+	return value
+end
+
 -- The list as the clients before that one answered it: eleven return values, no table.
 local function readGlobalList()
 	if type(_G.GetCurrencyListSize) ~= "function" then return nil end
@@ -110,12 +143,16 @@ local function readGlobalList()
 
 	local found = {}
 	for index = 1, size do
-		local name, isHeader, _, _, _, count, icon, maximum =
-			Family:TryCall(GetCurrencyListInfo, index)
+		local row, width = rowFrom(Family:TryCall(GetCurrencyListInfo, index))
+		local name, isHeader, count, icon, maximum = row[1], row[2], row[6], row[7], row[8]
 
 		if not isHeader then
-			local entry = entryFrom(idFromLink(Family:TryCall(GetCurrencyListLink, index)),
-				name, count, maximum, icon)
+			-- The link first wherever there is one: a link names the currency it means,
+			-- while a position is only a thing that was true when somebody looked.
+			local id = idFromLink(Family:TryCall(GetCurrencyListLink, index))
+				or idFromRow(row, width)
+
+			local entry = entryFrom(id, name, count, maximum, icon)
 			if entry then found[#found + 1] = entry end
 		end
 	end

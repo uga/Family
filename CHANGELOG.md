@@ -29,6 +29,14 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Currencies
+
+- **Honor on Burning Crusade is recognised by the game's own number for it, not by its name.**
+  A family whose characters are played on clients of different languages now sees one honor
+  column that adds up, where before an English client and a French one made two columns that
+  each held half the family. Characters read before this release keep their old column until
+  the next time they log in.
+
 ## 4.3.0 — 2026-09-19
 
 ### Typing to Family

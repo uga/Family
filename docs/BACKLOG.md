@@ -6113,7 +6113,7 @@ pair logged out in an inn and one pair logged out in the field.
 
 ---
 
-## 95. A currency read from the older list is filed under its name, not its id
+## 95. A currency read from the older list is filed under its name, not its id — DONE 2026-09-20
 
 **Found by the probe 2026-09-20**, while answering something else. Not asked for by anybody, and
 live on Burning Crusade today.
@@ -6143,3 +6143,18 @@ row whose last value is not an id is still filed rather than dropped.
 **What it would fix for a player**: honor scanned on two clients of different languages becoming
 one row on the Currencies panel rather than two. Nothing about it is visible until somebody plays
 in two languages, which is why nothing reported it.
+
+**Done 2026-09-20.** The id is read from the row as well, after the link and never instead of it,
+and the care this entry asked for is in the gate rather than in the comment: it is read only where
+the row is **exactly the twelve values that were measured**, and only where the twelfth is a whole
+number above nought. A shorter row, a longer row, or a twelve-value row with a false, a nought or a
+decimal in that place all keep the name they keep today. The second currency this entry wanted
+before anything was unpacked never arrived - that build holds honor and a header and nothing else -
+so the shape check stands in for it: a build that answers differently is not read by position at
+all, which is the same answer as waiting, and it stops being wrong about honor in the meantime.
+
+Nine checks, four mutations. The one that survived first is worth naming: removing the length gate
+was caught by nothing, because the eleven-value row in the check has a nil in the twelfth place and
+fails the number test anyway. It wanted a **longer** row, with a real number sitting in that place
+— the icon file id, which is exactly what a client could put there. That check is in now, and the
+mutation is caught.
