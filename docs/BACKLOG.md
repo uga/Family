@@ -337,6 +337,41 @@ that **differs per character**, which Family can only read, never compute.
 What is still missing is every probe: which call answers what, on each build. That section
 lists them, and none has been run.
 
+**Asked again 2026-09-20, with a brief that disagrees with the section above.** It describes Era as
+having moved to the later system - honor as a spendable currency, ranks gone - where the research
+of 2026-09-04 reads patch 1.14.4 as keeping the fourteen ranks and removing only the ranking points
+and the decay, with a weekly cap of 500,000. One of the two is wrong and neither is a measurement,
+which is exactly what the probe list was written for. Alberto, on being shown the disagreement:
+*le nuove probe ci diranno se avevamo ragione allora oppure oggi*.
+
+The brief adds two things the section does not carry: `GetPersonalRatedInfo(bracket)` for arena and
+rated battleground ratings on Mists, and the observation that a conquest cap there rises each week
+as a catch-up. Both go in the probe list rather than into the table, for the reason the table gives.
+
+**The probes now exist to be run.** `tools/FamilyProbe` gained a PvP set on 2026-09-20: ranks,
+this week's and last week's figures, the honor and conquest currencies by id through whichever
+currency call this client has, arena teams, and the rated brackets. Nothing is stored by Family
+until they have been run on all three builds.
+
+**Era answered the same day, and the 2026-09-04 research was right.** Ranks are there
+(`UnitPVPRank` 8, named through `GetPVPRankInfo`), and the honor currency is not: both currency
+ids answer nothing. So the disagreement above is settled for this build in favour of the table,
+and the brief was describing another one. The readings, and the two traps in them - the rank
+asked with is not the rank answered, and two rated-play calls are present on a build with no
+rated play - are in `DATASOURCES.md` under *What Era answered*.
+
+**Burning Crusade and Mists answered too**: ranks gone on both, as the table said. What is still
+unknown is the one thing the request turns on - **which id honor is on those two builds**. The
+probe asked 392 and 390, which are Cataclysm's, and Family has never read a currency by id at
+all: its scanner walks the list the player sees. The probe now walks it the same way, and the
+next run names the ids.
+
+**A second brief the same day** adds the events a scanner would wake on, the Midnight ids to try
+when there is a Midnight to try them on, and `GetArenaCurrency` as Burning Crusade's arena points
+- which that client says it does not have. All three are in `DATASOURCES.md` under *What the
+second brief adds*; the events are now probed, and the one contradiction is written down rather
+than resolved by choosing a side.
+
 ---
 
 ## 6. A keybind that opens Family — DONE 2026-09-04
@@ -5762,3 +5797,349 @@ the goblin auctioneers the same day; nothing about backlog 91 is left unread.
 
 Checks under *the realms of one connected group are valued from one auction house*; mutations
 `realm-group-*`, and three older ones re-pinned to the new code.
+
+---
+
+## 92. The quests a character has already finished
+
+**Asked 2026-09-20.** Family knows what is in a quest log and nothing about what was handed in
+years ago. The question is *which of my characters has already done this*, which is what decides
+who to send when a chain, an attunement or a reputation grind comes up.
+
+**Today:** the log, and only the log. `Family/Scanners/Quests.lua` reads what is in it now, keeps
+it current, and forgets nothing on purpose - it is rewritten whole on every scan. It already
+listens for **`QUEST_TURNED_IN`** alongside `QUEST_ACCEPTED` and `QUEST_REMOVED`
+(`Quests.lua:407`), and it already speaks through `C_QuestLog` where the client carries it
+(`Quests.lua:111` and `:203`, `Names.lua:590`). So the event that would record a completion is
+already firing and is already wired to a scan; what is missing is somewhere to write it.
+
+**The specification already promises it**, twice, in the *Knowledge* table: *Quest completion
+history*, and *Daily quests completed - Burning Crusade onwards*. This entry is a debt, not a new
+idea.
+
+**Shape.** Two halves, and only the second is interesting. The first is the running one: a
+turn-in is one id, written where the log already is. The second is the history a character
+brings with it the first time Family meets it - thousands of ids at once, on a client that must
+not stutter. The addon already spreads work of that size a member at a time
+(`RecipeIndex:WarmStep`, `Database:WarmPayloads`), so the pattern exists and is not to be
+invented.
+
+**What it weighs is the open question, and Alberto has the observation that decides it**
+(2026-09-20): *le quest esistenti sono un numero finito, e due personaggi di livello X avranno
+completato moltissime delle stesse*. A family here reaches two hundred characters (entry 74), so
+two hundred private lists of the same few thousand ids is the shape to avoid. What to measure,
+with `tools/wire-size.lua`, which already does this for recipe lists:
+
+- how many ids a real character carries, per build and at a few levels;
+- how much two characters of a level overlap, which is the number that says whether one pool per
+  family with a small set per member beats a list each;
+- what each candidate shape costs stored and across a Wide Family link - loose ids, runs of
+  consecutive ids, or a map of bits against a pool.
+
+**The probes this needs, none run yet** (`tools/FamilyProbe`, PROBE set *quests*, added
+2026-09-20). Per build, Era first because the brief and this repository disagree about it:
+
+- whether `GetQuestsCompleted` answers at all, and whether `C_QuestLog.IsQuestFlaggedCompleted`
+  and `C_QuestLog.GetAllCompletedQuestIDs` do - the namespace is already answering on Era for
+  other things, so *which* calls it carries is a question and not an assumption;
+- whether anything has to be asked of the server first, and which event says the answer arrived:
+  a count read at login that is smaller than the same count a minute later is the fault this
+  catches;
+- **how long the call takes**, in milliseconds, since *it will lag* is the reason given for not
+  doing it and is a number nobody has;
+- whether a daily quest reads as completed, and for how long, which is the second row the
+  specification promises.
+
+**Era answered 2026-09-20**, on a level 60 with the quest history of a played character:
+
+- **`GetQuestsCompleted` is there and answered `1099` ids in `4.0` ms.** The account that said
+  Era has no native way to ask for this is wrong about this client, and *it will lag* is now a
+  number: four milliseconds, once, for a whole history. What that leaves is the weight, which is
+  the question this entry already says to measure.
+- `C_QuestLog.IsQuestFlaggedCompleted` is there too and behaves: a quest this character really
+  finished reads true, and 999999 reads false. So there are two routes on Era, and the cheap one
+  for *has this one been done* needs no history in memory at all.
+- `C_QuestLog.GetAllCompletedQuestIDs` and `QueryQuestsCompleted` are both absent, so on this
+  build there is nothing to ask the server for and no event to wait for - the answer is simply
+  there.
+- `GetDailyQuestsCompleted` answers `0`. Present, and Era is not a build with dailies to count:
+  `Capabilities.lua`'s thesis again, and the reason that row in the specification says *Burning
+  Crusade onwards*.
+
+Still open on Era: whether the count grows if the same call is made again some minutes after
+logging in, which is the one way a history that arrives late would show itself.
+
+**Burning Crusade and Mists answered the same day, and identically in shape.** `GetQuestsCompleted`
+on both - 11 ids in 5.2 ms on a level 5, 79 in 6.8 ms on a level 58 - with
+`IsQuestFlaggedCompleted` beside it and `GetAllCompletedQuestIDs` and `QueryQuestsCompleted`
+absent on all three. `GetDailyQuestsCompleted` answers 0 everywhere, including the two builds that
+have dailies, which says it is not the call that counts them.
+
+So **one route works on all three builds**, which is the answer this entry needed most: no
+per-expansion table, no fallback, and the modern namespace's list call is not there to be
+preferred. The times are of a small history on a young character and of a whole one on an old
+character; both are milliseconds.
+
+**And nothing arrives late.** Mists refuses a registration for `QUEST_QUERY_COMPLETE` and has no
+`QueryQuestsCompleted`, so there is no server round trip to wait for: what the call answers at
+login is what there is. `QUEST_TURNED_IN` is accepted, which is the event the running half would
+hang on and the one `Scanners/Quests.lua` already listens to.
+
+---
+
+## 93. Instance lockouts, and when each resets
+
+**Asked 2026-09-20.** Which of my characters is saved to what, and until when.
+
+**Today:** nothing, and the addon says so in three places - the Extras switch
+(`Family_UI/Options.lua:109`), the `/family cooldowns` note (`Family_UI/Slash.lua:709`) and the
+manual (`MANUAL.md:460`) - each translated in the four locales. That sentence is deliberate: the
+crafting cooldowns are called *crafting* cooldowns everywhere precisely so that the absence of
+lockouts reads as an absence rather than as a promise. Building this means unwriting those
+sentences, which is eight strings and a manual section.
+
+**The specification already promises it**, twice: *Instance lockouts and their expiry* among the
+Activity rows, and *Instance lockouts - when each expires* on the calendar.
+
+**Shape, and most of it is decided by a precedent.** A lockout is a **moment**, not a countdown:
+the client answers with seconds left, and seconds left written down yesterday is a lie today.
+That is the rule `Cooldowns.lua` sets out at length and this follows it. Two consequences that
+are already known and cost nothing to honour:
+
+- the moment has to join `DEADLINES` in `Codec.lua`, beside `readyAt` and `expiresBy`, or a
+  figure that jitters by a second marks the record changed at every login and every linked family
+  is sent the lot again;
+- it wants a category of its own in `Wide.lua` rather than riding on another, so that somebody
+  can share where their alts are saved without sharing anything else - §6's rule, and the reason
+  Equipment is not inside Possessions.
+
+**The probes this needs, none run yet** (`tools/FamilyProbe`, PROBE set *instances*):
+
+- what `GetNumSavedInstances` and `GetSavedInstanceInfo` answer **by position**, per build, with
+  the shape recorded rather than unpacked on faith - the trap `Scanners/Quests.lua` documents for
+  the quest log and `Talents.lua` for the talent grid;
+- whether `RequestRaidInfo` has to be asked first and which event says the answer is in;
+- what a character with no lockout at all answers, which is the case every reader will hit;
+- on Mists, whether world bosses are readable as saved instances or need `GetNumSavedWorldBosses`
+  and `GetSavedWorldBossInfo`;
+- whether the instance id a lockout carries is readable, since *who can I raid with* rests on it
+  and a promise made from an id that is not there is worse than saying nothing.
+
+**Era answered 2026-09-20**, on a character saved to nothing:
+
+- `GetNumSavedInstances` says `0`, and `GetSavedInstanceInfo(1)` **still answers** - fourteen
+  values, `nil 0 nil 0 false false 0 false 0 "" 0 0 false 0`. So a reader cannot tell "no lockout"
+  by the call refusing; it has to read the count, or the name being nil. That is the case every
+  player is in most of the time, and the one an addon gets wrong.
+- **Fourteen values, not the eight** a careless reader would take: the probe was built to keep
+  however many there are for exactly this reason, and the columns past the eighth are where the
+  difficulty's name and the boss counts live on the builds that have them.
+- `GetNumSavedWorldBosses` is present on Era and says `0` - present, meaningless, as above.
+- `time()` and `GetServerTime()` differed by one second, so either can carry a reset moment, and
+  neither is the other.
+
+Still owed: the same reading from a character that **is** saved to something, which is the only
+way to see what the fourteen columns hold when they hold anything.
+
+**A boss killed in a normal low-level dungeon put nothing in the list**, read on Burning Crusade
+2026-09-20 minutes afterwards: `GetNumSavedInstances` still 0. That fits what the game is
+understood to do - a normal dungeon holds an *instance id* for a while, which is what lets a group
+go back to the same one, and that is not a lockout and is not what this call reports. Heroics and
+raids are.
+
+**But the reading is not yet evidence, and that is the probe's fault.** It called
+`RequestRaidInfo` and read the list in the same instant, where the server's answer arrives with
+`UPDATE_INSTANCE_INFO` - so a list that fills a moment later would have read as empty every time.
+The probe now waits for that event and prints a line of its own when it comes.
+
+**Taken again through the event, it holds**: *after UPDATE_INSTANCE_INFO, 0 saved*, on the same
+character, minutes after the boss. So a normal dungeon really does put nothing in this list on
+Burning Crusade, and the hour or so a normal instance keeps its id is a different mechanism that
+this call does not report. What is still unread is a **heroic or a raid**, which is the only
+thing that fills those fourteen columns.
+
+**Burning Crusade and Mists answer exactly as Era does**, read the same day: nothing saved,
+fourteen values of blanks from index 1, `GetNumSavedWorldBosses` present and zero on all three.
+The clocks agreed to within a second on every build, and on Burning Crusade they matched exactly.
+
+So the shape is one shape across the three, and what is still unread is the only part that
+matters: what those columns carry when a character really is saved. Alberto, 2026-09-20: no
+character is in that state at the moment.
+
+---
+
+## 94. What a character's rested experience has grown to since they were put away
+
+**Asked 2026-09-20.** Family photographs rested experience at logout; a week later the Summary
+still shows the figure from that day, while the character has been filling up all along.
+
+**Today:** the photograph exists and is already shared. `Scanners/Identity.lua:77` records
+`GetXPExhaustion` into `meta.rested`, clears it at the level cap (`:84`), the Summary draws it as
+a percentage of a level (`Summary.lua:1178-1180`), and it crosses a Wide Family link in the
+*Character* category beside `xpMax` (`Wide.lua:83`). `Wide.lua:707` already names `rested` as a
+field that moves with time and keeps it out of the stable fingerprint, which is the problem this
+entry is about, written down from the other side.
+
+**Shape.** The figure Family would draw is **computed, not read**, and §2.2 governs that: it is a
+number nobody has seen. Alberto, 2026-09-20: *certamente, ma è semplice farlo, basta dare il nome
+giusto alla colonna e aggiungere una nota nella pagina*. So the column says it is an estimate and
+the page says how it is worked out, and the recorded figure stays exactly what it was.
+
+Two fields more than today are needed at the moment of the photograph: whether the character was
+resting, and the moment the reading was taken. The arithmetic is per level, so it is the level and
+`xpMax` **of that moment** that the sum runs against, not today's - a character that dinged on
+the way out would otherwise be measured against the wrong level.
+
+**The rules to write down before the code**, in `DATASOURCES.md` and in the shape of the honor
+section - what the game does, cited, and then what the client is asked:
+
+- the two rates the brief gives, 5% of a level every 8 hours resting and every 32 hours not, and
+  whether the second is still true on these builds at all;
+- the ceiling, which is a level and a half and is what makes a long absence stop counting;
+- whether a character logged out in the world accumulates anything, since that is the half the
+  estimate would be wrong about for a week at a time.
+
+**The probes this needs** (`tools/FamilyProbe`, PROBE set *rested*): what `IsResting` and
+`GetXPExhaustion` answer where the character is standing, with level, `xpMax` and the moment
+beside them, so that two readings taken a few hours apart on one character measure the rate
+rather than assuming it.
+
+**The first Era reading, 2026-09-20, measured nothing and said why.** The character was level 60
+on a build whose cap is 60, so `GetXPExhaustion` answered `0` and experience answered `0` out of
+`217400` - which is the state Family already clears the fields in (`Identity.lua:84`). Rested is
+a thing only a character below the cap has, so the sample has to be taken on one: **that is the
+first condition of this entry's measurement**, and it was missed in the asking rather than in the
+answering.
+
+**The ceiling is measured, on two builds, the same day.** Burning Crusade: level 5, `xpMax` 2800,
+rested **4200**. Mists: level 58, `xpMax` 165800, rested **248700**. Both are exactly **one and a
+half times that level's `xpMax`**, which is the ceiling the rules describe, read off two clients
+rather than taken from a page - and it is the half of this entry that keeps an estimate honest,
+since a character left alone for a month stops at it.
+
+It also means the ceiling **moves with the level**: it is a multiple of `xpMax`, so the same
+number of points is a different fraction of a level after a ding, and an estimate that does not
+re-read `xpMax` drifts.
+
+**A sixth, on a level 62 standing in a dungeon**: 921600 against an `xpMax` of 614400. One and a
+half again, and taken where the character was not resting at all - so the ceiling is the ceiling
+wherever they are put away, and only the filling depends on that.
+
+**Five readings by the end of the day, across the three builds**: Era level 1, 600 against 400;
+Burning Crusade level 5, 4200 against 2800, and level 63, **975450 against 650300**; Mists level
+58, 248700 against 165800. Every one of them one and a half exactly, from four hundred experience
+to six hundred and fifty thousand.
+
+**And a third reading, on Era the same day**: a level 1 with `xpMax` 400 and rested **600**. One
+and a half again, so the rule holds on all three builds and at both ends of a character's life -
+the ceiling is a multiple of the level's own `xpMax`, not a number.
+
+**The first character below the ceiling turned up the same day**, on Burning Crusade: a level 1
+in the Valley of Trials, **not** resting, with `xpMax` 400 and rested **104** - 26% of a level,
+a quarter of the way to the ceiling. That is the shape the rate can be measured from, and it
+wants only a second reading of the same character some hours later.
+
+**It also found a fault in the probe rather than in the game.** The sample printed
+`resting=absent` for a character who was simply not resting: `IsResting` answered **false**, and
+the line asked `call and try(call) or "absent"`, which takes the false branch on a false answer.
+A reading that cannot tell *no* from *no such call* is the fault §2.2 is about, in the tool
+rather than in the addon. Fixed the same day; the test is on the function now.
+
+**The first pair of readings, and it does not separate the two rules.** The same level 1, in the
+same spot, read **4587 seconds apart** - an hour and sixteen minutes - and not resting either
+time: rested **104** at both readings, against an `xpMax` of 400.
+
+What each rule predicts over that gap, for a level whose `xpMax` is 400:
+
+| rule | per hour | over 76 minutes |
+|---|---|---|
+| 5% of a level every 8 hours, resting | 2.5 | about 3.2 |
+| 5% of a level every 32 hours, away from an inn | 0.625 | about 0.8 |
+| nothing at all away from an inn | 0 | 0 |
+
+A reading of **0** rules out the first and cannot tell the second from the third: eight tenths of
+a point is a number this figure may simply not carry. **So the gap has to be a long one** - an
+overnight would show five to eight points at the slow rate and nothing at all if there is no such
+rate, which are answers that cannot be confused. The same again for a character left in an inn
+settles the other half.
+
+**And the other half has its subject**: a level 11 sitting in the Stoutlager Inn, resting, with
+`xpMax` 8700 and rested **9136** - a little over one level, and well under the ceiling of 13050.
+So this one is filling, where every earlier reading was either full or in the field.
+
+What a second reading of it says, at the inn rate of 5% of a level every 8 hours: 435 points in
+those eight hours, **54 an hour**. An hour's gap therefore shows about fifty points, which no
+rounding can hide, and an hour of nothing would refute the rule outright.
+
+**The rate is still unmeasured**, then, but both halves now have a character to measure them on
+and a number to expect: about 54 an hour in the inn, about five to eight over a night in the
+field.
+
+**A first, short reading of the inn half, 2026-09-20**: the same level 11 walked from Thelsamar
+into the Stoutlager Inn, read **214 seconds** apart, earning nothing in between. Rested **8506 ->
+8510**, up **4**.
+
+Four points in 214 seconds is about 67 an hour if the whole interval counted, against the 54 the
+rule predicts - and part of that interval was spent walking to the inn, where nothing accrues, so
+the true rate is higher still than a straight division says. On a delta of four, a figure that
+only carries whole points is uncertain by a quarter of itself. What it settles is the sign: **it
+fills while the character is logged in and resting**, which is neither nothing nor a thing that
+only happens while logged out.
+
+**The hour's reading is a prediction, not a look**: from 8510, the rule says about **8564** an
+hour later, with the ceiling at 13050 and nothing in the way. A reading near 8510 refutes it, one
+near 8564 carries it, and anything else is a rate of its own to write down.
+
+**Killing things spends it**, which is worth saying because a reading taken after a fight is a
+reading of a figure that has gone *down*: rested experience is drawn on as a bonus while the
+character earns. A measurement of the rate wants a character nobody is playing.
+
+**And that half is measured, 2026-09-20, on the level 11 above.** Two readings 168 seconds apart,
+the first in the inn and the second out in Thelsamar with a few boars killed in between:
+
+| | rested | xp |
+|---|---|---|
+| in the inn | 9136 | 4707 |
+| after the boars | 8506 | 5337 |
+
+**Down 630 against up 630**: over this pair the pool fell by exactly what the character earned.
+Whether it falls by the *bonus* and the bonus happened to equal the base - which doubled
+experience would do - or by the whole amount earned, these two readings cannot say, because
+nothing here knows what those boars were worth unrested. Either way the direction is settled and
+it is the half an estimate would get wrong: **a character that is played spends this figure**, so
+a projection that only ever adds is wrong for everybody except the ones nobody touches. It wants a character below it, which is what any
+character becomes as soon as it is played for a while - then two readings a few hours apart, one
+pair logged out in an inn and one pair logged out in the field.
+
+---
+
+## 95. A currency read from the older list is filed under its name, not its id
+
+**Found by the probe 2026-09-20**, while answering something else. Not asked for by anybody, and
+live on Burning Crusade today.
+
+**Today:** `Scanners/Currencies.lua` reads the currency list in whichever of two shapes the client
+answers in. The older shape - the one Burning Crusade uses - takes the id from
+`GetCurrencyListLink` alone (`readGlobalList`), and on `2.5.6` that link gave nothing at all for
+Honor Points. `entryFrom` then falls back through its own ladder and keys the entry `n:Honor
+Points`.
+
+**Why that matters, in this addon's own terms.** A name is one language. A character scanned on a
+French client files honor as `n:Points d'honneur` and one scanned here files `n:Honor Points`, and
+the two never line up in a column - which is §2.1, and is the same fault that once listed five
+French professions as never opened (L-015).
+
+**And the id was in the answer the whole time.** The row the probe printed ends with **1901**,
+which is what this build calls Honor Points. `readGlobalList` unpacks six of the twelve values and
+that one is past where it stops.
+
+**Shape.** Read the id from the row as well as from the link, preferring whichever answers, and
+keep the name fallback for a client that gives neither. The care needed is the one this file
+already documents at length: **the position is not a promise**. Twelve values on one build is not
+twelve on the next, and a value that is a number is not thereby an id - so it wants the second
+currency the probe is now asking for before anything is unpacked by position, and a check that a
+row whose last value is not an id is still filed rather than dropped.
+
+**What it would fix for a player**: honor scanned on two clients of different languages becoming
+one row on the Currencies panel rather than two. Nothing about it is visible until somebody plays
+in two languages, which is why nothing reported it.

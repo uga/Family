@@ -2846,6 +2846,176 @@ build, and read back rather than assumed:
 
 Until those are answered, the honest position is that Family stores no honor at all.
 
+#### What Era answered, measured 2026-09-20
+
+The first of the probes above, run on `1.15.9` through `/familyprobe apis` on a level 60 with 47
+honorable kills. **The table above was right and the account that disputed it was wrong:**
+
+| asked | answered |
+|---|---|
+| `UnitPVPRank` | `8` |
+| `GetPVPRankInfo(8)` | `"Master Sergeant"`, `4` |
+| `GetPVPThisWeekStats` | two numbers |
+| `GetPVPLastWeekStats` | four numbers |
+| `GetPVPLifetimeStats` | `47`, `0`, `8` |
+| `C_CurrencyInfo.GetCurrencyInfo(392)` and `(390)` | **nothing at all** |
+| `GetHonorCurrency`, `GetArenaCurrency` | absent |
+
+So Era has ranks and has no honor currency: honor there is not the thing it is on the other two
+builds, and a single column would have been wrong about it.
+
+**The number asked with is not the number answered.** `UnitPVPRank` said 8 and the call asked with
+that 8 answered with a 4 beside the name. Whatever is stored is the answered number, not the
+argument, and which of the two a reader means by *rank* is the one thing in this paragraph still
+to settle.
+
+**And two calls are present with nothing behind them.** `GetPersonalRatedInfo` answers on Era -
+zeros, with a last value of 2, 3 and 5 for the first three brackets, which reads like a team size -
+and so does `GetArenaTeam`, with nils. Era has neither rated play nor arena teams. This is
+`Capabilities.lua`'s thesis in its plainest form: the client carries the call because Blizzard
+builds one client, and the call answering is not the game agreeing that the question made sense.
+
+#### What Burning Crusade and Mists answered, measured 2026-09-20
+
+Read the same day, and the second reading found the probe's own question badly put.
+
+**Burning Crusade `2.5.6`**: `UnitPVPRank` answers **0** and `GetPVPRankInfo(0)` answers nothing,
+so the table's *gone* is confirmed. The week's and the lifetime figures answer with the shapes Era
+gives and all zeros on a character that has not fought. **And the honor currency did not answer
+either**: `C_CurrencyInfo.GetCurrencyInfo(392)` and `(390)` both came back empty, and
+`GetHonorCurrency` and `GetArenaCurrency` are absent from the build.
+
+**Mists `5.5.4`**: ranks gone as above. The two currency ids **do** answer, with tables whose
+descriptions are honor's and conquest's - *used to purchase less-powerful PvP armor* and *earned
+as a reward for Arena or Rated Battlegrounds* - and with `currencyID = 0` and `discovered = false`
+on a character that has never earned either.
+
+**Which is where the question was wrong rather than the answer.** 392 and 390 are the ids
+Cataclysm gave these two, and Family has never read a currency by id: `Scanners/Currencies.lua`
+walks the list the player sees, in whichever of its two shapes the client answers in. The probe
+now walks it the same way and prints each row's id, name, amount and cap, which is what will name
+honor's real id per build. **Until that has been run, which id honor is on Burning Crusade and on
+Mists is unknown**, and the readings above say only that it is not 392.
+
+The same reading also found the probe's field dump cutting a currency's table alphabetically at
+fourteen, which spent the whole allowance on the description and the icon and pushed `quantity`
+and the weekly cap out of sight. It names the fields it wants first now. A tool that reports is a
+tool that can report the wrong thing.
+
+#### What the second brief adds, 2026-09-20
+
+Alberto, describing the systems again in more detail. Three things in it are new to this section,
+and one of them is already contradicted by his own client.
+
+**`GetArenaCurrency` is named as the way arena points are read on Burning Crusade - and the probe
+found it absent on `2.5.6`.** So either the call went when the Anniversary client was built, or it
+is not the name it had. `Scanners/Currencies.lua` carries a standalone route for exactly that call
+and for `GetHonorCurrency`; neither is present on any of the three builds Family ships against,
+which makes that route dead code here until a client is found that answers it. Worth knowing
+before anything new is written against the same name.
+
+**The events, which this section had nothing about at all.** A scanner is half a reading and half
+a moment to take it at, and the briefs name `CURRENCY_DISPLAY_UPDATE`, `HONOR_XP_UPDATE`,
+`PVP_HONOR_XP_UPDATE` and `CHAT_MSG_COMBAT_HONOR_GAIN`. The probe now asks each client which of
+them it will accept a registration for - a client refuses a name it has never heard of - along
+with the ones the other three entries need: `UPDATE_INSTANCE_INFO` and its neighbours for
+lockouts, `PLAYER_UPDATE_RESTING` and `UPDATE_EXHAUSTION` for rested, `QUEST_QUERY_COMPLETE` for
+a quest history that arrives late. **Accepted is not the same as fires**, and nothing can tell
+those apart from outside; what it rules out is a name carried over from a build that had it.
+
+**And the ids to try when Midnight arrives**: honor `1792`, conquest `1602`, with `quantity`,
+`maxQuantity` and `totalEarned` in the table, and the honor *level* read per unit through
+`UnitHonorLevel`, `UnitHonor` and `UnitHonorMax` because it belongs to the account from Legion
+onwards. None of that can be measured here - there is no such client to ask - so it is written
+down as the first thing to probe on the `midnight` branch rather than as a fact. The probe asks
+the three unit calls on the three builds already, which will say whether they are there before
+the game they belong to is.
+
+#### What the second Mists run answered, 2026-09-20
+
+**392 is not honor on this build.** The id answers with a currency named **"Honor Deprecated 3"**,
+every figure nought and `discovered = false`. 390 answers with something called *Conquest Points*
+whose description is right, `currencyID = 0` and every figure nought, on a character that has
+earned none. So the ids from Cataclysm reach a retired row and a row nobody has touched, and
+neither is a reading of this character's honor.
+
+**The list is how to find the real ones, and it was empty here.** `GetCurrencyListSize` answered
+nothing to walk on a character with no currencies at all - which the probe reported as *no
+currency list on this client*, a sentence covering two different facts. It now prints which call
+exists and what size each answers, so an empty list and a missing call cannot read the same. The
+next run wants a character that **has** currencies.
+
+**The unit-shaped honor calls are not on this build**: `UnitHonorLevel`, `UnitHonor` and
+`UnitHonorMax` are all absent. They belong to the account-wide honor of Legion onwards, so this
+says plainly that Mists Classic is before that line and the brief's account of them is about the
+other client.
+
+**`GetPVPSessionStats` and `GetPVPYesterdayStats` are both here**, answering two and three numbers
+on a character who has not fought. They were named for Era and Burning Crusade; they exist on
+Mists as well, which is the usual shape - the call is in the client, the game behind it decides
+whether it means anything.
+
+**And the events, which is the half that was missing.** On Mists: `CURRENCY_DISPLAY_UPDATE`,
+`HONOR_XP_UPDATE`, `CHAT_MSG_COMBAT_HONOR_GAIN`, `PLAYER_PVP_RANK_CHANGED` and
+`PLAYER_PVP_KILLS_CHANGED` are all accepted, and **`PVP_HONOR_XP_UPDATE` is refused** - so the two
+spellings the brief offered are not interchangeable, and this build has the first. Every lockout
+and rested event was accepted. For quests, `QUEST_TURNED_IN` and `QUEST_LOG_UPDATE` are accepted
+and **`QUEST_QUERY_COMPLETE` is refused**, which agrees with `QueryQuestsCompleted` being absent:
+there is nothing to ask for and nothing to wait for.
+
+Accepted is not the same as fires, and nothing outside the game can tell those apart.
+
+**Era answers the events identically**, read the same day: `QUEST_QUERY_COMPLETE` refused,
+`PVP_HONOR_XP_UPDATE` refused, and every other name on the list accepted, lockouts and rested
+included. So the two refusals are a property of these builds rather than of one of them, and the
+spellings to write against are `HONOR_XP_UPDATE` and no quest query at all.
+
+`GetPVPSessionStats` and `GetPVPYesterdayStats` are on Era too, which is where the brief expected
+them.
+
+#### Honor on Burning Crusade, read at last, 2026-09-20
+
+A character with honor on it answered where the empty ones could not. `GetCurrencyListSize` says
+**2**, one of them a header, and the row is:
+
+    "Honor Points"  false  true  false  false  1428  136998  75000  false  0  false  1901
+
+Against the positions `Scanners/Currencies.lua` reads - name, isHeader, then the sixth as the
+amount, the seventh as the icon and the eighth as the cap - that is **1428 honor held, a cap of
+75,000**, and an icon file id. So the cap this section could only describe as *approximately
+twice the most expensive reward* is a number the client will state, and the 2026-09-04 note to
+measure it rather than ship it was right.
+
+**The twelfth value is 1901**, which is what the outside world calls Honor Points on this build.
+It reads like the id, and it is the only id in the answer - see the defect below.
+
+**A second character settled it the same day.** Another Burning Crusade character, with 15 honor
+instead of 1428, answered the same row: the sixth value moved with the amount, the eighth stayed
+at 75,000, the icon stayed at 136998, and **the twelfth stayed 1901**. A number that does not move
+between two characters while the amount does is an identity and not a figure. Still one currency:
+what arena points read as, if they appear at all, is unanswered.
+
+**And the old figures still answer on this build**, though the ranks are gone:
+`GetPVPLifetimeStats` said 6 kills and `GetPVPThisWeekStats` said 1, on a character that had been
+fighting. So honorable kills are readable on Burning Crusade through the calls Era uses, which is
+half of what the request asks for on a build where the other half - a rank - does not exist.
+
+**No arena points row.** The list held honor and a header and nothing else, on a character with
+no arena points. Whether they appear as a second row, with an id of their own, is unanswered -
+and `GetArenaCurrency`, which the brief names for them, is absent from this build.
+
+**Read once more with the probe saying which call it used**: `C_CurrencyInfo` is present on
+Burning Crusade and **has no `GetCurrencyListSize`**, the older global call answers 2 rows, and
+`GetCurrencyListLink` answers **nothing at all** - not a link without a currency in it, nothing.
+So on this build the only id available is the twelfth value, and the route Family reads ids by
+cannot work here.
+
+**The defect this found in Family**, which is not about honor at all: `readGlobalList` takes a
+currency's id **only from `GetCurrencyListLink`**, and on this build that link gave nothing. The
+fallback in `entryFrom` then keys the currency by its **name** - `n:Honor Points` - which is one
+language, and lining two clients up is the whole reason §2.1 exists. Burning Crusade is the build
+Family reads currencies on by the older call, so this is live, and it is backlog 95.
+
 #### Re-read this at a new build
 
 The rules above are pinned to the three builds in section 3 and to no others. They have already
