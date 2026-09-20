@@ -1,0 +1,6 @@
+name: any line the harness prints at the margin is taken for a section
+file: tools/mutate.py
+--- old
+        if check and section in present:
+--- new
+        if check and section:

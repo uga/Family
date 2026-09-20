@@ -1,0 +1,6 @@
+name: a case file edited on its own is not picked by --changed
+file: tools/mutate.py
+--- old
+            if parse(path)[1] in files or os.path.relpath(path, ROOT) in files]
+--- new
+            if parse(path)[1] in files]

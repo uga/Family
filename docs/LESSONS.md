@@ -3834,6 +3834,166 @@ log in place and fails if anything in it is called; setting the floor to 0 makes
 how it was checked. The rule: **a `pcall` is not a guard against the client. The only guard
 against a call that may crash is not making it - so a call with no arguments is made where it has
 been seen to be survivable, and nowhere else.**
+
+## L-112 — the lock serialised the runs, and nobody asked whether they were the same run
+
+**2026-09-20, the same afternoon the lock landed.** One session made four small edits to two
+documents - 15:42, 15:42:41, 15:44:34, 15:46:36 - and started a full mutation run behind each
+one. The lock did exactly what it was written to do: it put them in a queue. The machine then
+spent **32 minutes** on four runs, from 15:42:57 to about 16:15, three of them answering about a
+tree that had already been edited again by the time the answer arrived.
+
+**Bitten:** a second fault made visible by the fix for the first. Before the lock these four
+would have fought each other and mostly died, which is L-109 and looks like slowness. After the
+lock they queue politely, which looks like *the run takes twenty minutes* - the same wrong
+conclusion by a different road. A semaphore serialises; it has no opinion about whether the
+things it is serialising are worth doing.
+
+And the second and later runs were never worth doing. From one directory there are only two
+cases: the tree has not changed since the run that is going, so the queued run is that same run
+again, or it has changed, so the running one is answering about a tree nobody has any more.
+Neither is worth eight minutes of machine.
+
+**Why it was invisible.** Two reasons, and both are about what was not written down. The lock
+file held only its current holder, rewritten each time, so a line reading `since 15:59:01` was
+the truth about the run that wrote it and said nothing about the thirteen minutes that run had
+spent queued behind two others; putting those minutes back afterwards took the timestamps of
+unrelated files and a transcript. And the docstring said *wait for it, do not work beside it* -
+which the ten-minute ceiling on the calling tool had already pushed every session into
+disobeying, since a full run has to go in the background to finish at all, and from there to
+editing while it runs is one step nobody notices taking.
+
+**The check that now catches it.** A run from the same directory as one already going, or
+already queued, is **refused** rather than queued: it exits non-zero saying to wait and then run
+once on the tree being committed. A run from a different tree still waits, because between two
+trees the queue is exactly right. Liveness is asked of the system and not only of the log, or a
+run killed before its `finally` would jam its own tree shut for ever - which is the failure this
+repair could most easily have introduced. And the log is appended to, one line per event with
+how long each run waited and held, so the next such afternoon can be read rather than
+reconstructed. Mutations `a-second-run-from-one-tree-is-queued`,
+`a-killed-run-jams-its-tree-shut`, `the-wait-is-never-written-down`,
+`the-lock-does-not-say-who-holds-it`.
+
+The rule, which is the part that travels: **a queue is not a plan.** Serialising work says
+nothing about whether the work should exist, and a fix that makes a fault orderly can hide it
+better than the fault did. See [L-109](#l-109--two-sessions-one-processor-the-run-was-not-slow-it-was-killed),
+which is the first half of this one.
+
+## L-114 — eight minutes a commit, insuring against something never once observed
+
+**2026-09-20.** The full mutation run had been required before every commit since the tool
+existed, on the reasoning that a change anywhere can free a case anywhere. Reasonable, never
+tested, and by September it cost about eight minutes a commit.
+
+Another session went and looked. Over 12 to 20 September this repository had **28 red full runs
+holding 33 failures**. For each, was the case's `file:` in the working diff at the time? **29
+yes.** 2 were cases still being written. 2 had the `.mut` changed and its target not - a real
+gap, and `--changed` now covers it. **Not one** was a case on file X freed by a change to file
+Y, which is the whole thing the eight minutes were buying.
+
+**Bitten:** nothing dramatic - no wrong answer shipped, no gate missed. What it cost was time,
+every commit, for months, and the reason it was never questioned is that it always passed. A
+gate that never fires reads as a gate that is never needed *and* as a gate that is holding
+everything back, and nothing in its output tells the two apart. That is the trap here, and it is
+the same one as the checks this whole file is about: **something green is not evidence either
+way until you ask what it would have had to catch.**
+
+**But the measurement had a hole, and it is the interesting part.** It could only see what had
+happened, and the shape it could not have seen was this: a check weakened in the harness frees a
+case on a file that is nowhere in the diff. 376 of 402 cases name a file under `addons/` and 9
+name `tests/Harness.lua`, so a commit editing only a check ran those 9 and skipped the 376 that
+check stands over. A history of red runs cannot show that, because nobody had ever weakened a
+check and committed it alone - the eight minutes had been hiding the need for the evidence that
+would justify dropping them.
+
+**The check that now catches it.** `tools/mutations/caught-by.tsv`: for every case, which check
+caught it and which section of the harness that check is in, read out of the gate's own words -
+under `FAMILY_MUTATING` the harness stops at its first failure, so the last thing it printed is
+the check that noticed, and the last heading above it is the place. `--changed` with the harness
+in the diff now re-runs the cases whose section the diff touches. Two ways the map can go stale,
+and **both widen the run rather than narrow it**: a case nobody has recorded, and a case recorded
+under a section that no longer exists, are both run. It knows 400 of 410 cases; the ten it
+does not are ones whose catching check prints at the margin without standing under a heading,
+and they run every time the harness is touched. The register is written only by a full run
+and only once every worker has stopped, which is the single point where this tool touches the
+repository at all. Mutations `the-check-that-caught-it-is-not-read`,
+`a-heading-is-any-print-at-all`, `a-harness-change-takes-nothing-with-it`,
+`the-register-forgets-a-case-that-went-red`, and `a-changed-case-file-is-not-a-changed-case`.
+
+The rule: **an insurance nobody has priced is not caution, it is habit.** Ask what the policy
+has ever paid out, and ask separately what it could never have been observed paying out - the
+second question is the one that decides whether cancelling it is safe.
+
+## L-113 — the file said who wrote last, and was read as saying who holds it
+
+**2026-09-20, hours after the lock landed.** A session queued behind a run in another tree was
+told, correctly, that it was waiting - and told, wrongly, who for:
+
+    waiting for the machine: pid 3471174 in /home/dietpi/dev/Family-retail since 16:18:45
+
+`ps` at that moment showed a different process, in a different directory, holding it. 3471174
+was that session's **own** earlier run, finished long before. It read its own pid and briefly
+believed it had left a run of its own queued - the very thing it had just been corrected for.
+
+**Bitten:** nothing, this time, because the lock itself was right. The `flock` is the lock and it
+did its job: the run waited and went second. What lied was the diagnostic beside it, and a
+diagnostic that lies about **whose fault the wait is** sends the reader to examine their own
+tools - which is precisely the journey the lock was written to spare them (L-109). It was found
+by a session printing `ps` in the same command for an unrelated reason, which is to say by
+accident.
+
+**Why it was invisible.** The message was assembled from the last `holding` line in the log,
+and the log is not the lock. The lock is a `flock` held by a process; the file is what the last
+passer-by wrote in it. Those agree whenever runs are tidy and diverge the moment one is not, and
+the writing looked right because in every case anybody had tried, they agreed.
+
+**The check that now catches it.** `holder()` returns the standing entry whose **process is still
+there**, and where none is it says so - *a run that is not in the log, killed before it could
+tidy up, most likely* - instead of naming the most recent line. The check seeds a finished run's
+line into the log, has the real holder write nothing at all, and requires the answer to be
+*nobody named* rather than the seeded pid. Mutation `the-wait-names-whoever-wrote-last` puts the
+old reading back and is caught.
+
+The rule: **a record of who did something is not a statement about who is doing it.** Anything
+read out of a file about a live process wants the system asked as well, or the file will be right
+until the first time it matters. This is the twin of the fault the same lock was already guarded
+against - a killed run leaving a `holding` line and jamming its own tree shut - and the guard is
+the same one, `alive`, in a second place that was missed.
+
+## L-110 and L-111 — not used here, and deliberately
+
+**2026-09-20.** These two numbers are left empty on this branch. It is the only thing that can
+still be done about a collision that has already happened, and it costs two numbers out of a
+sequence whose only meaning is the order it was written in.
+
+Both lines of work allocated upward from L-107 for a week without either knowing. The Midnight
+line's lessons have since moved to L-200 and up, and its earlier commit messages still cite the
+numbers they were written against: `f463ca8` cites L-108, L-109 and **L-110**, `8e8cdff` cites
+L-108 and **L-111**, `dff86ec` cites L-108. A commit message cannot be corrected - rewriting
+history is on the reserved list, and the citation would be wrong in the history either way.
+
+L-108 and L-109 were taken here before any of this was noticed, so those citations now resolve
+to lessons that have nothing to do with what their commits meant. Nothing can be done about
+those two.
+
+**L-110 and L-111 can still be saved, and this is how.** If this branch never allocates them, a
+reader who follows one of them from a Midnight commit arrives here rather than at a plausible
+and unrelated lesson. What the number resolves to becomes the explanation - which is the whole
+difference between a fault that announces itself and one that does not, and is what most of the
+entries below are about.
+
+Where those commits say L-110 they mean **L-202**, *the canary passed all along, because the
+canary ran a different command*. Where one says L-111 it means **L-203**, *the block was written
+down, and every comparison that read the file dropped it*. The general rule, for any Midnight
+commit dated before 2026-09-20 citing anything from L-108 to L-115: **add 92**.
+
+**No check catches this**, and saying so is the point of the preamble above. A harness check that
+refused a heading of `## L-110` would be a check on the instance, and the rule it stands for -
+*do not reuse an identifier something else already points at* - is not a thing a sweep can see.
+What holds it is this entry being in the way.
+
+**The next lesson on this branch is L-112.**
+
 ## L-109 — two sessions, one processor: the run was not slow, it was killed
 
 **2026-09-20.** The full mutation run was reported as taking fifteen to twenty minutes, against

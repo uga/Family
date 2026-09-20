@@ -25193,6 +25193,13 @@ print("the release script refuses a version with no live-check row")
 		sh:match("%[%[ %-n \"%$clients\" %]%] |") ~= nil,
 		"without it the gate reads the file and then tags anyway")
 
+	-- The harness says the checks pass; only the mutations say the checks would notice the code
+	-- breaking underneath them. A release is the one moment that difference is worth eight
+	-- minutes, and this script ran the first and never the second until 2026-09-20.
+	check("release.sh runs the recorded mutations too, and stops on them",
+		sh:match("python3 tools/mutate%.py || fail") ~= nil,
+		"a green harness is not evidence that the checks are load-bearing")
+
 	check("release.sh holds a full release to all three clients",
 		sh:match("%*alpha%*|%*beta%*") ~= nil and sh:match("Anniversary:anni") ~= nil,
 		"a pre-release needs one row; the version everybody is offered by default needs three")
@@ -40828,7 +40835,7 @@ if RUN.storage == "compressed" then
 	local script, out = os.tmpname(), os.tmpname()
 	local handle = io.open(script, "w")
 	handle:write(table.concat({
-		"import os, sys, tempfile",
+		"import os, sys, tempfile, time",
 		"sys.path.insert(0, sys.argv[1] + '/tools')",
 		"import mutate",
 		"tree = tempfile.mkdtemp(prefix='family-hang-')",
@@ -40838,7 +40845,7 @@ if RUN.storage == "compressed" then
 		"case = os.path.join(tree, 'spin.mut')",
 		"open(case, 'w').write('name: spin\\nfile: Spinning.lua\\n--- old\\nbound = 10\\n--- new\\nbound = nil\\n')",
 		"mutate.TIMEOUT = 0.2",
-		"caught, line = mutate.run(case, tree)",
+		"caught, line, noted = mutate.run(case, tree)",
 		"print('caught', caught)",
 		"print(line)",
 		"print('restored', open(os.path.join(tree, 'Spinning.lua')).read().strip() == 'local bound = 10')",
@@ -40867,13 +40874,143 @@ if RUN.storage == "compressed" then
 		"    except OSError:",
 		"        print('held', True)",
 		"    other.close()",
-		"    print('names the holder', ('pid %d' % os.getpid()) in open(mutate.LOCK).read())",
+		"    print('names the holder', ('\\tholding\\t%d\\t' % os.getpid()) in open(mutate.LOCK).read())",
 		"after = open(mutate.LOCK, 'a+')",
 		"try:",
 		"    fcntl.flock(after, fcntl.LOCK_EX | fcntl.LOCK_NB)",
 		"    print('let go', True)",
 		"except OSError:",
 		"    print('let go', False)",
+		"after.close()",
+
+		-- **A queue is right between two trees and wrong inside one.** Four full runs from one
+		-- session were lined up in four minutes on 2026-09-20 and cost 32 minutes of machine
+		-- for one useful answer: the tree either had not changed, making the second run the
+		-- first one again, or had, making the first one's answer about a tree nobody has. So a
+		-- second run from the same directory is refused, and one from another tree still waits.
+		--
+		-- The live pid here is the process that started this harness, which is certainly
+		-- running and is certainly not us.
+		"import subprocess, threading",
+		"def logged(*lines):",
+		"    open(mutate.LOCK, 'w').write(''.join(lines))",
+		"def line(pid, where, what='holding'):",
+		"    return '09:00:00\\t%s\\t%d\\t%s\\t\\n' % (what, pid, where)",
+		"logged(line(os.getppid(), os.getcwd()))",
+		"try:",
+		"    with mutate.only_one_run():",
+		"        print('refuses the same tree', False)",
+		"except mutate.AlreadyRunningHere:",
+		"    print('refuses the same tree', True)",
+
+		-- A run killed before its `finally` leaves its *holding* line behind for ever. Reading
+		-- the log alone would then refuse every later run from that tree - a lock that jams
+		-- shut, which is worse than the queue it replaced. So the system is asked as well.
+		"gone = subprocess.Popen(['true']); gone.wait()",
+		"logged(line(gone.pid, os.getcwd()))",
+		"with mutate.only_one_run():",
+		"    print('a dead pid is not a queue', True)",
+
+		-- The other half: between two trees the queue is exactly right, and refusing there
+		-- would send a session away from work it is entitled to have done.
+		"logged(line(os.getppid(), '/some/other/tree'))",
+		"with mutate.only_one_run():",
+		"    print('another tree still waits', True)",
+
+		-- **The waiting is written down, not only printed.** A log holding just the current
+		-- holder answers *who has it now*: a line saying `since 15:59:01` was the truth about
+		-- the run that wrote it and hid the thirteen minutes it had queued behind two others.
+		-- Contended here by a second handle in this same process rather than a second process,
+		-- and released as soon as the line appears, so it costs milliseconds and cannot hang -
+		-- the poll gives up after two seconds and the check fails rather than the gate.
+		-- **And it must name whoever holds it now, not whoever wrote last.** Read from a live
+		-- run on 2026-09-20: a session queued behind another tree was told it was waiting for
+		-- its own earlier run, finished long before, in its own directory - so it waited
+		-- correctly and blamed the wrong tree, which sends the reader off to examine their own
+		-- tools. That is the journey this lock exists to spare them. A finished run's line is
+		-- seeded here and the process really holding it writes nothing at all, so a message
+		-- naming the seeded pid is the fault exactly.
+		"logged(line(gone.pid, os.getcwd()))",
+		"first = open(mutate.LOCK, 'a+')",
+		"fcntl.flock(first, fcntl.LOCK_EX)",
+		"print('names who holds it now', mutate.holder(open(mutate.LOCK).read()) is None)",
+
+		-- **A case file edited on its own is a changed case.** Re-point an anchor after the code
+		-- has moved under it and the `file:` it names may not have changed at all, so the
+		-- working loop skipped exactly what somebody had just been editing and reported that
+		-- nothing named a changed file. Two of the thirty-three red full runs between
+		-- 2026-09-12 and 2026-09-20 were that shape.
+		"one = os.path.join(tree, 'a.mut')",
+		"open(one, 'w').write('name: a\\nfile: addons/Family/Wide.lua\\n--- old\\nx\\n--- new\\ny\\n')",
+		"rel = os.path.relpath(one, mutate.ROOT)",
+		"print('picks by the file it mutates', mutate.picked([one], {'addons/Family/Wide.lua'}) == [one])",
+
+		-- **A commit that edits only the harness is what the register exists for.** Of 402
+		-- recorded cases, 376 name a file under `addons/` and 9 name `tests/Harness.lua`, so
+		-- weakening a check and committing that alone ran nine cases and skipped the 376 the
+		-- check stands over. The gate's own words say which check caught a case, because under
+		-- FAMILY_MUTATING the harness stops at its first failure; the section is the last
+		-- heading printed above it.
+		"spoken = 'professions\\n  ok  a\\n\\ncurrencies\\n  ok  b\\n  FAIL  the link wins  -> nil\\n'",
+		"print('reads the check and its section', mutate.caught_by(spoken) == ('the link wins', 'currencies'))",
+		"print('and says nothing where nothing failed', mutate.caught_by('a\\n  ok  b\\n') == (None, None))",
+
+		-- A heading is a print of one plain string at the margin; `print()` is a blank line
+		-- and a formatted print is a check's own output. Neither is a place.
+		"marks = mutate.sections('print(\"one\")\\nx\\nprint()\\nprint(\"two\")\\ny\\n')",
+		"print('finds the headings and not the blanks', marks == [(1, 'one'), (4, 'two')])",
+		"print('places a changed line under its heading', mutate.sections_touched('@@ -5,0 +5,1 @@', marks) == {'two'})",
+
+		-- Three ways in, and two of them are caution: an unknown case and a case whose section
+		-- has been renamed both run, because a stale map must widen a run and never narrow it.
+		"known = {'tools/mutations/a.mut': ('c', 'currencies'), 'tools/mutations/b.mut': ('c', 'gone')}",
+		"cases = [os.path.join(mutate.ROOT, n) for n in ('tools/mutations/a.mut', 'tools/mutations/b.mut', 'tools/mutations/c.mut')]",
+		"there = {'currencies', 'professions'}",
+		"took = mutate.also_for_harness(cases, set(), known, {'currencies'}, there)",
+		"print('takes the case whose section was touched', cases[0] in took)",
+		"print('takes the case whose section is gone', cases[1] in took)",
+		"print('takes the case it has never seen', cases[2] in took)",
+		"quiet = mutate.also_for_harness(cases, set(), known, {'professions'}, there)",
+		"print('and leaves the one it knows is elsewhere', cases[0] not in quiet)",
+
+		-- A red run must not quietly widen tomorrow's working loop by forgetting where a case
+		-- used to be caught, so a case that did not answer this time keeps what it had.
+		"mutate.REGISTER = os.path.join(tree, 'caught.tsv')",
+		"case_a = os.path.join(mutate.ROOT, 'tools/mutations/a.mut')",
+		"mutate.register_write([case_a], [(True, 'x', ('the check', 'currencies'))])",
+		"print('writes down what caught it', mutate.register_read().get('tools/mutations/a.mut') == ('the check', 'currencies'))",
+		"mutate.register_write([case_a], [(False, 'x', (None, None))])",
+		-- Not every line the harness prints at the margin is a heading: one check prints the
+		-- name of the throwaway file it has just grown, which is different every run. Taking
+		-- that for a place churns this file and files the case where nothing can match.
+		"mutate.register_write([case_a], [(True, 'x', ('the check', '/tmp/lua_AbCdEf: 3 members'))])",
+		"print('and a line that is not a heading is not a place', mutate.register_read().get('tools/mutations/a.mut') == ('the check', 'currencies'))",
+		-- And one already written that way is dropped rather than left: kept out on the way in
+		-- only, it would sit there for ever, since the guard above declines to replace it.
+		"open(mutate.REGISTER, 'a').write('tools/mutations/z.mut\\tsome check\\t/tmp/lua_Zz: 3 members\\n')",
+		"mutate.register_write([case_a], [(True, 'x', ('the check', 'currencies'))])",
+		"print('and an old one like it is dropped', 'tools/mutations/z.mut' not in mutate.register_read())",
+		"print('and a run that did not catch it keeps the old line', mutate.register_read().get('tools/mutations/a.mut') == ('the check', 'currencies'))",
+		"print('picks by the case file itself', mutate.picked([one], {rel}) == [one])",
+		"print('and picks nothing on an unrelated change', mutate.picked([one], {'README.md'}) == [])",
+		"ran = []",
+		"def go():",
+		"    with mutate.only_one_run():",
+		"        ran.append(True)",
+		"queued = threading.Thread(target=go)",
+		"queued.start()",
+		"saw, deadline = False, time.time() + 2",
+		"while time.time() < deadline:",
+		"    if '\\twaiting\\t' in open(mutate.LOCK).read():",
+		"        saw = True",
+		"        break",
+		"    time.sleep(0.002)",
+		"fcntl.flock(first, fcntl.LOCK_UN)",
+		"first.close()",
+		"queued.join(5)",
+		"print('the wait is written down', saw and bool(ran))",
+		"kinds = ('waiting', 'holding', 'released')",
+		"print('and the log keeps all three', all(('\\t%s\\t' % k) in open(mutate.LOCK).read() for k in kinds))",
 	}, "\n"))
 	handle:close()
 	os.execute(string.format("python3 %s %s > %s 2>&1", script, ROOT, out))
@@ -40893,6 +41030,54 @@ if RUN.storage == "compressed" then
 	-- other session reading its own tools for a slowness that is not there.
 	check("and says which process is holding it, for whoever is waiting",
 		text:find("names the holder True", 1, true) ~= nil, text)
+
+	-- A queue between two trees is the point; a queue inside one tree is four runs where one
+	-- was wanted, and the second of them is either the same run again or an answer about a
+	-- tree that has moved on.
+	check("a second run from the same tree is refused rather than queued",
+		text:find("refuses the same tree True", 1, true) ~= nil, text)
+	check("and a run killed before it could tidy up does not jam that tree shut",
+		text:find("a dead pid is not a queue True", 1, true) ~= nil, text)
+	check("while a run from another tree still waits its turn",
+		text:find("another tree still waits True", 1, true) ~= nil, text)
+
+	-- The thirteen minutes that were invisible: a log holding only the current holder answers
+	-- who has it now and nothing about how long anybody queued.
+	-- The log holds a finished run's line and the process actually holding it wrote nothing,
+	-- which is the shape read from a live run: naming the line would name the wrong tree.
+	check("and names whoever holds it now rather than whoever wrote last",
+		text:find("names who holds it now True", 1, true) ~= nil, text)
+	check("and a junk section written before is dropped, not left to sit there",
+		text:find("and an old one like it is dropped True", 1, true) ~= nil, text)
+	check("and only a real heading of this harness counts as a section",
+		text:find("and a line that is not a heading is not a place True", 1, true) ~= nil, text)
+	check("the register writes down which check caught which case",
+		text:find("writes down what caught it True", 1, true) ~= nil
+			and text:find("and a run that did not catch it keeps the old line True", 1, true) ~= nil,
+		text)
+	check("which check caught a case is read out of the gate's own words",
+		text:find("reads the check and its section True", 1, true) ~= nil
+			and text:find("and says nothing where nothing failed True", 1, true) ~= nil, text)
+	check("and the harness's own headings say which section that check is in",
+		text:find("finds the headings and not the blanks True", 1, true) ~= nil
+			and text:find("places a changed line under its heading True", 1, true) ~= nil, text)
+	-- The register may go stale in two ways, and both have to widen the run rather than narrow
+	-- it: a case nobody has recorded, and a case recorded in a section that no longer exists.
+	check("a change to the harness re-runs the cases its sections protect",
+		text:find("takes the case whose section was touched True", 1, true) ~= nil
+			and text:find("and leaves the one it knows is elsewhere True", 1, true) ~= nil, text)
+	check("and an unknown case, or one filed under a section since renamed, runs anyway",
+		text:find("takes the case whose section is gone True", 1, true) ~= nil
+			and text:find("takes the case it has never seen True", 1, true) ~= nil, text)
+	check("a changed case file is a changed case, whatever its file: has done",
+		text:find("picks by the case file itself True", 1, true) ~= nil
+			and text:find("picks by the file it mutates True", 1, true) ~= nil
+			and text:find("and picks nothing on an unrelated change True", 1, true) ~= nil,
+		text)
+	check("the waiting is written into the log and not only printed",
+		text:find("the wait is written down True", 1, true) ~= nil, text)
+	check("and the log is appended to, so a run's whole turn can be read back",
+		text:find("and the log keeps all three True", 1, true) ~= nil, text)
 end
 
 print()

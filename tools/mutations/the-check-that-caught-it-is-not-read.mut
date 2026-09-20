@@ -1,0 +1,8 @@
+name: which check caught a case is never read out of the gate
+file: tools/mutate.py
+--- old
+        if line.startswith("  FAIL"):
+            return line[len("  FAIL"):].strip().split("  -> ")[0].strip(), section
+--- new
+        if line.startswith("  FAIL"):
+            return None, None

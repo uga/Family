@@ -1,0 +1,11 @@
+name: the waiting line names whoever wrote last, not whoever holds it
+file: tools/mutate.py
+--- old
+    live = [entry for entry in standing(text) if entry[1] == "holding"]
+    return live[-1] if live else None
+--- new
+    lines = [line for line in text.split("\n") if "\tholding\t" in line]
+    if not lines:
+        return None
+    parts = lines[-1].split("\t")
+    return int(parts[2]), parts[1], parts[0], parts[3]
