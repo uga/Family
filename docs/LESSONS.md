@@ -15,6 +15,31 @@ still being held in somebody's head.
 
 ---
 
+## Two branches, two bands of numbers
+
+`main` allocates from the sequence below. **The `midnight` branch allocates from L-200 up**, and
+the two never meet. Decided 2026-09-20, after both branches wrote an L-108 and an L-109 from the
+same base of L-107 and a merge had to choose between two entries with one number, twice.
+
+**Commit messages written on `midnight` before 2026-09-20 cite numbers that have since moved.**
+Those citations cannot be repaired - rewriting history is reserved - and they are the reason the
+band exists rather than a renumber at each merge. Measured by the `main` session and confirmed
+here: `f463ca8` cites L-108, L-109 and L-110; `8e8cdff` cites L-108 and L-111; `dff86ec` cites
+L-108. Today L-108 and L-109 resolve to *main's* lessons, on a misaimed measurement and on two
+sessions sharing a processor, and not to the ones those commits meant - a `pcall` that does not
+guard a native crash (now **L-200**) and a probe that truncated its own answers (now **L-201**).
+L-110 and L-111 resolve to nothing at all - **for now**. `main` allocates L-110 next and L-111
+after it, so within days those two stop being visibly broken and become wrong in the same silent
+way as the first pair: four citations in three commits, every one of them resolving to a lesson
+that has nothing to do with what the commit was about. A reference that resolves to the wrong
+entry is worse than one that is broken, because only the second can be seen - and here the
+second kind decays into the first by itself, without anybody touching anything. Measured by the
+`main` session, which had counted today's damage and not the damage that matures on its own.
+
+So: **where a `midnight` commit before that date cites L-108 to L-115, add 92.** Not a
+convenience for a passer-by - once those numbers all exist again on `main`, the sum is the only
+thing that tells such a citation from a correct one.
+
 ## The one this project keeps making
 
 Read the entries below and a single failure appears six times in six disguises: **the check was
@@ -3498,7 +3523,7 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
-## L-114 — the instrument answered correctly, about a run taken two days earlier
+## L-206 — the instrument answered correctly, about a run taken two days earlier
 
 **2026-09-20.** The probe's saved variables accumulate on purpose: a run is filed under its build
 and its character, so a second character adds rather than overwrites. The file Alberto sent back
@@ -3538,7 +3563,7 @@ says nothing. The rule: **a stored answer carries the question it was asked, and
 that lets you name a subject has to tell you when the subject is not the one you think. Where a
 file accumulates, identity is not enough - ask it for its date.**
 
-## L-115 — two facts, a story to join them, and a question that offered the story back
+## L-207 — two facts, a story to join them, and a question that offered the story back
 
 **2026-09-20.** Having found that the probe called `C_AuctionHouse.CancelAuction()` on a live
 character, this session went looking for the damage. It found two things. The auction house,
@@ -3564,7 +3589,7 @@ whose options carry the asker's hypothesis cannot disconfirm it**; it can only c
 
 **Bitten:** a false statement about the user's own account, committed to the permanent record of
 the project in four places, and corrected only because he happened to mention in passing what he
-had done. Everything downstream - the severity of L-113, the wording of a decision, the tone of a
+had done. Everything downstream - the severity of L-205, the wording of a decision, the tone of a
 commit - was built on it.
 
 **Why it felt like grounding.** Both facts were real, both were read out of the file in this
@@ -3582,7 +3607,7 @@ a call returned; it cannot say what caused what. If a finding contains the word 
 because was not measured - and if it concerns somebody else's account, they are the only
 instrument that can read it.**
 
-## L-113 — the filter read a word as a prefix, and the probe called ten actions on a live character
+## L-205 — the filter read a word as a prefix, and the probe called ten actions on a live character
 
 **2026-09-20.** The probe's discovery sweep calls, with no arguments, every function in a matched
 namespace whose name begins with `Get`, `Is`, `Can` or `Has` - reads, and only reads. The decision
@@ -3600,7 +3625,7 @@ auctions - the run reads `GetNumOwnedAuctions() = 0` and a mailbox letter saying
 *"Auction canceled: Mecha-Blast Rocket"*. **He had cancelled it himself**, on purpose, to give the
 probe something to read in the inbox; `CancelAuction()` with no argument cancels nothing. How that
 false cause was built, and how a question was then framed so that he appeared to confirm it, is
-L-115. The correction does not soften this entry: a tool written only to observe fired ten actions
+L-207. The correction does not soften this entry: a tool written only to observe fired ten actions
 at somebody's account, and *nothing happened to be in reach* is not a safety property. The only
 visible sign at the time was a blocked-action popup, which names no function.
 
@@ -3632,7 +3657,7 @@ The rule: **a prefix is not a word. When a test on a name decides whether to cal
 word to end - and where the answer to "is this safe" is a convention about names, the check is a
 list of the names, not the convention.**
 
-## L-112 — the search could only confirm, so its answer was the question restated
+## L-204 — the search could only confirm, so its answer was the question restated
 
 **2026-09-20.** Asked which destinations `tools/Deploy.bat` knows, this session ran a grep for a
 closed list of the folder names it expected to find - `_classic_era_`, `_classic_`, `_retail_`,
@@ -3656,8 +3681,8 @@ it printed real lines with real numbers. Every outward sign of a measurement was
 missing is the only thing that matters: the command was built out of the answer expected, so its
 output could agree or say nothing, and *nothing* was read as *there are no others*.
 
-**Three in one day, in three disguises.** L-110 was a grep whose flags made a hit impossible.
-L-111 was a block of readings the reader could not key, so every comparison dropped it. This is
+**Three in one day, in three disguises.** L-202 was a grep whose flags made a hit impossible.
+L-203 was a block of readings the reader could not key, so every comparison dropped it. This is
 the third: a search that could only confirm. The shared shape is a step that **cannot produce the
 finding it is supposed to be looking for**, and passing it therefore means nothing.
 
@@ -3668,7 +3693,7 @@ many*, enumerate by the handle the program itself uses - the variable, the key, 
 by the values you expect to find. A search that cannot return something you did not predict is not
 a measurement, it is a confirmation, and its silence is not evidence of absence.**
 
-## L-111 — the block was written down, and every comparison that read the file dropped it
+## L-203 — the block was written down, and every comparison that read the file dropped it
 
 **2026-09-20.** Version 9 of the probe added three blocks of readings for the second brief - PvP
 standing, raid lockouts and the client constants - and wrote each name down in the plainest form
@@ -3695,7 +3720,7 @@ between them - and a file written for another program is an interface, not an ou
 **And the green was the wrong green.** Seventeen claims passed, every one of them true: the lines
 *were* written, the calls *were* guarded, the currency *did* keep its name. Not one of them was
 about whether anything could read the result. A self-test that only ever asks *did I write it*
-cannot fail this way, which is L-110's rule arriving from the other end.
+cannot fail this way, which is L-202's rule arriving from the other end.
 
 **What now catches it.** The self-test takes the reader's own pattern - the one at
 `tools/surface.py:156`, copied deliberately and not re-invented - and applies it to every line of
@@ -3706,7 +3731,7 @@ because the report forgives a nil as *this character happens to hold nothing*. T
 **a file one program writes and another reads is an interface, and a check that only exercises
 the writing half is checking half an interface.**
 
-## L-110 — the canary passed all along, because the canary ran a different command
+## L-202 — the canary passed all along, because the canary ran a different command
 
 **2026-09-20.** Asked where the banned words were, the session wrote an audit instead of running
 one: `grep -rlic` over the tree, filtered to the files whose count came back above zero. It
@@ -3743,7 +3768,7 @@ where a gate in the tree already answers the question, run the gate. An audit wr
 the asking is a second implementation of the check, with nothing checking it, and it will be
 believed on the strength of the first one's reputation.**
 
-## L-109 — a probe that shortens its own answers threw away the one field it was sent for
+## L-201 — a probe that shortens its own answers threw away the one field it was sent for
 
 **2026-09-19.** Probe version 6 was built to answer, among other things, what the Catalyst's
 charges are called: it reads every currency the client lists. It read them, wrote them down, and
@@ -3767,7 +3792,7 @@ currency table whose `name` sits sixteenth and fails unless the written line car
 **a limit on what is written down is a decision about what the run can answer - take it where
 the question is known, not once for everything.**
 
-## L-108 — three pcalls around a call that does not raise, it crashes
+## L-200 — three pcalls around a call that does not raise, it crashes
 
 **2026-09-19.** Version 6 of the probe sweeps namespaces found by name and calls every `Get`,
 `Is`, `Can` and `Has` in them with no arguments, reading the error each one gives back to learn
@@ -3797,6 +3822,76 @@ log in place and fails if anything in it is called; setting the floor to 0 makes
 how it was checked. The rule: **a `pcall` is not a guard against the client. The only guard
 against a call that may crash is not making it - so a call with no arguments is made where it has
 been seen to be survivable, and nowhere else.**
+## L-109 — two sessions, one processor: the run was not slow, it was killed
+
+**2026-09-20.** The full mutation run was reported as taking fifteen to twenty minutes, against
+about three at the start of the week. Two sessions working on this machine both went looking at
+the obvious suspect - the run had grown from 219 cases to 396, and a case's gate had got slower -
+and both found real seconds there: 1.8 times the cases, 1.5 times the gate, about eight minutes
+of honest work.
+
+That accounts for eight minutes. It does not account for twenty.
+
+**Bitten:** the rest was not slowness at all. Two sessions on this one computer started full runs
+minutes apart, four times over two days. Sixteen CPU-bound gates on twelve threads put **both**
+runs past the 600 seconds the calling tool allows; both were killed, and each lost its output
+entirely - so each session started again, and the second attempt met the same contention. The
+measurable trace was four abandoned copies of the tree in the temporary directory, 783 MB of
+memory, each left by a run killed before the `finally` that removes them could run.
+
+**Why it was invisible.** From inside either session the evidence reads *the mutation run has got
+slow*, and that reading survives contact with the facts, because the run really had got slower.
+A partly-true explanation is the hardest kind to get past: it absorbs the question. Neither
+session could see the other's processes, and nothing in the output of a killed run says it was
+killed - there is no output at all.
+
+**The check that now catches it.** `tools/mutate.py` takes an exclusive lock on a file outside
+every worktree before it gates anything, and releases it in a `finally`. A second run waits
+rather than competing, and while it waits it prints which process holds the lock, from where, and
+since when - so a session that is waiting is told why instead of going to read its own tools.
+Mutations `the-machine-lock-is-never-taken` and `the-lock-does-not-say-who-holds-it`; the harness
+asks the lock itself, pointed at a made-up file rather than the real one, since a check that took
+the real lock would hang every gate the mutator starts.
+
+The lock is per machine, so **it only works in both trees**: one checkout holding it and one not
+is one run protected and one run still competing.
+
+And the rule, which is the general one: **a partial explanation that is true is not the
+explanation.** Eight minutes measured does not answer a twenty-minute complaint, and the gap
+between what was measured and what was reported is the thing to go after, not a rounding error to
+absorb.
+
+## L-108 — the measurement was sound and it was aimed at a claim nobody makes
+
+**2026-09-20.** A Mists level 85 was read twice, 444 seconds apart, standing still and not
+resting, and its rested experience had not moved by a point. The arithmetic was done carefully:
+a level worth 13,000,000 fills at 20,312 an hour under *5% of a level every 32 hours*, so those
+444 seconds owed about 2,505 - 5.6% of the figure on screen, far too large to hide in a whole
+number. It went into `docs/BACKLOG.md` as **the field rule is refuted**, and the overnight
+reading that would have tested it was downgraded to a formality in the same paragraph.
+
+**Bitten:** Alberto read it and said so - *lo zero in campo aperto secondo me non è vero* - and
+the rule the sources actually give is that **time spent logged out** fills at a quarter rate in
+the world and the full rate in an inn, while a character who is logged in and standing outdoors
+fills at nothing. Both of this project's zeros were read on a connected character. They are
+exactly what the rule predicts. Nothing was refuted, and the one case an estimate would be wrong
+about for a week at a time had just been struck off the list of things to measure.
+
+**Why it was invisible.** Every number in the paragraph was right and every number was checked.
+What was never written down was the **condition the rule is about** - `resting=false` was read as
+*in the field* when the rule turns on *logged out*, and the probe's line has no word for the
+difference because the client has none either. A reading carries the conditions somebody thought
+to record, and a condition nobody names cannot be compared against the claim it decides.
+
+**What now catches it.** Not a harness check - this is a claim about the world, and the gate for
+those is the same one §2.2 sets for the client: **say which case was sampled, and leave every
+case that was not in the table as unmeasured.** BACKLOG 94 now carries the four cases as a table
+- logged in resting, logged out in an inn, logged in outdoors, logged out outdoors - with what
+was read for each and *never* against the fourth, so the gap is a row rather than an absence.
+The rule, and it is the one this file keeps relearning in a new costume: **a reading refutes the
+claim whose conditions it was taken under, and no other.** Before writing *refuted*, name the
+conditions of the claim and the conditions of the reading side by side; if they differ in one
+word, the reading is about something else.
 
 ## L-107 — a width measured somewhere else is not the width where it will be drawn
 

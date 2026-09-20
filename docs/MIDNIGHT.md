@@ -700,7 +700,7 @@ currency list was read for, and every currency came back as an id and eleven boo
 `showTable` prints a table's keys sorted and stops at twelve; a currency has twenty-five, and
 `name`, `quantity` and `maxQuantity` all sort past the cut, which ends in a `...` that reads like
 *more of the same*. Fixed in version 7 - the currency calls now ask for thirty keys - and it needs
-one more login to answer. L-109.
+one more login to answer. L-201.
 
 ### The Mists control could not be taken: version 6 crashes that client
 
@@ -725,7 +725,7 @@ by a new road.
 
 **Version 7** gates the sweep to interface 120000 and up, records a line saying so when it is
 skipped, and adds `tools/FamilySurface/selftest.lua`, which fires `PLAYER_LOGIN` on both numbers
-without a client. L-108.
+without a client. L-200.
 
 ## 13. A brief on the modern API, relayed 2026-09-19
 
@@ -797,7 +797,7 @@ hits, and naming it for the next probe is the move already made for `C_MerchantF
   differ. The brief's own remedy - hold a scan until `PLAYER_REGEN_ENABLED` - is a change to
   Family and is not made until the reading says it is needed.
 - **`recipeInfo.learned`**, the field it says to filter recipes by. §12's `GetRecipeInfo` answer
-  has 28 fields and the run wrote down 12; `learned` sorts past the cut. L-109 a second time, and
+  has 28 fields and the run wrote down 12; `learned` sorts past the cut. L-201 a second time, and
   the `keys` count added in version 7 for currencies belongs on this call too.
 - **Account-wide against per-character.** The brief's closing point: warbank, renown, transferable
   currencies and mounts belong to the account, not the character, so a record keyed by character
@@ -807,7 +807,7 @@ hits, and naming it for the next probe is the move already made for `C_MerchantF
 ### What probe version 8 asks of it
 
 Built the same day, on Alberto's *you should create a probe checking all of those hints*. Every
-claim above that a client can settle is now asked, and the safety rule of L-108 decides how:
+claim above that a client can settle is now asked, and the safety rule of L-200 decides how:
 
 - **The six namespaces, listed on every client** - `C_Reputation`, `C_MajorFactions`, `C_Bank`,
   `C_WeeklyRewards`, `C_MythicPlus`, `C_PetJournal`. Listing calls nothing and costs nothing, and
@@ -912,10 +912,10 @@ silently**. The block would have been in the file, and the report would have sai
 it. The lines are now `UnitHonorLevel (looked up) is function`, and `absent` rather than `nil`
 because the report forgives a nil as *this character happens to hold nothing*. Checked end to end
 by running the probe against stubs, writing the saved variables out and asking
-`tools/surface.py --report` for the difference, which now prints both directions. L-111.
+`tools/surface.py --report` for the difference, which now prints both directions. L-203.
 
 The division - **a name is looked up on every client, a call is made only where the sweep is
-allowed** - is L-108's rule and not a new one. It also happens to be the right division for this
+allowed** - is L-200's rule and not a new one. It also happens to be the right division for this
 brief in particular, because most of what it asserts is *supported in all versions*, and that is
 a claim about a name existing, which a lookup settles for nothing.
 
@@ -1049,7 +1049,7 @@ wearing the clothes of a measurement. The fourth column names the key; it does n
 The runs: **Midnight 12.1.0, build 69875, interface 120100**, character `Ahia-Chamber of Aspects`,
 probe version 9, against the control **Mists 5.5.4, interface 50504**, `Eccebombo-Mirage Raceway`,
 same version, same day. Both files hold older runs beside these and the wrong ones were read
-first; `--report` now says so by itself (L-114). The saved variables stay out of the tree.
+first; `--report` now says so by itself (L-206). The saved variables stay out of the tree.
 
 Against that control: **73 globals absent here and present there**, 0 namespace members absent,
 7 literals Midnight refuses that Mists registers, 0 templates failing, **49 calls absent here and
@@ -1148,12 +1148,12 @@ time the ownership rule of §15 has paid, and it paid as a check rather than as 
 ### What the probe did to the client, which is not a finding but must be read beside these
 
 Version 9's sweep called ten actions on Alberto's character - `C_AuctionHouse.CancelAuction()`
-among them - because its name filter read `Can` as a prefix and caught `Cancel` (L-113). Nothing
+among them - because its name filter read `Can` as a prefix and caught `Cancel` (L-205). Nothing
 is known to have been changed by any of them. This section said for some hours that a live auction
 had been cancelled, on the strength of an empty owned-auction list and a letter in the inbox;
 Alberto had cancelled it himself, to put something in the inbox for the probe to read, and
 `CancelAuction()` with no argument cancels nothing. That invented cause, and the leading question
-that appeared to confirm it, are L-115. The readings above are unaffected either way: they are
+that appeared to confirm it, are L-207. The readings above are unaffected either way: they are
 reads, and the file carries each with its own answer.
 
 ### Still to do for step 1

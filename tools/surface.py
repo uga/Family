@@ -243,7 +243,7 @@ def report(asked_path, control_path=None):
         and nothing in the answer says which moment. On 2026-09-20 a session compared a run
         of the 18th - taken against a list of 193 names, before `_G.Name` and namespace
         locals were followed (L-103) - against a control of the 20th, and read the counts as
-        facts about two clients (L-114).
+        facts about two clients (L-206).
 
         The run itself carries the size of the list it was asked, which is the one number
         that dates it without anything having to be remembered.

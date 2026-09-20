@@ -24,7 +24,7 @@ local LIMIT, ERROR_LIMIT = 80, 200
 
 -- How many of a table's keys are printed. Twelve is enough for the shape of an answer and
 -- short enough to read; a caller that needs a particular field asks for more, because the
--- keys are sorted and a `name` sits past the twelfth of a currency's twenty-five (L-109).
+-- keys are sorted and a `name` sits past the twelfth of a currency's twenty-five (L-201).
 local KEYS = 12
 
 local showTable
@@ -166,7 +166,7 @@ local CALLS = {
 -- The relayed brief (MIDNIGHT.md §13) names five namespaces Family has never used. Their
 -- functions are **listed** on every client and called on none of it by this list: a name written
 -- down settles most of what the brief claims - whether `GetFactionDataByIndex` is there at all -
--- and costs nothing, where calling an unknown function is what took Mists down (L-108).
+-- and costs nothing, where calling an unknown function is what took Mists down (L-200).
 -- The last three come from the second brief (§14) and are named the same way and for the same
 -- reason: `C_Garrison`, `C_ToyBox` and `C_Heirloom` are domains Family has never recorded, and
 -- the census knows only that they exist and how many functions each holds. `C_Traits` and
@@ -346,7 +346,7 @@ end
 -- A name counts as a read when it begins with one of these words **as a word**: the character
 -- after the prefix must be upper case. Without that rule `^Can` also matches `Cancel…`, and on
 -- 2026-09-20 version 9 called twelve of those on a live character - `C_AuctionHouse.CancelAuction()`
--- among them (L-113). Nothing is known to have been changed by any of them, because none was given
+-- among them (L-205). Nothing is known to have been changed by any of them, because none was given
 -- the argument it would have needed; that is luck rather than a property of this file. The
 -- decision of 2026-09-19 justified the sweep with *actions are never called, since no action is
 -- named that way*; that sentence was false and is now false by measurement.
@@ -425,7 +425,7 @@ local WORDS = { "Prof", "Trade", "Craft", "Trait", "Talent", "Catalyst", "Housin
 -- took the process down 28 seconds into the world: ACCESS_VIOLATION reading address 0, with
 -- `C_Housing.GetMaxHouseLevel()` on the Lua stack - the same call that answers 12 on Midnight.
 -- The three `pcall`s between it and the login timer caught nothing, because a native null
--- dereference is not a Lua error (L-108). A call with no arguments is only safe where it has
+-- dereference is not a Lua error (L-200). A call with no arguments is only safe where it has
 -- been seen to be safe, so the sweep stays where it has run whole: interface 120000 and up.
 local DISCOVER_FROM = 120000
 
@@ -472,7 +472,7 @@ function discover(word)
 		-- The near miss is written down, and only the near miss: a name that begins with a read
 		-- word and then turns into another one. Every other name in the namespace is skipped in
 		-- silence, as it always was. This line is how the next reader audits the filter by
-		-- reading rather than by watching an action happen (L-113).
+		-- reading rather than by watching an action happen (L-205).
 		if #refused > 0 then
 			lines[#lines + 1] = ("%s: %d name(s) begin with a read word and continue it, so are"
 				.. " listed and not called: %s"):format(space, #refused, table.concat(refused, " "))
@@ -485,7 +485,7 @@ end
 -- The brief's calls (MIDNIGHT.md §13). The quest one is asked on every client: `C_QuestLog` is
 -- a namespace Family already uses and the argument is an index, the same one the absent
 -- `GetQuestLogTitle(1)` took. The rest are asked only where the sweep is allowed, because this
--- repository has never seen any of them answer, and L-108 is what a first call can cost on the
+-- repository has never seen any of them answer, and L-200 is what a first call can cost on the
 -- wrong client. Their names are written down everywhere regardless, by the listing above.
 function briefCalls()
 	local lines = { ask(QUEST_CALL) }
@@ -505,12 +505,12 @@ end
 -- so they are hand-written like everything else in this file that is called.
 --
 -- Presence is read on **every** client and calling is not, which is the same division the first
--- brief settled into (L-108). It is also the right division for what this brief claims: *supported
+-- brief settled into (L-200). It is also the right division for what this brief claims: *supported
 -- in all versions* is a statement about a name existing, and a lookup answers it for nothing.
 -- The shape of the line matters as much as the reading in it. `tools/surface.py` keys a line by
 -- what precedes a `)` and compares the words after it, so a line with neither is written into the
 -- file and then dropped by every comparison the report makes - which is a block that looks
--- measured and answers nothing (L-110). Hence `name (looked up) is ...`: the key is the same on
+-- measured and answers nothing (L-202). Hence `name (looked up) is ...`: the key is the same on
 -- every client and the answer is the part that differs. And `absent` rather than `nil`, because
 -- the report treats a nil as *this character happens to hold nothing* and forgives it.
 local function presence(name, what)
@@ -556,7 +556,7 @@ local LOCKOUT_READS = { { "GetNumSavedInstances" }, { "GetSavedInstanceInfo", 1 
 -- new reading asked on every client, because the id is what is new and not the call:
 -- `C_CurrencyInfo.GetCurrencyInfo` is already asked everywhere by professionLines below. Thirty
 -- keys, because `totalEarned` and `maxQuantity` are the fields the claim is about and they sort
--- past the twelfth of a currency's twenty-five (L-109).
+-- past the twelfth of a currency's twenty-five (L-201).
 local CURRENCY_IDS = {
 	{ "C_CurrencyInfo.GetCurrencyInfo", 1792, keys = 30 },
 	{ "C_CurrencyInfo.GetCurrencyInfo", 1602, keys = 30 },
@@ -845,7 +845,7 @@ end
 -- When the client stops an addon touching something reserved to its own interface, it puts up a
 -- dialog that names the addon and **not the function**. Twice now that has left a session
 -- reasoning about which call it might have been: once on Midnight, where the answer turned out to
--- be a `Cancel…` the sweep had no business calling (L-113), and once on Mists, where the sweep
+-- be a `Cancel…` the sweep had no business calling (L-205), and once on Mists, where the sweep
 -- does not run at all and reasoning got nowhere.
 --
 -- So the client is asked instead. Nothing here assumes what these events carry - the arguments

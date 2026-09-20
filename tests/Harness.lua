@@ -2797,6 +2797,48 @@ GetCurrencyListLink = function() return "|Hcurrency:1900|h[Honor]|h" end
 check("a link outranks the row it sits beside",
 	(Family.Currencies:Read()[1] or {}).id == 1900)
 
+-- 2.5.6 as it really is: no global link call at all, and a C_CurrencyInfo that keeps no list
+-- calls and keeps the link. Asked on the row the older list handed over, it answers properly.
+GetCurrencyListLink = nil
+C_CurrencyInfo = {
+	GetCurrencyListLink = function(index)
+		return index == 2 and "|Hcurrency:1901|h[Honor Points]|h" or nil
+	end,
+	GetCurrencyInfo = function() return nil end,
+}
+check("the link on C_CurrencyInfo is asked where the client has no global one",
+	(Family.Currencies:Read()[1] or {}).key == "c1901",
+	tostring((Family.Currencies:Read()[1] or {}).key))
+
+-- A table with a list call of its own is a client the modern reader handles, and this one is
+-- not: the point of asking it here is that it keeps the link while keeping no list at all.
+check("and that is not the modern reader running, since it has no list call to run on",
+	C_CurrencyInfo.GetCurrencyListSize == nil)
+
+-- Both links present and disagreeing. The global one belongs to the list being walked, so it
+-- is the one believed; anything else would read one list's row through another's index.
+GetCurrencyListLink = function() return "|Hcurrency:1900|h[Honor]|h" end
+check("the global link outranks the one hanging off C_CurrencyInfo",
+	(Family.Currencies:Read()[1] or {}).id == 1900)
+
+-- And the link on the table outranks the position, which is the whole reason it is asked.
+GetCurrencyListLink = nil
+GetCurrencyListInfo = function(index)
+	if index == 1 then return "Player vs Player", true end
+	return "Honor Points", false, true, false, false, 1428, 136998, 75000,
+		false, 0, false, 1902
+end
+check("a link on C_CurrencyInfo outranks the twelfth value of the row",
+	(Family.Currencies:Read()[1] or {}).id == 1901,
+	tostring((Family.Currencies:Read()[1] or {}).id))
+
+C_CurrencyInfo = nil
+GetCurrencyListInfo = function(index)
+	if index == 1 then return "Player vs Player", true end
+	return "Honor Points", false, true, false, false, 1428, 136998, 75000,
+		false, 0, false, 1901
+end
+
 -- A row of some other length is some other build. It gets the name it got before this was
 -- read rather than a number lifted out of a position nobody measured.
 GetCurrencyListLink = function() return nil end
@@ -40769,8 +40811,19 @@ end
 -- **A hung gate is not caught.** Nothing was read back, so no check can be said to have seen
 -- the mutation, and the run has to fail on it - which it did not until 2026-09-14: `run`
 -- answered True for a hang, and the exit status stayed green while the docstring promised
--- otherwise. Asked of `run` itself on a made-up tree whose gate never answers, with the clock
--- set to one second, so this costs a second and no real gate.
+-- otherwise. Asked of `run` itself on a made-up tree whose gate never answers, and no real gate
+-- is run.
+--
+-- **The clock is set to a fifth of a second, which is a measurement and not a preference.** It
+-- was a whole second until 2026-09-20, and this block runs inside *every* gate the mutator
+-- starts - four hundred cases paying a second each to prove a thing about the tool rather than
+-- about the code any of them mutate. The floor is starting a process and killing it, since the
+-- made-up gate spins for ever and can never finish early, so the wait is never a race: a fifth
+-- of a second is ten times that floor and the case still answers *hung*.
+--
+-- It is deliberately **not** skipped under `FAMILY_MUTATING`, which is the cheaper fix and the
+-- wrong one: three recorded mutations name `tools/mutate.py`, and `a-hung-gate-counts-as-caught`
+-- is caught here and nowhere else.
 if RUN.storage == "compressed" then
 	local script, out = os.tmpname(), os.tmpname()
 	local handle = io.open(script, "w")
@@ -40784,11 +40837,43 @@ if RUN.storage == "compressed" then
 		"open(os.path.join(tree, 'Spinning.lua'), 'w').write('local bound = 10\\n')",
 		"case = os.path.join(tree, 'spin.mut')",
 		"open(case, 'w').write('name: spin\\nfile: Spinning.lua\\n--- old\\nbound = 10\\n--- new\\nbound = nil\\n')",
-		"mutate.TIMEOUT = 1",
+		"mutate.TIMEOUT = 0.2",
 		"caught, line = mutate.run(case, tree)",
 		"print('caught', caught)",
 		"print(line)",
 		"print('restored', open(os.path.join(tree, 'Spinning.lua')).read().strip() == 'local bound = 10')",
+
+		-- **One run at a time on the machine, asked of the lock itself.** Two sessions on this
+		-- one computer started full runs within minutes of each other four times in two days;
+		-- sixteen CPU-bound gates on twelve threads put both runs past the ten minutes their
+		-- caller allows, both were killed, and each lost its output. From inside either session
+		-- that reads as the run having got slow, which is the wrong place to look.
+		--
+		-- **Pointed at a made-up lock, never the real one.** This block runs inside every gate
+		-- the mutator starts, so taking the lock a run is holding would hang every one of them -
+		-- the deadlock would be the check's own doing. `mutate.LOCK` is moved first, exactly as
+		-- the clock above is.
+		--
+		-- No waiting and no sleeping: a second `flock` on the same file from a second open file
+		-- description is refused while the lock is held and granted once it is let go, which is
+		-- the whole of what this has to promise, and it costs nothing to ask.
+		"import fcntl",
+		"mutate.LOCK = os.path.join(tree, 'lock')",
+		"with mutate.only_one_run():",
+		"    other = open(mutate.LOCK, 'a+')",
+		"    try:",
+		"        fcntl.flock(other, fcntl.LOCK_EX | fcntl.LOCK_NB)",
+		"        print('held', False)",
+		"    except OSError:",
+		"        print('held', True)",
+		"    other.close()",
+		"    print('names the holder', ('pid %d' % os.getpid()) in open(mutate.LOCK).read())",
+		"after = open(mutate.LOCK, 'a+')",
+		"try:",
+		"    fcntl.flock(after, fcntl.LOCK_EX | fcntl.LOCK_NB)",
+		"    print('let go', True)",
+		"except OSError:",
+		"    print('let go', False)",
 	}, "\n"))
 	handle:close()
 	os.execute(string.format("python3 %s %s > %s 2>&1", script, ROOT, out))
@@ -40801,6 +40886,13 @@ if RUN.storage == "compressed" then
 		text:find("caught False", 1, true) ~= nil and text:find("HUNG     spin", 1, true) ~= nil
 			and text:find("restored True", 1, true) ~= nil,
 		text)
+	check("a run holds the machine's lock while it runs, and lets it go at the end",
+		text:find("held True", 1, true) ~= nil and text:find("let go True", 1, true) ~= nil,
+		text)
+	-- Who is waited for, not merely that somebody is: a run that says nothing leaves the
+	-- other session reading its own tools for a slowness that is not there.
+	check("and says which process is holding it, for whoever is waiting",
+		text:find("names the holder True", 1, true) ~= nil, text)
 end
 
 print()

@@ -59,7 +59,7 @@ Midnight called twelve `Cancel…` functions, ten of which executed without erro
 `C_AuctionHouse.CancelAuction()`, `CancelSell()`, `CancelCommoditiesPurchase()`,
 `C_TradeSkillUI.CancelProfessionRespec()` and six housing editors. Nothing is known to have been
 changed by any of them - `CancelAuction()` was given no auction to cancel - and that is luck
-rather than a property of the probe (`docs/LESSONS.md` L-113, and L-115 for the several hours in
+rather than a property of the probe (`docs/LESSONS.md` L-205, and L-207 for the several hours in
 which this file said otherwise). The decision of 2026-09-19 had justified the sweep with *actions
 are never called, since no action is named that way*; that is false, and `Cancel` is how.
 
@@ -76,7 +76,7 @@ learns what a call wants. Version 6 did that on every client, and on **Mists 5.5
 process down** twice, 28 seconds into the world: `ACCESS_VIOLATION` at address 0, with
 `C_Housing.GetMaxHouseLevel()` on the Lua stack - the call that answers `12` on Midnight. The
 three `pcall`s between it and the login timer caught nothing, because a native null dereference
-is not a Lua error (`docs/LESSONS.md` L-108).
+is not a Lua error (`docs/LESSONS.md` L-200).
 
 So from version 7 the sweep runs at **interface 120000 and up** and nowhere else, and a run below
 that writes one `discovery` line saying it was skipped. Everything else - the surface, the

@@ -43,8 +43,8 @@ turn and whichever answers is believed. `addons/Family/Scanners/Currencies.lua` 
 
 | Client | How | Gives an id? |
 |---|---|---|
-| Mists, and anything on the modern engine | `C_CurrencyInfo.GetCurrencyListSize()` / `GetCurrencyListInfo(index)` → a **table** | yes, `info.currencyID`, or from `GetCurrencyListLink(index)` |
-| The list-keeping clients before it | `GetCurrencyListSize()` / `GetCurrencyListInfo(index)` → **eleven return values** | only inside `GetCurrencyListLink(index)`, as `currency:<id>` |
+| Anything on the modern engine | `C_CurrencyInfo.GetCurrencyListSize()` / `GetCurrencyListInfo(index)` → a **table** | yes, `info.currencyID`, or from `GetCurrencyListLink(index)` |
+| The list-keeping clients, **Mists among them** | `GetCurrencyListSize()` / `GetCurrencyListInfo(index)` → **a row of return values** | inside `GetCurrencyListLink(index)` as `currency:<id>`, and on 2.5.6 in the twelfth value of the row |
 | Burning Crusade Anniversary | `GetHonorCurrency()`, `GetArenaCurrency()` → a bare number each | **no** |
 
 Three things this costs, all of them worth knowing before writing it again:
@@ -58,6 +58,12 @@ Three things this costs, all of them worth knowing before writing it again:
   them.
 - **A maximum of `0` means "no cap"**, everywhere it appears. Stored as `nil`, or every
   uncapped currency reports itself as permanently full.
+- **The first row is not where Mists goes**, measured 2026-09-20 on 5.5.4: `C_CurrencyInfo` is
+  there and **has no `GetCurrencyListSize`**, while the older global call is there and answers.
+  So the build this table put on the modern route takes the older one, and the row it answers
+  with has never been read - the two characters asked so far had earned no currency at all. The
+  first row is kept because it is the route a client that has those calls would take, and it is
+  now labelled as that rather than as Mists.
 
 Zero is a balance and nil is silence, and the client answers nil for both a missing call and
 a currency it will not discuss — so a call that answers `0` is recorded as `0`, and one that
@@ -2521,6 +2527,53 @@ tools/mutate.py --jobs N`, two runs each: eight took **3 min 20.8 s** and **3 mi
 about 40 CPU-minutes. `lscpu` reports 12 CPUs at two threads per core: the gate is CPU-bound, and
 the extra jobs share cores rather than adding them. The cap stays at eight.
 
+#### The same run a week later, measured 2026-09-20
+
+The cases went from 219 on 2026-09-14 to **396**, and a case's gate went from 4.8 s to
+**7.0-7.8 s** on the same machine, both timed one after the other with `FAMILY_MUTATING=1`. The
+whole gate went from 10.6 s to **13.2 s**. Multiplied out, the full run costs about **eight
+minutes** on its own - 389 cases in 469 s and in 470 s, with nothing else running.
+
+Where the extra seconds in a case's gate went, by section:
+
+| | 2026-09-13 | 2026-09-20 |
+|---|---|---|
+| *the gate run by the mutator* - the tool's own hang test | 0 | **1.12 s** |
+| *guild share* | 1.70 s | 2.23 s |
+
+The first is the one worth naming: the hang test sets a made-up gate spinning and waits for the
+clock, and the clock was **one second**. That block runs inside every gate the mutator starts, so
+four hundred cases paid a second each to prove something about the tool. The clock is now a fifth
+of a second, which is ten times what starting and killing a process costs and cannot race, since
+a gate that spins for ever can never finish early. It is not skipped under `FAMILY_MUTATING`:
+three recorded mutations name `tools/mutate.py` and one of them is caught by that block alone.
+
+**Two full runs at once do not both go slowly.** Both go past the **600 seconds** the calling
+tool allows, both are killed, and each loses its output - so the run has to be started again,
+which is where a reported *fifteen to twenty minutes* comes from. It happened four times over
+2026-09-19 and 2026-09-20, twice each day, when two sessions on this one machine started runs
+minutes apart: sixteen CPU-bound gates on twelve threads. The trace it left was four abandoned
+copies of the tree in the temporary directory, 783 MB of memory, each from a run killed before
+the `finally` that removes them could run.
+
+A run now takes a lock outside every tree, so the second one waits and says whose turn it is.
+Waiting is the honest outcome: sixteen minutes of queue is sixteen minutes of work done, where
+two overlapping runs were two lost ones.
+
+**What the shorter clock actually bought, measured in the same hour with nothing else running**:
+the same gate, five runs at each setting, `FAMILY_MUTATING=1`, changing nothing but the number.
+
+| the hang test's clock | a case's gate, median of five |
+|---|---|
+| 1 second | **8.12 s** |
+| 0.2 seconds | **7.40 s** |
+
+**0.72 s a gate, about nine per cent.** The full run afterwards: **398 cases in 475.7 s**, all
+caught. That is one sample and the saving the gate figure predicts - about 36 s spread over eight
+workers - sits inside its noise, so the honest statement is that the gate is measurably faster
+and the full run has not been measured often enough to show it. The gate number is the one to
+quote, because it was taken five times at each setting against the run's once.
+
 ### What a shared recipe list weighs, `tools/wire-size.lua`
 
 Not from the client's tables but from the libraries the addon channel is fed through, and
@@ -3022,6 +3075,102 @@ the twelfth is a whole number above nought. A build that answers some other leng
 twelve with something else in that place - keeps the name fallback rather than be read by a
 position nobody has looked at. So what is written down here is what the code trusts, and the
 moment a fourth build answers differently the reading is a name again and not a wrong id.
+
+#### Mists takes the older route too, 2026-09-20
+
+A level 85 with arenas open answered the question the two empty characters could not be asked:
+**`C_CurrencyInfo` is there on 5.5.4 and has no `GetCurrencyListSize`**, while the older global
+call is there and answers. So `readModernList` returns nothing on Mists and `readGlobalList` is
+what the build is read by - the same route as Burning Crusade, on a client this page had filed
+under the modern one.
+
+Two things follow, and only one of them is comfortable:
+
+- the twelve-value shape check written for 2.5.6 is now load-bearing on **two** builds;
+- the row Mists answers with has still never been read, because this character's list is empty
+  as well: `GetCurrencyListSize` says **0** on a level 85 who has fought no battleground. So
+  whether honor on Mists lands under its id or under its name is unknown, and it is the same
+  unknown that was live on Burning Crusade until today.
+
+**There is no third route.** The probe was extended to name which members `C_CurrencyInfo` has,
+one by one, in case the table kept `GetCurrencyListInfo` without `GetCurrencyListSize` - the list
+could then be walked with the older size and read as a table, which hands over `currencyID`
+outright. Read on 5.5.4 the same day:
+
+    GetCurrencyListSize=absent  GetCurrencyListInfo=absent  GetCurrencyListLink=there
+    GetCurrencyInfo=there       GetBackpackCurrencyInfo=absent
+
+So the table has **no list calls at all** on this build, and the older list is the only list.
+
+**But it keeps the link call**, which raises the question that decides how an id is read here. A
+link is a promise and a position is not, so whether honor on Mists comes out of a link or out of
+the twelfth value depends on something nobody has asked: whether the **global** `GetCurrencyListLink`
+is there on this build, or whether the only link call is the one hanging off `C_CurrencyInfo`.
+`readGlobalList` asks the global one. The probe now reports both globals by presence, since a list
+of size nought cannot be walked to find out, and the answer comes with the next run.
+
+Nothing is coded on the strength of the guess. If the global link is absent and the `C_CurrencyInfo`
+one answers for the same index, that is a route worth taking and it is one line - but *the same
+index* is the assumption in that sentence, and on a build with one list it is a reasonable one and
+still an assumption. It gets measured first.
+
+**Burning Crusade keeps the same two members**, read 2026-09-20 on 2.5.6: `GetCurrencyListSize`
+and `GetCurrencyListInfo` absent from `C_CurrencyInfo`, `GetCurrencyListLink` and
+`GetCurrencyInfo` there. So the two builds Family reads currencies on by the older list have the
+same half-populated table, and the question above is one question for both rather than a quirk of
+one.
+
+**And it was answered the same day, on the character that holds honor**:
+
+    (globals: GetCurrencyListInfo=there  GetCurrencyListLink=absent)
+    [id nil, link nothing, C_CurrencyInfo link "[Honor Points]" -> id 1901]
+      1="Honor Points" 2=false 3=true 4=false 5=false 6=1428 7=136998 8=75000
+      9=false 10=0 11=false 12=1901
+
+Two facts, and the first corrects this page. The global `GetCurrencyListLink` is **absent from
+2.5.6**, not present and unhelpful - so the sentence written this morning, that the link *gave
+nothing*, was describing a call that is not there. It is the same nil from `TryCall` either way,
+which is precisely the confusion §2.2 is about, and the probe had to be asked by presence before
+it came apart.
+
+The second is the answer: **`C_CurrencyInfo.GetCurrencyListLink` answers a proper link for the
+row the older list just handed over**, and the id in it is **1901** - the same number as the
+row's twelfth value. Two independent routes arriving at one answer, which is what makes a
+position believable rather than merely lucky.
+
+So the order Family asks in is now the global link, then the link on `C_CurrencyInfo`, then the
+position - two promises and a fallback, where this morning there was one route that does not
+exist on this build and one position. On 5.5.4 the same table keeps the same link call, so the
+route is there too; what that build answers for a row is still unread, because no Mists character
+asked so far has earned a currency.
+
+**What the rest of that reading said.** Quests: `GetQuestsCompleted` answered 64 ids in 6.1 ms
+and `C_QuestLog.IsQuestFlaggedCompleted` told a known quest from a nonsense one, which is the
+Mists shape already recorded. Lockouts: nothing saved, fourteen blank values from index 1, and
+`0 saved` after `UPDATE_INSTANCE_INFO`. The retired Cataclysm ids answered as before - 392 is
+*Honor Deprecated 3* and 390 is *Conquest Points* with `currencyID = 0` and `discovered = false`
+on both, so neither is a reading of this character.
+
+**`GetPersonalRatedInfo` answers on all four brackets**, twelve values each, every figure nought
+on a character who has played none - and the twelfth value is **2, 3, 5 and 0** across brackets 1
+to 4. That is the size of the team each bracket is for, and the nought is the rated battleground.
+A number that differs per bracket while everything beside it is nought is describing the bracket,
+not the character. `GetArenaTeam` answers three brackets of twenty-three values, all empty.
+
+**And the noughts there mean one thing on this character and another on a lower one.** Alberto,
+2026-09-20: arenas on Mists are open from level 70. This character is 85, so every nought in
+`GetPersonalRatedInfo` is *has played none*; the same call on a level 69 would answer the same
+noughts for *cannot play yet*, and nothing in the figures tells the two apart. Whatever is built
+on this has to read the level beside it, or it will report a character as having no rating when
+the game has not offered them one - which is §2.2 exactly, and the reason the level is recorded
+at the moment of the reading rather than looked up later.
+
+**The same question is open on Burning Crusade** - Alberto, same day, asking rather than
+asserting: *e in TBC anche, forse?* What is measured there is narrower and points the same way:
+`GetArenaCurrency` is **absent** from that build, and the list on a character with honor held
+honor and a header and nothing else. So a character who has no arena points and one who is not
+yet allowed any read identically today, on both builds, and nothing has been asked that would
+separate them. It is written here as the open question it is.
 
 #### Re-read this at a new build
 

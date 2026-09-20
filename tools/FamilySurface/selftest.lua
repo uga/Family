@@ -9,12 +9,12 @@
 --  1. The no-argument sweep does not run below interface 120000. Version 6 took Mists 5.5.4
 --     down 28 seconds into the world - ACCESS_VIOLATION at address 0, with
 --     C_Housing.GetMaxHouseLevel() on the Lua stack, inside three pcalls that caught nothing
---     (L-108). Here the namespace from that crash is in place with its calls counted, and a
+--     (L-200). Here the namespace from that crash is in place with its calls counted, and a
 --     Classic interface must leave them alone.
 --  2. A currency's name survives being written down. Its table has twenty-five fields, keys
 --     are printed in sorted order, and `name` sits past the twelfth - so the run that was
 --     meant to answer what the Catalyst's charges are called came back without a single
---     name in it (L-109).
+--     name in it (L-201).
 --
 -- It proves nothing about what a client answers. It proves the probe does not do, to any
 -- client, the two things it has already done.
@@ -173,7 +173,7 @@ check("the WOW_PROJECT constants are found by their prefix, not by being named",
 	project:find("WOW_PROJECT_MAINLINE (constant) is number 1", 1, true) ~= nil, project)
 
 -- Every line of the new blocks must be one tools/surface.py can key and compare, or the block is
--- written down and then dropped by every comparison the report makes (L-110). The reader's own
+-- written down and then dropped by every comparison the report makes (L-202). The reader's own
 -- rule is a `)` and then a lower-case word: tools/surface.py:156.
 local keyed, unkeyed = 0, {}
 for _, block in ipairs { "pvp", "lockouts", "project" } do
@@ -208,7 +208,7 @@ check("and so are the second brief's, in both of its blocks",
 -- a read word has to be a whole word. `CancelProfessionRespec` begins with `Can` and is an
 -- action; version 9 called it, and called C_AuctionHouse.CancelAuction() beside it. Nothing is
 -- known to have been changed by either - the second was given no auction to cancel - and that is
--- luck, not a property of the probe (L-113).
+-- luck, not a property of the probe (L-205).
 check("an action whose name begins with a read word is not called, even where the sweep runs",
 	cancelled == 0, cancelled .. " calls were made")
 check("and the predicate that only looks like it is still called",

@@ -6090,6 +6090,156 @@ only happens while logged out.
 hour later, with the ceiling at 13050 and nothing in the way. A reading near 8510 refutes it, one
 near 8564 carries it, and anything else is a rate of its own to write down.
 
+**A Mists character below the ceiling, 2026-09-20**: level 85, `xpMax` 13,000,000, rested
+**44,416**, not resting, standing in The Masonary. The ceiling there is 19,500,000, so this is
+about a third of a percent of a level - a figure that has been spent down rather than one that
+has been filling. It makes the third build one where a rate could be measured, and it is the
+first Mists reading that is not at the ceiling.
+
+**It is also about to move for the other reason.** Alberto took it into a battleground, which
+earns experience on this build, so the next reading of this character measures **spending** and
+not filling. That is worth having - the pair on Burning Crusade fell by exactly what was earned,
+and a second pair on another build says whether that is the rule or was that fight - but it is
+not the rate, and a reading taken after a battleground must not be counted as one.
+
+**A logged-in character in the open gains nothing on Mists, measured.** The same level 85 was
+read twice, **444 seconds apart**, standing in the same spot, not resting either time, having
+earned nothing: rested **44,416** both times, `xp` 62 both times. Exactly the same number, not a
+number that moved a little.
+
+What makes this settle what the Burning Crusade pair could not is the size of a level here. At
+5% of a level every 32 hours away from an inn, a level worth 13,000,000 fills at **20,312 an
+hour** - so those 444 seconds should have added about **2,505**, which is 5.6% of the figure
+being read. A point or two can hide in a whole number. Two and a half thousand cannot.
+
+| | per hour | over 444 seconds |
+|---|---|---|
+| 5% of a level every 8 hours, resting | 81,250 | about 10,021 |
+| 5% of a level every 32 hours, away from an inn | 20,312 | about 2,505 |
+| observed, away from an inn | - | **0** |
+
+So a character **logged in** and standing outside an inn gains nothing on this build, over seven
+minutes where the quarter rate would owe 2,505.
+
+**This was first written as *nothing accrues away from an inn*, and that was wrong** - see the
+correction further down. The reading was taken on a connected character, and the quarter rate the
+sources describe is about time spent **logged out** in the world. The zero refutes a claim nobody
+makes; it leaves the real one untouched.
+
+**The inn rate is measured, and the rule is carried, 2026-09-20.** The prediction above was
+written down before the reading was taken, which is the only way this counts for anything. The
+level 11 was left in the Stoutlager Inn and read again **6,842 seconds** - one hour and 54 minutes
+- after the reading of 8,510, most of that time logged out, and it had earned nothing in between:
+`xp` 5,337 at both readings.
+
+| | |
+|---|---|
+| rested at the first reading | 8,510 |
+| the rule's rate, 5% of 8,700 every 8 hours | 54.375 an hour |
+| what the rule owes over 6,842 seconds | 103.3 |
+| **what the rule predicts** | **8,613.3** |
+| **what the client answered** | **8,612** |
+
+Out by **1.3 points on a gain of 102**, which is a whole-number figure landing where a rule with
+no rounding in it said it would. **5% of a level every 8 hours in an inn is the rate**, on this
+build, measured rather than quoted.
+
+Three things come with it, and two were not what the reading was for:
+
+- **Logged out counts the same as logged in.** Most of those 6,842 seconds were spent with the
+  character away, and the total matches the continuous rate. Had the away time counted for
+  nothing, the gain would have been a fraction of 102 - so an estimate may run the clock from
+  the moment of the photograph and need not know whether anybody was playing.
+- **The accrual is fine-grained, not chunked.** 102 points in 6,842 seconds, and 4 points in the
+  214-second walk before it, are both what a near-continuous trickle looks like. A game crediting
+  rest in quarter-hours would answer in multiples of 13.6 and would have answered 0 to the walk.
+- **And it says nothing about the field**, which is where the paragraph above went wrong. See the
+  correction below.
+
+**Correction, the same day: the field is not measured and the zeros do not refute anything.**
+Alberto, reading the paragraph above: *lo zero in campo aperto secondo me non e vero ... la
+regola generale secondo tutti i siti di informazioni e che in campo aperto si accumula 4 volte
+piu lentamente che in una inn*. He is right, and the fault is in what the readings were taken to
+mean rather than in the readings.
+
+**Both zeros were read on a character that was logged in.** The Mists 85 stood in The Masonary
+for 444 seconds of one session; the Burning Crusade level 1 sat in the Valley of Trials across
+4,587 seconds, also connected. The rule the sources state is not *a character in the field fills
+at a quarter rate* - it is that **time spent logged out** fills at a quarter rate out in the
+world and at the full rate in an inn, while a character who is logged in and standing in the
+wilderness fills at **nothing**. Under that rule both zeros are exactly what should have been
+read, and neither one bears on the quarter rate at all. The arithmetic was right; it was aimed
+at a claim nobody makes.
+
+**The four cases, and which have been read:**
+
+| | rate the sources give | measured here |
+|---|---|---|
+| logged in, resting in an inn | 5% of a level per 8 hours | **yes** - 4 points in 214 seconds, in the Stoutlager Inn |
+| logged out in an inn | 5% per 8 hours | **yes** - 102 points over 6,842 seconds, carrying the rule to 1.3 points |
+| logged in, standing in the field | nothing | **yes**, twice, on two builds - 0 over 444 and over 4,587 seconds |
+| **logged out in the field** | **5% per 32 hours** | **never** |
+
+So the one case an estimate would be wrong about for a week at a time - a character parked
+outdoors and left there - is the one case that has never been sampled, and that is the same
+sentence this entry opened with. **The overnight reading of Tontazzo is load-bearing again**, and
+it is the only thing that settles it: left logged out in the Valley of Trials, a level 1 whose
+`xpMax` is 400 should gain about **5 points over eight hours** at the quarter rate and **0** if
+there is no such rate for a logged-out character either. Those two cannot be confused.
+
+**The reading that settles it is set up, and the prediction goes here first.** Alberto,
+2026-09-20: *ora loggo Ziofurgone, gli faccio ammazzare due maiali, poi lo sloggo fuori di una
+inn*. The level 11 from the inn measurement is the right subject - its rate in an inn is known
+to 1.3 points, so the same character out of doors is the same instrument pointed at the other
+case. The pigs are there to put it below the ceiling by a margin, and the pair on this very
+character says the pool falls by what is earned, so the figure to start from is whatever the
+probe reads **after** the killing and **outside** the rest zone, not 8,612.
+
+The three rates, for a level whose `xpMax` is 8,700, fixed before the reading is taken:
+
+| | per hour | over 8 hours | over 10 | over 12 |
+|---|---|---|---|---|
+| the inn rate, if being logged out is all that matters | 54.375 | 435 | 544 | 653 |
+| **the quarter rate, logged out in the world** | **13.594** | **109** | **136** | **163** |
+| nothing at all | 0 | 0 | 0 | 0 |
+
+Three answers that cannot be confused with each other over a night, on a figure that carries
+whole points. The ceiling is 13,050, so a gain of a few hundred has room and will not be clipped
+- and if the reading comes back *at* 13,050 the night was long enough to fill it and the rate is
+not readable from that pair, which is the one way this can waste the night.
+
+What it needs to be worth anything: the probe run **immediately before logging out**, standing
+where `resting=false`, and run again **first thing on logging back in**, before moving a step.
+Thelsamar itself reads `resting=false`, so the spot is next door to the inn.
+
+**The night's starting point, read 2026-09-20 in Thelsamar with `resting=false`**: rested
+**8,086**, `xp` 5,909, at 1789907222. From here the three rates give:
+
+| | over 8 hours | over 10 | over 12 |
+|---|---|---|---|
+| the inn rate, if being logged out is all that matters | 8,521 | 8,630 | 8,738 |
+| **the quarter rate, logged out in the world** | **8,195** | **8,222** | **8,249** |
+| nothing at all | 8,086 | 8,086 | 8,086 |
+
+The ceiling is 13,050, so nothing is clipped even at the fastest rate over twelve hours, and the
+three columns stay hundreds of points apart. A morning reading picks one of them.
+
+**And the walk out confirmed the spending rule a second time, unasked.** Between the inn reading
+and this one - 3,310 seconds - the character killed pigs and walked to Thelsamar: `xp` 5,337 to
+5,909, **572 earned**, and rested 8,612 to 8,086, **526 lost**. Those two do not match until the
+inn time in between is put back: resting for the whole gap would have added 50, which makes the
+loss 576 against 572 earned, and since part of that gap was spent walking where nothing accrues
+the true accrual is a few points under 50 and the loss lands on 572 exactly.
+
+So the pool falls by **what the character earns**, measured twice now on this character, the
+first time on a pair with no accrual in it at all (630 for 630). A projection that only ever adds
+is wrong for anybody who is played, and this is the arithmetic that says by how much.
+
+**And a second exception to write down before it bites.** Alberto: Pandaren fill faster than
+everybody else. Whatever Family computes has to know the race of the character it is computing
+for, or it is wrong for one race on the build that has them - and Mists is that build. Nothing
+has been measured; it is written here so the estimate is not built on a single rate.
+
 **Killing things spends it**, which is worth saying because a reading taken after a fight is a
 reading of a figure that has gone *down*: rested experience is drawn on as a bonus while the
 character earns. A measurement of the rate wants a character nobody is playing.
@@ -6158,3 +6308,22 @@ was caught by nothing, because the eleven-value row in the check has a nil in th
 fails the number test anyway. It wanted a **longer** row, with a real number sitting in that place
 — the icon file id, which is exactly what a client could put there. That check is in now, and the
 mutation is caught.
+
+**And the position turned out not to be the only way in.** Asking which members
+`C_CurrencyInfo` keeps - on a build that has no list calls in it at all - found that it keeps
+`GetCurrencyListLink`, and on the Burning Crusade character holding honor that call answers a
+proper link for the row the older list handed over: **1901**, the same id as the twelfth value.
+The global link call is **absent** from 2.5.6 altogether, which is why this ever went wrong.
+
+So the id is now asked for in the order of what each place promises: the global link, then the
+link on `C_CurrencyInfo`, then the position. Two links and a fallback, where this entry began with
+one route that does not exist on that build. The position stays, because it is measured and
+because it agreeing with the link is what makes it worth keeping, but nothing rests on it alone
+any more. Five checks and three mutations for the order itself.
+
+**A second build needs it, found the day it shipped.** Mists 5.5.4 has `C_CurrencyInfo` without
+`GetCurrencyListSize`, so it reads currencies by the older list as well - the route this entry is
+about, on a build that was filed under the modern one. Its row has still never been seen, because
+the only Mists character asked so far has earned no currency. If that row is twelve values with
+the id last, this fix covers it; if it is any other length, honor there keeps its name and this
+entry has a second half. Either way nothing is guessed, which is what the shape check buys.
