@@ -437,6 +437,15 @@ local WORDS = { "Prof", "Trade", "Craft", "Trait", "Talent", "Catalyst", "Housin
 -- That is paid for by the line `discover` writes for every namespace a word finds and this list
 -- does not hold: its functions are listed, so the next reader sees the new name in the run and
 -- decides, rather than finding out because something was called.
+--
+-- Three namespaces the words find and this list deliberately does not hold. `C_AuctionHouse` and
+-- `C_AddOnProfiler` are the over-matches above. The third arrived on version 13's own first run,
+-- through the line below, and is the argument for that line: **`C_TradeInfo`** is the
+-- player-to-player trade window - `AddTradeMoney PickupTradeMoney SetTradeMoney
+-- ShouldShowTradeOfferWarning` - reached by `Trade`, which was meant for `C_TradeSkillUI`. Three
+-- of its four functions move money. Nothing was ever called in it, because none of the four
+-- begins with a read word; had the client named one `GetTradeMoney`, version 12 would have
+-- called it. That is luck for the third time in two days, and the last time it is relied on.
 local SPACES = {
 	"C_ClassTalents", "C_CraftingOrders", "C_HouseEditor", "C_HouseExterior", "C_Housing",
 	"C_HousingBasicMode", "C_HousingBlueprint", "C_HousingCatalog", "C_HousingCleanupMode",

@@ -1250,3 +1250,27 @@ names the twenty namespaces that are called into, read off this run's census. Th
 run, and a namespace they find that the list does not hold is **listed and not called**, with a
 line in the run saying so - which is how the next build's new namespace gets seen and decided
 on, instead of swept.
+
+### What version 13 answered on its first run (2026-09-20, `Ahia`)
+
+Three predictions, and the arithmetic closes:
+
+- **No refusals.** The `blocked` block is empty where version 12's held eight. The three lines
+  naming what was listed and not called are there instead: `C_HouseExterior` 3,
+  `C_HousingCatalog` 1, `C_HousingDecor` 4.
+- **472 no-argument calls became 405, across 20 namespaces instead of 22.** The difference is
+  67 = 53 + 6 + 8, which is `C_AuctionHouse`, `C_AddOnProfiler` and the eight refusals, and
+  nothing else moved.
+- **And the off-list line found a third namespace on its first run, which is what it is for.**
+  `C_TradeInfo` - reached by `Trade`, which was meant for `C_TradeSkillUI`. It holds
+  `AddTradeMoney`, `PickupTradeMoney`, `SetTradeMoney` and `ShouldShowTradeOfferWarning`: the
+  player-to-player trade window, and three of the four move money. **Nothing was ever called in
+  it**, because none of the four begins with a read word - so version 12 swept a money-moving
+  namespace and was spared by the naming of its functions. That is luck for the third time in
+  two days.
+
+It was missed when `SPACES` was written because that list was read off the namespaces the
+earlier run had *made calls in*, and `C_TradeInfo` made none - enumerating from the effect
+rather than from the matcher, which is L-204's shape once more. The line that reports an
+off-list namespace is what caught it, on the first run after it was written, which is the whole
+argument for keeping the words as a net after taking them out of the decision.
