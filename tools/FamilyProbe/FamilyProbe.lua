@@ -398,11 +398,16 @@ local PROBES = {
     -- Backlog 94: rested experience
     ----------------------------------------------------------------------------------------
     { area = "rested", name = "the sample", ask = function()
+        -- **A call that answered false is not a call that is missing**, and the first writing of
+        -- this said `absent` for both: `x and try(x) or "absent"` takes the false branch on a
+        -- false answer. Read on Burning Crusade 2026-09-20 off a character standing in the
+        -- Valley of Trials, where *not resting* is the whole of what was being asked. The test
+        -- is on the function now, and whatever it answers is printed as it is.
         local resting = there("IsResting")
         local exhaustion = there("GetXPExhaustion")
         return table.concat({
-            "resting=" .. tostring(resting and try(resting) or "absent"),
-            "rested=" .. tostring(exhaustion and try(exhaustion) or "absent"),
+            "resting=" .. (resting and tostring(try(resting)) or "no such call"),
+            "rested=" .. (exhaustion and tostring(try(exhaustion)) or "no such call"),
             "xp=" .. tostring(try(UnitXP, "player")),
             "xpMax=" .. tostring(try(UnitXPMax, "player")),
             "level=" .. tostring(try(UnitLevel, "player")),

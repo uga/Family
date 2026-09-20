@@ -6013,8 +6013,19 @@ to six hundred and fifty thousand.
 and a half again, so the rule holds on all three builds and at both ends of a character's life -
 the ceiling is a multiple of the level's own `xpMax`, not a number.
 
-**The rate is still unmeasured**, and cannot be taken from these three: every character read was
-already at the ceiling, where nothing accumulates. It wants a character below it, which is what any
+**The first character below the ceiling turned up the same day**, on Burning Crusade: a level 1
+in the Valley of Trials, **not** resting, with `xpMax` 400 and rested **104** - 26% of a level,
+a quarter of the way to the ceiling. That is the shape the rate can be measured from, and it
+wants only a second reading of the same character some hours later.
+
+**It also found a fault in the probe rather than in the game.** The sample printed
+`resting=absent` for a character who was simply not resting: `IsResting` answered **false**, and
+the line asked `call and try(call) or "absent"`, which takes the false branch on a false answer.
+A reading that cannot tell *no* from *no such call* is the fault §2.2 is about, in the tool
+rather than in the addon. Fixed the same day; the test is on the function now.
+
+**The rate is still unmeasured**, and cannot be taken from the characters at the ceiling: nothing
+accumulates there. It wants a character below it, which is what any
 character becomes as soon as it is played for a while - then two readings a few hours apart, one
 pair logged out in an inn and one pair logged out in the field.
 
