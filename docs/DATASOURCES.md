@@ -2227,6 +2227,29 @@ So a *what does this disenchant into* feature cannot be generated the way the re
 needs either a new data source, which is reserved, or Family watching it happen and learning -
 which needs no source at all and is worth considering on its own terms.
 
+**Gathering nodes: wago has neither their names nor what they drop, asked 2026-09-20.** Backlog 96
+wants Family's possessions block on a herb node's or a mining vein's tooltip, and Alberto's own
+question was whether wago is where the node names and their herbs and ores come from. Answered by
+fetching, as the disenchant question above was.
+
+`GameObjects` **is** served for Era `1.15.9.69109`, and it is not the table the name suggests: 864
+rows, columns `Name_lang, Pos_0..2, Rot_0..3, ID, OwnerID, DisplayID, Scale, TypeID, ...`, and what
+is in it is **signposts and map-region markers** - *Old Coast Road*, *Sentinel Hill*, *Jangolode
+Mine*, *Northshire Abbey*. Not one gathering node. `GameObjectLabel` is listed on the index page and
+answers **404** for this build, exactly as `ItemSalvageLoot` did. `Lock` and `LockType` are served
+and are the right shape for *which skill opens this and at what level* - but they carry no names and
+nothing about items, and what points at them is the object template.
+
+Which is the disenchant answer again, for the same reason: a gathering node is a server-spawned
+object out of `gameobject_template`, and what it yields is a `gameobject_loot_template`. **Neither is
+client data**, so neither is anything wago mirrors. A generated table is therefore not available for
+this at all - not the mapping, and not even the node names in five languages, which is the half that
+looked as though it would be free.
+
+So the routes left for backlog 96 are Family learning the mapping from play, a table written by
+hand, or a genuinely third-party *database* rather than a mirror of the client's own files - which
+is a different and heavier proposition than the one that was asked about, and is reserved.
+
 **`SpellReagents` is served for all three pinned builds** and was read on 2026-09-12, against a
 recipe somebody named rather than against nothing: `29360` Smelt Felsteel gives `23445` ×3 and
 `23447` ×2 — Fel Iron Bar and Eternium Bar, which is what the game's own window shows. Era 2,305
@@ -4582,3 +4605,56 @@ keeps answering its keyboard.
 Prices checked on common goods afterwards and correct, which is the reading that says the division
 by quantity is right way round.
 
+
+### What a herb node and a mining vein actually say, measured on Era 2026-09-20
+
+Backlog 96, route 1: ask the client before choosing a table. Read on `1.15.9`, Hooga-Pyrewood
+Village, with `/familyprobe node`.
+
+| Hovered | Frame under the pointer | item / spell / unit | The tooltip |
+|---|---|---|---|
+| A Liferoot in the world | **nothing** | all three `nil` | 2 lines: `"Liferoot"`, `"Herbalism"` |
+| A Copper Vein in the world | **nothing** | all three `nil` | 2 lines: `"Copper Vein"`, `"Mining"` |
+| The minimap | `Minimap` | all three `nil` | 1 line: `"Copper Vein"` |
+| A GatherMate pin | `GatherMatePin2`, `GatherMatePin4` | all three `nil` | 1 line: the node's name |
+
+**No id, and no route to one on this build.** `TooltipDataProcessor` is `nil` and `C_TooltipInfo`
+is absent on 1.15.9, so the modern tooltip system is simply not there and nothing can be
+registered against it. A world object hands over a name and the client will not say what the
+tooltip is about by any of the three calls that could.
+
+**And `Enum.TooltipDataType` is there anyway, with 28 members - `Object` and `MinimapMouseover`
+among them.** Present is not meaningful, on a client instead of on a capability: read that line
+alone and Era looks like a build with an id route for exactly the two cases this entry wants. It
+has neither, because the processor those types are fed to does not exist here. The probe registers
+a post-call for every one of the 28 and none of them fired, which is the reading that says so
+rather than an inference from the absence of the processor.
+
+**The second line is the gathering profession, in the client's own word.** *Herbalism* under
+Liferoot, *Mining* under the Copper Vein. That is not a name Family has to ship: `SkillLines.lua`
+already carries skill 182 and 186 with their names in five locales, generated from the client's own
+`SkillLine` table - so **which profession a node belongs to is answerable by id, in any language,
+with nothing new**, even while which node it is stays a name. Worth knowing before anything is
+built on line 1 alone.
+
+**The world node has no frame at all.** `GetMouseFoci` came back empty for both real nodes, while
+every addon pin had a named frame. Together with all three subject calls answering nothing and a
+two-line tooltip whose second line is a gathering skill, that is a recognisable shape, and it is a
+good deal more specific than *a tooltip the client would not name*.
+
+**The minimap reading is contaminated and is not evidence yet.** `GatherMatePin2` and
+`GatherMatePin4` are GatherMate's own frames - a third-party addon that records node locations and
+draws its own pins - so that client had another addon drawing on the minimap throughout. Nothing in
+the reading can tell whether `Minimap  |  "Copper Vein"` is the client's own tracking blip or
+GatherMate's pin anchored to the minimap, and the difference decides whether the minimap half of
+backlog 96 is possible at all on a stock interface. **It wants one more reading with GatherMate
+switched off**, and until then the world node is the only measured half.
+
+**A tooltip line can carry a name twice.** One reading came back `1="Plaguebloom\nPlaguebloom"` -
+one line, two names, a newline between them, from two pins under one cursor. Anything reading line
+one has to cope with that rather than assume a line is a name.
+
+**Still unread: Mists.** `TooltipDataProcessor` is there on 5.5.4 - `Family.tooltipRoute` reports
+`both` - so `Enum.TooltipDataType.Object` may fire with an id on that build where it cannot on this
+one. That reading would not change Era, which has to work without an id whatever Mists says, but it
+decides whether the two builds are read by one route or two.

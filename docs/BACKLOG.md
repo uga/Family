@@ -6349,14 +6349,16 @@ The minimap is the same answer twice over: the only minimap code in either addon
 button (`Family_UI/Broker.lua:566`). Whether a tracking blip can be hovered at all on these
 clients, and whether it says anything when it is, has never been asked here.
 
-**The ore-and-bar half needs no table and no new data.** `Family.RecipeReagents` is spell -> the
-item ids it consumes, generated from the game's own files and with no language in it:
-`[3307]={2772,1}` is Smelt Iron taking Iron Ore. A recipe Family records carries `recipe.itemID`,
-the id of the thing it makes - `Scanners/Professions.lua:460`, and the comment at 700 says why it
-is read separately: *Smelting says "Smelt Copper" and makes a Copper Bar*. Inverted, that is
-**Iron Ore is a reagent of Smelt Iron, which makes Iron Bar**, by id, in any language. And
-`Family/Index.lua` already answers *who holds this item id* without walking anybody. Given the
-node's items, the rest of this entry is drawing.
+**The ore-and-bar half needs no table and no new data**, and it needs even less than this entry
+first said. `Family.RecipeReagents` is spell -> the item ids it consumes, generated and with no
+language in it: `[3307]={2772,1}` is Smelt Iron taking Iron Ore. `Family.RecipeProducts` is the
+same spell -> the one item it makes, generated for all three builds from `SpellEffect`'s
+CREATE_ITEM (DATASOURCES, *The one item a recipe spell makes*), and `Recipes:MadeBy(item)` already
+reads it backwards. So **Iron Ore is a reagent of Smelt Iron, which makes Iron Bar** is two shipped
+tables and no client involved at all - where this entry first said the product id came off a
+recorded recipe, which is a route that needs somebody to have opened a forge. And `Family/Index.lua`
+answers *who holds this item id* without walking anybody. Given the node's items, the rest of this
+entry is drawing.
 
 **The unmeasured half is the node itself, and it is the whole entry.** A world object hands over a
 name and, as far as anything here knows, no id at all. §2.1 is ids and not names, and a name is
@@ -6385,6 +6387,51 @@ assumed*. Four routes, in the order of how much each promises:
 
 **Shape.** A probe first - hover a herb node, a vein and a minimap dot on each client, and print
 what arrives. Nothing else is worth writing until that reading exists.
+
+### Route 1, answered on Era 2026-09-20
+
+Alberto chose route 1 - *lets start with 1 then we decide* - and it was read the same day on
+`1.15.9`. The reading is in DATASOURCES, *What a herb node and a mining vein actually say*; what
+it does to this entry is below.
+
+**There is no id and on Era there is no way to one.** `TooltipDataProcessor` is `nil` and
+`C_TooltipInfo` absent, so nothing can be registered against the modern tooltip system - and
+`Enum.TooltipDataType` is there anyway with 28 members, `Object` and `MinimapMouseover` among them.
+Present is not meaningful: the probe registered a post-call for all 28 and not one fired. So the
+mapping from node to item has to be learned or written, and this entry's open question is now
+**which of those**, not whether.
+
+**Route 4 is narrower than the question that was asked, and the narrow part is already answered.**
+`wago.tools` is the source Family already uses (DATASOURCES §3), so *is WAGO a source for this* is
+not a question about adopting anything - it is a question about what the client's own tables hold,
+and it was answered by fetching. `GameObjects` for Era is 864 rows of signposts and region markers
+with no node in it, `GameObjectLabel` 404s for that build, and `Lock` carries no names and no items.
+A node is a server-spawned object and what it drops is a server loot template, so **neither the
+mapping nor even the node names in five languages can be generated** - the disenchant answer of
+2026-09-12 over again, for the same reason. What remains of route 4 is a third-party *database*
+rather than a mirror of the client's files, which is a heavier proposition than the one asked about
+and stays reserved.
+
+**Route 3 grew a reason to be taken seriously.** The measured tooltip is **two** lines, and the
+second is the gathering profession in the client's own word - *Herbalism* under Liferoot, *Mining*
+under Copper Vein. `SkillLines.lua` already carries 182 and 186 with their names in five locales,
+so which profession a node belongs to is answerable **by id, in any language, with nothing new**.
+That does not name the item, but it says which half of the problem a given node is in before line 1
+is read at all. And the name lookup has a property worth noticing: **it only has to succeed where
+somebody holds the item.** If nobody in the family holds Liferoot the honest answer is *nobody has
+any*, which needs no mapping - and if somebody does, Family has already resolved that item's name
+in the reader's own language into `Names:ItemStore` in order to draw it. Measured on two herbs only,
+and *the node is named exactly what the herb is named* is a claim about Classic herbs that has not
+been checked across the set. It is false for every ore: *Copper Vein* is not *Copper Ore*.
+
+**The minimap half is not measured.** That client was running GatherMate, whose pins are named
+frames and which draws on the minimap, so the one `Minimap` reading cannot be told from a
+GatherMate pin anchored there. It wants a reading with GatherMate off before anything is said about
+the minimap at all.
+
+**Still to read: Mists**, which has `TooltipDataProcessor`. It cannot change what Era needs, since
+Era has to work without an id whatever 5.5.4 says; it decides whether the two are read by one route
+or two.
 
 ---
 
