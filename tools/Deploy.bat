@@ -19,6 +19,8 @@ rem          Deploy.bat /era         only Classic Era      (combine with /test o
 rem          Deploy.bat /anni        only Anniversary
 rem          Deploy.bat /mists       only Mists of Pandaria
 rem          Deploy.bat /icons       also copy the icon contact sheet (tools\)
+rem          Deploy.bat /probe       also copy the client probe          (tools\)
+rem          Deploy.bat /tools       both of those
 rem          Deploy.bat /nodrive     skip the Google Drive copy
 rem          Deploy.bat "folder"     use that folder as the source instead
 rem ---------------------------------------------------------------------------------------
@@ -26,11 +28,18 @@ rem ----------------------------------------------------------------------------
 set "ADDON_1=Family"
 set "ADDON_2=Family_UI"
 
-rem A development tool, not part of Family and not in any release: the icon contact sheet,
-rem which draws every candidate stock icon so a screenshot can say which ones this client
-rem actually has. Only copied when /icons is asked for, and it lives under tools\ rather
-rem than addons\ so that it can never be mistaken for something that ships.
-set "ADDON_TOOL=FamilyIconSheet"
+rem Two development tools, neither part of Family and neither in any release. Each lives under
+rem tools\ rather than addons\ so that it can never be mistaken for something that ships, and
+rem each is copied only when it is asked for by name.
+rem
+rem   FamilyIconSheet  draws every candidate stock icon, so a screenshot can say which ones this
+rem                    client actually has, and measures what a money figure really comes to.
+rem   FamilyProbe      asks one client what it calls things and which calls it carries, and
+rem                    writes the answers to its own saved variables. Added 2026-09-20, when it
+rem                    grew the probes for quests completed, lockouts, rested and honor - which
+rem                    have to be run on all three clients, so they have to reach all three.
+set "ADDON_TOOL_1=FamilyIconSheet"
+set "ADDON_TOOL_2=FamilyProbe"
 
 rem Windows refuses to run a script from a network path, so this file lives on a local disk
 rem and the checkout is reached over the share.
@@ -46,10 +55,15 @@ rem --- where the addons are coming from ---------------------------------------
 rem This script sits in tools\, so the addons are one level up.
 set "SRC=%~dp0..\addons"
 
+rem Anything that is not one of the flags is the source folder, so a flag this list forgets is
+rem read as a path - and the copy then runs against a folder that does not exist, or worse, one
+rem that does. Every flag above is named here.
 for %%A in (%*) do (
 	if /i not "%%~A"=="/test" if /i not "%%~A"=="/y" if /i not "%%~A"=="/era" (
 		if /i not "%%~A"=="/anni" if /i not "%%~A"=="/mists" (
-			if /i not "%%~A"=="/icons" if /i not "%%~A"=="/nodrive" set "SRC=%%~A"
+			if /i not "%%~A"=="/icons" if /i not "%%~A"=="/probe" (
+				if /i not "%%~A"=="/tools" if /i not "%%~A"=="/nodrive" set "SRC=%%~A"
+			)
 		)
 	)
 )
@@ -92,6 +106,7 @@ set "DRYRUN="
 set "NOASK="
 set "ONLY="
 set "ICONS="
+set "PROBE="
 set "NODRIVE="
 for %%A in (%*) do (
 	if /i "%%~A"=="/test"    set "DRYRUN=1"
@@ -100,12 +115,25 @@ for %%A in (%*) do (
 	if /i "%%~A"=="/anni"    set "ONLY=ANNI"
 	if /i "%%~A"=="/mists"   set "ONLY=MISTS"
 	if /i "%%~A"=="/icons"   set "ICONS=1"
+	if /i "%%~A"=="/probe"   set "PROBE=1"
+	rem Two sets on one line, in brackets. Chained with ^& instead, the second one runs whatever
+	rem the test said - which would copy the probe on every run, quietly.
+	if /i "%%~A"=="/tools" (
+		set "ICONS=1"
+		set "PROBE=1"
+	)
 	if /i "%%~A"=="/nodrive" set "NODRIVE=1"
 )
 
-if defined ICONS if not exist "%SRC_TOOLS%\%ADDON_TOOL%\%ADDON_TOOL%.toc" (
-	echo  /icons asked for, but "%SRC_TOOLS%\%ADDON_TOOL%" is not there - skipping it.
+rem A tool that was asked for and is not in the checkout is said out loud and dropped, rather
+rem than left to fail once per client further down.
+if defined ICONS if not exist "%SRC_TOOLS%\%ADDON_TOOL_1%\%ADDON_TOOL_1%.toc" (
+	echo  /icons asked for, but "%SRC_TOOLS%\%ADDON_TOOL_1%" is not there - skipping it.
 	set "ICONS="
+)
+if defined PROBE if not exist "%SRC_TOOLS%\%ADDON_TOOL_2%\%ADDON_TOOL_2%.toc" (
+	echo  /probe asked for, but "%SRC_TOOLS%\%ADDON_TOOL_2%" is not there - skipping it.
+	set "PROBE="
 )
 
 rem The three libraries are .pkgmeta externals: CurseForge builds them into the zip and
@@ -121,7 +149,8 @@ echo.
 echo   source : %SRC%
 echo   addons : %ADDON_1%, %ADDON_2%
 if defined LIBS echo   libs   : LibStub, LibSerialize, LibDeflate
-if defined ICONS echo   also   : %ADDON_TOOL% ^(development tool, not part of a release^)
+if defined ICONS echo   also   : %ADDON_TOOL_1% ^(development tool, not part of a release^)
+if defined PROBE echo   also   : %ADDON_TOOL_2% ^(development tool, not part of a release^)
 if defined ONLY echo   only   : %ONLY%
 if not defined NODRIVE if exist "%DEST_DRIVE%\" echo   drive  : %DEST_DRIVE%
 if defined DRYRUN echo.& echo   TEST RUN - nothing will be written.
@@ -220,6 +249,7 @@ echo.
 echo  Then try:  /family        open the window
 echo             /family caps   what this client can do, and how Family worked it out
 if defined ICONS echo             /iconsheet     the icon contact sheet - screenshot it
+if defined PROBE echo             /familyprobe apis  what this client carries - paste the lines
 goto :done
 
 rem --- is this client installed ? ------------------------------------------------------------
@@ -257,7 +287,8 @@ if /i not "%TAIL%"=="Interface\AddOns" (
 echo  --- %~2 ---
 call :copyone "%SRC%" "%ADDON_1%"
 call :copyone "%SRC%" "%ADDON_2%"
-if defined ICONS call :copyone "%SRC_TOOLS%" "%ADDON_TOOL%"
+if defined ICONS call :copyone "%SRC_TOOLS%" "%ADDON_TOOL_1%"
+if defined PROBE call :copyone "%SRC_TOOLS%" "%ADDON_TOOL_2%"
 exit /b 0
 
 rem --- and the same two into Google Drive ------------------------------------------------------
@@ -285,7 +316,8 @@ if /i not "%TAIL%"=="\Addons" (
 echo  --- %~2 ---
 call :copyone "%SRC%" "%ADDON_1%"
 call :copyone "%SRC%" "%ADDON_2%"
-if defined ICONS call :copyone "%SRC_TOOLS%" "%ADDON_TOOL%"
+if defined ICONS call :copyone "%SRC_TOOLS%" "%ADDON_TOOL_1%"
+if defined PROBE call :copyone "%SRC_TOOLS%" "%ADDON_TOOL_2%"
 exit /b 0
 
 :copyone

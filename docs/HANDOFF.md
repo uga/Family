@@ -207,6 +207,11 @@ looked at, on each client, in the **icon contact sheet**:
     tools/Deploy.bat /icons        copies tools/FamilyIconSheet/ alongside the two addons
     /iconsheet                     opens it in the game
 
+The other tool under `tools/` travels the same way. `tools/Deploy.bat /probe` copies
+`tools/FamilyProbe/`, which asks one client what it calls each profession and which calls it
+carries for the things Family does not record yet — quests completed, instance lockouts, rested
+experience and honor, backlog entries 5 and 92 to 94. `/tools` copies both.
+
 It draws every candidate at 32 and at the 18 a tab icon really is, on a backing colour that
 cycles magenta / black / white, with a control group whose first cell is a path invented to
 be wrong — so a miss can be recognised by comparison rather than by assumption. Clicking a

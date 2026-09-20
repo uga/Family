@@ -21,7 +21,8 @@ report rather than a silent fault in a release.
 
 ## Running it
 
-1. Copy the `FamilyProbe` folder into `Interface/AddOns/`.
+1. Copy the `FamilyProbe` folder into `Interface/AddOns/` — `tools/Deploy.bat /probe` does it
+   for every client installed, and `/tools` copies the icon sheet along with it.
 2. Log in. It reports in chat five seconds later; `/familyprobe` runs it again.
 3. **Log out** — that is when the client writes the file.
 4. Repeat on each client language, and on a few characters per language: the skill list only
