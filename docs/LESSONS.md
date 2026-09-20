@@ -3498,6 +3498,40 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-110 and L-111 — not used here, and deliberately
+
+**2026-09-20.** These two numbers are left empty on this branch. It is the only thing that can
+still be done about a collision that has already happened, and it costs two numbers out of a
+sequence whose only meaning is the order it was written in.
+
+Both lines of work allocated upward from L-107 for a week without either knowing. The Midnight
+line's lessons have since moved to L-200 and up, and its earlier commit messages still cite the
+numbers they were written against: `f463ca8` cites L-108, L-109 and **L-110**, `8e8cdff` cites
+L-108 and **L-111**, `dff86ec` cites L-108. A commit message cannot be corrected - rewriting
+history is on the reserved list, and the citation would be wrong in the history either way.
+
+L-108 and L-109 were taken here before any of this was noticed, so those citations now resolve
+to lessons that have nothing to do with what their commits meant. Nothing can be done about
+those two.
+
+**L-110 and L-111 can still be saved, and this is how.** If this branch never allocates them, a
+reader who follows one of them from a Midnight commit arrives here rather than at a plausible
+and unrelated lesson. What the number resolves to becomes the explanation - which is the whole
+difference between a fault that announces itself and one that does not, and is what most of the
+entries below are about.
+
+Where those commits say L-110 they mean **L-202**, *the canary passed all along, because the
+canary ran a different command*. Where one says L-111 it means **L-203**, *the block was written
+down, and every comparison that read the file dropped it*. The general rule, for any Midnight
+commit dated before 2026-09-20 citing anything from L-108 to L-115: **add 92**.
+
+**No check catches this**, and saying so is the point of the preamble above. A harness check that
+refused a heading of `## L-110` would be a check on the instance, and the rule it stands for -
+*do not reuse an identifier something else already points at* - is not a thing a sweep can see.
+What holds it is this entry being in the way.
+
+**The next lesson on this branch is L-112.**
+
 ## L-109 — two sessions, one processor: the run was not slow, it was killed
 
 **2026-09-20.** The full mutation run was reported as taking fifteen to twenty minutes, against
