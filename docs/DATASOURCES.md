@@ -2819,6 +2819,35 @@ build, and read back rather than assumed:
 
 Until those are answered, the honest position is that Family stores no honor at all.
 
+#### What Era answered, measured 2026-09-20
+
+The first of the probes above, run on `1.15.9` through `/familyprobe apis` on a level 60 with 47
+honorable kills. **The table above was right and the account that disputed it was wrong:**
+
+| asked | answered |
+|---|---|
+| `UnitPVPRank` | `8` |
+| `GetPVPRankInfo(8)` | `"Master Sergeant"`, `4` |
+| `GetPVPThisWeekStats` | two numbers |
+| `GetPVPLastWeekStats` | four numbers |
+| `GetPVPLifetimeStats` | `47`, `0`, `8` |
+| `C_CurrencyInfo.GetCurrencyInfo(392)` and `(390)` | **nothing at all** |
+| `GetHonorCurrency`, `GetArenaCurrency` | absent |
+
+So Era has ranks and has no honor currency: honor there is not the thing it is on the other two
+builds, and a single column would have been wrong about it.
+
+**The number asked with is not the number answered.** `UnitPVPRank` said 8 and the call asked with
+that 8 answered with a 4 beside the name. Whatever is stored is the answered number, not the
+argument, and which of the two a reader means by *rank* is the one thing in this paragraph still
+to settle.
+
+**And two calls are present with nothing behind them.** `GetPersonalRatedInfo` answers on Era -
+zeros, with a last value of 2, 3 and 5 for the first three brackets, which reads like a team size -
+and so does `GetArenaTeam`, with nils. Era has neither rated play nor arena teams. This is
+`Capabilities.lua`'s thesis in its plainest form: the client carries the call because Blizzard
+builds one client, and the call answering is not the game agreeing that the question made sense.
+
 #### Re-read this at a new build
 
 The rules above are pinned to the three builds in section 3 and to no others. They have already

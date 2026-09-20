@@ -353,6 +353,14 @@ this week's and last week's figures, the honor and conquest currencies by id thr
 currency call this client has, arena teams, and the rated brackets. Nothing is stored by Family
 until they have been run on all three builds.
 
+**Era answered the same day, and the 2026-09-04 research was right.** Ranks are there
+(`UnitPVPRank` 8, named through `GetPVPRankInfo`), and the honor currency is not: both currency
+ids answer nothing. So the disagreement above is settled for this build in favour of the table,
+and the brief was describing another one. The readings, and the two traps in them - the rank
+asked with is not the rank answered, and two rated-play calls are present on a build with no
+rated play - are in `DATASOURCES.md` under *What Era answered*. Burning Crusade and Mists are
+still unread.
+
 ---
 
 ## 6. A keybind that opens Family — DONE 2026-09-04
@@ -5831,6 +5839,25 @@ with `tools/wire-size.lua`, which already does this for recipe lists:
 - whether a daily quest reads as completed, and for how long, which is the second row the
   specification promises.
 
+**Era answered 2026-09-20**, on a level 60 with the quest history of a played character:
+
+- **`GetQuestsCompleted` is there and answered `1099` ids in `4.0` ms.** The account that said
+  Era has no native way to ask for this is wrong about this client, and *it will lag* is now a
+  number: four milliseconds, once, for a whole history. What that leaves is the weight, which is
+  the question this entry already says to measure.
+- `C_QuestLog.IsQuestFlaggedCompleted` is there too and behaves: a quest this character really
+  finished reads true, and 999999 reads false. So there are two routes on Era, and the cheap one
+  for *has this one been done* needs no history in memory at all.
+- `C_QuestLog.GetAllCompletedQuestIDs` and `QueryQuestsCompleted` are both absent, so on this
+  build there is nothing to ask the server for and no event to wait for - the answer is simply
+  there.
+- `GetDailyQuestsCompleted` answers `0`. Present, and Era is not a build with dailies to count:
+  `Capabilities.lua`'s thesis again, and the reason that row in the specification says *Burning
+  Crusade onwards*.
+
+Still open on Era: whether the count grows if the same call is made again some minutes after
+logging in, which is the one way a history that arrives late would show itself.
+
 ---
 
 ## 93. Instance lockouts, and when each resets
@@ -5871,6 +5898,22 @@ are already known and cost nothing to honour:
 - whether the instance id a lockout carries is readable, since *who can I raid with* rests on it
   and a promise made from an id that is not there is worse than saying nothing.
 
+**Era answered 2026-09-20**, on a character saved to nothing:
+
+- `GetNumSavedInstances` says `0`, and `GetSavedInstanceInfo(1)` **still answers** - fourteen
+  values, `nil 0 nil 0 false false 0 false 0 "" 0 0 false 0`. So a reader cannot tell "no lockout"
+  by the call refusing; it has to read the count, or the name being nil. That is the case every
+  player is in most of the time, and the one an addon gets wrong.
+- **Fourteen values, not the eight** a careless reader would take: the probe was built to keep
+  however many there are for exactly this reason, and the columns past the eighth are where the
+  difficulty's name and the boss counts live on the builds that have them.
+- `GetNumSavedWorldBosses` is present on Era and says `0` - present, meaningless, as above.
+- `time()` and `GetServerTime()` differed by one second, so either can carry a reset moment, and
+  neither is the other.
+
+Still owed: the same reading from a character that **is** saved to something, which is the only
+way to see what the fourteen columns hold when they hold anything.
+
 ---
 
 ## 94. What a character's rested experience has grown to since they were put away
@@ -5908,3 +5951,10 @@ section - what the game does, cited, and then what the client is asked:
 `GetXPExhaustion` answer where the character is standing, with level, `xpMax` and the moment
 beside them, so that two readings taken a few hours apart on one character measure the rate
 rather than assuming it.
+
+**The first Era reading, 2026-09-20, measured nothing and said why.** The character was level 60
+on a build whose cap is 60, so `GetXPExhaustion` answered `0` and experience answered `0` out of
+`217400` - which is the state Family already clears the fields in (`Identity.lua:84`). Rested is
+a thing only a character below the cap has, so the sample has to be taken on one: **that is the
+first condition of this entry's measurement**, and it was missed in the asking rather than in the
+answering.
