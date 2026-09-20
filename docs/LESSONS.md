@@ -3709,6 +3709,25 @@ resolved to nothing when they were written and resolve to unrelated lessons toda
 be done about them either - the numbers were spent before anybody looked - and they are listed
 here so that the count is the real one rather than the three it started at.
 
+**How the count went from three to six is the part worth keeping.** The first one was made by
+searching the log for L-108 to L-111 - the numbers already known to be wrong - which is a search
+that can only return what it was given. The real one enumerates instead: every commit on the
+other branch and not on this one, every `L-[0-9][0-9][0-9]` in its message, nothing expected.
+
+    for c in $(git log midnight --format=%h --not main); do
+        git log -1 --format=%B $c | grep -oE 'L-[0-9]{3}' | sort -u | sed "s/^/$c /"
+    done
+
+Both branches made that narrowing independently, and the Midnight session found its own the same
+way - inside the paragraph recording the lesson about searches that can only confirm.
+
+Run that way it says two things the targeted search could not. **No commit cites L-113**, so of
+the four numbers allocated here that evening, three do damage and one does none - and the lesson
+that became L-205 there is quoted nowhere at all, so there was never anything to save. And
+`6b72d49` cites **L-103**, which is a lesson older than the split and means the same on both
+branches: the enumeration returns undamaged citations too, which is how a reader can tell it is
+not merely agreeing with whoever ran it.
+
 **The next free number on this branch is L-116.**
 
 ## L-109 — two sessions, one processor: the run was not slow, it was killed
