@@ -107,6 +107,13 @@ esac
 echo "==> checks"
 lua tests/Harness.lua >/dev/null || fail "checks failed - nothing is released on a red run"
 
+# The recorded mutations, which until now this script never ran. A green harness says the checks
+# pass; only this says they would notice if the code underneath them broke, and a release is the
+# one moment where that difference is worth eight minutes. It refuses on a survivor, a moved
+# anchor or a hung gate, exactly as it does by hand.
+echo "==> mutations (about eight minutes)"
+python3 tools/mutate.py || fail "the recorded mutations did not all come back caught - nothing is released on that"
+
 echo "==> version $version in both .toc files"
 for toc in addons/Family/Family.toc addons/Family_UI/Family_UI.toc; do
     grep -q '^## Version:' "$toc" || fail "$toc has no ## Version line"

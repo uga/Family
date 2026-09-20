@@ -51,7 +51,7 @@ anybody checked, which is what a citation that reads as checked does for a livin
 
     tools/mutate.py                 every case in tools/mutations
     tools/mutate.py one.mut two.mut just those
-    tools/mutate.py --changed       only cases whose file: is changed since HEAD or not yet tracked
+    tools/mutate.py --changed       cases whose file: - or whose own .mut - is changed or untracked
     tools/mutate.py --jobs 1        one at a time, for when a failure needs watching
     tools/mutate.py --all           print every case, not only the ones that need looking at
 
@@ -275,6 +275,20 @@ def changed_files():
             return None
         files.update(line.strip() for line in out.stdout.split("\n") if line.strip())
     return files
+
+
+def picked(paths, files):
+    """The cases a change touches: the file a case mutates, **or the case itself**.
+
+    The second half was missing until 2026-09-20. A `.mut` edited on its own - an anchor
+    re-pointed after the code moved under it, a replacement rewritten - names a `file:` that may
+    not have changed at all, so the working loop skipped precisely the cases somebody had just
+    been working on, and said *no recorded mutation names a file changed* while holding one in
+    the diff. Measured by another session over the red full runs of 2026-09-12 to 2026-09-20:
+    two of the thirty-three failures were exactly that, a case file changed and its target not.
+    """
+    return [path for path in paths
+            if parse(path)[1] in files or os.path.relpath(path, ROOT) in files]
 
 
 # One run at a time on this machine, whichever worktree it is started from. Outside every tree
@@ -520,7 +534,7 @@ def run_all(argv):
         if files is None:
             print("git did not say what has changed, so nothing can be picked by it")
             return 1
-        paths = [p for p in paths if parse(p)[1] in files]
+        paths = picked(paths, files)
         if not paths:
             print("no recorded mutation names a file changed since HEAD - the full run is "
                   "still the one before a commit")

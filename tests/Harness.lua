@@ -25193,6 +25193,13 @@ print("the release script refuses a version with no live-check row")
 		sh:match("%[%[ %-n \"%$clients\" %]%] |") ~= nil,
 		"without it the gate reads the file and then tags anyway")
 
+	-- The harness says the checks pass; only the mutations say the checks would notice the code
+	-- breaking underneath them. A release is the one moment that difference is worth eight
+	-- minutes, and this script ran the first and never the second until 2026-09-20.
+	check("release.sh runs the recorded mutations too, and stops on them",
+		sh:match("python3 tools/mutate%.py || fail") ~= nil,
+		"a green harness is not evidence that the checks are load-bearing")
+
 	check("release.sh holds a full release to all three clients",
 		sh:match("%*alpha%*|%*beta%*") ~= nil and sh:match("Anniversary:anni") ~= nil,
 		"a pre-release needs one row; the version everybody is offered by default needs three")
@@ -40927,6 +40934,18 @@ if RUN.storage == "compressed" then
 		"first = open(mutate.LOCK, 'a+')",
 		"fcntl.flock(first, fcntl.LOCK_EX)",
 		"print('names who holds it now', mutate.holder(open(mutate.LOCK).read()) is None)",
+
+		-- **A case file edited on its own is a changed case.** Re-point an anchor after the code
+		-- has moved under it and the `file:` it names may not have changed at all, so the
+		-- working loop skipped exactly what somebody had just been editing and reported that
+		-- nothing named a changed file. Two of the thirty-three red full runs between
+		-- 2026-09-12 and 2026-09-20 were that shape.
+		"one = os.path.join(tree, 'a.mut')",
+		"open(one, 'w').write('name: a\\nfile: addons/Family/Wide.lua\\n--- old\\nx\\n--- new\\ny\\n')",
+		"rel = os.path.relpath(one, mutate.ROOT)",
+		"print('picks by the file it mutates', mutate.picked([one], {'addons/Family/Wide.lua'}) == [one])",
+		"print('picks by the case file itself', mutate.picked([one], {rel}) == [one])",
+		"print('and picks nothing on an unrelated change', mutate.picked([one], {'README.md'}) == [])",
 		"ran = []",
 		"def go():",
 		"    with mutate.only_one_run():",
@@ -40981,6 +41000,11 @@ if RUN.storage == "compressed" then
 	-- which is the shape read from a live run: naming the line would name the wrong tree.
 	check("and names whoever holds it now rather than whoever wrote last",
 		text:find("names who holds it now True", 1, true) ~= nil, text)
+	check("a changed case file is a changed case, whatever its file: has done",
+		text:find("picks by the case file itself True", 1, true) ~= nil
+			and text:find("picks by the file it mutates True", 1, true) ~= nil
+			and text:find("and picks nothing on an unrelated change True", 1, true) ~= nil,
+		text)
 	check("the waiting is written into the log and not only printed",
 		text:find("the wait is written down True", 1, true) ~= nil, text)
 	check("and the log is appended to, so a run's whole turn can be read back",
