@@ -183,6 +183,9 @@ end
 -- open; everything else reads.
 --------------------------------------------------------------------------------------------
 
+-- Declared before the probes, which mention it, and given a body after the readers it needs.
+local watchInstanceInfo
+
 local function describe(value)
     local kind = type(value)
     if kind == "table" then
@@ -354,8 +357,16 @@ local PROBES = {
     { area = "instances", name = "RequestRaidInfo", ask = function()
         local call = there("RequestRaidInfo")
         if not call then return "absent" end
+
+        -- **And the answer is read again when the server's own reply arrives.**
+        --
+        -- The line below this one reads the list in the same instant the request goes out, which
+        -- is the shape that reports nothing whatever the truth is: `UPDATE_INSTANCE_INFO` is the
+        -- client saying *now I know*, and until 2026-09-20 this probe never waited for it. A
+        -- reading taken before the answer arrives is not evidence of an empty list.
+        watchInstanceInfo()
         try(call)
-        return "asked; run this again in a moment and see whether the count below changes"
+        return "asked; the line marked 'after UPDATE_INSTANCE_INFO' below is the one to read"
     end },
 
     { area = "instances", name = "GetNumSavedInstances", ask = function()
@@ -600,6 +611,31 @@ local EVENTS = {
         "CHAT_MSG_COMBAT_HONOR_GAIN", "PLAYER_PVP_RANK_CHANGED", "PLAYER_PVP_KILLS_CHANGED" },
     quests = { "QUEST_TURNED_IN", "QUEST_LOG_UPDATE", "QUEST_QUERY_COMPLETE" },
 }
+
+-- What the server says when it has finished answering `RequestRaidInfo`, printed as a line of
+-- its own because it arrives after every other line has been written.
+local instanceWatcher
+
+function watchInstanceInfo()
+    if not instanceWatcher then
+        instanceWatcher = CreateFrame("Frame")
+        instanceWatcher:SetScript("OnEvent", function(self)
+            pcall(self.UnregisterEvent, self, "UPDATE_INSTANCE_INFO")
+
+            local count = tonumber(try(there("GetNumSavedInstances"))) or 0
+            local out = {}
+            for index = 1, math.min(count, 5) do
+                out[#out + 1] = "[" .. index .. "] " ..
+                    shape(callPacked(there("GetSavedInstanceInfo"), index))
+            end
+
+            DEFAULT_CHAT_FRAME:AddMessage(string.format(
+                "  |cffffd700instances|r after UPDATE_INSTANCE_INFO  %d saved%s",
+                count, #out > 0 and (": " .. table.concat(out, " | ")) or ""))
+        end)
+    end
+    pcall(instanceWatcher.RegisterEvent, instanceWatcher, "UPDATE_INSTANCE_INFO")
+end
 
 local eventFrame
 

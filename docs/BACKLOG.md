@@ -5941,6 +5941,19 @@ are already known and cost nothing to honour:
 Still owed: the same reading from a character that **is** saved to something, which is the only
 way to see what the fourteen columns hold when they hold anything.
 
+**A boss killed in a normal low-level dungeon put nothing in the list**, read on Burning Crusade
+2026-09-20 minutes afterwards: `GetNumSavedInstances` still 0. That fits what the game is
+understood to do - a normal dungeon holds an *instance id* for a while, which is what lets a group
+go back to the same one, and that is not a lockout and is not what this call reports. Heroics and
+raids are.
+
+**But the reading is not yet evidence, and that is the probe's fault.** It called
+`RequestRaidInfo` and read the list in the same instant, where the server's answer arrives with
+`UPDATE_INSTANCE_INFO` - so a list that fills a moment later would have read as empty every time.
+The probe now waits for that event and prints a line of its own when it comes. **The zero above
+has to be taken again before it counts**, and the reading that settles this entry wants a heroic
+or a raid.
+
 **Burning Crusade and Mists answer exactly as Era does**, read the same day: nothing saved,
 fourteen values of blanks from index 1, `GetNumSavedWorldBosses` present and zero on all three.
 The clocks agreed to within a second on every build, and on Burning Crusade they matched exactly.
