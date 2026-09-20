@@ -6187,6 +6187,31 @@ it is the only thing that settles it: left logged out in the Valley of Trials, a
 `xpMax` is 400 should gain about **5 points over eight hours** at the quarter rate and **0** if
 there is no such rate for a logged-out character either. Those two cannot be confused.
 
+**The reading that settles it is set up, and the prediction goes here first.** Alberto,
+2026-09-20: *ora loggo Ziofurgone, gli faccio ammazzare due maiali, poi lo sloggo fuori di una
+inn*. The level 11 from the inn measurement is the right subject - its rate in an inn is known
+to 1.3 points, so the same character out of doors is the same instrument pointed at the other
+case. The pigs are there to put it below the ceiling by a margin, and the pair on this very
+character says the pool falls by what is earned, so the figure to start from is whatever the
+probe reads **after** the killing and **outside** the rest zone, not 8,612.
+
+The three rates, for a level whose `xpMax` is 8,700, fixed before the reading is taken:
+
+| | per hour | over 8 hours | over 10 | over 12 |
+|---|---|---|---|---|
+| the inn rate, if being logged out is all that matters | 54.375 | 435 | 544 | 653 |
+| **the quarter rate, logged out in the world** | **13.594** | **109** | **136** | **163** |
+| nothing at all | 0 | 0 | 0 | 0 |
+
+Three answers that cannot be confused with each other over a night, on a figure that carries
+whole points. The ceiling is 13,050, so a gain of a few hundred has room and will not be clipped
+- and if the reading comes back *at* 13,050 the night was long enough to fill it and the rate is
+not readable from that pair, which is the one way this can waste the night.
+
+What it needs to be worth anything: the probe run **immediately before logging out**, standing
+where `resting=false`, and run again **first thing on logging back in**, before moving a step.
+Thelsamar itself reads `resting=false`, so the spot is next door to the inn.
+
 **And a second exception to write down before it bites.** Alberto: Pandaren fill faster than
 everybody else. Whatever Family computes has to know the race of the character it is computing
 for, or it is wrong for one race on the build that has them - and Mists is that build. Nothing
