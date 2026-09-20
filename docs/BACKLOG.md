@@ -5880,6 +5880,11 @@ per-expansion table, no fallback, and the modern namespace's list call is not th
 preferred. The times are of a small history on a young character and of a whole one on an old
 character; both are milliseconds.
 
+**And nothing arrives late.** Mists refuses a registration for `QUEST_QUERY_COMPLETE` and has no
+`QueryQuestsCompleted`, so there is no server round trip to wait for: what the call answers at
+login is what there is. `QUEST_TURNED_IN` is accepted, which is the event the running half would
+hang on and the one `Scanners/Quests.lua` already listens to.
+
 ---
 
 ## 93. Instance lockouts, and when each resets

@@ -493,8 +493,21 @@ local PROBES = {
         -- Family itself has never read a currency by id - `Scanners/Currencies.lua` walks the
         -- list the player sees, in whichever of its two shapes this client answers in. So this
         -- asks the same way, and what comes back names honor's real id on this build.
+        -- **Which call, and what size**, before any walking. The first writing of this said
+        -- "no currency list on this client" for both of the things that can be true, and they
+        -- are not the same thing: a client without the call, and a client whose list is empty
+        -- because this character has never earned a currency. Mists answered that sentence on
+        -- a character with none, and it read as the build having no list at all.
         local modern = _G.C_CurrencyInfo
         local out = {}
+
+        local how = "C_CurrencyInfo " .. (modern == nil and "absent" or
+            (type(modern.GetCurrencyListSize) == "function"
+                and ("list size " .. tostring(try(modern.GetCurrencyListSize)))
+                or "has no GetCurrencyListSize"))
+        how = how .. ", older GetCurrencyListSize " ..
+            (type(_G.GetCurrencyListSize) == "function"
+                and tostring(try(GetCurrencyListSize)) or "absent")
 
         local size = modern and tonumber(try(modern.GetCurrencyListSize)) or nil
         if size and size > 0 then
@@ -510,12 +523,15 @@ local PROBES = {
                         " " .. tostring(info.quantity) .. "/" .. tostring(info.maxQuantity)
                 end
             end
-            return "modern list, " .. size .. " rows: " .. table.concat(out, " | ")
+            return how .. " -- " .. table.concat(out, " | ")
         end
 
         size = type(_G.GetCurrencyListSize) == "function"
             and tonumber(try(GetCurrencyListSize)) or nil
-        if not size or size == 0 then return "no currency list on this client" end
+        if not size or size == 0 then
+            return how .. " -- nothing to walk: either the call is not here, or this character "
+                .. "has earned no currency at all. Run it on one that has some."
+        end
 
         for index = 1, math.min(size, 16) do
             local answer = callPacked(_G.GetCurrencyListInfo, index)
@@ -525,7 +541,7 @@ local PROBES = {
                 out[#out + 1] = "[" .. tostring(id) .. "] " .. shape(answer)
             end
         end
-        return "older list, " .. size .. " rows: " .. table.concat(out, " | ")
+        return how .. " -- " .. table.concat(out, " | ")
     end },
 
     { area = "pvp", name = "the standalone honor and arena calls", ask = function()

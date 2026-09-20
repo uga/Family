@@ -2904,6 +2904,40 @@ down as the first thing to probe on the `midnight` branch rather than as a fact.
 the three unit calls on the three builds already, which will say whether they are there before
 the game they belong to is.
 
+#### What the second Mists run answered, 2026-09-20
+
+**392 is not honor on this build.** The id answers with a currency named **"Honor Deprecated 3"**,
+every figure nought and `discovered = false`. 390 answers with something called *Conquest Points*
+whose description is right, `currencyID = 0` and every figure nought, on a character that has
+earned none. So the ids from Cataclysm reach a retired row and a row nobody has touched, and
+neither is a reading of this character's honor.
+
+**The list is how to find the real ones, and it was empty here.** `GetCurrencyListSize` answered
+nothing to walk on a character with no currencies at all - which the probe reported as *no
+currency list on this client*, a sentence covering two different facts. It now prints which call
+exists and what size each answers, so an empty list and a missing call cannot read the same. The
+next run wants a character that **has** currencies.
+
+**The unit-shaped honor calls are not on this build**: `UnitHonorLevel`, `UnitHonor` and
+`UnitHonorMax` are all absent. They belong to the account-wide honor of Legion onwards, so this
+says plainly that Mists Classic is before that line and the brief's account of them is about the
+other client.
+
+**`GetPVPSessionStats` and `GetPVPYesterdayStats` are both here**, answering two and three numbers
+on a character who has not fought. They were named for Era and Burning Crusade; they exist on
+Mists as well, which is the usual shape - the call is in the client, the game behind it decides
+whether it means anything.
+
+**And the events, which is the half that was missing.** On Mists: `CURRENCY_DISPLAY_UPDATE`,
+`HONOR_XP_UPDATE`, `CHAT_MSG_COMBAT_HONOR_GAIN`, `PLAYER_PVP_RANK_CHANGED` and
+`PLAYER_PVP_KILLS_CHANGED` are all accepted, and **`PVP_HONOR_XP_UPDATE` is refused** - so the two
+spellings the brief offered are not interchangeable, and this build has the first. Every lockout
+and rested event was accepted. For quests, `QUEST_TURNED_IN` and `QUEST_LOG_UPDATE` are accepted
+and **`QUEST_QUERY_COMPLETE` is refused**, which agrees with `QueryQuestsCompleted` being absent:
+there is nothing to ask for and nothing to wait for.
+
+Accepted is not the same as fires, and nothing outside the game can tell those apart.
+
 #### Re-read this at a new build
 
 The rules above are pinned to the three builds in section 3 and to no others. They have already
