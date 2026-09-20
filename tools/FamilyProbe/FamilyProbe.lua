@@ -525,6 +525,35 @@ local PROBES = {
             (type(_G.GetCurrencyListSize) == "function"
                 and tostring(try(GetCurrencyListSize)) or "absent")
 
+        -- **Which members it has, one by one.** Mists 5.5.4 answered that `C_CurrencyInfo`
+        -- is there and has no `GetCurrencyListSize`, which sends Family down the older route
+        -- on a client nobody expected it on. If the table still has `GetCurrencyListInfo`,
+        -- the list can be walked with the older size and read as a table - which hands over
+        -- `currencyID` outright and beats reading an id out of a position. That is a
+        -- different route from either of the two, and it is worth knowing before one is
+        -- written: absent is a fact, and so is present.
+        if modern then
+            local members = {}
+            for _, name in ipairs({ "GetCurrencyListSize", "GetCurrencyListInfo",
+                "GetCurrencyListLink", "GetCurrencyInfo", "GetBackpackCurrencyInfo" }) do
+                members[#members + 1] = name ..
+                    (type(modern[name]) == "function" and "=there" or "=absent")
+            end
+            how = how .. " (C_CurrencyInfo: " .. table.concat(members, " ") .. ")"
+        end
+
+        -- **And the same three as globals**, which the line above does not answer and Family
+        -- depends on. 5.5.4 answered that `C_CurrencyInfo` keeps `GetCurrencyListLink` and has
+        -- no list calls at all - so whether the *global* link is there decides whether an id on
+        -- that build comes out of a link or out of a position, and only one of those two is a
+        -- promise. Asked by presence, because a list of size nought cannot be walked to find out.
+        local globals = {}
+        for _, name in ipairs({ "GetCurrencyListInfo", "GetCurrencyListLink" }) do
+            globals[#globals + 1] = name ..
+                (type(_G[name]) == "function" and "=there" or "=absent")
+        end
+        how = how .. " (globals: " .. table.concat(globals, " ") .. ")"
+
         local size = modern and tonumber(try(modern.GetCurrencyListSize)) or nil
         if size and size > 0 then
             for index = 1, math.min(size, 16) do

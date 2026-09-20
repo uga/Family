@@ -74,8 +74,13 @@ local function entryFrom(id, name, quantity, maximum, icon, kind)
 	}
 end
 
--- Mists and anything on the modern engine: the whole list, in the order the player sees it,
--- headers and all.
+-- The modern engine: the whole list, in the order the player sees it, headers and all.
+--
+-- **Not Mists**, which is what this comment said until it was asked. `C_CurrencyInfo` is there
+-- on 5.5.4 and has no `GetCurrencyListSize`, so this returns nothing and the older list below
+-- is what that build is read by (DATASOURCES, the currencies table). Kept because it is the
+-- route a client that has those calls takes, and because a table that hands over `currencyID`
+-- outright is worth more than any position - not because any build here was seen using it.
 local function readModernList()
 	local api = _G.C_CurrencyInfo
 	if type(api) ~= "table" then return nil end

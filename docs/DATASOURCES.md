@@ -43,8 +43,8 @@ turn and whichever answers is believed. `addons/Family/Scanners/Currencies.lua` 
 
 | Client | How | Gives an id? |
 |---|---|---|
-| Mists, and anything on the modern engine | `C_CurrencyInfo.GetCurrencyListSize()` / `GetCurrencyListInfo(index)` → a **table** | yes, `info.currencyID`, or from `GetCurrencyListLink(index)` |
-| The list-keeping clients before it | `GetCurrencyListSize()` / `GetCurrencyListInfo(index)` → **eleven return values** | only inside `GetCurrencyListLink(index)`, as `currency:<id>` |
+| Anything on the modern engine | `C_CurrencyInfo.GetCurrencyListSize()` / `GetCurrencyListInfo(index)` → a **table** | yes, `info.currencyID`, or from `GetCurrencyListLink(index)` |
+| The list-keeping clients, **Mists among them** | `GetCurrencyListSize()` / `GetCurrencyListInfo(index)` → **a row of return values** | inside `GetCurrencyListLink(index)` as `currency:<id>`, and on 2.5.6 in the twelfth value of the row |
 | Burning Crusade Anniversary | `GetHonorCurrency()`, `GetArenaCurrency()` → a bare number each | **no** |
 
 Three things this costs, all of them worth knowing before writing it again:
@@ -58,6 +58,12 @@ Three things this costs, all of them worth knowing before writing it again:
   them.
 - **A maximum of `0` means "no cap"**, everywhere it appears. Stored as `nil`, or every
   uncapped currency reports itself as permanently full.
+- **The first row is not where Mists goes**, measured 2026-09-20 on 5.5.4: `C_CurrencyInfo` is
+  there and **has no `GetCurrencyListSize`**, while the older global call is there and answers.
+  So the build this table put on the modern route takes the older one, and the row it answers
+  with has never been read - the two characters asked so far had earned no currency at all. The
+  first row is kept because it is the route a client that has those calls would take, and it is
+  now labelled as that rather than as Mists.
 
 Zero is a balance and nil is silence, and the client answers nil for both a missing call and
 a currency it will not discuss — so a call that answers `0` is recorded as `0`, and one that
@@ -2995,6 +3001,72 @@ the twelfth is a whole number above nought. A build that answers some other leng
 twelve with something else in that place - keeps the name fallback rather than be read by a
 position nobody has looked at. So what is written down here is what the code trusts, and the
 moment a fourth build answers differently the reading is a name again and not a wrong id.
+
+#### Mists takes the older route too, 2026-09-20
+
+A level 85 with arenas open answered the question the two empty characters could not be asked:
+**`C_CurrencyInfo` is there on 5.5.4 and has no `GetCurrencyListSize`**, while the older global
+call is there and answers. So `readModernList` returns nothing on Mists and `readGlobalList` is
+what the build is read by - the same route as Burning Crusade, on a client this page had filed
+under the modern one.
+
+Two things follow, and only one of them is comfortable:
+
+- the twelve-value shape check written for 2.5.6 is now load-bearing on **two** builds;
+- the row Mists answers with has still never been read, because this character's list is empty
+  as well: `GetCurrencyListSize` says **0** on a level 85 who has fought no battleground. So
+  whether honor on Mists lands under its id or under its name is unknown, and it is the same
+  unknown that was live on Burning Crusade until today.
+
+**There is no third route.** The probe was extended to name which members `C_CurrencyInfo` has,
+one by one, in case the table kept `GetCurrencyListInfo` without `GetCurrencyListSize` - the list
+could then be walked with the older size and read as a table, which hands over `currencyID`
+outright. Read on 5.5.4 the same day:
+
+    GetCurrencyListSize=absent  GetCurrencyListInfo=absent  GetCurrencyListLink=there
+    GetCurrencyInfo=there       GetBackpackCurrencyInfo=absent
+
+So the table has **no list calls at all** on this build, and the older list is the only list.
+
+**But it keeps the link call**, which raises the question that decides how an id is read here. A
+link is a promise and a position is not, so whether honor on Mists comes out of a link or out of
+the twelfth value depends on something nobody has asked: whether the **global** `GetCurrencyListLink`
+is there on this build, or whether the only link call is the one hanging off `C_CurrencyInfo`.
+`readGlobalList` asks the global one. The probe now reports both globals by presence, since a list
+of size nought cannot be walked to find out, and the answer comes with the next run.
+
+Nothing is coded on the strength of the guess. If the global link is absent and the `C_CurrencyInfo`
+one answers for the same index, that is a route worth taking and it is one line - but *the same
+index* is the assumption in that sentence, and on a build with one list it is a reasonable one and
+still an assumption. It gets measured first.
+
+**What the rest of that reading said.** Quests: `GetQuestsCompleted` answered 64 ids in 6.1 ms
+and `C_QuestLog.IsQuestFlaggedCompleted` told a known quest from a nonsense one, which is the
+Mists shape already recorded. Lockouts: nothing saved, fourteen blank values from index 1, and
+`0 saved` after `UPDATE_INSTANCE_INFO`. The retired Cataclysm ids answered as before - 392 is
+*Honor Deprecated 3* and 390 is *Conquest Points* with `currencyID = 0` and `discovered = false`
+on both, so neither is a reading of this character.
+
+**`GetPersonalRatedInfo` answers on all four brackets**, twelve values each, every figure nought
+on a character who has played none - and the twelfth value is **2, 3, 5 and 0** across brackets 1
+to 4. That is the size of the team each bracket is for, and the nought is the rated battleground.
+A number that differs per bracket while everything beside it is nought is describing the bracket,
+not the character. `GetArenaTeam` answers three brackets of twenty-three values, all empty.
+
+**And the noughts there mean one thing on this character and another on a lower one.** Alberto,
+2026-09-20: arenas on Mists are open from level 70. This character is 85, so every nought in
+`GetPersonalRatedInfo` is *has played none*; the same call on a level 69 would answer the same
+noughts for *cannot play yet*, and nothing in the figures tells the two apart. Whatever is built
+on this has to read the level beside it, or it will report a character as having no rating when
+the game has not offered them one - which is §2.2 exactly, and the reason the level is recorded
+at the moment of the reading rather than looked up later.
+
+**The same question is open on Burning Crusade** - Alberto, same day, asking rather than
+asserting: *e in TBC anche, forse?* What is measured there is narrower and points the same way:
+`GetArenaCurrency` is **absent** from that build, and the list on a character with honor held
+honor and a header and nothing else. So a character who has no arena points and one who is not
+yet allowed any read identically today, on both builds, and nothing has been asked that would
+separate them. It is written here as the open question it is.
 
 #### Re-read this at a new build
 

@@ -6090,6 +6090,40 @@ only happens while logged out.
 hour later, with the ceiling at 13050 and nothing in the way. A reading near 8510 refutes it, one
 near 8564 carries it, and anything else is a rate of its own to write down.
 
+**A Mists character below the ceiling, 2026-09-20**: level 85, `xpMax` 13,000,000, rested
+**44,416**, not resting, standing in The Masonary. The ceiling there is 19,500,000, so this is
+about a third of a percent of a level - a figure that has been spent down rather than one that
+has been filling. It makes the third build one where a rate could be measured, and it is the
+first Mists reading that is not at the ceiling.
+
+**It is also about to move for the other reason.** Alberto took it into a battleground, which
+earns experience on this build, so the next reading of this character measures **spending** and
+not filling. That is worth having - the pair on Burning Crusade fell by exactly what was earned,
+and a second pair on another build says whether that is the rule or was that fight - but it is
+not the rate, and a reading taken after a battleground must not be counted as one.
+
+**And the field rule is refuted on Mists, by an accident of arithmetic.** The same level 85 was
+read twice, **444 seconds apart**, standing in the same spot, not resting either time, having
+earned nothing: rested **44,416** both times, `xp` 62 both times. Exactly the same number, not a
+number that moved a little.
+
+What makes this settle what the Burning Crusade pair could not is the size of a level here. At
+5% of a level every 32 hours away from an inn, a level worth 13,000,000 fills at **20,312 an
+hour** - so those 444 seconds should have added about **2,505**, which is 5.6% of the figure
+being read. A point or two can hide in a whole number. Two and a half thousand cannot.
+
+| | per hour | over 444 seconds |
+|---|---|---|
+| 5% of a level every 8 hours, resting | 81,250 | about 10,021 |
+| 5% of a level every 32 hours, away from an inn | 20,312 | about 2,505 |
+| observed, away from an inn | - | **0** |
+
+So on this build **nothing accrues away from an inn**, and the estimate must not add anything for
+a character put away in the field. The one thing this cannot rule out is accrual applied in
+*chunks* rather than continuously: if the game credits rest every quarter of an hour, a
+seven-minute window would read zero and be right. That is what the overnight reading still buys,
+and it is now the only thing it buys - the sign is settled everywhere except inside one chunk.
+
 **Killing things spends it**, which is worth saying because a reading taken after a fight is a
 reading of a figure that has gone *down*: rested experience is drawn on as a bonus while the
 character earns. A measurement of the rate wants a character nobody is playing.
@@ -6158,3 +6192,10 @@ was caught by nothing, because the eleven-value row in the check has a nil in th
 fails the number test anyway. It wanted a **longer** row, with a real number sitting in that place
 — the icon file id, which is exactly what a client could put there. That check is in now, and the
 mutation is caught.
+
+**A second build needs it, found the day it shipped.** Mists 5.5.4 has `C_CurrencyInfo` without
+`GetCurrencyListSize`, so it reads currencies by the older list as well - the route this entry is
+about, on a build that was filed under the modern one. Its row has still never been seen, because
+the only Mists character asked so far has earned no currency. If that row is twelve values with
+the id last, this fix covers it; if it is any other length, honor there keeps its name and this
+entry has a second half. Either way nothing is guessed, which is what the shape check buys.
