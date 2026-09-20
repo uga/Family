@@ -6230,6 +6230,18 @@ fails the number test anyway. It wanted a **longer** row, with a real number sit
 — the icon file id, which is exactly what a client could put there. That check is in now, and the
 mutation is caught.
 
+**And the position turned out not to be the only way in.** Asking which members
+`C_CurrencyInfo` keeps - on a build that has no list calls in it at all - found that it keeps
+`GetCurrencyListLink`, and on the Burning Crusade character holding honor that call answers a
+proper link for the row the older list handed over: **1901**, the same id as the twelfth value.
+The global link call is **absent** from 2.5.6 altogether, which is why this ever went wrong.
+
+So the id is now asked for in the order of what each place promises: the global link, then the
+link on `C_CurrencyInfo`, then the position. Two links and a fallback, where this entry began with
+one route that does not exist on that build. The position stays, because it is measured and
+because it agreeing with the link is what makes it worth keeping, but nothing rests on it alone
+any more. Five checks and three mutations for the order itself.
+
 **A second build needs it, found the day it shipped.** Mists 5.5.4 has `C_CurrencyInfo` without
 `GetCurrencyListSize`, so it reads currencies by the older list as well - the route this entry is
 about, on a build that was filed under the modern one. Its row has still never been seen, because

@@ -2797,6 +2797,48 @@ GetCurrencyListLink = function() return "|Hcurrency:1900|h[Honor]|h" end
 check("a link outranks the row it sits beside",
 	(Family.Currencies:Read()[1] or {}).id == 1900)
 
+-- 2.5.6 as it really is: no global link call at all, and a C_CurrencyInfo that keeps no list
+-- calls and keeps the link. Asked on the row the older list handed over, it answers properly.
+GetCurrencyListLink = nil
+C_CurrencyInfo = {
+	GetCurrencyListLink = function(index)
+		return index == 2 and "|Hcurrency:1901|h[Honor Points]|h" or nil
+	end,
+	GetCurrencyInfo = function() return nil end,
+}
+check("the link on C_CurrencyInfo is asked where the client has no global one",
+	(Family.Currencies:Read()[1] or {}).key == "c1901",
+	tostring((Family.Currencies:Read()[1] or {}).key))
+
+-- A table with a list call of its own is a client the modern reader handles, and this one is
+-- not: the point of asking it here is that it keeps the link while keeping no list at all.
+check("and that is not the modern reader running, since it has no list call to run on",
+	C_CurrencyInfo.GetCurrencyListSize == nil)
+
+-- Both links present and disagreeing. The global one belongs to the list being walked, so it
+-- is the one believed; anything else would read one list's row through another's index.
+GetCurrencyListLink = function() return "|Hcurrency:1900|h[Honor]|h" end
+check("the global link outranks the one hanging off C_CurrencyInfo",
+	(Family.Currencies:Read()[1] or {}).id == 1900)
+
+-- And the link on the table outranks the position, which is the whole reason it is asked.
+GetCurrencyListLink = nil
+GetCurrencyListInfo = function(index)
+	if index == 1 then return "Player vs Player", true end
+	return "Honor Points", false, true, false, false, 1428, 136998, 75000,
+		false, 0, false, 1902
+end
+check("a link on C_CurrencyInfo outranks the twelfth value of the row",
+	(Family.Currencies:Read()[1] or {}).id == 1901,
+	tostring((Family.Currencies:Read()[1] or {}).id))
+
+C_CurrencyInfo = nil
+GetCurrencyListInfo = function(index)
+	if index == 1 then return "Player vs Player", true end
+	return "Honor Points", false, true, false, false, 1428, 136998, 75000,
+		false, 0, false, 1901
+end
+
 -- A row of some other length is some other build. It gets the name it got before this was
 -- read rather than a number lifted out of a position nobody measured.
 GetCurrencyListLink = function() return nil end

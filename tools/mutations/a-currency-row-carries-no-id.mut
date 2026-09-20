@@ -1,7 +1,6 @@
 name: the id in the row itself is never looked at
 file: addons/Family/Scanners/Currencies.lua
 --- old
-			local id = idFromLink(Family:TryCall(GetCurrencyListLink, index))
-				or idFromRow(row, width)
+	return idFromRow(row, width)
 --- new
-			local id = idFromLink(Family:TryCall(GetCurrencyListLink, index))
+	return nil

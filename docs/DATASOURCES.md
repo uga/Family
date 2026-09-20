@@ -3046,13 +3046,29 @@ and `GetCurrencyListInfo` absent from `C_CurrencyInfo`, `GetCurrencyListLink` an
 same half-populated table, and the question above is one question for both rather than a quirk of
 one.
 
-**And on that build it is answerable today.** The global `GetCurrencyListLink` was read on a
-character holding honor and answered **nothing whatsoever** - not a link without a currency in it,
-nothing at all - while `C_CurrencyInfo.GetCurrencyListLink` was never asked, because at the time
-nobody knew it was there. If it answers a real link for the same row, an id comes out of a promise
-on both builds and the twelfth value goes back to being a fallback. The probe now calls both on
-each row of the walk and prints what each returns. It wants the Burning Crusade character that
-holds honor, not an empty one.
+**And it was answered the same day, on the character that holds honor**:
+
+    (globals: GetCurrencyListInfo=there  GetCurrencyListLink=absent)
+    [id nil, link nothing, C_CurrencyInfo link "[Honor Points]" -> id 1901]
+      1="Honor Points" 2=false 3=true 4=false 5=false 6=1428 7=136998 8=75000
+      9=false 10=0 11=false 12=1901
+
+Two facts, and the first corrects this page. The global `GetCurrencyListLink` is **absent from
+2.5.6**, not present and unhelpful - so the sentence written this morning, that the link *gave
+nothing*, was describing a call that is not there. It is the same nil from `TryCall` either way,
+which is precisely the confusion §2.2 is about, and the probe had to be asked by presence before
+it came apart.
+
+The second is the answer: **`C_CurrencyInfo.GetCurrencyListLink` answers a proper link for the
+row the older list just handed over**, and the id in it is **1901** - the same number as the
+row's twelfth value. Two independent routes arriving at one answer, which is what makes a
+position believable rather than merely lucky.
+
+So the order Family asks in is now the global link, then the link on `C_CurrencyInfo`, then the
+position - two promises and a fallback, where this morning there was one route that does not
+exist on this build and one position. On 5.5.4 the same table keeps the same link call, so the
+route is there too; what that build answers for a row is still unread, because no Mists character
+asked so far has earned a currency.
 
 **What the rest of that reading said.** Quests: `GetQuestsCompleted` answered 64 ids in 6.1 ms
 and `C_QuestLog.IsQuestFlaggedCompleted` told a known quest from a nonsense one, which is the

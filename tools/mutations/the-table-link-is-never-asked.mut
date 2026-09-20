@@ -1,0 +1,9 @@
+name: the link on C_CurrencyInfo is never asked
+file: addons/Family/Scanners/Currencies.lua
+--- old
+	local modern = _G.C_CurrencyInfo
+	if type(modern) == "table" then
+		id = idFromLink(Family:TryCall(modern.GetCurrencyListLink, index))
+		if id then return id end
+	end
+--- new

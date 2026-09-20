@@ -139,6 +139,31 @@ local function idFromRow(row, width)
 	return value
 end
 
+-- Where a row's id lives, asked in the order of how much each place promises.
+--
+-- **Two links and a position, and the links are not the same call.** Burning Crusade 2.5.6 has
+-- no global `GetCurrencyListLink` at all - which is why this used to come away with nothing and
+-- file honor under its name - while `C_CurrencyInfo` is there, keeps no list calls whatsoever,
+-- and *does* keep `GetCurrencyListLink`. Asked on the row the older list just handed over, it
+-- answers a proper link and the id in it is **1901**, which is the number in the row's twelfth
+-- value as well. Two routes arriving at one answer is what makes the third one believable.
+--
+-- So: the global link, then the one hanging off `C_CurrencyInfo`, then the position. Both links
+-- say which currency they mean and the position only happens to be right, so the position is
+-- last and is now a fallback rather than the only way in.
+local function idOf(index, row, width)
+	local id = idFromLink(Family:TryCall(_G.GetCurrencyListLink, index))
+	if id then return id end
+
+	local modern = _G.C_CurrencyInfo
+	if type(modern) == "table" then
+		id = idFromLink(Family:TryCall(modern.GetCurrencyListLink, index))
+		if id then return id end
+	end
+
+	return idFromRow(row, width)
+end
+
 -- The list as the clients before that one answered it: eleven return values, no table.
 local function readGlobalList()
 	if type(_G.GetCurrencyListSize) ~= "function" then return nil end
@@ -152,12 +177,7 @@ local function readGlobalList()
 		local name, isHeader, count, icon, maximum = row[1], row[2], row[6], row[7], row[8]
 
 		if not isHeader then
-			-- The link first wherever there is one: a link names the currency it means,
-			-- while a position is only a thing that was true when somebody looked.
-			local id = idFromLink(Family:TryCall(GetCurrencyListLink, index))
-				or idFromRow(row, width)
-
-			local entry = entryFrom(id, name, count, maximum, icon)
+			local entry = entryFrom(idOf(index, row, width), name, count, maximum, icon)
 			if entry then found[#found + 1] = entry end
 		end
 	end
