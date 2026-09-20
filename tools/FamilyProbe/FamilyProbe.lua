@@ -436,6 +436,33 @@ local PROBES = {
         return shape(callPacked(call))
     end },
 
+    { area = "pvp", name = "GetPVPSessionStats", ask = function()
+        -- Alberto, 2026-09-20: kills and honor for this session, on Era and Burning Crusade.
+        local call = there("GetPVPSessionStats")
+        if not call then return "absent" end
+        return shape(callPacked(call))
+    end },
+
+    { area = "pvp", name = "GetPVPYesterdayStats", ask = function()
+        local call = there("GetPVPYesterdayStats")
+        if not call then return "absent" end
+        return shape(callPacked(call))
+    end },
+
+    { area = "pvp", name = "the honor calls that take a unit", ask = function()
+        -- `UnitHonorLevel` and its two neighbours are the newer shape of the same question, and
+        -- Alberto expects the first of them on Burning Crusade. Asked of the player rather than
+        -- with no argument: a unit call given no unit answers nothing on some builds and errors
+        -- on others, and neither is an answer about honor.
+        local out = {}
+        for _, name in ipairs({ "UnitHonorLevel", "UnitHonor", "UnitHonorMax" }) do
+            local call = there(name)
+            out[#out + 1] = name .. "=" ..
+                (call and shape(callPacked(call, "player")) or "absent")
+        end
+        return table.concat(out, " | ")
+    end },
+
     { area = "pvp", name = "GetPVPLifetimeStats", ask = function()
         local call = there("GetPVPLifetimeStats")
         if not call then return "absent" end
