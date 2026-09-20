@@ -337,6 +337,22 @@ that **differs per character**, which Family can only read, never compute.
 What is still missing is every probe: which call answers what, on each build. That section
 lists them, and none has been run.
 
+**Asked again 2026-09-20, with a brief that disagrees with the section above.** It describes Era as
+having moved to the later system - honor as a spendable currency, ranks gone - where the research
+of 2026-09-04 reads patch 1.14.4 as keeping the fourteen ranks and removing only the ranking points
+and the decay, with a weekly cap of 500,000. One of the two is wrong and neither is a measurement,
+which is exactly what the probe list was written for. Alberto, on being shown the disagreement:
+*le nuove probe ci diranno se avevamo ragione allora oppure oggi*.
+
+The brief adds two things the section does not carry: `GetPersonalRatedInfo(bracket)` for arena and
+rated battleground ratings on Mists, and the observation that a conquest cap there rises each week
+as a catch-up. Both go in the probe list rather than into the table, for the reason the table gives.
+
+**The probes now exist to be run.** `tools/FamilyProbe` gained a PvP set on 2026-09-20: ranks,
+this week's and last week's figures, the honor and conquest currencies by id through whichever
+currency call this client has, arena teams, and the rated brackets. Nothing is stored by Family
+until they have been run on all three builds.
+
 ---
 
 ## 6. A keybind that opens Family — DONE 2026-09-04
@@ -5762,3 +5778,133 @@ the goblin auctioneers the same day; nothing about backlog 91 is left unread.
 
 Checks under *the realms of one connected group are valued from one auction house*; mutations
 `realm-group-*`, and three older ones re-pinned to the new code.
+
+---
+
+## 92. The quests a character has already finished
+
+**Asked 2026-09-20.** Family knows what is in a quest log and nothing about what was handed in
+years ago. The question is *which of my characters has already done this*, which is what decides
+who to send when a chain, an attunement or a reputation grind comes up.
+
+**Today:** the log, and only the log. `Family/Scanners/Quests.lua` reads what is in it now, keeps
+it current, and forgets nothing on purpose - it is rewritten whole on every scan. It already
+listens for **`QUEST_TURNED_IN`** alongside `QUEST_ACCEPTED` and `QUEST_REMOVED`
+(`Quests.lua:407`), and it already speaks through `C_QuestLog` where the client carries it
+(`Quests.lua:111` and `:203`, `Names.lua:590`). So the event that would record a completion is
+already firing and is already wired to a scan; what is missing is somewhere to write it.
+
+**The specification already promises it**, twice, in the *Knowledge* table: *Quest completion
+history*, and *Daily quests completed - Burning Crusade onwards*. This entry is a debt, not a new
+idea.
+
+**Shape.** Two halves, and only the second is interesting. The first is the running one: a
+turn-in is one id, written where the log already is. The second is the history a character
+brings with it the first time Family meets it - thousands of ids at once, on a client that must
+not stutter. The addon already spreads work of that size a member at a time
+(`RecipeIndex:WarmStep`, `Database:WarmPayloads`), so the pattern exists and is not to be
+invented.
+
+**What it weighs is the open question, and Alberto has the observation that decides it**
+(2026-09-20): *le quest esistenti sono un numero finito, e due personaggi di livello X avranno
+completato moltissime delle stesse*. A family here reaches two hundred characters (entry 74), so
+two hundred private lists of the same few thousand ids is the shape to avoid. What to measure,
+with `tools/wire-size.lua`, which already does this for recipe lists:
+
+- how many ids a real character carries, per build and at a few levels;
+- how much two characters of a level overlap, which is the number that says whether one pool per
+  family with a small set per member beats a list each;
+- what each candidate shape costs stored and across a Wide Family link - loose ids, runs of
+  consecutive ids, or a map of bits against a pool.
+
+**The probes this needs, none run yet** (`tools/FamilyProbe`, PROBE set *quests*, added
+2026-09-20). Per build, Era first because the brief and this repository disagree about it:
+
+- whether `GetQuestsCompleted` answers at all, and whether `C_QuestLog.IsQuestFlaggedCompleted`
+  and `C_QuestLog.GetAllCompletedQuestIDs` do - the namespace is already answering on Era for
+  other things, so *which* calls it carries is a question and not an assumption;
+- whether anything has to be asked of the server first, and which event says the answer arrived:
+  a count read at login that is smaller than the same count a minute later is the fault this
+  catches;
+- **how long the call takes**, in milliseconds, since *it will lag* is the reason given for not
+  doing it and is a number nobody has;
+- whether a daily quest reads as completed, and for how long, which is the second row the
+  specification promises.
+
+---
+
+## 93. Instance lockouts, and when each resets
+
+**Asked 2026-09-20.** Which of my characters is saved to what, and until when.
+
+**Today:** nothing, and the addon says so in three places - the Extras switch
+(`Family_UI/Options.lua:109`), the `/family cooldowns` note (`Family_UI/Slash.lua:709`) and the
+manual (`MANUAL.md:460`) - each translated in the four locales. That sentence is deliberate: the
+crafting cooldowns are called *crafting* cooldowns everywhere precisely so that the absence of
+lockouts reads as an absence rather than as a promise. Building this means unwriting those
+sentences, which is eight strings and a manual section.
+
+**The specification already promises it**, twice: *Instance lockouts and their expiry* among the
+Activity rows, and *Instance lockouts - when each expires* on the calendar.
+
+**Shape, and most of it is decided by a precedent.** A lockout is a **moment**, not a countdown:
+the client answers with seconds left, and seconds left written down yesterday is a lie today.
+That is the rule `Cooldowns.lua` sets out at length and this follows it. Two consequences that
+are already known and cost nothing to honour:
+
+- the moment has to join `DEADLINES` in `Codec.lua`, beside `readyAt` and `expiresBy`, or a
+  figure that jitters by a second marks the record changed at every login and every linked family
+  is sent the lot again;
+- it wants a category of its own in `Wide.lua` rather than riding on another, so that somebody
+  can share where their alts are saved without sharing anything else - §6's rule, and the reason
+  Equipment is not inside Possessions.
+
+**The probes this needs, none run yet** (`tools/FamilyProbe`, PROBE set *instances*):
+
+- what `GetNumSavedInstances` and `GetSavedInstanceInfo` answer **by position**, per build, with
+  the shape recorded rather than unpacked on faith - the trap `Scanners/Quests.lua` documents for
+  the quest log and `Talents.lua` for the talent grid;
+- whether `RequestRaidInfo` has to be asked first and which event says the answer is in;
+- what a character with no lockout at all answers, which is the case every reader will hit;
+- on Mists, whether world bosses are readable as saved instances or need `GetNumSavedWorldBosses`
+  and `GetSavedWorldBossInfo`;
+- whether the instance id a lockout carries is readable, since *who can I raid with* rests on it
+  and a promise made from an id that is not there is worse than saying nothing.
+
+---
+
+## 94. What a character's rested experience has grown to since they were put away
+
+**Asked 2026-09-20.** Family photographs rested experience at logout; a week later the Summary
+still shows the figure from that day, while the character has been filling up all along.
+
+**Today:** the photograph exists and is already shared. `Scanners/Identity.lua:77` records
+`GetXPExhaustion` into `meta.rested`, clears it at the level cap (`:84`), the Summary draws it as
+a percentage of a level (`Summary.lua:1178-1180`), and it crosses a Wide Family link in the
+*Character* category beside `xpMax` (`Wide.lua:83`). `Wide.lua:707` already names `rested` as a
+field that moves with time and keeps it out of the stable fingerprint, which is the problem this
+entry is about, written down from the other side.
+
+**Shape.** The figure Family would draw is **computed, not read**, and §2.2 governs that: it is a
+number nobody has seen. Alberto, 2026-09-20: *certamente, ma è semplice farlo, basta dare il nome
+giusto alla colonna e aggiungere una nota nella pagina*. So the column says it is an estimate and
+the page says how it is worked out, and the recorded figure stays exactly what it was.
+
+Two fields more than today are needed at the moment of the photograph: whether the character was
+resting, and the moment the reading was taken. The arithmetic is per level, so it is the level and
+`xpMax` **of that moment** that the sum runs against, not today's - a character that dinged on
+the way out would otherwise be measured against the wrong level.
+
+**The rules to write down before the code**, in `DATASOURCES.md` and in the shape of the honor
+section - what the game does, cited, and then what the client is asked:
+
+- the two rates the brief gives, 5% of a level every 8 hours resting and every 32 hours not, and
+  whether the second is still true on these builds at all;
+- the ceiling, which is a level and a half and is what makes a long absence stop counting;
+- whether a character logged out in the world accumulates anything, since that is the half the
+  estimate would be wrong about for a week at a time.
+
+**The probes this needs** (`tools/FamilyProbe`, PROBE set *rested*): what `IsResting` and
+`GetXPExhaustion` answer where the character is standing, with level, `xpMax` and the moment
+beside them, so that two readings taken a few hours apart on one character measure the rate
+rather than assuming it.

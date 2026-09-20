@@ -165,6 +165,347 @@ local function collect()
         .. "Log out to write the file.", locale, found, #CANDIDATES, who))
 end
 
+--------------------------------------------------------------------------------------------
+-- Which calls this client carries, for backlog 5, 92, 93 and 94
+--
+-- Four questions were asked of the addon on 2026-09-20 - the quests a character has already
+-- finished, instance lockouts, rested experience while a character is away, and honor - and each
+-- brief came with an account of which API answers on which build. Those accounts disagree with
+-- what this repository wrote down in `DATASOURCES.md` on at least one point, and neither side is
+-- a measurement. This is the measurement.
+--
+-- **Nothing is unpacked by position and believed.** A return is recorded as what it is - its type
+-- and, where it is small, its value - because the shape of these calls differs between builds and
+-- reading them by position is the fault `Scanners/Quests.lua` and `Talents.lua` both document.
+--
+-- **Nothing here changes anything.** Two calls ask the server for what it already knows
+-- (`QueryQuestsCompleted`, `RequestRaidInfo`), which is what the game's own windows do when they
+-- open; everything else reads.
+--------------------------------------------------------------------------------------------
+
+local function describe(value)
+    local kind = type(value)
+    if kind == "table" then
+        local count = 0
+        for _ in pairs(value) do count = count + 1 end
+        return "table(" .. count .. ")"
+    end
+    if kind == "string" then return '"' .. value:sub(1, 40) .. '"' end
+    if kind == "function" then return "function" end
+    return tostring(value)
+end
+
+-- **Every return, however many there are.** `try` above hands back eight, which is plenty for a
+-- profession and not for `GetSavedInstanceInfo`: the columns this is being asked about - the
+-- difficulty's name, how many bosses, how many are down - are at the end of a list longer than
+-- that, and eight would have reported them as absent. So these keep the count the call really
+-- answered with, and nothing is mapped onto a name.
+local function packed(ok, ...)
+    if not ok then return { n = 0, failed = true } end
+    local count = select("#", ...)
+    local out = { n = count }
+    for index = 1, count do out[index] = (select(index, ...)) end
+    return out
+end
+
+local function callPacked(fn, ...)
+    if type(fn) ~= "function" then return nil end
+    return packed(pcall(fn, ...))
+end
+
+local function shape(answer)
+    if answer == nil then return "absent" end
+    if answer.failed then return "the call refused these arguments" end
+    if answer.n == 0 then return "no returns" end
+    local out = {}
+    for index = 1, answer.n do
+        out[index] = index .. "=" .. describe(answer[index])
+    end
+    return table.concat(out, " ")
+end
+
+-- A table's own fields, sorted, because the question a currency answers is *what is in it* -
+-- the amount, the cap, and whether a weekly one is there at all. Saying "table(9)" would hide
+-- the whole of what backlog 5 is waiting to know.
+local function fields(value)
+    if type(value) ~= "table" then return describe(value) end
+
+    local keys = {}
+    for key, held in pairs(value) do
+        if type(key) == "string" and type(held) ~= "table" and type(held) ~= "function" then
+            keys[#keys + 1] = key
+        end
+    end
+    table.sort(keys)
+
+    local out = {}
+    for index = 1, math.min(#keys, 14) do
+        out[index] = keys[index] .. "=" .. tostring(value[keys[index]])
+    end
+    if #keys > 14 then out[#out + 1] = "(+" .. (#keys - 14) .. " more)" end
+    if #out == 0 then return describe(value) end
+    return table.concat(out, " ")
+end
+
+local function elapsed(fn)
+    local clock = _G.debugprofilestop
+    local start = clock and clock() or nil
+    local answer = fn()
+    if start then return answer, _G.debugprofilestop() - start end
+    return answer, nil
+end
+
+local function there(name)
+    local value = _G[name]
+    if type(value) == "function" then return value end
+    return nil
+end
+
+local function inside(namespace, name)
+    local holder = _G[namespace]
+    if type(holder) ~= "table" then return nil end
+    if type(holder[name]) ~= "function" then return nil end
+    return holder[name]
+end
+
+-- Each probe answers a sentence. A probe whose call this client does not carry says so and is
+-- not a failure: that is the answer, and it is the one the capability table is built from.
+local PROBES = {
+    ----------------------------------------------------------------------------------------
+    -- Backlog 92: the quests a character has already finished
+    ----------------------------------------------------------------------------------------
+    { area = "quests", name = "GetQuestsCompleted", ask = function()
+        local call = there("GetQuestsCompleted")
+        if not call then return "absent" end
+        local into = {}
+        local _, took = elapsed(function() return try(call, into) end)
+        local count = 0
+        for _ in pairs(into) do count = count + 1 end
+        -- The table it filled, and how long filling it took: *it will lag* is the reason this
+        -- feature has not been built and is a number nobody has.
+        return count .. " ids" .. (took and string.format(" in %.1f ms", took) or "")
+    end },
+
+    { area = "quests", name = "C_QuestLog.GetAllCompletedQuestIDs", ask = function()
+        local call = inside("C_QuestLog", "GetAllCompletedQuestIDs")
+        if not call then return "absent" end
+        local answer, took = elapsed(function() return try(call) end)
+        local count = type(answer) == "table" and #answer or 0
+        return count .. " ids" .. (took and string.format(" in %.1f ms", took) or "")
+    end },
+
+    { area = "quests", name = "C_QuestLog.IsQuestFlaggedCompleted", ask = function()
+        local call = inside("C_QuestLog", "IsQuestFlaggedCompleted")
+        if not call then return "absent" end
+        -- One id this character really has finished, taken from whichever call above answered,
+        -- and one that exists nowhere. A call that says true to both is a call that means
+        -- something other than what its name says.
+        local known = nil
+        local fill = there("GetQuestsCompleted")
+        if fill then
+            local into = {}
+            try(fill, into)
+            for id in pairs(into) do known = id break end
+        end
+        local list = inside("C_QuestLog", "GetAllCompletedQuestIDs")
+        if not known and list then
+            local ids = try(list)
+            known = type(ids) == "table" and ids[1] or nil
+        end
+        return "known " .. tostring(known) .. " -> " .. tostring(try(call, known or 2))
+            .. ", nonsense 999999 -> " .. tostring(try(call, 999999))
+    end },
+
+    { area = "quests", name = "QueryQuestsCompleted", ask = function()
+        local call = there("QueryQuestsCompleted")
+        if not call then return "absent" end
+        try(call)
+        return "asked; if the count above grows on a second run, the answer arrives by event"
+    end },
+
+    { area = "quests", name = "GetDailyQuestsCompleted", ask = function()
+        local call = there("GetDailyQuestsCompleted")
+        if not call then return "absent" end
+        return shape(callPacked(call))
+    end },
+
+    ----------------------------------------------------------------------------------------
+    -- Backlog 93: instance lockouts
+    ----------------------------------------------------------------------------------------
+    { area = "instances", name = "RequestRaidInfo", ask = function()
+        local call = there("RequestRaidInfo")
+        if not call then return "absent" end
+        try(call)
+        return "asked; run this again in a moment and see whether the count below changes"
+    end },
+
+    { area = "instances", name = "GetNumSavedInstances", ask = function()
+        local call = there("GetNumSavedInstances")
+        if not call then return "absent" end
+        return tostring(try(call) or 0) .. " saved"
+    end },
+
+    { area = "instances", name = "GetSavedInstanceInfo", ask = function()
+        local call = there("GetSavedInstanceInfo")
+        if not call then return "absent" end
+        local count = tonumber(try(there("GetNumSavedInstances") or function() return 0 end)) or 0
+        if count == 0 then
+            -- The case every reader will meet, and the one an addon gets wrong.
+            return "nothing saved; index 1 answers: " .. shape(callPacked(call, 1))
+        end
+        local lines = {}
+        for index = 1, math.min(count, 3) do
+            lines[#lines + 1] = "[" .. index .. "] " .. shape(callPacked(call, index))
+        end
+        return table.concat(lines, " | ")
+    end },
+
+    { area = "instances", name = "GetNumSavedWorldBosses", ask = function()
+        local call = there("GetNumSavedWorldBosses")
+        if not call then return "absent" end
+        local count = tonumber(try(call)) or 0
+        local info = there("GetSavedWorldBossInfo")
+        if count == 0 or not info then return count .. " saved" end
+        return count .. " saved; [1] " .. shape(callPacked(info, 1))
+    end },
+
+    { area = "instances", name = "the clock", ask = function()
+        -- Seconds-to-reset only means something beside the moment it was read at.
+        return "time " .. tostring(time()) .. ", server " ..
+            tostring(try(there("GetServerTime") or function() return nil end))
+    end },
+
+    ----------------------------------------------------------------------------------------
+    -- Backlog 94: rested experience
+    ----------------------------------------------------------------------------------------
+    { area = "rested", name = "the sample", ask = function()
+        local resting = there("IsResting")
+        local exhaustion = there("GetXPExhaustion")
+        return table.concat({
+            "resting=" .. tostring(resting and try(resting) or "absent"),
+            "rested=" .. tostring(exhaustion and try(exhaustion) or "absent"),
+            "xp=" .. tostring(try(UnitXP, "player")),
+            "xpMax=" .. tostring(try(UnitXPMax, "player")),
+            "level=" .. tostring(try(UnitLevel, "player")),
+            "where=" .. tostring(try(GetSubZoneText) or try(GetZoneText)),
+            "at=" .. tostring(time()),
+        }, " ")
+    end },
+
+    ----------------------------------------------------------------------------------------
+    -- Backlog 5: honor, and what the weekly thing is on this build
+    ----------------------------------------------------------------------------------------
+    { area = "pvp", name = "UnitPVPRank / GetPVPRankInfo", ask = function()
+        local rank = there("UnitPVPRank")
+        if not rank then return "absent" end
+        local number = try(rank, "player")
+        local info = there("GetPVPRankInfo")
+        if not info then return "rank " .. tostring(number) .. ", GetPVPRankInfo absent" end
+        return "rank " .. tostring(number) .. " -> " ..
+            shape(callPacked(info, number, "player"))
+    end },
+
+    { area = "pvp", name = "GetPVPThisWeekStats", ask = function()
+        local call = there("GetPVPThisWeekStats")
+        if not call then return "absent" end
+        return shape(callPacked(call))
+    end },
+
+    { area = "pvp", name = "GetPVPLastWeekStats", ask = function()
+        local call = there("GetPVPLastWeekStats")
+        if not call then return "absent" end
+        return shape(callPacked(call))
+    end },
+
+    { area = "pvp", name = "GetPVPLifetimeStats", ask = function()
+        local call = there("GetPVPLifetimeStats")
+        if not call then return "absent" end
+        return shape(callPacked(call))
+    end },
+
+    { area = "pvp", name = "honor and conquest as currencies", ask = function()
+        -- 392 honor and 390 conquest, by id, through whichever of the two currency calls this
+        -- client carries. Ids because a name is one language (§2.1).
+        local modern = inside("C_CurrencyInfo", "GetCurrencyInfo")
+        local old = there("GetCurrencyInfo")
+        local out = {}
+        for _, pair in ipairs({ { "honor", 392 }, { "conquest", 390 } }) do
+            if modern then
+                out[#out + 1] = pair[1] .. " C_CurrencyInfo -> " ..
+                    fields(try(modern, pair[2]))
+            elseif old then
+                out[#out + 1] = pair[1] .. " GetCurrencyInfo -> " .. shape(callPacked(old, pair[2]))
+            end
+        end
+        if #out == 0 then return "neither currency call is here" end
+        return table.concat(out, " | ")
+    end },
+
+    { area = "pvp", name = "the standalone honor and arena calls", ask = function()
+        local out = {}
+        for _, name in ipairs({ "GetHonorCurrency", "GetArenaCurrency" }) do
+            local call = there(name)
+            out[#out + 1] = name .. "=" .. (call and shape(callPacked(call)) or "absent")
+        end
+        return table.concat(out, " | ")
+    end },
+
+    { area = "pvp", name = "GetPersonalRatedInfo", ask = function()
+        local call = there("GetPersonalRatedInfo")
+        if not call then return "absent" end
+        local out = {}
+        for bracket = 1, 4 do
+            out[#out + 1] = "[" .. bracket .. "] " .. shape(callPacked(call, bracket))
+        end
+        return table.concat(out, " | ")
+    end },
+
+    { area = "pvp", name = "GetArenaTeam", ask = function()
+        local call = there("GetArenaTeam")
+        if not call then return "absent" end
+        local out = {}
+        for team = 1, 3 do out[#out + 1] = "[" .. team .. "] " .. shape(callPacked(call, team)) end
+        return table.concat(out, " | ")
+    end },
+}
+
+local function askEverything()
+    local locale = (GetLocale and GetLocale()) or "unknown"
+    local report = FamilyProbeDB[locale] or {}
+    FamilyProbeDB[locale] = report
+    report.build = { try(GetBuildInfo) }
+
+    local who = (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?")
+    report.apis = report.apis or {}
+
+    DEFAULT_CHAT_FRAME:AddMessage(string.format(
+        "|cff66bbffFamily Probe|r: %s, build %s, %s - what this client answers",
+        locale, tostring(report.build[1]), who))
+
+    for _, probe in ipairs(PROBES) do
+        local ok, says = pcall(probe.ask)
+        if not ok then says = "error: " .. tostring(says) end
+
+        -- Readings that are a sample of a moment are kept one after another; answers about
+        -- which call exists replace the one before, because they cannot differ.
+        report.apis[probe.area] = report.apis[probe.area] or {}
+        if probe.area == "rested" then
+            local samples = report.apis.rested.samples or {}
+            samples[#samples + 1] = { who = who, says = says, at = time() }
+            report.apis.rested.samples = samples
+        else
+            report.apis[probe.area][probe.name] = { says = says, who = who, at = time() }
+        end
+
+        DEFAULT_CHAT_FRAME:AddMessage(string.format("  |cffffd700%s|r %s|r  %s",
+            probe.area, probe.name, tostring(says)))
+    end
+
+    DEFAULT_CHAT_FRAME:AddMessage(
+        "|cff66bbffFamily Probe|r: log out to write the file. Run it once per client, and twice "
+        .. "a few hours apart for the rested sample.")
+end
+
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:SetScript("OnEvent", function()
@@ -177,4 +518,19 @@ frame:SetScript("OnEvent", function()
 end)
 
 SLASH_FAMILYPROBE1 = "/familyprobe"
-SlashCmdList.FAMILYPROBE = collect
+SlashCmdList.FAMILYPROBE = function(argument)
+    argument = (argument or ""):lower()
+
+    -- The four questions of 2026-09-20. Kept off the login run: it reads a character's whole
+    -- quest history and asks the server twice, which is not a thing to do to somebody who only
+    -- wanted the profession names.
+    if argument == "apis" then
+        askEverything()
+        return
+    end
+
+    collect()
+    DEFAULT_CHAT_FRAME:AddMessage(
+        "|cff66bbffFamily Probe|r: |cffffd700/familyprobe apis|r asks what this client carries "
+        .. "for quests completed, lockouts, rested and honor.")
+end

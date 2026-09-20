@@ -32,6 +32,30 @@ report rather than a silent fault in a release.
 A Mists client is worth one login of its own: `GetProfessions` there hands back a name and its
 skill line id *together*, which is a verified pair with nothing guessed at all.
 
+## The second question: which calls this client carries
+
+Four things were asked of Family on 2026-09-20 - the quests a character has already finished,
+instance lockouts, rested experience while a character is away, and honor - and each came with an
+account of which API answers on which build. Those accounts disagree with what `DATASOURCES.md`
+wrote down about Era, and neither side is a measurement.
+
+    /familyprobe apis
+
+reads them and prints a line each. It is not part of the login run: it reads a whole quest history
+and asks the server twice, which is not a thing to do to somebody who only wanted the profession
+names.
+
+Run it **once per client** - Era, Burning Crusade Anniversary, Mists - and send back the chat
+lines, or the saved file after logging out. For the rested sample, run it **twice on one
+character a few hours apart**, once in an inn and once out in the world: two readings measure the
+rate, one assumes it.
+
+Every return is recorded by position and by type rather than unpacked into names. The shape of
+these calls differs between builds, and reading them by position is the fault that cost this
+project a talent grid and a quest log (`Scanners/Talents.lua`, `Scanners/Quests.lua`).
+
+Backlog entries 5, 92, 93 and 94 say what each answer decides.
+
 ## What it collects
 
 - The client's locale and build.
