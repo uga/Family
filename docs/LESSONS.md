@@ -28,12 +28,19 @@ here: `f463ca8` cites L-108, L-109 and L-110; `8e8cdff` cites L-108 and L-111; `
 L-108. Today L-108 and L-109 resolve to *main's* lessons, on a misaimed measurement and on two
 sessions sharing a processor, and not to the ones those commits meant - a `pcall` that does not
 guard a native crash (now **L-200**) and a probe that truncated its own answers (now **L-201**).
-**L-110 and L-111 were saved, and not by us.** They were about to decay the same way: `main`
-would have allocated exactly those two next, and four citations in three commits would all have
-resolved to unrelated lessons instead of two. Told that, the `main` session left both numbers
-permanently empty and put an entry there explaining the collision and naming what those commits
-actually mean (`5eed697`, *Leave L-110 and L-111 empty, so the number itself explains the
-collision*). So a reader following L-110 out of `f463ca8` now lands on the explanation rather
+**L-110 and L-111 were saved, by the other branch, because this one mentioned them in passing.**
+They were about to decay the same way: `main` would have allocated exactly those two next, and
+four citations in three commits would all have resolved to unrelated lessons instead of two. This
+branch wrote that to the `main` session as a courtesy, having concluded there was nothing to be
+done; that session replied that without the line it would have allocated L-110 the next day
+without noticing, and instead left both numbers permanently empty with an entry explaining the
+collision and naming what those commits actually mean (`5eed697`, *Leave L-110 and L-111 empty,
+so the number itself explains the collision*).
+
+**The rule that came out of it is narrower than *repair from the other end*,** and it was the
+`main` session that drew it: while an identifier has not been spent it is still a lever, and once
+spent it is not. Which also says when to look - at once, not when there is time. L-108 and L-109
+were already spent by the time anybody noticed, and no cleverness gets them back. So a reader following L-110 out of `f463ca8` now lands on the explanation rather
 than on something plausible and wrong. Two of the four citations are repaired, at the cost of two
 numbers from a sequence whose only meaning is the order it was written in.
 
