@@ -2500,6 +2500,53 @@ tools/mutate.py --jobs N`, two runs each: eight took **3 min 20.8 s** and **3 mi
 about 40 CPU-minutes. `lscpu` reports 12 CPUs at two threads per core: the gate is CPU-bound, and
 the extra jobs share cores rather than adding them. The cap stays at eight.
 
+#### The same run a week later, measured 2026-09-20
+
+The cases went from 219 on 2026-09-14 to **396**, and a case's gate went from 4.8 s to
+**7.0-7.8 s** on the same machine, both timed one after the other with `FAMILY_MUTATING=1`. The
+whole gate went from 10.6 s to **13.2 s**. Multiplied out, the full run costs about **eight
+minutes** on its own - 389 cases in 469 s and in 470 s, with nothing else running.
+
+Where the extra seconds in a case's gate went, by section:
+
+| | 2026-09-13 | 2026-09-20 |
+|---|---|---|
+| *the gate run by the mutator* - the tool's own hang test | 0 | **1.12 s** |
+| *guild share* | 1.70 s | 2.23 s |
+
+The first is the one worth naming: the hang test sets a made-up gate spinning and waits for the
+clock, and the clock was **one second**. That block runs inside every gate the mutator starts, so
+four hundred cases paid a second each to prove something about the tool. The clock is now a fifth
+of a second, which is ten times what starting and killing a process costs and cannot race, since
+a gate that spins for ever can never finish early. It is not skipped under `FAMILY_MUTATING`:
+three recorded mutations name `tools/mutate.py` and one of them is caught by that block alone.
+
+**Two full runs at once do not both go slowly.** Both go past the **600 seconds** the calling
+tool allows, both are killed, and each loses its output - so the run has to be started again,
+which is where a reported *fifteen to twenty minutes* comes from. It happened four times over
+2026-09-19 and 2026-09-20, twice each day, when two sessions on this one machine started runs
+minutes apart: sixteen CPU-bound gates on twelve threads. The trace it left was four abandoned
+copies of the tree in the temporary directory, 783 MB of memory, each from a run killed before
+the `finally` that removes them could run.
+
+A run now takes a lock outside every tree, so the second one waits and says whose turn it is.
+Waiting is the honest outcome: sixteen minutes of queue is sixteen minutes of work done, where
+two overlapping runs were two lost ones.
+
+**What the shorter clock actually bought, measured in the same hour with nothing else running**:
+the same gate, five runs at each setting, `FAMILY_MUTATING=1`, changing nothing but the number.
+
+| the hang test's clock | a case's gate, median of five |
+|---|---|
+| 1 second | **8.12 s** |
+| 0.2 seconds | **7.40 s** |
+
+**0.72 s a gate, about nine per cent.** The full run afterwards: **398 cases in 475.7 s**, all
+caught. That is one sample and the saving the gate figure predicts - about 36 s spread over eight
+workers - sits inside its noise, so the honest statement is that the gate is measurably faster
+and the full run has not been measured often enough to show it. The gate number is the one to
+quote, because it was taken five times at each setting against the run's once.
+
 ### What a shared recipe list weighs, `tools/wire-size.lua`
 
 Not from the client's tables but from the libraries the addon channel is fed through, and

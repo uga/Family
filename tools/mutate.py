@@ -53,6 +53,8 @@ required before a commit.
 Exit is non-zero if any mutation survived, any anchor has gone, or any gate hung.
 """
 
+import contextlib
+import fcntl
 import os
 import queue
 import shutil
@@ -60,6 +62,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CASES = os.path.join(ROOT, "tools", "mutations")
@@ -165,7 +168,7 @@ def prove(where):
         return None
 
     if answered is None:
-        return "the copy's own gate did not finish in %d seconds" % TIMEOUT
+        return "the copy's own gate did not finish in %g seconds" % TIMEOUT
 
     out = subprocess.run(GATE, cwd=where, capture_output=True, text=True)
     tail = (out.stderr or out.stdout or "").strip().split("\n")
@@ -205,7 +208,7 @@ def run(path, where):
             # Not caught: nothing was read back, so no check can be said to have seen it.
             # Until 2026-09-14 this answered True, and a hung gate left the exit status green
             # while the docstring promised otherwise (DECISIONS, that day).
-            return False, "  HUNG     %s - the gate ran past %d seconds" % (name, TIMEOUT)
+            return False, "  HUNG     %s - the gate ran past %g seconds" % (name, TIMEOUT)
         if answered != 0:
             return True, "  caught   %s" % name
 
@@ -255,7 +258,77 @@ def changed_files():
     return files
 
 
+# One run at a time on this machine, whichever worktree it is started from. Outside every tree
+# on purpose: the point is that two *different* checkouts see the same lock.
+LOCK = os.path.join(tempfile.gettempdir(), "family-mutate.lock")
+
+
+@contextlib.contextmanager
+def only_one_run():
+    """**Two full runs at once do not both go slowly - one of them dies and says nothing.**
+
+    Measured 2026-09-20 on a twelve-thread machine: a run of 396 cases takes about eight
+    minutes on its own, and each case's gate is CPU-bound. Two sessions starting a full run
+    within a few minutes of each other put sixteen of those gates on twelve threads; both runs
+    then go past the ten minutes their caller allows, both are killed, and the output of each
+    is lost. That happened four times in two days, and the evidence was four abandoned copies
+    of the tree sitting in the temporary directory - killed before the `finally` that removes
+    them could run.
+
+    None of that reads as contention from inside either session. It reads as *the mutation run
+    has got slow*, which is the wrong thing to go and look at.
+
+    So the second run waits instead, and says whose turn it is while it waits. Waiting is the
+    honest outcome: the work is not skipped, and a run that takes sixteen minutes because it
+    queued behind another one is sixteen honest minutes rather than two lost ones.
+
+    `--changed` takes it too. The contention is the same contention, and a short run held up by
+    a long one is the case this is for.
+
+    **A lock that cannot be taken is announced rather than enforced.** If the file cannot be
+    opened at all - another account owns it, the temporary directory is read-only - the run
+    goes ahead without it and says so on stderr. Refusing to run at all over that would be a
+    worse failure than the one this prevents.
+    """
+    try:
+        handle = open(LOCK, "a+")
+    except OSError as trouble:              # noqa: BLE001 - announced, not swallowed
+        sys.stderr.write("could not take %s (%s), so two runs can overlap on this machine\n"
+                         % (LOCK, trouble))
+        sys.stderr.flush()
+        yield
+        return
+
+    try:
+        try:
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            handle.seek(0)
+            held = handle.read().strip() or "a run that did not say who it was"
+            sys.stderr.write("waiting for the machine: %s\n" % held)
+            sys.stderr.flush()
+            fcntl.flock(handle, fcntl.LOCK_EX)
+
+        handle.seek(0)
+        handle.truncate()
+        handle.write("pid %d in %s since %s\n"
+                     % (os.getpid(), os.getcwd(), time.strftime("%H:%M:%S")))
+        handle.flush()
+        yield
+    finally:
+        try:
+            fcntl.flock(handle, fcntl.LOCK_UN)
+        finally:
+            handle.close()
+
+
 def main(argv):
+    """The run, with the machine to itself. `run_all` is the run."""
+    with only_one_run():
+        return run_all(argv)
+
+
+def run_all(argv):
     jobs = None
     rest = []
     only_changed = False

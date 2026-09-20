@@ -3498,6 +3498,45 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-109 — two sessions, one processor: the run was not slow, it was killed
+
+**2026-09-20.** The full mutation run was reported as taking fifteen to twenty minutes, against
+about three at the start of the week. Two sessions working on this machine both went looking at
+the obvious suspect - the run had grown from 219 cases to 396, and a case's gate had got slower -
+and both found real seconds there: 1.8 times the cases, 1.5 times the gate, about eight minutes
+of honest work.
+
+That accounts for eight minutes. It does not account for twenty.
+
+**Bitten:** the rest was not slowness at all. Two sessions on this one computer started full runs
+minutes apart, four times over two days. Sixteen CPU-bound gates on twelve threads put **both**
+runs past the 600 seconds the calling tool allows; both were killed, and each lost its output
+entirely - so each session started again, and the second attempt met the same contention. The
+measurable trace was four abandoned copies of the tree in the temporary directory, 783 MB of
+memory, each left by a run killed before the `finally` that removes them could run.
+
+**Why it was invisible.** From inside either session the evidence reads *the mutation run has got
+slow*, and that reading survives contact with the facts, because the run really had got slower.
+A partly-true explanation is the hardest kind to get past: it absorbs the question. Neither
+session could see the other's processes, and nothing in the output of a killed run says it was
+killed - there is no output at all.
+
+**The check that now catches it.** `tools/mutate.py` takes an exclusive lock on a file outside
+every worktree before it gates anything, and releases it in a `finally`. A second run waits
+rather than competing, and while it waits it prints which process holds the lock, from where, and
+since when - so a session that is waiting is told why instead of going to read its own tools.
+Mutations `the-machine-lock-is-never-taken` and `the-lock-does-not-say-who-holds-it`; the harness
+asks the lock itself, pointed at a made-up file rather than the real one, since a check that took
+the real lock would hang every gate the mutator starts.
+
+The lock is per machine, so **it only works in both trees**: one checkout holding it and one not
+is one run protected and one run still competing.
+
+And the rule, which is the general one: **a partial explanation that is true is not the
+explanation.** Eight minutes measured does not answer a twenty-minute complaint, and the gap
+between what was measured and what was reported is the thing to go after, not a rounding error to
+absorb.
+
 ## L-108 — the measurement was sound and it was aimed at a claim nobody makes
 
 **2026-09-20.** A Mists level 85 was read twice, 444 seconds apart, standing still and not
