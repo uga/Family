@@ -41011,6 +41011,16 @@ if RUN.storage == "compressed" then
 		"print('the wait is written down', saw and bool(ran))",
 		"kinds = ('waiting', 'holding', 'released')",
 		"print('and the log keeps all three', all(('\\t%s\\t' % k) in open(mutate.LOCK).read() for k in kinds))",
+
+		-- **Choosing is free; gating is not.** The lock used to wrap the choosing as well, so a
+		-- `--changed` that selected nothing still queued behind whatever full run was going -
+		-- measured at five and a half minutes on 2026-09-20, to find out it had no work. Read
+		-- here from the lock itself: a run with nothing to gate must never open the file.
+		"mutate.LOCK = os.path.join(tree, 'untouched')",
+		"mutate.CASES = os.path.join(tree, 'none')",
+		"os.mkdir(mutate.CASES)",
+		"code = mutate.main([])",
+		"print('nothing to gate takes no lock', code == 1 and not os.path.exists(mutate.LOCK))",
 	}, "\n"))
 	handle:close()
 	os.execute(string.format("python3 %s %s > %s 2>&1", script, ROOT, out))
@@ -41051,6 +41061,10 @@ if RUN.storage == "compressed" then
 		text:find("and an old one like it is dropped True", 1, true) ~= nil, text)
 	check("and only a real heading of this harness counts as a section",
 		text:find("and a line that is not a heading is not a place True", 1, true) ~= nil, text)
+	-- The lock defends the machine while gates run, and nothing else. Working out that there
+	-- is nothing to run reads git and the register, and competes with nobody.
+	check("a run with nothing to gate never waits for the machine",
+		text:find("nothing to gate takes no lock True", 1, true) ~= nil, text)
 	check("the register writes down which check caught which case",
 		text:find("writes down what caught it True", 1, true) ~= nil
 			and text:find("and a run that did not catch it keeps the old line True", 1, true) ~= nil,

@@ -19,8 +19,9 @@ restart from. Alberto, 2026-09-12: *che senso ha metterlo in parallelo per andar
 frattempo? E se quando finisce dice che non andava bene qualcosa, da "dove" ricominci?*
 
 **One full run, at the end, on the tree being committed** - not one behind each edit. The working
-loop is `--changed`, which answers in about a second, and on a change that touches no file any
-recorded mutation names it says so and stops. A full run started behind every intermediate save
+loop is `--changed`, which answers in about a second where it has nothing to gate, and in the
+time its cases take where it has. On a change that touches no file any recorded mutation names,
+it says so and stops without waiting for anybody. A full run started behind every intermediate save
 is answering about a tree that has already moved on: four of them were queued in four minutes on
 2026-09-20 and cost 32 minutes of machine for one useful answer, which is what taught the lock
 below to refuse a second run from the same tree rather than queue it. Running it in the
@@ -562,8 +563,10 @@ def only_one_run():
     honest outcome: the work is not skipped, and a run that takes sixteen minutes because it
     queued behind another one is sixteen honest minutes rather than two lost ones.
 
-    `--changed` takes it too. The contention is the same contention, and a short run held up by
-    a long one is the case this is for.
+    `--changed` takes it too **when it has cases to gate**, because then the contention is the
+    same contention and a short run held up by a long one is the case this is for. When it has
+    none it never reaches here: choosing reads git and the register and competes with nobody,
+    and `main` above says why that distinction had to be drawn.
 
     **A queue is right between two trees and wrong within one**, which the lock made visible on
     the day it landed. One session made four small edits to two documents and started a full run
@@ -654,16 +657,37 @@ def trim(handle):
 
 
 def main(argv):
-    """The run, with the machine to itself. `run_all` is the run."""
+    """Choose first, then take the machine - and only if there is something to gate.
+
+    **Choosing is free and gating is not.** Working out which cases a change touches reads git
+    and the register; it competes with nobody. Taking the lock around that as well meant a
+    `--changed` selecting *nothing* still queued behind whatever full run was going: measured at
+    five and a half minutes on 2026-09-20, to discover it had no work.
+
+    That was harmless while `--changed` was a convenience run between commits. It stopped being
+    harmless the day it became the gate of every commit, and nobody re-read this line when the
+    decision was taken - which is the shape of the thing three times over that day.
+
+    So the lock now wraps only the gating. A run with cases to gate queues exactly as before,
+    and the lock still defends the only thing it ever defended: the machine while gates run.
+    """
+    plan = choose(argv)
+    if isinstance(plan, int):
+        return plan
+
     try:
         with only_one_run():
-            return run_all(argv)
+            return gate_all(*plan)
     except AlreadyRunningHere as why:
         print(why)
         return 1
 
 
-def run_all(argv):
+def choose(argv):
+    """Which cases this invocation will gate, or the exit status to stop with.
+
+    Reads git, the case files and the register. Touches nothing and waits for nobody.
+    """
     jobs = None
     rest = []
     only_changed = False
@@ -726,6 +750,11 @@ def run_all(argv):
         print("no mutations recorded in %s" % CASES)
         return 1
 
+    return paths, jobs, everything, only_changed, rest
+
+
+def gate_all(paths, jobs, everything, only_changed, rest):
+    """The gating itself, with the machine to itself."""
     # The gate has to be green first, or every mutation below "catches" something that was
     # already broken and the whole run says nothing. Run against the repository itself, since
     # this is the one gate of the lot that is about the code as it actually stands.
