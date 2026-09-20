@@ -971,7 +971,7 @@ renumbering solves one collision and moving solves the class.
 | 92 | The quests a character has already finished | Which of the four completion calls Midnight carries, and whether the account-wide one answers - Family already asks `IsQuestFlaggedCompletedOnAccount` here (§12) |
 | 93 | Instance lockouts, and when each resets | Whether the same two calls answer, which §14 calls the one claim worth more than the others |
 | 94 | Rested experience since a character was put away | `GetXPExhaustion` is already asked here; `IsResting` and the two events are not |
-| 95 | A currency read from the older list is filed under its name, not its id | Midnight's list is `C_CurrencyInfo`'s, already read with 30 keys, so the fix may not need a fourth column at all |
+| 95 | A currency read from the older list is filed under its name, not its id | Settled on Burning Crusade by **position** - see below. Midnight's list is `C_CurrencyInfo`'s and answers a table with named keys, so the position cannot carry over and the question has to be asked again here |
 
 ### The debt, counted rather than described
 
@@ -1024,6 +1024,25 @@ the honour ids 1792 and 1602 and the three unit calls as *the first thing to pro
 carries for it dead code **on the three clients Family ships against today** - and says nothing
 about whether Midnight has it. Version 9 asks that call on every client for exactly that reason.
 What the finding saves this branch is the re-discovery, not the question.
+
+### A worked example of the limit, landed the same day
+
+`main`'s `6047f8f` settled backlog 95 on Burning Crusade, and it is worth reading as the shape of
+what will keep arriving here. `GetCurrencyListLink` answers nothing at all on 2.5.6, so the only
+route Family had to a currency's id gave none and honour was filed under its own name in one
+language. The id turned out to be **the twelfth value of the row** the older list answers with -
+1901, held against two characters whose honour differed while the twelfth value did not, which is
+how an identity is told from a figure.
+
+That is a **positional** reading of a list of loose values. Midnight does not have that list: it
+answers `C_CurrencyInfo.GetCurrencyListInfo` with a table of named keys, which version 9 already
+reads thirty keys deep. So the measurement is exact, hard-won, true of 2.5.6 - and the one thing
+it cannot be is the answer here. What travels is the question it sharpens: *where does Midnight
+put a currency's id, and is it there at all?* What does not travel is *the twelfth value*.
+
+Held the other way round, the same commit is a warning about this branch's own code: a scanner
+that read position twelve because Burning Crusade puts it there would be a branch on the client
+wearing the clothes of a measurement. The fourth column names the key; it does not count places.
 
 ### Still to do for step 1
 
