@@ -556,6 +556,44 @@ local PROBES = {
     end },
 }
 
+-- **Which announcements this client will take a registration for.**
+--
+-- A scanner is half a reading and half a moment to read it at, and every brief so far has named
+-- events this repository has never asked about. A client refuses to register an event it has
+-- never heard of, so a registration that is accepted says the name exists here.
+--
+-- **Accepted is not the same as fires**, and this cannot tell the two apart: an event that is
+-- accepted and never sent looks exactly like one that is waiting for something to happen. What
+-- it rules out is the other half - a name carried over from a build that had it, registered
+-- against a client that does not, which is a scanner that never runs and says nothing.
+local EVENTS = {
+    instances = { "UPDATE_INSTANCE_INFO", "RAID_INSTANCE_WELCOME", "BOSS_KILL",
+        "INSTANCE_LOCK_START", "INSTANCE_LOCK_STOP" },
+    rested = { "PLAYER_UPDATE_RESTING", "UPDATE_EXHAUSTION", "PLAYER_XP_UPDATE" },
+    pvp = { "CURRENCY_DISPLAY_UPDATE", "HONOR_XP_UPDATE", "PVP_HONOR_XP_UPDATE",
+        "CHAT_MSG_COMBAT_HONOR_GAIN", "PLAYER_PVP_RANK_CHANGED", "PLAYER_PVP_KILLS_CHANGED" },
+    quests = { "QUEST_TURNED_IN", "QUEST_LOG_UPDATE", "QUEST_QUERY_COMPLETE" },
+}
+
+local eventFrame
+
+local function eventsFor(area)
+    if not eventFrame then eventFrame = CreateFrame("Frame") end
+
+    local out = {}
+    for _, event in ipairs(EVENTS[area] or {}) do
+        local ok = pcall(eventFrame.RegisterEvent, eventFrame, event)
+        out[#out + 1] = event .. "=" .. (ok and "accepted" or "refused")
+        if ok then pcall(eventFrame.UnregisterEvent, eventFrame, event) end
+    end
+    return table.concat(out, " | ")
+end
+
+for _, area in ipairs({ "quests", "instances", "rested", "pvp" }) do
+    PROBES[#PROBES + 1] = { area = area, name = "the events this client accepts",
+        ask = function() return eventsFor(area) end }
+end
+
 local function askEverything()
     local locale = (GetLocale and GetLocale()) or "unknown"
     local report = FamilyProbeDB[locale] or {}

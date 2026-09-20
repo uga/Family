@@ -358,8 +358,19 @@ until they have been run on all three builds.
 ids answer nothing. So the disagreement above is settled for this build in favour of the table,
 and the brief was describing another one. The readings, and the two traps in them - the rank
 asked with is not the rank answered, and two rated-play calls are present on a build with no
-rated play - are in `DATASOURCES.md` under *What Era answered*. Burning Crusade and Mists are
-still unread.
+rated play - are in `DATASOURCES.md` under *What Era answered*.
+
+**Burning Crusade and Mists answered too**: ranks gone on both, as the table said. What is still
+unknown is the one thing the request turns on - **which id honor is on those two builds**. The
+probe asked 392 and 390, which are Cataclysm's, and Family has never read a currency by id at
+all: its scanner walks the list the player sees. The probe now walks it the same way, and the
+next run names the ids.
+
+**A second brief the same day** adds the events a scanner would wake on, the Midnight ids to try
+when there is a Midnight to try them on, and `GetArenaCurrency` as Burning Crusade's arena points
+- which that client says it does not have. All three are in `DATASOURCES.md` under *What the
+second brief adds*; the events are now probed, and the one contradiction is written down rather
+than resolved by choosing a side.
 
 ---
 

@@ -2875,6 +2875,35 @@ fourteen, which spent the whole allowance on the description and the icon and pu
 and the weekly cap out of sight. It names the fields it wants first now. A tool that reports is a
 tool that can report the wrong thing.
 
+#### What the second brief adds, 2026-09-20
+
+Alberto, describing the systems again in more detail. Three things in it are new to this section,
+and one of them is already contradicted by his own client.
+
+**`GetArenaCurrency` is named as the way arena points are read on Burning Crusade - and the probe
+found it absent on `2.5.6`.** So either the call went when the Anniversary client was built, or it
+is not the name it had. `Scanners/Currencies.lua` carries a standalone route for exactly that call
+and for `GetHonorCurrency`; neither is present on any of the three builds Family ships against,
+which makes that route dead code here until a client is found that answers it. Worth knowing
+before anything new is written against the same name.
+
+**The events, which this section had nothing about at all.** A scanner is half a reading and half
+a moment to take it at, and the briefs name `CURRENCY_DISPLAY_UPDATE`, `HONOR_XP_UPDATE`,
+`PVP_HONOR_XP_UPDATE` and `CHAT_MSG_COMBAT_HONOR_GAIN`. The probe now asks each client which of
+them it will accept a registration for - a client refuses a name it has never heard of - along
+with the ones the other three entries need: `UPDATE_INSTANCE_INFO` and its neighbours for
+lockouts, `PLAYER_UPDATE_RESTING` and `UPDATE_EXHAUSTION` for rested, `QUEST_QUERY_COMPLETE` for
+a quest history that arrives late. **Accepted is not the same as fires**, and nothing can tell
+those apart from outside; what it rules out is a name carried over from a build that had it.
+
+**And the ids to try when Midnight arrives**: honor `1792`, conquest `1602`, with `quantity`,
+`maxQuantity` and `totalEarned` in the table, and the honor *level* read per unit through
+`UnitHonorLevel`, `UnitHonor` and `UnitHonorMax` because it belongs to the account from Legion
+onwards. None of that can be measured here - there is no such client to ask - so it is written
+down as the first thing to probe on the `midnight` branch rather than as a fact. The probe asks
+the three unit calls on the three builds already, which will say whether they are there before
+the game they belong to is.
+
 #### Re-read this at a new build
 
 The rules above are pinned to the three builds in section 3 and to no others. They have already
