@@ -6063,8 +6063,21 @@ overnight would show five to eight points at the slow rate and nothing at all if
 rate, which are answers that cannot be confused. The same again for a character left in an inn
 settles the other half.
 
-**The rate is still unmeasured**, then, but the shape of the measurement that would settle it is
-now known, and so is the figure it starts from. It wants a character below it, which is what any
+**And the other half has its subject**: a level 11 sitting in the Stoutlager Inn, resting, with
+`xpMax` 8700 and rested **9136** - a little over one level, and well under the ceiling of 13050.
+So this one is filling, where every earlier reading was either full or in the field.
+
+What a second reading of it says, at the inn rate of 5% of a level every 8 hours: 435 points in
+those eight hours, **54 an hour**. An hour's gap therefore shows about fifty points, which no
+rounding can hide, and an hour of nothing would refute the rule outright.
+
+**The rate is still unmeasured**, then, but both halves now have a character to measure them on
+and a number to expect: about 54 an hour in the inn, about five to eight over a night in the
+field.
+
+**Killing things spends it**, which is worth saying because a reading taken after a fight is a
+reading of a figure that has gone *down*: rested experience is drawn on as a bonus while the
+character earns. A measurement of the rate wants a character nobody is playing. It wants a character below it, which is what any
 character becomes as soon as it is played for a while - then two readings a few hours apart, one
 pair logged out in an inn and one pair logged out in the field.
 
