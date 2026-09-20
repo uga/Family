@@ -1,0 +1,6 @@
+name: a second run from the same tree queues instead of being refused
+file: tools/mutate.py
+--- old
+        here = others_here(handle.read(), os.getcwd())
+--- new
+        here = []

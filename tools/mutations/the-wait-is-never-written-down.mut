@@ -1,0 +1,6 @@
+name: the waiting is printed but never written into the log
+file: tools/mutate.py
+--- old
+            note(handle, "waiting")
+--- new
+            pass

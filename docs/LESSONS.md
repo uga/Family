@@ -3498,6 +3498,50 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-112 — the lock serialised the runs, and nobody asked whether they were the same run
+
+**2026-09-20, the same afternoon the lock landed.** One session made four small edits to two
+documents - 15:42, 15:42:41, 15:44:34, 15:46:36 - and started a full mutation run behind each
+one. The lock did exactly what it was written to do: it put them in a queue. The machine then
+spent **32 minutes** on four runs, from 15:42:57 to about 16:15, three of them answering about a
+tree that had already been edited again by the time the answer arrived.
+
+**Bitten:** a second fault made visible by the fix for the first. Before the lock these four
+would have fought each other and mostly died, which is L-109 and looks like slowness. After the
+lock they queue politely, which looks like *the run takes twenty minutes* - the same wrong
+conclusion by a different road. A semaphore serialises; it has no opinion about whether the
+things it is serialising are worth doing.
+
+And the second and later runs were never worth doing. From one directory there are only two
+cases: the tree has not changed since the run that is going, so the queued run is that same run
+again, or it has changed, so the running one is answering about a tree nobody has any more.
+Neither is worth eight minutes of machine.
+
+**Why it was invisible.** Two reasons, and both are about what was not written down. The lock
+file held only its current holder, rewritten each time, so a line reading `since 15:59:01` was
+the truth about the run that wrote it and said nothing about the thirteen minutes that run had
+spent queued behind two others; putting those minutes back afterwards took the timestamps of
+unrelated files and a transcript. And the docstring said *wait for it, do not work beside it* -
+which the ten-minute ceiling on the calling tool had already pushed every session into
+disobeying, since a full run has to go in the background to finish at all, and from there to
+editing while it runs is one step nobody notices taking.
+
+**The check that now catches it.** A run from the same directory as one already going, or
+already queued, is **refused** rather than queued: it exits non-zero saying to wait and then run
+once on the tree being committed. A run from a different tree still waits, because between two
+trees the queue is exactly right. Liveness is asked of the system and not only of the log, or a
+run killed before its `finally` would jam its own tree shut for ever - which is the failure this
+repair could most easily have introduced. And the log is appended to, one line per event with
+how long each run waited and held, so the next such afternoon can be read rather than
+reconstructed. Mutations `a-second-run-from-one-tree-is-queued`,
+`a-killed-run-jams-its-tree-shut`, `the-wait-is-never-written-down`,
+`the-lock-does-not-say-who-holds-it`.
+
+The rule, which is the part that travels: **a queue is not a plan.** Serialising work says
+nothing about whether the work should exist, and a fix that makes a fault orderly can hide it
+better than the fault did. See [L-109](#l-109--two-sessions-one-processor-the-run-was-not-slow-it-was-killed),
+which is the first half of this one.
+
 ## L-110 and L-111 — not used here, and deliberately
 
 **2026-09-20.** These two numbers are left empty on this branch. It is the only thing that can

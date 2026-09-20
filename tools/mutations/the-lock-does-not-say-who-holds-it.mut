@@ -1,7 +1,7 @@
 name: the lock does not say which process is holding it
 file: tools/mutate.py
 --- old
-        handle.write("pid %d in %s since %s\n"
-                     % (os.getpid(), os.getcwd(), time.strftime("%H:%M:%S")))
+    handle.write("%s\t%s\t%d\t%s\t%s\n" % (time.strftime("%H:%M:%S"), what, os.getpid(),
+                                           os.getcwd(), extra))
 --- new
-        handle.write("\n")
+    handle.write("%s\t%s\t\t\t%s\n" % (time.strftime("%H:%M:%S"), what, extra))

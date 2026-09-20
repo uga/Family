@@ -1,0 +1,6 @@
+name: a run killed before it tidied up refuses that tree for ever
+file: tools/mutate.py
+--- old
+            if pid != os.getpid() and alive(pid)]
+--- new
+            if pid != os.getpid()]

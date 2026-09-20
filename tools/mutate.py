@@ -18,6 +18,14 @@ answered after the next thing is built is not a gate - a red result then has no 
 restart from. Alberto, 2026-09-12: *che senso ha metterlo in parallelo per andare avanti nel
 frattempo? E se quando finisce dice che non andava bene qualcosa, da "dove" ricominci?*
 
+**One full run, at the end, on the tree being committed** - not one behind each edit. The working
+loop is `--changed`, which answers in about a second, and on a change that touches no file any
+recorded mutation names it says so and stops. A full run started behind every intermediate save
+is answering about a tree that has already moved on: four of them were queued in four minutes on
+2026-09-20 and cost 32 minutes of machine for one useful answer, which is what taught the lock
+below to refuse a second run from the same tree rather than queue it. Running it in the
+background is for the ten-minute ceiling the calling tool has, not for carrying on meanwhile.
+
 **So the parallelism is here, inside the run**, and its whole purpose is to make waiting
 affordable. One case is one gate, the gate is about six seconds, and the cases have nothing to
 say to each other - ninety of them serially is nine minutes, which is long enough that somebody
@@ -262,6 +270,71 @@ def changed_files():
 # on purpose: the point is that two *different* checkouts see the same lock.
 LOCK = os.path.join(tempfile.gettempdir(), "family-mutate.lock")
 
+# How much of the lock's history to keep. A run writes two or three lines, so this is a couple
+# of hundred runs - small enough to leave alone and long enough to read a morning out of.
+LOCK_LINES = 500
+
+
+class AlreadyRunningHere(Exception):
+    """A run from this same directory is already going, or already queued behind one."""
+
+
+def alive(pid):
+    """Whether that process is still there. A dead pid in the log is history, not a queue."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:                 # somebody else's, and therefore running
+        return True
+    except OSError:
+        return False
+    return True
+
+
+def note(handle, what, extra=""):
+    """One line per event, appended. The file is the lock and the lock's own history.
+
+    **Appended rather than rewritten**, which it was for half a day. A file holding only the
+    current holder answers *who has it now* and nothing else: on 2026-09-20 a line reading
+    `since 15:59:01` was the truth about the run that wrote it and hid the thirteen minutes it
+    had spent queued behind two others, and putting those minutes back took the timestamps of
+    unrelated files and a transcript. Three lines a run costs nothing and answers afterwards.
+
+    Tab-separated because a path may hold spaces and must not need quoting to be read back.
+    """
+    handle.write("%s\t%s\t%d\t%s\t%s\n" % (time.strftime("%H:%M:%S"), what, os.getpid(),
+                                           os.getcwd(), extra))
+    handle.flush()
+
+
+def others_here(text, where):
+    """Runs from this same directory that are still going, by the log and then by the system.
+
+    The log says what was last written about each process; `alive` says whether that is still
+    true. Both are needed: a run killed before its `finally` leaves a *holding* line behind for
+    ever, and treating that as a queue would refuse every later run from that tree.
+    """
+    state = {}
+    for line in text.split("\n"):
+        parts = line.split("\t")
+        if len(parts) < 4:
+            continue
+        when, what, pid = parts[0], parts[1], parts[2]
+        if parts[3] != where:
+            continue
+        try:
+            pid = int(pid)
+        except ValueError:
+            continue
+        if what == "released":
+            state.pop(pid, None)
+        else:
+            state[pid] = (what, when)
+
+    return [(pid, what, when) for pid, (what, when) in sorted(state.items())
+            if pid != os.getpid() and alive(pid)]
+
 
 @contextlib.contextmanager
 def only_one_run():
@@ -285,6 +358,23 @@ def only_one_run():
     `--changed` takes it too. The contention is the same contention, and a short run held up by
     a long one is the case this is for.
 
+    **A queue is right between two trees and wrong within one**, which the lock made visible on
+    the day it landed. One session made four small edits to two documents and started a full run
+    behind each: the lock lined them up and the machine spent 32 minutes on four runs where one
+    was wanted. Either the tree has not changed since the run that is going - and the second run
+    is the same run again - or it has, and the first run's answer is about a tree nobody has any
+    more. Neither is worth eight minutes.
+
+    So a second run **from the same directory** is refused outright rather than queued, and says
+    to wait and run once at the end. A run from a different tree still waits, because there the
+    queue is exactly right.
+
+    The check is the log and then the system: a run killed before its `finally` leaves a
+    *holding* line behind for ever, so a pid that is no longer there is history rather than a
+    queue. Two runs started in the same second from one tree can still both get through - the
+    look and the write are not one act - which is a second of window against a fault measured in
+    half-hours, and it is written down here rather than closed with a second lock.
+
     **A lock that cannot be taken is announced rather than enforced.** If the file cannot be
     opened at all - another account owns it, the temporary directory is read-only - the run
     goes ahead without it and says so on stderr. Refusing to run at all over that would be a
@@ -299,33 +389,69 @@ def only_one_run():
         yield
         return
 
+    started, took, holding = time.time(), None, False
     try:
+        handle.seek(0)
+        here = others_here(handle.read(), os.getcwd())
+        if here:
+            pid, what, when = here[0]
+            raise AlreadyRunningHere(
+                "a run from this tree is already going (pid %d, %s since %s) - wait for it, "
+                "then run once on the tree you mean to commit" % (pid, what, when))
+
         try:
             fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:
+            note(handle, "waiting")
             handle.seek(0)
-            held = handle.read().strip() or "a run that did not say who it was"
-            sys.stderr.write("waiting for the machine: %s\n" % held)
+            holder = [line for line in handle.read().split("\n") if "\tholding\t" in line]
+            sys.stderr.write("waiting for the machine: %s\n"
+                             % (holder[-1] if holder else "a run that did not say who it was"))
             sys.stderr.flush()
             fcntl.flock(handle, fcntl.LOCK_EX)
 
-        handle.seek(0)
-        handle.truncate()
-        handle.write("pid %d in %s since %s\n"
-                     % (os.getpid(), os.getcwd(), time.strftime("%H:%M:%S")))
-        handle.flush()
+        trim(handle)
+        note(handle, "holding", "waited %ds" % (time.time() - started))
+        took, holding = time.time(), True
         yield
     finally:
+        try:
+            if holding:
+                note(handle, "released", "held %ds" % (time.time() - took))
+        except OSError:
+            pass
         try:
             fcntl.flock(handle, fcntl.LOCK_UN)
         finally:
             handle.close()
 
 
+def trim(handle):
+    """Keep the tail of the log, done while holding the lock so nobody else is appending.
+
+    A line can still be lost if a run happens to be writing its *waiting* line in the same
+    instant, which is a line of history and not a lock - the lock is the `flock`, and no amount
+    of rewriting this file can take it away from whoever holds it.
+    """
+    handle.seek(0)
+    lines = handle.read().split("\n")
+    if len(lines) <= LOCK_LINES:
+        return
+
+    handle.seek(0)
+    handle.truncate()
+    handle.write("\n".join(lines[-LOCK_LINES:]))
+    handle.flush()
+
+
 def main(argv):
     """The run, with the machine to itself. `run_all` is the run."""
-    with only_one_run():
-        return run_all(argv)
+    try:
+        with only_one_run():
+            return run_all(argv)
+    except AlreadyRunningHere as why:
+        print(why)
+        return 1
 
 
 def run_all(argv):

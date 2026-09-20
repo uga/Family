@@ -40828,7 +40828,7 @@ if RUN.storage == "compressed" then
 	local script, out = os.tmpname(), os.tmpname()
 	local handle = io.open(script, "w")
 	handle:write(table.concat({
-		"import os, sys, tempfile",
+		"import os, sys, tempfile, time",
 		"sys.path.insert(0, sys.argv[1] + '/tools')",
 		"import mutate",
 		"tree = tempfile.mkdtemp(prefix='family-hang-')",
@@ -40867,13 +40867,76 @@ if RUN.storage == "compressed" then
 		"    except OSError:",
 		"        print('held', True)",
 		"    other.close()",
-		"    print('names the holder', ('pid %d' % os.getpid()) in open(mutate.LOCK).read())",
+		"    print('names the holder', ('\\tholding\\t%d\\t' % os.getpid()) in open(mutate.LOCK).read())",
 		"after = open(mutate.LOCK, 'a+')",
 		"try:",
 		"    fcntl.flock(after, fcntl.LOCK_EX | fcntl.LOCK_NB)",
 		"    print('let go', True)",
 		"except OSError:",
 		"    print('let go', False)",
+		"after.close()",
+
+		-- **A queue is right between two trees and wrong inside one.** Four full runs from one
+		-- session were lined up in four minutes on 2026-09-20 and cost 32 minutes of machine
+		-- for one useful answer: the tree either had not changed, making the second run the
+		-- first one again, or had, making the first one's answer about a tree nobody has. So a
+		-- second run from the same directory is refused, and one from another tree still waits.
+		--
+		-- The live pid here is the process that started this harness, which is certainly
+		-- running and is certainly not us.
+		"import subprocess, threading",
+		"def logged(*lines):",
+		"    open(mutate.LOCK, 'w').write(''.join(lines))",
+		"def line(pid, where, what='holding'):",
+		"    return '09:00:00\\t%s\\t%d\\t%s\\t\\n' % (what, pid, where)",
+		"logged(line(os.getppid(), os.getcwd()))",
+		"try:",
+		"    with mutate.only_one_run():",
+		"        print('refuses the same tree', False)",
+		"except mutate.AlreadyRunningHere:",
+		"    print('refuses the same tree', True)",
+
+		-- A run killed before its `finally` leaves its *holding* line behind for ever. Reading
+		-- the log alone would then refuse every later run from that tree - a lock that jams
+		-- shut, which is worse than the queue it replaced. So the system is asked as well.
+		"gone = subprocess.Popen(['true']); gone.wait()",
+		"logged(line(gone.pid, os.getcwd()))",
+		"with mutate.only_one_run():",
+		"    print('a dead pid is not a queue', True)",
+
+		-- The other half: between two trees the queue is exactly right, and refusing there
+		-- would send a session away from work it is entitled to have done.
+		"logged(line(os.getppid(), '/some/other/tree'))",
+		"with mutate.only_one_run():",
+		"    print('another tree still waits', True)",
+
+		-- **The waiting is written down, not only printed.** A log holding just the current
+		-- holder answers *who has it now*: a line saying `since 15:59:01` was the truth about
+		-- the run that wrote it and hid the thirteen minutes it had queued behind two others.
+		-- Contended here by a second handle in this same process rather than a second process,
+		-- and released as soon as the line appears, so it costs milliseconds and cannot hang -
+		-- the poll gives up after two seconds and the check fails rather than the gate.
+		"logged()",
+		"first = open(mutate.LOCK, 'a+')",
+		"fcntl.flock(first, fcntl.LOCK_EX)",
+		"ran = []",
+		"def go():",
+		"    with mutate.only_one_run():",
+		"        ran.append(True)",
+		"queued = threading.Thread(target=go)",
+		"queued.start()",
+		"saw, deadline = False, time.time() + 2",
+		"while time.time() < deadline:",
+		"    if '\\twaiting\\t' in open(mutate.LOCK).read():",
+		"        saw = True",
+		"        break",
+		"    time.sleep(0.002)",
+		"fcntl.flock(first, fcntl.LOCK_UN)",
+		"first.close()",
+		"queued.join(5)",
+		"print('the wait is written down', saw and bool(ran))",
+		"kinds = ('waiting', 'holding', 'released')",
+		"print('and the log keeps all three', all(('\\t%s\\t' % k) in open(mutate.LOCK).read() for k in kinds))",
 	}, "\n"))
 	handle:close()
 	os.execute(string.format("python3 %s %s > %s 2>&1", script, ROOT, out))
@@ -40893,6 +40956,23 @@ if RUN.storage == "compressed" then
 	-- other session reading its own tools for a slowness that is not there.
 	check("and says which process is holding it, for whoever is waiting",
 		text:find("names the holder True", 1, true) ~= nil, text)
+
+	-- A queue between two trees is the point; a queue inside one tree is four runs where one
+	-- was wanted, and the second of them is either the same run again or an answer about a
+	-- tree that has moved on.
+	check("a second run from the same tree is refused rather than queued",
+		text:find("refuses the same tree True", 1, true) ~= nil, text)
+	check("and a run killed before it could tidy up does not jam that tree shut",
+		text:find("a dead pid is not a queue True", 1, true) ~= nil, text)
+	check("while a run from another tree still waits its turn",
+		text:find("another tree still waits True", 1, true) ~= nil, text)
+
+	-- The thirteen minutes that were invisible: a log holding only the current holder answers
+	-- who has it now and nothing about how long anybody queued.
+	check("the waiting is written into the log and not only printed",
+		text:find("the wait is written down True", 1, true) ~= nil, text)
+	check("and the log is appended to, so a run's whole turn can be read back",
+		text:find("and the log keeps all three True", 1, true) ~= nil, text)
 end
 
 print()
