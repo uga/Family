@@ -602,14 +602,255 @@ at the top read in full).
   keep their secondary stats. Family records currencies (specification §3). Whether this one is
   in the currency list is for the probe.
 
+## 12. What version 6 answered, and what it cost on Mists (2026-09-19)
+
+Midnight 12.1.0, build 69875: **Ahia**, all five windows opened, read with
+`tools/surface.py --report <file>@Ahia`. The file also holds two older runs, Druiduga and Mara,
+which predate version 6 - a run's key is the client version and the character, so earlier runs
+sit beside the new one rather than being replaced. Only Ahia's carries a `census`.
+
+**There is no Mists control for any of this.** Version 6 crashed that client (below), so the
+comparisons in §4 and §5 are still the newest ones taken, and they were taken with the earlier
+list. Everything here is a raw Midnight reading: an absence below is absent on Midnight, and
+whether Mists has it is not re-asked.
+
+The counts: **99 globals absent, 2 namespace members absent, 74 literals refused as events, 0
+templates that fail to build, 1035 calls answered, 243 that throw.** The two members are
+`C_AuctionHouse.GetAuctionHouseDepositRate` and `C_TradeSkillUI.GetTradeSkillLine`. **All 243
+throws are from the no-argument sweep** - 219 in `discovery`, 24 in `tradeSkill`, every one of
+them *bad argument #1 … Usage:*, which is a function saying what it wants. Nothing Family calls
+threw, which is what §3 said of the first run and still holds.
+
+### Professions: the per-expansion lines are real, and they are parent and child
+
+`C_TradeSkillUI.GetAllProfessionTradeSkillLines()` answers **157** skill lines, and
+`GetProfessionInfoBySkillLineID` describes each one with an `expansionName` and a
+`parentProfessionID`/`parentProfessionName`. Twelve expansions of eleven professions each -
+Classic, Outland, Northrend, Cataclysm, Pandaria, Draenor, Legion, Kul Tiran, Shadowlands,
+Dragon Isles, Khaz Algar, **Midnight** - and 25 more named *Unknown*. So 2500 is *Legion
+Engineering*, parent 202 *Engineering*.
+
+**This settles the hypothesis at the foot of §9**: Midnight's tiers are child skill lines under a
+parent, which is the shape backlog 24 measured for cooking's six *Way of* lines on Mists
+(`SkillLine` 975 to 980, `ParentSkillLineID` 185). One model of parent and child would serve both.
+
+**And it is only readable with the window open.** At login `GetBaseProfessionInfo()` answers a
+zeroed table and `GetChildProfessionInfos()` an empty one. With Ahia's engineering window open:
+
+| Call | Answer |
+|---|---|
+| `GetBaseProfessionInfo()` | *Engineering*, `professionID` 202, `skillLevel` 305, `maxSkillLevel` 805 |
+| `GetChildProfessionInfo()` | *Kul Tiran Engineering*, `professionID` 2499, `parentProfessionID` 202, `skillLevel` 55, `maxSkillLevel` 180 |
+| `GetChildProfessionInfos()` | 8 tables |
+| `GetProfessionChildSkillLineID()` | 2499 |
+| `GetProfessionInventorySlots()` | 11 slots, inventory ids 19 to 29 |
+
+That is the §7 gap measured: one profession is a parent with a skill of its own and a child line
+per expansion, each with its own skill and cap. Family's one-rank-per-profession model reads the
+parent and is silent about eight children.
+
+### Concentration: 24 of the 157 lines have a currency
+
+Three tiers, eight crafting professions each - the three gathering lines have none, and every
+older tier answers 0:
+
+| Tier | Currency ids |
+|---|---|
+| Dragon Isles | 3047 to 3054 |
+| Khaz Algar | 3013, 3040 to 3046 |
+| **Midnight** | 3161 to 3168 |
+
+**Read on an account that has not bought Midnight**, so the skill-line table and its currencies
+are client data rather than something the purchase unlocks. What they are *called* is not here;
+see the limitation below.
+
+### `C_ProfSpecs` is where the specialisations live
+
+§8 ended by saying the specialisations and their knowledge points are in no namespace Family
+uses, and that finding them would mean naming one from memory as `C_MerchantFrame` was named.
+It did not come to that: the sweep's own words include `Prof`, and the census found
+**`C_ProfSpecs`** (27 functions) - `GetConfigIDForSkillLine`, `GetCurrencyInfoForSkillLine`,
+`GetSpecTabIDsForSkillLine`, `GetPerksForPath`, `GetStateForPath`. With the window open
+`GetDefaultSpecSkillLine()` answers **2810** and `GetSpecTabInfo()` answers `{enabled=false}`;
+at login both answer nothing.
+
+### Recipes, specialisation counts, Housing
+
+- **Recipes.** `GetAllRecipeIDs()` 639 ids. `GetRecipeInfo(1260349)` a 28-field table with
+  `hyperlink`, `categoryID`, `firstCraft`, `alwaysUsesLowestQuality`. `IsRecipeFirstCraft` false;
+  `GetRecipeCooldown` `nil | false | 0 | 0`; `GetQualitiesForRecipe` nil for that recipe.
+- **Specialisation counts.** `C_SpecializationInfo.GetNumSpecializationsForClassID` answers 3 for
+  classes 1 to 10, 12 and 13; **4** for class 11; 0 for class 14. So a class with more than three
+  exists and Family's model must allow it. It does **not** settle the *Devourer* of §11: which
+  class each id is was not asked, and `C_CreatureInfo.GetClassInfo` is present and would say.
+- **Housing.** `C_Housing.GetMaxHouseLevel()` answers **12**, which is §10's claim now read from
+  the client instead of a page. `GetHousingAccessFlags()` 0, `GetPlayerOwnedHouses()` nothing,
+  `GetCurrentHouseInfo()` nil - the unpurchased account. The census lists thirteen `C_Housing*`
+  and `C_House*` namespaces.
+- **The merchant is not ready at its own event.** Asked at `MERCHANT_SHOW`:
+  `MerchantFrame:IsShown()` false, `GetMerchantItemLink(1)` nothing, `C_MerchantFrame.GetItemInfo(1)`
+  an 8-field table with no `name`. Two seconds later: shown, the link is *Tough Hunk of Bread*, and
+  the table has 9 fields with `name`. Worth holding against the Mists innkeeper that answered
+  nothing (§6).
+
+### What version 6 did not answer, and why
+
+**No currency is named anywhere in the run.** The Catalyst question of §11 is exactly what the
+currency list was read for, and every currency came back as an id and eleven booleans.
+`showTable` prints a table's keys sorted and stops at twelve; a currency has twenty-five, and
+`name`, `quantity` and `maxQuantity` all sort past the cut, which ends in a `...` that reads like
+*more of the same*. Fixed in version 7 - the currency calls now ask for thirty keys - and it needs
+one more login to answer. L-109.
+
+### The Mists control could not be taken: version 6 crashes that client
+
+Two launches, the same crash both times, 28 seconds into the world. From the log
+(`2026-09-19_22.49.38_Crash_27336.txt`, build 69585, interface 50504,
+Eccebombo-Mirage Raceway):
+
+    Exception: ACCESS_VIOLATION ... referenced memory at "0x0000000000000000"
+    #3 FamilySurface.lua:234  name="C_Housing.GetMaxHouseLevel", shown=""
+    #4 FamilySurface.lua:343  word=nil, space="C_Housing", name="GetMaxHouseLevel"
+    #6 FamilySurface.lua:470  interface=50504, who="Eccebombo-Mirage Raceway"
+
+**The faulting call is `C_Housing.GetMaxHouseLevel()` with no arguments** - the same call that
+answers 12 on Midnight. Frames 2, 5 and 7 are all `pcall`, and they caught nothing: a native null
+dereference is not a Lua error. `professionLines` at `:468` completed before the sweep reached
+`C_Housing` at `:470`, so it is not implicated and is unchanged.
+
+So **Mists has a `C_Housing` namespace too**, and its functions are stubs that do not survive
+being called. That is a reading about Mists worth keeping: a namespace existing on a Classic
+client says nothing about the feature being there, which is `Capabilities.lua`'s thesis arriving
+by a new road.
+
+**Version 7** gates the sweep to interface 120000 and up, records a line saying so when it is
+skipped, and adds `tools/FamilySurface/selftest.lua`, which fires `PLAYER_LOGIN` on both numbers
+without a client. L-108.
+
+## 13. A brief on the modern API, relayed 2026-09-19
+
+**Hypotheses, not evidence**, under the rule of §8. Relayed by Alberto, who did not name its
+source and said what it is for: *these are hints, all to be verified by us to convert into
+facts.* So nothing here enters `Capabilities.lua`, a harness stub or Family's data until a client
+shows it; what it does is steer what the next probe asks.
+
+Its shape: everything moved into `C_` namespaces, calls answer one table instead of several
+values, and Midnight returns unreadable *Secret Values* in combat and in instances. Then a
+module-by-module list, taken from the alt-manager addons it is written about, of what to
+call for each category.
+
+### Checked against §12's run, and agreeing
+
+| The brief says | The client said |
+|---|---|
+| the old quest log calls are gone | `GetNumQuestLogEntries`, `GetQuestLogTitle` absent |
+| `GetFactionInfo` was removed | `GetFactionInfo`, `GetNumFactions` absent |
+| the old auction house is gone | `GetNumAuctionItems` absent; `C_AuctionHouse.GetOwnedAuctionInfo(1)` answers a table with `itemKey`, `buyoutAmount`, `quantity`, `status` (§5) |
+| `GetTradeSkillLine` is dead, use `GetBaseProfessionInfo` | both forms of the old call absent; the new one answers a table (§12) |
+| quests come through `C_QuestLog.GetInfo` | `GetInfo` is in the namespace's listing |
+
+### Checked, and the client says otherwise
+
+1. **"Almost every loose `Get…` has been removed."** **99 of the 278 globals Family reads are
+   absent; 179 answer.** `GetMoney`, `UnitXP`, `GetInventoryItemLink`, `GetSpecialization`,
+   `GetSpecializationInfo`, `GetCategoryList`, `GetInboxNumItems`, `GetMerchantNumItems` all
+   answer on Midnight. The removals cluster - quests, reputation, the old auction house,
+   professions, talents, glyphs, the bank - and leave equipment, money, mail, the merchant and
+   the unit calls alone.
+2. **"Midnight returns tables where the old API returned several values."** Not a property of the
+   client. Mists already answers `C_Container.GetContainerItemInfo(-1, 1)` with a table carrying
+   `itemID` (§5), and Midnight still answers `GetSpecializationInfo(1)` with
+   `259 | "Assassination" | …`. It is per call, which is why `Capabilities.lua` is a table and not
+   a version number.
+3. **"The warband bank is bag ids 13 to 17."** §6 settled it by sweeping the ids and matching
+   them against Alberto's screenshots of every tab: containers **6 to 11** are the character's six
+   tabs in order and **12** is the warband tab. The measurement stands and the brief does not.
+4. **`C_ClassTalents.GetTraitTreeIDsForClass` does not exist.** `C_ClassTalents` is one of the
+   namespaces the run listed in full - 31 functions - and the tree call it holds is
+   `GetTraitTreeForSpec(specID)`, beside `GetConfigIDsBySpecID` and `GetActiveConfigID`.
+
+### Not checkable from this run, and the reason
+
+The probe lists the functions of the namespaces Family already uses and of those matched by a
+brief's word (decision of 2026-09-19). The brief names five that are neither, so the census knows
+only that they exist and how many functions each holds:
+
+| Namespace | Functions | What the brief wants from it |
+|---|---|---|
+| `C_Reputation` | 27 | `GetNumFactions`, `GetFactionDataByIndex` |
+| `C_MajorFactions` | 12 | `GetMajorFactionData`, for renown |
+| `C_Bank` | 23 | `FetchPurchasedBankTabIds`, and `Enum.BagIndex.AccountBankTab_*` |
+| `C_WeeklyRewards` | 21 | `GetActivities` |
+| `C_MythicPlus` | 21 | `GetRunHistory` |
+
+**Reputations are the one Family already ships**, so that namespace is the first the code step
+hits, and naming it for the next probe is the move already made for `C_MerchantFrame`.
+
+### What the brief adds that was not written down here
+
+- **Secret Values in combat and in instances.** The most valuable line in it, because it is the
+  one that would fail quietly: a scan that runs while the player is fighting could read back
+  something unreadable and write a well-formed record of nothing over a real one, which is
+  **L-019** arriving from a new direction. Nothing in this repository has asked the client about
+  it. The probe is cheap and is a comparison, not a lookup: ask the equipment, talent and
+  container calls once out of combat and once in it, write both down, and see whether the answers
+  differ. The brief's own remedy - hold a scan until `PLAYER_REGEN_ENABLED` - is a change to
+  Family and is not made until the reading says it is needed.
+- **`recipeInfo.learned`**, the field it says to filter recipes by. §12's `GetRecipeInfo` answer
+  has 28 fields and the run wrote down 12; `learned` sorts past the cut. L-109 a second time, and
+  the `keys` count added in version 7 for currencies belongs on this call too.
+- **Account-wide against per-character.** The brief's closing point: warbank, renown, transferable
+  currencies and mounts belong to the account, not the character, so a record keyed by character
+  is the wrong shape for them. Family is character-keyed throughout. **This is a question for the
+  specification and therefore Alberto's**, and it is one of the three below.
+
+### What probe version 8 asks of it
+
+Built the same day, on Alberto's *you should create a probe checking all of those hints*. Every
+claim above that a client can settle is now asked, and the safety rule of L-108 decides how:
+
+- **The six namespaces, listed on every client** - `C_Reputation`, `C_MajorFactions`, `C_Bank`,
+  `C_WeeklyRewards`, `C_MythicPlus`, `C_PetJournal`. Listing calls nothing and costs nothing, and
+  it settles most of the brief by itself: *is `GetFactionDataByIndex` there* is a question about a
+  name. Filed as `(brief)` in the namespaces.
+- **A hand-written call into each, on Midnight only** - `C_Reputation.GetNumFactions()` and
+  `GetFactionDataByIndex(1)`, `C_MajorFactions.GetMajorFactionIDs()`,
+  `C_WeeklyRewards.GetActivities()`, `C_MythicPlus.GetRunHistory(false, true)`,
+  `C_PetJournal.GetNumPets()`, `C_ClassTalents.GetActiveConfigID()`, and
+  `C_Bank.FetchPurchasedBankTabIds(Enum.BankType.Account)`. Not on a Classic client: this
+  repository has never seen one of them answer, and a first call is exactly what took Mists down.
+  Filed as `brief`.
+- **`C_QuestLog.GetInfo(1)` everywhere**, because that namespace is one Family already uses and
+  an index is the argument the absent `GetQuestLogTitle(1)` took.
+- **`Enum.BagIndex` and `Enum.BankType`, read as tables.** The brief puts the warband bank at
+  `AccountBankTab_1`; §6 found bag 12 by sweeping ids against screenshots. Two readings of one
+  thing, and they agree or one is wrong.
+- **Secret Values, as a comparison.** Thirteen reads - money, level, class, an equipped link, an
+  item, the specialisation, the talent reader, two container calls, the quest call - taken at
+  login as `combatOut` and again two seconds into a fight as `combat`, with
+  `InCombatLockdown()` written beside each. Nothing is assumed about how an unreadable answer
+  prints: if the two differ, that is the finding, and if they do not, that is also the finding.
+- **`GetRecipeInfo` widened to 40 keys**, so `learned` survives being written down.
+
+### The three shape questions 5.0.0 now waits on
+
+Alberto, 2026-09-19, asked whether the differences are large enough to want a Family of its own
+for Midnight, and **deferred the answer until they are counted rather than described** (see
+`DECISIONS.md`). The call-level differences are small and measured. What is not counted is the
+shape, and these are the three that decide it:
+
+1. **Professions as parent and child.** Measured in §12 - 157 lines, a parent on every one. What
+   it costs Family's one-rank-per-profession model is not measured.
+2. **Records that belong to the account and not the character.** Unread: `C_Bank`,
+   `C_MajorFactions` and the transferable flag on a currency are all in the table above.
+3. **Secret Values in combat.** Unread, and the only one of the three that could make a scanner
+   silently wrong rather than merely incomplete.
+
 ### Still to do for step 1
 
-**Probe version 6** tests §8, §10 and §11: a census of every `C_` namespace, discovery in the ones
-whose names hold a word from the briefs, every profession skill line with its concentration
-currency, and, in a profession window, the child professions, equipment slots and the first
-recipe's first-craft, cooldown and qualities. It also asks every class's specialisation count and reads
-the whole currency list. It needs a Midnight login with a profession window
-opened. A Mists login gives the census its control.
+**Probe version 7** re-takes what version 6 could not: the **Mists control** for the census and the
+surface, which the crash cost; and, on Midnight, the **currency names** for §11's Catalyst. Nothing
+else about it changed, so the Midnight readings above stand and the run is for those two.
 
 
 1. ~~Where the bank is on Midnight~~: containers 6 to 11 are the character's six tabs in order,
@@ -621,3 +862,24 @@ opened. A Mists login gives the census its control.
    answered an ordinary link and `GetMerchantItemCostInfo` 0 for a vendor's bread. What a
    Mists vendor with goods would add is the shape of those two on the client where Family
    already works.
+4. ~~Where the profession specialisations and their knowledge points live~~: `C_ProfSpecs`,
+   found by the sweep rather than named from memory (§12).
+5. ~~Whether Midnight's per-expansion lines are child skill lines~~: they are, with a parent
+   named on every one of the 157 (§12). What is still open is whether **Mists' *Way of* lines
+   answer the same calls**, which would make one model serve both - backlog 24 measured them as
+   child lines, and no client has been asked with these calls.
+6. **What the Catalyst's charges are called**, and whether they are in the currency list at all.
+   Version 6 read the list and threw the names away; version 7 keeps them (§12).
+7. **Which class id is which on Midnight**, so that the specialisation counts can be read as
+   classes. `C_CreatureInfo.GetClassInfo` is present and is one line.
+8. **The Mists control run**, still owed: the census has never had one, and the surface's
+   control is still §4 and §5's, taken against the shorter list.
+9. **Whether a scan reads Secret Values in combat** (§13). The same calls in and out of combat,
+   written down twice and compared. The one unread question that could make a scanner wrong
+   rather than short.
+10. **What `C_Reputation`, `C_MajorFactions` and `C_Bank` hold** (§13): named for the probe the
+    way `C_MerchantFrame` was, because reputations are a category Family already ships and the
+    old calls for them are absent.
+11. **Whether a record belongs to the account or the character** on Midnight - the warband bank,
+    renown, and the transferable flag on a currency. A question for the specification once the
+    probe has read them, and one of the three that 5.0.0's shape waits on.

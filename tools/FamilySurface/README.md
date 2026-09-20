@@ -24,7 +24,10 @@ So for each name it asks the question that can actually be answered:
 | container ids -20 to 40 | slot count asked at login and with the bank open | which hold slots, and the first item in each |
 | `C_MerchantFrame`, named from memory | its keys listed; at a vendor, each `Get…` and `Is…` function called with 1 | the answers, filed under the merchant |
 | every `C_` namespace the client has | counted | `census`: each name with its number of functions |
-| namespaces whose name holds a word from the briefs (`Prof`, `Trade`, `Craft`, `Trait`, `Talent`, `Catalyst`, `Housing`, `House`, `Decor`, `Neighborhood`) | listed; every `Get…`, `Is…`, `Can…` and `Has…` called with no arguments, at login and with a profession window open | filed as `discovery`, and under the trade skill |
+| the six namespaces the relayed brief names and Family has never used (`C_Reputation`, `C_MajorFactions`, `C_Bank`, `C_WeeklyRewards`, `C_MythicPlus`, `C_PetJournal`) | their function names listed on every client; a hand-written call each **only where the sweep is allowed** | listed under `(brief)`, called under `brief` |
+| `Enum.BagIndex` and `Enum.BankType` | read as tables, called never | listed under `(enum)` - the brief puts the warband bank at `AccountBankTab_1`, and the container sweep found 12 |
+| the same reads out of combat and two seconds into a fight | asked at login, and again on `PLAYER_REGEN_DISABLED` | `combatOut` and `combat`, to be compared - the brief says Midnight answers unreadable *Secret Values* in combat |
+| namespaces whose name holds a word from the briefs (`Prof`, `Trade`, `Craft`, `Trait`, `Talent`, `Catalyst`, `Housing`, `House`, `Decor`, `Neighborhood`) | listed; **on Midnight only**, every `Get…`, `Is…`, `Can…` and `Has…` called with no arguments, at login and with a profession window open | filed as `discovery`, and under the trade skill |
 | every profession skill line the client lists | its details, its concentration currency and that currency's details; `GetProfessionInfo` 1 to 6; the specialisation count of classes 1 to 14; every currency in the list; the treasure quest 89117 | filed as `professions` |
 | the merchant, a second time | asked the moment the vendor opens as well as two seconds later, with `MerchantFrame:IsShown()` each time | filed as `merchantAtOnce` and `merchant` |
 
@@ -39,6 +42,30 @@ one Classic run is part of the job and not an extra.
 The calls are the one hand-written list, because only a person can say a call is safe. Nothing
 that opens a window, queries the server or changes the character is called; those are only
 looked up.
+
+## The one call it will not make on a Classic client
+
+Calling a function with no arguments to read the error it gives back is how the sweep above
+learns what a call wants. Version 6 did that on every client, and on **Mists 5.5.4 it took the
+process down** twice, 28 seconds into the world: `ACCESS_VIOLATION` at address 0, with
+`C_Housing.GetMaxHouseLevel()` on the Lua stack - the call that answers `12` on Midnight. The
+three `pcall`s between it and the login timer caught nothing, because a native null dereference
+is not a Lua error (`docs/LESSONS.md` L-108).
+
+So from version 7 the sweep runs at **interface 120000 and up** and nowhere else, and a run below
+that writes one `discovery` line saying it was skipped. Everything else - the surface, the
+literals, the templates, the hand-written calls, the container sweep, the census, the profession
+skill lines - runs on every client as before.
+
+## Before you copy it anywhere
+
+    lua5.1 tools/FamilySurface/selftest.lua
+
+It loads the addon with the real generated list, stubs the login path and fires `PLAYER_LOGIN` at
+interface 50504 and at 120100. Eleven claims: that the sweep and the brief's calls stay away from
+the first and still run on the second, that a skipped run says so, that a currency and the warband
+enumeration are written down whole, and that the out-of-combat reading is taken. It says nothing
+about what a client answers; it checks what the probe does to a client.
 
 ## Running it
 
@@ -55,11 +82,16 @@ looked up.
    - the bank;
    - a mailbox, with at least one letter in it;
    - any vendor.
-5. **Log out.** That is when the client writes the file.
-6. Do the same on **Mists**, which is the Classic client whose API is nearest Midnight's and
+5. **Pick a fight with something harmless** and stay in combat for a few seconds. That is the
+   other half of the Secret Values comparison, and without it there is only the out-of-combat
+   reading. Wait for *combat: 13 calls asked*.
+6. **Log out.** That is when the client writes the file.
+7. Do the same on **Mists**, which is the Classic client whose API is nearest Midnight's and
    so gives the useful comparison. Use a character with a guild and a profession: an empty
-   answer is recorded as the character's state and compares with nothing.
-7. Send back `WTF/Account/<ACCOUNT>/SavedVariables/FamilySurface.lua` from each.
+   answer is recorded as the character's state and compares with nothing. The sweep does not
+   run there (above), so the `discovery` block will hold one line saying so - that is the
+   correct reading, not a failed one.
+8. Send back `WTF/Account/<ACCOUNT>/SavedVariables/FamilySurface.lua` from each.
 
 Runs accumulate under the build and the character, so a second character adds rather than
 overwrites; opening a window again replaces that window's answers for the login.

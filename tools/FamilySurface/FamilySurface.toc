@@ -2,7 +2,7 @@
 ## Title: Family Surface |cff888888(throwaway)|r
 ## Notes: Asks this client about every call, event and template Family uses, and writes down the answers.
 ## Author: Alberto Pittaluga
-## Version: 6
+## Version: 8
 ## SavedVariables: FamilySurfaceDB
 
 Surface.lua

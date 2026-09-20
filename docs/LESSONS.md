@@ -3498,6 +3498,98 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-110 — the canary passed all along, because the canary ran a different command
+
+**2026-09-20.** Asked where the banned words were, the session wrote an audit instead of running
+one: `grep -rlic` over the tree, filtered to the files whose count came back above zero. It
+printed clean. Asked again, it was written again in the same shape, and printed clean again. The
+tree was not clean: `docs/BACKLOG.md:287` carries one of the two words, legitimately, under the
+single `allow` fragment that L-016's gate exists to permit.
+
+`-l` and `-c` do not combine - `-l` wins, and grep prints bare filenames with no `:count` on
+them. Measured here, on two made-up files with the word twice in the first: `grep -rlic` prints
+`one.txt`, where `grep -ric` prints `one.txt:2` and `two.txt:0`. The filter read the second
+field of a line that had no second field, matched nothing, and *nothing* is exactly what a clean
+tree looks like. The audit could not have found a word anywhere, in any tree, ever.
+
+**Bitten:** a direct question about the one thing this project sweeps for, answered *clean*
+twice, with confidence, by a command whose output the filter could not read. Had a word really
+been in the tree, the same two sentences would have been written.
+
+**Why the canary said nothing.** There was one - a file known to carry the word, searched to
+prove the search could see it - and it passed. It passed because it was written as its own
+command rather than run through the audit's pipeline. What it proved was that grep finds
+things, which was never in doubt; about the `-rlic` and the filter that produced the answer it
+said nothing at all, because it never touched them. A canary is only evidence for the path it
+runs down.
+
+**What now catches it: nothing new, and that is the entry.** The harness already answers this
+question correctly, and it is the positive example to copy rather than a second one to write.
+Its sweep is a single function, `sweep(files, read)` (`tests/Harness.lua:40956`), and it is
+called twice: first on made-up files, one of which carries a banned word in upper case
+(`:40986`), then on the tracked tree (`:41018`). The assertion and the canary are the same code;
+only where the files come from differs. That is why it can say *clean* and be believed.
+
+The rule: **a canary must run the code path the check runs, differing only in its input - and
+where a gate in the tree already answers the question, run the gate. An audit written fresh for
+the asking is a second implementation of the check, with nothing checking it, and it will be
+believed on the strength of the first one's reputation.**
+
+## L-109 — a probe that shortens its own answers threw away the one field it was sent for
+
+**2026-09-19.** Probe version 6 was built to answer, among other things, what the Catalyst's
+charges are called: it reads every currency the client lists. It read them, wrote them down, and
+the run came back without a single currency name in it. `showTable` prints a table's keys in
+sorted order and stops at twelve; a currency has twenty-five, and `name`, `quantity` and
+`maxQuantity` all sort past the twelfth. The answer was fetched, truncated and saved, and the
+truncation looks exactly like a complete line.
+
+**Bitten:** the whole question §11 was written for, unanswered by a run that cost a client
+login, five windows and a file sent across. Nothing was wrong with the call, the client or the
+reading - only with the writing down.
+
+**Why nothing caught it:** the cut is silent by design. It ends in `...`, which reads as *and
+some more of the same* rather than as *the part you came for is gone*, and no check had ever
+read a probe line looking for a particular field.
+
+**What now catches it.** `ask` takes a `keys` count for an answer whose interesting field sorts
+past the twelfth, and the two currency calls pass 30. `tools/FamilySurface/selftest.lua` builds a
+currency table whose `name` sits sixteenth and fails unless the written line carries it; putting
+`showTable` back to a fixed twelve makes it fail, which is how it was checked. The rule:
+**a limit on what is written down is a decision about what the run can answer - take it where
+the question is known, not once for everything.**
+
+## L-108 — three pcalls around a call that does not raise, it crashes
+
+**2026-09-19.** Version 6 of the probe sweeps namespaces found by name and calls every `Get`,
+`Is`, `Can` and `Has` in them with no arguments, reading the error each one gives back to learn
+what it wants. On Midnight that produced 219 tidy *bad argument #1* messages and nothing else,
+so the sweep looked safe and was left to run on every client. On Mists 5.5.4 it took the process
+down twice, 28 seconds into the world: `ACCESS_VIOLATION`, address 0, with
+`C_Housing.GetMaxHouseLevel()` on the Lua stack - the same call that answers `12` on Midnight.
+
+**Bitten:** two failed launches of the client, a crash log, and the Mists control run the whole
+comparison depends on could not be taken at all.
+
+**Why the guard looked like a guard.** Every call goes through `ask`, which wraps it in `pcall`,
+and the crash log shows three `pcall` frames between the faulting call and the login timer. A
+`pcall` catches a Lua error. A native null dereference is not a Lua error: the process is gone
+before Lua is told anything, and no amount of wrapping changes that. *Protected* was read as
+*safe*, and those are different words.
+
+**And the reasoning was inverted.** The sweep exists because we do not know what those functions
+do - that is its whole purpose. Calling an unknown function to find out what it wants is exactly
+the case where the argument checking cannot be relied on, so *it survived here* is evidence about
+one client and none at all about the next.
+
+**What now catches it.** The sweep runs at interface 120000 and up and nowhere else, and a run
+below that writes a line saying it was skipped, so an absence is never read as an answer.
+`tools/FamilySurface/selftest.lua` fires `PLAYER_LOGIN` at 50504 with the namespace from the crash
+log in place and fails if anything in it is called; setting the floor to 0 makes it fail, which is
+how it was checked. The rule: **a `pcall` is not a guard against the client. The only guard
+against a call that may crash is not making it - so a call with no arguments is made where it has
+been seen to be survivable, and nowhere else.**
+
 ## L-107 — a width measured somewhere else is not the width where it will be drawn
 
 **2026-09-19.** Tooltip money is lined up by padding each place, and then each whole figure, with a

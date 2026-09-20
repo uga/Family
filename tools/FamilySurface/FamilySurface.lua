@@ -22,12 +22,17 @@ local ADDON, Surface = ...
 -- An error is kept longer than an answer: its path comes first and what it says comes last.
 local LIMIT, ERROR_LIMIT = 80, 200
 
+-- How many of a table's keys are printed. Twelve is enough for the shape of an answer and
+-- short enough to read; a caller that needs a particular field asks for more, because the
+-- keys are sorted and a `name` sits past the twelfth of a currency's twenty-five (L-109).
+local KEYS = 12
+
 local showTable
 
-local function show(value, limit)
+local function show(value, limit, keys)
 	limit = limit or LIMIT
 	local kind = type(value)
-	if kind == "table" then return showTable(value) end
+	if kind == "table" then return showTable(value, keys) end
 	if kind == "function" or kind == "userdata" then return kind end
 	local ok, text = pcall(tostring, value)
 	if not ok then return "unprintable: " .. tostring(text) end
@@ -36,21 +41,26 @@ local function show(value, limit)
 	return text
 end
 
-local function showAll(...)
+local function showAllWith(keys, ...)
 	local count = select("#", ...)
 	if count == 0 then return "(nothing)" end
 	local parts = {}
 	for index = 1, math.min(count, 12) do
-		parts[index] = show((select(index, ...)))
+		parts[index] = show((select(index, ...)), nil, keys)
 	end
 	if count > 12 then parts[#parts + 1] = "+" .. (count - 12) .. " more" end
 	return table.concat(parts, " | ")
 end
 
+local function showAll(...)
+	return showAllWith(nil, ...)
+end
+
 -- One level deep, keys sorted, numbers before names: `{#3 1=6948, 2=6949, 3=...}` for a
 -- list, `{#2 iconID=134414, name="Hearthstone"}` for a record. Enough to see the shape of an
 -- answer that the first runs recorded only as "table".
-function showTable(value)
+function showTable(value, keyLimit)
+	keyLimit = keyLimit or KEYS
 	local keys = {}
 	local ok = pcall(function()
 		for key in pairs(value) do keys[#keys + 1] = key end
@@ -61,13 +71,13 @@ function showTable(value)
 		return tostring(a) < tostring(b)
 	end)
 	local parts = {}
-	for index = 1, math.min(#keys, 12) do
+	for index = 1, math.min(#keys, keyLimit) do
 		local key = keys[index]
 		local inner = value[key]
 		local text = type(inner) == "table" and "table" or show(inner, 40)
 		parts[index] = tostring(key) .. "=" .. text
 	end
-	if #keys > 12 then parts[#parts + 1] = "..." end
+	if #keys > keyLimit then parts[#parts + 1] = "..." end
 	return "{#" .. #keys .. " " .. table.concat(parts, ", ") .. "}"
 end
 
@@ -148,6 +158,49 @@ local CALLS = {
 	{ "C_Texture.GetAtlasInfo", "auctionhouse-icon-favorite" },
 }
 
+-- The relayed brief (MIDNIGHT.md §13) names five namespaces Family has never used. Their
+-- functions are **listed** on every client and called on none of it by this list: a name written
+-- down settles most of what the brief claims - whether `GetFactionDataByIndex` is there at all -
+-- and costs nothing, where calling an unknown function is what took Mists down (L-108).
+local BRIEF_SPACES = { "C_Reputation", "C_MajorFactions", "C_Bank", "C_WeeklyRewards",
+	"C_MythicPlus", "C_PetJournal" }
+
+-- And these are called, with the arguments a person chose, where the sweep is allowed to run.
+-- Each one is a read the brief names and Family would need if that category is ever recorded.
+local BRIEF_CALLS = {
+	{ "C_Reputation.GetNumFactions" }, { "C_Reputation.GetFactionDataByIndex", 1 },
+	{ "C_MajorFactions.GetMajorFactionIDs" },
+	{ "C_WeeklyRewards.GetActivities" }, { "C_MythicPlus.GetRunHistory", false, true },
+	{ "C_PetJournal.GetNumPets" }, { "C_ClassTalents.GetActiveConfigID" },
+	{ "C_Bank.FetchPurchasedBankTabIds", function()
+		return _G.Enum and _G.Enum.BankType and _G.Enum.BankType.Account
+	end },
+}
+
+-- Asked everywhere: `C_QuestLog` is a namespace Family already uses, and an index is the same
+-- argument the absent `GetQuestLogTitle(1)` took.
+local QUEST_CALL = { "C_QuestLog.GetInfo", 1 }
+
+-- What the brief calls unreadable Secret Values in combat. Not a lookup but a comparison: the
+-- same reads are asked out of combat at login and again two seconds into a fight, and the two
+-- are written down side by side. Nothing here is assumed about how an unreadable answer prints -
+-- if the two readings differ, that is the finding, and if they do not, that is also the finding.
+local COMBAT_CALLS = {
+	{ "InCombatLockdown" }, { "UnitLevel", "player" }, { "UnitClass", "player" },
+	{ "GetMoney" }, { "GetInventoryItemLink", "player", 1 },
+	{ "C_Item.GetItemInfoInstant", 6948 },
+	{ "GetSpecialization" }, { "GetSpecializationInfo", 1 },
+	{ "C_SpecializationInfo.GetTalentInfo",
+		{ tier = 1, column = 1, groupIndex = 1, isInspect = false } },
+	{ "C_Container.GetContainerNumSlots", 0 }, { "C_Container.GetContainerItemInfo", 0, 1 },
+	QUEST_CALL,
+}
+
+-- The values of an enumeration, read rather than called. The brief puts the warband bank behind
+-- `Enum.BagIndex.AccountBankTab_1`; §6 found bag 12 by sweeping the ids, and these two readings
+-- either agree or one of them is wrong.
+local ENUMS = { "Enum.BagIndex", "Enum.BankType" }
+
 -- Arguments worked out when the window is open, the way Family works them out.
 local function firstRecipe()
 	local api = _G.C_TradeSkillUI
@@ -158,7 +211,7 @@ local function bank() return _G.BANK_CONTAINER or -1 end
 local function firstBankBag() return (_G.NUM_BAG_SLOTS or 4) + 1 end
 
 -- Defined below, after `ask`, and used by the windows.
-local ask, sweep, namedReads, discover, professionLines
+local ask, sweep, namedReads, discover, professionLines, briefCalls
 
 -- Asked two seconds after the window's own event, so that what it lists has arrived. Only
 -- reads: nothing here queries the server, and the auction house calls read what the window
@@ -178,7 +231,7 @@ local WINDOWS = {
 		return lines
 	end, calls = {
 		{ "GetProfessions" }, { "C_TradeSkillUI.GetTradeSkillLine" },
-		{ "C_TradeSkillUI.GetAllRecipeIDs" }, { "C_TradeSkillUI.GetRecipeInfo", firstRecipe },
+		{ "C_TradeSkillUI.GetAllRecipeIDs" }, { "C_TradeSkillUI.GetRecipeInfo", firstRecipe, keys = 40 },
 		{ "C_TradeSkillUI.GetRecipeItemLink", firstRecipe },
 		{ "GetNumTradeSkills" }, { "GetTradeSkillLine" }, { "GetTradeSkillInfo", 1 },
 		{ "GetTradeSkillItemLink", 1 }, { "GetTradeSkillRecipeLink", 1 },
@@ -208,6 +261,11 @@ local WINDOWS = {
 		{ "GetInboxNumItems" }, { "GetInboxHeaderInfo", 1 }, { "GetInboxItem", 1, 1 },
 		{ "GetInboxItemLink", 1, 1 },
 	} },
+	-- Two seconds into a fight, which is when the brief says an answer may come back
+	-- unreadable. The same calls were asked out of combat at login, under `combatOut`.
+	PLAYER_REGEN_DISABLED = { key = "combat", calls = COMBAT_CALLS, extra = function()
+		return { "InCombatLockdown() when asked: " .. tostring(InCombatLockdown()) }
+	end },
 	MERCHANT_SHOW = { key = "merchant", shown = "MerchantFrame", atOnce = true, extra = function() return namedReads("C_MerchantFrame") end,
 	calls = {
 		{ "GetMerchantNumItems" }, { "GetMerchantItemInfo", 1 }, { "GetMerchantItemLink", 1 },
@@ -233,7 +291,10 @@ function ask(call)
 	end
 	local results = pack(pcall(fn, unpack(args, 1, #call - 1)))
 	if results[1] then
-		return name .. "(" .. shown .. ") answers " .. showAll(unpack(results, 2, results.n))
+		-- `keys` on the call asks for a wider table than the usual twelve, for an answer
+		-- whose interesting field sorts past it.
+		return name .. "(" .. shown .. ") answers "
+			.. showAllWith(call.keys, unpack(results, 2, results.n))
 	end
 	return name .. "(" .. shown .. ") throws " .. show(results[2], ERROR_LIMIT)
 end
@@ -315,6 +376,19 @@ end
 local WORDS = { "Prof", "Trade", "Craft", "Trait", "Talent", "Catalyst", "Housing", "House",
 	"Decor", "Neighborhood" }
 
+-- And it is asked on Midnight and on no other client. On Mists 5.5.4, build 69585, version 6
+-- took the process down 28 seconds into the world: ACCESS_VIOLATION reading address 0, with
+-- `C_Housing.GetMaxHouseLevel()` on the Lua stack - the same call that answers 12 on Midnight.
+-- The three `pcall`s between it and the login timer caught nothing, because a native null
+-- dereference is not a Lua error (L-108). A call with no arguments is only safe where it has
+-- been seen to be safe, so the sweep stays where it has run whole: interface 120000 and up.
+local DISCOVER_FROM = 120000
+
+local function mayDiscover()
+	local interface = select(4, GetBuildInfo())
+	return type(interface) == "number" and interface >= DISCOVER_FROM
+end
+
 local function matching(word)
 	local spaces = {}
 	for name, space in pairs(_G) do
@@ -330,6 +404,12 @@ end
 
 function discover(word)
 	local lines = {}
+	if not mayDiscover() then
+		-- Written down rather than left out: a run with no discovery lines in it should say
+		-- why, or the next reader takes an absence for an answer.
+		return { ("discovery skipped: the no-argument sweep runs on interface %d and up, and "
+			.. "this client is %s"):format(DISCOVER_FROM, tostring(select(4, GetBuildInfo()))) }
+	end
 	for _, space in ipairs(matching(word)) do
 		local names = {}
 		for key, value in pairs(_G[space]) do
@@ -342,6 +422,23 @@ function discover(word)
 		table.sort(names)
 		for _, name in ipairs(names) do lines[#lines + 1] = ask({ space .. "." .. name }) end
 	end
+	return lines
+end
+
+-- The brief's calls (MIDNIGHT.md §13). The quest one is asked on every client: `C_QuestLog` is
+-- a namespace Family already uses and the argument is an index, the same one the absent
+-- `GetQuestLogTitle(1)` took. The rest are asked only where the sweep is allowed, because this
+-- repository has never seen any of them answer, and L-108 is what a first call can cost on the
+-- wrong client. Their names are written down everywhere regardless, by the listing above.
+function briefCalls()
+	local lines = { ask(QUEST_CALL) }
+	if not mayDiscover() then
+		lines[#lines + 1] = ("the brief's other calls are skipped below interface %d, and this "
+			.. "client is %s - their namespaces are listed rather than called")
+			:format(DISCOVER_FROM, tostring(select(4, GetBuildInfo())))
+		return lines
+	end
+	for _, call in ipairs(BRIEF_CALLS) do lines[#lines + 1] = ask(call) end
 	return lines
 end
 
@@ -358,7 +455,7 @@ function professionLines()
 			lines[#lines + 1] = ask({ "C_TradeSkillUI.GetConcentrationCurrencyID", id })
 			local got, currency = pcall(api.GetConcentrationCurrencyID, id)
 			if got and type(currency) == "number" and currency > 0 then
-				lines[#lines + 1] = ask({ "C_CurrencyInfo.GetCurrencyInfo", currency })
+				lines[#lines + 1] = ask({ "C_CurrencyInfo.GetCurrencyInfo", currency, keys = 30 })
 			end
 		end
 	end
@@ -371,7 +468,7 @@ function professionLines()
 	local count = _G.C_CurrencyInfo and _G.C_CurrencyInfo.GetCurrencyListSize
 	local got, size = pcall(count or function() end)
 	for index = 1, (got and type(size) == "number") and size or 0 do
-		lines[#lines + 1] = ask({ "C_CurrencyInfo.GetCurrencyListInfo", index })
+		lines[#lines + 1] = ask({ "C_CurrencyInfo.GetCurrencyListInfo", index, keys = 30 })
 	end
 	-- The treasure quest the professions brief names, for this character and for the account.
 	lines[#lines + 1] = ask({ "C_QuestLog.IsQuestFlaggedCompleted", 89117 })
@@ -436,6 +533,40 @@ local function probe()
 			run.namespaces[name .. " (named)"] = "absent (" .. type(space) .. ")"
 		end
 	end
+	-- The brief's five, listed and not called (MIDNIGHT.md §13). A namespace that is not there
+	-- is written down as absent, because "the brief named it and the client has it" is half the
+	-- claim and the other half is the name of the function inside it.
+	for _, name in ipairs(BRIEF_SPACES) do
+		local space = _G[name]
+		if type(space) == "table" then
+			local names = {}
+			pcall(function()
+				for key, value in pairs(space) do
+					if type(value) == "function" then names[#names + 1] = tostring(key) end
+				end
+			end)
+			table.sort(names)
+			run.namespaces[name .. " (brief)"] = #names .. ": " .. table.concat(names, " ")
+		else
+			run.namespaces[name .. " (brief)"] = "absent (" .. type(space) .. ")"
+		end
+	end
+	-- Enumerations, read as tables. `Enum.BagIndex` is where the brief puts the warband bank.
+	for _, name in ipairs(ENUMS) do
+		local value = lookup(name)
+		if type(value) == "table" then
+			local parts = {}
+			pcall(function()
+				for key, inner in pairs(value) do
+					parts[#parts + 1] = tostring(key) .. "=" .. tostring(inner)
+				end
+			end)
+			table.sort(parts)
+			run.namespaces[name .. " (enum)"] = table.concat(parts, " ")
+		else
+			run.namespaces[name .. " (enum)"] = "absent (" .. type(value) .. ")"
+		end
+	end
 	for _, name in ipairs(Surface.members) do
 		run.members[name] = type(lookup(name))
 	end
@@ -469,6 +600,14 @@ local function probe()
 	run.windows.professions = ok and lines or { "professionLines throws " .. show(lines, ERROR_LIMIT) }
 	ok, lines = pcall(discover)
 	run.windows.discovery = ok and lines or { "discover throws " .. show(lines, ERROR_LIMIT) }
+	ok, lines = pcall(briefCalls)
+	run.windows.brief = ok and lines or { "briefCalls throws " .. show(lines, ERROR_LIMIT) }
+	-- The out-of-combat half of the Secret Values comparison. The other half is asked when a
+	-- fight starts, and the two sit side by side under `combat`.
+	run.windows.combatOut = {}
+	for _, call in ipairs(COMBAT_CALLS) do
+		run.windows.combatOut[#run.windows.combatOut + 1] = ask(call)
+	end
 	for _, space in ipairs(matching()) do
 		local names = {}
 		for key in pairs(_G[space]) do names[#names + 1] = tostring(key) end
