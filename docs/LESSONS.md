@@ -3498,6 +3498,52 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-113 — the filter read a word as a prefix, and the probe cancelled a real auction
+
+**2026-09-20.** The probe's discovery sweep calls, with no arguments, every function in a matched
+namespace whose name begins with `Get`, `Is`, `Can` or `Has` - reads, and only reads. The decision
+that allowed it says so in as many words: *actions are never called, since no action is named that
+way.* On Midnight it called `C_AuctionHouse.CancelAuction()`.
+
+`^Can` is a prefix. `Cancel` is a different word that begins with those three letters. Twelve
+`Cancel…` functions were called in that run; two refused for want of an argument and **ten
+executed**: `CancelAuction`, `CancelSell`, `CancelCommoditiesPurchase`, `CancelProfessionRespec`
+and six housing editors.
+
+**Bitten, and this one is not a near miss.** Alberto had one auction up. The run's own mailbox
+reading, taken minutes later in the same file, is the receipt: `GetInboxHeaderInfo(1)` answers
+*"Auction House" | "Auction canceled: Mecha-Blast Rocket"*, with the item attached. A tool written
+to observe a client changed the player's account, and then wrote down the evidence of having done
+so without anybody noticing for an hour. The only visible sign at the time was a blocked-action
+popup, which names no function.
+
+**Why the guard read as a guard.** *Actions are never called, since no action is named that way*
+is a claim about the client's naming, stated in a decisions log, never checked against a list of
+names. It was not even wrong as a convention - `Get`, `Is` and `Has` held across all 639 names
+that run swept - it was wrong about `Can`, and one counter-example is all a rule of that shape
+needs. **A naming convention is evidence about intent, not a permission.**
+
+**And the blast radius was chosen by the client, not by us.** The sweep calls whatever it finds,
+so what an over-matching filter costs depends entirely on what the namespace happens to hold. Here
+it was an auction. In `C_HousingNeighborhood` it was `CancelInviteToNeighborhood`, which only
+refused because it wanted an argument. The difference between a nuisance and a loss was an
+argument list.
+
+**What now catches it.** One function, `isRead(name, prefixes)`, used by the sweep and by the
+merchant's named reads, requiring the character after the prefix to be upper case: `CanEditTalents`
+is called, `CancelAuction` is not. Measured against the run that caused this - it separates the 9
+`Cancel…` names from the 39 real `Can…` predicates, which answer things worth having, and touches
+nothing else. `tools/FamilySurface/selftest.lua` holds a namespace containing both a
+`CancelProfessionRespec` that counts its own calls and a `CanChangeTalents` that must still be
+called, and goes red if the action is called, if the predicate is not, or if the audit line is
+dropped; putting `^Can` back makes it red, which is how it was checked. The sweep also **writes
+the near misses into the run** - a name that begins with a read word and continues it - so the
+next reader audits the filter by reading a line rather than by watching something happen.
+
+The rule: **a prefix is not a word. When a test on a name decides whether to call it, require the
+word to end - and where the answer to "is this safe" is a convention about names, the check is a
+list of the names, not the convention.**
+
 ## L-112 — the search could only confirm, so its answer was the question restated
 
 **2026-09-20.** Asked which destinations `tools/Deploy.bat` knows, this session ran a grep for a

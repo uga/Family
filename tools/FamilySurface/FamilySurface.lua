@@ -333,6 +333,36 @@ function sweep()
 end
 
 -- Named from memory rather than taken from Family's sources, and recorded as such: where the
+-- A name counts as a read when it begins with one of these words **as a word**: the character
+-- after the prefix must be upper case. Without that rule `^Can` also matches `Cancel…`, and on
+-- 2026-09-20 version 9 called twelve of those on a live character - `C_AuctionHouse.CancelAuction()`
+-- among them, which cancelled a real auction (L-113). The decision of 2026-09-19 justified the
+-- sweep with *actions are never called, since no action is named that way*; that sentence was
+-- false and is now false by measurement.
+--
+-- `Get`, `Is` and `Has` showed no such over-match in the 639 names that run swept, but they are
+-- held to the same rule, because what failed was the shape of the test and not the word it was
+-- applied to. One function, two call sites, different word lists.
+local SWEEP_PREFIXES = { "Get", "Is", "Can", "Has" }
+local NAMED_PREFIXES = { "Get", "Is" }
+
+local function isRead(name, prefixes)
+	for _, prefix in ipairs(prefixes) do
+		if name:find("^" .. prefix .. "%u") then return true end
+	end
+	return false
+end
+
+-- A name that begins with a read word and then continues it into another word - `Cancel` out of
+-- `Can`. Written down rather than merely skipped, so that the next run is audited by reading a
+-- line instead of by an incident.
+local function continuesTheWord(name, prefixes)
+	for _, prefix in ipairs(prefixes) do
+		if name:find("^" .. prefix) and not name:find("^" .. prefix .. "%u") then return true end
+	end
+	return false
+end
+
 -- merchant's GetMerchantItemInfo went on Midnight is not in any namespace Family uses, and the
 -- decision of 2026-09-19 names a namespace only when a missing call needs one. This one does.
 local NAMED = { "C_MerchantFrame" }
@@ -344,7 +374,7 @@ function namedReads(space)
 	if type(api) ~= "table" then return { space .. " absent (" .. type(api) .. ")" } end
 	local names = {}
 	for key, value in pairs(api) do
-		if type(value) == "function" and (tostring(key):find("^Get") or tostring(key):find("^Is")) then
+		if type(value) == "function" and isRead(tostring(key), NAMED_PREFIXES) then
 			names[#names + 1] = key
 		end
 	end
@@ -415,15 +445,27 @@ function discover(word)
 			.. "this client is %s"):format(DISCOVER_FROM, tostring(select(4, GetBuildInfo()))) }
 	end
 	for _, space in ipairs(matching(word)) do
-		local names = {}
+		local names, refused = {}, {}
 		for key, value in pairs(_G[space]) do
 			local text = tostring(key)
-			if type(value) == "function" and (text:find("^Get") or text:find("^Is")
-					or text:find("^Can") or text:find("^Has")) then
-				names[#names + 1] = text
+			if type(value) == "function" then
+				if isRead(text, SWEEP_PREFIXES) then
+					names[#names + 1] = text
+				elseif continuesTheWord(text, SWEEP_PREFIXES) then
+					refused[#refused + 1] = text
+				end
 			end
 		end
 		table.sort(names)
+		table.sort(refused)
+		-- The near miss is written down, and only the near miss: a name that begins with a read
+		-- word and then turns into another one. Every other name in the namespace is skipped in
+		-- silence, as it always was. This line is how the next reader audits the filter by
+		-- reading rather than by watching an action happen (L-113).
+		if #refused > 0 then
+			lines[#lines + 1] = ("%s: %d name(s) begin with a read word and continue it, so are"
+				.. " listed and not called: %s"):format(space, #refused, table.concat(refused, " "))
+		end
 		for _, name in ipairs(names) do lines[#lines + 1] = ask({ space .. "." .. name }) end
 	end
 	return lines

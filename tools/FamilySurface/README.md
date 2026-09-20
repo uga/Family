@@ -47,6 +47,26 @@ The calls are the one hand-written list, because only a person can say a call is
 that opens a window, queries the server or changes the character is called; those are only
 looked up.
 
+## The reads it calls, and the actions it does not
+
+A namespace matched by a word from the briefs has its functions called with no arguments, and
+which ones is decided by the name: `Get`, `Is`, `Can` or `Has`, **as a whole word** - the letter
+after the prefix must be upper case.
+
+That last clause was missing until version 10 and it cost a real auction. `^Can` matches `Cancel`,
+so version 9's run on Midnight called twelve `Cancel…` functions, ten of which executed:
+`C_AuctionHouse.CancelAuction()`, `CancelSell()`, `CancelCommoditiesPurchase()`,
+`C_TradeSkillUI.CancelProfessionRespec()` and six housing editors. The mailbox read later in the
+same run carries the receipt - *Auction canceled: Mecha-Blast Rocket* (`docs/LESSONS.md` L-113).
+The decision of 2026-09-19 had justified the sweep with *actions are never called, since no action
+is named that way*; that is false, and `Cancel` is how.
+
+`Get`, `Is` and `Has` showed no such over-match across the 639 names that run swept, but all four
+go through one function with the same rule, because what failed was the shape of the test and not
+the word it was applied to. A name that begins with a read word and continues it - the near miss,
+and only the near miss - is **written into the run** under its namespace, so the next reader audits
+the filter by reading a line instead of by watching something happen.
+
 ## The one call it will not make on a Classic client
 
 Calling a function with no arguments to read the error it gives back is how the sweep above
@@ -72,7 +92,9 @@ placed to answer, and asking for it at the far end is how a gate turns into a re
 sometimes skipped.
 
 It loads the addon with the real generated list, stubs the login path and fires `PLAYER_LOGIN` at
-interface 50504 and at 120100. Eighteen claims: that the sweep and both briefs' calls stay away
+interface 50504 and at 120100. Twenty-one claims: that an action whose name begins with a read
+word is not called even where the sweep runs, that the predicate which only looks like it still
+is, that the near miss is written down; that the sweep and both briefs' calls stay away
 from the first and still run on the second, that a skipped block says why it is short, that a
 currency and the warband enumeration are written down whole, that a refused event is written down
 rather than dropped, that the `WOW_PROJECT` constants are found by their prefix and not by being

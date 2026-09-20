@@ -21,10 +21,10 @@
 
 local ROOT = arg[0]:match("^(.*)selftest%.lua$") or "tools/FamilySurface/"
 
-local called, pvpCalled, listener
+local called, pvpCalled, cancelled, listener
 
 local function stubs(interface)
-	called, pvpCalled, listener = 0, 0, nil
+	called, pvpCalled, cancelled, listener = 0, 0, 0, nil
 	FamilySurfaceDB = nil
 	_G.GetBuildInfo = function() return "x", "69585", "Aug 27 2026", interface end
 	_G.UnitName = function() return "Tester" end
@@ -58,7 +58,11 @@ local function stubs(interface)
 		GetMaxHouseLevel = function() called = called + 1 return 12 end,
 		GetTrackedHouseGuid = function() called = called + 1 return nil end,
 	}
-	_G.C_TradeSkillUI = { GetAllRecipeIDs = function() return {} end }
+	_G.C_TradeSkillUI = { GetAllRecipeIDs = function() return {} end,
+		-- The real one, from the run of 2026-09-20: `Cancel` begins with `Can` and is an action.
+		-- If it is ever called here the count says so, and the claim below goes red.
+		CancelProfessionRespec = function() cancelled = cancelled + 1 end,
+		CanChangeTalents = function() return false end }
 	-- One of the brief's namespaces (§13). Its functions are listed on every client and called
 	-- only where the sweep is allowed, so this counter says which happened.
 	_G.C_Reputation = {
@@ -191,6 +195,18 @@ local answered = table.concat(midnight.windows.pvp, "\n")
 check("and so are the second brief's, in both of its blocks",
 	answered:find('UnitHonorLevel("player") answers 3', 1, true) ~= nil
 		and answered:find("GetNumSavedInstances() answers 2", 1, true) ~= nil, answered)
+
+-- The sweep on the client where it does run, held to the rule that was missing on 2026-09-20:
+-- a read word has to be a whole word. `CancelProfessionRespec` begins with `Can` and is an
+-- action; version 9 called it, and called C_AuctionHouse.CancelAuction() beside it, which
+-- cancelled a real auction (L-113).
+check("an action whose name begins with a read word is not called, even where the sweep runs",
+	cancelled == 0, cancelled .. " calls were made")
+check("and the predicate that only looks like it is still called",
+	swept:find("C_TradeSkillUI.CanChangeTalents() answers", 1, true) ~= nil, swept)
+check("and the near miss is written down, so the filter is audited by reading",
+	swept:find("CancelProfessionRespec", 1, true) ~= nil
+		and swept:find("begin with a read word and continue it", 1, true) ~= nil, swept)
 
 if failures > 0 then
 	print(failures .. " failed")
