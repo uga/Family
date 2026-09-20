@@ -6441,11 +6441,40 @@ under the pointer. So **on every client Family runs on, a gathering node hands o
 nothing else**, and the line beneath it is the gathering profession, which `SkillLines.lua` already
 resolves to an id in five locales.
 
-**What is left before this can be decided:** whether GatherMate was installed on the Mists client.
-`Minimap  |  "Dreamfoil"` reads there exactly as `Minimap  |  "Copper Vein"` did on Era, and no
-`GatherMatePin` frame appeared in the Mists session at all - but nobody asked, and a pin anchoring
-its tooltip to the minimap would look the same. The world node is measured on both builds; the
-minimap is not measured on either.
+**The minimap is unmeasured on both builds, and now known to be.** Asked rather than inferred:
+GatherMate is installed on the Mists client too. So `Minimap  |  "Dreamfoil"` and Era's
+`Minimap  |  "Copper Vein"` are the same unreadable reading twice, not two builds agreeing - a pin
+anchoring its tooltip to the minimap looks exactly like the client's own blip, and no
+`GatherMatePin` frame appearing in the Mists session says only that no pin was hovered there. The
+world node is measured on both builds; **the minimap half rests on one run with GatherMate switched
+off** and nothing about it should be built before that.
+
+### The route, chosen 2026-09-20: a table written by hand
+
+Alberto, choosing it over learning the mapping from play, over a third-party database and over
+building the resolvable half first. Recorded against my recommendation, which was to learn it, and
+the reason for the recommendation is the thing the table now has to answer.
+
+**Where the names come from is the open question, and it is not a detail.** The node names are not
+in the client's files - that is what the wago fetch above settled - so a hand table's English column
+has to be read off somewhere outside this project, and its other four columns doubly so. This
+repository has a standing rule about exactly that: `SkillLines.lua` is generated rather than typed
+because *Erste Hilfe* and *Erstehilfe* are indistinguishable from outside the game and a wrong one
+fails silently for the players who cannot be asked to check it. A hand table of node names in five
+languages is that risk once per node per locale.
+
+**Half of it has a way out, and it costs nothing.** A herb node is named exactly what the herb is
+named - measured on Liferoot, Plaguebloom and Dreamfoil, and not checked across the set - and the
+client will name an item id in the player's own language. So for herbs the table can be
+**`node -> item ids` with no names in it at all**: the localized node name is the localized item
+name, which Family already resolves through `Names:Item`. An ore vein is not named after its ore in
+English - *Copper Vein* against *Copper Ore* - so that trick does not reach the mining half.
+
+**So the fork to settle before a line of the table is written:** whether it ships with English node
+names only, working fully on an English client and on other locales only where a node is named
+after its item, or whether the localized vein names are written down too and from where. Nothing
+below should be built until that is answered, because it decides the table's shape rather than its
+contents.
 
 ---
 

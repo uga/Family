@@ -4680,11 +4680,18 @@ gathering node hands over a name and nothing else.
 | Post-calls registered | none possible | **all 28** |
 | A world node fired | - | **none of them** |
 | Frame under the pointer | nothing | nothing |
-| The tooltip | `"Liferoot"` / `"Herbalism"` | `"Dreamfoil"` / `"Herbalism"` |
+| A herb | `"Liferoot"` / `"Herbalism"` | `"Dreamfoil"` / `"Herbalism"` |
+| A vein | `"Copper Vein"` / `"Mining"` | `"Copper Vein"` / `"Mining"` |
 
 **The two-line shape holds on a second build**, which is what makes it worth building on: line one
 the node, line two the gathering profession in the client's own word. And the world node has no
 frame under the pointer on this build either.
+
+**Both kinds, on both builds**, after a fourth run taken for the mining half: a Copper Vein on 5.5.4
+reads `"Copper Vein"` / `"Mining"`, no frame, `modern=nothing fired` with all 28 types registered -
+the same four answers as the herb beside it and as Era. So the shape is four readings across two
+builds and two professions rather than one build's quirk, and the second line is a gathering skill
+in both of the two cases this entry is about.
 
 **The minimap is closer to settled but not settled.** `Minimap  |  "Dreamfoil"` came back here as
 `Minimap  |  "Copper Vein"` did on Era, and no `GatherMatePin` frame appeared anywhere in this
