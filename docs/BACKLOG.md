@@ -6077,7 +6077,22 @@ field.
 
 **Killing things spends it**, which is worth saying because a reading taken after a fight is a
 reading of a figure that has gone *down*: rested experience is drawn on as a bonus while the
-character earns. A measurement of the rate wants a character nobody is playing. It wants a character below it, which is what any
+character earns. A measurement of the rate wants a character nobody is playing.
+
+**And that half is measured, 2026-09-20, on the level 11 above.** Two readings 168 seconds apart,
+the first in the inn and the second out in Thelsamar with a few boars killed in between:
+
+| | rested | xp |
+|---|---|---|
+| in the inn | 9136 | 4707 |
+| after the boars | 8506 | 5337 |
+
+**Down 630 against up 630**: over this pair the pool fell by exactly what the character earned.
+Whether it falls by the *bonus* and the bonus happened to equal the base - which doubled
+experience would do - or by the whole amount earned, these two readings cannot say, because
+nothing here knows what those boars were worth unrested. Either way the direction is settled and
+it is the half an estimate would get wrong: **a character that is played spends this figure**, so
+a projection that only ever adds is wrong for everybody except the ones nobody touches. It wants a character below it, which is what any
 character becomes as soon as it is played for a while - then two readings a few hours apart, one
 pair logged out in an inn and one pair logged out in the field.
 
