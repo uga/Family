@@ -4654,7 +4654,41 @@ switched off**, and until then the world node is the only measured half.
 one line, two names, a newline between them, from two pins under one cursor. Anything reading line
 one has to cope with that rather than assume a line is a name.
 
-**Still unread: Mists.** `TooltipDataProcessor` is there on 5.5.4 - `Family.tooltipRoute` reports
-`both` - so `Enum.TooltipDataType.Object` may fire with an id on that build where it cannot on this
-one. That reading would not change Era, which has to work without an id whatever Mists says, but it
-decides whether the two builds are read by one route or two.
+### And Mists says the same thing with the modern system switched on, measured 2026-09-20
+
+Read the same day on `5.5.4`, Uga-Mirage Raceway, and it is the reading that settles the entry.
+
+**The modern tooltip system is there**: `TooltipDataProcessor` is a table, `AddTooltipPostCall` a
+function, `C_TooltipInfo` absent. The probe said so out loud when it armed - *watching the tooltip,
+and every tooltip type this client knows* - which is the line it prints only when it has registered
+a post-call against all 28 members of `Enum.TooltipDataType`.
+
+**And a herb node still went through none of them.** Hovering a Dreamfoil: `modern=nothing fired`,
+with all 28 registered. So it is not that Mists lacks the machinery - it has it, every type was
+listening, and a world object does not travel that way on this build. `Enum.TooltipDataType.Object`
+exists on both builds and is used by neither for the thing it is named after.
+
+That is what the Era reading could not tell on its own. Era has no processor, so *nothing fired*
+there was the only possible answer and said nothing about world objects; here the processor is
+present and the answer is the same. **One route, not two**: on every client Family runs on, a
+gathering node hands over a name and nothing else.
+
+| | Era `1.15.9` | Mists `5.5.4` |
+|---|---|---|
+| `TooltipDataProcessor` | `nil` | **table**, `AddTooltipPostCall` a function |
+| `Enum.TooltipDataType` | 28 members, `Object` among them | the same 28 |
+| Post-calls registered | none possible | **all 28** |
+| A world node fired | - | **none of them** |
+| Frame under the pointer | nothing | nothing |
+| The tooltip | `"Liferoot"` / `"Herbalism"` | `"Dreamfoil"` / `"Herbalism"` |
+
+**The two-line shape holds on a second build**, which is what makes it worth building on: line one
+the node, line two the gathering profession in the client's own word. And the world node has no
+frame under the pointer on this build either.
+
+**The minimap is closer to settled but not settled.** `Minimap  |  "Dreamfoil"` came back here as
+`Minimap  |  "Copper Vein"` did on Era, and no `GatherMatePin` frame appeared anywhere in this
+session - where the Era run hovered two of them. That is suggestive and it is not a reading:
+whether GatherMate is installed on this client was never asked, and a pin that anchors its tooltip
+to the minimap would look exactly like this. The clean test is still one run with GatherMate
+switched off, and until then the world node is the measured half on both builds.

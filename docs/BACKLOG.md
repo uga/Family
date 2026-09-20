@@ -6429,9 +6429,23 @@ frames and which draws on the minimap, so the one `Minimap` reading cannot be to
 GatherMate pin anchored there. It wants a reading with GatherMate off before anything is said about
 the minimap at all.
 
-**Still to read: Mists**, which has `TooltipDataProcessor`. It cannot change what Era needs, since
-Era has to work without an id whatever 5.5.4 says; it decides whether the two are read by one route
-or two.
+**Mists, read the same day, settles it: one route and not two.** 5.5.4 **has** the modern tooltip
+system - `TooltipDataProcessor` a table, `AddTooltipPostCall` a function - and the probe registered
+a post-call against all 28 members of `Enum.TooltipDataType` and said so when it armed. A Dreamfoil
+node fired **none of them**. So the machinery is present, every type was listening, and a world
+object does not travel that way. Era could not have told us that on its own: with no processor
+there, *nothing fired* was the only answer available and said nothing about world objects.
+
+The rest of the shape held on the second build - two lines, the second `"Herbalism"`, and no frame
+under the pointer. So **on every client Family runs on, a gathering node hands over a name and
+nothing else**, and the line beneath it is the gathering profession, which `SkillLines.lua` already
+resolves to an id in five locales.
+
+**What is left before this can be decided:** whether GatherMate was installed on the Mists client.
+`Minimap  |  "Dreamfoil"` reads there exactly as `Minimap  |  "Copper Vein"` did on Era, and no
+`GatherMatePin` frame appeared in the Mists session at all - but nobody asked, and a pin anchoring
+its tooltip to the minimap would look the same. The world node is measured on both builds; the
+minimap is not measured on either.
 
 ---
 
