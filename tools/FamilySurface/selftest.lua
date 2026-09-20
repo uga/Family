@@ -21,22 +21,31 @@
 
 local ROOT = arg[0]:match("^(.*)selftest%.lua$") or "tools/FamilySurface/"
 
-local called, listener
+local called, pvpCalled, listener
 
 local function stubs(interface)
-	called, listener = 0, nil
+	called, pvpCalled, listener = 0, 0, nil
 	FamilySurfaceDB = nil
 	_G.GetBuildInfo = function() return "x", "69585", "Aug 27 2026", interface end
 	_G.UnitName = function() return "Tester" end
 	_G.GetRealmName = function() return "Nowhere" end
 	_G.GetLocale = function() return "enUS" end
 	_G.WOW_PROJECT_ID = 5
+	-- A second constant with the same prefix, so that the sweep is seen to find by prefix
+	-- rather than by the three names the brief happens to give.
+	_G.WOW_PROJECT_MAINLINE = 1
 	_G.date, _G.time = os.date, os.time
 	_G.C_Timer = { After = function(_, fn) fn() end }
 	_G.SlashCmdList = {}
 	_G.CreateFrame = function()
 		local frame = {}
-		function frame:RegisterEvent() end
+		-- One event this pretend client does not have, so that a refusal is seen to be written
+		-- down and not silently dropped. Family:RegisterEvent reads the same refusal.
+		function frame:RegisterEvent(name)
+			if type(name) == "string" and name:find("GARRISON", 1, true) then
+				error("unknown event " .. name, 0)
+			end
+		end
 		function frame:UnregisterAllEvents() end
 		function frame:SetScript(_, fn) listener = fn end
 		function frame:Hide() end
@@ -57,6 +66,11 @@ local function stubs(interface)
 		GetFactionDataByIndex = function() called = called + 1 return {} end,
 	}
 	_G.C_QuestLog = { GetInfo = function() return { title = "A Quest" } end }
+	-- The second brief's domains (§14): looked up on every client, called only where the sweep
+	-- is allowed. One name from each block is enough to count; the rest are absent, which is
+	-- itself what the probe writes down on a client that lacks them.
+	_G.UnitHonorLevel = function() pvpCalled = pvpCalled + 1 return 3 end
+	_G.GetNumSavedInstances = function() pvpCalled = pvpCalled + 1 return 2 end
 	_G.Enum = { BankType = { Account = 2, Character = 0 },
 		BagIndex = { Backpack = 0, AccountBankTab_1 = 13 } }
 	-- A currency table wide enough that `name` sorts past the twelfth key, as the real one is.
@@ -129,6 +143,38 @@ check("the warband bank enumeration is written down",
 check("and the out-of-combat half of the combat comparison is taken at login",
 	#(mists.windows.combatOut or {}) > 0, "no combatOut block")
 
+-- The second brief (§14): the same division, checked the same way. A name is written down on
+-- every client and a call is made on none but Midnight.
+local pvp = table.concat(mists.windows.pvp or {}, "\n")
+check("the second brief's PvP names are looked up on a Classic client",
+	pvp:find("UnitHonorLevel (looked up) is function", 1, true) ~= nil, pvp)
+check("and none of its calls are made there", pvpCalled == 0, pvpCalled .. " calls were made")
+local lockouts = table.concat(mists.windows.lockouts or {}, "\n")
+check("and the lockout block says why it is short rather than just being short",
+	lockouts:find("skipped below interface", 1, true) ~= nil, lockouts)
+check("an event the brief names is asked with the generated literals, refusal and all",
+	mists.events["UPDATE_INSTANCE_INFO"] == "registers"
+		and (mists.events["GARRISON_MISSION_LIST_UPDATE"] or ""):find("^refused") ~= nil,
+	tostring(mists.events["GARRISON_MISSION_LIST_UPDATE"]))
+local project = table.concat(mists.windows.project or {}, "\n")
+check("the WOW_PROJECT constants are found by their prefix, not by being named",
+	project:find("WOW_PROJECT_MAINLINE (constant) is number 1", 1, true) ~= nil, project)
+
+-- Every line of the new blocks must be one tools/surface.py can key and compare, or the block is
+-- written down and then dropped by every comparison the report makes (L-110). The reader's own
+-- rule is a `)` and then a lower-case word: tools/surface.py:156.
+local keyed, unkeyed = 0, {}
+for _, block in ipairs { "pvp", "lockouts", "project" } do
+	for _, line in ipairs(mists.windows[block] or {}) do
+		if line:match("^(.-%)) ([a-z]+ ?.*)$") then keyed = keyed + 1
+		elseif not line:find("skipped below interface", 1, true) then
+			unkeyed[#unkeyed + 1] = block .. ": " .. line
+		end
+	end
+end
+check("and every line of the new blocks is one the report can key and compare",
+	keyed > 0 and #unkeyed == 0, table.concat(unkeyed, "\n        "))
+
 local midnight = login(120100)
 check("interface 120100 still sweeps", called > 0, called .. " calls were made")
 -- Not a line per call: the sweep also reaches every other namespace whose name holds one of
@@ -140,6 +186,11 @@ check("and writes down the call the crash log names",
 local asked = table.concat(midnight.windows.brief, "\n")
 check("and there the brief's own calls are made",
 	asked:find("C_Reputation.GetNumFactions() answers 7", 1, true) ~= nil, asked)
+local answered = table.concat(midnight.windows.pvp, "\n")
+	.. "\n" .. table.concat(midnight.windows.lockouts, "\n")
+check("and so are the second brief's, in both of its blocks",
+	answered:find('UnitHonorLevel("player") answers 3', 1, true) ~= nil
+		and answered:find("GetNumSavedInstances() answers 2", 1, true) ~= nil, answered)
 
 if failures > 0 then
 	print(failures .. " failed")

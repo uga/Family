@@ -3498,6 +3498,44 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-111 — the block was written down, and every comparison that read the file dropped it
+
+**2026-09-20.** Version 9 of the probe added three blocks of readings for the second brief - PvP
+standing, raid lockouts and the client constants - and wrote each name down in the plainest form
+there is: `UnitHonorLevel is function`. The self-test went green on seventeen claims. The blocks
+were in the saved variables. And `tools/surface.py --report`, which is how a run is actually read,
+said nothing whatever about any of them.
+
+`tools/surface.py:156` keys a line by the text before a `)` and compares the words after it. A
+line with no `)` is keyed by the whole of itself - so `UnitHonorLevel is function` on one client
+and `UnitHonorLevel is nil` on the other are two different keys that never meet, and every section
+of the report is a comparison between keys. Three blocks, thirty-odd readings, silently absent
+from the only thing that reads them.
+
+**Bitten:** an hour, and nearly two client runs. It was caught before Alberto logged in only
+because the question *can the reader read this?* was asked out loud and answered by running the
+reader - the probe against stubs, the saved variables written out, `--report` asked for the
+difference. Nothing else in the session would have asked it.
+
+**Why the self-test said nothing.** It checks what the probe does to a client, which is what it
+was built for and what it says on its own first line. The reader is a different program. Nobody
+had ever run the two against each other, so a writer and a reader of the same file had no check
+between them - and a file written for another program is an interface, not an output.
+
+**And the green was the wrong green.** Seventeen claims passed, every one of them true: the lines
+*were* written, the calls *were* guarded, the currency *did* keep its name. Not one of them was
+about whether anything could read the result. A self-test that only ever asks *did I write it*
+cannot fail this way, which is L-110's rule arriving from the other end.
+
+**What now catches it.** The self-test takes the reader's own pattern - the one at
+`tools/surface.py:156`, copied deliberately and not re-invented - and applies it to every line of
+every new block, failing with the offending line quoted. Adding a line of prose to a block, the
+way a fifth reading would arrive, makes it red and names it; so does putting the old shape back.
+The lines now read `UnitHonorLevel (looked up) is function`, and say `absent` rather than `nil`
+because the report forgives a nil as *this character happens to hold nothing*. The rule:
+**a file one program writes and another reads is an interface, and a check that only exercises
+the writing half is checking half an interface.**
+
 ## L-110 — the canary passed all along, because the canary ran a different command
 
 **2026-09-20.** Asked where the banned words were, the session wrote an audit instead of running

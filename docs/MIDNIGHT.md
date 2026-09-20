@@ -846,6 +846,105 @@ shape, and these are the three that decide it:
 3. **Secret Values in combat.** Unread, and the only one of the three that could make a scanner
    silently wrong rather than merely incomplete.
 
+## 14. A second brief, relayed 2026-09-20, and what version 9 asks of it
+
+Alberto relayed a second brief the day after the first: twelve numbered domains, each with the
+events it says an addon listens to, whether it is supported on the old clients, and how the call
+differs between Midnight and the rest. It enters here under the same rule as the first and as
+wow-professions.com - **hypotheses, never evidence**. Nothing from it reaches `Capabilities.lua`,
+a harness stub or Family's data until a client answers. Its prose is not quoted here: a relayed
+brief is an inbound vector for a name the tree must not carry, and one already rode in once (L-016).
+
+### How much of it was already being asked
+
+Counted rather than judged, name by name, against the generated list in `Surface.lua` and the
+hand-written calls in version 8 of the probe:
+
+| | already asked | new |
+|---|---|---|
+| functions and namespaces (51 named) | 33 | 18 |
+| event names (30 named) | 17 | 13 |
+
+So two thirds of the brief was already in the run Alberto is about to take. That is the useful
+number: it says the first brief and this one describe the same client, and it says where the
+thirty-one names that are left actually are.
+
+### What it claims that this file has already measured
+
+- **That Retail answers with tables where the old clients answer with several values.** Already
+  refuted as a property of the client in §13: Mists answers `C_Container.GetContainerItemInfo`
+  with a table, and Midnight still answers `GetSpecializationInfo(1)` with six values. It is per
+  call. This brief repeats the claim domain by domain, and it is wrong the same way each time.
+- **That the warband bank is reached through `Enum.BagIndex.AccountBankTab_1`.** §6 measured
+  container **12** against Alberto's screenshots, and version 8 already reads the enumeration as
+  a table so that the two readings can be held against each other.
+- **`C_Reputation`, `C_MajorFactions`, `C_WeeklyRewards`, `C_MythicPlus`, `C_PetJournal`.** All
+  five are already the namespaces version 8 lists on every client and calls on Midnight (§13).
+- **`BAG_UPDATE`.** Recorded here because it looks like a gap in the generated list and is not:
+  Family listens to `BAG_UPDATE_DELAYED` on purpose - `addons/Family/Core.lua:690` says why, and
+  `Scanners/Bags.lua:463` and `Scanners/Bank.lua:399` are where it is done - and that name *is*
+  in the list. The brief names the un-coalesced event; Family does not want it.
+
+### What is genuinely new, and what version 9 does with it
+
+Four domains Family has never recorded, none of which the generated list can reach, because that
+list is generated from what Family already calls:
+
+| Domain | New names | Asked how |
+|---|---|---|
+| PvP standing | `UnitHonor`, `UnitHonorMax`, `UnitHonorLevel`, `UnitPVPRank`, `GetPVPRankInfo`, `GetPVPLifetimeStats`, `GetPVPSessionStats`, `GetPVPYesterdayStats` | looked up everywhere, called on Midnight only; honour and conquest asked by id (1792, 1602) everywhere, since the call is one Family already makes and only the id is new |
+| Raid lockouts | `GetNumSavedInstances`, `GetSavedInstanceInfo` | the same |
+| Collections and mission tables | `C_Garrison`, `C_ToyBox`, `C_Heirloom` | listed by name on every client, called nowhere: a call into them needs a follower type or a filter that nothing here has measured, and naming one would be guessing |
+| The client constants | every `WOW_PROJECT` global | swept **by prefix** and read as values; naming the three the brief gives is how a fourth is missed |
+
+Plus the thirteen event names, asked with `RegisterEvent` in a `pcall`, which is how the other
+136 literals are asked and how `Family:RegisterEvent` itself asks. They go into the same block as
+those 136 rather than one of their own, so that the report compares them against the control
+without being taught anything new - and a name no Family file mentions prints as `(no file found)`
+beside it, which records where it came from without a second list saying so. **The events block is
+149 names in version 9**, and §12's count of refusals was against 136.
+
+One thing was nearly lost here and is worth the paragraph. The first version of these blocks wrote
+lines like `UnitHonorLevel is function`. `tools/surface.py` keys a line by what stands before a
+`)` and compares the words after it (`tools/surface.py:156`), so those lines were keyed by their
+whole text, which differs on every client, and **every comparison the report makes dropped them
+silently**. The block would have been in the file, and the report would have said nothing about
+it. The lines are now `UnitHonorLevel (looked up) is function`, and `absent` rather than `nil`
+because the report forgives a nil as *this character happens to hold nothing*. Checked end to end
+by running the probe against stubs, writing the saved variables out and asking
+`tools/surface.py --report` for the difference, which now prints both directions. L-111.
+
+The division - **a name is looked up on every client, a call is made only where the sweep is
+allowed** - is L-108's rule and not a new one. It also happens to be the right division for this
+brief in particular, because most of what it asserts is *supported in all versions*, and that is
+a claim about a name existing, which a lookup settles for nothing.
+
+**`C_Traits` and `C_ClassTalents` are not in the table** because the word list the discovery sweep
+already carries (`Trait`, `Talent`) matches them by name, so both were listed in full by version 6
+- which is how §13 could say that the tree call is `GetTraitTreeForSpec(specID)` and not the one
+the first brief named.
+
+### The one claim worth more than the others
+
+That a lockout is read by the same two calls on **every** client. If it holds, it is the only
+domain in either brief that would need no fourth column at all - one reader, four clients, no
+capability entry. If it does not hold, that is worth knowing before anybody designs for it. It
+costs two lines in the run either way.
+
+### Where the brief argues against this branch
+
+It closes with an implementation suggestion: branch on `WOW_PROJECT_ID`, one arm per client
+family, and keep two separate shapes in the saved variables. **The first half is refused.** This
+branch goes by the capability table and `Family:TryCall`, never by a branch on which client is
+running (`CLAUDE.md`, step 3 of the order); a client id says what the build is and not what the
+build can do, which is the whole thesis of `Capabilities.lua` and the reason four of its entries
+exist at all. What the constant *answers* on each client is still a fact, and version 9 writes it
+down - reading it and branching on it are different acts.
+
+The second half - that PvP is two different records rather than one with holes - is a question
+for the specification and therefore Alberto's, and it is the same question as the account-wide
+one in §13. It is in `docs/BACKLOG.md` with the other three domains rather than decided here.
+
 ### Still to do for step 1
 
 **Probe version 7** re-takes what version 6 could not: the **Mists control** for the census and the
@@ -883,3 +982,9 @@ else about it changed, so the Midnight readings above stand and the run is for t
 11. **Whether a record belongs to the account or the character** on Midnight - the warband bank,
     renown, and the transferable flag on a currency. A question for the specification once the
     probe has read them, and one of the three that 5.0.0's shape waits on.
+12. **Whether a lockout reads the same on all four clients** (§14). Two calls, and the only claim
+    in either brief that would give a domain needing no fourth column.
+13. **What PvP standing is on each client** (§14): whether honour and conquest are ordinary
+    currencies on Midnight, whether the account-wide honour level is readable, and which of the
+    old rank calls survive where. Presence is answered everywhere by version 9; what the calls
+    answer is Midnight-only until one of them has been seen to survive.

@@ -162,8 +162,12 @@ local CALLS = {
 -- functions are **listed** on every client and called on none of it by this list: a name written
 -- down settles most of what the brief claims - whether `GetFactionDataByIndex` is there at all -
 -- and costs nothing, where calling an unknown function is what took Mists down (L-108).
+-- The last three come from the second brief (§14) and are named the same way and for the same
+-- reason: `C_Garrison`, `C_ToyBox` and `C_Heirloom` are domains Family has never recorded, and
+-- the census knows only that they exist and how many functions each holds. `C_Traits` and
+-- `C_ClassTalents` are not here because the word list below already matches them by name.
 local BRIEF_SPACES = { "C_Reputation", "C_MajorFactions", "C_Bank", "C_WeeklyRewards",
-	"C_MythicPlus", "C_PetJournal" }
+	"C_MythicPlus", "C_PetJournal", "C_Garrison", "C_ToyBox", "C_Heirloom" }
 
 -- And these are called, with the arguments a person chose, where the sweep is allowed to run.
 -- Each one is a read the brief names and Family would need if that category is ever recorded.
@@ -442,6 +446,110 @@ function briefCalls()
 	return lines
 end
 
+-- A second brief, relayed 2026-09-20 (MIDNIGHT.md §14), names four domains Family has never
+-- recorded: PvP standing, raid lockouts, the account-wide collections and the mission tables.
+-- None of their names are in Surface.lua, because that list is generated from what Family calls,
+-- so they are hand-written like everything else in this file that is called.
+--
+-- Presence is read on **every** client and calling is not, which is the same division the first
+-- brief settled into (L-108). It is also the right division for what this brief claims: *supported
+-- in all versions* is a statement about a name existing, and a lookup answers it for nothing.
+-- The shape of the line matters as much as the reading in it. `tools/surface.py` keys a line by
+-- what precedes a `)` and compares the words after it, so a line with neither is written into the
+-- file and then dropped by every comparison the report makes - which is a block that looks
+-- measured and answers nothing (L-110). Hence `name (looked up) is ...`: the key is the same on
+-- every client and the answer is the part that differs. And `absent` rather than `nil`, because
+-- the report treats a nil as *this character happens to hold nothing* and forgives it.
+local function presence(name, what)
+	local value = lookup(name)
+	local kind = type(value)
+	local answer = kind == "nil" and "absent" or kind
+	if kind == "number" or kind == "string" then answer = kind .. " " .. show(value) end
+	return name .. " (" .. (what or "looked up") .. ") is " .. answer
+end
+
+-- Looked up everywhere, called where the sweep is allowed, and the skipped run says so rather
+-- than leaving a shorter block for the next reader to misread as an absence.
+local function guarded(reads, what)
+	local lines = {}
+	for _, call in ipairs(reads) do lines[#lines + 1] = presence(call[1]) end
+	if not mayDiscover() then
+		lines[#lines + 1] = ("the %s calls are skipped below interface %d, and this client is %s -"
+			.. " the names above are looked up rather than called"):format(what, DISCOVER_FROM,
+			tostring(select(4, GetBuildInfo())))
+		return lines
+	end
+	for _, call in ipairs(reads) do lines[#lines + 1] = ask(call) end
+	return lines
+end
+
+-- The rank is the argument its own reader answers with, so it is worked out at the moment of
+-- asking the way a window's arguments are.
+local function playerRank()
+	return _G.UnitPVPRank and _G.UnitPVPRank("player")
+end
+
+local PVP_READS = {
+	{ "UnitHonor", "player" }, { "UnitHonorMax", "player" }, { "UnitHonorLevel", "player" },
+	{ "UnitPVPRank", "player" }, { "GetPVPRankInfo", playerRank },
+	{ "GetPVPLifetimeStats" }, { "GetPVPSessionStats" }, { "GetPVPYesterdayStats" },
+}
+
+-- The brief says a lockout is read by the same two calls on every client it has ever been read
+-- on. That is the one claim in it which, if true, is worth a module that needs no fourth column.
+local LOCKOUT_READS = { { "GetNumSavedInstances" }, { "GetSavedInstanceInfo", 1 } }
+
+-- Honour and conquest, which the brief says are ordinary currencies on Midnight. This is the one
+-- new reading asked on every client, because the id is what is new and not the call:
+-- `C_CurrencyInfo.GetCurrencyInfo` is already asked everywhere by professionLines below. Thirty
+-- keys, because `totalEarned` and `maxQuantity` are the fields the claim is about and they sort
+-- past the twelfth of a currency's twenty-five (L-109).
+local CURRENCY_IDS = {
+	{ "C_CurrencyInfo.GetCurrencyInfo", 1792, keys = 30 },
+	{ "C_CurrencyInfo.GetCurrencyInfo", 1602, keys = 30 },
+}
+
+local function pvpReads()
+	local lines = guarded(PVP_READS, "PvP")
+	for _, call in ipairs(CURRENCY_IDS) do lines[#lines + 1] = ask(call) end
+	return lines
+end
+
+local function lockoutReads()
+	return guarded(LOCKOUT_READS, "lockout")
+end
+
+-- Thirteen event names the brief uses that Family does not. They are asked with the generated
+-- literals and written into the same block, because that is the block the report compares against
+-- the control - and because a name no Family file mentions is marked `(no file found)` there,
+-- which says where it came from without a second list saying so. `BAG_UPDATE` is among them
+-- although Family deliberately listens to `BAG_UPDATE_DELAYED` instead (`Core.lua`), since
+-- whether the un-coalesced event still exists is a fact about the client either way.
+local BRIEF_EVENTS = { "BAG_UPDATE", "CHAT_MSG_COMBAT_HONOR_GAIN",
+	"GARRISON_FOLLOWER_LIST_UPDATE", "GARRISON_MISSION_LIST_UPDATE", "HEIRLOOMS_UPDATED",
+	"HONOR_XP_UPDATE", "MAJOR_FACTION_RENOWN_LEVEL_CHANGED", "NEW_MOUNT_ADDED",
+	"PET_JOURNAL_LIST_UPDATE", "PVP_HONOR_XP_UPDATE", "TOYS_UPDATED", "UPDATE_INSTANCE_INFO",
+	"WEEKLY_REWARDS_UPDATE" }
+
+-- Every `WOW_PROJECT` constant this client has, with its value. Swept rather than named, because
+-- naming three of them from a brief is how a fourth is missed. The brief proposes branching on
+-- `WOW_PROJECT_ID`; this branch does not - what a client can do is data in Capabilities.lua and
+-- a question for Family:TryCall (CLAUDE.md) - but what the constant answers on each client is
+-- still a fact worth one line.
+local function projectConstants()
+	local found = {}
+	for name, value in pairs(_G) do
+		local kind = type(value)
+		if type(name) == "string" and name:find("^WOW_PROJECT")
+				and kind ~= "table" and kind ~= "function" then
+			found[#found + 1] = presence(name, "constant")
+		end
+	end
+	table.sort(found)
+	if #found == 0 then found[1] = "WOW_PROJECT (constant) is absent on this client" end
+	return found
+end
+
 -- Every skill line the client lists as a profession's, and for each its details and the
 -- currency its concentration is kept in. All names Midnight reported (MIDNIGHT.md §8).
 function professionLines()
@@ -574,9 +682,11 @@ local function probe()
 	-- Refused is what an event this client does not have looks like: Family:RegisterEvent asks
 	-- the same way and reads the same answer.
 	local listener = CreateFrame("Frame")
-	for _, name in ipairs(Surface.literals) do
-		local ok, problem = pcall(listener.RegisterEvent, listener, name)
-		run.events[name] = ok and "registers" or ("refused: " .. show(problem, ERROR_LIMIT))
+	for _, list in ipairs { Surface.literals, BRIEF_EVENTS } do
+		for _, name in ipairs(list) do
+			local ok, problem = pcall(listener.RegisterEvent, listener, name)
+			run.events[name] = ok and "registers" or ("refused: " .. show(problem, ERROR_LIMIT))
+		end
 	end
 	listener:UnregisterAllEvents()
 
@@ -608,6 +718,14 @@ local function probe()
 	for _, call in ipairs(COMBAT_CALLS) do
 		run.windows.combatOut[#run.windows.combatOut + 1] = ask(call)
 	end
+	-- The second brief's four blocks (§14). None of them needs a window open, so version 9 asks
+	-- nothing more of whoever runs it than version 8 did.
+	ok, lines = pcall(pvpReads)
+	run.windows.pvp = ok and lines or { "pvpReads throws " .. show(lines, ERROR_LIMIT) }
+	ok, lines = pcall(lockoutReads)
+	run.windows.lockouts = ok and lines or { "lockoutReads throws " .. show(lines, ERROR_LIMIT) }
+	ok, lines = pcall(projectConstants)
+	run.windows.project = ok and lines or { "projectConstants throws " .. show(lines, ERROR_LIMIT) }
 	for _, space in ipairs(matching()) do
 		local names = {}
 		for key in pairs(_G[space]) do names[#names + 1] = tostring(key) end
