@@ -3040,6 +3040,20 @@ one answers for the same index, that is a route worth taking and it is one line 
 index* is the assumption in that sentence, and on a build with one list it is a reasonable one and
 still an assumption. It gets measured first.
 
+**Burning Crusade keeps the same two members**, read 2026-09-20 on 2.5.6: `GetCurrencyListSize`
+and `GetCurrencyListInfo` absent from `C_CurrencyInfo`, `GetCurrencyListLink` and
+`GetCurrencyInfo` there. So the two builds Family reads currencies on by the older list have the
+same half-populated table, and the question above is one question for both rather than a quirk of
+one.
+
+**And on that build it is answerable today.** The global `GetCurrencyListLink` was read on a
+character holding honor and answered **nothing whatsoever** - not a link without a currency in it,
+nothing at all - while `C_CurrencyInfo.GetCurrencyListLink` was never asked, because at the time
+nobody knew it was there. If it answers a real link for the same row, an id comes out of a promise
+on both builds and the twelfth value goes back to being a fallback. The probe now calls both on
+each row of the walk and prints what each returns. It wants the Burning Crusade character that
+holds honor, not an empty one.
+
 **What the rest of that reading said.** Quests: `GetQuestsCompleted` answered 64 ids in 6.1 ms
 and `C_QuestLog.IsQuestFlaggedCompleted` told a known quest from a nonsense one, which is the
 Mists shape already recorded. Lockouts: nothing saved, fourteen blank values from index 1, and

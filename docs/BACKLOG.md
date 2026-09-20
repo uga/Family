@@ -6124,6 +6124,43 @@ a character put away in the field. The one thing this cannot rule out is accrual
 seven-minute window would read zero and be right. That is what the overnight reading still buys,
 and it is now the only thing it buys - the sign is settled everywhere except inside one chunk.
 
+**The inn rate is measured, and the rule is carried, 2026-09-20.** The prediction above was
+written down before the reading was taken, which is the only way this counts for anything. The
+level 11 was left in the Stoutlager Inn and read again **6,842 seconds** - one hour and 54 minutes
+- after the reading of 8,510, most of that time logged out, and it had earned nothing in between:
+`xp` 5,337 at both readings.
+
+| | |
+|---|---|
+| rested at the first reading | 8,510 |
+| the rule's rate, 5% of 8,700 every 8 hours | 54.375 an hour |
+| what the rule owes over 6,842 seconds | 103.3 |
+| **what the rule predicts** | **8,613.3** |
+| **what the client answered** | **8,612** |
+
+Out by **1.3 points on a gain of 102**, which is a whole-number figure landing where a rule with
+no rounding in it said it would. **5% of a level every 8 hours in an inn is the rate**, on this
+build, measured rather than quoted.
+
+Three things come with it, and two were not what the reading was for:
+
+- **Logged out counts the same as logged in.** Most of those 6,842 seconds were spent with the
+  character away, and the total matches the continuous rate. Had the away time counted for
+  nothing, the gain would have been a fraction of 102 - so an estimate may run the clock from
+  the moment of the photograph and need not know whether anybody was playing.
+- **The accrual is fine-grained, not chunked.** 102 points in 6,842 seconds, and 4 points in the
+  214-second walk before it, are both what a near-continuous trickle looks like. A game crediting
+  rest in quarter-hours would answer in multiples of 13.6 and would have answered 0 to the walk.
+- **Which closes the escape hatch left open on Mists.** The zero read there over 444 seconds was
+  survivable only if rest arrives in chunks longer than seven minutes. It does not arrive in
+  chunks at all, so that zero is a zero: **nothing accrues away from an inn**.
+
+**What is left to measure is now one thing**, and it is small: whether the away-from-inn rate is
+truly nought on *this* build too, where a level is worth 400 and the slow rule would owe less
+than a point an hour. The overnight reading of the level 1 in the Valley of Trials still answers
+it, and it is no longer load-bearing - the arithmetic that settles it has been done on a build
+where the numbers are big enough to see.
+
 **Killing things spends it**, which is worth saying because a reading taken after a fight is a
 reading of a figure that has gone *down*: rested experience is drawn on as a bonus while the
 character earns. A measurement of the rate wants a character nobody is playing.

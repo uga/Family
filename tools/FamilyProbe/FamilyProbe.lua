@@ -587,8 +587,22 @@ local PROBES = {
                 -- different faults. Whatever comes back is shown rather than summarised.
                 local link = try(_G.GetCurrencyListLink, index)
                 local id = type(link) == "string" and link:match("currency:(%d+)") or nil
+
+                -- **And the other link call, on the same index.** Both 2.5.6 and 5.5.4 keep
+                -- `C_CurrencyInfo.GetCurrencyListLink` while having no list calls in that
+                -- table at all, and on 2.5.6 the *global* link answered nothing whatsoever for
+                -- a currency that plainly has an id. If this one answers a real link for the
+                -- same row, an id comes out of a promise instead of out of a position on both
+                -- builds - and if it answers nothing either, the position is all there is and
+                -- that is worth knowing rather than assuming.
+                local other = modern and try(modern.GetCurrencyListLink, index)
+                local otherID = type(other) == "string"
+                    and other:match("currency:(%d+)") or nil
+
                 out[#out + 1] = "[id " .. tostring(id) .. ", link " ..
-                    (link and describe(link) or "nothing") .. "] " .. shape(answer)
+                    (link and describe(link) or "nothing") ..
+                    ", C_CurrencyInfo link " .. (other and describe(other) or "nothing") ..
+                    " -> id " .. tostring(otherID) .. "] " .. shape(answer)
             end
         end
         return how .. " -- " .. table.concat(out, " | ")
