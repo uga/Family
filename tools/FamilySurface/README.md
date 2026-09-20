@@ -34,7 +34,7 @@ So for each name it asks the question that can actually be answered:
 | the two lockout reads (`GetNumSavedInstances`, `GetSavedInstanceInfo`) | the same way - the brief claims they are the same call on every client, and presence is what that claim is about | filed as `lockouts` |
 | 13 event names the brief uses and Family does not | `RegisterEvent` in a `pcall`, with the generated literals and into the same block, so the report compares them against the control; a name no Family file mentions prints as `(no file found)`, which is where it came from | filed with the events |
 | every `WOW_PROJECT` constant the client has | swept by prefix and read as a value, called never | filed as `project` |
-| whatever the client blocks | the two blocked-action events registered in a `pcall`, their arguments written down as they arrive and printed in chat at once | filed as `blocked` |
+| whatever the client blocks | the two blocked-action events registered in a `pcall`, their arguments written down as they arrive and printed in chat at once, **with the call this file was making at that instant** - Midnight names the function `UNKNOWN()` every time, so the probe's own bookkeeping is the only thing that can say which it was | filed as `blocked` |
 
 The first three lists are `tools/surface.py`'s, generated from the Family sources into
 `Surface.lua`; the counts above are what it wrote on 2026-09-19. The first two runs, on
@@ -94,7 +94,7 @@ placed to answer, and asking for it at the far end is how a gate turns into a re
 sometimes skipped.
 
 It loads the addon with the real generated list, stubs the login path and fires `PLAYER_LOGIN` at
-interface 50504 and at 120100. Twenty-three claims: that an action whose name begins with a read
+interface 50504 and at 120100. Twenty-five claims: that an action whose name begins with a read
 word is not called even where the sweep runs, that the predicate which only looks like it still
 is, that the near miss is written down; that the sweep and both briefs' calls stay away
 from the first and still run on the second, that a skipped block says why it is short, that a

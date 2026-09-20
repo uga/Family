@@ -56,7 +56,15 @@ local function stubs(interface)
 	-- down; here they only count themselves, which is enough to see whether they were called.
 	_G.C_Housing = {
 		GetMaxHouseLevel = function() called = called + 1 return 12 end,
-		GetTrackedHouseGuid = function() called = called + 1 return nil end,
+		-- This one refuses the way the real client did on 2026-09-20: it raises the
+		-- blocked-action event **while it is being called**, and names the function
+		-- `UNKNOWN()`, exactly as Midnight does. Only the probe's own bookkeeping can say
+		-- which call it was.
+		GetTrackedHouseGuid = function()
+			called = called + 1
+			if listener then listener(nil, "ADDON_ACTION_FORBIDDEN", "FamilySurface", "UNKNOWN()") end
+			return nil
+		end,
 	}
 	_G.C_TradeSkillUI = { GetAllRecipeIDs = function() return {} end,
 		-- The real one, from the run of 2026-09-20: `Cancel` begins with `Can` and is an action.
@@ -218,13 +226,19 @@ load("Surface.lua", surface)
 load("FamilySurface.lua", surface)
 listener(nil, "PLAYER_LOGIN")
 local before = select(2, next(FamilySurfaceDB))
+local duringLogin = table.concat(before.windows.blocked or {}, "\n")
+check("a call refused while it runs is named by the probe, not by the client",
+	duringLogin:find("while calling C_Housing.GetTrackedHouseGuid()", 1, true) ~= nil, duringLogin)
+check("and what the client did say is kept beside it, UNKNOWN and all",
+	duringLogin:find("ADDON_ACTION_FORBIDDEN", 1, true) ~= nil
+		and duringLogin:find("UNKNOWN()", 1, true) ~= nil, duringLogin)
+local howMany = #(before.windows.blocked or {})
 listener(nil, "ADDON_ACTION_BLOCKED", "FamilySurface", "SomeProtectedThing()")
-check("a blocked action is written into the run with whatever the client said",
-	(table.concat(before.windows.blocked or {}, "\n")):find("SomeProtectedThing", 1, true) ~= nil,
-	table.concat(before.windows.blocked or {}, "\n"))
-check("and it does not schedule a second probe the way a window would",
-	before.windows.blocked ~= nil and #(before.windows.blocked) == 1,
-	tostring(before.windows.blocked and #before.windows.blocked))
+check("one arriving outside any call is written down too, and says so",
+	(table.concat(before.windows.blocked, "\n")):find("nothing this file started", 1, true) ~= nil,
+	table.concat(before.windows.blocked, "\n"))
+check("and neither is mistaken for a window that schedules a second probe",
+	#before.windows.blocked == howMany + 1, tostring(#before.windows.blocked))
 
 if failures > 0 then
 	print(failures .. " failed")

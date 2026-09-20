@@ -29,6 +29,11 @@ local KEYS = 12
 
 local showTable
 
+-- The name of the call in flight, set by `ask` for the length of the call and read by the
+-- blocked-action recorder at the bottom. The client raises that event while the call is
+-- running, so whatever is written here at that instant is the call it refused.
+local doing
+
 local function show(value, limit, keys)
 	limit = limit or LIMIT
 	local kind = type(value)
@@ -293,7 +298,12 @@ function ask(call)
 	if type(fn) ~= "function" then
 		return name .. "(" .. shown .. ") absent (" .. type(fn) .. ")"
 	end
+	-- What is being called, for as long as the call lasts. The client raises its blocked-action
+	-- event **during** the call, and on 2026-09-20 it named the function `UNKNOWN()`, so the only
+	-- thing on this machine that can say which call it was is this file's own bookkeeping.
+	doing = name .. "(" .. shown .. ")"
 	local results = pack(pcall(fn, unpack(args, 1, #call - 1)))
+	doing = nil
 	if results[1] then
 		-- `keys` on the call asks for a wider table than the usual twelve, for an answer
 		-- whose interesting field sorts past it.
@@ -846,7 +856,10 @@ end
 local BLOCKED_EVENTS = { "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN" }
 
 local function noteBlocked(event, ...)
+	-- The client named the function `UNKNOWN()` on 2026-09-20, every time. What it says is
+	-- kept anyway, and the call this file knows it was making is written beside it.
 	local line = event .. " " .. showAll(...)
+		.. " while calling " .. (doing or "nothing this file started")
 	blocked[#blocked + 1] = line
 	if current then current.windows.blocked = blocked end
 	print("|cff88ccffFamily Surface|r blocked: " .. line)
