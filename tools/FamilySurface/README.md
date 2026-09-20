@@ -88,7 +88,7 @@ skill lines - runs on every client as before.
     lua5.1 tools/FamilySurface/selftest.lua
 
 **This is run in the session, not by the person at the client**, and its result is reported with
-the folder - eighteen claims and an exit status, or the folder does not go. It needs only `lua5.1`
+the folder - its claims and an exit status, or the folder does not go. It needs only `lua5.1`
 and this repository, so there is nothing about it that the machine holding the game is better
 placed to answer, and asking for it at the far end is how a gate turns into a request that is
 sometimes skipped.
