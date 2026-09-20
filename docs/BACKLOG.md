@@ -6004,7 +6004,11 @@ It also means the ceiling **moves with the level**: it is a multiple of `xpMax`,
 number of points is a different fraction of a level after a ding, and an estimate that does not
 re-read `xpMax` drifts.
 
-**The rate is still unmeasured**, and cannot be taken from these two: both characters were already
-at the ceiling, where nothing accumulates. It wants a character below it, which is what any
+**And a third reading, on Era the same day**: a level 1 with `xpMax` 400 and rested **600**. One
+and a half again, so the rule holds on all three builds and at both ends of a character's life -
+the ceiling is a multiple of the level's own `xpMax`, not a number.
+
+**The rate is still unmeasured**, and cannot be taken from these three: every character read was
+already at the ceiling, where nothing accumulates. It wants a character below it, which is what any
 character becomes as soon as it is played for a while - then two readings a few hours apart, one
 pair logged out in an inn and one pair logged out in the field.

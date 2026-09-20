@@ -2938,6 +2938,14 @@ there is nothing to ask for and nothing to wait for.
 
 Accepted is not the same as fires, and nothing outside the game can tell those apart.
 
+**Era answers the events identically**, read the same day: `QUEST_QUERY_COMPLETE` refused,
+`PVP_HONOR_XP_UPDATE` refused, and every other name on the list accepted, lockouts and rested
+included. So the two refusals are a property of these builds rather than of one of them, and the
+spellings to write against are `HONOR_XP_UPDATE` and no quest query at all.
+
+`GetPVPSessionStats` and `GetPVPYesterdayStats` are on Era too, which is where the brief expected
+them.
+
 #### Re-read this at a new build
 
 The rules above are pinned to the three builds in section 3 and to no others. They have already
