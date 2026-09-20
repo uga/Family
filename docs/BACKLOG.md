@@ -5950,9 +5950,13 @@ raids are.
 **But the reading is not yet evidence, and that is the probe's fault.** It called
 `RequestRaidInfo` and read the list in the same instant, where the server's answer arrives with
 `UPDATE_INSTANCE_INFO` - so a list that fills a moment later would have read as empty every time.
-The probe now waits for that event and prints a line of its own when it comes. **The zero above
-has to be taken again before it counts**, and the reading that settles this entry wants a heroic
-or a raid.
+The probe now waits for that event and prints a line of its own when it comes.
+
+**Taken again through the event, it holds**: *after UPDATE_INSTANCE_INFO, 0 saved*, on the same
+character, minutes after the boss. So a normal dungeon really does put nothing in this list on
+Burning Crusade, and the hour or so a normal instance keeps its id is a different mechanism that
+this call does not report. What is still unread is a **heroic or a raid**, which is the only
+thing that fills those fourteen columns.
 
 **Burning Crusade and Mists answer exactly as Era does**, read the same day: nothing saved,
 fourteen values of blanks from index 1, `GetNumSavedWorldBosses` present and zero on all three.

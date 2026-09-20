@@ -2977,6 +2977,12 @@ half of what the request asks for on a build where the other half - a rank - doe
 no arena points. Whether they appear as a second row, with an id of their own, is unanswered -
 and `GetArenaCurrency`, which the brief names for them, is absent from this build.
 
+**Read once more with the probe saying which call it used**: `C_CurrencyInfo` is present on
+Burning Crusade and **has no `GetCurrencyListSize`**, the older global call answers 2 rows, and
+`GetCurrencyListLink` answers **nothing at all** - not a link without a currency in it, nothing.
+So on this build the only id available is the twelfth value, and the route Family reads ids by
+cannot work here.
+
 **The defect this found in Family**, which is not about honor at all: `readGlobalList` takes a
 currency's id **only from `GetCurrencyListLink`**, and on this build that link gave nothing. The
 fallback in `entryFrom` then keys the currency by its **name** - `n:Honor Points` - which is one
