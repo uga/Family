@@ -1,0 +1,8 @@
+name: a change to the harness widens nothing
+file: tools/mutate.py
+--- old
+        if not note or note[1] not in present or note[1] in touched:
+            extra.append(path)
+--- new
+        if note and note[1] in touched:
+            extra.append(path)

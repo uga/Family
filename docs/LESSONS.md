@@ -3542,6 +3542,49 @@ nothing about whether the work should exist, and a fix that makes a fault orderl
 better than the fault did. See [L-109](#l-109--two-sessions-one-processor-the-run-was-not-slow-it-was-killed),
 which is the first half of this one.
 
+## L-114 — eight minutes a commit, insuring against something never once observed
+
+**2026-09-20.** The full mutation run had been required before every commit since the tool
+existed, on the reasoning that a change anywhere can free a case anywhere. Reasonable, never
+tested, and by September it cost about eight minutes a commit.
+
+Another session went and looked. Over 12 to 20 September this repository had **28 red full runs
+holding 33 failures**. For each, was the case's `file:` in the working diff at the time? **29
+yes.** 2 were cases still being written. 2 had the `.mut` changed and its target not - a real
+gap, and `--changed` now covers it. **Not one** was a case on file X freed by a change to file
+Y, which is the whole thing the eight minutes were buying.
+
+**Bitten:** nothing dramatic - no wrong answer shipped, no gate missed. What it cost was time,
+every commit, for months, and the reason it was never questioned is that it always passed. A
+gate that never fires reads as a gate that is never needed *and* as a gate that is holding
+everything back, and nothing in its output tells the two apart. That is the trap here, and it is
+the same one as the checks this whole file is about: **something green is not evidence either
+way until you ask what it would have had to catch.**
+
+**But the measurement had a hole, and it is the interesting part.** It could only see what had
+happened, and the shape it could not have seen was this: a check weakened in the harness frees a
+case on a file that is nowhere in the diff. 376 of 402 cases name a file under `addons/` and 9
+name `tests/Harness.lua`, so a commit editing only a check ran those 9 and skipped the 376 that
+check stands over. A history of red runs cannot show that, because nobody had ever weakened a
+check and committed it alone - the eight minutes had been hiding the need for the evidence that
+would justify dropping them.
+
+**The check that now catches it.** `tools/mutations/caught-by.tsv`: for every case, which check
+caught it and which section of the harness that check is in, read out of the gate's own words -
+under `FAMILY_MUTATING` the harness stops at its first failure, so the last thing it printed is
+the check that noticed, and the last heading above it is the place. `--changed` with the harness
+in the diff now re-runs the cases whose section the diff touches. Two ways the map can go stale,
+and **both widen the run rather than narrow it**: a case nobody has recorded, and a case recorded
+under a section that no longer exists, are both run. The register is written only by a full run
+and only once every worker has stopped, which is the single point where this tool touches the
+repository at all. Mutations `the-check-that-caught-it-is-not-read`,
+`a-heading-is-any-print-at-all`, `a-harness-change-takes-nothing-with-it`,
+`the-register-forgets-a-case-that-went-red`, and `a-changed-case-file-is-not-a-changed-case`.
+
+The rule: **an insurance nobody has priced is not caution, it is habit.** Ask what the policy
+has ever paid out, and ask separately what it could never have been observed paying out - the
+second question is the one that decides whether cancelling it is safe.
+
 ## L-113 — the file said who wrote last, and was read as saying who holds it
 
 **2026-09-20, hours after the lock landed.** A session queued behind a run in another tree was

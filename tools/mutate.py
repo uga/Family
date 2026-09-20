@@ -66,8 +66,26 @@ measured 2026-09-14). Each case is gated with `FAMILY_MUTATING=1` in the environ
 stops at its first failure, which is all a case needs to be caught, and skips its second pass
 (compression switched off) unless the case file says `pass: both` - the few cases only that pass
 can catch. The gate that proves a copy green, and the gate on the repository before anything is
-run, are the whole gate. `--changed` is for the working loop; the full run is still the one
-required before a commit.
+run, are the whole gate.
+
+**The full run is the gate of a release; `--changed` is the gate of a commit.** Alberto,
+2026-09-20, on a measurement taken over this repository's own history: of the 33 failures in the
+28 red full runs between 12 and 20 September, **29** named a file that was in the working diff
+at the time, 2 were cases still being written, and 2 had the case file changed and its target
+not - which `--changed` now picks. **Not once** did a full run find a case on one file freed by
+a change to another. Eight minutes a commit, against an event whose measured frequency over
+those 33 was nought.
+
+What that measurement could not rule out is the one shape `--changed` was blind to: **a check
+weakened in the harness frees a case on a file nowhere in the diff.** 376 of 402 cases name a
+file under `addons/` and 9 name `tests/Harness.lua`, so editing a check and committing it alone
+ran nine cases and skipped the 376 that check stands over. `caught-by.tsv` closes it - see
+`REGISTER` below - and without that this tier would be a trade rather than a saving.
+
+`tools/release.sh` runs the full one and refuses the release on anything but green.
+
+`CLAUDE.md` still carries the older rule at the time of writing; Alberto settles that line
+himself, and until he does it is the one to follow where the two differ.
 
 Exit is non-zero if any mutation survived, any anchor has gone, or any gate hung.
 """
@@ -159,10 +177,11 @@ def gate(where, seconds=None, case=None):
     if TRACKED:
         environment["FAMILY_TRACKED"] = TRACKED
     try:
-        return subprocess.run(GATE, cwd=where, capture_output=True, text=True,
-                              timeout=seconds, env=environment).returncode
+        out = subprocess.run(GATE, cwd=where, capture_output=True, text=True,
+                             timeout=seconds, env=environment)
+        return out.returncode, (out.stdout or "") + (out.stderr or "")
     except subprocess.TimeoutExpired:
-        return None
+        return None, ""
 
 
 def copy_tree(into, source=None):
@@ -182,7 +201,7 @@ def prove(where):
     So the copy is gated once, clean, before it is used - and the run stops rather than
     reporting on a tree it has no reason to trust.
     """
-    answered = gate(where, TIMEOUT)
+    answered, _ = gate(where, TIMEOUT)
     if answered == 0:
         return None
 
@@ -196,17 +215,17 @@ def prove(where):
 
 
 def run(path, where):
-    """One case, in one worker's copy. Answers (caught, line to print)."""
+    """One case, in one worker's copy. Answers (caught, line to print, (check, section))."""
     name, target, old, new, passes = parse(path)
 
     if not target or not old:
-        return False, "  BROKEN   %s - no file: or no --- old block" % name
+        return False, "  BROKEN   %s - no file: or no --- old block" % name, (None, None)
 
     full = os.path.join(where, target)
     if not os.path.exists(full):
         # Said against the repository rather than against the copy, because "not there" is a
         # fact about the project and naming a temporary directory would hide it.
-        return False, "  MOVED    %s - %s is not there" % (name, target)
+        return False, "  MOVED    %s - %s is not there" % (name, target), (None, None)
 
     with open(full, encoding="utf-8") as handle:
         held = handle.read()
@@ -216,22 +235,23 @@ def run(path, where):
         # Not a skip. A mutation matching nothing tests nothing, and one matching twice
         # patches whichever came first, which is not the case anybody wrote down.
         return False, "  ANCHOR   %s - the fragment appears %d times in %s" % (
-            name, seen, target)
+            name, seen, target), (None, None)
 
     try:
         with open(full, "w", encoding="utf-8") as handle:
             handle.write(held.replace(old, new, 1))
 
-        answered = gate(where, TIMEOUT, passes)
+        answered, spoken = gate(where, TIMEOUT, passes)
         if answered is None:
             # Not caught: nothing was read back, so no check can be said to have seen it.
             # Until 2026-09-14 this answered True, and a hung gate left the exit status green
             # while the docstring promised otherwise (DECISIONS, that day).
-            return False, "  HUNG     %s - the gate ran past %g seconds" % (name, TIMEOUT)
+            return False, "  HUNG     %s - the gate ran past %g seconds" % (name, TIMEOUT), \
+                (None, None)
         if answered != 0:
-            return True, "  caught   %s" % name
+            return True, "  caught   %s" % name, caught_by(spoken)
 
-        return False, "  SURVIVED %s" % name
+        return False, "  SURVIVED %s" % name, (None, None)
     finally:
         # Still restored, even though this is a copy: a worker runs many cases in the one
         # tree, and a case left patched would make every case after it meaningless.
@@ -275,6 +295,133 @@ def changed_files():
             return None
         files.update(line.strip() for line in out.stdout.split("\n") if line.strip())
     return files
+
+
+# Which check caught which case, and in which section of the harness it stands. Tracked, so the
+# working loop can read it without having run anything; written only by a full run, and only
+# once every worker has finished.
+#
+# **This is the one thing here that writes into the repository.** Everything else about this
+# tool is built so that killing it at any moment leaves the tree exactly as it was, and that
+# still holds while it runs: the file is written at the end, from the results, in one go.
+REGISTER = os.path.join(CASES, "caught-by.tsv")
+
+
+def caught_by(spoken):
+    """The check that caught a case, and the section it is in, read out of the gate's own words.
+
+    Under `FAMILY_MUTATING` the harness stops at its first failure, so the last thing it printed
+    is the check that noticed - no search of the source is needed, and none would be as true.
+    The section is the last heading printed before it, which is how the harness lays itself out:
+    a heading at the margin, its checks indented under it.
+    """
+    section = None
+    for line in spoken.split("\n"):
+        if line.startswith("  FAIL"):
+            return line[len("  FAIL"):].strip().split("  -> ")[0].strip(), section
+        if line and not line.startswith(" "):
+            section = line.strip()
+    return None, None
+
+
+def sections(source):
+    """Every section heading in the harness, as (line number, heading), in order.
+
+    A heading is a `print` of one plain string at the margin. `print()` with nothing in it is a
+    blank line and `print(string.format(...))` is a check's own output, and neither is a place.
+    """
+    found = []
+    for number, line in enumerate(source.split("\n"), start=1):
+        if line.startswith('print("') and line.endswith('")') and line.count('"') == 2:
+            found.append((number, line[7:-2]))
+    return found
+
+
+def sections_touched(diff, marks):
+    """Which sections a `git diff -U0` of the harness falls inside.
+
+    The line numbers are the ones in the *new* file, which is what `marks` was read from, so
+    the two are talking about the same text.
+    """
+    hit = set()
+    for line in diff.split("\n"):
+        if not line.startswith("@@"):
+            continue
+        try:
+            after = line.split("+")[1].split("@@")[0].strip()
+            start = int(after.split(",")[0])
+            length = int(after.split(",")[1]) if "," in after else 1
+        except (IndexError, ValueError):
+            continue
+        for number in range(start, start + max(length, 1)):
+            where = None
+            for at, name in marks:
+                if at <= number:
+                    where = name
+                else:
+                    break
+            if where:
+                hit.add(where)
+    return hit
+
+
+def register_read(path=None):
+    """The recorded case -> (check, section), or an empty map where none has been written."""
+    try:
+        with open(path or REGISTER, encoding="utf-8") as handle:
+            text = handle.read()
+    except OSError:
+        return {}
+
+    known = {}
+    for line in text.split("\n"):
+        parts = line.split("\t")
+        if len(parts) == 3 and not line.startswith("#"):
+            known[parts[0]] = (parts[1], parts[2])
+    return known
+
+
+def also_for_harness(paths, already, known, touched, present):
+    """The cases a change to the harness itself should re-run, beyond those already picked.
+
+    **A commit that only edits the harness is the case this exists for.** Of 402 recorded cases
+    on 2026-09-20, 376 name a file under `addons/` and 9 name `tests/Harness.lua`; so weakening
+    a check and committing that alone ran those 9 and skipped the 376 the check stands over.
+    That is the one shape `--changed` could not see, and the register is what lets it.
+
+    Three ways a case gets in: its section was touched; it has no registration at all; or its
+    registration names a section that is no longer there. **The last two are caution, not
+    exemption** - a map that has gone stale must widen the run, never narrow it.
+    """
+    extra = []
+    for path in paths:
+        if path in already:
+            continue
+        note = known.get(os.path.relpath(path, ROOT))
+        if not note or note[1] not in present or note[1] in touched:
+            extra.append(path)
+    return extra
+
+
+def register_write(paths, results):
+    """Write case -> check -> section, sorted, for the cases this run caught.
+
+    A case that was not caught has nothing to record and keeps whatever it had: a survivor or a
+    moved anchor is a red run, and a red run must not also quietly widen tomorrow's working
+    loop by forgetting where the case used to be caught.
+    """
+    known = register_read()
+    for path, answer in zip(paths, results):
+        check, section = answer[2] if len(answer) > 2 else (None, None)
+        if check and section:
+            known[os.path.relpath(path, ROOT)] = (check, section)
+
+    body = ["# case\tthe check that caught it\tthe section that check is in",
+            "# Written by a full run of tools/mutate.py, at the end. Do not edit by hand."]
+    body += ["%s\t%s\t%s" % (case, check, section)
+             for case, (check, section) in sorted(known.items())]
+    with open(REGISTER, "w", encoding="utf-8") as handle:
+        handle.write("\n".join(body) + "\n")
 
 
 def picked(paths, files):
@@ -534,7 +681,26 @@ def run_all(argv):
         if files is None:
             print("git did not say what has changed, so nothing can be picked by it")
             return 1
-        paths = picked(paths, files)
+        chosen = picked(paths, files)
+
+        # The harness in the diff means every check may have moved under every case, so the
+        # register decides which of them to take as well. Read before the list is narrowed,
+        # because `also_for_harness` is choosing from all of them.
+        if "tests/Harness.lua" in files:
+            source = open(os.path.join(ROOT, "tests", "Harness.lua"), encoding="utf-8").read()
+            marks = sections(source)
+            diff = subprocess.run(["git", "diff", "-U0", "HEAD", "--", "tests/Harness.lua"],
+                                  cwd=ROOT, capture_output=True, text=True)
+            touched = sections_touched(diff.stdout or "", marks)
+            widened = also_for_harness(paths, set(chosen), register_read(), touched,
+                                       {name for _, name in marks})
+            if widened:
+                print("the harness changed, so %d more case(s) come with it - those the "
+                      "register puts in a section the diff touches, and those it does not "
+                      "know" % len(widened))
+            chosen += widened
+
+        paths = sorted(set(chosen))
         if not paths:
             print("no recorded mutation names a file changed since HEAD - the full run is "
                   "still the one before a commit")
@@ -572,7 +738,7 @@ def run_all(argv):
 
     preparing = threading.Thread(target=prepare)
     preparing.start()
-    standing = gate(ROOT, TIMEOUT)
+    standing, _ = gate(ROOT, TIMEOUT)
     preparing.join()
 
     if standing is None:
@@ -672,7 +838,13 @@ def run_all(argv):
         sys.stderr.flush()
 
 
-    lines, bad = report(results, everything)
+    # **Written here and nowhere earlier**: every worker has finished, nothing is being gated,
+    # and this is the only moment the tool touches the repository. Only a full run may write it
+    # - a partial one knows about the cases it ran and would drop every other line.
+    if not only_changed and not rest:
+        register_write(paths, results)
+
+    lines, bad = report([(caught, line) for caught, line, _ in results], everything)
     for line in lines:
         print(line)
     return 1 if bad else 0

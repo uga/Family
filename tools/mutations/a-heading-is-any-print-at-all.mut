@@ -1,0 +1,6 @@
+name: a blank line counts as a section heading
+file: tools/mutate.py
+--- old
+        if line.startswith('print("') and line.endswith('")') and line.count('"') == 2:
+--- new
+        if line.startswith("print("):

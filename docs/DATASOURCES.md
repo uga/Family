@@ -2547,6 +2547,34 @@ workers - sits inside its noise, so the honest statement is that the gate is mea
 and the full run has not been measured often enough to show it. The gate number is the one to
 quote, because it was taken five times at each setting against the run's once.
 
+#### What the full run before every commit was buying, measured 2026-09-20
+
+Over 2026-09-12 to 2026-09-20 this repository had **28 red full runs**, holding **33 failures**.
+Against the working diff at the time of each:
+
+| | |
+|---|---|
+| the case's `file:` was in the diff | **29** |
+| the case was still being written | 2 |
+| the `.mut` was changed and its `file:` was not | 2 |
+| a case on one file freed by a change to another | **0** |
+
+So the eight minutes a commit were insuring against an event with a measured frequency of nought
+over 33 opportunities. The third row is a real gap and `--changed` now covers it: a case is
+picked by its target **or by itself**.
+
+**What the count could not see** is the shape nobody had yet produced: a check weakened in
+`tests/Harness.lua` frees a case on a file nowhere in the diff. Of 402 cases, **376** name a file
+under `addons/` and **9** name `tests/Harness.lua`, so a commit editing only a check ran nine and
+skipped the 376 that check stands over. A history of red runs cannot contain that event, because
+the full run was what made it impossible - which is why it is written down as a hole in the
+measurement rather than as a number in the table.
+
+`tools/mutations/caught-by.tsv` closes it: case, the check that caught it, and the section that
+check is in, read out of the gate's own words rather than searched for in the source. A change to
+the harness re-runs the cases in the sections it touches, and a case the register does not know -
+or knows under a section that has since gone - runs anyway.
+
 ### What a shared recipe list weighs, `tools/wire-size.lua`
 
 Not from the client's tables but from the libraries the addon channel is fed through, and

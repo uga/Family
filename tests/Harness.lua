@@ -40845,7 +40845,7 @@ if RUN.storage == "compressed" then
 		"case = os.path.join(tree, 'spin.mut')",
 		"open(case, 'w').write('name: spin\\nfile: Spinning.lua\\n--- old\\nbound = 10\\n--- new\\nbound = nil\\n')",
 		"mutate.TIMEOUT = 0.2",
-		"caught, line = mutate.run(case, tree)",
+		"caught, line, noted = mutate.run(case, tree)",
 		"print('caught', caught)",
 		"print(line)",
 		"print('restored', open(os.path.join(tree, 'Spinning.lua')).read().strip() == 'local bound = 10')",
@@ -40944,6 +40944,43 @@ if RUN.storage == "compressed" then
 		"open(one, 'w').write('name: a\\nfile: addons/Family/Wide.lua\\n--- old\\nx\\n--- new\\ny\\n')",
 		"rel = os.path.relpath(one, mutate.ROOT)",
 		"print('picks by the file it mutates', mutate.picked([one], {'addons/Family/Wide.lua'}) == [one])",
+
+		-- **A commit that edits only the harness is what the register exists for.** Of 402
+		-- recorded cases, 376 name a file under `addons/` and 9 name `tests/Harness.lua`, so
+		-- weakening a check and committing that alone ran nine cases and skipped the 376 the
+		-- check stands over. The gate's own words say which check caught a case, because under
+		-- FAMILY_MUTATING the harness stops at its first failure; the section is the last
+		-- heading printed above it.
+		"spoken = 'professions\\n  ok  a\\n\\ncurrencies\\n  ok  b\\n  FAIL  the link wins  -> nil\\n'",
+		"print('reads the check and its section', mutate.caught_by(spoken) == ('the link wins', 'currencies'))",
+		"print('and says nothing where nothing failed', mutate.caught_by('a\\n  ok  b\\n') == (None, None))",
+
+		-- A heading is a print of one plain string at the margin; `print()` is a blank line
+		-- and a formatted print is a check's own output. Neither is a place.
+		"marks = mutate.sections('print(\"one\")\\nx\\nprint()\\nprint(\"two\")\\ny\\n')",
+		"print('finds the headings and not the blanks', marks == [(1, 'one'), (4, 'two')])",
+		"print('places a changed line under its heading', mutate.sections_touched('@@ -5,0 +5,1 @@', marks) == {'two'})",
+
+		-- Three ways in, and two of them are caution: an unknown case and a case whose section
+		-- has been renamed both run, because a stale map must widen a run and never narrow it.
+		"known = {'tools/mutations/a.mut': ('c', 'currencies'), 'tools/mutations/b.mut': ('c', 'gone')}",
+		"cases = [os.path.join(mutate.ROOT, n) for n in ('tools/mutations/a.mut', 'tools/mutations/b.mut', 'tools/mutations/c.mut')]",
+		"there = {'currencies', 'professions'}",
+		"took = mutate.also_for_harness(cases, set(), known, {'currencies'}, there)",
+		"print('takes the case whose section was touched', cases[0] in took)",
+		"print('takes the case whose section is gone', cases[1] in took)",
+		"print('takes the case it has never seen', cases[2] in took)",
+		"quiet = mutate.also_for_harness(cases, set(), known, {'professions'}, there)",
+		"print('and leaves the one it knows is elsewhere', cases[0] not in quiet)",
+
+		-- A red run must not quietly widen tomorrow's working loop by forgetting where a case
+		-- used to be caught, so a case that did not answer this time keeps what it had.
+		"mutate.REGISTER = os.path.join(tree, 'caught.tsv')",
+		"case_a = os.path.join(mutate.ROOT, 'tools/mutations/a.mut')",
+		"mutate.register_write([case_a], [(True, 'x', ('the check', 'currencies'))])",
+		"print('writes down what caught it', mutate.register_read().get('tools/mutations/a.mut') == ('the check', 'currencies'))",
+		"mutate.register_write([case_a], [(False, 'x', (None, None))])",
+		"print('and a run that did not catch it keeps the old line', mutate.register_read().get('tools/mutations/a.mut') == ('the check', 'currencies'))",
 		"print('picks by the case file itself', mutate.picked([one], {rel}) == [one])",
 		"print('and picks nothing on an unrelated change', mutate.picked([one], {'README.md'}) == [])",
 		"ran = []",
@@ -41000,6 +41037,24 @@ if RUN.storage == "compressed" then
 	-- which is the shape read from a live run: naming the line would name the wrong tree.
 	check("and names whoever holds it now rather than whoever wrote last",
 		text:find("names who holds it now True", 1, true) ~= nil, text)
+	check("the register writes down which check caught which case",
+		text:find("writes down what caught it True", 1, true) ~= nil
+			and text:find("and a run that did not catch it keeps the old line True", 1, true) ~= nil,
+		text)
+	check("which check caught a case is read out of the gate's own words",
+		text:find("reads the check and its section True", 1, true) ~= nil
+			and text:find("and says nothing where nothing failed True", 1, true) ~= nil, text)
+	check("and the harness's own headings say which section that check is in",
+		text:find("finds the headings and not the blanks True", 1, true) ~= nil
+			and text:find("places a changed line under its heading True", 1, true) ~= nil, text)
+	-- The register may go stale in two ways, and both have to widen the run rather than narrow
+	-- it: a case nobody has recorded, and a case recorded in a section that no longer exists.
+	check("a change to the harness re-runs the cases its sections protect",
+		text:find("takes the case whose section was touched True", 1, true) ~= nil
+			and text:find("and leaves the one it knows is elsewhere True", 1, true) ~= nil, text)
+	check("and an unknown case, or one filed under a section since renamed, runs anyway",
+		text:find("takes the case whose section is gone True", 1, true) ~= nil
+			and text:find("takes the case it has never seen True", 1, true) ~= nil, text)
 	check("a changed case file is a changed case, whatever its file: has done",
 		text:find("picks by the case file itself True", 1, true) ~= nil
 			and text:find("picks by the file it mutates True", 1, true) ~= nil
