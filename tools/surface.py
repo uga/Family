@@ -230,9 +230,29 @@ def differs(one, other):
 
 def report(asked_path, control_path=None):
     uses = collections.defaultdict(set)
-    measure(uses)
+    globals_, _, _, _ = measure(uses)
     label, asked = answers(asked_path)
     control_label, control = answers(control_path) if control_path else (None, None)
+
+    def stale(label, run):
+        """Say so when a run was written by a probe older than the list generated today.
+
+        A saved-variables file accumulates: a character logged in a week ago keeps its run
+        beside the one taken this morning, which is what makes a second character add rather
+        than overwrite. Naming one with `@` therefore picks a moment as well as a character,
+        and nothing in the answer says which moment. On 2026-09-20 a session compared a run
+        of the 18th - taken against a list of 193 names, before `_G.Name` and namespace
+        locals were followed (L-103) - against a control of the 20th, and read the counts as
+        facts about two clients (L-114).
+
+        The run itself carries the size of the list it was asked, which is the one number
+        that dates it without anything having to be remembered.
+        """
+        asked_now, asked_then = len(globals_), len(run["globals"])
+        if asked_then != asked_now:
+            print("# **%s was asked %d globals; the list generates %d today.** That run is from"
+                  " an older probe: re-run it, or read what follows as a comparison with the"
+                  " past." % (label, asked_then, asked_now))
 
     def files(name):
         found = sorted(uses.get(name, ()))
@@ -246,6 +266,9 @@ def report(asked_path, control_path=None):
     print("# %s, interface %s" % (label, asked["interface"]["interface"]))
     if control:
         print("# against %s, interface %s" % (control_label, control["interface"]["interface"]))
+    stale(label, asked)
+    if control:
+        stale(control_label, control)
 
     for kind, word in (("globals", "Globals"), ("members", "Namespace members")):
         rows = []

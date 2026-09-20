@@ -3498,6 +3498,46 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-114 — the instrument answered correctly, about a run taken two days earlier
+
+**2026-09-20.** The probe's saved variables accumulate on purpose: a run is filed under its build
+and its character, so a second character adds rather than overwrites. The file Alberto sent back
+from Midnight therefore held **three** runs, and the one from Mists held **five**.
+`tools/surface.py --report` requires one to be named with `@`, and this session named the first
+one it saw at the top of the file - `@Druiduga` on one side, `@Holycuw` on the other.
+
+Both were runs of **2026-09-18**, taken by a probe whose generated list held 193 names, before
+`surface.py` learned to follow `_G.Name` and locals holding a namespace (L-103). The report that
+came back was perfectly correct and about the wrong thing: *66 globals absent*, *31 calls absent
+here*, *3 calls answering in a different shape*. With the right pair - `@Ahia` against
+`@Eccebombo`, the runs of the 20th - the same three numbers are **73**, **49** and **12**, and the
+twelve include `GetTalentInfo`, which answers the same number of values in a different order on
+the two clients and is the sharpest finding of the day.
+
+**Bitten:** a set of figures given to Alberto as measurements of Midnight against Mists, four of
+which were wrong, in a session that had spent the afternoon writing lessons about exactly this.
+Caught only because two other numbers in the same report - *Windows asked: none* and *Namespace
+functions here and not on the control: 0* - were impossible, and chasing those revealed that the
+run being read had no window blocks at all, because the probe that wrote it had none.
+
+**Why nothing said anything.** The tool behaves well when nothing is named: it prints how many
+runs the file holds and refuses to choose. It has nothing to say once a run *is* named, and a
+name is not a date. The run's own shape said it plainly - 193 globals where the list generates
+278 - and nobody was reading it.
+
+**And the two impossible numbers were the only warning.** Had that stale run merely been thinner
+rather than window-less, the report would have looked entirely ordinary and the wrong figures
+would have gone into `MIDNIGHT.md` as measurements. What saved it was an accident of which
+version wrote the file.
+
+**What now catches it.** `tools/surface.py --report` compares the number of globals a run was
+asked against the number the list generates today, for the run and for the control, and prints a
+line naming the run when they differ. Checked by asking it for the pair that caused this, which
+now says *was asked 193 globals; the list generates 278 today*, and for the correct pair, which
+says nothing. The rule: **a stored answer carries the question it was asked, and an instrument
+that lets you name a subject has to tell you when the subject is not the one you think. Where a
+file accumulates, identity is not enough - ask it for its date.**
+
 ## L-113 — the filter read a word as a prefix, and the probe cancelled a real auction
 
 **2026-09-20.** The probe's discovery sweep calls, with no arguments, every function in a matched

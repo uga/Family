@@ -1044,6 +1044,114 @@ Held the other way round, the same commit is a warning about this branch's own c
 that read position twelve because Burning Crusade puts it there would be a branch on the client
 wearing the clothes of a measurement. The fourth column names the key; it does not count places.
 
+## 16. What the client answered, 2026-09-20 — and the verdict on both briefs
+
+The runs: **Midnight 12.1.0, build 69875, interface 120100**, character `Ahia-Chamber of Aspects`,
+probe version 9, against the control **Mists 5.5.4, interface 50504**, `Eccebombo-Mirage Raceway`,
+same version, same day. Both files hold older runs beside these and the wrong ones were read
+first; `--report` now says so by itself (L-114). The saved variables stay out of the tree.
+
+Against that control: **73 globals absent here and present there**, 0 namespace members absent,
+7 literals Midnight refuses that Mists registers, 0 templates failing, **49 calls absent here and
+answered there**, 33 namespace functions here and not there, and **12 calls both clients answer in
+a different shape**.
+
+### The one that could have made a scanner silently wrong, and did not
+
+**Secret Values: no.** Twelve reads taken at login out of combat and again two seconds into a
+fight - money, level, class, an equipped link, an item, the specialisation, the talent reader, two
+container calls, the quest call - and **ten are identical**. The two that differ are
+`InCombatLockdown()`, which is the flag itself and says `false` then `true`, and `GetMoney()`,
+which went from 627950934 to 627950484: the character spent 450 copper. Nothing came back
+unreadable.
+
+This is the third of the three shape questions 5.0.0 waits on (§13), and it is answered in the
+direction that costs nothing: **a scan that runs in combat reads what a scan out of combat reads**,
+for every call Family makes. It is one character and one fight; it is not a proof that no call on
+Midnight is ever a Secret Value. It is a measurement that the ones Family makes are not.
+
+### The twelve that answer differently, and the one that matters
+
+`GetTalentInfo(1, 1)` is the sharpest thing either brief turned up, and neither brief mentions it:
+
+| | answer |
+|---|---|
+| Midnight | `22337 \| "Master Poisoner" \| 132108 \| false \| false \| 196864 \| …` |
+| Mists | `"Speed of Light" \| 571558 \| 1 \| 1 \| 1 \| 1 \| …` |
+
+Same name, same client-facing call, **the id and the name swapped places**. A scanner doing
+`local name = GetTalentInfo(tab, index)` writes a number into a name field on one client and a
+name on the other, and nothing anywhere goes red. `Scanners/Talents.lua` already inspects the
+returns rather than unpacking them positionally - the note at its head says positional unpacking
+has been wrong there twice - so Family survives this by a habit it learnt the hard way.
+
+The others: `GetInventoryItemID` answers one value here and two there; `GetBuildInfo` seven there
+and six here; the container sweep finds 6 to 10 holding 98 slots each here against Mists' own
+arrangement; `WOW_PROJECT_ID` is **1** here and **19** there; and five of the twelve are the PvP
+split below.
+
+### Three calls that exist on Mists and throw
+
+`GetNumTalentGroups()`, `GetNumTalentTabs()` and `GetNumTalents(1)` all answer
+*"API unsupported in this version of World of Warcraft"* on 5.5.4 - in **all five** runs in the
+control file, so this is as old as the client and not news. It is `Capabilities.lua`'s thesis in
+one line: the symbol is there and the call is not. Family reads all three and calls all three
+through `Family:TryCall` (`Scanners/Talents.lua:115`, `:129`, `:68`), and `readTrees` returns
+`nil` when the count comes back 0 (`:157`), so the scanner is right. Checked by reading the code,
+because a throw in a probe is not by itself a defect anywhere.
+
+### The verdict on the second brief, domain by domain
+
+| Brief | Verdict on Midnight |
+|---|---|
+| Inventory in `C_Container`, old globals gone | **Right.** `GetContainerNumSlots` and `GetContainerItemInfo` absent |
+| Warband bank behind `Enum.BagIndex` | **Right in kind, wrong in value.** `AccountBankTab_1` = **12**, not 13. It agrees with §6's container sweep - two readings, one number |
+| Mail almost unchanged since the beginning | **Right.** `GetInboxNumItems`, `GetInboxHeaderInfo` and `GetInboxItemLink` all answer |
+| Professions rebuilt on `C_TradeSkillUI` | **Right in full.** `GetBaseProfessionInfo`, `GetAllRecipeIDs` (639 recipes) and `GetRecipeInfo(id)` all answer; `GetChildProfessionInfo` gives `parentProfessionID=202`; `GetNumTradeSkills` and `GetTradeSkillInfo` absent |
+| Talents on `ConfigID`/`TreeID`, the old ones legacy | **Half wrong.** `C_ClassTalents.GetActiveConfigID()` answers 27781581, but `GetTalentInfo` is *still here* and answers in a different order (above). `GetNumTalentTabs` absent |
+| Auction house rewritten, `C_AuctionHouse` | **Right.** Old `GetNumAuctionItems`/`GetAuctionItemInfo` absent; `GetNumOwnedAuctions` and `GetOwnedAuctionInfo` answer; the three `AUCTION_*_LIST_UPDATE` events are refused here and registered on the control |
+| Quest log in `C_QuestLog` | **Right.** `GetNumQuestLogEntries` and `GetQuestLogTitle` absent; `C_QuestLog.GetInfo(1)` answers 26 keys |
+| Reputations: old deprecated, `C_Reputation` + `C_MajorFactions` | **Right.** `GetNumFactions`/`GetFactionInfo` absent; `C_Reputation.GetNumFactions()` = 67; `C_MajorFactions` holds `GetMajorFactionData` among its 12 |
+| Currencies in `C_CurrencyInfo`, with a transferable flag | **Right, under another name.** The field is `isAccountTransferable`, with `transferPercentage` beside it - 80 for honour |
+| Collections account-wide | **Right.** `C_PetJournal` 80 functions, `C_ToyBox` 26, `C_Heirloom` 24; `GetNumPets()` answers 2069 \| 599 |
+| Garrisons Retail-only, `C_Garrison` | **Right.** 227 functions |
+| Lockouts the same two calls everywhere; Vault and M+ Retail-only | **Right, and it is the best news in the brief.** `GetNumSavedInstances` and `GetSavedInstanceInfo` are here and answer. `C_WeeklyRewards.GetActivities()` gives 10 tables, `C_MythicPlus.GetRunHistory(false, true)` an empty one |
+
+### Where it is wrong, in five places
+
+1. **The warband bank is 12**, not 13 to 17.
+2. **`GetTalentInfo` did not go**, and answers in a different order - the case above.
+3. **The old PvP stat calls are not Classic-only.** `GetPVPLifetimeStats` (2078 \| 9),
+   `GetPVPSessionStats` and `GetPVPYesterdayStats` all answer on Midnight.
+4. **"Honour is an ordinary currency" is true and incomplete, in a way that would have cost us.**
+   Currency 1792 is here and is named *Honor*, `maxQuantity` 15000, `isAccountTransferable` true
+   at 80 per cent - and on this character it answers **`quantity = 0`** while
+   `UnitHonor("player")` answers **5394**. Two readings of one word. A scanner written from the
+   brief alone would record zero for a character with 5394. On Mists, `FamilyProbe` reads the same
+   id as `name = "Honor Deprecated 3"`, `currencyID = 0`: the same number is a different thing per
+   client, which is why the fourth column is data and not a version check.
+5. **`C_Bank.FetchPurchasedBankTabIds` does not exist.** The namespace is here with 23 functions;
+   that name is not among them.
+
+### The PvP split, which is an exact mirror
+
+| | Midnight | Mists |
+|---|---|---|
+| `UnitHonor`, `UnitHonorMax`, `UnitHonorLevel` | there - 5394, 5500, 3 | **absent** |
+| `UnitPVPRank`, `GetPVPRankInfo` | **absent** | there |
+| `GetPVPLifetimeStats`, `GetPVPSessionStats`, `GetPVPYesterdayStats` | there | there |
+
+Confirmed from both sides and by both tools: `FamilyProbe` on `Luga-Mirage Raceway` reports the
+same three unit calls absent on Mists. **Two instruments, two characters, one answer** - the first
+time the ownership rule of §15 has paid, and it paid as a check rather than as duplicated work.
+
+### What the probe did to the client, which is not a finding but must be read beside these
+
+Version 9's sweep called ten actions on Alberto's character and cancelled a live auction. The
+findings above are not in doubt because of it - they are reads, and the file carries each one with
+its own answer - but the run that produced them is also the run that produced
+*Auction canceled: Mecha-Blast Rocket*. See `docs/LESSONS.md` L-113, and version 10.
+
 ### Still to do for step 1
 
 **Probe version 7** re-takes what version 6 could not: the **Mists control** for the census and the
@@ -1070,19 +1178,19 @@ else about it changed, so the Midnight readings above stand and the run is for t
    Version 6 read the list and threw the names away; version 7 keeps them (§12).
 7. **Which class id is which on Midnight**, so that the specialisation counts can be read as
    classes. `C_CreatureInfo.GetClassInfo` is present and is one line.
-8. **The Mists control run**, still owed: the census has never had one, and the surface's
-   control is still §4 and §5's, taken against the shorter list.
-9. **Whether a scan reads Secret Values in combat** (§13). The same calls in and out of combat,
-   written down twice and compared. The one unread question that could make a scanner wrong
-   rather than short.
-10. **What `C_Reputation`, `C_MajorFactions` and `C_Bank` hold** (§13): named for the probe the
-    way `C_MerchantFrame` was, because reputations are a category Family already ships and the
-    old calls for them are absent.
+8. ~~The Mists control run~~: taken 2026-09-20 with the long list, `Eccebombo-Mirage Raceway`,
+   probe version 9 (§16). The census has its control at last.
+9. ~~Whether a scan reads Secret Values in combat~~: **no** (§16). Ten of twelve reads identical
+   in and out of a fight; the two that differ are the combat flag itself and 450 copper spent.
+10. ~~What `C_Reputation`, `C_MajorFactions` and `C_Bank` hold~~: 27, 12 and 23 functions, listed
+    in full (§16). `GetFactionDataByIndex` and `GetMajorFactionData` are there;
+    `C_Bank.FetchPurchasedBankTabIds` is not.
 11. **Whether a record belongs to the account or the character** on Midnight - the warband bank,
     renown, and the transferable flag on a currency. A question for the specification once the
     probe has read them, and one of the three that 5.0.0's shape waits on.
-12. **Whether a lockout reads the same on all four clients** (§14). Two calls, and the only claim
-    in either brief that would give a domain needing no fourth column.
+12. ~~Whether a lockout reads the same on Midnight~~: **yes** - `GetNumSavedInstances` and
+    `GetSavedInstanceInfo` are there and answer (§16), and `FamilyProbe` reads them on Mists.
+    Era and Burning Crusade are `main`'s to confirm.
 13. **What PvP standing is on each client** (§14): whether honour and conquest are ordinary
     currencies on Midnight, whether the account-wide honour level is readable, and which of the
     old rank calls survive where. Presence is answered everywhere by version 9; what the calls
