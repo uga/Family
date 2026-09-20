@@ -3498,6 +3498,38 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-108 — the measurement was sound and it was aimed at a claim nobody makes
+
+**2026-09-20.** A Mists level 85 was read twice, 444 seconds apart, standing still and not
+resting, and its rested experience had not moved by a point. The arithmetic was done carefully:
+a level worth 13,000,000 fills at 20,312 an hour under *5% of a level every 32 hours*, so those
+444 seconds owed about 2,505 - 5.6% of the figure on screen, far too large to hide in a whole
+number. It went into `docs/BACKLOG.md` as **the field rule is refuted**, and the overnight
+reading that would have tested it was downgraded to a formality in the same paragraph.
+
+**Bitten:** Alberto read it and said so - *lo zero in campo aperto secondo me non è vero* - and
+the rule the sources actually give is that **time spent logged out** fills at a quarter rate in
+the world and the full rate in an inn, while a character who is logged in and standing outdoors
+fills at nothing. Both of this project's zeros were read on a connected character. They are
+exactly what the rule predicts. Nothing was refuted, and the one case an estimate would be wrong
+about for a week at a time had just been struck off the list of things to measure.
+
+**Why it was invisible.** Every number in the paragraph was right and every number was checked.
+What was never written down was the **condition the rule is about** - `resting=false` was read as
+*in the field* when the rule turns on *logged out*, and the probe's line has no word for the
+difference because the client has none either. A reading carries the conditions somebody thought
+to record, and a condition nobody names cannot be compared against the claim it decides.
+
+**What now catches it.** Not a harness check - this is a claim about the world, and the gate for
+those is the same one §2.2 sets for the client: **say which case was sampled, and leave every
+case that was not in the table as unmeasured.** BACKLOG 94 now carries the four cases as a table
+- logged in resting, logged out in an inn, logged in outdoors, logged out outdoors - with what
+was read for each and *never* against the fourth, so the gap is a row rather than an absence.
+The rule, and it is the one this file keeps relearning in a new costume: **a reading refutes the
+claim whose conditions it was taken under, and no other.** Before writing *refuted*, name the
+conditions of the claim and the conditions of the reading side by side; if they differ in one
+word, the reading is about something else.
+
 ## L-107 — a width measured somewhere else is not the width where it will be drawn
 
 **2026-09-19.** Tooltip money is lined up by padding each place, and then each whole figure, with a

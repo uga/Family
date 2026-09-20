@@ -6102,7 +6102,7 @@ not filling. That is worth having - the pair on Burning Crusade fell by exactly 
 and a second pair on another build says whether that is the rule or was that fight - but it is
 not the rate, and a reading taken after a battleground must not be counted as one.
 
-**And the field rule is refuted on Mists, by an accident of arithmetic.** The same level 85 was
+**A logged-in character in the open gains nothing on Mists, measured.** The same level 85 was
 read twice, **444 seconds apart**, standing in the same spot, not resting either time, having
 earned nothing: rested **44,416** both times, `xp` 62 both times. Exactly the same number, not a
 number that moved a little.
@@ -6118,11 +6118,13 @@ being read. A point or two can hide in a whole number. Two and a half thousand c
 | 5% of a level every 32 hours, away from an inn | 20,312 | about 2,505 |
 | observed, away from an inn | - | **0** |
 
-So on this build **nothing accrues away from an inn**, and the estimate must not add anything for
-a character put away in the field. The one thing this cannot rule out is accrual applied in
-*chunks* rather than continuously: if the game credits rest every quarter of an hour, a
-seven-minute window would read zero and be right. That is what the overnight reading still buys,
-and it is now the only thing it buys - the sign is settled everywhere except inside one chunk.
+So a character **logged in** and standing outside an inn gains nothing on this build, over seven
+minutes where the quarter rate would owe 2,505.
+
+**This was first written as *nothing accrues away from an inn*, and that was wrong** - see the
+correction further down. The reading was taken on a connected character, and the quarter rate the
+sources describe is about time spent **logged out** in the world. The zero refutes a claim nobody
+makes; it leaves the real one untouched.
 
 **The inn rate is measured, and the rule is carried, 2026-09-20.** The prediction above was
 written down before the reading was taken, which is the only way this counts for anything. The
@@ -6151,15 +6153,44 @@ Three things come with it, and two were not what the reading was for:
 - **The accrual is fine-grained, not chunked.** 102 points in 6,842 seconds, and 4 points in the
   214-second walk before it, are both what a near-continuous trickle looks like. A game crediting
   rest in quarter-hours would answer in multiples of 13.6 and would have answered 0 to the walk.
-- **Which closes the escape hatch left open on Mists.** The zero read there over 444 seconds was
-  survivable only if rest arrives in chunks longer than seven minutes. It does not arrive in
-  chunks at all, so that zero is a zero: **nothing accrues away from an inn**.
+- **And it says nothing about the field**, which is where the paragraph above went wrong. See the
+  correction below.
 
-**What is left to measure is now one thing**, and it is small: whether the away-from-inn rate is
-truly nought on *this* build too, where a level is worth 400 and the slow rule would owe less
-than a point an hour. The overnight reading of the level 1 in the Valley of Trials still answers
-it, and it is no longer load-bearing - the arithmetic that settles it has been done on a build
-where the numbers are big enough to see.
+**Correction, the same day: the field is not measured and the zeros do not refute anything.**
+Alberto, reading the paragraph above: *lo zero in campo aperto secondo me non e vero ... la
+regola generale secondo tutti i siti di informazioni e che in campo aperto si accumula 4 volte
+piu lentamente che in una inn*. He is right, and the fault is in what the readings were taken to
+mean rather than in the readings.
+
+**Both zeros were read on a character that was logged in.** The Mists 85 stood in The Masonary
+for 444 seconds of one session; the Burning Crusade level 1 sat in the Valley of Trials across
+4,587 seconds, also connected. The rule the sources state is not *a character in the field fills
+at a quarter rate* - it is that **time spent logged out** fills at a quarter rate out in the
+world and at the full rate in an inn, while a character who is logged in and standing in the
+wilderness fills at **nothing**. Under that rule both zeros are exactly what should have been
+read, and neither one bears on the quarter rate at all. The arithmetic was right; it was aimed
+at a claim nobody makes.
+
+**The four cases, and which have been read:**
+
+| | rate the sources give | measured here |
+|---|---|---|
+| logged in, resting in an inn | 5% of a level per 8 hours | **yes** - 4 points in 214 seconds, in the Stoutlager Inn |
+| logged out in an inn | 5% per 8 hours | **yes** - 102 points over 6,842 seconds, carrying the rule to 1.3 points |
+| logged in, standing in the field | nothing | **yes**, twice, on two builds - 0 over 444 and over 4,587 seconds |
+| **logged out in the field** | **5% per 32 hours** | **never** |
+
+So the one case an estimate would be wrong about for a week at a time - a character parked
+outdoors and left there - is the one case that has never been sampled, and that is the same
+sentence this entry opened with. **The overnight reading of Tontazzo is load-bearing again**, and
+it is the only thing that settles it: left logged out in the Valley of Trials, a level 1 whose
+`xpMax` is 400 should gain about **5 points over eight hours** at the quarter rate and **0** if
+there is no such rate for a logged-out character either. Those two cannot be confused.
+
+**And a second exception to write down before it bites.** Alberto: Pandaren fill faster than
+everybody else. Whatever Family computes has to know the race of the character it is computing
+for, or it is wrong for one race on the build that has them - and Mists is that build. Nothing
+has been measured; it is written here so the estimate is not built on a single rate.
 
 **Killing things spends it**, which is worth saying because a reading taken after a fight is a
 reading of a figure that has gone *down*: rested experience is drawn on as a bonus while the
