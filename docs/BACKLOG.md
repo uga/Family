@@ -6212,6 +6212,29 @@ What it needs to be worth anything: the probe run **immediately before logging o
 where `resting=false`, and run again **first thing on logging back in**, before moving a step.
 Thelsamar itself reads `resting=false`, so the spot is next door to the inn.
 
+**The night's starting point, read 2026-09-20 in Thelsamar with `resting=false`**: rested
+**8,086**, `xp` 5,909, at 1789907222. From here the three rates give:
+
+| | over 8 hours | over 10 | over 12 |
+|---|---|---|---|
+| the inn rate, if being logged out is all that matters | 8,521 | 8,630 | 8,738 |
+| **the quarter rate, logged out in the world** | **8,195** | **8,222** | **8,249** |
+| nothing at all | 8,086 | 8,086 | 8,086 |
+
+The ceiling is 13,050, so nothing is clipped even at the fastest rate over twelve hours, and the
+three columns stay hundreds of points apart. A morning reading picks one of them.
+
+**And the walk out confirmed the spending rule a second time, unasked.** Between the inn reading
+and this one - 3,310 seconds - the character killed pigs and walked to Thelsamar: `xp` 5,337 to
+5,909, **572 earned**, and rested 8,612 to 8,086, **526 lost**. Those two do not match until the
+inn time in between is put back: resting for the whole gap would have added 50, which makes the
+loss 576 against 572 earned, and since part of that gap was spent walking where nothing accrues
+the true accrual is a few points under 50 and the loss lands on 572 exactly.
+
+So the pool falls by **what the character earns**, measured twice now on this character, the
+first time on a pair with no accrual in it at all (630 for 630). A projection that only ever adds
+is wrong for anybody who is played, and this is the arithmetic that says by how much.
+
 **And a second exception to write down before it bites.** Alberto: Pandaren fill faster than
 everybody else. Whatever Family computes has to know the race of the character it is computing
 for, or it is wrong for one race on the build that has them - and Mists is that build. Nothing
