@@ -204,13 +204,14 @@ do not agree on which paths exist. Achievement-era art is the usual casualty on 
 So a stock icon does not go into Family on anybody's confidence. It goes in after it has been
 looked at, on each client, in the **icon contact sheet**:
 
-    tools/Deploy.bat /icons        copies tools/FamilyIconSheet/ alongside the two addons
+    tools/Deploy.bat               copies tools/FamilyIconSheet/ alongside the two addons
     /iconsheet                     opens it in the game
 
-The other tool under `tools/` travels the same way. `tools/Deploy.bat /probe` copies
-`tools/FamilyProbe/`, which asks one client what it calls each profession and which calls it
-carries for the things Family does not record yet — quests completed, instance lockouts, rested
-experience and honor, backlog entries 5 and 92 to 94. `/tools` copies both.
+Both tools under `tools/` go with every deploy, with no switch to remember (2026-09-20). The
+other one is `tools/FamilyProbe/`: it asks one client what it calls each profession and which
+calls it carries for the things Family does not record yet — quests completed, instance
+lockouts, rested experience and honor, backlog entries 5 and 92 to 94. `/familyprobe apis`
+runs that set and prints a line each.
 
 It draws every candidate at 32 and at the 18 a tab icon really is, on a backing colour that
 cycles magenta / black / white, with a control group whose first cell is a path invented to

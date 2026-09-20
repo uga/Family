@@ -4,10 +4,10 @@ setlocal enabledelayedexpansion
 rem ---------------------------------------------------------------------------------------
 rem  Family - deploy to the game clients.
 rem
-rem  Copies addons\Family and addons\Family_UI into every Classic client installed on this
-rem  machine. Two folders, named explicitly: there is no pattern matching here, because a
-rem  mirroring copy driven by a wildcard is how a wrong source folder empties a right
-rem  destination one.
+rem  Copies addons\Family and addons\Family_UI, and the two development tools under tools\,
+rem  into every Classic client installed on this machine. Four folders, named explicitly:
+rem  there is no pattern matching here, because a mirroring copy driven by a wildcard is how
+rem  a wrong source folder empties a right destination one.
 rem
 rem  Run it on the games PC. The source is worked out from where this file lives, so a
 rem  checkout mounted from the Pi needs no arguments.
@@ -18,9 +18,6 @@ rem          Deploy.bat /y           copy without asking
 rem          Deploy.bat /era         only Classic Era      (combine with /test or /y)
 rem          Deploy.bat /anni        only Anniversary
 rem          Deploy.bat /mists       only Mists of Pandaria
-rem          Deploy.bat /icons       also copy the icon contact sheet (tools\)
-rem          Deploy.bat /probe       also copy the client probe          (tools\)
-rem          Deploy.bat /tools       both of those
 rem          Deploy.bat /nodrive     skip the Google Drive copy
 rem          Deploy.bat "folder"     use that folder as the source instead
 rem ---------------------------------------------------------------------------------------
@@ -29,15 +26,18 @@ set "ADDON_1=Family"
 set "ADDON_2=Family_UI"
 
 rem Two development tools, neither part of Family and neither in any release. Each lives under
-rem tools\ rather than addons\ so that it can never be mistaken for something that ships, and
-rem each is copied only when it is asked for by name.
+rem tools\ rather than addons\ so that it can never be mistaken for something that ships -
+rem `.pkgmeta` ignores that folder, so nothing here can reach a zip by this route.
 rem
 rem   FamilyIconSheet  draws every candidate stock icon, so a screenshot can say which ones this
 rem                    client actually has, and measures what a money figure really comes to.
 rem   FamilyProbe      asks one client what it calls things and which calls it carries, and
-rem                    writes the answers to its own saved variables. Added 2026-09-20, when it
-rem                    grew the probes for quests completed, lockouts, rested and honor - which
-rem                    have to be run on all three clients, so they have to reach all three.
+rem                    writes the answers to its own saved variables.
+rem
+rem **Both go every time**, Alberto 2026-09-20, replacing the /icons switch that carried the
+rem first of them only when it was remembered. A question that has to be answered on three
+rem clients is one the tool has to be sitting on all three for, and a tool that is there and
+rem unused costs a folder.
 set "ADDON_TOOL_1=FamilyIconSheet"
 set "ADDON_TOOL_2=FamilyProbe"
 
@@ -57,7 +57,9 @@ set "SRC=%~dp0..\addons"
 
 rem Anything that is not one of the flags is the source folder, so a flag this list forgets is
 rem read as a path - and the copy then runs against a folder that does not exist, or worse, one
-rem that does. Every flag above is named here.
+rem that does. Every flag above is named here, and so are the three that were retired on
+rem 2026-09-20: /icons, /probe and /tools do nothing now, and a hand that still types one of
+rem them out of habit should get a copy rather than an error about a folder called /icons.
 for %%A in (%*) do (
 	if /i not "%%~A"=="/test" if /i not "%%~A"=="/y" if /i not "%%~A"=="/era" (
 		if /i not "%%~A"=="/anni" if /i not "%%~A"=="/mists" (
@@ -105,8 +107,6 @@ set "DEST_DRIVE=G:\My Drive\Addons"
 set "DRYRUN="
 set "NOASK="
 set "ONLY="
-set "ICONS="
-set "PROBE="
 set "NODRIVE="
 for %%A in (%*) do (
 	if /i "%%~A"=="/test"    set "DRYRUN=1"
@@ -114,26 +114,23 @@ for %%A in (%*) do (
 	if /i "%%~A"=="/era"     set "ONLY=ERA"
 	if /i "%%~A"=="/anni"    set "ONLY=ANNI"
 	if /i "%%~A"=="/mists"   set "ONLY=MISTS"
-	if /i "%%~A"=="/icons"   set "ICONS=1"
-	if /i "%%~A"=="/probe"   set "PROBE=1"
-	rem Two sets on one line, in brackets. Chained with ^& instead, the second one runs whatever
-	rem the test said - which would copy the probe on every run, quietly.
-	if /i "%%~A"=="/tools" (
-		set "ICONS=1"
-		set "PROBE=1"
-	)
 	if /i "%%~A"=="/nodrive" set "NODRIVE=1"
 )
 
-rem A tool that was asked for and is not in the checkout is said out loud and dropped, rather
-rem than left to fail once per client further down.
-if defined ICONS if not exist "%SRC_TOOLS%\%ADDON_TOOL_1%\%ADDON_TOOL_1%.toc" (
-	echo  /icons asked for, but "%SRC_TOOLS%\%ADDON_TOOL_1%" is not there - skipping it.
-	set "ICONS="
+rem A tool the checkout does not have is said out loud once and left out, rather than failing
+rem once per client further down. It is not an error: a copy of this repository that has only
+rem the addons is a perfectly good one to deploy from.
+set "TOOL_1="
+set "TOOL_2="
+if exist "%SRC_TOOLS%\%ADDON_TOOL_1%\%ADDON_TOOL_1%.toc" (
+	set "TOOL_1=1"
+) else (
+	echo  "%SRC_TOOLS%\%ADDON_TOOL_1%" is not there - leaving it out.
 )
-if defined PROBE if not exist "%SRC_TOOLS%\%ADDON_TOOL_2%\%ADDON_TOOL_2%.toc" (
-	echo  /probe asked for, but "%SRC_TOOLS%\%ADDON_TOOL_2%" is not there - skipping it.
-	set "PROBE="
+if exist "%SRC_TOOLS%\%ADDON_TOOL_2%\%ADDON_TOOL_2%.toc" (
+	set "TOOL_2=1"
+) else (
+	echo  "%SRC_TOOLS%\%ADDON_TOOL_2%" is not there - leaving it out.
 )
 
 rem The three libraries are .pkgmeta externals: CurseForge builds them into the zip and
@@ -149,8 +146,8 @@ echo.
 echo   source : %SRC%
 echo   addons : %ADDON_1%, %ADDON_2%
 if defined LIBS echo   libs   : LibStub, LibSerialize, LibDeflate
-if defined ICONS echo   also   : %ADDON_TOOL_1% ^(development tool, not part of a release^)
-if defined PROBE echo   also   : %ADDON_TOOL_2% ^(development tool, not part of a release^)
+if defined TOOL_1 echo   tools  : %ADDON_TOOL_1% ^(development tool, not part of a release^)
+if defined TOOL_2 echo   tools  : %ADDON_TOOL_2% ^(development tool, not part of a release^)
 if defined ONLY echo   only   : %ONLY%
 if not defined NODRIVE if exist "%DEST_DRIVE%\" echo   drive  : %DEST_DRIVE%
 if defined DRYRUN echo.& echo   TEST RUN - nothing will be written.
@@ -248,8 +245,8 @@ echo  Done. Start the game, or /reload if it was already running.
 echo.
 echo  Then try:  /family        open the window
 echo             /family caps   what this client can do, and how Family worked it out
-if defined ICONS echo             /iconsheet     the icon contact sheet - screenshot it
-if defined PROBE echo             /familyprobe apis  what this client carries - paste the lines
+if defined TOOL_1 echo             /iconsheet     the icon contact sheet - screenshot it
+if defined TOOL_2 echo             /familyprobe apis  what this client carries - paste the lines
 goto :done
 
 rem --- is this client installed ? ------------------------------------------------------------
@@ -287,8 +284,8 @@ if /i not "%TAIL%"=="Interface\AddOns" (
 echo  --- %~2 ---
 call :copyone "%SRC%" "%ADDON_1%"
 call :copyone "%SRC%" "%ADDON_2%"
-if defined ICONS call :copyone "%SRC_TOOLS%" "%ADDON_TOOL_1%"
-if defined PROBE call :copyone "%SRC_TOOLS%" "%ADDON_TOOL_2%"
+if defined TOOL_1 call :copyone "%SRC_TOOLS%" "%ADDON_TOOL_1%"
+if defined TOOL_2 call :copyone "%SRC_TOOLS%" "%ADDON_TOOL_2%"
 exit /b 0
 
 rem --- and the same two into Google Drive ------------------------------------------------------
@@ -316,8 +313,8 @@ if /i not "%TAIL%"=="\Addons" (
 echo  --- %~2 ---
 call :copyone "%SRC%" "%ADDON_1%"
 call :copyone "%SRC%" "%ADDON_2%"
-if defined ICONS call :copyone "%SRC_TOOLS%" "%ADDON_TOOL_1%"
-if defined PROBE call :copyone "%SRC_TOOLS%" "%ADDON_TOOL_2%"
+if defined TOOL_1 call :copyone "%SRC_TOOLS%" "%ADDON_TOOL_1%"
+if defined TOOL_2 call :copyone "%SRC_TOOLS%" "%ADDON_TOOL_2%"
 exit /b 0
 
 :copyone
