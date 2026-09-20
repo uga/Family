@@ -224,25 +224,44 @@ local function shape(answer)
     return table.concat(out, " ")
 end
 
--- A table's own fields, sorted, because the question a currency answers is *what is in it* -
--- the amount, the cap, and whether a weekly one is there at all. Saying "table(9)" would hide
--- the whole of what backlog 5 is waiting to know.
+-- A table's own fields, because the question a currency answers is *what is in it* - the amount,
+-- the cap, and whether a weekly one is there at all. Saying "table(24)" would hide the whole of
+-- what backlog 5 is waiting to know.
+--
+-- **The ones that answer the question come first, by name.** Sorted alphabetically and cut at
+-- fourteen, the first reading on Mists spent its whole allowance on `canEarnPerWeek`,
+-- `description` and `iconFileID` and pushed `quantity` and the weekly cap into "+10 more" - the
+-- two fields it was run for. A cut has to be made somewhere; it may as well be made where the
+-- answer is not.
+local WANTED = {
+    "name", "currencyID", "quantity", "maxQuantity", "quantityEarnedThisWeek",
+    "maxWeeklyQuantity", "totalEarned", "useTotalEarnedForMaxQty", "discovered",
+}
+
 local function fields(value)
     if type(value) ~= "table" then return describe(value) end
 
-    local keys = {}
-    for key, held in pairs(value) do
-        if type(key) == "string" and type(held) ~= "table" and type(held) ~= "function" then
-            keys[#keys + 1] = key
+    local out, said = {}, {}
+    for _, key in ipairs(WANTED) do
+        if value[key] ~= nil and type(value[key]) ~= "table" then
+            out[#out + 1] = key .. "=" .. tostring(value[key])
+            said[key] = true
         end
     end
-    table.sort(keys)
 
-    local out = {}
-    for index = 1, math.min(#keys, 14) do
-        out[index] = keys[index] .. "=" .. tostring(value[keys[index]])
+    local rest = {}
+    for key, held in pairs(value) do
+        if type(key) == "string" and not said[key] and type(held) ~= "table"
+            and type(held) ~= "function" then
+            rest[#rest + 1] = key
+        end
     end
-    if #keys > 14 then out[#out + 1] = "(+" .. (#keys - 14) .. " more)" end
+    table.sort(rest)
+
+    for index = 1, math.min(#rest, 6) do
+        out[#out + 1] = rest[index] .. "=" .. tostring(value[rest[index]])
+    end
+    if #rest > 6 then out[#out + 1] = "(+" .. (#rest - 6) .. " more)" end
     if #out == 0 then return describe(value) end
     return table.concat(out, " ")
 end
@@ -439,6 +458,47 @@ local PROBES = {
         end
         if #out == 0 then return "neither currency call is here" end
         return table.concat(out, " | ")
+    end },
+
+    { area = "pvp", name = "the currency list", ask = function()
+        -- **By walking the list, not by asking for an id.** The two ids above are the ones
+        -- Cataclysm gave honor and conquest; Burning Crusade answered nothing to either, and
+        -- Family itself has never read a currency by id - `Scanners/Currencies.lua` walks the
+        -- list the player sees, in whichever of its two shapes this client answers in. So this
+        -- asks the same way, and what comes back names honor's real id on this build.
+        local modern = _G.C_CurrencyInfo
+        local out = {}
+
+        local size = modern and tonumber(try(modern.GetCurrencyListSize)) or nil
+        if size and size > 0 then
+            for index = 1, math.min(size, 16) do
+                local info = try(modern.GetCurrencyListInfo, index)
+                if type(info) == "table" and not info.isHeader then
+                    local id = info.currencyID
+                    if not id then
+                        local link = try(modern.GetCurrencyListLink, index)
+                        id = type(link) == "string" and link:match("currency:(%d+)") or nil
+                    end
+                    out[#out + 1] = "[" .. tostring(id) .. "] " .. tostring(info.name) ..
+                        " " .. tostring(info.quantity) .. "/" .. tostring(info.maxQuantity)
+                end
+            end
+            return "modern list, " .. size .. " rows: " .. table.concat(out, " | ")
+        end
+
+        size = type(_G.GetCurrencyListSize) == "function"
+            and tonumber(try(GetCurrencyListSize)) or nil
+        if not size or size == 0 then return "no currency list on this client" end
+
+        for index = 1, math.min(size, 16) do
+            local answer = callPacked(_G.GetCurrencyListInfo, index)
+            if answer and not answer[2] then
+                local link = try(_G.GetCurrencyListLink, index)
+                local id = type(link) == "string" and link:match("currency:(%d+)") or nil
+                out[#out + 1] = "[" .. tostring(id) .. "] " .. shape(answer)
+            end
+        end
+        return "older list, " .. size .. " rows: " .. table.concat(out, " | ")
     end },
 
     { area = "pvp", name = "the standalone honor and arena calls", ask = function()

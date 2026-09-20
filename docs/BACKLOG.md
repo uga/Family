@@ -5858,6 +5858,17 @@ with `tools/wire-size.lua`, which already does this for recipe lists:
 Still open on Era: whether the count grows if the same call is made again some minutes after
 logging in, which is the one way a history that arrives late would show itself.
 
+**Burning Crusade and Mists answered the same day, and identically in shape.** `GetQuestsCompleted`
+on both - 11 ids in 5.2 ms on a level 5, 79 in 6.8 ms on a level 58 - with
+`IsQuestFlaggedCompleted` beside it and `GetAllCompletedQuestIDs` and `QueryQuestsCompleted`
+absent on all three. `GetDailyQuestsCompleted` answers 0 everywhere, including the two builds that
+have dailies, which says it is not the call that counts them.
+
+So **one route works on all three builds**, which is the answer this entry needed most: no
+per-expansion table, no fallback, and the modern namespace's list call is not there to be
+preferred. The times are of a small history on a young character and of a whole one on an old
+character; both are milliseconds.
+
 ---
 
 ## 93. Instance lockouts, and when each resets
@@ -5914,6 +5925,14 @@ are already known and cost nothing to honour:
 Still owed: the same reading from a character that **is** saved to something, which is the only
 way to see what the fourteen columns hold when they hold anything.
 
+**Burning Crusade and Mists answer exactly as Era does**, read the same day: nothing saved,
+fourteen values of blanks from index 1, `GetNumSavedWorldBosses` present and zero on all three.
+The clocks agreed to within a second on every build, and on Burning Crusade they matched exactly.
+
+So the shape is one shape across the three, and what is still unread is the only part that
+matters: what those columns carry when a character really is saved. Alberto, 2026-09-20: no
+character is in that state at the moment.
+
 ---
 
 ## 94. What a character's rested experience has grown to since they were put away
@@ -5958,3 +5977,18 @@ on a build whose cap is 60, so `GetXPExhaustion` answered `0` and experience ans
 a thing only a character below the cap has, so the sample has to be taken on one: **that is the
 first condition of this entry's measurement**, and it was missed in the asking rather than in the
 answering.
+
+**The ceiling is measured, on two builds, the same day.** Burning Crusade: level 5, `xpMax` 2800,
+rested **4200**. Mists: level 58, `xpMax` 165800, rested **248700**. Both are exactly **one and a
+half times that level's `xpMax`**, which is the ceiling the rules describe, read off two clients
+rather than taken from a page - and it is the half of this entry that keeps an estimate honest,
+since a character left alone for a month stops at it.
+
+It also means the ceiling **moves with the level**: it is a multiple of `xpMax`, so the same
+number of points is a different fraction of a level after a ding, and an estimate that does not
+re-read `xpMax` drifts.
+
+**The rate is still unmeasured**, and cannot be taken from these two: both characters were already
+at the ceiling, where nothing accumulates. It wants a character below it, which is what any
+character becomes as soon as it is played for a while - then two readings a few hours apart, one
+pair logged out in an inn and one pair logged out in the field.

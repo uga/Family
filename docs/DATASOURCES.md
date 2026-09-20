@@ -2848,6 +2848,33 @@ and so does `GetArenaTeam`, with nils. Era has neither rated play nor arena team
 `Capabilities.lua`'s thesis in its plainest form: the client carries the call because Blizzard
 builds one client, and the call answering is not the game agreeing that the question made sense.
 
+#### What Burning Crusade and Mists answered, measured 2026-09-20
+
+Read the same day, and the second reading found the probe's own question badly put.
+
+**Burning Crusade `2.5.6`**: `UnitPVPRank` answers **0** and `GetPVPRankInfo(0)` answers nothing,
+so the table's *gone* is confirmed. The week's and the lifetime figures answer with the shapes Era
+gives and all zeros on a character that has not fought. **And the honor currency did not answer
+either**: `C_CurrencyInfo.GetCurrencyInfo(392)` and `(390)` both came back empty, and
+`GetHonorCurrency` and `GetArenaCurrency` are absent from the build.
+
+**Mists `5.5.4`**: ranks gone as above. The two currency ids **do** answer, with tables whose
+descriptions are honor's and conquest's - *used to purchase less-powerful PvP armor* and *earned
+as a reward for Arena or Rated Battlegrounds* - and with `currencyID = 0` and `discovered = false`
+on a character that has never earned either.
+
+**Which is where the question was wrong rather than the answer.** 392 and 390 are the ids
+Cataclysm gave these two, and Family has never read a currency by id: `Scanners/Currencies.lua`
+walks the list the player sees, in whichever of its two shapes the client answers in. The probe
+now walks it the same way and prints each row's id, name, amount and cap, which is what will name
+honor's real id per build. **Until that has been run, which id honor is on Burning Crusade and on
+Mists is unknown**, and the readings above say only that it is not 392.
+
+The same reading also found the probe's field dump cutting a currency's table alphabetically at
+fourteen, which spent the whole allowance on the description and the icon and pushed `quantity`
+and the weekly cap out of sight. It names the fields it wants first now. A tool that reports is a
+tool that can report the wrong thing.
+
 #### Re-read this at a new build
 
 The rules above are pinned to the three builds in section 3 and to no others. They have already
