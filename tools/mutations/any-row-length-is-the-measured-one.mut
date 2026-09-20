@@ -1,0 +1,6 @@
+name: a row of any length is read by position
+file: addons/Family/Scanners/Currencies.lua
+--- old
+	if width ~= MEASURED_ROW then return nil end
+--- new
+	if false then return nil end

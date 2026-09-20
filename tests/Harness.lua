@@ -2773,6 +2773,67 @@ check("and the cap where there is one", (money[2] or {}).max == 75000,
 -- it as a ceiling would report every one of them as full.
 check("a cap of nought is no cap at all", (money[1] or {}).max == nil)
 
+-- Burning Crusade 2.5.6, where that link answers nothing at all and the id is the twelfth
+-- value of the row. Read in the game on two characters, and the only id the build will give.
+clearCurrencyAPI()
+GetCurrencyListSize = function() return 2 end
+GetCurrencyListInfo = function(index)
+	if index == 1 then return "Player vs Player", true end
+	return "Honor Points", false, true, false, false, 1428, 136998, 75000,
+		false, 0, false, 1901
+end
+GetCurrencyListLink = function() return nil end
+
+money = Family.Currencies:Read()
+check("the id is taken from the row where the client links to no currency at all",
+	money and money[1] and money[1].id == 1901 and money[1].key == "c1901",
+	money and money[1] and tostring(money[1].key))
+check("and the amount and the cap are still read from where they were",
+	money and money[1] and money[1].quantity == 1428 and money[1].max == 75000)
+
+-- The link says which currency it means; a position is a thing that was true when somebody
+-- looked. Where the two disagree the link wins, and nothing here is unpacked on faith.
+GetCurrencyListLink = function() return "|Hcurrency:1900|h[Honor]|h" end
+check("a link outranks the row it sits beside",
+	(Family.Currencies:Read()[1] or {}).id == 1900)
+
+-- A row of some other length is some other build. It gets the name it got before this was
+-- read rather than a number lifted out of a position nobody measured.
+GetCurrencyListLink = function() return nil end
+GetCurrencyListInfo = function(index)
+	if index == 1 then return "Player vs Player", true end
+	return "Honor Points", false, true, false, false, 1428, 136998, 75000, false, 0, false
+end
+check("a row that is not the shape that was measured is not read by position",
+	(Family.Currencies:Read()[1] or {}).key == "n:Honor Points",
+	tostring((Family.Currencies:Read()[1] or {}).key))
+
+-- And a longer one, which is the way this goes wrong that a shorter row cannot show: a
+-- fourteen-value row has something in the twelfth place too, and on a build nobody has read
+-- that something is whatever the client put there. Here it is the icon file id again - a
+-- perfectly good number, and not this currency's name.
+GetCurrencyListInfo = function(index)
+	if index == 1 then return "Player vs Player", true end
+	return "Honor Points", false, true, false, false, 1428, 136998, 75000,
+		false, 0, false, 136998, false, 0
+end
+check("nor is a longer one, however id-shaped the number in that place looks",
+	(Family.Currencies:Read()[1] or {}).key == "n:Honor Points",
+	tostring((Family.Currencies:Read()[1] or {}).key))
+
+-- Twelve values, and the twelfth is not an id. Every one of these is a shape some build
+-- answers in, and none of them is a currency numbered 0, -1 or 1901.5.
+for _, notAnId in ipairs { false, 0, -1, 1901.5, "Honor Points" } do
+	GetCurrencyListInfo = function(index)
+		if index == 1 then return "Player vs Player", true end
+		return "Honor Points", false, true, false, false, 1428, 136998, 75000,
+			false, 0, false, notAnId
+	end
+	check("a twelfth value of " .. tostring(notAnId) .. " is not mistaken for an id",
+		(Family.Currencies:Read()[1] or {}).key == "n:Honor Points",
+		tostring((Family.Currencies:Read()[1] or {}).key))
+end
+
 -- Mists and anything on the modern engine, which answers with a table.
 clearCurrencyAPI()
 C_CurrencyInfo = {

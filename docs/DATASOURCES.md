@@ -2989,6 +2989,13 @@ fallback in `entryFrom` then keys the currency by its **name** - `n:Honor Points
 language, and lining two clients up is the whole reason §2.1 exists. Burning Crusade is the build
 Family reads currencies on by the older call, so this is live, and it is backlog 95.
 
+**Fixed the same day.** `readGlobalList` now reads the id from the row as well, after the link
+and never instead of it, and only where the row is exactly the twelve values measured above and
+the twelfth is a whole number above nought. A build that answers some other length - or answers
+twelve with something else in that place - keeps the name fallback rather than be read by a
+position nobody has looked at. So what is written down here is what the code trusts, and the
+moment a fourth build answers differently the reading is a name again and not a wrong id.
+
 #### Re-read this at a new build
 
 The rules above are pinned to the three builds in section 3 and to no others. They have already

@@ -1,0 +1,6 @@
+name: whatever sits in that place is taken for an id
+file: addons/Family/Scanners/Currencies.lua
+--- old
+	if not value or value <= 0 or value ~= math.floor(value) then return nil end
+--- new
+	if not value then return nil end
