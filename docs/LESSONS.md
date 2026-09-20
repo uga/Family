@@ -3498,6 +3498,42 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-112 — the search could only confirm, so its answer was the question restated
+
+**2026-09-20.** Asked which destinations `tools/Deploy.bat` knows, this session ran a grep for a
+closed list of the folder names it expected to find - `_classic_era_`, `_classic_`, `_retail_`,
+and a few spellings of *flavour*. Two matched. The answer went to Alberto as a measurement: *it
+knows only two destinations, lines 90 and 92*. It knows four. `_anniversary_` and
+`G:\My Drive\Addons` were never among the alternatives, so no run of that command on any file
+could ever have returned them.
+
+The right search was one line and asks the program for its own handle rather than for the values:
+`grep -oE "DEST_[A-Z0-9]+"` answers `DEST_ANNI  DEST_DRIVE  DEST_ERA  DEST_MISTS`, and would have
+said four whatever the four turned out to be.
+
+**Bitten:** a wrong fact stated as a measured one, in a paragraph that also carried line numbers,
+which is what made it convincing. Alberto corrected it. The conclusion it was supporting happened
+to survive - none of the four is a Retail client, so the Midnight copy is by hand either way - and
+that is luck, not method: the same grep would have hidden a Retail destination had one been there,
+and then the conclusion would have been wrong too.
+
+**Why it felt like grounding.** It *was* a command, run in the session, against the real file, and
+it printed real lines with real numbers. Every outward sign of a measurement was present. What was
+missing is the only thing that matters: the command was built out of the answer expected, so its
+output could agree or say nothing, and *nothing* was read as *there are no others*.
+
+**Three in one day, in three disguises.** L-110 was a grep whose flags made a hit impossible.
+L-111 was a block of readings the reader could not key, so every comparison dropped it. This is
+the third: a search that could only confirm. The shared shape is a step that **cannot produce the
+finding it is supposed to be looking for**, and passing it therefore means nothing.
+
+**What now catches it: nothing mechanical, and the entry says so** - this is a habit, and
+`LESSONS.md` says plainly that an entry naming no check is the useful signal, because it means the
+lesson is still held in somebody's head. The rule to hold: **when the question is *which* or *how
+many*, enumerate by the handle the program itself uses - the variable, the key, the prefix - never
+by the values you expect to find. A search that cannot return something you did not predict is not
+a measurement, it is a confirmation, and its silence is not evidence of absence.**
+
 ## L-111 — the block was written down, and every comparison that read the file dropped it
 
 **2026-09-20.** Version 9 of the probe added three blocks of readings for the second brief - PvP

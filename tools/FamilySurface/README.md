@@ -61,9 +61,15 @@ that writes one `discovery` line saying it was skipped. Everything else - the su
 literals, the templates, the hand-written calls, the container sweep, the census, the profession
 skill lines - runs on every client as before.
 
-## Before you copy it anywhere
+## Before the folder is handed over
 
     lua5.1 tools/FamilySurface/selftest.lua
+
+**This is run in the session, not by the person at the client**, and its result is reported with
+the folder - eighteen claims and an exit status, or the folder does not go. It needs only `lua5.1`
+and this repository, so there is nothing about it that the machine holding the game is better
+placed to answer, and asking for it at the far end is how a gate turns into a request that is
+sometimes skipped.
 
 It loads the addon with the real generated list, stubs the login path and fires `PLAYER_LOGIN` at
 interface 50504 and at 120100. Eighteen claims: that the sweep and both briefs' calls stay away
@@ -82,7 +88,13 @@ refusal and naming the constants instead of sweeping for them. The mutations rec
 
 ## Running it
 
-1. Copy the `FamilySurface` folder into `Interface/AddOns/` on the **Midnight** client.
+1. Copy the `FamilySurface` folder into `Interface/AddOns/` on the **Midnight** client. **By
+   hand: `tools/Deploy.bat` does not carry this tool and should not.** That script puts Family
+   where Family is released - its four destinations are Classic Era, Anniversary, Mists and a
+   Google Drive folder (`Deploy.bat:90`, `:91`, `:92`, `:105`) - along with the two development
+   tools that answer questions on those three clients as a matter of routine. This one is a
+   throwaway for a client Family is not released on, copied for a measuring run and deleted at
+   5.0.0, so it would not belong there even at no cost. Alberto, 2026-09-20.
 2. Its `.toc` carries Midnight's interface number, `120100`, read off a 12.1.0 client with
    `/dump select(4, GetBuildInfo())` on 2026-09-19. Without it Midnight marks the addon
    incompatible and does not load it. When
