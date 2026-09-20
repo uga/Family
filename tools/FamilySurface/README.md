@@ -27,7 +27,7 @@ So for each name it asks the question that can actually be answered:
 | the nine namespaces the relayed briefs name and Family has never used (`C_Reputation`, `C_MajorFactions`, `C_Bank`, `C_WeeklyRewards`, `C_MythicPlus`, `C_PetJournal`, and from the second brief `C_Garrison`, `C_ToyBox`, `C_Heirloom`) | their function names listed on every client; a hand-written call each **only where the sweep is allowed** | listed under `(brief)`, called under `brief` |
 | `Enum.BagIndex` and `Enum.BankType` | read as tables, called never | listed under `(enum)` - the brief puts the warband bank at `AccountBankTab_1`, and the container sweep found 12 |
 | the same reads out of combat and two seconds into a fight | asked at login, and again on `PLAYER_REGEN_DISABLED` | `combatOut` and `combat`, to be compared - the brief says Midnight answers unreadable *Secret Values* in combat |
-| namespaces whose name holds a word from the briefs (`Prof`, `Trade`, `Craft`, `Trait`, `Talent`, `Catalyst`, `Housing`, `House`, `Decor`, `Neighborhood`) | listed; **on Midnight only**, every `Get…`, `Is…`, `Can…` and `Has…` called with no arguments, at login and with a profession window open | filed as `discovery`, and under the trade skill |
+| namespaces whose name holds a word from the briefs (`Prof`, `Trade`, `Craft`, `Trait`, `Talent`, `Catalyst`, `Housing`, `House`, `Decor`, `Neighborhood`) | listed, all of them; and **only the twenty named in `SPACES`** have their `Get…`, `Is…`, `Can…` and `Has…` called with no arguments, **on Midnight only**, at login and with a profession window open. One a word finds and the list does not hold writes a line saying so | filed as `discovery`, and under the trade skill |
 | every profession skill line the client lists | its details, its concentration currency and that currency's details; `GetProfessionInfo` 1 to 6; the specialisation count of classes 1 to 14; every currency in the list; the treasure quest 89117 | filed as `professions` |
 | the merchant, a second time | asked the moment the vendor opens as well as two seconds later, with `MerchantFrame:IsShown()` each time | filed as `merchantAtOnce` and `merchant` |
 | the PvP reads of the second brief (`UnitHonor`, `UnitHonorMax`, `UnitHonorLevel`, `UnitPVPRank`, `GetPVPRankInfo`, `GetPVPLifetimeStats`, `GetPVPSessionStats`, `GetPVPYesterdayStats`) | looked up on every client; called **only where the sweep is allowed**; honour and conquest asked by id, 1792 and 1602, everywhere | filed as `pvp` |
@@ -69,6 +69,46 @@ the word it was applied to. A name that begins with a read word and continues it
 and only the near miss - is **written into the run** under its namespace, so the next reader audits
 the filter by reading a line instead of by watching something happen.
 
+## Which namespaces it calls into, and why that is a written list
+
+Until version 13 the word decided both things: a namespace whose name held one of the brief's
+words was listed **and** swept. The run of 2026-09-20 shows what that reached - twenty-two
+namespaces, and two of them nobody meant. `House` sits inside `AuctionHouse`, so
+**`C_AuctionHouse` had 53 of its functions called with no arguments on a character with live
+auctions**; `Prof` sits inside `AddOnProfiler` the same way.
+
+**No rule of position separates them from the ones that are wanted.** The word is in the middle
+of the name in `C_AuctionHouse` and `C_AddOnProfiler`, and equally in the middle in
+`C_LegendaryCrafting` and `C_ClassTalents`, which are what the brief asked about. A filter that
+keeps the second pair keeps the first. So the filter is not made cleverer: `SPACES` names the
+twenty namespaces that are called into, read off that run's census rather than remembered, the
+same way the hand-written calls are written down - only a person can say that calling into a
+namespace is safe.
+
+The word still runs, and what it finds off the list is **listed and not called**, with a line in
+the run saying so. That is what pays for the list's one cost: a namespace a future build adds is
+not swept until somebody adds it, and this line is how the next reader sees the new name in the
+run and decides, rather than finding out because something was called.
+
+## The reads the client keeps for itself
+
+Eight of the calls that run made raised `ADDON_ACTION_FORBIDDEN`, which put a dialog in front of
+Alberto for each. Because version 12 writes down what the probe was calling at that instant, they
+are named - the client answers `UNKNOWN()` every time. Seven hold `Debug` in the name and the
+eighth is `C_HousingDecor.GetAllPlacedDecor`; all eight answer nothing, so the dialog was the
+whole of what they produced.
+
+**Forbidden is not absent.** These functions are there and they are Blizzard's: the event says
+the action is only available to the Blizzard interface. The first measurement of them was read as
+an entitlement - an expansion not bought - and the run refutes that by itself: 208 housing
+functions were called, 200 answered, and the boundary the refusals follow is the word `Debug`,
+which no unowned expansion would draw.
+
+So version 13 leaves them alone, by a rule and by a name kept apart on purpose: a function
+reporting debug information about what is hovered or selected is the client's own instrumentation
+and that generalises, while the eighth generalises to nothing and is recorded as one name, on one
+build, on one day. Both are written into the run under their namespace, like the near miss.
+
 ## The one call it will not make on a Classic client
 
 Calling a function with no arguments to read the error it gives back is how the sweep above
@@ -94,7 +134,7 @@ placed to answer, and asking for it at the far end is how a gate turns into a re
 sometimes skipped.
 
 It loads the addon with the real generated list, stubs the login path and fires `PLAYER_LOGIN` at
-interface 50504 and at 120100. Twenty-five claims: that an action whose name begins with a read
+interface 50504 and at 120100. Thirty-one claims: that an action whose name begins with a read
 word is not called even where the sweep runs, that the predicate which only looks like it still
 is, that the near miss is written down; that the sweep and both briefs' calls stay away
 from the first and still run on the second, that a skipped block says why it is short, that a

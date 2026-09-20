@@ -416,10 +416,37 @@ local function census()
 end
 
 -- Words taken from the briefs (MIDNIGHT.md §8, §10 and §11). A namespace whose own name holds one
--- has its functions listed, and its reads - Get, Is, Can, Has - asked with no arguments: an
--- answer, or an error that usually says what the call wants.
+-- is **listed**. Which of them are also **called** is the list below, and not the word.
 local WORDS = { "Prof", "Trade", "Craft", "Trait", "Talent", "Catalyst", "Housing", "House",
 	"Decor", "Neighborhood" }
+
+-- The namespaces whose reads - Get, Is, Can, Has - are asked with no arguments. Named one by
+-- one, read off the census in the run of 2026-09-20 rather than remembered, because the word
+-- match that used to decide this reached two namespaces nobody meant and one of them was
+-- `C_AuctionHouse`: `House` sits inside `AuctionHouse`, and 53 of its functions were called on a
+-- character with live auctions. `Prof` sits inside `AddOnProfiler` the same way.
+--
+-- **And no rule of position separates the four.** The word is in the middle of the name in
+-- `C_AuctionHouse` and `C_AddOnProfiler`, which nobody wanted, and equally in the middle in
+-- `C_LegendaryCrafting` and `C_ClassTalents`, which are exactly what the brief asked about. A
+-- filter that keeps the second pair keeps the first. So the filter is not made cleverer: the
+-- names are written down, the way the hand-written calls are, because only a person can say that
+-- calling into a namespace is safe (L-205 is what the other kind of cleverness cost).
+--
+-- The cost is that a namespace a future build adds is not swept until somebody adds it here.
+-- That is paid for by the line `discover` writes for every namespace a word finds and this list
+-- does not hold: its functions are listed, so the next reader sees the new name in the run and
+-- decides, rather than finding out because something was called.
+local SPACES = {
+	"C_ClassTalents", "C_CraftingOrders", "C_HouseEditor", "C_HouseExterior", "C_Housing",
+	"C_HousingBasicMode", "C_HousingBlueprint", "C_HousingCatalog", "C_HousingCleanupMode",
+	"C_HousingCustomizeMode", "C_HousingDecor", "C_HousingExpertMode", "C_HousingInspectMode",
+	"C_HousingLayout", "C_HousingNeighborhood", "C_LegendaryCrafting", "C_NeighborhoodInitiative",
+	"C_ProfSpecs", "C_TradeSkillUI", "C_Traits",
+}
+
+local onTheList = {}
+for _, name in ipairs(SPACES) do onTheList[name] = true end
 
 -- And it is asked on Midnight and on no other client. On Mists 5.5.4, build 69585, version 6
 -- took the process down 28 seconds into the world: ACCESS_VIOLATION reading address 0, with
@@ -428,6 +455,29 @@ local WORDS = { "Prof", "Trade", "Craft", "Trait", "Talent", "Catalyst", "Housin
 -- dereference is not a Lua error (L-200). A call with no arguments is only safe where it has
 -- been seen to be safe, so the sweep stays where it has run whole: interface 120000 and up.
 local DISCOVER_FROM = 120000
+
+-- And eight of those calls are ones the client will not let an addon make at all. Version 12's
+-- run on Midnight 12.1.0 (build 69875, 2026-09-20) raised `ADDON_ACTION_FORBIDDEN` eight times,
+-- and because that version writes down what this file was calling at the instant, they are
+-- named: seven whose name holds `Debug`, and `C_HousingDecor.GetAllPlacedDecor`. The client
+-- names none of them itself - it answers `UNKNOWN()` every time - and it shows Alberto a popup
+-- for each, which is the whole cost, since all eight answer nothing.
+--
+-- **Forbidden is not absent.** These functions are there and they are Blizzard's: the event says
+-- the action is only available to the Blizzard interface. Whether Family could ever use one is
+-- not the question - Family names no housing call anywhere - so they are listed and not called.
+--
+-- The word is a rule and the name is a measurement, and they are kept apart on purpose. A
+-- function that reports debug information about what the player has hovered or selected is the
+-- client's own instrumentation, and that generalises to whatever the next build adds. The
+-- eighth does not generalise at all, so it is written down as what it is: one name, seen refused
+-- on one build, on one day.
+local FORBIDDEN_WORD = "Debug"
+local FORBIDDEN = { ["C_HousingDecor.GetAllPlacedDecor"] = true }
+
+local function isForbidden(space, name)
+	return name:find(FORBIDDEN_WORD, 1, true) ~= nil or FORBIDDEN[space .. "." .. name] == true
+end
 
 local function mayDiscover()
 	local interface = select(4, GetBuildInfo())
@@ -456,28 +506,51 @@ function discover(word)
 			.. "this client is %s"):format(DISCOVER_FROM, tostring(select(4, GetBuildInfo()))) }
 	end
 	for _, space in ipairs(matching(word)) do
-		local names, refused = {}, {}
-		for key, value in pairs(_G[space]) do
-			local text = tostring(key)
-			if type(value) == "function" then
-				if isRead(text, SWEEP_PREFIXES) then
-					names[#names + 1] = text
-				elseif continuesTheWord(text, SWEEP_PREFIXES) then
-					refused[#refused + 1] = text
+		if not onTheList[space] then
+			-- A word found it and the list does not hold it. Its function names are written down
+			-- by `namespaces` as before, and nothing in it is called. This is the line that would
+			-- have shown `C_AuctionHouse` being swept on the day of the run rather than on the
+			-- fourth reading of the file it wrote.
+			lines[#lines + 1] = ("%s: found by a word from the briefs and not on the list of "
+				.. "namespaces this sweep calls, so it is listed and not called"):format(space)
+		else
+			local names, refused, forbidden = {}, {}, {}
+			for key, value in pairs(_G[space]) do
+				local text = tostring(key)
+				if type(value) == "function" then
+					if not isRead(text, SWEEP_PREFIXES) then
+						if continuesTheWord(text, SWEEP_PREFIXES) then
+							refused[#refused + 1] = text
+						end
+					elseif isForbidden(space, text) then
+						forbidden[#forbidden + 1] = text
+					else
+						names[#names + 1] = text
+					end
 				end
 			end
+			table.sort(names)
+			table.sort(refused)
+			table.sort(forbidden)
+			-- The near miss is written down, and only the near miss: a name that begins with a
+			-- read word and then turns into another one. Every other name in the namespace is
+			-- skipped in silence, as it always was. This line is how the next reader audits the
+			-- filter by reading rather than by watching an action happen (L-205).
+			if #refused > 0 then
+				lines[#lines + 1] = ("%s: %d name(s) begin with a read word and continue it, so "
+					.. "are listed and not called: %s")
+					:format(space, #refused, table.concat(refused, " "))
+			end
+			-- The same treatment for the same reason: written into the run so that the next
+			-- reader audits the list by reading it, rather than by watching a dialog appear at
+			-- the client.
+			if #forbidden > 0 then
+				lines[#lines + 1] = ("%s: %d name(s) the client allows only its own interface, "
+					.. "so are listed and not called: %s")
+					:format(space, #forbidden, table.concat(forbidden, " "))
+			end
+			for _, name in ipairs(names) do lines[#lines + 1] = ask({ space .. "." .. name }) end
 		end
-		table.sort(names)
-		table.sort(refused)
-		-- The near miss is written down, and only the near miss: a name that begins with a read
-		-- word and then turns into another one. Every other name in the namespace is skipped in
-		-- silence, as it always was. This line is how the next reader audits the filter by
-		-- reading rather than by watching an action happen (L-205).
-		if #refused > 0 then
-			lines[#lines + 1] = ("%s: %d name(s) begin with a read word and continue it, so are"
-				.. " listed and not called: %s"):format(space, #refused, table.concat(refused, " "))
-		end
-		for _, name in ipairs(names) do lines[#lines + 1] = ask({ space .. "." .. name }) end
 	end
 	return lines
 end

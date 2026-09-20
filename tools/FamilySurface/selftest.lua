@@ -21,10 +21,10 @@
 
 local ROOT = arg[0]:match("^(.*)selftest%.lua$") or "tools/FamilySurface/"
 
-local called, pvpCalled, cancelled, listener
+local called, pvpCalled, cancelled, forbidden, offList, listener
 
 local function stubs(interface)
-	called, pvpCalled, cancelled, listener = 0, 0, 0, nil
+	called, pvpCalled, cancelled, forbidden, offList, listener = 0, 0, 0, 0, 0, nil
 	FamilySurfaceDB = nil
 	_G.GetBuildInfo = function() return "x", "69585", "Aug 27 2026", interface end
 	_G.UnitName = function() return "Tester" end
@@ -65,7 +65,18 @@ local function stubs(interface)
 			if listener then listener(nil, "ADDON_ACTION_FORBIDDEN", "FamilySurface", "UNKNOWN()") end
 			return nil
 		end,
+		-- Two the real client refused on 2026-09-20, one caught by the word and one by name.
+		-- Both count themselves, so calling either makes the claims below go red.
+		GetHoveredDecorDebugInfo = function() forbidden = forbidden + 1 end,
 	}
+	_G.C_HousingDecor = {
+		GetAllPlacedDecor = function() forbidden = forbidden + 1 end,
+		GetDecorCount = function() called = called + 1 return 3 end,
+	}
+	-- The one a word finds and the list does not hold: `House` sits inside `AuctionHouse`, and
+	-- on 2026-09-20 that got 53 of its functions called on a character with live auctions. It
+	-- counts itself, so a sweep that reaches it again makes the claim below go red.
+	_G.C_AuctionHouse = { GetBids = function() offList = offList + 1 return {} end }
 	_G.C_TradeSkillUI = { GetAllRecipeIDs = function() return {} end,
 		-- The real one, from the run of 2026-09-20: `Cancel` begins with `Can` and is an action.
 		-- If it is ever called here the count says so, and the claim below goes red.
@@ -216,6 +227,30 @@ check("and the predicate that only looks like it is still called",
 check("and the near miss is written down, so the filter is audited by reading",
 	swept:find("CancelProfessionRespec", 1, true) ~= nil
 		and swept:find("begin with a read word and continue it", 1, true) ~= nil, swept)
+
+-- The eight the client refused on 2026-09-20. They are reads by every rule above, and the client
+-- raises ADDON_ACTION_FORBIDDEN for each and puts a dialog in front of whoever is playing. Seven
+-- are caught by the word in their name and the eighth only by being named, so both routes are
+-- held here: break either and one of these goes red.
+check("a read the client keeps for its own interface is not called, by the word in its name",
+	forbidden == 0, forbidden .. " calls were made")
+check("and the one that only a measurement names is not called either",
+	swept:find("C_HousingDecor.GetAllPlacedDecor() answers", 1, true) == nil, swept)
+check("and both are written into the run, so the list is audited by reading",
+	swept:find("the client allows only its own interface", 1, true) ~= nil
+		and swept:find("GetHoveredDecorDebugInfo", 1, true) ~= nil
+		and swept:find("GetAllPlacedDecor", 1, true) ~= nil, swept)
+check("while an ordinary read in the same namespace is still called",
+	swept:find("C_HousingDecor.GetDecorCount() answers 3", 1, true) ~= nil, swept)
+
+-- Which namespaces are swept is a written list and not a word any more. The word still finds
+-- them, and what it finds off the list is written down and left alone - `C_AuctionHouse` was
+-- reached by `House` and had 53 functions called on a character with auctions up before anybody
+-- read the file that said so.
+check("a namespace a word finds and the list does not hold is not called",
+	offList == 0, offList .. " calls were made")
+check("and the run says it was found and left alone, so the next new one is seen",
+	swept:find("C_AuctionHouse: found by a word from the briefs", 1, true) ~= nil, swept)
 
 -- The blocked-action events. The dialog the client puts up names the addon and not the call,
 -- which left two sessions reasoning about which one it had been. Whatever the client sends is

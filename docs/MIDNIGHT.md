@@ -1199,3 +1199,54 @@ else about it changed, so the Midnight readings above stand and the run is for t
     currencies on Midnight, whether the account-wide honour level is readable, and which of the
     old rank calls survive where. Presence is answered everywhere by version 9; what the calls
     answer is Midnight-only until one of them has been seen to survive.
+
+## 17. What the client refused, and the sweep that asked it (2026-09-20, version 12)
+
+The run of version 12 on `12.1.0` build 69875, two characters on Chamber of Aspects, answers the
+question the blocked-action dialog has been asking since the 19th: **which call.** The client
+names none - it says `UNKNOWN()` every time - so the answer comes from the probe's own
+bookkeeping, which records what it was calling at the instant the event arrived.
+
+**Eight calls, the same eight on both characters:**
+
+    C_HouseExterior.GetFixtureDebugInfoForGUID      C_HousingDecor.GetDecorDebugInfoForGUID
+    C_HouseExterior.GetHoveredFixtureDebugInfo      C_HousingDecor.GetHoveredDecorDebugInfo
+    C_HouseExterior.GetSelectedFixtureDebugInfo     C_HousingDecor.GetSelectedDecorDebugInfo
+    C_HousingCatalog.GetCatalogEntryDebugInfoForID  C_HousingDecor.GetAllPlacedDecor
+
+**It is not an unbought expansion, and the run settles that on its own.** The first reading of
+these lines was that the housing API is not enabled on the account. Measured instead: the sweep
+called **208** housing functions and **200 went through**; 292 lines in those namespaces answer
+with a value (`GetHouseEditorAvailability() answers 50`, `IsHouseEditorActive() answers false`).
+Of the 208, exactly **seven** hold `Debug` in the name and **all seven are refused**, with
+`GetAllPlacedDecor` the eighth. No entitlement draws a boundary around the word `Debug`. And the
+event says as much: `ADDON_ACTION_FORBIDDEN` is *only available to the Blizzard UI*, a
+protection, not an absence - a missing function is recorded as `absent`, which is a separate
+measurement this probe takes.
+
+**The refusals were ours, not the client's fault and not Family's.** Family names no housing call
+anywhere: `grep -r Housing addons/` answers nothing. Every one of these came from the probe's own
+no-argument discovery sweep. Version 13 lists them and does not call them.
+
+### And the thing the same run shows that nobody asked
+
+The sweep chooses namespaces by whether the name holds one of the briefs' words. In this run that
+reached **22 namespaces**, and two of them nobody meant:
+
+| namespace | calls made | because |
+|---|---|---|
+| `C_AuctionHouse` | **53** | `House` sits inside *Auction**House*** |
+| `C_AddOnProfiler` | 6 | `Prof` sits inside *AddOn**Prof**iler* |
+
+On a character with live auctions. Nothing is known to have changed - every name called was a
+`Get`, `Is`, `Can` or `Has` by the whole-word rule of version 10, and `CanCancelAuction` is a
+predicate and not the action - and that is again luck rather than a property of the probe, which
+is the second time in two days this sentence has had to be written (L-205).
+
+**No rule of position fixes it.** The word is in the middle of the name in the two that are
+unwanted and equally in the middle in `C_LegendaryCrafting` and `C_ClassTalents`, which are
+exactly what the brief asked about. So version 13 stops deciding this with a pattern: `SPACES`
+names the twenty namespaces that are called into, read off this run's census. The words still
+run, and a namespace they find that the list does not hold is **listed and not called**, with a
+line in the run saying so - which is how the next build's new namespace gets seen and decided
+on, instead of swept.
