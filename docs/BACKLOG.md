@@ -6004,6 +6004,10 @@ It also means the ceiling **moves with the level**: it is a multiple of `xpMax`,
 number of points is a different fraction of a level after a ding, and an estimate that does not
 re-read `xpMax` drifts.
 
+**A sixth, on a level 62 standing in a dungeon**: 921600 against an `xpMax` of 614400. One and a
+half again, and taken where the character was not resting at all - so the ceiling is the ceiling
+wherever they are put away, and only the filling depends on that.
+
 **Five readings by the end of the day, across the three builds**: Era level 1, 600 against 400;
 Burning Crusade level 5, 4200 against 2800, and level 63, **975450 against 650300**; Mists level
 58, 248700 against 165800. Every one of them one and a half exactly, from four hundred experience

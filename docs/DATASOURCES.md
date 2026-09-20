@@ -2960,8 +2960,18 @@ twice the most expensive reward* is a number the client will state, and the 2026
 measure it rather than ship it was right.
 
 **The twelfth value is 1901**, which is what the outside world calls Honor Points on this build.
-It reads like the id, and it is the only id in the answer - see the defect below. One row is not
-a rule, so the probe now prints the link beside it and a second currency will settle it.
+It reads like the id, and it is the only id in the answer - see the defect below.
+
+**A second character settled it the same day.** Another Burning Crusade character, with 15 honor
+instead of 1428, answered the same row: the sixth value moved with the amount, the eighth stayed
+at 75,000, the icon stayed at 136998, and **the twelfth stayed 1901**. A number that does not move
+between two characters while the amount does is an identity and not a figure. Still one currency:
+what arena points read as, if they appear at all, is unanswered.
+
+**And the old figures still answer on this build**, though the ranks are gone:
+`GetPVPLifetimeStats` said 6 kills and `GetPVPThisWeekStats` said 1, on a character that had been
+fighting. So honorable kills are readable on Burning Crusade through the calls Era uses, which is
+half of what the request asks for on a build where the other half - a rank - does not exist.
 
 **No arena points row.** The list held honor and a header and nothing else, on a character with
 no arena points. Whether they appear as a second row, with an id of their own, is unanswered -
