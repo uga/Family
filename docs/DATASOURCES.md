@@ -2583,6 +2583,13 @@ really has, because the first writing took the throwaway file name for a section
 then changed on every run. Those ten count as unrecorded, which makes them run every time the
 harness is touched rather than never.
 
+**And it is the same file on another machine's checkout**, which is what makes it safe to track
+at all. The Midnight worktree ran the full suite after merging and the register came back byte
+for byte identical - same 400 of 410, same sections, `git diff` silent on it. So the register is
+a fact about the gate rather than about the tree it was generated from, and a merge does not
+have to treat it as noise. That was assumed when the file was written down and is measured now,
+by a second tree rather than by the one that produced it.
+
 ### What a shared recipe list weighs, `tools/wire-size.lua`
 
 Not from the client's tables but from the libraries the addon channel is fed through, and
