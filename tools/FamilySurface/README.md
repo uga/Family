@@ -34,6 +34,7 @@ So for each name it asks the question that can actually be answered:
 | the two lockout reads (`GetNumSavedInstances`, `GetSavedInstanceInfo`) | the same way - the brief claims they are the same call on every client, and presence is what that claim is about | filed as `lockouts` |
 | 13 event names the brief uses and Family does not | `RegisterEvent` in a `pcall`, with the generated literals and into the same block, so the report compares them against the control; a name no Family file mentions prints as `(no file found)`, which is where it came from | filed with the events |
 | every `WOW_PROJECT` constant the client has | swept by prefix and read as a value, called never | filed as `project` |
+| whatever the client blocks | the two blocked-action events registered in a `pcall`, their arguments written down as they arrive and printed in chat at once | filed as `blocked` |
 
 The first three lists are `tools/surface.py`'s, generated from the Family sources into
 `Surface.lua`; the counts above are what it wrote on 2026-09-19. The first two runs, on
@@ -53,13 +54,14 @@ A namespace matched by a word from the briefs has its functions called with no a
 which ones is decided by the name: `Get`, `Is`, `Can` or `Has`, **as a whole word** - the letter
 after the prefix must be upper case.
 
-That last clause was missing until version 10 and it cost a real auction. `^Can` matches `Cancel`,
-so version 9's run on Midnight called twelve `Cancel…` functions, ten of which executed:
+That last clause was missing until version 10. `^Can` matches `Cancel`, so version 9's run on
+Midnight called twelve `Cancel…` functions, ten of which executed without error:
 `C_AuctionHouse.CancelAuction()`, `CancelSell()`, `CancelCommoditiesPurchase()`,
-`C_TradeSkillUI.CancelProfessionRespec()` and six housing editors. The mailbox read later in the
-same run carries the receipt - *Auction canceled: Mecha-Blast Rocket* (`docs/LESSONS.md` L-113).
-The decision of 2026-09-19 had justified the sweep with *actions are never called, since no action
-is named that way*; that is false, and `Cancel` is how.
+`C_TradeSkillUI.CancelProfessionRespec()` and six housing editors. Nothing is known to have been
+changed by any of them - `CancelAuction()` was given no auction to cancel - and that is luck
+rather than a property of the probe (`docs/LESSONS.md` L-113, and L-115 for the several hours in
+which this file said otherwise). The decision of 2026-09-19 had justified the sweep with *actions
+are never called, since no action is named that way*; that is false, and `Cancel` is how.
 
 `Get`, `Is` and `Has` showed no such over-match across the 639 names that run swept, but all four
 go through one function with the same rule, because what failed was the shape of the test and not
@@ -92,7 +94,7 @@ placed to answer, and asking for it at the far end is how a gate turns into a re
 sometimes skipped.
 
 It loads the addon with the real generated list, stubs the login path and fires `PLAYER_LOGIN` at
-interface 50504 and at 120100. Twenty-one claims: that an action whose name begins with a read
+interface 50504 and at 120100. Twenty-three claims: that an action whose name begins with a read
 word is not called even where the sweep runs, that the predicate which only looks like it still
 is, that the near miss is written down; that the sweep and both briefs' calls stay away
 from the first and still run on the second, that a skipped block says why it is short, that a

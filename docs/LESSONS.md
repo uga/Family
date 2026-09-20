@@ -3538,7 +3538,51 @@ says nothing. The rule: **a stored answer carries the question it was asked, and
 that lets you name a subject has to tell you when the subject is not the one you think. Where a
 file accumulates, identity is not enough - ask it for its date.**
 
-## L-113 — the filter read a word as a prefix, and the probe cancelled a real auction
+## L-115 — two facts, a story to join them, and a question that offered the story back
+
+**2026-09-20.** Having found that the probe called `C_AuctionHouse.CancelAuction()` on a live
+character, this session went looking for the damage. It found two things. The auction house,
+read minutes later in the same run, answered `GetNumOwnedAuctions() = 0`. The mailbox, read
+minutes after that, carried *"Auction canceled: Mecha-Blast Rocket"* with the item attached.
+
+Neither is evidence of anything. Together they made a story, and the story was written down as a
+finding: *the probe cancelled Alberto's auction*. It went into `LESSONS.md` as a bite, into
+`DECISIONS.md` as the reason for a correction, into `MIDNIGHT.md` §16, and into a commit message,
+inside an hour.
+
+**Alberto had cancelled it himself**, deliberately, after listing it and showing the panel -
+precisely so that there would be something in the inbox for the probe to read. The tool had done
+nothing. `CancelAuction()` with no argument cancels no auction, which on reflection is the only
+thing it could do.
+
+**And the confirmation was manufactured.** The session asked him about it, and framed the question
+this way: *did you have an auction up on Druiduga?* - with the answers offered as *no, nothing
+active → then the ten calls did nothing*, and *yes, I had an auction up → **then that zero is real
+damage** and I record it as such*. He answered yes, because he had. The consequence was the
+session's, bolted onto his fact, handed back to him as though he had agreed to it. **A question
+whose options carry the asker's hypothesis cannot disconfirm it**; it can only collect a signature.
+
+**Bitten:** a false statement about the user's own account, committed to the permanent record of
+the project in four places, and corrected only because he happened to mention in passing what he
+had done. Everything downstream - the severity of L-113, the wording of a decision, the tone of a
+commit - was built on it.
+
+**Why it felt like grounding.** Both facts were real, both were read out of the file in this
+session, and both were quoted with their values. The invention was the *joining word*. Nothing in
+the method this project uses says anything about that: the rule is read the file rather than
+remember it, and the file was read. A cause is not in a file. It is the one thing that always has
+to be asked for.
+
+**What now catches it: nothing mechanical, and that is the entry.** Two habits instead. First,
+**a consequence goes in the question, never in the option** - ask *did you have an auction up, and
+did anything happen to it?* and leave the conclusion out of the answers offered. Second, when
+what is at stake is what happened to somebody's own property, **the user is the primary source and
+the file is the corroboration**, not the other way round. The rule: **a measurement can say what
+a call returned; it cannot say what caused what. If a finding contains the word *because*, the
+because was not measured - and if it concerns somebody else's account, they are the only
+instrument that can read it.**
+
+## L-113 — the filter read a word as a prefix, and the probe called ten actions on a live character
 
 **2026-09-20.** The probe's discovery sweep calls, with no arguments, every function in a matched
 namespace whose name begins with `Get`, `Is`, `Can` or `Has` - reads, and only reads. The decision
@@ -3550,12 +3594,15 @@ way.* On Midnight it called `C_AuctionHouse.CancelAuction()`.
 executed**: `CancelAuction`, `CancelSell`, `CancelCommoditiesPurchase`, `CancelProfessionRespec`
 and six housing editors.
 
-**Bitten, and this one is not a near miss.** Alberto had one auction up. The run's own mailbox
-reading, taken minutes later in the same file, is the receipt: `GetInboxHeaderInfo(1)` answers
-*"Auction House" | "Auction canceled: Mecha-Blast Rocket"*, with the item attached. A tool written
-to observe a client changed the player's account, and then wrote down the evidence of having done
-so without anybody noticing for an hour. The only visible sign at the time was a blocked-action
-popup, which names no function.
+**Bitten: ten actions fired on a live character, and no harm that anybody can point to.** This
+entry said, for several hours and in four places, that the probe had cancelled one of Alberto's
+auctions - the run reads `GetNumOwnedAuctions() = 0` and a mailbox letter saying
+*"Auction canceled: Mecha-Blast Rocket"*. **He had cancelled it himself**, on purpose, to give the
+probe something to read in the inbox; `CancelAuction()` with no argument cancels nothing. How that
+false cause was built, and how a question was then framed so that he appeared to confirm it, is
+L-115. The correction does not soften this entry: a tool written only to observe fired ten actions
+at somebody's account, and *nothing happened to be in reach* is not a safety property. The only
+visible sign at the time was a blocked-action popup, which names no function.
 
 **Why the guard read as a guard.** *Actions are never called, since no action is named that way*
 is a claim about the client's naming, stated in a decisions log, never checked against a list of
@@ -3563,11 +3610,12 @@ names. It was not even wrong as a convention - `Get`, `Is` and `Has` held across
 that run swept - it was wrong about `Can`, and one counter-example is all a rule of that shape
 needs. **A naming convention is evidence about intent, not a permission.**
 
-**And the blast radius was chosen by the client, not by us.** The sweep calls whatever it finds,
-so what an over-matching filter costs depends entirely on what the namespace happens to hold. Here
-it was an auction. In `C_HousingNeighborhood` it was `CancelInviteToNeighborhood`, which only
-refused because it wanted an argument. The difference between a nuisance and a loss was an
-argument list.
+**And the blast radius is chosen by the client, not by us.** The sweep calls whatever it finds, so
+what an over-matching filter costs depends entirely on what the namespace happens to hold and what
+the call happens to need. `CancelAuction()` did nothing because it was given no auction to cancel;
+`C_CraftingOrders.CancelOrder` and `C_HousingNeighborhood.CancelInviteToNeighborhood` refused
+outright for want of an argument. The difference between a nuisance and a loss was an argument
+list, which is to say it was luck.
 
 **What now catches it.** One function, `isRead(name, prefixes)`, used by the sweep and by the
 merchant's named reads, requiring the character after the prefix to be upper case: `CanEditTalents`

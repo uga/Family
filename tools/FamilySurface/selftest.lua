@@ -198,8 +198,9 @@ check("and so are the second brief's, in both of its blocks",
 
 -- The sweep on the client where it does run, held to the rule that was missing on 2026-09-20:
 -- a read word has to be a whole word. `CancelProfessionRespec` begins with `Can` and is an
--- action; version 9 called it, and called C_AuctionHouse.CancelAuction() beside it, which
--- cancelled a real auction (L-113).
+-- action; version 9 called it, and called C_AuctionHouse.CancelAuction() beside it. Nothing is
+-- known to have been changed by either - the second was given no auction to cancel - and that is
+-- luck, not a property of the probe (L-113).
 check("an action whose name begins with a read word is not called, even where the sweep runs",
 	cancelled == 0, cancelled .. " calls were made")
 check("and the predicate that only looks like it is still called",
@@ -207,6 +208,23 @@ check("and the predicate that only looks like it is still called",
 check("and the near miss is written down, so the filter is audited by reading",
 	swept:find("CancelProfessionRespec", 1, true) ~= nil
 		and swept:find("begin with a read word and continue it", 1, true) ~= nil, swept)
+
+-- The blocked-action events. The dialog the client puts up names the addon and not the call,
+-- which left two sessions reasoning about which one it had been. Whatever the client sends is
+-- written down as it arrives; nothing here claims to know what that is.
+stubs(120100)
+local surface = {}
+load("Surface.lua", surface)
+load("FamilySurface.lua", surface)
+listener(nil, "PLAYER_LOGIN")
+local before = select(2, next(FamilySurfaceDB))
+listener(nil, "ADDON_ACTION_BLOCKED", "FamilySurface", "SomeProtectedThing()")
+check("a blocked action is written into the run with whatever the client said",
+	(table.concat(before.windows.blocked or {}, "\n")):find("SomeProtectedThing", 1, true) ~= nil,
+	table.concat(before.windows.blocked or {}, "\n"))
+check("and it does not schedule a second probe the way a window would",
+	before.windows.blocked ~= nil and #(before.windows.blocked) == 1,
+	tostring(before.windows.blocked and #before.windows.blocked))
 
 if failures > 0 then
 	print(failures .. " failed")

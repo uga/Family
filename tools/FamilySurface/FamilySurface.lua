@@ -336,9 +336,10 @@ end
 -- A name counts as a read when it begins with one of these words **as a word**: the character
 -- after the prefix must be upper case. Without that rule `^Can` also matches `Cancel…`, and on
 -- 2026-09-20 version 9 called twelve of those on a live character - `C_AuctionHouse.CancelAuction()`
--- among them, which cancelled a real auction (L-113). The decision of 2026-09-19 justified the
--- sweep with *actions are never called, since no action is named that way*; that sentence was
--- false and is now false by measurement.
+-- among them (L-113). Nothing is known to have been changed by any of them, because none was given
+-- the argument it would have needed; that is luck rather than a property of this file. The
+-- decision of 2026-09-19 justified the sweep with *actions are never called, since no action is
+-- named that way*; that sentence was false and is now false by measurement.
 --
 -- `Get`, `Is` and `Has` showed no such over-match in the 639 names that run swept, but they are
 -- held to the same rule, because what failed was the shape of the test and not the word it was
@@ -628,6 +629,10 @@ end
 
 local current
 
+-- Lines from the blocked-action events below. Kept out here because one can arrive before
+-- the first probe has run, and must then still reach the run it belongs to.
+local blocked = {}
+
 local function probe()
 	FamilySurfaceDB = FamilySurfaceDB or {}
 
@@ -756,6 +761,9 @@ local function probe()
 	run.windows.brief = ok and lines or { "briefCalls throws " .. show(lines, ERROR_LIMIT) }
 	-- The out-of-combat half of the Secret Values comparison. The other half is asked when a
 	-- fight starts, and the two sit side by side under `combat`.
+	-- Anything the client has already refused this session, so a block that happens before
+	-- the first probe is not lost.
+	if #blocked > 0 then run.windows.blocked = blocked end
 	run.windows.combatOut = {}
 	for _, call in ipairs(COMBAT_CALLS) do
 		run.windows.combatOut[#run.windows.combatOut + 1] = ask(call)
@@ -824,12 +832,38 @@ local function askWindow(window, atOnce)
 		#answers, threw))
 end
 
+-- When the client stops an addon touching something reserved to its own interface, it puts up a
+-- dialog that names the addon and **not the function**. Twice now that has left a session
+-- reasoning about which call it might have been: once on Midnight, where the answer turned out to
+-- be a `Cancel…` the sweep had no business calling (L-113), and once on Mists, where the sweep
+-- does not run at all and reasoning got nowhere.
+--
+-- So the client is asked instead. Nothing here assumes what these events carry - the arguments
+-- are written down as they arrive, whatever they are - and the line is printed in chat at the
+-- moment it happens, so that whoever is at the client reads the name without waiting for a logout
+-- and a file. Registered in a `pcall` each, like every other literal: a client that does not have
+-- one refuses it and the other must still arrive.
+local BLOCKED_EVENTS = { "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN" }
+
+local function noteBlocked(event, ...)
+	local line = event .. " " .. showAll(...)
+	blocked[#blocked + 1] = line
+	if current then current.windows.blocked = blocked end
+	print("|cff88ccffFamily Surface|r blocked: " .. line)
+end
+
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
 -- Each open event is registered in a pcall of its own: a client without one refuses it, and
 -- that must not stop the others.
 for event in pairs(WINDOWS) do pcall(frame.RegisterEvent, frame, event) end
-frame:SetScript("OnEvent", function(_, event)
+for _, event in ipairs(BLOCKED_EVENTS) do pcall(frame.RegisterEvent, frame, event) end
+frame:SetScript("OnEvent", function(_, event, ...)
+	-- Before anything else, and never treated as a window: one of these arriving must not
+	-- schedule a second probe five seconds later.
+	for _, name in ipairs(BLOCKED_EVENTS) do
+		if event == name then return noteBlocked(event, ...) end
+	end
 	local window = WINDOWS[event]
 	-- A Mists vendor that sold goods answered no items two seconds after opening, so the
 	-- merchant is also asked the moment it opens.

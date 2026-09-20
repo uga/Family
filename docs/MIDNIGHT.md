@@ -1147,10 +1147,14 @@ time the ownership rule of §15 has paid, and it paid as a check rather than as 
 
 ### What the probe did to the client, which is not a finding but must be read beside these
 
-Version 9's sweep called ten actions on Alberto's character and cancelled a live auction. The
-findings above are not in doubt because of it - they are reads, and the file carries each one with
-its own answer - but the run that produced them is also the run that produced
-*Auction canceled: Mecha-Blast Rocket*. See `docs/LESSONS.md` L-113, and version 10.
+Version 9's sweep called ten actions on Alberto's character - `C_AuctionHouse.CancelAuction()`
+among them - because its name filter read `Can` as a prefix and caught `Cancel` (L-113). Nothing
+is known to have been changed by any of them. This section said for some hours that a live auction
+had been cancelled, on the strength of an empty owned-auction list and a letter in the inbox;
+Alberto had cancelled it himself, to put something in the inbox for the probe to read, and
+`CancelAuction()` with no argument cancels nothing. That invented cause, and the leading question
+that appeared to confirm it, are L-115. The readings above are unaffected either way: they are
+reads, and the file carries each with its own answer.
 
 ### Still to do for step 1
 
