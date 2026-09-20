@@ -24,10 +24,29 @@ same base of L-107 and a merge had to choose between two entries with one number
 **Commit messages written on `midnight` before 2026-09-20 cite numbers that have since moved.**
 Those citations cannot be repaired - rewriting history is reserved - and they are the reason the
 band exists rather than a renumber at each merge. Measured by the `main` session and confirmed
-here: `f463ca8` cites L-108, L-109 and L-110; `8e8cdff` cites L-108 and L-111; `dff86ec` cites
-L-108. Today L-108 and L-109 resolve to *main's* lessons, on a misaimed measurement and on two
-sessions sharing a processor, and not to the ones those commits meant - a `pcall` that does not
-guard a native crash (now **L-200**) and a probe that truncated its own answers (now **L-201**).
+here, and **six commits, not the three this note first named**:
+
+    git log --format='%H%x09%s' main..HEAD |
+      while IFS=$'\t' read -r h s; do git log -1 --format='%B' "$h" | grep -o 'L-[0-9]\{3\}'; done
+
+`f463ca8` cites L-108, L-109 and L-110; `8e8cdff` cites L-108 and L-111; `dff86ec` cites L-108;
+`571205c` cites L-112, meaning what is now **L-204**; `f743759` cites L-114, now **L-206**;
+`29f7ba0` cites L-115, now **L-207**. Today L-108, L-109, L-112 and L-114 all resolve to *main's*
+lessons and not to the ones those commits meant - a `pcall` that does not guard a native crash
+(now **L-200**), a probe that truncated its own answers (now **L-201**), a search that could only
+confirm (**L-204**), an instrument pointed at a run two days stale (**L-206**). L-115 is the one
+still visibly broken: nothing answers it yet, and it decays into silence the moment `main`
+allocates it, which that session says is imminent.
+
+**The three that were missing were found by the `main` session, not by this one, and the reason
+is L-204 turned on this very paragraph.** The first count was taken by looking up the numbers
+already known to be in trouble - L-108 to L-111 - which is a search that can only return what it
+was given. The command above is the fix and is written here so the count can be retaken rather
+than remembered: it reads every commit on this branch and lists whatever lesson number each one
+happens to cite. Run today it finds those six and no seventh; it also shows that the four commits
+written after the renumber cite L-108 to L-111 on purpose, to describe the collision, and are not
+damage. Nothing cites L-113.
+
 **L-110 and L-111 were saved, by the other branch, because this one mentioned them in passing.**
 They were about to decay the same way: `main` would have allocated exactly those two next, and
 four citations in three commits would all have resolved to unrelated lessons instead of two. This
@@ -40,7 +59,9 @@ so the number itself explains the collision*).
 **The rule that came out of it is narrower than *repair from the other end*,** and it was the
 `main` session that drew it: while an identifier has not been spent it is still a lever, and once
 spent it is not. Which also says when to look - at once, not when there is time. L-108 and L-109
-were already spent by the time anybody noticed, and no cleverness gets them back. So a reader following L-110 out of `f463ca8` now lands on the explanation rather
+were already spent by the time anybody noticed, and no cleverness gets them back - and so, it
+turned out, were L-112, L-114 and L-115, spent in one evening while this file still said the
+damage was three commits wide. So a reader following L-110 out of `f463ca8` now lands on the explanation rather
 than on something plausible and wrong. Two of the four citations are repaired, at the cost of two
 numbers from a sequence whose only meaning is the order it was written in.
 
