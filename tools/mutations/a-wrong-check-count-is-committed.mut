@@ -1,0 +1,8 @@
+name: a message claiming a check count nobody read is committed anyway
+file: tools/hooks/commit-msg
+--- old
+		echo "commit-msg: correctable afterwards. --no-verify skips this, and is worth saying." >&2
+		exit 1
+--- new
+		echo "commit-msg: correctable afterwards. --no-verify skips this, and is worth saying." >&2
+		exit 0

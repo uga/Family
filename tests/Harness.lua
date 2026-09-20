@@ -41011,6 +41011,16 @@ if RUN.storage == "compressed" then
 		"print('the wait is written down', saw and bool(ran))",
 		"kinds = ('waiting', 'holding', 'released')",
 		"print('and the log keeps all three', all(('\\t%s\\t' % k) in open(mutate.LOCK).read() for k in kinds))",
+
+		-- **Choosing is free; gating is not.** The lock used to wrap the choosing as well, so a
+		-- `--changed` that selected nothing still queued behind whatever full run was going -
+		-- measured at five and a half minutes on 2026-09-20, to find out it had no work. Read
+		-- here from the lock itself: a run with nothing to gate must never open the file.
+		"mutate.LOCK = os.path.join(tree, 'untouched')",
+		"mutate.CASES = os.path.join(tree, 'none')",
+		"os.mkdir(mutate.CASES)",
+		"code = mutate.main([])",
+		"print('nothing to gate takes no lock', code == 1 and not os.path.exists(mutate.LOCK))",
 	}, "\n"))
 	handle:close()
 	os.execute(string.format("python3 %s %s > %s 2>&1", script, ROOT, out))
@@ -41051,6 +41061,10 @@ if RUN.storage == "compressed" then
 		text:find("and an old one like it is dropped True", 1, true) ~= nil, text)
 	check("and only a real heading of this harness counts as a section",
 		text:find("and a line that is not a heading is not a place True", 1, true) ~= nil, text)
+	-- The lock defends the machine while gates run, and nothing else. Working out that there
+	-- is nothing to run reads git and the register, and competes with nobody.
+	check("a run with nothing to gate never waits for the machine",
+		text:find("nothing to gate takes no lock True", 1, true) ~= nil, text)
 	check("the register writes down which check caught which case",
 		text:find("writes down what caught it True", 1, true) ~= nil
 			and text:find("and a run that did not catch it keeps the old line True", 1, true) ~= nil,
@@ -41245,6 +41259,71 @@ FamilyDB = {
 	os.remove(out)
 	os.remove(refusedOut)
 end)() end
+
+print()
+print("the hooks, and the one claim in a commit message that can be checked")
+
+-- **A commit message cannot be corrected.** Rewriting history is on this project's reserved
+-- list, so a figure invented in a message is permanent. Almost everything in one is beyond a
+-- program, but the number of checks the gate has just reported is mechanically true or false -
+-- and on 2026-09-20 two messages went in claiming 3547 and 3550 where the run had said 3546 and
+-- 3548, the second of them an hour after the first had been noticed and owned out loud. That is
+-- the difference between a fault a resolution fixes and one that wants a mechanism.
+--
+-- Asked of the hook itself, run against made-up messages and a made-up count, because a check
+-- that reads the script for a string would pass on a script that no longer runs.
+do
+	local function wrote(path, text)
+		local h = io.open(path, "w")
+		h:write(text)
+		h:close()
+	end
+
+	local count, message = os.tmpname(), os.tmpname()
+	wrote(count, "1234\n")
+
+	local function ranOn(text)
+		wrote(message, text)
+		local ok, how, code = os.execute(string.format(
+			"FAMILY_CHECK_COUNT=%s sh %s/tools/hooks/commit-msg %s >/dev/null 2>&1",
+			count, ROOT, message))
+		if type(ok) == "number" then return ok end
+		return (ok and 0) or (how == "exit" and code) or 1
+	end
+
+	check("a message whose check count matches the gate goes through",
+		ranOn("A title\n\nHarness 1234 checks, and the run was green.\n") == 0)
+	check("and one claiming a different number is refused",
+		ranOn("A title\n\nHarness 9999 checks, and the run was green.\n") ~= 0)
+	-- The other spelling, because the number is written both ways in this repository.
+	check("whichever way round the figure and the word are written",
+		ranOn("A title\n\n9999 checks passed.\n") ~= 0)
+	-- A count of something else is not a claim about this one, or the hook would refuse every
+	-- message that says how many mutations or cases a run held.
+	check("a small number, or a count of something else, is not this claim",
+		ranOn("A title\n\nFour checks, two mutations, 398 cases.\n") == 0)
+	-- Nothing recorded means nothing to compare with, and refusing then would block a commit
+	-- for the gate not having run rather than for the message being wrong.
+	check("and with no count recorded it lets the message be",
+		(function()
+			os.remove(count)
+			local answer = ranOn("A title\n\nHarness 9999 checks.\n")
+			wrote(count, "1234\n")
+			return answer
+		end)() == 0)
+
+	-- pre-commit is the half that writes it down, and a hook that counts and tells nobody
+	-- leaves commit-msg comparing against whatever was there last.
+	local f = io.open(ROOT .. "/tools/hooks/pre-commit")
+	local pre = f and f:read("*a") or ""
+	if f then f:close() end
+	check("pre-commit writes the count where commit-msg will look for it",
+		pre:find("family%-checks") ~= nil and pre:find("git rev%-parse %-%-git%-dir") ~= nil,
+		"without it the comparison is against a stale number or none")
+
+	os.remove(count)
+	os.remove(message)
+end
 
 print()
 print("no word from the list outside the tree appears inside it")

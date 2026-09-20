@@ -1,0 +1,6 @@
+name: the gate counts the checks and leaves the number nowhere
+file: tools/hooks/pre-commit
+--- old
+echo "$count" > "$(git rev-parse --git-dir)/family-checks" 2>/dev/null || true
+--- new
+true

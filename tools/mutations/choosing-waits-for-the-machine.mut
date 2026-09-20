@@ -1,0 +1,17 @@
+name: a run with nothing to gate still queues for the machine
+file: tools/mutate.py
+--- old
+    plan = choose(argv)
+    if isinstance(plan, int):
+        return plan
+
+    try:
+        with only_one_run():
+            return gate_all(*plan)
+--- new
+    try:
+        with only_one_run():
+            plan = choose(argv)
+            if isinstance(plan, int):
+                return plan
+            return gate_all(*plan)

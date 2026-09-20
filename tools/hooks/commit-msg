@@ -1,2 +1,52 @@
 #!/bin/sh
+# What a commit message claims, and the one claim that can be checked from here.
+#
+# Almost everything in a message is beyond a program: why a change was made, what it fixes, what
+# it decided not to do. **One thing in it is mechanically true or false** - the number of checks
+# the gate just reported - and on 2026-09-20 two messages went in claiming 3547 and 3550 when
+# the run had said 3546 and 3548. Both were written from memory a minute after the real number
+# had been printed, by an author who had every reason to read it and did not.
+#
+# A commit message cannot be corrected afterwards: rewriting history is on this project's
+# reserved list, so a figure invented here is permanent. That is what makes it worth a hook
+# rather than a resolution - the second of the two was written an hour after the first was
+# noticed and owned out loud.
+#
+# It **refuses** rather than quietly correcting the number. A claim edited to be true is worse
+# than a wrong one, because the next reader cannot tell it was ever a claim; and the author is
+# three seconds from the real figure.
+#
+# **It cannot tell a quoted number from a claimed one**, and the very first message it refused
+# was the one adding it - a message whose subject was the two wrong figures, which therefore
+# said "3550 checks" while the gate counted 3554. That is the right way round: a hook that let
+# a wrong number through whenever the message looked like it was discussing numbers would be no
+# hook at all. The cost is that a message *about* a count writes the old figures away from the
+# word - "claiming 3547 and 3550 where it had said 3546 and 3548" passes, and says more anyway.
+#
+# `git commit --no-verify` skips this along with the gate, and is worth saying out loud.
+
 sed -i '/^Co-Authored-By: Claude/d;/^Claude-Session:/d;/Generated with \[Claude Code\]/d' "$1"
+
+# Written by `pre-commit`, which has just counted. The variable is for the harness, which points
+# it at a made-up file rather than at this repository's own.
+counted_file="${FAMILY_CHECK_COUNT:-$(git rev-parse --git-dir)/family-checks}"
+[ -f "$counted_file" ] || exit 0
+
+counted=$(cat "$counted_file" 2>/dev/null)
+[ -n "$counted" ] || exit 0
+
+# Only a figure standing next to the word, and only one big enough to be a count of these
+# checks: "four checks" and "398 cases" are not claims about this number.
+claimed=$(grep -oiE '(harness [0-9]{3,6}|[0-9]{3,6} checks)' "$1" 2>/dev/null \
+	| grep -oE '[0-9]{3,6}' | sort -u)
+
+for n in $claimed; do
+	if [ "$n" != "$counted" ]; then
+		echo "commit-msg: the message says $n checks where the gate counted $counted." >&2
+		echo "commit-msg: nothing goes in on a number nobody read - a commit message is not" >&2
+		echo "commit-msg: correctable afterwards. --no-verify skips this, and is worth saying." >&2
+		exit 1
+	fi
+done
+
+exit 0
