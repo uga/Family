@@ -5762,35 +5762,3 @@ the goblin auctioneers the same day; nothing about backlog 91 is left unread.
 
 Checks under *the realms of one connected group are valued from one auction house*; mutations
 `realm-group-*`, and three older ones re-pinned to the new code.
-
-## 92. Four domains Midnight has and Family does not: PvP, lockouts, collections, mission tables
-
-**Raised 2026-09-20**, from the second relayed brief (`docs/MIDNIGHT.md` §14). Not a decision and
-not a plan: a question for the specification, parked here so that the answer is taken on what
-probe version 9 reads rather than on what a brief describes. Alberto, the same day, on which of
-them the probe should ask: *misura ora, decidi dopo*.
-
-Each is a category Family has never recorded, so none of its names reach the generated surface
-list and all of them are hand-written in the probe. What is being asked of the client is presence
-on all four clients and, on Midnight, the answer.
-
-1. **PvP standing.** Honour and conquest, the weekly or seasonal cap, the account-wide honour
-   level, lifetime honourable kills, and the old ranks. The brief's own suggestion is that this is
-   two records rather than one - a currency-shaped one for the modern clients and a rank-shaped one
-   for Era - which is the same shape question as *does a record belong to the account or the
-   character* (§13), and it is reserved for Alberto for the same reason.
-2. **Raid and dungeon lockouts.** The cheapest of the four, and the only one the brief claims is
-   the same two calls on every client. If that survives contact with version 9 it is a domain with
-   no fourth column at all.
-3. **Collections** - mounts, battle pets, toys, heirlooms. Account-wide on Midnight and not a
-   collection at all on Era and Anniversary, where a mount is an item in a bag and is therefore
-   already counted by the bag scanner. So this is not one feature but two that happen to share a
-   word, and building it as one is how a Classic client ends up with an empty panel.
-4. **Garrisons, class halls and mission tables.** Retail only, whatever the client. The whole
-   module would have to be absent on three of the four clients rather than merely empty, which is
-   the first thing Family would have had to do that `Capabilities.lua` does not yet express: a
-   capability that turns a panel off rather than a call.
-
-**Nothing here is built, and nothing should be** until §14's readings come back and the shape
-questions of §13 are answered. The cost of asking is four blocks in one run that needs no extra
-step in game; the cost of guessing is a panel per client per domain.

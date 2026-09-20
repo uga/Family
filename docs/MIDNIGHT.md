@@ -945,6 +945,86 @@ The second half - that PvP is two different records rather than one with holes -
 for the specification and therefore Alberto's, and it is the same question as the account-wide
 one in §13. It is in `docs/BACKLOG.md` with the other three domains rather than decided here.
 
+## 15. What Midnight owes the features `main` is building (2026-09-20)
+
+`main` is not standing still while this branch measures. On 2026-09-20 it added four entries and
+revived a fifth, and it is building each of them **to what is supported up to Mists and no
+further** - Alberto, the same day. Every one of them therefore arrives here as a fourth column to
+fill, and the cheapest moment to know what that costs is before the code is written, not at the
+5.0.0 merge.
+
+### Why this section is here and not in `docs/BACKLOG.md`
+
+Because the numbering is main's and a Midnight entry in it collides. It already did: on
+2026-09-20 both sides wrote a `## 92.` on the same day, main's *The quests a character has
+already finished* and this branch's, and the merge would have had to choose between two entries
+with one number. `BACKLOG.md` is where `main` lists what Family will do; what **Midnight** owes
+those features is a fact about this branch and belongs in this file, which `main` does not have.
+The Midnight-only entry written that day was moved here rather than renumbered, because
+renumbering solves one collision and moving solves the class.
+
+### The five, and what each rests on
+
+| main | What it is | Midnight's part |
+|---|---|---|
+| 5 | Honor: rank, the week's progress, what is left of the cap. Deferred 2026-09-12, measured again 2026-09-20 | The whole shape changes: §14's brief says honour and conquest are ordinary currencies and the honour *level* belongs to the account. Probe version 9 asks both |
+| 92 | The quests a character has already finished | Which of the four completion calls Midnight carries, and whether the account-wide one answers - Family already asks `IsQuestFlaggedCompletedOnAccount` here (§12) |
+| 93 | Instance lockouts, and when each resets | Whether the same two calls answer, which §14 calls the one claim worth more than the others |
+| 94 | Rested experience since a character was put away | `GetXPExhaustion` is already asked here; `IsResting` and the two events are not |
+| 95 | A currency read from the older list is filed under its name, not its id | Midnight's list is `C_CurrencyInfo`'s, already read with 30 keys, so the fix may not need a fourth column at all |
+
+### The debt, counted rather than described
+
+Those five entries rest on eighteen names between them. Measured on 2026-09-20 against
+`Surface.lua` and version 9's hand-written calls: **ten are asked on Midnight and eight are not.**
+
+| Asked by version 9 | Not asked |
+|---|---|
+| `C_QuestLog.IsQuestFlaggedCompleted`, `GetNumSavedInstances`, `GetSavedInstanceInfo`, `UPDATE_INSTANCE_INFO`, `GetXPExhaustion`, `PLAYER_UPDATE_RESTING`, `UPDATE_EXHAUSTION`, `GetCurrencyListLink`, `GetCurrencyListInfo`, and the honour block of §14 | `GetQuestsCompleted`, `C_QuestLog.GetAllCompletedQuestIDs`, `QueryQuestsCompleted`, `GetDailyQuestsCompleted`, `QUEST_QUERY_COMPLETE`, `GetNumSavedWorldBosses`, `GetSavedWorldBossInfo`, `IsResting` |
+
+Version 9 is **not** being extended to cover the eight - Alberto, 2026-09-20 - so they are asked
+in the run after those features land rather than in the one about to be taken. The cost of that
+choice is one more client run, and it is written here so that it is a choice and not a surprise.
+
+### Which probe owns which fact
+
+Two probes now ask overlapping questions of Mists: `tools/FamilyProbe` on `main`, and
+`tools/FamilySurface` here. The rule, so that one client does not end up with two answers in two
+documents:
+
+- **What Era, Burning Crusade and Mists answer belongs to `FamilyProbe` and is written in
+  `docs/DATASOURCES.md`.** This file cites it and does not re-derive it.
+- **What Midnight answers, and the Mists control taken beside it, belongs to `FamilySurface` and
+  is written here.**
+- Where both have measured the same thing, **two readings that agree are a check and not waste**;
+  two that disagree are a finding, and the disagreement is written down before either is believed.
+
+**And the limit of that ownership, which is the whole point of it.** `main`'s mandate is Era,
+Burning Crusade and Mists, and nothing after - Alberto, 2026-09-20. So everything it measures is,
+for this branch, **a starting point and never a conclusion**. *`GetQuestsCompleted` answers in
+4.0 ms on Era* is a fact about Era. It is a reason to ask Midnight the same question and a
+description of what a good answer looks like; it is not evidence that the call is there, that it
+is named that, or that it answers the same way. Some of these calls will turn out identical after
+Mists and some will not, and which is which is not knowable from this side of the measurement -
+that sentence is `Capabilities.lua`'s thesis word for word, and the reason a fourth column is data
+and not a guess. **A row of this file may cite a `main` measurement as the question. It may never
+cite one as the answer for Midnight.**
+
+This is also why the Mists control stays even though `FamilyProbe` already asks Mists. The
+control's job is not to know Mists - `DATASOURCES.md` knows Mists - but to sit beside the Midnight
+reading, taken by **the same probe, with the same arguments, in the same run**. Two probes asking
+one client the same question with arguments chosen separately can differ for reasons that are
+about the probes, and a difference read as a difference between clients would be a wrong answer
+arrived at honestly.
+
+`main` has already written its half of this: `DATASOURCES.md`, *What the second brief adds*, files
+the honour ids 1792 and 1602 and the three unit calls as *the first thing to probe on the
+`midnight` branch*, having asked the three unit calls on its own three builds. It also found
+`GetArenaCurrency` **absent on 2.5.6**, which makes the standalone route `Scanners/Currencies.lua`
+carries for it dead code **on the three clients Family ships against today** - and says nothing
+about whether Midnight has it. Version 9 asks that call on every client for exactly that reason.
+What the finding saves this branch is the re-discovery, not the question.
+
 ### Still to do for step 1
 
 **Probe version 7** re-takes what version 6 could not: the **Mists control** for the census and the
