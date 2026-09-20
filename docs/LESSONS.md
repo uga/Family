@@ -47,6 +47,26 @@ happens to cite. Run today it finds those six and no seventh; it also shows that
 written after the renumber cite L-108 to L-111 on purpose, to describe the collision, and are not
 damage. Nothing cites L-113.
 
+**And it returns healthy citations too, which is how you can tell it is not merely agreeing with
+whoever ran it** - the point was the `main` session's, made after enumerating from its own side
+and getting the same six. `6b72d49` cites L-103, a lesson older than the split. Except that here
+the control case is not clean either, and that is the seventh piece of damage, of a kind neither
+session had named: **L-103 answers twice in this file.** `main` spent it on 2026-09-16 for *a
+width asked for in markup is not the width the client draws*; `6b72d49` wrote a second L-103 on
+2026-09-19, on the routes `tools/surface.py` must follow to count what Family asks the client,
+and the renumber of the 20th missed it because it was searching L-108 to L-115 - the same
+one-way search, a third time.
+
+**It stays L-103, on purpose.** The number is spent on both sides, so renumbering repairs
+nothing: `6b72d49` cannot be corrected, six citations in this tree mean the second entry and
+three mean the first, and `docs/DECISIONS.md` is append-only so its citation could not follow.
+What a renumber would buy is a tidy file; what it would cost is that L-103 would then resolve,
+silently and only, to a lesson about panel padding. A duplicate heading is visible to anyone who
+looks - `grep -o '^## L-[0-9]\{3\}' docs/LESSONS.md | sort | uniq -d` names it, and finds
+nothing else here and nothing at all on `main` - and the second entry says in its first line that
+it is the second. A fault that announces itself, over one that does not, which is the rule this
+whole note exists to apply.
+
 **L-110 and L-111 were saved, by the other branch, because this one mentioned them in passing.**
 They were about to decay the same way: `main` would have allocated exactly those two next, and
 four citations in three commits would all have resolved to unrelated lessons instead of two. This
@@ -4204,6 +4224,10 @@ be asked at all - whether a texture exists - the icon sheet and an eye; where it
 sheet should print the number rather than invite a judgement about a column of coins.
 
 ## L-103 — an inventory counted one way, and the code read the client three ways
+
+**This branch's L-103, and the file holds two.** `main` spent the number on 2026-09-16 for *a
+width asked for in markup is not the width the client draws*, above; this branch wrote a second
+one three days later without noticing. It is deliberately not renumbered - see the head note.
 
 **2026-09-19, branch `midnight`.** `tools/surface.py` counted what Family asks of the client from
 the bytecode's `GETGLOBAL`s and from `C_Something.Member` in the source, and both Midnight and
