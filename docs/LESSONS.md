@@ -3536,6 +3536,21 @@ corrected either way - and what a renumber buys is a tidy file, while what it co
 resolving silently, and only, to a lesson about padding. A doubled heading is seen by anyone who
 looks. That is L-110's rule, borrowed back.
 
+**And the argument it was meant to make survives, repaired.** The original claim was that the
+enumeration deserved belief because it returned healthy citations as well as damaged ones. It
+returned none: six citations resolving to the wrong lesson, one resolving to two, and nothing
+healthy. What actually earns it belief is the opposite of what was claimed - **it returned a
+seventh case nobody was looking for**, of a kind neither session had a name for. A method that
+comes back with exactly the findings it was pointed at is the one to distrust; this one came
+back with more, and of a different shape.
+
+**What the one-line check is for here**, since it answers nothing on this branch: it is a guard
+and not a detector. The damage it would have found is on the other copy, and the case worth
+preventing is the next one rather than this one. There is no harness check behind it - a sweep
+refusing a doubled heading would be a check on the instance, and the rule it stands for, *do not
+reuse an identifier something already points at*, is not a thing a sweep can see. That is the
+same sentence the entry on L-110 and L-111 had to write, one identifier and three days apart.
+
 The rule: **a control case is evidence only once it has been checked as hard as the thing it is
 controlling.** An example that arrives conveniently proving the method sound is the one to open
 and read, not the one to quote.
