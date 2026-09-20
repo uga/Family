@@ -3498,6 +3498,48 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-116 — the control case was offered as evidence, and never checked
+
+**2026-09-20.** Counting which commits on the other branch cite lesson numbers this one has
+taken, the enumeration turned up `6b72d49` quoting **L-103** - a lesson written here on
+2026-09-16 and older than the branch split. That looked like the control the method needed: a
+citation that is *not* damaged, proving the enumeration was not simply handing back whatever it
+had been pointed at. It went into the entry above as exactly that, and into a message saying so.
+
+It was wrong, and the Midnight session found it by checking it. That branch's `LESSONS.md` has
+**two** headings numbered L-103: mine, and one written there on the 19th about the routes a
+generator has to follow to count what Family asks the client. `6b72d49` means the second. So it
+is not a healthy citation at all - it is a seventh piece of damage, of a kind nobody had named:
+not a number that moved, but a number that **answers twice in one file**.
+
+**Bitten:** nothing yet, because the claim was five minutes old. What it would have cost is
+worse than the miscount it was correcting - a false control is an argument that a method is
+sound, and it is believed precisely where the method is about to be trusted with something.
+
+**Why it was invisible.** The number was checked, and only the number. `grep "^## L-103"` on
+this branch answers once, and from one answer here I concluded *the same on both* without
+opening the other branch's file or reading what the commit meant by it. That is **present is
+not meaningful** - the rule this project applies to every client capability, in
+`Capabilities.lua` at length - applied to a document instead of an API, where the habit had not
+reached. The renumbering that missed it had the same shape a third time: it searched L-108 to
+L-115, so a collision at L-103 was outside the range it asked about.
+
+**The check that now catches it.** `grep -o '^## L-[0-9]\{3\}' docs/LESSONS.md | sort | uniq -d`
+answers nothing on this branch and `## L-103` on the other. It is one line, it is in this entry,
+and it is the thing neither of us had run in a day of counting citations. No harness check: a
+sweep could say this file has no duplicate heading, but the fault was a duplicate *across two
+copies of the file*, and nothing inside one tree can see the other.
+
+**The duplicate stays**, which is the other branch's call and is the right one by this file's own
+rule. The number is spent on both sides, so moving it repairs no citation - `6b72d49` cannot be
+corrected either way - and what a renumber buys is a tidy file, while what it costs is L-103
+resolving silently, and only, to a lesson about padding. A doubled heading is seen by anyone who
+looks. That is L-110's rule, borrowed back.
+
+The rule: **a control case is evidence only once it has been checked as hard as the thing it is
+controlling.** An example that arrives conveniently proving the method sound is the one to open
+and read, not the one to quote.
+
 ## L-115 — the number was printed, and written down from memory anyway
 
 **2026-09-20, twice in two hours.** Two commit messages went in claiming the gate had passed
@@ -3723,10 +3765,14 @@ way - inside the paragraph recording the lesson about searches that can only con
 
 Run that way it says two things the targeted search could not. **No commit cites L-113**, so of
 the four numbers allocated here that evening, three do damage and one does none - and the lesson
-that became L-205 there is quoted nowhere at all, so there was never anything to save. And
-`6b72d49` cites **L-103**, which is a lesson older than the split and means the same on both
-branches: the enumeration returns undamaged citations too, which is how a reader can tell it is
-not merely agreeing with whoever ran it.
+that became L-205 there is quoted nowhere at all, so there was never anything to save.
+
+And the second is harder than the sentence that first stood here. **Among those commits there is
+not one undamaged citation of a lesson number.** Every `L-nnn` any of them quotes means something
+other than what it resolves to today. The first writing of this paragraph said the opposite - it
+offered `6b72d49` citing L-103 as proof that the enumeration returns healthy citations too. That
+example was wrong, and [L-116](#l-116--the-control-case-was-offered-as-evidence-and-never-checked)
+is what came of checking it.
 
 **The next free number on this branch is L-116.**
 
