@@ -3575,7 +3575,9 @@ under `FAMILY_MUTATING` the harness stops at its first failure, so the last thin
 the check that noticed, and the last heading above it is the place. `--changed` with the harness
 in the diff now re-runs the cases whose section the diff touches. Two ways the map can go stale,
 and **both widen the run rather than narrow it**: a case nobody has recorded, and a case recorded
-under a section that no longer exists, are both run. The register is written only by a full run
+under a section that no longer exists, are both run. It knows 400 of 410 cases; the ten it
+does not are ones whose catching check prints at the margin without standing under a heading,
+and they run every time the harness is touched. The register is written only by a full run
 and only once every worker has stopped, which is the single point where this tool touches the
 repository at all. Mutations `the-check-that-caught-it-is-not-read`,
 `a-heading-is-any-print-at-all`, `a-harness-change-takes-nothing-with-it`,

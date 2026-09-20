@@ -410,10 +410,24 @@ def register_write(paths, results):
     moved anchor is a red run, and a red run must not also quietly widen tomorrow's working
     loop by forgetting where the case used to be caught.
     """
-    known = register_read()
+    # **Only a real heading counts as a place.** Not every line the harness prints at the margin
+    # is a section: one check prints the name of the throwaway file it just grew, which is a new
+    # name every run, and taking it for a place churned this file on every run and filed that
+    # case under a section that could never match. Read from the harness rather than trusted
+    # from the output - and a case whose section does not survive that stays unrecorded, which
+    # means it always runs.
+    with open(os.path.join(ROOT, "tests", "Harness.lua"), encoding="utf-8") as handle:
+        present = {name for _, name in sections(handle.read())}
+
+    # Dropped on the way in as well as kept out on the way out, or a line written before this
+    # was understood stays for ever: the filter below would decline to replace it and never
+    # remove it. A section that has since been renamed goes the same way, and the cases under it
+    # count as unrecorded until a full run files them again - which makes them run, not skip.
+    known = {case: note for case, note in register_read().items() if note[1] in present}
+
     for path, answer in zip(paths, results):
         check, section = answer[2] if len(answer) > 2 else (None, None)
-        if check and section:
+        if check and section in present:
             known[os.path.relpath(path, ROOT)] = (check, section)
 
     body = ["# case\tthe check that caught it\tthe section that check is in",
@@ -702,8 +716,12 @@ def run_all(argv):
 
         paths = sorted(set(chosen))
         if not paths:
-            print("no recorded mutation names a file changed since HEAD - the full run is "
-                  "still the one before a commit")
+            # **This is an answer, not a shrug.** Nothing recorded stands over anything in
+            # this diff, which for a change to prose is the whole truth and is what makes it
+            # the commit's gate. The harness is a separate gate and the hook runs it either
+            # way; the full run is the release's.
+            print("no recorded mutation names a file changed since HEAD - nothing here is "
+                  "under a mutation, and the harness has its own gate")
             return 0
 
     if not paths:

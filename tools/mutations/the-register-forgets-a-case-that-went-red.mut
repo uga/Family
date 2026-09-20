@@ -1,7 +1,7 @@
 name: a case that went red loses the line saying where it was caught
 file: tools/mutate.py
 --- old
-        if check and section:
+        if check and section in present:
             known[os.path.relpath(path, ROOT)] = (check, section)
 --- new
         known[os.path.relpath(path, ROOT)] = (check, section)

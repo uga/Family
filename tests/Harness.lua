@@ -40980,6 +40980,16 @@ if RUN.storage == "compressed" then
 		"mutate.register_write([case_a], [(True, 'x', ('the check', 'currencies'))])",
 		"print('writes down what caught it', mutate.register_read().get('tools/mutations/a.mut') == ('the check', 'currencies'))",
 		"mutate.register_write([case_a], [(False, 'x', (None, None))])",
+		-- Not every line the harness prints at the margin is a heading: one check prints the
+		-- name of the throwaway file it has just grown, which is different every run. Taking
+		-- that for a place churns this file and files the case where nothing can match.
+		"mutate.register_write([case_a], [(True, 'x', ('the check', '/tmp/lua_AbCdEf: 3 members'))])",
+		"print('and a line that is not a heading is not a place', mutate.register_read().get('tools/mutations/a.mut') == ('the check', 'currencies'))",
+		-- And one already written that way is dropped rather than left: kept out on the way in
+		-- only, it would sit there for ever, since the guard above declines to replace it.
+		"open(mutate.REGISTER, 'a').write('tools/mutations/z.mut\\tsome check\\t/tmp/lua_Zz: 3 members\\n')",
+		"mutate.register_write([case_a], [(True, 'x', ('the check', 'currencies'))])",
+		"print('and an old one like it is dropped', 'tools/mutations/z.mut' not in mutate.register_read())",
 		"print('and a run that did not catch it keeps the old line', mutate.register_read().get('tools/mutations/a.mut') == ('the check', 'currencies'))",
 		"print('picks by the case file itself', mutate.picked([one], {rel}) == [one])",
 		"print('and picks nothing on an unrelated change', mutate.picked([one], {'README.md'}) == [])",
@@ -41037,6 +41047,10 @@ if RUN.storage == "compressed" then
 	-- which is the shape read from a live run: naming the line would name the wrong tree.
 	check("and names whoever holds it now rather than whoever wrote last",
 		text:find("names who holds it now True", 1, true) ~= nil, text)
+	check("and a junk section written before is dropped, not left to sit there",
+		text:find("and an old one like it is dropped True", 1, true) ~= nil, text)
+	check("and only a real heading of this harness counts as a section",
+		text:find("and a line that is not a heading is not a place True", 1, true) ~= nil, text)
 	check("the register writes down which check caught which case",
 		text:find("writes down what caught it True", 1, true) ~= nil
 			and text:find("and a run that did not catch it keeps the old line True", 1, true) ~= nil,

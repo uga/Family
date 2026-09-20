@@ -2575,6 +2575,14 @@ check is in, read out of the gate's own words rather than searched for in the so
 the harness re-runs the cases in the sections it touches, and a case the register does not know -
 or knows under a section that has since gone - runs anyway.
 
+**It knows 400 of 410**, measured on the run that first wrote it. The ten it does not are cases
+whose catching check prints something of its own at the margin rather than standing under a
+heading - the grown family's throwaway file name, the icon sheet's own banner, the second
+harness pass. A line at the margin is only taken as a place if it is a heading the harness
+really has, because the first writing took the throwaway file name for a section and the file
+then changed on every run. Those ten count as unrecorded, which makes them run every time the
+harness is touched rather than never.
+
 ### What a shared recipe list weighs, `tools/wire-size.lua`
 
 Not from the client's tables but from the libraries the addon channel is fed through, and

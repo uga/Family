@@ -7,6 +7,7 @@ tools/mutations/a-currency-row-outranks-its-link.mut	with the id taken out of th
 tools/mutations/a-harness-change-takes-nothing-with-it.mut	and an unknown case, or one filed under a section since renamed, runs anyway	the gate run by the mutator
 tools/mutations/a-heading-is-any-print-at-all.mut	and the harness's own headings say which section that check is in	the gate run by the mutator
 tools/mutations/a-hung-gate-counts-as-caught.mut	a case whose gate never answers is reported hung and not caught, and its file restored	the gate run by the mutator
+tools/mutations/a-junk-section-is-kept-for-ever.mut	and a junk section written before is dropped, not left to sit there	the gate run by the mutator
 tools/mutations/a-killed-run-jams-its-tree-shut.mut	and a run killed before it could tidy up does not jam that tree shut	the gate run by the mutator
 tools/mutations/a-lane-count-goes-back-in-the-money-column.mut	with the two lanes it was reached by, never the total on its own	vendor prices: one from the client, one learned from merchants
 tools/mutations/a-lane-counts-everything-held.mut	with the two lanes it was reached by, never the total on its own	vendor prices: one from the client, one learned from merchants
@@ -44,6 +45,7 @@ tools/mutations/an-unloaded-item-is-searched-for-by-its-placeholder.mut	while CT
 tools/mutations/an-unreadable-scroll-offset-is-taken-for-nought.mut	nor is one whose scroll offset the client will not give up	vendor prices: one from the client, one learned from merchants
 tools/mutations/any-frame-is-taken-for-a-browse-button.mut	a scrolled list is read at the row on the screen, not at the slot showing it	vendor prices: one from the client, one learned from merchants
 tools/mutations/any-frame-is-taken-for-a-merchant-button.mut	while a frame that is not one of the vendor's own buttons is refused	vendor prices: one from the client, one learned from merchants
+tools/mutations/any-line-at-the-margin-is-a-section.mut	and only a real heading of this harness counts as a section	the gate run by the mutator
 tools/mutations/any-number-in-that-place-is-an-id.mut	a twelfth value of 0 is not mistaken for an id	currencies
 tools/mutations/any-row-length-is-the-measured-one.mut	nor is a longer one, however id-shaped the number in that place looks	currencies
 tools/mutations/auction-panel-anchored-to-a-corner.mut	the panel fills a frame the client sized rather than a corner nobody has measured	a Family tab on the auction window
@@ -147,17 +149,11 @@ tools/mutations/fold-depth-ignores-headings.mut	the page's headings count agains
 tools/mutations/fold-switch-ignored.mut	switched off, a page that overflows folds nothing, and one not yet measured neither	loading Family_UI
 tools/mutations/fold-switch-off-by-default.mut	the folding switch is on the Options panel, ticked when nothing was ever set	Possessions: the carried bags as one block and the bank as another (backlog 85)
 tools/mutations/fold-switch-stores-nothing.mut	and unticking it switches folding off	Possessions: the carried bags as one block and the bank as another (backlog 85)
-tools/mutations/grow-family-two-copies-one-key.mut	it holds the original members and every copy asked for	/tmp/lua_YyxOvk: 3 members, 5 copies added, 8 members now
 tools/mutations/guild-tab-empty-name-kept.mut	a tab the client gives no name is recorded without one, not with an empty one  ->	the bank
 tools/mutations/guild-tab-name-not-kept.mut	and the tab's own name, as the guild bank gave it	the bank
 tools/mutations/guild-tab-title-by-number.mut	a guild bank tab is titled by its own name, and one with none by its number	Possessions: the carried bags as one block and the bank as another (backlog 85)
 tools/mutations/held-by-builds-the-whole-family.mut	opening one member's professions page reads that member's record and no other	a tooltip and a one-member page ask about no more than they show
 tools/mutations/held-by-keeps-a-stale-member.mut	and what it holds is answered afresh once that member is written	a tooltip and a one-member page ask about no more than they show
-tools/mutations/icon-sheet-coins-markup-lost.mut	and inside a figure, as the markup a price would carry	|cff66bbffFamily icon sheet|r: chosen on 1.15.9:
-tools/mutations/icon-sheet-coins-not-drawn.mut	the three coins are drawn as candidates	|cff66bbffFamily icon sheet|r: chosen on 1.15.9:
-tools/mutations/icon-sheet-coins-raw-unescaped.mut	and one it does carry is shown raw, escapes and all	|cff66bbffFamily icon sheet|r: chosen on 1.15.9:
-tools/mutations/icon-sheet-coins-verdict-inverted.mut	the money fit test measures a figure against the cell its column leaves	|cff66bbffFamily icon sheet|r: chosen on 1.15.9:
-tools/mutations/icon-sheet-coins-white-left-gold.mut	the white figures and the gold ones are both coloured explicitly	|cff66bbffFamily icon sheet|r: chosen on 1.15.9:
 tools/mutations/index-files-under-the-plain-item.mut	so the family counts it under that heading and never under the plain item	auctions
 tools/mutations/itemclick-shift-ignored.mut	and shift, which the game already uses, is left alone	a modified click on an item
 tools/mutations/knowers-of-names-though-a-table-answered.mut	once a table names the spell, a recipe carrying neither id is not matched by name	a tooltip and a one-member page ask about no more than they show
@@ -213,7 +209,6 @@ tools/mutations/money-string-places-never-padded.mut	a figure drawn as one strin
 tools/mutations/mutator-gate-runs-on-past-a-failure.mut	under the mutator a failing check ends the run there, with a non-zero status	the gate run by the mutator
 tools/mutations/mutator-report-hides-a-survivor.mut	and keeps the survivor, the hung gate and the count  ->	the gate run by the mutator
 tools/mutations/mutator-report-says-caught-for-every-case.mut	the mutator's report leaves out the lines that say caught	the gate run by the mutator
-tools/mutations/mutator-runs-the-second-pass-for-every-case.mut	the gate runs the second pass, and under the mutator only for a case that asks for both	the same checks, with compression switched off
 tools/mutations/names-asks-the-build-every-time.mut	and the search asks the client for its build no more than once	a whole-family recipe search does not ask the client for its build per recipe
 tools/mutations/names-keeps-the-build-of-a-replaced-client.mut	a client at a build the store has never seen reads every record again	the walk steps past a character it has already read
 tools/mutations/neutral-house-beats-your-own.mut	your own side's house wins over the shared one where both have a price	the neutral auction house is one market for both sides of a realm
@@ -228,7 +223,6 @@ tools/mutations/ours-make-leaves-out-items.mut	what our own members can make is 
 tools/mutations/ours-make-never-dropped.mut	and a recipe written to a record is in it at the next question	what a craftable thing costs to make
 tools/mutations/out-of-reach-is-called-offline.mut	a family whose characters are all on realms out of reach is said to be so	a family is a person with several characters
 tools/mutations/own-auction-forgets-which-variant.mut	a member's own auction records the string that says which variant it is	auctions
-tools/mutations/plain-pass-is-never-run.mut	and says the sharing libraries are missing exactly when they are	the same checks, with compression switched off
 tools/mutations/plain-pass-is-not-started.mut	and the plain storage pass ran the checks rather than none of them	records are changed only by writing them, and the saved data's read is timed
 tools/mutations/plain-record-answers-no-mark.mut	a member sent and changed since is counted as changed, by name	wide family
 tools/mutations/plain-record-without-mark-is-never-stamped.mut	a plain record with no mark has its parts marked the first time it is asked, and keeps it	a record from before backlog 74 keeps its mark when it is rewritten plain
@@ -342,7 +336,7 @@ tools/mutations/the-merchant-quantity-is-the-wrong-return.mut	a merchant's row i
 tools/mutations/the-merchant-row-is-not-checked.mut	and a vendor's row naming something else is not counted	vendor prices: one from the client, one learned from merchants
 tools/mutations/the-pile-count-never-leaves-the-bags.mut	an auction row is offered the key rather than the answer	vendor prices: one from the client, one learned from merchants
 tools/mutations/the-position-outranks-the-table-link.mut	a link on C_CurrencyInfo outranks the twelfth value of the row	currencies
-tools/mutations/the-register-forgets-a-case-that-went-red.mut	the register writes down which check caught which case	the gate run by the mutator
+tools/mutations/the-register-forgets-a-case-that-went-red.mut	and only a real heading of this harness counts as a section	the gate run by the mutator
 tools/mutations/the-ruler-leaves-its-measurement-behind.mut	and measuring puts back what the font string was saying	two ways of saying it, and the shorter one where the longer will not fit
 tools/mutations/the-status-line-drops-the-hint-unmeasured.mut	with no ruler at all the long way is used	two ways of saying it, and the shorter one where the longer will not fit
 tools/mutations/the-status-line-never-drops-the-hint.mut	and the short way where there is not	two ways of saying it, and the shorter one where the longer will not fit

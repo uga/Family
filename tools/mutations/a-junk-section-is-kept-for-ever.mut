@@ -1,0 +1,6 @@
+name: a section written before the filter existed is kept for ever
+file: tools/mutate.py
+--- old
+    known = {case: note for case, note in register_read().items() if note[1] in present}
+--- new
+    known = register_read()
