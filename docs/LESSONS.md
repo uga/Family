@@ -28,17 +28,22 @@ here: `f463ca8` cites L-108, L-109 and L-110; `8e8cdff` cites L-108 and L-111; `
 L-108. Today L-108 and L-109 resolve to *main's* lessons, on a misaimed measurement and on two
 sessions sharing a processor, and not to the ones those commits meant - a `pcall` that does not
 guard a native crash (now **L-200**) and a probe that truncated its own answers (now **L-201**).
-L-110 and L-111 resolve to nothing at all - **for now**. `main` allocates L-110 next and L-111
-after it, so within days those two stop being visibly broken and become wrong in the same silent
-way as the first pair: four citations in three commits, every one of them resolving to a lesson
-that has nothing to do with what the commit was about. A reference that resolves to the wrong
-entry is worse than one that is broken, because only the second can be seen - and here the
-second kind decays into the first by itself, without anybody touching anything. Measured by the
-`main` session, which had counted today's damage and not the damage that matures on its own.
+**L-110 and L-111 were saved, and not by us.** They were about to decay the same way: `main`
+would have allocated exactly those two next, and four citations in three commits would all have
+resolved to unrelated lessons instead of two. Told that, the `main` session left both numbers
+permanently empty and put an entry there explaining the collision and naming what those commits
+actually mean (`5eed697`, *Leave L-110 and L-111 empty, so the number itself explains the
+collision*). So a reader following L-110 out of `f463ca8` now lands on the explanation rather
+than on something plausible and wrong. Two of the four citations are repaired, at the cost of two
+numbers from a sequence whose only meaning is the order it was written in.
 
-So: **where a `midnight` commit before that date cites L-108 to L-115, add 92.** Not a
-convenience for a passer-by - once those numbers all exist again on `main`, the sum is the only
-thing that tells such a citation from a correct one.
+L-108 and L-109 cannot be saved that way - `main` had taken them before anybody noticed - so
+those two citations still resolve to lessons that have nothing to do with their commits. **A
+reference that resolves to the wrong entry is worse than one that is broken, because only the
+second can be seen.**
+
+So: **where a `midnight` commit before that date cites L-108 to L-115, add 92.** For L-110 and
+L-111 the number now says so itself; for L-108 and L-109 this line is the only thing that does.
 
 ## The one this project keeps making
 
