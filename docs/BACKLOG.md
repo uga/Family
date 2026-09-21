@@ -6297,35 +6297,54 @@ covers. The full four:
 | logged in, standing in the field | nothing | 0 over 444 and over 4,587 seconds, two builds |
 | logged out in the field | 5% per 32 hours | **226 over 60,406 seconds against 228** |
 
-### And Tontazzo confirms it at the other end of a character's life
+### And Tontazzo, whose numbers I got wrong before the file arrived
 
 Read 2026-09-21 on logging in: rested **114**, `xp` 40, level 1, `xpMax` 400, `resting=false`, in
-the Valley of Trials, at 1789968200. The pair taken on 2026-09-20 read **104** both times.
+the Valley of Trials, at 1789968200. The last reading before the night, out of that client's saved
+variables: rested **104** at **1789896416**, same spot, `xp` 40.
 
-**The half that needs no arithmetic at all: it grew.** 104 to 114, on a character logged out in
-the open world. *Nothing accrues in the field* is refuted outright by that, with no interval and
-no rate needed - and so is the particular worry Alberto raised when he made the correction, that
-the troll and orc starting valley might be one of the *zone particolari di campo aperto* where
-nothing accrues. It accrues there.
+**The half that needs no arithmetic still stands, and it is the important half.** The figure
+**grew** while the character was logged out in the open world. *Nothing accrues in the field* is
+refuted by that alone, and so is the particular worry Alberto raised when he made the correction -
+that the orc and troll starting valley might be one of the *zone particolari di campo aperto*
+where nothing accrues. It accrues there.
 
-**The half that does need the interval, and the interval is not recorded.** Ten points is 16.0
-hours at the quarter rate and 4.0 at the inn rate. If Tontazzo's night was Ziofurgone's 60,406
-seconds, the quarter rate gives 104 + 10.49 = **114.49**, which a whole-point figure shows as
-**114** - the reading - against the inn rate's 146 and nothing's 104. The ceiling is 600, so
-nothing was clipped.
+**The arithmetic does not come out, and this entry said it did.** Before the saved variables
+arrived, this section scored the gain against *Ziofurgone's* interval, because Tontazzo's own
+moments had not been written down - and got 104 + 10.49 = 114.49, shown as **114**, which is the
+reading. An exact fit, and an accident of the wrong interval:
 
-That is an exact fit and it rests on an assumed logout time, because **this entry wrote Tontazzo's
-readings down without their `at=` values** while recording Ziofurgone's with them. The probe
-prints the moment on every sample and stores it, so the number is not lost - it is in that
-client's saved variables - but the document cannot be read on its own. L-117. The rule this entry
-now keeps: **a rested reading is written down with its moment or it is half a reading**, because
-a figure without a moment cannot be scored against a rate, and that is the only thing these
-readings are for.
+| | Tontazzo | Ziofurgone |
+|---|---|---|
+| interval between readings | 71,784 s, **19.94 h** | 60,406 s, 16.78 h |
+| gain | 10 | 226 |
+| the quarter rate over that interval | +12.46 → **116.46** | +228 → 8,314 |
+| read | **114** | 8,312 |
+| hours the gain implies | **16.00** | 16.63 |
+| short of the interval by | **3.94 h** | 9.2 min |
+| implied rate, % of a level per 32 h | **4.01%** | **4.95%** |
 
-**Two characters, two ends of a life.** The rate is a fraction of the level's own `xpMax` - 8,700
-for Ziofurgone and 400 for Tontazzo, a factor of nearly 22 - and both land on the quarter rate. A
-single character could have been a character-shaped coincidence; two at these extremes are the
-rule.
+**The likeliest explanation is one this entry has already measured, and it cannot be checked from
+what was recorded.** The pool fills while a character is **logged out**, and the gap between two
+readings is not that interval: a character can be read, stay logged in for hours accruing nothing
+in the field - which is the third row of the four-case table, measured twice on two builds - and
+only then be put away. Tontazzo's gain is exactly 16.00 hours of the quarter rate, so 3.94 hours
+of that window bought nothing; Ziofurgone was parked and logged out nine minutes after his
+reading, and his fit is to within 1%. Nothing in the file says when either character actually
+left, because the probe recorded readings and not logouts. **So one of 4.01% and 4.95% is an
+artefact of the wrong interval and the data cannot say which.** L-117.
+
+**Fixed for the next pair rather than argued about:** the probe now takes `PLAYER_LOGOUT` and
+`PLAYER_LOGIN`, works the absence out at login and stores it before a later logout can overwrite
+either end, and prints it beside the rested sample as `awayFor=`. A character it has not yet seen
+go away says so rather than offering a number.
+
+**And this is not only about the measurement - Family has the same problem.** The addon can record
+when it last *saw* a character, never when that character logged out. Every projection it draws
+will therefore assume the whole interval was spent away, and will **over-estimate** for anybody who
+sat logged in - exactly the error above, 3.94 hours of it on one overnight. That is a property of
+the feature and not of the probe, it always rounds the same way, and it belongs in whatever the
+panel eventually says rather than in a footnote.
 
 **What is still unmeasured**, and is written here so the estimate is not built as though it were
 not: the Pandaren exception on Mists, and what a character who crosses between the two cases in
@@ -6572,13 +6591,14 @@ tooltips seen but declined means a test of ours, and none seen at all means the 
 route that case through `GameTooltip`'s `OnShow` - in which case the eventual feature has the same
 blind spot and inherits it from the client rather than from us.
 
-**The minimap is unmeasured on both builds, and now known to be.** Asked rather than inferred:
-GatherMate is installed on the Mists client too. So `Minimap  |  "Dreamfoil"` and Era's
-`Minimap  |  "Copper Vein"` are the same unreadable reading twice, not two builds agreeing - a pin
-anchoring its tooltip to the minimap looks exactly like the client's own blip, and no
-`GatherMatePin` frame appearing in the Mists session says only that no pin was hovered there. The
-world node is measured on both builds; **the minimap half rests on one run with GatherMate switched
-off** and nothing about it should be built before that.
+**The minimap is measured after all, 2026-09-21.** Alberto turned GatherMate off on purpose for a
+clean read and hovered a blip: `Minimap  |  "Silverleaf"`. So that is **the client's own tracking
+blip**, it answers on a stock interface, and the minimap half of this entry is possible.
+
+What it gives is less than the world node does: **one line, the name, and no profession line**,
+where a world node answers two. So a blip says which node it is and not which profession it
+belongs to - the discriminator the world route hands over for nothing. Whatever resolves a node
+name has to work without it there.
 
 ### The route, chosen 2026-09-20: a table written by hand
 

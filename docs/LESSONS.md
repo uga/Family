@@ -4079,28 +4079,46 @@ Mutations `banned-word-sweep-never-says-no`, `banned-word-sweep-quotes-everythin
 `banned-word-sweep-covers-nothing`. The rule is in `CLAUDE.md`, and adding an `allow` line
 is on the reserved list.
 
-## L-117 — A reading written down without its moment is half a reading
+## L-117 — A reading without its moment does not lose precision, it invents a fit
 
-**2026-09-21.** Tontazzo's overnight rested reading came back 114 against 104 the day before, and
-the quarter rate fits it to the point: 104 + 10.49 over Ziofurgone's 60,406 seconds is 114.49,
-which a whole-point figure shows as 114. Exact - and resting on an interval nobody wrote down.
+**2026-09-21.** Tontazzo's overnight rested reading came back 114 against 104. His own moments had
+not been written down - `BACKLOG.md` 94 recorded that pair as *rested **104** at both readings*
+while recording Ziofurgone's with `at 1789907222` beside them - so the gain was scored against
+Ziofurgone's interval instead. That gave 104 + 10.49 = 114.49, which a whole-point figure shows as
+**114**. The reading was 114. It was written up as an exact fit and a second independent
+confirmation.
 
-`BACKLOG.md` 94 recorded that character's earlier pair as *rested **104** at both readings*, 4,587
-seconds apart, and recorded Ziofurgone's with `at 1789907222` beside them. So one of the two
-overnight measurements can be scored against a rate from the document alone and the other cannot,
-and the difference is a field that was in front of me both times: the probe prints `at=` on every
-rested sample and stores it in the saved variables, where that number still is.
+The saved variables arrived an hour later. Tontazzo's real interval was **19.94 hours**, not
+16.78, over which the quarter rate gives **116.46**. The reading is 114, the implied rate is
+**4.01%** of a level per 32 hours against Ziofurgone's 4.95%, and what looked like the tightest
+confirmation in the entry was the wrong interval landing on the right number.
 
-**What it cost:** the difference between a second independent confirmation and a second
-confirmation with an assumption inside it. The qualitative half survives untouched - the figure
-grew, so the field rate is not zero - but the arithmetic that makes it a *measurement* is on loan.
+**That is the lesson, and it is not the one I wrote here first.** The first version of this entry
+said a reading without its moment is *half* a reading - less precise, the qualitative half intact.
+That is too kind. A missing interval does not widen an error bar, because the arithmetic still
+produces a single number and that number still gets compared to the reading. It produces a **fit**,
+with all the confidence a fit carries and none of the warrant, and the closer the assumed interval
+happens to land the more convincing the wrong answer looks. An assumption that made the answer
+*visibly* wrong would have cost nothing; this one made it visibly right.
 
-**The check.** There is not a mechanical one, and saying so is better than inventing one: the
-harness cannot read a prose entry and tell a figure from a figure-with-a-moment. What there is
-instead is the rule in the entry itself - **a rested reading is written down with its `at=` or it
-is not written down** - and the observation that every one of these readings exists to be scored
-against a rate, which is arithmetic on two moments. A number with one moment is not half of that
-arithmetic; it is none of it.
+The qualitative half does survive untouched - the figure grew, so the field rate is not zero - and
+that half never needed an interval at all. Worth separating the two in any reading: what follows
+from the direction, and what follows from the arithmetic.
 
-Related: [[L-108]], which is the reasoning error this same entry made about the same rule, and
-which this reading closes.
+**The check**, which this entry did not have when it was first written and now does: the probe
+takes `PLAYER_LOGOUT` and `PLAYER_LOGIN`, computes the absence at login and stores it before a
+later logout can overwrite either end, and prints it beside every rested sample as `awayFor=`. A
+character it has not yet seen go away **says so** instead of offering a number - §2.2, applied to
+the tool's own bookkeeping. Driven against a stub before it went near the game: the interval is
+recorded, it survives a later session, and an unseen character reports nothing.
+
+And the reason the moments are the right thing to record rather than the interval between
+readings: **the pool fills while a character is logged out**, which is not the gap between two
+looks at it. Tontazzo's gain is exactly 16.00 hours of the quarter rate over a 19.94 hour window,
+so nearly four hours of it bought nothing - most likely spent logged in and idle, which the same
+entry measures as accruing nothing. Nothing in the file can confirm that, which is the whole
+complaint.
+
+Related: [[L-108]], the reasoning error this same entry made about the same rule. The two are the
+same shape - an answer that was right about arithmetic and wrong about which interval, then an
+arithmetic that was right and aimed at the wrong interval.

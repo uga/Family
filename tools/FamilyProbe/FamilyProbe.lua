@@ -1061,8 +1061,74 @@ local function askEverything()
 end
 
 local frame = CreateFrame("Frame")
+-- **When each character went away and came back**, which is the measurement every rested reading
+-- was actually about and which none of them carried.
+--
+-- 2026-09-21: Tontazzo's overnight pair was scored against the gap between two *readings* - 19.94
+-- hours - because that is all the file held. The pool fills while a character is **logged out**,
+-- and those are not the same interval: a character can be read, stay logged in for hours accruing
+-- nothing in the field, and only then be put away. Scored on the reading gap the rate came out at
+-- 4.01% of a level per 32 hours; scored on Ziofurgone, whose logout followed his reading by nine
+-- minutes, 4.95%. One of those two numbers is an artefact of the wrong interval and nothing in the
+-- file can say which.
+--
+-- `PLAYER_LOGOUT` fires before the saved variables are written, so the moment survives. With both
+-- ends recorded the next pair is scored on the interval that the rule is about, rather than on the
+-- one that happened to be written down.
+-- **The interval is worked out at login and stored**, not left to be worked out later from two
+-- fields that the next logout will overwrite. A file sent after another session would otherwise
+-- hold that session's logout beside that session's login, and the night in between - the only
+-- thing anybody wanted - would be gone.
+local function mark(field)
+    local locale = (GetLocale and GetLocale()) or "unknown"
+    local report = FamilyProbeDB[locale] or {}
+    FamilyProbeDB[locale] = report
+
+    local who = (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?")
+    report.away = report.away or {}
+    local mine = report.away[who] or {}
+    report.away[who] = mine
+
+    local now = time()
+
+    if field == "in" and mine.out then
+        mine.awayFor = now - mine.out
+        mine.cameBackAt = now
+    end
+
+    mine[field] = now
+end
+
+-- What the last absence was, for the line that reports rested. Nothing to say on a character this
+-- probe has not seen go away yet, which is every character until it has been installed for one
+-- logout - and saying so is the point.
+local function away()
+    local locale = (GetLocale and GetLocale()) or "unknown"
+    local report = FamilyProbeDB[locale] or {}
+    local mine = report.away and report.away[(UnitName("player") or "?") .. "-"
+        .. (GetRealmName() or "?")]
+
+    if not mine or not mine.awayFor then
+        return "awayFor=unknown (this probe has not seen this character log out yet)"
+    end
+
+    return string.format("awayFor=%d s (%.2f h) out=%d back=%d",
+        mine.awayFor, mine.awayFor / 3600, mine.out or 0, mine.cameBackAt or 0)
+end
+
+-- Beside the rested sample, because it is half of every sum anybody does with one.
+PROBES[#PROBES + 1] = { area = "rested", name = "the last absence", ask = away }
+
 frame:RegisterEvent("PLAYER_LOGIN")
-frame:SetScript("OnEvent", function()
+frame:RegisterEvent("PLAYER_LOGOUT")
+frame:SetScript("OnEvent", function(_, event)
+    if event == "PLAYER_LOGOUT" then
+        mark("out")
+        return
+    end
+
+    mark("in")
+
     -- A moment after login: the skill list is not always populated at the instant it fires.
     if C_Timer and C_Timer.After then
         C_Timer.After(5, collect)

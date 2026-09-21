@@ -4707,12 +4707,18 @@ behaviour, and reports **which addons are loaded** on every `apis` run - because
 readings were taken before anybody asked whether that client had GatherMate on it, and the answer
 is what decides whether a minimap reading means anything at all.
 
-**The minimap is closer to settled but not settled.** `Minimap  |  "Dreamfoil"` came back here as
-`Minimap  |  "Copper Vein"` did on Era, and no `GatherMatePin` frame appeared anywhere in this
-session - where the Era run hovered two of them. That is suggestive and it is not a reading:
-whether GatherMate is installed on this client was never asked, and a pin that anchors its tooltip
-to the minimap would look exactly like this. The clean test is still one run with GatherMate
-switched off, and until then the world node is the measured half on both builds.
+**The minimap, settled 2026-09-21 by the one run that could settle it.** Alberto switched
+GatherMate off on purpose and hovered a blip on Burning Crusade: `Minimap  |  "Silverleaf"`. So a
+tracking blip **does** answer, on a stock interface, and the three earlier `Minimap` readings -
+Era's *Copper Vein*, Mists' *Dreamfoil* - were the client's own after all. They were right and
+unreadable, which is a different thing from right: with GatherMate loaded, a pin anchoring its
+tooltip to the minimap would have looked identical, and nothing in those readings separated the
+two.
+
+What the blip gives is **less** than the world node: one line, the name, and no profession line,
+where a world node answers two. So the minimap says which node and not which profession, and
+whatever resolves a node name has to manage there without the discriminator the world route hands
+over for nothing.
 
 ### The fourteen columns of `GetSavedInstanceInfo`, filled at last — read on Era 2026-09-21
 
