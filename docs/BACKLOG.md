@@ -6736,11 +6736,54 @@ client will name an item id in the player's own language. So for herbs the table
 name, which Family already resolves through `Names:Item`. An ore vein is not named after its ore in
 English - *Copper Vein* against *Copper Ore* - so that trick does not reach the mining half.
 
-**So the fork to settle before a line of the table is written:** whether it ships with English node
-names only, working fully on an English client and on other locales only where a node is named
-after its item, or whether the localized vein names are written down too and from where. Nothing
-below should be built until that is answered, because it decides the table's shape rather than its
-contents.
+### The fork settled, 2026-09-21, and it closes the route above for half the entry
+
+Alberto: *96 needs localised names like anything else in game*, and *locale words must come from
+official game vocabulary, not our translations.*
+
+The second sentence is this repository's `SkillLines.lua` rule - generated rather than typed,
+because *Erste Hilfe* and *Erstehilfe* are indistinguishable from outside the game - stated as a
+requirement instead of as a precedent. It answers the fork, and it does more than answer it.
+
+**The herb half is not merely possible under the rule, it is finished by it.** A herb node is named
+exactly what the herb is named, and a herb is an **item**, and item names are client data. The
+running client answers `GetItemInfo` for any id in its own language - that is `Names:Item`, with
+the callback for an id the client has not cached yet, and the harness checks both paths. Offline,
+`ItemSparse` is a table this project already fetches (`tools/GenerateCraftLevels.py:90`). So the
+herb half ships **no strings at all**: a list of item ids, and every word that reaches the screen
+came out of the client. Official vocabulary by construction, in five languages, with nothing for
+anybody to check and nothing for anybody to get wrong.
+
+**The mining half has no such source, and that is measured rather than feared.** A vein is a
+*gameobject*; its name lives in `gameobject_template` on the server; and the wago fetch above found
+neither the names nor the mapping in anything wago mirrors. So **there is no official vein
+vocabulary anywhere outside a running client - in any language, English included**. A table written
+by hand would be somebody's reading of the game rather than the game's own word, which is precisely
+what the second sentence forbids, once per node per locale.
+
+So the route chosen on 2026-09-20 survives for herbs, where it turns out to need no names, and
+**is closed for veins by the rule that was meant to guide it**. What the mining half needs is a
+route that ends in the game's own mouth. Three do, and only one of them is free:
+
+1. **Learn it from play.** A miner mines a vein; the client knows both the node it was and the ore
+   that came out; Family records `locale + node name -> ore item ids` and shares it like anything
+   else. Every word official, no table, and it works in a language nobody here speaks. The cost is
+   that it knows nothing until somebody mines one, and what the client offers at that moment -
+   whether the node's name is reachable from the loot - **has never been asked** and is the probe
+   this half now wants.
+2. **Join the two official strings.** The vein name comes from the tooltip and the ore name from
+   `GetItemInfo`, both the game's own words in the reader's own language, and only the *join* would
+   be ours: the shared metal word. *Kupferader* against *Kupfererz*, *Filon de cuivre* against
+   *Minerai de cuivre*. Ships nothing, needs no play, works on the first hover - and it is a
+   heuristic, which this repository distrusts, and it cannot be checked offline because checking it
+   needs the vein names that do not exist outside the game.
+3. **A third-party database** - Wowhead and the like, which have the names in every locale because
+   people playing in those locales submitted them. That is **reserved item 2** and is Alberto's
+   alone.
+
+**Recommendation: 1, with the probe first**, and build the herb half now rather than behind it. The
+herb half is the whole of the Silverleaf example in the asking message, it satisfies both of
+Alberto's sentences with nothing shipped, and it is the half that cannot go wrong.
 
 ---
 
