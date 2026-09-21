@@ -486,12 +486,25 @@ local PROBES = {
     end },
 
     { area = "pvp", name = "honor and conquest as currencies", ask = function()
-        -- 392 honor and 390 conquest, by id, through whichever of the two currency calls this
-        -- client carries. Ids because a name is one language (§2.1).
+        -- Honor and conquest by id, through whichever of the two currency calls this client
+        -- carries. Ids because a name is one language (§2.1).
+        --
+        -- **Four ids, because the first two were the wrong ones and answered anyway.** 392 is
+        -- honor on Cataclysm and on retail, and it is what this asked alone until 2026-09-21.
+        -- On Mists 5.5.4 it answers a full table named **"Honor Deprecated 3"** with
+        -- `currencyID = 0`, which reads like a client that has retired honor and is nothing of
+        -- the sort: `CurrencyTypes` for that build carries 1901 *Honor Points* and 1900 *Arena
+        -- Points* beside three deprecated honor rows - 104, 181 and 392. 1901 is also the id
+        -- Burning Crusade 2.5.6 was measured to use, twice over, from the row and from the link.
+        --
+        -- So the reading that looked like an answer was the probe asking a retired number and
+        -- being answered politely. Present is not meaningful, and a call that answers is not
+        -- thereby answering about the thing you meant.
         local modern = inside("C_CurrencyInfo", "GetCurrencyInfo")
         local old = there("GetCurrencyInfo")
         local out = {}
-        for _, pair in ipairs({ { "honor", 392 }, { "conquest", 390 } }) do
+        for _, pair in ipairs({ { "honor 1901", 1901 }, { "arena 1900", 1900 },
+            { "honor 392 (retired on Mists)", 392 }, { "conquest 390", 390 } }) do
             if modern then
                 out[#out + 1] = pair[1] .. " C_CurrencyInfo -> " ..
                     fields(try(modern, pair[2]))

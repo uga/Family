@@ -4758,3 +4758,52 @@ record would have got wrong.
 gets fourteen values back — `nil 0 nil 0 false false 0 false 0 "" 0 0 false 0` — so "no lockout"
 is read from the count or from the nil name, never from the call refusing. And a boss killed in a
 normal low-level dungeon put nothing in this list at all.
+
+### Honor on Mists is 1901, and the probe had been asking 392 — 2026-09-21
+
+Backlog 5 and the second half of 95 were both waiting on *a Mists character holding a currency*,
+and Alberto reported the practical blocker: nobody queues low-level battlegrounds on that realm
+and he has no character at the top of it. That blocker is real for one of the two questions and
+not for the other, and checking which found a fault in the probe.
+
+**`CurrencyTypes` for `5.5.4.69078` carries four honor-shaped rows**, fetched rather than recalled:
+
+| Id | Name | Max |
+|---|---|---|
+| 104 | `Honor Points DEPRECATED` | 0 |
+| 181 | `Honor Points DEPRECATED2` | 0 |
+| 392 | `Honor Deprecated 3` | 400,099 |
+| **1901** | **`Honor Points`** | 400,000 |
+| **1900** | **`Arena Points`** | 10,000 |
+| 390 | `Conquest Points` | 400,000 |
+
+**1901 is the live one, and it is the same id Burning Crusade 2.5.6 was measured to use** — from
+the row's twelfth value and from `C_CurrencyInfo.GetCurrencyListLink`, two routes agreeing, in
+backlog 95. So honor's id on Mists needed no battleground and no character at all: it is in the
+client's own table, and it is the number this project had already measured on the build next door.
+
+**And the probe had been asking 392 the whole time.** That is honor on Cataclysm and on retail, and
+on 5.5.4 it answers a full, plausible table — name, description, icon, `maxQuantity` — reading
+*Honor Deprecated 3*, with `currencyID = 0`. Which looks like a client that has retired honor and
+is nothing of the sort. **A call that answers is not thereby answering about the thing you meant**:
+the same lesson as the capability probes, arrived at from the other end, and the third time this
+week a number that resolved was taken for the right number. The probe now asks 1901 and 1900 as
+well, with 392 kept and labelled, because what a retired id answers is worth seeing beside the
+live one.
+
+**What is still genuinely blocked, and what unblocks it.** The open question in backlog 95 is the
+*shape of a row* from the older list on Mists — twelve values with the id last, as on Burning
+Crusade, or some other length. That needs a character with something in the list, because
+`GetCurrencyListSize` answers 0 until then. But it does **not** need honor, and it does not need
+PvP: any currency at all puts a row in that list. From the same table, the ones a character short
+of the level cap can hold:
+
+- the twelve **archaeology fragments** (category 82: Dwarf 384, Troll 385, Fossil 393, Night Elf
+  394, Orc 397, Draenei 398, Vrykul 399, Nerubian 400, Tol'vir 401, Pandaren 676, Mogu 677,
+  Mantid 754) — one survey on one dig site;
+- **Darkmoon Prize Ticket** (515), from the monthly faire's games, at any level;
+- **Ironpaw Token** (402) for cooking and the **jewelcrafter's tokens** (361, 698) for the daily.
+
+Archaeology is the cheapest of these: it needs the skill and a single dig, and nobody else has to
+be online. Whichever is used, the reading wanted is `/familyprobe apis` on that character, for the
+*the currency list* line.

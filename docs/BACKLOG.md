@@ -6348,7 +6348,23 @@ any more. Five checks and three mutations for the order itself.
 about, on a build that was filed under the modern one. Its row has still never been seen, because
 the only Mists character asked so far has earned no currency. If that row is twelve values with
 the id last, this fix covers it; if it is any other length, honor there keeps its name and this
-entry has a second half. Either way nothing is guessed, which is what the shape check buys.
+entry has a second half.
+
+**Two of that second half's questions were separable, and one is now answered - 2026-09-21.**
+Alberto reported the blocker: nobody queues low-level battlegrounds on that realm and he has no
+character at the top of it. That stops the *row shape* question and does not stop the other one.
+
+**Honor's id on Mists is 1901**, the same number Burning Crusade 2.5.6 was measured to use, read
+from `CurrencyTypes` for that build - no battleground and no character needed. And the probe had
+been asking **392**, which is honor on Cataclysm and on retail and on 5.5.4 answers a full,
+plausible table named *Honor Deprecated 3* with `currencyID = 0`. So the reading that looked like
+*this build has retired honor* was the probe asking a retired number and being answered politely.
+Written up in DATASOURCES, *Honor on Mists is 1901*.
+
+**What is still blocked is only the row's shape**, and it needs neither honor nor PvP: any currency
+at all puts a row in that list. Archaeology fragments are the cheapest - one survey on one dig
+site, nobody else online - and a Darkmoon Prize Ticket at any level is the next. Then
+`/familyprobe apis` on that character, for the *the currency list* line. Either way nothing is guessed, which is what the shape check buys.
 
 ---
 
