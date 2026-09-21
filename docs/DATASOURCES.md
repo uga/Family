@@ -4889,6 +4889,62 @@ the client; what is unknown is only how much of the feature those two languages 
 language, which is exactly the class of thing that makes a comparison fail for one item and
 nobody can see why.
 
+#### The iron pair, read in two languages, and the rule that resolves it — 2026-09-21
+
+Alberto supplied the four vein names the join was blocked on, out of the game:
+
+| | Iron | Dark Iron |
+|---|---|---|
+| French | `Gisement de fer` | `Gisement de sombrefer` |
+| German | `Eisenvorkommen` | `Dunkeleisenvorkommen` |
+
+That is the hard case in the two languages that make it hard for opposite reasons: German
+collides because `Eisenerz` sits inside `Dunkeleisenerz`, French because `fer` sits inside
+`sombrefer`. A plain longest-shared-run join ties **three ways** in German - `Eisenvorkommen`
+shares exactly `eisen` with `Eisenerz`, `Dunkeleisenerz` and `Teufelseisenerz`.
+
+**One change resolves every case that has ever been measured, and it is not a threshold fitted to
+the answer.** Score the run as a **share of the candidate's own name** rather than as a count of
+characters. A short metal word filling a short plain name is a strong match; the same word buried
+in a long specific one is a weak one. `eisen` is 5 of 8 in `Eisenerz` and 5 of 14 in
+`Dunkeleisenerz`, so the plain ore wins the plain vein — and `dunkeleisen` is 11 of 14, so the
+specific vein wins the specific ore. **The containment stops being a tie and becomes the
+discriminator.**
+
+**And the candidates are ores alone** — Alberto, having seen the scoring: *we can drop the BAR
+requirement, we can show only ores.* Which is the display and the scoring both. The candidate set
+is the single-reagent smelts whose reagent is not itself smelted from something else: 15 ores on
+Burning Crusade, 22 on Mists. Bronze takes two bars and Elementium four things, neither of which
+is in the ground, and dropping them drops `Coal`, `Fiery Core` and `Elemental Flux` with them -
+which were the closest wrong answers while bars were in. French `Gisement de fer` had `Noyau de
+feu` a tenth of a point behind it; against ores alone its nearest rival is `Minerai de pyrite`,
+two and a half times further off.
+
+| Client | The vein | Picks | Score | Runner-up | Margin |
+|---|---|---|---|---|---|
+| frFR | `Gisement de fer` | `Minerai de fer` | 0.500 | `Minerai de pyrite` 0.235 | 0.265 |
+| frFR | `Gisement de sombrefer` | `Minerai de sombrefer` | 0.650 | `Minerai de fer` 0.286 | 0.364 |
+| frFR | `Filon de cuivre` | `Minerai de cuivre` | 0.588 | `Minerai de cobalt` 0.294 | 0.294 |
+| deDE | `Eisenvorkommen` | `Eisenerz` | 0.625 | `Dunkeleisenerz` 0.357 | **0.268** |
+| deDE | `Dunkeleisenvorkommen` | `Dunkeleisenerz` | 0.786 | `Eisenerz` 0.625 | **0.161** |
+| enUS | `Iron Deposit` | `Iron Ore` | 0.625 | `Fel Iron Ore` 0.417 | 0.208 |
+| enUS | `Dark Iron Deposit` | `Dark Iron Ore` | 0.769 | `Iron Ore` 0.625 | **0.144** |
+| enUS | `Copper Vein` | `Copper Ore` | 0.700 | `Silver Ore` 0.300 | 0.400 |
+
+Eight for eight across three languages, including **both members of every containment** the count
+above found. The narrowest margin is 0.144 and the lowest winning share is 0.500.
+
+**What this is and is not.** It resolves every vein name anybody has read, and those readings were
+chosen to be the hard ones rather than the easy ones - the opposite of how the ore-to-ore floor
+was sampled, and the reason to trust this further than that. It is **not** a proof about the
+dozens of vein names nobody has read. So the rule ships with a floor: below a minimum share, or
+within a margin of the runner-up, **nothing is drawn**. The failure that matters is naming the
+wrong metal confidently, and a vein this cannot place is left exactly as the client drew it.
+
+Two of the eight are Alberto's words from the asking message rather than a probe reading - English
+`Iron Deposit` and `Dark Iron Deposit` - and they are marked rather than quietly counted with the
+six that came off a tooltip.
+
 ### The fourteen columns of `GetSavedInstanceInfo`, filled at last — read on Era 2026-09-21
 
 Backlog 93 had one thing owed: the same call read on a character who **is** saved to something.
