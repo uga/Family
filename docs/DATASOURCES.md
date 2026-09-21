@@ -4945,6 +4945,107 @@ Two of the eight are Alberto's words from the asking message rather than a probe
 `Iron Deposit` and `Dark Iron Deposit` - and they are marked rather than quietly counted with the
 six that came off a tooltip.
 
+#### The join measured on every mining node of three builds in five languages — 2026-09-21
+
+Alberto read the vein names for de/fr/es/ru off Wowhead's *Mining Nodes* category pages by hand
+and put them outside the tree, in `~/dev/varie/`, with the object ids. **Use granted for one
+purpose: measuring the join. No name from them goes into the addon**, and whether they are ever
+copied into the repository is his. Wowhead is not adopted as a data source by this; the addon
+reads a vein's name off the tooltip and the ore names from the client, exactly as before.
+
+That turns the question from *does it work on the eight names anybody has read* into *how often
+is it wrong across everything the game has*. Every node object Wowhead lists for Era, Burning
+Crusade and Mists, in five languages, scored against the ore names from the client's own
+`ItemSparse` at the pinned builds: **534 rows with a known ore**, plus 213 that yield no
+smeltable ore and must draw nothing.
+
+**Ground truth is split three ways and the third way is the honest one.** 37 English node names
+whose ore is certain; 18 that certainly yield none - gems, stones, obsidian, trillium, kyparite;
+and everything else, whose yield this project has never established. A fire on that third group
+is counted as **unverified** rather than scored against a guess, which is the fault this whole
+entry has been about.
+
+**Four rules, and each one was put there by a reading rather than by taste.**
+
+1. **Share of the candidate's name, not a count of characters** — the change that broke the
+   German three-way tie.
+2. **A minimum run of 4 characters.** Spanish ore names are short: `Torio` is five letters, so a
+   three-character coincidence scores 0.6 and `Filón de indurio` took `Torio`. A run floor kills
+   that and costs nothing real.
+3. **A margin of 0.27 over the runner-up.** Measured, not chosen: at 0.26 the Russian
+   `Большая обсидиановая глыба` still takes `Обсидиановая руда` — obsidian against obsidium, a
+   stone node named as an ore. At 0.27 it stops and two correct answers go with it.
+4. **Unless the runner-up's name sits inside the winner's**, in which case the margin is waived.
+   `Silver Ore` under `Truesilver Ore` is one metal seen twice, not two candidates, and the
+   margin was silencing the correct answer on every Truesilver node in the game. Worth **28**
+   correct answers and cost nothing.
+
+**The result at floor 0.55, margin 0.27, run ≥ 4, with the kin rule:**
+
+| | named correctly | **wrong metal** | silent |
+|---|---|---|---|
+| English | 119 | **0** | 16 |
+| German | 62 | **0** | 9 |
+| French | 100 | **0** | 29 |
+| Spanish | 59 | **0** | 11 |
+| Russian | 73 | **0** | 56 |
+| **total** | **413** | **0** | 121 |
+
+Plus 213 nodes that yield nothing smeltable, every one of them silent, and 6 fires on nodes
+whose yield is unestablished.
+
+**Russian degrades to silence and not to error**, which is the whole design holding up under the
+language that breaks substring matching: Russian declines, so `Залежи железа` and
+`Железная руда` share only `желез`, and `Залежи призрачного железа` scores **higher** against
+`Руда черного железа` than against its own ore. At the chosen margin every one of those falls
+below the bar instead of naming the wrong metal. It names 73 of 129 and says nothing about the
+rest.
+
+**Trillium and Kyparite have no candidate at all** - Trillium is smelted from two ores and
+Kyparite is not smelted - so those nodes are silent by construction rather than by threshold,
+which is correct and is not a gap to close.
+
+**Two of the five languages could not be measured on Mists**, because wago's `ItemSparse` export
+for German and Spanish at `5.5.4.69078` is truncated: 21,850 and 15,640 rows against 88,746. The
+request succeeds. Nothing in the addon depends on it, so the consequence is only that those two
+cells of this table are Era and Burning Crusade alone.
+
+**What is still owed is the in-game confirmation**, and the table says which hovers are worth
+taking rather than leaving it to chance: the rows nearest the bar. Anything Wowhead and the
+client disagree about would show up there first.
+
+#### The herb route read in game, and it works — 2026-09-21
+
+`/family debug` over a Peacebloom in the world, after the narration went in:
+
+```
+node: GameTooltip shown with 2 line(s): Peacebloom / Herbalism
+node: "Peacebloom" is a herbalism node and nobody recorded holds one
+```
+
+and over its blip on the minimap, with GatherMate off:
+
+```
+node: GameTooltip shown with 1 line(s): Peacebloom / nil
+```
+
+**So every measured claim holds and the route is not broken.** The world node is two lines with
+the profession second, the blip is one line with no profession line, and the line-count gate
+turns the blip away exactly as designed. What is hiding the feature is a **decision**, not a
+fault: a node's name is resolved only against items the family already owns, so a herb nobody
+holds cannot be named, and the tooltip is left alone.
+
+That decision was recorded as costing nothing - *an item nobody holds has nothing to say on this
+tooltip*. It costs more than nothing. It makes a working feature indistinguishable from an absent
+one for exactly the herb somebody is standing over and deciding whether to pick, and it was
+reported as *herb nodes do not seem to work at all* twice before the narration could say
+otherwise. **A herb needs naming from a list of ids the way an ore does**, and then *nobody has
+any* is an answer worth drawing.
+
+The narration fires twice per hover, because the callback now runs at `OnShow` and again a frame
+later and the already-described guard is only set once a name resolves. Harmless and worth
+tidying.
+
 ### The fourteen columns of `GetSavedInstanceInfo`, filled at last — read on Era 2026-09-21
 
 Backlog 93 had one thing owed: the same call read on a character who **is** saved to something.
