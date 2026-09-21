@@ -4745,12 +4745,21 @@ characters. A join has to beat this floor before it can be said to have found an
 | esES | **11** — `mineral de ` | `Hierro` ⊂ `Hierro Negro` |
 | ruRU | **10** — `иевая руда` (Ториевая / Элементиевая) | none |
 
-**The floor is boilerplate, and in two languages it is longer than the metal word.** Every French
+**The floor is boilerplate**, and in two languages it is longer than the metal word. Every French
 ore begins `Minerai de` and every Spanish one `Mineral de`, so eleven characters of agreement
 between two ores that have nothing to do with each other. Russian agrees on `ная руда` and
 `иевая руда` — the adjective ending and the word for ore. German and English agree on `erz` and
-` Ore`. A longest-shared-run join therefore scores the **stationery** before it scores the metal,
-and a threshold low enough to accept a real match is far below the noise.
+` Ore`.
+
+> **Corrected 2026-09-21, an hour after this table was written, by Alberto: this floor is not the
+> join's floor.** The reading was written up as *a longest-shared-run join scores the stationery
+> before it scores the metal*, and that does not follow. `minerai de ` is scored only when **both**
+> strings carry it, and the two strings a join compares are a **vein name and an ore name**. Unless
+> a vein is also called *Minerai de something* — which nothing here knows, because no vein name has
+> been read in any language but English — the boilerplate cancels instead of counting, and the run
+> that survives is the metal word alone. The table above measures how alike the ten ores are to
+> **each other**. That was the pair available without a hover; it is not the pair the question is
+> about, and reporting it as the answer was the fault, not the fetching of it. See L-120.
 
 **Worse, the containments are exactly the interesting pairs.** `Iron Ore` is inside `Dark Iron
 Ore`; `Silbererz` is inside `Echtsilbererz`. So a node name carrying only the short metal word
@@ -4764,10 +4773,26 @@ Iron Ore` — five characters each, a dead tie — and iron is the example in th
 others, and the two iron ores differ by `Negro` — a word that a vein name would carry only if the
 game happens to use the same one for the rock as for the metal, which nothing here knows.
 
-**What this does not say.** It does not say the join is wrong; it says the join cannot be a plain
-longest shared run, and that four of the ten ores are safe in every language while two pairs are
-not. The part that is still unmeasured is the only part that matters in the end — what a vein is
-actually called — and that needs a client, in a language, with a miner in it.
+**What this does say, once the correction above is applied.** Not that the join is wrong, and not
+that its signal is buried: what survives is the **containment**, which is real and which the
+boilerplate correction does not touch. A vein whose name carries only the short metal word scores
+the same against the short ore and the long one, in any language where one ore's name sits inside
+another's, and that is English, German and Spanish out of five. Four of the ten ores are
+unambiguous everywhere; two pairs are not.
+
+**And why there is no list to ship, which is a different question from whether the name is
+available.** Alberto, 2026-09-21: *the client must have the localised names for all veins,
+otherwise how does it show the tooltips*. Quite so, and the two facts sit together without
+contradiction. The name is on the tooltip, in the reader's language, every time — that is measured,
+four readings across two builds. What is absent is the name in any **file**: a gameobject's name
+reaches the client from the server when it first meets the object, which is exactly why it is on
+the tooltip and exactly why `wago.tools`, which mirrors the client's shipped data, does not carry
+it. So the name can always be read **for the node under the cursor** and can never be enumerated
+into a table. Route 2 needs only the first of those, which is why it is the route that does not
+need a table at all.
+
+The part still unmeasured is the only part that decides it — what a vein is actually called, in a
+language other than English — and that needs a client, in a language, with a miner in it.
 
 ### The fourteen columns of `GetSavedInstanceInfo`, filled at last — read on Era 2026-09-21
 

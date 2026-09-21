@@ -4196,3 +4196,40 @@ the client rather than by the character can be seen before a raid finds it.
 **And the rule the next one falls to.** When a part is added to an existing scanner, the question
 is not only *is this read off the character* but *does the schedule this now inherits have anything
 to do with what changes it*. Wearing a different hat does not change what you have achieved.
+
+## L-120 — the pair that could be measured was not the pair in question
+
+**2026-09-21.** Backlog 96's mining half joins a vein's name to its ore's, both the game's own
+words. Asked whether the join can work, and unable to read a single vein name outside a running
+client, I measured the thing that was to hand: how alike the **ten ore names are to each other**,
+in five languages, from `ItemSparse`. French and Spanish came back with an eleven-character run
+between any two ores - `Minerai de `, `Mineral de ` - and that was written up, in a document, a
+backlog entry, a decisions row and a commit message, as *a longest-shared-run join scores the
+stationery before it scores the metal*.
+
+It does not. `Minerai de ` is scored only when **both** strings carry it, and the join compares a
+vein name with an ore name. Alberto saw it in a sentence: *the client must have the localised names
+for all veins, otherwise how does it show the tooltips*. He was answering a different point, and
+the answer took this one with it - the two strings are not both ore names, so the boilerplate
+cancels rather than counting, and no vein name has been read in any language but English to say
+what a vein's boilerplate even is.
+
+**The fetching was right and the labelling was wrong.** The ore-to-ore reading is a true
+measurement and it keeps a real finding: `Iron Ore` sits inside `Dark Iron Ore`, `Silbererz` inside
+`Echtsilbererz`, `Hierro` inside `Hierro Negro`, so a vein carrying only the short metal word
+cannot choose between them. That survives untouched. What was wrong was presenting a measurement of
+the available pair as a measurement of the asked pair, and then reasoning onward from it - a route
+was called *unworkable* on the strength of it, and an amendment designed to rescue it from a
+problem it does not have.
+
+**This is L-117's fault in a different coat.** There, an interval nobody had recorded was replaced
+by one from another character, and the arithmetic produced a fit rather than an error bar. Here, a
+pair nobody could read was replaced by a pair that could be, and the statistics produced a floor
+rather than an admission. Both times the substitution was invisible in the write-up because the
+number that came out looked like the number that had been asked for. **A measurement carries the
+thing it measured in its own sentence, or it will be read as the thing that was wanted.**
+
+**The check.** The heading and the first paragraph of that section now say what was compared - *not
+whether a vein matches its ore, but whether the ores can be told apart from each other* - and the
+correction sits inside it as a block quote rather than replacing the text, so the wrong reading and
+its retraction are read together. The same rule is why `docs/DECISIONS.md` is append-only.

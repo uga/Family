@@ -6794,19 +6794,28 @@ ore*. What it settles:
 - **The candidate ores need no new table.** `SkillLineAbility` for `1.15.9.69109` gives 23 spells
   on skill line 186; crossed with the shipped `Family.RecipeReagents` they consume ten ores -
   `2770 2771 2772 2775 2776 3858 7911 10620 11370 18562`. Out of the client's own files, both ends.
-- **The noise floor is higher than the signal in two languages.** Two *unrelated* ores share 11
-  characters in French (`Minerai de `) and Spanish (`Mineral de `), 10 in English (`silver ore`)
-  and Russian (`иевая руда`), 9 in German (`silbererz`). A longest-shared-run join scores the
-  stationery before it scores the metal.
+- ~~**The noise floor is higher than the signal in two languages.**~~ **Retracted the same hour**,
+  by Alberto's *I did not understand the problem*. Two *unrelated* ores do share 11 characters in
+  French (`Minerai de `) and Spanish (`Mineral de `) - but that run is scored only when **both**
+  strings carry it, and the join compares a **vein** name with an **ore** name. No vein name has
+  been read in any language but English, so nothing says a vein carries that boilerplate; if it
+  does not, it cancels instead of counting. A measurement of the pair that was available was
+  written up as a measurement of the pair in question (L-120).
 - **And the containments are the interesting pairs.** `Iron Ore` ⊂ `Dark Iron Ore`, `Silbererz` ⊂
   `Echtsilbererz`, `Hierro` ⊂ `Hierro Negro`. On English, *Iron Deposit* shares `iron ` with both
   iron ores - five characters each, a dead tie - and **iron is the example in the asking message**.
-- **Spanish will not yield to a threshold.** Its ore names are not one family: `Mineral de cobre`
-  carries the word and `Hierro`, `Torio`, `Veraplata` and `Hierro Negro` do not, so the boilerplate
-  to discount is there for some rows and absent for others.
+- **Spanish ore names are not one family**: `Mineral de cobre` carries the word and `Hierro`,
+  `Torio`, `Veraplata` and `Hierro Negro` do not. That matters for a rule that strips boilerplate
+  before matching, and not for one that does not.
+- **And there was never a names problem to solve here.** Alberto: *the client must have the
+  localised names for all veins, otherwise how does it show the tooltips.* It does, on the tooltip,
+  in the reader's language, measured four ways. What is missing is the name in a **file** - a
+  gameobject's name comes from the server when the client first meets it, which is why the tooltip
+  has it and why a mirror of the client's shipped data does not. So the name is always readable
+  **for the node under the cursor** and never enumerable into a table, and route 2 wants only the
+  first. The official-vocabulary objection was about shipping a table and never applied to it.
 
-**So route 2 stands only in an amended form**, and the amendment is what makes it honest rather
-than lucky:
+**So route 2 stands, with one amendment**, for the narrower reason that survived:
 
 - score a node name against all ten ores and take the best, **but require it to beat the runner-up
   by a margin** - a tie or a near-tie shows nothing at all, which is §2.2 applied to a guess;
