@@ -4779,6 +4779,69 @@ gets fourteen values back — `nil 0 nil 0 false false 0 false 0 "" 0 0 false 0`
 is read from the count or from the nil name, never from the call refusing. And a boss killed in a
 normal low-level dungeon put nothing in this list at all.
 
+### And Mists answers the same fourteen columns, with one of them contradicting Era — read 2026-09-21
+
+Backlog 93's Mists half, on `5.5.4`, Luga-Mirage Raceway, an English client, on a character
+standing inside Molten Core with one lockout. Both answers are in the probe's output — the one
+taken beside `RequestRaidInfo` and the one taken when `UPDATE_INSTANCE_INFO` arrived, about seven
+minutes apart.
+
+| # | First answer | After the event | Beside Era's three raids |
+|---|---|---|---|
+| 1 | `"Molten Core"` | the same | a name in the client's language, as before |
+| 2 | `239723021` | the same | the lock's own id |
+| 3 | `127269` | `126845` | **counts down**: 424 seconds in those seven minutes |
+| 4 | `9` | the same | difficulty 9, exactly Era's three |
+| 5 | **`false`** | **`true`** | Era read `true` at both moments |
+| 6 | `false` | the same | |
+| 7 | `524615680` | the same | **the same number Era gave for all three of its raids** |
+| 8 | `true` | the same | is a raid |
+| 9 | `40` | the same | |
+| 10 | `"40 Player"` | the same | `"40 joueurs"` on the French client |
+| 11 | **`1`** | the same | Era read 8, 9 and 15 |
+| 12 | `0` | the same | nothing down |
+| 13 | **`false`** | the same | Era read `true` on all three |
+| 14 | **`409`** | the same | Molten Core |
+
+**Column 14 holds, and it is the column the record is keyed by.** `409` is `MoltenCore` in this
+build's own `Map` table, so the identifier is the identifier on both clients and nothing about the
+storage shape changes.
+
+**Column 3 holds, and this reading is better evidence than Era's was.** Era had two answers in one
+session and only their direction; here the gap is seven minutes of wall clock against 424 seconds
+of column, which is the same thing measured rather than observed.
+
+**Column 7 carries no information.** `524615680` on three Era raids and on a Mists Molten Core is
+one constant across two expansions and four places, and it is `8005 × 65536` exactly — a high word
+with nothing under it. Whatever the client means by it, it does not describe the instance, and
+nothing may be read off it.
+
+**Column 11 does not hold, and it is the column this entry had already been written on.** The Era
+reading called it *how many bosses the place has* and checked it against `DungeonEncounter` keyed
+by `MapID`: 8 rows for 469, 9 for 531, 15 for 533, matching the client's 8, 9 and 15 exactly. The
+same table at `5.5.4.69078` holds **ten** rows for 409 — Lucifron through Ragnaros, bits 0 to 9,
+fetched not recalled — and the client answers **1**.
+
+So *12 of 15* is sayable on Era and is not sayable on Mists. What made it look settled was three
+rows agreeing on one client, all three of the same kind: a forty-man raid on Era, read in one
+session. The fourth row is the first of a different kind and it disagrees. Column 11 is therefore
+**unknown again**, not known; what survives is column 12 on its own, *N bosses down*, with any
+denominator taken from somewhere that can be checked rather than from the client's word here.
+
+**Column 5 changed inside the session** — `false` beside `RequestRaidInfo`, `true` when the event
+arrived. Every earlier finding about that event was about the list being *empty* before it; this is
+the first field measured to be **wrong** before it rather than missing, on a row that was already
+there. So the list is read when the event says so, and never beside the request, and that is now a
+measured rule rather than a careful one.
+
+**Column 13 disagrees across the two clients**, `true` on Era's three and `false` here. Consistent
+with a per-lock flag and evidence for nothing further.
+
+**Still owed after this**: a **heroic** lockout, since columns 4 and 10 have now said 40 on four
+rows across two clients and have never been seen saying anything else; and Mists world bosses,
+where `GetNumSavedWorldBosses` answered `0` on this character too — present and empty on all three
+builds, every time it has been asked.
+
 ### Honor on Mists is 1901, and the probe had been asking 392 — 2026-09-21
 
 Backlog 5 and the second half of 95 were both waiting on *a Mists character holding a currency*,
@@ -4827,3 +4890,12 @@ of the level cap can hold:
 Archaeology is the cheapest of these: it needs the skill and a single dig, and nobody else has to
 be online. Whichever is used, the reading wanted is `/familyprobe apis` on that character, for the
 *the currency list* line.
+
+**The corrected probe was run the same day and 1901 answers**: `name=Honor Points`, and the
+description the client gives for it — *Honor is gained by killing members of the opposite faction
+in PvP combat* — beside 392's *Used to purchase less-powerful PvP armor and weapons*. So the id is
+confirmed from the client as well as from the table, and the two rows can be told apart by what
+they say about themselves. Every quantity on it is `0`, which is what this character holds, and
+`currencyID` comes back `0` on all four rows rather than echoing the id asked for — so that field
+is not a route to an identifier on this build, and `GetCurrencyListSize` still answers `0`. The
+blocked half is exactly as described above and no smaller.

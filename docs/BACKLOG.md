@@ -5946,9 +5946,9 @@ What it settles for this entry:
   Checked against the client's own `Map` table for this build, not recognised: 469 is
   `BlackwingLair`, 533 is `Stratholme Raid` named *Naxxramas*, and all three French names match the
   probe's output character for character.
-- **Columns 11 and 12 are bosses and bosses down** - 8 of 8, 8 of 9, 12 of 15 - confirmed against
-  `DungeonEncounter` keyed by the same `MapID`, which holds exactly 8, 9 and 15 rows for them. So
-  *12 of 15* is sayable without a table of our own.
+- **Columns 11 and 12 looked like bosses and bosses down** - 8 of 8, 8 of 9, 12 of 15 - against
+  `DungeonEncounter` keyed by the same `MapID`, which holds exactly 8, 9 and 15 rows for them.
+  **Column 11 did not survive the Mists reading of 2026-09-21** and the retraction is below.
 - **Column 3 is a countdown in seconds**, as this entry predicted: 189500 on the first answer and
   189351 on the `UPDATE_INSTANCE_INFO` one. So the moment is made on the way in and `DEADLINES` is
   the right home for it, exactly as written above.
@@ -5959,9 +5959,27 @@ What it settles for this entry:
   these builds turns the id back into a name for the reader, which is why the label travels.
 - Column 7 is `524615680` on all three rows, so whatever it is, it is not per-instance here.
 
+**The Mists reading came in 2026-09-21** - Molten Core, one lockout, a character standing in it -
+and the full column map is in DATASOURCES, *And Mists answers the same fourteen columns, with one
+of them contradicting Era*. Three things change for this entry:
+
+- **Column 11 is retracted.** The client answers `1` for a place its own `DungeonEncounter` gives
+  **ten** rows for. The Era reading was three rows of one kind on one client and they agreed; the
+  fourth row is of another kind and it does not. So *12 of 15* is sayable on Era and not on Mists,
+  and this entry may promise only column 12 on its own - *N bosses down* - unless the denominator
+  comes from somewhere that can be checked. `DungeonEncounter` is fetchable per build from wago
+  and a generated `instance id -> boss count` table is the obvious candidate; not decided here.
+- **Column 5 was wrong before `UPDATE_INSTANCE_INFO`, not missing.** It read `false` beside
+  `RequestRaidInfo` and `true` when the event arrived, on a row that was already present with its
+  other thirteen columns filled. Every earlier finding about that event was about an empty list; a
+  reader that took the list early would have had a lockout and called it unlocked.
+- **Column 7 is a constant across expansions**, `524615680` on Era's three raids and on Mists, and
+  it is `8005 x 65536` exactly. Nothing may be read off it.
+
 **What is still owed:** a **heroic** lockout rather than a raid one, which is where the difficulty
-columns (4 and 10) do something other than say 40, and the Mists reading for world bosses -
-`GetNumSavedWorldBosses` is present on both Era and Mists and has said `0` every time so far.
+columns (4 and 10) do something other than say 40 - four rows across two clients have now all said
+40 - and the Mists reading for world bosses, where `GetNumSavedWorldBosses` is present on all three
+builds and has answered `0` every time it has been asked, Mists included.
 
 **A boss killed in a normal low-level dungeon put nothing in the list**, read on Burning Crusade
 2026-09-20 minutes afterwards: `GetNumSavedInstances` still 0. That fits what the game is

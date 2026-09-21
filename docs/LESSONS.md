@@ -4122,3 +4122,35 @@ complaint.
 Related: [[L-108]], the reasoning error this same entry made about the same rule. The two are the
 same shape - an answer that was right about arithmetic and wrong about which interval, then an
 arithmetic that was right and aimed at the wrong interval.
+
+## L-118 — The reading carried its client; the promise made from it did not
+
+**2026-09-21.** Three Era lockouts were read and their fourteen columns mapped. Column 11 answered
+8, 9 and 15 for Blackwing Lair, Ahn'Qiraj and Naxxramas, and the client's own `DungeonEncounter`
+table holds exactly 8, 9 and 15 rows for those three map ids. A cross-check against a second source
+agreeing three times out of three is good evidence, and the DATASOURCES section that recorded it is
+titled *read on Era 2026-09-21*, which is the whole scope of what had been measured.
+
+Then backlog 93 drew the design conclusion from it: *So **12 of 15** is sayable without a table of
+our own.* No client in that sentence. The Mists reading arrived the next day and answers **1** for
+Molten Core, whose `DungeonEncounter` at `5.5.4.69078` holds **ten** rows. The promise was wrong on
+the first client that was not the one it was measured on.
+
+**The reading was never overstated - the promise was.** The section header carried the build; the
+sentence that turned it into something Family would print did not, and that sentence is the one a
+later session reads and builds on. This project already has the rule in a different dress: §2.3
+says a capability is per build and is probed on each, and `Capabilities.lua` exists because a call
+that answers on one client answers about something else on another. A *column map* is a capability
+reading and obeys the same rule.
+
+**And three rows can be one reading.** All three Era lockouts were forty-man raids, on one client,
+in one session - identical in columns 4, 8, 9, 10 and 13. They agreed about column 11 because they
+were the same kind of thing, and the fourth row is the first of a different kind. Counting rows is
+not the same as counting kinds.
+
+**The check.** The conclusion in backlog 93 now names the client it holds on - *sayable on Era and
+not on Mists* - and its *what is still owed* names the kinds of row never yet read, not just the
+builds: a heroic lockout, where columns 4 and 10 would say something other than 40, which four rows
+across two clients have never done. Anything the entry promises Family will print says which client
+it was measured on, and a column with one client behind it is written as unknown rather than as
+settled-so-far.
