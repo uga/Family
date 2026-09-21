@@ -4078,3 +4078,29 @@ any hit that is not on an `allow` line. A missing list is a red gate, not a skip
 Mutations `banned-word-sweep-never-says-no`, `banned-word-sweep-quotes-everything`,
 `banned-word-sweep-covers-nothing`. The rule is in `CLAUDE.md`, and adding an `allow` line
 is on the reserved list.
+
+## L-117 — A reading written down without its moment is half a reading
+
+**2026-09-21.** Tontazzo's overnight rested reading came back 114 against 104 the day before, and
+the quarter rate fits it to the point: 104 + 10.49 over Ziofurgone's 60,406 seconds is 114.49,
+which a whole-point figure shows as 114. Exact - and resting on an interval nobody wrote down.
+
+`BACKLOG.md` 94 recorded that character's earlier pair as *rested **104** at both readings*, 4,587
+seconds apart, and recorded Ziofurgone's with `at 1789907222` beside them. So one of the two
+overnight measurements can be scored against a rate from the document alone and the other cannot,
+and the difference is a field that was in front of me both times: the probe prints `at=` on every
+rested sample and stores it in the saved variables, where that number still is.
+
+**What it cost:** the difference between a second independent confirmation and a second
+confirmation with an assumption inside it. The qualitative half survives untouched - the figure
+grew, so the field rate is not zero - but the arithmetic that makes it a *measurement* is on loan.
+
+**The check.** There is not a mechanical one, and saying so is better than inventing one: the
+harness cannot read a prose entry and tell a figure from a figure-with-a-moment. What there is
+instead is the rule in the entry itself - **a rested reading is written down with its `at=` or it
+is not written down** - and the observation that every one of these readings exists to be scored
+against a rate, which is arithmetic on two moments. A number with one moment is not half of that
+arithmetic; it is none of it.
+
+Related: [[L-108]], which is the reasoning error this same entry made about the same rule, and
+which this reading closes.

@@ -6297,9 +6297,39 @@ covers. The full four:
 | logged in, standing in the field | nothing | 0 over 444 and over 4,587 seconds, two builds |
 | logged out in the field | 5% per 32 hours | **226 over 60,406 seconds against 228** |
 
+### And Tontazzo confirms it at the other end of a character's life
+
+Read 2026-09-21 on logging in: rested **114**, `xp` 40, level 1, `xpMax` 400, `resting=false`, in
+the Valley of Trials, at 1789968200. The pair taken on 2026-09-20 read **104** both times.
+
+**The half that needs no arithmetic at all: it grew.** 104 to 114, on a character logged out in
+the open world. *Nothing accrues in the field* is refuted outright by that, with no interval and
+no rate needed - and so is the particular worry Alberto raised when he made the correction, that
+the troll and orc starting valley might be one of the *zone particolari di campo aperto* where
+nothing accrues. It accrues there.
+
+**The half that does need the interval, and the interval is not recorded.** Ten points is 16.0
+hours at the quarter rate and 4.0 at the inn rate. If Tontazzo's night was Ziofurgone's 60,406
+seconds, the quarter rate gives 104 + 10.49 = **114.49**, which a whole-point figure shows as
+**114** - the reading - against the inn rate's 146 and nothing's 104. The ceiling is 600, so
+nothing was clipped.
+
+That is an exact fit and it rests on an assumed logout time, because **this entry wrote Tontazzo's
+readings down without their `at=` values** while recording Ziofurgone's with them. The probe
+prints the moment on every sample and stores it, so the number is not lost - it is in that
+client's saved variables - but the document cannot be read on its own. L-117. The rule this entry
+now keeps: **a rested reading is written down with its moment or it is half a reading**, because
+a figure without a moment cannot be scored against a rate, and that is the only thing these
+readings are for.
+
+**Two characters, two ends of a life.** The rate is a fraction of the level's own `xpMax` - 8,700
+for Ziofurgone and 400 for Tontazzo, a factor of nearly 22 - and both land on the quarter rate. A
+single character could have been a character-shaped coincidence; two at these extremes are the
+rule.
+
 **What is still unmeasured**, and is written here so the estimate is not built as though it were
 not: the Pandaren exception on Mists, and what a character who crosses between the two cases in
-one absence accrues - all four readings above are of a character that stayed where it was put.
+one absence accrues - all the readings above are of a character that stayed where it was put.
 
 **And a second exception to write down before it bites.** Alberto: Pandaren fill faster than
 everybody else. Whatever Family computes has to know the race of the character it is computing
