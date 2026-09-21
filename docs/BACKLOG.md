@@ -6785,6 +6785,37 @@ route that ends in the game's own mouth. Three do, and only one of them is free:
 herb half is the whole of the Silverleaf example in the asking message, it satisfies both of
 Alberto's sentences with nothing shipped, and it is the half that cannot go wrong.
 
+### Route 2 chosen, and measured the same hour — it cannot be a plain shared run
+
+Alberto took **2**, the join. Half of it can be checked without a hover and was, and the full
+reading is in DATASOURCES under *What the ore names themselves say about joining a vein to its
+ore*. What it settles:
+
+- **The candidate ores need no new table.** `SkillLineAbility` for `1.15.9.69109` gives 23 spells
+  on skill line 186; crossed with the shipped `Family.RecipeReagents` they consume ten ores -
+  `2770 2771 2772 2775 2776 3858 7911 10620 11370 18562`. Out of the client's own files, both ends.
+- **The noise floor is higher than the signal in two languages.** Two *unrelated* ores share 11
+  characters in French (`Minerai de `) and Spanish (`Mineral de `), 10 in English (`silver ore`)
+  and Russian (`иевая руда`), 9 in German (`silbererz`). A longest-shared-run join scores the
+  stationery before it scores the metal.
+- **And the containments are the interesting pairs.** `Iron Ore` ⊂ `Dark Iron Ore`, `Silbererz` ⊂
+  `Echtsilbererz`, `Hierro` ⊂ `Hierro Negro`. On English, *Iron Deposit* shares `iron ` with both
+  iron ores - five characters each, a dead tie - and **iron is the example in the asking message**.
+- **Spanish will not yield to a threshold.** Its ore names are not one family: `Mineral de cobre`
+  carries the word and `Hierro`, `Torio`, `Veraplata` and `Hierro Negro` do not, so the boilerplate
+  to discount is there for some rows and absent for others.
+
+**So route 2 stands only in an amended form**, and the amendment is what makes it honest rather
+than lucky:
+
+- score a node name against all ten ores and take the best, **but require it to beat the runner-up
+  by a margin** - a tie or a near-tie shows nothing at all, which is §2.2 applied to a guess;
+- which means four of the ten work everywhere and the two confusable pairs fall silent until a
+  vein name is seen that separates them;
+- and the part still unmeasured is the only part that decides it - **what a vein is actually
+  called** - which needs a client, in a language, with a miner in it. That is the same probe route
+  1 wanted, so it is owed either way and should be run before a line of the join is written.
+
 ---
 
 ## 97. CTRL or ALT on a character's name jumps to that character's Possessions or Professions

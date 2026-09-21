@@ -4720,6 +4720,55 @@ where a world node answers two. So the minimap says which node and not which pro
 whatever resolves a node name has to manage there without the discriminator the world route hands
 over for nothing.
 
+### What the ore names themselves say about joining a vein to its ore — measured 2026-09-21
+
+Backlog 96's mining half, route chosen by Alberto: take the vein's name from the tooltip and the
+ore's name from the client, both the game's own words, and join them on the metal word they share.
+Nothing is translated and nothing is typed. The question is whether the join can be made to work,
+and half of it can be answered without a single hover.
+
+**The candidate ores are derivable from what is already in the tree.** `SkillLineAbility` for
+`1.15.9.69109` gives 23 spells on skill line 186; crossed with the shipped `Family.RecipeReagents`
+they consume ten ores: `2770 2771 2772 2775 2776 3858 7911 10620 11370 18562`. No new table, and
+the set comes out of the client's own files.
+
+**And `ItemSparse` names all ten in all five languages.** Fetched per locale at the same build.
+This is the measurement: not whether a vein matches its ore — no vein names exist outside a running
+client — but whether the **ores can be told apart from each other at all** by a shared run of
+characters. A join has to beat this floor before it can be said to have found anything.
+
+| Locale | Longest run two *different* ores share | One ore's whole name inside another's |
+|---|---|---|
+| enUS | **10** — `silver ore` (Silver / Truesilver) | `Iron Ore` ⊂ `Dark Iron Ore`, `Silver Ore` ⊂ `Truesilver Ore` |
+| deDE | **9** — `silbererz` (Silbererz / Echtsilbererz) | `Eisenerz` ⊂ `Dunkeleisenerz`, `Silbererz` ⊂ `Echtsilbererz` |
+| frFR | **11** — `minerai de ` | none |
+| esES | **11** — `mineral de ` | `Hierro` ⊂ `Hierro Negro` |
+| ruRU | **10** — `иевая руда` (Ториевая / Элементиевая) | none |
+
+**The floor is boilerplate, and in two languages it is longer than the metal word.** Every French
+ore begins `Minerai de` and every Spanish one `Mineral de`, so eleven characters of agreement
+between two ores that have nothing to do with each other. Russian agrees on `ная руда` and
+`иевая руда` — the adjective ending and the word for ore. German and English agree on `erz` and
+` Ore`. A longest-shared-run join therefore scores the **stationery** before it scores the metal,
+and a threshold low enough to accept a real match is far below the noise.
+
+**Worse, the containments are exactly the interesting pairs.** `Iron Ore` is inside `Dark Iron
+Ore`; `Silbererz` is inside `Echtsilbererz`. So a node name carrying only the short metal word
+matches the long ore as well as the short one, and which of the two wins depends on a word the
+join does not have. On English, *Iron Deposit* shares `iron ` with **both** `Iron Ore` and `Dark
+Iron Ore` — five characters each, a dead tie — and iron is the example in the asking message.
+
+**Spanish is the case that cannot be repaired by a threshold.** Its ore names are not one family:
+`Mineral de cobre` and `Mineral de plata` carry the word, while `Hierro`, `Torio`, `Veraplata` and
+`Hierro Negro` do not. So the boilerplate to discount is present for some rows and absent for
+others, and the two iron ores differ by `Negro` — a word that a vein name would carry only if the
+game happens to use the same one for the rock as for the metal, which nothing here knows.
+
+**What this does not say.** It does not say the join is wrong; it says the join cannot be a plain
+longest shared run, and that four of the ten ores are safe in every language while two pairs are
+not. The part that is still unmeasured is the only part that matters in the end — what a vein is
+actually called — and that needs a client, in a language, with a miner in it.
+
 ### The fourteen columns of `GetSavedInstanceInfo`, filled at last — read on Era 2026-09-21
 
 Backlog 93 had one thing owed: the same call read on a character who **is** saved to something.
