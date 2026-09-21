@@ -1,0 +1,6 @@
+name: a tooltip the client will name as an item is taken for a node as well
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if (Family:TryCall(tooltip.GetItem, tooltip)) then return nil end
+--- new
+	if false then return nil end

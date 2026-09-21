@@ -1,0 +1,8 @@
+name: a node name is worked out on every hover, walking every heading the family owns each time
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local held = resolvedNames[wanted]
+	if held ~= nil then return held or nil end
+--- new
+	local held = nil
+	if held ~= nil then return held or nil end

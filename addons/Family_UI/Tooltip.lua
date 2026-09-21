@@ -1242,6 +1242,40 @@ local function onSpell(tooltip, spellID)
 	tooltip:Show()
 end
 
+-- **Blocks on to the tooltip, spaced.** Each block that has something to say is preceded by one
+-- blank line and the last is followed by one, so two blocks are separated by exactly one gap and
+-- a block with nothing to say leaves no trace at all. Family is rarely the only addon writing on
+-- a tooltip, and without the closing line whatever is added next reads as part of this list.
+--
+-- Shared by the item route and the gathering-node route rather than written twice. The spacing
+-- is the part a reader notices and so the part that would drift.
+local function writeBlocks(tooltip, blocks)
+	if #blocks == 0 then return end
+
+	-- Every money figure on the tooltip one width, across the blocks, since they share one
+	-- right-hand column (`UI:MoneyEven`).
+	local all = {}
+	for _, lines in ipairs(blocks) do
+		for _, line in ipairs(lines) do all[#all + 1] = line end
+	end
+	UI:MoneyEven(all, 2)
+
+	for _, lines in ipairs(blocks) do
+		tooltip:AddLine(" ")
+		for _, line in ipairs(lines) do
+			if line[2] then
+				tooltip:AddDoubleLine(line[1], line[2], line[3], line[4], line[5],
+					line[6], line[7], line[8])
+			else
+				tooltip:AddLine(line[1])
+			end
+		end
+	end
+
+	tooltip:AddLine(" ")
+	tooltip:Show()
+end
+
 local function onItem(tooltip, itemID, data)
 	if not tooltip then return end
 	if tooltip.IsForbidden and tooltip:IsForbidden() then return end
@@ -1296,30 +1330,164 @@ local function onItem(tooltip, itemID, data)
 		if lines and #lines > 0 then blocks[#blocks + 1] = lines end
 	end
 
-	if #blocks == 0 then return end
+	writeBlocks(tooltip, blocks)
+end
 
-	-- Every money figure on the tooltip one width, across the blocks, since they share one
-	-- right-hand column (`UI:MoneyEven`).
-	local all = {}
-	for _, lines in ipairs(blocks) do
-		for _, line in ipairs(lines) do all[#all + 1] = line end
-	end
-	UI:MoneyEven(all, 2)
+--------------------------------------------------------------------------------------------
+-- A herb in the ground
+--
+-- Backlog 96. Hovering a Silverleaf in the world puts Family's possessions block on the
+-- client's own tooltip, the same block a Silverleaf in a bag gets.
+--
+-- **Neither of the two routes above reaches one**, and that is measured rather than assumed.
+-- Four readings across Era `1.15.9` and Mists `5.5.4`, on both a herb and a vein: `GetItem`,
+-- `GetSpell` and `GetUnit` all answer nothing, there is no frame under the pointer, and on
+-- Mists - which *has* the modern tooltip system - a post-call was registered against every one
+-- of the 28 members of `Enum.TooltipDataType` and a world node fired **none** of them. So a
+-- gathering node hands over a name and nothing else, on every client Family runs on, and the
+-- only way in is the tooltip being shown at all.
+--
+-- **What a node looks like: two lines, and the second is the profession.** *Silverleaf* over
+-- *Herbalism*, *Copper Vein* over *Mining*, in the client's own words. That second line is not
+-- a word Family has to ship - `Family.SkillLineByName` carries every profession name in every
+-- locale, generated from the client's own `SkillLine` table - so **which profession a node
+-- belongs to is answerable by id in any language**, which is the whole discriminator.
+--
+-- **And the herb half needs no table of node names at all.** A herb node is named exactly what
+-- the herb is named, measured on Liferoot, Plaguebloom, Dreamfoil and Silverleaf. So the word
+-- on the tooltip is the client's, the word it is matched against is the client's - `Index:Search`
+-- names what the family owns - and what comes out is an id. Nothing is shipped, nothing is
+-- translated, and it works in a language nobody here speaks. Alberto's rule for this entry, in
+-- as many words: *locale words must come from official game vocabulary, not our translations.*
+--
+-- Mining is not here. A vein is **not** named after its ore - *Copper Vein* against *Copper
+-- Ore* - so it needs a join, and what a vein is called in any language but English has never
+-- been read. That reading is owed before the join is written and not after.
+--------------------------------------------------------------------------------------------
 
-	for _, lines in ipairs(blocks) do
-		tooltip:AddLine(" ")
-		for _, line in ipairs(lines) do
-			if line[2] then
-				tooltip:AddDoubleLine(line[1], line[2], line[3], line[4], line[5],
-					line[6], line[7], line[8])
-			else
-				tooltip:AddLine(line[1])
-			end
+-- **Herbalism, and only Herbalism.** An id, so the test is in no language.
+--
+-- Mining is not here, and it is left out at this line rather than further down on purpose: a
+-- vein is not named after its ore - *Copper Vein* against *Copper Ore* - so it needs a join
+-- rather than a lookup, and what a vein is called in any language but English has never been
+-- read. Until then a vein is not recognised at all and its tooltip is left exactly as the
+-- client drew it. One gate, doing the whole of the work, is also the only shape a check can
+-- catch breaking: with the skill tested twice, mutating either test changed nothing.
+local GATHERED_UNDER_ITS_OWN_NAME = 182
+
+-- **Cheapest test first, and the order is the point.** This runs on every tooltip the game
+-- shows, so what it must not do is ask the client four questions about a bag slot. The line
+-- count throws out most of them for the price of one call, and the profession line - a table
+-- lookup, free - throws out very nearly all the rest. Only then is it worth asking the three
+-- calls what this tooltip is about. Getting that order the wrong way round is L-119 in
+-- miniature: a test whose cost is set by how often it runs rather than by what it answers.
+local function gatheringNode(tooltip)
+	if not tooltip then return nil end
+	if tooltip.IsForbidden and tooltip:IsForbidden() then return nil end
+
+	if (tonumber((Family:TryCall(tooltip.NumLines, tooltip))) or 0) ~= 2 then return nil end
+
+	local name = tooltip:GetName()
+	if not name then return nil end
+
+	local second = _G[name .. "TextLeft2"]
+	second = second and second.GetText and (Family:TryCall(second.GetText, second))
+	if type(second) ~= "string" then return nil end
+
+	local skill = Family:SkillLineFor(second)
+	if skill ~= GATHERED_UNDER_ITS_OWN_NAME then return nil end
+
+	-- Anything the client will name is not a node. Asked last because by here almost nothing
+	-- that is not a node is left, and asked at all because a two-line tooltip that happens to
+	-- end in the word *Mining* is a thing somebody's addon will make one day.
+	if (Family:TryCall(tooltip.GetItem, tooltip)) then return nil end
+	if (Family:TryCall(tooltip.GetSpell, tooltip)) then return nil end
+	if (Family:TryCall(tooltip.GetUnit, tooltip)) then return nil end
+
+	local first = _G[name .. "TextLeft1"]
+	first = first and first.GetText and (Family:TryCall(first.GetText, first))
+	if type(first) ~= "string" or first == "" then return nil end
+
+	return first, skill
+end
+
+-- **An item the family holds that is named exactly this.**
+--
+-- `Index:Search` matches loosely, which is right for a search box and wrong here: *Silverleaf*
+-- would also find *Silverleaf Pendant* if anybody owned one. So the loose search narrows the
+-- field and an exact comparison decides, and where two variants of one id both match, the first
+-- by the search's own ordering wins - a herb carries no random suffix, so that case is a
+-- coincidence of names rather than two versions of the same thing.
+--
+-- Only ids the family **owns** are ever considered, and that is not a shortcut. An item nobody
+-- holds has nothing to say on this tooltip, so a list of every herb in the game would add
+-- exactly nothing to what is drawn.
+--
+-- **Worked out once per name, and forgotten whenever the records change.** `Index:Search` walks
+-- every heading the family owns and lowercases each one, which is what it was built to do -
+-- behind the professions panel's settle delay, on a keystroke. A pointer crossing a field of
+-- herbs has no settle and asks the same question every time, and the answer does not move: a
+-- name belongs to an item whatever anybody happens to be carrying. A miss is kept as well as a
+-- hit, because a herb nobody owns is exactly the node somebody hovers again - and a record
+-- changing is the only thing that can turn that miss into a hit, which is what empties this.
+--
+-- That ordering is L-119's lesson taken twice in one file: the cost of this is set by how often
+-- a pointer moves, not by how much it has to work out.
+local resolvedNames = {}
+
+local function heldItemNamed(wanted)
+	if type(wanted) ~= "string" or wanted == "" then return nil end
+
+	local held = resolvedNames[wanted]
+	if held ~= nil then return held or nil end
+
+	local lowered = wanted:lower()
+	local found
+
+	for _, entry in ipairs(Family.Index:Search(wanted, 50) or {}) do
+		if type(entry.name) == "string" and entry.name:lower() == lowered then
+			found = tonumber(entry.id)
+			if found then break end
 		end
 	end
 
-	tooltip:AddLine(" ")
-	tooltip:Show()
+	resolvedNames[wanted] = found or false
+	return found
+end
+
+local function onNode(tooltip)
+	if not tooltip then return end
+	if not (FamilyDB and FamilyDB.tooltips ~= false) then return end
+
+	local said = gatheringNode(tooltip)
+	if not said then return end
+
+	-- **A tooltip line can carry a name twice.** One probe reading came back
+	-- `"Plaguebloom\nPlaguebloom"` - one line, two names, a newline between them, from two pins
+	-- under one cursor. So the line is split rather than taken whole, and the first piece that
+	-- names something the family owns is the answer.
+	local itemID
+	for piece in tostring(said):gmatch("[^\r\n]+") do
+		itemID = itemID or heldItemNamed(piece)
+	end
+	if not itemID then return end
+
+	-- The same guard `onItem` keeps, on the same table, so a node tooltip re-firing for what it
+	-- is already describing does not collect the block twice.
+	local describing = "node:" .. said
+	if lastDescribed[tooltip] == describing then return end
+	lastDescribed[tooltip] = describing
+
+	UI:MoneyFontFrom(tooltip)
+
+	-- **Possessions and nothing else.** What a node is worth, who can make one and what it costs
+	-- are questions about an item somebody is holding; a rock in the ground is a place to go and
+	-- the only question is whether anybody has been. A herb is never suffixed, so the variant is
+	-- the id.
+	local lines = possessionLines(tooltip, itemID, itemID)
+	if not lines or #lines == 0 then return end
+
+	writeBlocks(tooltip, { lines })
 end
 
 local function forget(tooltip)
@@ -1390,6 +1558,34 @@ Family:OnDatabaseReady("tooltips", function()
 	end
 
 	for _, tooltip in ipairs(tooltips) do hookSetSpell(tooltip) end
+
+	-- **And the world, which is neither of those routes.**
+	--
+	-- `GameTooltip` alone: a herb in the ground is never described on an `ItemRefTooltip` or in
+	-- a shopping comparison. `OnShow` rather than any of the setters, because no setter runs -
+	-- that is the whole finding behind `onNode`.
+	--
+	-- **A frame later**, which the probe had to do before it could read a node's lines at all:
+	-- at `OnShow` the tooltip is up and its text is not all on it yet. `Show` is called again at
+	-- the end of the write, which is what resizes it around the lines just added.
+	--
+	-- Kept reachable for the same reason `__modernCallback` is: this route cannot be reached
+	-- from a setter, so a test that cannot call it cannot catch it breaking.
+	UI.__nodeCallback = onNode
+
+	-- What a name resolves to is a fact about the game; whether anybody holds one is a fact
+	-- about the records, and that is the half that moves.
+	Family.Database:OnChanged("tooltip.nodes", function() wipe(resolvedNames) end)
+
+	if _G.GameTooltip and _G.GameTooltip.HookScript then
+		_G.GameTooltip:HookScript("OnShow", function(self)
+			if C_Timer and C_Timer.After then
+				C_Timer.After(0, function() onNode(self) end)
+			else
+				onNode(self)
+			end
+		end)
+	end
 
 	Family.tooltipRoute = modern and "both" or "classic"
 	Family:Debug("tooltip hooks installed: %s", Family.tooltipRoute)

@@ -1,0 +1,6 @@
+name: any profession name makes a node, so the gathering skill stops being the discriminator
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if skill ~= GATHERED_UNDER_ITS_OWN_NAME then return nil end
+--- new
+	if not skill then return nil end

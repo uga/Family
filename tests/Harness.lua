@@ -4885,6 +4885,146 @@ end
 
 check("an item somebody owns gets a possessions block", tooltipFor(2589) == true)
 
+-- **A herb in the ground**, which reaches none of the routes above.
+--
+-- Backlog 96. Measured four ways across two builds: a world node answers nothing to `GetItem`,
+-- `GetSpell` and `GetUnit`, has no frame under the pointer, and on Mists - which has the modern
+-- tooltip system - fires none of the 28 tooltip types with all of them registered. What it does
+-- have is two lines, the name and the gathering profession in the client's own word, and
+-- `SkillLineByName` turns that second line into 182 or 186 in any language.
+--
+-- In its own block because this file's main chunk is close to Lua's limit of two hundred locals.
+do
+	local HERB = Family:ProfessionName(182)
+	local CLOTH = Family:ProfessionName(197)
+
+	local function nodeTooltip(said, profession)
+		GameTooltip:ClearLines()
+		GameTooltip.__itemName, GameTooltip.__itemLink = nil, nil
+		GameTooltip.__spellName, GameTooltip.__spellID = nil, nil
+		if GameTooltip.__scripts.OnTooltipCleared then
+			GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+		end
+
+		GameTooltip:AddLine(said)
+		if profession then GameTooltip:AddLine(profession) end
+
+		local before = #GameTooltip.__lines
+
+		-- **Through the script the addon installed**, not through the callback behind it. This
+		-- route cannot be reached from any setter, so the hook itself is part of what is being
+		-- tested: driving `__nodeCallback` directly would pass just as well with nothing hooked
+		-- to anything. There is no `C_Timer` here, which is the branch that runs the work in
+		-- this frame rather than the next.
+		GameTooltip.__scripts.OnShow(GameTooltip)
+
+		for index = before + 1, #GameTooltip.__lines do
+			local line = GameTooltip.__lines[index]
+			if type(line[1]) == "string" and line[1]:find("Family possessions") then
+				return true
+			end
+		end
+		return false
+	end
+
+	check("the profession line is read by id and not by the English word",
+		HERB == "Herbalism" and Family:SkillLineFor(HERB) == 182,
+		tostring(HERB) .. " -> " .. tostring(Family:SkillLineFor(HERB)))
+
+	check("a herb node named after something the family owns gets the block",
+		nodeTooltip("Linen Cloth", HERB) == true)
+
+	-- **A tooltip line can carry a name twice**, from two pins under one cursor: the probe read
+	-- back `"Plaguebloom\nPlaguebloom"` as a single line.
+	check("and a line carrying the name twice still resolves it",
+		nodeTooltip("Linen Cloth\nLinen Cloth", HERB) == true)
+
+	check("a node nobody holds anything from says nothing",
+		nodeTooltip("Sungrass", HERB) == false)
+
+	-- **Exactly, and not the way a search box matches.** Loosely, *Silverleaf* would also find
+	-- *Silverleaf Pendant*, and a node would report the family's holdings of something else
+	-- entirely under the name of the thing in the ground.
+	check("a node whose name is only part of an owned item's name is not that item",
+		nodeTooltip("Linen", HERB) == false)
+
+	-- The discriminator doing its work. A two-line tooltip ending in a profession that is not
+	-- gathered from the ground is not a node, whoever drew it.
+	check("a second line that is not a gathering profession is not a node",
+		nodeTooltip("Linen Cloth", CLOTH) == false)
+	check("and neither is a tooltip with no second line at all",
+		nodeTooltip("Linen Cloth", nil) == false)
+
+	-- Cheapest test first, which is the order that keeps this off every tooltip in the game.
+	GameTooltip:ClearLines()
+	GameTooltip.__itemName, GameTooltip.__itemLink = nil, nil
+	GameTooltip:AddLine("Linen Cloth")
+	GameTooltip:AddLine(HERB)
+	GameTooltip:AddLine("and a third line")
+	GameTooltip.__scripts.OnShow(GameTooltip)
+	check("a tooltip of three lines is not a node", #GameTooltip.__lines == 3,
+		tostring(#GameTooltip.__lines))
+
+	-- Anything the client will name is an item, and the item route already has it.
+	GameTooltip:ClearLines()
+	if GameTooltip.__scripts.OnTooltipCleared then
+		GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+	end
+	GameTooltip.__itemName, GameTooltip.__itemLink = "Linen Cloth", "|Hitem:2589|h"
+	GameTooltip:AddLine("Linen Cloth")
+	GameTooltip:AddLine(HERB)
+	GameTooltip.__scripts.OnShow(GameTooltip)
+	check("and a tooltip the client will name is not a node either",
+		#GameTooltip.__lines == 2, tostring(#GameTooltip.__lines))
+	GameTooltip.__itemName, GameTooltip.__itemLink = nil, nil
+
+	-- **The memo is emptied when the records change**, which is the only thing that can turn a
+	-- node nobody could use into one somebody can. Without it, a herb picked up this session
+	-- goes on reading as nobody's for as long as the client stays open - and the name half of
+	-- the answer is cached precisely because it never moves, so the ownership half has to be
+	-- the part that does.
+	-- Silverleaf, which is the example the feature was asked for by name.
+	ITEM_NAMES[765] = "Silverleaf"
+	Family.Names:Item(765, "nodes")
+
+	check("a node for an item nobody holds says nothing",
+		nodeTooltip("Silverleaf", HERB) == false)
+
+	local me = Family:CurrentMember()
+	local mine = Family.Database:Payload(me) or {}
+	local heldBags = mine.bags
+	mine.bags = { [0] = { size = 4, slots = { [1] = { id = 765, count = 6 } } } }
+	Family.Database:SetPayload(me, mine, { "bags" })
+
+	check("and says something once somebody does, because the record changing emptied it",
+		nodeTooltip("Silverleaf", HERB) == true)
+
+	mine.bags = heldBags
+	Family.Database:SetPayload(me, mine, { "bags" })
+	ITEM_NAMES[765] = nil
+
+	-- **And asked of the index once, not once per hover.** `Index:Search` walks every heading
+	-- the family owns and lowercases each one, which it was built to do behind the professions
+	-- panel's settle delay. A pointer crossing a field of herbs has no settle, so the walk has
+	-- to happen once and the answer be kept - which is the whole of why `resolvedNames` exists
+	-- and the only way to see that it is working.
+	local realSearch, searches = Family.Index.Search, 0
+	Family.Index.Search = function(...) searches = searches + 1 return realSearch(...) end
+	nodeTooltip("Firebloom", HERB)
+	nodeTooltip("Firebloom", HERB)
+	nodeTooltip("Firebloom", HERB)
+	Family.Index.Search = realSearch
+	check("a node name is worked out once however often it is hovered", searches == 1,
+		tostring(searches))
+
+	-- **Mining is deliberately not recognised yet**, and this says so rather than leaving it to
+	-- be discovered. A vein is not named after its ore - *Copper Vein* against *Copper Ore* - so
+	-- it needs a join rather than a lookup, and what a vein is called in any language but English
+	-- has never been read. Until it has, a vein's tooltip is left exactly as the client drew it.
+	check("a mining vein is not a node yet, and its tooltip is left alone",
+		nodeTooltip("Linen Cloth", Family:ProfessionName(186)) == false)
+end
+
 -- A thing made by using an item rather than by a recipe
 --
 -- Refined Deeprock Salt (15409) is on nobody's recipe list. It comes out of a Salt Shaker

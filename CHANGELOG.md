@@ -29,6 +29,13 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Herbs in the world
+
+- **Hovering a herb in the world says who in your family already has some.** Point at a
+  Silverleaf out in the open and the game's own tooltip gains the possessions block, the same
+  one that herb gets in your bags. It works whatever language you play in, because the name it
+  matches is the one your own client shows you. Mining veins are not included yet.
+
 ### Achievements
 
 - **Family no longer breaks off with *script ran too long* while you are fighting.** On Mists of

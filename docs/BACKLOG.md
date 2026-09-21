@@ -6576,7 +6576,31 @@ site, nobody else online - and a Darkmoon Prize Ticket at any level is the next.
 
 ---
 
-## 96. Family's possessions on a herb node's or a mining vein's tooltip
+## 96. Family's possessions on a herb node's or a mining vein's tooltip — HERBS DONE 2026-09-21
+
+**The herb half is built and the mining half is not**, for a reason that is about evidence and
+not about effort: the herb half rests on a measurement - a herb node is named exactly what the
+herb is named, read four ways across two builds - and the mining half rests on an assumption
+about what a vein is called in four of the five languages, which nobody has read. Building the
+first and probing the second is what the rest of this entry is for.
+
+**What went in** (`Family_UI/Tooltip.lua`): a third tooltip route beside the item and spell ones,
+hooked to `GameTooltip`'s `OnShow` because no setter runs for a world object, deferred by a frame
+because at `OnShow` the text is not all on the tooltip yet. A node is recognised by line count,
+then by `Family:SkillLineFor` on the second line - which carries every profession name in every
+locale - and only then by the three calls that would name an item, a spell or a unit. That order
+is deliberate: the test runs on every tooltip the game draws, so its cost is set by how often a
+pointer moves rather than by what it answers, which is L-119 in miniature. The name is matched
+**exactly** against what the family owns through `Index:Search`, memoised per name and emptied
+when the records change, and the answer is an item id. **Nothing is shipped and nothing is
+translated**: the word on the tooltip is the client's, the word it is matched against is the
+client's. Thirteen checks, nine mutations, all caught.
+
+**What it does not do yet**: veins, and the minimap. A blip is one line and this wants two, so a
+blip is not recognised at all - correct today, and the thing to revisit when the mining half lands
+without a profession line to lean on.
+
+
 
 **Asked 2026-09-20, by Alberto.** Hovering a Silverleaf in the world, or its dot on the minimap,
 should add Family's possessions block for Silverleaf. Hovering an Iron Deposit or a Large Thorium

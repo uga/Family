@@ -1,0 +1,6 @@
+name: a node's name is matched the way a search box matches, so Silverleaf finds a pendant
+file: addons/Family_UI/Tooltip.lua
+--- old
+		if type(entry.name) == "string" and entry.name:lower() == lowered then
+--- new
+		if type(entry.name) == "string" and entry.name:lower():find(lowered, 1, true) then

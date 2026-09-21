@@ -1,0 +1,6 @@
+name: the world-node route is never hooked to anything, so no node tooltip reaches it
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if _G.GameTooltip and _G.GameTooltip.HookScript then
+--- new
+	if false and _G.GameTooltip and _G.GameTooltip.HookScript then
