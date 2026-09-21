@@ -6849,6 +6849,37 @@ ore*. What it settles:
   called** - which needs a client, in a language, with a miner in it. That is the same probe route
   1 wanted, so it is owed either way and should be run before a line of the join is written.
 
+### The first vein name in a second language, read 2026-09-21
+
+`1="Filon de cuivre" 2="Minage"` on a French client. The full scoring is in DATASOURCES under
+*The first vein name in a second language*. What it changes:
+
+- **The join resolves both vein names that have ever been read.** `Copper Vein` picks
+  `Copper Ore` at 7 against 3, and `Filon de cuivre` picks `Minerai de cuivre` at 10 against 4.
+  Margins of 4 and 6, not hairs.
+- **The stationery is different on the two sides** - the vein says *Filon de*, the ore says
+  *Minerai de* - so the eleven-character floor never reaches this comparison, which is the
+  retraction confirmed by a reading rather than by an argument.
+- **`Minage` is already in `SkillLines.lua` under 186**, so the discriminator the herb half runs
+  on needs nothing added for veins.
+- **Both measured veins are copper**, which is the one metal with no near neighbour in any
+  language. The containments are untouched by this reading and are still where a confident wrong
+  answer lives: `Iron Ore` inside `Dark Iron Ore`, `Silver Ore` inside `Truesilver Ore`, `Hierro`
+  inside `Hierro Negro`.
+
+**And a design consequence found while scoring.** This entry promises the ore **and** the bar -
+*who has Iron Ore and Iron Bars*. The bar's name carries the same metal word the ore's does in
+every language, so the bar **ties** with the ore rather than losing to it. A rule of the form
+*the winner must beat the runner-up* would fall silent on the ordinary case, which has two right
+answers. The rule has to tell *two answers both wanted* from *two answers one of which is wrong*,
+and what tells them apart is the ore-to-bar link, which is already known by id through
+`RecipeReagents` and `RecipeProducts` - so it comes from there and never from the scoring.
+
+**What is owed before this is built**, and it is small: one hover each on an **iron** vein and a
+**dark iron** one, in any single language other than English. That is the pair that decides
+whether the scoring needs a tie-break at all, and it is the only pair whose failure would show a
+wrong name confidently rather than showing nothing.
+
 ---
 
 ## 97. CTRL or ALT on a character's name jumps to that character's Possessions or Professions

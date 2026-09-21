@@ -4794,6 +4794,46 @@ need a table at all.
 The part still unmeasured is the only part that decides it — what a vein is actually called, in a
 language other than English — and that needs a client, in a language, with a miner in it.
 
+#### The first vein name in a second language, read 2026-09-21
+
+`nodes nothing | item=nil spell=nil unit=nil | (2 lines) 1="Filon de cuivre" 2="Minage" |
+modern=nothing fired` — a French client, a copper vein in the world.
+
+**It confirms the retraction above rather than the claim that was retracted.** The vein is
+*Filon de cuivre* and the ore is *Minerai de cuivre*: the stationery is **different on the two
+sides**, so `Minerai de ` is never scored and the eleven-character floor does not reach this
+comparison at all. What scores is the metal.
+
+**And the join resolves both vein names that have ever been read**, against the ten ores the
+client's own tables name:
+
+| Client | The vein, as read | Winner | Score | Runner-up | Margin |
+|---|---|---|---|---|---|
+| `enUS` | `Copper Vein` | `Copper Ore` | 7 (`copper `) | `Truesilver Ore` at 3 | **4** |
+| `frFR` | `Filon de cuivre` | `Minerai de cuivre` | 10 (` de cuivre`) | `Minerai de vrai-argent` at 4 | **6** |
+
+Comfortable both times, and by a margin rather than by a hair.
+
+**`Minage` is already in `SkillLines.lua` under 186**, so the tooltip's second line turns into
+the skill id on a French client with nothing added — the discriminator the herb half is built on
+needs no work for the mining half.
+
+**Two things this does not settle, and they are the ones worth waiting for.** Both measured
+veins are *copper*, which is the metal with no near neighbour in any language. The pairs that can
+go wrong are the containments: `Iron Ore` inside `Dark Iron Ore`, `Silver Ore` inside
+`Truesilver Ore`, `Hierro` inside `Hierro Negro`. A vein whose name carries only the short metal
+word scores alike against both, and **which one wins is decided by a word nobody has read.**
+
+**And a design consequence found while scoring, worth writing down before it is designed
+around.** The feature is meant to show the ore **and** the bar - *who has Iron Ore and Iron
+Bars*. In every language the bar's name carries the same metal word the ore's does, so the bar
+ties with the ore on this scoring rather than losing to it. A rule of the form *the winner must
+beat the runner-up* would therefore fall silent on the ordinary case, because the ordinary case
+has two right answers. Whatever rule is written has to distinguish *two answers that are both
+wanted* from *two answers only one of which is right*, and the ore-to-bar link is already known
+by id (`RecipeReagents` and `RecipeProducts`), which is where that distinction comes from rather
+than from the scoring.
+
 ### The fourteen columns of `GetSavedInstanceInfo`, filled at last — read on Era 2026-09-21
 
 Backlog 93 had one thing owed: the same call read on a character who **is** saved to something.
