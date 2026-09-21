@@ -6292,8 +6292,8 @@ covers. The full four:
 
 | | rate | measured |
 |---|---|---|
-| logged in, resting in an inn | 5% of a level per 8 hours | 4 points in 214 seconds |
-| logged out in an inn | 5% per 8 hours | 102 over 6,842 seconds, to 1.3 points |
+| logged in, `IsResting()` true | 5% of a level per 8 hours | 4 points in 214 seconds |
+| logged out where `IsResting()` was true | 5% per 8 hours | 102 over 6,842 seconds, to 1.3 points |
 | logged in, standing in the field | nothing | 0 over 444 and over 4,587 seconds, two builds |
 | logged out in the field | 5% per 32 hours | **226 over 60,406 seconds against 228** |
 
@@ -6338,6 +6338,35 @@ artefact of the wrong interval and the data cannot say which.** L-117.
 `PLAYER_LOGIN`, works the absence out at login and stores it before a later logout can overwrite
 either end, and prints it beside the rested sample as `awayFor=`. A character it has not yet seen
 go away says so rather than offering a number.
+
+### The discriminator is `IsResting()`, and the client has been showing it all along
+
+Alberto, 2026-09-21: *the client knows, it prints "zzz" on the character frame when it is in a
+resting zone.* Which is the third thing this projection needs and the one this entry had not
+named - the rested figure and the moment say how much and from when, and **this says which of the
+two rates applies to the absence**.
+
+**It is not geography and Family never has to know what an inn is.** The samples in the saved
+file corroborate it across six characters, and two pairs make the point on their own:
+
+| `resting` | where | |
+|---|---|---|
+| `true` | Stoutlager Inn | the inn |
+| `false` | **Thelsamar** | the village the inn stands in |
+| `true` | Stormwind City | the city |
+| `false` | **Stormwind Stockade** | a dungeon inside that city |
+| `true` | Ironforge, Honor Hold | a city and a town |
+| `false` | Valley of Trials | open world |
+
+A shipped list of rest zones would have to get Thelsamar and the Stoutlager Inn the right way
+round in five languages; `IsResting()` gets it right for nothing, in any language, on any build,
+including places nobody thought of. So the rule this entry states per case is **keyed on that flag
+and never on the name of the place** - which also means the four-case table's *inn* should be read
+as *`IsResting()` was true*, and has been corrected to say so.
+
+The catch is the same one as everything else above: the flag has to be read **at the moment the
+character leaves**, because it is the logout location that sets the rate for the absence. Which is
+the question below.
 
 **A claim about the feature, made here and then retracted the same day.** This entry said Family
 has the same problem - that it can record when it last *saw* a character and never when they
