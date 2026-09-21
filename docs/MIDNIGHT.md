@@ -1189,9 +1189,17 @@ else about it changed, so the Midnight readings above stand and the run is for t
 10. ~~What `C_Reputation`, `C_MajorFactions` and `C_Bank` hold~~: 27, 12 and 23 functions, listed
     in full (§16). `GetFactionDataByIndex` and `GetMajorFactionData` are there;
     `C_Bank.FetchPurchasedBankTabIds` is not.
-11. **Whether a record belongs to the account or the character** on Midnight - the warband bank,
-    renown, and the transferable flag on a currency. A question for the specification once the
-    probe has read them, and one of the three that 5.0.0's shape waits on.
+11. ~~Whether a record belongs to the account or the character~~: **answered, 2026-09-21,
+    Alberto - the account is a second kind of record.** Family has been character-keyed
+    throughout; it learns one more subject. A fact that belongs to the account is written once,
+    under the account, and shown as *Warband* rather than under a character's name. The measured
+    cases are container 12 (§6: the same first item on both characters, because it is one shelf
+    seen twice), `isAccountTransferable` with `transferPercentage` on a currency, renown and the
+    collections. **The same answer settles §14's PvP half**, which was the same question asked
+    of honour. What it costs is a schema, a migration of what is already stored, and every place
+    that assumes a character key; what it buys is that *who has this* stays true and a family
+    total stops counting one shelf once per character. It is step 3's work and does not block
+    step 2.
 12. ~~Whether a lockout reads the same on Midnight~~: **yes** - `GetNumSavedInstances` and
     `GetSavedInstanceInfo` are there and answer (§16), and `FamilyProbe` reads them on Mists.
     Era and Burning Crusade are `main`'s to confirm.
