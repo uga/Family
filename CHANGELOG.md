@@ -29,12 +29,15 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
-### Herbs in the world
+### Herbs and ore in the world
 
-- **Hovering a herb in the world says who in your family already has some.** Point at a
-  Silverleaf out in the open and the game's own tooltip gains the possessions block, the same
-  one that herb gets in your bags. It works whatever language you play in, because the name it
-  matches is the one your own client shows you. Mining veins are not included yet.
+- **Hovering a herb or a mining vein in the world says who in your family already has some.**
+  Point at a Silverleaf or an Iron Deposit out in the open and the game's own tooltip gains the
+  possessions block, the same one that herb or that ore gets in your bags. It answers **none**
+  when nobody has any, which is usually the answer you wanted.
+- **It works whatever language you play in**, because every word it matches is one your own
+  client gave it. A vein it cannot place with confidence stays quiet instead of naming the wrong
+  metal.
 
 ### Achievements
 

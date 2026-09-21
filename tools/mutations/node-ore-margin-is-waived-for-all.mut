@@ -1,0 +1,6 @@
+name: the margin is waived for every runner-up, not only one whose name sits inside the winner's
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if not kin and (bestShare - nextShare) < ORE_MARGIN then return nil end
+--- new
+	if false and (bestShare - nextShare) < ORE_MARGIN then return nil end

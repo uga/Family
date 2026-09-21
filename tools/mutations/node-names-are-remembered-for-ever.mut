@@ -1,6 +1,0 @@
-name: a node name resolved once is never worked out again, so a herb picked up today stays nobody's
-file: addons/Family_UI/Tooltip.lua
---- old
-	Family.Database:OnChanged("tooltip.nodes", function() wipe(resolvedNames) end)
---- new
-	Family.Database:OnChanged("tooltip.nodes", function() end)

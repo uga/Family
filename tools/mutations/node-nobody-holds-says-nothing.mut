@@ -1,6 +1,0 @@
-name: a node nobody holds anything from is silent about being recognised at all
-file: addons/Family_UI/Tooltip.lua
---- old
-		Family:Debug("node: \"%s\" is a herbalism node and nobody recorded holds one", said)
---- new
-		Family:Debug("node: \"%s\"", said)

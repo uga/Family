@@ -2115,7 +2115,7 @@ for _, file in ipairs {
 	"QuestSorts.lua",
 	"Capabilities.lua", "Codec.lua",
 	"Comm.lua", "Database.lua", "Names.lua", "Mounts.lua", "Extras.lua", "Index.lua",
-	"RecipeReagents.lua", "Recipes.lua", "RecipeIndex.lua", "Cooldowns.lua",
+	"RecipeReagents.lua", "Gathered.lua", "Recipes.lua", "RecipeIndex.lua", "Cooldowns.lua",
 	"Scanners/Bags.lua", "Scanners/Talents.lua", "Scanners/Professions.lua",
 	"Scanners/Bank.lua", "Scanners/Identity.lua",
 	"Scanners/Auctions.lua", "Scanners/Mail.lua", "Scanners/Character.lua",
@@ -4885,7 +4885,7 @@ end
 
 check("an item somebody owns gets a possessions block", tooltipFor(2589) == true)
 
--- **A herb in the ground**, which reaches none of the routes above.
+-- **A gathering node in the world**, which reaches none of the routes above.
 --
 -- Backlog 96. Measured four ways across two builds: a world node answers nothing to `GetItem`,
 -- `GetSpell` and `GetUnit`, has no frame under the pointer, and on Mists - which has the modern
@@ -4893,12 +4893,29 @@ check("an item somebody owns gets a possessions block", tooltipFor(2589) == true
 -- have is two lines, the name and the gathering profession in the client's own word, and
 -- `SkillLineByName` turns that second line into 182 or 186 in any language.
 --
+-- A herb node is named exactly what the herb is named, so a herb is a lookup. A vein is not -
+-- *Copper Vein* against *Copper Ore* - so a vein is scored. Neither ships a word: `Gathered.lua`
+-- is ids, and every name compared comes from the client.
+--
 -- In its own block because this file's main chunk is close to Lua's limit of two hundred locals.
 do
 	local HERB = Family:ProfessionName(182)
+	local MINE = Family:ProfessionName(186)
 	local CLOTH = Family:ProfessionName(197)
 
-	local function nodeTooltip(said, profession)
+	-- What this client calls the ids the table ships. Nothing else in the feature is a word.
+	ITEM_NAMES[765] = "Silverleaf"
+	ITEM_NAMES[2447] = "Peacebloom"
+	ITEM_NAMES[2770] = "Copper Ore"
+	ITEM_NAMES[2771] = "Tin Ore"
+	ITEM_NAMES[2772] = "Iron Ore"
+	ITEM_NAMES[2775] = "Silver Ore"
+	ITEM_NAMES[2776] = "Gold Ore"
+	ITEM_NAMES[3858] = "Mithril Ore"
+	ITEM_NAMES[7911] = "Truesilver Ore"
+	ITEM_NAMES[11370] = "Dark Iron Ore"
+
+	local function nodeSays(said, profession)
 		GameTooltip:ClearLines()
 		GameTooltip.__itemName, GameTooltip.__itemLink = nil, nil
 		GameTooltip.__spellName, GameTooltip.__spellID = nil, nil
@@ -4911,54 +4928,116 @@ do
 
 		local before = #GameTooltip.__lines
 
-		-- **Through the script the addon installed**, not through the callback behind it. This
-		-- route cannot be reached from any setter, so the hook itself is part of what is being
-		-- tested: driving `__nodeCallback` directly would pass just as well with nothing hooked
-		-- to anything. There is no `C_Timer` here, which is the branch that runs the work in
-		-- this frame rather than the next.
+		-- **Through the script the addon installed**, not the callback behind it. This route
+		-- cannot be reached from any setter, so the hook is part of what is under test: driving
+		-- `__nodeCallback` would pass just as well with nothing hooked to anything.
 		GameTooltip.__scripts.OnShow(GameTooltip)
 
+		local out = {}
 		for index = before + 1, #GameTooltip.__lines do
 			local line = GameTooltip.__lines[index]
-			if type(line[1]) == "string" and line[1]:find("Family possessions") then
-				return true
-			end
+			out[#out + 1] = tostring(line[1]) .. " " .. tostring(line[2])
 		end
-		return false
+		return table.concat(out, " | ")
 	end
 
-	check("the profession line is read by id and not by the English word",
-		HERB == "Herbalism" and Family:SkillLineFor(HERB) == 182,
-		tostring(HERB) .. " -> " .. tostring(Family:SkillLineFor(HERB)))
+	local function drewBlock(text) return text:find("Family possessions", 1, true) ~= nil end
 
-	check("a herb node named after something the family owns gets the block",
-		nodeTooltip("Linen Cloth", HERB) == true)
+	check("the profession line is read by id and not by the English word",
+		HERB == "Herbalism" and Family:SkillLineFor(HERB) == 182
+			and Family:SkillLineFor(MINE) == 186,
+		tostring(HERB) .. "/" .. tostring(MINE))
+
+	-- **Ids and no words.** The rule this whole entry turns on: locale words come from the
+	-- client, never from this repository.
+	local shipped = Family.Gathered and Family.Gathered[1]
+	check("the gathered table ships ids for both professions", shipped
+		and #shipped.herbs > 50 and #shipped.ores > 5,
+		shipped and (#shipped.herbs .. "/" .. #shipped.ores) or "nothing")
+	local words = 0
+	for _, which in ipairs { "herbs", "ores" } do
+		for _, id in ipairs(shipped[which] or {}) do
+			if type(id) ~= "number" then words = words + 1 end
+		end
+	end
+	check("and not one word of any language", words == 0, tostring(words))
+
+	-- A herb nobody holds. The answer is *none*, which is the whole of what the first report
+	-- from play was about: this drew nothing and looked exactly like an absent feature.
+	local none = nodeSays("Silverleaf", HERB)
+	check("a herb node nobody holds any of says so rather than nothing",
+		drewBlock(none) and none:find("none", 1, true) ~= nil, none)
+
+	-- And one somebody does hold.
+	local me = Family:CurrentMember()
+	local mine = Family.Database:Payload(me) or {}
+	local heldBags = mine.bags
+	mine.bags = { [0] = { size = 4, slots = { [1] = { id = 765, count = 6 } } } }
+	Family.Database:SetPayload(me, mine, { "bags" })
+
+	local owned = nodeSays("Silverleaf", HERB)
+	check("and one somebody holds draws the owners instead of none",
+		drewBlock(owned) and owned:find("none", 1, true) == nil
+			and owned:find("6 bags", 1, true) ~= nil, owned)
+
+	mine.bags = heldBags
+	Family.Database:SetPayload(me, mine, { "bags" })
 
 	-- **A tooltip line can carry a name twice**, from two pins under one cursor: the probe read
 	-- back `"Plaguebloom\nPlaguebloom"` as a single line.
-	check("and a line carrying the name twice still resolves it",
-		nodeTooltip("Linen Cloth\nLinen Cloth", HERB) == true)
+	check("a line carrying the name twice still resolves it",
+		drewBlock(nodeSays("Peacebloom\nPeacebloom", HERB)))
 
-	check("a node nobody holds anything from says nothing",
-		nodeTooltip("Sungrass", HERB) == false)
+	-- **Exactly, and not the way a search box matches.** Loosely, *Silverleaf* would find
+	-- *Silverleaf Pendant* and report the family's holdings of something else entirely.
+	check("a herb name that is only part of an item's name resolves to nothing",
+		nodeSays("Silver", HERB) == "")
+	check("and a herb this build does not ship an id for resolves to nothing",
+		nodeSays("Sungrass", HERB) == "")
 
-	-- **Exactly, and not the way a search box matches.** Loosely, *Silverleaf* would also find
-	-- *Silverleaf Pendant*, and a node would report the family's holdings of something else
-	-- entirely under the name of the thing in the ground.
-	check("a node whose name is only part of an owned item's name is not that item",
-		nodeTooltip("Linen", HERB) == false)
+	-- **A vein is scored, and the score was fixed on 534 nodes.** Copper is the plain case and
+	-- iron is the one that made the rule: *Iron Deposit* shares `iron ` with both iron ores and
+	-- the share of each name is what tells them apart - 5 of 8 against 5 of 13.
+	check("a copper vein names copper ore", drewBlock(nodeSays("Copper Vein", MINE)))
+	local iron = nodeSays("Iron Deposit", MINE)
+	check("an iron deposit names iron ore and not dark iron ore", drewBlock(iron), iron)
+	check("and a dark iron deposit names the dark iron one",
+		drewBlock(nodeSays("Dark Iron Deposit", MINE)))
+	-- Truesilver is why the margin is waived when one ore's name sits inside another's: without
+	-- that, the runner-up Silver Ore silences the correct answer on every Truesilver node.
+	check("a truesilver deposit is not silenced by silver ore",
+		drewBlock(nodeSays("Truesilver Deposit", MINE)))
+	-- And a vein of something this build cannot smelt draws nothing rather than the nearest
+	-- metal. Naming the wrong metal confidently is the only failure here that matters.
+	check("a vein the score cannot place draws nothing at all",
+		nodeSays("Small Obsidian Chunk", MINE) == "")
 
-	-- The discriminator doing its work. A two-line tooltip ending in a profession that is not
-	-- gathered from the ground is not a node, whoever drew it.
+	-- **The margin on its own**, which nothing above exercises. *Cold Iron Deposit* scores
+	-- `Iron Ore` at 0.625 against `Gold Ore` at 0.500 - past the floor, past the run length,
+	-- and inside the margin. Two different metals that close is a guess, so it draws nothing.
+	check("a vein whose two best candidates are close draws nothing",
+		nodeSays("Cold Iron Deposit", MINE) == "")
+
+	-- **The minimum run on its own**, which only bites where an ore's name is very short - and
+	-- one is. `Torio` is what a Spanish client calls thorium ore, five bytes, so a three-byte
+	-- coincidence is 0.6 of it and clears the floor: that is how *Filón de indurio* came to be
+	-- named as thorium in the measurement, and why the run length is there. Both words here are
+	-- the game's own, from the same reading.
+	ITEM_NAMES[10620] = "Torio"
+	check("and a three-byte coincidence with a very short ore name is refused",
+		nodeSays("Filón de indurio", MINE) == "")
+
+	-- The discriminator. A two-line tooltip whose second line is not gathered from the ground is
+	-- not a node, whoever drew it.
 	check("a second line that is not a gathering profession is not a node",
-		nodeTooltip("Linen Cloth", CLOTH) == false)
+		nodeSays("Silverleaf", CLOTH) == "")
 	check("and neither is a tooltip with no second line at all",
-		nodeTooltip("Linen Cloth", nil) == false)
+		nodeSays("Silverleaf", nil) == "")
 
-	-- Cheapest test first, which is the order that keeps this off every tooltip in the game.
+	-- Cheapest test first, which is what keeps this off every tooltip in the game.
 	GameTooltip:ClearLines()
 	GameTooltip.__itemName, GameTooltip.__itemLink = nil, nil
-	GameTooltip:AddLine("Linen Cloth")
+	GameTooltip:AddLine("Silverleaf")
 	GameTooltip:AddLine(HERB)
 	GameTooltip:AddLine("and a third line")
 	GameTooltip.__scripts.OnShow(GameTooltip)
@@ -4970,89 +5049,50 @@ do
 	if GameTooltip.__scripts.OnTooltipCleared then
 		GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
 	end
-	GameTooltip.__itemName, GameTooltip.__itemLink = "Linen Cloth", "|Hitem:2589|h"
-	GameTooltip:AddLine("Linen Cloth")
+	GameTooltip.__itemName, GameTooltip.__itemLink = "Silverleaf", "|Hitem:765|h"
+	GameTooltip:AddLine("Silverleaf")
 	GameTooltip:AddLine(HERB)
 	GameTooltip.__scripts.OnShow(GameTooltip)
 	check("and a tooltip the client will name is not a node either",
 		#GameTooltip.__lines == 2, tostring(#GameTooltip.__lines))
 	GameTooltip.__itemName, GameTooltip.__itemLink = nil, nil
 
-	-- **The memo is emptied when the records change**, which is the only thing that can turn a
-	-- node nobody could use into one somebody can. Without it, a herb picked up this session
-	-- goes on reading as nobody's for as long as the client stays open - and the name half of
-	-- the answer is cached precisely because it never moves, so the ownership half has to be
-	-- the part that does.
-	-- Silverleaf, which is the example the feature was asked for by name.
-	ITEM_NAMES[765] = "Silverleaf"
-	Family.Names:Item(765, "nodes")
-
-	check("a node for an item nobody holds says nothing",
-		nodeTooltip("Silverleaf", HERB) == false)
-
-	local me = Family:CurrentMember()
-	local mine = Family.Database:Payload(me) or {}
-	local heldBags = mine.bags
-	mine.bags = { [0] = { size = 4, slots = { [1] = { id = 765, count = 6 } } } }
-	Family.Database:SetPayload(me, mine, { "bags" })
-
-	check("and says something once somebody does, because the record changing emptied it",
-		nodeTooltip("Silverleaf", HERB) == true)
-
-	mine.bags = heldBags
-	Family.Database:SetPayload(me, mine, { "bags" })
-	ITEM_NAMES[765] = nil
-
-	-- **And asked of the index once, not once per hover.** `Index:Search` walks every heading
-	-- the family owns and lowercases each one, which it was built to do behind the professions
-	-- panel's settle delay. A pointer crossing a field of herbs has no settle, so the walk has
-	-- to happen once and the answer be kept - which is the whole of why `resolvedNames` exists
-	-- and the only way to see that it is working.
-	local realSearch, searches = Family.Index.Search, 0
-	Family.Index.Search = function(...) searches = searches + 1 return realSearch(...) end
-	nodeTooltip("Firebloom", HERB)
-	nodeTooltip("Firebloom", HERB)
-	nodeTooltip("Firebloom", HERB)
-	Family.Index.Search = realSearch
-	check("a node name is worked out once however often it is hovered", searches == 1,
-		tostring(searches))
+	-- **Asked of the client once, not once per hover.** Naming every candidate and scoring
+	-- against all of them is work a pointer crossing a field of herbs must not pay twice, and
+	-- the answer does not move: a name belongs to an item whatever anybody is carrying.
+	local realItem, asked = Family.Names.Item, 0
+	Family.Names.Item = function(...) asked = asked + 1 return realItem(...) end
+	nodeSays("Silverleaf", HERB)
+	local first = asked
+	nodeSays("Silverleaf", HERB)
+	nodeSays("Silverleaf", HERB)
+	Family.Names.Item = realItem
+	check("a node name is worked out once however often it is hovered",
+		first > 0 and asked == first, first .. " then " .. asked)
 
 	-- **Silence has to say which kind of silence it is.** Reported from play the day this
-	-- landed as *herb nodes do not seem to work at all*, with a Silverleaf and its two lines on
-	-- the screen: four gates in this route, all of them silent, and no way to tell which one
-	-- turned the tooltip away - or whether the build was on the client at all. The same fault
-	-- the node probe had in August and the same answer. Off unless `/family debug` is on.
+	-- landed as *herb nodes do not seem to work at all*: four gates in this route, all silent,
+	-- and no way to tell which turned the tooltip away - or whether the build was on the client.
 	local heldDebug = FamilyDB.debug
 	FamilyDB.debug = true
 
 	local from = #DEFAULT_CHAT_FRAME.messages
-	nodeTooltip("Linen Cloth", CLOTH)
+	nodeSays("Silverleaf", CLOTH)
 	local heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
 		#DEFAULT_CHAT_FRAME.messages)
 	check("a tooltip turned away names the gate that did it",
 		heard:find("which is skill", 1, true) ~= nil, heard)
-
-	-- **And the shape of every tooltip, before any gate.** The line-count gate turns nearly
-	-- everything away and cannot narrate on its own account, which makes its rejection look
-	-- exactly like this route never running - which is how it was reported.
 	check("and every tooltip reports its shape before any gate runs",
 		heard:find("shown with 2 line(s)", 1, true) ~= nil, heard)
 
 	from = #DEFAULT_CHAT_FRAME.messages
-	nodeTooltip("Sungrass", HERB)
+	nodeSays("Small Obsidian Chunk", MINE)
 	heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
 		#DEFAULT_CHAT_FRAME.messages)
-	check("and a node recognised but held by nobody says that, rather than nothing",
-		heard:find("nobody recorded holds one", 1, true) ~= nil, heard)
+	check("and a node nothing can place says that, rather than nothing",
+		heard:find("nothing here can place it", 1, true) ~= nil, heard)
 
 	FamilyDB.debug = heldDebug
-
-	-- **Mining is deliberately not recognised yet**, and this says so rather than leaving it to
-	-- be discovered. A vein is not named after its ore - *Copper Vein* against *Copper Ore* - so
-	-- it needs a join rather than a lookup, and what a vein is called in any language but English
-	-- has never been read. Until it has, a vein's tooltip is left exactly as the client drew it.
-	check("a mining vein is not a node yet, and its tooltip is left alone",
-		nodeTooltip("Linen Cloth", Family:ProfessionName(186)) == false)
 end
 
 -- A thing made by using an item rather than by a recipe
