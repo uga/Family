@@ -1385,28 +1385,54 @@ local function gatheringNode(tooltip)
 	if not tooltip then return nil end
 	if tooltip.IsForbidden and tooltip:IsForbidden() then return nil end
 
+	-- **Four gates turn a tooltip away here and all four were silent.** Reported from play
+	-- 2026-09-21: a Silverleaf in Loch Modan, the client's own two lines on the screen, nothing
+	-- under them, and no way to tell which gate did it - or whether the build was even on the
+	-- client. That is the fault the node probe had, and it has the same answer: silence has to
+	-- say which kind of silence it is. A reason is built only when somebody has `/family debug`
+	-- on, so an ordinary tooltip pays a comparison and no string at all.
+	-- Not narrated at all: most tooltips in the game stop here and a pointer crosses a great
+	-- many of them. Everything past this line is rare enough to say something about.
 	if (tonumber((Family:TryCall(tooltip.NumLines, tooltip))) or 0) ~= 2 then return nil end
 
 	local name = tooltip:GetName()
-	if not name then return nil end
+	if not name then
+		Family:Debug("node: a two-line tooltip with no name, so its lines cannot be read")
+		return nil
+	end
 
 	local second = _G[name .. "TextLeft2"]
 	second = second and second.GetText and (Family:TryCall(second.GetText, second))
-	if type(second) ~= "string" then return nil end
+	if type(second) ~= "string" then
+		Family:Debug("node: %s line 2 is not text", name)
+		return nil
+	end
 
 	local skill = Family:SkillLineFor(second)
-	if skill ~= GATHERED_UNDER_ITS_OWN_NAME then return nil end
+	if skill ~= GATHERED_UNDER_ITS_OWN_NAME then
+		Family:Debug("node: line 2 is %s, which is skill %s and not %d",
+			second, tostring(skill or "no skill this client knows"),
+			GATHERED_UNDER_ITS_OWN_NAME)
+		return nil
+	end
 
 	-- Anything the client will name is not a node. Asked last because by here almost nothing
 	-- that is not a node is left, and asked at all because a two-line tooltip that happens to
 	-- end in the word *Mining* is a thing somebody's addon will make one day.
-	if (Family:TryCall(tooltip.GetItem, tooltip)) then return nil end
-	if (Family:TryCall(tooltip.GetSpell, tooltip)) then return nil end
-	if (Family:TryCall(tooltip.GetUnit, tooltip)) then return nil end
+	local named = (Family:TryCall(tooltip.GetItem, tooltip))
+		or (Family:TryCall(tooltip.GetSpell, tooltip))
+		or (Family:TryCall(tooltip.GetUnit, tooltip))
+	if named then
+		Family:Debug("node: the client calls it %s, so it is not one", tostring(named))
+		return nil
+	end
 
 	local first = _G[name .. "TextLeft1"]
 	first = first and first.GetText and (Family:TryCall(first.GetText, first))
-	if type(first) ~= "string" or first == "" then return nil end
+	if type(first) ~= "string" or first == "" then
+		Family:Debug("node: line 2 named a gathering skill and line 1 is not text")
+		return nil
+	end
 
 	return first, skill
 end
@@ -1470,7 +1496,18 @@ local function onNode(tooltip)
 	for piece in tostring(said):gmatch("[^\r\n]+") do
 		itemID = itemID or heldItemNamed(piece)
 	end
-	if not itemID then return end
+
+	if not itemID then
+		-- **The case that gets reported as *it does not work*.** A name is resolved against what
+		-- the family owns and nothing else, so a herb nobody holds cannot be named at all - and
+		-- the tooltip is left alone rather than saying *nobody has any*. Whether silence is the
+		-- right answer there is backlog 96's to settle; what it must not be is indistinguishable
+		-- from the feature being absent.
+		Family:Debug("node: \"%s\" is a herbalism node and nobody recorded holds one", said)
+		return
+	end
+
+	Family:Debug("node: \"%s\" is item %d", said, itemID)
 
 	-- The same guard `onItem` keeps, on the same table, so a node tooltip re-firing for what it
 	-- is already describing does not collect the block twice.

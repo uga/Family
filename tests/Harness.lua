@@ -5017,6 +5017,30 @@ do
 	check("a node name is worked out once however often it is hovered", searches == 1,
 		tostring(searches))
 
+	-- **Silence has to say which kind of silence it is.** Reported from play the day this
+	-- landed as *herb nodes do not seem to work at all*, with a Silverleaf and its two lines on
+	-- the screen: four gates in this route, all of them silent, and no way to tell which one
+	-- turned the tooltip away - or whether the build was on the client at all. The same fault
+	-- the node probe had in August and the same answer. Off unless `/family debug` is on.
+	local heldDebug = FamilyDB.debug
+	FamilyDB.debug = true
+
+	local from = #DEFAULT_CHAT_FRAME.messages
+	nodeTooltip("Linen Cloth", CLOTH)
+	local heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("a tooltip turned away names the gate that did it",
+		heard:find("which is skill", 1, true) ~= nil, heard)
+
+	from = #DEFAULT_CHAT_FRAME.messages
+	nodeTooltip("Sungrass", HERB)
+	heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("and a node recognised but held by nobody says that, rather than nothing",
+		heard:find("nobody recorded holds one", 1, true) ~= nil, heard)
+
+	FamilyDB.debug = heldDebug
+
 	-- **Mining is deliberately not recognised yet**, and this says so rather than leaving it to
 	-- be discovered. A vein is not named after its ore - *Copper Vein* against *Copper Ore* - so
 	-- it needs a join rather than a lookup, and what a vein is called in any language but English
