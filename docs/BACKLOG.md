@@ -6339,12 +6339,29 @@ artefact of the wrong interval and the data cannot say which.** L-117.
 either end, and prints it beside the rested sample as `awayFor=`. A character it has not yet seen
 go away says so rather than offering a number.
 
-**And this is not only about the measurement - Family has the same problem.** The addon can record
-when it last *saw* a character, never when that character logged out. Every projection it draws
-will therefore assume the whole interval was spent away, and will **over-estimate** for anybody who
-sat logged in - exactly the error above, 3.94 hours of it on one overnight. That is a property of
-the feature and not of the probe, it always rounds the same way, and it belongs in whatever the
-panel eventually says rather than in a footnote.
+**A claim about the feature, made here and then retracted the same day.** This entry said Family
+has the same problem - that it can record when it last *saw* a character and never when they
+logged out, so every projection would over-estimate. **That is wrong, and Alberto asked the
+question that found it:** *when do we take the last reading of a char xp before it logs out?*
+
+Family already takes a reading at `PLAYER_LOGOUT`. `Scanners/Identity.lua:306` registers it and
+writes the logout zone there, and the comment above it records that this was measured rather than
+assumed: `GetZoneText` and `GetSubZoneText` still answer at that moment, and what is written then
+reaches the saved variables. So the start of the absence is a moment Family can have exactly,
+and the over-estimate above is not a property of the feature.
+
+**What is genuinely open is narrower, and the same file is why it is worth asking.** Not every
+call answers during `PLAYER_LOGOUT`: `GetBestMapForUnit` does **not**, because the map system is
+already gone by then, which was found by writing it and reading the record back - *`Cité
+d'Ironforge  map nil`*. Whether `GetXPExhaustion`, `UnitXP`, `UnitXPMax` and `IsResting` answer
+there has never been asked. If they do, a rested reading taken at logout is the exact start of the
+absence and the projection has no guesswork in it at all. If they do not, the last reading is
+whenever the scanner last ran and the shortfall is real, and the panel has to say so.
+
+**That question cannot be settled from a `/run`**, for the same reason the map one could not - the
+moment only exists on the way out. So the probe now asks the rested calls during `PLAYER_LOGOUT`
+and writes the answer into the saved file marked `AT LOGOUT:`, to be read back off the file
+exactly as the map answer was. One logout settles it.
 
 **What is still unmeasured**, and is written here so the estimate is not built as though it were
 not: the Pandaren exception on Mists, and what a character who crosses between the two cases in

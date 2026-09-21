@@ -1121,9 +1121,43 @@ PROBES[#PROBES + 1] = { area = "rested", name = "the last absence", ask = away }
 
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_LOGOUT")
+-- **The rested calls asked at the one moment the answer is the one wanted.**
+--
+-- `Scanners/Identity.lua` already writes the logout zone during `PLAYER_LOGOUT` and measured what
+-- can be read there: `GetZoneText` and `GetSubZoneText` still answer, and `GetBestMapForUnit` does
+-- **not** - the map system is already gone by then. Nobody has ever asked that of
+-- `GetXPExhaustion`, and the answer decides something real: a reading taken at logout is the exact
+-- start of the absence, and one taken earlier is a guess about when the character actually left.
+--
+-- This is the shape of question that cannot be settled from a `/run`, for the same reason that one
+-- could not - the moment only exists on the way out. So it is written then and read back off the
+-- saved file, which is how that one was settled.
+local function sampleAtLogout()
+    local locale = (GetLocale and GetLocale()) or "unknown"
+    local report = FamilyProbeDB[locale] or {}
+    FamilyProbeDB[locale] = report
+    report.apis = report.apis or {}
+    report.apis.rested = report.apis.rested or {}
+
+    for _, probe in ipairs(PROBES) do
+        if probe.area == "rested" and probe.name == "the sample" then
+            local ok, says = pcall(probe.ask)
+            local samples = report.apis.rested.samples or {}
+            samples[#samples + 1] = {
+                who = (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?"),
+                says = "AT LOGOUT: " .. (ok and tostring(says) or ("error: " .. tostring(says))),
+                at = time(),
+            }
+            report.apis.rested.samples = samples
+            return
+        end
+    end
+end
+
 frame:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_LOGOUT" then
         mark("out")
+        sampleAtLogout()
         return
     end
 
