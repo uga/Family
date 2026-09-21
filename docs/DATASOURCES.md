@@ -4699,3 +4699,62 @@ session - where the Era run hovered two of them. That is suggestive and it is no
 whether GatherMate is installed on this client was never asked, and a pin that anchors its tooltip
 to the minimap would look exactly like this. The clean test is still one run with GatherMate
 switched off, and until then the world node is the measured half on both builds.
+
+### The fourteen columns of `GetSavedInstanceInfo`, filled at last — read on Era 2026-09-21
+
+Backlog 93 had one thing owed: the same call read on a character who **is** saved to something.
+Read on `1.15.9`, Aleister-Pyrewood Village, three raid lockouts — and on a **French** client,
+which is worth more here than an English one would have been.
+
+| # | Blackwing Lair | Ahn'Qiraj | Naxxramas | What it is |
+|---|---|---|---|---|
+| 1 | `"Repaire de l'Aile noire"` | `"Temple d'Ahn'Qiraj"` | `"Naxxramas"` | the name, **in the client's language** |
+| 2 | `135392441` | `135990587` | `133827138` | the lock's own id, one per row |
+| 3 | `189500` → `189351` | the same | the same | **seconds left**, a countdown |
+| 4 | `9` | `9` | `9` | the difficulty's id |
+| 5 | `true` | `true` | `true` | locked |
+| 6 | `false` | `false` | `false` | extended |
+| 7 | `524615680` | `524615680` | `524615680` | **the same on all three** |
+| 8 | `true` | `true` | `true` | is a raid |
+| 9 | `40` | `40` | `40` | maximum players |
+| 10 | `"40 joueurs"` | `"40 joueurs"` | `"40 joueurs"` | the difficulty's name, **in the client's language** |
+| 11 | `8` | `9` | `15` | how many bosses the place has |
+| 12 | `8` | `8` | `12` | how many are down |
+| 13 | `true` | `true` | `true` | extending disabled |
+| 14 | **`469`** | **`531`** | **`533`** | **the instance's id** |
+
+**Column 14 is an identifier and it is the one this entry needed.** Checked against the client's
+own `Map` table for this build rather than recognised: `469` is `BlackwingLair`, named *Repaire de
+l'Aile noire* in French; `531` is `AhnQirajTemple`, *Temple d'Ahn'Qiraj*; `533` is — and this is
+what makes it a lookup rather than a coincidence — `Stratholme Raid`, named *Naxxramas*, the
+internal directory that place has carried since it was built out of Stratholme's map. Three names
+matching the probe's output character for character, from a table nobody here typed.
+
+**Columns 11 and 12 are confirmed the same way.** `DungeonEncounter`, keyed by the same `MapID`,
+holds **8** rows for 469, **9** for 531 and **15** for 533 — exactly the three figures in column
+11, which also settles that column 14's numbering is `Map`'s and not something else that happens
+to look like it. So *12 of 15* is sayable from the client alone.
+
+**Column 3 is a countdown, which is what backlog 93 predicted and has now measured.** It read
+`189500` on the first answer and `189351` on the `UPDATE_INSTANCE_INFO` answer in the same
+session — it goes **down**. And 189,500 is about 2.2 days, where an epoch moment on this client is
+about 1,789,946,646. So it is seconds remaining, and seconds remaining written to disk is a lie by
+the next login: it becomes a moment on the way in, `time() + reset`, and joins `DEADLINES` in
+`Codec.lua` beside `readyAt` and `expiresBy`.
+
+**`Names:Map` is not the reader for column 14, and reaching for it is the obvious mistake.** It
+calls `C_Map.GetMapInfo`, which takes a **UiMapID** — a different numbering. Era's `UiMap` table
+has 54 rows and **contains none of 469, 531 or 533**, so that call answers nothing for every one of
+these. The comment above `Names:Map` already says a map id is not an area id; this is a third
+number to keep apart from both.
+
+So a lockout is stored the way a currency is (`Scanners/Currencies.lua`): **keyed by the id, with
+the name carried as a label** from whichever client last saw it, because nothing on these builds
+turns 469 back into a name in the reader's own language. A lockout scanned in French and one
+scanned in English then line up in one column, which is §2.1 and is exactly what a name-keyed
+record would have got wrong.
+
+**Two cases already read, and worth keeping beside this one.** A character saved to nothing still
+gets fourteen values back — `nil 0 nil 0 false false 0 false 0 "" 0 0 false 0` — so "no lockout"
+is read from the count or from the nil name, never from the call refusing. And a boss killed in a
+normal low-level dungeon put nothing in this list at all.

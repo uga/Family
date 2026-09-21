@@ -5938,8 +5938,30 @@ are already known and cost nothing to honour:
 - `time()` and `GetServerTime()` differed by one second, so either can carry a reset moment, and
   neither is the other.
 
-Still owed: the same reading from a character that **is** saved to something, which is the only
-way to see what the fourteen columns hold when they hold anything.
+**And that reading came in 2026-09-21**, on a French Era character saved to three forty-man raids.
+The column map is in DATASOURCES, *The fourteen columns of `GetSavedInstanceInfo`, filled at last*.
+What it settles for this entry:
+
+- **Column 14 is the instance's id** - 469, 531, 533 - and it is what a lockout is keyed by.
+  Checked against the client's own `Map` table for this build, not recognised: 469 is
+  `BlackwingLair`, 533 is `Stratholme Raid` named *Naxxramas*, and all three French names match the
+  probe's output character for character.
+- **Columns 11 and 12 are bosses and bosses down** - 8 of 8, 8 of 9, 12 of 15 - confirmed against
+  `DungeonEncounter` keyed by the same `MapID`, which holds exactly 8, 9 and 15 rows for them. So
+  *12 of 15* is sayable without a table of our own.
+- **Column 3 is a countdown in seconds**, as this entry predicted: 189500 on the first answer and
+  189351 on the `UPDATE_INSTANCE_INFO` one. So the moment is made on the way in and `DEADLINES` is
+  the right home for it, exactly as written above.
+- **Columns 1 and 10 are language** - *Repaire de l'Aile noire*, *40 joueurs* - so they are labels
+  and never keys, and this is a lockout stored the way a currency is.
+- **`Names:Map` must not be used to name column 14.** It calls `C_Map.GetMapInfo`, which takes a
+  UiMapID; Era's `UiMap` table has 54 rows and none of 469, 531 or 533 is among them. Nothing on
+  these builds turns the id back into a name for the reader, which is why the label travels.
+- Column 7 is `524615680` on all three rows, so whatever it is, it is not per-instance here.
+
+**What is still owed:** a **heroic** lockout rather than a raid one, which is where the difficulty
+columns (4 and 10) do something other than say 40, and the Mists reading for world bosses -
+`GetNumSavedWorldBosses` is present on both Era and Mists and has said `0` every time so far.
 
 **A boss killed in a normal low-level dungeon put nothing in the list**, read on Burning Crusade
 2026-09-20 minutes afterwards: `GetNumSavedInstances` still 0. That fits what the game is
