@@ -6200,7 +6200,7 @@ at a claim nobody makes.
 | logged in, resting in an inn | 5% of a level per 8 hours | **yes** - 4 points in 214 seconds, in the Stoutlager Inn |
 | logged out in an inn | 5% per 8 hours | **yes** - 102 points over 6,842 seconds, carrying the rule to 1.3 points |
 | logged in, standing in the field | nothing | **yes**, twice, on two builds - 0 over 444 and over 4,587 seconds |
-| **logged out in the field** | **5% per 32 hours** | **never** |
+| **logged out in the field** | **5% per 32 hours** | **yes, 2026-09-21** - 226 points over 60,406 seconds, against 228 predicted |
 
 So the one case an estimate would be wrong about for a week at a time - a character parked
 outdoors and left there - is the one case that has never been sampled, and that is the same
@@ -6256,6 +6256,50 @@ the true accrual is a few points under 50 and the loss lands on 572 exactly.
 So the pool falls by **what the character earns**, measured twice now on this character, the
 first time on a pair with no accrual in it at all (630 for 630). A projection that only ever adds
 is wrong for anybody who is played, and this is the arithmetic that says by how much.
+
+### The morning reading, 2026-09-21: it is the quarter rate
+
+Ziofurgone, read on logging back in before moving: rested **8,312**, `xp` **5,909**, level 11,
+`xpMax` 8,700, `resting=false`, in Thelsamar, at 1789967628.
+
+**`xp` is unchanged from 5,909**, so nobody played the character and nothing was spent. That is
+what makes this a reading of the rate and not of the rate less the spending, and it is the one
+thing that could have spoilt the night.
+
+The interval was **60,406 seconds - 16.78 hours**, longer than any column in the table above, so
+it is scored against the rates rather than against the columns:
+
+| | over 60,406 seconds | would have read |
+|---|---|---|
+| the inn rate, if being logged out is all that matters | +912 | 8,998 |
+| **the quarter rate, logged out in the world** | **+228** | **8,314** |
+| nothing at all | +0 | 8,086 |
+
+**Read: 8,312. The quarter rate predicted 8,314**, and the other two are 686 and 226 away. There
+is no reading of this that is ambiguous.
+
+**The two points of residue are the right shape too.** 226 points is 59,851 seconds at that rate,
+which is **555 seconds - nine minutes - short of the interval**. The pool starts filling when the
+character is logged out, not when the probe is run, and nine minutes between running it and
+reaching the character select screen is an ordinary amount of nine minutes. The residue being
+*less* than predicted, by about the time a person takes to log out, is a better fit than an exact
+hit would have been.
+
+**So Alberto's correction was right and the rule is now measured on all four cases.** The
+paragraph this entry used to carry - that the field rate was refuted by two zeros - was aimed at a
+claim nobody makes, and the case those zeros could never have spoken about is the one this reading
+covers. The full four:
+
+| | rate | measured |
+|---|---|---|
+| logged in, resting in an inn | 5% of a level per 8 hours | 4 points in 214 seconds |
+| logged out in an inn | 5% per 8 hours | 102 over 6,842 seconds, to 1.3 points |
+| logged in, standing in the field | nothing | 0 over 444 and over 4,587 seconds, two builds |
+| logged out in the field | 5% per 32 hours | **226 over 60,406 seconds against 228** |
+
+**What is still unmeasured**, and is written here so the estimate is not built as though it were
+not: the Pandaren exception on Mists, and what a character who crosses between the two cases in
+one absence accrues - all four readings above are of a character that stayed where it was put.
 
 **And a second exception to write down before it bites.** Alberto: Pandaren fill faster than
 everybody else. Whatever Family computes has to know the race of the character it is computing
