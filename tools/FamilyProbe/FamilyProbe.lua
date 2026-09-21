@@ -868,6 +868,16 @@ end
 local sightings = 0
 local SIGHTINGS = 3
 
+-- Every tooltip this saw while armed, and every one it turned down. Declared up here because the
+-- disarm message reports them: *three readings, and nine tooltips went past* is a different world
+-- from *three readings, and nothing else was ever offered*.
+local seenWhileArmed, refused = 0, 0
+local TOLD = 3
+
+local function tally()
+    return string.format("Saw %d tooltips while armed, declined %d.", seenWhileArmed, refused)
+end
+
 local function record(text)
     DEFAULT_CHAT_FRAME:AddMessage("  |cffffd700nodes|r " .. text)
 
@@ -893,7 +903,7 @@ local function dump()
         armed = false
         DEFAULT_CHAT_FRAME:AddMessage(
             "|cff66bbffFamily Probe|r: that is " .. SIGHTINGS .. ", and the watcher is off again. "
-            .. "|cffffd700/familyprobe node|r arms it for three more.")
+            .. tally() .. " |cffffd700/familyprobe node|r arms it for three more.")
     end
 end
 
@@ -936,15 +946,48 @@ local function couldBeANode()
     return named == "Minimap" or named == "MinimapCluster"
 end
 
+-- **A refusal is a reading, and this used to throw them away.**
+--
+-- Reported from play 2026-09-21: armed, hovering a vein on a character who is **not a miner** -
+-- the game draws the tooltip, red *Requires Mining* line and all - and the probe says nothing.
+-- Which is indistinguishable, from the outside, from the tooltip never having reached the probe
+-- at all. Those are two different worlds: one where the client routes that case somewhere else,
+-- and one where this file declined it on a test of its own.
+--
+-- §2.2's rule, in the tool rather than in the addon. So every tooltip seen while armed is counted,
+-- and a refusal out in the world says which gate refused it and what the client had said. Capped,
+-- because a pointer crosses a great many tooltips and a probe that reports each one is one nobody
+-- leaves armed.
+local function decline(why)
+    refused = refused + 1
+    if refused > TOLD then return end
+
+    DEFAULT_CHAT_FRAME:AddMessage("  |cff888888nodes declined|r " .. why
+        .. "  |  " .. tooltipText())
+end
+
 local function onTooltipShown()
     if not armed then return end
+
+    seenWhileArmed = seenWhileArmed + 1
 
     local itemName, itemLink = try(GameTooltip.GetItem, GameTooltip)
     local spellName, spellID = try(GameTooltip.GetSpell, GameTooltip)
     local unitName, unitToken = try(GameTooltip.GetUnit, GameTooltip)
-    if itemName or itemLink or spellName or spellID or unitName or unitToken then return end
+    local named = itemName or itemLink or spellName or spellID or unitName or unitToken
 
-    if not everything and not couldBeANode() then return end
+    local couldBe = couldBeANode()
+
+    -- Only a refusal **where a node could have been** is worth a line. A bag slot declined for
+    -- being an item is the filter doing its job and is not news.
+    if named then
+        if couldBe then
+            decline("the client named it: " .. tooltipSubject())
+        end
+        return
+    end
+
+    if not everything and not couldBe then return end
 
     if C_Timer and C_Timer.After then C_Timer.After(0, dump) else dump() end
 end
@@ -966,6 +1009,7 @@ local function watchNodes(wantEverything)
     end
 
     sightings = 0
+    seenWhileArmed, refused = 0, 0
     armed = true
     everything = wantEverything and true or false
 

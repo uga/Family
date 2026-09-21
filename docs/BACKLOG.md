@@ -6553,6 +6553,25 @@ under the pointer. So **on every client Family runs on, a gathering node hands o
 nothing else**, and the line beneath it is the gathering profession, which `SkillLines.lua` already
 resolves to an id in five locales.
 
+**Reported from play 2026-09-21, and not yet explained: the probe reacts only to a node the
+character can actually work.** Hovering a vein on a character who is **not a miner** draws the
+game's own tooltip, red *Requires Mining* line and all, and the probe says nothing.
+
+If that holds it matters twice over. It would mean Family's block appears on the nodes you can
+take and not on the ones you cannot - which is arguably the right behaviour and is certainly a
+behaviour somebody should have chosen rather than inherited. And *who in the family has Iron Ore*
+is a question a non-miner has every reason to ask while looking at a vein they cannot touch, so
+the blind spot would sit exactly where part of the value is.
+
+**What cannot be said yet is why**, and the probe was unable to tell: *it declined the tooltip* and
+*the tooltip never reached it* were the same silence. That is §2.2's fault in the tool rather than
+in the addon, so the watcher now counts every tooltip it sees while armed and reports a refusal
+**out in the world** with the gate that refused it and what the client had said - capped at three
+lines, since a pointer crosses a great many tooltips. The next run separates the two worlds:
+tooltips seen but declined means a test of ours, and none seen at all means the client does not
+route that case through `GameTooltip`'s `OnShow` - in which case the eventual feature has the same
+blind spot and inherits it from the client rather than from us.
+
 **The minimap is unmeasured on both builds, and now known to be.** Asked rather than inferred:
 GatherMate is installed on the Mists client too. So `Minimap  |  "Dreamfoil"` and Era's
 `Minimap  |  "Copper Vein"` are the same unreadable reading twice, not two builds agreeing - a pin
