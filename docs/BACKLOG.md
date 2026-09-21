@@ -5964,16 +5964,28 @@ What it settles for this entry:
 and the full column map is in DATASOURCES, *And Mists answers the same fourteen columns, with one
 of them contradicting Era*. Three things change for this entry:
 
-- **Column 11 is retracted.** The client answers `1` for a place its own `DungeonEncounter` gives
-  **ten** rows for. The Era reading was three rows of one kind on one client and they agreed; the
-  fourth row is of another kind and it does not. So *12 of 15* is sayable on Era and not on Mists,
-  and this entry may promise only column 12 on its own - *N bosses down* - unless the denominator
-  comes from somewhere that can be checked. `DungeonEncounter` is fetchable per build from wago
-  and a generated `instance id -> boss count` table is the obvious candidate; not decided here.
-- **Column 5 was wrong before `UPDATE_INSTANCE_INFO`, not missing.** It read `false` beside
-  `RequestRaidInfo` and `true` when the event arrived, on a row that was already present with its
-  other thirteen columns filled. Every earlier finding about that event was about an empty list; a
-  reader that took the list early would have had a lockout and called it unlocked.
+- **Columns 11 and 12 are both retracted**, the first on the reading that arrived and the second
+  on the one half an hour behind it. Column 11 answers `1` for a place its own `DungeonEncounter`
+  gives **ten** rows for; the Era reading was three rows of one kind on one client and they
+  agreed, and the fourth row is of another kind and does not. Column 12 then stayed at nought
+  across a second read taken *after more bosses*, on the same lock id, in which **the countdown
+  was the only column in the whole row that moved**. So on Mists this row carries no boss
+  progress at all, and neither *N of M* nor *N bosses down* is sayable from it there.
+- **What a denominator could come from, if one is wanted**: `DungeonEncounter` is fetchable per
+  build from wago and a generated `instance id -> boss count` table would give *M*. That answers
+  half the question and the retraction above takes away the other half, so it is not worth
+  building until *N* has a source. Not decided here.
+- **Where *N* might live: `GetSavedInstanceEncounterInfo`**, which the probe now asks for eight
+  slots by position. Bounding a walk by column 11 would read one boss and stop, which is why the
+  count is not taken from the row. Unread on every build.
+- **Column 5 is sometimes wrong before `UPDATE_INSTANCE_INFO`, not merely missing.** It read
+  `false` beside `RequestRaidInfo` and `true` when the event arrived, on a row already present
+  with its other thirteen columns filled. Every earlier finding about that event was about an
+  empty list; a reader that took the list early would have had a lockout and called it unlocked.
+  **Weakened the same day by the second read**, where it answered `true` at both moments: so that
+  `false` was a lock the client had not yet heard about rather than a standing property of the
+  early answer. The rule is unchanged - read the list when the event says so - and only the
+  strength of the claim is.
 - **Column 7 is a constant across expansions**, `524615680` on Era's three raids and on Mists, and
   it is `8005 x 65536` exactly. Nothing may be read off it.
 
@@ -6440,6 +6452,32 @@ it is the half an estimate would get wrong: **a character that is played spends 
 a projection that only ever adds is wrong for everybody except the ones nobody touches. It wants a character below it, which is what any
 character becomes as soon as it is played for a while - then two readings a few hours apart, one
 pair logged out in an inn and one pair logged out in the field.
+
+**But *played* is not *earned*, and a Mists reading says so.** Two samples half an hour apart on a
+level 85 in Molten Core, 2026-09-21: `xp` went **62 to 1,629** and `rested` did not move from
+**631,648**, with `resting=false` throughout.
+
+| | rested | xp |
+|---|---|---|
+| first | 631648 | 62 |
+| half an hour later | 631648 | 1629 |
+
+1,567 experience earned and nothing spent. That does not contradict the level 11 above so much as
+bound it: the pool is drawn on by *some* kinds of earning and not by all of them, and the boars
+measurement cannot tell which because everything it measured was a kill. Two explanations fit and
+neither is measured here - a level 60 raid's occupants are grey to a level 85 and grey things are
+worth nothing, so the 1,567 came from elsewhere; and experience that is not a kill may not draw on
+the pool at all. **What it settles is the shape of the rule**: *a character that is played spends
+this figure* is too strong, and a projection built on it would subtract from a questing alt that
+never spent a point. The reading a rule wants is a pair taken around a session of ordinary killing
+with the character's own level above the mobs'.
+
+**And the place can come back empty while the character is standing in it.** The same sample wrote
+`where=` with nothing after it, where the earlier one said `Magmadar Cavern`. That is `GetZoneText`
+answering a blank string in an instance, from a character who was logged in and playing - so the
+blank is not the logout case this entry is otherwise about, and a reader that treats *no place* as
+*not read* would be wrong both times. It matters here because `Scanners/Identity.lua:306` writes
+the zone at `PLAYER_LOGOUT` and the question open below is what else answers at that moment.
 
 ---
 

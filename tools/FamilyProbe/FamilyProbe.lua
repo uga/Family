@@ -390,6 +390,36 @@ local PROBES = {
         return table.concat(lines, " | ")
     end },
 
+    -- **Where the bosses are, if they are anywhere.**
+    --
+    -- Read twice in Molten Core on Mists, 2026-09-21, half an hour and several bosses apart:
+    -- columns 11 and 12 of `GetSavedInstanceInfo` said `1` and `0` both times, and column 3 -
+    -- the countdown - was the only thing in the whole row that moved. So on that client the row
+    -- does not carry boss progress, whatever it carries on Era, and *N bosses down* has to come
+    -- from somewhere else or from nowhere.
+    --
+    -- This is the somewhere else worth asking about: a per-encounter call the client may or may
+    -- not have. Asked for eight slots rather than for a count, because the count to ask for is
+    -- exactly the number that is in doubt - column 11 says one, and if that is wrong then a loop
+    -- bounded by it reads one boss and stops. Every answer is printed by position and nothing is
+    -- unpacked on faith.
+    { area = "instances", name = "GetSavedInstanceEncounterInfo", ask = function()
+        local call = there("GetSavedInstanceEncounterInfo")
+        if not call then return "absent" end
+
+        local count = tonumber(try(there("GetNumSavedInstances") or function() return 0 end)) or 0
+        if count == 0 then
+            return "nothing saved; (1,1) answers: " .. shape(callPacked(call, 1, 1))
+        end
+
+        local lines = {}
+        for slot = 1, 8 do
+            local answer = callPacked(call, 1, slot)
+            lines[#lines + 1] = "(1," .. slot .. ") " .. shape(answer)
+        end
+        return table.concat(lines, " | ")
+    end },
+
     { area = "instances", name = "GetNumSavedWorldBosses", ask = function()
         local call = there("GetNumSavedWorldBosses")
         if not call then return "absent" end

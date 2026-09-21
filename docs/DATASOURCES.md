@@ -4842,6 +4842,49 @@ rows across two clients and have never been seen saying anything else; and Mists
 where `GetNumSavedWorldBosses` answered `0` on this character too — present and empty on all three
 builds, every time it has been asked.
 
+#### The same lockout half an hour and several bosses later, and only the clock had moved
+
+Read again the same day, same character, same lock — column 2 is `239723021` both times, so this is
+one row watched over time and not two rows compared.
+
+| # | first read | after more bosses | |
+|---|---|---|---|
+| 3 | `126845` | `125040` | down 1,805 against 1,826 seconds of `time()` |
+| 5 | `false` then `true` | `true` on both answers | |
+| 11 | `1` | `1` | |
+| 12 | `0` | `0` | |
+
+Everything else in the fourteen is character for character what it was. **The countdown is the only
+column in the row that moved**, and it moved by the wall clock, which is column 3's third
+confirmation and the best of the three: across sessions, against `time()`, not against itself.
+
+**Column 12 does not survive this either.** The Era reading called 11 and 12 *bosses* and *bosses
+down*, and column 11 was already retracted above. Column 12 held on, because 8 of 8, 8 of 9 and 12
+of 15 are exactly what three raid lockouts ought to say. Here a character killed bosses in a raid
+he holds a lock on, and the column stayed at nought. So on Mists this row carries **no boss
+progress at all** — not a denominator and not a numerator — and *N bosses down* is not sayable from
+`GetSavedInstanceInfo` on that client any more than *N of M* is.
+
+**What this rests on, said plainly**: Alberto's *after more bosses*, which is a report and not a
+column. The row cannot distinguish bosses killed from bosses killed *and recorded against this
+lock*, and nothing else in the reading does either. If the kills never reached the lock, columns 11
+and 12 are innocent and something else entirely is wrong — which is the reason for the call below
+rather than for a third reading of the same fourteen values.
+
+**So the probe now asks `GetSavedInstanceEncounterInfo`**, which is where a per-boss answer would
+live if this client has one. Eight slots, asked by position, printed by position: the count to loop
+to would be column 11, and column 11 is the number in doubt — bounded by it, a walk reads one boss
+and stops. Three shapes are driven against a stub before it goes near the game: a lockout with
+bosses behind it, no lockout at all, and a client without the call.
+
+**And column 5 is quieter than the first reading made it look.** It answered `true` at both moments
+this time, where the first session had `false` beside `RequestRaidInfo` and `true` after the event.
+So that `false` was about the moment — a lock the client had not yet heard about — and not a
+standing property of the early answer. The rule it produced is unchanged and still right: read the
+list when `UPDATE_INSTANCE_INFO` says so. What is corrected is the strength of it. One session saw
+the field change; one session saw it steady; that is a field which is *sometimes* wrong before the
+event, which is all a reader needs to know and less than was written.
+
 ### Honor on Mists is 1901, and the probe had been asking 392 — 2026-09-21
 
 Backlog 5 and the second half of 95 were both waiting on *a Mists character holding a currency*,
