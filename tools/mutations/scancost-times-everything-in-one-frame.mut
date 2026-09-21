@@ -1,0 +1,8 @@
+name: /family scancost times every part in one frame, which is the thing it cannot do
+file: addons/Family_UI/Slash.lua
+--- old
+			Family:After(0, "scancost", nextPart)
+			return
+--- new
+			nextPart()
+			return

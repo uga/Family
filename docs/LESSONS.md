@@ -4154,3 +4154,45 @@ builds: a heroic lockout, where columns 4 and 10 would say something other than 
 across two clients have never done. Anything the entry promises Family will print says which client
 it was measured on, and a column with one client behind it is written as unknown rather than as
 settled-so-far.
+
+## L-119 — the expensive part was added to a schedule chosen for the cheap ones
+
+**2026-09-21.** `Character:ScanNow` reads equipment, reputations and the spellbook, and it is
+scheduled two seconds after `PLAYER_EQUIPMENT_CHANGED`, `UPDATE_FACTION`, `LEARNED_SPELL_IN_TAB`
+and `SPELLS_CHANGED`. That cadence was chosen for those three things and it is right for them:
+they are what those events are about, and each is a few hundred calls into the client.
+
+Achievements were added to the same function later, because they are read off the character with
+no window to open - which is what the file's own opening comment gives as the reason the three
+live together. Nothing was said about the schedule, so the new part simply inherited it. On Mists
+that part is 126 categories, 3,998 achievements and 19,428 criteria: **about 27,400 calls into the
+client, in one frame, several times a minute in a raid fight**, to re-read something none of those
+four events can change. It came back as four *script ran too long* errors in one Molten Core
+session.
+
+**The three things that kept it hidden.** It only exists on Mists, and Era and Burning Crusade are
+where nearly all the play and all the earlier probing happened. The cost is set by the *client's*
+catalogue and not by the character, so it does not grow with anything a developer watches, and it
+is as large on a level-one alt as on a raider. And every call goes through `Family:TryCall`, which
+makes a loop of twenty thousand client calls read exactly like a loop of twenty - one line either
+way - while being a `pcall` and a table apiece.
+
+**What named it was the client, twice.** L-094 says *script ran too long* gives the line where the
+budget ran out and not where the time went, and the first report - `Core.lua:126`, which is
+`TryCall`'s `pcall` and so the busiest line in the whole addon - said nothing at all. Two more
+reports arrived at `Scanners/Character.lua:426` and `:435`, both inside `criteriaProgress`, six
+lines apart. Four stops scattered anywhere would have meant nothing; two inside one small function
+is a measurement. L-094 is the reason to wait for the second report rather than to ignore the
+first.
+
+**The check.** The walk has its own key, `character.achievements`, its own schedule and its own
+`SetPayload` naming its own part, so what reads it and what pays for it are visible in one place.
+The harness asserts that `Character:Scan()` stores no achievements at all, and that a frame after
+the walk begins it has done one category and not both - the second is what catches a walk that
+quietly goes back to running end to end. And `/family scancost` prints the price of each part of
+the scan in criteria asked about as well as in milliseconds, so the next part whose size is set by
+the client rather than by the character can be seen before a raid finds it.
+
+**And the rule the next one falls to.** When a part is added to an existing scanner, the question
+is not only *is this read off the character* but *does the schedule this now inherits have anything
+to do with what changes it*. Wearing a different hat does not change what you have achieved.

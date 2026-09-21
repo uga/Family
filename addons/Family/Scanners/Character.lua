@@ -435,59 +435,182 @@ local function criteriaProgress(id)
 	return done, total
 end
 
-function Character:ReadAchievements()
-	if not Family.Capabilities:Has("achievements") then return nil end
+-- **One category's worth**, added to what has been gathered so far.
+--
+-- Split out of the walk below rather than left inside it, so that a probe timing the walk times
+-- *this* and not a second copy of it - the fault named above `/family widecost`, where a probe
+-- that assembles its own version of what it is measuring drifts from the real one and is then
+-- quoted confidently for years. A category is also the unit a walk that has to be spread over
+-- several frames would be spread in.
+--
+-- Answers what the category cost as well as what it held: how many achievements it offered and
+-- how many criteria were asked about across them. That is the whole shape of the price - two
+-- calls per achievement and one per criterion - and it is a count rather than a clock, so it
+-- means the same on every machine.
+function Character:ReadAchievementCategory(category, into)
+	local offered = Family:TryCall(GetCategoryNumAchievements, category) or 0
+	local asked = 0
 
-	local points = Family:TryCall(GetTotalAchievementPoints)
-	local categories = Family:TryCall(GetCategoryList)
-	if not categories then return nil end
+	for index = 1, offered do
+		local id, _, achievementPoints, completed =
+			Family:TryCall(GetAchievementInfo, category, index)
 
-	local earned = {}          -- ids only, and the order the index answers with
-	local list = {}
-	local count = 0
+		if id then
+			local done, criteria = criteriaProgress(id)
+			asked = asked + (criteria or 0)
 
-	for _, category in ipairs(categories) do
-		local total = Family:TryCall(GetCategoryNumAchievements, category) or 0
-
-		for index = 1, total do
-			local id, _, achievementPoints, completed =
-				Family:TryCall(GetAchievementInfo, category, index)
-
-			if id then
-				local done, criteria = criteriaProgress(id)
-
-				if completed then
-					count = count + 1
-					earned[#earned + 1] = id
-					list[#list + 1] = {
-						id = id,
-						category = category,
-						points = tonumber(achievementPoints) or 0,
-						done = true,
-					}
-				elseif done and done > 0 then
-					-- Started but not finished: the ones an alt manager is for.
-					list[#list + 1] = {
-						id = id,
-						category = category,
-						points = tonumber(achievementPoints) or 0,
-						criteria = criteria,
-						completed = done,
-					}
-				end
+			if completed then
+				into.count = into.count + 1
+				into.earned[#into.earned + 1] = id
+				into.list[#into.list + 1] = {
+					id = id,
+					category = category,
+					points = tonumber(achievementPoints) or 0,
+					done = true,
+				}
+			elseif done and done > 0 then
+				-- Started but not finished: the ones an alt manager is for.
+				into.list[#into.list + 1] = {
+					id = id,
+					category = category,
+					points = tonumber(achievementPoints) or 0,
+					criteria = criteria,
+					completed = done,
+				}
 			end
 		end
 	end
 
-	if count == 0 and not points then return nil end
+	return offered, asked
+end
 
-	return {
-		earned = earned,
-		list = list,
-		count = count,
+--------------------------------------------------------------------------------------------
+-- The walk, a category at a time and on a schedule of its own
+--
+-- **Reported from play 2026-09-21, on Mists, fighting solo in Molten Core.** Four *script ran
+-- too long* errors in one session, and between them the client named the code twice:
+-- `Scanners/Character.lua:426` and `:435`, which are both inside `criteriaProgress`, and
+-- `Core.lua:125` and `:126`, which are `TryCall`'s own two lines. The numbering is the released
+-- 4.3.0 file's and was checked against it rather than assumed - L-094 says that line is where
+-- the client's budget ran out and not where the time went, which is exactly why two stops
+-- inside one small function are worth more than four stops anywhere.
+--
+-- **How big the walk is, from the client's own tables at `5.5.4.69078`**: 126 categories, 3,998
+-- achievements, 19,428 criteria. That is two calls per achievement and one per criterion, about
+-- **27,400 questions put to the client in a single frame**, each one through `TryCall`, which is
+-- a `pcall` and a table apiece. Era and Burning Crusade have no achievements at all, which is
+-- why this had never broken anywhere else.
+--
+-- And it ran again two seconds after every `PLAYER_EQUIPMENT_CHANGED`, `UPDATE_FACTION`,
+-- `LEARNED_SPELL_IN_TAB` and `SPELLS_CHANGED` - which in a raid fight is most of them, over and
+-- over - to re-read a part of the record that none of those events can change.
+--
+-- So two things, and the second matters more than the first:
+--
+-- 1. **A category a frame.** Nothing that asks the client twenty-seven thousand questions
+--    belongs in one frame, and a category is the unit the client already divides them into. The
+--    same stepping `Database:WarmPayloads` and `RecipeIndex` use, arrived at the same way.
+-- 2. **Its own schedule.** Achievements are read on arrival and when one is earned. Wearing a
+--    different hat does not change what you have achieved, and the scan that reads what does
+--    change is now the cheap part of the file again.
+--
+-- `CRITERIA_UPDATE` is deliberately **not** registered. It fires while a criterion is ticking
+-- along, which in a raid is constantly, and hanging a four-thousand-achievement walk off it
+-- would be this same fault wearing a different event.
+--
+-- **What this costs in freshness**: progress on a half-finished achievement is now as fresh as
+-- the last arrival or the last one earned, where before it was re-read several times a minute.
+-- The record has carried `seen` all along for exactly this, and nothing else in the addon was
+-- ever waiting on that walk.
+--------------------------------------------------------------------------------------------
+
+-- 126 categories at this step is about thirteen seconds, once, long after the loading screen.
+Character.CATEGORY_STEP = Character.CATEGORY_STEP or 0.1
+
+local walking = nil
+
+-- What a finished walk gathered, under its own `SetPayload` naming its own part, so that the
+-- rest of the record is not marked as written every time this lands.
+local function keepAchievements(key, into, points)
+	if into.count == 0 and not points then return false end
+
+	local payload = Family.Database:Payload(key) or {}
+	payload.achievements = {
+		earned = into.earned,
+		list = into.list,
+		count = into.count,
 		points = tonumber(points) or 0,
 		seen = time(),
 	}
+
+	Family.Database:SetPayload(key, payload, { "achievements" })
+	Family.Database:SetMeta(key, {
+		achievementPoints = payload.achievements.points,
+		achievementCount = payload.achievements.count,
+	})
+
+	Family:Debug("achievements: %d finished, %d kept, %d points",
+		into.count, #into.list, payload.achievements.points)
+	return true
+end
+
+-- Begins a walk, abandoning one already under way. Answers whether there is anything to walk:
+-- a client with no achievements, or one that will not list its categories, has not.
+function Character:StartAchievements()
+	walking = nil
+	if not Family.Capabilities:Has("achievements") then return false end
+
+	local categories = Family:TryCall(GetCategoryList)
+	if type(categories) ~= "table" or #categories == 0 then return false end
+
+	walking = {
+		-- **The member this walk is for, held rather than asked for again at the end.** A walk
+		-- spans a dozen seconds of frames, and whatever is true of the member key at the end of
+		-- that, the achievements gathered belong to the one it started on. `earned` is ids only,
+		-- in the order the index answers with.
+		key = Family:CurrentMember(),
+		points = Family:TryCall(GetTotalAchievementPoints),
+		categories = categories,
+		at = 1,
+		into = { earned = {}, list = {}, count = 0 },
+	}
+	return true
+end
+
+-- One category's worth. Answers whether another is waiting.
+function Character:StepAchievements()
+	if not walking then return false end
+
+	local category = walking.categories[walking.at]
+	if category then
+		walking.at = walking.at + 1
+		self:ReadAchievementCategory(category, walking.into)
+	end
+
+	if walking.categories[walking.at] then return true end
+
+	local finished = walking
+	walking = nil
+	keepAchievements(finished.key, finished.into, finished.points)
+	return false
+end
+
+function Character:IsWalkingAchievements()
+	return walking ~= nil
+end
+
+local function stepOn()
+	if Character:StepAchievements() then
+		Family:After(Character.CATEGORY_STEP, "character.achievements", stepOn)
+	end
+end
+
+-- Starts on a later frame and not in the caller's, so that whatever asked for this pays none
+-- of it. Answers whether a walk began.
+function Character:ScanAchievements()
+	if not self:StartAchievements() then return false end
+	Family:After(Character.CATEGORY_STEP, "character.achievements", stepOn)
+	return true
 end
 
 --------------------------------------------------------------------------------------------
@@ -527,11 +650,10 @@ function Character:ScanNow()
 
 	local branches = book and self:ReadSpecialisations(book) or nil
 
-	local achievements = self:ReadAchievements()
-	if achievements then payload.achievements = achievements end
-
-	Family.Database:SetPayload(key, payload,
-		{ "equipment", "reputations", "spells", "achievements" })
+	-- **Achievements are not read here**, and that is the whole of the Molten Core fix: this
+	-- runs two seconds after every equipment and spell event, and none of those events can
+	-- change an achievement. The walk has its own schedule further up the file.
+	Family.Database:SetPayload(key, payload, { "equipment", "reputations", "spells" })
 
 	-- How fast this character can travel, worked out from what was just written. Both
 	-- scanners that can change the answer call it, so whichever ran last leaves it right -
@@ -549,13 +671,10 @@ function Character:ScanNow()
 		specialisations = book and (branches or Family.CLEAR) or nil,
 		itemLevel = average or Family.CLEAR,
 		reputationCount = factions and #factions or nil,
-		achievementPoints = achievements and achievements.points or nil,
-		achievementCount = achievements and achievements.count or nil,
 	})
 
-	Family:Debug("scanned character: ilvl %s, %d factions, %s achievements",
-		tostring(average), factions and #factions or 0,
-		achievements and tostring(achievements.count) or "no")
+	Family:Debug("scanned character: ilvl %s, %d factions, %d spell(s)",
+		tostring(average), factions and #factions or 0, book and #book or 0)
 end
 
 --------------------------------------------------------------------------------------------
@@ -565,6 +684,11 @@ Family:OnDatabaseReady("character", function()
 		-- Later than the other scanners: item levels need the client to have loaded the
 		-- items, and asking too early gets a nil for half of them.
 		Family:After(6, "character", function() Character:Scan() end)
+
+		-- **And the achievements last of all**, because it is the longest job at an arrival
+		-- and the only one nothing is waiting on - the panel draws what was stored last time
+		-- until it finishes. Behind the record warm-up at 3 seconds and the recipe names at 5.
+		Family:After(12, "character.achievements", function() Character:ScanAchievements() end)
 	end)
 
 	for _, event in ipairs {
@@ -581,4 +705,12 @@ Family:OnDatabaseReady("character", function()
 			Family:After(2, "character", function() Character:Scan() end)
 		end)
 	end
+
+	-- **Earning one is the only thing that changes them short of an arrival**, and it is rare,
+	-- so a whole walk is affordable here. `Family:After` restarts its delay rather than
+	-- queueing, so the handful that land together at the end of a raid are one walk. An event
+	-- this client does not have registers as nothing at all (§2.2), which is the Era case.
+	Family:RegisterEvent("ACHIEVEMENT_EARNED", "character.achievements", function()
+		Family:After(5, "character.achievements", function() Character:ScanAchievements() end)
+	end)
 end)

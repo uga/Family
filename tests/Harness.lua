@@ -8604,10 +8604,32 @@ check("and the one the client will no longer talk about is not forgotten",
 
 GetSpecialization = anySpec
 
--- Achievements are a Mists thing, so this is the one place they can be read at all.
+-- **Achievements are a Mists thing**, so this is the one place they can be read at all - and
+-- since 2026-09-21 they are read on a schedule of their own, a category at a time, instead of
+-- inside the character scan. That change is what stopped four *script ran too long* errors in
+-- one Molten Core session: the scan runs two seconds after every equipment and spell event, and
+-- the walk it was carrying puts about 27,400 questions to a Mists client. Both halves are
+-- checked here - the scan leaves them alone, and the walk spans frames rather than burning one.
 Family.Character:Scan()
+check("the character scan does not read achievements at all",
+	Family.Database:Payload(key).achievements == nil)
+
+check("a client with achievements has something to walk",
+	Family.Character:ScanAchievements() == true)
+check("and the walk has not finished in the frame that started it",
+	Family.Database:Payload(key).achievements == nil
+		and Family.Character:IsWalkingAchievements() == true)
+
+advance(0.1)
+check("a frame later it has done one category and not both",
+	Family.Character:IsWalkingAchievements() == true
+		and Family.Database:Payload(key).achievements == nil)
+
+advance(2)
 local achievements = Family.Database:Payload(key).achievements
 check("achievements are read on a client that has them", achievements ~= nil)
+check("and the walk has put itself away afterwards",
+	Family.Character:IsWalkingAchievements() == false)
 check("with the points the client reports", achievements
 	and achievements.points == 1450, achievements and tostring(achievements.points))
 check("and a count of the finished ones", achievements and achievements.count == 2,
@@ -8623,6 +8645,34 @@ check("a started one is kept with how far through it is",
 	byId[9202] and tostring(byId[9202].completed))
 check("and one nobody has started is not kept at all - there are thousands of those",
 	byId[9203] == nil)
+
+-- **The walk is split at a category**, which is the unit it is stepped in and the unit a probe
+-- times it in. Two things have to hold for that split to be worth anything: a category on its
+-- own gathers exactly what the whole walk gathered for it, and it answers what it cost. The
+-- price is two calls per achievement and one per criterion, and a count of those means the same
+-- on every machine where a millisecond does not.
+--
+-- In a block of its own: this file's main chunk is close to Lua's limit of two hundred locals,
+-- and three more at the top level is what tips it over.
+do
+	local piecemeal = { earned = {}, list = {}, count = 0 }
+	local offeredTotal, criteriaTotal = 0, 0
+	for _, category in ipairs(GetCategoryList()) do
+		local offered, asked = Family.Character:ReadAchievementCategory(category, piecemeal)
+		offeredTotal, criteriaTotal = offeredTotal + offered, criteriaTotal + asked
+	end
+
+	check("a category at a time gathers what the whole walk gathered",
+		#piecemeal.list == #achievements.list and piecemeal.count == achievements.count,
+		#piecemeal.list .. " of " .. #achievements.list)
+	check("and the same finished ids, in the same order",
+		table.concat(piecemeal.earned, ",") == table.concat(achievements.earned, ","),
+		table.concat(piecemeal.earned, ","))
+	check("a category says how many achievements it offered", offeredTotal == 5,
+		tostring(offeredTotal))
+	check("and how many criteria it had to ask about, which is what the walk costs",
+		criteriaTotal == 12, tostring(criteriaTotal))
+end
 
 -- Back to Era for the rest.
 GetBuildInfo, GetTalentInfo = savedBuild, savedTalentInfo
@@ -15098,6 +15148,56 @@ do
 				Family.Database:SetPayload(me, mine)
 				check("and what the records weigh",
 					heard:find("They weigh about", 1, true) ~= nil, heard)
+			end
+
+			-- **Which part of the character scan costs what.** Written after four *script ran
+			-- too long* errors in one Molten Core session, and its whole design is in the
+			-- stepping: a walk that is over the client's budget cannot report its own cost,
+			-- because the run that would print the number is the run that gets stopped. So each
+			-- part is timed a frame apart, and the part that never printed is named by its
+			-- absence. That is the property checked here - not the milliseconds, which are this
+			-- machine's and mean nothing, but that the parts arrive one frame at a time.
+			do
+				local from = #DEFAULT_CHAT_FRAME.messages
+				local ran = pcall(SlashCmdList["FAMILY"], "scancost")
+				local function since()
+					return table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+						#DEFAULT_CHAT_FRAME.messages)
+						:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+				end
+
+				check("/family scancost names the member before timing anything",
+					ran and since():find("Timing the character scan for", 1, true) ~= nil,
+					since())
+				check("and nothing has been timed in the frame that asked for it",
+					since():find("equipment", 1, true) == nil, since())
+
+				advance(0.1)
+				local afterOne = since()
+				check("one frame later the first part has reported and no other has",
+					afterOne:find("equipment", 1, true) ~= nil
+						and afterOne:find("reputations", 1, true) == nil, afterOne)
+
+				-- Four frames in all: three parts and then the achievements line with the
+				-- total. No more than that, because the clock these frames move is the one
+				-- the guild and Wide Family checks further down are timed against.
+				advance(0.4)
+				local heard = since()
+				check("and given frames enough, every part reports with a count and a time",
+					heard:find("reputations", 1, true) ~= nil
+						and heard:find("spells", 1, true) ~= nil
+						and heard:find("achievements", 1, true) ~= nil, heard)
+				check("the achievements line counts the criteria, which is what the walk costs",
+					heard:find("criteria", 1, true) ~= nil, heard)
+
+				-- Era, here: the scanner never pays for achievements on a client that has
+				-- none, so neither does the price this prints (§2.3).
+				check("and on a client without achievements it prints nought rather than a price",
+					Family.Capabilities:Has("achievements") == false
+						and heard:find("0 categories, 0 achievements, 0 criteria", 1, true) ~= nil,
+					heard)
+				check("and it finishes by saying a part that never printed is where it stopped",
+					heard:find("never printed is where the client stopped", 1, true) ~= nil, heard)
 			end
 
 			-- **Bytes in the unit a reader can hold in their head.**

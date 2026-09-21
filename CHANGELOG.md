@@ -29,6 +29,20 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Achievements
+
+- **Family no longer breaks off with *script ran too long* while you are fighting.** On Mists of
+  Pandaria it read all four thousand of your achievements again every couple of seconds during a
+  raid, which is far more than the game lets an addon do at once. They are now read a little at a
+  time, shortly after you arrive in the world and whenever you earn one. Progress on a
+  half-finished achievement now refreshes at each loading screen instead of every few seconds,
+  and nothing you can see on the Achievements page has changed.
+
+### Typing to Family
+
+- **`/family scancost` says which part of reading your character costs what**, a part at a time.
+  For when Family is slow, or stops with an error while you play.
+
 ### Currencies
 
 - **Honor on Burning Crusade is recognised by the game's own number for it, not by its name.**

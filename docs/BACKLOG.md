@@ -4709,7 +4709,8 @@ its own key and writes the whole thing back through `Database:SetPayload`.
 | `auctions` | `Auctions:Scan` at the auction house | `auctions.seen`; each auction's `expiresBy = time() + left` - same jitter |
 | `quests`, `questObjectives` | `Quests:Scan`, 4 s after entering the world and on quest events | `quests.seen = time()` - **at every login** |
 | `talents` | `Talents:Scan`, 3 s after entering the world | `talents.seen = time()` - **at every login** |
-| `equipment`, `reputations`, `spells`, `achievements` | `Character:ScanNow`, 6 s after entering the world and on its events | `achievements.seen = time()` - **at every login**, on clients with achievements |
+| `equipment`, `reputations`, `spells` | `Character:ScanNow`, 6 s after entering the world and on its events | none found inside the key |
+| `achievements` | the stepped walk, 12 s after entering the world and on `ACHIEVEMENT_EARNED` - **split off `Character:ScanNow` on 2026-09-21** | `achievements.seen = time()` - **at every login**, on clients with achievements |
 | `pets` | `Pets:Scan`, 5 s after entering the world, hunters and warlocks | `pets.seen = time()` - **at every login** |
 | `professions` | `Professions:Scan`, on skill changes and recipe windows | each profession's `recipesSeen`; each recipe's `readyAt = time() + cooldown` - jitter |
 | `crafts` | the Craft frame (Beast Training) | `crafts[id].seen = time()` |
