@@ -4693,6 +4693,20 @@ the same four answers as the herb beside it and as Era. So the shape is four rea
 builds and two professions rather than one build's quirk, and the second line is a gathering skill
 in both of the two cases this entry is about.
 
+**A third build, and the probe's own cost.** Burning Crusade 2.5.6 answered
+`Minimap  |  "Silverleaf"` - one line, the name, and **no profession line**, where a world node on
+both other builds gives two. So the minimap route, if it turns out to exist, loses the
+discriminator that the world route hands over for free.
+
+That run also spent two of its three readings on `MiniMapTrackingButton` and on
+`QuestieFrame804`, neither of which the client names as an item, a spell or a unit either. The
+frame names are what separates them: a world node has **no frame at all**, a blip reports the
+minimap, and everything else that got through was a named frame belonging to an addon or to the
+interface. The probe now dumps only those two cases, with `/familyprobe node all` for the old
+behaviour, and reports **which addons are loaded** on every `apis` run - because four node
+readings were taken before anybody asked whether that client had GatherMate on it, and the answer
+is what decides whether a minimap reading means anything at all.
+
 **The minimap is closer to settled but not settled.** `Minimap  |  "Dreamfoil"` came back here as
 `Minimap  |  "Copper Vein"` did on Era, and no `GatherMatePin` frame appeared anywhere in this
 session - where the Era run hovered two of them. That is suggestive and it is not a reading:

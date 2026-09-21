@@ -761,6 +761,33 @@ PROBES[#PROBES + 1] = { area = "nodes", name = "the frame under the pointer", as
         .. " GetMouseFoci=" .. type(_G.GetMouseFoci)
 end }
 
+-- **What else is drawing on this interface**, because a reading of the minimap is worth nothing
+-- without it.
+--
+-- Four node readings were taken before anybody asked whether the client had GatherMate on it, and
+-- the answer decides what `Minimap  |  "Copper Vein"` even means: the client's own tracking blip,
+-- or an addon's pin anchored to the minimap. It was asked by hand in the end, which is the sort of
+-- thing a reading should carry with it. Now every run says so.
+PROBES[#PROBES + 1] = { area = "nodes", name = "what else is loaded", ask = function()
+    local count = tonumber(try(there("GetNumAddOns"))) or 0
+    if count == 0 then return "GetNumAddOns says nothing" end
+
+    local info = there("GetAddOnInfo") or inside("C_AddOns", "GetAddOnInfo")
+    local loaded = there("IsAddOnLoaded") or inside("C_AddOns", "IsAddOnLoaded")
+    if not info then return count .. " addons, and no way to name them here" end
+
+    local out = {}
+    for index = 1, count do
+        local name = (try(info, index))
+        if type(name) == "string" and (not loaded or (try(loaded, index))) then
+            out[#out + 1] = name
+        end
+    end
+
+    table.sort(out)
+    return "(" .. #out .. " of " .. count .. " loaded) " .. table.concat(out, " ")
+end }
+
 -- **What the modern system was asked about**, recorded by type rather than guessed at.
 --
 -- A post-call is registered for *every* value `Enum.TooltipDataType` carries, not for the one
@@ -878,6 +905,37 @@ end
 -- A tick late, so that whatever `TooltipDataProcessor` was going to say has been said. The two
 -- fire in an order nothing here controls, and reading the one from the other without waiting is
 -- how a reading comes back "nothing fired" on a client where something did.
+-- **And only where a node can be**, which the frame names taught us rather than a guess.
+--
+-- The first three readings this took on Burning Crusade went on `MiniMapTrackingButton`, the
+-- minimap itself and `QuestieFrame804`: two of the three spent on things that are not nodes, out
+-- of an arming that gives three. The client names none of those as an item, a spell or a unit
+-- either, so the test above lets them all through.
+--
+-- What separates them is the frame. A world node has **no frame at all** - measured four times
+-- across two builds - and a minimap blip reports the minimap. Everything else that got through was
+-- a named frame belonging to an addon or to the interface. So the dump is now limited to those
+-- two, and `/familyprobe node all` keeps the old behaviour for the case where the interesting
+-- thing is what was filtered out.
+local everything = false
+
+local function couldBeANode()
+    local frame = try(there("GetMouseFocus"))
+    if type(frame) ~= "table" then
+        local list = try(there("GetMouseFoci"))
+        frame = type(list) == "table" and list[1] or nil
+    end
+
+    -- No frame under the pointer: the world, which is where a node is.
+    if type(frame) ~= "table" then return true end
+
+    local named = frame.GetName and try(frame.GetName, frame)
+    if type(named) ~= "string" then return false end
+
+    -- The minimap itself, and not a button sitting on it.
+    return named == "Minimap" or named == "MinimapCluster"
+end
+
 local function onTooltipShown()
     if not armed then return end
 
@@ -886,12 +944,14 @@ local function onTooltipShown()
     local unitName, unitToken = try(GameTooltip.GetUnit, GameTooltip)
     if itemName or itemLink or spellName or spellID or unitName or unitToken then return end
 
+    if not everything and not couldBeANode() then return end
+
     if C_Timer and C_Timer.After then C_Timer.After(0, dump) else dump() end
 end
 
 local watching = false
 
-local function watchNodes()
+local function watchNodes(wantEverything)
     if not watching then
         local modern = watchEveryTooltipType()
         pcall(GameTooltip.HookScript, GameTooltip, "OnShow", onTooltipShown)
@@ -907,11 +967,16 @@ local function watchNodes()
 
     sightings = 0
     armed = true
+    everything = wantEverything and true or false
 
     DEFAULT_CHAT_FRAME:AddMessage(
         "|cff66bbffFamily Probe|r: armed. Hover a herb node, then a mining vein, then a dot on "
-        .. "the minimap - three readings and it disarms itself. A tooltip the client can name as "
-        .. "an item, a spell or a unit is skipped.")
+        .. "the minimap - three readings and it disarms itself. Skipped: anything the client can "
+        .. "name as an item, a spell or a unit, and "
+        .. (everything and "nothing else (|cffffd700all|r)."
+            or "anything on a named frame that is not the minimap - so a quest pin and the "
+            .. "tracking button no longer spend a reading. |cffffd700/familyprobe node all|r "
+            .. "keeps those."))
 end
 
 local function askEverything()
@@ -977,7 +1042,12 @@ SlashCmdList.FAMILYPROBE = function(argument)
     -- Backlog 96, and the one probe here that needs the player to do something: nothing can ask
     -- a client what a herb node looks like except by pointing at one.
     if argument == "node" or argument == "nodes" then
-        watchNodes()
+        watchNodes(false)
+        return
+    end
+
+    if argument == "node all" or argument == "nodes all" then
+        watchNodes(true)
         return
     end
 
