@@ -5032,6 +5032,12 @@ do
 	check("a tooltip turned away names the gate that did it",
 		heard:find("which is skill", 1, true) ~= nil, heard)
 
+	-- **And the shape of every tooltip, before any gate.** The line-count gate turns nearly
+	-- everything away and cannot narrate on its own account, which makes its rejection look
+	-- exactly like this route never running - which is how it was reported.
+	check("and every tooltip reports its shape before any gate runs",
+		heard:find("shown with 2 line(s)", 1, true) ~= nil, heard)
+
 	from = #DEFAULT_CHAT_FRAME.messages
 	nodeTooltip("Sungrass", HERB)
 	heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,

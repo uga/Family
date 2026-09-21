@@ -1485,6 +1485,25 @@ local function onNode(tooltip)
 	if not tooltip then return end
 	if not (FamilyDB and FamilyDB.tooltips ~= false) then return end
 
+	-- **Every tooltip, while somebody is looking.**
+	--
+	-- The line-count gate below turns nearly every tooltip in the game away and so is the one
+	-- gate that cannot narrate on its own account - a pointer crosses far too many. Which makes
+	-- it the one gate whose rejection is indistinguishable, from outside, from this route never
+	-- running at all: *nothing is printed when hovering on silverleaf*, reported 2026-09-21 with
+	-- the build deployed and debug on. So the shape of every tooltip is reported here instead,
+	-- before any gate. Noisy with `/family debug` on and completely silent without it, which is
+	-- the trade a diagnostic is allowed to make and a feature is not.
+	if FamilyDB.debug then
+		local named = tooltip.GetName and (Family:TryCall(tooltip.GetName, tooltip))
+		local one = named and _G[tostring(named) .. "TextLeft1"]
+		local two = named and _G[tostring(named) .. "TextLeft2"]
+		Family:Debug("node: %s shown with %d line(s): %s / %s", tostring(named),
+			tonumber((Family:TryCall(tooltip.NumLines, tooltip))) or 0,
+			tostring(one and one.GetText and (Family:TryCall(one.GetText, one))),
+			tostring(two and two.GetText and (Family:TryCall(two.GetText, two))))
+	end
+
 	local said = gatheringNode(tooltip)
 	if not said then return end
 
@@ -1616,10 +1635,15 @@ Family:OnDatabaseReady("tooltips", function()
 
 	if _G.GameTooltip and _G.GameTooltip.HookScript then
 		_G.GameTooltip:HookScript("OnShow", function(self)
+			-- **Both, and the guard makes that safe.** At `OnShow` the tooltip is up and its
+			-- text may not all be on it, which is why the probe had to wait a frame to read a
+			-- node at all; but a client that fills it before showing it would then be read a
+			-- frame after something else had taken the tooltip over. `lastDescribed` already
+			-- refuses to describe the same thing twice, so trying at both moments costs one
+			-- rejected call and covers both clients.
+			onNode(self)
 			if C_Timer and C_Timer.After then
 				C_Timer.After(0, function() onNode(self) end)
-			else
-				onNode(self)
 			end
 		end)
 	end

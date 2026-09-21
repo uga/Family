@@ -1,0 +1,6 @@
+name: the route says nothing about a tooltip it never gets as far as gating, so silence has no kind
+file: addons/Family_UI/Tooltip.lua
+--- old
+		Family:Debug("node: %s shown with %d line(s): %s / %s", tostring(named),
+--- new
+		Family:Debug("node: %s%d%s%s", tostring(named),
