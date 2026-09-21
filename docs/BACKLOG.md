@@ -5975,9 +5975,21 @@ of them contradicting Era*. Three things change for this entry:
   build from wago and a generated `instance id -> boss count` table would give *M*. That answers
   half the question and the retraction above takes away the other half, so it is not worth
   building until *N* has a source. Not decided here.
+- **And the game's own Raid Information window settles whose fault that is.** Opened on the same
+  character while the lock was live, it draws the name, `40 Player`, `1 Day 10 Hr 37 Min` and
+  `239723021` - columns 1, 10, 3 and 2 - and **no boss progress anywhere on it**. So the call was
+  never lying: the row carries none because the client has none for this lock. The open question
+  is no longer *does this call report progress* but whether a **Mists legacy forty-man lock has
+  encounter state at all**, which Era's three raids cannot answer for a different client.
+- **Two columns confirmed for free by that picture.** Column 3 is what the window prints as *Lock
+  Expire* - 124,620 seconds against the probe's 125,019 a few minutes earlier - which is its
+  fourth confirmation and its first against the client's own rendering. And column 2 is a number
+  **the game shows the player**, in grey under the name, so it is the id somebody would quote and
+  is worth both carrying and showing.
 - **Where *N* might live: `GetSavedInstanceEncounterInfo`**, which the probe now asks for eight
   slots by position. Bounding a walk by column 11 would read one boss and stop, which is why the
-  count is not taken from the row. Unread on every build.
+  count is not taken from the row. Unread on every build, and now asked to find out whether
+  anything on this client holds what the window does not.
 - **Column 5 is sometimes wrong before `UPDATE_INSTANCE_INFO`, not merely missing.** It read
   `false` beside `RequestRaidInfo` and `true` when the event arrived, on a row already present
   with its other thirteen columns filled. Every earlier finding about that event was about an

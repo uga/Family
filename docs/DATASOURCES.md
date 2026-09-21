@@ -4877,6 +4877,36 @@ to would be column 11, and column 11 is the number in doubt — bounded by it, a
 and stops. Three shapes are driven against a stub before it goes near the game: a lockout with
 bosses behind it, no lockout at all, and a client without the call.
 
+**And then the game's own window answered it, which no third reading of the row would have.**
+Alberto opened Raid Information on that character while the lock was live. It draws four things:
+
+| What it draws | Which column |
+|---|---|
+| `Molten Core` | 1 |
+| `40 Player` | 10 |
+| `1 Day 10 Hr 37 Min` | 3, rendered as a duration |
+| `239723021` | 2, under the name, in grey |
+
+**And no boss progress anywhere on it.** Not *2/10*, not a list, not a tooltip's worth — the
+client itself does not believe this lock has any. So columns 11 and 12 were never lying: the row
+carries no boss progress because **there is none to carry**, and whatever the kills did they did
+not reach this lock. `GetSavedInstanceInfo` agrees with the client's own display, which is the
+strongest thing that can be said for a call short of a second source.
+
+That turns the retraction from a fault in the reading into a fact about the game, and it moves
+where the remaining doubt sits. It is no longer *does this call report progress* — the call reports
+what the window reports. It is whether a **Mists legacy forty-man lock has encounter state at
+all**, which is a question about that client and not about this call, and which Era's three raids
+cannot answer because they are a different client. `GetSavedInstanceEncounterInfo` is still worth
+asking, now to find out whether anything on this client holds what the window does not.
+
+**Two columns are confirmed for free by the same picture.** Column 3 is what the window prints as
+*Lock Expire*: 1 day 10 hr 37 min is 124,620 seconds against the probe's 125,019 a few minutes
+earlier, falling as it should. That is its fourth confirmation and the first against the client's
+own rendering of it rather than against another reading. And **column 2 is a number the game shows
+the player** — 239723021 in grey under the name — so it is the id somebody would quote, not an
+internal handle, which makes it worth carrying and worth showing.
+
 **And column 5 is quieter than the first reading made it look.** It answered `true` at both moments
 this time, where the first session had `false` beside `RequestRaidInfo` and `true` after the event.
 So that `false` was about the moment — a lock the client had not yet heard about — and not a
