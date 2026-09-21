@@ -4834,6 +4834,61 @@ wanted* from *two answers only one of which is right*, and the ore-to-bar link i
 by id (`RecipeReagents` and `RecipeProducts`), which is where that distinction comes from rather
 than from the scoring.
 
+#### The problem is not the name, it is that nothing joins it to an item — measured across three builds, 2026-09-21
+
+Alberto, twice, and the second time plainly: *each locale has tooltips coming up from the vein
+nodes in their own language. Where do they come from if not the client?* They do come from the
+client, and that was never in question after the first of those. **The name is not what is
+missing. The link is.**
+
+Everything the client hands over, in the reader's own language, every time:
+
+- the vein's name, on the tooltip — `Filon de cuivre`;
+- every ore's name, from its id — `Minerai de cuivre`, `Minerai de fer`, and the rest.
+
+What no call on any of the three builds hands over is **which item the rock contains**. The vein
+carries no id that can be read — no `GetItem`, no `GetSpell`, no frame under the pointer, and on
+Mists none of the 28 tooltip types fire with all of them registered. So the only bridge between
+the two lists is comparing the words, and the question is whether the words are distinct enough
+to compare.
+
+**In English they are not, and this is with the client answering perfectly in English.** On
+Mists the smelting reagents include `Iron Ore`, `Fel Iron Ore`, `Dark Iron Ore` and `Ghost Iron
+Ore`. A vein called `Iron Deposit` shares the run `Iron ` with **all four of them**, equally.
+Nothing on the tooltip and no call anywhere says which.
+
+**How often that bites is what differs by language**, which is the only reason the other locales
+were worth asking about. Counted from the client's own `ItemSparse` at the three pinned builds,
+over the reagents and products of every spell on skill line 186, ignoring the pairs that are one
+metal's ore and its own bar — those tie legitimately and both are wanted:
+
+| Build | enUS | deDE | frFR | esES | ruRU |
+|---|---|---|---|---|---|
+| Era `1.15.9` | 2 | 2 | **0** | 1 | **0** |
+| Burning Crusade `2.5.6` | 7 | 7 | **0** | 5 | **0** |
+| Mists `5.5.4` | 11 | *unknown* | 2, both between **bars** | *unknown* | 2, one between ores |
+
+**French is clean because it compounds the metal**: `Minerai de fer`, `Minerai de gangrefer`,
+`Minerai de sombrefer`, `Minerai d’ectofer` — the plain one is a substring of none of them.
+German does the opposite and collides everywhere: `Eisenerz` sits inside both `Dunkeleisenerz`
+and `Teufelseisenerz`. Spanish collides on iron three ways. Russian builds the others as
+`Руда черного железа` and only `Железная руда` inside `Призрачная железная руда` collides.
+
+So the feature would work **best in French and worst in English**, which is the opposite of what
+anybody would guess and is the reason this was worth counting rather than assuming.
+
+**Two of the fifteen cells cannot be filled from wago**, and the reason is the trap this file has
+recorded before: the Mists `ItemSparse` export for German returns 21,850 rows and for Spanish
+15,640, against 88,746 for English — **the request succeeds** and hands back a table missing
+everything from Burning Crusade onwards. The same shape as the German `ChrRaces` for Burning
+Crusade further up. Nothing in the addon depends on those files, which name ids at runtime from
+the client; what is unknown is only how much of the feature those two languages would get.
+
+**And a byte to watch.** `Minerai d’ectofer` uses a typographic apostrophe, U+2019, where
+`Minerai d'argent` uses the ASCII one. Two apostrophes in one column of one table in one
+language, which is exactly the class of thing that makes a comparison fail for one item and
+nobody can see why.
+
 ### The fourteen columns of `GetSavedInstanceInfo`, filled at last — read on Era 2026-09-21
 
 Backlog 93 had one thing owed: the same call read on a character who **is** saved to something.
