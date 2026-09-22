@@ -857,6 +857,7 @@ Family.locales.esES = {
 	["hold your modifiers and click an item: the next one will say what it held"] = "mantén tus modificadores y haz clic en un objeto: el siguiente dirá qué tenía",
 	["|cff888888the whole list is on Family's %s page, under %s|r"] = "|cff888888la lista completa está en la página %s de Family, bajo %s|r",
 	["|cff66bbffFamily possessions|r"] = "|cff66bbffPosesiones de la familia|r",
+	["|cff66bbffFamily possessions: %s|r"] = "|cff66bbffPosesiones de la familia: %s|r",
 
 	-- The member picker
 	["|cff9d9d9d(nobody)|r"] = "|cff9d9d9d(nadie)|r",

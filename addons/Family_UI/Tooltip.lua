@@ -184,10 +184,28 @@ local function runningFor(key, itemID)
 	return soonest
 end
 
+-- **Whose possessions, and of what**, where the thing counted is not the thing hovered.
+--
+-- On an item's own tooltip the subject is the line above and a bare heading is right: twenty,
+-- of the thing whose name is at the top. On a rock in the ground it is not. Reported by Alberto
+-- 2026-09-22, looking at a Copper Vein with *Family possessions 20* under it: twenty of what?
+-- Twenty veins is a perfectly fair reading of that tooltip, and the ore is never named anywhere
+-- on it. The name comes from the client, by the id the route resolved - the whole entry ships
+-- no word of any language and this is not the place to start.
+local function possessionHeading(named)
+	if named then
+		return string.format(L["|cff66bbffFamily possessions: %s|r"], named)
+	end
+	return L["|cff66bbffFamily possessions|r"]
+end
+
 -- **Asked by variant** (backlog 67). Hovering a Superior Sword *of the Bear* says how many of
 -- *those* the family has, not how many swords of that id in any suffix - which is what Alberto
 -- asked for in as many words and what the collapsed key was getting wrong.
-local function possessionLines(tooltip, itemID, variant)
+--
+-- `node` is the rock in the ground where the block is drawn on one, carrying what the client
+-- calls the thing it yields, and nil where the subject is an item somebody could click.
+local function possessionLines(tooltip, itemID, variant, node)
 	local owners, guilds = Family.Index:Owners(variant or itemID)
 
 	if #owners == 0 and #guilds == 0 then
@@ -199,7 +217,7 @@ local function possessionLines(tooltip, itemID, variant)
 	local total = 0
 	for _, owner in ipairs(owners) do total = total + owner.total end
 
-	local lines = { { L["|cff66bbffFamily possessions|r"],
+	local lines = { { possessionHeading(node and node.named),
 		total > 0 and ("|cffffd700" .. total .. "|r") or "" } }
 
 	-- **A family can be bigger than a tooltip.**
@@ -236,16 +254,27 @@ local function possessionLines(tooltip, itemID, variant)
 
 	-- **Whether the gesture is worth offering on this tooltip at all.**
 	--
-	-- Two conditions, and neither is about how long the list is. `ItemClickArmed` says the hook
-	-- is installed, so a modified click reaches Family on this client rather than on a client
+	-- Three conditions, and none of them is about how long the list is. `ItemClickArmed` says the
+	-- hook is installed, so a modified click reaches Family on this client rather than on a client
 	-- somebody hopes is the same. `ownerKeepsModifiers` says the frame under the pointer is a
 	-- secure action button - an action bar slot, whoever drew it - where control and alt are the
 	-- slot's own second and third bindings and the click is a cast rather than an item click.
 	-- The CTRL hints a few hundred lines below are kept off a bar by the same test for a
 	-- different reason: there the key never arrives, here the click never routes. One offer that
 	-- does nothing is worth as little as the other.
+	--
+	-- **And the third is the subject.** The gesture rides `HandleModifiedItemClick`, which the
+	-- client calls for a click on an *item* - a bag slot, a link in chat, a worn piece. A vein in
+	-- the ground is not one, and neither is a blip on the minimap or a pin on the world map. Both
+	-- tests above ask about the client and the frame, and nothing in this block had ever had to
+	-- ask what it was drawn on, because until backlog 96 every caller was an item. Reported by
+	-- Alberto 2026-09-22 off three screenshots: the note was under all three of them, promising a
+	-- gesture that cannot fire - and on the world node it is worse than a promise nothing keeps,
+	-- because control and alt and a click on a rock is a click on a rock, and the reader who
+	-- takes the tooltip at its word mines the thing they were only asking about.
 	local offers = UI.ItemClickArmed and UI:ItemClickArmed()
 		and not ownerKeepsModifiers(tooltip)
+		and not node
 
 	if shown < #owners then
 		local rest = 0
@@ -1817,11 +1846,28 @@ local function onNode(tooltip)
 
 	UI:MoneyFontFrom(tooltip)
 
+	-- **What the client calls what comes out of it.** Asked again rather than carried back from
+	-- the resolver, because the resolver answers by id on purpose and a name that arrived after
+	-- it was memoised would never reach this line. Where the client has not named the item yet
+	-- the heading goes back to the bare one: an unnamed subject is exactly the tooltip this note
+	-- was added for, and *Family possessions:* with nothing after the colon is worse than no
+	-- colon at all.
+	local named, known = Family.Names:Item(itemID, "nodes")
+	if not (known and type(named) == "string" and named ~= "") then named = nil end
+
+	-- **And not where the tooltip has already said it.** A herb node is named exactly what the
+	-- herb is named - that is the whole reason a herb is a lookup and a vein is scored - so
+	-- *Family possessions: Silverleaf* sits directly under a line reading *Silverleaf* and spends
+	-- the width on nothing. Alberto's reading of a Silverleaf on a non-herbalist, 2026-09-22.
+	-- The test is containment rather than equality because one line can carry the name twice,
+	-- from two pins under one cursor, and that line has already said it as well.
+	if named and said:lower():find(named:lower(), 1, true) then named = nil end
+
 	-- **Possessions and nothing else.** What a node is worth, who can make one and what it costs
 	-- are questions about an item somebody is holding; a rock in the ground is a place to go, and
 	-- the only question is whether anybody has already been. Neither a herb nor an ore carries a
 	-- random suffix, so the variant is the id.
-	local lines = possessionLines(tooltip, itemID, itemID)
+	local lines = possessionLines(tooltip, itemID, itemID, { named = named })
 
 	-- **And *nobody has any* is an answer**, which on an item's own tooltip it is not.
 	--
@@ -1832,7 +1878,7 @@ local function onNode(tooltip)
 	-- is exactly the answer that decides it. Reported twice as *herb nodes do not work at all*
 	-- while this said nothing, which is the other half of the reason.
 	if not lines or #lines == 0 then
-		lines = { { L["|cff66bbffFamily possessions|r"], "|cff9d9d9d" .. L["none"] .. "|r" } }
+		lines = { { possessionHeading(named), "|cff9d9d9d" .. L["none"] .. "|r" } }
 	end
 
 	writeBlocks(tooltip, { lines })

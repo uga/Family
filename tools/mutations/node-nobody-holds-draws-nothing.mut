@@ -2,7 +2,7 @@ name: a node nobody holds anything from draws nothing, which reads as the featur
 file: addons/Family_UI/Tooltip.lua
 --- old
 	if not lines or #lines == 0 then
-		lines = { { L["|cff66bbffFamily possessions|r"], "|cff9d9d9d" .. L["none"] .. "|r" } }
+		lines = { { possessionHeading(named), "|cff9d9d9d" .. L["none"] .. "|r" } }
 	end
 --- new
 	if not lines or #lines == 0 then return end

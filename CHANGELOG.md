@@ -34,7 +34,8 @@ is a decision rather than an afternoon of archaeology.
 - **Hovering a herb or a mining vein in the world says who in your family already has some.**
   Point at a Silverleaf or an Iron Deposit out in the open and the game's own tooltip gains the
   possessions block, the same one that herb or that ore gets in your bags. It answers **none**
-  when nobody has any, which is usually the answer you wanted.
+  when nobody has any, which is usually the answer you wanted. A vein's block names the ore, so
+  you can see at a glance that twenty under a Copper Vein means twenty Copper Ore.
 - **It works whatever language you play in**, because every word it matches is one your own
   client gave it. A vein it cannot place with confidence stays quiet instead of naming the wrong
   metal.

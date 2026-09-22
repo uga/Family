@@ -4956,6 +4956,14 @@ do
 
 	local function drewBlock(text) return text:find("Family possessions", 1, true) ~= nil end
 
+	-- **What the block says it is counting.** Twenty under a Copper Vein is twenty of something,
+	-- and until 2026-09-22 the block never said of what - so *twenty veins* was a fair reading of
+	-- the tooltip Alberto sent back. The name is taken out of the heading here, which is also what
+	-- turns the three scoring checks below from *it drew a block* into *it drew the right metal*:
+	-- `Iron Deposit` and `Dark Iron Deposit` both drew one before this existed, and nothing in
+	-- this file could tell which metal either of them had picked.
+	local function namedIn(text) return text:match("Family possessions: (.-)|r") end
+
 	check("the profession line is read by id and not by the English word",
 		HERB == "Herbalism" and Family:SkillLineFor(HERB) == 182
 			and Family:SkillLineFor(MINE) == 186,
@@ -5011,11 +5019,15 @@ do
 	-- **A vein is scored, and the score was fixed on 534 nodes.** Copper is the plain case and
 	-- iron is the one that made the rule: *Iron Deposit* shares `iron ` with both iron ores and
 	-- the share of each name is what tells them apart - 5 of 8 against 5 of 13.
-	check("a copper vein names copper ore", drewBlock(nodeSays("Copper Vein", MINE)))
+	local copper = nodeSays("Copper Vein", MINE)
+	check("a copper vein names copper ore", drewBlock(copper)
+		and namedIn(copper) == "Copper Ore", tostring(namedIn(copper)))
 	local iron = nodeSays("Iron Deposit", MINE)
-	check("an iron deposit names iron ore and not dark iron ore", drewBlock(iron), iron)
+	check("an iron deposit names iron ore and not dark iron ore",
+		namedIn(iron) == "Iron Ore", iron)
+	local dark = nodeSays("Dark Iron Deposit", MINE)
 	check("and a dark iron deposit names the dark iron one",
-		drewBlock(nodeSays("Dark Iron Deposit", MINE)))
+		namedIn(dark) == "Dark Iron Ore", dark)
 	-- Truesilver is why the margin is waived when one ore's name sits inside another's: without
 	-- that, the runner-up Silver Ore silences the correct answer on every Truesilver node.
 	check("a truesilver deposit is not silenced by silver ore",
@@ -5024,6 +5036,81 @@ do
 	-- metal. Naming the wrong metal confidently is the only failure here that matters.
 	check("a vein the score cannot place draws nothing at all",
 		nodeSays("Small Obsidian Chunk", MINE) == "")
+
+	-- **A herb is not named twice.** The heading carries the noun where the tooltip has not
+	-- already said it, and on a herb node it has: the node is named exactly what the herb is
+	-- named, which is the whole reason a herb is a lookup and a vein is scored.
+	local bare = nodeSays("Silverleaf", HERB)
+	check("a herb node does not repeat the name the tooltip already carries",
+		drewBlock(bare) and namedIn(bare) == nil, bare)
+
+	--------------------------------------------------------------------------------------------
+	-- What the block is allowed to say on a rock
+	--
+	-- Two faults in one reading, Alberto 2026-09-22, off three screenshots of a Copper Vein in
+	-- the world, on the minimap and on the world map. The block said *Family possessions 20*
+	-- with no noun anywhere on the tooltip, and under it offered *CTRL-ALT-click to open the
+	-- family's list* - a gesture that rides `HandleModifiedItemClick` and therefore cannot fire
+	-- on a vein, a blip or a pin. On the world node it is worse than an empty promise: control
+	-- and alt and a click on a rock is a click on a rock, and the reader who takes the tooltip
+	-- at its word mines the thing they were only asking about.
+	--------------------------------------------------------------------------------------------
+	do
+		local realOwners = Family.Index.Owners
+		local realArmed = Family.UI.ItemClickArmed
+
+		local function owning(howMany)
+			return function()
+				local owners = {}
+				for index = 1, howMany do
+					owners[index] = {
+						key = "Owner" .. index, name = "Owner" .. index,
+						realm = "Fire Maw", classFile = "MAGE",
+						bags = 1, bank = 0, mail = 0, auctions = 0, worn = 0,
+						bound = 0, total = 1,
+					}
+				end
+				return owners, {}
+			end
+		end
+
+		-- **Armed, and said so rather than hoped.** The offer is refused by three conditions and
+		-- two of them are about the client; with the hook unarmed here, a check that the note is
+		-- absent would pass with the third condition deleted. So the other two are held open.
+		Family.UI.ItemClickArmed = function() return true end
+		GameTooltip.__owner = nil
+
+		Family.Index.Owners = owning(1)
+		local few = nodeSays("Copper Vein", MINE)
+
+		Family.Index.Owners = owning(210)
+		local many = nodeSays("Copper Vein", MINE)
+
+		Family.Index.Owners = function() return {}, {} end
+		local nobody = nodeSays("Copper Vein", MINE)
+
+		Family.Index.Owners = realOwners
+		Family.UI.ItemClickArmed = realArmed
+
+		check("a node never offers a gesture that needs an item to click",
+			few:find("CTRL", 1, true) == nil and many:find("CTRL", 1, true) == nil,
+			few .. " || " .. many)
+
+		-- **And the reader is still not stranded.** Where the list is too long to draw, the
+		-- directions to the panel are what the gesture was standing in for, and they are true on
+		-- every tooltip. This is the branch the note used to occupy.
+		check("while a node list too long to draw still says where the rest of it is",
+			many:find(Family.L["Whole family"], 1, true) ~= nil
+				and many:find(Family.L["Possessions"], 1, true) ~= nil, many)
+
+		-- The heading names the ore on all three shapes of answer, and *none* is the one
+		-- somebody standing over a vein acts on.
+		check("a vein names the ore it yields, whoever holds any", namedIn(few) == "Copper Ore"
+			and namedIn(many) == "Copper Ore", tostring(namedIn(few)) .. " / "
+			.. tostring(namedIn(many)))
+		check("and says it on the none answer too, which is the one somebody acts on",
+			nobody:find("none", 1, true) ~= nil and namedIn(nobody) == "Copper Ore", nobody)
+	end
 
 	-- **The margin on its own**, which nothing above exercises. *Cold Iron Deposit* scores
 	-- `Iron Ore` at 0.625 against `Gold Ore` at 0.500 - past the floor, past the run length,
@@ -5110,16 +5197,25 @@ do
 	-- **Asked of the client once, not once per hover.** Naming every candidate and scoring
 	-- against all of them is work a pointer crossing a field of herbs must not pay twice, and
 	-- the answer does not move: a name belongs to an item whatever anybody is carrying.
+	--
+	-- **One lookup a hover is not the scan.** Since 2026-09-22 the heading names what the node
+	-- yields, and it asks the client for that name on every draw rather than carrying it back
+	-- from the memo - deliberately, because a name that arrives after the answer was memoised
+	-- would otherwise never reach the heading. So this counts the repeat hovers at one lookup
+	-- each and the first at the whole list, which is the difference the memo exists to make.
 	ITEM_NAMES[2450] = "Briarthorn"
 	local realItem, asked = Family.Names.Item, 0
 	Family.Names.Item = function(...) asked = asked + 1 return realItem(...) end
 	nodeSays("Briarthorn", HERB)
 	local first = asked
 	nodeSays("Briarthorn", HERB)
+	local second = asked - first
 	nodeSays("Briarthorn", HERB)
+	local third = asked - first - second
 	Family.Names.Item = realItem
 	check("a node name is worked out once however often it is hovered",
-		first > 0 and asked == first, first .. " then " .. asked)
+		first > 1 and second == 1 and third == 1,
+		first .. " then " .. second .. " then " .. third)
 
 	-- **A dot on the minimap**, which gives the name and nothing else.
 	--

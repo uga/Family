@@ -1,0 +1,10 @@
+name: the possessions heading never names the thing it is counting
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if named then
+		return string.format(L["|cff66bbffFamily possessions: %s|r"], named)
+	end
+--- new
+	if false then
+		return string.format(L["|cff66bbffFamily possessions: %s|r"], named)
+	end

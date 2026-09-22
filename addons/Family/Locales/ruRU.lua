@@ -857,6 +857,7 @@ Family.locales.ruRU = {
 	["hold your modifiers and click an item: the next one will say what it held"] = "зажми модификаторы и щёлкни по предмету: следующий скажет, что он держал",
 	["|cff888888the whole list is on Family's %s page, under %s|r"] = "|cff888888полный список - на странице %s в Family, в разделе %s|r",
 	["|cff66bbffFamily possessions|r"] = "|cff66bbffИмущество семьи|r",
+	["|cff66bbffFamily possessions: %s|r"] = "|cff66bbffИмущество семьи: %s|r",
 
 	-- The member picker
 	["|cff9d9d9d(nobody)|r"] = "|cff9d9d9d(никто)|r",

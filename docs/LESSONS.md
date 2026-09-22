@@ -4269,3 +4269,41 @@ in `tools/mutations` before giving up on a bare name, so it is true.
 does not exist: it answers a red `ERROR` line rather than raising, the line names the case, and
 `choose` resolves a bare name to the file beside the others. Three checks and two mutations,
 `mutator-lets-a-worker-exception-out` and `mutator-will-not-find-a-case-by-name`.
+
+## L-122 — the block had never had to ask what it was drawn on
+
+**2026-09-22.** `possessionLines` builds the *Family possessions* block, and it had one subject
+for as long as it existed: an item. The heading is bare because the item's name is the line
+directly above it, and the block offers *CTRL-ALT-click to open the family's list* because the
+thing under the pointer is something the client will report a modified click on.
+
+Backlog 96 gave it a second kind of caller - a herb or a vein in the ground - and passed the
+item id, which is all the block had ever asked for. Both assumptions came along silently. Under
+a `Copper Vein` the heading read *Family possessions 20* with the ore named nowhere on the
+tooltip, so *twenty veins* was a fair reading of it; and under that sat an invitation to
+CTRL-ALT-click, which rides `HandleModifiedItemClick` and therefore cannot fire on a vein, a
+minimap blip or a world map pin. On the world node it is worse than a promise nothing keeps: a
+modified click on a rock is still a click on a rock, so the reader who trusts the tooltip mines
+the thing they were standing there asking about.
+
+Neither was caught by anything, and the reason is the same for both: **the caller was new and the
+callee's assumptions were old, and nothing in a function signature carries an assumption.** The
+block took `(tooltip, itemID, variant)`. Nothing in that says *and the thing under the pointer is
+an item*, so the new caller could not have been refused, and nothing was there to be read and
+doubted. Both went out to the game and came back in a screenshot.
+
+The gesture in particular had three conditions guarding it, and both were about the client and
+the frame - *is the hook installed*, *is this an action bar slot*. That looks like care, and it
+read as care. It is care about a question that had already been asked; nobody had asked the new
+one.
+
+**When a shared builder gets a caller of a different kind, the assumptions it has never had to
+state are exactly what to go looking for.** They are not in its parameters and they are not in
+its checks, because until that day they were true by construction.
+
+**The check.** The node block is driven with the click armed and with owners stubbed at one, at
+two hundred and ten and at none: it must carry the ore's name on all three, never the CTRL note
+on any, and the directions to the panel where the list is too long to draw. Armed is stubbed
+true rather than hoped, or the absence of the note would pass with the fix deleted. Three
+mutations, `node-offers-a-click-on-a-rock`, `node-block-names-nothing` and
+`node-names-the-herb-twice`, all caught.
