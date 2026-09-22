@@ -182,8 +182,15 @@ local CALLS = {
 -- reason: `C_Garrison`, `C_ToyBox` and `C_Heirloom` are domains Family has never recorded, and
 -- the census knows only that they exist and how many functions each holds. `C_Traits` and
 -- `C_ClassTalents` are not here because the word list below already matches them by name.
+-- `C_StableInfo` and `C_PetInfo` are version 15's, and they come from a measurement rather
+-- than from a brief: `Scanners/Pets.lua` reads `HasPetSpells`, `GetPetTrainingPoints` and
+-- `GetStablePetInfo`, all three are `nil` on Midnight, and the census counts those two
+-- namespaces at 14 and 7 functions with nobody having ever asked what is in them. Listed and
+-- not called, like the rest of this table: a stable call takes a slot index this repository
+-- has not measured, and naming one would be guessing (L-200).
 local BRIEF_SPACES = { "C_Reputation", "C_MajorFactions", "C_Bank", "C_WeeklyRewards",
-	"C_MythicPlus", "C_PetJournal", "C_Garrison", "C_ToyBox", "C_Heirloom" }
+	"C_MythicPlus", "C_PetJournal", "C_Garrison", "C_ToyBox", "C_Heirloom",
+	"C_StableInfo", "C_PetInfo" }
 
 -- And these are called, with the arguments a person chose, where the sweep is allowed to run.
 -- Each one is a read the brief names and Family would need if that category is ever recorded.

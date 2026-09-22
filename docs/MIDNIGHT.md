@@ -1872,3 +1872,50 @@ them; they are written down so that the next reader of this section does not ask
 Defaulting a missing price to nought and a missing stack to one - which is what a reader written
 from the count would do - files the bread as free. Every check on all three Classic clients stays
 green, because there the call answers.
+
+## 29. Pets, and the four shapes step 2 has now measured (2026-09-22)
+
+Three checks, and they close step 2's sweep of the scanners.
+
+**Measured 2026-09-20**: `HasPetSpells`, `GetPetTrainingPoints` and `GetStablePetInfo` are all
+`nil`, while `UnitCreatureFamily`, `UnitGUID` and `UnitLevel` answer and the stable events
+register. So the scan is still asked for and every reading it depends on is gone: no stable, and
+no book for whatever creature is out.
+
+**And nothing is written, on purpose.** `Pets:Scan` ends on
+`if not stable and not out then return end`, and the comment over that line says why in terms
+this branch did not have to invent: *nothing read at all leaves the record alone rather than
+writing an empty one ... it is also every scan a mage ever runs, which is the common case and
+must not touch the record at all.* On Midnight every character is that mage. The guard written
+for the common case is the one that stops a Midnight login rewriting a hunter's pets, checked
+here with a hunter's record - a stabled cat and a known creature - put on the file first and read
+back unchanged, `seen` included.
+
+The mutation that disables the guard is caught here **and by an existing check**, so unlike §26
+and §28 this section is a second witness rather than new coverage. What it adds is the reading
+that the guard is load-bearing on a whole client and not only on a class.
+
+### The four shapes, which is what step 2 was for
+
+| Scanner | On a client it cannot read | |
+|---|---|---|
+| Quests (§24) | writes nothing, guarded at the top by the call it needs | right |
+| Pets (§29) | writes nothing, guarded at the bottom by what the reading produced | right |
+| Reputations (§23) | writes `reputationCount = 0` | wrong, and open |
+| Professions (§26) | wrote `{}` over a summary made elsewhere | wrong, and repaired 2026-09-22 |
+| Merchant (§28) | writes nothing, by a guard written about arithmetic | right, by luck |
+
+Two of the five guard themselves deliberately, one by luck, and two did not. **The one common
+factor in the two that did not is that they write a count or a table unconditionally after a
+read that can fail**, and the one common factor in the three that hold is that something in the
+write path asks what the reading actually produced. That is the rule the code step carries into
+every scanner it touches, and it is worth more than any single fix: `reputationCount` is the last
+one outstanding, and it is one line.
+
+### What nobody has ever asked
+
+The census counts **`C_StableInfo` at 14 functions and `C_PetInfo` at 7**, and no run has ever
+listed what is in either. They are version 15's, added to the namespaces the probe names on every
+client - listed and not called, because a stable call takes a slot index this repository has not
+measured and naming one would be guessing (L-200). They come from a measurement rather than from
+a brief, which makes them the first entries in that table that do.

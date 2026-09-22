@@ -1,0 +1,6 @@
+name: a client that can read neither the stable nor a pet rewrites the record anyway
+file: addons/Family/Scanners/Pets.lua
+--- old
+	if not stable and not out then return end
+--- new
+	if not stable and not out and false then return end

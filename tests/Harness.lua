@@ -3591,6 +3591,78 @@ print("the merchant on the fourth pretend client")
 end)()
 
 print()
+print("pets on the fourth pretend client")
+
+-- The fourth domain and the fourth shape, and this one is guarded on purpose.
+--
+-- Measured 2026-09-20: `HasPetSpells`, `GetPetTrainingPoints` and `GetStablePetInfo` are all
+-- `nil`, while `UnitCreatureFamily`, `UnitGUID` and `UnitLevel` answer and the stable events
+-- register. So the scan is still asked for and every reading it depends on is gone.
+--
+-- `Pets:Scan` ends on `if not stable and not out then return end`, and the comment above that
+-- line says why in terms this branch did not have to invent: *nothing read at all leaves the
+-- record alone rather than writing an empty one ... it is also every scan a mage ever runs*.
+-- On Midnight every character is that mage, and the guard written for the common case is the
+-- one that stops a Midnight login erasing a hunter's pets.
+;(function()
+	local was = {}
+	local function set(name, value)
+		was[name] = { _G[name] }
+		_G[name] = value
+	end
+
+	set("GetBuildInfo", function() return "12.1.0", "69875", "Sep 15 2026", 120100 end)
+	set("HasPetSpells", nil)
+	set("GetPetTrainingPoints", nil)
+	set("GetStablePetInfo", nil)
+	-- Present, and they answer about a creature that is out. Left in because they are in the
+	-- run: what is gone is the book and the stable, not the unit.
+	set("UnitCreatureFamily", function() return "Cat", 1 end)
+	set("UnitGUID", function() return "Pet-0-1-2-3-632-0000000001" end)
+
+	local stored = { meta = {}, payload = {} }
+	local midnight = setmetatable({}, { __index = FamilyPrivate })
+	midnight.CurrentMember = function() return "Mirror-Midnight" end
+	midnight.RegisterEvent = function() end
+	midnight.OnDatabaseReady = function() end
+	midnight.After = function() end
+	midnight.Debug = function() end
+	midnight.Database = {
+		Meta = function(_, k) return stored.meta[k] end,
+		SetMeta = function(_, k, fields)
+			stored.meta[k] = stored.meta[k] or {}
+			for name, value in pairs(fields) do stored.meta[k][name] = value end
+		end,
+		Payload = function(_, k) return stored.payload[k] end,
+		SetPayload = function(_, k, p) stored.payload[k] = p end,
+	}
+
+	load("addons/Family/Scanners/Pets.lua", "Family", midnight)
+
+	check("the stable cannot be read on this client", midnight.Pets:ReadStable() == nil)
+	check("nor the book of whatever creature is out", midnight.Pets:ReadOut() == nil)
+
+	-- A hunter's record, made on another client, put there before the scan. This is the
+	-- check §26 taught: the question is what a Midnight scan does to what was already known.
+	stored.payload["Mirror-Midnight"] = { pets = {
+		known = { ["1"] = { key = "1", name = "Broken Tooth", level = 60 } },
+		stable = { { name = "Broken Tooth", level = 60, family = "Cat" } },
+		seen = 1,
+	} }
+
+	midnight.Pets:Scan()
+
+	local pets = stored.payload["Mirror-Midnight"].pets
+	check("and a scan leaves the hunter's pets exactly where they were",
+		pets and pets.known and pets.known["1"] and pets.known["1"].name == "Broken Tooth"
+			and pets.stable and #pets.stable == 1 and pets.seen == 1,
+		pets and tostring(pets.seen) or "no record")
+
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+	Family.Capabilities:Detect()
+end)()
+
+print()
 print("identity")
 advance(3)
 
