@@ -3576,6 +3576,36 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-210 — the cut was alphabetical, and a record's flags sort before its name
+
+**2026-09-22.** `tools/FamilySurface` prints a table answer's keys in sorted order and stops at
+twelve, so that a line stays readable. Three slices in a row then found the field they were sent
+for sitting past that cut: a currency's `name` out of twenty-five keys (that one is **L-201**,
+and it was read as a one-off), a faction's `name` out of seventeen, a quest's `title` and
+`questID` out of twenty-six.
+
+Three is not three accidents, and the reason is in the names. A record's flags are called
+`atWarWith`, `canSetInactive`, `hasBonusRepGain`, `isAccountWide`, `isChild`, `isCollapsed`,
+`isHeader`; what identifies the thing is called `name`, `title`, `questID`, `quantity`. **An
+alphabetical cut keeps every flag and drops the identity, systematically**, and the shorter it is
+the more reliably it does so. The probe was not shortening its answers at random; it was
+shortening them in exactly the direction that costs a reader the most.
+
+**Bitten:** two code steps could not start from a run that had already been taken and had already
+asked the right call. Reputations and the quest log both stop at the same place - the client's
+answer is in hand, in the file, with the naming field cut off - and the only remedy is another
+run by Alberto.
+
+**What now catches it.** `KEYS` is **thirty**, read off the run rather than picked: on 2026-09-20
+the widest record-shaped answers Midnight gives are twenty-eight and twenty-nine keys, and
+everything wider (157, 169, 261, 639) is a **list**, where a cut is the right thing. And the
+selftest asserts it where nothing did: *a record's name survives the default cut, with nothing
+asked for* - the currency check beside it passes on a call that asks for thirty by name, so it
+could never have caught this. Seen to fail with `KEYS` put back to twelve before it was kept.
+
+The rule: **a limit on how much of an answer is written down is a choice about which half is
+thrown away. Check which half, and check it on the default rather than on a call that opted out.**
+
 ## L-209 — the fixture was convenient, so the mutation had nothing to bite
 
 **2026-09-22.** A mutation was written for the currency scanner: drop the `not info.isHeader`

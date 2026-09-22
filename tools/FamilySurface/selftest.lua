@@ -86,7 +86,18 @@ local function stubs(interface)
 	-- only where the sweep is allowed, so this counter says which happened.
 	_G.C_Reputation = {
 		GetNumFactions = function() called = called + 1 return 7 end,
-		GetFactionDataByIndex = function() called = called + 1 return {} end,
+		-- Shaped like the answer Midnight gave on 2026-09-20 - those are its twelve written-down
+		-- key names - with a thirteenth the run never reached. Sorted, `name` lands just past
+		-- where the old cut of twelve fell, which is where a faction's name really did land.
+		-- The values are this file's own; only the shape is the client's.
+		GetFactionDataByIndex = function()
+			called = called + 1
+			return { atWarWith = false, canSetInactive = false, canToggleAtWar = false,
+				currentReactionThreshold = 0, currentStanding = 0, description = "",
+				factionID = 2569, hasBonusRepGain = false, isAccountWide = false,
+				isChild = false, isCollapsed = false, isHeader = true,
+				name = "A Named Faction" }
+		end,
 	}
 	_G.C_QuestLog = { GetInfo = function() return { title = "A Quest" } end }
 	-- The second brief's domains (§14): looked up on every client, called only where the sweep
@@ -209,6 +220,14 @@ check("and writes down the call the crash log names",
 local asked = table.concat(midnight.windows.brief, "\n")
 check("and there the brief's own calls are made",
 	asked:find("C_Reputation.GetNumFactions() answers 7", 1, true) ~= nil, asked)
+-- The third thing this file asserts, and the reason `KEYS` is thirty rather than twelve: a
+-- record's identity survives being written down **without the caller asking for extra keys**.
+-- The currency check above passes on a call that asks for thirty by name; this one passes only
+-- if the default carries it. Three slices in a row lost the field they needed to that cut - a
+-- currency's name, a faction's, a quest's title - because the keys are sorted and every flag a
+-- record carries begins with `at`, `can`, `has` or `is` (L-210).
+check("and a record's name survives the default cut, with nothing asked for",
+	asked:find('name="A Named Faction"', 1, true) ~= nil, asked)
 local answered = table.concat(midnight.windows.pvp, "\n")
 	.. "\n" .. table.concat(midnight.windows.lockouts, "\n")
 check("and so are the second brief's, in both of its blocks",

@@ -1542,3 +1542,47 @@ written down answers `false`, and no row answering `true` has been seen, so *som
 belong to the account* is a deduction and not a measurement. Version 14's index 2 is the cheapest
 place to start turning it into one. What is already decided is that the code step reads that
 flag rather than deciding the matter for reputations in general.
+
+## 24. The quest log, and the same question answered the other way (2026-09-22)
+
+Six checks on the fourth pretend client, and they are here to be read beside §23.
+
+**Measured 2026-09-20**: `GetNumQuestLogEntries`, `GetQuestLogTitle` and `SelectQuestLogEntry`
+are `nil`, while `ExpandQuestHeader`, `CollapseQuestHeader`, `GetQuestLink`,
+`GetNumQuestLeaderBoards`, `GetQuestLogLeaderBoard` and `GetQuestObjectiveInfo` all answer. So
+the scanner has most of its calls and not the one it starts with.
+
+**And it stops, which is right.** `Scanners/Quests.lua` opens `ScanNow` with a test of
+`GetNumQuestLogEntries`, leaves if it is not a function, and says *no quest log on this client*.
+Nothing is written: no payload, and **no `questCount` in the summary**. The comment further down
+gives §2.2's reason in its own words - an empty log and a log that could not be read are
+different answers. Driven on the fourth client, all of that holds: the walk never starts and not
+one heading is opened.
+
+**Which is exactly what the reputation scanner does not do.** Same client, same class of
+absence, and `Character.lua` writes `reputationCount = 0` (§23). Two scanners, one question,
+two answers, and the quest one is the shape the port keeps. The mutation here makes the guard
+never fire, and the failure prints `questCount 0` - the reputation fault, reproduced on demand
+in the scanner that does not have it. **Every check on all three Classic clients stays green**
+under it, which is why this section had to exist for anybody to notice.
+
+### The gap is one call wide
+
+`C_QuestLog` on Midnight holds **90 functions**, and `GetNumQuestLogEntries` is among them,
+beside `GetInfo`, `GetTitleForLogIndex` and `GetQuestIDForLogIndex`. `Quests.lua` **already calls
+that namespace twice** - `GetQuestIDForLogIndex` for the id and `GetNumQuestObjectives` for the
+objectives - and both live inside the walk, so on this client neither is ever reached. The port
+for quests is not a new scanner. It is the count and the title row, and the rest of the file
+already knows where it is.
+
+### And the third time the instrument was the thing in the way
+
+`C_QuestLog.GetInfo(1)` answers **26** keys and version 9 wrote **12**, from `campaignID` to
+`isOnMap` - so `title` and `questID` are past the cut, exactly as a faction's name is (§23) and a
+currency's was (L-201). Three for three. The keys are sorted and a record's flags are called
+`is…`, `has…`, `can…`, `at…` while what names the thing is called `name`, `title`, `questID`: an
+alphabetical cut drops the identity every time. **`KEYS` is thirty from version 14**, read off
+the run - the widest record-shaped answers Midnight gives are 28 and 29 keys, and everything
+wider (157, 169, 261, 639) is a list. Written up as **L-210**, with the selftest check that was
+missing: the currency one beside it passes on a call that asks for thirty by name, so it could
+never have caught this.

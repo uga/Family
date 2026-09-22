@@ -3013,6 +3013,103 @@ print("reputations on the fourth pretend client")
 end)()
 
 print()
+print("the quest log on the fourth pretend client")
+
+-- The same question as the section above, answered the other way round by the other scanner,
+-- and this one is right.
+--
+-- Measured 2026-09-20: `GetNumQuestLogEntries`, `GetQuestLogTitle` and `SelectQuestLogEntry`
+-- are `nil` on Midnight, while `ExpandQuestHeader`, `CollapseQuestHeader`, `GetQuestLink`,
+-- `GetNumQuestLeaderBoards`, `GetQuestLogLeaderBoard` and `GetQuestObjectiveInfo` all answer.
+-- `Scanners/Quests.lua` opens `ScanNow` with a test of `GetNumQuestLogEntries` and leaves if
+-- it is not a function, and the comment further down says why in §2.2's words: an empty log
+-- and a log that could not be read are different answers. So this scanner stores **nothing**
+-- where the reputation scanner stores a zero, and the check is here to say which of the two
+-- shapes the port keeps.
+--
+-- The gap it leaves is one call wide. `C_QuestLog` on this client holds 90 functions and
+-- **`GetNumQuestLogEntries` is among them**, beside `GetInfo`, `GetTitleForLogIndex` and
+-- `GetQuestIDForLogIndex` - and `Quests.lua` already calls that namespace twice, for the id
+-- and for the objectives. Both of those live inside the walk, and the walk never starts.
+;(function()
+	local was = {}
+	local function set(name, value)
+		was[name] = { _G[name] }
+		_G[name] = value
+	end
+
+	set("GetBuildInfo", function() return "12.1.0", "69875", "Sep 15 2026", 120100 end)
+	set("GetNumQuestLogEntries", nil)
+	set("GetQuestLogTitle", nil)
+	set("SelectQuestLogEntry", nil)
+
+	-- Present here, and counted, because they are present on the client: if the scanner ever
+	-- got as far as walking the log it would open every heading first, and this is what says
+	-- whether it did. Absenting them would have hidden the difference.
+	local expanded = 0
+	set("ExpandQuestHeader", function() expanded = expanded + 1 end)
+	set("CollapseQuestHeader", function() expanded = expanded + 1 end)
+
+	local asked = 0
+	set("C_QuestLog", {
+		GetNumQuestLogEntries = function() asked = asked + 1 return 14 end,
+		GetInfo = function() asked = asked + 1 return { isHeader = true } end,
+		GetTitleForLogIndex = function() asked = asked + 1 return nil end,
+		GetQuestIDForLogIndex = function() asked = asked + 1 return nil end,
+		GetNumQuestObjectives = function() asked = asked + 1 return 0 end,
+	})
+
+	check("the namespace this client answers with is in front of the scanner",
+		type(_G.C_QuestLog) == "table" and _G.C_QuestLog.GetNumQuestLogEntries() == 14,
+		"C_QuestLog is not set up")
+	asked = 0
+
+	local stored = { meta = {}, payload = {} }
+	local midnight = setmetatable({}, { __index = FamilyPrivate })
+	local said
+	midnight.CurrentMember = function() return "Mirror-Midnight" end
+	midnight.RegisterEvent = function() end
+	midnight.OnDatabaseReady = function() end
+	midnight.After = function() end
+	midnight.Debug = function(_, message) said = message end
+	midnight.Database = {
+		Meta = function(_, k) return stored.meta[k] end,
+		SetMeta = function(_, k, fields)
+			stored.meta[k] = stored.meta[k] or {}
+			for name, value in pairs(fields) do stored.meta[k][name] = value end
+		end,
+		Payload = function(_, k) return stored.payload[k] end,
+		SetPayload = function(_, k, p) stored.payload[k] = p end,
+	}
+
+	load("addons/Family/Scanners/Quests.lua", "Family", midnight)
+	midnight.Quests:Scan()
+
+	-- Both halves, because storing an empty list and storing a zero beside it are two
+	-- separate ways of saying *nobody here has any quests* about a client nobody asked.
+	check("a quest scan on Midnight stores no payload",
+		stored.payload["Mirror-Midnight"] == nil)
+	check("and no count in the summary either, where reputations store a zero",
+		stored.meta["Mirror-Midnight"] == nil,
+		stored.meta["Mirror-Midnight"]
+			and ("questCount " .. tostring(stored.meta["Mirror-Midnight"].questCount)) or "none")
+
+	-- Which is not the same as the walk running and finding nothing. It never ran.
+	check("because it leaves before opening a single heading", expanded == 0,
+		tostring(expanded))
+	check("and it says so, by the one call it tested rather than by a reading",
+		said == "no quest log on this client", tostring(said))
+
+	-- And the namespace it already knows how to call sits there unasked, because both of the
+	-- places `Quests.lua` names `C_QuestLog` are inside the walk that did not start.
+	check("the modern namespace is never reached, though this file already calls it",
+		asked == 0, tostring(asked))
+
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+	Family.Capabilities:Detect()
+end)()
+
+print()
 print("identity")
 advance(3)
 

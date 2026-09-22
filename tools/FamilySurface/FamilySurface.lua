@@ -22,10 +22,21 @@ local ADDON, Surface = ...
 -- An error is kept longer than an answer: its path comes first and what it says comes last.
 local LIMIT, ERROR_LIMIT = 80, 200
 
--- How many of a table's keys are printed. Twelve is enough for the shape of an answer and
--- short enough to read; a caller that needs a particular field asks for more, because the
--- keys are sorted and a `name` sits past the twelfth of a currency's twenty-five (L-201).
-local KEYS = 12
+-- How many of a table's keys are printed, **thirty since version 14, and it was twelve**.
+--
+-- Twelve was chosen as enough for the shape of an answer, with a caller needing a particular
+-- field asking for more. Three slices in a row then found that the field they needed had sorted
+-- past it: a currency's `name` out of twenty-five keys (L-201), a faction's out of seventeen,
+-- a quest's `title` and `questID` out of twenty-six. That is not three accidents. The keys are
+-- **sorted alphabetically**, and a record's flags are called `atWarWith`, `canSetInactive`,
+-- `hasBonusRepGain`, `isHeader`; what identifies the thing is called `name`, `title`,
+-- `questID`, `quantity`. So an alphabetical cut keeps the flags and drops the identity, every
+-- time, and the shorter it is the more reliably it does so (L-210).
+--
+-- Thirty is read off the run rather than picked: on 2026-09-20 the widest record-shaped answers
+-- Midnight gives are twenty-eight and twenty-nine keys, and everything wider - 157, 169, 261,
+-- 639 - is a **list**, where a cut is the right thing and a hundred more ids say nothing new.
+local KEYS = 30
 
 local showTable
 
@@ -178,14 +189,14 @@ local BRIEF_SPACES = { "C_Reputation", "C_MajorFactions", "C_Bank", "C_WeeklyRew
 -- Each one is a read the brief names and Family would need if that category is ever recorded.
 local BRIEF_CALLS = {
 	{ "C_Reputation.GetNumFactions" },
-	-- Wider than the usual twelve, and asked twice. Version 9 read index 1 and wrote down
-	-- twelve of its **seventeen** keys, and the five that sorted past the cut are the five the
-	-- code step needs - a faction's name is not among `atWarWith` to `isHeader` (L-201, the
-	-- same cut that hid a currency's name). Index 1 answered `isHeader = true`, so it says
-	-- nothing about the shape of an ordinary faction either; index 2 of sixty-seven is the
-	-- cheapest place to find one. The call is the same call the client has already answered.
-	{ "C_Reputation.GetFactionDataByIndex", 1, keys = 25 },
-	{ "C_Reputation.GetFactionDataByIndex", 2, keys = 25 },
+	-- Asked twice. Version 9 read index 1 and wrote down twelve of its **seventeen** keys, and
+	-- a faction's name is among the five that sorted past the old cut - the third time that
+	-- happened, and the reason `KEYS` is thirty from this version (L-210). Index 1 also
+	-- answered `isHeader = true`, so it describes a heading and says nothing about the shape of
+	-- an ordinary faction; index 2 of sixty-seven is the cheapest place to find one, and it is
+	-- the same call the client has already answered.
+	{ "C_Reputation.GetFactionDataByIndex", 1 },
+	{ "C_Reputation.GetFactionDataByIndex", 2 },
 	{ "C_MajorFactions.GetMajorFactionIDs" },
 	{ "C_WeeklyRewards.GetActivities" }, { "C_MythicPlus.GetRunHistory", false, true },
 	{ "C_PetJournal.GetNumPets" }, { "C_ClassTalents.GetActiveConfigID" },
