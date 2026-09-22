@@ -5496,3 +5496,15 @@ they say about themselves. Every quantity on it is `0`, which is what this chara
 `currencyID` comes back `0` on all four rows rather than echoing the id asked for — so that field
 is not a route to an identifier on this build, and `GetCurrencyListSize` still answers `0`. The
 blocked half is exactly as described above and no smaller.
+
+
+#### The shipped list of places is a superset, 2026-09-22
+
+`tools/gathered.py` scores an area name against the ore names with the rule as it stood before
+the word rule, so the ids it emitted are the places that would have collided under the looser
+rule. The word rule silences some of them on its own - `Silverpine Forest` is one, which is how
+a mutation found a check that had stopped reaching the refusal it tested. A place in the list is
+refused by **name equality** with the node's own name and never by scoring, so a list that is too
+long cannot silence a real vein: the measurement that matters is unchanged, 0 of 929 vein names
+is also the name of a refused place. Regenerating with the word rule would shrink the list and is
+owed the next time that generator is run, so that the tool and the addon do not drift.

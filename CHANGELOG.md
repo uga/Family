@@ -38,7 +38,8 @@ is a decision rather than an afternoon of archaeology.
   you can see at a glance that twenty under a Copper Vein means twenty Copper Ore.
 - **It works whatever language you play in**, because every word it matches is one your own
   client gave it. A vein it cannot place with confidence stays quiet instead of naming the wrong
-  metal.
+  metal. Thorium and khorium veins are told apart, which took a second look: their names share
+  seven letters and each was silencing the other on Burning Crusade and on Mists.
 - **You do not need the profession to get the answer.** A character who cannot mine an Iron
   Deposit, or whose mining is too low for it, still sees who in the family is holding iron ore -
   which is usually the character asking.

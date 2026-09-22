@@ -1409,20 +1409,27 @@ local HERBALISM, MINING = 182, 186
 -- vein takes the plain ore, while `dunkeleisen` is 11 of 14 and the specific vein takes the
 -- specific one. A longest-run join ties three ways in German and this does not tie at all.
 --
--- **Measured on 534 nodes**: every mining node of the three builds Family ships for, in five
--- languages, scored against the ore names from the client's own tables - the reading is in
--- DATASOURCES. At these three numbers it names 422 correctly, **gets none wrong**, and says
--- nothing about 112. Each number is here because a reading put it here:
+-- **Measured on every mining node of the three builds Family ships for, in five languages**,
+-- scored against the ore names from the client's own tables - the reading is in DATASOURCES.
+-- With the word rule below, these numbers name **446 correctly and none wrong**, saying nothing
+-- about 88; without it, 422 and 112. Each number is here because a reading put it here:
 --
 -- * `0.27` because at 0.26 the Russian *Большая обсидиановая глыба* still takes obsidium ore -
 --   a stone node named as a metal - and at 0.27 it stops;
--- * `4` because Spanish ore names are short, `Torio` is five letters, and a three-byte
---   coincidence scored 0.6 and took *Filón de indurio*;
+-- * `4` because ore names can be short: `Torio` is what a Spanish client calls thorium ore, and
+--   `tor` is three letters of five, so *Torre de vigilancia* - a watchtower, and a label a
+--   pointer crosses on a map - clears the floor without it. **Re-measured 2026-09-22 and it is
+--   not exercised by any of the 970 rows**: with the word rule in, a minimum of 1, 2, 3 and 4
+--   answer identically. It stays as a guard over the case above, which the corpus does not
+--   contain, and this sentence is here so nobody mistakes it for a rule the rows earn;
 -- * `0.55` as the floor under both.
 --
 -- Bytes rather than characters, and `lower` folds A to Z and nothing else, because that is
--- what Lua does and so it is what was measured. It beats folding the whole of Unicode on those
--- 534 rows, by leaving Cyrillic case alone and losing matches that were never words.
+-- what Lua does and so it is what was measured. Folding Cyrillic as well was measured on the
+-- same rows and **refused**: it names 28 more and gets one wrong, and the one is
+-- *Большая обсидиановая глыба* taking obsidium - the exact row the margin above was set to
+-- close. A rule that buys answers by re-opening the failure this entry exists to prevent is a
+-- worse rule however the total reads.
 local ORE_FLOOR, ORE_MARGIN, ORE_RUN = 0.55, 0.27, 4
 
 -- **Cheapest test first, and the order is the point.** This runs on every tooltip the game
@@ -1668,12 +1675,13 @@ local function namesFor(which)
 	return named, whole, silent
 end
 
--- The longest run of bytes two names share. Two rolling rows rather than a whole table: the
--- names are a few dozen bytes and this runs once per node name, behind the memo.
+-- The longest run of bytes two names share, **and where it starts in the candidate**. Two
+-- rolling rows rather than a whole table: the names are a few dozen bytes and this runs once
+-- per node name, behind the memo.
 local function sharedRun(vein, name)
 	local a, b = vein:lower(), name:lower()
 	local width = #b
-	local best, previous, current = 0, {}, {}
+	local best, at, previous, current = 0, 0, {}, {}
 	for index = 0, width do previous[index] = 0 end
 
 	for i = 1, #a do
@@ -1683,7 +1691,7 @@ local function sharedRun(vein, name)
 			if byte == b:byte(j) then
 				local run = previous[j - 1] + 1
 				current[j] = run
-				if run > best then best = run end
+				if run > best then best, at = run, j - run + 1 end
 			else
 				current[j] = 0
 			end
@@ -1691,7 +1699,39 @@ local function sharedRun(vein, name)
 		previous, current = current, previous
 	end
 
-	return best
+	return best, at
+end
+
+-- **And whether that run begins at a word of the candidate's own name.**
+--
+-- Reported from play 2026-09-22, on Burning Crusade: a `Rich Thorium Vein` and a `Small Thorium
+-- Vein` on the minimap drew nothing while a `Dark Iron Deposit` beside them answered. The cause
+-- is `Khorium Ore`, which that build adds and Era does not: `thorium ` is 8 bytes of `Thorium
+-- Ore` and `horium ` is 7 of `Khorium Ore`, so the two score 0.727 and 0.636 and the margin -
+-- which exists to refuse a guess between two metals - refuses a vein that was never in doubt.
+-- Symmetrically, a `Khorium Vein` is silenced by thorium.
+--
+-- What separates them is not how much they share but **where**: `thorium` is the whole of the
+-- winner's first word, and `horium` starts inside the runner-up's. A candidate whose run starts
+-- mid-word has matched a coincidence, and a coincidence should not be able to silence a real
+-- answer by standing close to it.
+--
+-- Three ways to be at a word, and the middle one is the easy thing to get wrong: the run may
+-- **open with the separator itself**, which is what `Minerai de cuivre` does against `Filon de
+-- cuivre`, and testing only the byte before would throw those away. Separators are checked by
+-- byte, never by asking what a letter is - the names are UTF-8 and a letter here can be two
+-- bytes.
+--
+-- Measured over every mining node Wowhead lists for the three builds in five languages, against
+-- the ore names from the client's own tables: **446 named correctly and 0 wrong, against 422 and
+-- 0 for the rule without it**, with the silent falling from 112 to 88. Nothing that was right
+-- became wrong and nothing that was wrong became right - what moved was silence.
+local SEPARATORS = { [32] = true, [45] = true, [39] = true }
+
+local function atAWord(name, at)
+	if at <= 1 then return at == 1 end
+	if SEPARATORS[name:byte(at)] then return true end
+	return SEPARATORS[name:byte(at - 1)] and true or false
 end
 
 -- **A herb is a lookup**, because a herb node is named exactly what the herb is named -
@@ -1713,11 +1753,15 @@ local function oreScored(vein, named)
 	local nextName, nextShare = nil, 0
 
 	for id, name in pairs(named) do
-		local run = sharedRun(vein, name)
+		local run, at = sharedRun(vein, name)
 		local share = run / #name
+		-- **A candidate that matched mid-word has not matched this name at all**, so it neither
+		-- wins nor stands as the runner-up the margin is measured against. Dropped here rather
+		-- than at the end, because its whole effect is on what the runner-up is.
+		if not atAWord(name:lower(), at) then run, share = 0, 0 end
 		-- Ties broken by the longer run and then left alone, so the answer does not depend on
 		-- the order `pairs` happens to walk in.
-		if share > bestShare or (share == bestShare and run > bestRun) then
+		if run > 0 and (share > bestShare or (share == bestShare and run > bestRun)) then
 			nextName, nextShare = bestName, bestShare
 			bestID, bestName, bestShare, bestRun = id, name, share, run
 		elseif share > nextShare then

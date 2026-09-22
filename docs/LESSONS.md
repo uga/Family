@@ -4307,3 +4307,35 @@ on any, and the directions to the panel where the list is too long to draw. Arme
 true rather than hoped, or the absence of the note would pass with the fix deleted. Three
 mutations, `node-offers-a-click-on-a-rock`, `node-block-names-nothing` and
 `node-names-the-herb-twice`, all caught.
+
+## L-123 — the bucket for what could not be scored is where the failures went
+
+**2026-09-22.** The join from a vein's name to its ore was fixed on a measurement of every mining
+node in three builds and five languages, and reported as **422 named correctly, 0 wrong metal**.
+That figure went into a decisions row, into the source as a comment, and into a backlog entry.
+
+It was not true. The join names the wrong metal on six of those rows today.
+
+The measurement had three buckets - right, wrong, silent - and a fourth for rows it could not
+score: nodes whose yield this project had never established. Three node names went in there,
+all from Season of Discovery, and all three **fire**: `Cold Iron Deposit` is named as `Iron Ore`,
+`Fool's Gold Vein` as `Gold Ore`, `Starsilver Vein` as `Silver Ore`. Counted apart, they took the
+headline figure with them, and the headline was the one claim the whole entry rested on.
+
+**And the bucket was not even needed.** What those three yield is readable and took one query to
+read: `Cold Iron Ore` is item 219401 and `Starsilver Ore` is 219486 on the pinned Era build, and
+no mining spell there smelts either. So they cannot be candidates, silence is the right answer,
+and a name is a wrong answer - not an open question. *Unverified* meant *I did not look*.
+
+The shape is general and it is worse than an ordinary miscount. A row lands in that bucket
+**because the measurement could not decide about it**, which is the same property that makes it
+likely to be handled badly by the thing being measured. So the bucket fills with the hard cases,
+gets reported as a footnote, and the headline describes the easy ones. It reads as rigour -
+*counted apart rather than scored against a guess* - which is why nobody looks in it again.
+
+**The check.** The measuring script now has no unverified bucket: every row is right, wrong or
+silent, and a row nobody can classify is a reading owed rather than a count. The three that
+prompted it are backlog 98, written up with the count they actually produce - 6 wrong before the
+word rule and 8 after - so the family is a known hole with a number on it. And the source comment
+and the decisions row that carried `0 wrong` are corrected by a new row, this being an
+append-only log.

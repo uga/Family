@@ -4923,7 +4923,7 @@ do
 	local heldArea = _G.C_Map and _G.C_Map.GetAreaInfo
 	_G.C_Map = _G.C_Map or {}
 	_G.C_Map.GetAreaInfo = function(id)
-		if id == firstPlace then return "Silverpine Forest" end
+		if id == firstPlace then return "Gold Road" end
 		return "Area " .. tostring(id)
 	end
 
@@ -5112,20 +5112,90 @@ do
 			nobody:find("none", 1, true) ~= nil and namedIn(nobody) == "Copper Ore", nobody)
 	end
 
-	-- **The margin on its own**, which nothing above exercises. *Cold Iron Deposit* scores
-	-- `Iron Ore` at 0.625 against `Gold Ore` at 0.500 - past the floor, past the run length,
-	-- and inside the margin. Two different metals that close is a guess, so it draws nothing.
+	-- **The margin on its own**, which nothing above exercises. *Strange Ore*, which Mists puts
+	-- in the ground, scores `Tin Ore` at 0.571 against `Gold Ore` at 0.500 - past the floor,
+	-- past the run length, and inside the margin. Two different metals that close is a guess,
+	-- so it draws nothing.
+	--
+	-- **It used to be `Cold Iron Deposit` and that example had to be retired**, which is worth
+	-- the sentence because it looks like a check being weakened. Season of Discovery added that
+	-- node and `Cold Iron Ore` (219401) with it, and no client of this build smelts that ore -
+	-- so it is in no candidate list and the vein can only ever be scored against metals it does
+	-- not yield. Under the word rule it now answers `Iron Ore`, which is wrong, and it is wrong
+	-- for a reason the margin never addressed: the right answer is not among the candidates.
+	-- That family is written up in backlog 98 rather than pinned here, because pinning a wrong
+	-- answer in a check is how it stops being read as one.
 	check("a vein whose two best candidates are close draws nothing",
-		nodeSays("Cold Iron Deposit", MINE) == "")
+		nodeSays("Strange Ore", MINE) == "")
 
 	-- **The minimum run on its own**, which only bites where an ore's name is very short - and
-	-- one is. `Torio` is what a Spanish client calls thorium ore, five bytes, so a three-byte
-	-- coincidence is 0.6 of it and clears the floor: that is how *Filón de indurio* came to be
-	-- named as thorium in the measurement, and why the run length is there. Both words here are
-	-- the game's own, from the same reading.
+	-- one is. `Torio` is what a Spanish client calls thorium ore, five bytes, so a three-letter
+	-- coincidence is 0.6 of it and clears the floor. `Torre de vigilancia` is a watchtower and a
+	-- label a pointer crosses on a map; `tor` is the start of both words, so the word rule below
+	-- has nothing to say about it and the run length is the only thing that refuses it.
+	--
+	-- Measured 2026-09-22 over all 970 node names: with the word rule in, a minimum run of 1, 2,
+	-- 3 and 4 give identical answers, so **nothing in the corpus exercises this** and the case
+	-- it guards is the one here - a short aligned coincidence at the start of a short name.
+	-- Kept for that, and the reading is written down so the next reader knows it is a guard
+	-- against an unmeasured case and not a rule that earns its keep on the rows we have.
 	ITEM_NAMES[10620] = "Torio"
-	check("and a three-byte coincidence with a very short ore name is refused",
+	check("and a three-letter coincidence with a very short ore name is refused",
+		nodeSays("Torre de vigilancia", MINE) == "")
+
+	-- **And where the coincidence is inside the candidate's word, the word rule refuses it**,
+	-- which is the same Spanish pair the run length was first fixed on: `orio` sits inside
+	-- `Torio` starting at its second letter, so `Filón de indurio` matched a coincidence and
+	-- not a name.
+	check("and one that matched inside an ore's word is refused as well",
 		nodeSays("Filón de indurio", MINE) == "")
+
+	--------------------------------------------------------------------------------------------
+	-- The metal word has to be a word
+	--
+	-- Reported from play 2026-09-22 on Burning Crusade, with `/family debug` on: `Rich Thorium
+	-- Vein` and `Small Thorium Vein` on the minimap answered *nothing here can place it* while a
+	-- `Dark Iron Deposit` beside them named its ore. The cause is `Khorium Ore`, which that build
+	-- adds and Era does not: `thorium ` is 8 bytes of `Thorium Ore` and `horium ` is 7 of
+	-- `Khorium Ore`, so the two score 0.727 and 0.636 and the margin refuses a vein nobody was
+	-- ever in doubt about. Khorium is silenced by thorium the same way.
+	--
+	-- **Driven in German, and on stand-in ids**, which is a harness mechanic and is said out
+	-- loud. Era ships no khorium, so the pair has to be put into this build's list; and 10620 has
+	-- already been asked about above, so it cannot be renamed now - a name the client has given
+	-- is remembered for the session, which is the whole point of `Names`. The four words are the
+	-- game's own from the same reading as the English pair, and German is where the two names sit
+	-- closest: `thoriumerz` is 11 bytes of `Thoriumerz` and `horiumerz` is 9 of `Khoriumerz`.
+	do
+		local ores = Family.Gathered[1].ores
+		ITEM_NAMES[990620], ITEM_NAMES[990426] = "Thoriumerz", "Khoriumerz"
+		ores[#ores + 1], ores[#ores + 2] = 990620, 990426
+
+		local rich = nodeSays("Reiches Thoriumvorkommen", MINE)
+		local small = nodeSays("Kleines Thoriumvorkommen", MINE)
+		local khorium = nodeSays("Khoriumvorkommen", MINE)
+
+		check("a thorium vein is not silenced by khorium sharing nine of its letters",
+			namedIn(rich) == "Thoriumerz" and namedIn(small) == "Thoriumerz",
+			tostring(namedIn(rich)) .. " / " .. tostring(namedIn(small)))
+		check("and khorium is not silenced by thorium either",
+			namedIn(khorium) == "Khoriumerz", khorium)
+
+		-- **And the run that opens with the separator itself**, which is the branch of the word
+		-- rule that is easy to get wrong and impossible to notice: French puts the metal last, so
+		-- `Filon de cuivre` and `Minerai de cuivre` share ` de cuivre` starting at a space. Test
+		-- only the byte before it and every French vein in the game goes quiet.
+		ITEM_NAMES[990770] = "Minerai de cuivre"
+		ores[#ores + 1] = 990770
+		local french = nodeSays("Filon de cuivre", MINE)
+		check("a name whose shared run opens with the space is still at a word",
+			namedIn(french) == "Minerai de cuivre", french)
+		ores[#ores] = nil
+		ITEM_NAMES[990770] = nil
+
+		ores[#ores], ores[#ores - 1] = nil, nil
+		ITEM_NAMES[990620], ITEM_NAMES[990426] = nil, nil
+	end
 
 	-- The discriminator. A two-line tooltip whose second line is not gathered from the ground is
 	-- not a node, whoever drew it.
@@ -5268,8 +5338,15 @@ do
 
 	-- Named behind a complete candidate list, because without one the herb step stops the walk
 	-- before the ores are ever scored - and it is the ore score this refusal exists to head off.
-	-- Silverpine Forest takes Silver Ore at 0.600 with the kin rule waiving the margin against
-	-- Truesilver Ore, which is exactly the shape that named a blip as silver in play.
+	-- `Gold Road` takes `Gold Ore` at 0.625 with nothing near it, which is the shape that named
+	-- a blip as silver in play.
+	--
+	-- **It was `Silverpine Forest` and the mutation caught that going stale**, which is the whole
+	-- reason the mutation exists. That name scored 0.600 for `Silver Ore` with the kin rule
+	-- waiving the margin against `Truesilver Ore`; the word rule drops `Truesilver Ore` - the run
+	-- starts inside its own first word - so the kin waiver goes with it, the margin refuses the
+	-- name on its own, and the check passed without ever reaching the refusal. A check that has
+	-- stopped testing what it names is invisible from the green column.
 	local beforeFiller = Family.Names.Item
 	Family.Names.Item = function(self, id, key, callback)
 		local name, known = beforeFiller(self, id, key, callback)
@@ -5277,7 +5354,7 @@ do
 		return "Filler " .. tostring(id), true
 	end
 	check("a place the client names is refused rather than scored as an ore",
-		nodeSays("Silverpine Forest", nil) == "")
+		nodeSays("Gold Road", nil) == "")
 	-- And the refusal is by name, not by turning the route off: a real node still resolves.
 	check("and a real node beside it still resolves",
 		drewBlock(nodeSays("Silverleaf", nil)))

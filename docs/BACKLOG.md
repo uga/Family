@@ -6973,3 +6973,48 @@ because an entry that invents an obstacle costs the same as one that hides a rea
 **What it would give a player:** the summary says *this character has 14 free slots* or *this one
 is a 300 blacksmith*, and both are a reason to go and look. Today that is: find the tab, find the
 member in the picker, forty-odd members deep.
+
+---
+
+## 98. A vein whose ore this build cannot smelt is named as the nearest metal it can
+
+**Found 2026-09-22**, while measuring the fix for the thorium veins Alberto reported. Not a
+consequence of that fix: six rows were already wrong before it, and the fix takes it to eight.
+
+**The state, measured over every mining node Wowhead lists for the three builds in five
+languages** (970 rows, of which 534 have an ore this project has established):
+
+| | right | wrong metal | ore node silent | correctly silent |
+|---|---|---|---|---|
+| before the word rule | 422 | **6** | 112 | 212 |
+| with it | 446 | **8** | 88 | 210 |
+
+**Every one of the eight is one of three nodes**, and all three are Season of Discovery:
+
+- `Cold Iron Deposit` → named as `Iron Ore` (English and German and Spanish)
+- `Fool's Gold Vein` → named as `Gold Ore`
+- `Starsilver Vein` → named as `Silver Ore`
+
+**The cause is not the scoring.** Those veins yield ores the client has items for - `Cold Iron
+Ore` is 219401 and `Starsilver Ore` is 219486 on `1.15.9.69109`, read out of `ItemSparse` - and
+**no mining spell on that build smelts either of them**. The candidate list is built from the
+single-reagent smelts, so those ores can never be in it, and a vein whose right answer is absent
+is scored against the metals that are present. `Cold Iron Deposit` shares `iron ` with `Iron Ore`
+the way `Ooze Covered Iron Deposit` does, and no rule reading names alone can tell the two apart:
+one adjective is part of an ore's name and the other is not, and the ore is the thing we do not
+have.
+
+**So the fix is the candidate list, not the rule.** The list is ores because ores are what a
+smelt names; the ores with no smelt need a second way in that ships no words - the trade goods
+subclass the client files them under (`Metal & Stone`) is the obvious candidate and would have
+to be measured, because it also admits bars, stones and gems and every new candidate is a new
+chance for a near miss.
+
+**Silence is the right answer until then**, and it is what a reader gets on most of these: 6 of
+the 14 rows those three nodes have across the locales, before the word rule, and 8 after. The
+trade was taken with the numbers in front of it - 24 more right answers on established rows
+against 2 more wrong ones inside a family that was already wrong - and it is written here so
+that the family is a known hole rather than a surprise.
+
+**What this does not touch:** every ore the build can smelt, which is every node outside Season
+of Discovery. The three names above are the whole of it on the rows that have been read.

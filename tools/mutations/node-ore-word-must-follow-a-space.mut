@@ -1,0 +1,6 @@
+name: a shared run that opens with the separator itself is not counted as being at a word
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if SEPARATORS[name:byte(at)] then return true end
+--- new
+	if false and SEPARATORS[name:byte(at)] then return true end
