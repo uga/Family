@@ -2951,21 +2951,36 @@ print("reputations on the fourth pretend client")
 	set("GetSpellInfo", nil)
 	set("GetSpellSubtext", nil)
 
-	-- What the client does answer, and a count of who asked. The row is the one the run wrote
-	-- down for index 1 and carries **only the twelve keys that were written down**: the answer
-	-- has seventeen and the probe's cut stops at twelve, so the other five are unmeasured and
-	-- putting plausible ones here would be inventing the client (L-209, L-201). That is also
-	-- why no code reads this yet: the modern route needs a name field nobody has seen.
+	-- What the client does answer, and a count of who asked. Both rows are the run's own and
+	-- carry **all seventeen keys**. They were twelve until 2026-09-22: the answer has
+	-- seventeen, the probe's old cut stopped at twelve, and the five it hid were
+	-- `isHeaderWithRep`, `isWatched`, `name`, `nextReactionThreshold` and `reaction` - which
+	-- is to say the name, the standing and the bar, the whole of what a reputation is
+	-- (L-210). The wider run answered them and they are here rather than invented (L-209).
+	--
+	-- `isHeaderWithRep` is worth naming: it is the modern spelling of the old call's
+	-- `hasRep`, the flag `Character.lua` reads as *a header that itself has a standing*,
+	-- and getting that one backwards once emptied the panel on a fully played character.
+	local ROWS = {
+		[1] = { atWarWith = false, canSetInactive = false, canToggleAtWar = false,
+			currentReactionThreshold = 0, currentStanding = 0, description = "",
+			factionID = 2569, hasBonusRepGain = false, isAccountWide = false,
+			isChild = false, isCollapsed = true, isHeader = true,
+			isHeaderWithRep = false, isWatched = false, name = "The War Within",
+			nextReactionThreshold = 3000, reaction = 4 },
+		[2] = { atWarWith = false, canSetInactive = false, canToggleAtWar = false,
+			currentReactionThreshold = 0, currentStanding = 0, description = "",
+			factionID = 2506, hasBonusRepGain = false, isAccountWide = false,
+			isChild = false, isCollapsed = true, isHeader = true,
+			isHeaderWithRep = false, isWatched = false, name = "Dragonflight",
+			nextReactionThreshold = 3000, reaction = 4 },
+	}
 	local asked = 0
 	set("C_Reputation", {
 		GetNumFactions = function() asked = asked + 1 return 67 end,
 		GetFactionDataByIndex = function(index)
 			asked = asked + 1
-			if index ~= 1 then return nil end
-			return { atWarWith = false, canSetInactive = false, canToggleAtWar = false,
-				currentReactionThreshold = 0, currentStanding = 0, description = "",
-				factionID = 2569, hasBonusRepGain = false, isAccountWide = false,
-				isChild = false, isCollapsed = false, isHeader = true }
+			return ROWS[index]
 		end,
 	})
 
@@ -2974,7 +2989,7 @@ print("reputations on the fourth pretend client")
 	check("the namespace this client answers with is in front of the scanner",
 		type(_G.C_Reputation) == "table"
 			and _G.C_Reputation.GetNumFactions() == 67
-			and type(_G.C_Reputation.GetFactionDataByIndex(1)) == "table",
+			and _G.C_Reputation.GetFactionDataByIndex(1).name == "The War Within",
 		"C_Reputation is not set up")
 	asked = 0
 
@@ -3153,16 +3168,17 @@ print("talents on the fourth pretend client")
 -- §16 calls `GetTalentInfo` the sharpest thing either brief turned up, and neither brief
 -- mentions it. On Midnight the call answers
 --
---   22337 | "Master Poisoner" | 132108 | false | false | 196864 | false | 1 | 1 | false | nil
+--   22363 | "Predator" | 132167 | false | false | 202021 | false | 1 | 1 | false | nil
 --
 -- and on Mists the same call answers `"Feline Swiftness" | 538517 | 1 | …` with the id last.
 -- **The id and the name swapped places.** A scanner doing `local name = GetTalentInfo(…)`
 -- writes 22337 into a name field on one client and a name on the other, and nothing anywhere
 -- goes red. That the file survives it was, until this section, something read in the code.
 --
--- Both lines above are the run's own, quoted from 2026-09-20 (`Ahia`, rogue, and the druid
--- beside her). Where a fixture goes past what was measured - columns 2 and 3 of a tier, which
--- nobody asked the client for - it says so, and nothing is checked about their content.
+-- Both lines above are the run's own: the druid on 2026-09-20, with the rogue beside her
+-- answering the same shape as `22337 | "Master Poisoner"`. Where a fixture goes past what was
+-- measured - columns 2 and 3 of a tier, which nobody asked the client for - it says so, and
+-- nothing is checked about their content.
 ;(function()
 	local was = {}
 	local function set(name, value)
@@ -3192,16 +3208,22 @@ print("talents on the fourth pretend client")
 	-- 3 are this harness's own - a real client has three different talents on a tier and
 	-- nobody asked it which - so they carry names and nothing is asserted about them beyond
 	-- their being three and different, which is what the reader is chosen by.
-	local NAMES = { "Master Poisoner", "a second talent", "a third talent" }
+	-- The druid's row, which is the one the run of 2026-09-22 wrote down **whole**: all
+	-- eighteen keys, where the earlier run stopped at twelve and the five after `name` were
+	-- unread. `talentID` is one of the five, and this section said so as a finding until the
+	-- wider run answered it (L-210).
+	local NAMES = { "Predator", "a second talent", "a third talent" }
 	set("C_SpecializationInfo", {
 		GetTalentInfo = function(query)
 			if type(query) ~= "table" then return nil end
 			local column = tonumber(query.column) or 0
 			if not NAMES[column] then return nil end
 			return { available = false, column = column, grantedByAura = false,
-				hasGoldBorder = false, icon = 132108, isExceptional = false,
+				hasGoldBorder = false, icon = 132167, isExceptional = false,
 				isPVPTalentUnlocked = false, known = false, maxRank = 1,
-				meetsPrereq = false, meetsPreviewPrereq = false, name = NAMES[column] }
+				meetsPrereq = false, meetsPreviewPrereq = false, name = NAMES[column],
+				previewRank = 1, rank = 1, selected = false, spellID = 202020 + column,
+				talentID = 22362 + column, tier = 1 }
 		end,
 		GetSpecialization = function() return 2 end,
 	})
@@ -3214,7 +3236,8 @@ print("talents on the fourth pretend client")
 		looseAsked = looseAsked + 1
 		local at = tonumber(column) or tonumber(tier) or 0
 		if not NAMES[at] then return nil end
-		return 22336 + at, NAMES[at], 132108, false, false, 196864, false, 1, 1, false, nil
+		return 22362 + at, NAMES[at], 132167, false, false, 202020 + at, false, 1, 1,
+			false, nil
 	end)
 
 	local stored = { meta = {}, payload = {} }
@@ -3258,16 +3281,16 @@ print("talents on the fourth pretend client")
 	-- The whole point. `name` holds the name and `id` holds the id, on the client where the
 	-- call answers them the other way round from every other client this addon runs on.
 	check("the name field holds the name and not the id",
-		first and first.name == "Master Poisoner", first and tostring(first.name) or "nothing")
-	-- And no id, which is a statement about the reading rather than about the client.
-	-- `interpret` takes it from `talentID` or `id`, and **neither is among the twelve keys
-	-- the run wrote down**: the answer has eighteen and the probe's old cut stopped at
-	-- twelve, right after `name`. So the fixture cannot carry one without inventing it
-	-- (L-209), and what this check pins is what Family gets out of what is actually known
-	-- about this client. Version 14 asks the wider question; until it is answered, a talent
-	-- read this way is a name with no identifier behind it (L-210).
-	check("and no id, because the key that would carry one is past the probe's old cut",
-		first and first.id == nil, first and tostring(first.id) or "nothing")
+		first and first.name == "Predator", first and tostring(first.name) or "nothing")
+	-- And the id, which this section reported as **missing** until 2026-09-22 and which was
+	-- never missing from the client. `interpret` takes it from `talentID` or `id`, and
+	-- `talentID` is the seventeenth of the answer's eighteen keys - so the old twelve-key cut
+	-- hid it, the fixture could not carry what had not been read (L-209), and the finding was
+	-- about the probe rather than about the game. The wider run answers `talentID = 22363`
+	-- beside `spellID = 202021`, and the reader had been right all along. **L-210 cost this
+	-- section a wrong conclusion, not only a missing field.**
+	check("and the id field holds the id, which the probe had been hiding",
+		first and first.id == 22363, first and tostring(first.id) or "nothing")
 
 	-- Which route got there. The namespace answers a table and is tried first, so it should
 	-- be the one used and the loose call should never be reached for a reading.
@@ -3288,7 +3311,7 @@ print("talents on the fourth pretend client")
 	loose = loose and loose.talents and loose.talents.groups and loose.talents.groups[1]
 	loose = loose and loose.tiers and loose.tiers[1] and loose.tiers[1].choices[1]
 	check("and with only the swapped loose call left, the name is still the name",
-		loose and loose.name == "Master Poisoner" and loose.id == 22337,
+		loose and loose.name == "Predator" and loose.id == 22363,
 		loose and (tostring(loose.name) .. " / " .. tostring(loose.id)) or "nothing")
 	check("which it could only be by inspecting the returns rather than unpacking them",
 		looseAsked > 0, tostring(looseAsked))

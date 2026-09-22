@@ -3591,10 +3591,16 @@ alphabetical cut keeps every flag and drops the identity, systematically**, and 
 the more reliably it does so. The probe was not shortening its answers at random; it was
 shortening them in exactly the direction that costs a reader the most.
 
-**Bitten:** two code steps could not start from a run that had already been taken and had already
-asked the right call. Reputations and the quest log both stop at the same place - the client's
-answer is in hand, in the file, with the naming field cut off - and the only remedy is another
-run by Alberto.
+**Bitten, and worse than it first looked.** Two code steps could not start from a run that had
+already been taken and had already asked the right call - reputations and the quest log both
+stopped at the same place, the client's answer in hand, in the file, with the naming field cut
+off. That was the first reading. Then a fourth case, `C_SpecializationInfo.GetTalentInfo`, was
+written up in `MIDNIGHT.md` §25 as *Family records a talent with no id at all on this route*,
+with a green check pinning the absence. The wider run answers `talentID = 22363`. **The field was
+never missing from the client and the finding was about the instrument**, so the cut did not only
+lose data and block work: it produced a conclusion about the game that was false, and nothing
+went red. A tool that shortens its answers does not report less. It reports something else, and
+the something else reads exactly like a finding.
 
 **What now catches it.** `KEYS` is **thirty**, read off the run rather than picked: on 2026-09-20
 the widest record-shaped answers Midnight gives are twenty-eight and twenty-nine keys, and

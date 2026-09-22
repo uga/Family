@@ -1545,15 +1545,14 @@ one failure, in the new section.
 `GetFactionDataByIndex(1)` answers a table of **seventeen** keys and version 9 wrote down
 **twelve** of them: `atWarWith`, `canSetInactive`, `canToggleAtWar`, `currentReactionThreshold`,
 `currentStanding`, `description`, `factionID`, `hasBonusRepGain`, `isAccountWide`, `isChild`,
-`isCollapsed`, `isHeader`. They sort alphabetically and the cut falls at `isHeader`, so **a
-faction's name is among the five nobody has seen** - L-201 for the third time, the same cut that
-once hid a currency's name. The harness fixture here carries those twelve and no more, on
-purpose: a plausible thirteenth key would be inventing the client (L-209).
+`isCollapsed`, `isHeader`. They sort alphabetically and the cut fell at `isHeader`, so a
+faction's name was among the five nobody had seen - L-201 for the third time, the same cut that
+once hid a currency's name.
 
-Version 14 asks for the rest, in two lines and with no special play required of Alberto:
-`GetFactionDataByIndex` at **25 keys**, and at **index 2** as well as index 1 - index 1 answered
-`isHeader = true`, so it describes a heading and not a faction, and index 2 of sixty-seven is the
-cheapest place to find an ordinary one.
+**Answered on 2026-09-22 by the version 14 run, and this paragraph is kept as it stood** because
+what it could not see is the point. The five were `isHeaderWithRep`, `isWatched`, `name`,
+`nextReactionThreshold` and `reaction`: the name, the standing and the bar - the whole of what a
+reputation is. §27 has the rows; the fixture here now carries all seventeen.
 
 ### The one field that is already an answer to something else
 
@@ -1601,8 +1600,9 @@ already knows where it is.
 ### And the third time the instrument was the thing in the way
 
 `C_QuestLog.GetInfo(1)` answers **26** keys and version 9 wrote **12**, from `campaignID` to
-`isOnMap` - so `title` and `questID` are past the cut, exactly as a faction's name is (§23) and a
-currency's was (L-201). Three for three. The keys are sorted and a record's flags are called
+`isOnMap` - so `title` and `questID` were past the cut, exactly as a faction's name was (§23) and
+a currency's before it (L-201). Three for three, and a fourth turned up the same day (§25).
+Version 14 answered all of them; §27 has the rows. The keys are sorted and a record's flags are called
 `is…`, `has…`, `can…`, `at…` while what names the thing is called `name`, `title`, `questID`: an
 alphabetical cut drops the identity every time. **`KEYS` is thirty from version 14**, read off
 the run - the widest record-shaped answers Midnight gives are 28 and 29 keys, and everything
@@ -1639,14 +1639,22 @@ anyway, because it is the only way to put the swapped answer itself in front of 
 **the name is still the name and the id is still 22337**. That is `interpret` inspecting the
 returns rather than unpacking them, and it is now measured rather than read.
 
-### And the id the namespace route does not get
+### And the id the namespace route was said not to get - which was wrong
 
-On the table route Family records the talent with **no id at all**. `interpret` takes one from
-`talentID` or `id`, and neither is among the twelve keys the run wrote down - the answer has
-**eighteen** and the old cut stopped at twelve, immediately after `name`. The fixture carries the
-twelve that were measured and no more (L-209), so what the check pins is what Family gets out of
-what is actually known about this client. **L-210's fourth instance**, and this one lands on the
-route the client actually takes. Version 14 asks the wider question.
+This section first reported that on the table route Family records the talent with **no id at
+all**, because `interpret` takes one from `talentID` or `id` and neither was among the twelve
+keys the run had written down of eighteen. The fixture carried the twelve and no more (L-209),
+so the check pinned an absence.
+
+**The version 14 run answers `talentID = 22363`, beside `spellID = 202021`.** It was the
+seventeenth of eighteen sorted keys, and the old cut hid it. The reader had been right the whole
+time and the finding was about the instrument, not about the game.
+
+So L-210 did not only block two code steps and cost a field. Here it produced **a wrong
+conclusion about this client, written into this file and into a check**, and the check that
+carried it was green. That is the sharpest reason a limit on what a tool writes down is not a
+matter of tidiness: a probe that shortens its answers does not report less, it reports something
+else, and the something else reads exactly like a finding.
 
 ### What the two mutations here do and do not prove
 
@@ -1710,3 +1718,90 @@ because the section is about recipes. The base client's versions answered instea
 was expanded with nothing recorded as collapsed, and *and the skill window is put back as it was
 found* failed in a section further down. **L-209 with a longer arm**: an incomplete fixture does
 not only weaken its own checks, it can break somebody else's.
+
+## 27. What version 14 answered, and the three records the old cut had hidden (2026-09-22)
+
+The run: **Midnight 12.1.0, build 69875, interface 120100**, `Druiduga-Chamber of Aspects` with
+`Ahia` and `Mara` beside her in the same file. Asked for on the strength of §23 to §26, taken at
+login, with no window opened and no fight - the three answers below are all login reads, and all
+three were **already taken on 2026-09-20 and thrown away by the probe's twelve-key cut** (L-210).
+
+Older runs sit in the same file and the truncated lines are still there beside the full ones.
+`--report` says which run it read (L-206); the rows below are the version 14 ones.
+
+### A faction
+
+```
+C_Reputation.GetFactionDataByIndex(1) -> {#17
+  atWarWith=false, canSetInactive=false, canToggleAtWar=false, currentReactionThreshold=0,
+  currentStanding=0, description="", factionID=2569, hasBonusRepGain=false,
+  isAccountWide=false, isChild=false, isCollapsed=true, isHeader=true,
+  isHeaderWithRep=false, isWatched=false, name="The War Within",
+  nextReactionThreshold=3000, reaction=4 }
+```
+
+Index 2 is `factionID=2506`, `name="Dragonflight"`, the same shape. **Both are headers**, so an
+ordinary faction's row is still unseen - but the key *set* is the answer that was wanted, and it
+maps onto `Character.lua` line for line:
+
+| the old call's return | the modern key |
+|---|---|
+| `name` | `name` |
+| `factionID` | `factionID` |
+| `standing` | `reaction` |
+| `barMin`, `barValue`, `barMax` | `currentReactionThreshold`, `currentStanding`, `nextReactionThreshold` |
+| `isHeader`, `isCollapsed` | `isHeader`, `isCollapsed` |
+| `hasRep` | **`isHeaderWithRep`** |
+
+That last row is the one worth having in writing. `hasRep` is the flag `ReadReputations` reads as
+*a header that itself has a standing*, and the note in the code says getting it backwards once
+emptied the panel on a fully played character. The modern name says what it means.
+
+`isAccountWide` is there and answers `false` on both, so the per-faction account question (§23)
+is still a deduction: the field exists, and no row answering `true` has been seen.
+
+### A quest
+
+```
+C_QuestLog.GetInfo(1) -> {#26
+  campaignID=256, difficultyLevel=0, hasLocalPOI=false, headerSortKey=-2147483392,
+  isAbandonOnDisable=false, isAutoComplete=false, isBounty=false, isCollapsed=false,
+  isHeader=true, isHidden=false, isInternalOnly=false, isOnMap=false, isScaling=false,
+  isStory=false, isTask=false, level=0, overridesSortOrder=false, questClassification=2,
+  questID=0, questLogIndex=1, readyForTranslation=false, sortAsNormalQuest=false,
+  startEvent=false, suggestedGroup=0, title="Dragonflight", useMinimalHeader=false }
+```
+
+Row 1 is a heading again - `isHeader=true`, `questID=0` - which is what a quest log's first row
+is. What `interpretTitle` needs is all here and under plain names: `title`, `level`, `isHeader`,
+`isCollapsed`, and `questID` where the old call hid the id somewhere among its returns and
+`questIDAt` had to go looking for it by asking `GetQuestLink` about each candidate. **The modern
+call makes that search unnecessary**, which is a simplification the port gets for free.
+
+### A talent
+
+```
+C_SpecializationInfo.GetTalentInfo{tier=1, column=1, groupIndex=1, isInspect=false} -> {#18
+  available=false, column=1, grantedByAura=false, hasGoldBorder=false, icon=132167,
+  isExceptional=false, isPVPTalentUnlocked=false, known=false, maxRank=1, meetsPrereq=false,
+  meetsPreviewPrereq=false, name="Predator", previewRank=1, rank=1, selected=false,
+  spellID=202021, talentID=22363, tier=1 }
+```
+
+`talentID`, `spellID`, `selected` and `rank` were all past the old cut. §25 had reported the id
+as missing from the client; it was missing from the probe. The four checks in that section are
+corrected and the fixture carries all eighteen keys.
+
+### What this unblocks, and what it does not
+
+| Domain | State |
+|---|---|
+| Reputations (§23) | **unblocked.** Every field `ReadReputations` writes has a named source |
+| Quests (§24) | **unblocked**, and the id search can go |
+| Talents (§25) | **was never blocked**, and this file said it was |
+| Professions (§26) | never blocked - `GetBaseProfessionInfo` was read whole on 2026-09-20 |
+
+Still unseen, and neither is in the way: an **ordinary faction** row and an **ordinary quest**
+row. Both index-1 reads landed on a heading. A `GetFactionDataByIndex(n)` at a higher index and a
+`GetInfo(n)` beside it would settle the shape of a row that is not a heading, and both are one
+line in version 15 if any later slice turns out to want them.
