@@ -1643,21 +1643,29 @@ end
 -- client was still silent must not be remembered: that is how the first hover of a session
 -- would fix a wrong reading in place for the rest of it. So completeness travels with the
 -- answer and an incomplete pass is thrown away rather than cached.
+--
+-- **How many are still silent travels too**, and only so that the narration can say it. A node
+-- left alone because the client has not finished answering and a node the score genuinely cannot
+-- place are the same silence from outside, and they want opposite responses - hover again, or
+-- nothing will ever come of this one. Reported 2026-09-22 on two thorium veins on the world map
+-- while a mithril deposit beside them answered, which is exactly the shape a part-named list
+-- makes and exactly the shape nothing here could say out loud.
 local function namesFor(which)
 	local set = Family.Gathered and Family.Gathered[Family.Capabilities.expansion]
 	local ids = set and set[which]
-	if not ids then return nil, false end
+	if not ids then return nil, false, 0 end
 
-	local named, whole = {}, true
+	local named, whole, silent = {}, true, 0
 	for _, id in ipairs(ids) do
 		local name, known = Family.Names:Item(id, "nodes")
 		if known and type(name) == "string" and name ~= "" then
 			named[id] = name
 		else
 			whole = false
+			silent = silent + 1
 		end
 	end
-	return named, whole
+	return named, whole, silent
 end
 
 -- The longest run of bytes two names share. Two rolling rows rather than a whole table: the
@@ -1766,7 +1774,7 @@ local function itemForNode(said, skill)
 
 	local found, whole = nil, true
 	for _, pair in ipairs(lists) do
-		local named, complete = namesFor(pair[1])
+		local named, complete, silent = namesFor(pair[1])
 		whole = whole and complete
 		if named then
 			-- **A tooltip line can carry a name twice.** One probe reading came back
@@ -1791,7 +1799,18 @@ local function itemForNode(said, skill)
 		-- and in the world the profession line prevents it by saying which list to look in. On a
 		-- blip there is no such line, so the guard has to be here. Nothing is remembered either:
 		-- the answer is not *no*, it is *not yet*.
-		if not complete then return nil end
+		--
+		-- **And it says so**, because from outside this is the same silence as a name the score
+		-- cannot place and the two want opposite things from the reader. Two thorium veins on the
+		-- world map drew nothing 2026-09-22 while a mithril deposit beside them answered, which
+		-- is what a part-named list looks like and what nothing here could say.
+		if not complete then
+			Family:Debug("node: \"%s\" is left alone: the client has not named %d of the "
+				.. "%d %s this build ships, so this list has not said no yet",
+				said, silent, #((Family.Gathered[Family.Capabilities.expansion]
+					or {})[pair[1]] or {}), pair[1])
+			return nil
+		end
 	end
 
 	if found or whole then resolvedNames[key] = found or false end

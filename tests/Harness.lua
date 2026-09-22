@@ -5366,6 +5366,28 @@ do
 	check("and a node nothing can place says that, rather than nothing",
 		heard:find("nothing here can place it", 1, true) ~= nil, heard)
 
+	-- **And the two kinds of silence are told apart.** A node the score cannot place and a node
+	-- left alone while the client is still naming the candidates look identical from outside,
+	-- and they want opposite things from whoever is standing there: the first will never answer,
+	-- the second answers on the next hover. Reported 2026-09-22 as two thorium veins on the
+	-- world map drawing nothing while a mithril deposit beside them answered - which is the
+	-- shape a part-named list makes, and which this route could not say out loud.
+	--
+	-- A name no earlier check has resolved, because a memoised answer would never reach the
+	-- walk at all.
+	local heldFocus, heldFoci = _G.GetMouseFocus, _G.GetMouseFoci
+	pointerOn(Minimap)
+	from = #DEFAULT_CHAT_FRAME.messages
+	nodeSays("Tin Vein", nil)
+	heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("and a list the client has not finished naming says so, and says which and how many",
+		heard:find("has not said no yet", 1, true) ~= nil
+			and heard:find("herbs", 1, true) ~= nil, heard)
+	-- Put the pointer back where this block found it: a probe further down the file reads the
+	-- same call and would take the minimap for its own answer.
+	_G.GetMouseFocus, _G.GetMouseFoci = heldFocus, heldFoci
+
 	FamilyDB.debug = heldDebug
 
 	-- Put the client back as it was found. `/family hearth` further down asks this very

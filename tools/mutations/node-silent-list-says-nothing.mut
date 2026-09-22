@@ -1,0 +1,14 @@
+name: a list the client has not finished naming is silent without saying which silence it is
+file: addons/Family_UI/Tooltip.lua
+--- old
+		if not complete then
+			Family:Debug("node: \"%s\" is left alone: the client has not named %d of the "
+				.. "%d %s this build ships, so this list has not said no yet",
+				said, silent, #((Family.Gathered[Family.Capabilities.expansion]
+					or {})[pair[1]] or {}), pair[1])
+			return nil
+		end
+--- new
+		if not complete then
+			return nil
+		end
