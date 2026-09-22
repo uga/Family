@@ -3260,6 +3260,176 @@ print("talents on the fourth pretend client")
 end)()
 
 print()
+print("professions on the fourth pretend client")
+
+-- The largest gap of the four, and the one where Family does the whole job and then throws the
+-- answer away.
+--
+-- Measured 2026-09-20, with an engineering window open on `Ahia`:
+-- `C_TradeSkillUI.GetAllRecipeIDs()` answers **639** ids, `GetRecipeInfo(1260349)` answers a
+-- table of 28 keys, and `GetBaseProfessionInfo()` answers `professionName = "Engineering"`,
+-- `professionID = 202`, `skillLevel = 305` of `805`. Every old route is gone: the skill sheet,
+-- the trade skill window and the craft window, all three, and with them `GetNumSkillLines` and
+-- `GetNumTradeSkills`.
+--
+-- And **`C_TradeSkillUI.GetTradeSkillLine` is absent**, which is the only thing
+-- `readModernRecipes` has ever used to name a profession. So it reads all 639, keeps the ones
+-- marked `learned`, and hands back a list with no name - and `ReadRecipes` answers `nil` to a
+-- nameless list, which is right and which costs everything here.
+;(function()
+	local was = {}
+	local function set(name, value)
+		was[name] = { _G[name] }
+		_G[name] = value
+	end
+
+	set("GetBuildInfo", function() return "12.1.0", "69875", "Sep 15 2026", 120100 end)
+
+	-- The skill sheet, the trade skill window and the craft window. All measured absent.
+	--
+	-- `ExpandSkillHeader` and `CollapseSkillHeader` are in this list because they are in the
+	-- run, and leaving them out cost a section further down: the base client's stubs answered,
+	-- the skill list was expanded with nothing recorded as having been collapsed, and *the
+	-- skill window is put back as it was found* went red four hundred lines later. A fixture
+	-- that stops at the calls the section is about is still a fixture that lies (L-209).
+	set("GetNumSkillLines", nil)
+	set("GetSkillLineInfo", nil)
+	set("ExpandSkillHeader", nil)
+	set("CollapseSkillHeader", nil)
+	set("GetNumTradeSkills", nil)
+	set("GetTradeSkillInfo", nil)
+	set("GetTradeSkillLine", nil)
+	set("GetNumCrafts", nil)
+	set("GetCraftInfo", nil)
+	set("GetCraftName", nil)
+
+	-- And this one is present, with the run's own answer: six returns, five of them numbers,
+	-- the two primaries first. `GetProfessionInfo` is present too and is left as it is - what
+	-- it answers for these five indices on this client was not asked, so the section says
+	-- nothing about it and the summary below is read rather than predicted.
+	set("GetProfessions", function() return 7, 8, 10, 9, 6, nil end)
+
+	-- Two recipes. The first is the run's own row for 1260349, keys and values both, down to
+	-- `learned = false`. The second is that row with three fields changed, because a character
+	-- with nothing learned would have made this section agree for the wrong reason (L-209) -
+	-- and the run has no learned row written down, so the change is named here rather than
+	-- passed off as a reading.
+	local ROWS = {
+		[1260349] = { alwaysUsesLowestQuality = true, canCreateMultiple = true,
+			canSkillUp = true, categoryID = 2385, craftable = true, disabled = false,
+			favorite = false, firstCraft = false, hasSingleItemOutput = true,
+			icon = 7422723, isDummyRecipe = false, isEnchantingRecipe = false,
+			isGatheringRecipe = false, isRecraft = false, isSalvageRecipe = false,
+			itemLevel = 885, learned = false, maxQuality = 0, maxTrivialLevel = 175,
+			name = "Deactivated Atomic Recalibrator", numSkillUps = 1,
+			recipeID = 1260349, relativeDifficulty = 0, skillLineAbilityID = 55950,
+			sourceType = 0, supportsCraftingStats = true, supportsQualities = false },
+		[255393] = { alwaysUsesLowestQuality = true, canCreateMultiple = true,
+			canSkillUp = true, categoryID = 2385, craftable = true, disabled = false,
+			favorite = false, firstCraft = false, hasSingleItemOutput = true,
+			icon = 7422724, isDummyRecipe = false, isEnchantingRecipe = false,
+			isGatheringRecipe = false, isRecraft = false, isSalvageRecipe = false,
+			itemLevel = 885, learned = true, maxQuality = 0, maxTrivialLevel = 175,
+			name = "A Learned Recipe", numSkillUps = 1, recipeID = 255393,
+			relativeDifficulty = 0, skillLineAbilityID = 55951, sourceType = 0,
+			supportsCraftingStats = true, supportsQualities = false },
+	}
+
+	local looked = 0
+	set("C_TradeSkillUI", {
+		-- Absent on this client. Named here as nil on purpose: it is the one call the whole
+		-- section turns on, and leaving it out of the stub would say the same thing quietly.
+		GetTradeSkillLine = nil,
+		GetAllRecipeIDs = function() return { 1260349, 255393 } end,
+		GetRecipeInfo = function(id) looked = looked + 1 return ROWS[id] end,
+		GetRecipeItemLink = function() return nil end,
+		-- What the window really answers, and the name is in here. With the window shut it
+		-- answers the same eight fields with `professionName = ""` and `professionID = 0`.
+		GetBaseProfessionInfo = function()
+			return { expansionName = "Unknown", isPrimaryProfession = true,
+				maxSkillLevel = 805, profession = 8, professionID = 202,
+				professionName = "Engineering", skillLevel = 305, skillModifier = 0,
+				sourceCounter = 1 }
+		end,
+	})
+
+	check("the namespace this client answers with is in front of the scanner",
+		type(_G.C_TradeSkillUI) == "table"
+			and #_G.C_TradeSkillUI.GetAllRecipeIDs() == 2
+			and _G.C_TradeSkillUI.GetBaseProfessionInfo().professionName == "Engineering",
+		"C_TradeSkillUI is not set up")
+
+	local stored = { meta = {}, payload = {} }
+	local midnight = setmetatable({}, { __index = FamilyPrivate })
+	midnight.CurrentMember = function() return "Mirror-Midnight" end
+	midnight.RegisterEvent = function() end
+	midnight.OnDatabaseReady = function() end
+	midnight.After = function() end
+	midnight.Debug = function() end
+	midnight.Database = {
+		Meta = function(_, k) return stored.meta[k] end,
+		SetMeta = function(_, k, fields)
+			stored.meta[k] = stored.meta[k] or {}
+			for name, value in pairs(fields) do stored.meta[k][name] = value end
+		end,
+		Payload = function(_, k) return stored.payload[k] end,
+		SetPayload = function(_, k, p) stored.payload[k] = p end,
+	}
+
+	load("addons/Family/Scanners/Professions.lua", "Family", midnight)
+
+	local name, recipes = midnight.Professions:ReadRecipes()
+	check("a recipe read on Midnight answers nothing at all",
+		name == nil and recipes == nil,
+		tostring(name) .. " / " .. (recipes and #recipes or "nil"))
+
+	-- Which is the part worth knowing: the work was done and then dropped. Every recipe was
+	-- looked up, and the list was thrown away for want of a name.
+	check("and it was not for want of recipes, which were all read", looked == 2,
+		tostring(looked))
+
+	-- The call that names a profession here, and the one `readModernRecipes` looks for.
+	check("the call it looks for is gone, and the name is in the one beside it",
+		_G.C_TradeSkillUI.GetTradeSkillLine == nil
+			and _G.C_TradeSkillUI.GetBaseProfessionInfo().professionID == 202)
+
+	-- And end to end, with the window open, which is when this scan is asked for at all.
+	--
+	-- A record made on another client is put there first, because the question is not only
+	-- what Midnight writes but what it does to what was already known. This is the same
+	-- member seen on Mists last week: two professions with ranks, in the summary.
+	stored.meta["Mirror-Midnight"] = {
+		skills = { [202] = { name = "Engineering", rank = 305, max = 805 },
+			[197] = { name = "Tailoring", rank = 300, max = 800 } },
+	}
+
+	midnight.Professions:Scan(true)
+	local payload = stored.payload["Mirror-Midnight"]
+	local meta = stored.meta["Mirror-Midnight"]
+
+	-- Not "nothing was written". Something was, and it is the third time this branch has
+	-- found a scanner recording a measured emptiness where it has not been able to ask.
+	check("a profession scan with a window open still writes a professions table",
+		payload and payload.professions ~= nil)
+	check("and it is empty, because not one of the 639 recipes survived the missing name",
+		payload and payload.professions and next(payload.professions) == nil,
+		payload and payload.professions and "something was kept" or "no table")
+
+	-- The one that is worse than an empty record. `SetMeta` merges field by field, so a
+	-- field written as an empty table **replaces** what was on the record - and `skills` is
+	-- built from `ReadRanks`, which on this client can read nothing at all.
+	local skills = meta and meta.skills
+	local kept = 0
+	for _ in pairs(skills or {}) do kept = kept + 1 end
+	check("and the summary's skills, read from another client last week, are gone",
+		skills ~= nil and kept == 0,
+		skills and (kept .. " kept") or "no skills field at all")
+
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+	Family.Capabilities:Detect()
+end)()
+
+print()
 print("identity")
 advance(3)
 

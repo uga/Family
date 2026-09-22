@@ -1632,3 +1632,58 @@ the table-answering reader, and taking a talent's name from the first return ins
 for it, are both caught - but unlike §23 and §24, **neither is caught by this section alone**:
 the Mists checks notice them too. The value of this section is not new coverage against those
 two. It is that §16's claim was a code-read and is now a reading.
+
+## 26. The 639 recipes Family reads and throws away (2026-09-22)
+
+Seven checks on the fourth pretend client, and the largest gap of the four so far.
+
+**Every old route is gone**: the skill sheet (`GetNumSkillLines`, `GetSkillLineInfo`,
+`ExpandSkillHeader`, `CollapseSkillHeader`), the trade skill window (`GetNumTradeSkills`,
+`GetTradeSkillInfo`, `GetTradeSkillLine`) and the craft window, all three. What answers is
+`C_TradeSkillUI`, and it answers well: with an engineering window open on `Ahia`,
+`GetAllRecipeIDs()` gives **639** ids, `GetRecipeInfo(1260349)` gives a table of **28** keys, and
+`GetBaseProfessionInfo()` gives `professionName = "Engineering"`, `professionID = 202`,
+`skillLevel = 305` of `805`.
+
+**And `C_TradeSkillUI.GetTradeSkillLine` is absent**, which is the only call
+`readModernRecipes` has ever used to name a profession. So Family walks all 639 ids, asks about
+every one, keeps the ones marked `learned` - and hands back a list with no name. `ReadRecipes`
+answers `nil` to a nameless list, which is right, and which here costs the entire read. Measured
+rather than argued: the recipes were all looked up, and the answer is nothing.
+
+**The gap is one call wide again**, as it was for quests. The name is in
+`GetBaseProfessionInfo`, one call along in the same namespace, beside the id and the rank - and
+an id is what the top of `Professions.lua` says a profession has never had on Era, which is why
+it is keyed by a name there. So this client offers the shape the file has always wanted.
+
+### What the scan writes, which is not nothing
+
+The check that was written as *records nothing* went red, and the red was the finding.
+
+- **An empty `professions` table is written** to the payload. Third time this branch has found a
+  scanner recording a measured emptiness where it could not ask - `reputationCount = 0` (§23) and
+  `questCount` are the other two, and only the quest one is guarded.
+- **And the summary's `skills` are replaced with an empty table.** `SetMeta` merges field by
+  field, so a field written empty *overwrites*, and `skills` is built from `ReadRanks`, which on
+  this client can read nothing at all. Checked with a record made on another client put there
+  first: two professions with ranks, read on Mists, **gone** after one Midnight scan with a
+  window open. The payload's professions survive, because `ScanNow` starts from what was stored;
+  the summary's do not.
+
+That last one is the first thing this branch has found that **destroys** a record rather than
+failing to add one. It needs no new reading to fix and it is step 3's, the same afternoon the
+route lands.
+
+### One mutation, caught by this section alone
+
+Recording a nameless list instead of dropping it - `if not name then return nil end` made into
+`name = "a profession"` - leaves every check on all three Classic clients green, where a
+profession always has a name, and goes red three times here.
+
+### And a fixture that lied four hundred lines away
+
+`ExpandSkillHeader` and `CollapseSkillHeader` are measured absent and were left out of the stub
+because the section is about recipes. The base client's versions answered instead, the skill list
+was expanded with nothing recorded as collapsed, and *and the skill window is put back as it was
+found* failed in a section further down. **L-209 with a longer arm**: an incomplete fixture does
+not only weaken its own checks, it can break somebody else's.
