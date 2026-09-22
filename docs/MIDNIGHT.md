@@ -1484,3 +1484,61 @@ One mutation: the bank window container falling back to the backpack instead of 
 **survived** the first time, because the fixture had no container 0 - the backpack is there on
 the real client and was missing from the stub, which is L-209 within a day of writing it. With
 the backpack in the fixture the mutation is caught, and the failure names it: *0,6,7,8,9,10,11*.
+
+## 23. The reputations Family ships and Midnight cannot answer (2026-09-22)
+
+Seven checks on the fourth pretend client. **This is the first slice that measures a gap rather
+than a working route**, and nothing is fixed in it: the fix is step 3's and needs a reading this
+file does not yet have.
+
+**Family asks Midnight a question it cannot hear.** `Scanners/Character.lua` reads factions
+through `GetNumFactions`, `GetFactionInfo`, `ExpandFactionHeader` and `CollapseFactionHeader`,
+and the run of 2026-09-20 has all four as `nil` (`Ahia-Chamber of Aspects`, build 69875).
+`UPDATE_FACTION` still registers, so the scan is still *asked for*, on a schedule, and finds
+nothing every time. The client's answer is elsewhere and is not small:
+`C_Reputation.GetNumFactions()` says **67**, and the namespace holds 27 functions.
+
+**What that costs, measured by running the scanner rather than by reading it.**
+`Character:ReadReputations()` answers an empty list and throws nothing - `Family:TryCall`
+absorbs four absent globals without a word, which is the design working. `ScanNow` then guards
+`#factions > 0`, so **no `reputations` key is written at all** rather than an empty one, and the
+panel says *nothing has been recorded* instead of *no factions*. That part is right.
+
+**And one part is not.** `reputationCount = factions and #factions or nil` hands `SetMeta` a
+**zero**, because `#factions` is 0 and `0` is true in Lua. The summary is fed from meta and
+nothing else, so on Midnight a character liked by sixty-seven factions is summarised as measured
+and liked by none. It is checked here as it is, not as it ought to be: changing it belongs to the
+commit that gives this client a route, and a check that pins today's wrong answer is what will
+make that commit notice it.
+
+**One mutation, and it is caught by this section alone.** Dropping the `#factions > 0` guard, so
+that an empty list is filed as a reading, leaves **every check on all three Classic clients
+green** - on those the list is never empty - and is named only by *and records no reputations at
+all rather than an empty list*. Confirmed by applying it by hand and running the whole harness:
+one failure, in the new section.
+
+### Why the code step cannot start today
+
+`GetFactionDataByIndex(1)` answers a table of **seventeen** keys and version 9 wrote down
+**twelve** of them: `atWarWith`, `canSetInactive`, `canToggleAtWar`, `currentReactionThreshold`,
+`currentStanding`, `description`, `factionID`, `hasBonusRepGain`, `isAccountWide`, `isChild`,
+`isCollapsed`, `isHeader`. They sort alphabetically and the cut falls at `isHeader`, so **a
+faction's name is among the five nobody has seen** - L-201 for the third time, the same cut that
+once hid a currency's name. The harness fixture here carries those twelve and no more, on
+purpose: a plausible thirteenth key would be inventing the client (L-209).
+
+Version 14 asks for the rest, in two lines and with no special play required of Alberto:
+`GetFactionDataByIndex` at **25 keys**, and at **index 2** as well as index 1 - index 1 answered
+`isHeader = true`, so it describes a heading and not a faction, and index 2 of sixty-seven is the
+cheapest place to find an ordinary one.
+
+### The one field that is already an answer to something else
+
+`isAccountWide` is on the faction record itself, beside `isChild`. The account-versus-character
+question - §13's second shape question, decided 2026-09-21 in favour of a second kind of record
+(`DECISIONS.md`, that date) - is therefore answerable **per faction and by the client**, rather
+than settled once for the domain by us. What is read is only that the field exists: the one row
+written down answers `false`, and no row answering `true` has been seen, so *some of the 67
+belong to the account* is a deduction and not a measurement. Version 14's index 2 is the cheapest
+place to start turning it into one. What is already decided is that the code step reads that
+flag rather than deciding the matter for reputations in general.

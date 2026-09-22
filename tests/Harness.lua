@@ -2912,6 +2912,107 @@ print("the bank on the fourth pretend client")
 end)()
 
 print()
+print("reputations on the fourth pretend client")
+
+-- The one domain Family already ships whose Midnight route does not exist. Measured in the run
+-- of 2026-09-20 (`Ahia-Chamber of Aspects`, build 69875): `GetNumFactions`, `GetFactionInfo`,
+-- `ExpandFactionHeader` and `CollapseFactionHeader` are all `nil`; `UPDATE_FACTION` still
+-- registers, so the scan is still asked for; and `C_Reputation.GetNumFactions()` answers **67**
+-- beside `GetFactionDataByIndex(1)` answering a table of seventeen keys. `Character.lua` names
+-- `C_Item` and no `C_Reputation` anywhere, so the scanner asks a question this client cannot
+-- hear, and the character who is liked by sixty-seven factions is recorded as liked by none.
+--
+-- Nothing is fixed here. This section is the measurement that the gap is real, taken by running
+-- the scanner rather than by grepping it, and step 3 is what turns it red.
+;(function()
+	local was = {}
+	local function set(name, value)
+		was[name] = { _G[name] }
+		_G[name] = value
+	end
+
+	set("GetBuildInfo", function() return "12.1.0", "69875", "Sep 15 2026", 120100 end)
+	set("GetNumFactions", nil)
+	set("GetFactionInfo", nil)
+	set("ExpandFactionHeader", nil)
+	set("CollapseFactionHeader", nil)
+
+	-- What the client does answer, and a count of who asked. The row is the one the run wrote
+	-- down for index 1 and carries **only the twelve keys that were written down**: the answer
+	-- has seventeen and the probe's cut stops at twelve, so the other five are unmeasured and
+	-- putting plausible ones here would be inventing the client (L-209, L-201). That is also
+	-- why no code reads this yet: the modern route needs a name field nobody has seen.
+	local asked = 0
+	set("C_Reputation", {
+		GetNumFactions = function() asked = asked + 1 return 67 end,
+		GetFactionDataByIndex = function(index)
+			asked = asked + 1
+			if index ~= 1 then return nil end
+			return { atWarWith = false, canSetInactive = false, canToggleAtWar = false,
+				currentReactionThreshold = 0, currentStanding = 0, description = "",
+				factionID = 2569, hasBonusRepGain = false, isAccountWide = false,
+				isChild = false, isCollapsed = false, isHeader = true }
+		end,
+	})
+
+	-- The canary before the verdict: a section that reports "Family asked nobody" is worthless
+	-- if the namespace it was meant to ask is not there to be asked (L-202).
+	check("the namespace this client answers with is in front of the scanner",
+		type(_G.C_Reputation) == "table"
+			and _G.C_Reputation.GetNumFactions() == 67
+			and type(_G.C_Reputation.GetFactionDataByIndex(1)) == "table",
+		"C_Reputation is not set up")
+	asked = 0
+
+	local stored = { meta = {}, payload = {} }
+	local midnight = setmetatable({}, { __index = FamilyPrivate })
+	midnight.CurrentMember = function() return "Mirror-Midnight" end
+	midnight.RegisterEvent = function() end
+	-- Safe to drop here, unlike the bank's: everything this section calls is called by name on
+	-- the scanner itself, so nothing is waiting on a registration that never happened.
+	midnight.OnDatabaseReady = function() end
+	midnight.After = function() end
+	midnight.Mounts = { Recompute = function() end }
+	midnight.Database = {
+		Meta = function(_, k) return stored.meta[k] end,
+		SetMeta = function(_, k, fields)
+			stored.meta[k] = stored.meta[k] or {}
+			for name, value in pairs(fields) do stored.meta[k][name] = value end
+		end,
+		Payload = function(_, k) return stored.payload[k] end,
+		SetPayload = function(_, k, p) stored.payload[k] = p end,
+	}
+
+	load("addons/Family/Scanners/Character.lua", "Family", midnight)
+
+	local factions = midnight.Character:ReadReputations()
+	check("the reputation read answers a list and not an error",
+		type(factions) == "table", type(factions))
+	check("and on Midnight that list is empty", #factions == 0, tostring(#factions))
+	check("because nothing in the scanner asks C_Reputation", asked == 0, tostring(asked))
+
+	midnight.Character:Scan()
+	local payload = stored.payload["Mirror-Midnight"]
+	check("a whole character scan still records the equipment",
+		payload and payload.equipment ~= nil)
+	check("and records no reputations at all rather than an empty list",
+		payload and payload.reputations == nil,
+		payload and payload.reputations and ("a list of " .. #payload.reputations) or "nothing")
+
+	-- And the one that is not an absence. `reputationCount = factions and #factions or nil`
+	-- hands `SetMeta` a **zero** here, because `#factions` is 0 and 0 is true in Lua. The
+	-- summary is fed from meta and nothing else, so on Midnight this character reads as
+	-- measured-and-liked-by-nobody rather than as never looked at. Checked as it is rather
+	-- than as it ought to be: the fix belongs to the commit that gives this client a route.
+	local meta = stored.meta["Mirror-Midnight"]
+	check("the summary is told zero factions, which is a reading and not a silence",
+		meta and meta.reputationCount == 0, meta and tostring(meta.reputationCount) or "no meta")
+
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+	Family.Capabilities:Detect()
+end)()
+
+print()
 print("identity")
 advance(3)
 

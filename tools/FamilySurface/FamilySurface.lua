@@ -177,7 +177,15 @@ local BRIEF_SPACES = { "C_Reputation", "C_MajorFactions", "C_Bank", "C_WeeklyRew
 -- And these are called, with the arguments a person chose, where the sweep is allowed to run.
 -- Each one is a read the brief names and Family would need if that category is ever recorded.
 local BRIEF_CALLS = {
-	{ "C_Reputation.GetNumFactions" }, { "C_Reputation.GetFactionDataByIndex", 1 },
+	{ "C_Reputation.GetNumFactions" },
+	-- Wider than the usual twelve, and asked twice. Version 9 read index 1 and wrote down
+	-- twelve of its **seventeen** keys, and the five that sorted past the cut are the five the
+	-- code step needs - a faction's name is not among `atWarWith` to `isHeader` (L-201, the
+	-- same cut that hid a currency's name). Index 1 answered `isHeader = true`, so it says
+	-- nothing about the shape of an ordinary faction either; index 2 of sixty-seven is the
+	-- cheapest place to find one. The call is the same call the client has already answered.
+	{ "C_Reputation.GetFactionDataByIndex", 1, keys = 25 },
+	{ "C_Reputation.GetFactionDataByIndex", 2, keys = 25 },
 	{ "C_MajorFactions.GetMajorFactionIDs" },
 	{ "C_WeeklyRewards.GetActivities" }, { "C_MythicPlus.GetRunHistory", false, true },
 	{ "C_PetJournal.GetNumPets" }, { "C_ClassTalents.GetActiveConfigID" },
