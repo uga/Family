@@ -1,0 +1,6 @@
+name: a talent's name is taken from the first return instead of being looked for
+file: addons/Family/Scanners/Talents.lua
+--- old
+	local id, name, icon, selected
+--- new
+	local id, name, icon, selected = nil, (select(1, ...))

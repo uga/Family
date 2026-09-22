@@ -1,0 +1,6 @@
+name: the reader for a client that answers talents with a table is never offered
+file: addons/Family/Scanners/Talents.lua
+--- old
+	if api and type(api.GetTalentInfo) == "function" then
+--- new
+	if api and type(api.GetTalentInfo) == "a function" then

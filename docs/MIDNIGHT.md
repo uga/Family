@@ -1586,3 +1586,49 @@ the run - the widest record-shaped answers Midnight gives are 28 and 29 keys, an
 wider (157, 169, 261, 639) is a list. Written up as **L-210**, with the selftest check that was
 missing: the currency one beside it passes on a call that asks for thirty by name, so it could
 never have caught this.
+
+## 25. The talent call that swaps the id and the name, put to the reader (2026-09-22)
+
+Nine checks on the fourth pretend client. §16 calls `GetTalentInfo` the sharpest thing either
+brief turned up and says Family survives it "by a habit it learnt the hard way" - **checked by
+reading the code**, in that section's own words. This one runs it.
+
+| | `GetTalentInfo(1, 1)` answers |
+|---|---|
+| Midnight | `22337 \| "Master Poisoner" \| 132108 \| false \| false \| 196864 \| false \| 1 \| 1 \| false \| nil` |
+| Mists | `"Feline Swiftness" \| 538517 \| 1 \| 1 \| 1 \| 1 \| false \| 1 \| false \| false \| false \| 18569` |
+
+Both are the run's own lines, and the second Midnight character gives the same shape with
+different values (`22363 \| "Predator"`). The id and the name are on opposite ends.
+
+**What the scan does, measured.** The capability table has no column 12, so `talentTrees` is
+false and the tree reader is not the one asked - which matters more than it looks, because
+`readTrees` **does** unpack `GetTalentInfo` by position (`name, icon, tier, column, rank`) and
+would have written `22337` into a name field. It is not reached on this client because
+`GetNumTalentTabs` is absent. So the habit is real in `interpret` and is **not** in `readTrees`,
+and what protects Midnight is the capability answer plus an absent global, not the habit alone.
+
+The record comes back as `system = "choices"`, tier 1 column 1 named *Master Poisoner*, read
+through `C_SpecializationInfo.GetTalentInfo{tier, column, groupIndex}` - the reader that answers
+a table, which is tried first and wins here; the loose call is never asked for a reading. Then
+the same client with that namespace taken away, which is not this client and is worth a check
+anyway, because it is the only way to put the swapped answer itself in front of the reader:
+**the name is still the name and the id is still 22337**. That is `interpret` inspecting the
+returns rather than unpacking them, and it is now measured rather than read.
+
+### And the id the namespace route does not get
+
+On the table route Family records the talent with **no id at all**. `interpret` takes one from
+`talentID` or `id`, and neither is among the twelve keys the run wrote down - the answer has
+**eighteen** and the old cut stopped at twelve, immediately after `name`. The fixture carries the
+twelve that were measured and no more (L-209), so what the check pins is what Family gets out of
+what is actually known about this client. **L-210's fourth instance**, and this one lands on the
+route the client actually takes. Version 14 asks the wider question.
+
+### What the two mutations here do and do not prove
+
+`Scanners/Talents.lua` had **no recorded mutation at all** before today; it has two now. Dropping
+the table-answering reader, and taking a talent's name from the first return instead of looking
+for it, are both caught - but unlike §23 and §24, **neither is caught by this section alone**:
+the Mists checks notice them too. The value of this section is not new coverage against those
+two. It is that §16's claim was a code-read and is now a reading.

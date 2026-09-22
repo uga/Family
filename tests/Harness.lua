@@ -3110,6 +3110,156 @@ print("the quest log on the fourth pretend client")
 end)()
 
 print()
+print("talents on the fourth pretend client")
+
+-- §16 calls `GetTalentInfo` the sharpest thing either brief turned up, and neither brief
+-- mentions it. On Midnight the call answers
+--
+--   22337 | "Master Poisoner" | 132108 | false | false | 196864 | false | 1 | 1 | false | nil
+--
+-- and on Mists the same call answers `"Feline Swiftness" | 538517 | 1 | …` with the id last.
+-- **The id and the name swapped places.** A scanner doing `local name = GetTalentInfo(…)`
+-- writes 22337 into a name field on one client and a name on the other, and nothing anywhere
+-- goes red. That the file survives it was, until this section, something read in the code.
+--
+-- Both lines above are the run's own, quoted from 2026-09-20 (`Ahia`, rogue, and the druid
+-- beside her). Where a fixture goes past what was measured - columns 2 and 3 of a tier, which
+-- nobody asked the client for - it says so, and nothing is checked about their content.
+;(function()
+	local was = {}
+	local function set(name, value)
+		was[name] = { _G[name] }
+		_G[name] = value
+	end
+
+	set("GetBuildInfo", function() return "12.1.0", "69875", "Sep 15 2026", 120100 end)
+
+	-- Measured absent, all four. Without `GetNumTalentTabs` the tree reader leaves at its
+	-- first line, which is the only reason it matters that it unpacks by position.
+	set("GetNumTalentTabs", nil)
+	set("GetNumTalents", nil)
+	set("GetNumTalentTiers", nil)
+	set("GetNumTalentGroups", nil)
+
+	-- And measured present, with these values: the grid's shape comes from two constants
+	-- because the call that would state it arrived later than this client's ancestors.
+	set("MAX_TALENT_TIERS", 7)
+	set("NUM_TALENT_COLUMNS", 3)
+	set("GetNumSpecGroups", function() return 1 end)
+	set("GetActiveSpecGroup", function() return 1 end)
+	set("GetSpecialization", function() return 2 end)
+	set("GetSpecializationInfo", function(index) return 258 + index end)
+
+	-- Column 1 of tier 1 is the row the client answered, keys and values both. Columns 2 and
+	-- 3 are this harness's own - a real client has three different talents on a tier and
+	-- nobody asked it which - so they carry names and nothing is asserted about them beyond
+	-- their being three and different, which is what the reader is chosen by.
+	local NAMES = { "Master Poisoner", "a second talent", "a third talent" }
+	set("C_SpecializationInfo", {
+		GetTalentInfo = function(query)
+			if type(query) ~= "table" then return nil end
+			local column = tonumber(query.column) or 0
+			if not NAMES[column] then return nil end
+			return { available = false, column = column, grantedByAura = false,
+				hasGoldBorder = false, icon = 132108, isExceptional = false,
+				isPVPTalentUnlocked = false, known = false, maxRank = 1,
+				meetsPrereq = false, meetsPreviewPrereq = false, name = NAMES[column] }
+		end,
+		GetSpecialization = function() return 2 end,
+	})
+
+	-- The loose call, in the order the client really answered it. Left present because it is
+	-- present: the namespace reader is tried first and should win, and a check below says so
+	-- rather than assuming it.
+	local looseAsked = 0
+	set("GetTalentInfo", function(tier, column)
+		looseAsked = looseAsked + 1
+		local at = tonumber(column) or tonumber(tier) or 0
+		if not NAMES[at] then return nil end
+		return 22336 + at, NAMES[at], 132108, false, false, 196864, false, 1, 1, false, nil
+	end)
+
+	local stored = { meta = {}, payload = {} }
+	local midnight = setmetatable({}, { __index = FamilyPrivate })
+	local said = {}
+	midnight.CurrentMember = function() return "Mirror-Midnight" end
+	midnight.RegisterEvent = function() end
+	midnight.OnDatabaseReady = function() end
+	midnight.After = function() end
+	-- Formatted rather than kept as the pattern: the interesting half of this line is the
+	-- argument, and a stub that keeps only the first one reads `%s` back and passes anyway.
+	midnight.Debug = function(_, message, ...)
+		local ok, line = pcall(string.format, message, ...)
+		said[#said + 1] = ok and line or message
+	end
+	midnight.Database = {
+		Meta = function(_, k) return stored.meta[k] end,
+		SetMeta = function(_, k, fields)
+			stored.meta[k] = stored.meta[k] or {}
+			for name, value in pairs(fields) do stored.meta[k][name] = value end
+		end,
+		Payload = function(_, k) return stored.payload[k] end,
+		SetPayload = function(_, k, p) stored.payload[k] = p end,
+	}
+
+	Family.Capabilities:Detect()
+	check("this client claims no talent trees, so the tree reader is not the one asked",
+		Family.Capabilities:Has("talentTrees") == false)
+
+	load("addons/Family/Scanners/Talents.lua", "Family", midnight)
+	midnight.Talents:Scan()
+
+	local payload = stored.payload["Mirror-Midnight"]
+	local group = payload and payload.talents and payload.talents.groups
+		and payload.talents.groups[1]
+	check("a talent scan on Midnight records a group", group ~= nil)
+	check("and reads it as choices rather than as trees",
+		group and group.system == "choices", group and tostring(group.system) or "nothing")
+
+	local first = group and group.tiers and group.tiers[1] and group.tiers[1].choices[1]
+	-- The whole point. `name` holds the name and `id` holds the id, on the client where the
+	-- call answers them the other way round from every other client this addon runs on.
+	check("the name field holds the name and not the id",
+		first and first.name == "Master Poisoner", first and tostring(first.name) or "nothing")
+	-- And no id, which is a statement about the reading rather than about the client.
+	-- `interpret` takes it from `talentID` or `id`, and **neither is among the twelve keys
+	-- the run wrote down**: the answer has eighteen and the probe's old cut stopped at
+	-- twelve, right after `name`. So the fixture cannot carry one without inventing it
+	-- (L-209), and what this check pins is what Family gets out of what is actually known
+	-- about this client. Version 14 asks the wider question; until it is answered, a talent
+	-- read this way is a name with no identifier behind it (L-210).
+	check("and no id, because the key that would carry one is past the probe's old cut",
+		first and first.id == nil, first and tostring(first.id) or "nothing")
+
+	-- Which route got there. The namespace answers a table and is tried first, so it should
+	-- be the one used and the loose call should never be reached for a reading.
+	check("it was read through the namespace, which answers a table",
+		said[1] == "choices: reading talents with "
+			.. "C_SpecializationInfo.GetTalentInfo{tier, column, groupIndex}",
+		tostring(said[1]))
+	check("and the loose call was never asked", looseAsked == 0, tostring(looseAsked))
+
+	-- Now the same client with the namespace taken away, which is not this client and is
+	-- worth a check anyway: it is the only way to put the swapped answer itself in front of
+	-- the reader, and the eleven values below are the ones the run wrote down.
+	_G.C_SpecializationInfo = nil
+	stored.payload["Mirror-Midnight"] = nil
+	midnight.Talents:Scan()
+
+	local loose = stored.payload["Mirror-Midnight"]
+	loose = loose and loose.talents and loose.talents.groups and loose.talents.groups[1]
+	loose = loose and loose.tiers and loose.tiers[1] and loose.tiers[1].choices[1]
+	check("and with only the swapped loose call left, the name is still the name",
+		loose and loose.name == "Master Poisoner" and loose.id == 22337,
+		loose and (tostring(loose.name) .. " / " .. tostring(loose.id)) or "nothing")
+	check("which it could only be by inspecting the returns rather than unpacking them",
+		looseAsked > 0, tostring(looseAsked))
+
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+	Family.Capabilities:Detect()
+end)()
+
+print()
 print("identity")
 advance(3)
 
