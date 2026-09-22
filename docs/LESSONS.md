@@ -3576,6 +3576,36 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-208 — the check crashed instead of failing, and the mutator called it caught
+
+**2026-09-22.** A mutation written for the fourth pretend client made every bag slot read as
+empty. The run ended with
+
+    lua5.1: tests/Harness.lua:2548: attempt to index field '?' (a nil value)
+
+and printed no failure at all. The check on that line was
+`payload.bags[0].slots[2].id == 2589`: with the slot gone, the index found nil and the process
+died where a check should have said *backpack contents* and gone red.
+
+**Bitten:** nothing shipped, and that is luck rather than design. `tools/mutate.py` reads the
+gate's **exit status**, and a crash is a non-zero exit, so the case was reported *caught* - a
+true word for a wrong reason. What was lost is everything a red check is for: the claim was not
+named, the value was not printed, and every check after that line never ran, so a second fault
+in the same mutation would have been invisible.
+
+**Why it hid.** A check of the form `a.b.c == x` reads as one assertion and is three: two
+indexes that must succeed and one comparison that may fail. The two are invisible while the
+data is there, which is every run until the day the mutation arrives - and the mutation is
+exactly the moment the check is being asked to do its job.
+
+**What now catches it.** The check is guarded down to the slot and says what it found:
+*backpack contents -> slot 2 of the backpack is empty*. Re-run with the mutation in place, it
+is a red line in the report where it was a traceback. The general rule, and the reason this is
+a lesson rather than a repair: **a check must be able to fail.** Where it reads through a
+chain the data may not have, the chain is guarded and the detail says what was there instead,
+because a gate whose failure mode is a crash tells the mutator the truth and the reader
+nothing.
+
 ## L-206 — the instrument answered correctly, about a run taken two days earlier
 
 **2026-09-20.** The probe's saved variables accumulate on purpose: a run is filed under its build

@@ -1,0 +1,6 @@
+name: the bag scanner ignores C_Container and takes only the loose globals
+file: addons/Family/Scanners/Bags.lua
+--- old
+local container = C_Container or {}
+--- new
+local container = {}

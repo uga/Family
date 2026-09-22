@@ -1,0 +1,10 @@
+name: a slot answered as one table is read as the older ten returns
+file: addons/Family/Scanners/Bags.lua
+--- old
+	if type(info) == "table" then
+		return info.itemID, info.stackCount or 1, worth
+	end
+--- new
+	if false then
+		return info.itemID, info.stackCount or 1, worth
+	end

@@ -2545,11 +2545,19 @@ end
 local payload = Family.Database:Payload(key)
 check("payload recorded", payload ~= nil and payload.bags ~= nil)
 if payload and payload.bags then
-	check("backpack contents", payload.bags[0].slots[2].id == 2589
-		and payload.bags[0].slots[2].count == 20)
-	check("quiver flagged special", payload.bags[2].special == true)
-	check("backpack never special", payload.bags[0].special == false)
-	check("bag item id recorded by id", payload.bags[1].itemID ~= nil)
+	-- Guarded down to the slot, because an empty one is a result and not a reason to stop.
+	-- A mutation that made every slot read as nothing crashed here instead of going red:
+	-- the run ended at this line with an index error, saying nothing about which claim had
+	-- failed and leaving every check after it unrun. The mutator counted it caught, which it
+	-- was, by a check that never got to speak.
+	local backpack = payload.bags[0] and payload.bags[0].slots
+	check("backpack contents", backpack and backpack[2]
+		and backpack[2].id == 2589 and backpack[2].count == 20,
+		backpack and backpack[2] and (tostring(backpack[2].id) .. " x"
+			.. tostring(backpack[2].count)) or "slot 2 of the backpack is empty")
+	check("quiver flagged special", payload.bags[2] and payload.bags[2].special == true)
+	check("backpack never special", payload.bags[0] and payload.bags[0].special == false)
+	check("bag item id recorded by id", payload.bags[1] and payload.bags[1].itemID ~= nil)
 end
 
 print()
@@ -2559,6 +2567,146 @@ fire("PLAYER_MONEY")
 check("money updated in place", Family.Database:Meta(key).money == 500,
 	tostring(Family.Database:Meta(key).money))
 check("bag totals untouched", Family.Database:Meta(key).bagSlots == 32)
+
+print()
+print("the same bag scan on the fourth pretend client")
+
+-- Step 2, second slice, and **narrower than it first claimed to be**. The first version of
+-- this comment said the section proved Family reaches Midnight through `C_Container` where the
+-- loose globals are gone. It does not: the base pretend client above is *already* built on
+-- `C_Container` and this harness defines no loose container global anywhere, so that route was
+-- covered before this section existed. Measured after writing it, by mutating the shim and
+-- watching an Era check go red rather than one of these.
+--
+-- What is new here is the rest of the client: the Midnight **build**, with what the capability
+-- table answers for it - no keyring, so the bag order has one fewer entry - and a scanner
+-- loaded with no loose global present at all rather than merely unused. And the shape, checked
+-- below on its own: a slot answered as one table rather than as ten returns beginning with a
+-- texture.
+--
+-- **The shim binds at load** - `local container = C_Container or {}` - which is right in a
+-- client, where the surface does not change under a running addon, and means the file has to
+-- be loaded again to be asked about a different one.
+--
+-- **It has to be loaded again to be asked.** The shim binds at load - `local container =
+-- C_Container or {}` - which is right in a client, where the surface does not change under a
+-- running addon, and means a harness cannot swap a loaded scanner from one API to the other.
+-- So the file is loaded a second time into a private table that reads through to the real
+-- Family for everything except what would disturb it: no events are registered, the member is
+-- a name of its own, and the database is a recorder rather than the real one, so nothing here
+-- adds a member that later sections would have to know about.
+;(function()
+	local was = {}
+	local function set(name, value)
+		was[name] = { _G[name] }
+		_G[name] = value
+	end
+
+	set("GetBuildInfo", function() return "12.1.0", "69875", "Sep 15 2026", 120100 end)
+	set("KEYRING_CONTAINER", nil)
+
+	-- The six loose globals Midnight does not have. Measured: every one of them is `nil` in
+	-- the run of 2026-09-20, and `C_Container` holds all six under the newer names.
+	set("GetContainerNumSlots", nil)
+	set("GetContainerNumFreeSlots", nil)
+	set("GetContainerItemInfo", nil)
+	set("ContainerIDToInventoryID", nil)
+	set("GetContainerItemCooldown", nil)
+	set("GetContainerItemLink", nil)
+
+	-- A backpack of twenty and one bag of thirty, which is what the container sweep read on
+	-- both characters. **The answers are the new shape**: `GetContainerItemInfo` hands back a
+	-- table here, where the loose global handed back ten returns beginning with a texture.
+	-- That difference is the one this whole section exists to put a check on.
+	set("C_Container", {
+		GetContainerNumSlots = function(bag)
+			if bag == 0 then return 20 end
+			if bag == 1 then return 30 end
+			return 0
+		end,
+		GetContainerNumFreeSlots = function(bag)
+			if bag == 0 then return 18, 0 end
+			return 28, 0
+		end,
+		GetContainerItemInfo = function(bag, slot)
+			if bag == 0 and slot == 1 then
+				return { itemID = 6948, stackCount = 1, hasLoot = false }
+			end
+			if bag == 0 and slot == 2 then
+				return { itemID = 2589, stackCount = 20, hasLoot = false }
+			end
+			if bag == 1 and slot == 1 then
+				return { itemID = 158154, stackCount = 3, hasLoot = false }
+			end
+			return nil
+		end,
+		ContainerIDToInventoryID = function(bag) return 19 + bag end,
+		GetContainerItemCooldown = function() return 0, 0, 1 end,
+		GetContainerItemLink = function(bag, slot)
+			if bag == 0 and slot == 1 then return "|Hitem:6948::::::::60:::::|h[Hearthstone]|h" end
+			return nil
+		end,
+	})
+
+	Family.Capabilities:Detect()
+	check("the fourth client has no keyring to scan",
+		Family.Capabilities:Has("keyring") == false)
+
+	-- Reads the real Family for everything it does not shadow. What it shadows is what would
+	-- otherwise reach across this section: the events, the member name, and the store.
+	local stored = { meta = {}, payload = {} }
+	local midnight = setmetatable({}, { __index = FamilyPrivate })
+	midnight.CurrentMember = function() return "Mirror-Midnight" end
+	midnight.RegisterEvent = function() end
+	midnight.OnDatabaseReady = function() end
+	midnight.Mounts = { Recompute = function() end }
+	midnight.Database = {
+		Meta = function(_, k) return stored.meta[k] end,
+		SetMeta = function(_, k, fields)
+			stored.meta[k] = stored.meta[k] or {}
+			for name, value in pairs(fields) do stored.meta[k][name] = value end
+		end,
+		Payload = function(_, k) return stored.payload[k] end,
+		SetPayload = function(_, k, p) stored.payload[k] = p end,
+	}
+
+	load("addons/Family/Scanners/Bags.lua", "Family", midnight)
+	check("the scanner loads against a client with no loose container globals",
+		type(midnight.Bags) == "table" and type(midnight.Bags.Scan) == "function")
+
+	midnight.Bags:Scan()
+
+	local meta = stored.meta["Mirror-Midnight"]
+	local payload = stored.payload["Mirror-Midnight"]
+	check("a Midnight-build scan counts the bags it was given",
+		meta ~= nil and meta.bagSlots == 50, meta and tostring(meta.bagSlots))
+	check("and their free slots with them",
+		meta and meta.bagFree == 46, meta and tostring(meta.bagFree))
+	check("and no bag is taken for a special one on a client with no quivers",
+		meta and meta.specialSlots == 0, meta and tostring(meta.specialSlots))
+
+	-- The shape, which is the half a shim cannot fix by aliasing a name. The loose global
+	-- answered ten values beginning with a texture; this one answers a table, and `itemID`
+	-- and `stackCount` live inside it.
+	check("a slot read from a table answer keeps its id and its count",
+		payload and payload.bags[0].slots[2]
+			and payload.bags[0].slots[2].id == 2589
+			and payload.bags[0].slots[2].count == 20,
+		payload and payload.bags[0].slots[2]
+			and (tostring(payload.bags[0].slots[2].id) .. " x"
+				.. tostring(payload.bags[0].slots[2].count)))
+	check("and a second bag is read the same way",
+		payload and payload.bags[1] and payload.bags[1].slots[1]
+			and payload.bags[1].slots[1].id == 158154, payload and payload.bags[1]
+			and payload.bags[1].slots[1] and tostring(payload.bags[1].slots[1].id))
+
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+	Family.Capabilities:Detect()
+	check("and the client it borrowed goes back as it was",
+		Family.Capabilities.name == "Classic Era"
+			and Family.Database:Meta(key).bagSlots == 32,
+		Family.Capabilities.name)
+end)()
 
 print()
 print("identity")

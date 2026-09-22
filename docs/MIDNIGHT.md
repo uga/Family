@@ -1312,3 +1312,32 @@ which is no.
 Three mutations recorded, each checked to be caught by the check meant to catch it: reading an
 unknown interface as the newest known client, giving a missing column every feature, and
 dropping the diagnostics where the table has no column.
+
+### The second slice: a bag scan on the fourth client (2026-09-22)
+
+`Scanners/Bags.lua` chooses its route at the top - `local container = C_Container or {}` - and
+every function it needs is present and answering on Midnight, measured: `GetContainerNumSlots`,
+`GetContainerNumFreeSlots`, `GetContainerItemInfo`, `ContainerIDToInventoryID`,
+`GetContainerItemCooldown`, `GetContainerItemLink`, with `NUM_BAG_SLOTS` at 4 as on the other
+clients. `slotContents` already reads both answer shapes, the table and the older ten returns.
+
+So the harness loads that file a second time, under the Midnight build with no loose container
+global present, into a private table that reads through to the real Family for everything but
+the three things that would reach across the rest of the run: no events are registered, the
+member has a name of its own, and the store is a recorder. Eight checks. The scan comes back
+with 50 slots, 46 free, no special bag, and the ids and counts intact.
+
+**The claim this section first made was too wide, and the measurement is what narrowed it.**
+It said the checks proved Family reaches Midnight through `C_Container` where the loose globals
+are gone. They do not: the harness's own base client is already built on `C_Container` and
+defines no loose container global anywhere, so that route was covered before this slice
+existed. Found by mutating the shim and watching an *Era* check go red rather than one of the
+new ones. What the section adds is the Midnight build, the capability answers that come with it
+- no keyring, so the bag order is one entry shorter - and a scanner loaded where the old names
+are absent rather than merely unused.
+
+**And it turned up a check that could not fail.** The mutation that makes every slot read as
+empty crashed the run at `tests/Harness.lua`'s `payload.bags[0].slots[2].id == 2589` - an index
+into a slot that is no longer there - so the gate exited non-zero, the mutator called the case
+caught, and no failure was ever printed. True word, wrong reason. That check is now guarded and
+says *slot 2 of the backpack is empty*, and the rule is L-208.
