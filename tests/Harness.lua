@@ -2405,6 +2405,90 @@ check("unknown capability answers false", Family.Capabilities:Has("nonsense") ==
 		Family.Capabilities.name == "Classic Era")
 end)()
 
+-- The fourth pretend client: Midnight, 12.1.0 build 69875, interface 120100. Step 2 of the
+-- branch plan, and the numbers in it are measured rather than expected - every symbol below was
+-- read off `FamilySurface`'s run of 2026-09-20 on `Ahia-Chamber of Aspects` and is written up in
+-- `docs/MIDNIGHT.md`. The three Classic clients above are not edited to make room, which is the
+-- rule this section was written under.
+--
+-- **What it is for is the state Family is in before the fourth column exists.** `expansion()` is
+-- `interface / 10000`, so Midnight is 12, and no row of the capability table has a 12. Every
+-- feature therefore answers false. That is the safe direction - Family claims nothing on a
+-- client nobody has measured it against - and it is also wrong for three features whose symbols
+-- are right there, which is what the diagnostics are for and what step 3 has to settle.
+;(function()
+	local was = {}
+	local function set(name, value)
+		was[name] = { _G[name] }
+		_G[name] = value
+	end
+
+	set("GetBuildInfo", function() return "12.1.0", "69875", "Sep 15 2026", 120100 end)
+
+	-- Absent on Midnight, all five read off the run's own list of names: the keyring and the
+	-- bank container are gone, the old currency list call is gone, glyphs are gone twice over,
+	-- and the talent-group call that Mists answers is not there either.
+	set("KEYRING_CONTAINER", nil)
+	set("BANK_CONTAINER", nil)
+	set("GetCurrencyListSize", nil)
+	set("GetNumGlyphSockets", nil)
+	set("C_GlyphInfo", nil)
+	set("GetNumTalentGroups", nil)
+
+	-- Present, and this is the half that matters: a symbol being there is not the feature being
+	-- there, which is the whole thesis of `Capabilities.lua` and the reason four of its entries
+	-- exist. The guild bank, achievements and the currency namespace are all on this client.
+	set("GetNumGuildBankTabs", function() return 8 end)
+	set("C_GuildBank", {})
+	set("GetAchievementInfo", function() return 1, "An Achievement" end)
+	set("C_CurrencyInfo", { GetCurrencyListSize = function() return 49 end })
+	-- It answers, and it answers **1**. Not an error, as Anniversary's does, and not a number
+	-- above one, as Mists' does: Midnight has one specialisation group and says so plainly.
+	set("GetNumSpecGroups", function() return 1 end)
+
+	Family.Capabilities:Detect()
+
+	check("Midnight is not mistaken for one of the three Classic clients",
+		Family.Capabilities.name == "interface 12", Family.Capabilities.name)
+	check("and a client the table has no column for claims nothing",
+		Family.Capabilities:Has("achievements") == false
+			and Family.Capabilities:Has("guildBank") == false
+			and Family.Capabilities:Has("currencies") == false
+			and Family.Capabilities:Has("dualSpec") == false)
+
+	-- The three the table is wrong about, and the diagnostics say so by name. This is step 3's
+	-- list of work, written as checks rather than as a paragraph: when the fourth column lands,
+	-- these stop disagreeing, and this check is what will say so.
+	local reported = {}
+	for _, entry in ipairs(Family.Capabilities:Report()) do reported[entry.feature] = entry end
+	check("while the diagnostics name the three whose symbols are on the client",
+		reported.achievements.disagrees ~= nil and reported.guildBank.disagrees ~= nil
+			and reported.currencies.disagrees ~= nil,
+		tostring(reported.achievements.disagrees) .. " / "
+			.. tostring(reported.guildBank.disagrees) .. " / "
+			.. tostring(reported.currencies.disagrees))
+	check("and say the symbol is there, not that the feature is",
+		reported.currencies.disagrees == "client has the symbol",
+		tostring(reported.currencies.disagrees))
+
+	-- And the two the table gets right for the right reason: the symbols are gone as well.
+	check("a feature whose symbols are absent too is quietly right",
+		reported.keyring.disagrees == nil and reported.glyphs.disagrees == nil,
+		tostring(reported.keyring.disagrees) .. " / " .. tostring(reported.glyphs.disagrees))
+
+	-- Dual specialisation is the one that would have been got wrong by looking. The symbol is
+	-- present and it answers - `GetNumSpecGroups()` is 1 on Midnight, measured - so a probe that
+	-- asked whether the call exists would have said yes. Calling it says one group, which is no.
+	check("and a call that answers one group is not read as two",
+		reported.dualSpec.disagrees == nil, tostring(reported.dualSpec.disagrees))
+
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+	Family.Capabilities:Detect()
+	check("and the fourth client leaves the other three as it found them",
+		Family.Capabilities.name == "Classic Era" and Family.Capabilities:Has("keyring") == true,
+		Family.Capabilities.name)
+end)()
+
 -- The bug the game found three times over: these clients carry symbols for features they do
 -- not have. GetAchievementInfo, C_GuildBank and KEYRING_CONTAINER all exist on clients where
 -- the feature does not. A probe finding one must change nothing at all.

@@ -1282,3 +1282,33 @@ earlier run had *made calls in*, and `C_TradeInfo` made none - enumerating from 
 rather than from the matcher, which is L-204's shape once more. The line that reports an
 off-list namespace is what caught it, on the first run after it was written, which is the whole
 argument for keeping the words as a net after taking them out of the decision.
+
+## 18. Step 2 begins: the harness learns a fourth pretend client (2026-09-22)
+
+`tests/Harness.lua` had no 12.x build in it and stubbed `5.5.4 / 50504` at four sites. It now
+carries a fourth pretend client - `12.1.0`, build 69875, interface 120100 - beside the three
+Classic ones, which are not edited to make room.
+
+**Every symbol in it is measured, not expected**, read off the version 13 run on
+`Ahia-Chamber of Aspects`: `KEYRING_CONTAINER`, `BANK_CONTAINER`, `GetCurrencyListSize`,
+`GetNumGlyphSockets`, `C_GlyphInfo` and `GetNumTalentGroups` are **absent**;
+`GetNumGuildBankTabs`, `C_GuildBank`, `GetAchievementInfo`, `C_CurrencyInfo` and
+`GetNumSpecGroups` are **present**, and `GetNumSpecGroups()` answers **1**.
+
+What the seven checks pin is the state Family is in *before* the fourth column exists.
+`expansion()` is `interface / 10000`, so Midnight is 12 and no row of the table has a 12: every
+feature answers false, the client is named `interface 12`, and nothing is claimed for a client
+nobody has measured Family against. That is the safe direction and it is also wrong for three
+features - achievements, the guild bank and currencies - whose symbols are on the client and
+whose diagnostics say so by name. **Those three disagreements are step 3's work written as
+checks rather than as a paragraph**: when the fourth column lands they stop disagreeing, and
+the check is what will say so.
+
+Two more are pinned because they are right for the right reason - the keyring and glyphs are
+off *and* their symbols are gone - and one because it is the one a looking probe would get
+wrong: dual specialisation's symbol is present and answering, and calling it says one group,
+which is no.
+
+Three mutations recorded, each checked to be caught by the check meant to catch it: reading an
+unknown interface as the newest known client, giving a missing column every feature, and
+dropping the diagnostics where the table has no column.

@@ -1,0 +1,10 @@
+name: an unknown interface number is read as the newest client we know
+file: addons/Family/Capabilities.lua
+--- old
+	local _, _, _, interface = GetBuildInfo()
+	return math.floor((tonumber(interface) or 11509) / 10000)
+--- new
+	local _, _, _, interface = GetBuildInfo()
+	local xpac = math.floor((tonumber(interface) or 11509) / 10000)
+	if xpac > MISTS then return MISTS end
+	return xpac

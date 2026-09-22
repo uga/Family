@@ -1,0 +1,8 @@
+name: a client the capability table has no column for is given every feature
+file: addons/Family/Capabilities.lua
+--- old
+		local answer = byExpansion[xpac]
+		if answer == nil then answer = false end
+--- new
+		local answer = byExpansion[xpac]
+		if answer == nil then answer = true end

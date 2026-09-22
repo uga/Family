@@ -1,0 +1,6 @@
+name: the diagnostics stay silent on a client the table has no column for
+file: addons/Family/Capabilities.lua
+--- old
+			if ok and (found and true or false) ~= answer then
+--- new
+			if ok and (found and true or false) ~= answer and byExpansion[xpac] ~= nil then
