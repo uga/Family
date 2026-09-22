@@ -6893,6 +6893,32 @@ and what tells them apart is the ore-to-bar link, which is already known by id t
 whether the scoring needs a tie-break at all, and it is the only pair whose failure would show a
 wrong name confidently rather than showing nothing.
 
+### What was actually built, and the four corrections play made to it
+
+Built 2026-09-21 and confirmed case by case in the game over the two days after. The shape that
+shipped differs from the one above in four ways, each of them bought by a reading:
+
+- **Ores only, no bars.** Alberto, having seen the scoring: the bar ties with the ore in every
+  language, and dropping it removes the tie instead of tie-breaking it. The ore-to-bar link the
+  section above designs is therefore not needed and was never written.
+- **The score is a share of the candidate's own name**, not a count of characters, which turns
+  the containments from ties into the discriminator. Fixed on 534 measured rows in five languages
+  and three builds at floor 0.55, margin 0.27, minimum run 4, the margin waived where one ore's
+  name sits inside another's.
+- **A node is recognised by a line that *contains* a gathering profession**, not one that is it,
+  so `Requires Mining` and `Requires Herbalism` are nodes too. The character who cannot take the
+  node is the one most likely to be asking.
+- **The maps are served as well as the world** - the minimap and the world map, including pins
+  drawn by GatherMate, Gatherer and their like - and the zone labels that would misread as an ore
+  are refused by **id**, so the exception holds in every language. 53 places on Era, 50 on Burning
+  Crusade, 127 on Mists, and not one of 929 vein names is silenced by them.
+
+And two faults Alberto read off the shipped tooltip on 2026-09-22, both fixed the same day: the
+block named no ore, so *Family possessions 20* under a `Copper Vein` could be read as twenty
+veins; and it offered *CTRL-ALT-click to open the family's list*, which needs an item to click and
+cannot fire on a rock. Both were the same cause - a block written when every caller was an item -
+and the lesson is L-122.
+
 ---
 
 ## 97. CTRL or ALT on a character's name jumps to that character's Possessions or Professions
