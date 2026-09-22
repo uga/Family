@@ -5497,8 +5497,34 @@ do
 	-- languages, which is why the table is ids and not words - and why one that collides in any
 	-- one locale is refused in all of them.
 	local places = Family.Gathered and Family.Gathered[1] and Family.Gathered[1].places
-	check("the build ships the places its own rule would misread", places and #places > 20,
+	-- **A known collision, not a count.** This read `more than twenty` when Era shipped 53, and
+	-- the regeneration of 2026-09-22 under the word rule took it to 18 - correctly - which a
+	-- floor chosen off one run turned red for no reason about the addon. *Thorium Point* (1446)
+	-- is the one to hold instead: it takes Thorium Ore on every build, it is in Searing Gorge
+	-- where the fault that brought the word rule was read, and on Burning Crusade the list
+	-- shipped before the regeneration did not refuse it.
+	local refusesThoriumPoint = false
+	for _, id in ipairs(places or {}) do
+		if id == 1446 then refusesThoriumPoint = true end
+	end
+	check("the build ships the places its own rule would misread, Thorium Point among them",
+		places and #places > 0 and refusesThoriumPoint,
 		places and tostring(#places) or "none")
+
+	-- **And on every build, which is where the hole was.** Burning Crusade and Mists add Khorium
+	-- Ore, which used to silence *Thorium Point* the way it silenced the thorium veins; the word
+	-- rule took that away, and the list generated under the older rule had never needed to
+	-- refuse it. Era alone could not show this, having no khorium.
+	local missing = {}
+	for _, expansion in ipairs { 1, 2, 5 } do
+		local found = false
+		for _, id in ipairs((Family.Gathered[expansion] or {}).places or {}) do
+			if id == 1446 then found = true end
+		end
+		if not found then missing[#missing + 1] = tostring(expansion) end
+	end
+	check("and every build refuses it, including the two where khorium used to hide it",
+		#missing == 0, "missing on " .. table.concat(missing, ", "))
 
 	-- Named behind a complete candidate list, because without one the herb step stops the walk
 	-- before the ores are ever scored - and it is the ore score this refusal exists to head off.
