@@ -4915,7 +4915,7 @@ do
 	ITEM_NAMES[7911] = "Truesilver Ore"
 	ITEM_NAMES[11370] = "Dark Iron Ore"
 
-	local function nodeSays(said, profession)
+	local function nodeSays(said, profession, extra)
 		GameTooltip:ClearLines()
 		GameTooltip.__itemName, GameTooltip.__itemLink = nil, nil
 		GameTooltip.__spellName, GameTooltip.__spellID = nil, nil
@@ -4925,6 +4925,7 @@ do
 
 		GameTooltip:AddLine(said)
 		if profession then GameTooltip:AddLine(profession) end
+		if extra then GameTooltip:AddLine(extra) end
 
 		local before = #GameTooltip.__lines
 
@@ -5034,14 +5035,35 @@ do
 	check("and neither is a tooltip with no second line at all",
 		nodeSays("Silverleaf", nil) == "")
 
-	-- Cheapest test first, which is what keeps this off every tooltip in the game.
+	-- **A character who cannot gather the node still sees it**, and still wants the answer.
+	-- Alberto, 2026-09-22: without the profession the line says *requires* it, and a miner whose
+	-- skill is too low for the vein reads *Requires Mining (275)*. Both shapes were turned away
+	-- by a test that asked the line to **be** the profession rather than to contain it - so the
+	-- block showed only to characters who could already take the node, and the one who wants it
+	-- most is the one who cannot. Which line carries the requirement is not known here, so both
+	-- the second and the third are read and neither position is assumed.
+	check("a vein whose second line only requires the profession is still a node",
+		drewBlock(nodeSays("Copper Vein", "Requires " .. MINE)))
+	check("and one that names it and then requires a level as well",
+		drewBlock(nodeSays("Copper Vein", MINE, "Requires " .. MINE .. " (275)")))
+	-- **And the third line on its own**, which is the claim the code makes rather than a shape
+	-- anybody has read: both known shapes put the word on the second line, and which line the
+	-- requirement lands on is not established. Reading only one of them would be a guess, so
+	-- both are read - and a blank separator above the requirement is an ordinary thing for a
+	-- tooltip to have.
+	check("and one whose second line is blank and whose third requires the profession",
+		drewBlock(nodeSays("Copper Vein", "", "Requires " .. MINE .. " (275)")))
+
+	-- Cheapest test first, which is what keeps this off every tooltip in the game: past three
+	-- lines nothing is read at all.
 	GameTooltip:ClearLines()
 	GameTooltip.__itemName, GameTooltip.__itemLink = nil, nil
 	GameTooltip:AddLine("Silverleaf")
 	GameTooltip:AddLine(HERB)
-	GameTooltip:AddLine("and a third line")
+	GameTooltip:AddLine("a third line")
+	GameTooltip:AddLine("and a fourth")
 	GameTooltip.__scripts.OnShow(GameTooltip)
-	check("a tooltip of three lines is not a node", #GameTooltip.__lines == 3,
+	check("a tooltip of four lines is not a node", #GameTooltip.__lines == 4,
 		tostring(#GameTooltip.__lines))
 
 	-- Anything the client will name is an item, and the item route already has it.
@@ -5060,15 +5082,55 @@ do
 	-- **Asked of the client once, not once per hover.** Naming every candidate and scoring
 	-- against all of them is work a pointer crossing a field of herbs must not pay twice, and
 	-- the answer does not move: a name belongs to an item whatever anybody is carrying.
+	ITEM_NAMES[2450] = "Briarthorn"
 	local realItem, asked = Family.Names.Item, 0
 	Family.Names.Item = function(...) asked = asked + 1 return realItem(...) end
-	nodeSays("Silverleaf", HERB)
+	nodeSays("Briarthorn", HERB)
 	local first = asked
-	nodeSays("Silverleaf", HERB)
-	nodeSays("Silverleaf", HERB)
+	nodeSays("Briarthorn", HERB)
+	nodeSays("Briarthorn", HERB)
 	Family.Names.Item = realItem
 	check("a node name is worked out once however often it is hovered",
 		first > 0 and asked == first, first .. " then " .. asked)
+
+	-- **A dot on the minimap**, which gives the name and nothing else.
+	--
+	-- One line, no profession line, so nothing in the text says it is a node. That is why the
+	-- frame is required there and the resolution is not allowed to decide on its own: 647 of
+	-- 43,356 ordinary item names score as an ore under the rules a real vein passes, and no
+	-- threshold separates the two - by the time the false ones stop, the veins stop with them.
+	--
+	-- **And a pin another addon drew is served too.** Alberto, 2026-09-22: GatherMate, Gatherer
+	-- and their like remember where nodes were and draw their own pins, and those are nodes.
+	-- Their frames are children of `Minimap`, so the test walks up the parents rather than
+	-- naming one addon's frame.
+	local realFocus, realFoci = _G.GetMouseFocus, _G.GetMouseFoci
+	local function pointerOn(frame)
+		_G.GetMouseFocus = function() return frame end
+		_G.GetMouseFoci = function() return { frame } end
+	end
+
+	pointerOn(Minimap)
+	check("a blip on the minimap resolves from its one line",
+		drewBlock(nodeSays("Silverleaf", nil)))
+	check("and a vein blip is scored the same way a vein in the world is",
+		drewBlock(nodeSays("Copper Vein", nil)))
+
+	local pin = CreateFrame("Frame", "GatherMatePin2", Minimap)
+	pointerOn(pin)
+	check("a pin another addon drew on the minimap is served as well",
+		drewBlock(nodeSays("Silverleaf", nil)))
+
+	-- Anywhere else, one line is one line and says nothing about being a node.
+	pointerOn(CreateFrame("Frame", "SomeOtherFrame"))
+	check("a one-line tooltip that is not on the minimap is not a node",
+		nodeSays("Silverleaf", nil) == "")
+	_G.GetMouseFocus = function() return nil end
+	_G.GetMouseFoci = function() return {} end
+	check("and neither is one with no frame under the pointer at all",
+		nodeSays("Silverleaf", nil) == "")
+
+	_G.GetMouseFocus, _G.GetMouseFoci = realFocus, realFoci
 
 	-- **Silence has to say which kind of silence it is.** Reported from play the day this
 	-- landed as *herb nodes do not seem to work at all*: four gates in this route, all silent,
@@ -5081,7 +5143,7 @@ do
 	local heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
 		#DEFAULT_CHAT_FRAME.messages)
 	check("a tooltip turned away names the gate that did it",
-		heard:find("which is skill", 1, true) ~= nil, heard)
+		heard:find("none of 2..3 names a gathering profession", 1, true) ~= nil, heard)
 	check("and every tooltip reports its shape before any gate runs",
 		heard:find("shown with 2 line(s)", 1, true) ~= nil, heard)
 

@@ -1,0 +1,8 @@
+name: only the minimap frame itself counts, so a pin another addon drew is turned away
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local steps = 0
+	while type(frame) == "table" and steps < 8 do
+--- new
+	local steps = 8
+	while type(frame) == "table" and steps < 8 do

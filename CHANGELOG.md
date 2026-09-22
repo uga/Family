@@ -38,6 +38,11 @@ is a decision rather than an afternoon of archaeology.
 - **It works whatever language you play in**, because every word it matches is one your own
   client gave it. A vein it cannot place with confidence stays quiet instead of naming the wrong
   metal.
+- **You do not need the profession to get the answer.** A character who cannot mine an Iron
+  Deposit, or whose mining is too low for it, still sees who in the family is holding iron ore -
+  which is usually the character asking.
+- **And the dots on your minimap answer too**, including the ones GatherMate and Gatherer draw
+  from where they remember nodes being.
 
 ### Achievements
 

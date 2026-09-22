@@ -1,0 +1,8 @@
+name: a tooltip naming no gathering profession is taken for a node anyway
+file: addons/Family_UI/Tooltip.lua
+--- old
+		skill, said = professionNamed(frameName, lines)
+		if not skill then
+--- new
+		skill, said = professionNamed(frameName, lines)
+		if false then

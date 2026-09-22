@@ -5014,6 +5014,46 @@ cells of this table are Era and Burning Crusade alone.
 taking rather than leaving it to chance: the rows nearest the bar. Anything Wowhead and the
 client disagree about would show up there first.
 
+#### Why the minimap needs the frame and the world does not — measured 2026-09-22
+
+A blip gives **one line and no profession line**, which the probe read on both Burning Crusade
+and Era and which Alberto's Peacebloom run confirmed: `1 line(s): Peacebloom / nil`. So nothing
+in a blip's text says it is a node, and the question is whether the resolution can carry that on
+its own.
+
+It cannot. Scored against **every item name the client has** — the nearest corpus of real game
+strings there is — under exactly the rules a real vein passes:
+
+| Build and locale | distinct names | would fire as an ore |
+|---|---|---|
+| Era `enUS` | 21,392 | **565** (2.64%) |
+| Era `frFR` | 21,964 | 82 (0.37%) |
+| Mists `enUS` | 75,141 | 1,576 (2.10%) |
+
+`Silver Defias Belt` takes `Silver Ore` at **0.700** — the same share a real copper vein scores
+against copper ore. And there is no stricter bar that separates them, swept over both corpora at
+once:
+
+| floor / margin / run | real veins named | item names wrongly named |
+|---|---|---|
+| 0.55 / 0.27 / 4 | 67 of 93 | 647 |
+| 0.75 / 0.40 / 6 | 5 of 93 | 81 |
+| 0.80 / 0.40 / 6 | **0** of 93 | 4 |
+
+By the time the false fires stop, the veins have stopped with them. **The distributions overlap
+completely**, and the world route works only because it has a second signal — the profession
+line — that the minimap has not. So on the minimap the frame is required, and it is required
+because of this table rather than out of caution.
+
+**What the frame test is, and what it is not.** Not *is the frame the minimap*, which excludes
+exactly the pins worth serving: GatherMate and Gatherer remember where nodes were and draw their
+own, and those are nodes. It walks up the parents to `Minimap`, bounded at eight steps, which
+admits any addon's pin without naming one. A Questie pin passes it too, so among things drawn on
+a minimap the resolution still decides - a corpus of a few dozen pins rather than 43,356 item
+names, and the worst case is an irrelevant block rather than a wrong metal named on a vein.
+**That residual rate is not measured**, and no table here can measure it: what other addons put
+on a minimap is not client data.
+
 #### The herb route read in game, and it works — 2026-09-21
 
 `/family debug` over a Peacebloom in the world, after the narration went in:

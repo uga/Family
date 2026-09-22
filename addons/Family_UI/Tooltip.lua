@@ -1402,43 +1402,122 @@ local ORE_FLOOR, ORE_MARGIN, ORE_RUN = 0.55, 0.27, 4
 -- lookup, free - throws out very nearly all the rest. Only then is it worth asking the three
 -- calls what this tooltip is about. Getting that order the wrong way round is L-119 in
 -- miniature: a test whose cost is set by how often it runs rather than by what it answers.
+-- **The gathering words this client uses**, from `SkillLines.lua` rather than from anything
+-- written here: skill 182 and 186 carry their names in five locales, generated from the client's
+-- own table. A locale can spell one of them more than one way and both are kept.
+local gatheringWords
+do
+	local words
+	gatheringWords = function()
+		if words then return words end
+		words = {}
+		for _, skill in ipairs { HERBALISM, MINING } do
+			local entry = Family.SkillLines and Family.SkillLines[skill]
+			local named = entry and entry.names
+				and (entry.names[Family.locale] or entry.names.enUS)
+			for _, word in ipairs(named or {}) do
+				if type(word) == "string" and word ~= "" then
+					words[#words + 1] = { word = word:lower(), skill = skill }
+				end
+			end
+		end
+		return words
+	end
+end
+
+-- **Which gathering profession a tooltip names, anywhere in its second or third line.**
+--
+-- `contains` and not `equals`, which is the correction that matters. Alberto, 2026-09-22: a
+-- character **without** the profession still sees the node, and what the line says is *requires*
+-- the profession; a miner whose skill is too low for the vein reads *Requires Mining (275)*.
+-- Both were being turned away by a test that asked the line to **be** the word, so the block
+-- showed only to characters who could already gather the node - and the one who wants it most is
+-- the one who cannot, standing there wondering whether an alt has the ore.
+--
+-- Two lines rather than one, because where the requirement sits is not known here and guessing
+-- it would be the same fault again. A reading would settle the order; this does not need it.
+local function professionNamed(frameName, lines)
+	for index = 2, math.min(lines, 3) do
+		local region = _G[frameName .. "TextLeft" .. index]
+		local text = region and region.GetText and (Family:TryCall(region.GetText, region))
+		if type(text) == "string" and text ~= "" then
+			local lowered = text:lower()
+			for _, entry in ipairs(gatheringWords()) do
+				if lowered:find(entry.word, 1, true) then return entry.skill, text end
+			end
+		end
+	end
+	return nil
+end
+
+-- **Is the pointer on something drawn on the minimap?**
+--
+-- Not *is it the minimap*, which was the first shape and excluded exactly the pins worth
+-- serving. Alberto, 2026-09-22: GatherMate, Gatherer and their like remember where nodes were
+-- and draw their own pins with their own tooltips, and those are nodes too. Their frames are
+-- children of `Minimap`, so a walk up the parents admits them without this file knowing one
+-- addon's name.
+--
+-- `GetMouseFocus` on Era and `GetMouseFoci` on Mists - measured, the first is nil there - so
+-- both are asked and neither is assumed.
+local function onTheMinimap()
+	local frame = Family:TryCall(_G.GetMouseFocus)
+	if type(frame) ~= "table" then
+		local several = Family:TryCall(_G.GetMouseFoci)
+		frame = type(several) == "table" and several[1] or nil
+	end
+
+	local minimap = _G.Minimap
+	if not minimap then return false end
+
+	-- Bounded rather than walked to the top: a parent chain that loops would hang the client,
+	-- and nothing on the minimap is eight deep.
+	local steps = 0
+	while type(frame) == "table" and steps < 8 do
+		if frame == minimap then return true end
+		frame = frame.GetParent and (Family:TryCall(frame.GetParent, frame)) or nil
+		steps = steps + 1
+	end
+	return false
+end
+
+-- Answers the node's name, the skill if the tooltip said one, and where it was drawn.
+--
+-- **Cheapest test first, and the order is the point.** This runs on every tooltip the game
+-- shows, so what it must not do is ask the client four questions about a bag slot. The line
+-- count throws out most of them for the price of one call, and the profession scan - a handful
+-- of `find`s - throws out very nearly all the rest. Only then is it worth asking the three calls
+-- what this tooltip is about. Getting that order the wrong way round is L-119 in miniature.
 local function gatheringNode(tooltip)
 	if not tooltip then return nil end
 	if tooltip.IsForbidden and tooltip:IsForbidden() then return nil end
 
-	-- **Four gates turn a tooltip away here and all four were silent.** Reported from play
-	-- 2026-09-21: a Silverleaf in Loch Modan, the client's own two lines on the screen, nothing
-	-- under them, and no way to tell which gate did it - or whether the build was even on the
-	-- client. That is the fault the node probe had, and it has the same answer: silence has to
-	-- say which kind of silence it is. A reason is built only when somebody has `/family debug`
-	-- on, so an ordinary tooltip pays a comparison and no string at all.
-	-- Not narrated at all: most tooltips in the game stop here and a pointer crosses a great
-	-- many of them. Everything past this line is rare enough to say something about.
-	if (tonumber((Family:TryCall(tooltip.NumLines, tooltip))) or 0) ~= 2 then return nil end
+	local lines = tonumber((Family:TryCall(tooltip.NumLines, tooltip))) or 0
+	if lines < 1 or lines > 3 then return nil end
 
-	local name = tooltip:GetName()
-	if not name then
-		Family:Debug("node: a two-line tooltip with no name, so its lines cannot be read")
-		return nil
-	end
+	local frameName = tooltip:GetName()
+	if not frameName then return nil end
 
-	local second = _G[name .. "TextLeft2"]
-	second = second and second.GetText and (Family:TryCall(second.GetText, second))
-	if type(second) ~= "string" then
-		Family:Debug("node: %s line 2 is not text", name)
-		return nil
-	end
-
-	local skill = Family:SkillLineFor(second)
-	if skill ~= HERBALISM and skill ~= MINING then
-		Family:Debug("node: line 2 is %s, which is skill %s and neither %d nor %d",
-			second, tostring(skill or "no skill this client knows"), HERBALISM, MINING)
-		return nil
+	-- **One line is the minimap and nowhere else.** A blip gives the name and no profession
+	-- line, so nothing in the text says it is a node - measured, and the reason the resolution
+	-- cannot be trusted to decide on its own there: 647 of 43,356 ordinary item names score as
+	-- an ore under the rules a vein passes, and no threshold separates the two. Where it was
+	-- drawn is the only signal left, so it is required.
+	local skill, said
+	if lines == 1 then
+		if not onTheMinimap() then return nil end
+	else
+		skill, said = professionNamed(frameName, lines)
+		if not skill then
+			Family:Debug("node: %d line(s) and none of 2..3 names a gathering profession",
+				lines)
+			return nil
+		end
 	end
 
 	-- Anything the client will name is not a node. Asked last because by here almost nothing
-	-- that is not a node is left, and asked at all because a two-line tooltip that happens to
-	-- end in the word *Mining* is a thing somebody's addon will make one day.
+	-- that is not a node is left, and asked at all because a tooltip that happens to carry the
+	-- word *Mining* is a thing somebody's addon will make one day.
 	local named = (Family:TryCall(tooltip.GetItem, tooltip))
 		or (Family:TryCall(tooltip.GetSpell, tooltip))
 		or (Family:TryCall(tooltip.GetUnit, tooltip))
@@ -1447,14 +1526,15 @@ local function gatheringNode(tooltip)
 		return nil
 	end
 
-	local first = _G[name .. "TextLeft1"]
-	first = first and first.GetText and (Family:TryCall(first.GetText, first))
+	local region = _G[frameName .. "TextLeft1"]
+	local first = region and region.GetText and (Family:TryCall(region.GetText, region))
 	if type(first) ~= "string" or first == "" then
-		Family:Debug("node: line 2 named a gathering skill and line 1 is not text")
+		Family:Debug("node: line 1 is not text")
 		return nil
 	end
 
-	return first, skill
+	if said then Family:Debug("node: line naming the profession is %s", said) end
+	return first, skill, lines == 1 and "minimap" or "world"
 end
 
 -- **What the client calls each id this build can gather**, and whether it answered about all
@@ -1561,24 +1641,37 @@ end
 -- which is the one case where the answer really can change without the records doing so.
 local resolvedNames = {}
 
+--
+-- **What to try, and in what order.** Where the tooltip named a profession there is one list to
+-- look in. Where it did not - a minimap blip, which gives the name and nothing else - both are
+-- tried, herbs first and exactly, ores second and scored. That order is safe and measured: of
+-- the 752 vein names read for the three builds in five languages, **none** is also the name of
+-- a herb, so the exact step cannot take a vein for a plant.
 local function itemForNode(said, skill)
-	local held = resolvedNames[said]
+	local key = tostring(skill or 0) .. ":" .. said
+	local held = resolvedNames[key]
 	if held ~= nil then return held or nil end
 
-	local named, whole = namesFor(skill == MINING and "ores" or "herbs")
-	if not named then return nil end
+	local lists = { { "herbs", herbNamed }, { "ores", oreScored } }
+	if skill == HERBALISM then lists = { lists[1] } end
+	if skill == MINING then lists = { lists[2] } end
 
-	-- **A tooltip line can carry a name twice.** One probe reading came back
-	-- `"Plaguebloom\nPlaguebloom"` - one line, two names, a newline between them, from two pins
-	-- under one cursor. So the line is split rather than taken whole.
-	local found
-	for piece in tostring(said):gmatch("[^\r\n]+") do
-		if not found then
-			found = (skill == MINING) and oreScored(piece, named) or herbNamed(piece, named)
+	local found, whole = nil, true
+	for _, pair in ipairs(lists) do
+		local named, complete = namesFor(pair[1])
+		whole = whole and complete
+		if named then
+			-- **A tooltip line can carry a name twice.** One probe reading came back
+			-- `"Plaguebloom\nPlaguebloom"` - one line, two names, a newline between them, from
+			-- two pins under one cursor. So the line is split rather than taken whole.
+			for piece in tostring(said):gmatch("[^\r\n]+") do
+				if not found then found = pair[2](piece, named) end
+			end
 		end
+		if found then break end
 	end
 
-	if found or whole then resolvedNames[said] = found or false end
+	if found or whole then resolvedNames[key] = found or false end
 	return found
 end
 
@@ -1605,12 +1698,12 @@ local function onNode(tooltip)
 			tostring(two and two.GetText and (Family:TryCall(two.GetText, two))))
 	end
 
-	local said, skill = gatheringNode(tooltip)
+	local said, skill, where = gatheringNode(tooltip)
 	if not said then return end
 
 	-- **The guard first**, so a route that runs twice for one tooltip - which it does, at
 	-- `OnShow` and again a frame later - resolves once and narrates once.
-	local describing = "node:" .. said
+	local describing = "node:" .. tostring(where) .. ":" .. said
 	if lastDescribed[tooltip] == describing then return end
 	lastDescribed[tooltip] = describing
 
@@ -1621,7 +1714,8 @@ local function onNode(tooltip)
 		-- Silence, and the client's own tooltip left exactly as it drew it: naming the wrong
 		-- metal confidently is the only failure here that matters, and on the 534 nodes this
 		-- was measured against it never did.
-		Family:Debug("node: \"%s\" is skill %d and nothing here can place it", said, skill)
+		Family:Debug("node: \"%s\" on the %s, skill %s, and nothing here can place it",
+			said, tostring(where), tostring(skill or "not said"))
 		return
 	end
 

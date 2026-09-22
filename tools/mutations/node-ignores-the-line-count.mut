@@ -1,6 +1,6 @@
-name: a node is anything with two lines or more, and the cheapest test stops discarding
+name: a node is anything of one line or more, and the cheapest test stops discarding
 file: addons/Family_UI/Tooltip.lua
 --- old
-	if (tonumber((Family:TryCall(tooltip.NumLines, tooltip))) or 0) ~= 2 then return nil end
+	if lines < 1 or lines > 3 then return nil end
 --- new
-	if (tonumber((Family:TryCall(tooltip.NumLines, tooltip))) or 0) < 2 then return nil end
+	if lines < 1 then return nil end

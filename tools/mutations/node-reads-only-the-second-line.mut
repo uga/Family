@@ -1,0 +1,6 @@
+name: only the second line is read for the profession, so a requirement on the third is missed
+file: addons/Family_UI/Tooltip.lua
+--- old
+	for index = 2, math.min(lines, 3) do
+--- new
+	for index = 2, math.min(lines, 2) do
