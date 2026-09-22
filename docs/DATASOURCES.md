@@ -5072,6 +5072,32 @@ ore. Three things are confirmed at once and none of them by reasoning:
 Backlog 96 has now been seen working in the game for both professions. What has still never been
 hovered is a **minimap** dot, and the low-skill shape of a vein a miner cannot yet take.
 
+#### The minimap dot too, and a wart it made visible — 2026-09-22
+
+```
+Briarthorn
+
+Family possessions                        1
+Ziofurgone                       1 (1 bags)
+(CTRL-ALT-click to open the family's list)
+```
+
+A dot on the minimap, one line, and the block under it. That is the last of backlog 96's four
+cases to be seen working, and it is the one that rested entirely on reasoning until now: the
+frame test is the whole discriminator there, because the measurement above says the resolution
+cannot be trusted to decide on its own with no profession line. It holds.
+
+It also exercises the order the entry chose without a profession to go on - **herbs exactly, then
+ores scored** - on a herb whose name shares nothing with any ore, which is the ordinary case and
+not the hard one. A pin drawn by GatherMate or Gatherer is still unhovered.
+
+**And it shows up a wart that is nobody's fault but is now in the most visible place in the
+addon.** `UI:HeldWhere` builds its parts from `L["%d bags"]`, which has no singular, so one herb
+reads **1 bags**. It has read that way everywhere the possessions block is drawn; what changed is
+that a node tooltip is the first place where holding exactly one of something is the common case
+rather than the odd one. Four locales, and Russian wants more than two forms. Not fixed here -
+it is outside the slice that found it - and written down so that it is found on purpose.
+
 #### Why the minimap needs the frame and the world does not — measured 2026-09-22
 
 A blip gives **one line and no profession line**, which the probe read on both Burning Crusade
