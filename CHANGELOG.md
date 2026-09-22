@@ -47,7 +47,8 @@ is a decision rather than an afternoon of archaeology.
   ones GatherMate and Gatherer draw from where they remember nodes being. A zone's own label is
   left alone, and so is a cursor covering several different nodes at once: with four veins under
   the pointer there is no way to say which one a single answer is about, so it waits until you
-  zoom in.
+  zoom in. Herbs on a GatherMate pin answer too, which they did not at first - that addon writes
+  its names in colour, and Family was reading the colour as part of the name.
 
 ### Achievements
 

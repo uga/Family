@@ -1,0 +1,6 @@
+name: one name of several on a line keeps the spacing the markup left around it
+file: addons/Family_UI/Tooltip.lua
+--- old
+				local one = pair[2](trimmed(piece), named) or false
+--- new
+				local one = pair[2](piece, named) or false

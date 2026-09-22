@@ -5326,6 +5326,38 @@ do
 	check("a blip on the minimap resolves from its one line",
 		drewBlock(nodeSays("Silverleaf", nil)))
 
+	-- **A pin's name can arrive wearing a colour**, and that is the whole of *herbalism works in
+	-- the world and not on the minimap*, reported 2026-09-22. GatherMate2 draws a herb's name in
+	-- green and a vein's in red, so its text is `|cff00ff00Bruiseweed|r`; the client's own world
+	-- tooltip carries no markup at all. A vein survived it because it is scored and the share is
+	-- measured against the candidate's own length, so markup on the other side changes nothing -
+	-- which is exactly why this went unnoticed while every vein on every pin answered.
+	--
+	-- **Drawing a block is not the check**, and this is where that had to be learned twice. With
+	-- the markup left on, `|cff00ff00Silverleaf|r` misses the herb list - an exact match - and
+	-- then goes on to the ores, where `silver` comes out of it and it draws a block naming
+	-- **Silver Ore**. So a check that asks *did it draw* passes on the fault it is written for.
+	-- What tells them apart is the heading: a herb the tooltip has already named leaves the
+	-- heading bare, and an ore puts its own name in it.
+	local function heldOnly(text) return drewBlock(text) and namedIn(text) == nil end
+
+	check("a herb whose name arrives wrapped in a colour still resolves, and as the herb",
+		heldOnly(nodeSays("|cff00ff00Silverleaf|r", nil)),
+		nodeSays("|cff00ff00Silverleaf|r", nil))
+	check("and one carrying an inline icon as well",
+		heldOnly(nodeSays("|TInterface\\Icons\\INV_Misc_Herb_07:0|t |cff00ff00Silverleaf|r",
+			nil)))
+	check("and two coloured pins of one herb are still one answer",
+		heldOnly(nodeSays("|cff00ff00Silverleaf|r\n|cff00ff00Silverleaf|r", nil)))
+	-- The markup comes off the whole line, so what it leaves between the names is inside the
+	-- line and outside the reach of trimming its ends. Each name is trimmed on its own.
+	check("and the spacing the markup leaves between two names comes off each of them",
+		heldOnly(nodeSays("|cff00ff00Silverleaf|r \n |cff00ff00Silverleaf|r", nil)))
+	check("while two coloured pins of different herbs are still no answer",
+		nodeSays("|cff00ff00Silverleaf|r\n|cff00ff00Peacebloom|r", nil) == "")
+	check("and a name that is nothing but markup is not a node",
+		nodeSays("|cff00ff00|r", nil) == "")
+
 	-- **A blip with no profession line may not fall through to the ores while the herb list is
 	-- still being named.** Read in play 2026-09-22: `"Silverleaf" is item 2775`, which is Silver
 	-- Ore. The herbs had not been named, so the exact step found nothing, and the scorer took

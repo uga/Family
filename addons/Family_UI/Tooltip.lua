@@ -1579,6 +1579,28 @@ end
 -- count throws out most of them for the price of one call, and the profession scan - a handful
 -- of `find`s - throws out very nearly all the rest. Only then is it worth asking the three calls
 -- what this tooltip is about. Getting that order the wrong way round is L-119 in miniature.
+-- **A name can arrive wearing a colour**, and a herb is matched exactly, so it has to come off.
+--
+-- Read from play 2026-09-22 and visible in the screenshot rather than in any log: on the
+-- minimap, GatherMate2 draws a herb's name in green and a vein's in red, which means its text is
+-- `|cff00ff00Bruiseweed|r` and not `Bruiseweed`. A vein survived that because it is **scored**,
+-- and the share is measured against the candidate's own length, so ten bytes of markup on the
+-- other side of the comparison change nothing. A herb is matched **exactly** and did not survive
+-- it at all. That is the whole of *herbalism works in the world and not on the minimap*: the
+-- client's own tooltip carries no markup and somebody else's pin does.
+--
+-- Textures go too, for the same reason and before anybody reports it: a pin that draws its icon
+-- inline puts `|T...|t` in the same string.
+local function trimmed(text)
+	return (text:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local function plainly(text)
+	text = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+	text = text:gsub("|T.-|t", "")
+	return trimmed(text)
+end
+
 local function gatheringNode(tooltip)
 	if not tooltip then return nil end
 	if tooltip.IsForbidden and tooltip:IsForbidden() then return nil end
@@ -1636,6 +1658,12 @@ local function gatheringNode(tooltip)
 	local first = region and region.GetText and (Family:TryCall(region.GetText, region))
 	if type(first) ~= "string" or first == "" then
 		Family:Debug("node: line 1 is not text")
+		return nil
+	end
+
+	first = plainly(first)
+	if first == "" then
+		Family:Debug("node: line 1 is nothing but markup")
 		return nil
 	end
 
@@ -1842,7 +1870,11 @@ local function itemForNode(said, skill)
 				-- `false` and not nil for a piece this list cannot place, so that *one pin
 				-- I know and one I do not* is a disagreement like any other rather than an
 				-- answer about whichever happened to resolve.
-				local one = pair[2](piece, named) or false
+				-- Trimmed and not stripped: the markup came off the whole line above, and
+				-- what it leaves behind is the spacing that sat between it and the name -
+				-- which is inside the line and so outside what trimming the ends of it
+				-- reached.
+				local one = pair[2](trimmed(piece), named) or false
 				if answer == nil then
 					answer = one
 				elseif one ~= answer then

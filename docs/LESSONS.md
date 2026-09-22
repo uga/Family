@@ -4339,3 +4339,35 @@ prompted it are backlog 98, written up with the count they actually produce - 6 
 word rule and 8 after - so the family is a known hole with a number on it. And the source comment
 and the decisions row that carried `0 wrong` are corrected by a new row, this being an
 append-only log.
+
+## L-124 — the fault was in somebody else's tooltip, and only half of ours could feel it
+
+**2026-09-22.** Herb nodes answered in the world and said nothing on the minimap. Veins answered
+in both. Four readings went into finding out why, and two of them were mine and wrong: a naming
+race, then a completeness guard. Alberto settled it in one sentence - *if I disable GatherMate2
+it works perfectly* - and the screenshot had carried the answer the whole time. The pin names are
+**green**. GatherMate2 colours them, so what arrives at `GetText` is `|cff00ff00Bruiseweed|r`.
+
+**The reason it presented as a herb fault is worth more than the fix.** A vein is *scored*, and
+the score is a share of the candidate's own name, so markup on the other side of the comparison
+changes nothing at all - every vein on every pin kept answering, all afternoon, while the same
+pins ate every herb. A herb is matched **exactly**. One route was robust to the corruption by
+construction and the other was not, so the corruption looked like a property of herbs.
+
+**When one half of a feature works and the other does not, the difference between the halves is
+the first place to look - and the difference here was not herbs and ores, it was exact against
+approximate.** That framing would have found it in a minute, and it is the same framing that says
+which other exact matches in this addon are exposed to the same thing.
+
+And the tooltip belongs to whoever drew it. Family reads other addons' pins on purpose - that is
+what serving GatherMate and Gatherer means - so what arrives is their text, in their format, with
+their markup on it. Reading a foreign string as though it were the client's own is the fault, not
+the colour.
+
+**The check.** Coloured names, an inline texture, a coloured pair and a coloured pair with the
+spacing the markup leaves between them - `node-name-keeps-its-markup` and
+`node-piece-keeps-its-markup`, both watched failing before they were kept. The first pair of
+checks asked only whether a block was drawn, and **both mutations survived them**: with the
+markup on, the herb misses and the ore scorer takes `silver` out of `Silverleaf`, so a block is
+drawn naming Silver Ore. A check that asks *did anything happen* passes on the exact fault it
+was written for. They read the heading now.
