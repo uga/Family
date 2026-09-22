@@ -1,0 +1,6 @@
+name: the bank window container falls back to the backpack instead of -1
+file: addons/Family/Scanners/Bank.lua
+--- old
+local BANK = _G.BANK_CONTAINER or -1
+--- new
+local BANK = _G.BANK_CONTAINER or 0

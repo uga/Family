@@ -2804,6 +2804,114 @@ print("the currency list Midnight is the first client to answer")
 end)()
 
 print()
+print("the bank on the fourth pretend client")
+
+-- §6 measured Midnight's bank by sweeping the container ids against Alberto's screenshots of
+-- every tab: **6 to 11 are the character's six tabs in order and 12 is the warband tab**. What
+-- `Scanners/Bank.lua` looks at is `BANK_CONTAINER` - absent on Midnight, so it falls back to -1
+-- - and then the bags from `NUM_BAG_SLOTS + 1` to that plus `NUM_BANKBAGSLOTS - 1`, which with
+-- the constants this client answers is 5 to 11.
+--
+-- So the prediction, before the checks: Family reads Midnight's six tabs **by accident**, because
+-- the range it walks for a Classic client's bank bags happens to cover them; it reads nothing at
+-- -1 and nothing at 5, both of which this client answers 0 slots for; and it never looks at 12,
+-- which is the warband tab and belongs to the account rather than to the character (decision of
+-- 2026-09-21). The first of those is luck worth knowing about and the last is step 3's work.
+;(function()
+	local was = {}
+	local function set(name, value)
+		was[name] = { _G[name] }
+		_G[name] = value
+	end
+
+	set("GetBuildInfo", function() return "12.1.0", "69875", "Sep 15 2026", 120100 end)
+	set("BANK_CONTAINER", nil)
+	set("NUM_BANKBAGSLOTS", nil)
+	set("GetContainerNumSlots", nil)
+	set("GetContainerNumFreeSlots", nil)
+	set("GetContainerItemInfo", nil)
+	set("ContainerIDToInventoryID", nil)
+	set("GetContainerItemLink", nil)
+
+	-- The layout §6 read: -1 and 5 answer nothing, 6 to 11 are the tabs, 12 is the warband one
+	-- with something in it. The number of slots is the shape rather than the exact count.
+	-- The carried backpack is in here as well, with the twenty slots this client gives it. It
+	-- is not a bank container and nothing should read it as one - which is only worth checking
+	-- if it is there to be read wrongly (L-209).
+	local TABS = { [0] = 20,
+		[6] = 20, [7] = 20, [8] = 20, [9] = 20, [10] = 20, [11] = 20, [12] = 98 }
+	set("C_Container", {
+		GetContainerNumSlots = function(bag) return TABS[bag] or 0 end,
+		GetContainerNumFreeSlots = function(bag) return (TABS[bag] or 0) - 1, 0 end,
+		GetContainerItemInfo = function(bag, slot)
+			if not TABS[bag] or slot ~= 1 then return nil end
+			-- 122637 is the item §6 read in the warband tab's first slot on both characters.
+			return { itemID = (bag == 12) and 122637 or (6948 + bag), stackCount = 1 }
+		end,
+		ContainerIDToInventoryID = function(bag) return 19 + bag end,
+		GetContainerItemLink = function() return nil end,
+	})
+
+	local stored = { meta = {}, payload = {} }
+	local midnight = setmetatable({}, { __index = FamilyPrivate })
+	local handlers = {}
+	midnight.CurrentMember = function() return "Mirror-Midnight" end
+	midnight.RegisterEvent = function(_, event, _, fn) handlers[event] = fn end
+	-- Run at once rather than dropped: this scanner registers everything inside it, so a noop
+	-- here leaves nothing listening and a scan that writes nothing - which reads exactly like
+	-- the client answering nothing, and is not.
+	midnight.OnDatabaseReady = function(_, _, fn) fn() end
+	-- The event asks for the scan half a second later. Here it is the caller's business.
+	midnight.After = function() end
+	midnight.Database = {
+		Meta = function(_, k) return stored.meta[k] end,
+		SetMeta = function(_, k, fields)
+			stored.meta[k] = stored.meta[k] or {}
+			for name, value in pairs(fields) do stored.meta[k][name] = value end
+		end,
+		Payload = function(_, k) return stored.payload[k] end,
+		SetPayload = function(_, k, p) stored.payload[k] = p end,
+	}
+
+	load("addons/Family/Scanners/Bank.lua", "Family", midnight)
+
+	-- Nothing is written unless a bank window is open (L-019), and the flag is set by the
+	-- client's own event rather than by a setter, so the event is what opens it here too.
+	check("a bank scan with no window open writes nothing",
+		(function()
+			midnight.Bank:Scan()
+			return stored.payload["Mirror-Midnight"] == nil
+		end)())
+
+	if handlers["BANKFRAME_OPENED"] then handlers["BANKFRAME_OPENED"]() end
+	midnight.Bank:Scan()
+
+	local payload = stored.payload["Mirror-Midnight"]
+	-- Keyed by container id rather than listed, so the ids are the answer and `#` is not.
+	local bank = payload and payload.bank and payload.bank.containers
+	local ids = {}
+	for id in pairs(bank or {}) do ids[#ids + 1] = id end
+	table.sort(ids)
+	check("with the window open, Midnight's six tabs are read",
+		#ids == 6, bank and table.concat(ids, ",") or "nothing recorded")
+	check("and they are the containers 6 to 11 that §6 measured",
+		ids[1] == 6 and ids[6] == 11, table.concat(ids, ","))
+
+	-- The two the old layout expects and this client does not have. Neither is an error, and
+	-- both would be if the client answered slots for them holding nothing (L-019).
+	check("nothing is recorded for the bank window container or for bag 5",
+		bank and bank[-1] == nil and bank[5] == nil)
+
+	-- And the one it does not reach. Not a defect to fix here: container 12 is the warband
+	-- tab, the account owns it rather than the character, and what Family does with a fact
+	-- that belongs to the account was settled on 2026-09-21 and is step 3's.
+	check("the warband tab is not read as one of this character's", bank and bank[12] == nil)
+
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+	Family.Capabilities:Detect()
+end)()
+
+print()
 print("identity")
 advance(3)
 

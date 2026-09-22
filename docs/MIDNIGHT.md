@@ -1459,3 +1459,28 @@ a mutation removing the `isHeader` guard survived, because a header with no `qua
 out anyway. The client's own headers carry `quantity = 0` and `currencyID = 0` and look exactly
 like a currency nobody has any of; `0` is truthy in Lua, so without that guard the list header
 *Midnight* is filed under the key `c0`. The fixture now carries what the run read. L-209.
+
+## 22. The bank Family already reads, and the tab it does not (2026-09-22)
+
+Five checks on the fourth pretend client, with the container layout §6 measured.
+
+**Family reads Midnight's six bank tabs today, and by accident.** `Scanners/Bank.lua` walks
+`BANK_CONTAINER` - absent here, so it falls back to `-1` - and then the bags from
+`NUM_BAG_SLOTS + 1` to that plus `NUM_BANKBAGSLOTS - 1`. With what this client answers, that
+range is **5 to 11**, and §6 measured the character's six tabs at **6 to 11**. Nothing was
+written for Midnight; the Classic bank-bag range happens to cover the Midnight tabs. It is
+worth knowing which parts of the port are luck, because luck moves: if this client ever
+answered five carried bag slots, the same arithmetic would reach container 12.
+
+**Container 12 is not read, and today that is right.** It is the warband tab, the account owns
+it rather than the character (decision of 2026-09-21), and the check says so in those terms
+rather than recording a gap to close.
+
+**Nothing is written for `-1` or for bag 5**, both of which this client answers zero slots for,
+and a bank scan with no window open still writes nothing at all - L-019's guard, which the
+section exercises first so that the four checks after it mean something.
+
+One mutation: the bank window container falling back to the backpack instead of `-1`. It
+**survived** the first time, because the fixture had no container 0 - the backpack is there on
+the real client and was missing from the stub, which is L-209 within a day of writing it. With
+the backpack in the fixture the mutation is caught, and the failure names it: *0,6,7,8,9,10,11*.
