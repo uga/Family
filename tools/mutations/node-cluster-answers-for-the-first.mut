@@ -1,10 +1,8 @@
-name: a cursor over several different nodes is answered about whichever name comes first
+name: a cursor holding several nodes answers about the first of them and drops the rest
 file: addons/Family_UI/Tooltip.lua
 --- old
-				if answer == nil then
-					answer = one
-				elseif one ~= answer then
+	for index = 1, shown do
+		local itemID = ids[index]
 --- new
-				if answer == nil or answer == false then
-					answer = one
-				elseif one ~= answer and one ~= false then
+	for index = 1, 1 do
+		local itemID = ids[index]

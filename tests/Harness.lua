@@ -4964,6 +4964,14 @@ do
 	-- this file could tell which metal either of them had picked.
 	local function namedIn(text) return text:match("Family possessions: (.-)|r") end
 
+	-- Every heading on the tooltip, in the order they were written, for the tooltips that carry
+	-- more than one - a cursor holding several nodes answers about each of them.
+	local function namesIn(text)
+		local all = {}
+		for name in text:gmatch("Family possessions: (.-)|r") do all[#all + 1] = name end
+		return table.concat(all, "|")
+	end
+
 	check("the profession line is read by id and not by the English word",
 		HERB == "Herbalism" and Family:SkillLineFor(HERB) == 182
 			and Family:SkillLineFor(MINE) == 186,
@@ -5020,12 +5028,116 @@ do
 	-- **One known and one unknown is a disagreement too**, and that is the half worth a check of
 	-- its own: it is the case where *answer about the one you can place* looks reasonable, and
 	-- it puts one number under two names exactly as the eight-pin cluster did.
-	check("a line naming two different veins draws nothing",
-		nodeSays("Dark Iron Deposit\nTruesilver Deposit", MINE) == "")
-	check("and neither does one naming a vein beside something it cannot place",
-		nodeSays("Copper Vein\nSmall Obsidian Chunk", MINE) == "")
-	check("and two different herbs are no more answerable than two veins",
-		nodeSays("Silverleaf\nPeacebloom", HERB) == "")
+	--
+	-- **And it answers about each of them**, which is what Alberto asked for on seeing sixteen
+	-- pins under one cursor over Searing Gorge: *deduplicated titles and the full list for each
+	-- below each*. The heading naming what it counts is what makes that readable, and it is why
+	-- the silence this replaces was only ever a stopgap - one unnamed number under four names is
+	-- unreadable, four named ones are not.
+	local twoVeins = nodeSays("Dark Iron Deposit\nTruesilver Deposit", MINE)
+	check("a line naming two different veins answers about both",
+		namesIn(twoVeins) == "Dark Iron Ore|Truesilver Ore", twoVeins)
+
+	-- Deduplicated by what they resolve to and not by the words: two spellings of one node, or
+	-- the same node twice, are one answer.
+	local repeated = nodeSays("Dark Iron Deposit\nTruesilver Deposit\nDark Iron Deposit", MINE)
+	check("and names the same thing once however often the cursor holds it",
+		namesIn(repeated) == "Dark Iron Ore|Truesilver Ore", repeated)
+
+	-- **A name this build cannot place sits beside the ones it can** rather than silencing them.
+	-- It could not before: one unnamed answer under two names would have been read as being about
+	-- either pin, and now each answer carries the name of what it is about.
+	--
+	-- Behind a complete candidate list, because *this list cannot place it* and *this list has
+	-- not answered yet* are different things and only the first of them sits beside an answer.
+	-- Without the stub the check would pass on the second, which is not what it says.
+	do
+		local realNames = Family.Names.Item
+		Family.Names.Item = function(self, id, key, callback)
+			local name, known = realNames(self, id, key, callback)
+			if known then return name, known end
+			return "Filler " .. tostring(id), true
+		end
+		local mixed = nodeSays("Copper Vein\nSmall Obsidian Chunk", MINE)
+		Family.Names.Item = realNames
+		check("and a vein beside something it cannot place still answers for the vein",
+			namesIn(mixed) == "Copper Ore", mixed)
+	end
+
+	--------------------------------------------------------------------------------------------
+	-- Sixteen pins under one cursor
+	--
+	-- Alberto's reading of a zoomed-out world map over Searing Gorge, 2026-09-22: sixteen pin
+	-- names on one tooltip, four distinct veins among them. A tooltip does not scroll and is not
+	-- clipped politely - what runs off the top is gone - so the room left on the screen is shared
+	-- out between the answers rather than handed to each of them in turn.
+	--------------------------------------------------------------------------------------------
+	do
+		local realRows = Family.UI.TooltipRows
+		local realOwners = Family.Index.Owners
+		Family.Index.Owners = function()
+			local owners = {}
+			for index = 1, 30 do
+				owners[index] = { key = "Owner" .. index, name = "Owner" .. index,
+					realm = "Fire Maw", classFile = "MAGE", bags = 1, bank = 0, mail = 0,
+					auctions = 0, worn = 0, bound = 0, total = 1 }
+			end
+			return owners, {}
+		end
+
+		local crowd = "Gold Vein\nDark Iron Deposit\nTruesilver Deposit\nMithril Deposit"
+
+		-- A screen with room for everything draws all four and their holders.
+		Family.UI.TooltipRows = function() return 120 end
+		local roomy = nodeSays(crowd, MINE)
+		check("four veins under one cursor are four answers where the screen has room",
+			namesIn(roomy) == "Gold Ore|Dark Iron Ore|Truesilver Ore|Mithril Ore", roomy)
+
+		-- And one with room for very little draws fewer of them and says how many it left.
+		Family.UI.TooltipRows = function() return 12 end
+		local tight = nodeSays(crowd, MINE)
+		local drawn = select(2, tight:gsub("Family possessions", ""))
+		check("and a short screen draws fewer of them rather than running off the top",
+			drawn > 0 and drawn < 4, tostring(drawn) .. " of 4: " .. tight)
+		check("and says how many it did not draw",
+			tight:find("more", 1, true) ~= nil, tight)
+
+		-- **And the whole of it fits**, which is the property rather than any one cap: four
+		-- headings with ten holders under each is the same tooltip off the top of the screen by
+		-- another route. Counted in lines against the screen the answers were shared out for.
+		--
+		-- A weaker check stood here first - *fewer than thirty holders* - and a mutation that
+		-- gave every answer the full cap survived it, because three answers of ten is fewer than
+		-- thirty and still twice the screen.
+		local before = #GameTooltip.__lines
+		GameTooltip:ClearLines()
+		GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+		GameTooltip:AddLine(crowd)
+		GameTooltip:AddLine(MINE)
+		local mark = #GameTooltip.__lines
+		GameTooltip.__scripts.OnShow(GameTooltip)
+		local added = #GameTooltip.__lines - mark
+		check("and the whole of what it writes fits the screen it measured",
+			added > 0 and added <= Family.UI:TooltipRows(),
+			added .. " line(s) written into " .. Family.UI:TooltipRows())
+
+		-- **And one node on its own is the tooltip it always was.** The cap it keeps is backlog
+		-- 82's switch and backlog 89's screen, not a share of the room - there is nothing to
+		-- share it with. Pinned because the sharing above reaches this block through the same
+		-- argument and would otherwise quietly take the cap off every single-node tooltip.
+		Family.UI.TooltipRows = function() return 120 end
+		local alone = nodeSays("Mithril Deposit", MINE)
+		local drawnAlone = select(2, alone:gsub("Owner", ""))
+		check("while one node on its own still stops at the cap it always had",
+			drawnAlone == 10, tostring(drawnAlone) .. " owner line(s)")
+
+		Family.UI.TooltipRows = realRows
+		Family.Index.Owners = realOwners
+	end
+
+	check("and two different herbs answer the same way two veins do",
+		namesIn(nodeSays("Silverleaf\nPeacebloom", HERB)) == "Silverleaf|Peacebloom",
+		nodeSays("Silverleaf\nPeacebloom", HERB))
 
 	-- **Exactly, and not the way a search box matches.** Loosely, *Silverleaf* would find
 	-- *Silverleaf Pendant* and report the family's holdings of something else entirely.
@@ -5353,8 +5465,10 @@ do
 	-- line and outside the reach of trimming its ends. Each name is trimmed on its own.
 	check("and the spacing the markup leaves between two names comes off each of them",
 		heldOnly(nodeSays("|cff00ff00Silverleaf|r \n |cff00ff00Silverleaf|r", nil)))
-	check("while two coloured pins of different herbs are still no answer",
-		nodeSays("|cff00ff00Silverleaf|r\n|cff00ff00Peacebloom|r", nil) == "")
+	check("while two coloured pins of different herbs answer about each of them",
+		namesIn(nodeSays("|cff00ff00Silverleaf|r\n|cff00ff00Peacebloom|r", nil))
+			== "Silverleaf|Peacebloom",
+		nodeSays("|cff00ff00Silverleaf|r\n|cff00ff00Peacebloom|r", nil))
 	check("and a name that is nothing but markup is not a node",
 		nodeSays("|cff00ff00|r", nil) == "")
 

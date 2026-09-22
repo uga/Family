@@ -235,7 +235,10 @@ local function possessionLines(tooltip, itemID, variant, node)
 	-- The count the hidden ones hold goes in the right-hand column, where every other line in
 	-- this block already carries a count - so the header's total still adds up, which is the
 	-- whole reason somebody reads this block on an item they own hundreds of.
-	local shown = UI:ShowAtMost(#owners, roomFor(tooltip, OWNER_CAP))
+	-- Where a cursor holds several nodes at once the room is shared between their blocks, so the
+	-- cap arrives from the caller; everywhere else it is this block's own.
+	local shown = UI:ShowAtMost(#owners, (node and node.owners)
+		or roomFor(tooltip, OWNER_CAP))
 	local named = labelled(owners)
 
 	for index = 1, shown do
@@ -1826,7 +1829,7 @@ local resolvedNames = {}
 -- tried, herbs first and exactly, ores second and scored. That order is safe and measured: of
 -- the 752 vein names read for the three builds in five languages, **none** is also the name of
 -- a herb, so the exact step cannot take a vein for a plant.
-local function itemForNode(said, skill)
+local function itemsForNode(said, skill)
 	-- **A zone label is not a node.** Checked before anything is scored, and by name against the
 	-- ids the build ships: of 929 vein names read across three builds and five languages, not
 	-- one is also the name of a refused place, so this cannot silence a real node.
@@ -1840,52 +1843,38 @@ local function itemForNode(said, skill)
 	local held = resolvedNames[key]
 	if held ~= nil then return held or nil end
 
-	local lists = { { "herbs", herbNamed }, { "ores", oreScored } }
-	if skill == HERBALISM then lists = { lists[1] } end
-	if skill == MINING then lists = { lists[2] } end
+	-- **Both lists, and each name asked of them in turn.**
+	--
+	-- Where the tooltip named a profession there is one list to look in. Where it did not - a
+	-- pin, which gives names and nothing else - both are tried, **herbs first and exactly, ores
+	-- second and scored**. That order is safe and measured: of the 752 vein names read for the
+	-- three builds in five languages, none is also the name of a herb, so the exact step cannot
+	-- take a vein for a plant.
+	local herbs, herbsWhole, herbsSilent = nil, true, 0
+	local ores, oresWhole, oresSilent = nil, true, 0
+	if skill ~= MINING then herbs, herbsWhole, herbsSilent = namesFor("herbs") end
+	if skill ~= HERBALISM then ores, oresWhole, oresSilent = namesFor("ores") end
 
-	local found, whole = nil, true
-	for _, pair in ipairs(lists) do
-		local named, complete, silent = namesFor(pair[1])
-		whole = whole and complete
-		if named then
-			-- **A tooltip line can carry more than one name.** One probe reading came back
-			-- `"Plaguebloom\nPlaguebloom"` - one line, two names, a newline between them, from
-			-- two pins under one cursor. So the line is split rather than taken whole.
-			--
-			-- **And where the names disagree, there is no answer to give.** Read from play
-			-- 2026-09-22 on a world map zoomed out over Searing Gorge: eight pins under one
-			-- cursor, `Dark Iron Deposit` and `Rich Thorium Vein` and `Truesilver Deposit`
-			-- among them, and this block said *Family possessions: Dark Iron Ore 42* - the
-			-- first name of eight, drawn as confidently as if it had been the only one.
-			-- Which pin the 42 belonged to was not on the tooltip and could not be worked
-			-- out from it.
-			--
-			-- Two of the same name is still one answer, which is the reading this loop was
-			-- written for and it keeps working. Two of different names is the question
-			-- *which one*, and nothing here can answer it - so it is left alone, which is what
-			-- this route does with every other question it cannot answer.
-			local answer
-			for piece in tostring(said):gmatch("[^\r\n]+") do
-				-- `false` and not nil for a piece this list cannot place, so that *one pin
-				-- I know and one I do not* is a disagreement like any other rather than an
-				-- answer about whichever happened to resolve.
-				-- Trimmed and not stripped: the markup came off the whole line above, and
-				-- what it leaves behind is the spacing that sat between it and the name -
-				-- which is inside the line and so outside what trimming the ends of it
-				-- reached.
-				local one = pair[2](trimmed(piece), named) or false
-				if answer == nil then
-					answer = one
-				elseif one ~= answer then
-					Family:Debug("node: \"%s\" is more than one thing at once, so there is "
-						.. "no single answer to give", said)
-					return nil
-				end
-			end
-			found = answer or nil
-		end
-		if found then break end
+	local function notYet(which, silent)
+		Family:Debug("node: \"%s\" is left alone: the client has not named %d of the "
+			.. "%d %s this build ships, so this list has not said no yet",
+			said, silent, #((Family.Gathered[Family.Capabilities.expansion]
+				or {})[which] or {}), which)
+	end
+
+	-- **A tooltip line can carry more than one name**, from several pins under one cursor: the
+	-- probe read back `"Plaguebloom\nPlaguebloom"` as a single line, and a world map zoomed out
+	-- over Searing Gorge gave sixteen. So the line is split and each name asked on its own, and
+	-- what comes back is **every distinct thing the cursor is holding**, in the order the tooltip
+	-- names them. One pin and sixteen are the same question with a longer answer.
+	local ids, seen = {}, {}
+
+	for piece in tostring(said):gmatch("[^\r\n]+") do
+		-- Trimmed and not stripped: the markup came off the whole line already, and what it
+		-- leaves behind is the spacing that sat between it and the name - which is inside the
+		-- line and so outside what trimming the ends of it reached.
+		local name = trimmed(piece)
+		local one = herbs and herbNamed(name, herbs) or nil
 
 		-- **A list that did not answer, and was not complete, has not said no.**
 		--
@@ -1898,24 +1887,32 @@ local function itemForNode(said, skill)
 		--
 		-- Naming the wrong metal confidently is the one failure this entry set out not to have,
 		-- and in the world the profession line prevents it by saying which list to look in. On a
-		-- blip there is no such line, so the guard has to be here. Nothing is remembered either:
+		-- pin there is no such line, so the guard has to be here. Nothing is remembered either:
 		-- the answer is not *no*, it is *not yet*.
-		--
-		-- **And it says so**, because from outside this is the same silence as a name the score
-		-- cannot place and the two want opposite things from the reader. Two thorium veins on the
-		-- world map drew nothing 2026-09-22 while a mithril deposit beside them answered, which
-		-- is what a part-named list looks like and what nothing here could say.
-		if not complete then
-			Family:Debug("node: \"%s\" is left alone: the client has not named %d of the "
-				.. "%d %s this build ships, so this list has not said no yet",
-				said, silent, #((Family.Gathered[Family.Capabilities.expansion]
-					or {})[pair[1]] or {}), pair[1])
+		if not one and herbs and not herbsWhole then
+			notYet("herbs", herbsSilent)
 			return nil
+		end
+
+		if not one and ores then one = oreScored(name, ores) end
+		if not one and ores and not oresWhole then
+			notYet("ores", oresSilent)
+			return nil
+		end
+
+		if one and not seen[one] then
+			seen[one] = true
+			ids[#ids + 1] = one
 		end
 	end
 
-	if found or whole then resolvedNames[key] = found or false end
-	return found
+	-- A name this build cannot place sits beside the ones it can rather than silencing them,
+	-- because each answer carries the name of what it is about and so cannot be read as being
+	-- about the pin next to it. That was not true while a cursor holding several things got one
+	-- unnamed answer, and it is why that case was silent until 2026-09-22.
+	local answer = #ids > 0 and ids or nil
+	if answer or (herbsWhole and oresWhole) then resolvedNames[key] = answer or false end
+	return answer
 end
 
 local function onNode(tooltip)
@@ -1950,58 +1947,112 @@ local function onNode(tooltip)
 	if lastDescribed[tooltip] == describing then return end
 	lastDescribed[tooltip] = describing
 
-	local itemID = itemForNode(said, skill)
+	local ids = itemsForNode(said, skill)
 
-	if not itemID then
+	if not ids then
 		-- A vein the score cannot place, or a herb that is not in the list this build ships.
 		-- Silence, and the client's own tooltip left exactly as it drew it: naming the wrong
-		-- metal confidently is the only failure here that matters, and on the 534 nodes this
-		-- was measured against it never did.
+		-- metal confidently is the only failure here that matters, and on the nodes this was
+		-- measured against it never did.
 		Family:Debug("node: \"%s\" on the %s, skill %s, and nothing here can place it",
 			said, tostring(where), tostring(skill or "not said"))
 		return
 	end
 
-	Family:Debug("node: \"%s\" is item %d", said, itemID)
+	Family:Debug("node: \"%s\" is %d thing(s), the first being item %d", said, #ids, ids[1])
 
 	UI:MoneyFontFrom(tooltip)
 
-	-- **What the client calls what comes out of it.** Asked again rather than carried back from
-	-- the resolver, because the resolver answers by id on purpose and a name that arrived after
-	-- it was memoised would never reach this line. Where the client has not named the item yet
-	-- the heading goes back to the bare one: an unnamed subject is exactly the tooltip this note
-	-- was added for, and *Family possessions:* with nothing after the colon is worse than no
-	-- colon at all.
-	local named, known = Family.Names:Item(itemID, "nodes")
-	if not (known and type(named) == "string" and named ~= "") then named = nil end
-
-	-- **And not where the tooltip has already said it.** A herb node is named exactly what the
-	-- herb is named - that is the whole reason a herb is a lookup and a vein is scored - so
-	-- *Family possessions: Silverleaf* sits directly under a line reading *Silverleaf* and spends
-	-- the width on nothing. Alberto's reading of a Silverleaf on a non-herbalist, 2026-09-22.
-	-- The test is containment rather than equality because one line can carry the name twice,
-	-- from two pins under one cursor, and that line has already said it as well.
-	if named and said:lower():find(named:lower(), 1, true) then named = nil end
-
-	-- **Possessions and nothing else.** What a node is worth, who can make one and what it costs
-	-- are questions about an item somebody is holding; a rock in the ground is a place to go, and
-	-- the only question is whether anybody has already been. Neither a herb nor an ore carries a
-	-- random suffix, so the variant is the id.
-	local lines = possessionLines(tooltip, itemID, itemID, { named = named })
-
-	-- **And *nobody has any* is an answer**, which on an item's own tooltip it is not.
+	-- **How much of the screen is left, shared out between them.**
 	--
-	-- `possessionLines` is silent where nothing is owned, and rightly: a tooltip that grows a
-	-- line for every item nobody has is a tooltip nobody reads, and an item tooltip is drawn
-	-- whenever a pointer crosses a bag. A node is different twice over. It is hovered
-	-- deliberately, by somebody standing over the thing deciding whether to take it, and *none*
-	-- is exactly the answer that decides it. Reported twice as *herb nodes do not work at all*
-	-- while this said nothing, which is the other half of the reason.
-	if not lines or #lines == 0 then
-		lines = { { possessionHeading(named), "|cff9d9d9d" .. L["none"] .. "|r" } }
+	-- A cursor on a zoomed-out world map can hold sixteen pins, and GatherMate2 draws a line for
+	-- each before Family writes anything - so the room this block has is what the tooltip has not
+	-- already spent, and it has to be divided rather than handed to each answer in turn. Three
+	-- rows is the least an answer is worth having: its heading, one holder, and the blank line
+	-- that separates it from the next.
+	--
+	-- `TooltipRows` is measured from the screen's own height and the tooltip font's own size, so
+	-- this follows a player's UI scale rather than a number chosen on one monitor.
+	-- **What an answer costs besides its holders**: its heading, the line counting the holders it
+	-- did not name, the line saying where the rest of them are, and the blank that separates it
+	-- from the next answer. Four, and they are why a budget of *three rows each* wrote fifteen
+	-- lines into a screen with room for twelve on the first try - the holders were counted and
+	-- the furniture around them was not.
+	local FIXED_EACH = 4
+	local used = tonumber((Family:TryCall(tooltip.NumLines, tooltip))) or 0
+	local room = math.max(UI:TooltipRows() - used - 2, FIXED_EACH + 1)
+	local shown = math.min(#ids, math.max(1, math.floor(room / (FIXED_EACH + 1))))
+
+	-- **Never looser than this block's own cap, and never wider than its share of what is left.**
+	--
+	-- `roomFor` is the cap the rest of the addon keeps - ten holders with folding on, the
+	-- screen's worth with it off (backlog 82 and 89) - so one node is the tooltip it always was:
+	-- its share of the room is the whole of it, and the cap is what bites. The share only bites
+	-- once there is a second answer to divide it with.
+	--
+	-- **There was a `shown > 1` guard here and a mutation said it did nothing**, which was true:
+	-- with one answer the share is larger than the cap and the `min` was already choosing the
+	-- cap. A condition that cannot change an answer is a condition that will be read as
+	-- protecting something.
+	local owners = math.max(1, math.min(roomFor(tooltip, OWNER_CAP),
+		math.floor(room / shown) - FIXED_EACH))
+
+	local blocks = {}
+
+	for index = 1, shown do
+		local itemID = ids[index]
+
+		-- **What the client calls what comes out of it.** Asked again rather than carried back
+		-- from the resolver, because the resolver answers by id on purpose and a name that
+		-- arrived after it was memoised would never reach this line. Where the client has not
+		-- named the item yet the heading goes back to the bare one: an unnamed subject is exactly
+		-- the tooltip this note was added for, and *Family possessions:* with nothing after the
+		-- colon is worse than no colon at all.
+		local named, known = Family.Names:Item(itemID, "nodes")
+		if not (known and type(named) == "string" and named ~= "") then named = nil end
+
+		-- **And not where the tooltip has already said it, which only one answer can be.**
+		--
+		-- A herb node is named exactly what the herb is named - that is the whole reason a herb
+		-- is a lookup and a vein is scored - so *Family possessions: Silverleaf* sits directly
+		-- under a line reading *Silverleaf* and spends the width on nothing. Alberto's reading of
+		-- a Silverleaf on a non-herbalist, 2026-09-22.
+		--
+		-- Where the cursor holds several things every heading carries its name, whatever the
+		-- lines above say. The tooltip names all of them and the blocks have to be told apart
+		-- from each other, which is the one job the bare heading cannot do.
+		if #ids == 1 and named and said:lower():find(named:lower(), 1, true) then named = nil end
+
+		-- **Possessions and nothing else.** What a node is worth, who can make one and what it
+		-- costs are questions about an item somebody is holding; a rock in the ground is a place
+		-- to go, and the only question is whether anybody has already been. Neither a herb nor an
+		-- ore carries a random suffix, so the variant is the id.
+		local lines = possessionLines(tooltip, itemID, itemID,
+			{ named = named, owners = owners })
+
+		-- **And *nobody has any* is an answer**, which on an item's own tooltip it is not.
+		--
+		-- `possessionLines` is silent where nothing is owned, and rightly: a tooltip that grows a
+		-- line for every item nobody has is a tooltip nobody reads, and an item tooltip is drawn
+		-- whenever a pointer crosses a bag. A node is different twice over. It is hovered
+		-- deliberately, by somebody standing over the thing deciding whether to take it, and
+		-- *none* is exactly the answer that decides it. Reported twice as *herb nodes do not work
+		-- at all* while this said nothing, which is the other half of the reason.
+		if not lines or #lines == 0 then
+			lines = { { possessionHeading(named), "|cff9d9d9d" .. L["none"] .. "|r" } }
+		end
+
+		blocks[#blocks + 1] = lines
 	end
 
-	writeBlocks(tooltip, { lines })
+	-- And what the room did not stretch to, counted rather than dropped in silence - the same
+	-- rule every contracted list in the addon keeps.
+	if shown < #ids then
+		blocks[#blocks + 1] = { { string.format(L["|cff888888and %d more|r"], #ids - shown),
+			"", nil, nil, nil, 0.5, 0.5, 0.5 } }
+	end
+
+	writeBlocks(tooltip, blocks)
 end
 
 local function forget(tooltip)

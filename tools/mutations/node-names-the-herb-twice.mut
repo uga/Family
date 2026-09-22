@@ -1,6 +1,6 @@
 name: the heading names the herb the tooltip has already named on the line above
 file: addons/Family_UI/Tooltip.lua
 --- old
-	if named and said:lower():find(named:lower(), 1, true) then named = nil end
+		if #ids == 1 and named and said:lower():find(named:lower(), 1, true) then named = nil end
 --- new
-	if false and said:lower():find(named:lower(), 1, true) then named = nil end
+		if false and said:lower():find(named:lower(), 1, true) then named = nil end

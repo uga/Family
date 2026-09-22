@@ -7021,7 +7021,7 @@ of Discovery. The three names above are the whole of it on the rows that have be
 
 ---
 
-## 99. A cursor holding several nodes could answer about each of them
+## 99. A cursor holding several nodes could answer about each of them — DONE 2026-09-22
 
 **Asked by the fix for the cluster fault, 2026-09-22.** On a zoomed-out world map a cursor covers
 several pins, the client puts every name on one tooltip line, and Family now says nothing at all
@@ -7047,3 +7047,21 @@ owners under it.
 drawn at all under a cluster or only the totals, and what a cluster of eight looks like when six
 of them are the same two ores. None of that is hard; all of it is a design decision rather than a
 fix, which is why the honest silence shipped first.
+
+### Built the same day, to Alberto's words
+
+*Deduplicated titles and the full list for each below each*, on a reading of sixteen pin names
+over Searing Gorge - four distinct veins among them. Each distinct thing the cursor holds gets
+the block it would get on its own, headed by what the client calls it, deduplicated by **what
+the name resolved to** rather than by the words.
+
+**The room is shared rather than handed out.** A tooltip does not scroll and is not clipped
+politely - what runs off the top is the answer, while the detail survives - so what is left of
+the screen after the pin names is divided between the answers. An answer costs four lines
+besides its holders: the heading, the count of the holders it did not name, the line saying
+where the rest of them are, and the blank before the next one. Budgeting three rows each and
+forgetting the furniture wrote fifteen lines into a screen with room for twelve, which is why
+the check counts **lines against `TooltipRows`** and not holders against a cap.
+
+One node on its own is the tooltip it always was: its share is the whole room, so the cap that
+bites is backlog 82's switch and backlog 89's screen, exactly as before.

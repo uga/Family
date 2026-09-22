@@ -1,0 +1,6 @@
+name: a cursor holding many nodes draws them all however little screen is left
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local shown = math.min(#ids, math.max(1, math.floor(room / (FIXED_EACH + 1))))
+--- new
+	local shown = #ids

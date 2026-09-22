@@ -1,0 +1,6 @@
+name: the room a cluster shares out counts holders and not the lines around them
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local FIXED_EACH = 4
+--- new
+	local FIXED_EACH = 1
