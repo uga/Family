@@ -5098,6 +5098,37 @@ that a node tooltip is the first place where holding exactly one of something is
 rather than the odd one. Four locales, and Russian wants more than two forms. Not fixed here -
 it is outside the slice that found it - and written down so that it is found on purpose.
 
+#### A GatherMate2 pin is served too, which is what the parent walk was for — 2026-09-22
+
+```
+Silverleaf
+
+Family possessions                     none
+```
+
+The pin is GatherMate2's own, drawn from where it remembers a node being, and the block is on
+it. That is the case the frame test was widened for: *is the frame the minimap* would have
+refused this, and *is it drawn on the minimap* admits it without this file knowing one addon's
+name. Alberto asked for it in as many words and it works without a line about GatherMate
+anywhere in the tree.
+
+It also shows the other half of the decision that came out of the Peacebloom report: **none** is
+an answer. Nobody in that family holds Silverleaf, and on an item's own tooltip that is a line
+worth suppressing - on a node somebody is standing over, it is the answer they came for.
+
+**And the same pin on the *world map* gets nothing**, reported minutes later. That is not a
+surprise but it is not yet a diagnosis either: the frame test walks up to `Minimap`, and a world
+map pin's parents end at the world map instead, so the route would refuse it. But there is a
+second possibility that wants the opposite fix - the world map may not draw on `GameTooltip` at
+all, and the hook is on `GameTooltip` alone. **Which of the two it is, the narration says in one
+hover** and nothing here should say before it does.
+
+Worth stating plainly: a world map pin is the same question with the same answer wanted, so if it
+is the first of those it is a short fix. The discrimination problem is the same as the minimap's
+and so is its answer - where it was drawn restricts, the resolution decides - with one corpus
+nobody has measured, the names a world map carries. Zone names are one line and are hovered
+constantly.
+
 #### Why the minimap needs the frame and the world does not — measured 2026-09-22
 
 A blip gives **one line and no profession line**, which the probe read on both Burning Crusade
