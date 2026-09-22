@@ -5009,6 +5009,24 @@ do
 	check("a line carrying the name twice still resolves it",
 		drewBlock(nodeSays("Peacebloom\nPeacebloom", HERB)))
 
+	-- **And where the names on it disagree, there is no answer to give.**
+	--
+	-- Read from play 2026-09-22, on a world map zoomed out over Searing Gorge: eight pins under
+	-- one cursor - `Dark Iron Deposit`, `Rich Thorium Vein`, `Truesilver Deposit` among them -
+	-- and the block said *Family possessions: Dark Iron Ore 42*, the first name of the eight,
+	-- drawn as confidently as if it had been the only one. Which pin the 42 belonged to was not
+	-- on the tooltip and could not be worked out from it.
+	--
+	-- **One known and one unknown is a disagreement too**, and that is the half worth a check of
+	-- its own: it is the case where *answer about the one you can place* looks reasonable, and
+	-- it puts one number under two names exactly as the eight-pin cluster did.
+	check("a line naming two different veins draws nothing",
+		nodeSays("Dark Iron Deposit\nTruesilver Deposit", MINE) == "")
+	check("and neither does one naming a vein beside something it cannot place",
+		nodeSays("Copper Vein\nSmall Obsidian Chunk", MINE) == "")
+	check("and two different herbs are no more answerable than two veins",
+		nodeSays("Silverleaf\nPeacebloom", HERB) == "")
+
 	-- **Exactly, and not the way a search box matches.** Loosely, *Silverleaf* would find
 	-- *Silverleaf Pendant* and report the family's holdings of something else entirely.
 	check("a herb name that is only part of an item's name resolves to nothing",

@@ -1821,12 +1821,37 @@ local function itemForNode(said, skill)
 		local named, complete, silent = namesFor(pair[1])
 		whole = whole and complete
 		if named then
-			-- **A tooltip line can carry a name twice.** One probe reading came back
+			-- **A tooltip line can carry more than one name.** One probe reading came back
 			-- `"Plaguebloom\nPlaguebloom"` - one line, two names, a newline between them, from
 			-- two pins under one cursor. So the line is split rather than taken whole.
+			--
+			-- **And where the names disagree, there is no answer to give.** Read from play
+			-- 2026-09-22 on a world map zoomed out over Searing Gorge: eight pins under one
+			-- cursor, `Dark Iron Deposit` and `Rich Thorium Vein` and `Truesilver Deposit`
+			-- among them, and this block said *Family possessions: Dark Iron Ore 42* - the
+			-- first name of eight, drawn as confidently as if it had been the only one.
+			-- Which pin the 42 belonged to was not on the tooltip and could not be worked
+			-- out from it.
+			--
+			-- Two of the same name is still one answer, which is the reading this loop was
+			-- written for and it keeps working. Two of different names is the question
+			-- *which one*, and nothing here can answer it - so it is left alone, which is what
+			-- this route does with every other question it cannot answer.
+			local answer
 			for piece in tostring(said):gmatch("[^\r\n]+") do
-				if not found then found = pair[2](piece, named) end
+				-- `false` and not nil for a piece this list cannot place, so that *one pin
+				-- I know and one I do not* is a disagreement like any other rather than an
+				-- answer about whichever happened to resolve.
+				local one = pair[2](piece, named) or false
+				if answer == nil then
+					answer = one
+				elseif one ~= answer then
+					Family:Debug("node: \"%s\" is more than one thing at once, so there is "
+						.. "no single answer to give", said)
+					return nil
+				end
 			end
+			found = answer or nil
 		end
 		if found then break end
 

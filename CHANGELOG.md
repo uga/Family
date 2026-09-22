@@ -45,7 +45,9 @@ is a decision rather than an afternoon of archaeology.
   which is usually the character asking.
 - **And the dots on your maps answer too** - the minimap and the world map both, including the
   ones GatherMate and Gatherer draw from where they remember nodes being. A zone's own label is
-  left alone.
+  left alone, and so is a cursor covering several different nodes at once: with four veins under
+  the pointer there is no way to say which one a single answer is about, so it waits until you
+  zoom in.
 
 ### Achievements
 

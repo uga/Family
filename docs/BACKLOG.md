@@ -7018,3 +7018,32 @@ that the family is a known hole rather than a surprise.
 
 **What this does not touch:** every ore the build can smelt, which is every node outside Season
 of Discovery. The three names above are the whole of it on the rows that have been read.
+
+---
+
+## 99. A cursor holding several nodes could answer about each of them
+
+**Asked by the fix for the cluster fault, 2026-09-22.** On a zoomed-out world map a cursor covers
+several pins, the client puts every name on one tooltip line, and Family now says nothing at all
+because it cannot tell which one the reader means.
+
+**Silence is right and it is not the best answer available.** The block's heading already names
+what it is counting - *Family possessions: Dark Iron Ore* - so a cursor over four different veins
+could carry a line for each:
+
+```
+Family possessions
+  Dark Iron Ore      42
+  Truesilver Ore   none
+  Thorium Ore         5
+```
+
+That is what somebody zoomed out over Searing Gorge actually wants: which of these is worth
+flying to. What it costs is tooltip height, on the one tooltip that is already the longest in the
+addon, and a shape the block does not have today - a header with items under it rather than
+owners under it.
+
+**What would have to be decided:** how many to draw before it contracts, whether the owners are
+drawn at all under a cluster or only the totals, and what a cluster of eight looks like when six
+of them are the same two ores. None of that is hard; all of it is a design decision rather than a
+fix, which is why the honest silence shipped first.
