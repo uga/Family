@@ -769,19 +769,21 @@ call for each category.
    namespaces the run listed in full - 31 functions - and the tree call it holds is
    `GetTraitTreeForSpec(specID)`, beside `GetConfigIDsBySpecID` and `GetActiveConfigID`.
 
-### Not checkable from this run, and the reason
+### ~~Not checkable from this run~~ - all five were named to the probe, and all five answered
 
 The probe lists the functions of the namespaces Family already uses and of those matched by a
-brief's word (decision of 2026-09-19). The brief names five that are neither, so the census knows
-only that they exist and how many functions each holds:
+brief's word (decision of 2026-09-19). The brief named five that were neither, so at the time
+the census knew only that they existed and how many functions each held. **Version 8 named them,
+and the run of 2026-09-20 lists every one in full**, so the column on the right is now a verdict
+rather than a want:
 
-| Namespace | Functions | What the brief wants from it |
-|---|---|---|
-| `C_Reputation` | 27 | `GetNumFactions`, `GetFactionDataByIndex` |
-| `C_MajorFactions` | 12 | `GetMajorFactionData`, for renown |
-| `C_Bank` | 23 | `FetchPurchasedBankTabIds`, and `Enum.BagIndex.AccountBankTab_*` |
-| `C_WeeklyRewards` | 21 | `GetActivities` |
-| `C_MythicPlus` | 21 | `GetRunHistory` |
+| Namespace | Functions | What the brief wants from it | The client |
+|---|---|---|---|
+| `C_Reputation` | 27 | `GetNumFactions`, `GetFactionDataByIndex` | **both there** |
+| `C_MajorFactions` | 12 | `GetMajorFactionData`, for renown | **there** |
+| `C_Bank` | 23 | `FetchPurchasedBankTabIds`, and `Enum.BagIndex.AccountBankTab_*` | **there as `FetchPurchasedBankTabIDs`** - the discovery is right and the spelling is not, which in Lua is the same as absent |
+| `C_WeeklyRewards` | 21 | `GetActivities` | **there** |
+| `C_MythicPlus` | 21 | `GetRunHistory` | **there** |
 
 **Reputations are the one Family already ships**, so that namespace is the first the code step
 hits, and naming it for the next probe is the move already made for `C_MerchantFrame`.
@@ -1382,3 +1384,42 @@ is not spent: it becomes a *question to ask of every call*, and the answer is a 
 measurement rather than a sentence in a document. This audit is that column for one hint. The
 same treatment is owed to the other claims in §13 and §14 that were recorded as *per call*
 rather than settled.
+
+## 20. The briefs, confirmed one function at a time (2026-09-22)
+
+Alberto, on being shown §19: *"i suggerimenti che ti ho dato hanno forte probabilità di essere
+esatti; è lavoro di scoperta già fatto, devi solo confermare se ci sono errori."* That is the
+right framing and this file had not been using it - the briefs were being read as claims to
+weigh rather than as findings to check off. So every function-level claim in §13 and §14 was put
+to the run, by name.
+
+**Seventeen claims. Sixteen right, one wrong, and the one that looked wrong was a spelling.**
+
+| The brief names | The client |
+|---|---|
+| `C_Reputation.GetNumFactions`, `.GetFactionDataByIndex` | both there |
+| `C_MajorFactions.GetMajorFactionData` | there |
+| `C_WeeklyRewards.GetActivities` | there |
+| `C_MythicPlus.GetRunHistory` | there |
+| `C_PetJournal.GetNumPets`, `C_ToyBox.GetNumToys`, `C_Heirloom.GetNumDisplayedHeirlooms` | all there |
+| `C_Garrison.GetOwnedBuildingInfo` | there |
+| `C_TradeSkillUI.GetBaseProfessionInfo`, `.GetRecipeInfo` | both there |
+| `C_QuestLog.GetInfo` | there |
+| `C_Item.GetItemInfo`, `C_Spell.GetSpellInfo` | both there |
+| `C_Bank.FetchPurchasedBankTabIds` | **`FetchPurchasedBankTabIDs`** - the function is exactly where the brief says, and the brief's capitals are not the client's. In Lua that is the same as absent, and it is the kind of error only a machine finds |
+| `C_ClassTalents.GetTraitTreeIDsForClass` | **not there.** The tree call this client has is `GetTraitTreeForSpec(specID)`, beside `GetConfigIDsBySpecID` and `GetActiveConfigID`. The only claim of the seventeen that is wrong about the client rather than about its own spelling |
+
+`C_Bank` also carries `FetchPurchasedBankTabData`, `FetchNumPurchasedBankTabs`,
+`CanPurchaseBankTab` and `FetchDepositedMoney`, which is more of the warband bank than the brief
+promised and is the answer to *how many tabs are bought* without a container sweep.
+
+**The instrument was wrong first, and this section nearly reported it.** The first pass answered
+*absent* for `C_Container.GetContainerItemInfo`, a call this branch has watched answer. The fault
+was a dictionary keeping the last value for each namespace - the one-word presence line, `table`,
+overwriting the listing of function names. Three known presences are now asserted before any
+verdict is printed, and nothing is reported if one of them fails: L-202's rule, that a canary has
+to run the same command as the thing it guards.
+
+**What this leaves.** The briefs' function-level claims are now checked off rather than pending.
+What remains open from them is not presence but behaviour - what `GetActivities` answers, whether
+renown reads per account - and that is step 3's, one scanner at a time.
