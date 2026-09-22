@@ -1,0 +1,7 @@
+name: the margin is never waived, so silver ore silences every truesilver node in the game
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local kin = nextName and (nextName:lower():find(lowered, 1, true) ~= nil
+		or lowered:find(nextName:lower(), 1, true) ~= nil)
+--- new
+	local kin = false

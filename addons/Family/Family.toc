@@ -66,6 +66,7 @@ Mounts.lua
 Extras.lua
 Index.lua
 RecipeReagents.lua
+Gathered.lua
 Recipes.lua
 RecipeIndex.lua
 Cooldowns.lua

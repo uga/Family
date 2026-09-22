@@ -2122,7 +2122,7 @@ reads, from `luac5.1 -l`, which sees the names the code looks up and none that a
 mentions. Then, from the source, the namespace members, upper-case literals and frame templates
 that the listing cannot see. On 2026-09-18, at `2d9780c`: 193 globals, 39 members,
 136 literals, 6 templates. On 2026-09-19, once it also followed `_G.Name` and locals holding a
-whole namespace (L-103): **278 globals, 56 members, 136 literals, 6 templates**. It writes them into `tools/FamilySurface/Surface.lua`, and
+whole namespace (L-103): **278 globals, 57 members, 137 literals, 6 templates**. It writes them into `tools/FamilySurface/Surface.lua`, and
 `--check` exits 1 when that file is stale.
 
 `tools/FamilySurface` is a throwaway addon that asks a running client about each one. It records
@@ -2253,6 +2253,29 @@ hit, `ItemSalvageLoot`, is 404 on both of these builds.
 So a *what does this disenchant into* feature cannot be generated the way the reagents were. It
 needs either a new data source, which is reserved, or Family watching it happen and learning -
 which needs no source at all and is worth considering on its own terms.
+
+**Gathering nodes: wago has neither their names nor what they drop, asked 2026-09-20.** Backlog 96
+wants Family's possessions block on a herb node's or a mining vein's tooltip, and Alberto's own
+question was whether wago is where the node names and their herbs and ores come from. Answered by
+fetching, as the disenchant question above was.
+
+`GameObjects` **is** served for Era `1.15.9.69109`, and it is not the table the name suggests: 864
+rows, columns `Name_lang, Pos_0..2, Rot_0..3, ID, OwnerID, DisplayID, Scale, TypeID, ...`, and what
+is in it is **signposts and map-region markers** - *Old Coast Road*, *Sentinel Hill*, *Jangolode
+Mine*, *Northshire Abbey*. Not one gathering node. `GameObjectLabel` is listed on the index page and
+answers **404** for this build, exactly as `ItemSalvageLoot` did. `Lock` and `LockType` are served
+and are the right shape for *which skill opens this and at what level* - but they carry no names and
+nothing about items, and what points at them is the object template.
+
+Which is the disenchant answer again, for the same reason: a gathering node is a server-spawned
+object out of `gameobject_template`, and what it yields is a `gameobject_loot_template`. **Neither is
+client data**, so neither is anything wago mirrors. A generated table is therefore not available for
+this at all - not the mapping, and not even the node names in five languages, which is the half that
+looked as though it would be free.
+
+So the routes left for backlog 96 are Family learning the mapping from play, a table written by
+hand, or a genuinely third-party *database* rather than a mirror of the client's own files - which
+is a different and heavier proposition than the one that was asked about, and is reserved.
 
 **`SpellReagents` is served for all three pinned builds** and was read on 2026-09-12, against a
 recipe somebody named rather than against nothing: `29360` Smelt Felsteel gives `23445` ×3 and
@@ -4609,3 +4632,696 @@ keeps answering its keyboard.
 Prices checked on common goods afterwards and correct, which is the reading that says the division
 by quantity is right way round.
 
+
+### What a herb node and a mining vein actually say, measured on Era 2026-09-20
+
+Backlog 96, route 1: ask the client before choosing a table. Read on `1.15.9`, Hooga-Pyrewood
+Village, with `/familyprobe node`.
+
+| Hovered | Frame under the pointer | item / spell / unit | The tooltip |
+|---|---|---|---|
+| A Liferoot in the world | **nothing** | all three `nil` | 2 lines: `"Liferoot"`, `"Herbalism"` |
+| A Copper Vein in the world | **nothing** | all three `nil` | 2 lines: `"Copper Vein"`, `"Mining"` |
+| The minimap | `Minimap` | all three `nil` | 1 line: `"Copper Vein"` |
+| A GatherMate pin | `GatherMatePin2`, `GatherMatePin4` | all three `nil` | 1 line: the node's name |
+
+**No id, and no route to one on this build.** `TooltipDataProcessor` is `nil` and `C_TooltipInfo`
+is absent on 1.15.9, so the modern tooltip system is simply not there and nothing can be
+registered against it. A world object hands over a name and the client will not say what the
+tooltip is about by any of the three calls that could.
+
+**And `Enum.TooltipDataType` is there anyway, with 28 members - `Object` and `MinimapMouseover`
+among them.** Present is not meaningful, on a client instead of on a capability: read that line
+alone and Era looks like a build with an id route for exactly the two cases this entry wants. It
+has neither, because the processor those types are fed to does not exist here. The probe registers
+a post-call for every one of the 28 and none of them fired, which is the reading that says so
+rather than an inference from the absence of the processor.
+
+**The second line is the gathering profession, in the client's own word.** *Herbalism* under
+Liferoot, *Mining* under the Copper Vein. That is not a name Family has to ship: `SkillLines.lua`
+already carries skill 182 and 186 with their names in five locales, generated from the client's own
+`SkillLine` table - so **which profession a node belongs to is answerable by id, in any language,
+with nothing new**, even while which node it is stays a name. Worth knowing before anything is
+built on line 1 alone.
+
+**The world node has no frame at all.** `GetMouseFoci` came back empty for both real nodes, while
+every addon pin had a named frame. Together with all three subject calls answering nothing and a
+two-line tooltip whose second line is a gathering skill, that is a recognisable shape, and it is a
+good deal more specific than *a tooltip the client would not name*.
+
+**The minimap reading is contaminated and is not evidence yet.** `GatherMatePin2` and
+`GatherMatePin4` are GatherMate's own frames - a third-party addon that records node locations and
+draws its own pins - so that client had another addon drawing on the minimap throughout. Nothing in
+the reading can tell whether `Minimap  |  "Copper Vein"` is the client's own tracking blip or
+GatherMate's pin anchored to the minimap, and the difference decides whether the minimap half of
+backlog 96 is possible at all on a stock interface. **It wants one more reading with GatherMate
+switched off**, and until then the world node is the only measured half.
+
+**A tooltip line can carry a name twice.** One reading came back `1="Plaguebloom\nPlaguebloom"` -
+one line, two names, a newline between them, from two pins under one cursor. Anything reading line
+one has to cope with that rather than assume a line is a name.
+
+### And Mists says the same thing with the modern system switched on, measured 2026-09-20
+
+Read the same day on `5.5.4`, Uga-Mirage Raceway, and it is the reading that settles the entry.
+
+**The modern tooltip system is there**: `TooltipDataProcessor` is a table, `AddTooltipPostCall` a
+function, `C_TooltipInfo` absent. The probe said so out loud when it armed - *watching the tooltip,
+and every tooltip type this client knows* - which is the line it prints only when it has registered
+a post-call against all 28 members of `Enum.TooltipDataType`.
+
+**And a herb node still went through none of them.** Hovering a Dreamfoil: `modern=nothing fired`,
+with all 28 registered. So it is not that Mists lacks the machinery - it has it, every type was
+listening, and a world object does not travel that way on this build. `Enum.TooltipDataType.Object`
+exists on both builds and is used by neither for the thing it is named after.
+
+That is what the Era reading could not tell on its own. Era has no processor, so *nothing fired*
+there was the only possible answer and said nothing about world objects; here the processor is
+present and the answer is the same. **One route, not two**: on every client Family runs on, a
+gathering node hands over a name and nothing else.
+
+| | Era `1.15.9` | Mists `5.5.4` |
+|---|---|---|
+| `TooltipDataProcessor` | `nil` | **table**, `AddTooltipPostCall` a function |
+| `Enum.TooltipDataType` | 28 members, `Object` among them | the same 28 |
+| Post-calls registered | none possible | **all 28** |
+| A world node fired | - | **none of them** |
+| Frame under the pointer | nothing | nothing |
+| A herb | `"Liferoot"` / `"Herbalism"` | `"Dreamfoil"` / `"Herbalism"` |
+| A vein | `"Copper Vein"` / `"Mining"` | `"Copper Vein"` / `"Mining"` |
+
+**The two-line shape holds on a second build**, which is what makes it worth building on: line one
+the node, line two the gathering profession in the client's own word. And the world node has no
+frame under the pointer on this build either.
+
+**Both kinds, on both builds**, after a fourth run taken for the mining half: a Copper Vein on 5.5.4
+reads `"Copper Vein"` / `"Mining"`, no frame, `modern=nothing fired` with all 28 types registered -
+the same four answers as the herb beside it and as Era. So the shape is four readings across two
+builds and two professions rather than one build's quirk, and the second line is a gathering skill
+in both of the two cases this entry is about.
+
+**A third build, and the probe's own cost.** Burning Crusade 2.5.6 answered
+`Minimap  |  "Silverleaf"` - one line, the name, and **no profession line**, where a world node on
+both other builds gives two. So the minimap route, if it turns out to exist, loses the
+discriminator that the world route hands over for free.
+
+That run also spent two of its three readings on `MiniMapTrackingButton` and on
+`QuestieFrame804`, neither of which the client names as an item, a spell or a unit either. The
+frame names are what separates them: a world node has **no frame at all**, a blip reports the
+minimap, and everything else that got through was a named frame belonging to an addon or to the
+interface. The probe now dumps only those two cases, with `/familyprobe node all` for the old
+behaviour, and reports **which addons are loaded** on every `apis` run - because four node
+readings were taken before anybody asked whether that client had GatherMate on it, and the answer
+is what decides whether a minimap reading means anything at all.
+
+**The minimap, settled 2026-09-21 by the one run that could settle it.** Alberto switched
+GatherMate off on purpose and hovered a blip on Burning Crusade: `Minimap  |  "Silverleaf"`. So a
+tracking blip **does** answer, on a stock interface, and the three earlier `Minimap` readings -
+Era's *Copper Vein*, Mists' *Dreamfoil* - were the client's own after all. They were right and
+unreadable, which is a different thing from right: with GatherMate loaded, a pin anchoring its
+tooltip to the minimap would have looked identical, and nothing in those readings separated the
+two.
+
+What the blip gives is **less** than the world node: one line, the name, and no profession line,
+where a world node answers two. So the minimap says which node and not which profession, and
+whatever resolves a node name has to manage there without the discriminator the world route hands
+over for nothing.
+
+### What the ore names themselves say about joining a vein to its ore — measured 2026-09-21
+
+Backlog 96's mining half, route chosen by Alberto: take the vein's name from the tooltip and the
+ore's name from the client, both the game's own words, and join them on the metal word they share.
+Nothing is translated and nothing is typed. The question is whether the join can be made to work,
+and half of it can be answered without a single hover.
+
+**The candidate ores are derivable from what is already in the tree.** `SkillLineAbility` for
+`1.15.9.69109` gives 23 spells on skill line 186; crossed with the shipped `Family.RecipeReagents`
+they consume ten ores: `2770 2771 2772 2775 2776 3858 7911 10620 11370 18562`. No new table, and
+the set comes out of the client's own files.
+
+**And `ItemSparse` names all ten in all five languages.** Fetched per locale at the same build.
+This is the measurement: not whether a vein matches its ore — no vein names exist outside a running
+client — but whether the **ores can be told apart from each other at all** by a shared run of
+characters. A join has to beat this floor before it can be said to have found anything.
+
+| Locale | Longest run two *different* ores share | One ore's whole name inside another's |
+|---|---|---|
+| enUS | **10** — `silver ore` (Silver / Truesilver) | `Iron Ore` ⊂ `Dark Iron Ore`, `Silver Ore` ⊂ `Truesilver Ore` |
+| deDE | **9** — `silbererz` (Silbererz / Echtsilbererz) | `Eisenerz` ⊂ `Dunkeleisenerz`, `Silbererz` ⊂ `Echtsilbererz` |
+| frFR | **11** — `minerai de ` | none |
+| esES | **11** — `mineral de ` | `Hierro` ⊂ `Hierro Negro` |
+| ruRU | **10** — `иевая руда` (Ториевая / Элементиевая) | none |
+
+**The floor is boilerplate**, and in two languages it is longer than the metal word. Every French
+ore begins `Minerai de` and every Spanish one `Mineral de`, so eleven characters of agreement
+between two ores that have nothing to do with each other. Russian agrees on `ная руда` and
+`иевая руда` — the adjective ending and the word for ore. German and English agree on `erz` and
+` Ore`.
+
+> **Corrected 2026-09-21, an hour after this table was written, by Alberto: this floor is not the
+> join's floor.** The reading was written up as *a longest-shared-run join scores the stationery
+> before it scores the metal*, and that does not follow. `minerai de ` is scored only when **both**
+> strings carry it, and the two strings a join compares are a **vein name and an ore name**. Unless
+> a vein is also called *Minerai de something* — which nothing here knows, because no vein name has
+> been read in any language but English — the boilerplate cancels instead of counting, and the run
+> that survives is the metal word alone. The table above measures how alike the ten ores are to
+> **each other**. That was the pair available without a hover; it is not the pair the question is
+> about, and reporting it as the answer was the fault, not the fetching of it. See L-120.
+
+**Worse, the containments are exactly the interesting pairs.** `Iron Ore` is inside `Dark Iron
+Ore`; `Silbererz` is inside `Echtsilbererz`. So a node name carrying only the short metal word
+matches the long ore as well as the short one, and which of the two wins depends on a word the
+join does not have. On English, *Iron Deposit* shares `iron ` with **both** `Iron Ore` and `Dark
+Iron Ore` — five characters each, a dead tie — and iron is the example in the asking message.
+
+**Spanish is the case that cannot be repaired by a threshold.** Its ore names are not one family:
+`Mineral de cobre` and `Mineral de plata` carry the word, while `Hierro`, `Torio`, `Veraplata` and
+`Hierro Negro` do not. So the boilerplate to discount is present for some rows and absent for
+others, and the two iron ores differ by `Negro` — a word that a vein name would carry only if the
+game happens to use the same one for the rock as for the metal, which nothing here knows.
+
+**What this does say, once the correction above is applied.** Not that the join is wrong, and not
+that its signal is buried: what survives is the **containment**, which is real and which the
+boilerplate correction does not touch. A vein whose name carries only the short metal word scores
+the same against the short ore and the long one, in any language where one ore's name sits inside
+another's, and that is English, German and Spanish out of five. Four of the ten ores are
+unambiguous everywhere; two pairs are not.
+
+**And why there is no list to ship, which is a different question from whether the name is
+available.** Alberto, 2026-09-21: *the client must have the localised names for all veins,
+otherwise how does it show the tooltips*. Quite so, and the two facts sit together without
+contradiction. The name is on the tooltip, in the reader's language, every time — that is measured,
+four readings across two builds. What is absent is the name in any **file**: a gameobject's name
+reaches the client from the server when it first meets the object, which is exactly why it is on
+the tooltip and exactly why `wago.tools`, which mirrors the client's shipped data, does not carry
+it. So the name can always be read **for the node under the cursor** and can never be enumerated
+into a table. Route 2 needs only the first of those, which is why it is the route that does not
+need a table at all.
+
+The part still unmeasured is the only part that decides it — what a vein is actually called, in a
+language other than English — and that needs a client, in a language, with a miner in it.
+
+#### The first vein name in a second language, read 2026-09-21
+
+`nodes nothing | item=nil spell=nil unit=nil | (2 lines) 1="Filon de cuivre" 2="Minage" |
+modern=nothing fired` — a French client, a copper vein in the world.
+
+**It confirms the retraction above rather than the claim that was retracted.** The vein is
+*Filon de cuivre* and the ore is *Minerai de cuivre*: the stationery is **different on the two
+sides**, so `Minerai de ` is never scored and the eleven-character floor does not reach this
+comparison at all. What scores is the metal.
+
+**And the join resolves both vein names that have ever been read**, against the ten ores the
+client's own tables name:
+
+| Client | The vein, as read | Winner | Score | Runner-up | Margin |
+|---|---|---|---|---|---|
+| `enUS` | `Copper Vein` | `Copper Ore` | 7 (`copper `) | `Truesilver Ore` at 3 | **4** |
+| `frFR` | `Filon de cuivre` | `Minerai de cuivre` | 10 (` de cuivre`) | `Minerai de vrai-argent` at 4 | **6** |
+
+Comfortable both times, and by a margin rather than by a hair.
+
+**`Minage` is already in `SkillLines.lua` under 186**, so the tooltip's second line turns into
+the skill id on a French client with nothing added — the discriminator the herb half is built on
+needs no work for the mining half.
+
+**Two things this does not settle, and they are the ones worth waiting for.** Both measured
+veins are *copper*, which is the metal with no near neighbour in any language. The pairs that can
+go wrong are the containments: `Iron Ore` inside `Dark Iron Ore`, `Silver Ore` inside
+`Truesilver Ore`, `Hierro` inside `Hierro Negro`. A vein whose name carries only the short metal
+word scores alike against both, and **which one wins is decided by a word nobody has read.**
+
+**And a design consequence found while scoring, worth writing down before it is designed
+around.** The feature is meant to show the ore **and** the bar - *who has Iron Ore and Iron
+Bars*. In every language the bar's name carries the same metal word the ore's does, so the bar
+ties with the ore on this scoring rather than losing to it. A rule of the form *the winner must
+beat the runner-up* would therefore fall silent on the ordinary case, because the ordinary case
+has two right answers. Whatever rule is written has to distinguish *two answers that are both
+wanted* from *two answers only one of which is right*, and the ore-to-bar link is already known
+by id (`RecipeReagents` and `RecipeProducts`), which is where that distinction comes from rather
+than from the scoring.
+
+#### The problem is not the name, it is that nothing joins it to an item — measured across three builds, 2026-09-21
+
+Alberto, twice, and the second time plainly: *each locale has tooltips coming up from the vein
+nodes in their own language. Where do they come from if not the client?* They do come from the
+client, and that was never in question after the first of those. **The name is not what is
+missing. The link is.**
+
+Everything the client hands over, in the reader's own language, every time:
+
+- the vein's name, on the tooltip — `Filon de cuivre`;
+- every ore's name, from its id — `Minerai de cuivre`, `Minerai de fer`, and the rest.
+
+What no call on any of the three builds hands over is **which item the rock contains**. The vein
+carries no id that can be read — no `GetItem`, no `GetSpell`, no frame under the pointer, and on
+Mists none of the 28 tooltip types fire with all of them registered. So the only bridge between
+the two lists is comparing the words, and the question is whether the words are distinct enough
+to compare.
+
+**In English they are not, and this is with the client answering perfectly in English.** On
+Mists the smelting reagents include `Iron Ore`, `Fel Iron Ore`, `Dark Iron Ore` and `Ghost Iron
+Ore`. A vein called `Iron Deposit` shares the run `Iron ` with **all four of them**, equally.
+Nothing on the tooltip and no call anywhere says which.
+
+**How often that bites is what differs by language**, which is the only reason the other locales
+were worth asking about. Counted from the client's own `ItemSparse` at the three pinned builds,
+over the reagents and products of every spell on skill line 186, ignoring the pairs that are one
+metal's ore and its own bar — those tie legitimately and both are wanted:
+
+| Build | enUS | deDE | frFR | esES | ruRU |
+|---|---|---|---|---|---|
+| Era `1.15.9` | 2 | 2 | **0** | 1 | **0** |
+| Burning Crusade `2.5.6` | 7 | 7 | **0** | 5 | **0** |
+| Mists `5.5.4` | 11 | *unknown* | 2, both between **bars** | *unknown* | 2, one between ores |
+
+**French is clean because it compounds the metal**: `Minerai de fer`, `Minerai de gangrefer`,
+`Minerai de sombrefer`, `Minerai d’ectofer` — the plain one is a substring of none of them.
+German does the opposite and collides everywhere: `Eisenerz` sits inside both `Dunkeleisenerz`
+and `Teufelseisenerz`. Spanish collides on iron three ways. Russian builds the others as
+`Руда черного железа` and only `Железная руда` inside `Призрачная железная руда` collides.
+
+So the feature would work **best in French and worst in English**, which is the opposite of what
+anybody would guess and is the reason this was worth counting rather than assuming.
+
+**Two of the fifteen cells cannot be filled from wago**, and the reason is the trap this file has
+recorded before: the Mists `ItemSparse` export for German returns 21,850 rows and for Spanish
+15,640, against 88,746 for English — **the request succeeds** and hands back a table missing
+everything from Burning Crusade onwards. The same shape as the German `ChrRaces` for Burning
+Crusade further up. Nothing in the addon depends on those files, which name ids at runtime from
+the client; what is unknown is only how much of the feature those two languages would get.
+
+**And a byte to watch.** `Minerai d’ectofer` uses a typographic apostrophe, U+2019, where
+`Minerai d'argent` uses the ASCII one. Two apostrophes in one column of one table in one
+language, which is exactly the class of thing that makes a comparison fail for one item and
+nobody can see why.
+
+#### The iron pair, read in two languages, and the rule that resolves it — 2026-09-21
+
+Alberto supplied the four vein names the join was blocked on, out of the game:
+
+| | Iron | Dark Iron |
+|---|---|---|
+| French | `Gisement de fer` | `Gisement de sombrefer` |
+| German | `Eisenvorkommen` | `Dunkeleisenvorkommen` |
+
+That is the hard case in the two languages that make it hard for opposite reasons: German
+collides because `Eisenerz` sits inside `Dunkeleisenerz`, French because `fer` sits inside
+`sombrefer`. A plain longest-shared-run join ties **three ways** in German - `Eisenvorkommen`
+shares exactly `eisen` with `Eisenerz`, `Dunkeleisenerz` and `Teufelseisenerz`.
+
+**One change resolves every case that has ever been measured, and it is not a threshold fitted to
+the answer.** Score the run as a **share of the candidate's own name** rather than as a count of
+characters. A short metal word filling a short plain name is a strong match; the same word buried
+in a long specific one is a weak one. `eisen` is 5 of 8 in `Eisenerz` and 5 of 14 in
+`Dunkeleisenerz`, so the plain ore wins the plain vein — and `dunkeleisen` is 11 of 14, so the
+specific vein wins the specific ore. **The containment stops being a tie and becomes the
+discriminator.**
+
+**And the candidates are ores alone** — Alberto, having seen the scoring: *we can drop the BAR
+requirement, we can show only ores.* Which is the display and the scoring both. The candidate set
+is the single-reagent smelts whose reagent is not itself smelted from something else: 15 ores on
+Burning Crusade, 22 on Mists. Bronze takes two bars and Elementium four things, neither of which
+is in the ground, and dropping them drops `Coal`, `Fiery Core` and `Elemental Flux` with them -
+which were the closest wrong answers while bars were in. French `Gisement de fer` had `Noyau de
+feu` a tenth of a point behind it; against ores alone its nearest rival is `Minerai de pyrite`,
+two and a half times further off.
+
+| Client | The vein | Picks | Score | Runner-up | Margin |
+|---|---|---|---|---|---|
+| frFR | `Gisement de fer` | `Minerai de fer` | 0.500 | `Minerai de pyrite` 0.235 | 0.265 |
+| frFR | `Gisement de sombrefer` | `Minerai de sombrefer` | 0.650 | `Minerai de fer` 0.286 | 0.364 |
+| frFR | `Filon de cuivre` | `Minerai de cuivre` | 0.588 | `Minerai de cobalt` 0.294 | 0.294 |
+| deDE | `Eisenvorkommen` | `Eisenerz` | 0.625 | `Dunkeleisenerz` 0.357 | **0.268** |
+| deDE | `Dunkeleisenvorkommen` | `Dunkeleisenerz` | 0.786 | `Eisenerz` 0.625 | **0.161** |
+| enUS | `Iron Deposit` | `Iron Ore` | 0.625 | `Fel Iron Ore` 0.417 | 0.208 |
+| enUS | `Dark Iron Deposit` | `Dark Iron Ore` | 0.769 | `Iron Ore` 0.625 | **0.144** |
+| enUS | `Copper Vein` | `Copper Ore` | 0.700 | `Silver Ore` 0.300 | 0.400 |
+
+Eight for eight across three languages, including **both members of every containment** the count
+above found. The narrowest margin is 0.144 and the lowest winning share is 0.500.
+
+**What this is and is not.** It resolves every vein name anybody has read, and those readings were
+chosen to be the hard ones rather than the easy ones - the opposite of how the ore-to-ore floor
+was sampled, and the reason to trust this further than that. It is **not** a proof about the
+dozens of vein names nobody has read. So the rule ships with a floor: below a minimum share, or
+within a margin of the runner-up, **nothing is drawn**. The failure that matters is naming the
+wrong metal confidently, and a vein this cannot place is left exactly as the client drew it.
+
+Two of the eight are Alberto's words from the asking message rather than a probe reading - English
+`Iron Deposit` and `Dark Iron Deposit` - and they are marked rather than quietly counted with the
+six that came off a tooltip.
+
+#### The join measured on every mining node of three builds in five languages — 2026-09-21
+
+Alberto read the vein names for de/fr/es/ru off Wowhead's *Mining Nodes* category pages by hand
+and put them outside the tree, in `~/dev/varie/`, with the object ids. **Use granted for one
+purpose: measuring the join. No name from them goes into the addon**, and whether they are ever
+copied into the repository is his. Wowhead is not adopted as a data source by this; the addon
+reads a vein's name off the tooltip and the ore names from the client, exactly as before.
+
+That turns the question from *does it work on the eight names anybody has read* into *how often
+is it wrong across everything the game has*. Every node object Wowhead lists for Era, Burning
+Crusade and Mists, in five languages, scored against the ore names from the client's own
+`ItemSparse` at the pinned builds: **534 rows with a known ore**, plus 213 that yield no
+smeltable ore and must draw nothing.
+
+**Ground truth is split three ways and the third way is the honest one.** 37 English node names
+whose ore is certain; 18 that certainly yield none - gems, stones, obsidian, trillium, kyparite;
+and everything else, whose yield this project has never established. A fire on that third group
+is counted as **unverified** rather than scored against a guess, which is the fault this whole
+entry has been about.
+
+**Four rules, and each one was put there by a reading rather than by taste.**
+
+1. **Share of the candidate's name, not a count of characters** — the change that broke the
+   German three-way tie.
+2. **A minimum run of 4 characters.** Spanish ore names are short: `Torio` is five letters, so a
+   three-character coincidence scores 0.6 and `Filón de indurio` took `Torio`. A run floor kills
+   that and costs nothing real.
+3. **A margin of 0.27 over the runner-up.** Measured, not chosen: at 0.26 the Russian
+   `Большая обсидиановая глыба` still takes `Обсидиановая руда` — obsidian against obsidium, a
+   stone node named as an ore. At 0.27 it stops and two correct answers go with it.
+4. **Unless the runner-up's name sits inside the winner's**, in which case the margin is waived.
+   `Silver Ore` under `Truesilver Ore` is one metal seen twice, not two candidates, and the
+   margin was silencing the correct answer on every Truesilver node in the game. Worth **28**
+   correct answers and cost nothing.
+
+**The result at floor 0.55, margin 0.27, run ≥ 4, with the kin rule:**
+
+| | named correctly | **wrong metal** | silent |
+|---|---|---|---|
+| English | 119 | **0** | 16 |
+| German | 62 | **0** | 9 |
+| French | 100 | **0** | 29 |
+| Spanish | 59 | **0** | 11 |
+| Russian | 73 | **0** | 56 |
+| **total** | **413** | **0** | 121 |
+
+Plus 213 nodes that yield nothing smeltable, every one of them silent, and 6 fires on nodes
+whose yield is unestablished.
+
+**Russian degrades to silence and not to error**, which is the whole design holding up under the
+language that breaks substring matching: Russian declines, so `Залежи железа` and
+`Железная руда` share only `желез`, and `Залежи призрачного железа` scores **higher** against
+`Руда черного железа` than against its own ore. At the chosen margin every one of those falls
+below the bar instead of naming the wrong metal. It names 73 of 129 and says nothing about the
+rest.
+
+**Trillium and Kyparite have no candidate at all** - Trillium is smelted from two ores and
+Kyparite is not smelted - so those nodes are silent by construction rather than by threshold,
+which is correct and is not a gap to close.
+
+**Two of the five languages could not be measured on Mists**, because wago's `ItemSparse` export
+for German and Spanish at `5.5.4.69078` is truncated: 21,850 and 15,640 rows against 88,746. The
+request succeeds. Nothing in the addon depends on it, so the consequence is only that those two
+cells of this table are Era and Burning Crusade alone.
+
+**What is still owed is the in-game confirmation**, and the table says which hovers are worth
+taking rather than leaving it to chance: the rows nearest the bar. Anything Wowhead and the
+client disagree about would show up there first.
+
+#### The herb route read in game, and it works — 2026-09-21
+
+`/family debug` over a Peacebloom in the world, after the narration went in:
+
+```
+node: GameTooltip shown with 2 line(s): Peacebloom / Herbalism
+node: "Peacebloom" is a herbalism node and nobody recorded holds one
+```
+
+and over its blip on the minimap, with GatherMate off:
+
+```
+node: GameTooltip shown with 1 line(s): Peacebloom / nil
+```
+
+**So every measured claim holds and the route is not broken.** The world node is two lines with
+the profession second, the blip is one line with no profession line, and the line-count gate
+turns the blip away exactly as designed. What is hiding the feature is a **decision**, not a
+fault: a node's name is resolved only against items the family already owns, so a herb nobody
+holds cannot be named, and the tooltip is left alone.
+
+That decision was recorded as costing nothing - *an item nobody holds has nothing to say on this
+tooltip*. It costs more than nothing. It makes a working feature indistinguishable from an absent
+one for exactly the herb somebody is standing over and deciding whether to pick, and it was
+reported as *herb nodes do not seem to work at all* twice before the narration could say
+otherwise. **A herb needs naming from a list of ids the way an ore does**, and then *nobody has
+any* is an answer worth drawing.
+
+The narration fires twice per hover, because the callback now runs at `OnShow` and again a frame
+later and the already-described guard is only set once a name resolves. Harmless and worth
+tidying.
+
+### The fourteen columns of `GetSavedInstanceInfo`, filled at last — read on Era 2026-09-21
+
+Backlog 93 had one thing owed: the same call read on a character who **is** saved to something.
+Read on `1.15.9`, Aleister-Pyrewood Village, three raid lockouts — and on a **French** client,
+which is worth more here than an English one would have been.
+
+| # | Blackwing Lair | Ahn'Qiraj | Naxxramas | What it is |
+|---|---|---|---|---|
+| 1 | `"Repaire de l'Aile noire"` | `"Temple d'Ahn'Qiraj"` | `"Naxxramas"` | the name, **in the client's language** |
+| 2 | `135392441` | `135990587` | `133827138` | the lock's own id, one per row |
+| 3 | `189500` → `189351` | the same | the same | **seconds left**, a countdown |
+| 4 | `9` | `9` | `9` | the difficulty's id |
+| 5 | `true` | `true` | `true` | locked |
+| 6 | `false` | `false` | `false` | extended |
+| 7 | `524615680` | `524615680` | `524615680` | **the same on all three** |
+| 8 | `true` | `true` | `true` | is a raid |
+| 9 | `40` | `40` | `40` | maximum players |
+| 10 | `"40 joueurs"` | `"40 joueurs"` | `"40 joueurs"` | the difficulty's name, **in the client's language** |
+| 11 | `8` | `9` | `15` | how many bosses the place has |
+| 12 | `8` | `8` | `12` | how many are down |
+| 13 | `true` | `true` | `true` | extending disabled |
+| 14 | **`469`** | **`531`** | **`533`** | **the instance's id** |
+
+**Column 14 is an identifier and it is the one this entry needed.** Checked against the client's
+own `Map` table for this build rather than recognised: `469` is `BlackwingLair`, named *Repaire de
+l'Aile noire* in French; `531` is `AhnQirajTemple`, *Temple d'Ahn'Qiraj*; `533` is — and this is
+what makes it a lookup rather than a coincidence — `Stratholme Raid`, named *Naxxramas*, the
+internal directory that place has carried since it was built out of Stratholme's map. Three names
+matching the probe's output character for character, from a table nobody here typed.
+
+**Columns 11 and 12 are confirmed the same way.** `DungeonEncounter`, keyed by the same `MapID`,
+holds **8** rows for 469, **9** for 531 and **15** for 533 — exactly the three figures in column
+11, which also settles that column 14's numbering is `Map`'s and not something else that happens
+to look like it. So *12 of 15* is sayable from the client alone.
+
+**Column 3 is a countdown, which is what backlog 93 predicted and has now measured.** It read
+`189500` on the first answer and `189351` on the `UPDATE_INSTANCE_INFO` answer in the same
+session — it goes **down**. And 189,500 is about 2.2 days, where an epoch moment on this client is
+about 1,789,946,646. So it is seconds remaining, and seconds remaining written to disk is a lie by
+the next login: it becomes a moment on the way in, `time() + reset`, and joins `DEADLINES` in
+`Codec.lua` beside `readyAt` and `expiresBy`.
+
+**`Names:Map` is not the reader for column 14, and reaching for it is the obvious mistake.** It
+calls `C_Map.GetMapInfo`, which takes a **UiMapID** — a different numbering. Era's `UiMap` table
+has 54 rows and **contains none of 469, 531 or 533**, so that call answers nothing for every one of
+these. The comment above `Names:Map` already says a map id is not an area id; this is a third
+number to keep apart from both.
+
+So a lockout is stored the way a currency is (`Scanners/Currencies.lua`): **keyed by the id, with
+the name carried as a label** from whichever client last saw it, because nothing on these builds
+turns 469 back into a name in the reader's own language. A lockout scanned in French and one
+scanned in English then line up in one column, which is §2.1 and is exactly what a name-keyed
+record would have got wrong.
+
+**Two cases already read, and worth keeping beside this one.** A character saved to nothing still
+gets fourteen values back — `nil 0 nil 0 false false 0 false 0 "" 0 0 false 0` — so "no lockout"
+is read from the count or from the nil name, never from the call refusing. And a boss killed in a
+normal low-level dungeon put nothing in this list at all.
+
+### And Mists answers the same fourteen columns, with one of them contradicting Era — read 2026-09-21
+
+Backlog 93's Mists half, on `5.5.4`, Luga-Mirage Raceway, an English client, on a character
+standing inside Molten Core with one lockout. Both answers are in the probe's output — the one
+taken beside `RequestRaidInfo` and the one taken when `UPDATE_INSTANCE_INFO` arrived, about seven
+minutes apart.
+
+| # | First answer | After the event | Beside Era's three raids |
+|---|---|---|---|
+| 1 | `"Molten Core"` | the same | a name in the client's language, as before |
+| 2 | `239723021` | the same | the lock's own id |
+| 3 | `127269` | `126845` | **counts down**: 424 seconds in those seven minutes |
+| 4 | `9` | the same | difficulty 9, exactly Era's three |
+| 5 | **`false`** | **`true`** | Era read `true` at both moments |
+| 6 | `false` | the same | |
+| 7 | `524615680` | the same | **the same number Era gave for all three of its raids** |
+| 8 | `true` | the same | is a raid |
+| 9 | `40` | the same | |
+| 10 | `"40 Player"` | the same | `"40 joueurs"` on the French client |
+| 11 | **`1`** | the same | Era read 8, 9 and 15 |
+| 12 | `0` | the same | nothing down |
+| 13 | **`false`** | the same | Era read `true` on all three |
+| 14 | **`409`** | the same | Molten Core |
+
+**Column 14 holds, and it is the column the record is keyed by.** `409` is `MoltenCore` in this
+build's own `Map` table, so the identifier is the identifier on both clients and nothing about the
+storage shape changes.
+
+**Column 3 holds, and this reading is better evidence than Era's was.** Era had two answers in one
+session and only their direction; here the gap is seven minutes of wall clock against 424 seconds
+of column, which is the same thing measured rather than observed.
+
+**Column 7 carries no information.** `524615680` on three Era raids and on a Mists Molten Core is
+one constant across two expansions and four places, and it is `8005 × 65536` exactly — a high word
+with nothing under it. Whatever the client means by it, it does not describe the instance, and
+nothing may be read off it.
+
+**Column 11 does not hold, and it is the column this entry had already been written on.** The Era
+reading called it *how many bosses the place has* and checked it against `DungeonEncounter` keyed
+by `MapID`: 8 rows for 469, 9 for 531, 15 for 533, matching the client's 8, 9 and 15 exactly. The
+same table at `5.5.4.69078` holds **ten** rows for 409 — Lucifron through Ragnaros, bits 0 to 9,
+fetched not recalled — and the client answers **1**.
+
+So *12 of 15* is sayable on Era and is not sayable on Mists. What made it look settled was three
+rows agreeing on one client, all three of the same kind: a forty-man raid on Era, read in one
+session. The fourth row is the first of a different kind and it disagrees. Column 11 is therefore
+**unknown again**, not known; what survives is column 12 on its own, *N bosses down*, with any
+denominator taken from somewhere that can be checked rather than from the client's word here.
+
+**Column 5 changed inside the session** — `false` beside `RequestRaidInfo`, `true` when the event
+arrived. Every earlier finding about that event was about the list being *empty* before it; this is
+the first field measured to be **wrong** before it rather than missing, on a row that was already
+there. So the list is read when the event says so, and never beside the request, and that is now a
+measured rule rather than a careful one.
+
+**Column 13 disagrees across the two clients**, `true` on Era's three and `false` here. Consistent
+with a per-lock flag and evidence for nothing further.
+
+**Still owed after this**: a **heroic** lockout, since columns 4 and 10 have now said 40 on four
+rows across two clients and have never been seen saying anything else; and Mists world bosses,
+where `GetNumSavedWorldBosses` answered `0` on this character too — present and empty on all three
+builds, every time it has been asked.
+
+#### The same lockout half an hour and several bosses later, and only the clock had moved
+
+Read again the same day, same character, same lock — column 2 is `239723021` both times, so this is
+one row watched over time and not two rows compared.
+
+| # | first read | after more bosses | |
+|---|---|---|---|
+| 3 | `126845` | `125040` | down 1,805 against 1,826 seconds of `time()` |
+| 5 | `false` then `true` | `true` on both answers | |
+| 11 | `1` | `1` | |
+| 12 | `0` | `0` | |
+
+Everything else in the fourteen is character for character what it was. **The countdown is the only
+column in the row that moved**, and it moved by the wall clock, which is column 3's third
+confirmation and the best of the three: across sessions, against `time()`, not against itself.
+
+**Column 12 does not survive this either.** The Era reading called 11 and 12 *bosses* and *bosses
+down*, and column 11 was already retracted above. Column 12 held on, because 8 of 8, 8 of 9 and 12
+of 15 are exactly what three raid lockouts ought to say. Here a character killed bosses in a raid
+he holds a lock on, and the column stayed at nought. So on Mists this row carries **no boss
+progress at all** — not a denominator and not a numerator — and *N bosses down* is not sayable from
+`GetSavedInstanceInfo` on that client any more than *N of M* is.
+
+**What this rests on, said plainly**: Alberto's *after more bosses*, which is a report and not a
+column. The row cannot distinguish bosses killed from bosses killed *and recorded against this
+lock*, and nothing else in the reading does either. If the kills never reached the lock, columns 11
+and 12 are innocent and something else entirely is wrong — which is the reason for the call below
+rather than for a third reading of the same fourteen values.
+
+**So the probe now asks `GetSavedInstanceEncounterInfo`**, which is where a per-boss answer would
+live if this client has one. Eight slots, asked by position, printed by position: the count to loop
+to would be column 11, and column 11 is the number in doubt — bounded by it, a walk reads one boss
+and stops. Three shapes are driven against a stub before it goes near the game: a lockout with
+bosses behind it, no lockout at all, and a client without the call.
+
+**And then the game's own window answered it, which no third reading of the row would have.**
+Alberto opened Raid Information on that character while the lock was live. It draws four things:
+
+| What it draws | Which column |
+|---|---|
+| `Molten Core` | 1 |
+| `40 Player` | 10 |
+| `1 Day 10 Hr 37 Min` | 3, rendered as a duration |
+| `239723021` | 2, under the name, in grey |
+
+**And no boss progress anywhere on it.** Not *2/10*, not a list, not a tooltip's worth — the
+client itself does not believe this lock has any. So columns 11 and 12 were never lying: the row
+carries no boss progress because **there is none to carry**, and whatever the kills did they did
+not reach this lock. `GetSavedInstanceInfo` agrees with the client's own display, which is the
+strongest thing that can be said for a call short of a second source.
+
+That turns the retraction from a fault in the reading into a fact about the game, and it moves
+where the remaining doubt sits. It is no longer *does this call report progress* — the call reports
+what the window reports. It is whether a **Mists legacy forty-man lock has encounter state at
+all**, which is a question about that client and not about this call, and which Era's three raids
+cannot answer because they are a different client. `GetSavedInstanceEncounterInfo` is still worth
+asking, now to find out whether anything on this client holds what the window does not.
+
+**Two columns are confirmed for free by the same picture.** Column 3 is what the window prints as
+*Lock Expire*: 1 day 10 hr 37 min is 124,620 seconds against the probe's 125,019 a few minutes
+earlier, falling as it should. That is its fourth confirmation and the first against the client's
+own rendering of it rather than against another reading. And **column 2 is a number the game shows
+the player** — 239723021 in grey under the name — so it is the id somebody would quote, not an
+internal handle, which makes it worth carrying and worth showing.
+
+**And column 5 is quieter than the first reading made it look.** It answered `true` at both moments
+this time, where the first session had `false` beside `RequestRaidInfo` and `true` after the event.
+So that `false` was about the moment — a lock the client had not yet heard about — and not a
+standing property of the early answer. The rule it produced is unchanged and still right: read the
+list when `UPDATE_INSTANCE_INFO` says so. What is corrected is the strength of it. One session saw
+the field change; one session saw it steady; that is a field which is *sometimes* wrong before the
+event, which is all a reader needs to know and less than was written.
+
+### Honor on Mists is 1901, and the probe had been asking 392 — 2026-09-21
+
+Backlog 5 and the second half of 95 were both waiting on *a Mists character holding a currency*,
+and Alberto reported the practical blocker: nobody queues low-level battlegrounds on that realm
+and he has no character at the top of it. That blocker is real for one of the two questions and
+not for the other, and checking which found a fault in the probe.
+
+**`CurrencyTypes` for `5.5.4.69078` carries four honor-shaped rows**, fetched rather than recalled:
+
+| Id | Name | Max |
+|---|---|---|
+| 104 | `Honor Points DEPRECATED` | 0 |
+| 181 | `Honor Points DEPRECATED2` | 0 |
+| 392 | `Honor Deprecated 3` | 400,099 |
+| **1901** | **`Honor Points`** | 400,000 |
+| **1900** | **`Arena Points`** | 10,000 |
+| 390 | `Conquest Points` | 400,000 |
+
+**1901 is the live one, and it is the same id Burning Crusade 2.5.6 was measured to use** — from
+the row's twelfth value and from `C_CurrencyInfo.GetCurrencyListLink`, two routes agreeing, in
+backlog 95. So honor's id on Mists needed no battleground and no character at all: it is in the
+client's own table, and it is the number this project had already measured on the build next door.
+
+**And the probe had been asking 392 the whole time.** That is honor on Cataclysm and on retail, and
+on 5.5.4 it answers a full, plausible table — name, description, icon, `maxQuantity` — reading
+*Honor Deprecated 3*, with `currencyID = 0`. Which looks like a client that has retired honor and
+is nothing of the sort. **A call that answers is not thereby answering about the thing you meant**:
+the same lesson as the capability probes, arrived at from the other end, and the third time this
+week a number that resolved was taken for the right number. The probe now asks 1901 and 1900 as
+well, with 392 kept and labelled, because what a retired id answers is worth seeing beside the
+live one.
+
+**What is still genuinely blocked, and what unblocks it.** The open question in backlog 95 is the
+*shape of a row* from the older list on Mists — twelve values with the id last, as on Burning
+Crusade, or some other length. That needs a character with something in the list, because
+`GetCurrencyListSize` answers 0 until then. But it does **not** need honor, and it does not need
+PvP: any currency at all puts a row in that list. From the same table, the ones a character short
+of the level cap can hold:
+
+- the twelve **archaeology fragments** (category 82: Dwarf 384, Troll 385, Fossil 393, Night Elf
+  394, Orc 397, Draenei 398, Vrykul 399, Nerubian 400, Tol'vir 401, Pandaren 676, Mogu 677,
+  Mantid 754) — one survey on one dig site;
+- **Darkmoon Prize Ticket** (515), from the monthly faire's games, at any level;
+- **Ironpaw Token** (402) for cooking and the **jewelcrafter's tokens** (361, 698) for the daily.
+
+Archaeology is the cheapest of these: it needs the skill and a single dig, and nobody else has to
+be online. Whichever is used, the reading wanted is `/familyprobe apis` on that character, for the
+*the currency list* line.
+
+**The corrected probe was run the same day and 1901 answers**: `name=Honor Points`, and the
+description the client gives for it — *Honor is gained by killing members of the opposite faction
+in PvP combat* — beside 392's *Used to purchase less-powerful PvP armor and weapons*. So the id is
+confirmed from the client as well as from the table, and the two rows can be told apart by what
+they say about themselves. Every quantity on it is `0`, which is what this character holds, and
+`currencyID` comes back `0` on all four rows rather than echoing the id asked for — so that field
+is not a route to an identifier on this build, and `GetCurrencyListSize` still answers `0`. The
+blocked half is exactly as described above and no smaller.

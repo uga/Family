@@ -1,0 +1,6 @@
+name: a finished achievements walk stores nothing
+file: addons/Family/Scanners/Character.lua
+--- old
+	if into.count == 0 and not points then return false end
+--- new
+	if into.count >= 0 or not points then return false end

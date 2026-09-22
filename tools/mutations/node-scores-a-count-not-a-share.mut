@@ -1,0 +1,6 @@
+name: a vein is scored by the length of the shared run rather than by its share of the ore's name
+file: addons/Family_UI/Tooltip.lua
+--- old
+		local share = run / #name
+--- new
+		local share = run / 20

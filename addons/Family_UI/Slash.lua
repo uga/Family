@@ -2303,6 +2303,113 @@ add("paycost", L["what marking each part of this character's record would cost"]
 	Family:Print(L["|cff888888Nothing was changed.|r"])
 end)
 
+-- **Which part of the character scan spends the client's budget.**
+--
+-- Reported from play 2026-09-21, on Mists, fighting solo in Molten Core: *error in deferred
+-- character: Core.lua:126: script ran too long*. That line is `TryCall`'s own `pcall` - the
+-- busiest line in the addon and so the likeliest one to be standing on when the budget runs out.
+-- It says where the client stopped and not where the time went (L-094), so the report does not
+-- name the part and the part has to be timed.
+--
+-- **A part at a time, a frame apart**, which is the whole point of the command: a walk that is
+-- over the budget cannot report its own cost, because the run that would print the number is the
+-- run that gets stopped. Apart, each part is given a fresh budget, every line before the fatal one
+-- is already on the screen, and the part that never printed is named by its absence and by the
+-- error that follows it.
+--
+-- The achievements walk is stepped a **category** at a time, for that reason and one more. It is
+-- the only part whose size is set by the client rather than by the character, and if it is what
+-- costs, then stepping it is also the shape of the fix - so timing it in the unit a fix would use
+-- measures the fix at the same time as the fault. It counts as well as times: achievements offered
+-- and criteria asked about are the price in calls, and a count means the same on every machine
+-- where a millisecond does not.
+add("scancost", L["which part of the character scan costs what: /family scancost"], function()
+	local Character = Family.Character
+	local clock = _G.debugprofilestop
+	local function now()
+		if clock then return (Family:TryCall(clock)) or 0 end
+		return ((Family:TryCall(GetTime)) or 0) * 1000
+	end
+
+	-- The reads themselves, asked for by name rather than reimplemented here.
+	local parts = {
+		{ name = "equipment", run = function()
+			local _, _, counted = Character:ReadEquipment()
+			return tonumber(counted) or 0
+		end },
+		{ name = "reputations", run = function()
+			local factions = Character:ReadReputations()
+			return factions and #factions or 0
+		end },
+		{ name = "spells", run = function()
+			local book = Character:ReadSpells()
+			local ids = 0
+			for _, school in ipairs(book or {}) do ids = ids + #(school.spells or {}) end
+			return ids
+		end },
+	}
+
+	local spentOnParts, index = 0, 0
+
+	local function nextPart()
+		index = index + 1
+		local part = parts[index]
+
+		if part then
+			local began = now()
+			local read = part.run()
+			local took = now() - began
+			spentOnParts = spentOnParts + took
+			Family:Print(L["  |cffffd700%s|r: %d read, %.0f ms."], part.name, read, took)
+			Family:After(0, "scancost", nextPart)
+			return
+		end
+
+		-- And then the achievements, behind the same capability gate the scanner is behind, so
+		-- that a client which never pays this is not shown a price for it. That reads as nought
+		-- categories and nought milliseconds, which is the truth and is said rather than left
+		-- out. Only the loop over the categories is this command's own; what happens inside one
+		-- is `Character:ReadAchievementCategory`, the scanner's.
+		local categories = Family.Capabilities:Has("achievements")
+			and (Family:TryCall(GetCategoryList) or {}) or {}
+		local into = { earned = {}, list = {}, count = 0 }
+		local at, offered, criteria, spent, worst = 1, 0, 0, 0, 0
+
+		local function nextCategory()
+			local category = categories[at]
+
+			if not category then
+				Family:Print(L["  |cffffd700achievements|r: %d categories, %d achievements, "
+					.. "%d criteria, %.0f ms, the slowest category %.0f ms."],
+					#categories, offered, criteria, spent, worst)
+				Family:Print(L["The parts together: %.0f ms, and a part that never printed is "
+					.. "where the client stopped. |cff888888Nothing was stored. Reading the "
+					.. "reputations makes the game announce a change, so an ordinary scan "
+					.. "follows a couple of seconds from now.|r"], spentOnParts + spent)
+				return
+			end
+
+			at = at + 1
+			local began = now()
+			local held, asked = Character:ReadAchievementCategory(category, into)
+			local took = now() - began
+
+			spent = spent + took
+			if took > worst then worst = took end
+			offered = offered + held
+			criteria = criteria + asked
+
+			Family:After(0, "scancost", nextCategory)
+		end
+
+		nextCategory()
+	end
+
+	Family:Print(L["Timing the character scan for %s, a part at a time so that each is given "
+		.. "its own budget."], tostring(Family:CurrentMember()))
+	Family:After(0, "scancost", nextPart)
+end)
+
 -- **Whether this auction house is shared across the connected realm group** (backlog 91). A
 -- reading for a person, printed raw as `/family guild names` is: what it answers is a fact about
 -- the client and is only worth quoting as the client said it.

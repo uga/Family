@@ -1,0 +1,6 @@
+name: a tooltip line carrying a name twice is taken whole, so two pins under one cursor resolve nothing
+file: addons/Family_UI/Tooltip.lua
+--- old
+	for piece in tostring(said):gmatch("[^\r\n]+") do
+--- new
+	for _, piece in ipairs({ tostring(said) }) do

@@ -390,6 +390,36 @@ local PROBES = {
         return table.concat(lines, " | ")
     end },
 
+    -- **Where the bosses are, if they are anywhere.**
+    --
+    -- Read twice in Molten Core on Mists, 2026-09-21, half an hour and several bosses apart:
+    -- columns 11 and 12 of `GetSavedInstanceInfo` said `1` and `0` both times, and column 3 -
+    -- the countdown - was the only thing in the whole row that moved. So on that client the row
+    -- does not carry boss progress, whatever it carries on Era, and *N bosses down* has to come
+    -- from somewhere else or from nowhere.
+    --
+    -- This is the somewhere else worth asking about: a per-encounter call the client may or may
+    -- not have. Asked for eight slots rather than for a count, because the count to ask for is
+    -- exactly the number that is in doubt - column 11 says one, and if that is wrong then a loop
+    -- bounded by it reads one boss and stops. Every answer is printed by position and nothing is
+    -- unpacked on faith.
+    { area = "instances", name = "GetSavedInstanceEncounterInfo", ask = function()
+        local call = there("GetSavedInstanceEncounterInfo")
+        if not call then return "absent" end
+
+        local count = tonumber(try(there("GetNumSavedInstances") or function() return 0 end)) or 0
+        if count == 0 then
+            return "nothing saved; (1,1) answers: " .. shape(callPacked(call, 1, 1))
+        end
+
+        local lines = {}
+        for slot = 1, 8 do
+            local answer = callPacked(call, 1, slot)
+            lines[#lines + 1] = "(1," .. slot .. ") " .. shape(answer)
+        end
+        return table.concat(lines, " | ")
+    end },
+
     { area = "instances", name = "GetNumSavedWorldBosses", ask = function()
         local call = there("GetNumSavedWorldBosses")
         if not call then return "absent" end
@@ -486,12 +516,25 @@ local PROBES = {
     end },
 
     { area = "pvp", name = "honor and conquest as currencies", ask = function()
-        -- 392 honor and 390 conquest, by id, through whichever of the two currency calls this
-        -- client carries. Ids because a name is one language (§2.1).
+        -- Honor and conquest by id, through whichever of the two currency calls this client
+        -- carries. Ids because a name is one language (§2.1).
+        --
+        -- **Four ids, because the first two were the wrong ones and answered anyway.** 392 is
+        -- honor on Cataclysm and on retail, and it is what this asked alone until 2026-09-21.
+        -- On Mists 5.5.4 it answers a full table named **"Honor Deprecated 3"** with
+        -- `currencyID = 0`, which reads like a client that has retired honor and is nothing of
+        -- the sort: `CurrencyTypes` for that build carries 1901 *Honor Points* and 1900 *Arena
+        -- Points* beside three deprecated honor rows - 104, 181 and 392. 1901 is also the id
+        -- Burning Crusade 2.5.6 was measured to use, twice over, from the row and from the link.
+        --
+        -- So the reading that looked like an answer was the probe asking a retired number and
+        -- being answered politely. Present is not meaningful, and a call that answers is not
+        -- thereby answering about the thing you meant.
         local modern = inside("C_CurrencyInfo", "GetCurrencyInfo")
         local old = there("GetCurrencyInfo")
         local out = {}
-        for _, pair in ipairs({ { "honor", 392 }, { "conquest", 390 } }) do
+        for _, pair in ipairs({ { "honor 1901", 1901 }, { "arena 1900", 1900 },
+            { "honor 392 (retired on Mists)", 392 }, { "conquest 390", 390 } }) do
             if modern then
                 out[#out + 1] = pair[1] .. " C_CurrencyInfo -> " ..
                     fields(try(modern, pair[2]))
@@ -699,6 +742,317 @@ for _, area in ipairs({ "quests", "instances", "rested", "pvp" }) do
         ask = function() return eventsFor(area) end }
 end
 
+--------------------------------------------------------------------------------------------
+-- Backlog 96: a herb node or a mining vein under the pointer
+--
+-- Family's possessions block fires on `OnTooltipSetItem` and `OnTooltipSetSpell`, and on the
+-- newer clients on `TooltipDataProcessor` post-calls for the Item and Spell types. A Silverleaf
+-- in the world is neither, so nothing Family has today fires on one.
+--
+-- Before a line of that is written there is one thing to find out, and it decides the whole
+-- shape: **does a world object arrive here carrying an id, or a name and nothing else?** A name
+-- is one language, and this project files by id (§2.1) - so a name alone means the mapping from
+-- node to item has to be learned or shipped, and an id means it does not.
+--
+-- Route 1 of the four in the backlog entry, and the cheapest: ask the client. Two static probes
+-- below answer the half that needs no hovering - which tooltip types this build knows about at
+-- all - and the watcher answers the half that does.
+--------------------------------------------------------------------------------------------
+
+-- A table's member names rather than its size. `describe` would say `table(17)` and the whole
+-- question here is *which seventeen* - whether one of them is an object.
+local function membersOf(value)
+    if type(value) ~= "table" then return "absent" end
+
+    local names = {}
+    for name in pairs(value) do names[#names + 1] = tostring(name) end
+    if #names == 0 then return "present, no members" end
+
+    table.sort(names)
+    return "(" .. #names .. ") " .. table.concat(names, " ")
+end
+
+PROBES[#PROBES + 1] = { area = "nodes", name = "Enum.TooltipDataType", ask = function()
+    local enum = _G.Enum
+    if type(enum) ~= "table" then return "no Enum on this client" end
+    return membersOf(enum.TooltipDataType)
+end }
+
+PROBES[#PROBES + 1] = { area = "nodes", name = "the modern tooltip system", ask = function()
+    local processor = _G.TooltipDataProcessor
+    return "TooltipDataProcessor=" .. type(processor)
+        .. " AddTooltipPostCall=" .. (type(processor) == "table"
+            and type(processor.AddTooltipPostCall) or "n/a")
+        .. " C_TooltipInfo=" .. membersOf(_G.C_TooltipInfo)
+end }
+
+PROBES[#PROBES + 1] = { area = "nodes", name = "the frame under the pointer", ask = function()
+    return "GetMouseFocus=" .. type(_G.GetMouseFocus)
+        .. " GetMouseFoci=" .. type(_G.GetMouseFoci)
+end }
+
+-- **What else is drawing on this interface**, because a reading of the minimap is worth nothing
+-- without it.
+--
+-- Four node readings were taken before anybody asked whether the client had GatherMate on it, and
+-- the answer decides what `Minimap  |  "Copper Vein"` even means: the client's own tracking blip,
+-- or an addon's pin anchored to the minimap. It was asked by hand in the end, which is the sort of
+-- thing a reading should carry with it. Now every run says so.
+PROBES[#PROBES + 1] = { area = "nodes", name = "what else is loaded", ask = function()
+    local count = tonumber(try(there("GetNumAddOns"))) or 0
+    if count == 0 then return "GetNumAddOns says nothing" end
+
+    local info = there("GetAddOnInfo") or inside("C_AddOns", "GetAddOnInfo")
+    local loaded = there("IsAddOnLoaded") or inside("C_AddOns", "IsAddOnLoaded")
+    if not info then return count .. " addons, and no way to name them here" end
+
+    local out = {}
+    for index = 1, count do
+        local name = (try(info, index))
+        if type(name) == "string" and (not loaded or (try(loaded, index))) then
+            out[#out + 1] = name
+        end
+    end
+
+    table.sort(out)
+    return "(" .. #out .. " of " .. count .. " loaded) " .. table.concat(out, " ")
+end }
+
+-- **What the modern system was asked about**, recorded by type rather than guessed at.
+--
+-- A post-call is registered for *every* value `Enum.TooltipDataType` carries, not for the one
+-- that looks like it means an object. Which member a world node comes through is exactly what
+-- is unknown, and a probe that registers the one it expects can only ever confirm itself.
+--
+-- Registered once and for the whole session, which a throwaway addon may do: nothing is printed
+-- unless the watcher is armed.
+local lastTypeName, lastTypeID
+local armed = false
+
+local function watchEveryTooltipType()
+    local processor = _G.TooltipDataProcessor
+    local enum = _G.Enum and _G.Enum.TooltipDataType
+
+    if type(processor) ~= "table" or type(processor.AddTooltipPostCall) ~= "function"
+        or type(enum) ~= "table" then
+        return false
+    end
+
+    for name, value in pairs(enum) do
+        if type(value) == "number" then
+            pcall(processor.AddTooltipPostCall, value, function(_, data)
+                if not armed then return end
+                lastTypeName = tostring(name)
+                lastTypeID = data and data.id or nil
+            end)
+        end
+    end
+
+    return true
+end
+
+local function pointerFrame()
+    local frame = try(there("GetMouseFocus"))
+    if type(frame) ~= "table" then
+        local list = try(there("GetMouseFoci"))
+        frame = type(list) == "table" and list[1] or nil
+    end
+    if type(frame) ~= "table" then return "nothing" end
+
+    local named = frame.GetName and try(frame.GetName, frame)
+    return tostring(named or "an unnamed frame")
+end
+
+-- Six lines is more than any node tooltip has and enough to see whether the client added
+-- anything of its own under the name.
+local function tooltipText()
+    local count = tonumber(try(GameTooltip.NumLines, GameTooltip)) or 0
+    if count == 0 then return "no lines" end
+
+    local out = {}
+    for index = 1, math.min(count, 6) do
+        local left = _G["GameTooltipTextLeft" .. index]
+        local right = _G["GameTooltipTextRight" .. index]
+        local a = left and left.GetText and try(left.GetText, left)
+        local b = right and right.GetText and try(right.GetText, right)
+        if a and a ~= "" then
+            out[#out + 1] = index .. '="' .. a .. '"' .. (b and b ~= "" and ('/"' .. b .. '"') or "")
+        end
+    end
+
+    return "(" .. count .. " lines) " .. table.concat(out, " ")
+end
+
+-- What the tooltip says it is about, asked three ways. All three answering nothing is what a
+-- world object is expected to look like, and is the reading this is here for.
+local function tooltipSubject()
+    local itemName, itemLink = try(GameTooltip.GetItem, GameTooltip)
+    local spellName, spellID = try(GameTooltip.GetSpell, GameTooltip)
+    local unitName, unitToken = try(GameTooltip.GetUnit, GameTooltip)
+
+    return "item=" .. describe(itemLink or itemName)
+        .. " spell=" .. describe(spellID or spellName)
+        .. " unit=" .. describe(unitToken or unitName)
+end
+
+local sightings = 0
+local SIGHTINGS = 3
+
+-- Every tooltip this saw while armed, and every one it turned down. Declared up here because the
+-- disarm message reports them: *three readings, and nine tooltips went past* is a different world
+-- from *three readings, and nothing else was ever offered*.
+local seenWhileArmed, refused = 0, 0
+local TOLD = 3
+
+local function tally()
+    return string.format("Saw %d tooltips while armed, declined %d.", seenWhileArmed, refused)
+end
+
+local function record(text)
+    DEFAULT_CHAT_FRAME:AddMessage("  |cffffd700nodes|r " .. text)
+
+    local locale = (GetLocale and GetLocale()) or "unknown"
+    local report = FamilyProbeDB[locale] or {}
+    FamilyProbeDB[locale] = report
+    report.apis = report.apis or {}
+    report.apis.nodes = report.apis.nodes or {}
+
+    local seen = report.apis.nodes.sightings or {}
+    seen[#seen + 1] = { says = text, at = time(),
+        who = (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?") }
+    report.apis.nodes.sightings = seen
+end
+
+local function dump()
+    record(pointerFrame() .. "  |  " .. tooltipSubject() .. "  |  " .. tooltipText()
+        .. "  |  modern=" .. (lastTypeName and (lastTypeName .. " id=" .. tostring(lastTypeID))
+            or "nothing fired"))
+
+    sightings = sightings + 1
+    if sightings >= SIGHTINGS then
+        armed = false
+        DEFAULT_CHAT_FRAME:AddMessage(
+            "|cff66bbffFamily Probe|r: that is " .. SIGHTINGS .. ", and the watcher is off again. "
+            .. tally() .. " |cffffd700/familyprobe node|r arms it for three more.")
+    end
+end
+
+-- **Only a tooltip that is about none of the three**, because a bag slot, a unit frame and an
+-- action button are all things the pointer crosses on the way to a node, and a dump for each of
+-- them is a dump nobody reads. A world object is the case where the client will not say what
+-- the tooltip is about - which is the whole reason this entry exists.
+--
+-- A tick late, so that whatever `TooltipDataProcessor` was going to say has been said. The two
+-- fire in an order nothing here controls, and reading the one from the other without waiting is
+-- how a reading comes back "nothing fired" on a client where something did.
+-- **And only where a node can be**, which the frame names taught us rather than a guess.
+--
+-- The first three readings this took on Burning Crusade went on `MiniMapTrackingButton`, the
+-- minimap itself and `QuestieFrame804`: two of the three spent on things that are not nodes, out
+-- of an arming that gives three. The client names none of those as an item, a spell or a unit
+-- either, so the test above lets them all through.
+--
+-- What separates them is the frame. A world node has **no frame at all** - measured four times
+-- across two builds - and a minimap blip reports the minimap. Everything else that got through was
+-- a named frame belonging to an addon or to the interface. So the dump is now limited to those
+-- two, and `/familyprobe node all` keeps the old behaviour for the case where the interesting
+-- thing is what was filtered out.
+local everything = false
+
+local function couldBeANode()
+    local frame = try(there("GetMouseFocus"))
+    if type(frame) ~= "table" then
+        local list = try(there("GetMouseFoci"))
+        frame = type(list) == "table" and list[1] or nil
+    end
+
+    -- No frame under the pointer: the world, which is where a node is.
+    if type(frame) ~= "table" then return true end
+
+    local named = frame.GetName and try(frame.GetName, frame)
+    if type(named) ~= "string" then return false end
+
+    -- The minimap itself, and not a button sitting on it.
+    return named == "Minimap" or named == "MinimapCluster"
+end
+
+-- **A refusal is a reading, and this used to throw them away.**
+--
+-- Reported from play 2026-09-21: armed, hovering a vein on a character who is **not a miner** -
+-- the game draws the tooltip, red *Requires Mining* line and all - and the probe says nothing.
+-- Which is indistinguishable, from the outside, from the tooltip never having reached the probe
+-- at all. Those are two different worlds: one where the client routes that case somewhere else,
+-- and one where this file declined it on a test of its own.
+--
+-- §2.2's rule, in the tool rather than in the addon. So every tooltip seen while armed is counted,
+-- and a refusal out in the world says which gate refused it and what the client had said. Capped,
+-- because a pointer crosses a great many tooltips and a probe that reports each one is one nobody
+-- leaves armed.
+local function decline(why)
+    refused = refused + 1
+    if refused > TOLD then return end
+
+    DEFAULT_CHAT_FRAME:AddMessage("  |cff888888nodes declined|r " .. why
+        .. "  |  " .. tooltipText())
+end
+
+local function onTooltipShown()
+    if not armed then return end
+
+    seenWhileArmed = seenWhileArmed + 1
+
+    local itemName, itemLink = try(GameTooltip.GetItem, GameTooltip)
+    local spellName, spellID = try(GameTooltip.GetSpell, GameTooltip)
+    local unitName, unitToken = try(GameTooltip.GetUnit, GameTooltip)
+    local named = itemName or itemLink or spellName or spellID or unitName or unitToken
+
+    local couldBe = couldBeANode()
+
+    -- Only a refusal **where a node could have been** is worth a line. A bag slot declined for
+    -- being an item is the filter doing its job and is not news.
+    if named then
+        if couldBe then
+            decline("the client named it: " .. tooltipSubject())
+        end
+        return
+    end
+
+    if not everything and not couldBe then return end
+
+    if C_Timer and C_Timer.After then C_Timer.After(0, dump) else dump() end
+end
+
+local watching = false
+
+local function watchNodes(wantEverything)
+    if not watching then
+        local modern = watchEveryTooltipType()
+        pcall(GameTooltip.HookScript, GameTooltip, "OnShow", onTooltipShown)
+        pcall(GameTooltip.HookScript, GameTooltip, "OnHide", function()
+            lastTypeName, lastTypeID = nil, nil
+        end)
+        watching = true
+
+        DEFAULT_CHAT_FRAME:AddMessage("|cff66bbffFamily Probe|r: watching the tooltip"
+            .. (modern and ", and every tooltip type this client knows" or "")
+            .. ". Nothing is sent anywhere and nothing is changed.")
+    end
+
+    sightings = 0
+    seenWhileArmed, refused = 0, 0
+    armed = true
+    everything = wantEverything and true or false
+
+    DEFAULT_CHAT_FRAME:AddMessage(
+        "|cff66bbffFamily Probe|r: armed. Hover a herb node, then a mining vein, then a dot on "
+        .. "the minimap - three readings and it disarms itself. Skipped: anything the client can "
+        .. "name as an item, a spell or a unit, and "
+        .. (everything and "nothing else (|cffffd700all|r)."
+            or "anything on a named frame that is not the minimap - so a quest pin and the "
+            .. "tracking button no longer spend a reading. |cffffd700/familyprobe node all|r "
+            .. "keeps those."))
+end
+
 local function askEverything()
     local locale = (GetLocale and GetLocale()) or "unknown"
     local report = FamilyProbeDB[locale] or {}
@@ -737,8 +1091,108 @@ local function askEverything()
 end
 
 local frame = CreateFrame("Frame")
+-- **When each character went away and came back**, which is the measurement every rested reading
+-- was actually about and which none of them carried.
+--
+-- 2026-09-21: Tontazzo's overnight pair was scored against the gap between two *readings* - 19.94
+-- hours - because that is all the file held. The pool fills while a character is **logged out**,
+-- and those are not the same interval: a character can be read, stay logged in for hours accruing
+-- nothing in the field, and only then be put away. Scored on the reading gap the rate came out at
+-- 4.01% of a level per 32 hours; scored on Ziofurgone, whose logout followed his reading by nine
+-- minutes, 4.95%. One of those two numbers is an artefact of the wrong interval and nothing in the
+-- file can say which.
+--
+-- `PLAYER_LOGOUT` fires before the saved variables are written, so the moment survives. With both
+-- ends recorded the next pair is scored on the interval that the rule is about, rather than on the
+-- one that happened to be written down.
+-- **The interval is worked out at login and stored**, not left to be worked out later from two
+-- fields that the next logout will overwrite. A file sent after another session would otherwise
+-- hold that session's logout beside that session's login, and the night in between - the only
+-- thing anybody wanted - would be gone.
+local function mark(field)
+    local locale = (GetLocale and GetLocale()) or "unknown"
+    local report = FamilyProbeDB[locale] or {}
+    FamilyProbeDB[locale] = report
+
+    local who = (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?")
+    report.away = report.away or {}
+    local mine = report.away[who] or {}
+    report.away[who] = mine
+
+    local now = time()
+
+    if field == "in" and mine.out then
+        mine.awayFor = now - mine.out
+        mine.cameBackAt = now
+    end
+
+    mine[field] = now
+end
+
+-- What the last absence was, for the line that reports rested. Nothing to say on a character this
+-- probe has not seen go away yet, which is every character until it has been installed for one
+-- logout - and saying so is the point.
+local function away()
+    local locale = (GetLocale and GetLocale()) or "unknown"
+    local report = FamilyProbeDB[locale] or {}
+    local mine = report.away and report.away[(UnitName("player") or "?") .. "-"
+        .. (GetRealmName() or "?")]
+
+    if not mine or not mine.awayFor then
+        return "awayFor=unknown (this probe has not seen this character log out yet)"
+    end
+
+    return string.format("awayFor=%d s (%.2f h) out=%d back=%d",
+        mine.awayFor, mine.awayFor / 3600, mine.out or 0, mine.cameBackAt or 0)
+end
+
+-- Beside the rested sample, because it is half of every sum anybody does with one.
+PROBES[#PROBES + 1] = { area = "rested", name = "the last absence", ask = away }
+
 frame:RegisterEvent("PLAYER_LOGIN")
-frame:SetScript("OnEvent", function()
+frame:RegisterEvent("PLAYER_LOGOUT")
+-- **The rested calls asked at the one moment the answer is the one wanted.**
+--
+-- `Scanners/Identity.lua` already writes the logout zone during `PLAYER_LOGOUT` and measured what
+-- can be read there: `GetZoneText` and `GetSubZoneText` still answer, and `GetBestMapForUnit` does
+-- **not** - the map system is already gone by then. Nobody has ever asked that of
+-- `GetXPExhaustion`, and the answer decides something real: a reading taken at logout is the exact
+-- start of the absence, and one taken earlier is a guess about when the character actually left.
+--
+-- This is the shape of question that cannot be settled from a `/run`, for the same reason that one
+-- could not - the moment only exists on the way out. So it is written then and read back off the
+-- saved file, which is how that one was settled.
+local function sampleAtLogout()
+    local locale = (GetLocale and GetLocale()) or "unknown"
+    local report = FamilyProbeDB[locale] or {}
+    FamilyProbeDB[locale] = report
+    report.apis = report.apis or {}
+    report.apis.rested = report.apis.rested or {}
+
+    for _, probe in ipairs(PROBES) do
+        if probe.area == "rested" and probe.name == "the sample" then
+            local ok, says = pcall(probe.ask)
+            local samples = report.apis.rested.samples or {}
+            samples[#samples + 1] = {
+                who = (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?"),
+                says = "AT LOGOUT: " .. (ok and tostring(says) or ("error: " .. tostring(says))),
+                at = time(),
+            }
+            report.apis.rested.samples = samples
+            return
+        end
+    end
+end
+
+frame:SetScript("OnEvent", function(_, event)
+    if event == "PLAYER_LOGOUT" then
+        mark("out")
+        sampleAtLogout()
+        return
+    end
+
+    mark("in")
+
     -- A moment after login: the skill list is not always populated at the instant it fires.
     if C_Timer and C_Timer.After then
         C_Timer.After(5, collect)
@@ -759,8 +1213,21 @@ SlashCmdList.FAMILYPROBE = function(argument)
         return
     end
 
+    -- Backlog 96, and the one probe here that needs the player to do something: nothing can ask
+    -- a client what a herb node looks like except by pointing at one.
+    if argument == "node" or argument == "nodes" then
+        watchNodes(false)
+        return
+    end
+
+    if argument == "node all" or argument == "nodes all" then
+        watchNodes(true)
+        return
+    end
+
     collect()
     DEFAULT_CHAT_FRAME:AddMessage(
         "|cff66bbffFamily Probe|r: |cffffd700/familyprobe apis|r asks what this client carries "
-        .. "for quests completed, lockouts, rested and honor.")
+        .. "for quests completed, lockouts, rested and honor. |cffffd700/familyprobe node|r "
+        .. "watches what arrives when you hover a herb node, a vein or a minimap dot.")
 end

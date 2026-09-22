@@ -1,0 +1,6 @@
+name: a vein with no real match is placed anyway, because the floor and the run length are gone
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if not bestID or bestShare < ORE_FLOOR or bestRun < ORE_RUN then return nil end
+--- new
+	if not bestID then return nil end

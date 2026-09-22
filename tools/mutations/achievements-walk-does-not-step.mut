@@ -1,0 +1,12 @@
+name: the achievements walk runs every category in one frame, which is the Molten Core fault
+file: addons/Family/Scanners/Character.lua
+--- old
+local function stepOn()
+	if Character:StepAchievements() then
+		Family:After(Character.CATEGORY_STEP, "character.achievements", stepOn)
+	end
+end
+--- new
+local function stepOn()
+	while Character:StepAchievements() do end
+end

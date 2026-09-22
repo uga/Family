@@ -15,8 +15,8 @@ So for each name it asks the question that can actually be answered:
 
 | What | Asked how | Recorded |
 |---|---|---|
-| 278 globals and 56 namespace members Family reads | looked up | the type, the value of a number or string, or `nil` |
-| 136 upper-case string literals | `RegisterEvent` in a `pcall`, as `Family:RegisterEvent` does | `registers` or the refusal |
+| 278 globals and 57 namespace members Family reads | looked up | the type, the value of a number or string, or `nil` |
+| 137 upper-case string literals | `RegisterEvent` in a `pcall`, as `Family:RegisterEvent` does | `registers` or the refusal |
 | 6 frame templates | built on the frame type Family builds them on | `builds` or the error |
 | 100 read-only calls at login | called, with the smallest sensible arguments | every return, tables one level deep, or the error |
 | 43 read-only calls in five windows | called two seconds after the window opens, with Family's own arguments | the same, filed under the window |
@@ -37,7 +37,7 @@ So for each name it asks the question that can actually be answered:
 | whatever the client blocks | the two blocked-action events registered in a `pcall`, their arguments written down as they arrive and printed in chat at once, **with the call this file was making at that instant** - Midnight names the function `UNKNOWN()` every time, so the probe's own bookkeeping is the only thing that can say which it was | filed as `blocked` |
 
 The first three lists are `tools/surface.py`'s, generated from the Family sources into
-`Surface.lua`; the counts above are what it wrote on 2026-09-19. The first two runs, on
+`Surface.lua`; the counts above are what it wrote on 2026-09-22. The first two runs, on
 Midnight and Mists that day, asked an earlier list of 193 and 39 that missed every name Family
 reads through `_G.` or through a local alias of a namespace (L-103). The literals are generous on
 purpose: some are events and some (`TOPLEFT`, `HEADSLOT`) are not and are refused everywhere,

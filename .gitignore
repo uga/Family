@@ -19,6 +19,7 @@ tools/.recipe-cooldowns-cache/
 tools/.recipe-teaches-cache/
 tools/.quest-sorts-cache/
 tools/.mounts-cache/
+tools/.gathered-cache/
 
 # Bytecode left behind when one generator imports another
 tools/__pycache__/

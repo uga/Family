@@ -1,0 +1,6 @@
+name: a tooltip the client will name as an item is taken for a node as well
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local named = (Family:TryCall(tooltip.GetItem, tooltip))
+--- new
+	local named = false and (Family:TryCall(tooltip.GetItem, tooltip))

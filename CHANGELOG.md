@@ -29,6 +29,30 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Herbs and ore in the world
+
+- **Hovering a herb or a mining vein in the world says who in your family already has some.**
+  Point at a Silverleaf or an Iron Deposit out in the open and the game's own tooltip gains the
+  possessions block, the same one that herb or that ore gets in your bags. It answers **none**
+  when nobody has any, which is usually the answer you wanted.
+- **It works whatever language you play in**, because every word it matches is one your own
+  client gave it. A vein it cannot place with confidence stays quiet instead of naming the wrong
+  metal.
+
+### Achievements
+
+- **Family no longer breaks off with *script ran too long* while you are fighting.** On Mists of
+  Pandaria it read all four thousand of your achievements again every couple of seconds during a
+  raid, which is far more than the game lets an addon do at once. They are now read a little at a
+  time, shortly after you arrive in the world and whenever you earn one. Progress on a
+  half-finished achievement now refreshes at each loading screen instead of every few seconds,
+  and nothing you can see on the Achievements page has changed.
+
+### Typing to Family
+
+- **`/family scancost` says which part of reading your character costs what**, a part at a time.
+  For when Family is slow, or stops with an error while you play.
+
 ### Currencies
 
 - **Honor on Burning Crusade is recognised by the game's own number for it, not by its name.**

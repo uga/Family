@@ -2115,7 +2115,7 @@ for _, file in ipairs {
 	"QuestSorts.lua",
 	"Capabilities.lua", "Codec.lua",
 	"Comm.lua", "Database.lua", "Names.lua", "Mounts.lua", "Extras.lua", "Index.lua",
-	"RecipeReagents.lua", "Recipes.lua", "RecipeIndex.lua", "Cooldowns.lua",
+	"RecipeReagents.lua", "Gathered.lua", "Recipes.lua", "RecipeIndex.lua", "Cooldowns.lua",
 	"Scanners/Bags.lua", "Scanners/Talents.lua", "Scanners/Professions.lua",
 	"Scanners/Bank.lua", "Scanners/Identity.lua",
 	"Scanners/Auctions.lua", "Scanners/Mail.lua", "Scanners/Character.lua",
@@ -4968,6 +4968,216 @@ local function tooltipFor(itemID, viaData)
 end
 
 check("an item somebody owns gets a possessions block", tooltipFor(2589) == true)
+
+-- **A gathering node in the world**, which reaches none of the routes above.
+--
+-- Backlog 96. Measured four ways across two builds: a world node answers nothing to `GetItem`,
+-- `GetSpell` and `GetUnit`, has no frame under the pointer, and on Mists - which has the modern
+-- tooltip system - fires none of the 28 tooltip types with all of them registered. What it does
+-- have is two lines, the name and the gathering profession in the client's own word, and
+-- `SkillLineByName` turns that second line into 182 or 186 in any language.
+--
+-- A herb node is named exactly what the herb is named, so a herb is a lookup. A vein is not -
+-- *Copper Vein* against *Copper Ore* - so a vein is scored. Neither ships a word: `Gathered.lua`
+-- is ids, and every name compared comes from the client.
+--
+-- In its own block because this file's main chunk is close to Lua's limit of two hundred locals.
+do
+	local HERB = Family:ProfessionName(182)
+	local MINE = Family:ProfessionName(186)
+	local CLOTH = Family:ProfessionName(197)
+
+	-- What this client calls the ids the table ships. Nothing else in the feature is a word.
+	ITEM_NAMES[765] = "Silverleaf"
+	ITEM_NAMES[2447] = "Peacebloom"
+	ITEM_NAMES[2770] = "Copper Ore"
+	ITEM_NAMES[2771] = "Tin Ore"
+	ITEM_NAMES[2772] = "Iron Ore"
+	ITEM_NAMES[2775] = "Silver Ore"
+	ITEM_NAMES[2776] = "Gold Ore"
+	ITEM_NAMES[3858] = "Mithril Ore"
+	ITEM_NAMES[7911] = "Truesilver Ore"
+	ITEM_NAMES[11370] = "Dark Iron Ore"
+
+	local function nodeSays(said, profession)
+		GameTooltip:ClearLines()
+		GameTooltip.__itemName, GameTooltip.__itemLink = nil, nil
+		GameTooltip.__spellName, GameTooltip.__spellID = nil, nil
+		if GameTooltip.__scripts.OnTooltipCleared then
+			GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+		end
+
+		GameTooltip:AddLine(said)
+		if profession then GameTooltip:AddLine(profession) end
+
+		local before = #GameTooltip.__lines
+
+		-- **Through the script the addon installed**, not the callback behind it. This route
+		-- cannot be reached from any setter, so the hook is part of what is under test: driving
+		-- `__nodeCallback` would pass just as well with nothing hooked to anything.
+		GameTooltip.__scripts.OnShow(GameTooltip)
+
+		local out = {}
+		for index = before + 1, #GameTooltip.__lines do
+			local line = GameTooltip.__lines[index]
+			out[#out + 1] = tostring(line[1]) .. " " .. tostring(line[2])
+		end
+		return table.concat(out, " | ")
+	end
+
+	local function drewBlock(text) return text:find("Family possessions", 1, true) ~= nil end
+
+	check("the profession line is read by id and not by the English word",
+		HERB == "Herbalism" and Family:SkillLineFor(HERB) == 182
+			and Family:SkillLineFor(MINE) == 186,
+		tostring(HERB) .. "/" .. tostring(MINE))
+
+	-- **Ids and no words.** The rule this whole entry turns on: locale words come from the
+	-- client, never from this repository.
+	local shipped = Family.Gathered and Family.Gathered[1]
+	check("the gathered table ships ids for both professions", shipped
+		and #shipped.herbs > 50 and #shipped.ores > 5,
+		shipped and (#shipped.herbs .. "/" .. #shipped.ores) or "nothing")
+	local words = 0
+	for _, which in ipairs { "herbs", "ores" } do
+		for _, id in ipairs(shipped[which] or {}) do
+			if type(id) ~= "number" then words = words + 1 end
+		end
+	end
+	check("and not one word of any language", words == 0, tostring(words))
+
+	-- A herb nobody holds. The answer is *none*, which is the whole of what the first report
+	-- from play was about: this drew nothing and looked exactly like an absent feature.
+	local none = nodeSays("Silverleaf", HERB)
+	check("a herb node nobody holds any of says so rather than nothing",
+		drewBlock(none) and none:find("none", 1, true) ~= nil, none)
+
+	-- And one somebody does hold.
+	local me = Family:CurrentMember()
+	local mine = Family.Database:Payload(me) or {}
+	local heldBags = mine.bags
+	mine.bags = { [0] = { size = 4, slots = { [1] = { id = 765, count = 6 } } } }
+	Family.Database:SetPayload(me, mine, { "bags" })
+
+	local owned = nodeSays("Silverleaf", HERB)
+	check("and one somebody holds draws the owners instead of none",
+		drewBlock(owned) and owned:find("none", 1, true) == nil
+			and owned:find("6 bags", 1, true) ~= nil, owned)
+
+	mine.bags = heldBags
+	Family.Database:SetPayload(me, mine, { "bags" })
+
+	-- **A tooltip line can carry a name twice**, from two pins under one cursor: the probe read
+	-- back `"Plaguebloom\nPlaguebloom"` as a single line.
+	check("a line carrying the name twice still resolves it",
+		drewBlock(nodeSays("Peacebloom\nPeacebloom", HERB)))
+
+	-- **Exactly, and not the way a search box matches.** Loosely, *Silverleaf* would find
+	-- *Silverleaf Pendant* and report the family's holdings of something else entirely.
+	check("a herb name that is only part of an item's name resolves to nothing",
+		nodeSays("Silver", HERB) == "")
+	check("and a herb this build does not ship an id for resolves to nothing",
+		nodeSays("Sungrass", HERB) == "")
+
+	-- **A vein is scored, and the score was fixed on 534 nodes.** Copper is the plain case and
+	-- iron is the one that made the rule: *Iron Deposit* shares `iron ` with both iron ores and
+	-- the share of each name is what tells them apart - 5 of 8 against 5 of 13.
+	check("a copper vein names copper ore", drewBlock(nodeSays("Copper Vein", MINE)))
+	local iron = nodeSays("Iron Deposit", MINE)
+	check("an iron deposit names iron ore and not dark iron ore", drewBlock(iron), iron)
+	check("and a dark iron deposit names the dark iron one",
+		drewBlock(nodeSays("Dark Iron Deposit", MINE)))
+	-- Truesilver is why the margin is waived when one ore's name sits inside another's: without
+	-- that, the runner-up Silver Ore silences the correct answer on every Truesilver node.
+	check("a truesilver deposit is not silenced by silver ore",
+		drewBlock(nodeSays("Truesilver Deposit", MINE)))
+	-- And a vein of something this build cannot smelt draws nothing rather than the nearest
+	-- metal. Naming the wrong metal confidently is the only failure here that matters.
+	check("a vein the score cannot place draws nothing at all",
+		nodeSays("Small Obsidian Chunk", MINE) == "")
+
+	-- **The margin on its own**, which nothing above exercises. *Cold Iron Deposit* scores
+	-- `Iron Ore` at 0.625 against `Gold Ore` at 0.500 - past the floor, past the run length,
+	-- and inside the margin. Two different metals that close is a guess, so it draws nothing.
+	check("a vein whose two best candidates are close draws nothing",
+		nodeSays("Cold Iron Deposit", MINE) == "")
+
+	-- **The minimum run on its own**, which only bites where an ore's name is very short - and
+	-- one is. `Torio` is what a Spanish client calls thorium ore, five bytes, so a three-byte
+	-- coincidence is 0.6 of it and clears the floor: that is how *Filón de indurio* came to be
+	-- named as thorium in the measurement, and why the run length is there. Both words here are
+	-- the game's own, from the same reading.
+	ITEM_NAMES[10620] = "Torio"
+	check("and a three-byte coincidence with a very short ore name is refused",
+		nodeSays("Filón de indurio", MINE) == "")
+
+	-- The discriminator. A two-line tooltip whose second line is not gathered from the ground is
+	-- not a node, whoever drew it.
+	check("a second line that is not a gathering profession is not a node",
+		nodeSays("Silverleaf", CLOTH) == "")
+	check("and neither is a tooltip with no second line at all",
+		nodeSays("Silverleaf", nil) == "")
+
+	-- Cheapest test first, which is what keeps this off every tooltip in the game.
+	GameTooltip:ClearLines()
+	GameTooltip.__itemName, GameTooltip.__itemLink = nil, nil
+	GameTooltip:AddLine("Silverleaf")
+	GameTooltip:AddLine(HERB)
+	GameTooltip:AddLine("and a third line")
+	GameTooltip.__scripts.OnShow(GameTooltip)
+	check("a tooltip of three lines is not a node", #GameTooltip.__lines == 3,
+		tostring(#GameTooltip.__lines))
+
+	-- Anything the client will name is an item, and the item route already has it.
+	GameTooltip:ClearLines()
+	if GameTooltip.__scripts.OnTooltipCleared then
+		GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+	end
+	GameTooltip.__itemName, GameTooltip.__itemLink = "Silverleaf", "|Hitem:765|h"
+	GameTooltip:AddLine("Silverleaf")
+	GameTooltip:AddLine(HERB)
+	GameTooltip.__scripts.OnShow(GameTooltip)
+	check("and a tooltip the client will name is not a node either",
+		#GameTooltip.__lines == 2, tostring(#GameTooltip.__lines))
+	GameTooltip.__itemName, GameTooltip.__itemLink = nil, nil
+
+	-- **Asked of the client once, not once per hover.** Naming every candidate and scoring
+	-- against all of them is work a pointer crossing a field of herbs must not pay twice, and
+	-- the answer does not move: a name belongs to an item whatever anybody is carrying.
+	local realItem, asked = Family.Names.Item, 0
+	Family.Names.Item = function(...) asked = asked + 1 return realItem(...) end
+	nodeSays("Silverleaf", HERB)
+	local first = asked
+	nodeSays("Silverleaf", HERB)
+	nodeSays("Silverleaf", HERB)
+	Family.Names.Item = realItem
+	check("a node name is worked out once however often it is hovered",
+		first > 0 and asked == first, first .. " then " .. asked)
+
+	-- **Silence has to say which kind of silence it is.** Reported from play the day this
+	-- landed as *herb nodes do not seem to work at all*: four gates in this route, all silent,
+	-- and no way to tell which turned the tooltip away - or whether the build was on the client.
+	local heldDebug = FamilyDB.debug
+	FamilyDB.debug = true
+
+	local from = #DEFAULT_CHAT_FRAME.messages
+	nodeSays("Silverleaf", CLOTH)
+	local heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("a tooltip turned away names the gate that did it",
+		heard:find("which is skill", 1, true) ~= nil, heard)
+	check("and every tooltip reports its shape before any gate runs",
+		heard:find("shown with 2 line(s)", 1, true) ~= nil, heard)
+
+	from = #DEFAULT_CHAT_FRAME.messages
+	nodeSays("Small Obsidian Chunk", MINE)
+	heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("and a node nothing can place says that, rather than nothing",
+		heard:find("nothing here can place it", 1, true) ~= nil, heard)
+
+	FamilyDB.debug = heldDebug
+end
 
 -- A thing made by using an item rather than by a recipe
 --
@@ -8688,10 +8898,32 @@ check("and the one the client will no longer talk about is not forgotten",
 
 GetSpecialization = anySpec
 
--- Achievements are a Mists thing, so this is the one place they can be read at all.
+-- **Achievements are a Mists thing**, so this is the one place they can be read at all - and
+-- since 2026-09-21 they are read on a schedule of their own, a category at a time, instead of
+-- inside the character scan. That change is what stopped four *script ran too long* errors in
+-- one Molten Core session: the scan runs two seconds after every equipment and spell event, and
+-- the walk it was carrying puts about 27,400 questions to a Mists client. Both halves are
+-- checked here - the scan leaves them alone, and the walk spans frames rather than burning one.
 Family.Character:Scan()
+check("the character scan does not read achievements at all",
+	Family.Database:Payload(key).achievements == nil)
+
+check("a client with achievements has something to walk",
+	Family.Character:ScanAchievements() == true)
+check("and the walk has not finished in the frame that started it",
+	Family.Database:Payload(key).achievements == nil
+		and Family.Character:IsWalkingAchievements() == true)
+
+advance(0.1)
+check("a frame later it has done one category and not both",
+	Family.Character:IsWalkingAchievements() == true
+		and Family.Database:Payload(key).achievements == nil)
+
+advance(2)
 local achievements = Family.Database:Payload(key).achievements
 check("achievements are read on a client that has them", achievements ~= nil)
+check("and the walk has put itself away afterwards",
+	Family.Character:IsWalkingAchievements() == false)
 check("with the points the client reports", achievements
 	and achievements.points == 1450, achievements and tostring(achievements.points))
 check("and a count of the finished ones", achievements and achievements.count == 2,
@@ -8707,6 +8939,34 @@ check("a started one is kept with how far through it is",
 	byId[9202] and tostring(byId[9202].completed))
 check("and one nobody has started is not kept at all - there are thousands of those",
 	byId[9203] == nil)
+
+-- **The walk is split at a category**, which is the unit it is stepped in and the unit a probe
+-- times it in. Two things have to hold for that split to be worth anything: a category on its
+-- own gathers exactly what the whole walk gathered for it, and it answers what it cost. The
+-- price is two calls per achievement and one per criterion, and a count of those means the same
+-- on every machine where a millisecond does not.
+--
+-- In a block of its own: this file's main chunk is close to Lua's limit of two hundred locals,
+-- and three more at the top level is what tips it over.
+do
+	local piecemeal = { earned = {}, list = {}, count = 0 }
+	local offeredTotal, criteriaTotal = 0, 0
+	for _, category in ipairs(GetCategoryList()) do
+		local offered, asked = Family.Character:ReadAchievementCategory(category, piecemeal)
+		offeredTotal, criteriaTotal = offeredTotal + offered, criteriaTotal + asked
+	end
+
+	check("a category at a time gathers what the whole walk gathered",
+		#piecemeal.list == #achievements.list and piecemeal.count == achievements.count,
+		#piecemeal.list .. " of " .. #achievements.list)
+	check("and the same finished ids, in the same order",
+		table.concat(piecemeal.earned, ",") == table.concat(achievements.earned, ","),
+		table.concat(piecemeal.earned, ","))
+	check("a category says how many achievements it offered", offeredTotal == 5,
+		tostring(offeredTotal))
+	check("and how many criteria it had to ask about, which is what the walk costs",
+		criteriaTotal == 12, tostring(criteriaTotal))
+end
 
 -- Back to Era for the rest.
 GetBuildInfo, GetTalentInfo = savedBuild, savedTalentInfo
@@ -15182,6 +15442,56 @@ do
 				Family.Database:SetPayload(me, mine)
 				check("and what the records weigh",
 					heard:find("They weigh about", 1, true) ~= nil, heard)
+			end
+
+			-- **Which part of the character scan costs what.** Written after four *script ran
+			-- too long* errors in one Molten Core session, and its whole design is in the
+			-- stepping: a walk that is over the client's budget cannot report its own cost,
+			-- because the run that would print the number is the run that gets stopped. So each
+			-- part is timed a frame apart, and the part that never printed is named by its
+			-- absence. That is the property checked here - not the milliseconds, which are this
+			-- machine's and mean nothing, but that the parts arrive one frame at a time.
+			do
+				local from = #DEFAULT_CHAT_FRAME.messages
+				local ran = pcall(SlashCmdList["FAMILY"], "scancost")
+				local function since()
+					return table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+						#DEFAULT_CHAT_FRAME.messages)
+						:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+				end
+
+				check("/family scancost names the member before timing anything",
+					ran and since():find("Timing the character scan for", 1, true) ~= nil,
+					since())
+				check("and nothing has been timed in the frame that asked for it",
+					since():find("equipment", 1, true) == nil, since())
+
+				advance(0.1)
+				local afterOne = since()
+				check("one frame later the first part has reported and no other has",
+					afterOne:find("equipment", 1, true) ~= nil
+						and afterOne:find("reputations", 1, true) == nil, afterOne)
+
+				-- Four frames in all: three parts and then the achievements line with the
+				-- total. No more than that, because the clock these frames move is the one
+				-- the guild and Wide Family checks further down are timed against.
+				advance(0.4)
+				local heard = since()
+				check("and given frames enough, every part reports with a count and a time",
+					heard:find("reputations", 1, true) ~= nil
+						and heard:find("spells", 1, true) ~= nil
+						and heard:find("achievements", 1, true) ~= nil, heard)
+				check("the achievements line counts the criteria, which is what the walk costs",
+					heard:find("criteria", 1, true) ~= nil, heard)
+
+				-- Era, here: the scanner never pays for achievements on a client that has
+				-- none, so neither does the price this prints (§2.3).
+				check("and on a client without achievements it prints nought rather than a price",
+					Family.Capabilities:Has("achievements") == false
+						and heard:find("0 categories, 0 achievements, 0 criteria", 1, true) ~= nil,
+					heard)
+				check("and it finishes by saying a part that never printed is where it stopped",
+					heard:find("never printed is where the client stopped", 1, true) ~= nil, heard)
 			end
 
 			-- **Bytes in the unit a reader can hold in their head.**
@@ -40897,6 +41207,47 @@ if RUN.storage == "compressed" then
 			and whole:find("SURVIVED two", 1, true) < whole:find("caught   four", 1, true)
 			and whole:find("2 caught, 2 not", 1, true) ~= nil,
 		whole)
+end
+
+-- **A case that throws is a case, and a bare name is a name.** Both reported by another session
+-- on 2026-09-21, from one incident: it ran `mutate.py nome.mut` with the name and not the path,
+-- `parse` raised, the worker died, `results[index]` stayed nil and the run fell over far away in
+-- `report` with a `TypeError` naming a function that had nothing wrong with it. The thread's own
+-- traceback was printed above, behind `threading.py`, so the line that read last read as the
+-- diagnosis and was the wrong one - and five minutes went into `report` before anybody read
+-- upwards. This tool gates every commit in this repository.
+--
+-- Asked of `mutate.attempt` and `mutate.choose` through python, on a path that does not exist and
+-- a name with no directory on it. Neither runs a gate, so this costs milliseconds.
+if RUN.storage == "compressed" then
+	local script, out = os.tmpname(), os.tmpname()
+	local handle = io.open(script, "w")
+	handle:write(table.concat({
+		"import sys",
+		"sys.path.insert(0, sys.argv[1] + '/tools')",
+		"import mutate",
+		-- A case that is not there at all: the exception has to become a line, not a crash.
+		"caught, line, _ = mutate.attempt(sys.argv[1] + '/no-such-case.mut', sys.argv[1])",
+		"print('threw' if caught else 'reported', line.strip())",
+		-- And a bare name is found where the cases live, which is what the usage promises.
+		"picked = mutate.choose(['node-ore-floor-is-dropped.mut'])",
+		"print('resolved', picked[0][0])",
+	}, "\n"))
+	handle:close()
+	os.execute(string.format("python3 %s %s > %s 2>&1", script, ROOT, out))
+	handle = io.open(out, "r")
+	local said = handle and handle:read("*a") or ""
+	if handle then handle:close() end
+	os.remove(script)
+	os.remove(out)
+
+	check("a case that throws is reported as a red line rather than crashing the run",
+		said:find("reported ERROR", 1, true) ~= nil, said)
+	check("and the line names the case, so the report is where you look for it",
+		said:find("no%-such%-case%.mut") ~= nil, said)
+	check("a case named without a directory is found where the cases live",
+		said:find("resolved", 1, true) ~= nil
+			and said:find("tools/mutations/node%-ore%-floor%-is%-dropped%.mut") ~= nil, said)
 end
 
 -- **A hung gate is not caught.** Nothing was read back, so no check can be said to have seen

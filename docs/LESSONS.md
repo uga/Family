@@ -4483,3 +4483,194 @@ any hit that is not on an `allow` line. A missing list is a red gate, not a skip
 Mutations `banned-word-sweep-never-says-no`, `banned-word-sweep-quotes-everything`,
 `banned-word-sweep-covers-nothing`. The rule is in `CLAUDE.md`, and adding an `allow` line
 is on the reserved list.
+
+## L-117 — A reading without its moment does not lose precision, it invents a fit
+
+**2026-09-21.** Tontazzo's overnight rested reading came back 114 against 104. His own moments had
+not been written down - `BACKLOG.md` 94 recorded that pair as *rested **104** at both readings*
+while recording Ziofurgone's with `at 1789907222` beside them - so the gain was scored against
+Ziofurgone's interval instead. That gave 104 + 10.49 = 114.49, which a whole-point figure shows as
+**114**. The reading was 114. It was written up as an exact fit and a second independent
+confirmation.
+
+The saved variables arrived an hour later. Tontazzo's real interval was **19.94 hours**, not
+16.78, over which the quarter rate gives **116.46**. The reading is 114, the implied rate is
+**4.01%** of a level per 32 hours against Ziofurgone's 4.95%, and what looked like the tightest
+confirmation in the entry was the wrong interval landing on the right number.
+
+**That is the lesson, and it is not the one I wrote here first.** The first version of this entry
+said a reading without its moment is *half* a reading - less precise, the qualitative half intact.
+That is too kind. A missing interval does not widen an error bar, because the arithmetic still
+produces a single number and that number still gets compared to the reading. It produces a **fit**,
+with all the confidence a fit carries and none of the warrant, and the closer the assumed interval
+happens to land the more convincing the wrong answer looks. An assumption that made the answer
+*visibly* wrong would have cost nothing; this one made it visibly right.
+
+The qualitative half does survive untouched - the figure grew, so the field rate is not zero - and
+that half never needed an interval at all. Worth separating the two in any reading: what follows
+from the direction, and what follows from the arithmetic.
+
+**The check**, which this entry did not have when it was first written and now does: the probe
+takes `PLAYER_LOGOUT` and `PLAYER_LOGIN`, computes the absence at login and stores it before a
+later logout can overwrite either end, and prints it beside every rested sample as `awayFor=`. A
+character it has not yet seen go away **says so** instead of offering a number - §2.2, applied to
+the tool's own bookkeeping. Driven against a stub before it went near the game: the interval is
+recorded, it survives a later session, and an unseen character reports nothing.
+
+And the reason the moments are the right thing to record rather than the interval between
+readings: **the pool fills while a character is logged out**, which is not the gap between two
+looks at it. Tontazzo's gain is exactly 16.00 hours of the quarter rate over a 19.94 hour window,
+so nearly four hours of it bought nothing - most likely spent logged in and idle, which the same
+entry measures as accruing nothing. Nothing in the file can confirm that, which is the whole
+complaint.
+
+Related: [[L-108]], the reasoning error this same entry made about the same rule. The two are the
+same shape - an answer that was right about arithmetic and wrong about which interval, then an
+arithmetic that was right and aimed at the wrong interval.
+
+## L-118 — The reading carried its client; the promise made from it did not
+
+**2026-09-21.** Three Era lockouts were read and their fourteen columns mapped. Column 11 answered
+8, 9 and 15 for Blackwing Lair, Ahn'Qiraj and Naxxramas, and the client's own `DungeonEncounter`
+table holds exactly 8, 9 and 15 rows for those three map ids. A cross-check against a second source
+agreeing three times out of three is good evidence, and the DATASOURCES section that recorded it is
+titled *read on Era 2026-09-21*, which is the whole scope of what had been measured.
+
+Then backlog 93 drew the design conclusion from it: *So **12 of 15** is sayable without a table of
+our own.* No client in that sentence. The Mists reading arrived the next day and answers **1** for
+Molten Core, whose `DungeonEncounter` at `5.5.4.69078` holds **ten** rows. The promise was wrong on
+the first client that was not the one it was measured on.
+
+**The reading was never overstated - the promise was.** The section header carried the build; the
+sentence that turned it into something Family would print did not, and that sentence is the one a
+later session reads and builds on. This project already has the rule in a different dress: §2.3
+says a capability is per build and is probed on each, and `Capabilities.lua` exists because a call
+that answers on one client answers about something else on another. A *column map* is a capability
+reading and obeys the same rule.
+
+**And three rows can be one reading.** All three Era lockouts were forty-man raids, on one client,
+in one session - identical in columns 4, 8, 9, 10 and 13. They agreed about column 11 because they
+were the same kind of thing, and the fourth row is the first of a different kind. Counting rows is
+not the same as counting kinds.
+
+**The check.** The conclusion in backlog 93 now names the client it holds on - *sayable on Era and
+not on Mists* - and its *what is still owed* names the kinds of row never yet read, not just the
+builds: a heroic lockout, where columns 4 and 10 would say something other than 40, which four rows
+across two clients have never done. Anything the entry promises Family will print says which client
+it was measured on, and a column with one client behind it is written as unknown rather than as
+settled-so-far.
+
+## L-119 — the expensive part was added to a schedule chosen for the cheap ones
+
+**2026-09-21.** `Character:ScanNow` reads equipment, reputations and the spellbook, and it is
+scheduled two seconds after `PLAYER_EQUIPMENT_CHANGED`, `UPDATE_FACTION`, `LEARNED_SPELL_IN_TAB`
+and `SPELLS_CHANGED`. That cadence was chosen for those three things and it is right for them:
+they are what those events are about, and each is a few hundred calls into the client.
+
+Achievements were added to the same function later, because they are read off the character with
+no window to open - which is what the file's own opening comment gives as the reason the three
+live together. Nothing was said about the schedule, so the new part simply inherited it. On Mists
+that part is 126 categories, 3,998 achievements and 19,428 criteria: **about 27,400 calls into the
+client, in one frame, several times a minute in a raid fight**, to re-read something none of those
+four events can change. It came back as four *script ran too long* errors in one Molten Core
+session.
+
+**The three things that kept it hidden.** It only exists on Mists, and Era and Burning Crusade are
+where nearly all the play and all the earlier probing happened. The cost is set by the *client's*
+catalogue and not by the character, so it does not grow with anything a developer watches, and it
+is as large on a level-one alt as on a raider. And every call goes through `Family:TryCall`, which
+makes a loop of twenty thousand client calls read exactly like a loop of twenty - one line either
+way - while being a `pcall` and a table apiece.
+
+**What named it was the client, twice.** L-094 says *script ran too long* gives the line where the
+budget ran out and not where the time went, and the first report - `Core.lua:126`, which is
+`TryCall`'s `pcall` and so the busiest line in the whole addon - said nothing at all. Two more
+reports arrived at `Scanners/Character.lua:426` and `:435`, both inside `criteriaProgress`, six
+lines apart. Four stops scattered anywhere would have meant nothing; two inside one small function
+is a measurement. L-094 is the reason to wait for the second report rather than to ignore the
+first.
+
+**The check.** The walk has its own key, `character.achievements`, its own schedule and its own
+`SetPayload` naming its own part, so what reads it and what pays for it are visible in one place.
+The harness asserts that `Character:Scan()` stores no achievements at all, and that a frame after
+the walk begins it has done one category and not both - the second is what catches a walk that
+quietly goes back to running end to end. And `/family scancost` prints the price of each part of
+the scan in criteria asked about as well as in milliseconds, so the next part whose size is set by
+the client rather than by the character can be seen before a raid finds it.
+
+**And the rule the next one falls to.** When a part is added to an existing scanner, the question
+is not only *is this read off the character* but *does the schedule this now inherits have anything
+to do with what changes it*. Wearing a different hat does not change what you have achieved.
+
+## L-120 — the pair that could be measured was not the pair in question
+
+**2026-09-21.** Backlog 96's mining half joins a vein's name to its ore's, both the game's own
+words. Asked whether the join can work, and unable to read a single vein name outside a running
+client, I measured the thing that was to hand: how alike the **ten ore names are to each other**,
+in five languages, from `ItemSparse`. French and Spanish came back with an eleven-character run
+between any two ores - `Minerai de `, `Mineral de ` - and that was written up, in a document, a
+backlog entry, a decisions row and a commit message, as *a longest-shared-run join scores the
+stationery before it scores the metal*.
+
+It does not. `Minerai de ` is scored only when **both** strings carry it, and the join compares a
+vein name with an ore name. Alberto saw it in a sentence: *the client must have the localised names
+for all veins, otherwise how does it show the tooltips*. He was answering a different point, and
+the answer took this one with it - the two strings are not both ore names, so the boilerplate
+cancels rather than counting, and no vein name has been read in any language but English to say
+what a vein's boilerplate even is.
+
+**The fetching was right and the labelling was wrong.** The ore-to-ore reading is a true
+measurement and it keeps a real finding: `Iron Ore` sits inside `Dark Iron Ore`, `Silbererz` inside
+`Echtsilbererz`, `Hierro` inside `Hierro Negro`, so a vein carrying only the short metal word
+cannot choose between them. That survives untouched. What was wrong was presenting a measurement of
+the available pair as a measurement of the asked pair, and then reasoning onward from it - a route
+was called *unworkable* on the strength of it, and an amendment designed to rescue it from a
+problem it does not have.
+
+**This is L-117's fault in a different coat.** There, an interval nobody had recorded was replaced
+by one from another character, and the arithmetic produced a fit rather than an error bar. Here, a
+pair nobody could read was replaced by a pair that could be, and the statistics produced a floor
+rather than an admission. Both times the substitution was invisible in the write-up because the
+number that came out looked like the number that had been asked for. **A measurement carries the
+thing it measured in its own sentence, or it will be read as the thing that was wanted.**
+
+**The check.** The heading and the first paragraph of that section now say what was compared - *not
+whether a vein matches its ore, but whether the ores can be told apart from each other* - and the
+correction sits inside it as a block quote rather than replacing the text, so the wrong reading and
+its retraction are read together. The same rule is why `docs/DECISIONS.md` is append-only.
+
+## L-121 — the traceback that reads last was written by the wrong thread
+
+**2026-09-21, found by another session and costing it five minutes.** It ran
+`python3 tools/mutate.py nome.mut` with the case's name and not its path. The file was not
+there, `parse` raised `FileNotFoundError`, the worker thread died, `results[index]` stayed
+`None`, and the run carried on to the end and fell over in a different function entirely:
+
+```
+File "tools/mutate.py", line 892, in gate_all
+    lines, bad = report([(caught, line) for caught, line, _ in results], everything)
+TypeError: cannot unpack non-iterable NoneType object
+```
+
+The thread's own traceback **was** printed. It was above, with `threading.py` between the two,
+so the thing a reader sees last - and therefore reads as the diagnosis - named `report`, which
+had nothing wrong with it. That session went looking for the bug in `report` and in a signature
+change before reading upwards.
+
+**A thread that dies does not fail where it died.** It leaves a hole, and the hole is found by
+whatever next assumes the slot is full, which can be any distance away in code nobody has
+touched. Python prints the real cause first and the consequence last, which is the opposite of
+the order a reader trusts. Every `for thread in threads: thread.join()` in this repository has
+that shape, and the only defence is at the point of the work: a worker catches what its own
+task raises, and turns it into the report the run already prints.
+
+**And the smaller half is worth as much.** The typed name was a fair reading of the tool's own
+usage line - `tools/mutate.py one.mut two.mut  just those` - which said nothing about a path
+while resolving relative names against the repository root. A usage line that reads as an
+invitation is a specification; either it is true or the tool makes it true. `choose` now looks
+in `tools/mutations` before giving up on a bare name, so it is true.
+
+**The check.** `mutate.attempt` is the worker's whole body, reachable and tested on a path that
+does not exist: it answers a red `ERROR` line rather than raising, the line names the case, and
+`choose` resolves a bare name to the file beside the others. Three checks and two mutations,
+`mutator-lets-a-worker-exception-out` and `mutator-will-not-find-a-case-by-name`.

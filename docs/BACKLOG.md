@@ -4709,7 +4709,8 @@ its own key and writes the whole thing back through `Database:SetPayload`.
 | `auctions` | `Auctions:Scan` at the auction house | `auctions.seen`; each auction's `expiresBy = time() + left` - same jitter |
 | `quests`, `questObjectives` | `Quests:Scan`, 4 s after entering the world and on quest events | `quests.seen = time()` - **at every login** |
 | `talents` | `Talents:Scan`, 3 s after entering the world | `talents.seen = time()` - **at every login** |
-| `equipment`, `reputations`, `spells`, `achievements` | `Character:ScanNow`, 6 s after entering the world and on its events | `achievements.seen = time()` - **at every login**, on clients with achievements |
+| `equipment`, `reputations`, `spells` | `Character:ScanNow`, 6 s after entering the world and on its events | none found inside the key |
+| `achievements` | the stepped walk, 12 s after entering the world and on `ACHIEVEMENT_EARNED` - **split off `Character:ScanNow` on 2026-09-21** | `achievements.seen = time()` - **at every login**, on clients with achievements |
 | `pets` | `Pets:Scan`, 5 s after entering the world, hunters and warlocks | `pets.seen = time()` - **at every login** |
 | `professions` | `Professions:Scan`, on skill changes and recipe windows | each profession's `recipesSeen`; each recipe's `readyAt = time() + cooldown` - jitter |
 | `crafts` | the Craft frame (Beast Training) | `crafts[id].seen = time()` |
@@ -5938,8 +5939,72 @@ are already known and cost nothing to honour:
 - `time()` and `GetServerTime()` differed by one second, so either can carry a reset moment, and
   neither is the other.
 
-Still owed: the same reading from a character that **is** saved to something, which is the only
-way to see what the fourteen columns hold when they hold anything.
+**And that reading came in 2026-09-21**, on a French Era character saved to three forty-man raids.
+The column map is in DATASOURCES, *The fourteen columns of `GetSavedInstanceInfo`, filled at last*.
+What it settles for this entry:
+
+- **Column 14 is the instance's id** - 469, 531, 533 - and it is what a lockout is keyed by.
+  Checked against the client's own `Map` table for this build, not recognised: 469 is
+  `BlackwingLair`, 533 is `Stratholme Raid` named *Naxxramas*, and all three French names match the
+  probe's output character for character.
+- **Columns 11 and 12 looked like bosses and bosses down** - 8 of 8, 8 of 9, 12 of 15 - against
+  `DungeonEncounter` keyed by the same `MapID`, which holds exactly 8, 9 and 15 rows for them.
+  **Column 11 did not survive the Mists reading of 2026-09-21** and the retraction is below.
+- **Column 3 is a countdown in seconds**, as this entry predicted: 189500 on the first answer and
+  189351 on the `UPDATE_INSTANCE_INFO` one. So the moment is made on the way in and `DEADLINES` is
+  the right home for it, exactly as written above.
+- **Columns 1 and 10 are language** - *Repaire de l'Aile noire*, *40 joueurs* - so they are labels
+  and never keys, and this is a lockout stored the way a currency is.
+- **`Names:Map` must not be used to name column 14.** It calls `C_Map.GetMapInfo`, which takes a
+  UiMapID; Era's `UiMap` table has 54 rows and none of 469, 531 or 533 is among them. Nothing on
+  these builds turns the id back into a name for the reader, which is why the label travels.
+- Column 7 is `524615680` on all three rows, so whatever it is, it is not per-instance here.
+
+**The Mists reading came in 2026-09-21** - Molten Core, one lockout, a character standing in it -
+and the full column map is in DATASOURCES, *And Mists answers the same fourteen columns, with one
+of them contradicting Era*. Three things change for this entry:
+
+- **Columns 11 and 12 are both retracted**, the first on the reading that arrived and the second
+  on the one half an hour behind it. Column 11 answers `1` for a place its own `DungeonEncounter`
+  gives **ten** rows for; the Era reading was three rows of one kind on one client and they
+  agreed, and the fourth row is of another kind and does not. Column 12 then stayed at nought
+  across a second read taken *after more bosses*, on the same lock id, in which **the countdown
+  was the only column in the whole row that moved**. So on Mists this row carries no boss
+  progress at all, and neither *N of M* nor *N bosses down* is sayable from it there.
+- **What a denominator could come from, if one is wanted**: `DungeonEncounter` is fetchable per
+  build from wago and a generated `instance id -> boss count` table would give *M*. That answers
+  half the question and the retraction above takes away the other half, so it is not worth
+  building until *N* has a source. Not decided here.
+- **And the game's own Raid Information window settles whose fault that is.** Opened on the same
+  character while the lock was live, it draws the name, `40 Player`, `1 Day 10 Hr 37 Min` and
+  `239723021` - columns 1, 10, 3 and 2 - and **no boss progress anywhere on it**. So the call was
+  never lying: the row carries none because the client has none for this lock. The open question
+  is no longer *does this call report progress* but whether a **Mists legacy forty-man lock has
+  encounter state at all**, which Era's three raids cannot answer for a different client.
+- **Two columns confirmed for free by that picture.** Column 3 is what the window prints as *Lock
+  Expire* - 124,620 seconds against the probe's 125,019 a few minutes earlier - which is its
+  fourth confirmation and its first against the client's own rendering. And column 2 is a number
+  **the game shows the player**, in grey under the name, so it is the id somebody would quote and
+  is worth both carrying and showing.
+- **Where *N* might live: `GetSavedInstanceEncounterInfo`**, which the probe now asks for eight
+  slots by position. Bounding a walk by column 11 would read one boss and stop, which is why the
+  count is not taken from the row. Unread on every build, and now asked to find out whether
+  anything on this client holds what the window does not.
+- **Column 5 is sometimes wrong before `UPDATE_INSTANCE_INFO`, not merely missing.** It read
+  `false` beside `RequestRaidInfo` and `true` when the event arrived, on a row already present
+  with its other thirteen columns filled. Every earlier finding about that event was about an
+  empty list; a reader that took the list early would have had a lockout and called it unlocked.
+  **Weakened the same day by the second read**, where it answered `true` at both moments: so that
+  `false` was a lock the client had not yet heard about rather than a standing property of the
+  early answer. The rule is unchanged - read the list when the event says so - and only the
+  strength of the claim is.
+- **Column 7 is a constant across expansions**, `524615680` on Era's three raids and on Mists, and
+  it is `8005 x 65536` exactly. Nothing may be read off it.
+
+**What is still owed:** a **heroic** lockout rather than a raid one, which is where the difficulty
+columns (4 and 10) do something other than say 40 - four rows across two clients have now all said
+40 - and the Mists reading for world bosses, where `GetNumSavedWorldBosses` is present on all three
+builds and has answered `0` every time it has been asked, Mists included.
 
 **A boss killed in a normal low-level dungeon put nothing in the list**, read on Burning Crusade
 2026-09-20 minutes afterwards: `GetNumSavedInstances` still 0. That fits what the game is
@@ -6178,7 +6243,7 @@ at a claim nobody makes.
 | logged in, resting in an inn | 5% of a level per 8 hours | **yes** - 4 points in 214 seconds, in the Stoutlager Inn |
 | logged out in an inn | 5% per 8 hours | **yes** - 102 points over 6,842 seconds, carrying the rule to 1.3 points |
 | logged in, standing in the field | nothing | **yes**, twice, on two builds - 0 over 444 and over 4,587 seconds |
-| **logged out in the field** | **5% per 32 hours** | **never** |
+| **logged out in the field** | **5% per 32 hours** | **yes, 2026-09-21** - 226 points over 60,406 seconds, against 228 predicted |
 
 So the one case an estimate would be wrong about for a week at a time - a character parked
 outdoors and left there - is the one case that has never been sampled, and that is the same
@@ -6235,6 +6300,145 @@ So the pool falls by **what the character earns**, measured twice now on this ch
 first time on a pair with no accrual in it at all (630 for 630). A projection that only ever adds
 is wrong for anybody who is played, and this is the arithmetic that says by how much.
 
+### The morning reading, 2026-09-21: it is the quarter rate
+
+Ziofurgone, read on logging back in before moving: rested **8,312**, `xp` **5,909**, level 11,
+`xpMax` 8,700, `resting=false`, in Thelsamar, at 1789967628.
+
+**`xp` is unchanged from 5,909**, so nobody played the character and nothing was spent. That is
+what makes this a reading of the rate and not of the rate less the spending, and it is the one
+thing that could have spoilt the night.
+
+The interval was **60,406 seconds - 16.78 hours**, longer than any column in the table above, so
+it is scored against the rates rather than against the columns:
+
+| | over 60,406 seconds | would have read |
+|---|---|---|
+| the inn rate, if being logged out is all that matters | +912 | 8,998 |
+| **the quarter rate, logged out in the world** | **+228** | **8,314** |
+| nothing at all | +0 | 8,086 |
+
+**Read: 8,312. The quarter rate predicted 8,314**, and the other two are 686 and 226 away. There
+is no reading of this that is ambiguous.
+
+**The two points of residue are the right shape too.** 226 points is 59,851 seconds at that rate,
+which is **555 seconds - nine minutes - short of the interval**. The pool starts filling when the
+character is logged out, not when the probe is run, and nine minutes between running it and
+reaching the character select screen is an ordinary amount of nine minutes. The residue being
+*less* than predicted, by about the time a person takes to log out, is a better fit than an exact
+hit would have been.
+
+**So Alberto's correction was right and the rule is now measured on all four cases.** The
+paragraph this entry used to carry - that the field rate was refuted by two zeros - was aimed at a
+claim nobody makes, and the case those zeros could never have spoken about is the one this reading
+covers. The full four:
+
+| | rate | measured |
+|---|---|---|
+| logged in, `IsResting()` true | 5% of a level per 8 hours | 4 points in 214 seconds |
+| logged out where `IsResting()` was true | 5% per 8 hours | 102 over 6,842 seconds, to 1.3 points |
+| logged in, standing in the field | nothing | 0 over 444 and over 4,587 seconds, two builds |
+| logged out in the field | 5% per 32 hours | **226 over 60,406 seconds against 228** |
+
+### And Tontazzo, whose numbers I got wrong before the file arrived
+
+Read 2026-09-21 on logging in: rested **114**, `xp` 40, level 1, `xpMax` 400, `resting=false`, in
+the Valley of Trials, at 1789968200. The last reading before the night, out of that client's saved
+variables: rested **104** at **1789896416**, same spot, `xp` 40.
+
+**The half that needs no arithmetic still stands, and it is the important half.** The figure
+**grew** while the character was logged out in the open world. *Nothing accrues in the field* is
+refuted by that alone, and so is the particular worry Alberto raised when he made the correction -
+that the orc and troll starting valley might be one of the *zone particolari di campo aperto*
+where nothing accrues. It accrues there.
+
+**The arithmetic does not come out, and this entry said it did.** Before the saved variables
+arrived, this section scored the gain against *Ziofurgone's* interval, because Tontazzo's own
+moments had not been written down - and got 104 + 10.49 = 114.49, shown as **114**, which is the
+reading. An exact fit, and an accident of the wrong interval:
+
+| | Tontazzo | Ziofurgone |
+|---|---|---|
+| interval between readings | 71,784 s, **19.94 h** | 60,406 s, 16.78 h |
+| gain | 10 | 226 |
+| the quarter rate over that interval | +12.46 → **116.46** | +228 → 8,314 |
+| read | **114** | 8,312 |
+| hours the gain implies | **16.00** | 16.63 |
+| short of the interval by | **3.94 h** | 9.2 min |
+| implied rate, % of a level per 32 h | **4.01%** | **4.95%** |
+
+**The likeliest explanation is one this entry has already measured, and it cannot be checked from
+what was recorded.** The pool fills while a character is **logged out**, and the gap between two
+readings is not that interval: a character can be read, stay logged in for hours accruing nothing
+in the field - which is the third row of the four-case table, measured twice on two builds - and
+only then be put away. Tontazzo's gain is exactly 16.00 hours of the quarter rate, so 3.94 hours
+of that window bought nothing; Ziofurgone was parked and logged out nine minutes after his
+reading, and his fit is to within 1%. Nothing in the file says when either character actually
+left, because the probe recorded readings and not logouts. **So one of 4.01% and 4.95% is an
+artefact of the wrong interval and the data cannot say which.** L-117.
+
+**Fixed for the next pair rather than argued about:** the probe now takes `PLAYER_LOGOUT` and
+`PLAYER_LOGIN`, works the absence out at login and stores it before a later logout can overwrite
+either end, and prints it beside the rested sample as `awayFor=`. A character it has not yet seen
+go away says so rather than offering a number.
+
+### The discriminator is `IsResting()`, and the client has been showing it all along
+
+Alberto, 2026-09-21: *the client knows, it prints "zzz" on the character frame when it is in a
+resting zone.* Which is the third thing this projection needs and the one this entry had not
+named - the rested figure and the moment say how much and from when, and **this says which of the
+two rates applies to the absence**.
+
+**It is not geography and Family never has to know what an inn is.** The samples in the saved
+file corroborate it across six characters, and two pairs make the point on their own:
+
+| `resting` | where | |
+|---|---|---|
+| `true` | Stoutlager Inn | the inn |
+| `false` | **Thelsamar** | the village the inn stands in |
+| `true` | Stormwind City | the city |
+| `false` | **Stormwind Stockade** | a dungeon inside that city |
+| `true` | Ironforge, Honor Hold | a city and a town |
+| `false` | Valley of Trials | open world |
+
+A shipped list of rest zones would have to get Thelsamar and the Stoutlager Inn the right way
+round in five languages; `IsResting()` gets it right for nothing, in any language, on any build,
+including places nobody thought of. So the rule this entry states per case is **keyed on that flag
+and never on the name of the place** - which also means the four-case table's *inn* should be read
+as *`IsResting()` was true*, and has been corrected to say so.
+
+The catch is the same one as everything else above: the flag has to be read **at the moment the
+character leaves**, because it is the logout location that sets the rate for the absence. Which is
+the question below.
+
+**A claim about the feature, made here and then retracted the same day.** This entry said Family
+has the same problem - that it can record when it last *saw* a character and never when they
+logged out, so every projection would over-estimate. **That is wrong, and Alberto asked the
+question that found it:** *when do we take the last reading of a char xp before it logs out?*
+
+Family already takes a reading at `PLAYER_LOGOUT`. `Scanners/Identity.lua:306` registers it and
+writes the logout zone there, and the comment above it records that this was measured rather than
+assumed: `GetZoneText` and `GetSubZoneText` still answer at that moment, and what is written then
+reaches the saved variables. So the start of the absence is a moment Family can have exactly,
+and the over-estimate above is not a property of the feature.
+
+**What is genuinely open is narrower, and the same file is why it is worth asking.** Not every
+call answers during `PLAYER_LOGOUT`: `GetBestMapForUnit` does **not**, because the map system is
+already gone by then, which was found by writing it and reading the record back - *`Cité
+d'Ironforge  map nil`*. Whether `GetXPExhaustion`, `UnitXP`, `UnitXPMax` and `IsResting` answer
+there has never been asked. If they do, a rested reading taken at logout is the exact start of the
+absence and the projection has no guesswork in it at all. If they do not, the last reading is
+whenever the scanner last ran and the shortfall is real, and the panel has to say so.
+
+**That question cannot be settled from a `/run`**, for the same reason the map one could not - the
+moment only exists on the way out. So the probe now asks the rested calls during `PLAYER_LOGOUT`
+and writes the answer into the saved file marked `AT LOGOUT:`, to be read back off the file
+exactly as the map answer was. One logout settles it.
+
+**What is still unmeasured**, and is written here so the estimate is not built as though it were
+not: the Pandaren exception on Mists, and what a character who crosses between the two cases in
+one absence accrues - all the readings above are of a character that stayed where it was put.
+
 **And a second exception to write down before it bites.** Alberto: Pandaren fill faster than
 everybody else. Whatever Family computes has to know the race of the character it is computing
 for, or it is wrong for one race on the build that has them - and Mists is that build. Nothing
@@ -6260,6 +6464,32 @@ it is the half an estimate would get wrong: **a character that is played spends 
 a projection that only ever adds is wrong for everybody except the ones nobody touches. It wants a character below it, which is what any
 character becomes as soon as it is played for a while - then two readings a few hours apart, one
 pair logged out in an inn and one pair logged out in the field.
+
+**But *played* is not *earned*, and a Mists reading says so.** Two samples half an hour apart on a
+level 85 in Molten Core, 2026-09-21: `xp` went **62 to 1,629** and `rested` did not move from
+**631,648**, with `resting=false` throughout.
+
+| | rested | xp |
+|---|---|---|
+| first | 631648 | 62 |
+| half an hour later | 631648 | 1629 |
+
+1,567 experience earned and nothing spent. That does not contradict the level 11 above so much as
+bound it: the pool is drawn on by *some* kinds of earning and not by all of them, and the boars
+measurement cannot tell which because everything it measured was a kill. Two explanations fit and
+neither is measured here - a level 60 raid's occupants are grey to a level 85 and grey things are
+worth nothing, so the 1,567 came from elsewhere; and experience that is not a kill may not draw on
+the pool at all. **What it settles is the shape of the rule**: *a character that is played spends
+this figure* is too strong, and a projection built on it would subtract from a questing alt that
+never spent a point. The reading a rule wants is a pair taken around a session of ordinary killing
+with the character's own level above the mobs'.
+
+**And the place can come back empty while the character is standing in it.** The same sample wrote
+`where=` with nothing after it, where the earlier one said `Magmadar Cavern`. That is `GetZoneText`
+answering a blank string in an instance, from a character who was logged in and playing - so the
+blank is not the logout case this entry is otherwise about, and a reader that treats *no place* as
+*not read* would be wrong both times. It matters here because `Scanners/Identity.lua:306` writes
+the zone at `PLAYER_LOGOUT` and the question open below is what else answers at that moment.
 
 ---
 
@@ -6326,4 +6556,393 @@ any more. Five checks and three mutations for the order itself.
 about, on a build that was filed under the modern one. Its row has still never been seen, because
 the only Mists character asked so far has earned no currency. If that row is twelve values with
 the id last, this fix covers it; if it is any other length, honor there keeps its name and this
-entry has a second half. Either way nothing is guessed, which is what the shape check buys.
+entry has a second half.
+
+**Two of that second half's questions were separable, and one is now answered - 2026-09-21.**
+Alberto reported the blocker: nobody queues low-level battlegrounds on that realm and he has no
+character at the top of it. That stops the *row shape* question and does not stop the other one.
+
+**Honor's id on Mists is 1901**, the same number Burning Crusade 2.5.6 was measured to use, read
+from `CurrencyTypes` for that build - no battleground and no character needed. And the probe had
+been asking **392**, which is honor on Cataclysm and on retail and on 5.5.4 answers a full,
+plausible table named *Honor Deprecated 3* with `currencyID = 0`. So the reading that looked like
+*this build has retired honor* was the probe asking a retired number and being answered politely.
+Written up in DATASOURCES, *Honor on Mists is 1901*.
+
+**What is still blocked is only the row's shape**, and it needs neither honor nor PvP: any currency
+at all puts a row in that list. Archaeology fragments are the cheapest - one survey on one dig
+site, nobody else online - and a Darkmoon Prize Ticket at any level is the next. Then
+`/familyprobe apis` on that character, for the *the currency list* line. Either way nothing is guessed, which is what the shape check buys.
+
+---
+
+## 96. Family's possessions on a herb node's or a mining vein's tooltip — DONE 2026-09-21
+
+**Both halves are built.** The mining half followed the herb half by a few hours, once Alberto
+put the vein names for four languages outside the tree and the join could be measured on 534
+nodes instead of eight - 422 named correctly, none wrong. The rule and its three numbers are in
+`Family_UI/Tooltip.lua` with the reading that fixed each one, and the full measurement is in
+DATASOURCES under *The join measured on every mining node of three builds in five languages*.
+**What a node can be about ships as ids**, generated by `tools/gathered.py` into `Gathered.lua`:
+not one word of any language, which was Alberto's condition for the entry.
+
+**Still open**: the minimap, which gives one line where this wants two, and so is not recognised
+at all; and the in-game confirmation of the mining half, which should be taken on the rows the
+measurement marks as narrow rather than at random.
+
+What follows is the entry as it was worked out, kept because the retractions in it are the
+point. The herb half was built first for a reason that was about evidence and not about effort: the herb half rests on a measurement - a herb node is named exactly what the
+herb is named, read four ways across two builds - and the mining half rests on an assumption
+about what a vein is called in four of the five languages, which nobody has read. Building the
+first and probing the second is what the rest of this entry is for.
+
+**What went in** (`Family_UI/Tooltip.lua`): a third tooltip route beside the item and spell ones,
+hooked to `GameTooltip`'s `OnShow` because no setter runs for a world object, deferred by a frame
+because at `OnShow` the text is not all on the tooltip yet. A node is recognised by line count,
+then by `Family:SkillLineFor` on the second line - which carries every profession name in every
+locale - and only then by the three calls that would name an item, a spell or a unit. That order
+is deliberate: the test runs on every tooltip the game draws, so its cost is set by how often a
+pointer moves rather than by what it answers, which is L-119 in miniature. The name is matched
+**exactly** against what the family owns through `Index:Search`, memoised per name and emptied
+when the records change, and the answer is an item id. **Nothing is shipped and nothing is
+translated**: the word on the tooltip is the client's, the word it is matched against is the
+client's. Thirteen checks, nine mutations, all caught.
+
+**What it does not do yet**: veins, and the minimap. A blip is one line and this wants two, so a
+blip is not recognised at all - correct today, and the thing to revisit when the mining half lands
+without a profession line to lean on.
+
+
+
+**Asked 2026-09-20, by Alberto.** Hovering a Silverleaf in the world, or its dot on the minimap,
+should add Family's possessions block for Silverleaf. Hovering an Iron Deposit or a Large Thorium
+Vein should show who holds **Iron Ore and Iron Bars** - the ore and what it smelts into, not the
+ore alone.
+
+**Today, measured.** Family puts its block on a tooltip through two routes and both of them are
+about an item or a spell: `Family_UI/Tooltip.lua` hooks `OnTooltipSetItem` and `OnTooltipSetSpell`
+(`hookSetItem`, `hookSetSpell`, installed at `Tooltip.lua:1344`), and on a client that has the
+modern tooltip system it registers `TooltipDataProcessor` post-calls for
+`Enum.TooltipDataType.Item` and `Enum.TooltipDataType.Spell` and nothing else. A herb node in the
+world is neither. **So nothing Family has today fires on one**, and there is no partial version of
+this to extend.
+
+The minimap is the same answer twice over: the only minimap code in either addon is Family's own
+button (`Family_UI/Broker.lua:566`). Whether a tracking blip can be hovered at all on these
+clients, and whether it says anything when it is, has never been asked here.
+
+**The ore-and-bar half needs no table and no new data**, and it needs even less than this entry
+first said. `Family.RecipeReagents` is spell -> the item ids it consumes, generated and with no
+language in it: `[3307]={2772,1}` is Smelt Iron taking Iron Ore. `Family.RecipeProducts` is the
+same spell -> the one item it makes, generated for all three builds from `SpellEffect`'s
+CREATE_ITEM (DATASOURCES, *The one item a recipe spell makes*), and `Recipes:MadeBy(item)` already
+reads it backwards. So **Iron Ore is a reagent of Smelt Iron, which makes Iron Bar** is two shipped
+tables and no client involved at all - where this entry first said the product id came off a
+recorded recipe, which is a route that needs somebody to have opened a forge. And `Family/Index.lua`
+answers *who holds this item id* without walking anybody. Given the node's items, the rest of this
+entry is drawing.
+
+**The unmeasured half is the node itself, and it is the whole entry.** A world object hands over a
+name and, as far as anything here knows, no id at all. §2.1 is ids and not names, and a name is
+one language - so the question is not *which table* but *whether this can be asked rather than
+assumed*. Four routes, in the order of how much each promises:
+
+1. **Ask the client.** Unknown, and cheap to find out. Mists 5.5.4 runs the modern tooltip system
+   (`Family.tooltipRoute` reports `both` there), so it may carry a `TooltipDataType` for a world
+   object with an id in its data. Era and Burning Crusade almost certainly carry nothing. This is
+   a probe, exactly as honor and the currency row were, and it is the first thing to do.
+2. **Learn it from play.** Gathering a node opens a loot window, and a loot window hands over item
+   links, which carry ids. Recording *this object name yielded these item ids* is the method this
+   project already uses twice - the areas store and the quest-title store (`Family/Names.lua`) -
+   and it is by id, in the player's own language, with nothing shipped. It knows only the nodes
+   somebody has actually gathered, which is a real limit and a growing one.
+3. **Match the name against what the client has already named.** Most herb nodes are called
+   exactly what the herb is called, so the tooltip's first line could be looked up in
+   `Names:ItemStore`. It is a name match, it works for no ore at all, and it works only for items
+   already in that store - so it is a shortcut for case 2 rather than a route of its own.
+4. **A third-party data source.** Alberto's own question: *I dont know if WAGO is a source to take
+   herb and metal node names, and their associated herbs/ores. Or we have to create a table by
+   hand?* **Adopting a new data source is reserved** (`CLAUDE.md`, item 2), so it is not decided
+   here. Put to Alberto 2026-09-20 with a recommendation against, on the grounds that routes 1 and
+   2 have not been tried and that a shipped name table is five languages to keep and one more
+   thing to be wrong at the next expansion.
+
+**Shape.** A probe first - hover a herb node, a vein and a minimap dot on each client, and print
+what arrives. Nothing else is worth writing until that reading exists.
+
+### Route 1, answered on Era 2026-09-20
+
+Alberto chose route 1 - *lets start with 1 then we decide* - and it was read the same day on
+`1.15.9`. The reading is in DATASOURCES, *What a herb node and a mining vein actually say*; what
+it does to this entry is below.
+
+**There is no id and on Era there is no way to one.** `TooltipDataProcessor` is `nil` and
+`C_TooltipInfo` absent, so nothing can be registered against the modern tooltip system - and
+`Enum.TooltipDataType` is there anyway with 28 members, `Object` and `MinimapMouseover` among them.
+Present is not meaningful: the probe registered a post-call for all 28 and not one fired. So the
+mapping from node to item has to be learned or written, and this entry's open question is now
+**which of those**, not whether.
+
+**Route 4 is narrower than the question that was asked, and the narrow part is already answered.**
+`wago.tools` is the source Family already uses (DATASOURCES §3), so *is WAGO a source for this* is
+not a question about adopting anything - it is a question about what the client's own tables hold,
+and it was answered by fetching. `GameObjects` for Era is 864 rows of signposts and region markers
+with no node in it, `GameObjectLabel` 404s for that build, and `Lock` carries no names and no items.
+A node is a server-spawned object and what it drops is a server loot template, so **neither the
+mapping nor even the node names in five languages can be generated** - the disenchant answer of
+2026-09-12 over again, for the same reason. What remains of route 4 is a third-party *database*
+rather than a mirror of the client's files, which is a heavier proposition than the one asked about
+and stays reserved.
+
+**Route 3 grew a reason to be taken seriously.** The measured tooltip is **two** lines, and the
+second is the gathering profession in the client's own word - *Herbalism* under Liferoot, *Mining*
+under Copper Vein. `SkillLines.lua` already carries 182 and 186 with their names in five locales,
+so which profession a node belongs to is answerable **by id, in any language, with nothing new**.
+That does not name the item, but it says which half of the problem a given node is in before line 1
+is read at all. And the name lookup has a property worth noticing: **it only has to succeed where
+somebody holds the item.** If nobody in the family holds Liferoot the honest answer is *nobody has
+any*, which needs no mapping - and if somebody does, Family has already resolved that item's name
+in the reader's own language into `Names:ItemStore` in order to draw it. Measured on two herbs only,
+and *the node is named exactly what the herb is named* is a claim about Classic herbs that has not
+been checked across the set. It is false for every ore: *Copper Vein* is not *Copper Ore*.
+
+**The minimap half is not measured.** That client was running GatherMate, whose pins are named
+frames and which draws on the minimap, so the one `Minimap` reading cannot be told from a
+GatherMate pin anchored there. It wants a reading with GatherMate off before anything is said about
+the minimap at all.
+
+**Mists, read the same day, settles it: one route and not two.** 5.5.4 **has** the modern tooltip
+system - `TooltipDataProcessor` a table, `AddTooltipPostCall` a function - and the probe registered
+a post-call against all 28 members of `Enum.TooltipDataType` and said so when it armed. A Dreamfoil
+node fired **none of them**. So the machinery is present, every type was listening, and a world
+object does not travel that way. Era could not have told us that on its own: with no processor
+there, *nothing fired* was the only answer available and said nothing about world objects.
+
+The rest of the shape held on the second build - two lines, the second `"Herbalism"`, and no frame
+under the pointer. So **on every client Family runs on, a gathering node hands over a name and
+nothing else**, and the line beneath it is the gathering profession, which `SkillLines.lua` already
+resolves to an id in five locales.
+
+**Reported from play 2026-09-21, and not yet explained: the probe reacts only to a node the
+character can actually work.** Hovering a vein on a character who is **not a miner** draws the
+game's own tooltip, red *Requires Mining* line and all, and the probe says nothing.
+
+If that holds it matters twice over. It would mean Family's block appears on the nodes you can
+take and not on the ones you cannot - which is arguably the right behaviour and is certainly a
+behaviour somebody should have chosen rather than inherited. And *who in the family has Iron Ore*
+is a question a non-miner has every reason to ask while looking at a vein they cannot touch, so
+the blind spot would sit exactly where part of the value is.
+
+**What cannot be said yet is why**, and the probe was unable to tell: *it declined the tooltip* and
+*the tooltip never reached it* were the same silence. That is §2.2's fault in the tool rather than
+in the addon, so the watcher now counts every tooltip it sees while armed and reports a refusal
+**out in the world** with the gate that refused it and what the client had said - capped at three
+lines, since a pointer crosses a great many tooltips. The next run separates the two worlds:
+tooltips seen but declined means a test of ours, and none seen at all means the client does not
+route that case through `GameTooltip`'s `OnShow` - in which case the eventual feature has the same
+blind spot and inherits it from the client rather than from us.
+
+**The minimap is measured after all, 2026-09-21.** Alberto turned GatherMate off on purpose for a
+clean read and hovered a blip: `Minimap  |  "Silverleaf"`. So that is **the client's own tracking
+blip**, it answers on a stock interface, and the minimap half of this entry is possible.
+
+What it gives is less than the world node does: **one line, the name, and no profession line**,
+where a world node answers two. So a blip says which node it is and not which profession it
+belongs to - the discriminator the world route hands over for nothing. Whatever resolves a node
+name has to work without it there.
+
+### The route, chosen 2026-09-20: a table written by hand
+
+Alberto, choosing it over learning the mapping from play, over a third-party database and over
+building the resolvable half first. Recorded against my recommendation, which was to learn it, and
+the reason for the recommendation is the thing the table now has to answer.
+
+**Where the names come from is the open question, and it is not a detail.** The node names are not
+in the client's files - that is what the wago fetch above settled - so a hand table's English column
+has to be read off somewhere outside this project, and its other four columns doubly so. This
+repository has a standing rule about exactly that: `SkillLines.lua` is generated rather than typed
+because *Erste Hilfe* and *Erstehilfe* are indistinguishable from outside the game and a wrong one
+fails silently for the players who cannot be asked to check it. A hand table of node names in five
+languages is that risk once per node per locale.
+
+**Half of it has a way out, and it costs nothing.** A herb node is named exactly what the herb is
+named - measured on Liferoot, Plaguebloom and Dreamfoil, and not checked across the set - and the
+client will name an item id in the player's own language. So for herbs the table can be
+**`node -> item ids` with no names in it at all**: the localized node name is the localized item
+name, which Family already resolves through `Names:Item`. An ore vein is not named after its ore in
+English - *Copper Vein* against *Copper Ore* - so that trick does not reach the mining half.
+
+### The fork settled, 2026-09-21, and it closes the route above for half the entry
+
+Alberto: *96 needs localised names like anything else in game*, and *locale words must come from
+official game vocabulary, not our translations.*
+
+The second sentence is this repository's `SkillLines.lua` rule - generated rather than typed,
+because *Erste Hilfe* and *Erstehilfe* are indistinguishable from outside the game - stated as a
+requirement instead of as a precedent. It answers the fork, and it does more than answer it.
+
+**The herb half is not merely possible under the rule, it is finished by it.** A herb node is named
+exactly what the herb is named, and a herb is an **item**, and item names are client data. The
+running client answers `GetItemInfo` for any id in its own language - that is `Names:Item`, with
+the callback for an id the client has not cached yet, and the harness checks both paths. Offline,
+`ItemSparse` is a table this project already fetches (`tools/GenerateCraftLevels.py:90`). So the
+herb half ships **no strings at all**: a list of item ids, and every word that reaches the screen
+came out of the client. Official vocabulary by construction, in five languages, with nothing for
+anybody to check and nothing for anybody to get wrong.
+
+**The mining half has no such source, and that is measured rather than feared.** A vein is a
+*gameobject*; its name lives in `gameobject_template` on the server; and the wago fetch above found
+neither the names nor the mapping in anything wago mirrors. So **there is no official vein
+vocabulary anywhere outside a running client - in any language, English included**. A table written
+by hand would be somebody's reading of the game rather than the game's own word, which is precisely
+what the second sentence forbids, once per node per locale.
+
+So the route chosen on 2026-09-20 survives for herbs, where it turns out to need no names, and
+**is closed for veins by the rule that was meant to guide it**. What the mining half needs is a
+route that ends in the game's own mouth. Three do, and only one of them is free:
+
+1. **Learn it from play.** A miner mines a vein; the client knows both the node it was and the ore
+   that came out; Family records `locale + node name -> ore item ids` and shares it like anything
+   else. Every word official, no table, and it works in a language nobody here speaks. The cost is
+   that it knows nothing until somebody mines one, and what the client offers at that moment -
+   whether the node's name is reachable from the loot - **has never been asked** and is the probe
+   this half now wants.
+2. **Join the two official strings.** The vein name comes from the tooltip and the ore name from
+   `GetItemInfo`, both the game's own words in the reader's own language, and only the *join* would
+   be ours: the shared metal word. *Kupferader* against *Kupfererz*, *Filon de cuivre* against
+   *Minerai de cuivre*. Ships nothing, needs no play, works on the first hover - and it is a
+   heuristic, which this repository distrusts, and it cannot be checked offline because checking it
+   needs the vein names that do not exist outside the game.
+3. **A third-party database** - Wowhead and the like, which have the names in every locale because
+   people playing in those locales submitted them. That is **reserved item 2** and is Alberto's
+   alone.
+
+**Recommendation: 1, with the probe first**, and build the herb half now rather than behind it. The
+herb half is the whole of the Silverleaf example in the asking message, it satisfies both of
+Alberto's sentences with nothing shipped, and it is the half that cannot go wrong.
+
+### Route 2 chosen, and measured the same hour — it cannot be a plain shared run
+
+Alberto took **2**, the join. Half of it can be checked without a hover and was, and the full
+reading is in DATASOURCES under *What the ore names themselves say about joining a vein to its
+ore*. What it settles:
+
+- **The candidate ores need no new table.** `SkillLineAbility` for `1.15.9.69109` gives 23 spells
+  on skill line 186; crossed with the shipped `Family.RecipeReagents` they consume ten ores -
+  `2770 2771 2772 2775 2776 3858 7911 10620 11370 18562`. Out of the client's own files, both ends.
+- ~~**The noise floor is higher than the signal in two languages.**~~ **Retracted the same hour**,
+  by Alberto's *I did not understand the problem*. Two *unrelated* ores do share 11 characters in
+  French (`Minerai de `) and Spanish (`Mineral de `) - but that run is scored only when **both**
+  strings carry it, and the join compares a **vein** name with an **ore** name. No vein name has
+  been read in any language but English, so nothing says a vein carries that boilerplate; if it
+  does not, it cancels instead of counting. A measurement of the pair that was available was
+  written up as a measurement of the pair in question (L-120).
+- **And the containments are the interesting pairs.** `Iron Ore` ⊂ `Dark Iron Ore`, `Silbererz` ⊂
+  `Echtsilbererz`, `Hierro` ⊂ `Hierro Negro`. On English, *Iron Deposit* shares `iron ` with both
+  iron ores - five characters each, a dead tie - and **iron is the example in the asking message**.
+- **Spanish ore names are not one family**: `Mineral de cobre` carries the word and `Hierro`,
+  `Torio`, `Veraplata` and `Hierro Negro` do not. That matters for a rule that strips boilerplate
+  before matching, and not for one that does not.
+- **And there was never a names problem to solve here.** Alberto: *the client must have the
+  localised names for all veins, otherwise how does it show the tooltips.* It does, on the tooltip,
+  in the reader's language, measured four ways. What is missing is the name in a **file** - a
+  gameobject's name comes from the server when the client first meets it, which is why the tooltip
+  has it and why a mirror of the client's shipped data does not. So the name is always readable
+  **for the node under the cursor** and never enumerable into a table, and route 2 wants only the
+  first. The official-vocabulary objection was about shipping a table and never applied to it.
+
+**So route 2 stands, with one amendment**, for the narrower reason that survived:
+
+- score a node name against all ten ores and take the best, **but require it to beat the runner-up
+  by a margin** - a tie or a near-tie shows nothing at all, which is §2.2 applied to a guess;
+- which means four of the ten work everywhere and the two confusable pairs fall silent until a
+  vein name is seen that separates them;
+- and the part still unmeasured is the only part that decides it - **what a vein is actually
+  called** - which needs a client, in a language, with a miner in it. That is the same probe route
+  1 wanted, so it is owed either way and should be run before a line of the join is written.
+
+### The first vein name in a second language, read 2026-09-21
+
+`1="Filon de cuivre" 2="Minage"` on a French client. The full scoring is in DATASOURCES under
+*The first vein name in a second language*. What it changes:
+
+- **The join resolves both vein names that have ever been read.** `Copper Vein` picks
+  `Copper Ore` at 7 against 3, and `Filon de cuivre` picks `Minerai de cuivre` at 10 against 4.
+  Margins of 4 and 6, not hairs.
+- **The stationery is different on the two sides** - the vein says *Filon de*, the ore says
+  *Minerai de* - so the eleven-character floor never reaches this comparison, which is the
+  retraction confirmed by a reading rather than by an argument.
+- **`Minage` is already in `SkillLines.lua` under 186**, so the discriminator the herb half runs
+  on needs nothing added for veins.
+- **Both measured veins are copper**, which is the one metal with no near neighbour in any
+  language. The containments are untouched by this reading and are still where a confident wrong
+  answer lives: `Iron Ore` inside `Dark Iron Ore`, `Silver Ore` inside `Truesilver Ore`, `Hierro`
+  inside `Hierro Negro`.
+
+**And a design consequence found while scoring.** This entry promises the ore **and** the bar -
+*who has Iron Ore and Iron Bars*. The bar's name carries the same metal word the ore's does in
+every language, so the bar **ties** with the ore rather than losing to it. A rule of the form
+*the winner must beat the runner-up* would fall silent on the ordinary case, which has two right
+answers. The rule has to tell *two answers both wanted* from *two answers one of which is wrong*,
+and what tells them apart is the ore-to-bar link, which is already known by id through
+`RecipeReagents` and `RecipeProducts` - so it comes from there and never from the scoring.
+
+**What is owed before this is built**, and it is small: one hover each on an **iron** vein and a
+**dark iron** one, in any single language other than English. That is the pair that decides
+whether the scoring needs a tie-break at all, and it is the only pair whose failure would show a
+wrong name confidently rather than showing nothing.
+
+---
+
+## 97. CTRL or ALT on a character's name jumps to that character's Possessions or Professions
+
+**Asked 2026-09-20, by Alberto.** CTRL-clicking a character's name on any Summary subpanel should
+open the Possessions panel with that character selected; ALT-clicking should open Professions.
+
+**Today, measured, and this one is nearly built.** Both doors exist and are already opened from
+this very panel:
+
+- `UI:ShowContentsFor(key)` - `Family_UI/Contents.lua:1447`, called from Summary's Bags set at
+  `Summary.lua:3417`.
+- `UI:ShowProfessionFor(key, profession)` - `Family_UI/Professions.lua:1969`, called from a
+  profession cell at `Summary.lua:3229`.
+
+And `ShowProfessionFor` already takes the key alone: `UI.__selectProfession` at
+`Professions.lua:1049` guards the second argument - `if profession then chosen = profession end` -
+so calling it with one argument selects the member and leaves the profession as it was. One edge:
+that function finds the member by walking `membersWithSkills()`, so a character with no
+professions recorded is not selected by it at all, and a click on such a name would open the panel
+on whoever was there before. That is the one thing this entry has to decide rather than reuse.
+
+The rows carry what is needed. `row.memberKey` is set at `Summary.lua:3316`, and the folded lines
+and extra rows carry it too (3439, 3512, 3567, 3686). There is **one** `OnClick` for a summary row,
+at `Summary.lua:2493`, and it already splits on the button: left runs `self.opens`, right offers to
+forget the member. A modifier test goes at the top of the left branch, before `self.opens`, and the
+whole feature is that test plus the two calls above.
+
+Reading the modifiers is also already solved and already careful about it. `Family_UI/ItemClick.lua`
+has `wanted()` at line 128 and, more to the point, `UI:ModifiedClickActions()` - which reads out of
+the client *which modified clicks the game has already spoken for*, rather than picking a
+combination and hoping. That list is what says whether plain CTRL and plain ALT are free on all
+three clients; on Mists, CTRL and a click was measured to open the Dressing Room, which is what
+moved the item-click gesture off CTRL-ALT in the first place.
+
+**One thing known to bite, already paid for once.** CTRL does not reach Family at all while the
+game window has lost focus - entry 90 and the measurement under entry 2350 - so a modifier-only
+gesture fails silently in exactly the case where somebody has alt-tabbed and come back. Not a
+blocker, but it belongs in the entry rather than in a surprise.
+
+**And a second one that turned out not to exist.** This entry first said plain CTRL was already
+doing something on these rows - swapping the tooltip to its worth block - and it is not. That
+block lives in `onItem` (`Tooltip.lua:1072`), which is reached from `OnTooltipSetItem` and needs
+an item id and a sell price. A Summary member row carries no item: it goes through
+`UI:AttachTooltip` and `showFor` (`Tooltip.lua:1646`), whose resolver is handed the frame alone
+and hands back plain lines, and `IsControlKeyDown` appears nowhere in `Summary.lua`. Holding CTRL
+over one of those rows re-fires the resolver and it draws the same thing. Corrected by Alberto the
+same day: *none of the rows on the various subpanels of Summary carry items*. Written down because
+the claim was made from a grep hit in a file rather than from reading which path it was on, and
+because an entry that invents an obstacle costs the same as one that hides a real one.
+
+**What it would give a player:** the summary says *this character has 14 free slots* or *this one
+is a 300 blacksmith*, and both are a reason to go and look. Today that is: find the tab, find the
+member in the picker, forty-odd members deep.

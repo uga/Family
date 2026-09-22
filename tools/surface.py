@@ -230,7 +230,7 @@ def differs(one, other):
 
 def report(asked_path, control_path=None):
     uses = collections.defaultdict(set)
-    globals_, _, _, _ = measure(uses)
+    globals_, members_, literals_, _ = measure(uses)
     label, asked = answers(asked_path)
     control_label, control = answers(control_path) if control_path else (None, None)
 
@@ -247,12 +247,28 @@ def report(asked_path, control_path=None):
 
         The run itself carries the size of the list it was asked, which is the one number
         that dates it without anything having to be remembered.
+
+        **All three lists are compared, and by name rather than by size.** Two reasons, both
+        found the same afternoon. The merge of 2026-09-22 moved the members from 56 to 57 and
+        the literals from 136 to 137 and left the globals at 278, so a run taken before it
+        would have passed a guard that watched the globals alone - checked against the one
+        number that happened not to move. And counting the rest does not work either: the run's
+        event block carries the generated literals **and** the thirteen names the briefs use
+        that Family does not, so 136 generated arrive as 149 asked and a count reads that as a
+        run from the future. What dates a run is a name the list has today and the run was
+        never asked, which neither of those can fake.
         """
-        asked_now, asked_then = len(globals_), len(run["globals"])
-        if asked_then != asked_now:
-            print("# **%s was asked %d globals; the list generates %d today.** That run is from"
-                  " an older probe: re-run it, or read what follows as a comparison with the"
-                  " past." % (label, asked_then, asked_now))
+        for word, generated, block in (("globals", globals_, "globals"),
+                                       ("namespace members", members_, "members"),
+                                       ("literals", literals_, "events")):
+            was_asked = run.get(block) or {}
+            missing = [name for name in generated if name not in was_asked]
+            if missing:
+                print("# **%s was never asked %d of today's %d %s** - %s%s. That run is from an"
+                      " older probe: re-run it, or read what follows as a comparison with the"
+                      " past." % (label, len(missing), len(generated), word,
+                                  ", ".join("`%s`" % name for name in missing[:3]),
+                                  " and others" if len(missing) > 3 else ""))
 
     def files(name):
         found = sorted(uses.get(name, ()))

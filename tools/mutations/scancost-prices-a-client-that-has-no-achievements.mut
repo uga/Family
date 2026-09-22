@@ -1,0 +1,7 @@
+name: /family scancost walks achievements on a client whose scanner never reads them
+file: addons/Family_UI/Slash.lua
+--- old
+		local categories = Family.Capabilities:Has("achievements")
+			and (Family:TryCall(GetCategoryList) or {}) or {}
+--- new
+		local categories = Family:TryCall(GetCategoryList) or {}

@@ -1,0 +1,6 @@
+name: a category does not say how many criteria it asked about, so the price cannot be read
+file: addons/Family/Scanners/Character.lua
+--- old
+			asked = asked + (criteria or 0)
+--- new
+			asked = asked + 0
