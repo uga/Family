@@ -1341,3 +1341,44 @@ empty crashed the run at `tests/Harness.lua`'s `payload.bags[0].slots[2].id == 2
 into a slot that is no longer there - so the gate exited non-zero, the mutator called the case
 caught, and no failure was ever printed. True word, wrong reason. That check is now guarded and
 says *slot 2 of the backpack is empty*, and the rule is L-208.
+
+## 19. The brief's table hint, applied to the whole surface (2026-09-22)
+
+Asked by Alberto whether the briefs were being used or filed: *"il fatto che molti metodi e api
+rispondono con una tabella in midnight faceva parte dei suggerimenti iniziali. Li stai usando?"*
+The answer had been **per slice** - each time a call was touched, its shape was checked - and
+never across the whole surface at once. It is now, from the run already in hand.
+
+**55 of the 331 calls the version 13 run answers hand back a table.** Of those, **12 are named
+in Family's own sources**, and they are the only ones that can break anything:
+
+| the call | where Family reads it | how it reads the answer |
+|---|---|---|
+| `C_Container.GetContainerItemInfo` | `Scanners/Bags.lua:71` | `if type(info) == "table"`, with the ten-return form kept beneath |
+| `C_CurrencyInfo.GetCurrencyListInfo` | `Scanners/Currencies.lua:93` | `type(info) == "table" and not info.isHeader` |
+| `C_TradeSkillUI.GetRecipeInfo` | `Scanners/Professions.lua:693` | `type(info) == "table" and info.learned` |
+| `C_TradeSkillUI.GetAllRecipeIDs` | `Scanners/Professions.lua` | a list, walked as one |
+| `C_Spell.GetSpellInfo` | `Names.lua:235` | table first, then the string form, then the old global |
+| `C_AuctionHouse.GetBrowseResults` | `Scanners/Auctions.lua:1030` | `type(results) ~= "table"` returns, and the first row is type-checked too |
+| `C_SpecializationInfo.GetTalentInfo` | `Scanners/Talents.lua` | the table form, through `TryCall` |
+| `C_CreatureInfo.GetRaceInfo` | `Races.lua:251` | `type(info) == "table" and type(info.raceName) == "string"` |
+| `C_Texture.GetAtlasInfo` | `Races.lua:296` | `type(info) == "table"` as the whole answer |
+| `GetCategoryList` | `Scanners/Character.lua:563` | `type(categories) ~= "table" or #categories == 0` |
+| `GetAutoCompleteRealms` | `Wide.lua`, `Guild.lua` | a list |
+
+**Every one of the eleven already guards on the type.** Not one reads a table as though it were
+the first of several returns. That is not luck: Mists answers several of these with a table
+already, which is why §13's second brief claim - *Midnight returns tables where the old API
+returned several values* - was recorded there as **false as a rule and true per call**.
+
+**The twelfth is `C_MerchantFrame.GetItemInfo`, and it is a different kind of gap.** It answers
+a table on Midnight and Family never names it: `grep -rc C_MerchantFrame addons/` is zero. That
+is not a shape Family reads wrongly, it is a call Family does not make - the replacement for the
+absent `GetMerchantItemInfo`, already listed in §6 as step 3's work. Worth separating, because a
+sweep for shape faults will keep finding it and it is not one.
+
+**What this changes about how the briefs are used.** A hint that turns out to be false as a rule
+is not spent: it becomes a *question to ask of every call*, and the answer is a column in the
+measurement rather than a sentence in a document. This audit is that column for one hint. The
+same treatment is owed to the other claims in §13 and §14 that were recorded as *per call*
+rather than settled.
