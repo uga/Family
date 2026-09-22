@@ -2994,6 +2994,25 @@ fourteen, which spent the whole allowance on the description and the icon and pu
 and the weekly cap out of sight. It names the fields it wants first now. A tool that reports is a
 tool that can report the wrong thing.
 
+**And it is a bias, not an accident - read 2026-09-22 from a session on `family-retail-2d`,
+which paid for it three times.** Their dump cuts a table's keys alphabetically at twelve, and
+three slices running lost exactly the field they were run for: a currency's `name` out of 25
+keys, a faction's `name` out of 17, and a quest's `title` and `questID` out of 26. The reason is
+in the vocabulary the client uses. A record's flags are called `atWarWith`, `canSetInactive`,
+`hasBonusRepGain`, `isAccountWide`, `isHeader`; the field that says *which thing this is* is
+called `name`, `title`, `questID`, `quantity`. **An alphabetical cut keeps the flags and drops
+the identity every time, and the shorter it is the more reliably it does so.** Two of their code
+steps are stalled on a run that had already made the right call with the naming field cut out of
+the answer.
+
+Here the damage is bounded and it was bounded by accident rather than by design: `fields` is
+called from **one** probe, the currency-by-id one, and the nine names it privileges are that
+call's own identity - `name`, `currencyID`, `quantity` and the caps - so the tail cut at six can
+only drop a flag. The residual is the shape and not the state: `fields` reads as general, its
+priority list is about currencies alone, and the next probe to reach for it inherits a list that
+knows nothing about what it is printing. `GetRecipeInfo` answers 28 fields and `learned` is not
+among the nine.
+
 #### What the second brief adds, 2026-09-20
 
 Alberto, describing the systems again in more detail. Three things in it are new to this section,
