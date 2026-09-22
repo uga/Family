@@ -3013,6 +3013,30 @@ priority list is about currencies alone, and the next probe to reach for it inhe
 knows nothing about what it is printing. `GetRecipeInfo` answers 28 fields and `learned` is not
 among the nine.
 
+**A fourth case the same day settles which of the two answers is right**, and it is not the one
+this file had reached for. `C_SpecializationInfo.GetTalentInfo{tier, column, groupIndex}` answers
+18 keys; their dump wrote 12, and the cut falls **immediately after `name`**, so a talent came
+back correctly named and with no identifier at all - on the route the client actually takes.
+`interpret` in `Scanners/Talents.lua:189` takes the id from `first.talentID or first.id`, and
+this tree carries that same line and that same call at `:232`, so the reading is about code
+shared with this repository rather than about theirs alone.
+
+**The argument against a per-caller list is that the fourth case was in nobody's list.** Nobody
+knew that call would need `talentID` until somebody drove the scanner with it. A list of identity
+keys is written from what is expected; the cut takes what is not. `WANTED` here is right and has
+held, and it held because that one call had already been got wrong once - it is the memory of an
+incident and not coverage of anything. **Raising the cut covers the calls nobody has got wrong
+yet, which is all of them.** Their number is 30, read rather than chosen: Midnight's widest
+answers shaped like a *record* are 28 and 29 keys, and everything wider - 157, 169, 261, 639 - is
+a **list**, where cutting is right. So: two mechanisms with two names, a cut that is generous
+enough for a record and a priority list kept only where an incident put one.
+
+And the check that guards it has one property that is not obvious: **it must pass only on the
+default.** Their currency check passed already, on a call that asks for thirty keys by name, so it
+could never have caught this. The new one was watched failing with the cut put back to twelve
+before it was kept - the same rule this repository states as making each check fail with the fix
+removed.
+
 #### What the second brief adds, 2026-09-20
 
 Alberto, describing the systems again in more detail. Three things in it are new to this section,
