@@ -198,7 +198,12 @@ local function readSkillList(dropWeapons)
 	end
 
 	restore(wasCollapsed)
-	return skills, everything
+
+	-- The row count comes back as well, and it is not the same fact as `next(skills)`. A sheet
+	-- that answers fifteen rows with no profession among them is a character who has none; a
+	-- sheet that answers nothing at all is a client that will not say. `ReadRanks` needs to
+	-- tell those apart, and from out here they look identical.
+	return skills, everything, count
 end
 
 -- Two lists, and the difference between them matters.
@@ -246,7 +251,7 @@ function Professions:ReadRanks()
 	local can = Family.Capabilities and Family.Capabilities.can
 	local dropWeapons = can ~= nil and can.weaponSkills == false
 
-	local skills, everything = readSkillList(dropWeapons)
+	local skills, everything, rows = readSkillList(dropWeapons)
 
 	-- The modern call wins where the two overlap: it hands back the skill line id and the
 	-- client's own picture, and the list has neither.
@@ -257,7 +262,19 @@ function Professions:ReadRanks()
 		end
 	end
 
-	return skills, everything
+	-- **And whether anything answered at all**, which is the third fact and the one that decides
+	-- whether this scan may write about skills.
+	--
+	-- Midnight has neither route: the skill sheet is gone - `GetNumSkillLines` and
+	-- `GetSkillLineInfo` are both absent - and `GetProfessions` answers, but the six indices it
+	-- hands back describe nothing this reader can use without the sheet. So both lists come back
+	-- empty, which is indistinguishable from a character who has no skills, and writing the
+	-- second reading over a record made on another client erased what that client knew (§26).
+	-- The three Classic clients always answer: `GetNumSkillLines` gives fifteen rows on Mists,
+	-- riding and weapons among them, and Era and Burning Crusade have languages besides.
+	--
+	-- Not a test of whether the function exists. The reading itself says whether it happened.
+	return skills, everything, (modern ~= nil) or (rows > 0)
 end
 
 --------------------------------------------------------------------------------------------
@@ -980,7 +997,7 @@ end
 function Professions:ScanNow(includeRecipes)
 	local key = Family:CurrentMember()
 
-	local skills, everything = self:ReadRanks()
+	local skills, everything, readable = self:ReadRanks()
 	if not next(everything) and not includeRecipes then
 		Family:Debug("no skills readable")
 		return
@@ -1440,7 +1457,19 @@ function Professions:ScanNow(includeRecipes)
 		-- because we changed clients.
 		specs = askedSpecs and (branches or Family.CLEAR) or nil,
 		specsSeen = askedSpecs and time() or nil,
-		skills = summary,
+		-- **Only where the question could be put**, the same rule as `specs` above and for a
+		-- sharper reason. `SetMeta` merges field by field, so a field written as an empty
+		-- table does not leave the record alone - it *replaces* what was there. On a client
+		-- that can read no skills at all this wrote `{}` over a summary made on another
+		-- client, and two professions read on Mists were gone after one scan on Midnight with
+		-- a profession window open (§26 of `docs/MIDNIGHT.md`). Nothing went red, because on
+		-- the three clients that can read a sheet the sheet always answers.
+		--
+		-- An empty summary from a sheet that *did* answer still goes in: a character who has
+		-- unlearnt their last profession is a reading, and this is the case that separates
+		-- the two. `skillsLocale` travels with it, since a stamp saying which language these
+		-- names are in is worth nothing beside names nobody wrote.
+		skills = readable and summary or nil,
 		-- Which language these names are in.
 		--
 		-- A profession has no id on Era, so it is keyed by its name (see the top of this
@@ -1449,7 +1478,7 @@ function Professions:ScanNow(includeRecipes)
 		-- the recipe lists keep whatever language *they* were opened in. When the two
 		-- disagree the panel had no way to tell that from a profession nobody had ever
 		-- opened, and said the wrong one of the two. Stamped so it can say the right one.
-		skillsLocale = Family.locale,
+		skillsLocale = readable and Family.locale or nil,
 		craftCooldowns = next(cooldowns) and cooldowns or Family.CLEAR,
 		cooldownItems = next(cooldownItems) and cooldownItems or Family.CLEAR,
 	})

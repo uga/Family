@@ -1702,8 +1702,24 @@ The check that was written as *records nothing* went red, and the red was the fi
   the summary's do not.
 
 That last one is the first thing this branch has found that **destroys** a record rather than
-failing to add one. It needs no new reading to fix and it is step 3's, the same afternoon the
-route lands.
+failing to add one.
+
+**Repaired 2026-09-22, the same day.** `ReadRanks` now answers a third value saying whether
+**anything answered at all** - `readSkillList` hands back its row count, and the third value is
+`(modern ~= nil) or (rows > 0)` - and `skills` and `skillsLocale` are written only where it did.
+Not a test of whether a function exists: the reading itself says whether it happened.
+
+The line the guard has to fall on is not *was the answer empty*. A player really can unlearn
+their last profession, and that is a reading that must be written, as an empty table, or the
+panel goes on showing a trade nobody has. So a sheet that answers fifteen rows with no profession
+among them still writes an empty summary; a client with no sheet and no `GetProfessions` writes
+nothing. Two mutations, one on each side of that line, and the second is caught on **Era** rather
+than here - which is the point of it.
+
+Not in the changelog. The defect cannot fire on the three released clients, where the sheet
+always answers: `GetNumSkillLines` gives fifteen rows on Mists, riding and weapons among them,
+and Era and Burning Crusade have languages besides. It becomes a changelog entry the day it is
+measured firing on one of them.
 
 ### One mutation, caught by this section alone
 

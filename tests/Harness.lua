@@ -3476,15 +3476,26 @@ print("professions on the fourth pretend client")
 		payload and payload.professions and next(payload.professions) == nil,
 		payload and payload.professions and "something was kept" or "no table")
 
-	-- The one that is worse than an empty record. `SetMeta` merges field by field, so a
-	-- field written as an empty table **replaces** what was on the record - and `skills` is
-	-- built from `ReadRanks`, which on this client can read nothing at all.
+	-- The one that was worse than an empty record, until 2026-09-22.
+	--
+	-- `SetMeta` merges field by field, so a field written as an empty table does not leave
+	-- the record alone - it **replaces** what was there. `skills` is built from `ReadRanks`,
+	-- which on this client can read nothing at all, so one Midnight scan with a profession
+	-- window open wrote `{}` over a summary made on another client and the two professions
+	-- above were gone. This check was written to fail once the route landed, and it did.
+	--
+	-- `ReadRanks` now answers a third value saying whether **anything answered**, rather than
+	-- whether the answer was empty, and `skills` is written only where it did. A sheet that
+	-- gives fifteen rows and no profession still writes an empty summary, because a character
+	-- who has unlearnt their last profession is a reading; a client with no sheet and no
+	-- `GetProfessions` writes nothing, because it is not.
 	local skills = meta and meta.skills
 	local kept = 0
 	for _ in pairs(skills or {}) do kept = kept + 1 end
-	check("and the summary's skills, read from another client last week, are gone",
-		skills ~= nil and kept == 0,
-		skills and (kept .. " kept") or "no skills field at all")
+	check("and the summary's skills, read from another client last week, are left alone",
+		kept == 2, skills and (kept .. " kept") or "no skills field at all")
+	check("and no locale stamp is moved onto names nobody wrote",
+		meta and meta.skillsLocale == nil, meta and tostring(meta.skillsLocale) or "no meta")
 
 	for name, saved in pairs(was) do _G[name] = saved[1] end
 	Family.Capabilities:Detect()
@@ -4476,6 +4487,7 @@ do
 		after and after.shrank and (after.shrank.rows .. " row(s), "
 			.. after.shrank.listed .. " recipe(s)") or "nothing kept")
 
+
 	-- **Ordinary churn is not a collapse.** A record that noted every recipe learnt would be a
 	-- record nobody reads, and the threshold is what decides what is written *down* rather than
 	-- what is written.
@@ -4492,6 +4504,46 @@ do
 	TRADE_RECIPES = held
 	Family.Professions:Scan(true)
 	TRADE_SKILL_OPEN = wasOpen
+end
+
+-- The other half of the guard the Midnight section put on the summary (§26), checked here
+-- because here is where a skill sheet answers.
+--
+-- `skills` is written where the read **happened**, not where it found something. The difference
+-- only shows on a character whose sheet answers and holds no profession: a player really can
+-- unlearn their last one, and that is a reading. Written as an empty table and not skipped, or
+-- the panel would go on showing a trade nobody has.
+--
+-- **In a block of its own**, after the section above has finished with this member. Inside it,
+-- the scan below unlearnt blacksmithing from the sheet - correctly - and the prune dropped the
+-- record the checks after it were still reading, so a check four lines down went red on a
+-- disturbance rather than on a defect. The same shape as §26's own fixture, one section later.
+do
+	local key = Family:CurrentMember()
+	local heldLines = SKILL_LINES
+	-- A language and nothing else. Not a weapon skill: on Era weapon ranks are real and
+	-- `Swords` is recorded as a skill, which is right and would have made this agree for the
+	-- wrong reason - the first version counted Swords and read the count back as the seeded
+	-- record surviving.
+	SKILL_LINES = {
+		{ name = "Languages", header = true, expanded = true },
+		{ name = "Common", rank = 1, maxRank = 1, abandonable = false },
+	}
+
+	Family.Database:SetMeta(key, { skills = { ["Blacksmithing"] = { rank = 287 } } })
+	Family.Professions:Scan(false)
+
+	local summary = Family.Database:Meta(key).skills
+	local left, named = 0, nil
+	for name in pairs(summary or {}) do left = left + 1 named = name end
+	check("a sheet that answers and holds no profession writes an empty summary",
+		type(summary) == "table" and left == 0,
+		summary and (left .. " kept, e.g. " .. tostring(named)) or "nothing written")
+	check("and stamps it with the language those absent names would have been in",
+		Family.Database:Meta(key).skillsLocale ~= nil)
+
+	SKILL_LINES = heldLines
+	Family.Professions:Scan(false)
 end
 
 -- A window whose sub-class headers are collapsed
