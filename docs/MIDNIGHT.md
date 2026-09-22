@@ -1423,3 +1423,39 @@ to run the same command as the thing it guards.
 **What this leaves.** The briefs' function-level claims are now checked off rather than pending.
 What remains open from them is not presence but behaviour - what `GetActivities` answers, whether
 renown reads per account - and that is step 3's, one scanner at a time.
+
+## 21. The route no client had ever taken (2026-09-22)
+
+`Scanners/Currencies.lua` has carried `readModernList()` since the currency slice, and its own
+comment says why it had never run: *not because any build here was seen using it*. Era and
+Burning Crusade have no `C_CurrencyInfo` list calls; Mists has the namespace and not the calls,
+and `tests/Harness.lua` asserts exactly that - `C_CurrencyInfo.GetCurrencyListSize == nil`.
+**Midnight answers 49.** It is the first client this project has met that takes that path, and
+until today the path was written, reviewed, gated and never once walked.
+
+It works. Four checks on the fourth pretend client: the list answers where the loose calls are
+gone, the header is not filed as a currency, honour is filed under the id the row carries -
+`1792`, not under its name, which is what every other client has to infer from a link or from
+the twelfth value of a row - and the amount and cap come back as the client gave them.
+
+### What had to be fixed first, and it was not the client
+
+The section could not be written at all to begin with: the scanner bound itself to `_G.Family`
+rather than to the addon vararg, so loading it against a substitute Family did nothing. It
+bound to the real addon and wrote to the real database while the checks read an empty recorder,
+which looks exactly like a stub that does not work.
+
+Three files in `addons/Family/` did this against 41 that take the vararg: `Scanners/Currencies.lua`,
+`Scanners/Merchant.lua`, `Scanners/Pets.lua`. It is **not** a fault in the client: `Core.lua:13`
+publishes the private table under that name, so they are the same table and the game never knew
+the difference. It is a fault in what can be measured - and the three files it touches are the
+merchant, the currencies and the pets, which is a third of what Midnight changes. Rebound, with
+the reason written where the line is.
+
+### And a fixture that let a mutation through
+
+The first header in the new fixture was written from the head - a name, `isHeader`, an id - and
+a mutation removing the `isHeader` guard survived, because a header with no `quantity` is thrown
+out anyway. The client's own headers carry `quantity = 0` and `currencyID = 0` and look exactly
+like a currency nobody has any of; `0` is truthy in Lua, so without that guard the list header
+*Midnight* is filed under the key `c0`. The fixture now carries what the run read. L-209.

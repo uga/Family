@@ -3576,6 +3576,33 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-209 — the fixture was convenient, so the mutation had nothing to bite
+
+**2026-09-22.** A mutation was written for the currency scanner: drop the `not info.isHeader`
+filter, so that a header in the list is filed as a currency. It **survived** - the whole harness
+stayed green with the guard removed.
+
+The guard was not the problem. The fixture was. The header in the new Midnight section had been
+written from the head, as `{ name = "...", isHeader = true, currencyID = 0 }`, and a header with
+no `quantity` is thrown out by `entryFrom` whatever the filter says. So the mutation removed a
+guard that nothing in the run was asking to do any work.
+
+**What the client actually sends**, read off the run rather than imagined: a header carries
+`name`, `currencyID = 0`, `quantity = 0`, `maxQuantity = 0` and `isHeader = true` - twenty-three
+fields, and it looks **exactly like a currency nobody has any of**. And `0` is truthy in Lua, so
+`id and ("c" .. id)` builds the key `c0` happily. `isHeader` is the only thing standing between
+a list header and a currency called *Midnight* with a quantity of nought.
+
+**Bitten:** nothing yet, and only because the guard was already right. What was lost is the
+proof that it is: for as long as the fixture was the convenient one, the harness would have
+stayed green if somebody had deleted that line.
+
+**What now catches it.** The header in the fixture carries the fields the client sends, and the
+mutation is caught: *the modern list answers where the loose calls are gone -> 3*. The rule:
+**a fixture is a measurement, not an illustration.** Where a run is in hand, the stub is filled
+from it - and the test of whether it was is to break the guard the fixture exists to exercise
+and watch the check go red.
+
 ## L-208 — the check crashed instead of failing, and the mutator called it caught
 
 **2026-09-22.** A mutation written for the fourth pretend client made every bag slot read as

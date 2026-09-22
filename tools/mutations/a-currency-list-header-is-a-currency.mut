@@ -1,0 +1,6 @@
+name: a header in the modern currency list is filed as a currency
+file: addons/Family/Scanners/Currencies.lua
+--- old
+		if type(info) == "table" and not info.isHeader then
+--- new
+		if type(info) == "table" then

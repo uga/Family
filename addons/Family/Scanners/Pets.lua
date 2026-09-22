@@ -38,7 +38,14 @@
 -- second. It is a `PETACTION`, it moves with the rank, and it differs between builds for the
 -- same ability. Filing anything under it would be filing it under a bar position.
 
-local Family = _G.Family
+-- Taken from the addon's own vararg rather than from `_G.Family`, which this file used
+-- until 2026-09-22. They are the same table in a client - `Core.lua:13` publishes the private
+-- one under that name - so nothing about the game changed. What changed is that a harness can
+-- load this file against a substitute Family and drive it, which is how the fourth pretend
+-- client asks a scanner anything. Reading the global made that impossible in a way that looked
+-- like the stub being wrong: the file bound to the real addon and wrote to the real database
+-- while the checks read an empty recorder.
+local _, Family = ...
 
 local Pets = {}
 Family.Pets = Pets

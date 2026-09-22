@@ -25,7 +25,14 @@
 -- in the way that matters - what it records was demonstrably for sale, at a price demonstrably
 -- charged.
 
-local Family = _G.Family
+-- Taken from the addon's own vararg rather than from `_G.Family`, which this file used
+-- until 2026-09-22. They are the same table in a client - `Core.lua:13` publishes the private
+-- one under that name - so nothing about the game changed. What changed is that a harness can
+-- load this file against a substitute Family and drive it, which is how the fourth pretend
+-- client asks a scanner anything. Reading the global made that impossible in a way that looked
+-- like the stub being wrong: the file bound to the real addon and wrote to the real database
+-- while the checks read an empty recorder.
+local _, Family = ...
 
 local Merchant = {}
 Family.Merchant = Merchant

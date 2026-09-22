@@ -2709,6 +2709,101 @@ print("the same bag scan on the fourth pretend client")
 end)()
 
 print()
+print("the currency list Midnight is the first client to answer")
+
+-- `readModernList` has been in `Scanners/Currencies.lua` since the currency slice and its own
+-- comment says why it had never run: *not because any build here was seen using it*. Era and
+-- Burning Crusade have no `C_CurrencyInfo` list calls, Mists has the namespace and not the
+-- calls, and the check at the currency section above asserts exactly that - `GetCurrencyListSize
+-- == nil`. **Midnight answers 49.** So this is a path that was written, reviewed and gated, and
+-- never once taken by a client, which is the kind of code the fourth pretend client exists for.
+;(function()
+	local was = {}
+	local function set(name, value)
+		was[name] = { _G[name] }
+		_G[name] = value
+	end
+
+	set("GetBuildInfo", function() return "12.1.0", "69875", "Sep 15 2026", 120100 end)
+
+	-- Gone on Midnight, all three, measured. The older routes read these.
+	set("GetCurrencyListSize", nil)
+	set("GetCurrencyListInfo", nil)
+	set("GetCurrencyListLink", nil)
+	set("GetHonorCurrency", nil)
+	set("GetArenaCurrency", nil)
+
+	-- The list as this client answers it: a header that is not a currency, and rows that carry
+	-- their own `currencyID`. The id is the point - the older routes have to take it from a link
+	-- or from the twelfth value of a row, and a row that hands it over outright is worth more
+	-- than either (DECISIONS, 2026-09-20). Honour carries the account-transfer fields the second
+	-- brief named, and §16 read 80 for its percentage.
+	set("C_CurrencyInfo", {
+		GetCurrencyListSize = function() return 3 end,
+		GetCurrencyListInfo = function(index)
+			if index == 1 then
+				-- A header as this client really writes one, read off the run: it carries a
+				-- name, a `currencyID` of 0 and a `quantity` of 0, so it looks exactly like a
+				-- currency nobody has any of. `isHeader` is the only thing that says otherwise,
+				-- and 0 is truthy in Lua, so without that flag it is filed under the key `c0`.
+				return { name = "Midnight", isHeader = true, currencyID = 0, quantity = 0,
+					maxQuantity = 0, isHeaderExpanded = true }
+			end
+			if index == 2 then
+				return { name = "Honor", currencyID = 1792, quantity = 1400,
+					maxQuantity = 15000, iconFileID = 133784,
+					isAccountTransferable = true, transferPercentage = 80 }
+			end
+			return { name = "Conquest", currencyID = 1602, quantity = 250,
+				maxQuantity = 0, iconFileID = 133785 }
+		end,
+	})
+
+	local stored = {}
+	local midnight = setmetatable({}, { __index = FamilyPrivate })
+	midnight.CurrentMember = function() return "Mirror-Midnight" end
+	midnight.RegisterEvent = function() end
+	midnight.OnDatabaseReady = function() end
+	midnight.Database = {
+		Meta = function(_, k) return stored[k] end,
+		SetMeta = function(_, k, fields)
+			stored[k] = stored[k] or {}
+			for name, value in pairs(fields) do stored[k][name] = value end
+		end,
+	}
+
+	load("addons/Family/Scanners/Currencies.lua", "Family", midnight)
+	midnight.Currencies:Scan()
+
+	local found = stored["Mirror-Midnight"] and stored["Mirror-Midnight"].currencies
+	check("the modern list answers where the loose calls are gone",
+		type(found) == "table" and #found == 2, found and #found or "nothing recorded")
+	check("and the header in it is not filed as a currency",
+		found and not (function()
+			for _, entry in ipairs(found) do
+				if tostring(entry.key or entry.name or ""):find("Player vs") then return true end
+			end
+		end)())
+
+	-- The id comes from the row itself. Every other route on every other client has to infer
+	-- it - from a link, or from where the value sits in the row - and this is the first client
+	-- that simply says it.
+	local honour
+	for _, entry in ipairs(found or {}) do
+		if entry.id == 1792 then honour = entry end
+	end
+	check("and a currency is filed under the id the row carries, not under its name",
+		honour ~= nil, found and #found > 0
+			and tostring(found[1].id) .. "/" .. tostring(found[1].key) or "nothing")
+	check("with the amount and the cap the client gave",
+		honour and honour.quantity == 1400 and honour.max == 15000,
+		honour and (tostring(honour.quantity) .. "/" .. tostring(honour.max)))
+
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+	Family.Capabilities:Detect()
+end)()
+
+print()
 print("identity")
 advance(3)
 

@@ -1,0 +1,6 @@
+name: the currency scanner binds to the global Family instead of its own vararg
+file: addons/Family/Scanners/Currencies.lua
+--- old
+local _, Family = ...
+--- new
+local Family = _G.Family
