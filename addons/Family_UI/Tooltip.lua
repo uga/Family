@@ -1492,8 +1492,23 @@ local function gatheringNode(tooltip)
 	if not tooltip then return nil end
 	if tooltip.IsForbidden and tooltip:IsForbidden() then return nil end
 
+	-- **No ceiling on the line count**, and the reading that took the ceiling away did not say
+	-- what I first read it as saying.
+	--
+	-- `5 line(s): Mageroyal / Herbalism` looked like a node tooltip growing under another addon.
+	-- It is not: the narration of 2026-09-22 shows the pair per hover - `2 line(s)` on the
+	-- immediate call, which resolves and writes, then `5 line(s)` on the deferred one, which is
+	-- **our own block counted back to us**. A blank line, a header, an owner and a blank line is
+	-- three more than two. So that reading is no evidence for a ceiling being wrong, and the
+	-- claim that it explained *showed the block then lost it* is withdrawn.
+	--
+	-- The ceiling still goes, for a reason that is about what can be relied on rather than what
+	-- was seen: nothing says a node tooltip is Family's alone before Family writes on it, and an
+	-- addon that adds a line above ours would have pushed it past three. What keeps this cheap
+	-- is the profession scan, which reads at most two font strings and asks a handful of `find`s
+	-- of them - a bag slot's second line is not the word Mining in any language.
 	local lines = tonumber((Family:TryCall(tooltip.NumLines, tooltip))) or 0
-	if lines < 1 or lines > 3 then return nil end
+	if lines < 1 then return nil end
 
 	local frameName = tooltip:GetName()
 	if not frameName then return nil end
@@ -1669,6 +1684,21 @@ local function itemForNode(said, skill)
 			end
 		end
 		if found then break end
+
+		-- **A list that did not answer, and was not complete, has not said no.**
+		--
+		-- The client had not named everything in it yet, so *no herb of that name* is unknown
+		-- rather than false - and going on to score the name against the ores turns an unknown
+		-- into a wrong answer. Read in play 2026-09-22, on a minimap blip: `"Silverleaf" is item
+		-- 2775`, which is **Silver Ore**. The herb list had not been named, the exact step
+		-- therefore found nothing, and the ore scorer then took `silver` out of `Silver Ore` at
+		-- 0.6 with the kin rule waiving the margin against `Truesilver Ore`.
+		--
+		-- Naming the wrong metal confidently is the one failure this entry set out not to have,
+		-- and in the world the profession line prevents it by saying which list to look in. On a
+		-- blip there is no such line, so the guard has to be here. Nothing is remembered either:
+		-- the answer is not *no*, it is *not yet*.
+		if not complete then return nil end
 	end
 
 	if found or whole then resolvedNames[key] = found or false end
@@ -1832,6 +1862,25 @@ Family:OnDatabaseReady("tooltips", function()
 	Family.Database:OnChanged("tooltip.nodes", function() wipe(resolvedNames) end)
 
 	if _G.GameTooltip and _G.GameTooltip.HookScript then
+		-- **And again whenever the tooltip is emptied and refilled.**
+		--
+		-- Reported from play 2026-09-22: on one and the same Mageroyal, *sometimes the rich
+		-- tooltip, sometimes the basic one*, with and without the skill alike. This route writes
+		-- once, at a moment it does not control, and it is only ever asked at `OnShow` - so a
+		-- tooltip that is refilled **in place**, which is what happens when a pointer crosses
+		-- from one node straight to another without the tooltip ever hiding, is never offered
+		-- to it at all. No second `OnShow`, no block, and nothing to say why.
+		--
+		-- `OnTooltipCleared` is the one signal that a rebuild has started. `forget` is already
+		-- hooked to it and drops the already-described mark, so asking again a frame later
+		-- redraws rather than doubling. Bounded: `AddLine` fires no clear, and `Show` on a frame
+		-- that is already shown fires no `OnShow`, so this cannot feed itself.
+		_G.GameTooltip:HookScript("OnTooltipCleared", function(self)
+			if C_Timer and C_Timer.After then
+				C_Timer.After(0, function() onNode(self) end)
+			end
+		end)
+
 		_G.GameTooltip:HookScript("OnShow", function(self)
 			-- **Both, and the guard makes that safe.** At `OnShow` the tooltip is up and its
 			-- text may not all be on it, which is why the probe had to wait a frame to read a

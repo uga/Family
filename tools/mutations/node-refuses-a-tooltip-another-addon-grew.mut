@@ -1,0 +1,6 @@
+name: a node tooltip another addon added a line to is refused, so the cheap test starts deciding
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if lines < 1 then return nil end
+--- new
+	if lines < 1 or lines > 3 then return nil end

@@ -5054,17 +5054,33 @@ do
 	check("and one whose second line is blank and whose third requires the profession",
 		drewBlock(nodeSays("Copper Vein", "", "Requires " .. MINE .. " (275)")))
 
-	-- Cheapest test first, which is what keeps this off every tooltip in the game: past three
-	-- lines nothing is read at all.
+	-- **A node tooltip has no ceiling on its lines**, because nothing says it is Family's alone
+	-- before Family writes on it: an addon adding a line above ours would push a two-line node
+	-- past a cap of three. Not evidenced by the `5 line(s)` reading, which turned out to be our
+	-- own block counted back to us on the deferred call - two lines plus a blank, a header, an
+	-- owner and a blank.
 	GameTooltip:ClearLines()
 	GameTooltip.__itemName, GameTooltip.__itemLink = nil, nil
+	if GameTooltip.__scripts.OnTooltipCleared then
+		GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+	end
 	GameTooltip:AddLine("Silverleaf")
 	GameTooltip:AddLine(HERB)
-	GameTooltip:AddLine("a third line")
-	GameTooltip:AddLine("and a fourth")
+	for _, extra in ipairs { "a third line", "a fourth", "a fifth" } do
+		GameTooltip:AddLine(extra)
+	end
+	local before = #GameTooltip.__lines
 	GameTooltip.__scripts.OnShow(GameTooltip)
-	check("a tooltip of four lines is not a node", #GameTooltip.__lines == 4,
-		tostring(#GameTooltip.__lines))
+	local grown = ""
+	for index = before + 1, #GameTooltip.__lines do
+		grown = grown .. tostring(GameTooltip.__lines[index][1]) .. " "
+	end
+	check("a node of five lines is still a node", drewBlock(grown), grown)
+
+	-- What keeps this off every tooltip in the game is the profession scan, not a line count:
+	-- a bag slot's second line is not the word Herbalism in any language.
+	check("and a long tooltip naming no gathering profession is not one",
+		nodeSays("Silverleaf", CLOTH, "a third line") == "")
 
 	-- Anything the client will name is an item, and the item route already has it.
 	GameTooltip:ClearLines()
@@ -5113,8 +5129,25 @@ do
 	pointerOn(Minimap)
 	check("a blip on the minimap resolves from its one line",
 		drewBlock(nodeSays("Silverleaf", nil)))
-	check("and a vein blip is scored the same way a vein in the world is",
+
+	-- **A blip with no profession line may not fall through to the ores while the herb list is
+	-- still being named.** Read in play 2026-09-22: `"Silverleaf" is item 2775`, which is Silver
+	-- Ore. The herbs had not been named, so the exact step found nothing, and the scorer took
+	-- `silver` out of `Silver Ore` with the kin rule waiving the margin against `Truesilver Ore`.
+	-- A list that did not answer and was not complete has not said no.
+	check("a vein blip says nothing while the herb list is still being named",
+		nodeSays("Copper Vein", nil) == "")
+
+	-- And once the client has named every candidate, the same blip resolves.
+	local realNames = Family.Names.Item
+	Family.Names.Item = function(self, id, key, callback)
+		local name, known = realNames(self, id, key, callback)
+		if known then return name, known end
+		return "Filler " .. tostring(id), true
+	end
+	check("and resolves once every candidate has a name",
 		drewBlock(nodeSays("Copper Vein", nil)))
+	Family.Names.Item = realNames
 
 	local pin = CreateFrame("Frame", "GatherMatePin2", Minimap)
 	pointerOn(pin)
@@ -5131,6 +5164,43 @@ do
 		nodeSays("Silverleaf", nil) == "")
 
 	_G.GetMouseFocus, _G.GetMouseFoci = realFocus, realFoci
+
+	-- **The deferred half, which this harness could never reach.** There is no `C_Timer` here,
+	-- so the route runs straight through; the game takes the other branch, and the redraw after
+	-- a refill lives only on it. A queue is stood in for these checks and drained by hand.
+	--
+	-- Reported from play 2026-09-22: on one and the same Mageroyal, *sometimes the rich tooltip,
+	-- sometimes the basic one*, with and without the skill alike. A tooltip refilled **in
+	-- place** - a pointer crossing from one node straight to another, without it ever hiding -
+	-- fires no second `OnShow`, so the route was never asked again and the block was simply
+	-- absent, with nothing to say why.
+	ITEM_NAMES[785] = "Mageroyal"
+	local heldTimer, queued = _G.C_Timer, {}
+	_G.C_Timer = { After = function(_, fn) queued[#queued + 1] = fn end }
+	local function drain()
+		local due = queued
+		queued = {}
+		for _, fn in ipairs(due) do fn() end
+	end
+
+	check("a node draws its block on the frame the tooltip is shown in",
+		drewBlock(nodeSays("Mageroyal", HERB)))
+	drain()
+
+	GameTooltip:ClearLines()
+	GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+	GameTooltip:AddLine("Mageroyal")
+	GameTooltip:AddLine(HERB)
+	local mark = #GameTooltip.__lines
+	drain()
+	local again = ""
+	for index = mark + 1, #GameTooltip.__lines do
+		again = again .. tostring(GameTooltip.__lines[index][1]) .. " "
+	end
+	check("and gets it back when the tooltip is emptied and refilled in place",
+		drewBlock(again), again)
+
+	_G.C_Timer = heldTimer
 
 	-- **Silence has to say which kind of silence it is.** Reported from play the day this
 	-- landed as *herb nodes do not seem to work at all*: four gates in this route, all silent,
