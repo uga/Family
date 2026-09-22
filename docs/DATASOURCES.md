@@ -5014,6 +5014,64 @@ cells of this table are Era and Burning Crusade alone.
 taking rather than leaving it to chance: the rows nearest the bar. Anything Wowhead and the
 client disagree about would show up there first.
 
+#### What a node says to somebody who cannot take it — read 2026-09-22
+
+Two screenshots, which settle the shape the `contains` test was built for and correct an
+inference of mine in the same stroke:
+
+| Hovered | What the client draws |
+|---|---|
+| A herb node, with Herbalism and the skill for it | `Silverleaf` / `Herbalism` |
+| A vein, on a character with **no** Mining at all | `Copper Vein` / `Requires Mining` |
+
+**Two lines in both cases.** The profession line is **replaced**, not added to: a character
+without the trade reads *Requires Mining* where a miner reads *Mining*. So the line count was
+never what turned the non-miner away - the equality test was, and `contains` is exactly the
+right shape. Confirmed by a reading rather than by reasoning, which is the way round that was
+available all along.
+
+**And it corrects me.** Backlog 96 and a commit message of the same morning both say a
+non-gatherer's tooltip has *three* lines, which I inferred from Alberto's *there is an extra
+line* without asking what it replaced. It has two. Nothing built on that inference is wrong -
+the scan reads lines 2 and 3 and the count allows 1 to 3 - but the reason for allowing three is
+now the **low-skill** case and not this one.
+
+**That case is still unread**: a miner at 50 standing over a vein that wants 275. Alberto
+describes it as *requires mining 275*, and whether that replaces the profession line as this one
+does, or sits under it, nobody here has seen. Both are covered, and the entry should stop saying
+which it is.
+
+**The word survives the sentence in every language Family ships**, which is what the test rests
+on: `Requires Mining` carries `Mining`, and so do *Nécessite Minage*, *Erfordert Bergbau*,
+*Requiere Minería* and *Требуется: Горное дело* carry the skill names `SkillLines.lua` holds.
+The comparison is byte-level with ASCII-only folding, which is safe here because a requirement
+sentence keeps the skill's own capitalisation rather than lowercasing it.
+
+#### And it works in the game, on the case that was broken an hour earlier — 2026-09-22
+
+```
+Copper Vein
+Requires Mining
+
+Family possessions                       20
+Spazzacamino of Serena           20 (20 bags)
+(CTRL-ALT-click to open the family's list)
+```
+
+A vein, on a character with **no Mining at all**, and the block is under it naming who holds the
+ore. Three things are confirmed at once and none of them by reasoning:
+
+- **the join places a vein**, which until this picture had only ever been measured against a
+  table - `Copper Vein` resolved to Copper Ore on a live client, in the world, from the name
+  alone;
+- **`contains` was the right correction**: this is the tooltip that said *Requires Mining*, which
+  the equality test turned away and which is the reader who most wants the answer;
+- **the sibling row reads as intended** - *Spazzacamino of Serena*, a name and a family, because
+  a count on somebody else's character is not a bag you can walk to.
+
+Backlog 96 has now been seen working in the game for both professions. What has still never been
+hovered is a **minimap** dot, and the low-skill shape of a vein a miner cannot yet take.
+
 #### Why the minimap needs the frame and the world does not — measured 2026-09-22
 
 A blip gives **one line and no profession line**, which the probe read on both Burning Crusade
