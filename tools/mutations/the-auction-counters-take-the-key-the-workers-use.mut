@@ -1,0 +1,6 @@
+name: the auction event counters are registered under the key the workers already use
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		Family:RegisterEvent(event, "auctions.heard", function()
+--- new
+		Family:RegisterEvent(event, "auctions", function()

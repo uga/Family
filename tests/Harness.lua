@@ -3663,6 +3663,139 @@ print("pets on the fourth pretend client")
 end)()
 
 print()
+print("the auction house on the fourth pretend client")
+
+-- The one domain of the six that needs nothing, and the reason is worth a check rather than a
+-- shrug: it survives on a rule this addon adopted for a different client.
+--
+-- Measured 2026-09-20: `GetNumAuctionItems`, `GetAuctionItemInfo`, `GetOwnerAuctionItems` and
+-- the rest of the old house are absent, `C_AuctionHouse` holds every member Family names bar
+-- `GetAuctionHouseDepositRate` - which nothing outside a diagnostic reads - and the events
+-- split. `AUCTION_ITEM_LIST_UPDATE`, `AUCTION_OWNED_LIST_UPDATE` and
+-- `AUCTION_BIDDER_LIST_UPDATE` are **refused**; `AUCTION_HOUSE_SHOW`, `AUCTION_HOUSE_CLOSED`
+-- and `OWNED_AUCTIONS_UPDATED` register.
+--
+-- That matters more than the calls. `Auctions:Scan` is driven by a loop over three event
+-- names, two of which this client refuses - and the third is the modern one, in the same loop,
+-- registered for a client that had never been imagined. An event a client does not have
+-- registers as nothing at all (§2.2), so the loop needs no branch and gets none.
+;(function()
+	local was = {}
+	local function set(name, value)
+		was[name] = { _G[name] }
+		_G[name] = value
+	end
+
+	set("GetBuildInfo", function() return "12.1.0", "69875", "Sep 15 2026", 120100 end)
+
+	-- The old house, measured absent.
+	set("GetNumAuctionItems", nil)
+	set("GetAuctionItemInfo", nil)
+	set("GetAuctionItemLink", nil)
+	set("GetAuctionItemTimeLeft", nil)
+	set("GetOwnerAuctionItems", nil)
+	set("CanSendAuctionQuery", nil)
+
+	-- And the new one. `GetNumOwnedAuctions` answered **0** in the run, because the character
+	-- had nothing up - so the shape of a Midnight owned-auction row has never been seen, and
+	-- this stub answers 0 rather than borrowing the row `main` measured on Mists. A `main`
+	-- measurement is the question here and never the answer.
+	local asked = {}
+	set("C_AuctionHouse", {
+		GetNumOwnedAuctions = function() asked.owned = (asked.owned or 0) + 1 return 0 end,
+		GetOwnedAuctionInfo = function() return nil end,
+		GetBrowseResults = function() return {} end,
+		QueryOwnedAuctions = function() asked.query = (asked.query or 0) + 1 end,
+	})
+
+	-- The three names this client refuses, answered the way `Family:RegisterEvent` answers:
+	-- false, with nothing registered, and no error anywhere.
+	local REFUSED = { AUCTION_ITEM_LIST_UPDATE = true, AUCTION_OWNED_LIST_UPDATE = true,
+		AUCTION_BIDDER_LIST_UPDATE = true }
+
+	local stored = { meta = {}, payload = {} }
+	local midnight = setmetatable({}, { __index = FamilyPrivate })
+	local tried, live = {}, {}
+
+	-- **Handlers are kept per event *and* per key, and firing an event runs all of them.**
+	--
+	-- The first version of this stub kept one function per event name, and it quietly threw
+	-- half of this file away: `AUCTION_HOUSE_SHOW` and `OWNED_AUCTIONS_UPDATED` are each
+	-- registered twice here, once to do the work and once under `auctions.heard` to count
+	-- that the event arrived. Keyed by name alone, the counter replaced the worker and
+	-- opening the house asked for nothing - which is **L-068 exactly**, and the comment at
+	-- `Scanners/Auctions.lua:2610` says it happened in the game for the same reason. A stub
+	-- that models the registry loosely reproduces the bug the registry was fixed for.
+	midnight.CurrentMember = function() return "Mirror-Midnight" end
+	midnight.RegisterEvent = function(_, event, key, fn)
+		tried[#tried + 1] = event
+		if REFUSED[event] then return false end
+		live[event] = live[event] or {}
+		live[event][key] = fn
+		return true
+	end
+	midnight.OnDatabaseReady = function(_, _, fn) fn() end
+	midnight.After = function(_, _, _, fn) if type(fn) == "function" then fn() end end
+
+	local function fire(event)
+		for _, fn in pairs(live[event] or {}) do fn() end
+	end
+	midnight.Debug = function() end
+	midnight.Database = {
+		Meta = function(_, k) return stored.meta[k] end,
+		SetMeta = function(_, k, fields)
+			stored.meta[k] = stored.meta[k] or {}
+			for name, value in pairs(fields) do stored.meta[k][name] = value end
+		end,
+		Payload = function(_, k) return stored.payload[k] end,
+		SetPayload = function(_, k, p) stored.payload[k] = p end,
+	}
+
+	load("addons/Family/Scanners/Auctions.lua", "Family", midnight)
+
+	-- All three were offered, which is the part a branch would have taken away.
+	local offered = {}
+	for _, event in ipairs(tried) do offered[event] = true end
+	check("all three owned-list events are offered, refused or not",
+		offered.AUCTION_OWNED_LIST_UPDATE and offered.AUCTION_BIDDER_LIST_UPDATE
+			and offered.OWNED_AUCTIONS_UPDATED)
+	check("and the one this client keeps is the modern one",
+		live.OWNED_AUCTIONS_UPDATED ~= nil
+			and live.AUCTION_OWNED_LIST_UPDATE == nil)
+
+	-- Two handlers apiece, under different keys, and both have to survive: one does the work
+	-- and one counts that the event arrived, which is what the visit rule rests on.
+	local function handlers(event)
+		local n = 0
+		for _ in pairs(live[event] or {}) do n = n + 1 end
+		return n
+	end
+	check("the window's own event survives too, which is what asks for the list",
+		handlers("AUCTION_HOUSE_SHOW") == 2, tostring(handlers("AUCTION_HOUSE_SHOW")))
+	check("and the modern list event carries both its worker and its counter",
+		handlers("OWNED_AUCTIONS_UPDATED") == 2,
+		tostring(handlers("OWNED_AUCTIONS_UPDATED")))
+
+	-- And end to end: opening the house asks the modern house for one's own listings, the
+	-- modern event answers, and the scan runs off it.
+	fire("AUCTION_HOUSE_SHOW")
+	check("opening the house queries the modern one", (asked.query or 0) > 0,
+		tostring(asked.query))
+
+	fire("OWNED_AUCTIONS_UPDATED")
+	local payload = stored.payload["Mirror-Midnight"]
+	check("and the event that survived drives a scan that reads the modern route",
+		payload and payload.auctions ~= nil and (asked.owned or 0) > 0,
+		tostring(asked.owned) .. " read(s)")
+	check("which reports none selling, because the route answered and said none",
+		payload and #payload.auctions.selling == 0
+			and stored.meta["Mirror-Midnight"].auctionsSelling == 0)
+
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+	Family.Capabilities:Detect()
+end)()
+
+print()
 print("identity")
 advance(3)
 

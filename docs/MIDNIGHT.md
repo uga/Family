@@ -1919,3 +1919,47 @@ listed what is in either. They are version 15's, added to the namespaces the pro
 client - listed and not called, because a stable call takes a slot index this repository has not
 measured and naming one would be guessing (L-200). They come from a measurement rather than from
 a brief, which makes them the first entries in that table that do.
+
+## 30. The auction house, which needs nothing, and a stub that reproduced L-068 (2026-09-22)
+
+Seven checks, and the first domain of the six that works end to end on this client.
+
+**Measured 2026-09-20**: the old house is gone - `GetNumAuctionItems`, `GetAuctionItemInfo`,
+`GetAuctionItemLink`, `GetAuctionItemTimeLeft`, `GetOwnerAuctionItems`, `CanSendAuctionQuery` -
+and `C_AuctionHouse` holds **every member Family names bar `GetAuctionHouseDepositRate`**, which
+nothing outside a diagnostic in `Family_UI/Slash.lua` reads. The events split:
+`AUCTION_ITEM_LIST_UPDATE`, `AUCTION_OWNED_LIST_UPDATE` and `AUCTION_BIDDER_LIST_UPDATE` are
+refused; `AUCTION_HOUSE_SHOW`, `AUCTION_HOUSE_CLOSED`, `OWNED_AUCTIONS_UPDATED`,
+`REPLICATE_ITEM_LIST_UPDATE` and the browse pair register.
+
+**And the events are why it works.** `Auctions:Scan` is driven by a loop over three names, two
+of which this client refuses - and the third is `OWNED_AUCTIONS_UPDATED`, in the same loop,
+written for a house nobody here had seen. An event a client does not have registers as nothing
+at all (§2.2), so the loop needs no branch and has none. Driven end to end here: opening the
+window queries the modern house, the modern event answers, the scan reads
+`C_AuctionHouse.GetNumOwnedAuctions` and files none selling.
+
+**What is not measured**: the shape of a Midnight owned-auction row. `GetNumOwnedAuctions()`
+answered **0** in the run, because that character had nothing up, so the fixture answers 0 too
+rather than borrowing the row `main` measured on Mists on 2026-09-10. A `main` measurement is
+the question here and never the answer. One auction posted before the next run settles it.
+
+### The stub was wrong in the way the code documents
+
+The first version of the section's `RegisterEvent` kept **one handler per event name**, and it
+threw half the file away without a word. `AUCTION_HOUSE_SHOW` and `OWNED_AUCTIONS_UPDATED` are
+each registered **twice** - once to do the work, once under the key `auctions.heard` to count
+that the event arrived, which is what the visit rule rests on. Keyed by name alone, the counter
+replaced the worker, opening the house asked for nothing, and the check that should have caught
+it reported `nil`.
+
+That is **L-068**, and it is not an analogy: `Core.lua:60` says *a second registration under one
+key replaces the first, in silence*, and `Scanners/Auctions.lua:2610` records that this exact
+pair of events did exactly this in the game on 2026-09-10 - opening the window stopped asking for
+the character's own listings, and the panel read *not seen* for everybody with nothing in the log
+to say why. **A stub that models a registry loosely reproduces the bug the registry was fixed
+for**, and it reproduces it silently, because a stub has no user to complain.
+
+The mutation recorded here is that bug, written out: register the counters under `auctions`
+rather than `auctions.heard`. It is caught five times over, on this client and on the Classic
+ones, which is what a fault that once shipped ought to look like.
