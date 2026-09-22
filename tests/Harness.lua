@@ -2937,6 +2937,20 @@ print("reputations on the fourth pretend client")
 	set("ExpandFactionHeader", nil)
 	set("CollapseFactionHeader", nil)
 
+	-- The other half of what this file reads, and it is in the stub because the whole scan is
+	-- run below: **the spellbook globals are gone too**, all six, measured in the same run.
+	-- Leaving them to the base client would have let a Midnight scan record a spellbook this
+	-- client cannot answer for, which is §26's lesson turned on this section. `GetSpellInfo`
+	-- is the widest-reaching absence in the whole file - `Names.lua`, `Professions.lua`,
+	-- `Family_UI/Slash.lua` and `Family_UI/Tooltip.lua` all name it - and the flyout calls,
+	-- which sit beside it here, are present.
+	set("GetNumSpellTabs", nil)
+	set("GetSpellTabInfo", nil)
+	set("GetSpellBookItemInfo", nil)
+	set("GetSpellBookItemName", nil)
+	set("GetSpellInfo", nil)
+	set("GetSpellSubtext", nil)
+
 	-- What the client does answer, and a count of who asked. The row is the one the run wrote
 	-- down for index 1 and carries **only the twelve keys that were written down**: the answer
 	-- has seventeen and the probe's cut stops at twelve, so the other five are unmeasured and
@@ -2991,10 +3005,34 @@ print("reputations on the fourth pretend client")
 	check("and on Midnight that list is empty", #factions == 0, tostring(#factions))
 	check("because nothing in the scanner asks C_Reputation", asked == 0, tostring(asked))
 
+	-- A record made on another client, put there first, because §26 found that the question
+	-- is not only what a Midnight scan writes but what it does to what was already known.
+	stored.meta["Mirror-Midnight"] = { specialisations = { "Swords", "Maces" } }
+
 	midnight.Character:Scan()
 	local payload = stored.payload["Mirror-Midnight"]
+	-- `GetInventoryItemLink`, `GetInventoryItemID` and `GetItemInfo` all answer on this
+	-- client, so this half of the file needs nothing: it is the only one of the three that
+	-- works today.
 	check("a whole character scan still records the equipment",
 		payload and payload.equipment ~= nil)
+
+	-- And the spellbook, which cannot be read at all here. `ReadSpells` leaves on a tab count
+	-- of nought and answers nil, and `ScanNow` writes the key only if it got a book - so
+	-- nothing is stored, which is right.
+	check("and records no spellbook, because there is no spellbook to read",
+		payload and payload.spells == nil,
+		payload and payload.spells and (#payload.spells .. " schools") or "nothing")
+
+	-- The field that would have been the professions fault a second time, and is not.
+	-- `specialisations = book and (branches or Family.CLEAR) or nil` is nil when the book is
+	-- nil, and `SetMeta` skips a nil field - so what another client learnt is left alone
+	-- rather than cleared. Exactly the case §26 found going the other way.
+	local carried = stored.meta["Mirror-Midnight"]
+	check("and leaves the specialisations another client read, rather than clearing them",
+		carried and type(carried.specialisations) == "table"
+			and carried.specialisations[1] == "Swords",
+		carried and tostring(carried.specialisations) or "no meta")
 	check("and records no reputations at all rather than an empty list",
 		payload and payload.reputations == nil,
 		payload and payload.reputations and ("a list of " .. #payload.reputations) or "nothing")

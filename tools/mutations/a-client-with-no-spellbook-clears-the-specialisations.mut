@@ -1,0 +1,6 @@
+name: a client that cannot read a spellbook clears the specialisations another one read
+file: addons/Family/Scanners/Character.lua
+--- old
+		specialisations = book and (branches or Family.CLEAR) or nil,
+--- new
+		specialisations = branches or Family.CLEAR,

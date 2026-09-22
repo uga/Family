@@ -1511,6 +1511,29 @@ and liked by none. It is checked here as it is, not as it ought to be: changing 
 commit that gives this client a route, and a check that pins today's wrong answer is what will
 make that commit notice it.
 
+### The rest of the character scan, added 2026-09-22 after §26
+
+The fixture first written for this section absented the four faction globals and left the rest
+to the base client - so a Midnight scan read a spellbook out of a client that has none. Nothing
+checked here depended on it and it was still a fixture going past its client, which is §26's
+lesson turned on this section. **All six spellbook globals are absent in the run** and are absent
+in the stub now: `GetNumSpellTabs`, `GetSpellTabInfo`, `GetSpellBookItemInfo`,
+`GetSpellBookItemName`, `GetSpellInfo`, `GetSpellSubtext`. `GetSpellInfo` is the widest-reaching
+absence in the whole file.
+
+Three readings came out of it, and the file is two thirds broken on this client:
+
+- **Equipment works.** `GetInventoryItemLink`, `GetInventoryItemID` and `GetItemInfo` all answer,
+  and a whole scan records the worn gear and the item level. It is the only one of the three
+  subjects in `Character.lua` that needs nothing.
+- **No spellbook is recorded**, and rightly: `ReadSpells` leaves on a tab count of nought and
+  answers nil, and `ScanNow` writes the key only if it got a book.
+- **And what another client read is left alone.** `specialisations = book and (branches or
+  Family.CLEAR) or nil` is nil when the book is nil, and `SetMeta` skips a nil field. Checked
+  with two specialisations read elsewhere put on the record first: still there after a Midnight
+  scan. This is exactly the case §26 found going the other way, and the difference between them
+  is one `book and`.
+
 **One mutation, and it is caught by this section alone.** Dropping the `#factions > 0` guard, so
 that an empty list is filed as a reading, leaves **every check on all three Classic clients
 green** - on those the list is never empty - and is named only by *and records no reputations at
