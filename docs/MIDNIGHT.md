@@ -2018,3 +2018,20 @@ What step 3 inherits is three gaps each one call wide - `C_QuestLog.GetNumQuestL
 `reputationCount` reporting a zero, and the rule §29 names: **a count or a table written
 unconditionally after a read that can fail is the whole of what went wrong in the two scanners
 that got it wrong.**
+
+## 32. The merge of 2026-09-22 evening, and one name the client has not been asked
+
+Seventeen commits of `main` since the last merge, landing Backlog 96: a gathering node's tooltip
+answers who in the family holds that herb or ore, on the world, the minimap and the world map.
+It touches the client, so it was merged the same evening under the per-landing rule. One conflict,
+in `DECISIONS.md`, where both sides had appended rows; both kept whole, this branch's first.
+`LESSONS.md` merged clean and carries no new duplicate number - only the deliberate L-103.
+
+**`tools/surface.py --check` said the list had moved**, which is the rule doing its job for the
+second time. The generator now finds **279** globals, and the one new name is `WorldMapFrame`,
+read in `Family_UI/Tooltip.lua` to decide whether the frame under the cursor is drawn on a map.
+
+It is read as `local maps = { _G.Minimap, _G.WorldMapFrame }` and compared with
+`if map and frame == map`, so a client without it skips it and nothing can break. **No run has ever
+asked Midnight about it.** The regenerated `Surface.lua` travels with probe version 15, which asks
+it at login with the other 278, so the next run answers it without anybody playing specially.

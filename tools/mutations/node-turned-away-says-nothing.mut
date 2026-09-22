@@ -1,6 +1,6 @@
-name: a tooltip turned away by the gathering-skill gate says nothing, so the silence has no kind
+name: a tooltip turned away by the gathering-profession gate says nothing, so the silence has no kind
 file: addons/Family_UI/Tooltip.lua
 --- old
-		Family:Debug("node: line 2 is %s, which is skill %s and neither %d nor %d",
+			Family:Debug("node: %d line(s) and none of 2..3 names a gathering profession",
 --- new
-		Family:Debug("node:%s%s%d%d",
+			Family:Debug("node: %d",

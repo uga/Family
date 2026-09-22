@@ -34,10 +34,20 @@ is a decision rather than an afternoon of archaeology.
 - **Hovering a herb or a mining vein in the world says who in your family already has some.**
   Point at a Silverleaf or an Iron Deposit out in the open and the game's own tooltip gains the
   possessions block, the same one that herb or that ore gets in your bags. It answers **none**
-  when nobody has any, which is usually the answer you wanted.
+  when nobody has any, which is usually the answer you wanted. A vein's block names the ore, so
+  you can see at a glance that twenty under a Copper Vein means twenty Copper Ore.
 - **It works whatever language you play in**, because every word it matches is one your own
   client gave it. A vein it cannot place with confidence stays quiet instead of naming the wrong
-  metal.
+  metal. Thorium and khorium veins are told apart, which took a second look: their names share
+  seven letters and each was silencing the other on Burning Crusade and on Mists.
+- **You do not need the profession to get the answer.** A character who cannot mine an Iron
+  Deposit, or whose mining is too low for it, still sees who in the family is holding iron ore -
+  which is usually the character asking.
+- **And the dots on your maps answer too** - the minimap and the world map both, including the
+  ones GatherMate and Gatherer draw from where they remember nodes being. A zone's own label is
+  left alone. A cursor covering several different nodes answers about each of them, one block per herb or ore, however many pins are
+  stacked up. Herbs on a GatherMate pin answer too, which they did not at first - that addon
+  writes its names in colour, and Family was reading the colour as part of the name.
 
 ### Achievements
 

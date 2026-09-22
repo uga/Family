@@ -1,0 +1,8 @@
+name: a cursor holding several nodes answers about the first of them and drops the rest
+file: addons/Family_UI/Tooltip.lua
+--- old
+	for index = 1, shown do
+		local itemID = ids[index]
+--- new
+	for index = 1, 1 do
+		local itemID = ids[index]

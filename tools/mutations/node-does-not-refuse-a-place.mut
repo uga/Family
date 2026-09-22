@@ -1,0 +1,6 @@
+name: a zone label the rule would misread as an ore is scored rather than refused
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if refused and refused[said:lower()] then
+--- new
+	if false and refused[said:lower()] then

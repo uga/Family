@@ -6367,7 +6367,19 @@ do
 	ITEM_NAMES[7911] = "Truesilver Ore"
 	ITEM_NAMES[11370] = "Dark Iron Ore"
 
-	local function nodeSays(said, profession)
+	-- **Before the first hover**, because what the client calls an area is worked out once and
+	-- kept: a client that will not name one is recorded as such and not asked again, which is
+	-- right in the game and would leave this stub arriving too late to be seen.
+	local firstPlace = (Family.Gathered[1].places or {})[1]
+	local heldMap = _G.C_Map
+	local heldArea = _G.C_Map and _G.C_Map.GetAreaInfo
+	_G.C_Map = _G.C_Map or {}
+	_G.C_Map.GetAreaInfo = function(id)
+		if id == firstPlace then return "Gold Road" end
+		return "Area " .. tostring(id)
+	end
+
+	local function nodeSays(said, profession, extra)
 		GameTooltip:ClearLines()
 		GameTooltip.__itemName, GameTooltip.__itemLink = nil, nil
 		GameTooltip.__spellName, GameTooltip.__spellID = nil, nil
@@ -6377,6 +6389,7 @@ do
 
 		GameTooltip:AddLine(said)
 		if profession then GameTooltip:AddLine(profession) end
+		if extra then GameTooltip:AddLine(extra) end
 
 		local before = #GameTooltip.__lines
 
@@ -6394,6 +6407,22 @@ do
 	end
 
 	local function drewBlock(text) return text:find("Family possessions", 1, true) ~= nil end
+
+	-- **What the block says it is counting.** Twenty under a Copper Vein is twenty of something,
+	-- and until 2026-09-22 the block never said of what - so *twenty veins* was a fair reading of
+	-- the tooltip Alberto sent back. The name is taken out of the heading here, which is also what
+	-- turns the three scoring checks below from *it drew a block* into *it drew the right metal*:
+	-- `Iron Deposit` and `Dark Iron Deposit` both drew one before this existed, and nothing in
+	-- this file could tell which metal either of them had picked.
+	local function namedIn(text) return text:match("Family possessions: (.-)|r") end
+
+	-- Every heading on the tooltip, in the order they were written, for the tooltips that carry
+	-- more than one - a cursor holding several nodes answers about each of them.
+	local function namesIn(text)
+		local all = {}
+		for name in text:gmatch("Family possessions: (.-)|r") do all[#all + 1] = name end
+		return table.concat(all, "|")
+	end
 
 	check("the profession line is read by id and not by the English word",
 		HERB == "Herbalism" and Family:SkillLineFor(HERB) == 182
@@ -6440,6 +6469,128 @@ do
 	check("a line carrying the name twice still resolves it",
 		drewBlock(nodeSays("Peacebloom\nPeacebloom", HERB)))
 
+	-- **And where the names on it disagree, there is no answer to give.**
+	--
+	-- Read from play 2026-09-22, on a world map zoomed out over Searing Gorge: eight pins under
+	-- one cursor - `Dark Iron Deposit`, `Rich Thorium Vein`, `Truesilver Deposit` among them -
+	-- and the block said *Family possessions: Dark Iron Ore 42*, the first name of the eight,
+	-- drawn as confidently as if it had been the only one. Which pin the 42 belonged to was not
+	-- on the tooltip and could not be worked out from it.
+	--
+	-- **One known and one unknown is a disagreement too**, and that is the half worth a check of
+	-- its own: it is the case where *answer about the one you can place* looks reasonable, and
+	-- it puts one number under two names exactly as the eight-pin cluster did.
+	--
+	-- **And it answers about each of them**, which is what Alberto asked for on seeing sixteen
+	-- pins under one cursor over Searing Gorge: *deduplicated titles and the full list for each
+	-- below each*. The heading naming what it counts is what makes that readable, and it is why
+	-- the silence this replaces was only ever a stopgap - one unnamed number under four names is
+	-- unreadable, four named ones are not.
+	local twoVeins = nodeSays("Dark Iron Deposit\nTruesilver Deposit", MINE)
+	check("a line naming two different veins answers about both",
+		namesIn(twoVeins) == "Dark Iron Ore|Truesilver Ore", twoVeins)
+
+	-- Deduplicated by what they resolve to and not by the words: two spellings of one node, or
+	-- the same node twice, are one answer.
+	local repeated = nodeSays("Dark Iron Deposit\nTruesilver Deposit\nDark Iron Deposit", MINE)
+	check("and names the same thing once however often the cursor holds it",
+		namesIn(repeated) == "Dark Iron Ore|Truesilver Ore", repeated)
+
+	-- **A name this build cannot place sits beside the ones it can** rather than silencing them.
+	-- It could not before: one unnamed answer under two names would have been read as being about
+	-- either pin, and now each answer carries the name of what it is about.
+	--
+	-- Behind a complete candidate list, because *this list cannot place it* and *this list has
+	-- not answered yet* are different things and only the first of them sits beside an answer.
+	-- Without the stub the check would pass on the second, which is not what it says.
+	do
+		local realNames = Family.Names.Item
+		Family.Names.Item = function(self, id, key, callback)
+			local name, known = realNames(self, id, key, callback)
+			if known then return name, known end
+			return "Filler " .. tostring(id), true
+		end
+		local mixed = nodeSays("Copper Vein\nSmall Obsidian Chunk", MINE)
+		Family.Names.Item = realNames
+		check("and a vein beside something it cannot place still answers for the vein",
+			namesIn(mixed) == "Copper Ore", mixed)
+	end
+
+	--------------------------------------------------------------------------------------------
+	-- Sixteen pins under one cursor
+	--
+	-- Alberto's reading of a zoomed-out world map over Searing Gorge, 2026-09-22: sixteen pin
+	-- names on one tooltip, four distinct veins among them. A tooltip does not scroll and is not
+	-- clipped politely - what runs off the top is gone - so the room left on the screen is shared
+	-- out between the answers rather than handed to each of them in turn.
+	--------------------------------------------------------------------------------------------
+	do
+		local realRows = Family.UI.TooltipRows
+		local realOwners = Family.Index.Owners
+		Family.Index.Owners = function()
+			local owners = {}
+			for index = 1, 30 do
+				owners[index] = { key = "Owner" .. index, name = "Owner" .. index,
+					realm = "Fire Maw", classFile = "MAGE", bags = 1, bank = 0, mail = 0,
+					auctions = 0, worn = 0, bound = 0, total = 1 }
+			end
+			return owners, {}
+		end
+
+		local crowd = "Gold Vein\nDark Iron Deposit\nTruesilver Deposit\nMithril Deposit"
+
+		-- A screen with room for everything draws all four and their holders.
+		Family.UI.TooltipRows = function() return 120 end
+		local roomy = nodeSays(crowd, MINE)
+		check("four veins under one cursor are four answers where the screen has room",
+			namesIn(roomy) == "Gold Ore|Dark Iron Ore|Truesilver Ore|Mithril Ore", roomy)
+
+		-- And one with room for very little draws fewer of them and says how many it left.
+		Family.UI.TooltipRows = function() return 12 end
+		local tight = nodeSays(crowd, MINE)
+		local drawn = select(2, tight:gsub("Family possessions", ""))
+		check("and a short screen draws fewer of them rather than running off the top",
+			drawn > 0 and drawn < 4, tostring(drawn) .. " of 4: " .. tight)
+		check("and says how many it did not draw",
+			tight:find("more", 1, true) ~= nil, tight)
+
+		-- **And the whole of it fits**, which is the property rather than any one cap: four
+		-- headings with ten holders under each is the same tooltip off the top of the screen by
+		-- another route. Counted in lines against the screen the answers were shared out for.
+		--
+		-- A weaker check stood here first - *fewer than thirty holders* - and a mutation that
+		-- gave every answer the full cap survived it, because three answers of ten is fewer than
+		-- thirty and still twice the screen.
+		local before = #GameTooltip.__lines
+		GameTooltip:ClearLines()
+		GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+		GameTooltip:AddLine(crowd)
+		GameTooltip:AddLine(MINE)
+		local mark = #GameTooltip.__lines
+		GameTooltip.__scripts.OnShow(GameTooltip)
+		local added = #GameTooltip.__lines - mark
+		check("and the whole of what it writes fits the screen it measured",
+			added > 0 and added <= Family.UI:TooltipRows(),
+			added .. " line(s) written into " .. Family.UI:TooltipRows())
+
+		-- **And one node on its own is the tooltip it always was.** The cap it keeps is backlog
+		-- 82's switch and backlog 89's screen, not a share of the room - there is nothing to
+		-- share it with. Pinned because the sharing above reaches this block through the same
+		-- argument and would otherwise quietly take the cap off every single-node tooltip.
+		Family.UI.TooltipRows = function() return 120 end
+		local alone = nodeSays("Mithril Deposit", MINE)
+		local drawnAlone = select(2, alone:gsub("Owner", ""))
+		check("while one node on its own still stops at the cap it always had",
+			drawnAlone == 10, tostring(drawnAlone) .. " owner line(s)")
+
+		Family.UI.TooltipRows = realRows
+		Family.Index.Owners = realOwners
+	end
+
+	check("and two different herbs answer the same way two veins do",
+		namesIn(nodeSays("Silverleaf\nPeacebloom", HERB)) == "Silverleaf|Peacebloom",
+		nodeSays("Silverleaf\nPeacebloom", HERB))
+
 	-- **Exactly, and not the way a search box matches.** Loosely, *Silverleaf* would find
 	-- *Silverleaf Pendant* and report the family's holdings of something else entirely.
 	check("a herb name that is only part of an item's name resolves to nothing",
@@ -6450,11 +6601,15 @@ do
 	-- **A vein is scored, and the score was fixed on 534 nodes.** Copper is the plain case and
 	-- iron is the one that made the rule: *Iron Deposit* shares `iron ` with both iron ores and
 	-- the share of each name is what tells them apart - 5 of 8 against 5 of 13.
-	check("a copper vein names copper ore", drewBlock(nodeSays("Copper Vein", MINE)))
+	local copper = nodeSays("Copper Vein", MINE)
+	check("a copper vein names copper ore", drewBlock(copper)
+		and namedIn(copper) == "Copper Ore", tostring(namedIn(copper)))
 	local iron = nodeSays("Iron Deposit", MINE)
-	check("an iron deposit names iron ore and not dark iron ore", drewBlock(iron), iron)
+	check("an iron deposit names iron ore and not dark iron ore",
+		namedIn(iron) == "Iron Ore", iron)
+	local dark = nodeSays("Dark Iron Deposit", MINE)
 	check("and a dark iron deposit names the dark iron one",
-		drewBlock(nodeSays("Dark Iron Deposit", MINE)))
+		namedIn(dark) == "Dark Iron Ore", dark)
 	-- Truesilver is why the margin is waived when one ore's name sits inside another's: without
 	-- that, the runner-up Silver Ore silences the correct answer on every Truesilver node.
 	check("a truesilver deposit is not silenced by silver ore",
@@ -6464,20 +6619,165 @@ do
 	check("a vein the score cannot place draws nothing at all",
 		nodeSays("Small Obsidian Chunk", MINE) == "")
 
-	-- **The margin on its own**, which nothing above exercises. *Cold Iron Deposit* scores
-	-- `Iron Ore` at 0.625 against `Gold Ore` at 0.500 - past the floor, past the run length,
-	-- and inside the margin. Two different metals that close is a guess, so it draws nothing.
+	-- **A herb is not named twice.** The heading carries the noun where the tooltip has not
+	-- already said it, and on a herb node it has: the node is named exactly what the herb is
+	-- named, which is the whole reason a herb is a lookup and a vein is scored.
+	local bare = nodeSays("Silverleaf", HERB)
+	check("a herb node does not repeat the name the tooltip already carries",
+		drewBlock(bare) and namedIn(bare) == nil, bare)
+
+	--------------------------------------------------------------------------------------------
+	-- What the block is allowed to say on a rock
+	--
+	-- Two faults in one reading, Alberto 2026-09-22, off three screenshots of a Copper Vein in
+	-- the world, on the minimap and on the world map. The block said *Family possessions 20*
+	-- with no noun anywhere on the tooltip, and under it offered *CTRL-ALT-click to open the
+	-- family's list* - a gesture that rides `HandleModifiedItemClick` and therefore cannot fire
+	-- on a vein, a blip or a pin. On the world node it is worse than an empty promise: control
+	-- and alt and a click on a rock is a click on a rock, and the reader who takes the tooltip
+	-- at its word mines the thing they were only asking about.
+	--------------------------------------------------------------------------------------------
+	do
+		local realOwners = Family.Index.Owners
+		local realArmed = Family.UI.ItemClickArmed
+
+		local function owning(howMany)
+			return function()
+				local owners = {}
+				for index = 1, howMany do
+					owners[index] = {
+						key = "Owner" .. index, name = "Owner" .. index,
+						realm = "Fire Maw", classFile = "MAGE",
+						bags = 1, bank = 0, mail = 0, auctions = 0, worn = 0,
+						bound = 0, total = 1,
+					}
+				end
+				return owners, {}
+			end
+		end
+
+		-- **Armed, and said so rather than hoped.** The offer is refused by three conditions and
+		-- two of them are about the client; with the hook unarmed here, a check that the note is
+		-- absent would pass with the third condition deleted. So the other two are held open.
+		Family.UI.ItemClickArmed = function() return true end
+		GameTooltip.__owner = nil
+
+		Family.Index.Owners = owning(1)
+		local few = nodeSays("Copper Vein", MINE)
+
+		Family.Index.Owners = owning(210)
+		local many = nodeSays("Copper Vein", MINE)
+
+		Family.Index.Owners = function() return {}, {} end
+		local nobody = nodeSays("Copper Vein", MINE)
+
+		Family.Index.Owners = realOwners
+		Family.UI.ItemClickArmed = realArmed
+
+		check("a node never offers a gesture that needs an item to click",
+			few:find("CTRL", 1, true) == nil and many:find("CTRL", 1, true) == nil,
+			few .. " || " .. many)
+
+		-- **And the reader is still not stranded.** Where the list is too long to draw, the
+		-- directions to the panel are what the gesture was standing in for, and they are true on
+		-- every tooltip. This is the branch the note used to occupy.
+		check("while a node list too long to draw still says where the rest of it is",
+			many:find(Family.L["Whole family"], 1, true) ~= nil
+				and many:find(Family.L["Possessions"], 1, true) ~= nil, many)
+
+		-- The heading names the ore on all three shapes of answer, and *none* is the one
+		-- somebody standing over a vein acts on.
+		check("a vein names the ore it yields, whoever holds any", namedIn(few) == "Copper Ore"
+			and namedIn(many) == "Copper Ore", tostring(namedIn(few)) .. " / "
+			.. tostring(namedIn(many)))
+		check("and says it on the none answer too, which is the one somebody acts on",
+			nobody:find("none", 1, true) ~= nil and namedIn(nobody) == "Copper Ore", nobody)
+	end
+
+	-- **The margin on its own**, which nothing above exercises. *Strange Ore*, which Mists puts
+	-- in the ground, scores `Tin Ore` at 0.571 against `Gold Ore` at 0.500 - past the floor,
+	-- past the run length, and inside the margin. Two different metals that close is a guess,
+	-- so it draws nothing.
+	--
+	-- **It used to be `Cold Iron Deposit` and that example had to be retired**, which is worth
+	-- the sentence because it looks like a check being weakened. Season of Discovery added that
+	-- node and `Cold Iron Ore` (219401) with it, and no client of this build smelts that ore -
+	-- so it is in no candidate list and the vein can only ever be scored against metals it does
+	-- not yield. Under the word rule it now answers `Iron Ore`, which is wrong, and it is wrong
+	-- for a reason the margin never addressed: the right answer is not among the candidates.
+	-- That family is written up in backlog 98 rather than pinned here, because pinning a wrong
+	-- answer in a check is how it stops being read as one.
 	check("a vein whose two best candidates are close draws nothing",
-		nodeSays("Cold Iron Deposit", MINE) == "")
+		nodeSays("Strange Ore", MINE) == "")
 
 	-- **The minimum run on its own**, which only bites where an ore's name is very short - and
-	-- one is. `Torio` is what a Spanish client calls thorium ore, five bytes, so a three-byte
-	-- coincidence is 0.6 of it and clears the floor: that is how *Filón de indurio* came to be
-	-- named as thorium in the measurement, and why the run length is there. Both words here are
-	-- the game's own, from the same reading.
+	-- one is. `Torio` is what a Spanish client calls thorium ore, five bytes, so a three-letter
+	-- coincidence is 0.6 of it and clears the floor. `Torre de vigilancia` is a watchtower and a
+	-- label a pointer crosses on a map; `tor` is the start of both words, so the word rule below
+	-- has nothing to say about it and the run length is the only thing that refuses it.
+	--
+	-- Measured 2026-09-22 over all 970 node names: with the word rule in, a minimum run of 1, 2,
+	-- 3 and 4 give identical answers, so **nothing in the corpus exercises this** and the case
+	-- it guards is the one here - a short aligned coincidence at the start of a short name.
+	-- Kept for that, and the reading is written down so the next reader knows it is a guard
+	-- against an unmeasured case and not a rule that earns its keep on the rows we have.
 	ITEM_NAMES[10620] = "Torio"
-	check("and a three-byte coincidence with a very short ore name is refused",
+	check("and a three-letter coincidence with a very short ore name is refused",
+		nodeSays("Torre de vigilancia", MINE) == "")
+
+	-- **And where the coincidence is inside the candidate's word, the word rule refuses it**,
+	-- which is the same Spanish pair the run length was first fixed on: `orio` sits inside
+	-- `Torio` starting at its second letter, so `Filón de indurio` matched a coincidence and
+	-- not a name.
+	check("and one that matched inside an ore's word is refused as well",
 		nodeSays("Filón de indurio", MINE) == "")
+
+	--------------------------------------------------------------------------------------------
+	-- The metal word has to be a word
+	--
+	-- Reported from play 2026-09-22 on Burning Crusade, with `/family debug` on: `Rich Thorium
+	-- Vein` and `Small Thorium Vein` on the minimap answered *nothing here can place it* while a
+	-- `Dark Iron Deposit` beside them named its ore. The cause is `Khorium Ore`, which that build
+	-- adds and Era does not: `thorium ` is 8 bytes of `Thorium Ore` and `horium ` is 7 of
+	-- `Khorium Ore`, so the two score 0.727 and 0.636 and the margin refuses a vein nobody was
+	-- ever in doubt about. Khorium is silenced by thorium the same way.
+	--
+	-- **Driven in German, and on stand-in ids**, which is a harness mechanic and is said out
+	-- loud. Era ships no khorium, so the pair has to be put into this build's list; and 10620 has
+	-- already been asked about above, so it cannot be renamed now - a name the client has given
+	-- is remembered for the session, which is the whole point of `Names`. The four words are the
+	-- game's own from the same reading as the English pair, and German is where the two names sit
+	-- closest: `thoriumerz` is 11 bytes of `Thoriumerz` and `horiumerz` is 9 of `Khoriumerz`.
+	do
+		local ores = Family.Gathered[1].ores
+		ITEM_NAMES[990620], ITEM_NAMES[990426] = "Thoriumerz", "Khoriumerz"
+		ores[#ores + 1], ores[#ores + 2] = 990620, 990426
+
+		local rich = nodeSays("Reiches Thoriumvorkommen", MINE)
+		local small = nodeSays("Kleines Thoriumvorkommen", MINE)
+		local khorium = nodeSays("Khoriumvorkommen", MINE)
+
+		check("a thorium vein is not silenced by khorium sharing nine of its letters",
+			namedIn(rich) == "Thoriumerz" and namedIn(small) == "Thoriumerz",
+			tostring(namedIn(rich)) .. " / " .. tostring(namedIn(small)))
+		check("and khorium is not silenced by thorium either",
+			namedIn(khorium) == "Khoriumerz", khorium)
+
+		-- **And the run that opens with the separator itself**, which is the branch of the word
+		-- rule that is easy to get wrong and impossible to notice: French puts the metal last, so
+		-- `Filon de cuivre` and `Minerai de cuivre` share ` de cuivre` starting at a space. Test
+		-- only the byte before it and every French vein in the game goes quiet.
+		ITEM_NAMES[990770] = "Minerai de cuivre"
+		ores[#ores + 1] = 990770
+		local french = nodeSays("Filon de cuivre", MINE)
+		check("a name whose shared run opens with the space is still at a word",
+			namedIn(french) == "Minerai de cuivre", french)
+		ores[#ores] = nil
+		ITEM_NAMES[990770] = nil
+
+		ores[#ores], ores[#ores - 1] = nil, nil
+		ITEM_NAMES[990620], ITEM_NAMES[990426] = nil, nil
+	end
 
 	-- The discriminator. A two-line tooltip whose second line is not gathered from the ground is
 	-- not a node, whoever drew it.
@@ -6486,15 +6786,52 @@ do
 	check("and neither is a tooltip with no second line at all",
 		nodeSays("Silverleaf", nil) == "")
 
-	-- Cheapest test first, which is what keeps this off every tooltip in the game.
+	-- **A character who cannot gather the node still sees it**, and still wants the answer.
+	-- Alberto, 2026-09-22: without the profession the line says *requires* it, and a miner whose
+	-- skill is too low for the vein reads *Requires Mining (275)*. Both shapes were turned away
+	-- by a test that asked the line to **be** the profession rather than to contain it - so the
+	-- block showed only to characters who could already take the node, and the one who wants it
+	-- most is the one who cannot. Which line carries the requirement is not known here, so both
+	-- the second and the third are read and neither position is assumed.
+	check("a vein whose second line only requires the profession is still a node",
+		drewBlock(nodeSays("Copper Vein", "Requires " .. MINE)))
+	check("and one that names it and then requires a level as well",
+		drewBlock(nodeSays("Copper Vein", MINE, "Requires " .. MINE .. " (275)")))
+	-- **And the third line on its own**, which is the claim the code makes rather than a shape
+	-- anybody has read: both known shapes put the word on the second line, and which line the
+	-- requirement lands on is not established. Reading only one of them would be a guess, so
+	-- both are read - and a blank separator above the requirement is an ordinary thing for a
+	-- tooltip to have.
+	check("and one whose second line is blank and whose third requires the profession",
+		drewBlock(nodeSays("Copper Vein", "", "Requires " .. MINE .. " (275)")))
+
+	-- **A node tooltip has no ceiling on its lines**, because nothing says it is Family's alone
+	-- before Family writes on it: an addon adding a line above ours would push a two-line node
+	-- past a cap of three. Not evidenced by the `5 line(s)` reading, which turned out to be our
+	-- own block counted back to us on the deferred call - two lines plus a blank, a header, an
+	-- owner and a blank.
 	GameTooltip:ClearLines()
 	GameTooltip.__itemName, GameTooltip.__itemLink = nil, nil
+	if GameTooltip.__scripts.OnTooltipCleared then
+		GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+	end
 	GameTooltip:AddLine("Silverleaf")
 	GameTooltip:AddLine(HERB)
-	GameTooltip:AddLine("and a third line")
+	for _, extra in ipairs { "a third line", "a fourth", "a fifth" } do
+		GameTooltip:AddLine(extra)
+	end
+	local before = #GameTooltip.__lines
 	GameTooltip.__scripts.OnShow(GameTooltip)
-	check("a tooltip of three lines is not a node", #GameTooltip.__lines == 3,
-		tostring(#GameTooltip.__lines))
+	local grown = ""
+	for index = before + 1, #GameTooltip.__lines do
+		grown = grown .. tostring(GameTooltip.__lines[index][1]) .. " "
+	end
+	check("a node of five lines is still a node", drewBlock(grown), grown)
+
+	-- What keeps this off every tooltip in the game is the profession scan, not a line count:
+	-- a bag slot's second line is not the word Herbalism in any language.
+	check("and a long tooltip naming no gathering profession is not one",
+		nodeSays("Silverleaf", CLOTH, "a third line") == "")
 
 	-- Anything the client will name is an item, and the item route already has it.
 	GameTooltip:ClearLines()
@@ -6512,15 +6849,193 @@ do
 	-- **Asked of the client once, not once per hover.** Naming every candidate and scoring
 	-- against all of them is work a pointer crossing a field of herbs must not pay twice, and
 	-- the answer does not move: a name belongs to an item whatever anybody is carrying.
+	--
+	-- **One lookup a hover is not the scan.** Since 2026-09-22 the heading names what the node
+	-- yields, and it asks the client for that name on every draw rather than carrying it back
+	-- from the memo - deliberately, because a name that arrives after the answer was memoised
+	-- would otherwise never reach the heading. So this counts the repeat hovers at one lookup
+	-- each and the first at the whole list, which is the difference the memo exists to make.
+	ITEM_NAMES[2450] = "Briarthorn"
 	local realItem, asked = Family.Names.Item, 0
 	Family.Names.Item = function(...) asked = asked + 1 return realItem(...) end
-	nodeSays("Silverleaf", HERB)
+	nodeSays("Briarthorn", HERB)
 	local first = asked
-	nodeSays("Silverleaf", HERB)
-	nodeSays("Silverleaf", HERB)
+	nodeSays("Briarthorn", HERB)
+	local second = asked - first
+	nodeSays("Briarthorn", HERB)
+	local third = asked - first - second
 	Family.Names.Item = realItem
 	check("a node name is worked out once however often it is hovered",
-		first > 0 and asked == first, first .. " then " .. asked)
+		first > 1 and second == 1 and third == 1,
+		first .. " then " .. second .. " then " .. third)
+
+	-- **A dot on the minimap**, which gives the name and nothing else.
+	--
+	-- One line, no profession line, so nothing in the text says it is a node. That is why the
+	-- frame is required there and the resolution is not allowed to decide on its own: 647 of
+	-- 43,356 ordinary item names score as an ore under the rules a real vein passes, and no
+	-- threshold separates the two - by the time the false ones stop, the veins stop with them.
+	--
+	-- **And a pin another addon drew is served too.** Alberto, 2026-09-22: GatherMate, Gatherer
+	-- and their like remember where nodes were and draw their own pins, and those are nodes.
+	-- Their frames are children of `Minimap`, so the test walks up the parents rather than
+	-- naming one addon's frame.
+	local realFocus, realFoci = _G.GetMouseFocus, _G.GetMouseFoci
+	local function pointerOn(frame)
+		_G.GetMouseFocus = function() return frame end
+		_G.GetMouseFoci = function() return { frame } end
+	end
+
+	pointerOn(Minimap)
+	check("a blip on the minimap resolves from its one line",
+		drewBlock(nodeSays("Silverleaf", nil)))
+
+	-- **A pin's name can arrive wearing a colour**, and that is the whole of *herbalism works in
+	-- the world and not on the minimap*, reported 2026-09-22. GatherMate2 draws a herb's name in
+	-- green and a vein's in red, so its text is `|cff00ff00Bruiseweed|r`; the client's own world
+	-- tooltip carries no markup at all. A vein survived it because it is scored and the share is
+	-- measured against the candidate's own length, so markup on the other side changes nothing -
+	-- which is exactly why this went unnoticed while every vein on every pin answered.
+	--
+	-- **Drawing a block is not the check**, and this is where that had to be learned twice. With
+	-- the markup left on, `|cff00ff00Silverleaf|r` misses the herb list - an exact match - and
+	-- then goes on to the ores, where `silver` comes out of it and it draws a block naming
+	-- **Silver Ore**. So a check that asks *did it draw* passes on the fault it is written for.
+	-- What tells them apart is the heading: a herb the tooltip has already named leaves the
+	-- heading bare, and an ore puts its own name in it.
+	local function heldOnly(text) return drewBlock(text) and namedIn(text) == nil end
+
+	check("a herb whose name arrives wrapped in a colour still resolves, and as the herb",
+		heldOnly(nodeSays("|cff00ff00Silverleaf|r", nil)),
+		nodeSays("|cff00ff00Silverleaf|r", nil))
+	check("and one carrying an inline icon as well",
+		heldOnly(nodeSays("|TInterface\\Icons\\INV_Misc_Herb_07:0|t |cff00ff00Silverleaf|r",
+			nil)))
+	check("and two coloured pins of one herb are still one answer",
+		heldOnly(nodeSays("|cff00ff00Silverleaf|r\n|cff00ff00Silverleaf|r", nil)))
+	-- The markup comes off the whole line, so what it leaves between the names is inside the
+	-- line and outside the reach of trimming its ends. Each name is trimmed on its own.
+	check("and the spacing the markup leaves between two names comes off each of them",
+		heldOnly(nodeSays("|cff00ff00Silverleaf|r \n |cff00ff00Silverleaf|r", nil)))
+	check("while two coloured pins of different herbs answer about each of them",
+		namesIn(nodeSays("|cff00ff00Silverleaf|r\n|cff00ff00Peacebloom|r", nil))
+			== "Silverleaf|Peacebloom",
+		nodeSays("|cff00ff00Silverleaf|r\n|cff00ff00Peacebloom|r", nil))
+	check("and a name that is nothing but markup is not a node",
+		nodeSays("|cff00ff00|r", nil) == "")
+
+	-- **A blip with no profession line may not fall through to the ores while the herb list is
+	-- still being named.** Read in play 2026-09-22: `"Silverleaf" is item 2775`, which is Silver
+	-- Ore. The herbs had not been named, so the exact step found nothing, and the scorer took
+	-- `silver` out of `Silver Ore` with the kin rule waiving the margin against `Truesilver Ore`.
+	-- A list that did not answer and was not complete has not said no.
+	check("a vein blip says nothing while the herb list is still being named",
+		nodeSays("Copper Vein", nil) == "")
+
+	-- And once the client has named every candidate, the same blip resolves.
+	local realNames = Family.Names.Item
+	Family.Names.Item = function(self, id, key, callback)
+		local name, known = realNames(self, id, key, callback)
+		if known then return name, known end
+		return "Filler " .. tostring(id), true
+	end
+	check("and resolves once every candidate has a name",
+		drewBlock(nodeSays("Copper Vein", nil)))
+	Family.Names.Item = realNames
+
+	-- **A zone label is not a node**, and the exception ships as ids so the client names them.
+	-- Alberto, 2026-09-22: *just for the fact that you can know this, you can write an exception
+	-- table.* 11 of Era's 1,018 area names score as an ore in English and **53** across the five
+	-- languages, which is why the table is ids and not words - and why one that collides in any
+	-- one locale is refused in all of them.
+	local places = Family.Gathered and Family.Gathered[1] and Family.Gathered[1].places
+	check("the build ships the places its own rule would misread", places and #places > 20,
+		places and tostring(#places) or "none")
+
+	-- Named behind a complete candidate list, because without one the herb step stops the walk
+	-- before the ores are ever scored - and it is the ore score this refusal exists to head off.
+	-- `Gold Road` takes `Gold Ore` at 0.625 with nothing near it, which is the shape that named
+	-- a blip as silver in play.
+	--
+	-- **It was `Silverpine Forest` and the mutation caught that going stale**, which is the whole
+	-- reason the mutation exists. That name scored 0.600 for `Silver Ore` with the kin rule
+	-- waiving the margin against `Truesilver Ore`; the word rule drops `Truesilver Ore` - the run
+	-- starts inside its own first word - so the kin waiver goes with it, the margin refuses the
+	-- name on its own, and the check passed without ever reaching the refusal. A check that has
+	-- stopped testing what it names is invisible from the green column.
+	local beforeFiller = Family.Names.Item
+	Family.Names.Item = function(self, id, key, callback)
+		local name, known = beforeFiller(self, id, key, callback)
+		if known then return name, known end
+		return "Filler " .. tostring(id), true
+	end
+	check("a place the client names is refused rather than scored as an ore",
+		nodeSays("Gold Road", nil) == "")
+	-- And the refusal is by name, not by turning the route off: a real node still resolves.
+	check("and a real node beside it still resolves",
+		drewBlock(nodeSays("Silverleaf", nil)))
+	Family.Names.Item = beforeFiller
+
+	local pin = CreateFrame("Frame", "GatherMatePin2", Minimap)
+	pointerOn(pin)
+	check("a pin another addon drew on the minimap is served as well",
+		drewBlock(nodeSays("Silverleaf", nil)))
+
+	-- **And the world map**, on Alberto's *I want both*: a pin drawn from a remembered position
+	-- is the same question with the same answer wanted, and the narration settled that such a
+	-- pin reaches `GameTooltip` and was refused by this test and nowhere else.
+	WorldMapFrame = WorldMapFrame or CreateFrame("Frame", "WorldMapFrame")
+	pointerOn(CreateFrame("Frame", "GatherMateWorldPin", WorldMapFrame))
+	check("a pin on the world map is served too",
+		drewBlock(nodeSays("Silverleaf", nil)))
+
+	-- Anywhere else, one line is one line and says nothing about being a node.
+	pointerOn(CreateFrame("Frame", "SomeOtherFrame"))
+	check("a one-line tooltip that is not on the minimap is not a node",
+		nodeSays("Silverleaf", nil) == "")
+	_G.GetMouseFocus = function() return nil end
+	_G.GetMouseFoci = function() return {} end
+	check("and neither is one with no frame under the pointer at all",
+		nodeSays("Silverleaf", nil) == "")
+
+	_G.GetMouseFocus, _G.GetMouseFoci = realFocus, realFoci
+
+	-- **The deferred half, which this harness could never reach.** There is no `C_Timer` here,
+	-- so the route runs straight through; the game takes the other branch, and the redraw after
+	-- a refill lives only on it. A queue is stood in for these checks and drained by hand.
+	--
+	-- Reported from play 2026-09-22: on one and the same Mageroyal, *sometimes the rich tooltip,
+	-- sometimes the basic one*, with and without the skill alike. A tooltip refilled **in
+	-- place** - a pointer crossing from one node straight to another, without it ever hiding -
+	-- fires no second `OnShow`, so the route was never asked again and the block was simply
+	-- absent, with nothing to say why.
+	ITEM_NAMES[785] = "Mageroyal"
+	local heldTimer, queued = _G.C_Timer, {}
+	_G.C_Timer = { After = function(_, fn) queued[#queued + 1] = fn end }
+	local function drain()
+		local due = queued
+		queued = {}
+		for _, fn in ipairs(due) do fn() end
+	end
+
+	check("a node draws its block on the frame the tooltip is shown in",
+		drewBlock(nodeSays("Mageroyal", HERB)))
+	drain()
+
+	GameTooltip:ClearLines()
+	GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+	GameTooltip:AddLine("Mageroyal")
+	GameTooltip:AddLine(HERB)
+	local mark = #GameTooltip.__lines
+	drain()
+	local again = ""
+	for index = mark + 1, #GameTooltip.__lines do
+		again = again .. tostring(GameTooltip.__lines[index][1]) .. " "
+	end
+	check("and gets it back when the tooltip is emptied and refilled in place",
+		drewBlock(again), again)
+
+	_G.C_Timer = heldTimer
 
 	-- **Silence has to say which kind of silence it is.** Reported from play the day this
 	-- landed as *herb nodes do not seem to work at all*: four gates in this route, all silent,
@@ -6533,7 +7048,7 @@ do
 	local heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
 		#DEFAULT_CHAT_FRAME.messages)
 	check("a tooltip turned away names the gate that did it",
-		heard:find("which is skill", 1, true) ~= nil, heard)
+		heard:find("none of 2..3 names a gathering profession", 1, true) ~= nil, heard)
 	check("and every tooltip reports its shape before any gate runs",
 		heard:find("shown with 2 line(s)", 1, true) ~= nil, heard)
 
@@ -6544,7 +7059,33 @@ do
 	check("and a node nothing can place says that, rather than nothing",
 		heard:find("nothing here can place it", 1, true) ~= nil, heard)
 
+	-- **And the two kinds of silence are told apart.** A node the score cannot place and a node
+	-- left alone while the client is still naming the candidates look identical from outside,
+	-- and they want opposite things from whoever is standing there: the first will never answer,
+	-- the second answers on the next hover. Reported 2026-09-22 as two thorium veins on the
+	-- world map drawing nothing while a mithril deposit beside them answered - which is the
+	-- shape a part-named list makes, and which this route could not say out loud.
+	--
+	-- A name no earlier check has resolved, because a memoised answer would never reach the
+	-- walk at all.
+	local heldFocus, heldFoci = _G.GetMouseFocus, _G.GetMouseFoci
+	pointerOn(Minimap)
+	from = #DEFAULT_CHAT_FRAME.messages
+	nodeSays("Tin Vein", nil)
+	heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("and a list the client has not finished naming says so, and says which and how many",
+		heard:find("has not said no yet", 1, true) ~= nil
+			and heard:find("herbs", 1, true) ~= nil, heard)
+	-- Put the pointer back where this block found it: a probe further down the file reads the
+	-- same call and would take the minimap for its own answer.
+	_G.GetMouseFocus, _G.GetMouseFoci = heldFocus, heldFoci
+
 	FamilyDB.debug = heldDebug
+
+	-- Put the client back as it was found. `/family hearth` further down asks this very
+	-- question of it and would read the stand-in as an answer about a real client.
+	if heldMap then _G.C_Map.GetAreaInfo = heldArea else _G.C_Map = nil end
 end
 
 -- A thing made by using an item rather than by a recipe

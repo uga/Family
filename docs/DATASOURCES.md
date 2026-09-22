@@ -3021,6 +3021,49 @@ fourteen, which spent the whole allowance on the description and the icon and pu
 and the weekly cap out of sight. It names the fields it wants first now. A tool that reports is a
 tool that can report the wrong thing.
 
+**And it is a bias, not an accident - read 2026-09-22 from a session on `family-retail-2d`,
+which paid for it three times.** Their dump cuts a table's keys alphabetically at twelve, and
+three slices running lost exactly the field they were run for: a currency's `name` out of 25
+keys, a faction's `name` out of 17, and a quest's `title` and `questID` out of 26. The reason is
+in the vocabulary the client uses. A record's flags are called `atWarWith`, `canSetInactive`,
+`hasBonusRepGain`, `isAccountWide`, `isHeader`; the field that says *which thing this is* is
+called `name`, `title`, `questID`, `quantity`. **An alphabetical cut keeps the flags and drops
+the identity every time, and the shorter it is the more reliably it does so.** Two of their code
+steps are stalled on a run that had already made the right call with the naming field cut out of
+the answer.
+
+Here the damage is bounded and it was bounded by accident rather than by design: `fields` is
+called from **one** probe, the currency-by-id one, and the nine names it privileges are that
+call's own identity - `name`, `currencyID`, `quantity` and the caps - so the tail cut at six can
+only drop a flag. The residual is the shape and not the state: `fields` reads as general, its
+priority list is about currencies alone, and the next probe to reach for it inherits a list that
+knows nothing about what it is printing. `GetRecipeInfo` answers 28 fields and `learned` is not
+among the nine.
+
+**A fourth case the same day settles which of the two answers is right**, and it is not the one
+this file had reached for. `C_SpecializationInfo.GetTalentInfo{tier, column, groupIndex}` answers
+18 keys; their dump wrote 12, and the cut falls **immediately after `name`**, so a talent came
+back correctly named and with no identifier at all - on the route the client actually takes.
+`interpret` in `Scanners/Talents.lua:189` takes the id from `first.talentID or first.id`, and
+this tree carries that same line and that same call at `:232`, so the reading is about code
+shared with this repository rather than about theirs alone.
+
+**The argument against a per-caller list is that the fourth case was in nobody's list.** Nobody
+knew that call would need `talentID` until somebody drove the scanner with it. A list of identity
+keys is written from what is expected; the cut takes what is not. `WANTED` here is right and has
+held, and it held because that one call had already been got wrong once - it is the memory of an
+incident and not coverage of anything. **Raising the cut covers the calls nobody has got wrong
+yet, which is all of them.** Their number is 30, read rather than chosen: Midnight's widest
+answers shaped like a *record* are 28 and 29 keys, and everything wider - 157, 169, 261, 639 - is
+a **list**, where cutting is right. So: two mechanisms with two names, a cut that is generous
+enough for a record and a priority list kept only where an incident put one.
+
+And the check that guards it has one property that is not obvious: **it must pass only on the
+default.** Their currency check passed already, on a call that asks for thirty keys by name, so it
+could never have caught this. The new one was watched failing with the cut put back to twelve
+before it was kept - the same rule this repository states as making each check fail with the fix
+removed.
+
 #### What the second brief adds, 2026-09-20
 
 Alberto, describing the systems again in more detail. Three things in it are new to this section,
@@ -5041,6 +5084,161 @@ cells of this table are Era and Burning Crusade alone.
 taking rather than leaving it to chance: the rows nearest the bar. Anything Wowhead and the
 client disagree about would show up there first.
 
+#### What a node says to somebody who cannot take it — read 2026-09-22
+
+Two screenshots, which settle the shape the `contains` test was built for and correct an
+inference of mine in the same stroke:
+
+| Hovered | What the client draws |
+|---|---|
+| A herb node, with Herbalism and the skill for it | `Silverleaf` / `Herbalism` |
+| A vein, on a character with **no** Mining at all | `Copper Vein` / `Requires Mining` |
+
+**Two lines in both cases.** The profession line is **replaced**, not added to: a character
+without the trade reads *Requires Mining* where a miner reads *Mining*. So the line count was
+never what turned the non-miner away - the equality test was, and `contains` is exactly the
+right shape. Confirmed by a reading rather than by reasoning, which is the way round that was
+available all along.
+
+**And it corrects me.** Backlog 96 and a commit message of the same morning both say a
+non-gatherer's tooltip has *three* lines, which I inferred from Alberto's *there is an extra
+line* without asking what it replaced. It has two. Nothing built on that inference is wrong -
+the scan reads lines 2 and 3 and the count allows 1 to 3 - but the reason for allowing three is
+now the **low-skill** case and not this one.
+
+**That case is still unread**: a miner at 50 standing over a vein that wants 275. Alberto
+describes it as *requires mining 275*, and whether that replaces the profession line as this one
+does, or sits under it, nobody here has seen. Both are covered, and the entry should stop saying
+which it is.
+
+**The word survives the sentence in every language Family ships**, which is what the test rests
+on: `Requires Mining` carries `Mining`, and so do *Nécessite Minage*, *Erfordert Bergbau*,
+*Requiere Minería* and *Требуется: Горное дело* carry the skill names `SkillLines.lua` holds.
+The comparison is byte-level with ASCII-only folding, which is safe here because a requirement
+sentence keeps the skill's own capitalisation rather than lowercasing it.
+
+#### And it works in the game, on the case that was broken an hour earlier — 2026-09-22
+
+```
+Copper Vein
+Requires Mining
+
+Family possessions                       20
+Spazzacamino of Serena           20 (20 bags)
+(CTRL-ALT-click to open the family's list)
+```
+
+A vein, on a character with **no Mining at all**, and the block is under it naming who holds the
+ore. Three things are confirmed at once and none of them by reasoning:
+
+- **the join places a vein**, which until this picture had only ever been measured against a
+  table - `Copper Vein` resolved to Copper Ore on a live client, in the world, from the name
+  alone;
+- **`contains` was the right correction**: this is the tooltip that said *Requires Mining*, which
+  the equality test turned away and which is the reader who most wants the answer;
+- **the sibling row reads as intended** - *Spazzacamino of Serena*, a name and a family, because
+  a count on somebody else's character is not a bag you can walk to.
+
+Backlog 96 has now been seen working in the game for both professions. What has still never been
+hovered is a **minimap** dot, and the low-skill shape of a vein a miner cannot yet take.
+
+#### The minimap dot too, and a wart it made visible — 2026-09-22
+
+```
+Briarthorn
+
+Family possessions                        1
+Ziofurgone                       1 (1 bags)
+(CTRL-ALT-click to open the family's list)
+```
+
+A dot on the minimap, one line, and the block under it. That is the last of backlog 96's four
+cases to be seen working, and it is the one that rested entirely on reasoning until now: the
+frame test is the whole discriminator there, because the measurement above says the resolution
+cannot be trusted to decide on its own with no profession line. It holds.
+
+It also exercises the order the entry chose without a profession to go on - **herbs exactly, then
+ores scored** - on a herb whose name shares nothing with any ore, which is the ordinary case and
+not the hard one. A pin drawn by GatherMate or Gatherer is still unhovered.
+
+**And it shows up a wart that is nobody's fault but is now in the most visible place in the
+addon.** `UI:HeldWhere` builds its parts from `L["%d bags"]`, which has no singular, so one herb
+reads **1 bags**. It has read that way everywhere the possessions block is drawn; what changed is
+that a node tooltip is the first place where holding exactly one of something is the common case
+rather than the odd one. Four locales, and Russian wants more than two forms. Not fixed here -
+it is outside the slice that found it - and written down so that it is found on purpose.
+
+#### A GatherMate2 pin is served too, which is what the parent walk was for — 2026-09-22
+
+```
+Silverleaf
+
+Family possessions                     none
+```
+
+The pin is GatherMate2's own, drawn from where it remembers a node being, and the block is on
+it. That is the case the frame test was widened for: *is the frame the minimap* would have
+refused this, and *is it drawn on the minimap* admits it without this file knowing one addon's
+name. Alberto asked for it in as many words and it works without a line about GatherMate
+anywhere in the tree.
+
+It also shows the other half of the decision that came out of the Peacebloom report: **none** is
+an answer. Nobody in that family holds Silverleaf, and on an item's own tooltip that is a line
+worth suppressing - on a node somebody is standing over, it is the answer they came for.
+
+**And the same pin on the *world map* gets nothing**, reported minutes later. That is not a
+surprise but it is not yet a diagnosis either: the frame test walks up to `Minimap`, and a world
+map pin's parents end at the world map instead, so the route would refuse it. But there is a
+second possibility that wants the opposite fix - the world map may not draw on `GameTooltip` at
+all, and the hook is on `GameTooltip` alone. **Which of the two it is, the narration says in one
+hover** and nothing here should say before it does.
+
+Worth stating plainly: a world map pin is the same question with the same answer wanted, so if it
+is the first of those it is a short fix. The discrimination problem is the same as the minimap's
+and so is its answer - where it was drawn restricts, the resolution decides - with one corpus
+nobody has measured, the names a world map carries. Zone names are one line and are hovered
+constantly.
+
+#### Why the minimap needs the frame and the world does not — measured 2026-09-22
+
+A blip gives **one line and no profession line**, which the probe read on both Burning Crusade
+and Era and which Alberto's Peacebloom run confirmed: `1 line(s): Peacebloom / nil`. So nothing
+in a blip's text says it is a node, and the question is whether the resolution can carry that on
+its own.
+
+It cannot. Scored against **every item name the client has** — the nearest corpus of real game
+strings there is — under exactly the rules a real vein passes:
+
+| Build and locale | distinct names | would fire as an ore |
+|---|---|---|
+| Era `enUS` | 21,392 | **565** (2.64%) |
+| Era `frFR` | 21,964 | 82 (0.37%) |
+| Mists `enUS` | 75,141 | 1,576 (2.10%) |
+
+`Silver Defias Belt` takes `Silver Ore` at **0.700** — the same share a real copper vein scores
+against copper ore. And there is no stricter bar that separates them, swept over both corpora at
+once:
+
+| floor / margin / run | real veins named | item names wrongly named |
+|---|---|---|
+| 0.55 / 0.27 / 4 | 67 of 93 | 647 |
+| 0.75 / 0.40 / 6 | 5 of 93 | 81 |
+| 0.80 / 0.40 / 6 | **0** of 93 | 4 |
+
+By the time the false fires stop, the veins have stopped with them. **The distributions overlap
+completely**, and the world route works only because it has a second signal — the profession
+line — that the minimap has not. So on the minimap the frame is required, and it is required
+because of this table rather than out of caution.
+
+**What the frame test is, and what it is not.** Not *is the frame the minimap*, which excludes
+exactly the pins worth serving: GatherMate and Gatherer remember where nodes were and draw their
+own, and those are nodes. It walks up the parents to `Minimap`, bounded at eight steps, which
+admits any addon's pin without naming one. A Questie pin passes it too, so among things drawn on
+a minimap the resolution still decides - a corpus of a few dozen pins rather than 43,356 item
+names, and the worst case is an irrelevant block rather than a wrong metal named on a vein.
+**That residual rate is not measured**, and no table here can measure it: what other addons put
+on a minimap is not client data.
+
 #### The herb route read in game, and it works — 2026-09-21
 
 `/family debug` over a Peacebloom in the world, after the narration went in:
@@ -5325,3 +5523,15 @@ they say about themselves. Every quantity on it is `0`, which is what this chara
 `currencyID` comes back `0` on all four rows rather than echoing the id asked for — so that field
 is not a route to an identifier on this build, and `GetCurrencyListSize` still answers `0`. The
 blocked half is exactly as described above and no smaller.
+
+
+#### The shipped list of places is a superset, 2026-09-22
+
+`tools/gathered.py` scores an area name against the ore names with the rule as it stood before
+the word rule, so the ids it emitted are the places that would have collided under the looser
+rule. The word rule silences some of them on its own - `Silverpine Forest` is one, which is how
+a mutation found a check that had stopped reaching the refusal it tested. A place in the list is
+refused by **name equality** with the node's own name and never by scoring, so a list that is too
+long cannot silence a real vein: the measurement that matters is unchanged, 0 of 929 vein names
+is also the name of a refused place. Regenerating with the word rule would shrink the list and is
+owed the next time that generator is run, so that the tool and the addon do not drift.

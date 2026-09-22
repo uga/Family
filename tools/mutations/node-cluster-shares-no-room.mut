@@ -1,0 +1,7 @@
+name: every answer in a cluster lists as many holders as it would on its own
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local owners = math.max(1, math.min(roomFor(tooltip, OWNER_CAP),
+		math.floor(room / shown) - FIXED_EACH))
+--- new
+	local owners = nil
