@@ -620,6 +620,7 @@ Family.locales.ruRU = {
 	["Ask to link"] = "Связаться",  -- 15
 	["Possessions"] = "Имущество",  -- 20
 	["Professions"] = "Профессии",  -- 14
+	["|cff888888%s has no profession recorded yet.|r"] = "|cff888888Для %s ещё не записано ни одной профессии.|r",
 	["Secondary Skills"] = "Вторичные навыки",
 	["May ride"] = "Может ездить",
 	["nothing to ride"] = "не на чем ездить",

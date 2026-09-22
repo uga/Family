@@ -12842,6 +12842,94 @@ print("Possessions: the carried bags as one block and the bank as another (backl
 end)()
 
 print()
+print("CTRL or ALT and a click on a Summary name goes to that character")
+
+-- Backlog 97, asked by Alberto 2026-09-20: CTRL-click a character's name on any Summary set for
+-- their Possessions, ALT-click for their Professions. Driven through the row's own OnClick with
+-- the modifiers stood in, because the modifier test is the whole of the feature and a check
+-- that called the doors directly would pass with it deleted.
+;(function()
+	local realCtrl, realAlt = _G.IsControlKeyDown, _G.IsAltKeyDown
+	local function holding(control, alt)
+		_G.IsControlKeyDown = function() return control end
+		_G.IsAltKeyDown = function() return alt end
+	end
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	fireClick(Family.UI.__summarySets.bags)
+	Family.UI:Refresh()
+
+	-- A row for a member with a profession recorded, so both gestures have somewhere to land.
+	local row, who
+	for _, f in ipairs(frames) do
+		if onScreen(f) and f.memberKey and f.__scripts and f.__scripts.OnClick then
+			local meta = Family.UI:Meta(f.memberKey) or {}
+			if meta.skills and next(meta.skills) then row, who = f, f.memberKey break end
+		end
+	end
+	check("a Summary row belongs to a member with a profession recorded", row ~= nil,
+		tostring(who))
+
+	if row then
+		holding(true, false)
+		row.__scripts.OnClick(row, "LeftButton")
+		check("CTRL and a click on a name opens that character's possessions",
+			Family.UI:CurrentTab() == "contents" and Family.UI.__contentsShowing == who,
+			tostring(Family.UI:CurrentTab()) .. " / " .. tostring(Family.UI.__contentsShowing))
+
+		Family.UI:ShowTab("summary")
+		holding(false, true)
+		row.__scripts.OnClick(row, "LeftButton")
+		check("and ALT and a click opens that character's professions",
+			Family.UI:CurrentTab() == "professions"
+				and Family.UI.__professionsShowing == who,
+			tostring(Family.UI:CurrentTab()) .. " / "
+				.. tostring(Family.UI.__professionsShowing))
+
+		-- **Both held is neither gesture**, so it is an ordinary click and the row does what it
+		-- always did - on the Bags set, that is Possessions by the row's own `opens`. Asked of a
+		-- row whose ordinary click goes somewhere, so *nothing happened* cannot pass for it.
+		Family.UI:ShowTab("summary")
+		local heldOpens, opened = row.opens, false
+		row.opens = function() opened = true end
+		holding(true, true)
+		row.__scripts.OnClick(row, "LeftButton")
+		check("and both held is an ordinary click, not either gesture",
+			opened and Family.UI:CurrentTab() == "summary", tostring(opened) .. " / "
+				.. tostring(Family.UI:CurrentTab()))
+
+		-- **And with neither, nothing about it changes.** The modifier test sits in front of the
+		-- row's own click and must not eat it.
+		opened = false
+		holding(false, false)
+		row.__scripts.OnClick(row, "LeftButton")
+		check("while a plain click still does what the row always did", opened,
+			tostring(opened))
+		row.opens = heldOpens
+
+		-- **A member with no profession recorded is not opened on somebody else.** The picker
+		-- behind the door lists only members with one, and without the check at the door the
+		-- panel refreshed on whoever it was already showing, saying nothing about the miss.
+		Family.UI:ShowTab("summary")
+		local heldKey, heldName = row.memberKey, row.memberName
+		row.memberKey, row.memberName = "Nobody-Nowhere", "Nobody"
+		local from = #DEFAULT_CHAT_FRAME.messages
+		holding(false, true)
+		row.__scripts.OnClick(row, "LeftButton")
+		local said = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+			#DEFAULT_CHAT_FRAME.messages)
+		check("ALT on a character with no profession does not open the panel on anybody",
+			Family.UI:CurrentTab() == "summary", tostring(Family.UI:CurrentTab()))
+		check("and says why, by name", said:find("Nobody", 1, true) ~= nil, said)
+		row.memberKey, row.memberName = heldKey, heldName
+	end
+
+	_G.IsControlKeyDown, _G.IsAltKeyDown = realCtrl, realAlt
+	Family.UI:ShowTab("summary")
+end)()
+
+print()
 print("clicking a Bags row opens that character's possessions")
 
 -- Asked for 2026-09-10, from the same instinct that already put the professions one there: a

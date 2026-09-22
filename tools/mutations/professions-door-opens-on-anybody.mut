@@ -1,0 +1,6 @@
+name: the Professions door opens on whoever was selected when the member asked for has no profession
+file: addons/Family_UI/Professions.lua
+--- old
+		if not present then return false end
+--- new
+		if false then return false end

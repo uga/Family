@@ -2147,6 +2147,39 @@ end
 -- Built once with as many cells as the widest set needs, then moved and resized when the set
 -- changes. Rebuilding every row on each switch would churn a hundred frames to show the same
 -- forty members.
+
+-- **CTRL or ALT and a click on a character's name goes to that character** - backlog 97, asked
+-- by Alberto 2026-09-20. CTRL for Possessions, ALT for Professions, on every Summary set, because
+-- the summary says *fourteen free slots* or *a 300 blacksmith* and both are a reason to go and
+-- look - and until now going to look meant finding the tab and then finding the member in a
+-- picker forty-odd names deep.
+--
+-- **Read as a pair, and only one of them.** Both held is not either gesture, so it is an ordinary
+-- click and the row does what it always did. Nothing in the game is bound to a modified click on
+-- a frame Family drew: the collisions measured for CTRL-ALT on an item (the Dressing Room takes
+-- CTRL) come through `HandleModifiedItemClick`, which a Summary row never reaches, so the plain
+-- modifiers are free here in a way they are not on a bag slot.
+--
+-- A member with no profession recorded is not in the Professions picker, and the door says so
+-- rather than opening the panel on whoever was there before; the reason is printed, because a
+-- click that visibly does nothing is otherwise indistinguishable from a click that was not heard.
+local function jumpedByModifier(row)
+	local control = Family:TryCall(IsControlKeyDown) and true or false
+	local alt = Family:TryCall(IsAltKeyDown) and true or false
+	if control == alt then return false end
+
+	if control then
+		UI:ShowContentsFor(row.memberKey)
+		return true
+	end
+
+	if UI:ShowProfessionFor(row.memberKey) == false then
+		Family:Print(L["|cff888888%s has no profession recorded yet.|r"],
+			tostring(row.memberName or row.memberKey))
+	end
+	return true
+end
+
 local function makeRow(parent)
 	local row = CreateFrame("Button", nil, parent)
 	row:SetHeight(ROW_HEIGHT)
@@ -2495,6 +2528,7 @@ local function makeRow(parent)
 		-- a timer rather than about anybody, and the guard that used to sit here meant a
 		-- click on it went nowhere. Removing a member still needs one.
 		if button ~= "RightButton" then
+			if self.memberKey and jumpedByModifier(self) then return end
 			if self.opens then self.opens(self) end
 			return
 		end

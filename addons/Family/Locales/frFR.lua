@@ -620,6 +620,7 @@ Family.locales.frFR = {
 	["Ask to link"] = "Demander",  -- 15
 	["Possessions"] = "Inventaire",  -- 20
 	["Professions"] = "Métiers",  -- 14
+	["|cff888888%s has no profession recorded yet.|r"] = "|cff888888Aucun métier encore enregistré pour %s.|r",
 	["Secondary Skills"] = "Compétences secondaires",
 	["May ride"] = "Peut monter",
 	["nothing to ride"] = "rien à monter",

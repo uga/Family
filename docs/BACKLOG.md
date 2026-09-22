@@ -6921,7 +6921,7 @@ and the lesson is L-122.
 
 ---
 
-## 97. CTRL or ALT on a character's name jumps to that character's Possessions or Professions
+## 97. CTRL or ALT on a character's name jumps to that character's Possessions or Professions — DONE 2026-09-22
 
 **Asked 2026-09-20, by Alberto.** CTRL-clicking a character's name on any Summary subpanel should
 open the Possessions panel with that character selected; ALT-clicking should open Professions.
@@ -6973,6 +6973,27 @@ because an entry that invents an obstacle costs the same as one that hides a rea
 **What it would give a player:** the summary says *this character has 14 free slots* or *this one
 is a 300 blacksmith*, and both are a reason to go and look. Today that is: find the tab, find the
 member in the picker, forty-odd members deep.
+
+### Built 2026-09-22, as the entry said it would be, and with the one decision it left open
+
+A modifier test at the top of the row's left click, in front of `self.opens`, and the two doors
+it already had. CTRL alone for Possessions, ALT alone for Professions; **both held is neither**,
+so it is an ordinary click and the row does what it always did. No collision to read out of
+`ModifiedClickActions`: those are the game's bindings for a click on an item, which reach
+`HandleModifiedItemClick`, and a row Family drew never does.
+
+**The decision: a member with no profession recorded is not opened on somebody else.** The door
+now looks for them in the picker's own list before switching the tab, returns `false` when they
+are not there, and the Summary prints *Nobody has no profession recorded yet* by name. Opening the
+panel on whoever was already selected was the silent alternative, and a click that lands on the
+wrong character is one more thing to fix by hand than a click that says why it did nothing.
+
+Possessions needed no such check - its picker is every member, siblings included.
+
+**Not built, and worth saying:** nothing on the Summary advertises the gesture. That is the
+complaint Alberto made on 2026-09-17 about the item click, *advertised only where it was needed*,
+and a hint in the row tooltip would answer it - but every Summary row would grow a tooltip line,
+which is a change to twelve lists nobody asked about, so it is left for asking.
 
 ---
 

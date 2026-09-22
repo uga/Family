@@ -1,0 +1,9 @@
+name: ALT on a character with no profession does nothing and says nothing
+file: addons/Family_UI/Summary.lua
+--- old
+	if UI:ShowProfessionFor(row.memberKey) == false then
+		Family:Print(L["|cff888888%s has no profession recorded yet.|r"],
+			tostring(row.memberName or row.memberKey))
+	end
+--- new
+	UI:ShowProfessionFor(row.memberKey)

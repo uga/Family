@@ -620,6 +620,7 @@ Family.locales.esES = {
 	["Ask to link"] = "Solicitar",  -- 15
 	["Possessions"] = "Posesiones",  -- 20
 	["Professions"] = "Profesiones",  -- 14
+	["|cff888888%s has no profession recorded yet.|r"] = "|cff888888Todavía no hay ninguna profesión registrada para %s.|r",
 	["Secondary Skills"] = "Habilidades secundarias",
 	["May ride"] = "Puede montar",
 	["nothing to ride"] = "nada que montar",

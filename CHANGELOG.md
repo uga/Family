@@ -49,6 +49,13 @@ is a decision rather than an afternoon of archaeology.
   stacked up. Herbs on a GatherMate pin answer too, which they did not at first - that addon
   writes its names in colour, and Family was reading the colour as part of the name.
 
+### The summary
+
+- **Hold CTRL and click a character's name on the summary to open their possessions, or ALT to
+  open their professions.** Every summary list, your own characters and a linked family's alike.
+  A character who has never opened a profession window says so in chat instead of opening the
+  professions page on somebody else.
+
 ### Achievements
 
 - **Family no longer breaks off with *script ran too long* while you are fighting.** On Mists of

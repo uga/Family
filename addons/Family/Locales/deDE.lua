@@ -620,6 +620,7 @@ Family.locales.deDE = {
 	["Ask to link"] = "Verbinden",  -- 15
 	["Possessions"] = "Besitz",  -- 20
 	["Professions"] = "Berufe",  -- 14
+	["|cff888888%s has no profession recorded yet.|r"] = "|cff888888Für %s ist noch kein Beruf erfasst.|r",
 	["Secondary Skills"] = "Sekundäre Fertigkeiten",
 	["May ride"] = "Darf reiten",
 	["nothing to ride"] = "nichts zum Reiten",
