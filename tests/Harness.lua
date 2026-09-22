@@ -41125,6 +41125,47 @@ if RUN.storage == "compressed" then
 		whole)
 end
 
+-- **A case that throws is a case, and a bare name is a name.** Both reported by another session
+-- on 2026-09-21, from one incident: it ran `mutate.py nome.mut` with the name and not the path,
+-- `parse` raised, the worker died, `results[index]` stayed nil and the run fell over far away in
+-- `report` with a `TypeError` naming a function that had nothing wrong with it. The thread's own
+-- traceback was printed above, behind `threading.py`, so the line that read last read as the
+-- diagnosis and was the wrong one - and five minutes went into `report` before anybody read
+-- upwards. This tool gates every commit in this repository.
+--
+-- Asked of `mutate.attempt` and `mutate.choose` through python, on a path that does not exist and
+-- a name with no directory on it. Neither runs a gate, so this costs milliseconds.
+if RUN.storage == "compressed" then
+	local script, out = os.tmpname(), os.tmpname()
+	local handle = io.open(script, "w")
+	handle:write(table.concat({
+		"import sys",
+		"sys.path.insert(0, sys.argv[1] + '/tools')",
+		"import mutate",
+		-- A case that is not there at all: the exception has to become a line, not a crash.
+		"caught, line, _ = mutate.attempt(sys.argv[1] + '/no-such-case.mut', sys.argv[1])",
+		"print('threw' if caught else 'reported', line.strip())",
+		-- And a bare name is found where the cases live, which is what the usage promises.
+		"picked = mutate.choose(['node-ore-floor-is-dropped.mut'])",
+		"print('resolved', picked[0][0])",
+	}, "\n"))
+	handle:close()
+	os.execute(string.format("python3 %s %s > %s 2>&1", script, ROOT, out))
+	handle = io.open(out, "r")
+	local said = handle and handle:read("*a") or ""
+	if handle then handle:close() end
+	os.remove(script)
+	os.remove(out)
+
+	check("a case that throws is reported as a red line rather than crashing the run",
+		said:find("reported ERROR", 1, true) ~= nil, said)
+	check("and the line names the case, so the report is where you look for it",
+		said:find("no%-such%-case%.mut") ~= nil, said)
+	check("a case named without a directory is found where the cases live",
+		said:find("resolved", 1, true) ~= nil
+			and said:find("tools/mutations/node%-ore%-floor%-is%-dropped%.mut") ~= nil, said)
+end
+
 -- **A hung gate is not caught.** Nothing was read back, so no check can be said to have seen
 -- the mutation, and the run has to fail on it - which it did not until 2026-09-14: `run`
 -- answered True for a hang, and the exit status stayed green while the docstring promised

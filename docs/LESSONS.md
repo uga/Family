@@ -4233,3 +4233,39 @@ thing it measured in its own sentence, or it will be read as the thing that was 
 whether a vein matches its ore, but whether the ores can be told apart from each other* - and the
 correction sits inside it as a block quote rather than replacing the text, so the wrong reading and
 its retraction are read together. The same rule is why `docs/DECISIONS.md` is append-only.
+
+## L-121 — the traceback that reads last was written by the wrong thread
+
+**2026-09-21, found by another session and costing it five minutes.** It ran
+`python3 tools/mutate.py nome.mut` with the case's name and not its path. The file was not
+there, `parse` raised `FileNotFoundError`, the worker thread died, `results[index]` stayed
+`None`, and the run carried on to the end and fell over in a different function entirely:
+
+```
+File "tools/mutate.py", line 892, in gate_all
+    lines, bad = report([(caught, line) for caught, line, _ in results], everything)
+TypeError: cannot unpack non-iterable NoneType object
+```
+
+The thread's own traceback **was** printed. It was above, with `threading.py` between the two,
+so the thing a reader sees last - and therefore reads as the diagnosis - named `report`, which
+had nothing wrong with it. That session went looking for the bug in `report` and in a signature
+change before reading upwards.
+
+**A thread that dies does not fail where it died.** It leaves a hole, and the hole is found by
+whatever next assumes the slot is full, which can be any distance away in code nobody has
+touched. Python prints the real cause first and the consequence last, which is the opposite of
+the order a reader trusts. Every `for thread in threads: thread.join()` in this repository has
+that shape, and the only defence is at the point of the work: a worker catches what its own
+task raises, and turns it into the report the run already prints.
+
+**And the smaller half is worth as much.** The typed name was a fair reading of the tool's own
+usage line - `tools/mutate.py one.mut two.mut  just those` - which said nothing about a path
+while resolving relative names against the repository root. A usage line that reads as an
+invitation is a specification; either it is true or the tool makes it true. `choose` now looks
+in `tools/mutations` before giving up on a bare name, so it is true.
+
+**The check.** `mutate.attempt` is the worker's whole body, reachable and tested on a path that
+does not exist: it answers a red `ERROR` line rather than raising, the line names the case, and
+`choose` resolves a bare name to the file beside the others. Three checks and two mutations,
+`mutator-lets-a-worker-exception-out` and `mutator-will-not-find-a-case-by-name`.

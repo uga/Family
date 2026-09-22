@@ -1,0 +1,6 @@
+name: a case that throws takes the run down elsewhere instead of being reported where it happened
+file: tools/mutate.py
+--- old
+        return False, "  ERROR    %s - %s" % (os.path.basename(path), trouble), (None, None)
+--- new
+        raise

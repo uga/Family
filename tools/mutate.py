@@ -51,7 +51,7 @@ a message, from the docstring, without opening the lesson. It had propagated one
 anybody checked, which is what a citation that reads as checked does for a living.
 
     tools/mutate.py                 every case in tools/mutations
-    tools/mutate.py one.mut two.mut just those
+    tools/mutate.py one.mut two.mut just those, by name or by path
     tools/mutate.py --changed       cases whose file: - or whose own .mut - is changed or untracked
     tools/mutate.py --jobs 1        one at a time, for when a failure needs watching
     tools/mutate.py --all           print every case, not only the ones that need looking at
@@ -256,6 +256,30 @@ def run(path, where):
         # tree, and a case left patched would make every case after it meaningless.
         with open(full, "w", encoding="utf-8") as handle:
             handle.write(held)
+
+
+def attempt(path, where):
+    """One case, where a case that throws is a case and not a crash.
+
+    **A worker that lets an exception out leaves `None` in its slot**, and the run then dies far
+    away, in `report`, unpacking it: `TypeError: cannot unpack non-iterable NoneType object`,
+    naming a function with nothing wrong with it. The thread's own traceback is printed, but
+    above, with `threading.py` in between - so the thing that reads last, and therefore reads as
+    the diagnosis, is the wrong one.
+
+    Reported by another session on 2026-09-21, which went looking for the bug in `report` and in
+    a signature change before reading upwards. Its own mistake was smaller than the hunt: a bare
+    case name instead of a path, so `parse` raised `FileNotFoundError`. That is exactly the trip
+    a diagnostic line exists to save, and this tool runs on every commit here.
+
+    So anything `run` raises becomes a red line in the report, where somebody is already looking,
+    and the run fails on it exactly as it fails on a survivor. Not only a missing file: an
+    unreadable case, a permission, a full disk.
+    """
+    try:
+        return run(path, where)
+    except Exception as trouble:            # noqa: BLE001 - reported, not swallowed
+        return False, "  ERROR    %s - %s" % (os.path.basename(path), trouble), (None, None)
 
 
 def report(results, everything=False):
@@ -707,7 +731,19 @@ def choose(argv):
             rest.append(arg)
 
     if rest:
-        paths = [p if os.path.isabs(p) else os.path.join(ROOT, p) for p in rest]
+        # **A bare case name is what the usage above reads as**, and it was not what this did:
+        # a relative path resolves against the repository root, so `mutate.py one.mut` looked
+        # for the case beside `README.md` and found nothing. Reported by another session
+        # 2026-09-21, which lost its five minutes to the error that caused rather than to the
+        # name it had typed. The cases have a home; look in it before giving up on a name.
+        paths = []
+        for name in rest:
+            full = name if os.path.isabs(name) else os.path.join(ROOT, name)
+            if not os.path.exists(full):
+                beside = os.path.join(CASES, os.path.basename(name))
+                if os.path.exists(beside):
+                    full = beside
+            paths.append(full)
     else:
         paths = sorted(os.path.join(CASES, f) for f in os.listdir(CASES)
                        if f.endswith(".mut"))
@@ -856,7 +892,7 @@ def gate_all(paths, jobs, everything, only_changed, rest):
             except queue.Empty:
                 return
 
-            results[index] = run(path, where)
+            results[index] = attempt(path, where)
 
             # Progress goes to stderr so that stdout stays the report and nothing else -
             # a run this long with no sign of life is one somebody kills, which is exactly

@@ -1,0 +1,8 @@
+name: a case named without a directory is looked for beside README and nowhere else
+file: tools/mutate.py
+--- old
+            if not os.path.exists(full):
+                beside = os.path.join(CASES, os.path.basename(name))
+--- new
+            if False:
+                beside = os.path.join(CASES, os.path.basename(name))
