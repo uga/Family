@@ -3502,6 +3502,95 @@ print("professions on the fourth pretend client")
 end)()
 
 print()
+print("the merchant on the fourth pretend client")
+
+-- The dangerous shape, and the one Family survives without having planned to.
+--
+-- Measured 2026-09-20 at a vendor: **`GetMerchantItemInfo` is absent**, while
+-- `GetMerchantNumItems`, `GetMerchantItemLink` and `GetMerchantItemCostInfo` all answer. So the
+-- window is not silent - it says how many rows it has and hands back a link for each - and the
+-- one call that is gone is the one carrying the price and the stack size. A reader that took
+-- the count as proof the window could be read would record items at no price at all.
+--
+-- `Merchant:Read()` does not, and the guard that saves it was written for something else: §2.2,
+-- *say nothing rather than round something into the record*, which asks for a price and a
+-- quantity that are both present and positive and divide exactly before anything is kept.
+;(function()
+	local was = {}
+	local function set(name, value)
+		was[name] = { _G[name] }
+		_G[name] = value
+	end
+
+	set("GetBuildInfo", function() return "12.1.0", "69875", "Sep 15 2026", 120100 end)
+
+	-- Absent, measured. The three that answer are below, and they answer about the same row
+	-- the run read: one stack of five Tough Hunk of Bread at twenty copper.
+	set("GetMerchantItemInfo", nil)
+	set("GetMerchantNumItems", function() return 1 end)
+	set("GetMerchantItemLink", function(index)
+		if index ~= 1 then return nil end
+		return "|cffffffff|Hitem:4540::::::::60:::::|h[Tough Hunk of Bread]|h|r"
+	end)
+	set("GetMerchantItemCostInfo", function() return 0 end)
+
+	-- The namespace the replacement is in, with the run's own row. Nine keys, and three of
+	-- them are the three the old route needed two calls to get: `price`, `stackCount` and
+	-- `hasExtendedCost`, which is `GetMerchantItemCostInfo`'s answer said as a flag.
+	set("C_MerchantFrame", {
+		GetItemInfo = function(index)
+			if index ~= 1 then return nil end
+			return { hasExtendedCost = false, isPurchasable = true,
+				isQuestStartItem = false, isUsable = true, name = "Tough Hunk of Bread",
+				numAvailable = -1, price = 20, stackCount = 5, texture = 133964 }
+		end,
+		GetMerchantCurrencies = function() return {} end,
+		GetNumJunkItems = function() return 0 end,
+	})
+
+	local kept = {}
+	set("FamilyDB", { vendorPrices = kept })
+
+	check("the window is not silent: it answers a count and a link",
+		_G.GetMerchantNumItems() == 1
+			and type(_G.GetMerchantItemLink(1)) == "string")
+
+	local midnight = setmetatable({}, { __index = FamilyPrivate })
+	midnight.RegisterEvent = function() end
+	midnight.OnDatabaseReady = function() end
+	midnight.Debug = function() end
+
+	load("addons/Family/Scanners/Merchant.lua", "Family", midnight)
+
+	local learned, raised = midnight.Merchant:Read()
+	check("but a merchant read on Midnight learns no price at all",
+		learned == 0 and raised == 0,
+		tostring(learned) .. " learned, " .. tostring(raised) .. " raised")
+
+	-- The half that matters more than the count. A price recorded here would be wrong, and
+	-- would be kept for ever: the record keeps the **highest** figure ever seen, so a bad one
+	-- can never be improved away by a later sighting.
+	check("and writes nothing against the item the vendor was showing",
+		next(kept) == nil and midnight.Merchant:PriceOf(4540) == nil,
+		midnight.Merchant:PriceOf(4540) and "a price was kept" or "nothing")
+
+	-- What it costs and what would answer it. Not a gap of the kind quests and professions
+	-- have - there the reader stops one call short of a whole domain - but the same shape.
+	check("the replacement carries the price and the stack in one answer",
+		_G.C_MerchantFrame.GetItemInfo(1).price == 20
+			and _G.C_MerchantFrame.GetItemInfo(1).stackCount == 5)
+	-- And it subsumes a second call. `Read` asks `GetMerchantItemCostInfo` separately to find
+	-- out whether a row is bought with badges or marks rather than money, because recording
+	-- the money part of an extended cost puts a few silver against an epic. The modern answer
+	-- says it in a field.
+	check("and says in a field what the old route needed a second call to ask",
+		_G.C_MerchantFrame.GetItemInfo(1).hasExtendedCost == false)
+
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+	Family.Capabilities:Detect()
+end)()
+
+print()
 print("identity")
 advance(3)
 

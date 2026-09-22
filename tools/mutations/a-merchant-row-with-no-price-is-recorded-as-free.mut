@@ -1,0 +1,8 @@
+name: a merchant row whose price the client will not give is recorded as costing nothing
+file: addons/Family/Scanners/Merchant.lua
+--- old
+		if itemID and components == 0 and price and price > 0
+			and quantity and quantity > 0 and price % quantity == 0 then
+--- new
+		price, quantity = price or 0, quantity or 1
+		if itemID and components == 0 and price % quantity == 0 then

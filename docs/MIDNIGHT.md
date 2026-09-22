@@ -1821,3 +1821,54 @@ Still unseen, and neither is in the way: an **ordinary faction** row and an **or
 row. Both index-1 reads landed on a heading. A `GetFactionDataByIndex(n)` at a higher index and a
 `GetInfo(n)` beside it would settle the shape of a row that is not a heading, and both are one
 line in version 15 if any later slice turns out to want them.
+
+## 28. The merchant, which is the dangerous shape and survives it (2026-09-22)
+
+Five checks on the fourth pretend client, and the first domain of the four where what the client
+answers is **partial** rather than absent.
+
+**Measured 2026-09-20 at a vendor**: `GetMerchantItemInfo` is absent, while
+`GetMerchantNumItems`, `GetMerchantItemLink` and `GetMerchantItemCostInfo` all answer. So the
+window is not silent. It says how many rows it has and hands back a link for every one - and the
+single call that is gone is the one carrying the **price** and the **stack size**. A reader that
+took the count as proof the window could be read would file every item at no price at all, and
+`Merchant:Read()` keeps the *highest* figure ever seen for an item precisely so that a later
+sighting can only improve the record - so a zero written once could never be improved away.
+
+**It writes nothing, and the guard that saves it was written for something else.** §2.2's rule -
+say nothing rather than round something into the record - asks for a price and a quantity both
+present and positive, and for the one to divide exactly by the other, before a figure is kept.
+On this client the price is nil and the whole row falls at the first clause. The rule was written
+about stacks that do not divide; it happens to be exactly the rule a client missing the call
+needs. Worth recording as luck, in the way §22's bank range was: nobody chose it.
+
+### What would answer it, measured at the same vendor
+
+```
+C_MerchantFrame.GetItemInfo(1) -> {#9
+  hasExtendedCost=false, isPurchasable=true, isQuestStartItem=false, isUsable=true,
+  name="Tough Hunk of Bread", numAvailable=-1, price=20, stackCount=5, texture=133964 }
+```
+
+`price` and `stackCount` are the two that went missing, and **`hasExtendedCost` is a third thing
+for free**: `Read` asks `GetMerchantItemCostInfo` in a separate call to find out whether a row is
+bought with badges or marks rather than money, because recording the money half of an extended
+cost puts a few silver against an epic. The modern answer says it in a field. So the port here is
+one call that replaces two.
+
+A second run of the same call answered **eight** keys with `name` absent, a moment before the
+item had loaded. Nothing reads `name` here - a price is filed by id (§2.1) - but it is the shape
+of answer this file has been bitten by before, and it is written down.
+
+### And the rest of `C_MerchantFrame`
+
+Seven functions: `GetBuybackItemID`, `GetItemInfo`, `GetMerchantCurrencies`, `GetNumJunkItems`,
+`IsMerchantItemRefundable`, `IsSellAllJunkEnabled`, `SellAllJunkItems`. `GetMerchantCurrencies(1)`
+answered an empty table and `GetNumJunkItems(1)` answered 0 at that vendor. Nothing here needs
+them; they are written down so that the next reader of this section does not ask again.
+
+### One mutation, caught by this section alone
+
+Defaulting a missing price to nought and a missing stack to one - which is what a reader written
+from the count would do - files the bread as free. Every check on all three Classic clients stays
+green, because there the call answers.
