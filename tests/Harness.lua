@@ -3796,6 +3796,98 @@ print("the auction house on the fourth pretend client")
 end)()
 
 print()
+print("the mailbox on the fourth pretend client")
+
+-- The shortest section here, and the finding is the short one: **nothing is missing**.
+--
+-- Measured 2026-09-20: `GetInboxNumItems`, `GetInboxHeaderInfo`, `GetInboxItem`,
+-- `GetInboxItemLink`, `GetSendMailItem`, `GetSendMailItemLink`, `GetSendMailMoney` and
+-- `GetSendMailCOD` all answer, and `MAIL_SHOW` and `MAIL_INBOX_UPDATE` both register. Every
+-- call and every event `Scanners/Mail.lua` makes is on this client, which is why the second
+-- brief's *mail is almost unchanged since the beginning* is the one claim in it that needed no
+-- qualification.
+--
+-- So the only thing the fourth pretend client changes here is the **build**, and that is what
+-- the section checks: the mailbox fixture is the base client's, unchanged, and the scan is run
+-- with `GetBuildInfo` answering 12.1.0 and the capability table holding no column for it. A
+-- domain that needs no port still has to survive being on the new client.
+--
+-- **Run against the real `Family.Mail` and not against a proxy**, unlike every section above.
+-- Loading this file a second time installs a second `hooksecurefunc` on the client's own send
+-- path, bound to the substitute - and that hook then fires from a later section, on a proxy
+-- with no `Database:Members`, killing the run four hundred lines away. The proxy pattern works
+-- for a scanner that only reads; a scanner that hooks a global leaves something behind.
+;(function()
+	local was = {}
+	local function set(name, value)
+		was[name] = { _G[name] }
+		_G[name] = value
+	end
+
+	set("GetBuildInfo", function() return "12.1.0", "69875", "Sep 15 2026", 120100 end)
+	Family.Capabilities:Detect()
+
+	check("the client the scan runs on is the fourth one",
+		Family.Capabilities.name == "interface 12", Family.Capabilities.name)
+
+	-- What the record held before this section, put back at the end of it. A scan here is a
+	-- real scan on the real database, and a section further down checks that **nothing** is
+	-- recorded until a mailbox is opened - which this would have made false from four hundred
+	-- lines away. Found by running it: that check went red and this section was green.
+	local key = Family:CurrentMember()
+	local held = Family.Database:Payload(key)
+	held = held and held.mail
+
+	-- The summary's half as well, and it is the half that caught this. `mailSeen` is what a
+	-- section four hundred lines down reads to check that **nothing** is recorded until a
+	-- mailbox is opened, and a payload put back does not put that back. Every field the scan
+	-- writes is captured by name and restored to what it was - `Family.CLEAR` where it was
+	-- nothing, since `SetMeta` skips a nil and would leave this section's value standing.
+	local MAIL_META = { "mailCount", "mailSeen", "mailExpiresBy", "mailMoney",
+		"mailInPost", "mailInPostAt" }
+	local heldMeta = {}
+	do
+		local meta = Family.Database:Meta(key) or {}
+		for _, field in ipairs(MAIL_META) do
+			heldMeta[field] = meta[field] == nil and Family.CLEAR or meta[field]
+		end
+	end
+
+	Family.Mail:Scan()
+
+	local payload = Family.Database:Payload(key)
+	local letters = payload and payload.mail and payload.mail.letters
+	check("a mailbox scan on the Midnight build reads both letters",
+		letters and #letters == 2, letters and tostring(#letters) or "nothing recorded")
+	check("with the sender the client gave",
+		letters and letters[1] and letters[1].sender == "Deiana",
+		letters and letters[1] and tostring(letters[1].sender) or "nothing")
+	check("the money on the one that carries it",
+		letters and letters[2] and letters[2].money == 50000,
+		letters and letters[2] and tostring(letters[2].money) or "nothing")
+
+	local first = letters and letters[1]
+	check("and the attachment by id, which is the whole of what a letter is worth keeping",
+		first and first.attachments and first.attachments[1]
+			and first.attachments[1].id == 2589 and first.attachments[1].count == 20,
+		first and first.attachments and first.attachments[1]
+			and tostring(first.attachments[1].id) or "no attachment")
+	-- The letter's own claim, kept beside what answered, so that the next disagreement says
+	-- so instead of looking complete.
+	check("beside the count the letter itself claimed",
+		first and first.attachmentsExpected == 1,
+		first and tostring(first.attachmentsExpected) or "nothing")
+
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+	Family.Capabilities:Detect()
+
+	local back = Family.Database:Payload(key) or {}
+	back.mail = held
+	Family.Database:SetPayload(key, back, "mail")
+	Family.Database:SetMeta(key, heldMeta)
+end)()
+
+print()
 print("identity")
 advance(3)
 

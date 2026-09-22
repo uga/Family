@@ -3576,6 +3576,61 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-212 — the second load installed the hook again, and it fired from another section
+
+**2026-09-22.** The fourth pretend client drives a scanner by loading its file a second time
+against a substitute `Family` - a proxy with its own database and its own recorder. It has worked
+for six scanners. `Scanners/Mail.lua` is the seventh and it does something none of the others do:
+it installs a `hooksecurefunc` on the client's own send path.
+
+So the second load installed a **second** hook, bound to the proxy, into a chain that is global
+and is never taken down. The mail section passed. Four hundred lines later another section posted
+a letter, the client's own function ran, both hooks fired, and the one belonging to the proxy
+died on `Database:Members` - a method the substitute never had. The run stopped with a traceback
+pointing at `Mail.lua:171`, which is not where anything is wrong.
+
+**Bitten:** twenty minutes, and the first guess was that the mail fixture was incomplete.
+
+**What now catches it.** The mail section runs against the real `Family.Mail`, not a proxy, and
+says at its head why it is the odd one out. The rule: **the proxy pattern is for a scanner that
+reads. A scanner that hooks a global, or registers anything outside its own table, leaves
+something behind on the way out** - and what it leaves behind runs in somebody else's section,
+which is the worst place to debug it.
+
+And the same load left a record behind as well: a real scan on the real database wrote
+`mailSeen`, and a section further down checks that nothing is recorded until a mailbox is opened.
+Putting the payload back was not enough, because that check reads meta. Every field the scan
+writes is now captured by name and restored, with `Family.CLEAR` where it had been nothing, since
+`SetMeta` skips a nil and would have left this section's value standing.
+
+## L-211 — the stub modelled the registry loosely, and reproduced the bug it was fixed for
+
+**2026-09-22.** The auction section's substitute `RegisterEvent` kept one handler per event name.
+The real one, `Core.lua:49`, keys them by event **and by the caller's key**, and `Core.lua:60`
+says why in as many words: *a second registration under one key replaces the first, in silence*.
+
+`Scanners/Auctions.lua` registers `AUCTION_HOUSE_SHOW` and `OWNED_AUCTIONS_UPDATED` **twice**
+each - once to do the work, once under `auctions.heard` to count that the event arrived, which is
+what the visit rule rests on. Against the loose stub the counter replaced the worker. Opening the
+auction house asked the house for nothing, the scan never ran, and the check that should have
+caught it reported `nil` with no error anywhere.
+
+**That is not an analogy for L-068. It is L-068.** The comment at `Scanners/Auctions.lua:2610`
+records this exact pair of events doing this exact thing in the game on 2026-09-10: a probe's
+counters were registered under the same key as the handler that asks for one's own listings, so
+opening the window stopped asking, and the panel read *not seen* for everybody with nothing in
+the log to say why. The fix was the second key. The stub threw the fix away by not modelling the
+thing the fix was made of.
+
+**Bitten:** half an hour, and the wrong suspects first - the `After` stub, then the query call.
+
+**What now catches it.** The stub keys handlers by event *and* key and fires every handler an
+event has, two checks assert that both of those events carry **two** handlers, and the recorded
+mutation `the-auction-counters-take-the-key-the-workers-use` is the original bug written out,
+caught five times over. The rule: **a test double that models a mechanism loosely will reproduce
+the bug the mechanism was fixed for, and it will do it silently, because a stub has no user to
+complain.** Where the real thing has a comment explaining its shape, the double copies the shape.
+
 ## L-210 — the cut was alphabetical, and a record's flags sort before its name
 
 **2026-09-22.** `tools/FamilySurface` prints a table answer's keys in sorted order and stops at

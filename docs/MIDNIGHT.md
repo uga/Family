@@ -1963,3 +1963,58 @@ for**, and it reproduces it silently, because a stub has no user to complain.
 The mutation recorded here is that bug, written out: register the counters under `auctions`
 rather than `auctions.heard`. It is caught five times over, on this client and on the Classic
 ones, which is what a fault that once shipped ought to look like.
+
+## 31. The mailbox, which needs nothing at all, and step 2 closes (2026-09-22)
+
+Six checks, and the shortest finding in this file: **nothing is missing**.
+
+`GetInboxNumItems`, `GetInboxHeaderInfo`, `GetInboxItem`, `GetInboxItemLink`,
+`GetSendMailItem`, `GetSendMailItemLink`, `GetSendMailMoney` and `GetSendMailCOD` all answer, and
+`MAIL_SHOW` and `MAIL_INBOX_UPDATE` both register. Every call and every event
+`Scanners/Mail.lua` makes is on this client, which is why the second brief's *mail is almost
+unchanged since the beginning* is the one claim in it that needed no qualification (§14).
+
+So the only thing the fourth pretend client changes here is the **build**, and that is what the
+section checks: the base client's mailbox fixture, unchanged, scanned with `GetBuildInfo`
+answering 12.1.0 and the capability table holding no column for it. Both letters, the sender, the
+money, the attachment by id and the count the letter claimed. **It adds no new mutation
+coverage** - the base mail section already stands over this code - and that is said here rather
+than dressed up: a domain that needs no port still has to be seen surviving the new client, and
+that is the whole of what these six checks are worth.
+
+### Two ways this section broke other sections before it worked
+
+Both are the same fault as §26's fixture, wearing different clothes, and both are written up.
+
+- **The proxy pattern does not fit a scanner that hooks a global.** Loading `Mail.lua` a second
+  time against a substitute `Family` installed a **second** `hooksecurefunc` on the client's own
+  send path, bound to the substitute. The mail section passed; four hundred lines later another
+  section posted a letter, both hooks fired, and the proxy's died on a `Database:Members` the
+  substitute never had. The run stopped with a traceback pointing at `Mail.lua:171`, which is not
+  where anything is wrong. This section runs against the real `Family.Mail`. **L-212**.
+- **A real scan on the real database leaves a record.** A section further down checks that
+  nothing is recorded until a mailbox is opened, and it reads **meta**, so putting the payload
+  back was not enough. Every field the scan writes is captured by name and restored, with
+  `Family.CLEAR` where it had been nothing, since `SetMeta` skips a nil.
+
+### Step 2 is finished
+
+Seven scanners driven on the fourth pretend client, plus the client itself: bags (§18),
+currencies (§21), bank (§22), reputations (§23), quests (§24), talents (§25), professions (§26),
+merchant (§28), pets (§29), auctions (§30) and mail (§31). **The harness is 3683 checks**, from
+3611 when step 2 began.
+
+| Domain | On Midnight |
+|---|---|
+| Bags, bank, currencies, auctions, mail | work |
+| Merchant | writes nothing, correctly, and by luck (§28) |
+| Quests, pets | write nothing, correctly and deliberately |
+| Reputations | write a zero; the route is unblocked and unwritten |
+| Professions | read 639 recipes and drop them for want of a name; the erasure is repaired |
+| Talents | work, and the file's claim about why was half wrong (§25) |
+
+What step 3 inherits is three gaps each one call wide - `C_QuestLog.GetNumQuestLogEntries`,
+`C_TradeSkillUI.GetBaseProfessionInfo`, `C_Reputation.GetFactionDataByIndex` - one line to stop
+`reputationCount` reporting a zero, and the rule §29 names: **a count or a table written
+unconditionally after a read that can fail is the whole of what went wrong in the two scanners
+that got it wrong.**
