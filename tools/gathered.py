@@ -46,6 +46,15 @@ EXPANSION = {"Classic Era": 1, "Burning Crusade Anniversary": 2,
 HERB_CUSTOMERS = (171, 773)     # Alchemy, Inscription
 SMELTING = 186                  # Mining's own window
 
+# The five Family ships. A name that collides in any one of them is excluded in all of them:
+# the table is ids, and which of them collides is a fact about a locale rather than about a node.
+LOCALES = ("enUS", "deDE", "frFR", "esES", "ruRU")
+
+# The rule as `Family_UI/Tooltip.lua` applies it. Written twice on purpose, and the harness
+# holds the two against each other: a generator that scored differently from the addon would
+# quietly ship the wrong exceptions.
+ORE_FLOOR, ORE_MARGIN, ORE_RUN = 0.55, 0.27, 4
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, ".gathered-cache")
 ADDON = os.path.join(HERE, "..", "addons", "Family")
@@ -86,6 +95,94 @@ def skill_lines(build):
         if row[spell] and row["SkillLine"]:
             out.setdefault(int(row["SkillLine"]), set()).add(int(row[spell]))
     return out
+
+
+ASCII = bytes.maketrans(bytes(range(65, 91)), bytes(range(97, 123)))
+
+
+def folded(text):
+    """Lua's `lower`, which folds A to Z and nothing else, over Lua's bytes."""
+    return text.encode("utf-8").translate(ASCII)
+
+
+def shared_run(one, other):
+    one, other = folded(one), folded(other)
+    best, previous = 0, [0] * (len(other) + 1)
+    for i in range(1, len(one) + 1):
+        current = [0] * (len(other) + 1)
+        for j in range(1, len(other) + 1):
+            if one[i - 1] == other[j - 1]:
+                current[j] = previous[j - 1] + 1
+                best = max(best, current[j])
+        previous = current
+    return best
+
+
+def scores_as_an_ore(name, ores):
+    """Exactly what `oreScored` does, so the exceptions match what the addon will decide."""
+    ranked = sorted(((shared_run(name, n) / len(folded(n)), shared_run(name, n), n)
+                     for n in ores), reverse=True)
+    if not ranked:
+        return False
+    top = ranked[0]
+    runner = ranked[1] if len(ranked) > 1 else (0.0, 0, "")
+    kin = runner[2] and (folded(runner[2]) in folded(top[2]) or folded(top[2]) in folded(runner[2]))
+    return top[0] >= ORE_FLOOR and top[1] >= ORE_RUN and (kin or (top[0] - runner[0]) >= ORE_MARGIN)
+
+
+def table_for(name, build, locale=None):
+    os.makedirs(CACHE, exist_ok=True)
+    shape = "%s-%s%s.csv" % (name, build, "-" + locale if locale else "")
+    target = os.path.join(CACHE, shape)
+    if not os.path.exists(target):
+        url = "https://wago.tools/db2/%s/csv?build=%s%s" % (
+            name, build, "&locale=" + locale if locale else "")
+        print("  fetch    %s %s %s" % (name, build, locale or ""), file=sys.stderr)
+        request = urllib.request.Request(url, headers={"User-Agent": AGENT})
+        open(target, "wb").write(urllib.request.urlopen(request, timeout=900).read())
+    import csv
+    return list(csv.DictReader(open(target, encoding="utf-8")))
+
+
+def places_that_read_as_ore(build, ore_ids):
+    """**Area ids whose name the vein rule would take for a metal.**
+
+    Alberto, 2026-09-22, on being told that 11 of Era's 1,018 area names score as an ore:
+    *just for the fact that you can know this, you can write an exception table.* Quite so -
+    and it ships as **ids**, so the client names them and the exception holds in whatever
+    language somebody plays in, which a table of names could not do.
+
+    A name that collides in any one locale is excluded in all of them. Which locale it
+    collides in is a fact about that language, and the id is the same node either way.
+    """
+    caught = set()
+    for locale in LOCALES:
+        items = table_for("ItemSparse", build, locale)
+        ores = [r["Display_lang"] for r in items
+                if int(r["ID"]) in ore_ids and r["Display_lang"]]
+        # **A locale wago serves short scores against a short list and says nothing.**
+        #
+        # The Mists export for German returns 21,850 rows and for Spanish 15,640, against 88,746
+        # for English - missing everything from Burning Crusade on, and the request succeeds.
+        # Scored quietly, that locale contributes the collisions of the ores it happens to have
+        # and none of the others, which is a table that looks complete and is not. Counted and
+        # said out loud, per DATASOURCES section 3.
+        if len(ores) < len(ore_ids):
+            print("  %s %s: %d of %d ores named, so its collisions are only partly known"
+                  % (build, locale, len(ores), len(ore_ids)), file=sys.stderr)
+        if not ores:
+            print("  %s %s: no ore names at all, so its collisions are unknown"
+                  % (build, locale), file=sys.stderr)
+            continue
+        areas = table_for("AreaTable", build, locale)
+        column = "AreaName_lang" if areas and "AreaName_lang" in areas[0] else None
+        if not column:
+            raise SystemExit("AreaTable has no AreaName_lang at %s - a column has moved" % build)
+        for row in areas:
+            name = row[column]
+            if name and scores_as_an_ore(name, ores):
+                caught.add(int(row["ID"]))
+    return caught
 
 
 def lua_table(path, opener):
@@ -139,15 +236,17 @@ def main():
         if not herbs or not ores:
             raise SystemExit("%s yielded %d herb(s) and %d ore(s) - a column has moved"
                              % (game, len(herbs), len(ores)))
-        print("   %-28s %3d herbs, %2d ores" % (game, len(herbs), len(ores)), file=sys.stderr)
-        lines.append((expansion, game, sorted(herbs), sorted(ores)))
+        places = places_that_read_as_ore(build, ores)
+        print("   %-28s %3d herbs, %2d ores, %2d places to refuse"
+              % (game, len(herbs), len(ores), len(places)), file=sys.stderr)
+        lines.append((expansion, game, sorted(herbs), sorted(ores), sorted(places)))
 
     with open(OUT, "w", encoding="utf-8") as out:
         out.write(HEADER)
         out.write("Family.Gathered = {\n")
-        for expansion, game, herbs, ores in lines:
+        for expansion, game, herbs, ores, places in lines:
             out.write("\t-- %s\n\t[%d] = {\n" % (game, expansion))
-            for name, ids in (("herbs", herbs), ("ores", ores)):
+            for name, ids in (("herbs", herbs), ("ores", ores), ("places", places)):
                 out.write("\t\t%s = {\n" % name)
                 for at in range(0, len(ids), 10):
                     out.write("\t\t\t" + ", ".join(str(i) for i in ids[at:at + 10]) + ",\n")

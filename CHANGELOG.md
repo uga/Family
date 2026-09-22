@@ -41,8 +41,9 @@ is a decision rather than an afternoon of archaeology.
 - **You do not need the profession to get the answer.** A character who cannot mine an Iron
   Deposit, or whose mining is too low for it, still sees who in the family is holding iron ore -
   which is usually the character asking.
-- **And the dots on your minimap answer too**, including the ones GatherMate and Gatherer draw
-  from where they remember nodes being.
+- **And the dots on your maps answer too** - the minimap and the world map both, including the
+  ones GatherMate and Gatherer draw from where they remember nodes being. A zone's own label is
+  left alone.
 
 ### Achievements
 

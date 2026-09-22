@@ -1460,25 +1460,80 @@ end
 --
 -- `GetMouseFocus` on Era and `GetMouseFoci` on Mists - measured, the first is nil there - so
 -- both are asked and neither is assumed.
-local function onTheMinimap()
+local function onAMap()
 	local frame = Family:TryCall(_G.GetMouseFocus)
 	if type(frame) ~= "table" then
 		local several = Family:TryCall(_G.GetMouseFoci)
 		frame = type(several) == "table" and several[1] or nil
 	end
 
-	local minimap = _G.Minimap
-	if not minimap then return false end
+	-- **The world map as well as the minimap**, on Alberto's *I want both*. A pin an addon drew
+	-- from where it remembers a node being is the same question with the same answer wanted, and
+	-- the narration settled that a world map pin does reach `GameTooltip` and was refused here
+	-- and nowhere else: `1 line(s): Silverleaf / nil`, and nothing after it.
+	local maps = { _G.Minimap, _G.WorldMapFrame }
 
 	-- Bounded rather than walked to the top: a parent chain that loops would hang the client,
-	-- and nothing on the minimap is eight deep.
+	-- and nothing drawn on either map is eight deep.
 	local steps = 0
 	while type(frame) == "table" and steps < 8 do
-		if frame == minimap then return true end
+		for _, map in ipairs(maps) do
+			if map and frame == map then return true end
+		end
 		frame = frame.GetParent and (Family:TryCall(frame.GetParent, frame)) or nil
 		steps = steps + 1
 	end
 	return false
+end
+
+-- **What this client calls an area id**, asked three ways and assumed in none.
+local function areaNamed(id)
+	local said = _G.C_Map and (Family:TryCall(_G.C_Map.GetAreaInfo, id))
+	if type(said) ~= "string" or said == "" then
+		said = Family:TryCall(_G.GetAreaInfo, id)
+	end
+	return type(said) == "string" and said ~= "" and said or nil
+end
+
+-- **Places whose names this rule would take for a metal, refused by id.**
+--
+-- Alberto, 2026-09-22, on being told that 11 of Era's 1,018 area names score as an ore: *just
+-- for the fact that you can know this, you can write an exception table.* Quite so. It ships as
+-- **ids** in `Gathered.lua` and the client names them, so the exception holds in whatever
+-- language somebody plays in - which a table of names could not do, and which matters because
+-- the collisions are not the same set in each: 11 in English and **53** across the five.
+--
+-- Worked out once. A client that will not name an area id is recorded as such and not asked
+-- again, because it will not start being able to.
+local refusedPlaces
+local function placesToRefuse()
+	if refusedPlaces ~= nil then return refusedPlaces or nil end
+
+	local set = Family.Gathered and Family.Gathered[Family.Capabilities.expansion]
+	local ids = set and set.places
+	if not ids then
+		refusedPlaces = false
+		return nil
+	end
+
+	local out, named = {}, 0
+	for _, id in ipairs(ids) do
+		local name = areaNamed(id)
+		if name then
+			out[name:lower()] = true
+			named = named + 1
+		end
+	end
+
+	if named == 0 then
+		Family:Debug("node: this client names no area id, so no place can be refused by name")
+		refusedPlaces = false
+		return nil
+	end
+
+	Family:Debug("node: %d of %d places named and refused", named, #ids)
+	refusedPlaces = out
+	return refusedPlaces
 end
 
 -- Answers the node's name, the skill if the tooltip said one, and where it was drawn.
@@ -1520,7 +1575,7 @@ local function gatheringNode(tooltip)
 	-- drawn is the only signal left, so it is required.
 	local skill, said
 	if lines == 1 then
-		if not onTheMinimap() then return nil end
+		if not onAMap() then return nil end
 	else
 		skill, said = professionNamed(frameName, lines)
 		if not skill then
@@ -1663,6 +1718,15 @@ local resolvedNames = {}
 -- the 752 vein names read for the three builds in five languages, **none** is also the name of
 -- a herb, so the exact step cannot take a vein for a plant.
 local function itemForNode(said, skill)
+	-- **A zone label is not a node.** Checked before anything is scored, and by name against the
+	-- ids the build ships: of 929 vein names read across three builds and five languages, not
+	-- one is also the name of a refused place, so this cannot silence a real node.
+	local refused = placesToRefuse()
+	if refused and refused[said:lower()] then
+		Family:Debug("node: \"%s\" is a place this rule would misread, so it is refused", said)
+		return nil
+	end
+
 	local key = tostring(skill or 0) .. ":" .. said
 	local held = resolvedNames[key]
 	if held ~= nil then return held or nil end

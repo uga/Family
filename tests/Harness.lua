@@ -4915,6 +4915,18 @@ do
 	ITEM_NAMES[7911] = "Truesilver Ore"
 	ITEM_NAMES[11370] = "Dark Iron Ore"
 
+	-- **Before the first hover**, because what the client calls an area is worked out once and
+	-- kept: a client that will not name one is recorded as such and not asked again, which is
+	-- right in the game and would leave this stub arriving too late to be seen.
+	local firstPlace = (Family.Gathered[1].places or {})[1]
+	local heldMap = _G.C_Map
+	local heldArea = _G.C_Map and _G.C_Map.GetAreaInfo
+	_G.C_Map = _G.C_Map or {}
+	_G.C_Map.GetAreaInfo = function(id)
+		if id == firstPlace then return "Silverpine Forest" end
+		return "Area " .. tostring(id)
+	end
+
 	local function nodeSays(said, profession, extra)
 		GameTooltip:ClearLines()
 		GameTooltip.__itemName, GameTooltip.__itemLink = nil, nil
@@ -5149,9 +5161,43 @@ do
 		drewBlock(nodeSays("Copper Vein", nil)))
 	Family.Names.Item = realNames
 
+	-- **A zone label is not a node**, and the exception ships as ids so the client names them.
+	-- Alberto, 2026-09-22: *just for the fact that you can know this, you can write an exception
+	-- table.* 11 of Era's 1,018 area names score as an ore in English and **53** across the five
+	-- languages, which is why the table is ids and not words - and why one that collides in any
+	-- one locale is refused in all of them.
+	local places = Family.Gathered and Family.Gathered[1] and Family.Gathered[1].places
+	check("the build ships the places its own rule would misread", places and #places > 20,
+		places and tostring(#places) or "none")
+
+	-- Named behind a complete candidate list, because without one the herb step stops the walk
+	-- before the ores are ever scored - and it is the ore score this refusal exists to head off.
+	-- Silverpine Forest takes Silver Ore at 0.600 with the kin rule waiving the margin against
+	-- Truesilver Ore, which is exactly the shape that named a blip as silver in play.
+	local beforeFiller = Family.Names.Item
+	Family.Names.Item = function(self, id, key, callback)
+		local name, known = beforeFiller(self, id, key, callback)
+		if known then return name, known end
+		return "Filler " .. tostring(id), true
+	end
+	check("a place the client names is refused rather than scored as an ore",
+		nodeSays("Silverpine Forest", nil) == "")
+	-- And the refusal is by name, not by turning the route off: a real node still resolves.
+	check("and a real node beside it still resolves",
+		drewBlock(nodeSays("Silverleaf", nil)))
+	Family.Names.Item = beforeFiller
+
 	local pin = CreateFrame("Frame", "GatherMatePin2", Minimap)
 	pointerOn(pin)
 	check("a pin another addon drew on the minimap is served as well",
+		drewBlock(nodeSays("Silverleaf", nil)))
+
+	-- **And the world map**, on Alberto's *I want both*: a pin drawn from a remembered position
+	-- is the same question with the same answer wanted, and the narration settled that such a
+	-- pin reaches `GameTooltip` and was refused by this test and nowhere else.
+	WorldMapFrame = WorldMapFrame or CreateFrame("Frame", "WorldMapFrame")
+	pointerOn(CreateFrame("Frame", "GatherMateWorldPin", WorldMapFrame))
+	check("a pin on the world map is served too",
 		drewBlock(nodeSays("Silverleaf", nil)))
 
 	-- Anywhere else, one line is one line and says nothing about being a node.
@@ -5225,6 +5271,10 @@ do
 		heard:find("nothing here can place it", 1, true) ~= nil, heard)
 
 	FamilyDB.debug = heldDebug
+
+	-- Put the client back as it was found. `/family hearth` further down asks this very
+	-- question of it and would read the stand-in as an answer about a real client.
+	if heldMap then _G.C_Map.GetAreaInfo = heldArea else _G.C_Map = nil end
 end
 
 -- A thing made by using an item rather than by a recipe
