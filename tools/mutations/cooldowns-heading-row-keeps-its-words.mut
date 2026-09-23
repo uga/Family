@@ -1,6 +1,6 @@
 name: the Cooldowns page's heading row says Cooldown above its sections again
 file: addons/Family_UI/Summary.lua
 --- old
-		{ key = "cdtimer", label = "", width = 220, justify = "LEFT" },
+		{ key = "cdtimer", label = "", width = 300, justify = "LEFT" },
 --- new
-		{ key = "cdtimer", label = L["Ready"], width = 220, justify = "LEFT" },
+		{ key = "cdtimer", label = L["Ready"], width = 300, justify = "LEFT" },

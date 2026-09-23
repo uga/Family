@@ -97,6 +97,10 @@ is a decision rather than an afternoon of archaeology.
   Pandaren fill twice as fast, up to three levels. The page's note says so. Before, the column
   showed the figure from the day the character was put away. A character not logged in since
   this update shows its old figure until its next login.
+- **A currency's heading on the summary shows its whole name when you hover it**, where the
+  heading had to be cut to fit, as in *Darkmoon Pri...*.
+- **An instance lockout's name and difficulty fit on the Cooldowns page**:
+  *Hellfire Citadel: Ramparts  Heroic* used to be cut to *Hellfire Citadel: Rampa...*.
 - **The summary's Last seen column gives the age alone**: *15d*, *3h*, *yesterday*, and *shared
   15d* for a linked family's character. It used to add *ago*, and *shared 15d ago* did not fit.
 - **The Cooldowns page has one line of headings per section**: *Crafting cooldowns*, *Member*,

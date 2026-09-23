@@ -1,0 +1,6 @@
+name: a cut currency heading gives no whole name on hover
+file: addons/Family_UI/Summary.lua
+--- old
+				if column.full and column.full ~= column.label then
+--- new
+				if false then

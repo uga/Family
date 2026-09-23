@@ -35845,6 +35845,22 @@ print("a currency filed under its name joins the column of its id")
 	end
 	check("and the older record's 20 is drawn in it", twenty)
 
+	-- A long name, cut on the heading, is read in full on the heading's tooltip.
+	Family.Database:SetMeta(newer, { currencies = { { id = 1901, key = "c1901",
+		name = "Honor Points", quantity = 1428 }, { id = 515, key = "c515",
+		name = "Darkmoon Prize Ticket", quantity = 1 } } })
+	Family.UI:Refresh()
+	local tipped
+	for _, f in ipairs(frames) do
+		if f.__familyTooltip and f.__shown ~= false then
+			local _, _, lines = f.__familyTooltip(f)
+			if type(lines) == "table" and lines[1] and lines[1][1] == "Darkmoon Prize Ticket" then
+				tipped = true
+			end
+		end
+	end
+	check("a currency heading cut to fit gives its whole name on hover", tipped)
+
 	clickButton("Overview")
 	Family.UI:Hide()
 	Family.Database:Forget(newer)
@@ -42230,6 +42246,13 @@ print("instance lockouts, read, kept and drawn")
 	Family.UI:Refresh()
 
 	check("with a section for the lockouts", visibleText(Family.L["Instance lockouts"]))
+	-- The place and its difficulty fit (Alberto's screenshot, 2026-09-23: *Rampa...*).
+	local placeWidth
+	for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+		if column.key == "cdtimer" then placeWidth = column.drawWidth or column.width end
+	end
+	check("the lockout's place has room for a name and its difficulty",
+		(placeWidth or 0) >= 300, tostring(placeWidth))
 
 	-- The section headings carry the column words, so the heading row above them carries none.
 	local worded = {}

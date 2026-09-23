@@ -2149,9 +2149,12 @@ UI.CRAFTING_PEOPLE = UI.CRAFTING_PEOPLE or 10
 -- semi-duplicate first headers line is ugly*). The columns stay, because they place the cells.
 function craftingColumns()
 	return {
-		{ key = "cdtimer", label = "", width = 220, justify = "LEFT" },
-		{ key = "cdwho", label = "", width = 200, justify = "LEFT" },
-		{ key = "cdwhen", label = "", width = 294, justify = "RIGHT" },
+		-- Three hundred for the place and its difficulty: *Hellfire Citadel: Ramparts  Heroic*
+		-- was cut at *Rampa...* in 220 (Alberto's screenshot, 2026-09-23), and the right-hand
+		-- column, which holds a lock number and a duration, had the room to give.
+		{ key = "cdtimer", label = "", width = 300, justify = "LEFT" },
+		{ key = "cdwho", label = "", width = 180, justify = "LEFT" },
+		{ key = "cdwhen", label = "", width = 234, justify = "RIGHT" },
 	}
 end
 
@@ -2167,8 +2170,10 @@ function currencyColumns()
 		local currency = held[index]
 		local key = "cur:" .. currency.key
 
+		-- `full` for the heading's tooltip, since the label is cut to fit (Alberto, 2026-09-23:
+		-- *we need a tooltip to read them in full, like the Wide Family columns*).
 		columns[index] = { key = key, label = shortened(currency.name or currency.key, 13),
-			width = CURRENCY_WIDTH, justify = "RIGHT" }
+			full = currency.name or currency.key, width = CURRENCY_WIDTH, justify = "RIGHT" }
 
 		-- Registered rather than looked up: every other column in this file has its cell
 		-- and its total written beside it, and these have to behave the same way or the
@@ -3316,6 +3321,17 @@ local function build(frame)
 					UI:SetSummarySort(currentSet.id, column.key)
 					frame:Refresh()
 				end)
+				-- The whole name where the heading had to be cut. Taken off again otherwise,
+				-- because these buttons are reused by every set.
+				if column.full and column.full ~= column.label then
+					UI:AttachTooltip(button, function()
+						return nil, nil, { { column.full } }
+					end)
+				else
+					button.__familyTooltip = nil
+					button:SetScript("OnEnter", nil)
+					button:SetScript("OnLeave", nil)
+				end
 				button:Show()
 			else
 				button:SetScript("OnClick", nil)
