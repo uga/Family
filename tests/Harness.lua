@@ -2120,6 +2120,7 @@ for _, file in ipairs {
 	"Scanners/Bank.lua", "Scanners/Identity.lua",
 	"Scanners/Auctions.lua", "Scanners/Mail.lua", "Scanners/Character.lua",
 	"Scanners/Quests.lua",
+	"Scanners/QuestHistory.lua",
 	"Scanners/Currencies.lua",
 	"Scanners/Instances.lua",
 	"Scanners/Pets.lua",
@@ -14241,6 +14242,46 @@ print("a quest row's own objectives, under the client's description of the quest
 		-- Reported from play 2026-09-06.
 		check("and no name over them on your own page, the client having named you already",
 			said:find(tostring(Family.UI:Meta(key).name or key), 1, true) == nil, said)
+
+		-- **And who in the family has already handed it in** (backlog 92), under the progress.
+		do
+			local heldCall = _G.GetQuestsCompleted
+			local function hover()
+				wipe(GameTooltip.__lines)
+				row.__scripts.OnEnter(row)
+				local text = ""
+				for _, line in ipairs(GameTooltip.__lines) do
+					text = text .. " " .. tostring(line[1]) .. " " .. tostring(line[2])
+				end
+				return text
+			end
+
+			GetQuestsCompleted = function(into) into[84] = true into[9000] = true end
+			Family.QuestHistory:Scan()
+			local done = hover()
+			check("a quest this character has handed in says so on its row's tooltip",
+				done:find(Family.L["|cff88bbffAlready handed in by:|r"], 1, true) ~= nil
+					and done:find(tostring(Family.UI:Meta(key).name or key), 1, true) ~= nil,
+				done)
+			check("under the objectives, which are still there",
+				done:find("Red Linen Goods 1: 1/1", 1, true) ~= nil, done)
+
+			GetQuestsCompleted = function(into) into[9000] = true end
+			Family.QuestHistory:Scan()
+			local nobody = hover()
+			check("and one nobody has handed in says that, once a history has been read",
+				nobody:find(Family.L["|cff9d9d9dNobody in the family has handed this in yet.|r"],
+					1, true) ~= nil, nobody)
+
+			GetQuestsCompleted = heldCall
+			local payload = Family.Database:Payload(key)
+			payload.questsDone = nil
+			Family.Database:SetPayload(key, payload, { "questsDone" })
+			Family.Database:SetMeta(key, { questsDoneCount = Family.CLEAR })
+			check("with no history read anywhere, the tooltip claims nothing either way",
+				not hover():find(Family.L["|cff9d9d9dNobody in the family has handed this in yet.|r"],
+					1, true))
+		end
 
 		-- And it is there on anybody else's, which is the half the name exists for. Driven
 		-- by moving who is being played rather than by building a second member: the branch
@@ -41955,6 +41996,118 @@ print("FamilyProbe prints a record whole")
 	said = fields(wide)
 	check("a table wider than a record is still cut, and says by how much",
 		said:find("(+10 more)", 1, true) ~= nil, said)
+end)()
+
+print()
+print("the quests a character has already handed in")
+
+-- Backlog 92. `GetQuestsCompleted` fills the table it is handed, keyed by id, on all three builds
+-- (DATASOURCES, measured 2026-09-20). Stored as one short string per character.
+;(function()
+	local QH = Family.QuestHistory
+	local key = Family:CurrentMember()
+	local heldCall = _G.GetQuestsCompleted
+
+	local function same(set, ids)
+		local count = 0
+		for _ in pairs(set) do count = count + 1 end
+		if count ~= #ids then return false end
+		for _, id in ipairs(ids) do if not set[id] then return false end end
+		return true
+	end
+
+	-- One list for the family, and flags per character against it (Alberto, 2026-09-23).
+	local heldPool = FamilyDB.questPool
+	FamilyDB.questPool = nil
+	QH:ForgetPool()
+
+	local first = QH:Encode({ 90000, 3, 40, 40 })
+	check("a history is kept as flags against the family list", first:sub(1, 1) == "p", first)
+	check("and comes back exactly, the repeat once", same(QH:Decode(first), { 3, 40, 90000 }))
+	check("each id written once in the family list", QH:PoolSize() == 3, tostring(QH:PoolSize()))
+
+	local second = QH:Encode({ 40, 7 })
+	check("a second character adds only what nobody had", QH:PoolSize() == 4,
+		tostring(QH:PoolSize()))
+	check("and the first character's flags still mean what they meant",
+		same(QH:Decode(first), { 3, 40, 90000 }))
+	check("while the second's come back as theirs", same(QH:Decode(second), { 7, 40 }))
+
+	-- Read back from the saved list in a new session: the order is what the flags point at.
+	QH:ForgetPool()
+	check("the family list survives a reload in the order it was built",
+		same(QH:Decode(first), { 3, 40, 90000 }) and QH:PoolSize() == 4)
+
+	local many = {}
+	for id = 1, 3000 do many[#many + 1] = id * 7 end
+	local long = QH:Encode(many)
+	check("three thousand quests are a character for every six in the family list",
+		#long <= 1 + math.ceil(QH:PoolSize() / 6), tostring(#long))
+	check("which come back exactly", same(QH:Decode(long), many))
+	check("an empty history is an empty set", next(QH:Decode(QH:Encode({}))) == nil)
+	check("and a string nobody wrote is nothing, not a guess",
+		next(QH:Decode("p!!")) == nil and next(QH:Decode("m3")) == nil)
+
+	-- Read from the table handed over, or from one the client hands back instead.
+	GetQuestsCompleted = function(into) into[7] = true into[12] = true end
+	check("the history is read from the table the client fills", #(QH:Read() or {}) == 2)
+	GetQuestsCompleted = function() return { [5] = true } end
+	check("or from one it hands back", #(QH:Read() or {}) == 1)
+	GetQuestsCompleted = nil
+	check("and a client without the call has no history, not an empty one", QH:Read() == nil)
+
+	-- At login, and again after a turn-in.
+	GetQuestsCompleted = function(into) into[7] = true end
+	fire("PLAYER_ENTERING_WORLD")
+	advance(7)
+	check("entering the world records the history", QH:Done(key, 7) == true)
+	check("with the count beside it for anybody who wants it without unpacking",
+		(Family.Database:Meta(key) or {}).questsDoneCount == 1)
+	GetQuestsCompleted = function(into) into[7] = true into[8] = true end
+	fire("QUEST_TURNED_IN", 8)
+	advance(4)
+	check("handing a quest in reads the history again", QH:Done(key, 8) == true)
+	check("a quest not handed in is not done", QH:Done(key, 9) == false)
+	check("and a member never read is neither", QH:Done("Nobody-Nowhere", 7) == nil)
+	-- **A whole minute of frame clock, not eleven seconds.** This file freezes `time` and lets the
+	-- frame clock run, and an item cooldown's deadline is rounded to the minute for a member's mark
+	-- - so a section that moves the frame clock part of a minute moves where later deadlines fall
+	-- inside theirs, and the idle-relog check below went red on a cooldown crossing a minute that
+	-- nothing here touched. LESSONS L-125.
+	advance(49)
+
+	-- Not shared: no category lists it.
+	do
+		local held = FamilyDB.wide
+		FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
+			links = { ["qfam"] = { name = "Nosy-Thunderstrike",
+				grants = { [key] = { quests = true } }, siblings = {}, members = {} } } }
+		local sent = Family.Wide:Offering(FamilyDB.wide.links["qfam"])[key]
+		check("granting quests does not send the history",
+			sent and sent.payload and sent.payload.questsDone == nil)
+		FamilyDB.wide = held
+	end
+
+	-- The fold: ten names, then a count.
+	for index = 1, 12 do
+		Family.Database:SetMeta("Done" .. index .. "-FireMaw",
+			{ name = "Done" .. index, realm = "Fire Maw" })
+		Family.Database:SetPayload("Done" .. index .. "-FireMaw", { questsDone = QH:Encode({ 77 }) })
+	end
+	local lines = Family.UI:QuestDoneLines(77)
+	local said = ""
+	for _, line in ipairs(lines) do said = said .. " " .. tostring(line[1]) end
+	check("twelve who have done it are ten names and a count",
+		said:find(string.format(Family.L["|cff888888and %d more|r"], 2), 1, true) ~= nil, said)
+	for index = 1, 12 do Family.Database:Forget("Done" .. index .. "-FireMaw") end
+
+	GetQuestsCompleted = heldCall
+	local payload = Family.Database:Payload(key)
+	payload.questsDone = nil
+	Family.Database:SetPayload(key, payload, { "questsDone" })
+	Family.Database:SetMeta(key, { questsDoneCount = Family.CLEAR })
+	FamilyDB.questPool = heldPool
+	QH:ForgetPool()
 end)()
 
 print()

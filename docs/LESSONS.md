@@ -4371,3 +4371,23 @@ checks asked only whether a block was drawn, and **both mutations survived them*
 markup on, the herb misses and the ore scorer takes `silver` out of `Silverleaf`, so a block is
 drawn naming Silver Ore. A check that asks *did anything happen* passes on the exact fault it
 was written for. They read the heading now.
+
+## L-125 — a check that turned red on a minute boundary nothing had touched
+
+**2026-09-23.** The quest history's checks fired a login and a turn-in, and the harness advanced
+the frame clock eleven seconds to let them run. The idle-relog check hundreds of lines later went
+red on a member's mark, and the field that moved was `itemCooldowns` - which the quest history
+never reads or writes. It took a bisection of the new section and a print of every marked field to
+find it. The harness freezes `time` and lets the frame clock run, an item cooldown's deadline is
+`time()` plus what the frame clock says is left, and the stable mark rounds that deadline to the
+minute. Eleven seconds moved where a deadline fell inside its minute, and the relog's own fifteen
+seconds of skew then carried it across one.
+
+**A section that moves the frame clock by part of a minute changes what every later
+minute-rounded reading does.** The relog check is right about the addon and fragile about the
+harness: its green depended on where earlier sections happened to leave the clock.
+
+**Caught by:** the idle-relog check itself, which went red, and the rule now written where the
+quest history's checks advance the clock: whole minutes. The relog check's own skew is left as it
+is; the backlog does not carry it, because it only ever fires on a harness change and says what
+changed.

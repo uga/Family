@@ -1,0 +1,6 @@
+name: the quest history crosses a link with the quest log
+file: addons/Family/Wide.lua
+--- old
+    { id = "quests",      label = L["Quests"],      payload = { "quests" },
+--- new
+    { id = "quests",      label = L["Quests"],      payload = { "quests", "questsDone" },

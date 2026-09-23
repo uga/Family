@@ -1027,4 +1027,6 @@ Family.locales.ruRU = {
 	["|cffffd700Collapsed recipe records|r, across the family:"] = "|cffffd700Сжавшиеся списки рецептов|r, по всей семье:",
 	["|cffffd700Collapsed recipe records|r, across the family: none."] = "|cffffd700Сжавшиеся списки рецептов|r, по всей семье: нет.",
 	["  %s, %s, %s: %d recipe(s) -> %d; the window showed %d recipe(s), have materials: %s, search box: %s"] = "  %s, %s, %s: рецептов %d -> %d; окно показывало %d, есть материалы: %s, поиск: %s",
+	["|cff9d9d9dNobody in the family has handed this in yet.|r"] = "|cff9d9d9dНикто в семье ещё не сдал это задание.|r",
+	["|cff88bbffAlready handed in by:|r"] = "|cff88bbffУже сдали:|r",
 }

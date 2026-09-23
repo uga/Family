@@ -5814,7 +5814,7 @@ Checks under *the realms of one connected group are valued from one auction hous
 
 ---
 
-## 92. The quests a character has already finished
+## 92. The quests a character has already finished — DONE 2026-09-23, not yet seen in game
 
 **Asked 2026-09-20.** Family knows what is in a quest log and nothing about what was handed in
 years ago. The question is *which of my characters has already done this*, which is what decides
@@ -5898,6 +5898,37 @@ character; both are milliseconds.
 `QueryQuestsCompleted`, so there is no server round trip to wait for: what the call answers at
 login is what there is. `QUEST_TURNED_IN` is accepted, which is the event the running half would
 hang on and the one `Scanners/Quests.lua` already listens to.
+
+### Built 2026-09-23
+
+**Recorded** by `Family/Scanners/QuestHistory.lua`: `GetQuestsCompleted` read whole at login and again
+three seconds after every `QUEST_TURNED_IN`, rather than appended to, because the read costs
+milliseconds.
+
+**Stored the way Alberto described it the same afternoon**: *the quests in game are a finite number;
+store the quests that anybody has done, plus the flags of who has completed each.* One family list,
+`FamilyDB.questPool`, holds every id any character has handed in, once, in the order first seen. Each
+character's payload holds `questsDone`, one bit per entry in that list, six to a character. The list
+only grows at its end, so flags already written never change meaning. No names are stored: the id is
+the quest. A family whose characters have handed in five thousand different quests costs each
+character about 830 bytes and the family list about 20 KB once. Stored as a table of ids instead, the
+same history would cost about 20 bytes an id per character in the saved variables.
+
+**Shown** where a quest id is already on screen: a quest row's tooltip in Family's quest lists (a
+character's log and the whole-family reading) now ends with *Already handed in by:* and the names,
+ten and then *and N more*, or *Nobody in the family has handed this in yet*. Nothing is said while no
+character's history has been read. **No list of the history is drawn anywhere.** A list of thousands
+needs segmenting (Alberto, the same afternoon), and a quest the client is not holding in a log has no
+name it will give on these builds without a measurement nobody has taken. So a browsable view is a
+later entry, with that measurement first.
+
+**Not shared.** No Wide Family category carries `questsDone` or the family list. The grant grid has no
+room for a fourteenth column, and putting it under *Quests* would widen a consent already given; both
+are Alberto's to decide, and a shared history would also need the other family's list beside the
+flags.
+
+**Not built:** dailies (the specification's second row, *Burning Crusade onwards*):
+`GetDailyQuestsCompleted` answered 0 on every build, so the call that counts them is still unknown.
 
 ---
 

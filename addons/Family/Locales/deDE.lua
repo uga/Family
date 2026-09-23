@@ -1027,4 +1027,6 @@ Family.locales.deDE = {
 	["|cffffd700Collapsed recipe records|r, across the family:"] = "|cffffd700Geschrumpfte Rezeptlisten|r, in der ganzen Familie:",
 	["|cffffd700Collapsed recipe records|r, across the family: none."] = "|cffffd700Geschrumpfte Rezeptlisten|r, in der ganzen Familie: keine.",
 	["  %s, %s, %s: %d recipe(s) -> %d; the window showed %d recipe(s), have materials: %s, search box: %s"] = "  %s, %s, %s: %d Rezept(e) -> %d; das Fenster zeigte %d Rezept(e), Material vorhanden: %s, Suchfeld: %s",
+	["|cff9d9d9dNobody in the family has handed this in yet.|r"] = "|cff9d9d9dNiemand in der Familie hat diese Quest schon abgegeben.|r",
+	["|cff88bbffAlready handed in by:|r"] = "|cff88bbffBereits abgegeben von:|r",
 }

@@ -62,6 +62,15 @@ is a decision rather than an afternoon of archaeology.
 - **Lockouts can be shared with a linked family**, in a category of their own. They are not sent
   unless you tick it.
 
+### Quests already handed in
+
+- **Hovering a quest in Family's quest lists now says which of your characters have already handed
+  it in**, or that nobody in the family has yet. Useful when a chain, an attunement or a reputation
+  grind comes up and you need to know who can still do it. Before, Family only knew what was in each
+  quest log.
+- Each character's history is read when they log in and after every quest they hand in, so a
+  character you have not logged in since this update has not been read yet.
+
 ### The summary
 
 - **Hold CTRL and click a character's name on the summary to open their possessions, or ALT to

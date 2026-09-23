@@ -1027,4 +1027,6 @@ Family.locales.frFR = {
 	["|cffffd700Collapsed recipe records|r, across the family:"] = "|cffffd700Listes de recettes effondrées|r, dans toute la famille :",
 	["|cffffd700Collapsed recipe records|r, across the family: none."] = "|cffffd700Listes de recettes effondrées|r, dans toute la famille : aucune.",
 	["  %s, %s, %s: %d recipe(s) -> %d; the window showed %d recipe(s), have materials: %s, search box: %s"] = "  %s, %s, %s : %d recette(s) -> %d ; la fenêtre en montrait %d, composants disponibles : %s, recherche : %s",
+	["|cff9d9d9dNobody in the family has handed this in yet.|r"] = "|cff9d9d9dPersonne dans la famille n'a encore rendu cette quête.|r",
+	["|cff88bbffAlready handed in by:|r"] = "|cff88bbffDéjà rendue par :|r",
 }

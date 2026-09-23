@@ -1,0 +1,8 @@
+name: handing a quest in does not read the history again
+file: addons/Family/Scanners/QuestHistory.lua
+--- old
+	Family:RegisterEvent("QUEST_TURNED_IN", "questHistory", function()
+		Family:After(3, "questHistory", function() QuestHistory:Scan() end)
+	end)
+--- new
+

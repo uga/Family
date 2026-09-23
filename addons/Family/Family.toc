@@ -79,6 +79,7 @@ Scanners\Auctions.lua
 Scanners\Mail.lua
 Scanners\Character.lua
 Scanners\Quests.lua
+Scanners\QuestHistory.lua
 Scanners\Currencies.lua
 Scanners\Instances.lua
 Scanners\Pets.lua

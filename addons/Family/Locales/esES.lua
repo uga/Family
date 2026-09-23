@@ -1027,4 +1027,6 @@ Family.locales.esES = {
 	["|cffffd700Collapsed recipe records|r, across the family:"] = "|cffffd700Listas de recetas encogidas|r, en toda la familia:",
 	["|cffffd700Collapsed recipe records|r, across the family: none."] = "|cffffd700Listas de recetas encogidas|r, en toda la familia: ninguna.",
 	["  %s, %s, %s: %d recipe(s) -> %d; the window showed %d recipe(s), have materials: %s, search box: %s"] = "  %s, %s, %s: %d receta(s) -> %d; la ventana mostraba %d receta(s), tengo materiales: %s, búsqueda: %s",
+	["|cff9d9d9dNobody in the family has handed this in yet.|r"] = "|cff9d9d9dNadie de la familia ha entregado esta misión todavía.|r",
+	["|cff88bbffAlready handed in by:|r"] = "|cff88bbffYa entregada por:|r",
 }

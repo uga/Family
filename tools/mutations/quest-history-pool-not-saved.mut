@@ -1,0 +1,7 @@
+name: the family list of quests is not saved, so flags point at nothing next session
+file: addons/Family/Scanners/QuestHistory.lua
+--- old
+		FamilyDB.questPool = (type(was) == "string" and was ~= "")
+			and (was .. "," .. table.concat(words, ",")) or table.concat(words, ",")
+--- new
+		local _ = was
