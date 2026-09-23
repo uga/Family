@@ -41831,6 +41831,17 @@ print("instance lockouts, read, kept and drawn")
 	end
 	check("the picker offers the place", offered["Blackwing Lair  40 Player"] == true)
 
+	-- Alberto, 2026-09-23: *only instances with at least one locked character should be listed;
+	-- if no character has a lockout the list will be empty.* With the two running locks gone,
+	-- what is left is one that has let go, and neither a place nor the section's heading is drawn.
+	Family.Database:Forget("Raidera-FireMaw")
+	Family.Database:Forget("Raiderb-FireMaw")
+	Family.UI:Refresh()
+	check("with nobody locked, no place is listed",
+		not visibleText("Blackwing Lair") and not visibleText("Molten Core"))
+	check("and the lockouts section is not drawn at all",
+		not visibleText(Family.L["Instance lockouts"]))
+
 	clickLastButton(Family.L["Overview"])
 	for _, name in ipairs { "Raidera", "Raiderb", "Raiderc" } do
 		Family.Database:Forget(name .. "-FireMaw")

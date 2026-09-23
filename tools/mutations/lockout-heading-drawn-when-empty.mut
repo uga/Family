@@ -1,0 +1,6 @@
+name: the lockouts heading is drawn over an empty section
+file: addons/Family_UI/Summary.lua
+--- old
+			if #lockOrder > 0 then section(L["Instance lockouts"], L["Resets in"]) end
+--- new
+			section(L["Instance lockouts"], L["Resets in"])
