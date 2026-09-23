@@ -7252,3 +7252,11 @@ nothing to change. If it is another length, or has an empty answer in it, the sc
 through `pcall` and `select("#")` the way `Scanners/Instances.lua` does, with a harness check on the row
 as read.
 
+**Read 2026-09-23, and the question changed.** Luga, holding eleven Dwarf fragments, answered
+`GetCurrencyListSize` **0**, and the Summary's Currencies page has no column for any Mists character.
+Alberto: the Mists Classic character window has **no Currency tab**. So the list may never be filled on
+this build, which would mean Family's currency scanner records nothing on Mists at all, and the row's
+shape is not the question any more. FamilyProbe now asks the fragment currencies by id (384, 385, 393)
+and the archaeology calls (`GetNumArchaeologyRaces`, `GetArchaeologyRaceInfo`); one run on Luga says
+which of them holds the eleven.
+
