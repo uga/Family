@@ -3669,6 +3669,18 @@ local function build(frame)
 				line.memberRealm = member.meta.realm
 				line.borrowed = row.borrowed
 
+				-- **Under the Chrono figure**, whose right edge is where the column's text
+				-- ends: four pixels in from the column's own edge (`layOut`). The row's
+				-- right edge is further out, past the last column, and the icons hung
+				-- there started to the right of the figure they unfold (Alberto's
+				-- screenshot, 2026-09-23).
+				local edge
+				for _, column in ipairs(columns) do
+					if column.key == "boon" and column.drawX then
+						edge = column.drawX + (column.drawWidth or column.width) - 4
+					end
+				end
+
 				local shown = math.min(BOON_SLOTS, #banked)
 				for index = 1, shown do
 					local buff = banked[index]
@@ -3680,7 +3692,12 @@ local function build(frame)
 					-- then end at the same edge, and the eye compares them down the column
 					-- instead of measuring from a name of a different length each time.
 					-- The order the game listed them in is kept.
-					slot:SetPoint("RIGHT", -6 - (shown - index) * (BOON_ICON + 2), 0)
+					if edge then
+						slot:SetPoint("RIGHT", line, "LEFT",
+							edge - (shown - index) * (BOON_ICON + 2), 0)
+					else
+						slot:SetPoint("RIGHT", -6 - (shown - index) * (BOON_ICON + 2), 0)
+					end
 
 					-- The fileID is what was recorded and is what is drawn, so a buff this
 					-- table has never heard of still appears as itself. The spell is only

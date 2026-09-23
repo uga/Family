@@ -21566,6 +21566,26 @@ print("the letters, put away with everything else")
 	check("and the Chrono figure unfolds it", rows() > shutBoon,
 		tostring(rows()) .. " rows against " .. tostring(shutBoon))
 
+	-- Under the Chrono figure, not past it at the row's edge (Alberto's screenshot, 2026-09-23).
+	local boonEdge
+	for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+		if column.key == "boon" then
+			boonEdge = column.drawX + (column.drawWidth or column.width) - 4
+		end
+	end
+	local placed
+	for _, f in ipairs(frames) do
+		if type(f.boon) == "table" and f.boon[1] and f.boon[1].__relative
+			and f.boon[1].__relative.RIGHT and f.boon[1].__shown ~= false
+			and f.boon[1].__offsets and f.boon[1].__offsets.RIGHT then
+			placed = f.boon[1]
+		end
+	end
+	check("and its buffs end where the Chrono figure does",
+		placed and placed.__relative.RIGHT.point == "LEFT"
+			and placed.__offsets.RIGHT.x == boonEdge,
+		tostring(placed and placed.__offsets.RIGHT.x) .. " against " .. tostring(boonEdge))
+
 	Family.UI:FoldEverything()
 	Family.UI:Refresh()
 	check("which the same fold puts away as well", rows() == shutBoon,
