@@ -5445,6 +5445,24 @@ list when `UPDATE_INSTANCE_INFO` says so. What is corrected is the strength of i
 the field change; one session saw it steady; that is a field which is *sometimes* wrong before the
 event, which is all a reader needs to know and less than was written.
 
+#### `GetSavedInstanceEncounterInfo` answered, and it holds one boss — read 2026-09-23
+
+A new lock on the same character, Luga on `5.5.4`, Molten Core again: lock id `239735737`, 551,724
+seconds left, which is the *6d 9h* the Summary's Cooldowns page drew for it in the same session.
+Columns 11 and 12 are `1` and `0`, as on the first lock.
+
+The encounter call, asked eight slots by position, answered **slot 1 only**: `"Majordomo Executus"`,
+`nil`, `false`, `false`. Slots 2 to 8 are all `nil`. So on this client the lock's own list of
+encounters has **one** entry, which is what column 11 said, against the ten rows `DungeonEncounter`
+holds for map 409. The third value reads as *killed* and is `false`.
+
+**What it settles:** column 11 is the length of this list, and the list really is one long here - it
+was not the count that was wrong, it is the lock that carries one encounter. A legacy forty-man lock on
+Mists does not track its bosses one by one, which is also what the game's Raid Information window
+showed by drawing no progress at all. *N of M bosses* stays unsayable on Mists, and Family's lockouts
+(backlog 93) claim none. **Still unread:** the same call on an Era lock, where column 11 said 8, 9 and
+15, and on a heroic.
+
 ### Honor on Mists is 1901, and the probe had been asking 392 — 2026-09-21
 
 Backlog 5 and the second half of 95 were both waiting on *a Mists character holding a currency*,
