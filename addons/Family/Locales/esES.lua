@@ -50,6 +50,7 @@ Family.locales.esES = {
 	-- The summary: its column sets, its columns and its totals
 	["%dm"] = "%dm",
 	["%dh"] = "%dh",
+	["%dd"] = "%dd",
 	["+%d"] = "+%d",
 	["Bags"] = "Bolsas",  -- 14
 	["Race"] = "Raza",  -- 15

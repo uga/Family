@@ -1173,9 +1173,9 @@ end
 CELL.seen = function(meta, key, sharedAt)
 	if not meta.lastSeen and UI:IsBorrowed(key) then
 		if not sharedAt then return UNKNOWN end
-		return string.format(L["|cff888888shared|r %s"], UI:Ago(sharedAt)), 0.7, 0.7, 0.7
+		return string.format(L["|cff888888shared|r %s"], UI:Age(sharedAt)), 0.7, 0.7, 0.7
 	end
-	return UI:Ago(meta.lastSeen), 0.7, 0.7, 0.7
+	return UI:Age(meta.lastSeen), 0.7, 0.7, 0.7
 end
 
 CELL.played = function(meta)

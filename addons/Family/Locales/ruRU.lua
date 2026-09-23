@@ -50,6 +50,7 @@ Family.locales.ruRU = {
 	-- The summary: its column sets, its columns and its totals
 	["%dm"] = "%dм",
 	["%dh"] = "%dч",
+	["%dd"] = "%dд",
 	["+%d"] = "+%d",
 	["Bags"] = "Сумки",  -- 14
 	["Race"] = "Раса",  -- 15

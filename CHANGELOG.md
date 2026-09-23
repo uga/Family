@@ -91,6 +91,8 @@ is a decision rather than an afternoon of archaeology.
   *712 at auction prices*, which left the reader to guess. The same on an item's tooltip.
 - **Realm headings on the summary show their whole name again.** They had been cut short, as in
   *Pyrewood Village...*.
+- **The summary's Last seen column gives the age alone**: *15d*, *3h*, *yesterday*, and *shared
+  15d* for a linked family's character. It used to add *ago*, and *shared 15d ago* did not fit.
 - **The Cooldowns page has one line of headings per section**: *Crafting cooldowns*, *Member*,
   *Ready*, and *Instance lockouts*, *Member*, *Resets in*. The line above them used to repeat
   *Cooldown*, *Member*, *Ready*.

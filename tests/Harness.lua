@@ -26506,8 +26506,17 @@ print("the fixes the live check asked for are still in place")
 	-- date cannot stay welded together in a language that puts them the other way round.
 	-- What is checked is unchanged - that the cell says "shared" and hands it the stamp.
 	check("and Last seen says when a sibling was shared",
-		sum:match('L%["|cff888888shared|r %%s"%], UI:Ago%(sharedAt%)') ~= nil,
+		sum:match('L%["|cff888888shared|r %%s"%], UI:Age%(sharedAt%)') ~= nil,
 		"a borrowed row's date is somebody else's exchange, not our own sighting")
+
+	-- Without *ago*: the heading says it, and *shared 15d ago* did not fit (2026-09-23).
+	check("Last seen gives an age without the word ago",
+		Family.UI:Age(time() - 15 * 86400 - 60) == "15d"
+			and Family.UI:Age(time() - 3 * 3600 - 60) == "3h"
+			and Family.UI:Age(time() - 86400 - 60) == Family.L["yesterday"],
+		Family.UI:Age(time() - 15 * 86400 - 60))
+	check("and the cell uses it for our own members too",
+		sum:match("return UI:Age%(meta%.lastSeen%)") ~= nil)
 
 	-- Reported live: clicking a mail count on Activity left the letters drawn on Currencies.
 	-- The unfold hangs off the **member** column, which every set has, so nothing about it was
