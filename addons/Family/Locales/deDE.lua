@@ -1024,4 +1024,7 @@ Family.locales.deDE = {
 	["Resets in"] = "Zurückgesetzt in",
 	["extended"] = "verlängert",
 	["|cff888888Nobody is saved to an instance right now.|r"] = "|cff888888Gerade ist niemand in einer Instanz gesperrt.|r",
+	["|cffffd700Collapsed recipe records|r, across the family:"] = "|cffffd700Geschrumpfte Rezeptlisten|r, in der ganzen Familie:",
+	["|cffffd700Collapsed recipe records|r, across the family: none."] = "|cffffd700Geschrumpfte Rezeptlisten|r, in der ganzen Familie: keine.",
+	["  %s, %s, %s: %d recipe(s) -> %d; the window showed %d recipe(s), have materials: %s, search box: %s"] = "  %s, %s, %s: %d Rezept(e) -> %d; das Fenster zeigte %d Rezept(e), Material vorhanden: %s, Suchfeld: %s",
 }

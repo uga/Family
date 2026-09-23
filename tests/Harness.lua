@@ -12575,6 +12575,40 @@ SlashCmdList["FAMILY"]("bank")
 check("/family bank reports what is recorded for every member",
 	#DEFAULT_CHAT_FRAME.messages > before)
 
+-- **And every collapsed record in the family, whoever is logged in** (backlog 68). One planted on
+-- another member, one on nobody else: the line names that member, and a family with none says so.
+do
+	local before
+	local function said(needle)
+		for index = before + 1, #DEFAULT_CHAT_FRAME.messages do
+			local line = tostring(DEFAULT_CHAT_FRAME.messages[index])
+			if line:find(needle, 1, true) then return true end
+		end
+		return false
+	end
+	-- The members are stood in for rather than the records edited: the blacksmithing trap above
+	-- left a real collapse on this character, and changing a record in place is its own red.
+	local heldMembers = Family.Database.Members
+	Family.Database.Members = function() return {} end
+	before = #DEFAULT_CHAT_FRAME.messages
+	SlashCmdList["FAMILY"]("recipes")
+	Family.Database.Members = heldMembers
+	check("with nothing collapsed anywhere, it says none",
+		said(Family.L["|cffffd700Collapsed recipe records|r, across the family: none."]))
+
+	Family.Database:SetMeta("Shrunk-FireMaw", { name = "Shrunk", realm = "Fire Maw" })
+	Family.Database:SetPayload("Shrunk-FireMaw", { professions = { [185] = {
+		recipes = { { name = "Goblin Deviled Clams" } },
+		shrank = { at = time(), was = 75, now = 1, rows = 2, headers = 1, listed = 1,
+			materials = true, box = "" } } } })
+	before = #DEFAULT_CHAT_FRAME.messages
+	SlashCmdList["FAMILY"]("recipes")
+	check("a collapsed record on another character is listed, by name",
+		said("Shrunk-FireMaw") and said("75 recipe(s) -> 1"))
+	check("with whether Have Materials was ticked", said("have materials: true"))
+	Family.Database:Forget("Shrunk-FireMaw")
+end
+
 -- Read in one language and looked at in another, which is the case the whole line is about -
 -- and with both the same, a line that printed the record's locale twice would look right.
 do

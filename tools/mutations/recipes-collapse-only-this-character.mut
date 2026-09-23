@@ -1,0 +1,8 @@
+name: /family recipes lists collapsed records for nobody but the character logged in
+file: addons/Family_UI/Slash.lua
+--- old
+	for memberKey in pairs(Family.Database:Members()) do
+		local theirs = (Family.Database:Payload(memberKey) or {}).professions or {}
+--- new
+	for memberKey in pairs({ [key] = true }) do
+		local theirs = (Family.Database:Payload(memberKey) or {}).professions or {}

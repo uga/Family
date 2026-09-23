@@ -1024,4 +1024,7 @@ Family.locales.ruRU = {
 	["Resets in"] = "Сброс через",
 	["extended"] = "продлено",
 	["|cff888888Nobody is saved to an instance right now.|r"] = "|cff888888Сейчас ни у кого нет привязки к подземелью.|r",
+	["|cffffd700Collapsed recipe records|r, across the family:"] = "|cffffd700Сжавшиеся списки рецептов|r, по всей семье:",
+	["|cffffd700Collapsed recipe records|r, across the family: none."] = "|cffffd700Сжавшиеся списки рецептов|r, по всей семье: нет.",
+	["  %s, %s, %s: %d recipe(s) -> %d; the window showed %d recipe(s), have materials: %s, search box: %s"] = "  %s, %s, %s: рецептов %d -> %d; окно показывало %d, есть материалы: %s, поиск: %s",
 }

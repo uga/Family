@@ -4332,6 +4332,19 @@ recipes` prints it. **It changes nothing about what is stored**, which is the wh
 record goes in exactly as before. The threshold decides what is written *down*, never what is
 written.
 
+**Checked again 2026-09-23, on Alberto's doubt that it was ever real.** His thought: a filter typed
+into Family's own Professions panel, unnoticed, showing one row of a full list. **Ruled out** by the
+screenshot he sent with the report (2026-09-12, read back from that session): the panel's search
+box is empty, and the line under the profession buttons reads *Cooking 372/375 | 1 recipes 1 grey
+| seen 13d ago*. That count is `#recipes` of the **stored** record, not of the rows drawn, and has
+been since 2026-08-28 (`Family_UI/Professions.lua`, the `%d recipes` status line). So the record
+really held one recipe, and the entry stands.
+
+**And the trap could only be read on the character it fired on**, so nobody could know whether it
+had fired without logging into every one. `/family recipes` now ends with every member's collapsed
+record, whoever is logged in, or *none*. **What is wanted from Alberto:** type `/family recipes` on
+any character once, and send the line headed *Collapsed recipe records*.
+
 ## 69. Recipe materials on the Professions panel — **done 2026-09-12**
 
 **Asked for 2026-09-12.** Each recipe line carries what it needs, on the right of the row:

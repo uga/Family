@@ -1024,4 +1024,7 @@ Family.locales.frFR = {
 	["Resets in"] = "Réinitialisé dans",
 	["extended"] = "prolongé",
 	["|cff888888Nobody is saved to an instance right now.|r"] = "|cff888888Personne n'est verrouillé dans une instance en ce moment.|r",
+	["|cffffd700Collapsed recipe records|r, across the family:"] = "|cffffd700Listes de recettes effondrées|r, dans toute la famille :",
+	["|cffffd700Collapsed recipe records|r, across the family: none."] = "|cffffd700Listes de recettes effondrées|r, dans toute la famille : aucune.",
+	["  %s, %s, %s: %d recipe(s) -> %d; the window showed %d recipe(s), have materials: %s, search box: %s"] = "  %s, %s, %s : %d recette(s) -> %d ; la fenêtre en montrait %d, composants disponibles : %s, recherche : %s",
 }
