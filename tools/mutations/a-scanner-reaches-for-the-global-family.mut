@@ -1,0 +1,6 @@
+name: a scanner takes the global Family instead of the addon's own table
+file: addons/Family/Scanners/Currencies.lua
+--- old
+local _, Family = ...
+--- new
+local Family = _G.Family

@@ -23,7 +23,7 @@
 -- name of Family's own - "honor" and "arena", never translated, never shown - and the label
 -- on screen comes from whichever client last saw them.
 
-local Family = _G.Family
+local _, Family = ...
 
 local Currencies = {}
 Family.Currencies = Currencies

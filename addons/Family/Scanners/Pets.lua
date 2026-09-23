@@ -38,7 +38,7 @@
 -- second. It is a `PETACTION`, it moves with the rank, and it differs between builds for the
 -- same ability. Filing anything under it would be filing it under a bar position.
 
-local Family = _G.Family
+local _, Family = ...
 
 local Pets = {}
 Family.Pets = Pets

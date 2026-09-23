@@ -2135,6 +2135,24 @@ for _, file in ipairs {
 	load("addons/Family/" .. file, "Family", FamilyPrivate)
 end
 
+-- **Every file of the recording addon takes the table the client hands it**, `local _, Family = ...`,
+-- and none reaches for the global (backlog 100). The two are one table only because `Core.lua` also
+-- publishes it, and a harness that loads both from the same place cannot tell them apart by
+-- behaviour - so the files are read. Family_UI is another addon and has to read the global.
+do
+	local reaching = {}
+	for _, file in ipairs(LOADED_HERE) do
+		local f = io.open(ROOT .. "/addons/Family/" .. file)
+		if f then
+			local text = f:read("*a")
+			f:close()
+			if text:find("\nlocal Family = _G%.Family") then reaching[#reaching + 1] = file end
+		end
+	end
+	check("no file of the recording addon takes the global Family", #reaching == 0,
+		table.concat(reaching, ", "))
+end
+
 print()
 print("startup")
 _G.debugprofilestop = function() return 1250 end

@@ -25,7 +25,7 @@
 -- in the way that matters - what it records was demonstrably for sale, at a price demonstrably
 -- charged.
 
-local Family = _G.Family
+local _, Family = ...
 
 local Merchant = {}
 Family.Merchant = Merchant

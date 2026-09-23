@@ -7132,7 +7132,7 @@ bites is backlog 82's switch and backlog 89's screen, exactly as before.
 
 ---
 
-## 100. The scanners take the addon's own table, not the global one
+## 100. The scanners take the addon's own table, not the global one — DONE 2026-09-23
 
 **Agreed 2026-09-22** with the session working on the Midnight branch, and not built. Three scanners
 start with `local Family = _G.Family`: `Scanners/Currencies.lua`, `Scanners/Merchant.lua` and
@@ -7142,6 +7142,12 @@ global. A build or another addon that changes that global would split them silen
 
 **To do:** the three lines, and a mutation named `a-scanner-reaches-for-the-global-family.mut`, the name
 the Midnight session used for its own, so the two trees stay comparable.
+
+
+**Built 2026-09-23.** The three lines are `local _, Family = ...` now. A harness check reads every file
+the recording addon loads and fails on `local Family = _G.Family`; the mutation under the agreed name
+puts it back in `Currencies.lua` and is caught. Family_UI is a separate addon, so its files read the
+global and are left alone.
 
 ---
 
