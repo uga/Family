@@ -4392,9 +4392,9 @@ quest history's checks advance the clock: whole minutes. The relog check's own s
 is; the backlog does not carry it, because it only ever fires on a harness change and says what
 changed.
 
-## L-126 A column widened to fit a name, checked by its width, while the name was clipped in code
+## L-126 — a column widened to fit a name, checked by its width, while the name was clipped in code
 
-2026-09-23. *Hellfire Citadel: Rampa...* on the Cooldowns page: I widened the place column from 220
+**2026-09-23.** *Hellfire Citadel: Rampa...* on the Cooldowns page: I widened the place column from 220
 to 300 and checked that it was 300. The check passed and cost Alberto a round trip in the game,
 because the text had been cut before it reached the column: `UI:Shortened(label, 24)`. Width was
 one of two things doing the cutting, and the check asked about that one only.
