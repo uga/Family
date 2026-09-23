@@ -3808,7 +3808,9 @@ local function build(frame)
 			-- Not while the picker has chosen a crafting timer, where the question is about
 			-- that timer and *nobody is saved* would answer a different one.
 			local lockSection = wanted == nil or #lockOrder > 0
-			local headings = (#order > 0 and 1 or 0)
+			-- A blank line between the two sections, asked for off a screenshot 2026-09-23.
+			local spaced = #order > 0 and lockSection
+			local headings = (#order > 0 and 1 or 0) + (spaced and 1 or 0)
 				+ (lockSection and (#lockOrder > 0 and 1 or 2) or 0)
 			local cap = UI:FoldDepth(sizes, headings,
 				UI:RowsThatFit(scroll, currentSet.rowHeight), UI.CRAFTING_PEOPLE or 3)
@@ -3910,10 +3912,19 @@ local function build(frame)
 				end
 			end
 
+			if spaced then nextRow(currentSet.rowHeight) end
 			if lockSection then section(L["Instance lockouts"], L["Resets in"]) end
 			if lockSection and #lockOrder == 0 then
 				local row = nextRow(currentSet.rowHeight)
+				-- The whole row, the way a realm's heading has it: in the first column's width
+				-- the sentence was cut to *Nobody is saved to an instance...* (screenshot,
+				-- 2026-09-23).
+				-- Widened after the text is set, because setting it puts a cell back to its
+				-- column's width (`UI:MoneyCell`).
 				setCell(row, 1, L["|cff888888Nobody is saved to an instance right now.|r"])
+				local cell = row.cells[1]
+				cell:SetWidth(math.max(list:GetWidth() - 8, 1))
+				if cell.SetWordWrap then cell:SetWordWrap(false) end
 			end
 
 			for _, group in ipairs(lockOrder) do

@@ -5064,6 +5064,21 @@ do
 	check("and names the same thing once however often the cursor holds it",
 		namesIn(repeated) == "Dark Iron Ore|Truesilver Ore", repeated)
 
+	-- **And the title above it says each name once too** (Alberto, 2026-09-23: *vein name still
+	-- not deduplicated*, on three Copper Veins under one minimap cursor). The line is GatherMate2's
+	-- and not ours, so it is rewritten only where Family writes a block, keeping each name the
+	-- first time it appears, colour and all.
+	local function title() return tostring(_G.GameTooltipTextLeft1:GetText()) end
+	nodeSays("|cffff0000Copper Vein|r\n|cffff0000Copper Vein|r\n|cffff0000Copper Vein|r", MINE)
+	check("three pins of one vein are one name in the title",
+		title() == "|cffff0000Copper Vein|r", title())
+	nodeSays("Dark Iron Deposit\nTruesilver Deposit\nDark Iron Deposit", MINE)
+	check("and several are each named once, in the order they came",
+		title() == "Dark Iron Deposit\nTruesilver Deposit", title())
+	nodeSays("Dark Iron Deposit\nTruesilver Deposit", MINE)
+	check("a title with nothing repeated is left as it was",
+		title() == "Dark Iron Deposit\nTruesilver Deposit", title())
+
 	-- **A name this build cannot place sits beside the ones it can** rather than silencing them.
 	-- It could not before: one unnamed answer under two names would have been read as being about
 	-- either pin, and now each answer carries the name of what it is about.
@@ -5330,6 +5345,12 @@ do
 			tostring(namedIn(rich)) .. " / " .. tostring(namedIn(small)))
 		check("and khorium is not silenced by thorium either",
 			namedIn(khorium) == "Khoriumerz", khorium)
+
+		-- Two different veins of one ore under one cursor are one answer: the words differ, so
+		-- only what they resolve to can tell they are the same.
+		local both = nodeSays("Reiches Thoriumvorkommen\nKleines Thoriumvorkommen", MINE)
+		check("two veins of one ore under one cursor are one answer",
+			namesIn(both) == "Thoriumerz", both)
 
 		-- **And the run that opens with the separator itself**, which is the branch of the word
 		-- rule that is easy to get wrong and impossible to notice: French puts the metal last, so
@@ -41940,6 +41961,29 @@ print("instance lockouts, read, kept and drawn")
 		visibleText(Family.L["Instance lockouts"]))
 	check("saying in grey that nobody is saved anywhere",
 		visibleText(Family.L["|cff888888Nobody is saved to an instance right now.|r"]))
+
+	-- Across the whole row and not cut at the first column (screenshot, 2026-09-23), and with a
+	-- blank line between the crafting section above and this one.
+	local nobodyCell, headingAt, rowsInOrder = nil, nil, {}
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and type(f.cells) == "table" and onScreen(f) then
+			rowsInOrder[#rowsInOrder + 1] = f
+			local text = f.cells[1] and f.cells[1].__text
+			if text == Family.L["|cff888888Nobody is saved to an instance right now.|r"] then
+				nobodyCell = f.cells[1]
+			end
+			if text == Family.L["Instance lockouts"] then headingAt = #rowsInOrder end
+		end
+	end
+	check("the line saying so has the row's width, not the first column's",
+		nobodyCell ~= nil and (nobodyCell.__width or 0) > 300,
+		tostring(nobodyCell and nobodyCell.__width))
+	local above = headingAt and rowsInOrder[headingAt - 1]
+	local blank = above ~= nil
+	for _, cell in ipairs(above and above.cells or {}) do
+		if cell.__text and cell.__text ~= "" then blank = false end
+	end
+	check("and a blank line sits between the crafting section and the lockouts heading", blank)
 
 	-- Narrowed to a crafting timer, the question is about that timer: no lockouts section.
 	narrow = Family.UI.__summaryNarrow

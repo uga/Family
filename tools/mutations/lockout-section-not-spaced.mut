@@ -1,0 +1,6 @@
+name: the lockouts section starts on the line after the crafting section
+file: addons/Family_UI/Summary.lua
+--- old
+			if spaced then nextRow(currentSet.rowHeight) end
+--- new
+			local _ = spaced
