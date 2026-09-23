@@ -151,6 +151,62 @@ local function isCollapsed(entry, returns)
 	return false
 end
 
+-- The same row the newer way: `C_QuestLog.GetInfo(index)`, a table with its fields named.
+--
+-- Measured on Midnight 2026-09-20, index 1 of Druiduga's log: twenty-six keys, among them
+-- `title`, `level`, `isHeader`, `isCollapsed`, `questID` and `isHidden` (`docs/MIDNIGHT.md`
+-- §27). So nothing here is inferred from position, and the id needs no search - it is a field,
+-- and nought on a heading. That row was a heading; **no ordinary quest row has been read yet**,
+-- and this takes the same keys to be on one, which the game in front of Alberto will say.
+--
+-- A hidden row is left out. The key is measured and what it means is read off its name: the
+-- log the player sees does not list it, and neither does this.
+local function interpretInfo(info)
+	if type(info) ~= "table" then return nil end
+	local title = info.title
+	if type(title) ~= "string" or title == "" then return nil end
+	if info.isHidden == true then return nil end
+
+	local id = tonumber(info.questID)
+	return {
+		title = title,
+		level = tonumber(info.level),
+		isHeader = info.isHeader and true or false,
+		collapsed = (info.isHeader and info.isCollapsed) and true or false,
+		id = (id and id > 0) and id or nil,
+	}
+end
+
+-- One row of the log, by whichever route this client answers, and the old route's raw returns
+-- beside it, which `questIDAt` searches.
+local function rowAt(index, modern)
+	if modern then
+		return interpretInfo(Family:TryCall((_G.C_QuestLog or {}).GetInfo, index)), nil
+	end
+
+	local returns = pack(Family:TryCall(GetQuestLogTitle, index))
+	local entry = interpretTitle(returns)
+	if entry then entry.collapsed = entry.isHeader and isCollapsed(entry, returns) or false end
+	return entry, returns
+end
+
+-- How many rows the log holds, and which route answered: the old count first, so the three
+-- clients it has always answered on read exactly as they did, and `C_QuestLog`'s only where
+-- the old one says nothing. Nil where neither does - §2.2's *could not be read*, which is not
+-- an empty log.
+--
+-- Midnight is the client with only the second (§24). What its count returns beyond the first
+-- value has not been measured, and only the first is read.
+local function countEntries()
+	local count = tonumber((Family:TryCall(GetNumQuestLogEntries)))
+	if count then return count, false end
+
+	count = tonumber((Family:TryCall((_G.C_QuestLog or {}).GetNumQuestLogEntries)))
+	if count then return count, true end
+
+	return nil
+end
+
 -- How far through a quest is. Asked for as objectives done out of objectives total rather
 -- than as a yes or no, because "3 of 5 wolves" is the answer somebody wants and "not
 -- complete" is not. A quest with no objectives at all - a delivery, a talk-to - reports
@@ -219,17 +275,15 @@ end
 -- Expanding, and putting it back
 --------------------------------------------------------------------------------------------
 
-local function collapsedHeaders()
+local function collapsedHeaders(modern)
 	local collapsed = {}
-	local count = Family:TryCall(GetNumQuestLogEntries) or 0
+	local count = countEntries() or 0
 
 	-- Noted by name rather than by index, because opening one heading moves every index
 	-- below it and the list has to be walked again to put things back.
 	for index = 1, count do
-		local returns = pack(Family:TryCall(GetQuestLogTitle, index))
-		local entry = interpretTitle(returns)
-
-		if entry and entry.isHeader and isCollapsed(entry, returns) then
+		local entry = rowAt(index, modern)
+		if entry and entry.isHeader and entry.collapsed then
 			collapsed[entry.title] = true
 		end
 	end
@@ -240,12 +294,12 @@ end
 -- Walked backwards and bounded by the count, for the same reason the skill list is: shutting
 -- one heading moves every index below it, and a client that answers for an index past the
 -- end would make a `while true` run until the game killed it.
-local function restore(collapsed)
+local function restore(collapsed, modern)
 	if not next(collapsed) then return end
 
-	local count = Family:TryCall(GetNumQuestLogEntries) or 0
+	local count = countEntries() or 0
 	for index = count, 1, -1 do
-		local entry = interpretTitle(pack(Family:TryCall(GetQuestLogTitle, index)))
+		local entry = rowAt(index, modern)
 		if entry and entry.isHeader and collapsed[entry.title] then
 			Family:TryCall(CollapseQuestHeader, index)
 		end
@@ -274,15 +328,18 @@ end
 function Quests:ScanNow()
 	local key = Family:CurrentMember()
 
-	if type(GetNumQuestLogEntries) ~= "function" then
+	-- Asked rather than looked up: a count that answers is a log that can be read, whichever
+	-- route it came by, and a count that does not is the one case that writes nothing.
+	local _, modern = countEntries()
+	if modern == nil then
 		Family:Debug("no quest log on this client")
 		return
 	end
 
-	local collapsed = collapsedHeaders()
+	local collapsed = collapsedHeaders(modern)
 	Family:TryCall(ExpandQuestHeader, 0)          -- 0 means all of them
 
-	local count = Family:TryCall(GetNumQuestLogEntries) or 0
+	local count = countEntries() or 0
 	local entries = {}
 	local category = nil
 	local complete = 0
@@ -318,8 +375,7 @@ function Quests:ScanNow()
 	for index = 1, count do
 		-- Kept, because the id is found among these returns rather than asked for
 		-- separately, and finding it means having them.
-		local returns = pack(Family:TryCall(GetQuestLogTitle, index))
-		local entry = interpretTitle(returns)
+		local entry, returns = rowAt(index, modern)
 
 		if entry and entry.isHeader then
 			if entry.title and zones[entry.title] == nil then
@@ -332,7 +388,8 @@ function Quests:ScanNow()
 			-- row of its own, so the panel can group, filter and sort freely.
 			category = entry.title
 		elseif entry then
-			local questID = questIDAt(index, returns, entry.title)
+			-- The newer row names its id; the older one has it somewhere among its returns.
+			local questID = entry.id or questIDAt(index, returns, entry.title)
 			local done, total, lines = progressOf(index, questID)
 
 			-- Written down as it is read, by id, in this client's language. It costs
@@ -361,7 +418,7 @@ function Quests:ScanNow()
 		end
 	end
 
-	restore(collapsed)
+	restore(collapsed, modern)
 
 	-- §2.2: an empty log and a log that could not be read are different answers. Nothing is
 	-- written unless the read got as far as producing a list, and the list is allowed to be

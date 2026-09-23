@@ -1,0 +1,6 @@
+name: headings are put back through the old row reader, which Midnight lacks
+file: addons/Family/Scanners/Quests.lua
+--- old
+	restore(collapsed, modern)
+--- new
+	restore(collapsed, false)

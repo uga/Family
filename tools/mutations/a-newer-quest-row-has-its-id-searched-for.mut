@@ -1,0 +1,6 @@
+name: the id a newer quest row names is ignored and searched for through quest links
+file: addons/Family/Scanners/Quests.lua
+--- old
+			local questID = entry.id or questIDAt(index, returns, entry.title)
+--- new
+			local questID = questIDAt(index, returns, entry.title)

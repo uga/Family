@@ -1,0 +1,6 @@
+name: the quest log is counted only by the old global, so Midnight's log is never read
+file: addons/Family/Scanners/Quests.lua
+--- old
+	count = tonumber((Family:TryCall((_G.C_QuestLog or {}).GetNumQuestLogEntries)))
+--- new
+	count = nil

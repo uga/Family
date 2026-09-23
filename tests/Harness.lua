@@ -3113,22 +3113,15 @@ end)()
 print()
 print("the quest log on the fourth pretend client")
 
--- The same question as the section above, answered the other way round by the other scanner,
--- and this one is right.
+-- Step 2 found this scanner silent on Midnight, and right to be: `GetNumQuestLogEntries`,
+-- `GetQuestLogTitle` and `SelectQuestLogEntry` are `nil` there (measured 2026-09-20), and a
+-- log that cannot be read writes nothing - §2.2, an empty log and an unread one are different
+-- answers. Step 3 (b) gave it `C_QuestLog`'s count and rows, so this section has two halves:
+-- the silence, kept for a client that answers neither count, and the log read the newer way.
 --
--- Measured 2026-09-20: `GetNumQuestLogEntries`, `GetQuestLogTitle` and `SelectQuestLogEntry`
--- are `nil` on Midnight, while `ExpandQuestHeader`, `CollapseQuestHeader`, `GetQuestLink`,
--- `GetNumQuestLeaderBoards`, `GetQuestLogLeaderBoard` and `GetQuestObjectiveInfo` all answer.
--- `Scanners/Quests.lua` opens `ScanNow` with a test of `GetNumQuestLogEntries` and leaves if
--- it is not a function, and the comment further down says why in §2.2's words: an empty log
--- and a log that could not be read are different answers. So this scanner stores **nothing**
--- where the reputation scanner stores a zero, and the check is here to say which of the two
--- shapes the port keeps.
---
--- The gap it leaves is one call wide. `C_QuestLog` on this client holds 90 functions and
--- **`GetNumQuestLogEntries` is among them**, beside `GetInfo`, `GetTitleForLogIndex` and
--- `GetQuestIDForLogIndex` - and `Quests.lua` already calls that namespace twice, for the id
--- and for the objectives. Both of those live inside the walk, and the walk never starts.
+-- `ExpandQuestHeader`, `CollapseQuestHeader`, `GetQuestLink`, `GetNumQuestLeaderBoards`,
+-- `GetQuestLogLeaderBoard` and `GetQuestObjectiveInfo` all answer on Midnight, so they are
+-- present here and counted rather than absented, which would hide what the scan does.
 ;(function()
 	local was = {}
 	local function set(name, value)
@@ -3141,26 +3134,59 @@ print("the quest log on the fourth pretend client")
 	set("GetQuestLogTitle", nil)
 	set("SelectQuestLogEntry", nil)
 
-	-- Present here, and counted, because they are present on the client: if the scanner ever
-	-- got as far as walking the log it would open every heading first, and this is what says
-	-- whether it did. Absenting them would have hidden the difference.
-	local expanded = 0
-	set("ExpandQuestHeader", function() expanded = expanded + 1 end)
-	set("CollapseQuestHeader", function() expanded = expanded + 1 end)
+	-- The log, as a client with a heading that starts shut. Opening all of them shows two
+	-- more rows; shutting the one at 3 hides them again.
+	local open, expanded, shut = false, {}, {}
+	set("ExpandQuestHeader", function(index) expanded[#expanded + 1] = index open = true end)
+	set("CollapseQuestHeader", function(index) shut[#shut + 1] = index open = false end)
+
+	local linked = 0
+	set("GetQuestLink", function() linked = linked + 1 return nil end)
+	set("GetNumQuestLeaderBoards", function() return 0 end)
+
+	-- **Row 1 is the measured one**, Druiduga's index 1 on 2026-09-20, all twenty-six keys as
+	-- the client gave them (`docs/MIDNIGHT.md` §27). **Rows 2 to 5 are this file's**: no
+	-- ordinary quest row, no shut heading and no hidden row has been read on Midnight. They
+	-- carry the same keys with values chosen to be recognisable, and ids nothing else here uses.
+	local MEASURED = { campaignID = 256, difficultyLevel = 0, hasLocalPOI = false,
+		headerSortKey = -2147483392, isAbandonOnDisable = false, isAutoComplete = false,
+		isBounty = false, isCollapsed = false, isHeader = true, isHidden = false,
+		isInternalOnly = false, isOnMap = false, isScaling = false, isStory = false,
+		isTask = false, level = 0, overridesSortOrder = false, questClassification = 2,
+		questID = 0, questLogIndex = 1, readyForTranslation = false,
+		sortAsNormalQuest = false, startEvent = false, suggestedGroup = 0,
+		title = "Dragonflight", useMinimalHeader = false }
+	local function like(fields)
+		local row = {}
+		for k, v in pairs(MEASURED) do row[k] = v end
+		for k, v in pairs(fields) do row[k] = v end
+		return row
+	end
+	local function rows()
+		local list = {
+			MEASURED,
+			like { title = "A Row Of This File's", questID = 910001, level = 70,
+				isHeader = false, questLogIndex = 2 },
+			like { title = "A Heading That Starts Shut", isCollapsed = not open,
+				questLogIndex = 3 },
+		}
+		if open then
+			list[4] = like { title = "A Row Under It", questID = 910002, level = 80,
+				isHeader = false, questLogIndex = 4 }
+			list[5] = like { title = "A Hidden Task", questID = 910003, level = 80,
+				isHeader = false, isHidden = true, isTask = true, questLogIndex = 5 }
+		end
+		return list
+	end
 
 	local asked = 0
 	set("C_QuestLog", {
-		GetNumQuestLogEntries = function() asked = asked + 1 return 14 end,
-		GetInfo = function() asked = asked + 1 return { isHeader = true } end,
-		GetTitleForLogIndex = function() asked = asked + 1 return nil end,
-		GetQuestIDForLogIndex = function() asked = asked + 1 return nil end,
-		GetNumQuestObjectives = function() asked = asked + 1 return 0 end,
+		-- Only the first value is read; what else the client returns is not measured.
+		GetNumQuestLogEntries = function() asked = asked + 1 return #rows() end,
+		GetInfo = function(index) asked = asked + 1 return rows()[index] end,
+		GetQuestIDForLogIndex = function() return nil end,
+		GetNumQuestObjectives = function() return 0 end,
 	})
-
-	check("the namespace this client answers with is in front of the scanner",
-		type(_G.C_QuestLog) == "table" and _G.C_QuestLog.GetNumQuestLogEntries() == 14,
-		"C_QuestLog is not set up")
-	asked = 0
 
 	local stored = { meta = {}, payload = {} }
 	local midnight = setmetatable({}, { __index = FamilyPrivate })
@@ -3169,7 +3195,12 @@ print("the quest log on the fourth pretend client")
 	midnight.RegisterEvent = function() end
 	midnight.OnDatabaseReady = function() end
 	midnight.After = function() end
-	midnight.Debug = function(_, message) said = message end
+	midnight.Debug = function(_, message, ...)
+		local ok, text = pcall(string.format, message, ...)
+		said = ok and text or message
+	end
+	-- Names writes into the real saved variables; nothing here is about names.
+	midnight.Names = { LearnQuest = function() end, AreaFor = function() return nil end }
 	midnight.Database = {
 		Meta = function(_, k) return stored.meta[k] end,
 		SetMeta = function(_, k, fields)
@@ -3181,27 +3212,69 @@ print("the quest log on the fourth pretend client")
 	}
 
 	load("addons/Family/Scanners/Quests.lua", "Family", midnight)
+
+	-- **First half: neither count.** The newer one taken away as well, which is the client
+	-- step 2 found as far as this scanner could tell.
+	local count = _G.C_QuestLog.GetNumQuestLogEntries
+	_G.C_QuestLog.GetNumQuestLogEntries = nil
+	asked = 0
 	midnight.Quests:Scan()
 
-	-- Both halves, because storing an empty list and storing a zero beside it are two
-	-- separate ways of saying *nobody here has any quests* about a client nobody asked.
-	check("a quest scan on Midnight stores no payload",
+	check("a quest scan on a client with no count at all stores no payload",
 		stored.payload["Mirror-Midnight"] == nil)
-	check("and no count in the summary either, where reputations store a zero",
+	check("and no count in the summary either",
 		stored.meta["Mirror-Midnight"] == nil,
 		stored.meta["Mirror-Midnight"]
 			and ("questCount " .. tostring(stored.meta["Mirror-Midnight"].questCount)) or "none")
+	check("because it leaves before opening a single heading", #expanded == 0,
+		tostring(#expanded))
+	check("and it says so", said == "no quest log on this client", tostring(said))
+	check("without reading a row the newer way either", asked == 0, tostring(asked))
 
-	-- Which is not the same as the walk running and finding nothing. It never ran.
-	check("because it leaves before opening a single heading", expanded == 0,
-		tostring(expanded))
-	check("and it says so, by the one call it tested rather than by a reading",
-		said == "no quest log on this client", tostring(said))
+	-- **Second half: Midnight as it is.**
+	_G.C_QuestLog.GetNumQuestLogEntries = count
+	midnight.Quests:Scan()
 
-	-- And the namespace it already knows how to call sits there unasked, because both of the
-	-- places `Quests.lua` names `C_QuestLog` are inside the walk that did not start.
-	check("the modern namespace is never reached, though this file already calls it",
-		asked == 0, tostring(asked))
+	local payload = stored.payload["Mirror-Midnight"]
+	local entries = payload and payload.quests and payload.quests.entries or {}
+	local byTitle = {}
+	for _, entry in ipairs(entries) do byTitle[entry.title] = entry end
+
+	check("the log is read through C_QuestLog where the old count is absent",
+		#entries == 2, #entries .. " entr(ies)")
+	check("a quest keeps its title, level and heading",
+		byTitle["A Row Of This File's"] and byTitle["A Row Of This File's"].level == 70
+			and byTitle["A Row Of This File's"].category == "Dragonflight")
+	check("and one under a heading that started shut is found, because it was opened",
+		byTitle["A Row Under It"] and byTitle["A Row Under It"].category
+			== "A Heading That Starts Shut")
+	check("its id is the row's own, with no search through quest links",
+		byTitle["A Row Of This File's"] and byTitle["A Row Of This File's"].id == 910001
+			and byTitle["A Row Under It"] and byTitle["A Row Under It"].id == 910002
+			and linked == 0, "links asked: " .. linked)
+	check("a hidden row is not a quest in the log",
+		byTitle["A Hidden Task"] == nil)
+	check("the summary counts the two",
+		stored.meta["Mirror-Midnight"] and stored.meta["Mirror-Midnight"].questCount == 2,
+		stored.meta["Mirror-Midnight"]
+			and tostring(stored.meta["Mirror-Midnight"].questCount) or "no meta")
+	check("every heading was opened, and the one found shut is shut again",
+		expanded[1] == 0 and #shut == 1 and shut[1] == 3 and not open,
+		"opened " .. #expanded .. ", shut " .. table.concat(shut, ","))
+
+	-- **And a client with both counts reads the old one**, which is what keeps the three
+	-- Classic clients on the route they have always been measured on, should any of their
+	-- builds carry the namespace too. The old log here is empty and says so; the newer one
+	-- is the full log above, and is not asked.
+	_G.GetNumQuestLogEntries = function() return 0 end
+	asked = 0
+	midnight.Quests:Scan()
+	payload = stored.payload["Mirror-Midnight"]
+	check("where both counts answer, the old one is read and the newer one is not asked",
+		asked == 0 and payload and #payload.quests.entries == 0,
+		"newer asked " .. asked .. ", entries "
+			.. tostring(payload and #payload.quests.entries))
+	_G.GetNumQuestLogEntries = nil
 
 	for name, saved in pairs(was) do _G[name] = saved[1] end
 	Family.Capabilities:Detect()

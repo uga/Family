@@ -1,6 +1,6 @@
 name: the guard that tells an unreadable quest log from an empty one never fires
 file: addons/Family/Scanners/Quests.lua
 --- old
-	if type(GetNumQuestLogEntries) ~= "function" then
+	if modern == nil then
 --- new
-	if type(GetNumQuestLogEntries) == "not a function" then
+	if modern == "never" then

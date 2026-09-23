@@ -1,0 +1,14 @@
+name: the newer quest count is asked before the old one, on every client that has both
+file: addons/Family/Scanners/Quests.lua
+--- old
+	local count = tonumber((Family:TryCall(GetNumQuestLogEntries)))
+	if count then return count, false end
+
+	count = tonumber((Family:TryCall((_G.C_QuestLog or {}).GetNumQuestLogEntries)))
+	if count then return count, true end
+--- new
+	local count = tonumber((Family:TryCall((_G.C_QuestLog or {}).GetNumQuestLogEntries)))
+	if count then return count, true end
+
+	count = tonumber((Family:TryCall(GetNumQuestLogEntries)))
+	if count then return count, false end

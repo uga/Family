@@ -1,0 +1,6 @@
+name: a row the quest log hides is recorded as a quest
+file: addons/Family/Scanners/Quests.lua
+--- old
+	if info.isHidden == true then return nil end
+--- new
+	if info.isHidden == "never" then return nil end

@@ -2188,3 +2188,58 @@ drives that case directly, and the mutation's name says what it tests now. Two n
 `a-faction-count-of-nought-is-read-as-a-silence.mut` (the correction overdone). Harness 3850.
 
 Nothing is read from `C_Reputation` yet; that is (d).
+
+## 37. Step 3 (b): the quest log read through `C_QuestLog` (2026-09-23)
+
+The second of step 3's five. `Scanners/Quests.lua` now counts and reads the log by whichever route
+the client answers, and on Midnight that is `C_QuestLog.GetNumQuestLogEntries` and
+`C_QuestLog.GetInfo`.
+
+- **`countEntries`** asks the old global first and `C_QuestLog`'s count only where the old one
+  answers nothing, and says which answered. Where neither does, the scan leaves as before and says
+  *no quest log on this client*: the silence of §24 is kept, and it is now decided by asking the
+  count and not by looking the function up.
+- **`rowAt`** reads one row by the route the count came from. The old route is exactly the code it
+  was - `interpretTitle` on the packed returns, `isCollapsed` on those returns. The new route is
+  **`interpretInfo`**, which takes `title`, `level`, `isHeader`, `isCollapsed` and `questID` by
+  name from the row §27 measured.
+- **The id needs no search.** A newer row names its `questID`, so `questIDAt` - which hands
+  `GetQuestLink` each candidate return and reads the title back - is used only where the row gave
+  none. That is §27's *simplification the port gets for free*.
+- **A hidden row is left out.** `isHidden` is a measured key; what it means is read from its name,
+  and that is a decision and not a measurement.
+- The headings are opened with `ExpandQuestHeader(0)` and shut again by index with
+  `CollapseQuestHeader`, as on the other clients: both answer on Midnight (§24).
+
+**Why this is a route in the scanner and not an entry in `Capabilities.lua`.** CLAUDE.md asks that
+anything Retail has and Classic does not be data in the table and not a branch in a scanner. The
+table records what the **game** has - guild banks, achievements, weapon skills - and every client
+has a quest log. Which call reads it is a fact about the **build**, and the file's own thesis is
+that the build's surface decides nothing about the game. So the route is chosen the way
+`Scanners/Auctions.lua` chooses its own - both routes, neither looked up, each silent where it does
+not apply - and by asking with `TryCall`, never `if fn then`. **The old count goes first**, so the
+three Classic clients read by the route they were measured on even if one of their builds carries
+the namespace too; a check says so, because no Classic stub has both and the order was otherwise
+untested (its mutation survived until the check was written).
+
+### What the fixture is made of
+
+Row 1 is Druiduga's measured heading, all twenty-six keys. **Rows 2 to 5 are the harness's** - an
+ordinary quest, a heading that starts shut, a quest under it and a hidden task - built on the same
+keys, because none of them has been read on Midnight. So three things are still the game's to
+confirm, in the smoke row and not here:
+
+1. that an ordinary quest row carries the keys a heading does;
+2. what `C_QuestLog.GetNumQuestLogEntries` returns after its first value, which is the only one
+   read;
+3. that `ExpandQuestHeader(0)` opens every heading on this client as it does on the others.
+
+**Objectives are not driven.** `progressOf` is unchanged: `GetNumQuestLeaderBoards` by index, then
+`C_QuestLog.GetNumQuestObjectives` and `GetQuestObjectiveInfo` by id. All three answer on Midnight
+(§24); the fixture answers nought, and how far through a Midnight quest is will be seen in the game.
+
+The section of §24 keeps its silence as its first half, with the newer count taken away as well,
+and adds the log read the newer way: 13 checks, from 6. Mutations: the step-2 guard case moved to
+the new guard, and five new ones - the newer count never asked, a hidden row recorded, the row's id
+ignored for the search, headings put back by the old reader, and the newer count asked first.
+Harness 3857.
