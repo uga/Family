@@ -29,6 +29,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 4.4.0 — 2026-09-23
+
 ### Herbs and ore in the world
 
 - **Hovering a herb or a mining vein in the world says who in your family already has some.**
