@@ -3037,6 +3037,12 @@ could never have caught this. The new one was watched failing with the cut put b
 before it was kept - the same rule this repository states as making each check fail with the fix
 removed.
 
+**Built here 2026-09-23 (backlog 101).** `fields()` in `tools/FamilyProbe` prints the `WANTED` keys and
+then the rest in order up to `CUT = 30`, where it used to stop six past `WANTED`, and says how many it
+left out. The harness cuts `fields` out of the probe's file and holds it to Midnight's fourth case: an
+eighteen-key talent record keeps `talentID`. That check fails with the cut put back to twelve, which is
+the recorded mutation.
+
 #### What the second brief adds, 2026-09-20
 
 Alberto, describing the systems again in more detail. Three things in it are new to this section,

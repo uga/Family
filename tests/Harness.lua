@@ -41886,6 +41886,44 @@ print("instance lockouts, read, kept and drawn")
 end)()
 
 print()
+print("FamilyProbe prints a record whole")
+
+-- Backlog 101. The probe is a separate addon the harness does not load, so its `describe`, `CUT`,
+-- `WANTED` and `fields` are cut out of the file by their own first lines and run on their own.
+-- The case is Midnight's fourth: `GetTalentInfo` answers eighteen keys, the old cut printed twelve,
+-- and `talentID` - the one that identifies the talent - was among the six it dropped.
+;(function()
+	local f = io.open(ROOT .. "/tools/FamilyProbe/FamilyProbe.lua")
+	local text = f and f:read("*a") or ""
+	if f then f:close() end
+
+	local from = text:find("\nlocal function describe%(")
+	local to = text:find("\nlocal function elapsed%(")
+	local middle = from and to and text:sub(from, to) or ""
+	-- `packed`, `try` and `shape` sit between them and are left in: they define and do not run.
+	local chunk = middle ~= "" and loadstring(middle .. "\nreturn fields") or nil
+	local fields = chunk and chunk() or nil
+	check("the probe's fields() can be read out of its file", type(fields) == "function")
+	if type(fields) ~= "function" then return end
+
+	local talent = { talentID = 23105, spellID = 196884, name = "Feline Swiftness",
+		icon = 131128, selected = false, available = true, known = false,
+		maxRank = 1, rank = 0, tier = 1, column = 1, grantedByAura = false,
+		hasGoldBorder = false, isExceptional = false, meetsPrereq = true,
+		meetsPreviewPrereq = true, previewRank = 0, prereqsLevel = 10 }
+	local said = fields(talent)
+	check("an eighteen-key record keeps the key that identifies it",
+		said:find("talentID=23105", 1, true) ~= nil, said)
+	check("and says nothing was left out", said:find("more)", 1, true) == nil, said)
+
+	local wide = {}
+	for index = 1, 40 do wide[string.format("k%02d", index)] = index end
+	said = fields(wide)
+	check("a table wider than a record is still cut, and says by how much",
+		said:find("(+10 more)", 1, true) ~= nil, said)
+end)()
+
+print()
 print("a member's mark stays still when nothing changed")
 
 -- **Step 6 of the data-path review, on Alberto's yes to change what leaves the machine.** A login

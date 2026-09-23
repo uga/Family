@@ -7151,7 +7151,7 @@ global and are left alone.
 
 ---
 
-## 101. FamilyProbe's `fields()` stops reading at a fixed count that is too low
+## 101. FamilyProbe's `fields()` stops reading at a fixed count that is too low — DONE 2026-09-23
 
 **Agreed 2026-09-22** with the same session, and not built. The recommendation is in DATASOURCES
 (commits `3385176` and `ab76e2f`). `fields()` in `tools/FamilyProbe` stops at a count written in, so a
@@ -7159,3 +7159,8 @@ table with more fields than that is printed short and nothing says so.
 
 **To do:** raise the limit to a number that is read and printed, around 30, and keep `WANTED` as the
 note of the incident that found it.
+
+**Built 2026-09-23.** `CUT = 30` in `tools/FamilyProbe/FamilyProbe.lua`, with `WANTED` still printed first
+and the comment above it saying why it stays. Four harness checks run the probe's own `fields()`, cut out
+of its file, on an eighteen-key talent record and on a forty-key table. The mutation puts the cut back to
+twelve and is caught.
