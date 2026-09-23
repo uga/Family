@@ -7225,7 +7225,7 @@ twelve and is caught.
 
 ---
 
-## 102. Read one currency row on Mists, from a character holding any currency — waiting on Alberto
+## 102. Read one currency row on Mists, from a character holding any currency — CLOSED 2026-09-23, the list is never filled on Mists
 
 **Opened 2026-09-23**, out of backlog 95. That entry closed with this reading still owed and wrote the
 way to get it down (2026-09-21), but a question inside a DONE entry is not on anybody's list. Alberto
@@ -7259,4 +7259,27 @@ this build, which would mean Family's currency scanner records nothing on Mists 
 shape is not the question any more. FamilyProbe now asks the fragment currencies by id (384, 385, 393)
 and the archaeology calls (`GetNumArchaeologyRaces`, `GetArchaeologyRaceInfo`); one run on Luga says
 which of them holds the eleven.
+
+**Closed the same day, and not with the answer it asked for.** Luga answered the fragments by id and
+the list with 0 rows (DATASOURCES, *On Mists the currency list is empty*). There is no Mists row to
+read, so the short-row risk in the older route never reaches Mists; Burning Crusade's row was read again
+the same day, twelve full values with the id last. What it found instead is backlog 103.
+
+---
+
+## 103. Family records no currency on Mists
+
+**Found 2026-09-23** through backlog 102. `Scanners/Currencies.lua` walks the older currency list on
+Mists, and on Mists Classic that list is empty - there is no Currency tab to fill it - so every Mists
+character is recorded with no currency, and the Summary's Currencies set draws no column there.
+
+**The route that works, measured:** `C_CurrencyInfo.GetCurrencyInfo(id)` answers a full table for an id
+it is asked, with `quantity`, `maxQuantity` and `discovered`. What it needs is the ids: a generated table
+per build from wago's `CurrencyTypes`, the source §3 already uses for the recipe tables, asked one by
+one at login and on `CURRENCY_DISPLAY_UPDATE`, keeping those with `discovered` or a quantity above
+nought. Honor (1901) and the fragments (384 and the other races) are among them.
+
+**What has to be decided in building it:** which rows of `CurrencyTypes` are worth asking - it carries
+retired ones such as *Honor Deprecated 3* - and whether the id route replaces the list on Mists only or
+becomes the fallback wherever the list answers nothing.
 

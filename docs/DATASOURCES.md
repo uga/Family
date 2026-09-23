@@ -5463,6 +5463,23 @@ showed by drawing no progress at all. *N of M bosses* stays unsayable on Mists, 
 (backlog 93) claim none. **Still unread:** the same call on an Era lock, where column 11 said 8, 9 and
 15, and on a heroic.
 
+### On Mists the currency list is empty and a currency answers by its own id — read 2026-09-23
+
+Luga on `5.5.4`, holding eleven Dwarf fragments. `GetCurrencyListSize` answered **0**, and Alberto
+reports the Mists Classic character window has **no Currency tab** - so the list the older route walks
+is not filled on this build, and every earlier *nothing to walk* on Mists was this, not an empty purse.
+
+Asked by id instead, `C_CurrencyInfo.GetCurrencyInfo(384)` answered `name=Dwarf Archaeology Fragment
+quantity=11 maxQuantity=200 discovered=true`, and the Troll (385) and Fossil (393) rows answered
+`quantity=0 discovered=false`. `currencyID` is `0` on all three, as it was for honor: the id is the one
+asked with, never read back. The archaeology calls agree: `GetNumArchaeologyRaces` is 13 and
+`GetArchaeologyRaceInfo(13)` is `"Dwarf" 461831 52843 11 32 200` - the fourth value is the fragments
+held, the sixth the cap.
+
+**So a Mists currency is reachable only by asking its id**, which means a list of the ids to ask, per
+build, out of `CurrencyTypes` (wago, §3). `discovered` is what separates a currency this character has
+met from one it has not. Backlog 103.
+
 ### Honor on Mists is 1901, and the probe had been asking 392 — 2026-09-21
 
 Backlog 5 and the second half of 95 were both waiting on *a Mists character holding a currency*,
