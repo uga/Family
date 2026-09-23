@@ -1,0 +1,6 @@
+name: a client with no faction count answers an empty list, and the summary is told zero
+file: addons/Family/Scanners/Character.lua
+--- old
+	return readable and factions or nil
+--- new
+	return factions

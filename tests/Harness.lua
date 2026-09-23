@@ -3034,15 +3034,40 @@ print("reputations on the fourth pretend client")
 
 	load("addons/Family/Scanners/Character.lua", "Family", midnight)
 
+	-- **Nil and not an empty list**, since step 3 (a): the old route's count is absent, so
+	-- the client has said nothing about how many factions there are, and an empty list would
+	-- claim it said none.
 	local factions = midnight.Character:ReadReputations()
-	check("the reputation read answers a list and not an error",
-		type(factions) == "table", type(factions))
-	check("and on Midnight that list is empty", #factions == 0, tostring(#factions))
+	check("the reputation read answers nothing, and not an error or an empty list",
+		factions == nil, type(factions))
 	check("because nothing in the scanner asks C_Reputation", asked == 0, tostring(asked))
+
+	-- And the other half, so that the nil above is about the missing count and not about an
+	-- empty answer: a client whose count is there and says nought has been read, and none is
+	-- what it said.
+	-- Straight into `_G` and not through `set`, which would overwrite the saved original.
+	_G.GetNumFactions = function() return 0 end
+	local none = midnight.Character:ReadReputations()
+	check("while a count that answers nought is a reading, an empty list",
+		type(none) == "table" and #none == 0, type(none))
+
+	-- And what a scan does with that nought, which is `ScanNow`'s rule since the first commit
+	-- and not this client's: an empty reading does not replace a list already stored. Before
+	-- step 3 (a) the Midnight scan was what exercised it; the nil above has taken that case
+	-- away, so it is exercised here, on purpose.
+	stored.payload["Mirror-Midnight"] = { reputations = { { id = 72, name = "Stormwind" } } }
+	midnight.Character:Scan()
+	local kept = stored.payload["Mirror-Midnight"].reputations
+	check("and a scan that reads nought leaves the stored faction list alone",
+		type(kept) == "table" and #kept == 1 and kept[1].id == 72,
+		type(kept) == "table" and (#kept .. " row(s)") or type(kept))
+	stored.payload["Mirror-Midnight"], stored.meta["Mirror-Midnight"] = nil, nil
+	_G.GetNumFactions = nil
 
 	-- A record made on another client, put there first, because §26 found that the question
 	-- is not only what a Midnight scan writes but what it does to what was already known.
-	stored.meta["Mirror-Midnight"] = { specialisations = { "Swords", "Maces" } }
+	stored.meta["Mirror-Midnight"] = { specialisations = { "Swords", "Maces" },
+		reputationCount = 12 }
 
 	midnight.Character:Scan()
 	local payload = stored.payload["Mirror-Midnight"]
@@ -3072,14 +3097,14 @@ print("reputations on the fourth pretend client")
 		payload and payload.reputations == nil,
 		payload and payload.reputations and ("a list of " .. #payload.reputations) or "nothing")
 
-	-- And the one that is not an absence. `reputationCount = factions and #factions or nil`
-	-- hands `SetMeta` a **zero** here, because `#factions` is 0 and 0 is true in Lua. The
-	-- summary is fed from meta and nothing else, so on Midnight this character reads as
-	-- measured-and-liked-by-nobody rather than as never looked at. Checked as it is rather
-	-- than as it ought to be: the fix belongs to the commit that gives this client a route.
+	-- And the one that used to be a reading. `reputationCount = factions and #factions or
+	-- nil` handed `SetMeta` a **zero** here until step 3 (a), because `#factions` was 0 and 0
+	-- is true in Lua, and the summary - fed from meta and nothing else - read this character
+	-- as belonging to no faction. Now the read answers nil and the field is skipped, so the
+	-- twelve put there first survive, the way the specialisations do above.
 	local meta = stored.meta["Mirror-Midnight"]
-	check("the summary is told zero factions, which is a reading and not a silence",
-		meta and meta.reputationCount == 0, meta and tostring(meta.reputationCount) or "no meta")
+	check("the summary's faction count is left as it was, not told zero",
+		meta and meta.reputationCount == 12, meta and tostring(meta.reputationCount) or "no meta")
 
 	for name, saved in pairs(was) do _G[name] = saved[1] end
 	Family.Capabilities:Detect()

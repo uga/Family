@@ -155,7 +155,15 @@ function Character:ReadReputations()
 	end
 
 	local factions = {}
-	local count = Family:TryCall(GetNumFactions) or 0
+
+	-- **Nil where the client cannot say, and an empty list only where it said none.** A
+	-- client with no `GetNumFactions` - Midnight, whose factions are behind `C_Reputation` -
+	-- used to come out of here as an empty list, and the scan wrote `reputationCount = 0`
+	-- from it: a character read as belonging to no faction, when nobody had read them at
+	-- all. The same fault §26 of `docs/MIDNIGHT.md` found in the skill summary.
+	local count = tonumber((Family:TryCall(GetNumFactions)))
+	local readable = count ~= nil
+	count = count or 0
 
 	-- The header a faction sits under is the game's own grouping - Alliance, Steamwheedle
 	-- Cartel, the expansion's factions - and it is what anybody would want to sort by. It is
@@ -202,7 +210,7 @@ function Character:ReadReputations()
 		end
 	end
 
-	return factions
+	return readable and factions or nil
 end
 
 --------------------------------------------------------------------------------------------

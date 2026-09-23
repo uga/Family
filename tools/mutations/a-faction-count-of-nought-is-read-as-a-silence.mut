@@ -1,0 +1,6 @@
+name: a client whose faction count answers nought is treated as one that cannot say
+file: addons/Family/Scanners/Character.lua
+--- old
+	local readable = count ~= nil
+--- new
+	local readable = (count or 0) > 0

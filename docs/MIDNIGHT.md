@@ -2154,3 +2154,37 @@ sweep as §22; the thirteen combat reads answered in combat what they answered o
 profession's name through `C_TradeSkillUI.GetBaseProfessionInfo`; reputations through
 `C_Reputation.GetFactionDataByIndex`; and **the quest history through
 `C_QuestLog.GetAllCompletedQuestIDs`**, once its answer has been read.
+
+## 36. Step 3 (a): a faction list nobody could read is no longer a list of none (2026-09-23)
+
+The first of step 3's five, and the one §23 pinned wrong on purpose. `Character:ReadReputations`
+began with `local count = Family:TryCall(GetNumFactions) or 0`, so a client with no
+`GetNumFactions` came out as an empty list, and `ScanNow` wrote `reputationCount = #factions` from
+it: **0**, because 0 is true in Lua. The summary reads meta and nothing else, so on Midnight a
+character read as belonging to no faction, when nobody had read them at all.
+
+Now the count is kept as the client gave it, and **the read answers nil where the count is nil**,
+an empty list only where the count answered nought. The loop that puts collapsed headers back
+still runs either way; the answer is decided at the end and not by an early return. `ScanNow`
+already skips a nil (`reputationCount = factions and #factions or nil`, and `SetMeta` skips a nil
+field), so it needed no change. The one other caller, the timing diagnostic at
+`Family_UI/Slash.lua:2376`, already reads `factions and #factions or 0`.
+
+This is §29's rule again and the same fault §26 repaired in the skill summary: **a count written
+after a read that can fail has to know whether the read happened.**
+
+The harness section of §23 turns round. The read answers nil; a count answering nought still
+answers an empty list; and a `reputationCount` of twelve left by an earlier reading survives the
+Midnight scan, the way the specialisations do.
+
+**One case from step 2 stopped testing anything, and was kept by a new check rather than
+dropped.** `an-empty-reputation-list-is-recorded-as-a-reading.mut` removes the `#factions > 0` in
+`if factions and #factions > 0 then payload.reputations = factions end`, and the Midnight scan was
+what caught it; with the read now nil there, it survived. The guard still means something - on
+any client, a count of nought does not replace a list already stored - and it has been in the file
+since the first commit with no reason given, so it is not this branch's to change. The section now
+drives that case directly, and the mutation's name says what it tests now. Two new cases:
+`an-unreadable-faction-list-is-read-as-none.mut` (the old answer back) and
+`a-faction-count-of-nought-is-read-as-a-silence.mut` (the correction overdone). Harness 3850.
+
+Nothing is read from `C_Reputation` yet; that is (d).

@@ -1,4 +1,4 @@
-name: a character with no readable factions is recorded as having an empty list of them
+name: a faction count of nought replaces the stored list with an empty one
 file: addons/Family/Scanners/Character.lua
 --- old
 	if factions and #factions > 0 then payload.reputations = factions end
