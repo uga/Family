@@ -1,0 +1,8 @@
+name: the Summary tooltip offers ALT-click to a character with no profession to open
+file: addons/Family_UI/Summary.lua
+--- old
+	if meta and meta.skills and next(meta.skills) then
+		lines[#lines + 1] = { string.format(L["|cff888888ALT-click: %s|r"], L["Professions"]) }
+--- new
+	if true then
+		lines[#lines + 1] = { string.format(L["|cff888888ALT-click: %s|r"], L["Professions"]) }

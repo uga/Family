@@ -12926,6 +12926,48 @@ print("CTRL or ALT and a click on a Summary name goes to that character")
 	end
 
 	_G.IsControlKeyDown, _G.IsAltKeyDown = realCtrl, realAlt
+
+	-- **And the tooltip says so, in grey** - Alberto 2026-09-23. Read off the row's own
+	-- resolver, which is what the hover draws from, on two sets: Bags, where a member row had no
+	-- tooltip at all until the hint gave it one, and Miscellaneous, where it already had one and
+	-- the hint goes at the foot of it. A gesture offered only where a tooltip happened to exist
+	-- is the fault of 2026-09-17 again - the item click worked everywhere and was advertised in
+	-- one place.
+	local function hintsOn(setKey)
+		Family.UI:ShowTab("summary")
+		fireClick(Family.UI.__summarySets[setKey])
+		Family.UI:Refresh()
+		local withSkills, without
+		for _, f in ipairs(frames) do
+			if onScreen(f) and f.memberKey and f.__familyTooltip then
+				local meta = Family.UI:Meta(f.memberKey) or {}
+				local _, _, lines = f.__familyTooltip(f)
+				local text = ""
+				for _, line in ipairs(lines or {}) do text = text .. tostring(line[1]) .. " / " end
+				if meta.skills and next(meta.skills) then withSkills = withSkills or text
+				else without = without or text end
+			end
+		end
+		return withSkills, without
+	end
+
+	for _, setKey in ipairs { "bags", "misc" } do
+		local withSkills, without = hintsOn(setKey)
+		local ctrl = string.format(Family.L["|cff888888CTRL-click: %s|r"], Family.L["Possessions"])
+		local alt = string.format(Family.L["|cff888888ALT-click: %s|r"], Family.L["Professions"])
+		check("a member's tooltip on the " .. setKey .. " set offers both clicks, in grey",
+			withSkills ~= nil and withSkills:find(ctrl, 1, true) ~= nil
+				and withSkills:find(alt, 1, true) ~= nil, tostring(withSkills))
+
+		-- ALT is only offered where it goes somewhere: the click on a character with no
+		-- profession says so in chat, which is right for a click and wrong for a promise.
+		if without then
+			check("and one with no profession recorded is not offered ALT on the " .. setKey
+				.. " set", without:find(ctrl, 1, true) ~= nil
+					and without:find(alt, 1, true) == nil, without)
+		end
+	end
+
 	Family.UI:ShowTab("summary")
 end)()
 

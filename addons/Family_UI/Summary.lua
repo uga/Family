@@ -2180,6 +2180,23 @@ local function jumpedByModifier(row)
 	return true
 end
 
+-- **The two gestures, in grey, at the foot of a member's tooltip** - asked by Alberto
+-- 2026-09-23: *the tooltip on summary should hint ctrl and alt clicks in grey*.
+--
+-- The page names come from the tabs' own labels, so the hint says what is written on the
+-- tab a reader will land on, in their language, and a translator has only the frame to write.
+--
+-- **ALT is offered only where it goes somewhere.** A character with no profession recorded is
+-- not on the Professions page, and the click says so in chat rather than opening it on somebody
+-- else - which is right for a click and wrong for a promise. The tooltip does not make one.
+local function clickHints(lines, meta)
+	lines[#lines + 1] = { " " }
+	lines[#lines + 1] = { string.format(L["|cff888888CTRL-click: %s|r"], L["Possessions"]) }
+	if meta and meta.skills and next(meta.skills) then
+		lines[#lines + 1] = { string.format(L["|cff888888ALT-click: %s|r"], L["Professions"]) }
+	end
+end
+
 local function makeRow(parent)
 	local row = CreateFrame("Button", nil, parent)
 	row:SetHeight(ROW_HEIGHT)
@@ -2333,7 +2350,20 @@ local function makeRow(parent)
 		end
 
 		local rowKey = self.__places or self.__riding or self.__stock or self.__skills
-		if not rowKey then return nil end
+
+		-- **Every member row says what a modified click on it does**, including the sets that
+		-- had nothing else to put in a tooltip. The gesture works on all of them, and offering
+		-- it only where a tooltip happened to exist would be the fault of 2026-09-17 again: the
+		-- item click worked on every possessions block and was advertised only on the ones too
+		-- long to draw, so a family of four never met it.
+		if not rowKey then
+			if not self.memberKey then return nil end
+			local meta = UI:Meta(self.memberKey)
+			if not meta then return nil end
+			local lines = { { UI:NameOf(meta) } }
+			clickHints(lines, meta)
+			return nil, nil, lines
+		end
 
 		local shared = UI:Meta(rowKey)
 		if not shared then return nil end
@@ -2508,6 +2538,8 @@ local function makeRow(parent)
 		add(skillsOf(meta, true), L["Secondary Skills"])
 		add(weaponsOf(meta), L["Weapon Skills"])
 		end
+
+		if self.memberKey then clickHints(lines, shared) end
 
 		-- Nothing worth a tooltip: the name alone is what the row already says.
 		if #lines == 1 then return nil end

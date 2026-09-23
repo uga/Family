@@ -6995,6 +6995,18 @@ complaint Alberto made on 2026-09-17 about the item click, *advertised only wher
 and a hint in the row tooltip would answer it - but every Summary row would grow a tooltip line,
 which is a change to twelve lists nobody asked about, so it is left for asking.
 
+**Asked for the next day, and built** - *the tooltip on summary should hint ctrl and alt clicks in
+grey*. Every member row on every set says `CTRL-click: Possessions` and `ALT-click: Professions`
+at the foot of its tooltip, the page names taken from the tabs' own labels. Rows on sets that had
+no tooltip at all get one for it, since offering the gesture only where a tooltip already existed
+would repeat what the 2026-09-17 row describes. ALT is left off for a character with no profession
+recorded, because that click goes nowhere and says so in chat - right for a click, wrong for a
+promise.
+
+*"Complaint"* in the paragraph above is wrong, and it is left standing so the correction reads
+against it: on 2026-09-17 Alberto asked where the item gesture was active and wrote the line he
+wanted (`DECISIONS.md`, that date). Nobody objected to anything.
+
 ---
 
 ## 98. A vein whose ore this build cannot smelt is named as the nearest metal it can

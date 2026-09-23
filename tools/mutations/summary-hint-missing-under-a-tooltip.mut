@@ -1,0 +1,6 @@
+name: a Summary row that already had a tooltip says nothing about its clicks
+file: addons/Family_UI/Summary.lua
+--- old
+		if self.memberKey then clickHints(lines, shared) end
+--- new
+		if false then clickHints(lines, shared) end

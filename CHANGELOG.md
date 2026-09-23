@@ -54,7 +54,8 @@ is a decision rather than an afternoon of archaeology.
 - **Hold CTRL and click a character's name on the summary to open their possessions, or ALT to
   open their professions.** Every summary list, your own characters and a linked family's alike.
   A character who has never opened a profession window says so in chat instead of opening the
-  professions page on somebody else.
+  professions page on somebody else. Hovering a name says both, in grey, at the foot of its
+  tooltip.
 
 ### Achievements
 
