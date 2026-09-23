@@ -4039,8 +4039,11 @@ local function build(frame)
 					row.memberRealm = person.member.meta.realm
 					row.borrowed = person.borrowed and true or false
 
+					-- Forty characters, which is what the 300 pixels of this column hold:
+					-- the column was widened for *Hellfire Citadel: Ramparts  Heroic* and
+					-- this clip, at 24, went on cutting it at *Rampa...* (2026-09-23).
 					setCell(row, 1, index == 1
-						and ("  " .. UI:Shortened(tostring(group.label), 24)) or "",
+						and ("  " .. UI:Shortened(tostring(group.label), 40)) or "",
 						0.6, 0.8, 1)
 
 					local who, red, green, blue =

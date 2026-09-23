@@ -1,0 +1,6 @@
+name: a lockout's place is clipped at 24 characters again
+file: addons/Family_UI/Summary.lua
+--- old
+						and ("  " .. UI:Shortened(tostring(group.label), 40)) or "",
+--- new
+						and ("  " .. UI:Shortened(tostring(group.label), 24)) or "",

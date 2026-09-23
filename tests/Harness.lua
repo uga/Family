@@ -42236,6 +42236,10 @@ print("instance lockouts, read, kept and drawn")
 	member("Raiderb", { { key = "i469:9", instance = 469, difficulty = 9,
 		name = "Repaire de l'Aile noire", difficultyName = "40 joueurs", lockID = 135392442,
 		resetAt = time() + 3600, extended = true } })
+	-- A long place and its difficulty, which was cut to *Rampa...* on the page (2026-09-23).
+	member("Raidere", { { key = "i543:2", instance = 543, difficulty = 2,
+		name = "Hellfire Citadel: Ramparts", difficultyName = "Heroic", lockID = 239736411,
+		resetAt = time() + 7 * 3600 } })
 	member("Raiderc", { { key = "i409:9", instance = 409, difficulty = 9,
 		name = "Molten Core", difficultyName = "40 Player", lockID = 239723021,
 		resetAt = time() - 60 } })
@@ -42253,6 +42257,8 @@ print("instance lockouts, read, kept and drawn")
 	end
 	check("the lockout's place has room for a name and its difficulty",
 		(placeWidth or 0) >= 300, tostring(placeWidth))
+	check("and the name and its difficulty are drawn whole",
+		visibleText("Hellfire Citadel: Ramparts  Heroic"))
 
 	-- The section headings carry the column words, so the heading row above them carries none.
 	local worded = {}
@@ -42309,6 +42315,7 @@ print("instance lockouts, read, kept and drawn")
 	-- gone, what is left is one that has let go.
 	Family.Database:Forget("Raidera-FireMaw")
 	Family.Database:Forget("Raiderb-FireMaw")
+	Family.Database:Forget("Raidere-FireMaw")
 	Family.Database:SetMeta("Raiderd-FireMaw", { name = "Raiderd", realm = "Fire Maw",
 		classFile = "MAGE", level = 60, faction = "Alliance",
 		craftCooldowns = { { name = "Transmute: Arcanite", profession = 171,
