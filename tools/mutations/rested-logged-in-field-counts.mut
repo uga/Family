@@ -1,0 +1,8 @@
+name: time logged in out of doors fills the pool
+file: addons/Family/Scanners/Identity.lua
+--- old
+    if meta.resting then
+        gained = gained + level * (math.max(math.min(left, now) - read, 0)) / RESTING_SPAN
+--- new
+    if true then
+        gained = gained + level * (math.max(math.min(left, now) - read, 0)) / RESTING_SPAN

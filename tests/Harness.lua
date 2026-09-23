@@ -35656,6 +35656,83 @@ print("a linked family's columns on the summary")
 end)()
 
 print()
+print("rested experience worked forward from the reading")
+
+-- Backlog 94. The four measured cases, the ceiling, and the records the sum declines.
+;(function()
+	local I = Family.Identity
+	local now = 1790000000
+	local H = 3600
+	-- A level of 8,700, the one the inn and field rates were measured on: 435 a day-third.
+	local function meta(fields)
+		local m = { xpMax = 8700, rested = 8086, restedAt = now - 16 * H, lastSeen = now - 16 * H }
+		for k, v in pairs(fields) do m[k] = v end
+		return m
+	end
+
+	-- Ziofurgone's night: 8,086 out of doors, logged out for 60,406 seconds, read 8,312.
+	local field = meta({ resting = false, restedAt = now - 60406, lastSeen = now - 60406 })
+	local value, worked = I:RestedNow(field, now)
+	check("logged out out of doors fills at 5% of a level every 32 hours",
+		worked and value == 8314, tostring(value))
+
+	-- The inn: 8,510, logged out 6,842 seconds, read 8,612.
+	local inn = meta({ resting = true, rested = 8510, restedAt = now - 6842, lastSeen = now - 6842 })
+	value = I:RestedNow(inn, now)
+	check("where it was resting, every 8 hours", value == 8613, tostring(value))
+
+	-- Logged in out of doors for eight hours after the reading, then away eight: only the away
+	-- half counts.
+	local stayed = meta({ resting = false, restedAt = now - 16 * H, lastSeen = now - 8 * H })
+	value = I:RestedNow(stayed, now)
+	check("time logged in out of doors adds nothing",
+		value == 8086 + math.floor(435 / 4), tostring(value))
+
+	-- Logged in resting for eight hours, then away eight: both halves at the full rate.
+	local innIn = meta({ resting = true, restedAt = now - 16 * H, lastSeen = now - 8 * H })
+	value = I:RestedNow(innIn, now)
+	check("time logged in while resting counts in full", value == 8086 + 870, tostring(value))
+
+	-- A month away stops at a level and a half.
+	local month = meta({ resting = true, restedAt = now - 30 * 24 * H, lastSeen = now - 30 * 24 * H })
+	value = I:RestedNow(month, now)
+	check("and never past a level and a half", value == 13050, tostring(value))
+
+	-- Declined: a record from before the fields, a Pandaren, and a character at the cap.
+	local old = { xpMax = 8700, rested = 500, lastSeen = now - 48 * H }
+	value, worked = I:RestedNow(old, now)
+	check("a record with no reading time keeps its figure", value == 500 and not worked,
+		tostring(value))
+	-- Pandaren: twice the rate and twice the ceiling (Alberto's rule, 2026-09-23).
+	value = I:RestedNow(meta({ resting = false, raceID = 24 }), now)
+	check("a Pandaren fills twice as fast", value == 8086 + math.floor(2 * 435 * 16 / 32),
+		tostring(value))
+	value = I:RestedNow(meta({ resting = true, raceID = 25, rested = 20000,
+		restedAt = now - 30 * 24 * H, lastSeen = now - 30 * 24 * H }), now)
+	check("and holds up to three levels", value == 26100, tostring(value))
+	check("a character at the cap has none", I:RestedNow({ rested = 5 }, now) == nil)
+
+	-- The scan records when, and whether resting.
+	local heldResting = _G.IsResting
+	_G.IsResting = function() return false end
+	-- Cleared first: the scan merges, so a stamp left by an earlier scan would pass for this one.
+	Family.Database:SetMeta(Family:CurrentMember(),
+		{ restedAt = Family.CLEAR, resting = Family.CLEAR })
+	Family.Identity:Scan()
+	local own = Family.Database:Meta(Family:CurrentMember()) or {}
+	check("the scan records when rested was read and whether the character was resting",
+		own.xpMax ~= nil and type(own.restedAt) == "number" and own.resting == false,
+		tostring(own.restedAt) .. " " .. tostring(own.resting))
+	_G.IsResting = heldResting
+
+	-- And the column says it is an estimate, and the page says how.
+	local src = io.open(ROOT .. "/addons/Family_UI/Summary.lua"):read("*a")
+	check("the column says it is an estimate", src:find('L["Rest XP est."]', 1, true) ~= nil)
+	check("and the cell draws the worked figure",
+		src:find("Family.Identity:RestedNow(meta) or meta.rested", 1, true) ~= nil)
+end)()
+
+print()
 print("a currency filed under its name joins the column of its id")
 
 -- Reported from play 2026-09-23 on Burning Crusade: two *Honor Points* columns, Tossica's 1,428

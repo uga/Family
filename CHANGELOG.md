@@ -91,6 +91,12 @@ is a decision rather than an afternoon of archaeology.
   *712 at auction prices*, which left the reader to guess. The same on an item's tooltip.
 - **Realm headings on the summary show their whole name again.** They had been cut short, as in
   *Pyrewood Village...*.
+- **Rested experience keeps growing while a character is away.** The summary's column is now
+  *Rest XP est.*: the figure recorded at logout, plus 5% of a level for every 8 hours away where
+  the character was resting, or every 32 hours anywhere else, up to a level and a half.
+  Pandaren fill twice as fast, up to three levels. The page's note says so. Before, the column
+  showed the figure from the day the character was put away. A character not logged in since
+  this update shows its old figure until its next login.
 - **The summary's Last seen column gives the age alone**: *15d*, *3h*, *yesterday*, and *shared
   15d* for a linked family's character. It used to add *ago*, and *shared 15d ago* did not fit.
 - **The Cooldowns page has one line of headings per section**: *Crafting cooldowns*, *Member*,

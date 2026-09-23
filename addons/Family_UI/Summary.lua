@@ -236,7 +236,7 @@ local SETS = {
 		columns = {
 			{ key = "level",  label = L["Level"],     width = 50,  justify = "RIGHT" },
 			{ key = "ilvl",   label = L["Item lvl"],  width = 70,  justify = "RIGHT" },
-			{ key = "xp",     label = L["Rest XP"],   width = 86,  justify = "RIGHT" },
+			{ key = "xp",     label = L["Rest XP est."], width = 86,  justify = "RIGHT" },
 			-- **Eight pixels wider since 2026-09-16**, and the four the Rest XP column gave
 			-- up are part of them. A figure is drawn as places now (backlog 88, UI:MoneyCell)
 			-- and a place is held at the *widest* two digits of its unit, where the old single
@@ -1191,7 +1191,10 @@ CELL.xp = function(meta, key)
 	-- max level on exactly that reasoning.
 	if not meta.xpMax and UI:IsBorrowed(key) then return UNKNOWN end
 	if not meta.xpMax then return L["|cff9d9d9dmax level|r"] end
-	local rested = meta.rested or 0
+	-- **Worked forward from the reading**, not the reading itself (backlog 94): a character put
+	-- away a week ago has been filling all week. The column's name says it is an estimate and the
+	-- page's note says how it is worked out, which is what Alberto asked for.
+	local rested = Family.Identity:RestedNow(meta) or meta.rested or 0
 	if rested == 0 then return "0%" end
 	return string.format("|cff8080ff%d%%|r", math.floor(rested / meta.xpMax * 100))
 end
@@ -1542,7 +1545,7 @@ local SORT = {
 	name      = function(meta) return meta.name end,
 	level     = function(meta) return meta.level end,
 	ilvl      = function(meta) return meta.itemLevel end,
-	xp        = function(meta) return meta.rested end,
+	xp        = function(meta) return (Family.Identity:RestedNow(meta)) end,
 	money     = function(meta) return meta.money end,
 	played    = function(meta) return meta.played end,
 	seen      = function(meta) return meta.lastSeen end,
@@ -4295,6 +4298,10 @@ local function build(frame)
 					and string.format(L[" |cffffaa00%d more not shown - there is only so "
 						.. "much room in a row.|r|cff888888"], currenciesOmitted)
 					or ""))
+		elseif currentSet.id == "overview" then
+			note:SetText(string.format(L["|cff888888Rest XP est. is worked out from the last "
+				.. "reading: 5%% of a level every 8 hours where the character was resting, every "
+				.. "32 hours elsewhere, up to a level and a half. Pandaren twice all of that.|r"]))
 		else
 			note:SetText("")
 		end

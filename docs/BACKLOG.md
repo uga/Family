@@ -6122,7 +6122,19 @@ drawn as the client gives it and has never been seen.
 
 ---
 
-## 94. What a character's rested experience has grown to since they were put away
+## 94. What a character's rested experience has grown to since they were put away — DONE 2026-09-23, not yet seen in game
+
+**Built 2026-09-23.** Every scan that reads `rested` now also records `restedAt` and `resting`
+(`IsResting`), and `Identity:RestedNow` works the figure forward with the four measured cases
+below, from the reading to `lastSeen` (logged in) and from `lastSeen` to now (logged out), capped
+at a level and a half. Pandaren get twice the rate and twice the ceiling, by Alberto's rule
+(*10%/8 h in rest zones, 10%/32 h outside, cap 300%*), not by a reading. The Summary column is
+*Rest XP est.* and the Overview's note says how it is worked out. **Still unmeasured, and the
+build does not depend on it:** whether `GetXPExhaustion` answers during `PLAYER_LOGOUT`. A last
+reading is taken there if it is a number not below the one held; otherwise the last scan stands,
+and a character logged in resting until logout is still counted at the full rate for that time.
+A record from before this has no `restedAt` and shows its figure as read until the next login.
+
 
 **Asked 2026-09-20.** Family photographs rested experience at logout; a week later the Summary
 still shows the figure from that day, while the character has been filling up all along.

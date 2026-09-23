@@ -63,7 +63,7 @@ Family.locales.deDE = {
 	["%dd %dh"] = "%dT %dh",
 	["%dh %dm"] = "%dh %dm",
 	["AH seen"] = "AH ges.",  -- 10
-	["Rest XP"] = "Ruhe-EP",  -- 13
+	["Rest XP est."] = "Ruhe-EP ca.",  -- 13
 	["Activity"] = "Aktivität",  -- 14
 	["Item lvl"] = "Itemlvl",  -- 10
 	["Overview"] = "Übersicht",  -- 14
@@ -1032,4 +1032,5 @@ Family.locales.deDE = {
 	["%d items priced at vendor prices"] = "%d Gegenstände zu Händlerpreisen bewertet",
 	["%d item with no price"] = "%d Gegenstand ohne Preis",
 	["%d items with no price"] = "%d Gegenstände ohne Preis",
+	["|cff888888Rest XP est. is worked out from the last reading: 5%% of a level every 8 hours where the character was resting, every 32 hours elsewhere, up to a level and a half. Pandaren twice all of that.|r"] = "|cff888888Ruhe-EP ca. wird aus der letzten Messung berechnet: 5%% einer Stufe alle 8 Stunden, wo der Charakter ausgeruht war, alle 32 Stunden anderswo, bis zu anderthalb Stufen. Bei Pandaren alles doppelt.|r",
 }

@@ -80,7 +80,7 @@ local CATEGORIES = {
     -- Nothing widens by itself. A category nobody has granted sends nothing, so every link
     -- that exists keeps sending exactly what it sent yesterday until these are ticked.
     { id = "character",   label = L["Character"],
-      meta = { "played", "rested", "xpMax", "guild", "guildless", "hearth", "hearthID",
+      meta = { "played", "rested", "restedAt", "resting", "xpMax", "guild", "guildless", "hearth", "hearthID",
                -- Where they logged out, which belongs with the hearthstone rather than in a
                -- category of its own: both answer "where is this character", and somebody who
                -- will tell you one will tell you the other.
@@ -706,10 +706,12 @@ end
 -- what changes is that deciding costs a fold of a few hundred bytes rather than a decode and a
 -- walk of the whole record.
 -- **The meta fields that are moments, left out of a sending mark.** `lastSeen` (every write),
--- `played` and `rested` (they move with time played and time away), and every `*Seen` stamp
+-- `played` and `rested` (they move with time played and time away), `restedAt` (every scan that
+-- reads `rested`), and every `*Seen` stamp
 -- (`bagsSeen`, `bankSeen`, `questsSeen` and the rest: backlog 72's inventory).
 local function isClock(field)
     return field == "lastSeen" or field == "played" or field == "playedSeen" or field == "rested"
+        or field == "restedAt"
         or (type(field) == "string" and field:find("Seen$") ~= nil)
 end
 

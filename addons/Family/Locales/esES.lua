@@ -63,7 +63,7 @@ Family.locales.esES = {
 	["%dd %dh"] = "%dd %dh",
 	["%dh %dm"] = "%dh %dm",
 	["AH seen"] = "CS visto",  -- 10
-	["Rest XP"] = "PE desc.",  -- 13
+	["Rest XP est."] = "PE desc. est.",  -- 13
 	["Activity"] = "Actividad",  -- 14
 	["Item lvl"] = "Niv. obj.",  -- 10
 	["Overview"] = "Resumen",  -- 14
@@ -1032,4 +1032,5 @@ Family.locales.esES = {
 	["%d items priced at vendor prices"] = "%d objetos valorados a precios de vendedor",
 	["%d item with no price"] = "%d objeto sin precio",
 	["%d items with no price"] = "%d objetos sin precio",
+	["|cff888888Rest XP est. is worked out from the last reading: 5%% of a level every 8 hours where the character was resting, every 32 hours elsewhere, up to a level and a half. Pandaren twice all of that.|r"] = "|cff888888PE desc. est. se calcula desde la última lectura: 5%% de un nivel cada 8 horas donde el personaje descansaba, cada 32 horas en otro sitio, hasta un nivel y medio. Los pandaren, el doble de todo.|r",
 }

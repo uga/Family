@@ -63,7 +63,7 @@ Family.locales.ruRU = {
 	["%dd %dh"] = "%dд %dч",
 	["%dh %dm"] = "%dч %dм",
 	["AH seen"] = "АД зам.",  -- 10
-	["Rest XP"] = "Отдых",  -- 13
+	["Rest XP est."] = "Отдых, оц.",  -- 13
 	["Activity"] = "Активность",  -- 14
 	["Item lvl"] = "Ур. пред.",  -- 10
 	["Overview"] = "Обзор",  -- 14
@@ -1032,4 +1032,5 @@ Family.locales.ruRU = {
 	["%d items priced at vendor prices"] = "Предметов по ценам торговцев: %d",
 	["%d item with no price"] = "Предметов без цены: %d",
 	["%d items with no price"] = "Предметов без цены: %d",
+	["|cff888888Rest XP est. is worked out from the last reading: 5%% of a level every 8 hours where the character was resting, every 32 hours elsewhere, up to a level and a half. Pandaren twice all of that.|r"] = "|cff888888Отдых, оц. считается от последнего замера: 5%% уровня каждые 8 часов там, где персонаж отдыхал, каждые 32 часа в других местах, но не больше полутора уровней. Для пандаренов всё вдвое больше.|r",
 }

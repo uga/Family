@@ -75,6 +75,13 @@ function Identity:Scan(retrying)
 			fields.xp = xp
 			fields.xpMax = xpMax
 			fields.rested = Family:TryCall(GetXPExhaustion) or 0
+			-- When, and whether the character was resting, which is what the Summary works
+			-- the figure forward from (backlog 94, `Identity:RestedNow`). `IsResting` answers
+			-- false rather than nothing out of a rest area, so an absent answer is a client
+			-- that could not say and leaves the last one alone.
+			fields.restedAt = time()
+			local resting = Family:TryCall(IsResting)
+			if resting ~= nil then fields.resting = resting and true or false end
 		end
 	else
 		-- Cleared rather than left nil: SetMeta merges, so a nil would leave the last
@@ -82,6 +89,8 @@ function Identity:Scan(retrying)
 		fields.xp = Family.CLEAR
 		fields.xpMax = Family.CLEAR
 		fields.rested = Family.CLEAR
+		fields.restedAt = Family.CLEAR
+		fields.resting = Family.CLEAR
 	end
 
 	-- The id of the place, so that every reader is told it in their own words rather than in
@@ -301,9 +310,77 @@ Family.Identity = Identity
 Identity.RecordWhere = function() recordWhere() end
 
 --------------------------------------------------------------------------------------------
+-- Rested experience since the last reading
+--
+-- Backlog 94. The recorded figure is a photograph, and a character put away for a week has been
+-- filling all along. The rules are measured, in the backlog entry and DATASOURCES, not quoted:
+--
+--   logged in, resting                 5% of a level every 8 hours
+--   logged out where it was resting    5% of a level every 8 hours
+--   logged in anywhere else            nothing
+--   logged out anywhere else           5% of a level every 32 hours
+--
+-- and the pool never grows past a level and a half of the level it was read at. *Resting* is the
+-- client's own `IsResting`, never the name of a place. The absence starts at `lastSeen`, which is
+-- the last thing written for the character and, where the logout zone could be read, the logout
+-- itself; a borrowed record carries no `lastSeen` and starts at the reading.
+--------------------------------------------------------------------------------------------
+
+local RESTING_SPAN, AWAY_SPAN = 8 * 3600, 32 * 3600
+local SHARE, CEILING = 0.05, 1.5
+
+-- Pandaren, on the one build that has them, fill twice as fast and hold twice as much - Alberto,
+-- 2026-09-23: *10% every 8 hours in rest zones, 10% every 32 hours outside, cap 300% of a level;
+-- all figures 2X*. His rule, not a reading taken here.
+local DOUBLED_RACE = { [24] = true, [25] = true, [26] = true }
+
+-- The figure now, and whether it was worked out rather than read. The recorded figure alone where
+-- a record predates the fields the sum needs.
+function Identity:RestedNow(meta, now)
+    if type(meta) ~= "table" or type(meta.rested) ~= "number" then return nil, false end
+    local xpMax = tonumber(meta.xpMax)
+    if not xpMax or xpMax <= 0 then return nil, false end
+    if not meta.restedAt or meta.resting == nil then
+        return meta.rested, false
+    end
+
+    now = now or time()
+    local read = meta.restedAt
+    local left = math.max(meta.lastSeen or read, read)
+    local factor = DOUBLED_RACE[meta.raceID] and 2 or 1
+    local level = xpMax * SHARE * factor
+    local gained = 0
+
+    if meta.resting then
+        gained = gained + level * (math.max(math.min(left, now) - read, 0)) / RESTING_SPAN
+    end
+    if now > left then
+        gained = gained + level * (now - left) / (meta.resting and RESTING_SPAN or AWAY_SPAN)
+    end
+
+    local ceiling = xpMax * CEILING * factor
+    if gained <= 0 or meta.rested >= ceiling then return meta.rested, false end
+    return math.floor(math.min(meta.rested + gained, ceiling)), true
+end
+
+-- One more reading on the way out, where the client still answers. Whether `GetXPExhaustion`
+-- does during `PLAYER_LOGOUT` has not been measured (backlog 94); so a figure is taken only if it
+-- is a number and not below the one held, which an inn can only have raised since the last scan.
+local function recordRestedLeaving()
+    local key = Family:CurrentMember()
+    local meta = key and Family.Database:Meta(key)
+    if not (meta and meta.xpMax and type(meta.rested) == "number") then return end
+
+    local rested = Family:TryCall(GetXPExhaustion)
+    if type(rested) ~= "number" or rested < meta.rested then return end
+    Family.Database:SetMeta(key, { rested = rested, restedAt = time() })
+end
+
+--------------------------------------------------------------------------------------------
 
 Family:OnDatabaseReady("identity", function()
 	Family:RegisterEvent("PLAYER_LOGOUT", "identity.where", function()
+		recordRestedLeaving()
 		recordWhere()
 	end)
 

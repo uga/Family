@@ -1,0 +1,6 @@
+name: a Pandaren stops at a level and a half
+file: addons/Family/Scanners/Identity.lua
+--- old
+    local ceiling = xpMax * CEILING * factor
+--- new
+    local ceiling = xpMax * CEILING
