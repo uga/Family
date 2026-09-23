@@ -19,7 +19,7 @@ A shorter guide is inside the addon, on the **About** tab.
 7. [Character](#7-character)
 8. [On the game's own tooltips](#8-on-the-games-own-tooltips)
 9. [Searching the whole family](#9-searching-the-whole-family)
-10. [Crafting cooldowns](#10-crafting-cooldowns)
+10. [Cooldowns and lockouts](#10-cooldowns-and-lockouts)
 11. [Wide Family](#11-wide-family)
 12. [Guild share](#12-guild-share)
 13. [Options](#13-options)
@@ -100,7 +100,7 @@ showing and the window closes.
 **Hover the minimap button or the broker** to see the whole family at a glance: every realm,
 every member with their level, item level and money, and a total for all realms. Below that:
 
-- **Crafting cooldowns ready**, as a number of members. The **Crafting** section of the
+- **Crafting cooldowns ready**, as a number of members. The **Cooldowns** section of the
   Summary panel names them (§10).
 - **Mail expiring soon**, as a number of members with mail less than three days from being
   returned or destroyed. This always counts the whole family, whatever the bar is set to.
@@ -129,12 +129,12 @@ The buttons across the top choose which sections are shown:
 
 | Section | Columns |
 |---|---|
-| **Overview** | level, item level, rested experience, money, worth, time played, last seen |
+| **Overview** | level, item level, rested experience (estimated, see below), money, worth, time played, last seen |
 | **Bags** | free and total slots in the bags and in the bank, and when each was last seen |
 | **Activity** | mail, mail on its way from a family member, when it expires, auctions, bid value, buyout value, and when the mailbox and the auction house were last seen |
 | **Professions** | every profession known by each member and its rank, primaries first |
-| **Currencies** | honor, arena points, and anything else your game counts as a currency |
-| **Crafting** | every crafting cooldown in the family: ready, or when it comes back |
+| **Currencies** | honor, arena points, and anything else your game counts as a currency. Hover a heading cut short to read the whole name |
+| **Cooldowns** | every crafting cooldown in the family, ready or when it comes back, then every instance lockout (§10) |
 | **Miscellaneous** | race, guild, where they logged out, hearthstone location, riding skill, and world buffs stored in a Chronoboon |
 
 **A realm where you play both factions is split in two**, with a subtotal under each. The two
@@ -146,6 +146,9 @@ begin with, and you can switch either off.
 
 What you can click:
 
+- **A member's name, holding CTRL**, opens their Possessions panel, and **holding ALT** their
+  Professions panel, on every section. Hovering a name shows where they logged out, just under
+  it.
 - **A member on Professions** opens their Professions panel.
 - **A member on Bags** opens their Possessions panel.
 - **The Mail figure** on Activity unfolds that member's mail: one line per letter, with its
@@ -174,6 +177,15 @@ totals. Right-click does not remove a sibling. Untick them on the Wide Family pa
 that.
 
 **Class** is the colour of each member's name, and is spelled out in the row's tooltip.
+
+**Rest XP est.** is worked out, not read. Family records the figure when a character logs out,
+and adds what the game gives while they are away: 5% of a level every 8 hours where they were
+resting, in an inn or a city, and every 32 hours anywhere else, up to a level and a half.
+Pandaren get twice all of that. The character you are playing shows the game's own figure. A
+character not played since Family 4.4.0 shows the figure from their last login until they log
+in again.
+
+**Last seen** is how long ago: *3h*, *yesterday*, *15d*.
 
 Two things to know. Free and total slots count general storage, so they leave out quivers,
 soul bags and other special bags, because nothing else fits in them. The Currencies set shows
@@ -347,6 +359,10 @@ currency without a cap says *no cap*. Currencies exist from Burning Crusade on.
 with progress on each quest. **Click a quest to open it in the game's quest log**, when it
 belongs to the character you are playing. Only those rows light up on hover.
 
+**Hover a quest** to see which of your characters have already handed it in, or that nobody in
+the family has yet. Each character's history is read when they log in and after every quest
+they hand in.
+
 Reputations and Quests also have a **Whole family** view. For quests it lists each quest once,
 with the characters who have it underneath, the one furthest along first.
 
@@ -453,7 +469,7 @@ has no name yet, and Family says so.
 
 ---
 
-## 10. Crafting cooldowns
+## 10. Cooldowns and lockouts
 
 Transmutes, mooncloth, salt shakers and the rest.
 
@@ -872,7 +888,7 @@ current for the character you are playing. Everything else is as old as the last
 character was played, or that window was opened.
 
 **"A sibling's *Last seen* says *shared*."** A linked family does not send when its characters
-last played. A sibling's row shows *shared 2 h ago*: the age of what you hold from them. A date
+last played. A sibling's row shows *shared 2h*: the age of what you hold from them. A date
 with no word beside it belongs to your own family.
 
 **"A profession has no recipes."** Its window has not been opened since Family was installed,
@@ -937,8 +953,9 @@ everything that specialisation can ever learn. Family does not record those tabs
 **"The game stops for a moment when Wide Family is on."** Type `/family widetime`. For each
 link it says how many members are shared, how long it takes to work out which of them changed,
 and how many are unchanged. Unchanged characters are never sent. Where some have to be sent,
-it names them and says why: *changed since they were sent*, or *never confirmed as sent*. It
-sends nothing, and nobody has to be online.
+it names them and says why: *changed since they were sent*, or *never confirmed as sent*. For
+a changed character it says what changed, as in *Malachia (bags, zone)*, or *not known* where
+Family did not keep what it sent. It sends nothing, and nobody has to be online.
 
 **"Family is slow to load."** Type `/family status`. It says how long your saved data took to
 read at the loading screen, and how many characters it holds.
