@@ -7225,7 +7225,7 @@ twelve and is caught.
 
 ---
 
-## 102. Read one currency row on Mists, from a character holding any currency — waiting on Alberto
+## 102. Read one currency row on Mists, from a character holding any currency — PARKED 2026-09-23
 
 **Opened 2026-09-23**, out of backlog 95. That entry closed with this reading still owed and wrote the
 way to get it down (2026-09-21), but a question inside a DONE entry is not on anybody's list. Alberto
@@ -7289,4 +7289,8 @@ So Luga's empty list means Luga has no listed currency, not that the list is nev
 Nothing shows that Family misses a Mists currency, and the reading 102 asks for still needs a Mists
 character **with a Currency tab**. Whether Family should show archaeology fragments at all is a
 separate question nobody has asked.
+
+**Parked 2026-09-23.** Alberto has no Mists character that owns a listed currency - no honor, nothing
+behind a Currency tab. Nothing is wrong meanwhile: a character with no listed currency has nothing for
+the list to miss. The reading is taken the first time any Mists character earns one.
 
