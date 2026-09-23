@@ -119,21 +119,96 @@ end
 -- does, so it is expanded to read and put back afterwards.
 --------------------------------------------------------------------------------------------
 
-local function collapsedFactions()
+-- How many rows the faction list holds, and which route answered: the old count first, so the
+-- three clients it has always answered on read as they always did, and `C_Reputation`'s only
+-- where the old one says nothing. Nil where neither does, which is a list nobody could read and
+-- not a list of none.
+--
+-- Midnight is the client with only the second: `GetNumFactions`, `GetFactionInfo`,
+-- `ExpandFactionHeader` and `CollapseFactionHeader` are all `nil` there, and
+-- `C_Reputation.GetNumFactions()` answers 67 (`docs/MIDNIGHT.md` §23).
+local function countFactions()
+	local count = tonumber((Family:TryCall(GetNumFactions)))
+	if count then return count, false end
+
+	count = tonumber((Family:TryCall((_G.C_Reputation or {}).GetNumFactions)))
+	if count then return count, true end
+
+	return nil
+end
+
+-- One row, by the route the count came from, in the old call's terms.
+--
+-- The newer row is a table with its fields named, measured whole on Midnight 2026-09-23 - two
+-- headings, one of them carrying a standing of its own (§35). Its names map onto the old returns
+-- one for one: `reaction` is the standing, `currentReactionThreshold` and
+-- `nextReactionThreshold` are the ends of the bar and `currentStanding` is where on it, all three
+-- in the same absolute units the old call gave - *The Cartels of Undermine* reads 3000 between
+-- 3000 and 9000, Friendly at the start of it. **`isHeaderWithRep` is the old `hasRep`**, the flag
+-- that says a heading has a standing too.
+local function factionAt(index, modern)
+	if modern then
+		local row = Family:TryCall((_G.C_Reputation or {}).GetFactionDataByIndex, index)
+		if type(row) ~= "table" or type(row.name) ~= "string" or row.name == "" then
+			return nil
+		end
+		return {
+			name = row.name,
+			standing = row.reaction,
+			barMin = row.currentReactionThreshold,
+			barMax = row.nextReactionThreshold,
+			barValue = row.currentStanding,
+			isHeader = row.isHeader and true or false,
+			isCollapsed = row.isCollapsed and true or false,
+			hasRep = row.isHeaderWithRep and true or false,
+			factionID = row.factionID,
+		}
+	end
+
+	local name, _, standing, barMin, barMax, barValue, _, _, isHeader, isCollapsed, hasRep,
+		_, _, factionID = Family:TryCall(GetFactionInfo, index)
+	if not name then return nil end
+	return {
+		name = name, standing = standing, barMin = barMin, barMax = barMax,
+		barValue = barValue, isHeader = isHeader, isCollapsed = isCollapsed, hasRep = hasRep,
+		factionID = factionID,
+	}
+end
+
+-- Opening and shutting a heading, by the same route. On Midnight both live in `C_Reputation`,
+-- listed there by name; that they take the row's index as the old ones did is the game's to
+-- confirm.
+local function expandAt(index, modern)
+	if modern then
+		Family:TryCall((_G.C_Reputation or {}).ExpandFactionHeader, index)
+	else
+		Family:TryCall(ExpandFactionHeader, index)
+	end
+end
+
+local function collapseAt(index, modern)
+	if modern then
+		Family:TryCall((_G.C_Reputation or {}).CollapseFactionHeader, index)
+	else
+		Family:TryCall(CollapseFactionHeader, index)
+	end
+end
+
+local function collapsedFactions(modern)
 	local collapsed = {}
-	local count = Family:TryCall(GetNumFactions) or 0
+	local count = countFactions() or 0
 
 	for index = 1, count do
-		local name, _, _, _, _, _, _, _, isHeader, isCollapsed =
-			Family:TryCall(GetFactionInfo, index)
-		if name and isHeader and isCollapsed then collapsed[name] = true end
+		local row = factionAt(index, modern)
+		if row and row.isHeader and row.isCollapsed then collapsed[row.name] = true end
 	end
 
 	return collapsed
 end
 
 function Character:ReadReputations()
-	local wasCollapsed = collapsedFactions()
+	local _, modern = countFactions()
+	local wasCollapsed = collapsedFactions(modern)
 
 	-- Expanding is one header at a time here; there is no expand-all for factions. The list
 	-- grows underneath as each one opens, so the same index is looked at again after an
@@ -143,12 +218,11 @@ function Character:ReadReputations()
 	while guard < 500 do
 		guard = guard + 1
 
-		local name, _, _, _, _, _, _, _, isHeader, isCollapsed =
-			Family:TryCall(GetFactionInfo, index)
-		if not name then break end
+		local row = factionAt(index, modern)
+		if not row then break end
 
-		if isHeader and isCollapsed then
-			Family:TryCall(ExpandFactionHeader, index)
+		if row.isHeader and row.isCollapsed then
+			expandAt(index, modern)
 		else
 			index = index + 1
 		end
@@ -157,11 +231,11 @@ function Character:ReadReputations()
 	local factions = {}
 
 	-- **Nil where the client cannot say, and an empty list only where it said none.** A
-	-- client with no `GetNumFactions` - Midnight, whose factions are behind `C_Reputation` -
-	-- used to come out of here as an empty list, and the scan wrote `reputationCount = 0`
-	-- from it: a character read as belonging to no faction, when nobody had read them at
-	-- all. The same fault §26 of `docs/MIDNIGHT.md` found in the skill summary.
-	local count = tonumber((Family:TryCall(GetNumFactions)))
+	-- client with no faction count used to come out of here as an empty list, and the scan
+	-- wrote `reputationCount = 0` from it: a character read as belonging to no faction, when
+	-- nobody had read them at all. The same fault §26 of `docs/MIDNIGHT.md` found in the skill
+	-- summary.
+	local count = countFactions()
 	local readable = count ~= nil
 	count = count or 0
 
@@ -172,25 +246,24 @@ function Character:ReadReputations()
 	local category
 
 	for position = 1, count do
-		local name, _, standing, barMin, barMax, barValue, _, _, isHeader, _, hasRep,
-			_, _, factionID = Family:TryCall(GetFactionInfo, position)
+		local row = factionAt(position, modern)
 
-		if name and isHeader and not hasRep then
-			category = name
+		if row and row.isHeader and not row.hasRep then
+			category = row.name
 		end
 
 		-- Not "hasRep and not isHeader". hasRep is false for ordinary factions - it marks
 		-- the unusual case of a *header* that itself has a standing, which is why the
 		-- game's own code asks `not isHeader or hasRep`. Getting it backwards excluded
 		-- every normal faction and left the panel empty on a fully played character.
-		if name and ((not isHeader) or hasRep) then
+		if row and ((not row.isHeader) or row.hasRep) then
 			factions[#factions + 1] = {
-				id = tonumber(factionID),
-				name = name,
+				id = tonumber(row.factionID),
+				name = row.name,
 				category = category,
-				standing = tonumber(standing) or 0,
-				value = (tonumber(barValue) or 0) - (tonumber(barMin) or 0),
-				maximum = (tonumber(barMax) or 0) - (tonumber(barMin) or 0),
+				standing = tonumber(row.standing) or 0,
+				value = (tonumber(row.barValue) or 0) - (tonumber(row.barMin) or 0),
+				maximum = (tonumber(row.barMax) or 0) - (tonumber(row.barMin) or 0),
 			}
 		end
 	end
@@ -202,11 +275,11 @@ function Character:ReadReputations()
 	-- `while true` that stopped when the client ran out of factions, and a client that
 	-- answers for an index past the end never runs out - which is how this ended as
 	-- "script ran too long" rather than as a wrong answer.
-	local total = Family:TryCall(GetNumFactions) or 0
+	local total = countFactions() or 0
 	for position = total, 1, -1 do
-		local name, _, _, _, _, _, _, _, isHeader = Family:TryCall(GetFactionInfo, position)
-		if name and isHeader and wasCollapsed[name] then
-			Family:TryCall(CollapseFactionHeader, position)
+		local row = factionAt(position, modern)
+		if row and row.isHeader and wasCollapsed[row.name] then
+			collapseAt(position, modern)
 		end
 	end
 

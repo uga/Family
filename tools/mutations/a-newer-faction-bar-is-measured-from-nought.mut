@@ -1,0 +1,6 @@
+name: a newer faction's bar is measured from nought rather than from its own start
+file: addons/Family/Scanners/Character.lua
+--- old
+			barMin = row.currentReactionThreshold,
+--- new
+			barMin = 0,

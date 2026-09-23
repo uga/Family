@@ -1,0 +1,6 @@
+name: the faction list is counted only by the old global, so Midnight's list is never read
+file: addons/Family/Scanners/Character.lua
+--- old
+	count = tonumber((Family:TryCall((_G.C_Reputation or {}).GetNumFactions)))
+--- new
+	count = nil

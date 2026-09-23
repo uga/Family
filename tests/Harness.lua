@@ -2934,16 +2934,14 @@ end)()
 print()
 print("reputations on the fourth pretend client")
 
--- The one domain Family already ships whose Midnight route does not exist. Measured in the run
--- of 2026-09-20 (`Ahia-Chamber of Aspects`, build 69875): `GetNumFactions`, `GetFactionInfo`,
--- `ExpandFactionHeader` and `CollapseFactionHeader` are all `nil`; `UPDATE_FACTION` still
--- registers, so the scan is still asked for; and `C_Reputation.GetNumFactions()` answers **67**
--- beside `GetFactionDataByIndex(1)` answering a table of seventeen keys. `Character.lua` names
--- `C_Item` and no `C_Reputation` anywhere, so the scanner asks a question this client cannot
--- hear, and the character who is liked by sixty-seven factions is recorded as liked by none.
---
--- Nothing is fixed here. This section is the measurement that the gap is real, taken by running
--- the scanner rather than by grepping it, and step 3 is what turns it red.
+-- Measured in the run of 2026-09-20 (`Ahia-Chamber of Aspects`, build 69875): `GetNumFactions`,
+-- `GetFactionInfo`, `ExpandFactionHeader` and `CollapseFactionHeader` are all `nil`;
+-- `UPDATE_FACTION` still registers, so the scan is still asked for; and
+-- `C_Reputation.GetNumFactions()` answers **67** beside `GetFactionDataByIndex` answering a table
+-- of seventeen keys. Step 2 drove the scanner here and found it asking a question this client
+-- cannot hear. Step 3 (a) stopped that silence being written as a zero, and step 3 (d) gave the
+-- scanner `C_Reputation`: this section is now the list read the newer way, with the silence
+-- kept for a client that answers neither count.
 ;(function()
 	local was = {}
 	local function set(name, value)
@@ -2971,44 +2969,85 @@ print("reputations on the fourth pretend client")
 	set("GetSpellInfo", nil)
 	set("GetSpellSubtext", nil)
 
-	-- What the client does answer, and a count of who asked. Both rows are the run's own and
-	-- carry **all seventeen keys**. They were twelve until 2026-09-22: the answer has
-	-- seventeen, the probe's old cut stopped at twelve, and the five it hid were
-	-- `isHeaderWithRep`, `isWatched`, `name`, `nextReactionThreshold` and `reaction` - which
-	-- is to say the name, the standing and the bar, the whole of what a reputation is
-	-- (L-210). The wider run answered them and they are here rather than invented (L-209).
+	-- The list, with its headings opening and shutting as the client's do.
 	--
-	-- `isHeaderWithRep` is worth naming: it is the modern spelling of the old call's
-	-- `hasRep`, the flag `Character.lua` reads as *a header that itself has a standing*,
-	-- and getting that one backwards once emptied the panel on a fully played character.
-	local ROWS = {
-		[1] = { atWarWith = false, canSetInactive = false, canToggleAtWar = false,
-			currentReactionThreshold = 0, currentStanding = 0, description = "",
-			factionID = 2569, hasBonusRepGain = false, isAccountWide = false,
-			isChild = false, isCollapsed = true, isHeader = true,
-			isHeaderWithRep = false, isWatched = false, name = "The War Within",
-			nextReactionThreshold = 3000, reaction = 4 },
-		[2] = { atWarWith = false, canSetInactive = false, canToggleAtWar = false,
-			currentReactionThreshold = 0, currentStanding = 0, description = "",
-			factionID = 2506, hasBonusRepGain = false, isAccountWide = false,
-			isChild = false, isCollapsed = true, isHeader = true,
-			isHeaderWithRep = false, isWatched = false, name = "Dragonflight",
-			nextReactionThreshold = 3000, reaction = 4 },
-	}
+	-- **Three rows are measured, with all seventeen keys.** *The War Within* (2569) and
+	-- *Dragonflight* (2506) are Druiduga's two headings of 2026-09-20, both shut; *The Cartels
+	-- of Undermine* (2653) is Ahia's index 2 of 2026-09-23, a heading with a standing of its own
+	-- (`isHeaderWithRep`, the old `hasRep`), account-wide, Friendly at 3000 between 3000 and
+	-- 9000. They were twelve keys until 2026-09-22, when the probe's cut hid the name, the
+	-- standing and the bar (L-210).
+	--
+	-- **Two rows are this file's**: no ordinary faction row has been read on Midnight. They
+	-- carry the same keys, with ids nothing else here uses.
+	local WW = { atWarWith = false, canSetInactive = false, canToggleAtWar = false,
+		currentReactionThreshold = 0, currentStanding = 0, description = "",
+		factionID = 2569, hasBonusRepGain = false, isAccountWide = false,
+		isChild = false, isCollapsed = true, isHeader = true,
+		isHeaderWithRep = false, isWatched = false, name = "The War Within",
+		nextReactionThreshold = 3000, reaction = 4 }
+	local DF = { atWarWith = false, canSetInactive = false, canToggleAtWar = false,
+		currentReactionThreshold = 0, currentStanding = 0, description = "",
+		factionID = 2506, hasBonusRepGain = false, isAccountWide = false,
+		isChild = false, isCollapsed = true, isHeader = true,
+		isHeaderWithRep = false, isWatched = false, name = "Dragonflight",
+		nextReactionThreshold = 3000, reaction = 4 }
+	local CARTELS = { atWarWith = false, canSetInactive = false, canToggleAtWar = false,
+		currentReactionThreshold = 3000, currentStanding = 3000,
+		description = "Undermine isn't like other towns. There ...", factionID = 2653,
+		hasBonusRepGain = false, isAccountWide = true, isChild = true, isCollapsed = false,
+		isHeader = true, isHeaderWithRep = true, isWatched = false,
+		name = "The Cartels of Undermine", nextReactionThreshold = 9000, reaction = 5 }
+	local function like(fields)
+		local row = {}
+		for k, v in pairs(WW) do row[k] = v end
+		for k, v in pairs(fields) do row[k] = v end
+		return row
+	end
+	local ORDINARY = like { factionID = 990001, name = "A Faction Of This File's",
+		isHeader = false, isCollapsed = false, isChild = true, reaction = 6,
+		currentReactionThreshold = 9000, currentStanding = 12000, nextReactionThreshold = 21000 }
+	local ANOTHER = like { factionID = 990002, name = "Another Of This File's",
+		isHeader = false, isCollapsed = false, isChild = true, reaction = 4,
+		currentReactionThreshold = 0, currentStanding = 1500, nextReactionThreshold = 3000 }
+
+	local shutNow = { [WW.name] = true, [DF.name] = true }
+	local opened, shut = {}, {}
+	local function rows()
+		local list = {}
+		local function add(row, isShut)
+			local copy = {}
+			for k, v in pairs(row) do copy[k] = v end
+			if copy.isHeader then copy.isCollapsed = isShut and true or false end
+			list[#list + 1] = copy
+		end
+		add(WW, shutNow[WW.name])
+		if not shutNow[WW.name] then add(CARTELS) add(ORDINARY) end
+		add(DF, shutNow[DF.name])
+		if not shutNow[DF.name] then add(ANOTHER) end
+		return list
+	end
+
 	local asked = 0
 	set("C_Reputation", {
-		GetNumFactions = function() asked = asked + 1 return 67 end,
-		GetFactionDataByIndex = function(index)
-			asked = asked + 1
-			return ROWS[index]
+		GetNumFactions = function() asked = asked + 1 return #rows() end,
+		GetFactionDataByIndex = function(index) asked = asked + 1 return rows()[index] end,
+		ExpandFactionHeader = function(index)
+			local row = rows()[index]
+			opened[#opened + 1] = row and row.name
+			if row then shutNow[row.name] = nil end
+		end,
+		CollapseFactionHeader = function(index)
+			local row = rows()[index]
+			shut[#shut + 1] = row and row.name
+			if row then shutNow[row.name] = true end
 		end,
 	})
 
-	-- The canary before the verdict: a section that reports "Family asked nobody" is worthless
-	-- if the namespace it was meant to ask is not there to be asked (L-202).
+	-- The canary before the verdict: a section that reports anything about the newer route is
+	-- worthless if the namespace is not there to be asked (L-202).
 	check("the namespace this client answers with is in front of the scanner",
-		type(_G.C_Reputation) == "table"
-			and _G.C_Reputation.GetNumFactions() == 67
+		type(_G.C_Reputation) == "table" and _G.C_Reputation.GetNumFactions() == 2
 			and _G.C_Reputation.GetFactionDataByIndex(1).name == "The War Within",
 		"C_Reputation is not set up")
 	asked = 0
@@ -3034,27 +3073,65 @@ print("reputations on the fourth pretend client")
 
 	load("addons/Family/Scanners/Character.lua", "Family", midnight)
 
-	-- **Nil and not an empty list**, since step 3 (a): the old route's count is absent, so
-	-- the client has said nothing about how many factions there are, and an empty list would
-	-- claim it said none.
+	-- **The list, read the newer way.**
 	local factions = midnight.Character:ReadReputations()
-	check("the reputation read answers nothing, and not an error or an empty list",
-		factions == nil, type(factions))
-	check("because nothing in the scanner asks C_Reputation", asked == 0, tostring(asked))
+	local byName = {}
+	for _, faction in ipairs(factions or {}) do byName[faction.name] = faction end
 
-	-- And the other half, so that the nil above is about the missing count and not about an
-	-- empty answer: a client whose count is there and says nought has been read, and none is
-	-- what it said.
+	check("the faction list is read through C_Reputation where the old count is absent",
+		factions and #factions == 3, factions and (#factions .. " faction(s)") or "nil")
+	check("a heading with a standing of its own is a faction, and one without is a heading",
+		byName["The Cartels of Undermine"] ~= nil and byName["The War Within"] == nil
+			and byName["Dragonflight"] == nil)
+	check("a faction under a shut heading is found, because the heading was opened",
+		byName["Another Of This File's"] and byName["Another Of This File's"].category
+			== "Dragonflight")
+	check("and one under a heading with a standing files under the heading above it",
+		byName["A Faction Of This File's"] and byName["A Faction Of This File's"].category
+			== "The War Within")
+
+	-- The measured row, whole: Friendly, at the start of a bar six thousand long.
+	local cartels = byName["The Cartels of Undermine"]
+	check("the measured row reads as its id, its standing and where it is on the bar",
+		cartels and cartels.id == 2653 and cartels.standing == 5 and cartels.value == 0
+			and cartels.maximum == 6000,
+		cartels and (tostring(cartels.standing) .. " " .. tostring(cartels.value) .. "/"
+			.. tostring(cartels.maximum)) or "missing")
+	local ordinary = byName["A Faction Of This File's"]
+	check("and a bar partly filled is measured from its own start",
+		ordinary and ordinary.value == 3000 and ordinary.maximum == 12000,
+		ordinary and (tostring(ordinary.value) .. "/" .. tostring(ordinary.maximum)) or "missing")
+
+	check("both shut headings were opened, and both are shut again, last first",
+		#opened == 2 and #shut == 2 and shut[1] == "Dragonflight"
+			and shut[2] == "The War Within" and shutNow["The War Within"]
+			and shutNow["Dragonflight"],
+		"opened " .. #opened .. ", shut " .. table.concat(shut, ", "))
+
+	-- **Neither count.** The newer one taken away too, which is the client step 2 found as far
+	-- as this scanner could tell: nothing was read, so nothing is claimed.
+	local count = _G.C_Reputation.GetNumFactions
+	_G.C_Reputation.GetNumFactions = nil
+	asked = 0
+	check("with neither count, the read answers nothing, not an empty list",
+		midnight.Character:ReadReputations() == nil)
+	check("and asks for no row either way", asked == 0, tostring(asked))
+	_G.C_Reputation.GetNumFactions = count
+
+	-- **Both counts.** The old one is read and the newer one is not asked, which is what keeps
+	-- the three Classic clients on the route they have been measured on. The old count answers
+	-- nought here, which is also the other half of the nil above: a count that says none has
+	-- been read, and none is what it said.
 	-- Straight into `_G` and not through `set`, which would overwrite the saved original.
 	_G.GetNumFactions = function() return 0 end
+	asked = 0
 	local none = midnight.Character:ReadReputations()
-	check("while a count that answers nought is a reading, an empty list",
-		type(none) == "table" and #none == 0, type(none))
+	check("where both counts answer, the old one is read and the newer one is not asked",
+		type(none) == "table" and #none == 0 and asked == 0,
+		type(none) .. ", newer asked " .. asked)
 
 	-- And what a scan does with that nought, which is `ScanNow`'s rule since the first commit
-	-- and not this client's: an empty reading does not replace a list already stored. Before
-	-- step 3 (a) the Midnight scan was what exercised it; the nil above has taken that case
-	-- away, so it is exercised here, on purpose.
+	-- and not this client's: an empty reading does not replace a list already stored.
 	stored.payload["Mirror-Midnight"] = { reputations = { { id = 72, name = "Stormwind" } } }
 	midnight.Character:Scan()
 	local kept = stored.payload["Mirror-Midnight"].reputations
@@ -3064,16 +3141,16 @@ print("reputations on the fourth pretend client")
 	stored.payload["Mirror-Midnight"], stored.meta["Mirror-Midnight"] = nil, nil
 	_G.GetNumFactions = nil
 
-	-- A record made on another client, put there first, because §26 found that the question
-	-- is not only what a Midnight scan writes but what it does to what was already known.
+	-- **The whole scan, on Midnight as it is.** A record made on another client is put there
+	-- first, because §26 found that the question is not only what a Midnight scan writes but
+	-- what it does to what was already known.
 	stored.meta["Mirror-Midnight"] = { specialisations = { "Swords", "Maces" },
 		reputationCount = 12 }
 
 	midnight.Character:Scan()
 	local payload = stored.payload["Mirror-Midnight"]
 	-- `GetInventoryItemLink`, `GetInventoryItemID` and `GetItemInfo` all answer on this
-	-- client, so this half of the file needs nothing: it is the only one of the three that
-	-- works today.
+	-- client, so this half of the file needs nothing.
 	check("a whole character scan still records the equipment",
 		payload and payload.equipment ~= nil)
 
@@ -3084,7 +3161,6 @@ print("reputations on the fourth pretend client")
 		payload and payload.spells == nil,
 		payload and payload.spells and (#payload.spells .. " schools") or "nothing")
 
-	-- The field that would have been the professions fault a second time, and is not.
 	-- `specialisations = book and (branches or Family.CLEAR) or nil` is nil when the book is
 	-- nil, and `SetMeta` skips a nil field - so what another client learnt is left alone
 	-- rather than cleared. Exactly the case §26 found going the other way.
@@ -3093,18 +3169,13 @@ print("reputations on the fourth pretend client")
 		carried and type(carried.specialisations) == "table"
 			and carried.specialisations[1] == "Swords",
 		carried and tostring(carried.specialisations) or "no meta")
-	check("and records no reputations at all rather than an empty list",
-		payload and payload.reputations == nil,
-		payload and payload.reputations and ("a list of " .. #payload.reputations) or "nothing")
 
-	-- And the one that used to be a reading. `reputationCount = factions and #factions or
-	-- nil` handed `SetMeta` a **zero** here until step 3 (a), because `#factions` was 0 and 0
-	-- is true in Lua, and the summary - fed from meta and nothing else - read this character
-	-- as belonging to no faction. Now the read answers nil and the field is skipped, so the
-	-- twelve put there first survive, the way the specialisations do above.
+	check("and records the three factions it read",
+		payload and payload.reputations and #payload.reputations == 3,
+		payload and payload.reputations and ("a list of " .. #payload.reputations) or "nothing")
 	local meta = stored.meta["Mirror-Midnight"]
-	check("the summary's faction count is left as it was, not told zero",
-		meta and meta.reputationCount == 12, meta and tostring(meta.reputationCount) or "no meta")
+	check("and the summary is told three, a reading, over the twelve from before",
+		meta and meta.reputationCount == 3, meta and tostring(meta.reputationCount) or "no meta")
 
 	for name, saved in pairs(was) do _G[name] = saved[1] end
 	Family.Capabilities:Detect()

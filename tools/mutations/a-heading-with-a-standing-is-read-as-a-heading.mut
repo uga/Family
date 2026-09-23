@@ -1,0 +1,6 @@
+name: a newer heading with a standing of its own is read as a bare heading and dropped
+file: addons/Family/Scanners/Character.lua
+--- old
+			hasRep = row.isHeaderWithRep and true or false,
+--- new
+			hasRep = false,

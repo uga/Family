@@ -1,0 +1,14 @@
+name: the newer faction count is asked before the old one, on every client that has both
+file: addons/Family/Scanners/Character.lua
+--- old
+	local count = tonumber((Family:TryCall(GetNumFactions)))
+	if count then return count, false end
+
+	count = tonumber((Family:TryCall((_G.C_Reputation or {}).GetNumFactions)))
+	if count then return count, true end
+--- new
+	local count = tonumber((Family:TryCall((_G.C_Reputation or {}).GetNumFactions)))
+	if count then return count, true end
+
+	count = tonumber((Family:TryCall(GetNumFactions)))
+	if count then return count, false end

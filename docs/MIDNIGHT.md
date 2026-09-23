@@ -2272,3 +2272,56 @@ rank - are not read, and the one-rank-per-profession model stays as it is. Wheth
 Two mutations - the second call never made, and the empty name taken - and the step-2 case
 `a-nameless-recipe-list-is-recorded-anyway.mut` is still caught, now by the shut-window check.
 Harness 3858.
+
+## 39. Step 3 (d): reputations read through `C_Reputation` (2026-09-23)
+
+The fourth of step 3's five, and the domain step 2 found asking a question this client cannot hear.
+`Character:ReadReputations` now works the way §37 made the quest log work:
+
+- **`countFactions`** asks `GetNumFactions` first and `C_Reputation.GetNumFactions` only where the
+  old one answers nothing. Neither answering is still nil - §36's silence, unchanged.
+- **`factionAt`** reads a row by the route the count came from and hands back the old call's
+  terms, so everything below it - the category carried down the list, the `not isHeader or hasRep`
+  rule, the bar arithmetic - is the code it was. The newer row maps one for one: `reaction` is the
+  standing, `currentReactionThreshold` and `nextReactionThreshold` the ends of the bar,
+  `currentStanding` the place on it, **`isHeaderWithRep` the old `hasRep`**.
+- **`expandAt` and `collapseAt`** open and shut headings through `C_Reputation` on that route.
+  Midnight has neither global; both functions are listed in the namespace (§35).
+
+**The mapping rests on two measured rows, and one of them tests it.** *The Cartels of Undermine*,
+Ahia's index 2, is a heading with a standing of its own: `reaction` 5, `currentStanding` 3000
+between thresholds 3000 and 9000. Read the old way that is Friendly, nought of six thousand, which
+is where a character who has just reached Friendly stands - the thresholds are absolute, as the
+old call's bar was, and not relative to the standing. That a heading like this is a faction and
+*The War Within* above it is only a heading is exactly the `hasRep` rule, now fed by the newer
+name.
+
+### What the fixture is made of
+
+Three rows are measured: Druiduga's two headings, both shut, and Ahia's Cartels, all seventeen
+keys each. **Two ordinary faction rows are the harness's** - no ordinary faction has been read on
+Midnight - built on the same keys. The list opens and shuts as the client's does, so the section
+checks that both shut headings were opened, that everything under them was found and filed under
+the right heading, and that both were shut again, last first.
+
+Checked beside it: neither count answers nil and asks for no row; where both counts answer the old
+one is read and the newer is not asked (no Classic stub carries both, so this is the check that
+holds the three Classic clients on their route); and a whole scan records the three factions and
+tells the summary three over the twelve left by an earlier reading.
+
+### Not done, and written down so it is not mistaken for done
+
+- **`isAccountWide` is not recorded.** The Cartels answer `true`, so the field is live on this
+  client, and a family view that shows the same account-wide standing on every character is a
+  display question. Nothing stored changes shape in this slice.
+- **Renown, paragon and the major factions are not read.** `C_MajorFactions` lists 29 ids and the
+  Cartels are one of them (§35); their standing is read here as the row gives it and not as
+  renown.
+- **`AreLegacyReputationsShown`** exists, so the list may hide older factions behind a setting;
+  what the list holds with it off is the game's to show.
+- That `ExpandFactionHeader` and `CollapseFactionHeader` take the row's index, as the old ones did,
+  is the smoke row's to confirm.
+
+Six new mutations - the newer count never asked, `isHeaderWithRep` ignored, the bar measured from
+nought, headings opened or shut through the old globals, and the newer count asked first - and
+§36's three still caught. Harness 3865.

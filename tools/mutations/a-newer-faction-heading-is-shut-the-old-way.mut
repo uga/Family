@@ -1,0 +1,6 @@
+name: an opened faction heading is shut again through the old global, which Midnight lacks
+file: addons/Family/Scanners/Character.lua
+--- old
+		Family:TryCall((_G.C_Reputation or {}).CollapseFactionHeader, index)
+--- new
+		Family:TryCall(CollapseFactionHeader, index)
