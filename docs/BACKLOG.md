@@ -7098,7 +7098,15 @@ wanted (`DECISIONS.md`, that date). Nobody objected to anything.
 
 ---
 
-## 98. A vein whose ore this build cannot smelt is named as the nearest metal it can
+## 98. A vein whose ore this build cannot smelt is named as the nearest metal it can — CLOSED 2026-09-23, not to be fixed
+
+**Closed by Alberto, 2026-09-23:** *98 refers to SoD which is not a supported build. So we have
+interest in fixing this only if the fix is useful for the supported builds.* It is not: every one
+of the eight wrong rows below is a Season of Discovery node, and on Era, Burning Crusade and Mists
+the measurement found no vein named with the wrong metal. Widening the candidate list would add
+candidates, and so chances of a near miss, on the builds Family supports, to fix a build it does
+not. The measurement stays below as the record of the hole.
+
 
 **Found 2026-09-22**, while measuring the fix for the thorium veins Alberto reported. Not a
 consequence of that fix: six rows were already wrong before it, and the fix takes it to eight.

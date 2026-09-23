@@ -42081,6 +42081,16 @@ print("instance lockouts, read, kept and drawn")
 	for _, column in ipairs(Family.UI.__summaryColumns or {}) do
 		if column.label ~= "" then worded[#worded + 1] = tostring(column.label) end
 	end
+	-- The note under the page wraps inside the list's width, not under the scroll bar.
+	local noteInset
+	for _, f in ipairs(fontStrings) do
+		if type(f.__text) == "string" and f.__text:find("Crafting cooldowns - transmutes", 1, true)
+			and f.__offsets and f.__offsets.BOTTOMRIGHT then
+			noteInset = f.__offsets.BOTTOMRIGHT.x
+		end
+	end
+	check("the Cooldowns note stops where the list does", noteInset and noteInset <= -22,
+		tostring(noteInset))
 	check("the Cooldowns page's heading row says nothing its sections say",
 		#Family.UI.__summaryColumns > 0 and #worded == 0, table.concat(worded, ", "))
 	local memberOnHeading = false

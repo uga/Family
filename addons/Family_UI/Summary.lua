@@ -2800,7 +2800,11 @@ local function build(frame)
 	-- Above the footer, because it is about the columns rather than about the totals.
 	local note = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 	note:SetPoint("BOTTOMLEFT", footer, "TOPLEFT", 0, CAPTION_GAP)
-	note:SetPoint("BOTTOMRIGHT", footer, "TOPRIGHT", 0, CAPTION_GAP)
+	-- **No wider than the list above it.** The footer runs to within four pixels of the frame's
+	-- edge, which is under the scroll bar's column and, on the screen, past the window's border:
+	-- the Cooldowns note's first line ran out there and was cut at *underneath* (Alberto's
+	-- screenshot, 2026-09-23). The list stops 26 pixels in, so the note wraps where it does.
+	note:SetPoint("BOTTOMRIGHT", footer, "TOPRIGHT", -22, CAPTION_GAP)
 	note:SetJustifyH("LEFT")
 
 	local rows = {}
