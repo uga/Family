@@ -204,6 +204,18 @@ local BRIEF_CALLS = {
 	-- the same call the client has already answered.
 	{ "C_Reputation.GetFactionDataByIndex", 1 },
 	{ "C_Reputation.GetFactionDataByIndex", 2 },
+	-- Version 16. Index 2 answered a heading too - one with a standing of its own - so an
+	-- ordinary faction has still never been read, and step 3 (d) reads one on a fixture's word
+	-- (`docs/MIDNIGHT.md` §39). Two more indices, the cheapest places to find one.
+	{ "C_Reputation.GetFactionDataByIndex", 3 },
+	{ "C_Reputation.GetFactionDataByIndex", 4 },
+	-- The same for the quest log (§37): index 1 is a heading, and a quest row has never been
+	-- read.
+	{ "C_QuestLog.GetInfo", 2 },
+	{ "C_QuestLog.GetInfo", 3 },
+	-- And the quest history, which on this client has no `GetQuestsCompleted` (§35). The
+	-- namespace lists this one; what it answers is the whole question.
+	{ "C_QuestLog.GetAllCompletedQuestIDs" },
 	{ "C_MajorFactions.GetMajorFactionIDs" },
 	{ "C_WeeklyRewards.GetActivities" }, { "C_MythicPlus.GetRunHistory", false, true },
 	{ "C_PetJournal.GetNumPets" }, { "C_ClassTalents.GetActiveConfigID" },
@@ -243,6 +255,15 @@ local function firstRecipe()
 	return type(ids) == "table" and ids[1] or nil
 end
 local function bank() return _G.BANK_CONTAINER or -1 end
+
+-- The first owned auction's `itemKey`, handed to the call that describes one. The row prints a
+-- nested table as `table`, so what is inside it has never been seen (§35); handed over as an
+-- argument it is printed whole, and the answer says what the house makes of it.
+local function ownedItemKey()
+	local api = _G.C_AuctionHouse
+	local row = api and api.GetOwnedAuctionInfo and api.GetOwnedAuctionInfo(1)
+	return type(row) == "table" and row.itemKey or nil
+end
 local function firstBankBag() return (_G.NUM_BAG_SLOTS or 4) + 1 end
 
 -- Defined below, after `ask`, and used by the windows.
@@ -279,6 +300,7 @@ local WINDOWS = {
 		{ "GetAuctionItemLink", "list", 1 }, { "GetAuctionItemInfo", "owner", 1 },
 		{ "C_AuctionHouse.IsThrottledMessageSystemReady" },
 		{ "C_AuctionHouse.GetNumOwnedAuctions" }, { "C_AuctionHouse.GetOwnedAuctionInfo", 1 },
+		{ "C_AuctionHouse.GetItemKeyInfo", ownedItemKey },
 		{ "C_AuctionHouse.GetNumReplicateItems" }, { "C_AuctionHouse.GetReplicateItemInfo", 0 },
 		{ "C_AuctionHouse.GetBrowseResults" },
 	} },

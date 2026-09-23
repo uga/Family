@@ -294,6 +294,20 @@ check("one arriving outside any call is written down too, and says so",
 check("and neither is mistaken for a window that schedules a second probe",
 	#before.windows.blocked == howMany + 1, tostring(#before.windows.blocked))
 
+-- Version 16's auction question. An owned row prints a nested table as `table`, so what its
+-- `itemKey` holds had never been seen (`docs/MIDNIGHT.md` §35); handing it to `GetItemKeyInfo`
+-- as an argument prints it whole. Checked by opening the house with one owned auction up,
+-- because the line exists only if the helper reached into the row and the call was made.
+_G.C_AuctionHouse = {
+	GetNumOwnedAuctions = function() return 1 end,
+	GetOwnedAuctionInfo = function() return { auctionID = 1, itemKey = { itemID = 161053 } } end,
+	GetItemKeyInfo = function(key) return { itemID = key and key.itemID, itemName = "Crackers" } end,
+}
+listener(nil, "AUCTION_HOUSE_SHOW")
+local house = table.concat(before.windows.auctionHouse or {}, "\n")
+check("an owned auction's itemKey is printed whole, as the argument of the call that reads it",
+	house:find("C_AuctionHouse.GetItemKeyInfo({#1 itemID=161053})", 1, true) ~= nil, house)
+
 if failures > 0 then
 	print(failures .. " failed")
 	os.exit(1)

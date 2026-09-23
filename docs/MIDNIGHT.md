@@ -2325,3 +2325,27 @@ tells the summary three over the twelve left by an earlier reading.
 Six new mutations - the newer count never asked, `isHeaderWithRep` ignored, the bar measured from
 nought, headings opened or shut through the old globals, and the newer count asked first - and
 §36's three still caught. Harness 3865.
+
+## 40. Probe version 16: what step 3 built on its own word (2026-09-23)
+
+Step 3's four slices so far each left a line saying what the harness supplied because the client
+had not been asked. Version 16 asks exactly those, and one more that step 3 cannot start without:
+
+| Question | Asked how | For |
+|---|---|---|
+| an ordinary faction row | `C_Reputation.GetFactionDataByIndex` 3 and 4 | §39's two fixture rows |
+| an ordinary quest row | `C_QuestLog.GetInfo` 2 and 3 | §37's fixture rows |
+| the quest history | `C_QuestLog.GetAllCompletedQuestIDs()` | step 3 (e), not written until this is read |
+| what an owned auction's `itemKey` holds | handed to `C_AuctionHouse.GetItemKeyInfo`, which prints it whole as its argument | §35: a Midnight row with no `itemID` in its key would be dropped in silence |
+
+The first three are brief calls and run on Midnight only. None of them opens a window, queries
+the server or changes the character; `GetItemKeyInfo` is a description of an item key and is
+asked with the auction house open, where the key comes from.
+
+The selftest has a claim for the fourth - an owned auction's key printed whole - and was seen to
+fail with the call taken out. The README's count of claims said thirty-one; it was thirty-two
+since L-210's claim on 2026-09-22 and is thirty-three now.
+
+Not asked, because a probe cannot: whether `ExpandQuestHeader(0)` and `C_Reputation`'s
+`ExpandFactionHeader(index)` open what they are given. Those change the interface in front of the
+player, and the smoke row is where they are seen.
