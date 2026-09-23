@@ -3064,6 +3064,12 @@ could never have caught this. The new one was watched failing with the cut put b
 before it was kept - the same rule this repository states as making each check fail with the fix
 removed.
 
+**Built here 2026-09-23 (backlog 101).** `fields()` in `tools/FamilyProbe` prints the `WANTED` keys and
+then the rest in order up to `CUT = 30`, where it used to stop six past `WANTED`, and says how many it
+left out. The harness cuts `fields` out of the probe's file and holds it to Midnight's fourth case: an
+eighteen-key talent record keeps `talentID`. That check fails with the cut put back to twelve, which is
+the recorded mutation.
+
 #### What the second brief adds, 2026-09-20
 
 Alberto, describing the systems again in more detail. Three things in it are new to this section,
@@ -5535,3 +5541,29 @@ refused by **name equality** with the node's own name and never by scoring, so a
 long cannot silence a real vein: the measurement that matters is unchanged, 0 of 929 vein names
 is also the name of a refused place. Regenerating with the word rule would shrink the list and is
 owed the next time that generator is run, so that the tool and the addon do not drift.
+
+**Corrected the same evening, by running it: the list was not a superset.** The word rule can
+*add* a collision as well as remove one - taking a mid-word runner-up out of the scoring lets a
+winner clear the margin it used to fall inside, which is exactly what it did for the thorium
+veins. Regenerated under the rule the addon actually uses:
+
+| build | before | after | dropped | **added** |
+|---|---|---|---|---|
+| Era | 53 | 18 | 35 | 0 |
+| Burning Crusade | 50 | 36 | 19 | **5** |
+| Mists | 127 | 90 | 46 | **9** |
+
+The added ones are places the addon had been misreading since the word rule shipped, with
+nothing refusing them. `Thorium Point` (1446) is among them on both later builds - Khorium Ore
+used to silence it the way it silenced the veins - and it is in Searing Gorge, where the fault
+that brought the word rule was read. The others: `Wellspring River`, `Wellspring Lake`,
+`Irontree Woods`, `Amberweb Pass`, and on Mists `Gate of the Yellow Moon`, `Shrine of Goldrinn`,
+`Vermillion Redoubt`, `Thorium Advance`, `Gilded Fan`, `The Gilding Stream`.
+
+The tool's verdicts were checked against the addon's on eight measured names before regenerating,
+eight for eight, and the invariant was measured again after: **0 of 929** vein names is also the
+name of a refused place. Herbs and ores came out byte-identical on all three builds.
+
+**What was wrong with the paragraph above** is the word *superset*, reasoned rather than run. A
+rule change that moves the runner-up moves collisions in both directions, and *safe because too
+long* was only half of what the list was.

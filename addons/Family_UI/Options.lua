@@ -105,8 +105,8 @@ local SWITCHES = {
 	},
 	{
 		label = L["Say which crafting cooldowns are ready when you log in"],
-		note = L["Transmutes, mooncloth, salt shakers. Crafting only - raid and heroic "
-			.. "lockouts are a different thing and Family does not record them yet."],
+		note = L["Transmutes, mooncloth, salt shakers. Crafting only - instance lockouts "
+			.. "are on the Summary's Cooldowns page and are not announced at login."],
 		get = function() return FamilyDB.cooldownNotice ~= false end,
 		set = function(on) FamilyDB.cooldownNotice = on and true or false end,
 	},

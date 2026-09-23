@@ -5888,7 +5888,7 @@ hang on and the one `Scanners/Quests.lua` already listens to.
 
 ---
 
-## 93. Instance lockouts, and when each resets
+## 93. Instance lockouts, and when each resets — DONE 2026-09-23, not yet seen in game
 
 **Asked 2026-09-20.** Which of my characters is saved to what, and until when.
 
@@ -6030,6 +6030,37 @@ The clocks agreed to within a second on every build, and on Burning Crusade they
 So the shape is one shape across the three, and what is still unread is the only part that
 matters: what those columns carry when a character really is saved. Alberto, 2026-09-20: no
 character is in that state at the moment.
+
+### Built 2026-09-23
+
+**Recorded** by `Family/Scanners/Instances.lua`: `RequestRaidInfo` at login and after `BOSS_KILL`,
+the list read when `UPDATE_INSTANCE_INFO` arrives and never beside the request. Into meta as
+`lockouts`, one entry per lock keyed by column 14 and the difficulty (`i469:9`), with the moment it
+resets (`resetAt`, joined to `DEADLINES`), the lock's own number, the two labels in the client's
+words, and whether it was extended. Column 14 is read only on a row exactly fourteen wide; any other
+width files the lock under its name. A row neither locked nor extended is not recorded. An empty
+answer empties the list and keeps `lockoutsSeen`. No boss progress, for the reasons above.
+
+**Shared** in a category of its own, *Lockouts*, and nothing without it. The grant grid's thirteen
+columns did not fit at 51 pixels each, so `CELL_MIN` went to 50.
+
+**Shown** on the Summary, where Alberto chose the layout the same day: an eighth set button would have
+left each of them too narrow for *Miscellaneous*, so the Crafting set became **Cooldowns**, with one
+section headed *Crafting cooldowns* (as before) and one headed *Instance lockouts* drawn the same way:
+the place written once, whoever is saved to it underneath, then the lock number, *extended* where it
+was, and the time left. **Only characters with a lock still running are listed**: a lock whose moment
+has passed is dropped at drawing time whether or not anybody has logged in since. When nobody is
+locked anywhere the section stays, with a grey line saying so (Alberto, the same evening), except
+while the picker has a crafting timer chosen. One place read in two
+languages is one block. The set's picker offers the places as well as the timers.
+
+**Unwritten**: the Options note and the `/family ready` note, which said lockouts were not recorded, and
+MANUAL §10.
+
+**Not built:** world bosses (`GetNumSavedWorldBosses` has answered 0 on every build, so there is nothing
+to read the shape of); the calendar and its warnings (§4.7), which do not exist for any kind yet; a login
+line about lockouts. **Still unread:** a heroic lock, so whatever difficulty label a heroic carries is
+drawn as the client gives it and has never been seen.
 
 ---
 
@@ -6921,7 +6952,7 @@ and the lesson is L-122.
 
 ---
 
-## 97. CTRL or ALT on a character's name jumps to that character's Possessions or Professions
+## 97. CTRL or ALT on a character's name jumps to that character's Possessions or Professions — DONE 2026-09-22
 
 **Asked 2026-09-20, by Alberto.** CTRL-clicking a character's name on any Summary subpanel should
 open the Possessions panel with that character selected; ALT-clicking should open Professions.
@@ -6973,6 +7004,39 @@ because an entry that invents an obstacle costs the same as one that hides a rea
 **What it would give a player:** the summary says *this character has 14 free slots* or *this one
 is a 300 blacksmith*, and both are a reason to go and look. Today that is: find the tab, find the
 member in the picker, forty-odd members deep.
+
+### Built 2026-09-22, as the entry said it would be, and with the one decision it left open
+
+A modifier test at the top of the row's left click, in front of `self.opens`, and the two doors
+it already had. CTRL alone for Possessions, ALT alone for Professions; **both held is neither**,
+so it is an ordinary click and the row does what it always did. No collision to read out of
+`ModifiedClickActions`: those are the game's bindings for a click on an item, which reach
+`HandleModifiedItemClick`, and a row Family drew never does.
+
+**The decision: a member with no profession recorded is not opened on somebody else.** The door
+now looks for them in the picker's own list before switching the tab, returns `false` when they
+are not there, and the Summary prints *Nobody has no profession recorded yet* by name. Opening the
+panel on whoever was already selected was the silent alternative, and a click that lands on the
+wrong character is one more thing to fix by hand than a click that says why it did nothing.
+
+Possessions needed no such check - its picker is every member, siblings included.
+
+**Not built, and worth saying:** nothing on the Summary advertises the gesture. That is the
+complaint Alberto made on 2026-09-17 about the item click, *advertised only where it was needed*,
+and a hint in the row tooltip would answer it - but every Summary row would grow a tooltip line,
+which is a change to twelve lists nobody asked about, so it is left for asking.
+
+**Asked for the next day, and built** - *the tooltip on summary should hint ctrl and alt clicks in
+grey*. Every member row on every set says `CTRL-click: Possessions` and `ALT-click: Professions`
+at the foot of its tooltip, the page names taken from the tabs' own labels. Rows on sets that had
+no tooltip at all get one for it, since offering the gesture only where a tooltip already existed
+would repeat what the 2026-09-17 row describes. ALT is left off for a character with no profession
+recorded, because that click goes nowhere and says so in chat - right for a click, wrong for a
+promise.
+
+*"Complaint"* in the paragraph above is wrong, and it is left standing so the correction reads
+against it: on 2026-09-17 Alberto asked where the item gesture was active and wrote the line he
+wanted (`DECISIONS.md`, that date). Nobody objected to anything.
 
 ---
 
@@ -7065,3 +7129,38 @@ the check counts **lines against `TooltipRows`** and not holders against a cap.
 
 One node on its own is the tooltip it always was: its share is the whole room, so the cap that
 bites is backlog 82's switch and backlog 89's screen, exactly as before.
+
+---
+
+## 100. The scanners take the addon's own table, not the global one — DONE 2026-09-23
+
+**Agreed 2026-09-22** with the session working on the Midnight branch, and not built. Three scanners
+start with `local Family = _G.Family`: `Scanners/Currencies.lua`, `Scanners/Merchant.lua` and
+`Scanners/Pets.lua`. Every other file takes the table the client hands each file of an addon,
+`local _, Family = ...`. The two are the same table today only because `Core.lua` also puts it in the
+global. A build or another addon that changes that global would split them silently.
+
+**To do:** the three lines, and a mutation named `a-scanner-reaches-for-the-global-family.mut`, the name
+the Midnight session used for its own, so the two trees stay comparable.
+
+
+**Built 2026-09-23.** The three lines are `local _, Family = ...` now. A harness check reads every file
+the recording addon loads and fails on `local Family = _G.Family`; the mutation under the agreed name
+puts it back in `Currencies.lua` and is caught. Family_UI is a separate addon, so its files read the
+global and are left alone.
+
+---
+
+## 101. FamilyProbe's `fields()` stops reading at a fixed count that is too low — DONE 2026-09-23
+
+**Agreed 2026-09-22** with the same session, and not built. The recommendation is in DATASOURCES
+(commits `3385176` and `ab76e2f`). `fields()` in `tools/FamilyProbe` stops at a count written in, so a
+table with more fields than that is printed short and nothing says so.
+
+**To do:** raise the limit to a number that is read and printed, around 30, and keep `WANTED` as the
+note of the incident that found it.
+
+**Built 2026-09-23.** `CUT = 30` in `tools/FamilyProbe/FamilyProbe.lua`, with `WANTED` still printed first
+and the comment above it saying why it stays. Four harness checks run the probe's own `fields()`, cut out
+of its file, on an eighteen-key talent record and on a forty-key table. The mutation puts the cut back to
+twelve and is caught.

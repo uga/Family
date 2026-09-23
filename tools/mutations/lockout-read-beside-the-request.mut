@@ -1,0 +1,6 @@
+name: the list is read beside the request instead of when the event says
+file: addons/Family/Scanners/Instances.lua
+--- old
+		Family:After(5, "lockouts.ask", function() Family:TryCall(_G.RequestRaidInfo) end)
+--- new
+		Family:After(5, "lockouts.ask", function() Family:TryCall(_G.RequestRaidInfo) Lockouts:Scan() end)

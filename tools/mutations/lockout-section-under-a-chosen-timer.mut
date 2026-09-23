@@ -1,0 +1,6 @@
+name: the lockouts section is drawn under a chosen crafting timer
+file: addons/Family_UI/Summary.lua
+--- old
+			local lockSection = wanted == nil or #lockOrder > 0
+--- new
+			local lockSection = true

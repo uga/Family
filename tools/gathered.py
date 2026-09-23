@@ -106,22 +106,47 @@ def folded(text):
 
 
 def shared_run(one, other):
+    """The longest run of bytes two names share, and where it starts in the second (-1: none)."""
     one, other = folded(one), folded(other)
-    best, previous = 0, [0] * (len(other) + 1)
+    best, at, previous = 0, -1, [0] * (len(other) + 1)
     for i in range(1, len(one) + 1):
         current = [0] * (len(other) + 1)
         for j in range(1, len(other) + 1):
             if one[i - 1] == other[j - 1]:
                 current[j] = previous[j - 1] + 1
-                best = max(best, current[j])
+                if current[j] > best:
+                    best, at = current[j], j - current[j]
         previous = current
-    return best
+    return best, at
+
+
+# Space, hyphen and apostrophe, by byte - `atAWord` in Tooltip.lua tests the same three.
+SEPARATORS = (32, 45, 39)
+
+
+def at_a_word(name, at):
+    """`atAWord`: the run begins the name, opens with a separator, or follows one."""
+    if at < 0:
+        return False
+    if at == 0:
+        return True
+    name = folded(name)
+    return name[at] in SEPARATORS or name[at - 1] in SEPARATORS
 
 
 def scores_as_an_ore(name, ores):
-    """Exactly what `oreScored` does, so the exceptions match what the addon will decide."""
-    ranked = sorted(((shared_run(name, n) / len(folded(n)), shared_run(name, n), n)
-                     for n in ores), reverse=True)
+    """Exactly what `oreScored` does, so the exceptions match what the addon will decide.
+
+    Including the word rule of 2026-09-22: a candidate whose shared run starts inside one of its
+    own words is not a candidate at all - neither the winner nor the runner-up the margin is
+    measured against. Before this was carried here the tool scored places by the older rule, and
+    the list it shipped was a superset of the places the addon would actually misread."""
+    ranked = []
+    for n in ores:
+        run, at = shared_run(name, n)
+        if run > 0 and at_a_word(n, at):
+            ranked.append((run / len(folded(n)), run, n))
+    ranked.sort(reverse=True)
     if not ranked:
         return False
     top = ranked[0]

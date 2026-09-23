@@ -64,7 +64,7 @@ local clipped
 -- Built further down, where the cells they have to register alongside are. Declared here
 -- because the sets below are written first and would otherwise capture a global that never
 -- arrives.
-local currencyColumns, craftingColumns, craftingKinds, professionColumns
+local currencyColumns, craftingColumns, craftingKinds, lockKinds, professionColumns
 
 -- A profession as one thing, however it was filed.
 --
@@ -498,7 +498,12 @@ local SETS = {
 		-- and for the same reason: which cooldowns exist depends on which professions this
 		-- family took, and a fixed set of columns would be Alchemy and Tailoring for
 		-- everybody, empty for most of them.
-		id = "crafting", label = L["Crafting"],
+		--
+		-- **Called Cooldowns since 2026-09-23**, when the instance lockouts joined it (backlog
+		-- 93): Alberto's name for the page, with *Crafting cooldowns* kept as the heading of its
+		-- first section so that the word stays wherever the crafting timers are reported. The id
+		-- stays `crafting`, because a Summary starred on this page is saved under it.
+		id = "crafting", label = L["Cooldowns"],
 		columns = {},
 		build = function() return craftingColumns() end,
 		-- This set brings its own first column, because it is a row per crafter of one timer
@@ -510,7 +515,9 @@ local SETS = {
 		-- Counted, not named: this only asks *whether* there are any, and asking the client
 		-- for names it has not loaded would redraw the panel to answer a question about how
 		-- many rows it has, which redraws it again.
-		only = function(meta) return #Family.Cooldowns:Crafting(meta) > 0 end,
+		only = function(meta)
+			return #Family.Cooldowns:Crafting(meta) > 0 or #Family.Lockouts:For(meta) > 0
+		end,
 
 		-- **Which cooldown**, and it answers both halves of what was asked - by cooldown and
 		-- by profession - because those are one list in the data rather than two. A timer
@@ -529,10 +536,16 @@ local SETS = {
 
 			-- The same list the columns are built from, so the picker cannot offer a
 			-- cooldown this panel would then have no column for.
+			--
+			-- And the places somebody is saved to, after the timers, so the one picker narrows
+			-- either section to one block.
 			choices = function()
 				local list = {}
 				for _, kind in ipairs(craftingKinds()) do
 					list[#list + 1] = { value = kind.label, label = kind.label }
+				end
+				for _, label in ipairs(lockKinds()) do
+					list[#list + 1] = { value = label, label = label }
 				end
 				return list
 			end,
@@ -540,6 +553,9 @@ local SETS = {
 			passes = function(meta, wanted)
 				for _, kind in ipairs(Family.Cooldowns:Crafting(meta)) do
 					if kind.label == wanted then return true end
+				end
+				for _, lock in ipairs(Family.Lockouts:For(meta)) do
+					if Family.Lockouts:Label(lock) == wanted then return true end
 				end
 				return false
 			end,
@@ -1998,6 +2014,24 @@ function craftingKinds()
 	return order
 end
 
+-- Every place anybody in the family is still saved to, by the words its heading is drawn with.
+function lockKinds()
+	local seen, list = {}, {}
+	for _, meta in ipairs(everyMeta()) do
+		if factionShown(meta.faction) then
+			for _, lock in ipairs(Family.Lockouts:For(meta)) do
+				local label = Family.Lockouts:Label(lock)
+				if not seen[label] then
+					seen[label] = true
+					list[#list + 1] = label
+				end
+			end
+		end
+	end
+	table.sort(list)
+	return list
+end
+
 -- The professions set's columns, which are fixed except for what the first one is called.
 --
 -- A set's columns are read on every draw, so this is where "what is this column ordered by"
@@ -2147,6 +2181,56 @@ end
 -- Built once with as many cells as the widest set needs, then moved and resized when the set
 -- changes. Rebuilding every row on each switch would churn a hundred frames to show the same
 -- forty members.
+
+-- **CTRL or ALT and a click on a character's name goes to that character** - backlog 97, asked
+-- by Alberto 2026-09-20. CTRL for Possessions, ALT for Professions, on every Summary set, because
+-- the summary says *fourteen free slots* or *a 300 blacksmith* and both are a reason to go and
+-- look - and until now going to look meant finding the tab and then finding the member in a
+-- picker forty-odd names deep.
+--
+-- **Read as a pair, and only one of them.** Both held is not either gesture, so it is an ordinary
+-- click and the row does what it always did. Nothing in the game is bound to a modified click on
+-- a frame Family drew: the collisions measured for CTRL-ALT on an item (the Dressing Room takes
+-- CTRL) come through `HandleModifiedItemClick`, which a Summary row never reaches, so the plain
+-- modifiers are free here in a way they are not on a bag slot.
+--
+-- A member with no profession recorded is not in the Professions picker, and the door says so
+-- rather than opening the panel on whoever was there before; the reason is printed, because a
+-- click that visibly does nothing is otherwise indistinguishable from a click that was not heard.
+local function jumpedByModifier(row)
+	local control = Family:TryCall(IsControlKeyDown) and true or false
+	local alt = Family:TryCall(IsAltKeyDown) and true or false
+	if control == alt then return false end
+
+	if control then
+		UI:ShowContentsFor(row.memberKey)
+		return true
+	end
+
+	if UI:ShowProfessionFor(row.memberKey) == false then
+		Family:Print(L["|cff888888%s has no profession recorded yet.|r"],
+			tostring(row.memberName or row.memberKey))
+	end
+	return true
+end
+
+-- **The two gestures, in grey, at the foot of a member's tooltip** - asked by Alberto
+-- 2026-09-23: *the tooltip on summary should hint ctrl and alt clicks in grey*.
+--
+-- The page names come from the tabs' own labels, so the hint says what is written on the
+-- tab a reader will land on, in their language, and a translator has only the frame to write.
+--
+-- **ALT is offered only where it goes somewhere.** A character with no profession recorded is
+-- not on the Professions page, and the click says so in chat rather than opening it on somebody
+-- else - which is right for a click and wrong for a promise. The tooltip does not make one.
+local function clickHints(lines, meta)
+	lines[#lines + 1] = { " " }
+	lines[#lines + 1] = { string.format(L["|cff888888CTRL-click: %s|r"], L["Possessions"]) }
+	if meta and meta.skills and next(meta.skills) then
+		lines[#lines + 1] = { string.format(L["|cff888888ALT-click: %s|r"], L["Professions"]) }
+	end
+end
+
 local function makeRow(parent)
 	local row = CreateFrame("Button", nil, parent)
 	row:SetHeight(ROW_HEIGHT)
@@ -2300,7 +2384,20 @@ local function makeRow(parent)
 		end
 
 		local rowKey = self.__places or self.__riding or self.__stock or self.__skills
-		if not rowKey then return nil end
+
+		-- **Every member row says what a modified click on it does**, including the sets that
+		-- had nothing else to put in a tooltip. The gesture works on all of them, and offering
+		-- it only where a tooltip happened to exist would be the fault of 2026-09-17 again: the
+		-- item click worked on every possessions block and was advertised only on the ones too
+		-- long to draw, so a family of four never met it.
+		if not rowKey then
+			if not self.memberKey then return nil end
+			local meta = UI:Meta(self.memberKey)
+			if not meta then return nil end
+			local lines = { { UI:NameOf(meta) } }
+			clickHints(lines, meta)
+			return nil, nil, lines
+		end
 
 		local shared = UI:Meta(rowKey)
 		if not shared then return nil end
@@ -2476,6 +2573,8 @@ local function makeRow(parent)
 		add(weaponsOf(meta), L["Weapon Skills"])
 		end
 
+		if self.memberKey then clickHints(lines, shared) end
+
 		-- Nothing worth a tooltip: the name alone is what the row already says.
 		if #lines == 1 then return nil end
 		return nil, nil, lines
@@ -2495,6 +2594,7 @@ local function makeRow(parent)
 		-- a timer rather than about anybody, and the guard that used to sit here meant a
 		-- click on it went nowhere. Removing a member still needs one.
 		if button ~= "RightButton" then
+			if self.memberKey and jumpedByModifier(self) then return end
 			if self.opens then self.opens(self) end
 			return
 		end
@@ -3604,6 +3704,12 @@ local function build(frame)
 		-- loop and the totals underneath it both key off that list, and both are about a table
 		-- of members - a grand total of money under a list of transmutes would be an answer to
 		-- a question this set is not asking.
+		--
+		-- **And the instance lockouts on the same page, under a heading of their own** (backlog 93,
+		-- 2026-09-23). Alberto's call, over an eighth set button that would have left each of
+		-- them too narrow for its label: one page called *Cooldowns*, one section for the
+		-- crafting timers as they were and one for the locks, drawn the same way - the place
+		-- written once, whoever is saved to it underneath, and when it lets go.
 		if currentSet.id == "crafting" then
 			local groups, order = {}, {}
 
@@ -3630,13 +3736,41 @@ local function build(frame)
 				end
 			end
 
+			-- A lock is one block per place and difficulty, keyed by the lock's own key so a
+			-- French Naxxramas and an English one are one block. Its heading is whichever
+			-- client's words got there first; nothing on these builds can do better (the
+			-- scanner says why).
+			local locks, lockOrder = {}, {}
+
+			local function addLocks(member, isSibling, familyName)
+				for _, lock in ipairs(Family.Lockouts:For(member.meta)) do
+					local label = Family.Lockouts:Label(lock)
+					if wanted == nil or label == wanted then
+						local found = locks[lock.key]
+						if not found then
+							found = { label = label, token = "lock:" .. lock.key,
+								people = {}, ready = 0 }
+							locks[lock.key] = found
+							lockOrder[#lockOrder + 1] = found
+						end
+						found.people[#found.people + 1] = {
+							member = member, lock = lock, borrowed = isSibling,
+							familyName = familyName }
+					end
+				end
+			end
+
 			for _, realm in ipairs(realms) do
-				for _, member in ipairs(byRealm[realm]) do add(member, false) end
+				for _, member in ipairs(byRealm[realm]) do
+					add(member, false)
+					addLocks(member, false)
+				end
 			end
 			for _, here in pairs(siblings) do
 				for _, group in ipairs(here.order or {}) do
 					for _, member in ipairs(group.members or {}) do
 						add(member, true, group.name)
+						addLocks(member, true, group.name)
 					end
 				end
 			end
@@ -3649,11 +3783,46 @@ local function build(frame)
 				return tostring(a.label) < tostring(b.label)
 			end)
 
-			-- **How deep this page folds** (backlog 64): one depth for every timer on it.
+			table.sort(lockOrder, function(a, b)
+				if #a.people ~= #b.people then return #a.people > #b.people end
+				return tostring(a.label) < tostring(b.label)
+			end)
+			-- Soonest to let go first, then by name, inside each place.
+			for _, group in ipairs(lockOrder) do
+				table.sort(group.people, function(a, b)
+					if a.lock.resetAt ~= b.lock.resetAt then
+						return a.lock.resetAt < b.lock.resetAt
+					end
+					return tostring(a.member.meta.name or a.member.key)
+						< tostring(b.member.meta.name or b.member.key)
+				end)
+			end
+
+			-- **How deep this page folds** (backlog 64): one depth for every block on it, both
+			-- sections together, with a heading row for each section that has anything.
 			local sizes = {}
 			for _, group in ipairs(order) do sizes[#sizes + 1] = #group.people end
-			local cap = UI:FoldDepth(sizes, 0, UI:RowsThatFit(scroll, currentSet.rowHeight),
-				UI.CRAFTING_PEOPLE or 3)
+			for _, group in ipairs(lockOrder) do sizes[#sizes + 1] = #group.people end
+			-- The lockouts section stays up when nobody is saved anywhere, with a grey line
+			-- saying so - Alberto, 2026-09-23: an absent section read as a missing feature.
+			-- Not while the picker has chosen a crafting timer, where the question is about
+			-- that timer and *nobody is saved* would answer a different one.
+			local lockSection = wanted == nil or #lockOrder > 0
+			local headings = (#order > 0 and 1 or 0)
+				+ (lockSection and (#lockOrder > 0 and 1 or 2) or 0)
+			local cap = UI:FoldDepth(sizes, headings,
+				UI:RowsThatFit(scroll, currentSet.rowHeight), UI.CRAFTING_PEOPLE or 3)
+
+			-- A section's heading: one line of text across the row, the way a realm's is, and
+			-- what the right-hand column means in that section, because *Ready* over a lock
+			-- would be a word about crafting.
+			local function section(title, right)
+				local heading = nextRow(currentSet.rowHeight)
+				setCell(heading, 1, title, 1, 0.82, 0)
+				setCell(heading, 3, right, 0.6, 0.6, 0.6)
+			end
+
+			if #order > 0 then section(L["Crafting cooldowns"], L["Ready"]) end
 
 			for _, group in ipairs(order) do
 				-- Ready first, because that is what anybody opened this for, then soonest
@@ -3729,6 +3898,66 @@ local function build(frame)
 
 					-- The block's own first line opens and closes it, as the reputations
 					-- list and the possessions search both do.
+					if foldable and index == 1 then row.opens = toggle end
+				end
+
+				if foldable then
+					local row = nextRow(currentSet.rowHeight)
+					setCell(row, 2, open and L["|cff888888fewer|r"]
+						or string.format(L["|cff888888and %d more|r"],
+							#group.people - limit))
+					row.opens = toggle
+				end
+			end
+
+			if lockSection then section(L["Instance lockouts"], L["Resets in"]) end
+			if lockSection and #lockOrder == 0 then
+				local row = nextRow(currentSet.rowHeight)
+				setCell(row, 1, L["|cff888888Nobody is saved to an instance right now.|r"])
+			end
+
+			for _, group in ipairs(lockOrder) do
+				local open = UI.__openCrafting == group.token
+				local foldable = cap ~= nil and UI:ShowAtMost(#group.people, cap) < #group.people
+				local limit = (foldable and not open) and cap or #group.people
+
+				local function toggle()
+					UI.__openCrafting = (UI.__openCrafting ~= group.token)
+						and group.token or nil
+					UI:Refresh()
+				end
+
+				for index = 1, limit do
+					local person = group.people[index]
+					local row = nextRow(currentSet.rowHeight)
+
+					row.memberKey = person.member.key
+					row.memberName = person.member.meta.name or person.member.key
+					row.memberRealm = person.member.meta.realm
+					row.borrowed = person.borrowed and true or false
+
+					setCell(row, 1, index == 1
+						and ("  " .. UI:Shortened(tostring(group.label), 24)) or "",
+						0.6, 0.8, 1)
+
+					local who, red, green, blue =
+						CELL.name(person.member.meta, person.member.key)
+					if person.familyName then
+						who = string.format(L["%s |cff9d9d9dof %s|r"], who,
+							tostring(person.familyName))
+					end
+					setCell(row, 2, who, red, green, blue)
+
+					-- The lock's own number first, in grey, because it is what the game's
+					-- Raid Information window shows and what two characters compare to
+					-- find out whether they are saved to the same raid - then when it lets
+					-- go, and whether it was extended past its own reset.
+					local lock = person.lock
+					setCell(row, 3, string.format("|cff9d9d9d%s%s%s|r",
+						lock.lockID and ("#" .. lock.lockID .. "  ") or "",
+						lock.extended and (L["extended"] .. "  ") or "",
+						duration(lock.resetAt - time()) or L["soon"]))
+
 					if foldable and index == 1 then row.opens = toggle end
 				end
 
@@ -3976,9 +4205,10 @@ local function build(frame)
 				.. "*who have I got there*. A character has no answer until they have "
 				.. "been played once.|r"])
 		elseif currentSet.id == "crafting" then
-			note:SetText(L["|cff888888Crafting cooldowns only - transmutes, mooncloth, "
-				.. "salt shakers. One line per timer, with whoever has it underneath and "
-				.. "when theirs comes back.|r"])
+			note:SetText(L["|cff888888Crafting cooldowns - transmutes, mooncloth, salt "
+				.. "shakers - and then instance lockouts. One line per timer or place, with "
+				.. "whoever has it underneath and when theirs comes back. A lockout is read "
+				.. "when that character logs in.|r"])
 		elseif currentSet.id == "currencies" then
 			-- The columns are whatever the family holds most of, so the panel has to say
 			-- that: five columns out of twelve currencies is not the same claim as five

@@ -1,0 +1,6 @@
+name: a lock whose moment has passed is still drawn
+file: addons/Family/Scanners/Instances.lua
+--- old
+		if (lock.resetAt or 0) > now then live[#live + 1] = lock end
+--- new
+		live[#live + 1] = lock

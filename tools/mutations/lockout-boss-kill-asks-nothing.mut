@@ -1,0 +1,6 @@
+name: a boss dying does not ask for the list again
+file: addons/Family/Scanners/Instances.lua
+--- old
+	Family:RegisterEvent("BOSS_KILL", "lockouts", ask)
+--- new
+

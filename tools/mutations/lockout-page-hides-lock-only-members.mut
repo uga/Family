@@ -1,0 +1,6 @@
+name: a member with a lock and no crafting timer is filtered off the page
+file: addons/Family_UI/Summary.lua
+--- old
+			return #Family.Cooldowns:Crafting(meta) > 0 or #Family.Lockouts:For(meta) > 0
+--- new
+			return #Family.Cooldowns:Crafting(meta) > 0

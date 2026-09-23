@@ -236,6 +236,17 @@ end
 -- `description` and `iconFileID` and pushed `quantity` and the weekly cap into "+10 more" - the
 -- two fields it was run for. A cut has to be made somewhere; it may as well be made where the
 -- answer is not.
+--
+-- **And the cut is thirty, read rather than chosen** (backlog 101, DATASOURCES *A fourth case the same
+-- day settles which of the two answers is right*). It was the named keys and six more in alphabetical
+-- order, and an alphabetical cut is biased as well as lossy: flags sort first (`atWarWith`,
+-- `canSetInactive`, `isHeader`) and the field naming the thing - `name`, `title`, `questID`,
+-- `talentID` - sorts late. Four readings on the Midnight tree lost exactly that field. The widest
+-- answers shaped like a *record* there are 28 and 29 keys, and everything wider is a list, where a cut
+-- is right. `WANTED` stays as the memory of the currency reading that put it here; it covers nothing
+-- else, and the cut is what covers the calls nobody has got wrong yet.
+local CUT = 30
+
 local WANTED = {
     "name", "currencyID", "quantity", "maxQuantity", "quantityEarnedThisWeek",
     "maxWeeklyQuantity", "totalEarned", "useTotalEarnedForMaxQty", "discovered",
@@ -261,10 +272,11 @@ local function fields(value)
     end
     table.sort(rest)
 
-    for index = 1, math.min(#rest, 6) do
+    local room = math.max(CUT - #out, 0)
+    for index = 1, math.min(#rest, room) do
         out[#out + 1] = rest[index] .. "=" .. tostring(value[rest[index]])
     end
-    if #rest > 6 then out[#out + 1] = "(+" .. (#rest - 6) .. " more)" end
+    if #rest > room then out[#out + 1] = "(+" .. (#rest - room) .. " more)" end
     if #out == 0 then return describe(value) end
     return table.concat(out, " ")
 end

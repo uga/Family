@@ -1,0 +1,6 @@
+name: the probe's fields() cuts a record back to six keys past the named ones
+file: tools/FamilyProbe/FamilyProbe.lua
+--- old
+local CUT = 30
+--- new
+local CUT = 12

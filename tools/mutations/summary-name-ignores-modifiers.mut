@@ -1,0 +1,6 @@
+name: CTRL or ALT and a click on a Summary name does what a plain click does
+file: addons/Family_UI/Summary.lua
+--- old
+			if self.memberKey and jumpedByModifier(self) then return end
+--- new
+			if false and jumpedByModifier(self) then return end

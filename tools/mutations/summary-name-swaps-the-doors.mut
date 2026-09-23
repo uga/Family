@@ -1,0 +1,8 @@
+name: CTRL on a Summary name opens Professions and ALT opens Possessions
+file: addons/Family_UI/Summary.lua
+--- old
+	if control then
+		UI:ShowContentsFor(row.memberKey)
+--- new
+	if alt then
+		UI:ShowContentsFor(row.memberKey)

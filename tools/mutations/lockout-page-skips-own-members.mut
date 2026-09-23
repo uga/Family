@@ -1,0 +1,8 @@
+name: our own members' locks are not gathered for the page
+file: addons/Family_UI/Summary.lua
+--- old
+					addLocks(member, false)
+
+--- new
+					
+

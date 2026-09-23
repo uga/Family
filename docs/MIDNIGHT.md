@@ -2035,3 +2035,30 @@ It is read as `local maps = { _G.Minimap, _G.WorldMapFrame }` and compared with
 `if map and frame == map`, so a client without it skips it and nothing can break. **No run has ever
 asked Midnight about it.** The regenerated `Surface.lua` travels with probe version 15, which asks
 it at login with the other 278, so the next run answers it without anybody playing specially.
+
+## 33. The merge that brought this branch's vararg back from `main` (2026-09-23)
+
+`main` landed the two things it had decided and not yet done - checked with FAMILY DEV before
+reading them as done, since from here only git is visible and git had neither:
+
+- **`73debab`** takes the addon's own table in `Scanners/Currencies.lua`, `Merchant.lua` and
+  `Pets.lua` - the change this branch made in `cf107f0` so that the fourth pretend client could
+  drive them - with a harness check that reads the files and the mutation
+  `a-scanner-reaches-for-the-global-family.mut`, **under the same name as this branch's**, so that
+  the two copies read together. Backlog 100.
+- **`0cd1f44`** prints a record whole in `tools/FamilyProbe`, cut at thirty with `WANTED` still
+  first - L-210 carried to `main`'s probe - and tries it on the eighteen-key talent record this
+  branch measured, `talentID` included. Backlog 101.
+
+**The conflict was the predicted one and it was only words.** The code was identical on both
+sides, `local _, Family = ...`; this branch had a seven-line comment above it and `main` has
+none, and the two `.mut` files differed only in their `name:` line. The change is `main`'s now, so
+`main`'s side was taken for all four files and they are byte-identical to `main`. The reason lives
+in `DECISIONS.md` on both sides, which is where a reason for a one-line binding belongs.
+
+Backlog 93 landed in the same merge - raid lockouts - and `surface.py --check` said the list had
+moved for the third time: **282 globals and 139 literals**, from 279 and 137. Three of the five new
+names Midnight has already answered, through the second brief's lockout block:
+`GetNumSavedInstances()` answers 0, `GetSavedInstanceInfo(1)` answers fourteen values, and
+`UPDATE_INSTANCE_INFO` registers. **`RequestRaidInfo` and `BOSS_KILL` have never been asked.**
+The regenerated `Surface.lua` rides probe version 15, which asks both at login.

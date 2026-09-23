@@ -1079,6 +1079,11 @@ local function build(frame)
 		end
 		local member = picker:Reconcile()
 
+		-- Left where a check can read it, as `__contentsShowing` is and for its reason: the
+		-- picker draws a name whether or not it was chosen, so looking for one on screen passes
+		-- for a panel that ignored the request.
+		UI.__professionsShowing = (not wholeFamily) and member and member.key or nil
+
 		for _, button in ipairs(skillButtons) do button:Hide() end
 		for index = 1, #rows do rows[index]:Hide() end
 
@@ -1966,9 +1971,26 @@ end
 --
 -- `ShowTab` is what builds it, so the selection happens after that and only if the panel got as
 -- far as registering itself.
+--
+-- **And it will not open on somebody else.** The picker behind this door lists only members with
+-- a profession recorded, and `__selectProfession` walks that list, finds nothing, and refreshes
+-- the panel anyway - on whoever was selected before, with nothing to say the click missed. No
+-- caller could reach that until backlog 97 put an ALT-click on every Summary name, and most of
+-- those names are characters who have never opened a profession window. So the member is looked
+-- for first, the tab is not switched when they are not there, and the answer is returned so the
+-- caller can say why nothing happened.
 function UI:ShowProfessionFor(key, profession)
+	if key ~= nil then
+		local present = false
+		for _, entry in ipairs(membersWithSkills()) do
+			if entry.key == key then present = true break end
+		end
+		if not present then return false end
+	end
+
 	UI:ShowTab("professions")
 	if UI.__selectProfession then UI.__selectProfession(key, profession) end
+	return true
 end
 
 UI:RegisterTab("professions", L["Professions"], build)

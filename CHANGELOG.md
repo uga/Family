@@ -49,6 +49,27 @@ is a decision rather than an afternoon of archaeology.
   stacked up. Herbs on a GatherMate pin answer too, which they did not at first - that addon
   writes its names in colour, and Family was reading the colour as part of the name.
 
+### Instance lockouts
+
+- **Family now records which instances each character is saved to, and when each lock resets.**
+  They are on the summary's **Cooldowns** page, which is the old Crafting page. Crafting cooldowns
+  come first, as before, then instance lockouts: each raid or dungeon once, with the characters
+  saved to it underneath, their lock number, and how long until it resets. Only locks still
+  running are listed, and when nobody is saved anywhere the section says so. Before, Family said
+  it did not record lockouts at all.
+- **A lockout is read when that character logs in**, and again after a boss dies. A character you
+  have not logged in since they were saved is not listed.
+- **Lockouts can be shared with a linked family**, in a category of their own. They are not sent
+  unless you tick it.
+
+### The summary
+
+- **Hold CTRL and click a character's name on the summary to open their possessions, or ALT to
+  open their professions.** Every summary list, your own characters and a linked family's alike.
+  A character who has never opened a profession window says so in chat instead of opening the
+  professions page on somebody else. Hovering a name says both, in grey, at the foot of its
+  tooltip.
+
 ### Achievements
 
 - **Family no longer breaks off with *script ran too long* while you are fighting.** On Mists of

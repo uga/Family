@@ -149,10 +149,11 @@ end
 --
 -- *Rounded to the minute*: deadlines worked out from time left, which are real data - a letter
 -- that expires does expire - and which jitter by the seconds between two readings: `expiresBy`
--- (mail, auctions), `readyAt` (a recipe's or an item's cooldown), `mailExpiresBy` (meta). A jitter
+-- (mail, auctions), `readyAt` (a recipe's or an item's cooldown), `mailExpiresBy` (meta), `resetAt`
+-- (an instance lockout, backlog 93). A jitter
 -- that crosses a minute boundary still moves the mark; that is a member sent once more.
 local CLOCKS = { seen = true, recipesSeen = true, at = true }
-local DEADLINES = { expiresBy = true, readyAt = true, mailExpiresBy = true }
+local DEADLINES = { expiresBy = true, readyAt = true, mailExpiresBy = true, resetAt = true }
 
 local function mark(sum, value, depth, stable)
     local kind = type(value)

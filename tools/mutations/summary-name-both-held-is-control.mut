@@ -1,0 +1,6 @@
+name: CTRL and ALT held together on a Summary name are taken as CTRL
+file: addons/Family_UI/Summary.lua
+--- old
+	if control == alt then return false end
+--- new
+	if not control and not alt then return false end

@@ -2121,6 +2121,7 @@ for _, file in ipairs {
 	"Scanners/Auctions.lua", "Scanners/Mail.lua", "Scanners/Character.lua",
 	"Scanners/Quests.lua",
 	"Scanners/Currencies.lua",
+	"Scanners/Instances.lua",
 	"Scanners/Pets.lua",
 	"Scanners/Merchant.lua",
 	"Wide.lua",
@@ -2132,6 +2133,24 @@ for _, file in ipairs {
 	_G.debugprofilestop = function() return 1000 end
 	LOADED_HERE[#LOADED_HERE + 1] = file
 	load("addons/Family/" .. file, "Family", FamilyPrivate)
+end
+
+-- **Every file of the recording addon takes the table the client hands it**, `local _, Family = ...`,
+-- and none reaches for the global (backlog 100). The two are one table only because `Core.lua` also
+-- publishes it, and a harness that loads both from the same place cannot tell them apart by
+-- behaviour - so the files are read. Family_UI is another addon and has to read the global.
+do
+	local reaching = {}
+	for _, file in ipairs(LOADED_HERE) do
+		local f = io.open(ROOT .. "/addons/Family/" .. file)
+		if f then
+			local text = f:read("*a")
+			f:close()
+			if text:find("\nlocal Family = _G%.Family") then reaching[#reaching + 1] = file end
+		end
+	end
+	check("no file of the recording addon takes the global Family", #reaching == 0,
+		table.concat(reaching, ", "))
 end
 
 print()
@@ -6949,8 +6968,34 @@ do
 	-- languages, which is why the table is ids and not words - and why one that collides in any
 	-- one locale is refused in all of them.
 	local places = Family.Gathered and Family.Gathered[1] and Family.Gathered[1].places
-	check("the build ships the places its own rule would misread", places and #places > 20,
+	-- **A known collision, not a count.** This read `more than twenty` when Era shipped 53, and
+	-- the regeneration of 2026-09-22 under the word rule took it to 18 - correctly - which a
+	-- floor chosen off one run turned red for no reason about the addon. *Thorium Point* (1446)
+	-- is the one to hold instead: it takes Thorium Ore on every build, it is in Searing Gorge
+	-- where the fault that brought the word rule was read, and on Burning Crusade the list
+	-- shipped before the regeneration did not refuse it.
+	local refusesThoriumPoint = false
+	for _, id in ipairs(places or {}) do
+		if id == 1446 then refusesThoriumPoint = true end
+	end
+	check("the build ships the places its own rule would misread, Thorium Point among them",
+		places and #places > 0 and refusesThoriumPoint,
 		places and tostring(#places) or "none")
+
+	-- **And on every build, which is where the hole was.** Burning Crusade and Mists add Khorium
+	-- Ore, which used to silence *Thorium Point* the way it silenced the thorium veins; the word
+	-- rule took that away, and the list generated under the older rule had never needed to
+	-- refuse it. Era alone could not show this, having no khorium.
+	local missing = {}
+	for _, expansion in ipairs { 1, 2, 5 } do
+		local found = false
+		for _, id in ipairs((Family.Gathered[expansion] or {}).places or {}) do
+			if id == 1446 then found = true end
+		end
+		if not found then missing[#missing + 1] = tostring(expansion) end
+	end
+	check("and every build refuses it, including the two where khorium used to hide it",
+		#missing == 0, "missing on " .. table.concat(missing, ", "))
 
 	-- Named behind a complete candidate list, because without one the herb step stops the walk
 	-- before the ores are ever scored - and it is the ore score this refusal exists to head off.
@@ -14268,6 +14313,136 @@ print("Possessions: the carried bags as one block and the bank as another (backl
 end)()
 
 print()
+print("CTRL or ALT and a click on a Summary name goes to that character")
+
+-- Backlog 97, asked by Alberto 2026-09-20: CTRL-click a character's name on any Summary set for
+-- their Possessions, ALT-click for their Professions. Driven through the row's own OnClick with
+-- the modifiers stood in, because the modifier test is the whole of the feature and a check
+-- that called the doors directly would pass with it deleted.
+;(function()
+	local realCtrl, realAlt = _G.IsControlKeyDown, _G.IsAltKeyDown
+	local function holding(control, alt)
+		_G.IsControlKeyDown = function() return control end
+		_G.IsAltKeyDown = function() return alt end
+	end
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	fireClick(Family.UI.__summarySets.bags)
+	Family.UI:Refresh()
+
+	-- A row for a member with a profession recorded, so both gestures have somewhere to land.
+	local row, who
+	for _, f in ipairs(frames) do
+		if onScreen(f) and f.memberKey and f.__scripts and f.__scripts.OnClick then
+			local meta = Family.UI:Meta(f.memberKey) or {}
+			if meta.skills and next(meta.skills) then row, who = f, f.memberKey break end
+		end
+	end
+	check("a Summary row belongs to a member with a profession recorded", row ~= nil,
+		tostring(who))
+
+	if row then
+		holding(true, false)
+		row.__scripts.OnClick(row, "LeftButton")
+		check("CTRL and a click on a name opens that character's possessions",
+			Family.UI:CurrentTab() == "contents" and Family.UI.__contentsShowing == who,
+			tostring(Family.UI:CurrentTab()) .. " / " .. tostring(Family.UI.__contentsShowing))
+
+		Family.UI:ShowTab("summary")
+		holding(false, true)
+		row.__scripts.OnClick(row, "LeftButton")
+		check("and ALT and a click opens that character's professions",
+			Family.UI:CurrentTab() == "professions"
+				and Family.UI.__professionsShowing == who,
+			tostring(Family.UI:CurrentTab()) .. " / "
+				.. tostring(Family.UI.__professionsShowing))
+
+		-- **Both held is neither gesture**, so it is an ordinary click and the row does what it
+		-- always did - on the Bags set, that is Possessions by the row's own `opens`. Asked of a
+		-- row whose ordinary click goes somewhere, so *nothing happened* cannot pass for it.
+		Family.UI:ShowTab("summary")
+		local heldOpens, opened = row.opens, false
+		row.opens = function() opened = true end
+		holding(true, true)
+		row.__scripts.OnClick(row, "LeftButton")
+		check("and both held is an ordinary click, not either gesture",
+			opened and Family.UI:CurrentTab() == "summary", tostring(opened) .. " / "
+				.. tostring(Family.UI:CurrentTab()))
+
+		-- **And with neither, nothing about it changes.** The modifier test sits in front of the
+		-- row's own click and must not eat it.
+		opened = false
+		holding(false, false)
+		row.__scripts.OnClick(row, "LeftButton")
+		check("while a plain click still does what the row always did", opened,
+			tostring(opened))
+		row.opens = heldOpens
+
+		-- **A member with no profession recorded is not opened on somebody else.** The picker
+		-- behind the door lists only members with one, and without the check at the door the
+		-- panel refreshed on whoever it was already showing, saying nothing about the miss.
+		Family.UI:ShowTab("summary")
+		local heldKey, heldName = row.memberKey, row.memberName
+		row.memberKey, row.memberName = "Nobody-Nowhere", "Nobody"
+		local from = #DEFAULT_CHAT_FRAME.messages
+		holding(false, true)
+		row.__scripts.OnClick(row, "LeftButton")
+		local said = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+			#DEFAULT_CHAT_FRAME.messages)
+		check("ALT on a character with no profession does not open the panel on anybody",
+			Family.UI:CurrentTab() == "summary", tostring(Family.UI:CurrentTab()))
+		check("and says why, by name", said:find("Nobody", 1, true) ~= nil, said)
+		row.memberKey, row.memberName = heldKey, heldName
+	end
+
+	_G.IsControlKeyDown, _G.IsAltKeyDown = realCtrl, realAlt
+
+	-- **And the tooltip says so, in grey** - Alberto 2026-09-23. Read off the row's own
+	-- resolver, which is what the hover draws from, on two sets: Bags, where a member row had no
+	-- tooltip at all until the hint gave it one, and Miscellaneous, where it already had one and
+	-- the hint goes at the foot of it. A gesture offered only where a tooltip happened to exist
+	-- is the fault of 2026-09-17 again - the item click worked everywhere and was advertised in
+	-- one place.
+	local function hintsOn(setKey)
+		Family.UI:ShowTab("summary")
+		fireClick(Family.UI.__summarySets[setKey])
+		Family.UI:Refresh()
+		local withSkills, without
+		for _, f in ipairs(frames) do
+			if onScreen(f) and f.memberKey and f.__familyTooltip then
+				local meta = Family.UI:Meta(f.memberKey) or {}
+				local _, _, lines = f.__familyTooltip(f)
+				local text = ""
+				for _, line in ipairs(lines or {}) do text = text .. tostring(line[1]) .. " / " end
+				if meta.skills and next(meta.skills) then withSkills = withSkills or text
+				else without = without or text end
+			end
+		end
+		return withSkills, without
+	end
+
+	for _, setKey in ipairs { "bags", "misc" } do
+		local withSkills, without = hintsOn(setKey)
+		local ctrl = string.format(Family.L["|cff888888CTRL-click: %s|r"], Family.L["Possessions"])
+		local alt = string.format(Family.L["|cff888888ALT-click: %s|r"], Family.L["Professions"])
+		check("a member's tooltip on the " .. setKey .. " set offers both clicks, in grey",
+			withSkills ~= nil and withSkills:find(ctrl, 1, true) ~= nil
+				and withSkills:find(alt, 1, true) ~= nil, tostring(withSkills))
+
+		-- ALT is only offered where it goes somewhere: the click on a character with no
+		-- profession says so in chat, which is right for a click and wrong for a promise.
+		if without then
+			check("and one with no profession recorded is not offered ALT on the " .. setKey
+				.. " set", without:find(ctrl, 1, true) ~= nil
+					and without:find(alt, 1, true) == nil, without)
+		end
+	end
+
+	Family.UI:ShowTab("summary")
+end)()
+
+print()
 print("clicking a Bags row opens that character's possessions")
 
 -- Asked for 2026-09-10, from the same instinct that already put the professions one there: a
@@ -16204,7 +16379,7 @@ end
 	-- The tab strip carries some of these words too, so it is the last button with the
 	-- label that is wanted - the same trap the professions check above walked into.
 	for _, label in ipairs { "Overview", "Bags", "Activity", "Professions", "Currencies",
-		"Crafting", "Miscellaneous" } do
+		"Cooldowns", "Miscellaneous" } do
 		local clicked = clickLastButton(label)
 		check("the " .. label:lower() .. " set is drawn", clicked)
 
@@ -23085,7 +23260,7 @@ print("crafting cooldowns")
 		return found ~= nil
 	end
 
-	check("the summary has a set for them", clickLast("Crafting"))
+	check("the summary has a set for them", clickLast("Cooldowns"))
 	check("what is available says so", visibleText("ready"))
 
 	-- An item whose cooldown has come back is shown as ready, and used to vanish instead.
@@ -23291,13 +23466,13 @@ print("crafting cooldowns")
 	Family.Database:SetMeta("Idle-FireMaw", { name = "Idle", realm = "Fire Maw",
 		level = 60, faction = "Horde" })
 	Family.UI:ShowTab("summary")
-	clickLast("Overview") clickLast("Crafting")
+	clickLast("Overview") clickLast("Cooldowns")
 	check("a member with no cooldown at all is not listed here",
 		visibleText("Idle") == false)
 	clickLast("Overview")
 	check("but is listed on a set that is about everybody", visibleText("Idle"))
 	Family.Database:Forget("Idle-FireMaw")
-	clickLast("Crafting")
+	clickLast("Cooldowns")
 	check("and what is not says when it comes back", visibleText("1h"))
 	check("with the shared one under the profession's name", visibleText("Alchemy"))
 
@@ -24661,7 +24836,7 @@ print("every panel, asked whether its buttons can be clicked")
 	if not Family.UI.window:IsShown() then Family.UI:Toggle() end
 
 	local SECTIONS = { "Equipped gear", "Reputations", "Quests", "Currencies",
-		"Whole family", "Overview", "Bags", "Activity", "Professions", "Crafting",
+		"Whole family", "Overview", "Bags", "Activity", "Professions", "Cooldowns",
 		"Miscellaneous" }
 
 	local drawn = 0
@@ -31428,7 +31603,7 @@ print("filtering the summary by name, class and level")
 
 		-- Composed with the set, not replacing it. Crafting narrows to members with a
 		-- cooldown running, and a class chosen on top of that narrows *that*.
-		clickButton("Crafting")
+		clickButton("Cooldowns")
 		local crafting = showing()
 		check("a set that narrows on its own still narrows with a filter on",
 			crafting["Filtera-Fire Maw"] == nil and crafting["Otherly-Fire Maw"] == nil)
@@ -31730,7 +31905,7 @@ print("a sibling with a crafting cooldown, on the summary's crafting set")
 
 	Family.UI:Show()
 	Family.UI:ShowTab("summary")
-	clickButton("Crafting")
+	clickButton("Cooldowns")
 	Family.UI:Refresh()
 
 	check("and the crafting set draws them", visibleText("Brewer"))
@@ -34012,7 +34187,7 @@ print("filtering the summary's crafting by which cooldown")
 		return false
 	end
 
-	check("the crafting column set can be opened", clickSet(Family.L["Crafting"]))
+	check("the crafting column set can be opened", clickSet(Family.L["Cooldowns"]))
 	Family.UI:Refresh()
 
 	local alchemy = Family:ProfessionName(171)
@@ -34098,7 +34273,7 @@ print("filtering the summary's crafting by which cooldown")
 	Family.UI:Refresh()
 	check("a set that narrows nothing takes the picker away", narrow:IsShown() == false)
 
-	clickSet(Family.L["Crafting"])
+	clickSet(Family.L["Cooldowns"])
 	Family.UI:Refresh()
 	local back = showing()
 	check("and coming back finds everybody again", back["Alchy-Fire Maw"] ~= nil)
@@ -34118,7 +34293,7 @@ print("filtering the summary's crafting by which cooldown")
 
 	do
 		Family.UI.__summaryNarrow:Choose(Family.UI.ANY)
-		clickSet(Family.L["Crafting"])
+		clickSet(Family.L["Cooldowns"])
 		Family.UI:Refresh()
 
 		-- What each drawn row says, in the order it was drawn.
@@ -36683,7 +36858,7 @@ print("a linked family's columns on the summary")
 
 	Family.UI:Show()
 	Family.UI:ShowTab("summary")
-	clickButton("Crafting")
+	clickButton("Cooldowns")
 	Family.UI:Refresh()
 
 	-- A block now rather than a column, which is the same claim about the same fault: the
@@ -42937,6 +43112,267 @@ print("the recipe index")
 
 	Family.Database:Forget("Indexone-FireMaw")
 	Family.Database:Forget("Indextwo-FireMaw")
+end)()
+
+print()
+print("instance lockouts, read, kept and drawn")
+
+-- Backlog 93. The rows are the ones read in the game (DATASOURCES, *The fourteen columns of
+-- `GetSavedInstanceInfo`*): a French Era character saved to three forty-man raids, and the blank
+-- row every build answers for a character saved to nothing.
+;(function()
+	local key = Family:CurrentMember()
+	local heldCount, heldInfo, heldAsk =
+		_G.GetNumSavedInstances, _G.GetSavedInstanceInfo, _G.RequestRaidInfo
+	local heldMeta = Family.Database:Meta(key) or {}
+	local heldLocks, heldSeen = heldMeta.lockouts, heldMeta.lockoutsSeen
+
+	local ROWS = {
+		{ "Repaire de l'Aile noire", 135392441, 189500, 9, true, false, 524615680, true, 40,
+			"40 joueurs", 8, 8, true, 469 },
+		{ "Naxxramas", 133827138, 7200, 9, true, false, 524615680, true, 40,
+			"40 joueurs", 15, 12, true, 533 },
+		-- A lock that has run out and is only listed so that it can be extended.
+		{ "Temple d'Ahn'Qiraj", 135990587, 3600, 9, false, false, 524615680, true, 40,
+			"40 joueurs", 9, 8, true, 531 },
+	}
+	local rows = ROWS
+	GetNumSavedInstances = function() return #rows end
+	GetSavedInstanceInfo = function(index)
+		local row = rows[index]
+		if not row then return nil, 0, nil, 0, false, false, 0, false, 0, "", 0, 0, false, 0 end
+		return unpack(row, 1, #row)
+	end
+
+	local read = Family.Lockouts:Read()
+	check("a character saved to two raids reads as two lockouts", read and #read == 2,
+		read and tostring(#read))
+	check("keyed by the instance's id and the difficulty, not by the words",
+		read and read[2] and read[2].key == "i469:9", read and read[2] and tostring(read[2].key))
+	check("soonest to let go first", read and read[1] and read[1].key == "i533:9")
+	check("kept as the moment it resets, not the seconds left",
+		read and read[2] and read[2].resetAt == time() + 189500,
+		read and read[2] and tostring(read[2].resetAt))
+	check("with the lock's own number and the client's words as labels",
+		read and read[2] and read[2].lockID == 135392441
+			and read[2].name == "Repaire de l'Aile noire"
+			and read[2].difficultyName == "40 joueurs")
+	check("a lock that is neither held nor extended is not recorded",
+		read and read[1].instance ~= 531 and read[2].instance ~= 531)
+
+	-- A row of another length is not the row that was measured: its fourteenth value is not
+	-- trusted to be an id, and the lock is filed under its name.
+	rows = { { "Molten Core", 239723021, 126845, 9, true, false, 524615680, true, 40,
+		"40 Player", 1, 0, false } }
+	read = Family.Lockouts:Read()
+	check("a row that is not fourteen wide is keyed by its name",
+		read and read[1] and read[1].key == "n:Molten Core:9",
+		read and read[1] and tostring(read[1].key))
+
+	-- Wider as well as narrower: a fifteenth value means another row, whatever the fourteenth
+	-- happens to hold.
+	rows = { { "Molten Core", 239723021, 126845, 9, true, false, 524615680, true, 40,
+		"40 Player", 1, 0, false, 409, true } }
+	read = Family.Lockouts:Read()
+	check("and so is a row wider than fourteen, whatever its fourteenth holds",
+		read and read[1] and read[1].key == "n:Molten Core:9",
+		read and read[1] and tostring(read[1].key))
+
+	-- **Read when the event says so, not beside the request.** The login asks; the answer is
+	-- read when UPDATE_INSTANCE_INFO arrives.
+	rows = ROWS
+	local asked = 0
+	RequestRaidInfo = function() asked = asked + 1 end
+	Family.Database:SetMeta(key, { lockouts = Family.CLEAR, lockoutsSeen = Family.CLEAR })
+	fire("PLAYER_ENTERING_WORLD")
+	advance(6)
+	check("entering the world asks the server for the list", asked == 1, tostring(asked))
+	check("and records nothing until the answer arrives",
+		(Family.Database:Meta(key) or {}).lockouts == nil)
+	fire("UPDATE_INSTANCE_INFO")
+	advance(2)
+	local meta = Family.Database:Meta(key) or {}
+	check("the answer is recorded when it arrives", meta.lockouts and #meta.lockouts == 2,
+		meta.lockouts and tostring(#meta.lockouts))
+	check("with when it was read", meta.lockoutsSeen == time())
+
+	fire("BOSS_KILL", 663, "Lucifron")
+	advance(6)
+	check("a boss dying asks again, since that is when a lock is made", asked == 2,
+		tostring(asked))
+
+	-- Saved to nothing is an answer, not a gap: the list is emptied and the reading kept.
+	rows = {}
+	fire("UPDATE_INSTANCE_INFO")
+	advance(2)
+	meta = Family.Database:Meta(key) or {}
+	check("a character whose locks have all gone is saved to nothing",
+		meta.lockouts == nil and meta.lockoutsSeen == time())
+
+	-- And a client with no way to ask leaves what was recorded alone.
+	Family.Database:SetMeta(key, { lockouts = { { key = "i469:9", name = "BWL",
+		resetAt = time() + 60 } } })
+	GetNumSavedInstances = nil
+	fire("UPDATE_INSTANCE_INFO")
+	advance(2)
+	check("a client without the call keeps what was recorded",
+		#((Family.Database:Meta(key) or {}).lockouts or {}) == 1)
+
+	-- A recorded lock whose moment has passed has let go whether anybody looked or not.
+	check("a lock whose moment has passed is not held",
+		#Family.Lockouts:For({ lockouts = { { key = "a", resetAt = time() - 1 },
+			{ key = "b", resetAt = time() + 1 } } }) == 1)
+
+	-- The moment is rounded for the mark, like every other deadline worked out from time left:
+	-- two readings a few seconds apart are the same lock.
+	local base = math.floor(time() / 60) * 60
+	check("a reset a few seconds later does not change the member's mark",
+		Family.Codec:StableFingerprint({ lockouts = { { resetAt = base + 5 } } })
+			== Family.Codec:StableFingerprint({ lockouts = { { resetAt = base + 40 } } }))
+
+	-- Its own category on a link, and nothing without it.
+	do
+		local held = FamilyDB.wide
+		Family.Database:SetMeta(key, { lockouts = { { key = "i469:9", name = "BWL",
+			resetAt = time() + 600 } }, lockoutsSeen = time() })
+		FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
+			links = { ["lockfam"] = { name = "Nosy-Thunderstrike",
+				grants = { [key] = { professions = true } }, siblings = {}, members = {} } } }
+		local link = FamilyDB.wide.links["lockfam"]
+		local sent = Family.Wide:Offering(link)[key]
+		check("granting professions does not send the lockouts",
+			sent and sent.meta and sent.meta.lockouts == nil)
+		link.grants[key].lockouts = true
+		sent = Family.Wide:Offering(link)[key]
+		check("granting lockouts does",
+			sent and sent.meta and sent.meta.lockouts ~= nil and sent.meta.lockoutsSeen ~= nil)
+		FamilyDB.wide = held
+	end
+
+	GetNumSavedInstances, GetSavedInstanceInfo, RequestRaidInfo = heldCount, heldInfo, heldAsk
+	Family.Database:SetMeta(key, { lockouts = heldLocks or Family.CLEAR,
+		lockoutsSeen = heldSeen or Family.CLEAR })
+
+	-- **The Cooldowns page**: the crafting timers as they were, then the lockouts under a heading
+	-- of their own, one block per place, whoever is saved to it underneath.
+	local function member(name, locks)
+		Family.Database:SetMeta(name .. "-FireMaw", { name = name, realm = "Fire Maw",
+			classFile = "MAGE", level = 60, faction = "Alliance", lockouts = locks,
+			lockoutsSeen = time() })
+	end
+	member("Raidera", { { key = "i469:9", instance = 469, difficulty = 9,
+		name = "Blackwing Lair", difficultyName = "40 Player", lockID = 135392441,
+		resetAt = time() + 2 * 86400 } })
+	-- The same place read on a French client: one block, headed by whichever came first.
+	member("Raiderb", { { key = "i469:9", instance = 469, difficulty = 9,
+		name = "Repaire de l'Aile noire", difficultyName = "40 joueurs", lockID = 135392442,
+		resetAt = time() + 3600, extended = true } })
+	member("Raiderc", { { key = "i409:9", instance = 409, difficulty = 9,
+		name = "Molten Core", difficultyName = "40 Player", lockID = 239723021,
+		resetAt = time() - 60 } })
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	check("the page is called Cooldowns", clickLastButton(Family.L["Cooldowns"]))
+	Family.UI:Refresh()
+
+	check("with a section for the lockouts", visibleText(Family.L["Instance lockouts"]))
+	check("a member with a lockout and no crafting timer is on it", visibleText("Raidera"))
+	check("and so is one read in another language", visibleText("Raiderb"))
+	check("the lock's own number is shown", visibleText("#135392441"))
+	check("an extended lock says so", visibleText(Family.L["extended"]))
+	check("a lock that has let go is not drawn", not visibleText("Raiderc")
+		and not visibleText("Molten Core"))
+
+	local blocks = 0
+	for _, f in ipairs(fontStrings) do
+		if type(f.__text) == "string" and f.__visible ~= false and onScreen(f)
+			and (f.__text:find("Blackwing Lair", 1, true)
+				or f.__text:find("Repaire de l'Aile noire", 1, true)) then
+			blocks = blocks + 1
+		end
+	end
+	check("one place in two languages is one block", blocks == 1, tostring(blocks))
+
+	local narrow = Family.UI.__summaryNarrow
+	local offered = {}
+	for _, choice in ipairs(narrow and narrow:Choices() or {}) do
+		offered[tostring(choice.label)] = true
+	end
+	check("the picker offers the place", offered["Blackwing Lair  40 Player"] == true)
+
+	-- Alberto, 2026-09-23: *only instances with at least one locked character should be listed*,
+	-- and with nobody locked the section stays, saying so in grey. With the two running locks
+	-- gone, what is left is one that has let go.
+	Family.Database:Forget("Raidera-FireMaw")
+	Family.Database:Forget("Raiderb-FireMaw")
+	Family.Database:SetMeta("Raiderd-FireMaw", { name = "Raiderd", realm = "Fire Maw",
+		classFile = "MAGE", level = 60, faction = "Alliance",
+		craftCooldowns = { { name = "Transmute: Arcanite", profession = 171,
+			readyAt = time() + 3600 } } })
+	Family.UI:Refresh()
+	check("with nobody locked, no place is listed",
+		not visibleText("Blackwing Lair") and not visibleText("Molten Core"))
+	check("but the lockouts section is still drawn",
+		visibleText(Family.L["Instance lockouts"]))
+	check("saying in grey that nobody is saved anywhere",
+		visibleText(Family.L["|cff888888Nobody is saved to an instance right now.|r"]))
+
+	-- Narrowed to a crafting timer, the question is about that timer: no lockouts section.
+	narrow = Family.UI.__summaryNarrow
+	local timer
+	for _, choice in ipairs(narrow and narrow:Choices() or {}) do
+		if choice.value ~= Family.UI.ANY then timer = timer or choice.value end
+	end
+	if narrow and timer ~= nil then narrow:Choose(timer) end
+	Family.UI:Refresh()
+	check("a crafting timer chosen in the picker brings no lockouts section with it",
+		timer ~= nil and not visibleText(Family.L["Instance lockouts"]), tostring(timer))
+	Family.Database:Forget("Raiderd-FireMaw")
+	Family.UI:Refresh()
+
+	clickLastButton(Family.L["Overview"])
+	for _, name in ipairs { "Raidera", "Raiderb", "Raiderc" } do
+		Family.Database:Forget(name .. "-FireMaw")
+	end
+end)()
+
+print()
+print("FamilyProbe prints a record whole")
+
+-- Backlog 101. The probe is a separate addon the harness does not load, so its `describe`, `CUT`,
+-- `WANTED` and `fields` are cut out of the file by their own first lines and run on their own.
+-- The case is Midnight's fourth: `GetTalentInfo` answers eighteen keys, the old cut printed twelve,
+-- and `talentID` - the one that identifies the talent - was among the six it dropped.
+;(function()
+	local f = io.open(ROOT .. "/tools/FamilyProbe/FamilyProbe.lua")
+	local text = f and f:read("*a") or ""
+	if f then f:close() end
+
+	local from = text:find("\nlocal function describe%(")
+	local to = text:find("\nlocal function elapsed%(")
+	local middle = from and to and text:sub(from, to) or ""
+	-- `packed`, `try` and `shape` sit between them and are left in: they define and do not run.
+	local chunk = middle ~= "" and loadstring(middle .. "\nreturn fields") or nil
+	local fields = chunk and chunk() or nil
+	check("the probe's fields() can be read out of its file", type(fields) == "function")
+	if type(fields) ~= "function" then return end
+
+	local talent = { talentID = 23105, spellID = 196884, name = "Feline Swiftness",
+		icon = 131128, selected = false, available = true, known = false,
+		maxRank = 1, rank = 0, tier = 1, column = 1, grantedByAura = false,
+		hasGoldBorder = false, isExceptional = false, meetsPrereq = true,
+		meetsPreviewPrereq = true, previewRank = 0, prereqsLevel = 10 }
+	local said = fields(talent)
+	check("an eighteen-key record keeps the key that identifies it",
+		said:find("talentID=23105", 1, true) ~= nil, said)
+	check("and says nothing was left out", said:find("more)", 1, true) == nil, said)
+
+	local wide = {}
+	for index = 1, 40 do wide[string.format("k%02d", index)] = index end
+	said = fields(wide)
+	check("a table wider than a record is still cut, and says by how much",
+		said:find("(+10 more)", 1, true) ~= nil, said)
 end)()
 
 print()

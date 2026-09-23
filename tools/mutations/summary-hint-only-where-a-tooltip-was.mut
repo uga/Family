@@ -1,0 +1,8 @@
+name: a Summary row that had no tooltip before gets none, so its clicks are advertised nowhere
+file: addons/Family_UI/Summary.lua
+--- old
+		if not rowKey then
+			if not self.memberKey then return nil end
+--- new
+		if not rowKey then
+			if true then return nil end

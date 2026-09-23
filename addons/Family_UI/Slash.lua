@@ -706,8 +706,7 @@ add("ready", L["which crafting cooldowns have come back, and for whom"], functio
 	if #waiting == 0 then
 		Family:Print(L["no crafting cooldowns are ready."])
 		Family:Print(L["|cff888888Crafting cooldowns only - transmutes, mooncloth, salt "
-			.. "shakers. Raid and heroic lockouts are a different thing and are not "
-			.. "recorded yet.|r"])
+			.. "shakers. Instance lockouts are on the Summary's Cooldowns page.|r"])
 		return
 	end
 
@@ -2711,12 +2710,10 @@ function UI:CooldownNotice()
 	-- would have printed your own salt shaker as a number.
 	for _, member in ipairs(Family.Cooldowns:Ready()) do
 		-- "Crafting cooldowns" in full, every time, because the thing people
-		-- assume next is that Family also watches raid lockouts and heroic
-		-- resets. It does not. Those are specified (§3, §4.7) and not built,
-		-- which is a different statement from "cannot be done" and should not be
-		-- allowed to sound like it - a character can read its own lockouts
-		-- perfectly well while it is being played, which is how Family learns
-		-- everything else.
+		-- assume next is that this line also announces raid lockouts and heroic
+		-- resets. It does not. Family records those since backlog 93 and draws
+		-- them on the Summary's Cooldowns page; announcing them is the calendar's
+		-- warnings (§4.7), which are not built.
 		lines = lines or { L["crafting cooldowns ready:"] }
 
 		local meta = Family.Database:Meta(member.key) or {}
