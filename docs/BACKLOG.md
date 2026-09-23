@@ -5922,13 +5922,13 @@ needs segmenting (Alberto, the same afternoon), and a quest the client is not ho
 name it will give on these builds without a measurement nobody has taken. So a browsable view is a
 later entry, with that measurement first.
 
-**Not shared.** No Wide Family category carries `questsDone` or the family list. The grant grid has no
-room for a fourteenth column, and putting it under *Quests* would widen a consent already given; both
-are Alberto's to decide, and a shared history would also need the other family's list beside the
-flags.
+**Not shared, by decision.** No Wide Family category carries `questsDone` or the family list, and
+none will: Alberto, 2026-09-23, *no wide family sharing for quest history*.
 
-**Not built:** dailies (the specification's second row, *Burning Crusade onwards*):
-`GetDailyQuestsCompleted` answered 0 on every build, so the call that counts them is still unknown.
+**No daily history, by decision.** Alberto, the same day: *no daily quests completion history; dailies
+will be tracked under Quests while active*. A daily in a character's log is read like any other quest
+by `Scanners/Quests.lua`, which is what that means today. The specification's two daily rows now say
+so.
 
 ---
 
