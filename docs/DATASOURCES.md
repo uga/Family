@@ -5486,6 +5486,19 @@ backlog 102.
 
 What stands: fragments answer by their own id, in full, and through the archaeology calls.
 
+**And the Mists row, read the same evening, on a character that owns a listed currency.** Luga won one
+Darkmoon Prize Ticket; the character window grew its Currency tab, and the list answered **2** rows - the
+*Miscellaneous* heading and the ticket:
+
+    "Darkmoon Prize Ticket"  false  true  false  false  1  134481  0  false  0  false  515
+
+Twelve values with nothing empty and the id last, the Burning Crusade shape exactly. The global
+`GetCurrencyListLink` is absent and `C_CurrencyInfo.GetCurrencyListLink` answers a link to **515**, so
+`Scanners/Currencies.lua` files it by id through its second route, which the Summary's Currencies set
+showed the same session: a *Darkmoon Prize Ticket* column with Luga at 1. The short-row risk in that
+scanner's read (`Family:TryCall` returning a row short when an answer in the middle is empty) has now been
+read against on both builds that list currencies, and neither answers an empty value in the row.
+
 ### Honor on Mists is 1901, and the probe had been asking 392 — 2026-09-21
 
 Backlog 5 and the second half of 95 were both waiting on *a Mists character holding a currency*,

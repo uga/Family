@@ -7225,7 +7225,7 @@ twelve and is caught.
 
 ---
 
-## 102. Read one currency row on Mists, from a character holding any currency — PARKED 2026-09-23
+## 102. Read one currency row on Mists, from a character holding any currency — CLOSED 2026-09-23, nothing to change
 
 **Opened 2026-09-23**, out of backlog 95. That entry closed with this reading still owed and wrote the
 way to get it down (2026-09-21), but a question inside a DONE entry is not on anybody's list. Alberto
@@ -7293,4 +7293,8 @@ separate question nobody has asked.
 **Parked 2026-09-23.** Alberto has no Mists character that owns a listed currency - no honor, nothing
 behind a Currency tab. Nothing is wrong meanwhile: a character with no listed currency has nothing for
 the list to miss. The reading is taken the first time any Mists character earns one.
+
+**Closed the same evening.** Luga won a Darkmoon Prize Ticket, the Currency tab appeared, and the row
+read as twelve values, none empty, id 515 last - the Burning Crusade shape. Family filed it by id and
+drew it on the Currencies set. Nothing to change (DATASOURCES, *On Mists the currency list is empty*).
 
