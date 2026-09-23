@@ -1023,4 +1023,5 @@ Family.locales.ruRU = {
 	["Instance lockouts"] = "Привязки к подземельям",
 	["Resets in"] = "Сброс через",
 	["extended"] = "продлено",
+	["|cff888888Nobody is saved to an instance right now.|r"] = "|cff888888Сейчас ни у кого нет привязки к подземелью.|r",
 }

@@ -6049,7 +6049,9 @@ left each of them too narrow for *Miscellaneous*, so the Crafting set became **C
 section headed *Crafting cooldowns* (as before) and one headed *Instance lockouts* drawn the same way:
 the place written once, whoever is saved to it underneath, then the lock number, *extended* where it
 was, and the time left. **Only characters with a lock still running are listed**: a lock whose moment
-has passed is dropped at drawing time whether or not anybody has logged in since. One place read in two
+has passed is dropped at drawing time whether or not anybody has logged in since. When nobody is
+locked anywhere the section stays, with a grey line saying so (Alberto, the same evening), except
+while the picker has a crafting timer chosen. One place read in two
 languages is one block. The set's picker offers the places as well as the timers.
 
 **Unwritten**: the Options note and the `/family ready` note, which said lockouts were not recorded, and

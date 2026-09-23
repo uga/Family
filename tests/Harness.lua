@@ -41831,16 +41831,35 @@ print("instance lockouts, read, kept and drawn")
 	end
 	check("the picker offers the place", offered["Blackwing Lair  40 Player"] == true)
 
-	-- Alberto, 2026-09-23: *only instances with at least one locked character should be listed;
-	-- if no character has a lockout the list will be empty.* With the two running locks gone,
-	-- what is left is one that has let go, and neither a place nor the section's heading is drawn.
+	-- Alberto, 2026-09-23: *only instances with at least one locked character should be listed*,
+	-- and with nobody locked the section stays, saying so in grey. With the two running locks
+	-- gone, what is left is one that has let go.
 	Family.Database:Forget("Raidera-FireMaw")
 	Family.Database:Forget("Raiderb-FireMaw")
+	Family.Database:SetMeta("Raiderd-FireMaw", { name = "Raiderd", realm = "Fire Maw",
+		classFile = "MAGE", level = 60, faction = "Alliance",
+		craftCooldowns = { { name = "Transmute: Arcanite", profession = 171,
+			readyAt = time() + 3600 } } })
 	Family.UI:Refresh()
 	check("with nobody locked, no place is listed",
 		not visibleText("Blackwing Lair") and not visibleText("Molten Core"))
-	check("and the lockouts section is not drawn at all",
-		not visibleText(Family.L["Instance lockouts"]))
+	check("but the lockouts section is still drawn",
+		visibleText(Family.L["Instance lockouts"]))
+	check("saying in grey that nobody is saved anywhere",
+		visibleText(Family.L["|cff888888Nobody is saved to an instance right now.|r"]))
+
+	-- Narrowed to a crafting timer, the question is about that timer: no lockouts section.
+	narrow = Family.UI.__summaryNarrow
+	local timer
+	for _, choice in ipairs(narrow and narrow:Choices() or {}) do
+		if choice.value ~= Family.UI.ANY then timer = timer or choice.value end
+	end
+	if narrow and timer ~= nil then narrow:Choose(timer) end
+	Family.UI:Refresh()
+	check("a crafting timer chosen in the picker brings no lockouts section with it",
+		timer ~= nil and not visibleText(Family.L["Instance lockouts"]), tostring(timer))
+	Family.Database:Forget("Raiderd-FireMaw")
+	Family.UI:Refresh()
 
 	clickLastButton(Family.L["Overview"])
 	for _, name in ipairs { "Raidera", "Raiderb", "Raiderc" } do

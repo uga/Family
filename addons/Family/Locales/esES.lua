@@ -1023,4 +1023,5 @@ Family.locales.esES = {
 	["Instance lockouts"] = "Bloqueos de instancia",
 	["Resets in"] = "Se reinicia en",
 	["extended"] = "extendido",
+	["|cff888888Nobody is saved to an instance right now.|r"] = "|cff888888Nadie tiene un bloqueo de instancia ahora mismo.|r",
 }

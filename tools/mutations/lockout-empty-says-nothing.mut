@@ -1,0 +1,6 @@
+name: an empty lockouts section says nothing
+file: addons/Family_UI/Summary.lua
+--- old
+				setCell(row, 1, L["|cff888888Nobody is saved to an instance right now.|r"])
+--- new
+				setCell(row, 1, "")

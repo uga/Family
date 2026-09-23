@@ -1023,4 +1023,5 @@ Family.locales.deDE = {
 	["Instance lockouts"] = "Instanzsperren",
 	["Resets in"] = "Zurückgesetzt in",
 	["extended"] = "verlängert",
+	["|cff888888Nobody is saved to an instance right now.|r"] = "|cff888888Gerade ist niemand in einer Instanz gesperrt.|r",
 }

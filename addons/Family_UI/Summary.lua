@@ -3803,7 +3803,13 @@ local function build(frame)
 			local sizes = {}
 			for _, group in ipairs(order) do sizes[#sizes + 1] = #group.people end
 			for _, group in ipairs(lockOrder) do sizes[#sizes + 1] = #group.people end
-			local headings = (#order > 0 and 1 or 0) + (#lockOrder > 0 and 1 or 0)
+			-- The lockouts section stays up when nobody is saved anywhere, with a grey line
+			-- saying so - Alberto, 2026-09-23: an absent section read as a missing feature.
+			-- Not while the picker has chosen a crafting timer, where the question is about
+			-- that timer and *nobody is saved* would answer a different one.
+			local lockSection = wanted == nil or #lockOrder > 0
+			local headings = (#order > 0 and 1 or 0)
+				+ (lockSection and (#lockOrder > 0 and 1 or 2) or 0)
 			local cap = UI:FoldDepth(sizes, headings,
 				UI:RowsThatFit(scroll, currentSet.rowHeight), UI.CRAFTING_PEOPLE or 3)
 
@@ -3904,7 +3910,11 @@ local function build(frame)
 				end
 			end
 
-			if #lockOrder > 0 then section(L["Instance lockouts"], L["Resets in"]) end
+			if lockSection then section(L["Instance lockouts"], L["Resets in"]) end
+			if lockSection and #lockOrder == 0 then
+				local row = nextRow(currentSet.rowHeight)
+				setCell(row, 1, L["|cff888888Nobody is saved to an instance right now.|r"])
+			end
 
 			for _, group in ipairs(lockOrder) do
 				local open = UI.__openCrafting == group.token

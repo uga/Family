@@ -1023,4 +1023,5 @@ Family.locales.frFR = {
 	["Instance lockouts"] = "Verrous d'instance",
 	["Resets in"] = "Réinitialisé dans",
 	["extended"] = "prolongé",
+	["|cff888888Nobody is saved to an instance right now.|r"] = "|cff888888Personne n'est verrouillé dans une instance en ce moment.|r",
 }

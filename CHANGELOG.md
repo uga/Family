@@ -55,7 +55,8 @@ is a decision rather than an afternoon of archaeology.
   They are on the summary's **Cooldowns** page, which is the old Crafting page. Crafting cooldowns
   come first, as before, then instance lockouts: each raid or dungeon once, with the characters
   saved to it underneath, their lock number, and how long until it resets. Only locks still
-  running are listed. Before, Family said it did not record lockouts at all.
+  running are listed, and when nobody is saved anywhere the section says so. Before, Family said
+  it did not record lockouts at all.
 - **A lockout is read when that character logs in**, and again after a boss dies. A character you
   have not logged in since they were saved is not listed.
 - **Lockouts can be shared with a linked family**, in a category of their own. They are not sent
