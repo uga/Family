@@ -35646,6 +35646,56 @@ print("a linked family's columns on the summary")
 	Family.UI:Refresh()
 end)()
 
+print()
+print("a currency filed under its name joins the column of its id")
+
+-- Reported from play 2026-09-23 on Burning Crusade: two *Honor Points* columns, Tossica's 1,428
+-- in one and Tanardo's 20 in the other. Tanardo's record was written before 2026-09-20, when that
+-- build filed honor under its name; Tossica's was written since, under 1901.
+;(function()
+	local faction = (Family.Database:Meta(Family:CurrentMember()) or {}).faction
+	local newer, older = "Idhonor-Thunderstrike", "Namehonor-Thunderstrike"
+	Family.Database:SetMeta(newer, { realm = "Thunderstrike", faction = faction, level = 70,
+		currenciesSeen = time(), currencies = { { id = 1901, key = "c1901",
+		name = "Honor Points", quantity = 1428 } } })
+	Family.Database:SetMeta(older, { realm = "Thunderstrike", faction = faction, level = 70,
+		currenciesSeen = time(), currencies = { { key = "n:Honor Points",
+		name = "Honor Points", quantity = 20 } } })
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	clickButton("Currencies")
+	Family.UI:Refresh()
+
+	local honor, byName = 0, false
+	for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+		if column.label == "Honor Points" then honor = honor + 1 end
+		if column.key == "cur:n:Honor Points" then byName = true end
+	end
+	check("one Honor Points column, whichever way each record was filed",
+		honor == 1 and not byName, honor .. " column(s)")
+
+	local twenty = false
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and type(f.cells) == "table" and onScreen(f) then
+			local name = type(f.cells[1]) == "table" and tostring(f.cells[1].__text) or ""
+			if name:find("Namehonor", 1, true) then
+				for index = 2, #f.cells do
+					local text = type(f.cells[index]) == "table"
+						and tostring(f.cells[index].__text) or ""
+					if text:find("20", 1, true) then twenty = true end
+				end
+			end
+		end
+	end
+	check("and the older record's 20 is drawn in it", twenty)
+
+	clickButton("Overview")
+	Family.UI:Hide()
+	Family.Database:Forget(newer)
+	Family.Database:Forget(older)
+end)()
+
 --------------------------------------------------------------------------------------------
 -- The harness loads what the game loads
 --
@@ -42025,6 +42075,23 @@ print("instance lockouts, read, kept and drawn")
 	Family.UI:Refresh()
 
 	check("with a section for the lockouts", visibleText(Family.L["Instance lockouts"]))
+
+	-- The section headings carry the column words, so the heading row above them carries none.
+	local worded = {}
+	for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+		if column.label ~= "" then worded[#worded + 1] = tostring(column.label) end
+	end
+	check("the Cooldowns page's heading row says nothing its sections say",
+		#Family.UI.__summaryColumns > 0 and #worded == 0, table.concat(worded, ", "))
+	local memberOnHeading = false
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and type(f.cells) == "table" and onScreen(f)
+			and type(f.cells[1]) == "table" and f.cells[1].__text == Family.L["Instance lockouts"]
+			and type(f.cells[2]) == "table" and f.cells[2].__text == Family.L["Member"] then
+			memberOnHeading = true
+		end
+	end
+	check("and a section heading names the member column", memberOnHeading)
 	check("a member with a lockout and no crafting timer is on it", visibleText("Raidera"))
 	check("and so is one read in another language", visibleText("Raiderb"))
 	check("the lock's own number is shown", visibleText("#135392441"))

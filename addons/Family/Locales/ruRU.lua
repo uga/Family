@@ -86,7 +86,6 @@ Family.locales.ruRU = {
 	["Miscellaneous"] = "Разное",  -- 14
 	["Unknown realm"] = "Неизвестный мир",
 	["|cffff4444gone|r"] = "|cffff4444пропало|r",
-	["Cooldown"] = "Восстановление",
 	["Ready"] = "Готово",
 	["|cff40bf40%d ready|r"] = "|cff40bf40%d готово|r",
 	["|cff40bf40ready|r"] = "|cff40bf40готово|r",

@@ -86,7 +86,6 @@ Family.locales.deDE = {
 	["Miscellaneous"] = "Sonstiges",  -- 14
 	["Unknown realm"] = "Unbekannter Realm",
 	["|cffff4444gone|r"] = "|cffff4444weg|r",
-	["Cooldown"] = "Abklingzeit",
 	["Ready"] = "Bereit",
 	["|cff40bf40%d ready|r"] = "|cff40bf40%d bereit|r",
 	["|cff40bf40ready|r"] = "|cff40bf40bereit|r",

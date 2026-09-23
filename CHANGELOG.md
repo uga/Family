@@ -91,6 +91,9 @@ is a decision rather than an afternoon of archaeology.
   *712 at auction prices*, which left the reader to guess. The same on an item's tooltip.
 - **Realm headings on the summary show their whole name again.** They had been cut short, as in
   *Pyrewood Village...*.
+- **The Cooldowns page has one line of headings per section**: *Crafting cooldowns*, *Member*,
+  *Ready*, and *Instance lockouts*, *Member*, *Resets in*. The line above them used to repeat
+  *Cooldown*, *Member*, *Ready*.
 
 ### Achievements
 
@@ -111,8 +114,9 @@ is a decision rather than an afternoon of archaeology.
 - **Honor on Burning Crusade is recognised by the game's own number for it, not by its name.**
   A family whose characters are played on clients of different languages now sees one honor
   column that adds up, where before an English client and a French one made two columns that
-  each held half the family. Characters read before this release keep their old column until
-  the next time they log in.
+  each held half the family. Characters read before this change, and not logged in since, are
+  counted in the same honor column as everybody else. They used to get a second *Honor Points*
+  column of their own.
 
 ## 4.3.0 — 2026-09-19
 

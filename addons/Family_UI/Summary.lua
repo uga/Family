@@ -1892,9 +1892,22 @@ end
 -- has, rather than added to the list it closes over.
 function UI:Shortened(name, limit) return shortened(name, limit) end
 
+-- **A currency filed under its name is read under its id where the family knows the id.** Burning
+-- Crusade filed honor as `n:Honor Points` until 2026-09-20, because that build links to no
+-- currency, and a character not played since still carries that record. Read as it stands, it
+-- drew a second *Honor Points* column beside the one keyed 1901 - reported from play 2026-09-23,
+-- Tanardo's 20 in one column and Tossica's 1,428 in the other. Only a name some record in the
+-- family also carries with an id is joined to it: the name is one language, so a record written
+-- on another client's language keeps its own column rather than be matched by guess.
+local currencyAlias = {}
+
+local function currencyKey(currency)
+	return currency.key and (currencyAlias[currency.key] or currency.key)
+end
+
 local function currencyOf(meta, key)
 	for _, currency in ipairs(meta.currencies or {}) do
-		if currency.key == key then return currency end
+		if currencyKey(currency) == key then return currency end
 	end
 	return nil
 end
@@ -1930,17 +1943,28 @@ end
 
 local function currenciesHeld()
 	local byKey, order = {}, {}
+	local metas = everyMeta()
 
-	for _, meta in ipairs(everyMeta()) do
+	for key in pairs(currencyAlias) do currencyAlias[key] = nil end
+	for _, meta in ipairs(metas) do
+		for _, currency in ipairs(meta.currencies or {}) do
+			if currency.id and type(currency.name) == "string" and currency.key then
+				currencyAlias["n:" .. currency.name] = currency.key
+			end
+		end
+	end
+
+	for _, meta in ipairs(metas) do
 		if factionShown(meta.faction) then
 			for _, currency in ipairs(meta.currencies or {}) do
 				-- Records written before the scanner insisted on a key are already on
 				-- disk, and one of them indexed a table with a nil and took this whole
 				-- panel down. They are skipped until that member is scanned again.
-				local found = currency.key and byKey[currency.key]
-				if currency.key and not found then
-					found = { key = currency.key, total = 0 }
-					byKey[currency.key] = found
+				local key = currencyKey(currency)
+				local found = key and byKey[key]
+				if key and not found then
+					found = { key = key, total = 0 }
+					byKey[key] = found
 					order[#order + 1] = found
 				end
 				if found then
@@ -2116,11 +2140,15 @@ UI.CRAFTING_PEOPLE = UI.CRAFTING_PEOPLE or 10
 --
 -- The same shape as the whole-family reputations list and the possessions search: the thing on
 -- the left written once, whoever it is about under it, and what there is to say on the right.
+-- **No words on the heading row.** Each section says what its columns are on its own heading -
+-- *Crafting cooldowns*, *Member*, *Ready*, and *Instance lockouts*, *Member*, *Resets in* - so the
+-- row above them said the same thing a second time, a line apart (Alberto, 2026-09-23: *the
+-- semi-duplicate first headers line is ugly*). The columns stay, because they place the cells.
 function craftingColumns()
 	return {
-		{ key = "cdtimer", label = L["Cooldown"], width = 220, justify = "LEFT" },
-		{ key = "cdwho", label = L["Member"], width = 200, justify = "LEFT" },
-		{ key = "cdwhen", label = L["Ready"], width = 294, justify = "RIGHT" },
+		{ key = "cdtimer", label = "", width = 220, justify = "LEFT" },
+		{ key = "cdwho", label = "", width = 200, justify = "LEFT" },
+		{ key = "cdwhen", label = "", width = 294, justify = "RIGHT" },
 	}
 end
 
@@ -3841,6 +3869,7 @@ local function build(frame)
 			local function section(title, right)
 				local heading = nextRow(currentSet.rowHeight)
 				setCell(heading, 1, title, 1, 0.82, 0)
+				setCell(heading, 2, L["Member"], 1, 0.82, 0)
 				-- In the title's yellow, which is the colour the column headings above are in
 				-- (screenshot, 2026-09-23: grey read as a value rather than a heading).
 				setCell(heading, 3, right, 1, 0.82, 0)

@@ -86,7 +86,6 @@ Family.locales.frFR = {
 	["Miscellaneous"] = "Divers",  -- 14
 	["Unknown realm"] = "Royaume inconnu",
 	["|cffff4444gone|r"] = "|cffff4444perdu|r",
-	["Cooldown"] = "Temps de recharge",
 	["Ready"] = "Prêt",
 	["|cff40bf40%d ready|r"] = "|cff40bf40%d prêts|r",
 	["|cff40bf40ready|r"] = "|cff40bf40prêt|r",

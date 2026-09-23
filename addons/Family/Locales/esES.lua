@@ -86,7 +86,6 @@ Family.locales.esES = {
 	["Miscellaneous"] = "Varios",  -- 14
 	["Unknown realm"] = "Reino desconocido",
 	["|cffff4444gone|r"] = "|cffff4444perdido|r",
-	["Cooldown"] = "Reutilización",
 	["Ready"] = "Listo",
 	["|cff40bf40%d ready|r"] = "|cff40bf40%d listos|r",
 	["|cff40bf40ready|r"] = "|cff40bf40listo|r",
