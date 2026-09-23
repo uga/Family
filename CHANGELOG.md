@@ -29,6 +29,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 4.4.0 — 2026-09-23
+
 ### Herbs and ore in the world
 
 - **Hovering a herb or a mining vein in the world says who in your family already has some.**
@@ -49,6 +51,13 @@ is a decision rather than an afternoon of archaeology.
   stacked up. Herbs on a GatherMate pin answer too, which they did not at first - that addon
   writes its names in colour, and Family was reading the colour as part of the name.
 
+### Professions
+
+- **A profession's recipe list can no longer be wiped by opening its window.** Family sometimes read
+  the window before the game had finished filling it, and saved the one recipe, or none, that it saw
+  at that moment - a cook with seventy-five recipes was recorded with one. Now a list that would
+  shrink by more than half is read again a moment later and saved only if the second look agrees.
+
 ### Instance lockouts
 
 - **Family now records which instances each character is saved to, and when each lock resets.**
@@ -62,6 +71,15 @@ is a decision rather than an afternoon of archaeology.
 - **Lockouts can be shared with a linked family**, in a category of their own. They are not sent
   unless you tick it.
 
+### Quests already handed in
+
+- **Hovering a quest in Family's quest lists now says which of your characters have already handed
+  it in**, or that nobody in the family has yet. Useful when a chain, an attunement or a reputation
+  grind comes up and you need to know who can still do it. Before, Family only knew what was in each
+  quest log.
+- Each character's history is read when they log in and after every quest they hand in, so a
+  character you have not logged in since this update has not been read yet.
+
 ### The summary
 
 - **Hold CTRL and click a character's name on the summary to open their possessions, or ALT to
@@ -69,6 +87,27 @@ is a decision rather than an afternoon of archaeology.
   A character who has never opened a profession window says so in chat instead of opening the
   professions page on somebody else. Hovering a name says both, in grey, at the foot of its
   tooltip.
+- **Hovering a character's name on the summary now says where they logged out**, just under the
+  name.
+- **The worth lines say what they count**: *712 items priced at auction prices*. They used to say
+  *712 at auction prices*, which left the reader to guess. The same on an item's tooltip.
+- **Realm headings on the summary show their whole name again.** They had been cut short, as in
+  *Pyrewood Village...*.
+- **Rested experience keeps growing while a character is away.** The summary's column is now
+  *Rest XP est.*: the figure recorded at logout, plus 5% of a level for every 8 hours away where
+  the character was resting, or every 32 hours anywhere else, up to a level and a half.
+  Pandaren fill twice as fast, up to three levels. The page's note says so. Before, the column
+  showed the figure from the day the character was put away. A character not logged in since
+  this update shows its old figure until its next login.
+- **A currency's heading on the summary shows its whole name when you hover it**, where the
+  heading had to be cut to fit, as in *Darkmoon Pri...*.
+- **An instance lockout's name and difficulty fit on the Cooldowns page**:
+  *Hellfire Citadel: Ramparts  Heroic* used to be cut to *Hellfire Citadel: Rampa...*.
+- **The summary's Last seen column gives the age alone**: *15d*, *3h*, *yesterday*, and *shared
+  15d* for a linked family's character. It used to add *ago*, and *shared 15d ago* did not fit.
+- **The Cooldowns page has one line of headings per section**: *Crafting cooldowns*, *Member*,
+  *Ready*, and *Instance lockouts*, *Member*, *Resets in*. The line above them used to repeat
+  *Cooldown*, *Member*, *Ready*.
 
 ### Achievements
 
@@ -81,6 +120,9 @@ is a decision rather than an afternoon of archaeology.
 
 ### Typing to Family
 
+- **`/family widetime` says what changed** for each character it lists as changed since it was
+  last sent to a linked family: *Malachia (bags, zone)*, or *not known* where Family did not keep
+  what it sent. Before, it gave only the name.
 - **`/family scancost` says which part of reading your character costs what**, a part at a time.
   For when Family is slow, or stops with an error while you play.
 
@@ -89,8 +131,9 @@ is a decision rather than an afternoon of archaeology.
 - **Honor on Burning Crusade is recognised by the game's own number for it, not by its name.**
   A family whose characters are played on clients of different languages now sees one honor
   column that adds up, where before an English client and a French one made two columns that
-  each held half the family. Characters read before this release keep their old column until
-  the next time they log in.
+  each held half the family. Characters read before this change, and not logged in since, are
+  counted in the same honor column as everybody else. They used to get a second *Honor Points*
+  column of their own.
 
 ## 4.3.0 — 2026-09-19
 

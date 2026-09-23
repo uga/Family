@@ -1,0 +1,6 @@
+name: the tooltip says nobody has done a quest when no history has been read
+file: addons/Family_UI/Quests.lua
+--- old
+	if read == 0 then return {} end
+--- new
+

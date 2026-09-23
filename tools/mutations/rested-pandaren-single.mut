@@ -1,0 +1,6 @@
+name: a Pandaren fills at everybody's rate
+file: addons/Family/Scanners/Identity.lua
+--- old
+    local factor = DOUBLED_RACE[meta.raceID] and 2 or 1
+--- new
+    local factor = 1

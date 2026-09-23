@@ -2062,3 +2062,32 @@ names Midnight has already answered, through the second brief's lockout block:
 `GetNumSavedInstances()` answers 0, `GetSavedInstanceInfo(1)` answers fourteen values, and
 `UPDATE_INSTANCE_INFO` registers. **`RequestRaidInfo` and `BOSS_KILL` have never been asked.**
 The regenerated `Surface.lua` rides probe version 15, which asks both at login.
+
+## 34. The merge of 4.4.0, and two more names the client has not been asked (2026-09-23)
+
+`main` released 4.4.0 at `fe0b690` - thirty-three commits since §33 - and FAMILY DEV asked for it
+to be read and merged. What it brings that calls the client:
+
+- **Quests already handed in** (backlog 92), a new `Scanners/QuestHistory.lua`: `GetQuestsCompleted`
+  handed a table to fill, on `PLAYER_ENTERING_WORLD` and `QUEST_TURNED_IN`. Where the global is
+  not a function it returns nil and the scanner writes nothing and says *no quest history on this
+  client* - the same silence as the quest log and the pets on this client, not a zero.
+- **Rested experience worked forward** (backlog 94), in `Scanners/Identity.lua`: `IsResting` and
+  `GetXPExhaustion`, both through `TryCall`.
+- **A collapsing recipe list read twice** (backlog 68), in `Scanners/Professions.lua`: `GetTime`
+  and a `Family:After` of two seconds. It sits in the recipe block; this branch's repair of §26
+  sits in `ReadRanks` and the summary's `SetMeta`, and git joined the two without a conflict.
+  On this client the recipe block is never reached while `GetTradeSkillLine` is absent (§24), so
+  the hold has nothing to hold here yet.
+
+**The one conflict was `DECISIONS.md`**, both sides appending rows on the same day; both were kept,
+this branch's first.
+
+`surface.py --check` said the list had moved for the fourth time: **284 globals**, from 282, the
+literals unchanged at 139. The two new names are **`GetQuestsCompleted` and `IsResting`**, and
+Midnight has been asked neither. The regenerated `Surface.lua` rides probe version 15 unchanged -
+its surface pass says whether each is a function, which is the first half of the question.
+The second half, for `GetQuestsCompleted`, is whether it still fills the table it is handed; that
+is for a brief once the first half is known, and nothing here assumes the Retail answer.
+
+The harness went from 3773 checks to 3846 with the three Classic stubs as `main` left them.

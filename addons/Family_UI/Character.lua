@@ -702,9 +702,15 @@ local function build(frame)
 			-- not in the player's log. Handing over the id without the fallback is what
 			-- made a declined quest show nothing at all rather than what Family knows.
 			if self.questID then
+				-- And who in the family has already handed it in, under the progress.
+				local extra = {}
+				for _, line in ipairs(self.progress or {}) do extra[#extra + 1] = line end
+				for _, line in ipairs(UI:QuestDoneLines(self.questID)) do
+					extra[#extra + 1] = line
+				end
 				return "quest", self.questLevel
 					and (self.questID .. ":" .. self.questLevel) or self.questID,
-					self.fallback, nil, self.progress
+					self.fallback, nil, extra
 			end
 			if self.achievementID then
 				return "achievement", self.achievementID, self.fallback

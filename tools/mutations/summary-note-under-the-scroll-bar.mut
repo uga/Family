@@ -1,0 +1,6 @@
+name: the Summary note runs out under the scroll bar again
+file: addons/Family_UI/Summary.lua
+--- old
+	note:SetPoint("BOTTOMRIGHT", footer, "TOPRIGHT", -22, CAPTION_GAP)
+--- new
+	note:SetPoint("BOTTOMRIGHT", footer, "TOPRIGHT", 0, CAPTION_GAP)

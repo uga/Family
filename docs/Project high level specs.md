@@ -285,8 +285,8 @@ broken down, with their type; they are excluded from the free-slot totals.
 | Every learnt recipe, with its difficulty colour | recorded when the profession window is opened |
 | Crafting cooldowns, on recipes and on the items that go with them | as seen — see §2.2. Called **crafting** cooldowns everywhere they are reported, so that the absence of instance lockouts below is read as an absence rather than as a promise |
 | Quests currently in the log | |
-| Quest completion history | |
-| Daily quests completed | Burning Crusade onwards |
+| Quest completion history | kept on this machine: never shared with a linked family (Alberto, 2026-09-23) |
+| Daily quests completed | **not recorded** (Alberto, 2026-09-23). A daily is followed like any other quest while it is in the log |
 | Reputations | only the factions the client has |
 | Achievements | Mists |
 | Currencies | Mists |
@@ -469,7 +469,7 @@ One subject at a time, every member side by side.
 | **Professions** | professions and ranks across the family | all |
 | **Keys** | dungeon keys and keyring contents | Era, Burning Crusade |
 | **Attunements** | attunement progress | Era, Burning Crusade |
-| **Daily quests** | which dailies each member has done | Burning Crusade onwards |
+| **Daily quests** | **not built** (Alberto, 2026-09-23): a daily shows in the quest log while it is active, and no history of them is kept | - |
 | **Currencies** | tokens and currencies | Mists |
 | **Achievements** | achievement progress | Mists |
 

@@ -1,0 +1,6 @@
+name: the history is taken only from what the call hands back, never from the table it fills
+file: addons/Family/Scanners/QuestHistory.lua
+--- old
+	local source = next(into) and into or (type(answer) == "table" and answer or into)
+--- new
+	local source = type(answer) == "table" and answer or {}

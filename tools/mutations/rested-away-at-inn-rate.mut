@@ -1,0 +1,6 @@
+name: a character logged out out of doors fills at the inn rate
+file: addons/Family/Scanners/Identity.lua
+--- old
+        gained = gained + level * (now - left) / (meta.resting and RESTING_SPAN or AWAY_SPAN)
+--- new
+        gained = gained + level * (now - left) / RESTING_SPAN

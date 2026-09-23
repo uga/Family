@@ -15,7 +15,7 @@ So for each name it asks the question that can actually be answered:
 
 | What | Asked how | Recorded |
 |---|---|---|
-| 282 globals and 57 namespace members Family reads | looked up | the type, the value of a number or string, or `nil` |
+| 284 globals and 57 namespace members Family reads | looked up | the type, the value of a number or string, or `nil` |
 | 139 upper-case string literals | `RegisterEvent` in a `pcall`, as `Family:RegisterEvent` does | `registers` or the refusal |
 | 6 frame templates | built on the frame type Family builds them on | `builds` or the error |
 | 100 read-only calls at login | called, with the smallest sensible arguments | every return, tables one level deep, or the error |

@@ -1,0 +1,8 @@
+name: a boon's buffs hang off the row's edge, right of the Chrono figure
+file: addons/Family_UI/Summary.lua
+--- old
+					if edge then
+						slot:SetPoint("RIGHT", line, "LEFT",
+--- new
+					if false then
+						slot:SetPoint("RIGHT", line, "LEFT",

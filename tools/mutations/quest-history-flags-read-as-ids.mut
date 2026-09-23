@@ -1,0 +1,6 @@
+name: a quest flag is read as its place rather than as the id in the family list
+file: addons/Family/Scanners/QuestHistory.lua
+--- old
+				local id = ids[(index - 2) * 6 + bit + 1]
+--- new
+				local id = (index - 2) * 6 + bit + 1

@@ -75,6 +75,42 @@ end
 -- in combat, say - simply leaves the game as it was.
 --------------------------------------------------------------------------------------------
 
+-- **Which of the family has already handed this quest in** (backlog 92), for the foot of a quest
+-- row's tooltip. The question a chain, an attunement or a reputation grind asks is *who can still
+-- do it*, and the log only says who is on it. Our own members only: nobody else's history is
+-- shared yet.
+--
+-- Nothing at all while no member's history has been read, because *nobody has done it* would be a
+-- claim made out of an absence. Ten names and then a count, the tooltips' usual fold.
+UI.QUEST_DONE_NAMES = UI.QUEST_DONE_NAMES or 10
+
+function UI:QuestDoneLines(questID)
+	if not questID then return {} end
+
+	local done, read = {}, 0
+	for key, entry in pairs(Family.Database:Members()) do
+		local answer = Family.QuestHistory:Done(key, questID)
+		if answer ~= nil then read = read + 1 end
+		if answer then done[#done + 1] = UI:NameOf(entry.meta or { key = key }) end
+	end
+	if read == 0 then return {} end
+
+	table.sort(done)
+	local lines = { { " " } }
+	if #done == 0 then
+		lines[#lines + 1] = { L["|cff9d9d9dNobody in the family has handed this in yet.|r"] }
+		return lines
+	end
+
+	lines[#lines + 1] = { L["|cff88bbffAlready handed in by:|r"] }
+	local shown = UI:ShowAtMost(#done, UI.QUEST_DONE_NAMES)
+	for index = 1, shown do lines[#lines + 1] = { "  " .. done[index] } end
+	if shown < #done then
+		lines[#lines + 1] = { string.format(L["|cff888888and %d more|r"], #done - shown) }
+	end
+	return lines
+end
+
 function UI:OpenQuest(memberKey, questID, title)
 	if memberKey ~= Family:CurrentMember() then return false end
 

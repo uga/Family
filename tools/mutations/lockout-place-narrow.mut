@@ -1,0 +1,6 @@
+name: the Cooldowns page's place column goes back to 220
+file: addons/Family_UI/Summary.lua
+--- old
+		{ key = "cdtimer", label = "", width = 300, justify = "LEFT" },
+--- new
+		{ key = "cdtimer", label = "", width = 220, justify = "LEFT" },

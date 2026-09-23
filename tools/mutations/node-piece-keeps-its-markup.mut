@@ -1,6 +1,6 @@
 name: one name of several on a line keeps the spacing the markup left around it
 file: addons/Family_UI/Tooltip.lua
 --- old
-		local name = trimmed(piece)
+			local each = trimmed(piece)
 --- new
-		local name = piece
+			local each = piece

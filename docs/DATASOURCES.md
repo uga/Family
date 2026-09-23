@@ -5472,6 +5472,60 @@ list when `UPDATE_INSTANCE_INFO` says so. What is corrected is the strength of i
 the field change; one session saw it steady; that is a field which is *sometimes* wrong before the
 event, which is all a reader needs to know and less than was written.
 
+#### `GetSavedInstanceEncounterInfo` answered, and it holds one boss — read 2026-09-23
+
+A new lock on the same character, Luga on `5.5.4`, Molten Core again: lock id `239735737`, 551,724
+seconds left, which is the *6d 9h* the Summary's Cooldowns page drew for it in the same session.
+Columns 11 and 12 are `1` and `0`, as on the first lock.
+
+The encounter call, asked eight slots by position, answered **slot 1 only**: `"Majordomo Executus"`,
+`nil`, `false`, `false`. Slots 2 to 8 are all `nil`. So on this client the lock's own list of
+encounters has **one** entry, which is what column 11 said, against the ten rows `DungeonEncounter`
+holds for map 409. The third value reads as *killed* and is `false`.
+
+**What it settles:** column 11 is the length of this list, and the list really is one long here - it
+was not the count that was wrong, it is the lock that carries one encounter. A legacy forty-man lock on
+Mists does not track its bosses one by one, which is also what the game's Raid Information window
+showed by drawing no progress at all. *N of M bosses* stays unsayable on Mists, and Family's lockouts
+(backlog 93) claim none. **Still unread:** the same call on an Era lock, where column 11 said 8, 9 and
+15, and on a heroic.
+
+### On Mists the currency list is empty and a currency answers by its own id — read 2026-09-23
+
+Luga on `5.5.4`, holding eleven Dwarf fragments. `GetCurrencyListSize` answered **0**, and Alberto
+reports the Mists Classic character window shows **no Currency tab** for this character.
+
+Asked by id instead, `C_CurrencyInfo.GetCurrencyInfo(384)` answered `name=Dwarf Archaeology Fragment
+quantity=11 maxQuantity=200 discovered=true`, and the Troll (385) and Fossil (393) rows answered
+`quantity=0 discovered=false`. `currencyID` is `0` on all three, as it was for honor: the id is the one
+asked with, never read back. The archaeology calls agree: `GetNumArchaeologyRaces` is 13 and
+`GetArchaeologyRaceInfo(13)` is `"Dwarf" 461831 52843 11 32 200` - the fourth value is the fragments
+held, the sixth the cap.
+
+**Corrected the same hour: this does not show that a Mists currency is reachable only by its id.**
+It was first written that way, and that was wrong. Alberto asked another player in the game: the
+character window grows a Currency tab once the character **owns** a currency, and Luga has none.
+Archaeology fragments are not currencies in the client's sense, whatever `CurrencyTypes` files them
+under, so they do not put Luga in the list and do not make the tab appear. An empty list on a
+character with fragments says that fragments are not listed. It says nothing about a character that
+does own a listed currency, and no Mists character with the tab has been read yet. That is still
+backlog 102.
+
+What stands: fragments answer by their own id, in full, and through the archaeology calls.
+
+**And the Mists row, read the same evening, on a character that owns a listed currency.** Luga won one
+Darkmoon Prize Ticket; the character window grew its Currency tab, and the list answered **2** rows - the
+*Miscellaneous* heading and the ticket:
+
+    "Darkmoon Prize Ticket"  false  true  false  false  1  134481  0  false  0  false  515
+
+Twelve values with nothing empty and the id last, the Burning Crusade shape exactly. The global
+`GetCurrencyListLink` is absent and `C_CurrencyInfo.GetCurrencyListLink` answers a link to **515**, so
+`Scanners/Currencies.lua` files it by id through its second route, which the Summary's Currencies set
+showed the same session: a *Darkmoon Prize Ticket* column with Luga at 1. The short-row risk in that
+scanner's read (`Family:TryCall` returning a row short when an answer in the middle is empty) has now been
+read against on both builds that list currencies, and neither answers an empty value in the row.
+
 ### Honor on Mists is 1901, and the probe had been asking 392 — 2026-09-21
 
 Backlog 5 and the second half of 95 were both waiting on *a Mists character holding a currency*,

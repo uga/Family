@@ -1,0 +1,5 @@
+name: a Cooldowns section heading leaves the member column unnamed
+file: addons/Family_UI/Summary.lua
+--- old
+				setCell(heading, 2, L["Member"], 1, 0.82, 0)
+--- new

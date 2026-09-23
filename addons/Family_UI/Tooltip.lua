@@ -1151,15 +1151,18 @@ local function priceLines(tooltip, itemID, variant)
 		-- and the right-hand column is left carrying nothing but money. The strings are shared
 		-- with the summary's row tooltip, which drew the same three lines the same way.
 		if held.atMarket > 0 then
-			lines[#lines + 1] = { string.format(L["%d at auction prices"], held.atMarket),
+			lines[#lines + 1] = { string.format(held.atMarket == 1 and L["%d item priced at auction prices"]
+				or L["%d items priced at auction prices"], held.atMarket),
 				"", 0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
 		end
 		if held.atVendor > 0 then
-			lines[#lines + 1] = { string.format(L["%d at vendor prices"], held.atVendor),
+			lines[#lines + 1] = { string.format(held.atVendor == 1 and L["%d item priced at vendor prices"]
+				or L["%d items priced at vendor prices"], held.atVendor),
 				"", 0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
 		end
 		if held.unpriced > 0 then
-			lines[#lines + 1] = { string.format(L["%d with no price"], held.unpriced),
+			lines[#lines + 1] = { string.format(held.unpriced == 1 and L["%d item with no price"]
+				or L["%d items with no price"], held.unpriced),
 				"", 0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
 		end
 	end
@@ -1870,10 +1873,8 @@ local function itemsForNode(said, skill)
 	local ids, seen = {}, {}
 
 	for piece in tostring(said):gmatch("[^\r\n]+") do
-		-- Trimmed and not stripped: the markup came off the whole line already, and what it
-		-- leaves behind is the spacing that sat between it and the name - which is inside the
-		-- line and so outside what trimming the ends of it reached.
-		local name = trimmed(piece)
+		-- Already trimmed, each piece, by `onNode` as it took the repeats out.
+		local name = piece
 		local one = herbs and herbNamed(name, herbs) or nil
 
 		-- **A list that did not answer, and was not complete, has not said no.**
@@ -1915,6 +1916,30 @@ local function itemsForNode(said, skill)
 	return answer
 end
 
+-- **The title says each name once** - Alberto, 2026-09-23, on a minimap pin over three copper
+-- veins: *vein name still not deduplicated*. GatherMate2 writes one name per pin under the cursor,
+-- all into the first line, so three pins of one vein read *Copper Vein* three times above a block
+-- that already says Copper Ore once. The line is not ours, and it is rewritten only here, where
+-- Family is about to write its own answer under it: each name kept the first time it appears, with
+-- whatever colour it came in, and the line left exactly as it was when nothing repeats.
+local function oncePerName(tooltip)
+	local frameName = tooltip.GetName and tooltip:GetName()
+	local region = frameName and _G[frameName .. "TextLeft1"]
+	local raw = region and region.GetText and (Family:TryCall(region.GetText, region))
+	if type(raw) ~= "string" or not region.SetText then return end
+
+	local seen, kept, pieces = {}, {}, 0
+	for piece in raw:gmatch("[^\r\n]+") do
+		pieces = pieces + 1
+		local name = plainly(piece)
+		if not seen[name] then
+			seen[name] = true
+			kept[#kept + 1] = piece
+		end
+	end
+	if #kept < pieces then Family:TryCall(region.SetText, region, table.concat(kept, "\n")) end
+end
+
 local function onNode(tooltip)
 	if not tooltip then return end
 	if not (FamilyDB and FamilyDB.tooltips ~= false) then return end
@@ -1941,6 +1966,23 @@ local function onNode(tooltip)
 	local said, skill, where = gatheringNode(tooltip)
 	if not said then return end
 
+	-- Each name once, for the guard below and for the title (`oncePerName`), so that the pass
+	-- after the title has been rewritten reads the same thing the first pass did.
+	do
+		local seen, unique = {}, {}
+		for piece in said:gmatch("[^\r\n]+") do
+			-- Trimmed and not stripped: the markup came off the whole line already, and what it
+			-- leaves behind is the spacing that sat between it and the name - which is inside
+			-- the line and so outside what trimming the ends of it reached.
+			local each = trimmed(piece)
+			if each ~= "" and not seen[each] then
+				seen[each] = true
+				unique[#unique + 1] = each
+			end
+		end
+		said = table.concat(unique, "\n")
+	end
+
 	-- **The guard first**, so a route that runs twice for one tooltip - which it does, at
 	-- `OnShow` and again a frame later - resolves once and narrates once.
 	local describing = "node:" .. tostring(where) .. ":" .. said
@@ -1960,6 +2002,8 @@ local function onNode(tooltip)
 	end
 
 	Family:Debug("node: \"%s\" is %d thing(s), the first being item %d", said, #ids, ids[1])
+
+	oncePerName(tooltip)
 
 	UI:MoneyFontFrom(tooltip)
 

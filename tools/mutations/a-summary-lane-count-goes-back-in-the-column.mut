@@ -1,8 +1,7 @@
 name: the summary row draws the lane count in the column beside the words
 file: addons/Family_UI/Summary.lua
 --- old
-				lines[#lines + 1] = {
-					string.format(L["%d at vendor prices"], held.atVendor) }
+					string.format(held.atVendor == 1 and L["%d item priced at vendor prices"]
+				or L["%d items priced at vendor prices"], held.atVendor) }
 --- new
-				lines[#lines + 1] = { L["%d at vendor prices"],
-					tostring(held.atVendor) }
+					L["%d items priced at vendor prices"], tostring(held.atVendor) }

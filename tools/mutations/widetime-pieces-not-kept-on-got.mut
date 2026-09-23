@@ -1,0 +1,7 @@
+name: an acknowledgement keeps no pieces of what went
+file: addons/Family/Wide.lua
+--- old
+            keepPieces(link, memberKey, mark)
+            confirmed = confirmed + 1
+--- new
+            confirmed = confirmed + 1

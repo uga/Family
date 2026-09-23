@@ -1,0 +1,6 @@
+name: the worked figure runs past a level and a half
+file: addons/Family/Scanners/Identity.lua
+--- old
+    return math.floor(math.min(meta.rested + gained, ceiling)), true
+--- new
+    return math.floor(meta.rested + gained), true

@@ -1,0 +1,6 @@
+name: a quest done by the whole family lists every name
+file: addons/Family_UI/Quests.lua
+--- old
+	local shown = UI:ShowAtMost(#done, UI.QUEST_DONE_NAMES)
+--- new
+	local shown = #done

@@ -123,6 +123,32 @@ add("recipes", L["why a recipe is in the wrong language: /family recipes"], func
 		Family:Print(L["  nothing recorded - open each profession window once"])
 	end
 
+	-- **Every member's record that has ever collapsed, not only this character's** (backlog 68,
+	-- 2026-09-23). The trap is read back above for whoever is logged in, which meant logging into
+	-- every character to learn whether it had ever fired. Each payload is decoded, which a
+	-- command typed by hand can afford.
+	local collapsed = 0
+	for memberKey in pairs(Family.Database:Members()) do
+		local theirs = (Family.Database:Payload(memberKey) or {}).professions or {}
+		for id, record in pairs(theirs) do
+			local shrank = record.shrank
+			if shrank then
+				if collapsed == 0 then
+					Family:Print(L["|cffffd700Collapsed recipe records|r, across the family:"])
+				end
+				collapsed = collapsed + 1
+				Family:Print(L["  %s, %s, %s: %d recipe(s) -> %d; the window showed %d "
+					.. "recipe(s), have materials: %s, search box: %s"],
+					tostring(memberKey), tostring(Family:ProfessionName(id, record.name)),
+					UI:Ago(shrank.at), shrank.was or 0, shrank.now or 0, shrank.listed or 0,
+					tostring(shrank.materials), tostring(shrank.box))
+			end
+		end
+	end
+	if collapsed == 0 then
+		Family:Print(L["|cffffd700Collapsed recipe records|r, across the family: none."])
+	end
+
 	-- What the client actually hands back, for a window open right now. Records keep ids
 	-- and not links, so this is the only place the raw answer can be seen - and "the call
 	-- returns nothing" and "the call returns a link of a kind nobody expected" are two
@@ -2125,13 +2151,22 @@ add("widetime", L["how long a Wide Family exchange takes on this client"], funct
 		-- playing a character does to it; never sent is the one to look into - and a count
 		-- of either left the reader asking which characters, with no way to find out.
 		if held < total and Family.Wide.MarkGaps then
-			local unmarkable, neverSent, changed, named = Family.Wide:MarkGaps(link)
+			local unmarkable, neverSent, changed, named, moved = Family.Wide:MarkGaps(link)
 			Family:Print(L["  |cff888888Of the %d that are not: %d changed since they were sent, "
 				.. "%d never confirmed as sent, and %d cannot be marked at all.|r"],
 				total - held, changed, neverSent, unmarkable)
 			if changed > 0 then
+				-- **And what moved for each** (backlog 76): the part of the record, the
+				-- field, or the grants - or that it is not known, where the mark they hold is
+				-- not one this side kept the pieces of.
+				local said = {}
+				for index, name in ipairs(named.changed) do
+					local what = moved and moved[index]
+					said[index] = string.format("%s (%s)", name,
+						what and table.concat(what, ", ") or L["not known"])
+				end
 				Family:Print(L["  |cff888888Changed since sent: %s|r"],
-					table.concat(named.changed, ", "))
+					table.concat(said, ", "))
 			end
 			if neverSent > 0 then
 				Family:Print(L["  |cff888888Never confirmed as sent: %s|r"],

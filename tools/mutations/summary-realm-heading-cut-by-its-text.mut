@@ -1,0 +1,6 @@
+name: a realm heading on the Summary is cut back to the Member column by its own text
+file: addons/Family_UI/Summary.lua
+--- old
+			title.__moneyWidth = math.max(list:GetWidth() - 8, 1)
+--- new
+			local _ = title

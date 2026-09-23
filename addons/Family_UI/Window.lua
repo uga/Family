@@ -2176,3 +2176,20 @@ function UI:Ago(stamp)
 	if days == 1 then return L["yesterday"] end
 	return string.format(L["%dd ago"], days)
 end
+
+-- **The same, without the *ago*, for a column whose heading already says it.** *Last seen*
+-- over *15d ago* says the time twice, and *shared 15d ago* was cut to *shared 15d a...* in the
+-- column's width (Alberto, 2026-09-23: *do we really need "ago"? probably not*). Only for a
+-- column: in a sentence - *bags 3d ago*, *oldest price 2d ago* - the word is what makes it read.
+function UI:Age(stamp)
+	if not stamp then return L["|cff9d9d9dnever|r"] end
+
+	local seconds = time() - stamp
+	if seconds < 60 then return L["just now"] end
+	if seconds < 3600 then return string.format(L["%dm"], math.floor(seconds / 60)) end
+	if seconds < 86400 then return string.format(L["%dh"], math.floor(seconds / 3600)) end
+
+	local days = math.floor(seconds / 86400)
+	if days == 1 then return L["yesterday"] end
+	return string.format(L["%dd"], days)
+end

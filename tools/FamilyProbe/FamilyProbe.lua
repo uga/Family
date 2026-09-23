@@ -527,6 +527,44 @@ local PROBES = {
         return shape(callPacked(call))
     end },
 
+    -- **Where a Mists fragment is, when the currency list is empty** (backlog 102, 2026-09-23). Luga
+    -- held eleven Dwarf fragments and `GetCurrencyListSize` still answered 0, and Alberto reports the
+    -- Mists Classic character window has no Currency tab at all. So the list may never be filled on
+    -- this build, and a currency has to be reached some other way: by its own id (384 is the Dwarf
+    -- fragment in `CurrencyTypes`, with the other races listed in DATASOURCES), or through the
+    -- archaeology calls, which list each race with the fragments held.
+    { area = "pvp", name = "archaeology fragments", ask = function()
+        local out = {}
+        local modern = inside("C_CurrencyInfo", "GetCurrencyInfo")
+        local old = there("GetCurrencyInfo")
+        for _, pair in ipairs({ { "dwarf 384", 384 }, { "troll 385", 385 },
+            { "fossil 393", 393 } }) do
+            if modern then
+                out[#out + 1] = pair[1] .. " C_CurrencyInfo -> " .. fields(try(modern, pair[2]))
+            end
+            if old then
+                out[#out + 1] = pair[1] .. " GetCurrencyInfo -> " .. shape(callPacked(old, pair[2]))
+            end
+        end
+
+        local races = there("GetNumArchaeologyRaces")
+        local info = there("GetArchaeologyRaceInfo")
+        if not races then
+            out[#out + 1] = "GetNumArchaeologyRaces absent"
+        else
+            local count = tonumber((try(races))) or 0
+            out[#out + 1] = "GetNumArchaeologyRaces " .. count
+            if info then
+                for index = 1, count do
+                    out[#out + 1] = "race " .. index .. ": " .. shape(callPacked(info, index))
+                end
+            else
+                out[#out + 1] = "GetArchaeologyRaceInfo absent"
+            end
+        end
+        return table.concat(out, " | ")
+    end },
+
     { area = "pvp", name = "honor and conquest as currencies", ask = function()
         -- Honor and conquest by id, through whichever of the two currency calls this client
         -- carries. Ids because a name is one language (§2.1).

@@ -1,0 +1,6 @@
+name: the scan forgets when rested was read
+file: addons/Family/Scanners/Identity.lua
+--- old
+			fields.restedAt = time()
+--- new
+			fields.restedAt = nil

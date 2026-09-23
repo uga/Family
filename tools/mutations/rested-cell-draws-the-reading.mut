@@ -1,0 +1,6 @@
+name: the Rest XP cell draws the old reading
+file: addons/Family_UI/Summary.lua
+--- old
+	local rested = Family.Identity:RestedNow(meta) or meta.rested or 0
+--- new
+	local rested = meta.rested or 0

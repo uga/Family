@@ -1,0 +1,6 @@
+name: the Last seen column says ago again
+file: addons/Family_UI/Window.lua
+--- old
+	return string.format(L["%dd"], days)
+--- new
+	return string.format(L["%dd ago"], days)

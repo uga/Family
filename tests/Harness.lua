@@ -2120,6 +2120,7 @@ for _, file in ipairs {
 	"Scanners/Bank.lua", "Scanners/Identity.lua",
 	"Scanners/Auctions.lua", "Scanners/Mail.lua", "Scanners/Character.lua",
 	"Scanners/Quests.lua",
+	"Scanners/QuestHistory.lua",
 	"Scanners/Currencies.lua",
 	"Scanners/Instances.lua",
 	"Scanners/Pets.lua",
@@ -4869,16 +4870,58 @@ do
 			"|cffffd000|Hspell:" .. (800000 + index) .. "|h[Thing]|h|r" }
 	end
 	Family.Professions:Scan(true)
+	local held20 = TRADE_RECIPES
 
 	local before = Family.Database:Payload(key).professions[SKILL.blacksmithing]
 	check("twenty recipes are stored before anything collapses",
 		before and #before.recipes == 20 and before.shrank == nil,
 		before and tostring(#before.recipes) or "no record")
 
-	-- And now the window shows one of them, which is what was reported.
+	-- **A window read before it has filled** (backlog 68, the Mists reading of 2026-09-23: *54
+	-- recipe(s) -> 0*, no row and no header). It lists nothing at first and everything a moment
+	-- later, and the record must come through it whole.
+	TRADE_RECIPES = {}
+	Family.Professions:Scan(true)
+	check("a window that lists nothing does not replace twenty recipes on its first read",
+		#Family.Database:Payload(key).professions[SKILL.blacksmithing].recipes == 20)
+	-- Filled with one more than it had, so the second read is what writes it.
+	TRADE_RECIPES = {}
+	for index, row in ipairs(held20) do TRADE_RECIPES[index] = row end
+	TRADE_RECIPES[#TRADE_RECIPES + 1] = { "Thing 21", "optimal", 0,
+		"|cffffd000|Hspell:800021|h[Thing]|h|r" }
+	advance(2.5)
+	check("and once it has filled, the second read writes it whole",
+		#Family.Database:Payload(key).professions[SKILL.blacksmithing].recipes == 21)
+	TRADE_RECIPES = held20
+	Family.Professions:Scan(true)
+
+	-- And one closed before the second read leaves the record as it was.
+	TRADE_RECIPES = {}
+	Family.Professions:Scan(true)
+	TRADE_SKILL_OPEN = false
+	advance(2.5)
+	TRADE_SKILL_OPEN = true
+	check("a window closed before the second read leaves the record alone",
+		#Family.Database:Payload(key).professions[SKILL.blacksmithing].recipes == 20)
+
+	-- A first read from an earlier opening of the window confirms nothing.
+	advance(31)
+	TRADE_RECIPES = {}
+	Family.Professions:Scan(true)
+	check("an empty read long after an earlier one is held again, not taken as confirmed",
+		#Family.Database:Payload(key).professions[SKILL.blacksmithing].recipes == 20)
+	TRADE_RECIPES = held20
+	advance(2.5)
+	advance(31)
+
+	-- And now the window shows one of them, which is what was reported - and stays showing it,
+	-- which is what a profession really unlearnt looks like: held, read again, then written.
 	TRADE_RECIPES = { { "Header", "header" },
 		{ "Thing 1", "optimal", 0, "|cffffd000|Hspell:800001|h[Thing]|h|r" } }
 	Family.Professions:Scan(true)
+	check("a collapse is held on its first read",
+		#Family.Database:Payload(key).professions[SKILL.blacksmithing].recipes == 20)
+	advance(2.5)
 
 	local after = Family.Database:Payload(key).professions[SKILL.blacksmithing]
 	check("the small record is stored, because a player really can unlearn a profession",
@@ -4905,6 +4948,9 @@ do
 	check("while a record that grows notes nothing new",
 		grown and grown.shrank == wasShrank,
 		tostring(grown and grown.shrank ~= wasShrank))
+
+	-- Whole minutes of frame clock, the settle checks above having taken 72 seconds (L-125).
+	advance(48)
 
 	TRADE_RECIPES = held
 	Family.Professions:Scan(true)
@@ -6515,6 +6561,21 @@ do
 	check("and names the same thing once however often the cursor holds it",
 		namesIn(repeated) == "Dark Iron Ore|Truesilver Ore", repeated)
 
+	-- **And the title above it says each name once too** (Alberto, 2026-09-23: *vein name still
+	-- not deduplicated*, on three Copper Veins under one minimap cursor). The line is GatherMate2's
+	-- and not ours, so it is rewritten only where Family writes a block, keeping each name the
+	-- first time it appears, colour and all.
+	local function title() return tostring(_G.GameTooltipTextLeft1:GetText()) end
+	nodeSays("|cffff0000Copper Vein|r\n|cffff0000Copper Vein|r\n|cffff0000Copper Vein|r", MINE)
+	check("three pins of one vein are one name in the title",
+		title() == "|cffff0000Copper Vein|r", title())
+	nodeSays("Dark Iron Deposit\nTruesilver Deposit\nDark Iron Deposit", MINE)
+	check("and several are each named once, in the order they came",
+		title() == "Dark Iron Deposit\nTruesilver Deposit", title())
+	nodeSays("Dark Iron Deposit\nTruesilver Deposit", MINE)
+	check("a title with nothing repeated is left as it was",
+		title() == "Dark Iron Deposit\nTruesilver Deposit", title())
+
 	-- **A name this build cannot place sits beside the ones it can** rather than silencing them.
 	-- It could not before: one unnamed answer under two names would have been read as being about
 	-- either pin, and now each answer carries the name of what it is about.
@@ -6781,6 +6842,12 @@ do
 			tostring(namedIn(rich)) .. " / " .. tostring(namedIn(small)))
 		check("and khorium is not silenced by thorium either",
 			namedIn(khorium) == "Khoriumerz", khorium)
+
+		-- Two different veins of one ore under one cursor are one answer: the words differ, so
+		-- only what they resolve to can tell they are the same.
+		local both = nodeSays("Reiches Thoriumvorkommen\nKleines Thoriumvorkommen", MINE)
+		check("two veins of one ore under one cursor are one answer",
+			namesIn(both) == "Thoriumerz", both)
 
 		-- **And the run that opens with the separator itself**, which is the branch of the word
 		-- rule that is easy to get wrong and impossible to notice: French puts the metal last, so
@@ -8771,7 +8838,8 @@ do
 		local auctionLane, auctionColumn = laneLine(2880, "at auction prices")
 		local vendorLane, vendorColumn = laneLine(2880, "at vendor prices")
 		check("with the two lanes it was reached by, never the total on its own",
-			auctionLane == "12 at auction prices" and vendorLane == "4 at vendor prices",
+			auctionLane == "12 items priced at auction prices"
+				and vendorLane == "4 items priced at vendor prices",
 			tostring(auctionLane) .. " / " .. tostring(vendorLane))
 
 		-- **And the count is in the words rather than in the column money is drawn in.**
@@ -14027,6 +14095,40 @@ SlashCmdList["FAMILY"]("bank")
 check("/family bank reports what is recorded for every member",
 	#DEFAULT_CHAT_FRAME.messages > before)
 
+-- **And every collapsed record in the family, whoever is logged in** (backlog 68). One planted on
+-- another member, one on nobody else: the line names that member, and a family with none says so.
+do
+	local before
+	local function said(needle)
+		for index = before + 1, #DEFAULT_CHAT_FRAME.messages do
+			local line = tostring(DEFAULT_CHAT_FRAME.messages[index])
+			if line:find(needle, 1, true) then return true end
+		end
+		return false
+	end
+	-- The members are stood in for rather than the records edited: the blacksmithing trap above
+	-- left a real collapse on this character, and changing a record in place is its own red.
+	local heldMembers = Family.Database.Members
+	Family.Database.Members = function() return {} end
+	before = #DEFAULT_CHAT_FRAME.messages
+	SlashCmdList["FAMILY"]("recipes")
+	Family.Database.Members = heldMembers
+	check("with nothing collapsed anywhere, it says none",
+		said(Family.L["|cffffd700Collapsed recipe records|r, across the family: none."]))
+
+	Family.Database:SetMeta("Shrunk-FireMaw", { name = "Shrunk", realm = "Fire Maw" })
+	Family.Database:SetPayload("Shrunk-FireMaw", { professions = { [185] = {
+		recipes = { { name = "Goblin Deviled Clams" } },
+		shrank = { at = time(), was = 75, now = 1, rows = 2, headers = 1, listed = 1,
+			materials = true, box = "" } } } })
+	before = #DEFAULT_CHAT_FRAME.messages
+	SlashCmdList["FAMILY"]("recipes")
+	check("a collapsed record on another character is listed, by name",
+		said("Shrunk-FireMaw") and said("75 recipe(s) -> 1"))
+	check("with whether Have Materials was ticked", said("have materials: true"))
+	Family.Database:Forget("Shrunk-FireMaw")
+end
+
 -- Read in one language and looked at in another, which is the case the whole line is about -
 -- and with both the same, a line that printed the record's locale twice would look right.
 do
@@ -14437,6 +14539,41 @@ print("CTRL or ALT and a click on a Summary name goes to that character")
 				.. " set", without:find(ctrl, 1, true) ~= nil
 					and without:find(alt, 1, true) == nil, without)
 		end
+	end
+
+	-- **And where they logged out, on the line under their name** - Alberto 2026-09-23. On a
+	-- set whose tooltip had nothing else, and not a second time on Miscellaneous, whose tooltip
+	-- already says it on a *Where* line.
+	do
+		local me = Family:CurrentMember()
+		local heldMeta = Family.Database:Meta(me) or {}
+		local heldZone, heldSub, heldID = heldMeta.zone, heldMeta.subzone, heldMeta.zoneID
+		Family.Database:SetMeta(me, { zone = "Tanaris", subzone = "Gadgetzan",
+			zoneID = Family.CLEAR })
+
+		local function underName(setKey)
+			Family.UI:ShowTab("summary")
+			fireClick(Family.UI.__summarySets[setKey])
+			Family.UI:Refresh()
+			for _, f in ipairs(frames) do
+				if onScreen(f) and f.memberKey == me and f.__familyTooltip then
+					local _, _, lines = f.__familyTooltip(f)
+					return lines and lines[2] and tostring(lines[2][1]) or ""
+				end
+			end
+			return nil
+		end
+
+		local bags = underName("bags")
+		check("under a character's name, where they logged out, subzone beside the zone",
+			bags ~= nil and bags:find("Tanaris", 1, true) ~= nil
+				and bags:find("Gadgetzan", 1, true) ~= nil, tostring(bags))
+		local misc = underName("misc")
+		check("but not twice on Miscellaneous, which says it on its own Where line",
+			misc ~= nil and misc:find("Tanaris", 1, true) == nil, tostring(misc))
+
+		Family.Database:SetMeta(me, { zone = heldZone or Family.CLEAR,
+			subzone = heldSub or Family.CLEAR, zoneID = heldID or Family.CLEAR })
 	end
 
 	Family.UI:ShowTab("summary")
@@ -14926,14 +15063,37 @@ print("the Stock column")
 		end
 
 		check("the summary row's tooltip counts each lane in its own words",
-			lanes ~= nil and lanes[1] and lanes[1][1] == "40 at auction prices"
-				and lanes[2] and lanes[2][1] == "6 at vendor prices"
-				and lanes[3] and lanes[3][1] == "2 with no price",
+			lanes ~= nil and lanes[1] and lanes[1][1] == "40 items priced at auction prices"
+				and lanes[2] and lanes[2][1] == "6 items priced at vendor prices"
+				and lanes[3] and lanes[3][1] == "2 items with no price",
 			lanes and #lanes > 0
 				and (tostring(lanes[1] and lanes[1][1]) .. " / "
 					.. tostring(lanes[2] and lanes[2][1]) .. " / "
 					.. tostring(lanes[3] and lanes[3][1]))
 				or "no lanes on the row")
+
+		-- One of each is *1 item*, not *1 items*.
+		local realStock = Family.UI.__stockOf
+		Family.UI.__stockOf = function()
+			return { worth = 100, atMarket = 1, atVendor = 1, unpriced = 1 }
+		end
+		local single = ""
+		for _, f in ipairs(frames) do
+			if single == "" and onScreen(f) and f.memberKey == who
+				and f.__scripts and f.__scripts.OnEnter then
+				wipe(GameTooltip.__lines)
+				f.__scripts.OnEnter(f)
+				for _, line in ipairs(GameTooltip.__lines) do
+					single = single .. " | " .. tostring(line[1])
+				end
+				if f.__scripts.OnLeave then f.__scripts.OnLeave(f) end
+			end
+		end
+		Family.UI.__stockOf = realStock
+		check("one item in a lane is said in the singular",
+			single:find("1 item priced at auction prices", 1, true) ~= nil
+				and single:find("1 item priced at vendor prices", 1, true) ~= nil
+				and single:find("1 item with no price", 1, true) ~= nil, single)
 
 		check("and leaves the column beside them empty, because it is not a price",
 			lanes ~= nil and #lanes == 3
@@ -15659,6 +15819,46 @@ print("a quest row's own objectives, under the client's description of the quest
 		-- Reported from play 2026-09-06.
 		check("and no name over them on your own page, the client having named you already",
 			said:find(tostring(Family.UI:Meta(key).name or key), 1, true) == nil, said)
+
+		-- **And who in the family has already handed it in** (backlog 92), under the progress.
+		do
+			local heldCall = _G.GetQuestsCompleted
+			local function hover()
+				wipe(GameTooltip.__lines)
+				row.__scripts.OnEnter(row)
+				local text = ""
+				for _, line in ipairs(GameTooltip.__lines) do
+					text = text .. " " .. tostring(line[1]) .. " " .. tostring(line[2])
+				end
+				return text
+			end
+
+			GetQuestsCompleted = function(into) into[84] = true into[9000] = true end
+			Family.QuestHistory:Scan()
+			local done = hover()
+			check("a quest this character has handed in says so on its row's tooltip",
+				done:find(Family.L["|cff88bbffAlready handed in by:|r"], 1, true) ~= nil
+					and done:find(tostring(Family.UI:Meta(key).name or key), 1, true) ~= nil,
+				done)
+			check("under the objectives, which are still there",
+				done:find("Red Linen Goods 1: 1/1", 1, true) ~= nil, done)
+
+			GetQuestsCompleted = function(into) into[9000] = true end
+			Family.QuestHistory:Scan()
+			local nobody = hover()
+			check("and one nobody has handed in says that, once a history has been read",
+				nobody:find(Family.L["|cff9d9d9dNobody in the family has handed this in yet.|r"],
+					1, true) ~= nil, nobody)
+
+			GetQuestsCompleted = heldCall
+			local payload = Family.Database:Payload(key)
+			payload.questsDone = nil
+			Family.Database:SetPayload(key, payload, { "questsDone" })
+			Family.Database:SetMeta(key, { questsDoneCount = Family.CLEAR })
+			check("with no history read anywhere, the tooltip claims nothing either way",
+				not hover():find(Family.L["|cff9d9d9dNobody in the family has handed this in yet.|r"],
+					1, true))
+		end
 
 		-- And it is there on anybody else's, which is the half the name exists for. Driven
 		-- by moving who is being played rather than by building a second member: the branch
@@ -17428,6 +17628,47 @@ do
 						heard:find("Never confirmed as sent: " .. who, 1, true) ~= nil
 							and heard:find("Changed since sent", 1, true) == nil, heard)
 
+					-- **Backlog 76: and what moved.** Sent as it stands, then changed.
+					local heldParts = link.sentParts
+					local heldMeta = Family.Database:Meta(someone) or {}
+					local heldLevel = heldMeta.level
+					Family.Wide.SendPiecesForTests(link, someone)
+					local _, _, changed3 = Family.Wide:MarkGaps(link)
+					check("a member sent as it stands is not changed", changed3 == 0,
+						tostring(changed3))
+
+					Family.Database:SetMeta(someone, { level = (heldLevel or 1) + 1 })
+					local _, _, _, _, moved = Family.Wide:MarkGaps(link)
+					check("a field that moved is named", moved[1]
+						and table.concat(moved[1], ",") == "level",
+						moved[1] and table.concat(moved[1], ",") or "nil")
+
+					local payload = Family.Database:Payload(someone)
+					local wantsParts = link.sentParts[someone].parts ~= nil
+					if payload and wantsParts then
+						local heldBags = payload.bags
+						payload.bags = { [0] = { size = 4, free = 3, slots = { { id = 2589 } } } }
+						Family.Database:SetPayload(someone, payload, { "bags" })
+						_, _, _, _, moved = Family.Wide:MarkGaps(link)
+						check("and so is a part of the record, beside it",
+							moved[1] and table.concat(moved[1], ",") == "bags,level",
+							moved[1] and table.concat(moved[1], ",") or "nil")
+						payload.bags = heldBags
+						Family.Database:SetPayload(someone, payload, { "bags" })
+					end
+					check("the test member carries a record part to name", wantsParts)
+
+					link.sentParts[someone].mark = "a mark this side never kept"
+					from = #DEFAULT_CHAT_FRAME.messages
+					pcall(SlashCmdList["FAMILY"], "widetime")
+					heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+						#DEFAULT_CHAT_FRAME.messages)
+					check("and where what was sent is not known, it says so",
+						heard:find(who .. " (" .. Family.L["not known"] .. ")", 1, true) ~= nil,
+						heard)
+
+					Family.Database:SetMeta(someone, { level = heldLevel or Family.CLEAR })
+					link.sentParts = heldParts
 					link.sent = heldSent
 				end
 			end
@@ -22818,6 +23059,26 @@ print("the letters, put away with everything else")
 	check("and the Chrono figure unfolds it", rows() > shutBoon,
 		tostring(rows()) .. " rows against " .. tostring(shutBoon))
 
+	-- Under the Chrono figure, not past it at the row's edge (Alberto's screenshot, 2026-09-23).
+	local boonEdge
+	for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+		if column.key == "boon" then
+			boonEdge = column.drawX + (column.drawWidth or column.width) - 4
+		end
+	end
+	local placed
+	for _, f in ipairs(frames) do
+		if type(f.boon) == "table" and f.boon[1] and f.boon[1].__relative
+			and f.boon[1].__relative.RIGHT and f.boon[1].__shown ~= false
+			and f.boon[1].__offsets and f.boon[1].__offsets.RIGHT then
+			placed = f.boon[1]
+		end
+	end
+	check("and its buffs end where the Chrono figure does",
+		placed and placed.__relative.RIGHT.point == "LEFT"
+			and placed.__offsets.RIGHT.x == boonEdge,
+		tostring(placed and placed.__offsets.RIGHT.x) .. " against " .. tostring(boonEdge))
+
 	Family.UI:FoldEverything()
 	Family.UI:Refresh()
 	check("which the same fold puts away as well", rows() == shutBoon,
@@ -27758,8 +28019,17 @@ print("the fixes the live check asked for are still in place")
 	-- date cannot stay welded together in a language that puts them the other way round.
 	-- What is checked is unchanged - that the cell says "shared" and hands it the stamp.
 	check("and Last seen says when a sibling was shared",
-		sum:match('L%["|cff888888shared|r %%s"%], UI:Ago%(sharedAt%)') ~= nil,
+		sum:match('L%["|cff888888shared|r %%s"%], UI:Age%(sharedAt%)') ~= nil,
 		"a borrowed row's date is somebody else's exchange, not our own sighting")
+
+	-- Without *ago*: the heading says it, and *shared 15d ago* did not fit (2026-09-23).
+	check("Last seen gives an age without the word ago",
+		Family.UI:Age(time() - 15 * 86400 - 60) == "15d"
+			and Family.UI:Age(time() - 3 * 3600 - 60) == "3h"
+			and Family.UI:Age(time() - 86400 - 60) == Family.L["yesterday"],
+		Family.UI:Age(time() - 15 * 86400 - 60))
+	check("and the cell uses it for our own members too",
+		sum:match("return UI:Age%(meta%.lastSeen%)") ~= nil)
 
 	-- Reported live: clicking a mail count on Activity left the letters drawn on Currencies.
 	-- The unfold hangs off the **member** column, which every set has, so nothing about it was
@@ -32873,6 +33143,11 @@ print("a transfer that stopped half way is picked up, not believed")
 		type((out[keys[1]] or {}).mark) == "string",
 		tostring((out[keys[1]] or {}).mark))
 	check("and all fifteen of them go", howMany(out) == 15, tostring(howMany(out)))
+	-- Backlog 76: what went into the mark is kept beside it, for `/family widetime` to name.
+	local pieces = (link.sentParts or {})[keys[1]]
+	check("and what went into each mark is kept beside it, under that mark",
+		pieces and pieces.mark == (link.sent or {})[keys[1]] and type(pieces.meta) == "table",
+		tostring(pieces and pieces.mark))
 
 	out = exchange()
 	check("a second exchange with nothing changed carries nobody", howMany(out) == 0,
@@ -33195,7 +33470,7 @@ print("they say what they stored, and that is what a mark means afterwards")
 	-- mark anything first: a check that lets it mark and then delivers a `got` is asking
 	-- whether the member is marked, which it already was, and passes with the confirmation
 	-- doing nothing at all.
-	link.sent, link.acks = nil, true
+	link.sent, link.acks, link.sentParts = nil, true, nil
 	sent = {}
 	Family.Wide:ExchangeWith("acking", "and now they answer", { full = true })
 	for _ = 1, 3 do advance(1.1) end
@@ -33214,6 +33489,9 @@ print("they say what they stored, and that is what a mark means afterwards")
 	check("and their answer marks the member it names, with the mark it names it by",
 		(link.sent or {})[keys[1]] == marks[keys[1]],
 		tostring((link.sent or {})[keys[1]]) .. " against " .. tostring(marks[keys[1]]))
+	check("and keeps what went into that mark, for widetime to name",
+		((link.sentParts or {})[keys[1]] or {}).mark == marks[keys[1]],
+		tostring(((link.sentParts or {})[keys[1]] or {}).mark))
 	check("while the two they said nothing about stay unmarked",
 		howMany(link.sent or {}) == 1, tostring(howMany(link.sent or {})))
 	check("and the link knows they answer at all", link.acks == true, tostring(link.acks))
@@ -36896,6 +37174,149 @@ print("a linked family's columns on the summary")
 	Family.Wide:SetSibling("cdfam", "Brewer-Thunderstrike", false)
 	FamilyDB.wide = held
 	Family.UI:Refresh()
+end)()
+
+print()
+print("rested experience worked forward from the reading")
+
+-- Backlog 94. The four measured cases, the ceiling, and the records the sum declines.
+;(function()
+	local I = Family.Identity
+	local now = 1790000000
+	local H = 3600
+	-- A level of 8,700, the one the inn and field rates were measured on: 435 a day-third.
+	local function meta(fields)
+		local m = { xpMax = 8700, rested = 8086, restedAt = now - 16 * H, lastSeen = now - 16 * H }
+		for k, v in pairs(fields) do m[k] = v end
+		return m
+	end
+
+	-- Ziofurgone's night: 8,086 out of doors, logged out for 60,406 seconds, read 8,312.
+	local field = meta({ resting = false, restedAt = now - 60406, lastSeen = now - 60406 })
+	local value, worked = I:RestedNow(field, now)
+	check("logged out out of doors fills at 5% of a level every 32 hours",
+		worked and value == 8314, tostring(value))
+
+	-- The inn: 8,510, logged out 6,842 seconds, read 8,612.
+	local inn = meta({ resting = true, rested = 8510, restedAt = now - 6842, lastSeen = now - 6842 })
+	value = I:RestedNow(inn, now)
+	check("where it was resting, every 8 hours", value == 8613, tostring(value))
+
+	-- Logged in out of doors for eight hours after the reading, then away eight: only the away
+	-- half counts.
+	local stayed = meta({ resting = false, restedAt = now - 16 * H, lastSeen = now - 8 * H })
+	value = I:RestedNow(stayed, now)
+	check("time logged in out of doors adds nothing",
+		value == 8086 + math.floor(435 / 4), tostring(value))
+
+	-- Logged in resting for eight hours, then away eight: both halves at the full rate.
+	local innIn = meta({ resting = true, restedAt = now - 16 * H, lastSeen = now - 8 * H })
+	value = I:RestedNow(innIn, now)
+	check("time logged in while resting counts in full", value == 8086 + 870, tostring(value))
+
+	-- A month away stops at a level and a half.
+	local month = meta({ resting = true, restedAt = now - 30 * 24 * H, lastSeen = now - 30 * 24 * H })
+	value = I:RestedNow(month, now)
+	check("and never past a level and a half", value == 13050, tostring(value))
+
+	-- Declined: a record from before the fields, a Pandaren, and a character at the cap.
+	local old = { xpMax = 8700, rested = 500, lastSeen = now - 48 * H }
+	value, worked = I:RestedNow(old, now)
+	check("a record with no reading time keeps its figure", value == 500 and not worked,
+		tostring(value))
+	-- Pandaren: twice the rate and twice the ceiling (Alberto's rule, 2026-09-23).
+	value = I:RestedNow(meta({ resting = false, raceID = 24 }), now)
+	check("a Pandaren fills twice as fast", value == 8086 + math.floor(2 * 435 * 16 / 32),
+		tostring(value))
+	value = I:RestedNow(meta({ resting = true, raceID = 25, rested = 20000,
+		restedAt = now - 30 * 24 * H, lastSeen = now - 30 * 24 * H }), now)
+	check("and holds up to three levels", value == 26100, tostring(value))
+	check("a character at the cap has none", I:RestedNow({ rested = 5 }, now) == nil)
+
+	-- The scan records when, and whether resting.
+	local heldResting = _G.IsResting
+	_G.IsResting = function() return false end
+	-- Cleared first: the scan merges, so a stamp left by an earlier scan would pass for this one.
+	Family.Database:SetMeta(Family:CurrentMember(),
+		{ restedAt = Family.CLEAR, resting = Family.CLEAR })
+	Family.Identity:Scan()
+	local own = Family.Database:Meta(Family:CurrentMember()) or {}
+	check("the scan records when rested was read and whether the character was resting",
+		own.xpMax ~= nil and type(own.restedAt) == "number" and own.resting == false,
+		tostring(own.restedAt) .. " " .. tostring(own.resting))
+	_G.IsResting = heldResting
+
+	-- And the column says it is an estimate, and the page says how.
+	local src = io.open(ROOT .. "/addons/Family_UI/Summary.lua"):read("*a")
+	check("the column says it is an estimate", src:find('L["Rest XP est."]', 1, true) ~= nil)
+	check("and the cell draws the worked figure",
+		src:find("Family.Identity:RestedNow(meta) or meta.rested", 1, true) ~= nil)
+end)()
+
+print()
+print("a currency filed under its name joins the column of its id")
+
+-- Reported from play 2026-09-23 on Burning Crusade: two *Honor Points* columns, Tossica's 1,428
+-- in one and Tanardo's 20 in the other. Tanardo's record was written before 2026-09-20, when that
+-- build filed honor under its name; Tossica's was written since, under 1901.
+;(function()
+	local faction = (Family.Database:Meta(Family:CurrentMember()) or {}).faction
+	local newer, older = "Idhonor-Thunderstrike", "Namehonor-Thunderstrike"
+	Family.Database:SetMeta(newer, { realm = "Thunderstrike", faction = faction, level = 70,
+		currenciesSeen = time(), currencies = { { id = 1901, key = "c1901",
+		name = "Honor Points", quantity = 1428 } } })
+	Family.Database:SetMeta(older, { realm = "Thunderstrike", faction = faction, level = 70,
+		currenciesSeen = time(), currencies = { { key = "n:Honor Points",
+		name = "Honor Points", quantity = 20 } } })
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	clickButton("Currencies")
+	Family.UI:Refresh()
+
+	local honor, byName = 0, false
+	for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+		if column.label == "Honor Points" then honor = honor + 1 end
+		if column.key == "cur:n:Honor Points" then byName = true end
+	end
+	check("one Honor Points column, whichever way each record was filed",
+		honor == 1 and not byName, honor .. " column(s)")
+
+	local twenty = false
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and type(f.cells) == "table" and onScreen(f) then
+			local name = type(f.cells[1]) == "table" and tostring(f.cells[1].__text) or ""
+			if name:find("Namehonor", 1, true) then
+				for index = 2, #f.cells do
+					local text = type(f.cells[index]) == "table"
+						and tostring(f.cells[index].__text) or ""
+					if text:find("20", 1, true) then twenty = true end
+				end
+			end
+		end
+	end
+	check("and the older record's 20 is drawn in it", twenty)
+
+	-- A long name, cut on the heading, is read in full on the heading's tooltip.
+	Family.Database:SetMeta(newer, { currencies = { { id = 1901, key = "c1901",
+		name = "Honor Points", quantity = 1428 }, { id = 515, key = "c515",
+		name = "Darkmoon Prize Ticket", quantity = 1 } } })
+	Family.UI:Refresh()
+	local tipped
+	for _, f in ipairs(frames) do
+		if f.__familyTooltip and f.__shown ~= false then
+			local _, _, lines = f.__familyTooltip(f)
+			if type(lines) == "table" and lines[1] and lines[1][1] == "Darkmoon Prize Ticket" then
+				tipped = true
+			end
+		end
+	end
+	check("a currency heading cut to fit gives its whole name on hover", tipped)
+
+	clickButton("Overview")
+	Family.UI:Hide()
+	Family.Database:Forget(newer)
+	Family.Database:Forget(older)
 end)()
 
 --------------------------------------------------------------------------------------------
@@ -43267,6 +43688,10 @@ print("instance lockouts, read, kept and drawn")
 	member("Raiderb", { { key = "i469:9", instance = 469, difficulty = 9,
 		name = "Repaire de l'Aile noire", difficultyName = "40 joueurs", lockID = 135392442,
 		resetAt = time() + 3600, extended = true } })
+	-- A long place and its difficulty, which was cut to *Rampa...* on the page (2026-09-23).
+	member("Raidere", { { key = "i543:2", instance = 543, difficulty = 2,
+		name = "Hellfire Citadel: Ramparts", difficultyName = "Heroic", lockID = 239736411,
+		resetAt = time() + 7 * 3600 } })
 	member("Raiderc", { { key = "i409:9", instance = 409, difficulty = 9,
 		name = "Molten Core", difficultyName = "40 Player", lockID = 239723021,
 		resetAt = time() - 60 } })
@@ -43277,6 +43702,42 @@ print("instance lockouts, read, kept and drawn")
 	Family.UI:Refresh()
 
 	check("with a section for the lockouts", visibleText(Family.L["Instance lockouts"]))
+	-- The place and its difficulty fit (Alberto's screenshot, 2026-09-23: *Rampa...*).
+	local placeWidth
+	for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+		if column.key == "cdtimer" then placeWidth = column.drawWidth or column.width end
+	end
+	check("the lockout's place has room for a name and its difficulty",
+		(placeWidth or 0) >= 300, tostring(placeWidth))
+	check("and the name and its difficulty are drawn whole",
+		visibleText("Hellfire Citadel: Ramparts  Heroic"))
+
+	-- The section headings carry the column words, so the heading row above them carries none.
+	local worded = {}
+	for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+		if column.label ~= "" then worded[#worded + 1] = tostring(column.label) end
+	end
+	-- The note under the page wraps inside the list's width, not under the scroll bar.
+	local noteInset
+	for _, f in ipairs(fontStrings) do
+		if type(f.__text) == "string" and f.__text:find("Crafting cooldowns - transmutes", 1, true)
+			and f.__offsets and f.__offsets.BOTTOMRIGHT then
+			noteInset = f.__offsets.BOTTOMRIGHT.x
+		end
+	end
+	check("the Cooldowns note stops where the list does", noteInset and noteInset <= -22,
+		tostring(noteInset))
+	check("the Cooldowns page's heading row says nothing its sections say",
+		#Family.UI.__summaryColumns > 0 and #worded == 0, table.concat(worded, ", "))
+	local memberOnHeading = false
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and type(f.cells) == "table" and onScreen(f)
+			and type(f.cells[1]) == "table" and f.cells[1].__text == Family.L["Instance lockouts"]
+			and type(f.cells[2]) == "table" and f.cells[2].__text == Family.L["Member"] then
+			memberOnHeading = true
+		end
+	end
+	check("and a section heading names the member column", memberOnHeading)
 	check("a member with a lockout and no crafting timer is on it", visibleText("Raidera"))
 	check("and so is one read in another language", visibleText("Raiderb"))
 	check("the lock's own number is shown", visibleText("#135392441"))
@@ -43306,6 +43767,7 @@ print("instance lockouts, read, kept and drawn")
 	-- gone, what is left is one that has let go.
 	Family.Database:Forget("Raidera-FireMaw")
 	Family.Database:Forget("Raiderb-FireMaw")
+	Family.Database:Forget("Raidere-FireMaw")
 	Family.Database:SetMeta("Raiderd-FireMaw", { name = "Raiderd", realm = "Fire Maw",
 		classFile = "MAGE", level = 60, faction = "Alliance",
 		craftCooldowns = { { name = "Transmute: Arcanite", profession = 171,
@@ -43317,6 +43779,29 @@ print("instance lockouts, read, kept and drawn")
 		visibleText(Family.L["Instance lockouts"]))
 	check("saying in grey that nobody is saved anywhere",
 		visibleText(Family.L["|cff888888Nobody is saved to an instance right now.|r"]))
+
+	-- Across the whole row and not cut at the first column (screenshot, 2026-09-23), and with a
+	-- blank line between the crafting section above and this one.
+	local nobodyCell, headingAt, rowsInOrder = nil, nil, {}
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and type(f.cells) == "table" and onScreen(f) then
+			rowsInOrder[#rowsInOrder + 1] = f
+			local text = f.cells[1] and f.cells[1].__text
+			if text == Family.L["|cff888888Nobody is saved to an instance right now.|r"] then
+				nobodyCell = f.cells[1]
+			end
+			if text == Family.L["Instance lockouts"] then headingAt = #rowsInOrder end
+		end
+	end
+	check("the line saying so has the row's width, not the first column's",
+		nobodyCell ~= nil and (nobodyCell.__width or 0) > 300,
+		tostring(nobodyCell and nobodyCell.__width))
+	local above = headingAt and rowsInOrder[headingAt - 1]
+	local blank = above ~= nil
+	for _, cell in ipairs(above and above.cells or {}) do
+		if cell.__text and cell.__text ~= "" then blank = false end
+	end
+	check("and a blank line sits between the crafting section and the lockouts heading", blank)
 
 	-- Narrowed to a crafting timer, the question is about that timer: no lockouts section.
 	narrow = Family.UI.__summaryNarrow
@@ -43332,6 +43817,22 @@ print("instance lockouts, read, kept and drawn")
 	Family.UI:Refresh()
 
 	clickLastButton(Family.L["Overview"])
+	Family.UI:Refresh()
+
+	-- **A realm's heading keeps the whole row** on the Summary, which it lost on 2026-09-18 to its
+	-- own text: setting a cell's text puts it back to the width `UI:MoneyCell` was told, and the
+	-- heading had only told the frame (screenshot, 2026-09-23: *Pyrewood Village...*).
+	local realmCell
+	for _, f in ipairs(fontStrings) do
+		if realmCell == nil and type(f.__text) == "string" and f.__visible ~= false
+			and onScreen(f) and f.__text:find("^Fire Maw  |cff888888%(") then
+			realmCell = f
+		end
+	end
+	check("a realm's heading on the Summary has the row's width, not the Member column's",
+		realmCell ~= nil and (realmCell.__width or 0) > 300,
+		tostring(realmCell and realmCell.__width))
+
 	for _, name in ipairs { "Raidera", "Raiderb", "Raiderc" } do
 		Family.Database:Forget(name .. "-FireMaw")
 	end
@@ -43373,6 +43874,118 @@ print("FamilyProbe prints a record whole")
 	said = fields(wide)
 	check("a table wider than a record is still cut, and says by how much",
 		said:find("(+10 more)", 1, true) ~= nil, said)
+end)()
+
+print()
+print("the quests a character has already handed in")
+
+-- Backlog 92. `GetQuestsCompleted` fills the table it is handed, keyed by id, on all three builds
+-- (DATASOURCES, measured 2026-09-20). Stored as one short string per character.
+;(function()
+	local QH = Family.QuestHistory
+	local key = Family:CurrentMember()
+	local heldCall = _G.GetQuestsCompleted
+
+	local function same(set, ids)
+		local count = 0
+		for _ in pairs(set) do count = count + 1 end
+		if count ~= #ids then return false end
+		for _, id in ipairs(ids) do if not set[id] then return false end end
+		return true
+	end
+
+	-- One list for the family, and flags per character against it (Alberto, 2026-09-23).
+	local heldPool = FamilyDB.questPool
+	FamilyDB.questPool = nil
+	QH:ForgetPool()
+
+	local first = QH:Encode({ 90000, 3, 40, 40 })
+	check("a history is kept as flags against the family list", first:sub(1, 1) == "p", first)
+	check("and comes back exactly, the repeat once", same(QH:Decode(first), { 3, 40, 90000 }))
+	check("each id written once in the family list", QH:PoolSize() == 3, tostring(QH:PoolSize()))
+
+	local second = QH:Encode({ 40, 7 })
+	check("a second character adds only what nobody had", QH:PoolSize() == 4,
+		tostring(QH:PoolSize()))
+	check("and the first character's flags still mean what they meant",
+		same(QH:Decode(first), { 3, 40, 90000 }))
+	check("while the second's come back as theirs", same(QH:Decode(second), { 7, 40 }))
+
+	-- Read back from the saved list in a new session: the order is what the flags point at.
+	QH:ForgetPool()
+	check("the family list survives a reload in the order it was built",
+		same(QH:Decode(first), { 3, 40, 90000 }) and QH:PoolSize() == 4)
+
+	local many = {}
+	for id = 1, 3000 do many[#many + 1] = id * 7 end
+	local long = QH:Encode(many)
+	check("three thousand quests are a character for every six in the family list",
+		#long <= 1 + math.ceil(QH:PoolSize() / 6), tostring(#long))
+	check("which come back exactly", same(QH:Decode(long), many))
+	check("an empty history is an empty set", next(QH:Decode(QH:Encode({}))) == nil)
+	check("and a string nobody wrote is nothing, not a guess",
+		next(QH:Decode("p!!")) == nil and next(QH:Decode("m3")) == nil)
+
+	-- Read from the table handed over, or from one the client hands back instead.
+	GetQuestsCompleted = function(into) into[7] = true into[12] = true end
+	check("the history is read from the table the client fills", #(QH:Read() or {}) == 2)
+	GetQuestsCompleted = function() return { [5] = true } end
+	check("or from one it hands back", #(QH:Read() or {}) == 1)
+	GetQuestsCompleted = nil
+	check("and a client without the call has no history, not an empty one", QH:Read() == nil)
+
+	-- At login, and again after a turn-in.
+	GetQuestsCompleted = function(into) into[7] = true end
+	fire("PLAYER_ENTERING_WORLD")
+	advance(7)
+	check("entering the world records the history", QH:Done(key, 7) == true)
+	check("with the count beside it for anybody who wants it without unpacking",
+		(Family.Database:Meta(key) or {}).questsDoneCount == 1)
+	GetQuestsCompleted = function(into) into[7] = true into[8] = true end
+	fire("QUEST_TURNED_IN", 8)
+	advance(4)
+	check("handing a quest in reads the history again", QH:Done(key, 8) == true)
+	check("a quest not handed in is not done", QH:Done(key, 9) == false)
+	check("and a member never read is neither", QH:Done("Nobody-Nowhere", 7) == nil)
+	-- **A whole minute of frame clock, not eleven seconds.** This file freezes `time` and lets the
+	-- frame clock run, and an item cooldown's deadline is rounded to the minute for a member's mark
+	-- - so a section that moves the frame clock part of a minute moves where later deadlines fall
+	-- inside theirs, and the idle-relog check below went red on a cooldown crossing a minute that
+	-- nothing here touched. LESSONS L-125.
+	advance(49)
+
+	-- Not shared: no category lists it.
+	do
+		local held = FamilyDB.wide
+		FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
+			links = { ["qfam"] = { name = "Nosy-Thunderstrike",
+				grants = { [key] = { quests = true } }, siblings = {}, members = {} } } }
+		local sent = Family.Wide:Offering(FamilyDB.wide.links["qfam"])[key]
+		check("granting quests does not send the history",
+			sent and sent.payload and sent.payload.questsDone == nil)
+		FamilyDB.wide = held
+	end
+
+	-- The fold: ten names, then a count.
+	for index = 1, 12 do
+		Family.Database:SetMeta("Done" .. index .. "-FireMaw",
+			{ name = "Done" .. index, realm = "Fire Maw" })
+		Family.Database:SetPayload("Done" .. index .. "-FireMaw", { questsDone = QH:Encode({ 77 }) })
+	end
+	local lines = Family.UI:QuestDoneLines(77)
+	local said = ""
+	for _, line in ipairs(lines) do said = said .. " " .. tostring(line[1]) end
+	check("twelve who have done it are ten names and a count",
+		said:find(string.format(Family.L["|cff888888and %d more|r"], 2), 1, true) ~= nil, said)
+	for index = 1, 12 do Family.Database:Forget("Done" .. index .. "-FireMaw") end
+
+	GetQuestsCompleted = heldCall
+	local payload = Family.Database:Payload(key)
+	payload.questsDone = nil
+	Family.Database:SetPayload(key, payload, { "questsDone" })
+	Family.Database:SetMeta(key, { questsDoneCount = Family.CLEAR })
+	FamilyDB.questPool = heldPool
+	QH:ForgetPool()
 end)()
 
 print()

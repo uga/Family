@@ -236,7 +236,7 @@ local SETS = {
 		columns = {
 			{ key = "level",  label = L["Level"],     width = 50,  justify = "RIGHT" },
 			{ key = "ilvl",   label = L["Item lvl"],  width = 70,  justify = "RIGHT" },
-			{ key = "xp",     label = L["Rest XP"],   width = 86,  justify = "RIGHT" },
+			{ key = "xp",     label = L["Rest XP est."], width = 86,  justify = "RIGHT" },
 			-- **Eight pixels wider since 2026-09-16**, and the four the Rest XP column gave
 			-- up are part of them. A figure is drawn as places now (backlog 88, UI:MoneyCell)
 			-- and a place is held at the *widest* two digits of its unit, where the old single
@@ -1173,9 +1173,9 @@ end
 CELL.seen = function(meta, key, sharedAt)
 	if not meta.lastSeen and UI:IsBorrowed(key) then
 		if not sharedAt then return UNKNOWN end
-		return string.format(L["|cff888888shared|r %s"], UI:Ago(sharedAt)), 0.7, 0.7, 0.7
+		return string.format(L["|cff888888shared|r %s"], UI:Age(sharedAt)), 0.7, 0.7, 0.7
 	end
-	return UI:Ago(meta.lastSeen), 0.7, 0.7, 0.7
+	return UI:Age(meta.lastSeen), 0.7, 0.7, 0.7
 end
 
 CELL.played = function(meta)
@@ -1191,7 +1191,10 @@ CELL.xp = function(meta, key)
 	-- max level on exactly that reasoning.
 	if not meta.xpMax and UI:IsBorrowed(key) then return UNKNOWN end
 	if not meta.xpMax then return L["|cff9d9d9dmax level|r"] end
-	local rested = meta.rested or 0
+	-- **Worked forward from the reading**, not the reading itself (backlog 94): a character put
+	-- away a week ago has been filling all week. The column's name says it is an estimate and the
+	-- page's note says how it is worked out, which is what Alberto asked for.
+	local rested = Family.Identity:RestedNow(meta) or meta.rested or 0
 	if rested == 0 then return "0%" end
 	return string.format("|cff8080ff%d%%|r", math.floor(rested / meta.xpMax * 100))
 end
@@ -1542,7 +1545,7 @@ local SORT = {
 	name      = function(meta) return meta.name end,
 	level     = function(meta) return meta.level end,
 	ilvl      = function(meta) return meta.itemLevel end,
-	xp        = function(meta) return meta.rested end,
+	xp        = function(meta) return (Family.Identity:RestedNow(meta)) end,
 	money     = function(meta) return meta.money end,
 	played    = function(meta) return meta.played end,
 	seen      = function(meta) return meta.lastSeen end,
@@ -1892,9 +1895,22 @@ end
 -- has, rather than added to the list it closes over.
 function UI:Shortened(name, limit) return shortened(name, limit) end
 
+-- **A currency filed under its name is read under its id where the family knows the id.** Burning
+-- Crusade filed honor as `n:Honor Points` until 2026-09-20, because that build links to no
+-- currency, and a character not played since still carries that record. Read as it stands, it
+-- drew a second *Honor Points* column beside the one keyed 1901 - reported from play 2026-09-23,
+-- Tanardo's 20 in one column and Tossica's 1,428 in the other. Only a name some record in the
+-- family also carries with an id is joined to it: the name is one language, so a record written
+-- on another client's language keeps its own column rather than be matched by guess.
+local currencyAlias = {}
+
+local function currencyKey(currency)
+	return currency.key and (currencyAlias[currency.key] or currency.key)
+end
+
 local function currencyOf(meta, key)
 	for _, currency in ipairs(meta.currencies or {}) do
-		if currency.key == key then return currency end
+		if currencyKey(currency) == key then return currency end
 	end
 	return nil
 end
@@ -1930,17 +1946,28 @@ end
 
 local function currenciesHeld()
 	local byKey, order = {}, {}
+	local metas = everyMeta()
 
-	for _, meta in ipairs(everyMeta()) do
+	for key in pairs(currencyAlias) do currencyAlias[key] = nil end
+	for _, meta in ipairs(metas) do
+		for _, currency in ipairs(meta.currencies or {}) do
+			if currency.id and type(currency.name) == "string" and currency.key then
+				currencyAlias["n:" .. currency.name] = currency.key
+			end
+		end
+	end
+
+	for _, meta in ipairs(metas) do
 		if factionShown(meta.faction) then
 			for _, currency in ipairs(meta.currencies or {}) do
 				-- Records written before the scanner insisted on a key are already on
 				-- disk, and one of them indexed a table with a nil and took this whole
 				-- panel down. They are skipped until that member is scanned again.
-				local found = currency.key and byKey[currency.key]
-				if currency.key and not found then
-					found = { key = currency.key, total = 0 }
-					byKey[currency.key] = found
+				local key = currencyKey(currency)
+				local found = key and byKey[key]
+				if key and not found then
+					found = { key = key, total = 0 }
+					byKey[key] = found
 					order[#order + 1] = found
 				end
 				if found then
@@ -2116,11 +2143,18 @@ UI.CRAFTING_PEOPLE = UI.CRAFTING_PEOPLE or 10
 --
 -- The same shape as the whole-family reputations list and the possessions search: the thing on
 -- the left written once, whoever it is about under it, and what there is to say on the right.
+-- **No words on the heading row.** Each section says what its columns are on its own heading -
+-- *Crafting cooldowns*, *Member*, *Ready*, and *Instance lockouts*, *Member*, *Resets in* - so the
+-- row above them said the same thing a second time, a line apart (Alberto, 2026-09-23: *the
+-- semi-duplicate first headers line is ugly*). The columns stay, because they place the cells.
 function craftingColumns()
 	return {
-		{ key = "cdtimer", label = L["Cooldown"], width = 220, justify = "LEFT" },
-		{ key = "cdwho", label = L["Member"], width = 200, justify = "LEFT" },
-		{ key = "cdwhen", label = L["Ready"], width = 294, justify = "RIGHT" },
+		-- Three hundred for the place and its difficulty: *Hellfire Citadel: Ramparts  Heroic*
+		-- was cut at *Rampa...* in 220 (Alberto's screenshot, 2026-09-23), and the right-hand
+		-- column, which holds a lock number and a duration, had the room to give.
+		{ key = "cdtimer", label = "", width = 300, justify = "LEFT" },
+		{ key = "cdwho", label = "", width = 180, justify = "LEFT" },
+		{ key = "cdwhen", label = "", width = 234, justify = "RIGHT" },
 	}
 end
 
@@ -2136,8 +2170,10 @@ function currencyColumns()
 		local currency = held[index]
 		local key = "cur:" .. currency.key
 
+		-- `full` for the heading's tooltip, since the label is cut to fit (Alberto, 2026-09-23:
+		-- *we need a tooltip to read them in full, like the Wide Family columns*).
 		columns[index] = { key = key, label = shortened(currency.name or currency.key, 13),
-			width = CURRENCY_WIDTH, justify = "RIGHT" }
+			full = currency.name or currency.key, width = CURRENCY_WIDTH, justify = "RIGHT" }
 
 		-- Registered rather than looked up: every other column in this file has its cell
 		-- and its total written beside it, and these have to behave the same way or the
@@ -2223,6 +2259,20 @@ end
 -- **ALT is offered only where it goes somewhere.** A character with no profession recorded is
 -- not on the Professions page, and the click says so in chat rather than opening it on somebody
 -- else - which is right for a click and wrong for a promise. The tooltip does not make one.
+-- **Where this character logged out, under their name** - asked by Alberto 2026-09-23 for every
+-- Summary character tooltip. The zone in the reader's language where it can be had, and the
+-- subzone beside it in grey, the way the Miscellaneous set's *Where* line puts them. Nothing for a
+-- character never logged out since places were recorded: no answer is not a place (§2.2).
+local function logoutPlace(lines, meta)
+	local zone = Family.Names:Where(meta)
+	if not zone then return end
+	local under = meta.subzone
+	if type(under) == "string" and under ~= "" and under ~= zone then
+		zone = zone .. "  |cff888888" .. under .. "|r"
+	end
+	lines[#lines + 1] = { "|cffdddddd" .. zone .. "|r" }
+end
+
 local function clickHints(lines, meta)
 	lines[#lines + 1] = { " " }
 	lines[#lines + 1] = { string.format(L["|cff888888CTRL-click: %s|r"], L["Possessions"]) }
@@ -2395,6 +2445,7 @@ local function makeRow(parent)
 			local meta = UI:Meta(self.memberKey)
 			if not meta then return nil end
 			local lines = { { UI:NameOf(meta) } }
+			logoutPlace(lines, meta)
 			clickHints(lines, meta)
 			return nil, nil, lines
 		end
@@ -2403,6 +2454,8 @@ local function makeRow(parent)
 		if not shared then return nil end
 
 		local lines = { { UI:NameOf(shared) } }
+		-- Not on Miscellaneous, whose tooltip already has the place on a *Where* line below.
+		if not self.__places then logoutPlace(lines, shared) end
 
 		if self.__places then
 			local meta = shared
@@ -2518,12 +2571,15 @@ local function makeRow(parent)
 				-- same three strings.
 				lines[#lines + 1] = { L["Worth"], UI:Money(held.worth) }
 				lines[#lines + 1] = {
-					string.format(L["%d at auction prices"], held.atMarket) }
+					string.format(held.atMarket == 1 and L["%d item priced at auction prices"]
+				or L["%d items priced at auction prices"], held.atMarket) }
 				lines[#lines + 1] = {
-					string.format(L["%d at vendor prices"], held.atVendor) }
+					string.format(held.atVendor == 1 and L["%d item priced at vendor prices"]
+				or L["%d items priced at vendor prices"], held.atVendor) }
 				if held.unpriced > 0 then
 					lines[#lines + 1] = {
-						string.format(L["%d with no price"], held.unpriced) }
+						string.format(held.unpriced == 1 and L["%d item with no price"]
+				or L["%d items with no price"], held.unpriced) }
 				end
 			end
 		end
@@ -2752,7 +2808,11 @@ local function build(frame)
 	-- Above the footer, because it is about the columns rather than about the totals.
 	local note = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 	note:SetPoint("BOTTOMLEFT", footer, "TOPLEFT", 0, CAPTION_GAP)
-	note:SetPoint("BOTTOMRIGHT", footer, "TOPRIGHT", 0, CAPTION_GAP)
+	-- **No wider than the list above it.** The footer runs to within four pixels of the frame's
+	-- edge, which is under the scroll bar's column and, on the screen, past the window's border:
+	-- the Cooldowns note's first line ran out there and was cut at *underneath* (Alberto's
+	-- screenshot, 2026-09-23). The list stops 26 pixels in, so the note wraps where it does.
+	note:SetPoint("BOTTOMRIGHT", footer, "TOPRIGHT", -22, CAPTION_GAP)
 	note:SetJustifyH("LEFT")
 
 	local rows = {}
@@ -3261,6 +3321,17 @@ local function build(frame)
 					UI:SetSummarySort(currentSet.id, column.key)
 					frame:Refresh()
 				end)
+				-- The whole name where the heading had to be cut. Taken off again otherwise,
+				-- because these buttons are reused by every set.
+				if column.full and column.full ~= column.label then
+					UI:AttachTooltip(button, function()
+						return nil, nil, { { column.full } }
+					end)
+				else
+					button.__familyTooltip = nil
+					button:SetScript("OnEnter", nil)
+					button:SetScript("OnLeave", nil)
+				end
 				button:Show()
 			else
 				button:SetScript("OnClick", nil)
@@ -3614,6 +3685,18 @@ local function build(frame)
 				line.memberRealm = member.meta.realm
 				line.borrowed = row.borrowed
 
+				-- **Under the Chrono figure**, whose right edge is where the column's text
+				-- ends: four pixels in from the column's own edge (`layOut`). The row's
+				-- right edge is further out, past the last column, and the icons hung
+				-- there started to the right of the figure they unfold (Alberto's
+				-- screenshot, 2026-09-23).
+				local edge
+				for _, column in ipairs(columns) do
+					if column.key == "boon" and column.drawX then
+						edge = column.drawX + (column.drawWidth or column.width) - 4
+					end
+				end
+
 				local shown = math.min(BOON_SLOTS, #banked)
 				for index = 1, shown do
 					local buff = banked[index]
@@ -3625,7 +3708,12 @@ local function build(frame)
 					-- then end at the same edge, and the eye compares them down the column
 					-- instead of measuring from a name of a different length each time.
 					-- The order the game listed them in is kept.
-					slot:SetPoint("RIGHT", -6 - (shown - index) * (BOON_ICON + 2), 0)
+					if edge then
+						slot:SetPoint("RIGHT", line, "LEFT",
+							edge - (shown - index) * (BOON_ICON + 2), 0)
+					else
+						slot:SetPoint("RIGHT", -6 - (shown - index) * (BOON_ICON + 2), 0)
+					end
 
 					-- The fileID is what was recorded and is what is drawn, so a buff this
 					-- table has never heard of still appears as itself. The spell is only
@@ -3808,7 +3896,9 @@ local function build(frame)
 			-- Not while the picker has chosen a crafting timer, where the question is about
 			-- that timer and *nobody is saved* would answer a different one.
 			local lockSection = wanted == nil or #lockOrder > 0
-			local headings = (#order > 0 and 1 or 0)
+			-- A blank line between the two sections, asked for off a screenshot 2026-09-23.
+			local spaced = #order > 0 and lockSection
+			local headings = (#order > 0 and 1 or 0) + (spaced and 1 or 0)
 				+ (lockSection and (#lockOrder > 0 and 1 or 2) or 0)
 			local cap = UI:FoldDepth(sizes, headings,
 				UI:RowsThatFit(scroll, currentSet.rowHeight), UI.CRAFTING_PEOPLE or 3)
@@ -3819,7 +3909,10 @@ local function build(frame)
 			local function section(title, right)
 				local heading = nextRow(currentSet.rowHeight)
 				setCell(heading, 1, title, 1, 0.82, 0)
-				setCell(heading, 3, right, 0.6, 0.6, 0.6)
+				setCell(heading, 2, L["Member"], 1, 0.82, 0)
+				-- In the title's yellow, which is the colour the column headings above are in
+				-- (screenshot, 2026-09-23: grey read as a value rather than a heading).
+				setCell(heading, 3, right, 1, 0.82, 0)
 			end
 
 			if #order > 0 then section(L["Crafting cooldowns"], L["Ready"]) end
@@ -3910,10 +4003,20 @@ local function build(frame)
 				end
 			end
 
+			if spaced then nextRow(currentSet.rowHeight) end
 			if lockSection then section(L["Instance lockouts"], L["Resets in"]) end
 			if lockSection and #lockOrder == 0 then
 				local row = nextRow(currentSet.rowHeight)
+				-- The whole row, the way a realm's heading has it: in the first column's width
+				-- the sentence was cut to *Nobody is saved to an instance...* (screenshot,
+				-- 2026-09-23).
+				-- Widened after the text is set, because setting it puts a cell back to its
+				-- column's width (`UI:MoneyCell`).
 				setCell(row, 1, L["|cff888888Nobody is saved to an instance right now.|r"])
+				local cell = row.cells[1]
+				cell:SetWidth(math.max(list:GetWidth() - 8, 1))
+				cell.__moneyWidth = math.max(list:GetWidth() - 8, 1)
+				if cell.SetWordWrap then cell:SetWordWrap(false) end
 			end
 
 			for _, group in ipairs(lockOrder) do
@@ -3936,8 +4039,11 @@ local function build(frame)
 					row.memberRealm = person.member.meta.realm
 					row.borrowed = person.borrowed and true or false
 
+					-- Forty characters, which is what the 300 pixels of this column hold:
+					-- the column was widened for *Hellfire Citadel: Ramparts  Heroic* and
+					-- this clip, at 24, went on cutting it at *Rampa...* (2026-09-23).
 					setCell(row, 1, index == 1
-						and ("  " .. UI:Shortened(tostring(group.label), 24)) or "",
+						and ("  " .. UI:Shortened(tostring(group.label), 40)) or "",
 						0.6, 0.8, 1)
 
 					local who, red, green, blue =
@@ -3984,8 +4090,14 @@ local function build(frame)
 			-- and the count wrapped onto a line of its own underneath, where it read as a
 			-- member of the realm called "(2)" - and pushed every row below it half a line
 			-- out of step with the header.
+			--
+			-- **And said to `UI:MoneyCell` as well**, which puts a cell back to the width it
+			-- was told when the text is set (backlog 88). Widened only on the frame, the
+			-- heading was cut back to the Member column by its own text from 2026-09-18 -
+			-- *Nethergarde Kee...*, *Pyrewood Village...*, screenshot of 2026-09-23.
 			local title = heading.cells[1]
 			title:SetWidth(math.max(list:GetWidth() - 8, 1))
+			title.__moneyWidth = math.max(list:GetWidth() - 8, 1)
 			if title.SetWordWrap then title:SetWordWrap(false) end
 
 			-- The count goes in the realm's own cell. Put in the next one along it read
@@ -4055,6 +4167,7 @@ local function build(frame)
 
 					local sideTitle = sideHeading.cells[1]
 					sideTitle:SetWidth(math.max(list:GetWidth() - 8, 1))
+					sideTitle.__moneyWidth = math.max(list:GetWidth() - 8, 1)
 					if sideTitle.SetWordWrap then sideTitle:SetWordWrap(false) end
 
 					local colour = SIDE_COLOUR[side] or { 0.8, 0.8, 0.8 }
@@ -4090,6 +4203,7 @@ local function build(frame)
 
 					local label = sub.cells[1]
 					label:SetWidth(math.max(list:GetWidth() - 8, 1))
+					label.__moneyWidth = math.max(list:GetWidth() - 8, 1)
 					if label.SetWordWrap then label:SetWordWrap(false) end
 
 					-- **Indented like the side heading above it, and naming the realm.**
@@ -4220,6 +4334,10 @@ local function build(frame)
 					and string.format(L[" |cffffaa00%d more not shown - there is only so "
 						.. "much room in a row.|r|cff888888"], currenciesOmitted)
 					or ""))
+		elseif currentSet.id == "overview" then
+			note:SetText(string.format(L["|cff888888Rest XP est. is worked out from the last "
+				.. "reading: 5%% of a level every 8 hours where the character was resting, every "
+				.. "32 hours elsewhere, up to a level and a half. Pandaren twice all of that.|r"]))
 		else
 			note:SetText("")
 		end

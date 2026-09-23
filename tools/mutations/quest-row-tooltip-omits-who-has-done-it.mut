@@ -1,0 +1,6 @@
+name: a quest row tooltip does not say who in the family has handed it in
+file: addons/Family_UI/Character.lua
+--- old
+				for _, line in ipairs(UI:QuestDoneLines(self.questID)) do
+--- new
+				for _, line in ipairs({}) do

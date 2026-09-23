@@ -1,0 +1,6 @@
+name: a currency filed under its name keeps a column of its own
+file: addons/Family_UI/Summary.lua
+--- old
+	return currency.key and (currencyAlias[currency.key] or currency.key)
+--- new
+	return currency.key

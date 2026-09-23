@@ -4288,7 +4288,7 @@ said the family had none while one was on sale. It records the string now, like 
    nobody has read is L-071 in another costume. Its whole-house route does carry a link, guarded by
    existence, and does file by variant.
 
-## 68. A profession's recipes can be recorded from a window that is showing a fraction of them
+## 68. A profession's recipes can be recorded from a window that is showing a fraction of them — DONE 2026-09-23, not yet seen in game
 
 **Reported from play, 2026-09-12.** Tanardo at **Cooking 372/375**, recorded as knowing **one**
 recipe - *Goblin Deviled Clams*, grey - and seen 13 days ago. Logging him in and opening cooking
@@ -4331,6 +4331,33 @@ Have Materials tick, the name filter, the search box and the item-level range - 
 recipes` prints it. **It changes nothing about what is stored**, which is the whole point: the small
 record goes in exactly as before. The threshold decides what is written *down*, never what is
 written.
+
+**Checked again 2026-09-23, on Alberto's doubt that it was ever real.** His thought: a filter typed
+into Family's own Professions panel, unnoticed, showing one row of a full list. **Ruled out** by the
+screenshot he sent with the report (2026-09-12, read back from that session): the panel's search
+box is empty, and the line under the profession buttons reads *Cooking 372/375 | 1 recipes 1 grey
+| seen 13d ago*. That count is `#recipes` of the **stored** record, not of the rows drawn, and has
+been since 2026-08-28 (`Family_UI/Professions.lua`, the `%d recipes` status line). So the record
+really held one recipe, and the entry stands.
+
+**And the trap could only be read on the character it fired on**, so nobody could know whether it
+had fired without logging into every one. `/family recipes` now ends with every member's collapsed
+record, whoever is logged in, or *none*. **What is wanted from Alberto:** type `/family recipes` on
+any character once, and send the line headed *Collapsed recipe records*.
+
+**Read 2026-09-23, on all three builds.** Era and Burning Crusade: *none*. **Mists: the trap had fired**,
+on Eccebombo four days earlier - *Cooking, 54 recipe(s) -> 0; the window showed 0 row(s): 0 header(s), 0
+recipe(s), have materials: nil, search box: Search, levels: 0-0*. No filter was on, and the window listed
+**nothing at all, not even a header**: it was read before it had filled. That is the second explanation
+above, and Tanardo's one recipe of seventy-five is the same thing caught one row in.
+
+**Built the same day: a collapse is read twice before it is believed.** When a read would take a
+record of ten or more recipes below half, the scanner keeps the stored list, reads the window again
+two seconds later, and writes only if the second read agrees. A window that was filling has filled by
+then and is written whole; one closed in between leaves the record alone; a first read more than
+thirty seconds old confirms nothing; a profession really unlearnt reads the same twice and is written,
+which is the case L-086 says a refusal would break. The trap stays, so `/family recipes` still says
+when a collapse was seen.
 
 ## 69. Recipe materials on the Professions panel — **done 2026-09-12**
 
@@ -4955,7 +4982,14 @@ comments were re-anchored on the same code.
 
 ---
 
-## 76. `/family widetime` names what moved for a member it counts as changed
+## 76. `/family widetime` names what moved for a member it counts as changed — DONE 2026-09-23, not yet seen in game
+
+**Built 2026-09-23** as written below, with one field fold per field (so *zone*, not *character*).
+`Database:PartMarks` hands over a copy of the part marks. The pieces are kept when the mark they
+belong to is written, at the client-took-it callback and at `onGot`, and pruned with `link.sent`.
+Saved-data size and load time were not measured; `/family status` before and after is still the
+way to read them.
+
 
 **Asked by Alberto 2026-09-13**, off Serena's reading *4 of 5 unchanged, changed since sent:
 Malachia* (backlog 72, *Points 1 and 2 read in the game*). Malachia was the character in play, so the
@@ -5801,7 +5835,7 @@ Checks under *the realms of one connected group are valued from one auction hous
 
 ---
 
-## 92. The quests a character has already finished
+## 92. The quests a character has already finished — DONE 2026-09-23, seen in game on TBC
 
 **Asked 2026-09-20.** Family knows what is in a quest log and nothing about what was handed in
 years ago. The question is *which of my characters has already done this*, which is what decides
@@ -5885,6 +5919,37 @@ character; both are milliseconds.
 `QueryQuestsCompleted`, so there is no server round trip to wait for: what the call answers at
 login is what there is. `QUEST_TURNED_IN` is accepted, which is the event the running half would
 hang on and the one `Scanners/Quests.lua` already listens to.
+
+### Built 2026-09-23
+
+**Recorded** by `Family/Scanners/QuestHistory.lua`: `GetQuestsCompleted` read whole at login and again
+three seconds after every `QUEST_TURNED_IN`, rather than appended to, because the read costs
+milliseconds.
+
+**Stored the way Alberto described it the same afternoon**: *the quests in game are a finite number;
+store the quests that anybody has done, plus the flags of who has completed each.* One family list,
+`FamilyDB.questPool`, holds every id any character has handed in, once, in the order first seen. Each
+character's payload holds `questsDone`, one bit per entry in that list, six to a character. The list
+only grows at its end, so flags already written never change meaning. No names are stored: the id is
+the quest. A family whose characters have handed in five thousand different quests costs each
+character about 830 bytes and the family list about 20 KB once. Stored as a table of ids instead, the
+same history would cost about 20 bytes an id per character in the saved variables.
+
+**Shown** where a quest id is already on screen: a quest row's tooltip in Family's quest lists (a
+character's log and the whole-family reading) now ends with *Already handed in by:* and the names,
+ten and then *and N more*, or *Nobody in the family has handed this in yet*. Nothing is said while no
+character's history has been read. **No list of the history is drawn anywhere.** A list of thousands
+needs segmenting (Alberto, the same afternoon), and a quest the client is not holding in a log has no
+name it will give on these builds without a measurement nobody has taken. So a browsable view is a
+later entry, with that measurement first.
+
+**Not shared, by decision.** No Wide Family category carries `questsDone` or the family list, and
+none will: Alberto, 2026-09-23, *no wide family sharing for quest history*.
+
+**No daily history, by decision.** Alberto, the same day: *no daily quests completion history; dailies
+will be tracked under Quests while active*. A daily in a character's log is read like any other quest
+by `Scanners/Quests.lua`, which is what that means today. The specification's two daily rows now say
+so.
 
 ---
 
@@ -6064,7 +6129,19 @@ drawn as the client gives it and has never been seen.
 
 ---
 
-## 94. What a character's rested experience has grown to since they were put away
+## 94. What a character's rested experience has grown to since they were put away — DONE 2026-09-23, not yet seen in game
+
+**Built 2026-09-23.** Every scan that reads `rested` now also records `restedAt` and `resting`
+(`IsResting`), and `Identity:RestedNow` works the figure forward with the four measured cases
+below, from the reading to `lastSeen` (logged in) and from `lastSeen` to now (logged out), capped
+at a level and a half. Pandaren get twice the rate and twice the ceiling, by Alberto's rule
+(*10%/8 h in rest zones, 10%/32 h outside, cap 300%*), not by a reading. The Summary column is
+*Rest XP est.* and the Overview's note says how it is worked out. **Still unmeasured, and the
+build does not depend on it:** whether `GetXPExhaustion` answers during `PLAYER_LOGOUT`. A last
+reading is taken there if it is a number not below the one held; otherwise the last scan stands,
+and a character logged in resting until logout is still counted at the full rate for that time.
+A record from before this has no `restedAt` and shows its figure as read until the next login.
+
 
 **Asked 2026-09-20.** Family photographs rested experience at logout; a week later the Summary
 still shows the figure from that day, while the character has been filling up all along.
@@ -7040,7 +7117,15 @@ wanted (`DECISIONS.md`, that date). Nobody objected to anything.
 
 ---
 
-## 98. A vein whose ore this build cannot smelt is named as the nearest metal it can
+## 98. A vein whose ore this build cannot smelt is named as the nearest metal it can — CLOSED 2026-09-23, not to be fixed
+
+**Closed by Alberto, 2026-09-23:** *98 refers to SoD which is not a supported build. So we have
+interest in fixing this only if the fix is useful for the supported builds.* It is not: every one
+of the eight wrong rows below is a Season of Discovery node, and on Era, Burning Crusade and Mists
+the measurement found no vein named with the wrong metal. Widening the candidate list would add
+candidates, and so chances of a near miss, on the builds Family supports, to fix a build it does
+not. The measurement stays below as the record of the hole.
+
 
 **Found 2026-09-22**, while measuring the fix for the thorium veins Alberto reported. Not a
 consequence of that fix: six rows were already wrong before it, and the fix takes it to eight.
@@ -7085,7 +7170,7 @@ of Discovery. The three names above are the whole of it on the rows that have be
 
 ---
 
-## 99. A cursor holding several nodes could answer about each of them — DONE 2026-09-22
+## 99. A cursor holding several nodes could answer about each of them — DONE 2026-09-22, seen in game
 
 **Asked by the fix for the cluster fault, 2026-09-22.** On a zoomed-out world map a cursor covers
 several pins, the client puts every name on one tooltip line, and Family now says nothing at all
@@ -7164,3 +7249,79 @@ note of the incident that found it.
 and the comment above it saying why it stays. Four harness checks run the probe's own `fields()`, cut out
 of its file, on an eighteen-key talent record and on a forty-key table. The mutation puts the cut back to
 twelve and is caught.
+
+---
+
+## 102. Read one currency row on Mists, from a character holding any currency — CLOSED 2026-09-23, nothing to change
+
+**Opened 2026-09-23**, out of backlog 95. That entry closed with this reading still owed and wrote the
+way to get it down (2026-09-21), but a question inside a DONE entry is not on anybody's list. Alberto
+asked for it as an entry of its own, and will take the reading.
+
+**Why it matters.** Mists reads currencies through the same older list as Burning Crusade, and a row
+from it has never been seen on Mists: every character probed there had an empty list. The scanner
+trusts the twelfth value as the currency's id only on a row exactly twelve answers long, which is the
+Burning Crusade row. A Mists row of another length files the currency under its name, so a French and
+an English character would get two columns for one currency. And `Family:TryCall`, which the scanner
+reads the row through, can come back short if an answer in the middle is empty, which can lose the
+amount as well.
+
+**What to do in the game, on any Mists character:**
+
+1. Get any currency at all. The cheapest is **one archaeology fragment**: learn Archaeology from a
+   trainer, then do one survey at one dig site on the map. Nobody else needs to be online. A
+   **Darkmoon Prize Ticket** from the faire's games works too, at any level.
+2. Type `/familyprobe apis` in the chat.
+3. Send the line headed *the currency list*.
+
+**What follows from it:** if the row is twelve answers, none empty, with the id last, this closes with
+nothing to change. If it is another length, or has an empty answer in it, the scanner reads the row
+through `pcall` and `select("#")` the way `Scanners/Instances.lua` does, with a harness check on the row
+as read.
+
+**Read 2026-09-23, and the question changed.** Luga, holding eleven Dwarf fragments, answered
+`GetCurrencyListSize` **0**, and the Summary's Currencies page has no column for any Mists character.
+Alberto: the Mists Classic character window has **no Currency tab**. So the list may never be filled on
+this build, which would mean Family's currency scanner records nothing on Mists at all, and the row's
+shape is not the question any more. FamilyProbe now asks the fragment currencies by id (384, 385, 393)
+and the archaeology calls (`GetNumArchaeologyRaces`, `GetArchaeologyRaceInfo`); one run on Luga says
+which of them holds the eleven.
+
+**Reopened within the hour - the paragraph below is wrong; see 103.** **Closed the same day, and not with the answer it asked for.** Luga answered the fragments by id and
+the list with 0 rows (DATASOURCES, *On Mists the currency list is empty*). There is no Mists row to
+read, so the short-row risk in the older route never reaches Mists; Burning Crusade's row was read again
+the same day, twelve full values with the id last. What it found instead is backlog 103.
+
+---
+
+## 103. Family records no currency on Mists — WITHDRAWN 2026-09-23, the premise was wrong
+
+**Found 2026-09-23** through backlog 102. `Scanners/Currencies.lua` walks the older currency list on
+Mists, and on Mists Classic that list is empty - there is no Currency tab to fill it - so every Mists
+character is recorded with no currency, and the Summary's Currencies set draws no column there.
+
+**The route that works, measured:** `C_CurrencyInfo.GetCurrencyInfo(id)` answers a full table for an id
+it is asked, with `quantity`, `maxQuantity` and `discovered`. What it needs is the ids: a generated table
+per build from wago's `CurrencyTypes`, the source §3 already uses for the recipe tables, asked one by
+one at login and on `CURRENCY_DISPLAY_UPDATE`, keeping those with `discovered` or a quantity above
+nought. Honor (1901) and the fragments (384 and the other races) are among them.
+
+**What has to be decided in building it:** which rows of `CurrencyTypes` are worth asking - it carries
+retired ones such as *Honor Deprecated 3* - and whether the id route replaces the list on Mists only or
+becomes the fallback wherever the list answers nothing.
+
+**Withdrawn within the hour, and 102 reopened.** Alberto, after asking another player in the game: the
+Currency tab appears once a character **owns** a currency, and archaeology fragments do not count.
+So Luga's empty list means Luga has no listed currency, not that the list is never filled on Mists.
+Nothing shows that Family misses a Mists currency, and the reading 102 asks for still needs a Mists
+character **with a Currency tab**. Whether Family should show archaeology fragments at all is a
+separate question nobody has asked.
+
+**Parked 2026-09-23.** Alberto has no Mists character that owns a listed currency - no honor, nothing
+behind a Currency tab. Nothing is wrong meanwhile: a character with no listed currency has nothing for
+the list to miss. The reading is taken the first time any Mists character earns one.
+
+**Closed the same evening.** Luga won a Darkmoon Prize Ticket, the Currency tab appeared, and the row
+read as twelve values, none empty, id 515 last - the Burning Crusade shape. Family filed it by id and
+drew it on the Currencies set. Nothing to change (DATASOURCES, *On Mists the currency list is empty*).
+

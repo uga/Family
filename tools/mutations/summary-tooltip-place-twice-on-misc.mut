@@ -1,0 +1,6 @@
+name: the Miscellaneous tooltip says the place twice
+file: addons/Family_UI/Summary.lua
+--- old
+		if not self.__places then logoutPlace(lines, shared) end
+--- new
+		logoutPlace(lines, shared)

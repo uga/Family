@@ -1,0 +1,6 @@
+name: a recipe list collapsing is written on its first read
+file: addons/Family/Scanners/Professions.lua
+--- old
+				hold = true
+--- new
+				hold = false

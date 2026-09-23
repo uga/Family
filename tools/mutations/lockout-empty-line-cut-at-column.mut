@@ -1,0 +1,6 @@
+name: the line saying nobody is saved is cut at the first column
+file: addons/Family_UI/Summary.lua
+--- old
+				cell:SetWidth(math.max(list:GetWidth() - 8, 1))
+--- new
+				local _ = cell
