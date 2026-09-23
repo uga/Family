@@ -7143,7 +7143,7 @@ of Discovery. The three names above are the whole of it on the rows that have be
 
 ---
 
-## 99. A cursor holding several nodes could answer about each of them — DONE 2026-09-22
+## 99. A cursor holding several nodes could answer about each of them — DONE 2026-09-22, seen in game
 
 **Asked by the fix for the cluster fault, 2026-09-22.** On a zoomed-out world map a cursor covers
 several pins, the client puts every name on one tooltip line, and Family now says nothing at all
