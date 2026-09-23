@@ -1151,15 +1151,18 @@ local function priceLines(tooltip, itemID, variant)
 		-- and the right-hand column is left carrying nothing but money. The strings are shared
 		-- with the summary's row tooltip, which drew the same three lines the same way.
 		if held.atMarket > 0 then
-			lines[#lines + 1] = { string.format(L["%d at auction prices"], held.atMarket),
+			lines[#lines + 1] = { string.format(held.atMarket == 1 and L["%d item priced at auction prices"]
+				or L["%d items priced at auction prices"], held.atMarket),
 				"", 0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
 		end
 		if held.atVendor > 0 then
-			lines[#lines + 1] = { string.format(L["%d at vendor prices"], held.atVendor),
+			lines[#lines + 1] = { string.format(held.atVendor == 1 and L["%d item priced at vendor prices"]
+				or L["%d items priced at vendor prices"], held.atVendor),
 				"", 0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
 		end
 		if held.unpriced > 0 then
-			lines[#lines + 1] = { string.format(L["%d with no price"], held.unpriced),
+			lines[#lines + 1] = { string.format(held.unpriced == 1 and L["%d item with no price"]
+				or L["%d items with no price"], held.unpriced),
 				"", 0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
 		end
 	end

@@ -7341,7 +7341,8 @@ do
 		local auctionLane, auctionColumn = laneLine(2880, "at auction prices")
 		local vendorLane, vendorColumn = laneLine(2880, "at vendor prices")
 		check("with the two lanes it was reached by, never the total on its own",
-			auctionLane == "12 at auction prices" and vendorLane == "4 at vendor prices",
+			auctionLane == "12 items priced at auction prices"
+				and vendorLane == "4 items priced at vendor prices",
 			tostring(auctionLane) .. " / " .. tostring(vendorLane))
 
 		-- **And the count is in the words rather than in the column money is drawn in.**
@@ -13043,6 +13044,41 @@ print("CTRL or ALT and a click on a Summary name goes to that character")
 		end
 	end
 
+	-- **And where they logged out, on the line under their name** - Alberto 2026-09-23. On a
+	-- set whose tooltip had nothing else, and not a second time on Miscellaneous, whose tooltip
+	-- already says it on a *Where* line.
+	do
+		local me = Family:CurrentMember()
+		local heldMeta = Family.Database:Meta(me) or {}
+		local heldZone, heldSub, heldID = heldMeta.zone, heldMeta.subzone, heldMeta.zoneID
+		Family.Database:SetMeta(me, { zone = "Tanaris", subzone = "Gadgetzan",
+			zoneID = Family.CLEAR })
+
+		local function underName(setKey)
+			Family.UI:ShowTab("summary")
+			fireClick(Family.UI.__summarySets[setKey])
+			Family.UI:Refresh()
+			for _, f in ipairs(frames) do
+				if onScreen(f) and f.memberKey == me and f.__familyTooltip then
+					local _, _, lines = f.__familyTooltip(f)
+					return lines and lines[2] and tostring(lines[2][1]) or ""
+				end
+			end
+			return nil
+		end
+
+		local bags = underName("bags")
+		check("under a character's name, where they logged out, subzone beside the zone",
+			bags ~= nil and bags:find("Tanaris", 1, true) ~= nil
+				and bags:find("Gadgetzan", 1, true) ~= nil, tostring(bags))
+		local misc = underName("misc")
+		check("but not twice on Miscellaneous, which says it on its own Where line",
+			misc ~= nil and misc:find("Tanaris", 1, true) == nil, tostring(misc))
+
+		Family.Database:SetMeta(me, { zone = heldZone or Family.CLEAR,
+			subzone = heldSub or Family.CLEAR, zoneID = heldID or Family.CLEAR })
+	end
+
 	Family.UI:ShowTab("summary")
 end)()
 
@@ -13530,14 +13566,37 @@ print("the Stock column")
 		end
 
 		check("the summary row's tooltip counts each lane in its own words",
-			lanes ~= nil and lanes[1] and lanes[1][1] == "40 at auction prices"
-				and lanes[2] and lanes[2][1] == "6 at vendor prices"
-				and lanes[3] and lanes[3][1] == "2 with no price",
+			lanes ~= nil and lanes[1] and lanes[1][1] == "40 items priced at auction prices"
+				and lanes[2] and lanes[2][1] == "6 items priced at vendor prices"
+				and lanes[3] and lanes[3][1] == "2 items with no price",
 			lanes and #lanes > 0
 				and (tostring(lanes[1] and lanes[1][1]) .. " / "
 					.. tostring(lanes[2] and lanes[2][1]) .. " / "
 					.. tostring(lanes[3] and lanes[3][1]))
 				or "no lanes on the row")
+
+		-- One of each is *1 item*, not *1 items*.
+		local realStock = Family.UI.__stockOf
+		Family.UI.__stockOf = function()
+			return { worth = 100, atMarket = 1, atVendor = 1, unpriced = 1 }
+		end
+		local single = ""
+		for _, f in ipairs(frames) do
+			if single == "" and onScreen(f) and f.memberKey == who
+				and f.__scripts and f.__scripts.OnEnter then
+				wipe(GameTooltip.__lines)
+				f.__scripts.OnEnter(f)
+				for _, line in ipairs(GameTooltip.__lines) do
+					single = single .. " | " .. tostring(line[1])
+				end
+				if f.__scripts.OnLeave then f.__scripts.OnLeave(f) end
+			end
+		end
+		Family.UI.__stockOf = realStock
+		check("one item in a lane is said in the singular",
+			single:find("1 item priced at auction prices", 1, true) ~= nil
+				and single:find("1 item priced at vendor prices", 1, true) ~= nil
+				and single:find("1 item with no price", 1, true) ~= nil, single)
 
 		check("and leaves the column beside them empty, because it is not a price",
 			lanes ~= nil and #lanes == 3
@@ -41999,6 +42058,22 @@ print("instance lockouts, read, kept and drawn")
 	Family.UI:Refresh()
 
 	clickLastButton(Family.L["Overview"])
+	Family.UI:Refresh()
+
+	-- **A realm's heading keeps the whole row** on the Summary, which it lost on 2026-09-18 to its
+	-- own text: setting a cell's text puts it back to the width `UI:MoneyCell` was told, and the
+	-- heading had only told the frame (screenshot, 2026-09-23: *Pyrewood Village...*).
+	local realmCell
+	for _, f in ipairs(fontStrings) do
+		if realmCell == nil and type(f.__text) == "string" and f.__visible ~= false
+			and onScreen(f) and f.__text:find("^Fire Maw  |cff888888%(") then
+			realmCell = f
+		end
+	end
+	check("a realm's heading on the Summary has the row's width, not the Member column's",
+		realmCell ~= nil and (realmCell.__width or 0) > 300,
+		tostring(realmCell and realmCell.__width))
+
 	for _, name in ipairs { "Raidera", "Raiderb", "Raiderc" } do
 		Family.Database:Forget(name .. "-FireMaw")
 	end

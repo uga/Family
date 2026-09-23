@@ -1,8 +1,8 @@
 name: an item tooltip draws the lane count in the column money is drawn in
 file: addons/Family_UI/Tooltip.lua
 --- old
-			lines[#lines + 1] = { string.format(L["%d at auction prices"], held.atMarket),
+				or L["%d items priced at auction prices"], held.atMarket),
 				"", 0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
 --- new
-			lines[#lines + 1] = { L["%d at auction prices"], tostring(held.atMarket),
-				0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }
+				or L["%d items priced at auction prices"], 0),
+				tostring(held.atMarket), 0.6, 0.6, 0.6, 0.8, 0.8, 0.8 }

@@ -1,0 +1,6 @@
+name: one item in a worth lane is said in the plural
+file: addons/Family_UI/Summary.lua
+--- old
+					string.format(held.atMarket == 1 and L["%d item priced at auction prices"]
+--- new
+					string.format(false and L["%d item priced at auction prices"]

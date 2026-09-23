@@ -4345,6 +4345,12 @@ had fired without logging into every one. `/family recipes` now ends with every 
 record, whoever is logged in, or *none*. **What is wanted from Alberto:** type `/family recipes` on
 any character once, and send the line headed *Collapsed recipe records*.
 
+**Read 2026-09-23, on all three builds.** Era and Burning Crusade: *none*. **Mists: the trap had fired**,
+on Eccebombo four days earlier - *Cooking, 54 recipe(s) -> 0; the window showed 0 row(s): 0 header(s), 0
+recipe(s), have materials: nil, search box: Search, levels: 0-0*. No filter was on, and the window listed
+**nothing at all, not even a header**: it was read before it had filled. That is the second explanation
+above, and Tanardo's one recipe of seventy-five is the same thing caught one row in.
+
 ## 69. Recipe materials on the Professions panel — **done 2026-09-12**
 
 **Asked for 2026-09-12.** Each recipe line carries what it needs, on the right of the row:

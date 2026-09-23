@@ -78,6 +78,12 @@ is a decision rather than an afternoon of archaeology.
   A character who has never opened a profession window says so in chat instead of opening the
   professions page on somebody else. Hovering a name says both, in grey, at the foot of its
   tooltip.
+- **Hovering a character's name on the summary now says where they logged out**, just under the
+  name.
+- **The worth lines say what they count**: *712 items priced at auction prices*. They used to say
+  *712 at auction prices*, which left the reader to guess. The same on an item's tooltip.
+- **Realm headings on the summary show their whole name again.** They had been cut short, as in
+  *Pyrewood Village...*.
 
 ### Achievements
 

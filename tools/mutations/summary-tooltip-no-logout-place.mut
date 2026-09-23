@@ -1,0 +1,6 @@
+name: a Summary character tooltip does not say where they logged out
+file: addons/Family_UI/Summary.lua
+--- old
+	lines[#lines + 1] = { "|cffdddddd" .. zone .. "|r" }
+--- new
+	local _ = lines

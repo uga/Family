@@ -2223,6 +2223,20 @@ end
 -- **ALT is offered only where it goes somewhere.** A character with no profession recorded is
 -- not on the Professions page, and the click says so in chat rather than opening it on somebody
 -- else - which is right for a click and wrong for a promise. The tooltip does not make one.
+-- **Where this character logged out, under their name** - asked by Alberto 2026-09-23 for every
+-- Summary character tooltip. The zone in the reader's language where it can be had, and the
+-- subzone beside it in grey, the way the Miscellaneous set's *Where* line puts them. Nothing for a
+-- character never logged out since places were recorded: no answer is not a place (§2.2).
+local function logoutPlace(lines, meta)
+	local zone = Family.Names:Where(meta)
+	if not zone then return end
+	local under = meta.subzone
+	if type(under) == "string" and under ~= "" and under ~= zone then
+		zone = zone .. "  |cff888888" .. under .. "|r"
+	end
+	lines[#lines + 1] = { "|cffdddddd" .. zone .. "|r" }
+end
+
 local function clickHints(lines, meta)
 	lines[#lines + 1] = { " " }
 	lines[#lines + 1] = { string.format(L["|cff888888CTRL-click: %s|r"], L["Possessions"]) }
@@ -2395,6 +2409,7 @@ local function makeRow(parent)
 			local meta = UI:Meta(self.memberKey)
 			if not meta then return nil end
 			local lines = { { UI:NameOf(meta) } }
+			logoutPlace(lines, meta)
 			clickHints(lines, meta)
 			return nil, nil, lines
 		end
@@ -2403,6 +2418,8 @@ local function makeRow(parent)
 		if not shared then return nil end
 
 		local lines = { { UI:NameOf(shared) } }
+		-- Not on Miscellaneous, whose tooltip already has the place on a *Where* line below.
+		if not self.__places then logoutPlace(lines, shared) end
 
 		if self.__places then
 			local meta = shared
@@ -2518,12 +2535,15 @@ local function makeRow(parent)
 				-- same three strings.
 				lines[#lines + 1] = { L["Worth"], UI:Money(held.worth) }
 				lines[#lines + 1] = {
-					string.format(L["%d at auction prices"], held.atMarket) }
+					string.format(held.atMarket == 1 and L["%d item priced at auction prices"]
+				or L["%d items priced at auction prices"], held.atMarket) }
 				lines[#lines + 1] = {
-					string.format(L["%d at vendor prices"], held.atVendor) }
+					string.format(held.atVendor == 1 and L["%d item priced at vendor prices"]
+				or L["%d items priced at vendor prices"], held.atVendor) }
 				if held.unpriced > 0 then
 					lines[#lines + 1] = {
-						string.format(L["%d with no price"], held.unpriced) }
+						string.format(held.unpriced == 1 and L["%d item with no price"]
+				or L["%d items with no price"], held.unpriced) }
 				end
 			end
 		end
@@ -3924,6 +3944,7 @@ local function build(frame)
 				setCell(row, 1, L["|cff888888Nobody is saved to an instance right now.|r"])
 				local cell = row.cells[1]
 				cell:SetWidth(math.max(list:GetWidth() - 8, 1))
+				cell.__moneyWidth = math.max(list:GetWidth() - 8, 1)
 				if cell.SetWordWrap then cell:SetWordWrap(false) end
 			end
 
@@ -3995,8 +4016,14 @@ local function build(frame)
 			-- and the count wrapped onto a line of its own underneath, where it read as a
 			-- member of the realm called "(2)" - and pushed every row below it half a line
 			-- out of step with the header.
+			--
+			-- **And said to `UI:MoneyCell` as well**, which puts a cell back to the width it
+			-- was told when the text is set (backlog 88). Widened only on the frame, the
+			-- heading was cut back to the Member column by its own text from 2026-09-18 -
+			-- *Nethergarde Kee...*, *Pyrewood Village...*, screenshot of 2026-09-23.
 			local title = heading.cells[1]
 			title:SetWidth(math.max(list:GetWidth() - 8, 1))
+			title.__moneyWidth = math.max(list:GetWidth() - 8, 1)
 			if title.SetWordWrap then title:SetWordWrap(false) end
 
 			-- The count goes in the realm's own cell. Put in the next one along it read
@@ -4066,6 +4093,7 @@ local function build(frame)
 
 					local sideTitle = sideHeading.cells[1]
 					sideTitle:SetWidth(math.max(list:GetWidth() - 8, 1))
+					sideTitle.__moneyWidth = math.max(list:GetWidth() - 8, 1)
 					if sideTitle.SetWordWrap then sideTitle:SetWordWrap(false) end
 
 					local colour = SIDE_COLOUR[side] or { 0.8, 0.8, 0.8 }
@@ -4101,6 +4129,7 @@ local function build(frame)
 
 					local label = sub.cells[1]
 					label:SetWidth(math.max(list:GetWidth() - 8, 1))
+					label.__moneyWidth = math.max(list:GetWidth() - 8, 1)
 					if label.SetWordWrap then label:SetWordWrap(false) end
 
 					-- **Indented like the side heading above it, and naming the realm.**
