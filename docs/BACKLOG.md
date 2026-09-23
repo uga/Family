@@ -7164,3 +7164,33 @@ note of the incident that found it.
 and the comment above it saying why it stays. Four harness checks run the probe's own `fields()`, cut out
 of its file, on an eighteen-key talent record and on a forty-key table. The mutation puts the cut back to
 twelve and is caught.
+
+---
+
+## 102. Read one currency row on Mists, from a character holding any currency — waiting on Alberto
+
+**Opened 2026-09-23**, out of backlog 95. That entry closed with this reading still owed and wrote the
+way to get it down (2026-09-21), but a question inside a DONE entry is not on anybody's list. Alberto
+asked for it as an entry of its own, and will take the reading.
+
+**Why it matters.** Mists reads currencies through the same older list as Burning Crusade, and a row
+from it has never been seen on Mists: every character probed there had an empty list. The scanner
+trusts the twelfth value as the currency's id only on a row exactly twelve answers long, which is the
+Burning Crusade row. A Mists row of another length files the currency under its name, so a French and
+an English character would get two columns for one currency. And `Family:TryCall`, which the scanner
+reads the row through, can come back short if an answer in the middle is empty, which can lose the
+amount as well.
+
+**What to do in the game, on any Mists character:**
+
+1. Get any currency at all. The cheapest is **one archaeology fragment**: learn Archaeology from a
+   trainer, then do one survey at one dig site on the map. Nobody else needs to be online. A
+   **Darkmoon Prize Ticket** from the faire's games works too, at any level.
+2. Type `/familyprobe apis` in the chat.
+3. Send the line headed *the currency list*.
+
+**What follows from it:** if the row is twelve answers, none empty, with the id last, this closes with
+nothing to change. If it is another length, or has an empty answer in it, the scanner reads the row
+through `pcall` and `select("#")` the way `Scanners/Instances.lua` does, with a harness check on the row
+as read.
+
