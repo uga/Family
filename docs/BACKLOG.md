@@ -5828,7 +5828,7 @@ Checks under *the realms of one connected group are valued from one auction hous
 
 ---
 
-## 92. The quests a character has already finished — DONE 2026-09-23, not yet seen in game
+## 92. The quests a character has already finished — DONE 2026-09-23, seen in game on TBC
 
 **Asked 2026-09-20.** Family knows what is in a quest log and nothing about what was handed in
 years ago. The question is *which of my characters has already done this*, which is what decides
