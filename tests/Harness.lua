@@ -16187,9 +16187,9 @@ do
 
 					Family.Database:SetMeta(someone, { level = (heldLevel or 1) + 1 })
 					local _, _, _, _, moved = Family.Wide:MarkGaps(link)
-					check("a field that moved is named", moved[who]
-						and table.concat(moved[who], ",") == "level",
-						moved[who] and table.concat(moved[who], ",") or "nil")
+					check("a field that moved is named", moved[1]
+						and table.concat(moved[1], ",") == "level",
+						moved[1] and table.concat(moved[1], ",") or "nil")
 
 					local payload = Family.Database:Payload(someone)
 					local wantsParts = link.sentParts[someone].parts ~= nil
@@ -16199,8 +16199,8 @@ do
 						Family.Database:SetPayload(someone, payload, { "bags" })
 						_, _, _, _, moved = Family.Wide:MarkGaps(link)
 						check("and so is a part of the record, beside it",
-							moved[who] and table.concat(moved[who], ",") == "bags,level",
-							moved[who] and table.concat(moved[who], ",") or "nil")
+							moved[1] and table.concat(moved[1], ",") == "bags,level",
+							moved[1] and table.concat(moved[1], ",") or "nil")
 						payload.bags = heldBags
 						Family.Database:SetPayload(someone, payload, { "bags" })
 					end

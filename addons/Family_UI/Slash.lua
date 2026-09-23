@@ -2161,7 +2161,7 @@ add("widetime", L["how long a Wide Family exchange takes on this client"], funct
 				-- not one this side kept the pieces of.
 				local said = {}
 				for index, name in ipairs(named.changed) do
-					local what = moved and moved[name]
+					local what = moved and moved[index]
 					said[index] = string.format("%s (%s)", name,
 						what and table.concat(what, ", ") or L["not known"])
 				end

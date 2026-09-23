@@ -1167,8 +1167,10 @@ end
 function Wide:MarkGaps(link)
     local unmarkable, neverSent, changed = 0, 0, 0
     local named = { unmarkable = {}, neverSent = {}, changed = {} }
-    -- Name -> what moved, for the changed; absent where what was sent is not known.
-    local moved = {}
+    -- What moved for each of the changed, in the order of `named.changed`: by position and not
+    -- by name, because two characters on two realms can share one (read from play 2026-09-23,
+    -- *Eccebombo* twice). Absent where what was sent is not known.
+    local moved, pairsChanged = {}, {}
 
     local function note(group, memberKey)
         local meta = Family.Database:Meta(memberKey)
@@ -1188,14 +1190,23 @@ function Wide:MarkGaps(link)
                 note("neverSent", memberKey)
             elseif recorded ~= mark then
                 changed = changed + 1
-                note("changed", memberKey)
-                local list = named.changed
-                moved[list[#list]] = whatMoved(link, memberKey, recorded, mark, inputs)
+                local meta = Family.Database:Meta(memberKey)
+                pairsChanged[#pairsChanged + 1] = { name = (meta and meta.name) or memberKey,
+                    key = memberKey, moved = whatMoved(link, memberKey, recorded, mark, inputs) }
             end
         end
     end
 
     for _, list in pairs(named) do table.sort(list) end
+
+    table.sort(pairsChanged, function(a, b)
+        if a.name ~= b.name then return a.name < b.name end
+        return a.key < b.key
+    end)
+    for index, entry in ipairs(pairsChanged) do
+        named.changed[index] = entry.name
+        moved[index] = entry.moved
+    end
 
     return unmarkable, neverSent, changed, named, moved
 end
