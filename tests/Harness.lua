@@ -3811,6 +3811,34 @@ print("the auction house on the fourth pretend client")
 		payload and #payload.auctions.selling == 0
 			and stored.meta["Mirror-Midnight"].auctionsSelling == 0)
 
+	-- **And the row itself, measured 2026-09-23** on Ahia, build 69933, with one auction up:
+	-- `GetOwnedAuctionInfo(1)` answered six keys and no more - `auctionID`, `buyoutAmount`,
+	-- `itemKey`, `quantity`, `status`, `timeLeftSeconds` - under a cut of thirty, so the row
+	-- is whole. **No `itemLink`, no `bidAmount`, no `minBid`**, the same six `main` read on
+	-- Mists. What is not measured is inside `itemKey`: the probe prints a nested table as
+	-- `table`, so the `itemID` below is this file's and not the client's, and the id is chosen
+	-- to be one nothing else here uses.
+	C_AuctionHouse.GetNumOwnedAuctions = function() asked.owned = (asked.owned or 0) + 1 return 1 end
+	C_AuctionHouse.GetOwnedAuctionInfo = function(index)
+		if index ~= 1 then return nil end
+		return { auctionID = 962346730, buyoutAmount = 13800, itemKey = { itemID = 161053 },
+			quantity = 1, status = 0, timeLeftSeconds = 86391 }
+	end
+
+	fire("OWNED_AUCTIONS_UPDATED")
+	payload = stored.payload["Mirror-Midnight"]
+	local row = payload and payload.auctions.selling[1]
+	check("a measured Midnight owned row, with no link and no bid field, is recorded",
+		payload and #payload.auctions.selling == 1
+			and stored.meta["Mirror-Midnight"].auctionsSelling == 1,
+		tostring(payload and #payload.auctions.selling))
+	check("as its id, its count and its buyout, with no bid and no item string",
+		row and row.id == 161053 and row.count == 1 and row.buyout == 13800
+			and row.bid == 0 and row.hasBid == false and row.minBid == 0 and row.item == nil)
+	check("and it runs out a day less nine seconds from now, exactly",
+		row and math.abs(row.expiresBy - (time() + 86391)) <= 1,
+		tostring(row and row.expiresBy))
+
 	for name, saved in pairs(was) do _G[name] = saved[1] end
 	Family.Capabilities:Detect()
 end)()

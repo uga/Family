@@ -2091,3 +2091,66 @@ The second half, for `GetQuestsCompleted`, is whether it still fills the table i
 is for a brief once the first half is known, and nothing here assumes the Retail answer.
 
 The harness went from 3773 checks to 3846 with the three Classic stubs as `main` left them.
+
+## 35. Probe version 15 on Midnight: Ahia, an auction up, and the quest history absent (2026-09-23)
+
+One file came back holding three records, because runs accumulate: **Ahia**, a level-50 rogue,
+enUS, **build 69933** - the version-15 run - beside Druiduga and Mara from earlier runs on
+69875. Ahia's is the only record holding the six names added to the list since, which is how it
+is told apart; nothing else in the file says which probe version wrote it.
+
+**The client did not move under the build number.** Ahia's globals block holds 286 entries and
+Druiduga's 280; sorted and compared, the difference is exactly the six new names, and every name
+the two share answers the same. The literals refused are the same 75 on both.
+
+| Name | On Midnight | So |
+|---|---|---|
+| `GetQuestsCompleted` | **absent** | `QuestHistory:Read` returns nil and the scanner writes nothing - a silence, not a zero (§34) |
+| `IsResting` | function | the rested estimate has both its reads (`GetXPExhaustion` was already known) |
+| `RequestRaidInfo` | function | the lockout scanner's request is there |
+| `BOSS_KILL` | registers | |
+| `GetNumSavedInstances`, `GetSavedInstanceInfo` | function; 0 saved, and index 1 answers the fourteen-value shape empty | as §33 records |
+| `WorldMapFrame` | table | |
+
+`C_QuestLog`'s own listing holds **`GetAllCompletedQuestIDs`** and
+**`IsQuestFlaggedCompletedOnAccount`**. Their names are measured and their answers are not: no
+call was made. That is the route for the quest history here, and it goes onto step 3's list as
+the fifth gap; what it returns is for a brief call before any code.
+
+`C_StableInfo` lists fourteen functions, `GetActivePetList`, `GetStabledPetList` and
+`GetStablePetInfo` among them, and `C_PetInfo` seven. Listed, not called, and on a rogue there
+would be nothing to call them about: the pets route needs a hunter.
+
+### The owned auction row
+
+`C_AuctionHouse.GetNumOwnedAuctions()` answered 1 and `GetOwnedAuctionInfo(1)` answered
+**six keys: `auctionID`, `buyoutAmount`, `itemKey`, `quantity`, `status`, `timeLeftSeconds`**.
+The probe cuts at thirty, so that is the whole row. **No `itemLink`, no `bidAmount`, no
+`minBid`** - the same six `main` read on Mists 2026-09-10, which `readModernOwned` was written
+for and cites (`Scanners/Auctions.lua:136`). So §30's *needs nothing* now rests on a row and not
+on a zero.
+
+The harness section of §30 keeps its zero reading and adds this row after it: one entry
+selling, id, count, buyout, no bid, no item string, and the expiry exact to the second. **What
+is still not measured is inside `itemKey`** - the probe prints a nested table as `table` - so the
+`itemID` there is the harness's and is labelled so. If Midnight's `itemKey` held no `itemID` the
+row would be dropped in silence; the next probe version should print it one level down.
+
+The mutation `a-midnight-owned-row-needs-a-link.mut` (a row recorded only where it carries a
+link) is caught by the three new checks **and by `main`'s Mists-shape checks** in the base
+auction section, since the two rows have the same shape. The new checks add the Midnight reading;
+they do not add coverage the code lacked.
+
+### Also in the record, unchanged
+
+Mail answered one letter whole; the merchant, both at once and two seconds on, as §28; the bank
+sweep as §22; the thirteen combat reads answered in combat what they answered outside it;
+`C_Reputation.GetNumFactions()` 67, and index 2, *The Cartels of Undermine*, carries
+`isAccountWide = true` and `isHeaderWithRep = true`.
+
+### Step 3's list, now five
+
+`reputationCount`'s zero; the quest log through `C_QuestLog.GetNumQuestLogEntries`/`GetInfo`; the
+profession's name through `C_TradeSkillUI.GetBaseProfessionInfo`; reputations through
+`C_Reputation.GetFactionDataByIndex`; and **the quest history through
+`C_QuestLog.GetAllCompletedQuestIDs`**, once its answer has been read.

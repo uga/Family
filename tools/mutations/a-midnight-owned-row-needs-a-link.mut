@@ -1,0 +1,6 @@
+name: an owned auction is recorded only where the row carries a link, which no Midnight row does
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		if itemID then
+--- new
+		if itemID and type(row.itemLink) == "string" then
