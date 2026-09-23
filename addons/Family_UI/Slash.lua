@@ -2151,13 +2151,22 @@ add("widetime", L["how long a Wide Family exchange takes on this client"], funct
 		-- playing a character does to it; never sent is the one to look into - and a count
 		-- of either left the reader asking which characters, with no way to find out.
 		if held < total and Family.Wide.MarkGaps then
-			local unmarkable, neverSent, changed, named = Family.Wide:MarkGaps(link)
+			local unmarkable, neverSent, changed, named, moved = Family.Wide:MarkGaps(link)
 			Family:Print(L["  |cff888888Of the %d that are not: %d changed since they were sent, "
 				.. "%d never confirmed as sent, and %d cannot be marked at all.|r"],
 				total - held, changed, neverSent, unmarkable)
 			if changed > 0 then
+				-- **And what moved for each** (backlog 76): the part of the record, the
+				-- field, or the grants - or that it is not known, where the mark they hold is
+				-- not one this side kept the pieces of.
+				local said = {}
+				for index, name in ipairs(named.changed) do
+					local what = moved and moved[name]
+					said[index] = string.format("%s (%s)", name,
+						what and table.concat(what, ", ") or L["not known"])
+				end
 				Family:Print(L["  |cff888888Changed since sent: %s|r"],
-					table.concat(named.changed, ", "))
+					table.concat(said, ", "))
 			end
 			if neverSent > 0 then
 				Family:Print(L["  |cff888888Never confirmed as sent: %s|r"],

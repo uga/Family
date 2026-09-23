@@ -1033,4 +1033,5 @@ Family.locales.frFR = {
 	["%d item with no price"] = "%d objet sans prix",
 	["%d items with no price"] = "%d objets sans prix",
 	["|cff888888Rest XP est. is worked out from the last reading: 5%% of a level every 8 hours where the character was resting, every 32 hours elsewhere, up to a level and a half. Pandaren twice all of that.|r"] = "|cff888888XP repos est. est calculé depuis la dernière lecture : 5%% d'un niveau toutes les 8 heures là où le personnage se reposait, toutes les 32 heures ailleurs, jusqu'à un niveau et demi. Le double de tout cela pour les Pandarens.|r",
+	["not known"] = "inconnu",
 }

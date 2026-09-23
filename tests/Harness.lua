@@ -16176,6 +16176,47 @@ do
 						heard:find("Never confirmed as sent: " .. who, 1, true) ~= nil
 							and heard:find("Changed since sent", 1, true) == nil, heard)
 
+					-- **Backlog 76: and what moved.** Sent as it stands, then changed.
+					local heldParts = link.sentParts
+					local heldMeta = Family.Database:Meta(someone) or {}
+					local heldLevel = heldMeta.level
+					Family.Wide.SendPiecesForTests(link, someone)
+					local _, _, changed3 = Family.Wide:MarkGaps(link)
+					check("a member sent as it stands is not changed", changed3 == 0,
+						tostring(changed3))
+
+					Family.Database:SetMeta(someone, { level = (heldLevel or 1) + 1 })
+					local _, _, _, _, moved = Family.Wide:MarkGaps(link)
+					check("a field that moved is named", moved[who]
+						and table.concat(moved[who], ",") == "level",
+						moved[who] and table.concat(moved[who], ",") or "nil")
+
+					local payload = Family.Database:Payload(someone)
+					local wantsParts = link.sentParts[someone].parts ~= nil
+					if payload and wantsParts then
+						local heldBags = payload.bags
+						payload.bags = { [0] = { size = 4, free = 3, slots = { { id = 2589 } } } }
+						Family.Database:SetPayload(someone, payload, { "bags" })
+						_, _, _, _, moved = Family.Wide:MarkGaps(link)
+						check("and so is a part of the record, beside it",
+							moved[who] and table.concat(moved[who], ",") == "bags,level",
+							moved[who] and table.concat(moved[who], ",") or "nil")
+						payload.bags = heldBags
+						Family.Database:SetPayload(someone, payload, { "bags" })
+					end
+					check("the test member carries a record part to name", wantsParts)
+
+					link.sentParts[someone].mark = "a mark this side never kept"
+					from = #DEFAULT_CHAT_FRAME.messages
+					pcall(SlashCmdList["FAMILY"], "widetime")
+					heard = table.concat(DEFAULT_CHAT_FRAME.messages, " ", from + 1,
+						#DEFAULT_CHAT_FRAME.messages)
+					check("and where what was sent is not known, it says so",
+						heard:find(who .. " (" .. Family.L["not known"] .. ")", 1, true) ~= nil,
+						heard)
+
+					Family.Database:SetMeta(someone, { level = heldLevel or Family.CLEAR })
+					link.sentParts = heldParts
 					link.sent = heldSent
 				end
 			end
@@ -31650,6 +31691,11 @@ print("a transfer that stopped half way is picked up, not believed")
 		type((out[keys[1]] or {}).mark) == "string",
 		tostring((out[keys[1]] or {}).mark))
 	check("and all fifteen of them go", howMany(out) == 15, tostring(howMany(out)))
+	-- Backlog 76: what went into the mark is kept beside it, for `/family widetime` to name.
+	local pieces = (link.sentParts or {})[keys[1]]
+	check("and what went into each mark is kept beside it, under that mark",
+		pieces and pieces.mark == (link.sent or {})[keys[1]] and type(pieces.meta) == "table",
+		tostring(pieces and pieces.mark))
 
 	out = exchange()
 	check("a second exchange with nothing changed carries nobody", howMany(out) == 0,
@@ -31972,7 +32018,7 @@ print("they say what they stored, and that is what a mark means afterwards")
 	-- mark anything first: a check that lets it mark and then delivers a `got` is asking
 	-- whether the member is marked, which it already was, and passes with the confirmation
 	-- doing nothing at all.
-	link.sent, link.acks = nil, true
+	link.sent, link.acks, link.sentParts = nil, true, nil
 	sent = {}
 	Family.Wide:ExchangeWith("acking", "and now they answer", { full = true })
 	for _ = 1, 3 do advance(1.1) end
@@ -31991,6 +32037,9 @@ print("they say what they stored, and that is what a mark means afterwards")
 	check("and their answer marks the member it names, with the mark it names it by",
 		(link.sent or {})[keys[1]] == marks[keys[1]],
 		tostring((link.sent or {})[keys[1]]) .. " against " .. tostring(marks[keys[1]]))
+	check("and keeps what went into that mark, for widetime to name",
+		((link.sentParts or {})[keys[1]] or {}).mark == marks[keys[1]],
+		tostring(((link.sentParts or {})[keys[1]] or {}).mark))
 	check("while the two they said nothing about stay unmarked",
 		howMany(link.sent or {}) == 1, tostring(howMany(link.sent or {})))
 	check("and the link knows they answer at all", link.acks == true, tostring(link.acks))

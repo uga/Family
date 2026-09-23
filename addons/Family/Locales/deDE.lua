@@ -1033,4 +1033,5 @@ Family.locales.deDE = {
 	["%d item with no price"] = "%d Gegenstand ohne Preis",
 	["%d items with no price"] = "%d Gegenstände ohne Preis",
 	["|cff888888Rest XP est. is worked out from the last reading: 5%% of a level every 8 hours where the character was resting, every 32 hours elsewhere, up to a level and a half. Pandaren twice all of that.|r"] = "|cff888888Ruhe-EP ca. wird aus der letzten Messung berechnet: 5%% einer Stufe alle 8 Stunden, wo der Charakter ausgeruht war, alle 32 Stunden anderswo, bis zu anderthalb Stufen. Bei Pandaren alles doppelt.|r",
+	["not known"] = "nicht bekannt",
 }

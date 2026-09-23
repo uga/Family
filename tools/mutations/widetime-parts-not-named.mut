@@ -1,0 +1,6 @@
+name: a record that moved is named as the record, not the part
+file: addons/Family/Wide.lua
+--- old
+        if was.parts and now.parts then
+--- new
+        if false then

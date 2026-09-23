@@ -4982,7 +4982,14 @@ comments were re-anchored on the same code.
 
 ---
 
-## 76. `/family widetime` names what moved for a member it counts as changed
+## 76. `/family widetime` names what moved for a member it counts as changed — DONE 2026-09-23, not yet seen in game
+
+**Built 2026-09-23** as written below, with one field fold per field (so *zone*, not *character*).
+`Database:PartMarks` hands over a copy of the part marks. The pieces are kept when the mark they
+belong to is written, at the client-took-it callback and at `onGot`, and pruned with `link.sent`.
+Saved-data size and load time were not measured; `/family status` before and after is still the
+way to read them.
+
 
 **Asked by Alberto 2026-09-13**, off Serena's reading *4 of 5 unchanged, changed since sent:
 Malachia* (backlog 72, *Points 1 and 2 read in the game*). Malachia was the character in play, so the

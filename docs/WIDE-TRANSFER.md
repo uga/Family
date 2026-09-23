@@ -170,6 +170,14 @@ wrong about:
    carrying its mark; the next `want` hands the marks back; the answer is the difference. So
    nothing depends on this side's bookkeeping being right about a transfer that stopped.
 
+**And what went into a mark is kept beside it, on this side only, since 2026-09-23** (backlog 76).
+When a member is built, the pieces of its mark - each record part's mark, a fold of each field in
+it, and the granted category ids - are held for the session; when that mark is written into
+`link.sent` (rule 3, or their `got`), they move into `link.sentParts[member]`. `/family widetime`
+compares them with the pieces now and names what moved, *Malachia (bags, zone)*. They are read only
+while their mark is the one `link.sent` holds; otherwise the command says *not known*. Nothing about
+the wire changes, and the far side never sees them.
+
 ### What a mark is made of, since 2026-09-13
 
 Step 6 of the data-path review, on Alberto's yes to change what leaves the machine.

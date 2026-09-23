@@ -301,6 +301,19 @@ function Database:PayloadMark(key)
 	return mark
 end
 
+-- The mark of each part of a record, as a copy: what `/family widetime` compares to say which
+-- part moved (backlog 76). Nil for a record this version has not written, whose mark is one fold
+-- with no parts in it.
+function Database:PartMarks(key)
+	local entry = record(key, false)
+	if not entry or type(entry.payload) ~= "table" then return nil end
+	if entry.partMarks == nil and type(entry.mark) == "string" then return nil end
+	composeMark(entry)
+	local copy = {}
+	for part, mark in pairs(entry.partMarks) do copy[part] = mark end
+	return copy
+end
+
 function Database:ReadPayloadMark(key)
 	local entry = record(key, false)
 	if not entry then return nil end

@@ -767,7 +767,93 @@ local function sendingMark(link, memberKey)
         payload = payloadMark,
         meta = fields,
         granted = ids,
-    }), true
+    }), true, { fields = fields, ids = ids, payload = payloadMark, wantsPayload = wantsPayload }
+end
+
+-- **What went into a mark, kept so that a *changed* can say what changed** - backlog 76, asked
+-- by Alberto 2026-09-13 off *changed since sent: Malachia*, where the reason was guessed from who
+-- was being played rather than read.
+--
+-- On this side only, and never inside `link.sent`: that table is replaced by the far side's `have`
+-- and written from their `got`, and they hold only the opaque string. So these are trusted only
+-- while their `mark` is the one `link.sent` holds, and where it is not the answer is *not known*.
+-- Nothing on the wire changes.
+--
+-- Built when a member goes out and kept here for the session; moved into the link only when the
+-- mark it belongs to is recorded as sent, at the two places that record it.
+local pendingPieces = setmetatable({}, { __mode = "k" })
+
+local function piecesOf(memberKey, mark, inputs)
+    local pieces = { mark = mark, payload = inputs.payload, meta = {},
+        ids = table.concat(inputs.ids, ",") }
+    for field, value in pairs(inputs.fields) do
+        pieces.meta[field] = Family.Codec:StableFingerprint(value)
+    end
+    if inputs.wantsPayload then pieces.parts = Family.Database:PartMarks(memberKey) end
+    return pieces
+end
+
+local function holdPieces(link, memberKey, mark, inputs)
+    if mark == nil or not inputs then return end
+    pendingPieces[link] = pendingPieces[link] or {}
+    local held = pendingPieces[link][memberKey] or {}
+    held[mark] = piecesOf(memberKey, mark, inputs)
+    pendingPieces[link][memberKey] = held
+end
+
+local function keepPieces(link, memberKey, mark)
+    local held = pendingPieces[link] and pendingPieces[link][memberKey]
+    local pieces = held and held[mark]
+    if not pieces then return end
+    link.sentParts = link.sentParts or {}
+    link.sentParts[memberKey] = pieces
+    pendingPieces[link][memberKey] = nil
+end
+
+-- Which pieces differ between the mark as sent and the mark now: part names, field names, and
+-- `grants`. Nil where what was sent is not known.
+local function whatMoved(link, memberKey, recorded, mark, inputs)
+    local was = (link.sentParts or {})[memberKey]
+    if not was or was.mark ~= recorded or not inputs then return nil end
+    local now = piecesOf(memberKey, mark, inputs)
+    local moved = {}
+
+    if was.payload ~= now.payload then
+        if was.parts and now.parts then
+            local seen = {}
+            for part, value in pairs(now.parts) do
+                seen[part] = true
+                if was.parts[part] ~= value then moved[#moved + 1] = part end
+            end
+            for part in pairs(was.parts) do
+                if not seen[part] then moved[#moved + 1] = part end
+            end
+        end
+        if #moved == 0 then moved[#moved + 1] = "record" end
+    end
+
+    local seen = {}
+    for field, value in pairs(now.meta) do
+        seen[field] = true
+        if was.meta[field] ~= value then moved[#moved + 1] = field end
+    end
+    for field in pairs(was.meta) do
+        if not seen[field] then moved[#moved + 1] = field end
+    end
+
+    table.sort(moved)
+    if was.ids ~= now.ids then moved[#moved + 1] = "grants" end
+    return #moved > 0 and moved or nil
+end
+
+-- For the harness: a member held and recorded as sent, the way an exchange does it.
+Wide.SendPiecesForTests = function(link, memberKey)
+    local mark, _, inputs = sendingMark(link, memberKey)
+    holdPieces(link, memberKey, mark, inputs)
+    link.sent = link.sent or {}
+    link.sent[memberKey] = mark
+    keepPieces(link, memberKey, mark)
+    return mark
 end
 
 local function worthSending(link, full)
@@ -776,7 +862,7 @@ local function worthSending(link, full)
     local marks, sending, offered, held, count = {}, {}, {}, 0, 0
 
     for memberKey in pairs(link.grants or {}) do
-        local mark, isOffered = sendingMark(link, memberKey)
+        local mark, isOffered, inputs = sendingMark(link, memberKey)
 
         if isOffered then
             if not full and mark ~= nil and link.sent[memberKey] == mark then
@@ -791,6 +877,7 @@ local function worthSending(link, full)
                 if entry then
                     offered[memberKey] = true
                     marks[memberKey] = mark
+                    holdPieces(link, memberKey, mark, inputs)
                     -- **The mark travels with the member**, which is what lets the other side
                     -- say what it holds rather than leaving us to remember it for them. It is
                     -- one short opaque string of ours, meaningless over there and never looked
@@ -908,6 +995,7 @@ local function postBatch(job, familyID)
             local memberKey = keys[index]
             if job.marks[memberKey] then
                 link.sent[memberKey] = job.marks[memberKey]
+                keepPieces(link, memberKey, job.marks[memberKey])
                 job.marked[#job.marked + 1] = memberKey
             end
         end
@@ -1079,6 +1167,8 @@ end
 function Wide:MarkGaps(link)
     local unmarkable, neverSent, changed = 0, 0, 0
     local named = { unmarkable = {}, neverSent = {}, changed = {} }
+    -- Name -> what moved, for the changed; absent where what was sent is not known.
+    local moved = {}
 
     local function note(group, memberKey)
         local meta = Family.Database:Meta(memberKey)
@@ -1087,7 +1177,7 @@ function Wide:MarkGaps(link)
     end
 
     for memberKey in pairs(link.grants or {}) do
-        local mark, isOffered = sendingMark(link, memberKey)
+        local mark, isOffered, inputs = sendingMark(link, memberKey)
         if isOffered then
             local recorded = (link.sent or {})[memberKey]
             if mark == nil then
@@ -1099,13 +1189,15 @@ function Wide:MarkGaps(link)
             elseif recorded ~= mark then
                 changed = changed + 1
                 note("changed", memberKey)
+                local list = named.changed
+                moved[list[#list]] = whatMoved(link, memberKey, recorded, mark, inputs)
             end
         end
     end
 
     for _, list in pairs(named) do table.sort(list) end
 
-    return unmarkable, neverSent, changed, named
+    return unmarkable, neverSent, changed, named, moved
 end
 
 -- `full` sends everything whether or not it has changed; `ask` sends the second half of the
@@ -1160,6 +1252,9 @@ function Wide:ExchangeWith(familyID, why, options)
     -- sent - the other side dropped them on the `offering` list and would never get them back.
     for memberKey in pairs(link.sent) do
         if not offered[memberKey] then link.sent[memberKey] = nil end
+    end
+    for memberKey in pairs(link.sentParts or {}) do
+        if not offered[memberKey] then link.sentParts[memberKey] = nil end
     end
 
     -- Bulk, although it is one line long.
@@ -1550,7 +1645,7 @@ end
 -- Everything again, next time. A link that has just been made, or remade, is a side that may
 -- hold nothing of ours at all - and the marks are a claim about what they already have.
 local function forgetWhatTheyHold(link)
-    if type(link) == "table" then link.sent = nil end
+    if type(link) == "table" then link.sent, link.sentParts = nil, nil end
 end
 
 local function onLinked(_, text, sender)
@@ -1726,6 +1821,9 @@ function answerWant(link, familyID, full, sender)
     for memberKey in pairs(link.sent) do
         if not offered[memberKey] then link.sent[memberKey] = nil end
     end
+    for memberKey in pairs(link.sentParts or {}) do
+        if not offered[memberKey] then link.sentParts[memberKey] = nil end
+    end
 
     Family:Debug("wide: answered %s (%d offered, %d sent, %d they already had)",
         tostring(sender), count, count - held, held)
@@ -1858,6 +1956,7 @@ local function onGot(_, text, sender)
         -- Their table, so nothing in it is trusted to be the shape ours would be.
         if type(memberKey) == "string" and type(mark) == "string" then
             link.sent[memberKey] = mark
+            keepPieces(link, memberKey, mark)
             confirmed = confirmed + 1
         end
     end

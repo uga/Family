@@ -1,0 +1,6 @@
+name: pieces kept for another mark are compared anyway
+file: addons/Family/Wide.lua
+--- old
+    if not was or was.mark ~= recorded or not inputs then return nil end
+--- new
+    if not was or not inputs then return nil end

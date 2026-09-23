@@ -1,0 +1,5 @@
+name: a batch taken by the client keeps no pieces of what went
+file: addons/Family/Wide.lua
+--- old
+                keepPieces(link, memberKey, job.marks[memberKey])
+--- new

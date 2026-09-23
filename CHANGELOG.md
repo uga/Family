@@ -114,6 +114,9 @@ is a decision rather than an afternoon of archaeology.
 
 ### Typing to Family
 
+- **`/family widetime` says what changed** for each character it lists as changed since it was
+  last sent to a linked family: *Malachia (bags, zone)*, or *not known* where Family did not keep
+  what it sent. Before, it gave only the name.
 - **`/family scancost` says which part of reading your character costs what**, a part at a time.
   For when Family is slow, or stops with an error while you play.
 
