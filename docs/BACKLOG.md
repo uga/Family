@@ -7225,7 +7225,7 @@ twelve and is caught.
 
 ---
 
-## 102. Read one currency row on Mists, from a character holding any currency — CLOSED 2026-09-23, the list is never filled on Mists
+## 102. Read one currency row on Mists, from a character holding any currency — waiting on Alberto
 
 **Opened 2026-09-23**, out of backlog 95. That entry closed with this reading still owed and wrote the
 way to get it down (2026-09-21), but a question inside a DONE entry is not on anybody's list. Alberto
@@ -7260,14 +7260,14 @@ shape is not the question any more. FamilyProbe now asks the fragment currencies
 and the archaeology calls (`GetNumArchaeologyRaces`, `GetArchaeologyRaceInfo`); one run on Luga says
 which of them holds the eleven.
 
-**Closed the same day, and not with the answer it asked for.** Luga answered the fragments by id and
+**Reopened within the hour - the paragraph below is wrong; see 103.** **Closed the same day, and not with the answer it asked for.** Luga answered the fragments by id and
 the list with 0 rows (DATASOURCES, *On Mists the currency list is empty*). There is no Mists row to
 read, so the short-row risk in the older route never reaches Mists; Burning Crusade's row was read again
 the same day, twelve full values with the id last. What it found instead is backlog 103.
 
 ---
 
-## 103. Family records no currency on Mists
+## 103. Family records no currency on Mists — WITHDRAWN 2026-09-23, the premise was wrong
 
 **Found 2026-09-23** through backlog 102. `Scanners/Currencies.lua` walks the older currency list on
 Mists, and on Mists Classic that list is empty - there is no Currency tab to fill it - so every Mists
@@ -7282,4 +7282,11 @@ nought. Honor (1901) and the fragments (384 and the other races) are among them.
 **What has to be decided in building it:** which rows of `CurrencyTypes` are worth asking - it carries
 retired ones such as *Honor Deprecated 3* - and whether the id route replaces the list on Mists only or
 becomes the fallback wherever the list answers nothing.
+
+**Withdrawn within the hour, and 102 reopened.** Alberto, after asking another player in the game: the
+Currency tab appears once a character **owns** a currency, and archaeology fragments do not count.
+So Luga's empty list means Luga has no listed currency, not that the list is never filled on Mists.
+Nothing shows that Family misses a Mists currency, and the reading 102 asks for still needs a Mists
+character **with a Currency tab**. Whether Family should show archaeology fragments at all is a
+separate question nobody has asked.
 

@@ -5466,8 +5466,7 @@ showed by drawing no progress at all. *N of M bosses* stays unsayable on Mists, 
 ### On Mists the currency list is empty and a currency answers by its own id — read 2026-09-23
 
 Luga on `5.5.4`, holding eleven Dwarf fragments. `GetCurrencyListSize` answered **0**, and Alberto
-reports the Mists Classic character window has **no Currency tab** - so the list the older route walks
-is not filled on this build, and every earlier *nothing to walk* on Mists was this, not an empty purse.
+reports the Mists Classic character window shows **no Currency tab** for this character.
 
 Asked by id instead, `C_CurrencyInfo.GetCurrencyInfo(384)` answered `name=Dwarf Archaeology Fragment
 quantity=11 maxQuantity=200 discovered=true`, and the Troll (385) and Fossil (393) rows answered
@@ -5476,9 +5475,16 @@ asked with, never read back. The archaeology calls agree: `GetNumArchaeologyRace
 `GetArchaeologyRaceInfo(13)` is `"Dwarf" 461831 52843 11 32 200` - the fourth value is the fragments
 held, the sixth the cap.
 
-**So a Mists currency is reachable only by asking its id**, which means a list of the ids to ask, per
-build, out of `CurrencyTypes` (wago, §3). `discovered` is what separates a currency this character has
-met from one it has not. Backlog 103.
+**Corrected the same hour: this does not show that a Mists currency is reachable only by its id.**
+It was first written that way, and that was wrong. Alberto asked another player in the game: the
+character window grows a Currency tab once the character **owns** a currency, and Luga has none.
+Archaeology fragments are not currencies in the client's sense, whatever `CurrencyTypes` files them
+under, so they do not put Luga in the list and do not make the tab appear. An empty list on a
+character with fragments says that fragments are not listed. It says nothing about a character that
+does own a listed currency, and no Mists character with the tab has been read yet. That is still
+backlog 102.
+
+What stands: fragments answer by their own id, in full, and through the archaeology calls.
 
 ### Honor on Mists is 1901, and the probe had been asking 392 — 2026-09-21
 
