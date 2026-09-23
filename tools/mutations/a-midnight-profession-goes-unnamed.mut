@@ -1,0 +1,8 @@
+name: a profession the first call cannot name is not asked about again, and its recipes are dropped
+file: addons/Family/Scanners/Professions.lua
+--- old
+	if type(name) ~= "string" or name == "" then
+		local base = Family:TryCall(C_TradeSkillUI.GetBaseProfessionInfo)
+--- new
+	if false then
+		local base = Family:TryCall(C_TradeSkillUI.GetBaseProfessionInfo)

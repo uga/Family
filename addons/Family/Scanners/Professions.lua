@@ -710,6 +710,20 @@ local function readModernRecipes()
 	if not C_TradeSkillUI then return nil end
 
 	local name = Family:TryCall(C_TradeSkillUI.GetTradeSkillLine)
+
+	-- **Midnight has no `GetTradeSkillLine`**, and a list with no name is thrown away below -
+	-- which cost every one of the 639 recipes an engineering window listed there
+	-- (`docs/MIDNIGHT.md` §26). The name is one call along: `GetBaseProfessionInfo()`, measured
+	-- with that window open, answers `professionName = "Engineering"` beside `professionID` 202.
+	-- Asked second, so a client that answers the first is read as it always was; and only a
+	-- name that says something is taken, because with the window shut the same call answers
+	-- the same fields zeroed, `professionName = ""`.
+	if type(name) ~= "string" or name == "" then
+		local base = Family:TryCall(C_TradeSkillUI.GetBaseProfessionInfo)
+		local named = type(base) == "table" and base.professionName
+		name = (type(named) == "string" and named ~= "") and named or nil
+	end
+
 	local ids = Family:TryCall(C_TradeSkillUI.GetAllRecipeIDs)
 	if not ids then return nil end
 

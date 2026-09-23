@@ -1,0 +1,6 @@
+name: the empty name a shut profession window answers is taken as a profession's name
+file: addons/Family/Scanners/Professions.lua
+--- old
+		name = (type(named) == "string" and named ~= "") and named or nil
+--- new
+		name = (type(named) == "string") and named or nil

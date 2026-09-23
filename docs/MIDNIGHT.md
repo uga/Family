@@ -2243,3 +2243,32 @@ and adds the log read the newer way: 13 checks, from 6. Mutations: the step-2 gu
 the new guard, and five new ones - the newer count never asked, a hidden row recorded, the row's id
 ignored for the search, headings put back by the old reader, and the newer count asked first.
 Harness 3857.
+
+## 38. Step 3 (c): a Midnight profession has a name again (2026-09-23)
+
+The third of step 3's five, and the largest loss §26 found: 639 recipes read and dropped for want
+of a name. `readModernRecipes` now asks `C_TradeSkillUI.GetTradeSkillLine` as before, and where
+that gives no word asks **`GetBaseProfessionInfo()`** and takes its `professionName` - measured
+with Ahia's engineering window open, *Engineering*, beside `professionID` 202 (§12, §26).
+
+**An empty word is not a name.** With the window shut the same call answers the same fields
+zeroed, `professionName = ""`, and taking that would file recipes under nothing; so only a
+non-empty string is used. Mists answers the first call, so it never reaches the second and reads
+exactly as it did.
+
+Driven on the fourth pretend client with the recipe rows §26 used (one measured, one learned and
+labelled as the harness's): the read now answers *Engineering* and the one learned recipe, the
+scan records it **under 202** - `Family:SkillLineFor` turns the name into the skill line, as on
+the other clients - and the window's reopening word is *Engineering*. The zeroed answer names
+nothing. The two §26 checks that pinned the loss are turned round, and its repair's checks - the
+summary's skills from another client left alone, no locale stamp moved - pass unchanged.
+
+**Not done here, and on purpose.** `GetBaseProfessionInfo` also answers the id, 202, which is the
+key Family has always wanted and had to derive from a word; this reads only the name and lets the
+existing derivation give the same id. The child lines of §12 - one per expansion, each with its own
+rank - are not read, and the one-rank-per-profession model stays as it is. Whether casting
+*Engineering* opens the window on this client is the smoke row's question.
+
+Two mutations - the second call never made, and the empty name taken - and the step-2 case
+`a-nameless-recipe-list-is-recorded-anyway.mut` is still caught, now by the shut-window check.
+Harness 3858.

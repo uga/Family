@@ -3451,10 +3451,11 @@ print("professions on the fourth pretend client")
 -- the trade skill window and the craft window, all three, and with them `GetNumSkillLines` and
 -- `GetNumTradeSkills`.
 --
--- And **`C_TradeSkillUI.GetTradeSkillLine` is absent**, which is the only thing
--- `readModernRecipes` has ever used to name a profession. So it reads all 639, keeps the ones
--- marked `learned`, and hands back a list with no name - and `ReadRecipes` answers `nil` to a
--- nameless list, which is right and which costs everything here.
+-- And **`C_TradeSkillUI.GetTradeSkillLine` is absent**, which until step 3 (c) was the only
+-- thing `readModernRecipes` used to name a profession. So it read all 639, kept the ones marked
+-- `learned`, and handed back a list with no name - and `ReadRecipes` answers `nil` to a
+-- nameless list, which is right and which cost everything here. The name now comes from
+-- `GetBaseProfessionInfo` where the first call gives none.
 ;(function()
 	local was = {}
 	local function set(name, value)
@@ -3558,17 +3559,28 @@ print("professions on the fourth pretend client")
 	load("addons/Family/Scanners/Professions.lua", "Family", midnight)
 
 	local name, recipes = midnight.Professions:ReadRecipes()
-	check("a recipe read on Midnight answers nothing at all",
-		name == nil and recipes == nil,
+	check("a recipe read on Midnight is named from the base profession",
+		name == "Engineering" and recipes and #recipes == 1,
 		tostring(name) .. " / " .. (recipes and #recipes or "nil"))
+	check("and keeps the learned recipe and only that one, after reading both", looked == 2
+		and recipes and recipes[1] and recipes[1].spellID == 255393,
+		tostring(looked) .. " looked up")
 
-	-- Which is the part worth knowing: the work was done and then dropped. Every recipe was
-	-- looked up, and the list was thrown away for want of a name.
-	check("and it was not for want of recipes, which were all read", looked == 2,
-		tostring(looked))
+	-- **With the window shut the same call answers, zeroed** - `professionName = ""`,
+	-- `professionID = 0` - and an empty word is no name. Measured 2026-09-20 at login.
+	local open = _G.C_TradeSkillUI.GetBaseProfessionInfo
+	_G.C_TradeSkillUI.GetBaseProfessionInfo = function()
+		return { expansionName = "Unknown", isPrimaryProfession = false, maxSkillLevel = 0,
+			profession = 0, professionID = 0, professionName = "", skillLevel = 0,
+			skillModifier = 0, sourceCounter = 0 }
+	end
+	local shutName, shutRecipes = midnight.Professions:ReadRecipes()
+	check("while an empty profession name, the shut window's answer, names nothing",
+		shutName == nil and shutRecipes == nil, tostring(shutName))
+	_G.C_TradeSkillUI.GetBaseProfessionInfo = open
 
-	-- The call that names a profession here, and the one `readModernRecipes` looks for.
-	check("the call it looks for is gone, and the name is in the one beside it",
+	-- The call that named a profession on Mists is still gone; the one beside it answers.
+	check("the call it looked for is gone, and the name is in the one beside it",
 		_G.C_TradeSkillUI.GetTradeSkillLine == nil
 			and _G.C_TradeSkillUI.GetBaseProfessionInfo().professionID == 202)
 
@@ -3586,13 +3598,17 @@ print("professions on the fourth pretend client")
 	local payload = stored.payload["Mirror-Midnight"]
 	local meta = stored.meta["Mirror-Midnight"]
 
-	-- Not "nothing was written". Something was, and it is the third time this branch has
-	-- found a scanner recording a measured emptiness where it has not been able to ask.
-	check("a profession scan with a window open still writes a professions table",
-		payload and payload.professions ~= nil)
-	check("and it is empty, because not one of the 639 recipes survived the missing name",
-		payload and payload.professions and next(payload.professions) == nil,
-		payload and payload.professions and "something was kept" or "no table")
+	-- Until step 3 (c) this table was written **empty**, the third measured emptiness this
+	-- branch found where nothing could be asked. Now it holds the profession, under the skill
+	-- line's id, with the recipe and the word that opens the window.
+	local engineering = payload and payload.professions and payload.professions[202]
+	check("a profession scan with a window open records the profession under its skill line",
+		engineering ~= nil and engineering.recipes and #engineering.recipes == 1
+			and engineering.recipes[1].spellID == 255393,
+		engineering and "recipes wrong" or "no entry at 202")
+	check("and the window is reopened by the profession's name",
+		engineering and engineering.openWith == "Engineering",
+		engineering and tostring(engineering.openWith) or "no entry")
 
 	-- The one that was worse than an empty record, until 2026-09-22.
 	--
