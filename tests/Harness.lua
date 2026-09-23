@@ -3459,16 +3459,58 @@ do
 			"|cffffd000|Hspell:" .. (800000 + index) .. "|h[Thing]|h|r" }
 	end
 	Family.Professions:Scan(true)
+	local held20 = TRADE_RECIPES
 
 	local before = Family.Database:Payload(key).professions[SKILL.blacksmithing]
 	check("twenty recipes are stored before anything collapses",
 		before and #before.recipes == 20 and before.shrank == nil,
 		before and tostring(#before.recipes) or "no record")
 
-	-- And now the window shows one of them, which is what was reported.
+	-- **A window read before it has filled** (backlog 68, the Mists reading of 2026-09-23: *54
+	-- recipe(s) -> 0*, no row and no header). It lists nothing at first and everything a moment
+	-- later, and the record must come through it whole.
+	TRADE_RECIPES = {}
+	Family.Professions:Scan(true)
+	check("a window that lists nothing does not replace twenty recipes on its first read",
+		#Family.Database:Payload(key).professions[SKILL.blacksmithing].recipes == 20)
+	-- Filled with one more than it had, so the second read is what writes it.
+	TRADE_RECIPES = {}
+	for index, row in ipairs(held20) do TRADE_RECIPES[index] = row end
+	TRADE_RECIPES[#TRADE_RECIPES + 1] = { "Thing 21", "optimal", 0,
+		"|cffffd000|Hspell:800021|h[Thing]|h|r" }
+	advance(2.5)
+	check("and once it has filled, the second read writes it whole",
+		#Family.Database:Payload(key).professions[SKILL.blacksmithing].recipes == 21)
+	TRADE_RECIPES = held20
+	Family.Professions:Scan(true)
+
+	-- And one closed before the second read leaves the record as it was.
+	TRADE_RECIPES = {}
+	Family.Professions:Scan(true)
+	TRADE_SKILL_OPEN = false
+	advance(2.5)
+	TRADE_SKILL_OPEN = true
+	check("a window closed before the second read leaves the record alone",
+		#Family.Database:Payload(key).professions[SKILL.blacksmithing].recipes == 20)
+
+	-- A first read from an earlier opening of the window confirms nothing.
+	advance(31)
+	TRADE_RECIPES = {}
+	Family.Professions:Scan(true)
+	check("an empty read long after an earlier one is held again, not taken as confirmed",
+		#Family.Database:Payload(key).professions[SKILL.blacksmithing].recipes == 20)
+	TRADE_RECIPES = held20
+	advance(2.5)
+	advance(31)
+
+	-- And now the window shows one of them, which is what was reported - and stays showing it,
+	-- which is what a profession really unlearnt looks like: held, read again, then written.
 	TRADE_RECIPES = { { "Header", "header" },
 		{ "Thing 1", "optimal", 0, "|cffffd000|Hspell:800001|h[Thing]|h|r" } }
 	Family.Professions:Scan(true)
+	check("a collapse is held on its first read",
+		#Family.Database:Payload(key).professions[SKILL.blacksmithing].recipes == 20)
+	advance(2.5)
 
 	local after = Family.Database:Payload(key).professions[SKILL.blacksmithing]
 	check("the small record is stored, because a player really can unlearn a profession",
@@ -3494,6 +3536,9 @@ do
 	check("while a record that grows notes nothing new",
 		grown and grown.shrank == wasShrank,
 		tostring(grown and grown.shrank ~= wasShrank))
+
+	-- Whole minutes of frame clock, the settle checks above having taken 72 seconds (L-125).
+	advance(48)
 
 	TRADE_RECIPES = held
 	Family.Professions:Scan(true)

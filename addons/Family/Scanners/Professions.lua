@@ -347,6 +347,15 @@ end
 --
 -- Read rather than assumed, and by existence: these calls are not all on all three clients, and
 -- which of them this one has is part of the answer. Nothing here changes a filter.
+-- **A collapse waiting for a second read**, by profession: how many the first read found and
+-- when. `SETTLE` is how long the window is given to fill before it is read again, and a read at
+-- least half that after the first confirms it - the timer and the clock are two readings of the
+-- same frames and need not agree to the hundredth. A first read older than `SETTLE_STALE` is a
+-- different opening of the window and confirms nothing.
+local pendingShrink = {}
+local SETTLE = 2
+local SETTLE_STALE = 30
+
 local function windowState(was, now)
 	local rows = Family:TryCall(GetNumTradeSkills) or 0
 	local headers, listed = 0, 0
@@ -1293,18 +1302,47 @@ function Professions:ScanNow(includeRecipes)
 		-- or more: below that, ordinary churn - a recipe learnt, a window part-filled by one
 		-- row - would fill the record with noise nobody would read.
 		local was = entry.recipes and #entry.recipes or 0
+		local hold = false
 		if was >= 10 and #recipes * 2 < was then
 			entry.shrank = windowState(was, #recipes)
 			Family:Debug("professions: %s went from %d recipes to %d - window state kept",
 				tostring(recipeName), was, #recipes)
+
+			-- **Read again before it is believed** (backlog 68, settled 2026-09-23). The trap
+			-- above fired on Mists: *54 recipe(s) -> 0*, with the window listing no row at
+			-- all, not even a header, and no filter on - a window read before it had filled.
+			-- Tanardo's one recipe of seventy-five was the same thing caught a row in. So a
+			-- collapse is held and the window read again a moment later, and written only
+			-- when the second read agrees. A window that was still filling has filled by
+			-- then and is written whole; one that was closed in between leaves the record as
+			-- it was; a profession really unlearnt reads the same twice and is written, which
+			-- is the case L-086 says a refusal would break.
+			local pending = pendingShrink[recipeKey]
+			-- The frame clock, which is the one `Family:After` counts the settle on.
+			local now = tonumber((Family:TryCall(GetTime))) or 0
+			local confirmed = pending and pending.count == #recipes
+				and now - pending.at >= SETTLE / 2 and now - pending.at <= SETTLE_STALE
+			if confirmed then
+				pendingShrink[recipeKey] = nil
+			else
+				hold = true
+				pendingShrink[recipeKey] = { count = #recipes, at = now }
+				Family:After(SETTLE, "professions.settle", function() Professions:Scan(true) end)
+				Family:Debug("professions: %s held at %d recipes until the window is read "
+					.. "again", tostring(recipeName), was)
+			end
+		else
+			pendingShrink[recipeKey] = nil
 		end
 
-		entry.recipes = recipes
-		entry.recipesSeen = time()
-		entry.locale = Family.locale
-		entry.openWith = openWith or entry.openWith
+		if not hold then
+			entry.recipes = recipes
+			entry.recipesSeen = time()
+			entry.locale = Family.locale
+			entry.openWith = openWith or entry.openWith
+			Family:Debug("scanned %d recipes for %s", #recipes, recipeName)
+		end
 		stored[recipeKey] = entry
-		Family:Debug("scanned %d recipes for %s", #recipes, recipeName)
 	end
 
 	payload.professions = stored

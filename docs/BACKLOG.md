@@ -4288,7 +4288,7 @@ said the family had none while one was on sale. It records the string now, like 
    nobody has read is L-071 in another costume. Its whole-house route does carry a link, guarded by
    existence, and does file by variant.
 
-## 68. A profession's recipes can be recorded from a window that is showing a fraction of them
+## 68. A profession's recipes can be recorded from a window that is showing a fraction of them — DONE 2026-09-23, not yet seen in game
 
 **Reported from play, 2026-09-12.** Tanardo at **Cooking 372/375**, recorded as knowing **one**
 recipe - *Goblin Deviled Clams*, grey - and seen 13 days ago. Logging him in and opening cooking
@@ -4350,6 +4350,14 @@ on Eccebombo four days earlier - *Cooking, 54 recipe(s) -> 0; the window showed 
 recipe(s), have materials: nil, search box: Search, levels: 0-0*. No filter was on, and the window listed
 **nothing at all, not even a header**: it was read before it had filled. That is the second explanation
 above, and Tanardo's one recipe of seventy-five is the same thing caught one row in.
+
+**Built the same day: a collapse is read twice before it is believed.** When a read would take a
+record of ten or more recipes below half, the scanner keeps the stored list, reads the window again
+two seconds later, and writes only if the second read agrees. A window that was filling has filled by
+then and is written whole; one closed in between leaves the record alone; a first read more than
+thirty seconds old confirms nothing; a profession really unlearnt reads the same twice and is written,
+which is the case L-086 says a refusal would break. The trap stays, so `/family recipes` still says
+when a collapse was seen.
 
 ## 69. Recipe materials on the Professions panel — **done 2026-09-12**
 

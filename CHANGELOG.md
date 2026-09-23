@@ -49,6 +49,13 @@ is a decision rather than an afternoon of archaeology.
   stacked up. Herbs on a GatherMate pin answer too, which they did not at first - that addon
   writes its names in colour, and Family was reading the colour as part of the name.
 
+### Professions
+
+- **A profession's recipe list can no longer be wiped by opening its window.** Family sometimes read
+  the window before the game had finished filling it, and saved the one recipe, or none, that it saw
+  at that moment - a cook with seventy-five recipes was recorded with one. Now a list that would
+  shrink by more than half is read again a moment later and saved only if the second look agrees.
+
 ### Instance lockouts
 
 - **Family now records which instances each character is saved to, and when each lock resets.**

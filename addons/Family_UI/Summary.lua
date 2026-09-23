@@ -3841,7 +3841,9 @@ local function build(frame)
 			local function section(title, right)
 				local heading = nextRow(currentSet.rowHeight)
 				setCell(heading, 1, title, 1, 0.82, 0)
-				setCell(heading, 3, right, 0.6, 0.6, 0.6)
+				-- In the title's yellow, which is the colour the column headings above are in
+				-- (screenshot, 2026-09-23: grey read as a value rather than a heading).
+				setCell(heading, 3, right, 1, 0.82, 0)
 			end
 
 			if #order > 0 then section(L["Crafting cooldowns"], L["Ready"]) end
