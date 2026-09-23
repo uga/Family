@@ -1,7 +1,7 @@
 name: the crafting set folds at its old depth whatever room it has
 file: addons/Family_UI/Summary.lua
 --- old
-			local cap = UI:FoldDepth(sizes, 0, UI:RowsThatFit(scroll, currentSet.rowHeight),
-				UI.CRAFTING_PEOPLE or 3)
+			local cap = UI:FoldDepth(sizes, headings,
+				UI:RowsThatFit(scroll, currentSet.rowHeight), UI.CRAFTING_PEOPLE or 3)
 --- new
 			local cap = UI.CRAFTING_PEOPLE or 3

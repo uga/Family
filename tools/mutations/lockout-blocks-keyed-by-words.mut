@@ -1,0 +1,6 @@
+name: one place read in two languages is two blocks
+file: addons/Family_UI/Summary.lua
+--- old
+						local found = locks[lock.key]
+--- new
+						local found = locks[label]

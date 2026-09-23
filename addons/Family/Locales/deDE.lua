@@ -64,7 +64,6 @@ Family.locales.deDE = {
 	["AH seen"] = "AH ges.",  -- 10
 	["Rest XP"] = "Ruhe-EP",  -- 13
 	["Activity"] = "Aktivität",  -- 14
-	["Crafting"] = "Herstellung",  -- 14
 	["Item lvl"] = "Itemlvl",  -- 10
 	["Overview"] = "Übersicht",  -- 14
 	["Bag slots"] = "Taschenplätze",  -- 13
@@ -142,7 +141,7 @@ Family.locales.deDE = {
 	["Behind most things. Choose this if Family covers something it should not."] = "Hinter den meisten Dingen. Wähle dies, wenn Family etwas verdeckt, das es nicht sollte.",
 	["|cff888888Family %s on %s   |||   tooltips hooked: %s   |||   storage: %s|r"] = "|cff888888Family %s auf %s   |||   Tooltips eingehängt: %s   |||   Speicher: %s|r",
 	["In front of nearly everything, alongside the game's own popups. Choose this if a HUD still draws over Family."] = "Vor fast allem, neben den Popups des Spiels. Wähle dies, wenn ein HUD immer noch über Family zeichnet.",
-	["Transmutes, mooncloth, salt shakers. Crafting only - raid and heroic lockouts are a different thing and Family does not record them yet."] = "Transmutationen, Mondstoff, Salzstreuer. Nur Herstellung - Schlachtzugs- und heroische Sperren sind etwas anderes und Family zeichnet sie noch nicht auf.",
+	["Transmutes, mooncloth, salt shakers. Crafting only - instance lockouts are on the Summary's Cooldowns page and are not announced at login."] = "Transmutationen, Mondstoff, Salzstreuer. Nur Herstellung - Instanzsperren stehen in der Übersicht unter Abklingzeiten und werden beim Einloggen nicht angekündigt.",
 	["Both ways: what your guild sees of you, and what you see of them. Nothing else is shared - bags, mail and the rest need a Wide Family link."] = "In beide Richtungen: was deine Gilde von dir sieht und was du von ihr siehst. Mehr wird nicht geteilt - Taschen, Post und der Rest brauchen eine Verbindung der Weiten Familie.",
 
 	-- The slash commands, and what /family says
@@ -834,8 +833,8 @@ Family.locales.deDE = {
 	["|cff40bf40knows it|r"] = "|cff40bf40kennt es|r",
 	["|cffff8040level %d|r"] = "|cffff8040Stufe %d|r",
 	["|cff9d9d9dmay know it|r"] = "|cff9d9d9dkennt es vielleicht|r",
-	["|cff888888Crafting cooldowns only - transmutes, mooncloth, salt shakers. Raid and heroic lockouts are a different thing and are not recorded yet.|r"] = "|cff888888Nur Herstellungs-Abklingzeiten - Transmutationen, Mondstoff, Salzstreuer. Schlachtzugs- und heroische Sperren sind etwas anderes und werden noch nicht aufgezeichnet.|r",
-	["|cff888888Crafting cooldowns only - transmutes, mooncloth, salt shakers. One line per timer, with whoever has it underneath and when theirs comes back.|r"] = "|cff888888Nur Herstellungs-Abklingzeiten - Transmutationen, Mondstoff, Salzstreuer. Eine Zeile je Zeitgeber, mit allen, die ihn haben, darunter und wann ihrer wieder bereit ist.|r",
+	["|cff888888Crafting cooldowns only - transmutes, mooncloth, salt shakers. Instance lockouts are on the Summary's Cooldowns page.|r"] = "|cff888888Nur Herstellungs-Abklingzeiten - Transmutationen, Mondstoff, Salzstreuer. Instanzsperren stehen in der Übersicht unter Abklingzeiten.|r",
+	["|cff888888Crafting cooldowns - transmutes, mooncloth, salt shakers - and then instance lockouts. One line per timer or place, with whoever has it underneath and when theirs comes back. A lockout is read when that character logs in.|r"] = "|cff888888Herstellungs-Abklingzeiten - Transmutationen, Mondstoff, Salzstreuer - und danach Instanzsperren. Eine Zeile pro Timer oder Ort, darunter wer ihn hat und wann er zurückkommt. Eine Sperre wird gelesen, wenn sich dieser Charakter einloggt.|r",
 	["Auction House"] = "Auktionshaus",
 	["|cffff8040another branch|r"] = "|cffff8040anderer Zweig|r",
 	["|cffff8040needs %s|r"] = "|cffff8040benötigt %s|r",
@@ -1019,4 +1018,9 @@ Family.locales.deDE = {
 	["this client has no tooltip to watch"] = "dieser Client hat keinen Tooltip zum Beobachten",
 	["what the frame under a tooltip says about its row: /family hover, then point"] = "was der Rahmen unter einem Tooltip über seine Zeile sagt: /family hover, dann zeigen",
 	["|cffffd700What the pointer was on|r"] = "|cffffd700Worauf der Zeiger war|r",
+	["Lockouts"] = "Sperren",
+	["Crafting cooldowns"] = "Herstellungs-Abklingzeiten",
+	["Instance lockouts"] = "Instanzsperren",
+	["Resets in"] = "Zurückgesetzt in",
+	["extended"] = "verlängert",
 }

@@ -50,7 +50,10 @@ local NAME_WIDTH = 92
 -- and a row has 708, which the guard below would have said out loud and nothing would have
 -- read. The cells themselves are tick boxes and do not care; what pays is the heading above
 -- them, which is a whole word in a small font and is now closer to being cut.
-local CELL_MIN = 51
+-- And to 50 the day Lockouts made thirteen (backlog 93, 2026-09-23): at 51 they need 755 pixels
+-- of the 750 a row has, and the guard below said so. One pixel a heading, taken rather than a
+-- category folded into another, because a category is a consent and a pixel is not.
+local CELL_MIN = 50
 local CELL_MAX = 92
 
 -- Where the buttons on a row sit, said once.

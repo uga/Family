@@ -5888,7 +5888,7 @@ hang on and the one `Scanners/Quests.lua` already listens to.
 
 ---
 
-## 93. Instance lockouts, and when each resets
+## 93. Instance lockouts, and when each resets — DONE 2026-09-23, not yet seen in game
 
 **Asked 2026-09-20.** Which of my characters is saved to what, and until when.
 
@@ -6030,6 +6030,35 @@ The clocks agreed to within a second on every build, and on Burning Crusade they
 So the shape is one shape across the three, and what is still unread is the only part that
 matters: what those columns carry when a character really is saved. Alberto, 2026-09-20: no
 character is in that state at the moment.
+
+### Built 2026-09-23
+
+**Recorded** by `Family/Scanners/Instances.lua`: `RequestRaidInfo` at login and after `BOSS_KILL`,
+the list read when `UPDATE_INSTANCE_INFO` arrives and never beside the request. Into meta as
+`lockouts`, one entry per lock keyed by column 14 and the difficulty (`i469:9`), with the moment it
+resets (`resetAt`, joined to `DEADLINES`), the lock's own number, the two labels in the client's
+words, and whether it was extended. Column 14 is read only on a row exactly fourteen wide; any other
+width files the lock under its name. A row neither locked nor extended is not recorded. An empty
+answer empties the list and keeps `lockoutsSeen`. No boss progress, for the reasons above.
+
+**Shared** in a category of its own, *Lockouts*, and nothing without it. The grant grid's thirteen
+columns did not fit at 51 pixels each, so `CELL_MIN` went to 50.
+
+**Shown** on the Summary, where Alberto chose the layout the same day: an eighth set button would have
+left each of them too narrow for *Miscellaneous*, so the Crafting set became **Cooldowns**, with one
+section headed *Crafting cooldowns* (as before) and one headed *Instance lockouts* drawn the same way:
+the place written once, whoever is saved to it underneath, then the lock number, *extended* where it
+was, and the time left. **Only characters with a lock still running are listed**: a lock whose moment
+has passed is dropped at drawing time whether or not anybody has logged in since. One place read in two
+languages is one block. The set's picker offers the places as well as the timers.
+
+**Unwritten**: the Options note and the `/family ready` note, which said lockouts were not recorded, and
+MANUAL §10.
+
+**Not built:** world bosses (`GetNumSavedWorldBosses` has answered 0 on every build, so there is nothing
+to read the shape of); the calendar and its warnings (§4.7), which do not exist for any kind yet; a login
+line about lockouts. **Still unread:** a heroic lock, so whatever difficulty label a heroic carries is
+drawn as the client gives it and has never been seen.
 
 ---
 
@@ -7098,3 +7127,27 @@ the check counts **lines against `TooltipRows`** and not holders against a cap.
 
 One node on its own is the tooltip it always was: its share is the whole room, so the cap that
 bites is backlog 82's switch and backlog 89's screen, exactly as before.
+
+---
+
+## 100. The scanners take the addon's own table, not the global one
+
+**Agreed 2026-09-22** with the session working on the Midnight branch, and not built. Three scanners
+start with `local Family = _G.Family`: `Scanners/Currencies.lua`, `Scanners/Merchant.lua` and
+`Scanners/Pets.lua`. Every other file takes the table the client hands each file of an addon,
+`local _, Family = ...`. The two are the same table today only because `Core.lua` also puts it in the
+global. A build or another addon that changes that global would split them silently.
+
+**To do:** the three lines, and a mutation named `a-scanner-reaches-for-the-global-family.mut`, the name
+the Midnight session used for its own, so the two trees stay comparable.
+
+---
+
+## 101. FamilyProbe's `fields()` stops reading at a fixed count that is too low
+
+**Agreed 2026-09-22** with the same session, and not built. The recommendation is in DATASOURCES
+(commits `3385176` and `ab76e2f`). `fields()` in `tools/FamilyProbe` stops at a count written in, so a
+table with more fields than that is printed short and nothing says so.
+
+**To do:** raise the limit to a number that is read and printed, around 30, and keep `WANTED` as the
+note of the incident that found it.

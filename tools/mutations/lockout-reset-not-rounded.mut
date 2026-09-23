@@ -1,0 +1,6 @@
+name: a lock reset is not rounded for the stable mark
+file: addons/Family/Codec.lua
+--- old
+local DEADLINES = { expiresBy = true, readyAt = true, mailExpiresBy = true, resetAt = true }
+--- new
+local DEADLINES = { expiresBy = true, readyAt = true, mailExpiresBy = true }

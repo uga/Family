@@ -1,0 +1,6 @@
+name: an empty answer leaves the old locks in place
+file: addons/Family/Scanners/Instances.lua
+--- old
+		lockouts = #found > 0 and found or Family.CLEAR,
+--- new
+		lockouts = #found > 0 and found or nil,

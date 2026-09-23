@@ -1,0 +1,6 @@
+name: the picker offers no place anybody is saved to
+file: addons/Family_UI/Summary.lua
+--- old
+				for _, label in ipairs(lockKinds()) do
+--- new
+				for _, label in ipairs({}) do

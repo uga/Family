@@ -1,0 +1,6 @@
+name: a lock neither held nor extended is recorded
+file: addons/Family/Scanners/Instances.lua
+--- old
+	if row[5] ~= true and row[6] ~= true then return nil end
+--- new
+

@@ -90,6 +90,11 @@ local CATEGORIES = {
     { id = "currencies",  label = L["Currencies"],
       meta = { "currencies", "currenciesSeen" } },
     { id = "worldbuffs",  label = L["World buffs"], meta = { "boons", "banked" } },
+    -- Its own category and not part of Professions, where the crafting cooldowns travel: a
+    -- raid lock says where somebody's alts have been this week and with whom, and that is not
+    -- what granting a recipe list agreed to. Backlog 93, added 2026-09-23; like every category
+    -- before it, it sends nothing until somebody ticks it.
+    { id = "lockouts",    label = L["Lockouts"],    meta = { "lockouts", "lockoutsSeen" } },
 }
 
 Wide.CATEGORIES = CATEGORIES

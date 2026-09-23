@@ -2121,6 +2121,7 @@ for _, file in ipairs {
 	"Scanners/Auctions.lua", "Scanners/Mail.lua", "Scanners/Character.lua",
 	"Scanners/Quests.lua",
 	"Scanners/Currencies.lua",
+	"Scanners/Instances.lua",
 	"Scanners/Pets.lua",
 	"Scanners/Merchant.lua",
 	"Wide.lua",
@@ -14908,7 +14909,7 @@ end
 	-- The tab strip carries some of these words too, so it is the last button with the
 	-- label that is wanted - the same trap the professions check above walked into.
 	for _, label in ipairs { "Overview", "Bags", "Activity", "Professions", "Currencies",
-		"Crafting", "Miscellaneous" } do
+		"Cooldowns", "Miscellaneous" } do
 		local clicked = clickLastButton(label)
 		check("the " .. label:lower() .. " set is drawn", clicked)
 
@@ -21789,7 +21790,7 @@ print("crafting cooldowns")
 		return found ~= nil
 	end
 
-	check("the summary has a set for them", clickLast("Crafting"))
+	check("the summary has a set for them", clickLast("Cooldowns"))
 	check("what is available says so", visibleText("ready"))
 
 	-- An item whose cooldown has come back is shown as ready, and used to vanish instead.
@@ -21995,13 +21996,13 @@ print("crafting cooldowns")
 	Family.Database:SetMeta("Idle-FireMaw", { name = "Idle", realm = "Fire Maw",
 		level = 60, faction = "Horde" })
 	Family.UI:ShowTab("summary")
-	clickLast("Overview") clickLast("Crafting")
+	clickLast("Overview") clickLast("Cooldowns")
 	check("a member with no cooldown at all is not listed here",
 		visibleText("Idle") == false)
 	clickLast("Overview")
 	check("but is listed on a set that is about everybody", visibleText("Idle"))
 	Family.Database:Forget("Idle-FireMaw")
-	clickLast("Crafting")
+	clickLast("Cooldowns")
 	check("and what is not says when it comes back", visibleText("1h"))
 	check("with the shared one under the profession's name", visibleText("Alchemy"))
 
@@ -23365,7 +23366,7 @@ print("every panel, asked whether its buttons can be clicked")
 	if not Family.UI.window:IsShown() then Family.UI:Toggle() end
 
 	local SECTIONS = { "Equipped gear", "Reputations", "Quests", "Currencies",
-		"Whole family", "Overview", "Bags", "Activity", "Professions", "Crafting",
+		"Whole family", "Overview", "Bags", "Activity", "Professions", "Cooldowns",
 		"Miscellaneous" }
 
 	local drawn = 0
@@ -30132,7 +30133,7 @@ print("filtering the summary by name, class and level")
 
 		-- Composed with the set, not replacing it. Crafting narrows to members with a
 		-- cooldown running, and a class chosen on top of that narrows *that*.
-		clickButton("Crafting")
+		clickButton("Cooldowns")
 		local crafting = showing()
 		check("a set that narrows on its own still narrows with a filter on",
 			crafting["Filtera-Fire Maw"] == nil and crafting["Otherly-Fire Maw"] == nil)
@@ -30434,7 +30435,7 @@ print("a sibling with a crafting cooldown, on the summary's crafting set")
 
 	Family.UI:Show()
 	Family.UI:ShowTab("summary")
-	clickButton("Crafting")
+	clickButton("Cooldowns")
 	Family.UI:Refresh()
 
 	check("and the crafting set draws them", visibleText("Brewer"))
@@ -32716,7 +32717,7 @@ print("filtering the summary's crafting by which cooldown")
 		return false
 	end
 
-	check("the crafting column set can be opened", clickSet(Family.L["Crafting"]))
+	check("the crafting column set can be opened", clickSet(Family.L["Cooldowns"]))
 	Family.UI:Refresh()
 
 	local alchemy = Family:ProfessionName(171)
@@ -32802,7 +32803,7 @@ print("filtering the summary's crafting by which cooldown")
 	Family.UI:Refresh()
 	check("a set that narrows nothing takes the picker away", narrow:IsShown() == false)
 
-	clickSet(Family.L["Crafting"])
+	clickSet(Family.L["Cooldowns"])
 	Family.UI:Refresh()
 	local back = showing()
 	check("and coming back finds everybody again", back["Alchy-Fire Maw"] ~= nil)
@@ -32822,7 +32823,7 @@ print("filtering the summary's crafting by which cooldown")
 
 	do
 		Family.UI.__summaryNarrow:Choose(Family.UI.ANY)
-		clickSet(Family.L["Crafting"])
+		clickSet(Family.L["Cooldowns"])
 		Family.UI:Refresh()
 
 		-- What each drawn row says, in the order it was drawn.
@@ -35387,7 +35388,7 @@ print("a linked family's columns on the summary")
 
 	Family.UI:Show()
 	Family.UI:ShowTab("summary")
-	clickButton("Crafting")
+	clickButton("Cooldowns")
 	Family.UI:Refresh()
 
 	-- A block now rather than a column, which is the same claim about the same fault: the
@@ -41641,6 +41642,199 @@ print("the recipe index")
 
 	Family.Database:Forget("Indexone-FireMaw")
 	Family.Database:Forget("Indextwo-FireMaw")
+end)()
+
+print()
+print("instance lockouts, read, kept and drawn")
+
+-- Backlog 93. The rows are the ones read in the game (DATASOURCES, *The fourteen columns of
+-- `GetSavedInstanceInfo`*): a French Era character saved to three forty-man raids, and the blank
+-- row every build answers for a character saved to nothing.
+;(function()
+	local key = Family:CurrentMember()
+	local heldCount, heldInfo, heldAsk =
+		_G.GetNumSavedInstances, _G.GetSavedInstanceInfo, _G.RequestRaidInfo
+	local heldMeta = Family.Database:Meta(key) or {}
+	local heldLocks, heldSeen = heldMeta.lockouts, heldMeta.lockoutsSeen
+
+	local ROWS = {
+		{ "Repaire de l'Aile noire", 135392441, 189500, 9, true, false, 524615680, true, 40,
+			"40 joueurs", 8, 8, true, 469 },
+		{ "Naxxramas", 133827138, 7200, 9, true, false, 524615680, true, 40,
+			"40 joueurs", 15, 12, true, 533 },
+		-- A lock that has run out and is only listed so that it can be extended.
+		{ "Temple d'Ahn'Qiraj", 135990587, 3600, 9, false, false, 524615680, true, 40,
+			"40 joueurs", 9, 8, true, 531 },
+	}
+	local rows = ROWS
+	GetNumSavedInstances = function() return #rows end
+	GetSavedInstanceInfo = function(index)
+		local row = rows[index]
+		if not row then return nil, 0, nil, 0, false, false, 0, false, 0, "", 0, 0, false, 0 end
+		return unpack(row, 1, #row)
+	end
+
+	local read = Family.Lockouts:Read()
+	check("a character saved to two raids reads as two lockouts", read and #read == 2,
+		read and tostring(#read))
+	check("keyed by the instance's id and the difficulty, not by the words",
+		read and read[2] and read[2].key == "i469:9", read and read[2] and tostring(read[2].key))
+	check("soonest to let go first", read and read[1] and read[1].key == "i533:9")
+	check("kept as the moment it resets, not the seconds left",
+		read and read[2] and read[2].resetAt == time() + 189500,
+		read and read[2] and tostring(read[2].resetAt))
+	check("with the lock's own number and the client's words as labels",
+		read and read[2] and read[2].lockID == 135392441
+			and read[2].name == "Repaire de l'Aile noire"
+			and read[2].difficultyName == "40 joueurs")
+	check("a lock that is neither held nor extended is not recorded",
+		read and read[1].instance ~= 531 and read[2].instance ~= 531)
+
+	-- A row of another length is not the row that was measured: its fourteenth value is not
+	-- trusted to be an id, and the lock is filed under its name.
+	rows = { { "Molten Core", 239723021, 126845, 9, true, false, 524615680, true, 40,
+		"40 Player", 1, 0, false } }
+	read = Family.Lockouts:Read()
+	check("a row that is not fourteen wide is keyed by its name",
+		read and read[1] and read[1].key == "n:Molten Core:9",
+		read and read[1] and tostring(read[1].key))
+
+	-- Wider as well as narrower: a fifteenth value means another row, whatever the fourteenth
+	-- happens to hold.
+	rows = { { "Molten Core", 239723021, 126845, 9, true, false, 524615680, true, 40,
+		"40 Player", 1, 0, false, 409, true } }
+	read = Family.Lockouts:Read()
+	check("and so is a row wider than fourteen, whatever its fourteenth holds",
+		read and read[1] and read[1].key == "n:Molten Core:9",
+		read and read[1] and tostring(read[1].key))
+
+	-- **Read when the event says so, not beside the request.** The login asks; the answer is
+	-- read when UPDATE_INSTANCE_INFO arrives.
+	rows = ROWS
+	local asked = 0
+	RequestRaidInfo = function() asked = asked + 1 end
+	Family.Database:SetMeta(key, { lockouts = Family.CLEAR, lockoutsSeen = Family.CLEAR })
+	fire("PLAYER_ENTERING_WORLD")
+	advance(6)
+	check("entering the world asks the server for the list", asked == 1, tostring(asked))
+	check("and records nothing until the answer arrives",
+		(Family.Database:Meta(key) or {}).lockouts == nil)
+	fire("UPDATE_INSTANCE_INFO")
+	advance(2)
+	local meta = Family.Database:Meta(key) or {}
+	check("the answer is recorded when it arrives", meta.lockouts and #meta.lockouts == 2,
+		meta.lockouts and tostring(#meta.lockouts))
+	check("with when it was read", meta.lockoutsSeen == time())
+
+	fire("BOSS_KILL", 663, "Lucifron")
+	advance(6)
+	check("a boss dying asks again, since that is when a lock is made", asked == 2,
+		tostring(asked))
+
+	-- Saved to nothing is an answer, not a gap: the list is emptied and the reading kept.
+	rows = {}
+	fire("UPDATE_INSTANCE_INFO")
+	advance(2)
+	meta = Family.Database:Meta(key) or {}
+	check("a character whose locks have all gone is saved to nothing",
+		meta.lockouts == nil and meta.lockoutsSeen == time())
+
+	-- And a client with no way to ask leaves what was recorded alone.
+	Family.Database:SetMeta(key, { lockouts = { { key = "i469:9", name = "BWL",
+		resetAt = time() + 60 } } })
+	GetNumSavedInstances = nil
+	fire("UPDATE_INSTANCE_INFO")
+	advance(2)
+	check("a client without the call keeps what was recorded",
+		#((Family.Database:Meta(key) or {}).lockouts or {}) == 1)
+
+	-- A recorded lock whose moment has passed has let go whether anybody looked or not.
+	check("a lock whose moment has passed is not held",
+		#Family.Lockouts:For({ lockouts = { { key = "a", resetAt = time() - 1 },
+			{ key = "b", resetAt = time() + 1 } } }) == 1)
+
+	-- The moment is rounded for the mark, like every other deadline worked out from time left:
+	-- two readings a few seconds apart are the same lock.
+	local base = math.floor(time() / 60) * 60
+	check("a reset a few seconds later does not change the member's mark",
+		Family.Codec:StableFingerprint({ lockouts = { { resetAt = base + 5 } } })
+			== Family.Codec:StableFingerprint({ lockouts = { { resetAt = base + 40 } } }))
+
+	-- Its own category on a link, and nothing without it.
+	do
+		local held = FamilyDB.wide
+		Family.Database:SetMeta(key, { lockouts = { { key = "i469:9", name = "BWL",
+			resetAt = time() + 600 } }, lockoutsSeen = time() })
+		FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
+			links = { ["lockfam"] = { name = "Nosy-Thunderstrike",
+				grants = { [key] = { professions = true } }, siblings = {}, members = {} } } }
+		local link = FamilyDB.wide.links["lockfam"]
+		local sent = Family.Wide:Offering(link)[key]
+		check("granting professions does not send the lockouts",
+			sent and sent.meta and sent.meta.lockouts == nil)
+		link.grants[key].lockouts = true
+		sent = Family.Wide:Offering(link)[key]
+		check("granting lockouts does",
+			sent and sent.meta and sent.meta.lockouts ~= nil and sent.meta.lockoutsSeen ~= nil)
+		FamilyDB.wide = held
+	end
+
+	GetNumSavedInstances, GetSavedInstanceInfo, RequestRaidInfo = heldCount, heldInfo, heldAsk
+	Family.Database:SetMeta(key, { lockouts = heldLocks or Family.CLEAR,
+		lockoutsSeen = heldSeen or Family.CLEAR })
+
+	-- **The Cooldowns page**: the crafting timers as they were, then the lockouts under a heading
+	-- of their own, one block per place, whoever is saved to it underneath.
+	local function member(name, locks)
+		Family.Database:SetMeta(name .. "-FireMaw", { name = name, realm = "Fire Maw",
+			classFile = "MAGE", level = 60, faction = "Alliance", lockouts = locks,
+			lockoutsSeen = time() })
+	end
+	member("Raidera", { { key = "i469:9", instance = 469, difficulty = 9,
+		name = "Blackwing Lair", difficultyName = "40 Player", lockID = 135392441,
+		resetAt = time() + 2 * 86400 } })
+	-- The same place read on a French client: one block, headed by whichever came first.
+	member("Raiderb", { { key = "i469:9", instance = 469, difficulty = 9,
+		name = "Repaire de l'Aile noire", difficultyName = "40 joueurs", lockID = 135392442,
+		resetAt = time() + 3600, extended = true } })
+	member("Raiderc", { { key = "i409:9", instance = 409, difficulty = 9,
+		name = "Molten Core", difficultyName = "40 Player", lockID = 239723021,
+		resetAt = time() - 60 } })
+
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	check("the page is called Cooldowns", clickLastButton(Family.L["Cooldowns"]))
+	Family.UI:Refresh()
+
+	check("with a section for the lockouts", visibleText(Family.L["Instance lockouts"]))
+	check("a member with a lockout and no crafting timer is on it", visibleText("Raidera"))
+	check("and so is one read in another language", visibleText("Raiderb"))
+	check("the lock's own number is shown", visibleText("#135392441"))
+	check("an extended lock says so", visibleText(Family.L["extended"]))
+	check("a lock that has let go is not drawn", not visibleText("Raiderc")
+		and not visibleText("Molten Core"))
+
+	local blocks = 0
+	for _, f in ipairs(fontStrings) do
+		if type(f.__text) == "string" and f.__visible ~= false and onScreen(f)
+			and (f.__text:find("Blackwing Lair", 1, true)
+				or f.__text:find("Repaire de l'Aile noire", 1, true)) then
+			blocks = blocks + 1
+		end
+	end
+	check("one place in two languages is one block", blocks == 1, tostring(blocks))
+
+	local narrow = Family.UI.__summaryNarrow
+	local offered = {}
+	for _, choice in ipairs(narrow and narrow:Choices() or {}) do
+		offered[tostring(choice.label)] = true
+	end
+	check("the picker offers the place", offered["Blackwing Lair  40 Player"] == true)
+
+	clickLastButton(Family.L["Overview"])
+	for _, name in ipairs { "Raidera", "Raiderb", "Raiderc" } do
+		Family.Database:Forget(name .. "-FireMaw")
+	end
 end)()
 
 print()

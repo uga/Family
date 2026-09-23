@@ -80,6 +80,7 @@ Scanners\Mail.lua
 Scanners\Character.lua
 Scanners\Quests.lua
 Scanners\Currencies.lua
+Scanners\Instances.lua
 Scanners\Pets.lua
 Scanners\Merchant.lua
 Wide.lua

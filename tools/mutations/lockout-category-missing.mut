@@ -1,0 +1,6 @@
+name: there is no lockouts category to grant
+file: addons/Family/Wide.lua
+--- old
+    { id = "lockouts",    label = L["Lockouts"],    meta = { "lockouts", "lockoutsSeen" } },
+--- new
+

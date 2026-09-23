@@ -1,0 +1,6 @@
+name: the fourteenth value is read as an id on a row of any width
+file: addons/Family/Scanners/Instances.lua
+--- old
+	local instance = width == MEASURED_ROW and wholePositive(row[14]) or nil
+--- new
+	local instance = wholePositive(row[14])

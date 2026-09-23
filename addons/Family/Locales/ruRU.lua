@@ -64,7 +64,6 @@ Family.locales.ruRU = {
 	["AH seen"] = "АД зам.",  -- 10
 	["Rest XP"] = "Отдых",  -- 13
 	["Activity"] = "Активность",  -- 14
-	["Crafting"] = "Создание",  -- 14
 	["Item lvl"] = "Ур. пред.",  -- 10
 	["Overview"] = "Обзор",  -- 14
 	["Bag slots"] = "Ячейки сумок",  -- 13
@@ -142,7 +141,7 @@ Family.locales.ruRU = {
 	["Behind most things. Choose this if Family covers something it should not."] = "Позади большинства элементов. Выберите, если Family закрывает то, что не должно.",
 	["|cff888888Family %s on %s   |||   tooltips hooked: %s   |||   storage: %s|r"] = "|cff888888Family %s на %s   |||   подсказки подключены: %s   |||   хранилище: %s|r",
 	["In front of nearly everything, alongside the game's own popups. Choose this if a HUD still draws over Family."] = "Перед почти всем, наравне с окнами игры. Выберите, если интерфейс всё ещё рисует поверх Family.",
-	["Transmutes, mooncloth, salt shakers. Crafting only - raid and heroic lockouts are a different thing and Family does not record them yet."] = "Трансмутации, луноткань, солонки. Только ремесло - привязки к рейдам и героикам это другое, и Family их пока не записывает.",
+	["Transmutes, mooncloth, salt shakers. Crafting only - instance lockouts are on the Summary's Cooldowns page and are not announced at login."] = "Трансмутации, луноткань, солонки. Только ремесло - привязки к подземельям показаны в Обзоре на странице Восстановления и не объявляются при входе.",
 	["Both ways: what your guild sees of you, and what you see of them. Nothing else is shared - bags, mail and the rest need a Wide Family link."] = "В обе стороны: что гильдия видит о вас и что вы видите о ней. Больше ничего не передаётся - сумки, почта и прочее требуют связи Большой семьи.",
 
 	-- The slash commands, and what /family says
@@ -834,8 +833,8 @@ Family.locales.ruRU = {
 	["|cff40bf40knows it|r"] = "|cff40bf40знает|r",
 	["|cffff8040level %d|r"] = "|cffff8040уровень %d|r",
 	["|cff9d9d9dmay know it|r"] = "|cff9d9d9dвозможно, знает|r",
-	["|cff888888Crafting cooldowns only - transmutes, mooncloth, salt shakers. Raid and heroic lockouts are a different thing and are not recorded yet.|r"] = "|cff888888Только ремесленные восстановления - трансмутации, луноткань, солонки. Привязки к рейдам и героикам это другое и пока не записываются.|r",
-	["|cff888888Crafting cooldowns only - transmutes, mooncloth, salt shakers. One line per timer, with whoever has it underneath and when theirs comes back.|r"] = "|cff888888Только время восстановления ремесла - трансмутации, лунная ткань, солонка. Одна строка на таймер, под ней все, у кого он есть, и когда он у них восстановится.|r",
+	["|cff888888Crafting cooldowns only - transmutes, mooncloth, salt shakers. Instance lockouts are on the Summary's Cooldowns page.|r"] = "|cff888888Только ремесленные восстановления - трансмутации, луноткань, солонки. Привязки к подземельям показаны в Обзоре на странице Восстановления.|r",
+	["|cff888888Crafting cooldowns - transmutes, mooncloth, salt shakers - and then instance lockouts. One line per timer or place, with whoever has it underneath and when theirs comes back. A lockout is read when that character logs in.|r"] = "|cff888888Ремесленные восстановления - трансмутации, луноткань, солонки - а затем привязки к подземельям. Одна строка на таймер или место, под ней те, у кого он есть, и когда он вернётся. Привязка читается, когда этот персонаж входит в игру.|r",
 	["Auction House"] = "Аукционный дом",
 	["|cffff8040another branch|r"] = "|cffff8040другая специализация|r",
 	["|cffff8040needs %s|r"] = "|cffff8040нужно %s|r",
@@ -1019,4 +1018,9 @@ Family.locales.ruRU = {
 	["this client has no tooltip to watch"] = "у этого клиента нет подсказки, за которой можно следить",
 	["what the frame under a tooltip says about its row: /family hover, then point"] = "что рамка под подсказкой говорит о своей строке: /family hover, затем наведите",
 	["|cffffd700What the pointer was on|r"] = "|cffffd700На чём был указатель|r",
+	["Lockouts"] = "Привязки",
+	["Crafting cooldowns"] = "Ремесленные восстановления",
+	["Instance lockouts"] = "Привязки к подземельям",
+	["Resets in"] = "Сброс через",
+	["extended"] = "продлено",
 }

@@ -457,13 +457,15 @@ has no name yet, and Family says so.
 
 Transmutes, mooncloth, salt shakers and the rest.
 
-**Crafting cooldowns only.** Raid lockouts, heroic resets and daily quest resets are not
-recorded.
+**Crafting cooldowns first, instance lockouts after them.** Daily quest resets are not
+recorded. Lockouts are the second section of the same page: each place once, the characters saved
+to it underneath with their lock number, and how long until it resets. A lockout is read when that
+character logs in, and only locks still running are listed.
 
 **Family records the moment a cooldown comes ready**, not the time remaining. That is why a
 cooldown recorded three days ago is still right today, however long the game was closed.
 
-**Summary / Crafting** shows all of them at once. There is a line for each kind of cooldown,
+**Summary / Cooldowns** shows all of them at once. There is a line for each kind of cooldown,
 with everybody who has it underneath: those who can use it now first, then whoever comes back
 soonest. Ready is green. Waiting is grey, with the time left.
 
