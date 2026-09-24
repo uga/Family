@@ -2831,3 +2831,35 @@ shows Mining's per-expansion ranks, the shape the professions slice needs: Kul T
 seconds to draw its pictures, every session. The list draws every row on each refresh, and on
 Midnight each row asks the client for its schematic the first time in a session. That is the
 suspect, not the finding.
+
+## 58. Gathering techniques are the game's own list, so the filter comes out (2026-09-24)
+
+§55 left gathering nodes out of a modern recipe list. It did not take in the game - the Mining list
+still had its deposits after the window was reopened - and before the reason was chased Alberto
+looked at the game's own window and found that the filter was wrong in what it meant, not only in
+how it worked:
+
+- **Kul Tiran Mining lists no smelting at all.** Its window has one category, *Mining Techniques*:
+  *Monelite Deposit*, *Monelite Seam*, *Platinum Deposit*, *Storm Silver Deposit*, *Storm Silver
+  Seam*, each ranked in stars (*Monelite Deposit* three of three), and *Osmenite Deposit* and
+  *Seam* unlearnt. Recipes of that line take ores directly, and the ore's own picture on the
+  tooltip is the deposit's.
+- **The older lines keep smelting**, under a *Smelting* category: Pandaria Mining 75/75 lists
+  *Smelt Trillium* and *Smelt Ghost Iron*, Cataclysm Mining 75/75 *Smelt Hardened Elementium*,
+  *Pyrite*, *Elementium* and *Obsidium* - the old metals still need a forge.
+- **Engineering's recipes are ranked too**: *F.R.I.E.D.* two stars of three, with *Next Rank*.
+
+So the techniques are what the game shows for that profession on that line, and Family shows what
+the game shows: `readModernRecipes` keeps everything the client lists as learnt, as it did before
+§55. What makes the list readable is not hiding them but the professions slice - each expansion line
+with its own rank (Kul Tiran 157/175, Legion 100/100, Draenor 100/100, Pandaria to Outland 75/75,
+Classic 300/300), recipes under the game's categories, and each recipe's rank - which also explains
+the three *Bolt-Action Headgun* rows of §55.
+
+Alberto chose option 1 of two: remove the filter, rather than hide the techniques by category. The
+fixture's technique of its own making is kept, and the professions section now records it; the
+mutation written for the filter is turned round and renamed (`a-gathering-technique-is-dropped-from-
+the-list.mut`) so that dropping it is what fails. Harness 3889.
+
+**Where a recipe's rank lives in the client's answers is not known yet**: the 28-key row of §26 has
+no key that plainly names one. A probe line on a ranked row is the first step of that slice.

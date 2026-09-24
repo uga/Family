@@ -1,6 +1,0 @@
-name: a gathering node the client lists among the learnt is recorded as a recipe
-file: addons/Family/Scanners/Professions.lua
---- old
-		if type(info) == "table" and info.learned and info.isGatheringRecipe ~= true then
---- new
-		if type(info) == "table" and info.learned then

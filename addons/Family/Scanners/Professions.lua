@@ -731,12 +731,11 @@ local function readModernRecipes()
 
 	for _, id in ipairs(ids) do
 		local info = Family:TryCall(C_TradeSkillUI.GetRecipeInfo, id)
-		-- **A gathering node is not a recipe.** Midnight's mining lists *Monelite Deposit*,
-		-- *Storm Silver Seam* and the like among what it has learnt - seen in Family's list,
-		-- 2026-09-24 - and nothing is made from them. `isGatheringRecipe` is a key of every row
-		-- read (§26), false on the engineering rows; that it is true on a node is taken from its
-		-- name, and the game shows whether it is (`docs/MIDNIGHT.md` §55).
-		if type(info) == "table" and info.learned and info.isGatheringRecipe ~= true then
+		-- **Everything the client lists as learnt is kept, gathering techniques included.**
+		-- Midnight's Kul Tiran Mining lists *Monelite Deposit* and *Storm Silver Seam*, ranked,
+		-- under *Mining Techniques*, and no smelting at all: that is the profession on that line
+		-- as the game shows it, and Family shows what the game shows (`docs/MIDNIGHT.md` §58).
+		if type(info) == "table" and info.learned then
 			-- The id of what it makes, asked for separately because this window hands
 			-- back a recipe id and stops there. Without it every recipe on this client
 			-- is a spell and nothing else, and "who can make one of these" has only the

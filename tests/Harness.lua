@@ -3598,9 +3598,9 @@ print("professions on the fourth pretend client")
 	-- and the run has no learned row written down, so the change is named here rather than
 	-- passed off as a reading.
 	local ROWS = {
-		-- A mining node among the learnt, which Midnight lists (2026-09-24, *Monelite Deposit*)
-		-- and nothing is made from. **This file's**: no node's row has been read, so its
-		-- `isGatheringRecipe = true` is what the key's name says and not a reading (§55).
+		-- A gathering technique among the learnt, which Midnight lists as Kul Tiran Mining's own
+		-- (2026-09-24, *Monelite Deposit*) and Family keeps (§58). **This file's**: no
+		-- technique's row has been read, so its `isGatheringRecipe = true` is the key's name.
 		[9900101] = { categoryID = 2385, icon = 7422725, isGatheringRecipe = true,
 			learned = true, name = "A Deposit Of This File's", recipeID = 9900101 },
 		[1260349] = { alwaysUsesLowestQuality = true, canCreateMultiple = true,
@@ -3668,11 +3668,12 @@ print("professions on the fourth pretend client")
 
 	local name, recipes = midnight.Professions:ReadRecipes()
 	check("a recipe read on Midnight is named from the base profession",
-		name == "Engineering" and recipes and #recipes == 1,
+		name == "Engineering" and recipes and #recipes == 2,
 		tostring(name) .. " / " .. (recipes and #recipes or "nil"))
-	check("and keeps the learned recipe and only that one, not the node, after reading all three",
+	check("and keeps the learnt ones, a gathering technique among them, after reading all three",
 		looked == 3
-		and recipes and recipes[1] and recipes[1].spellID == 255393,
+		and recipes and recipes[1] and recipes[1].spellID == 255393
+		and recipes[2] and recipes[2].spellID == 9900101,
 		tostring(looked) .. " looked up")
 
 	-- **With the window shut the same call answers, zeroed** - `professionName = ""`,
@@ -3712,7 +3713,7 @@ print("professions on the fourth pretend client")
 	-- line's id, with the recipe and the word that opens the window.
 	local engineering = payload and payload.professions and payload.professions[202]
 	check("a profession scan with a window open records the profession under its skill line",
-		engineering ~= nil and engineering.recipes and #engineering.recipes == 1
+		engineering ~= nil and engineering.recipes and #engineering.recipes == 2
 			and engineering.recipes[1].spellID == 255393,
 		engineering and "recipes wrong" or "no entry at 202")
 	check("and the window is reopened by the profession's name",
