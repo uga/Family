@@ -1,0 +1,6 @@
+name: a client whose quest history call answers no list is recorded as having finished nothing
+file: addons/Family/Scanners/QuestHistory.lua
+--- old
+	if type(list) ~= "table" then return nil end
+--- new
+	if type(list) ~= "table" then return {} end

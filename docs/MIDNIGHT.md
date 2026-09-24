@@ -2392,3 +2392,30 @@ another day, so which of the two it depends on is not known from here. **Version
 three owned reads again when that event arrives, at once and two seconds on, filed as
 `auctionOwned`; a selftest claim covers it and was seen to fail with the event renamed. Family
 itself scans on that event (§30), so this is the probe's gap and not the addon's.
+
+## 42. Step 3 (e): the quest history read from `C_QuestLog`'s list (2026-09-24)
+
+The last of step 3's five, and the one that arrived with 4.4.0 rather than with the branch.
+`QuestHistory:Read` took a client without `GetQuestsCompleted` as one with no history; it now
+hands that case to **`QuestHistory:ReadList`**, which asks `C_QuestLog.GetAllCompletedQuestIDs()`
+through `TryCall` and takes the list's **values** as the ids - §41's reading is positional,
+`1=5`, `10=18`, `100=168`. No list is still nil and still *no quest history on this client*; an
+empty list is a reading of none, as the old call's empty table already was.
+
+The old call's guard is `main`'s, `type(_G.GetQuestsCompleted) ~= "function"`, and it stays: the
+change is what happens behind it. Everything after the read - the family pool, the six-bit flags,
+`questsDoneCount` - is `main`'s code and unchanged.
+
+The section on the fourth pretend client uses three ids from the measured list and puts the
+family pool back as it found it, since the pool is the saved variables' and a later section may
+read it. Five checks; three mutations - the list never asked, the list read by position (which
+would say quests 1, 2 and 3 were done), and no list taken for an empty one.
+
+**Not measured: whose list it is.** `IsQuestFlaggedCompletedOnAccount` sits beside
+`IsQuestFlaggedCompleted` in the namespace, which suggests the account has its own calls and this
+list is the character's. If it is the account's, every character on it would read the same
+history; the smoke row is where two characters' counts are compared.
+
+**Step 3's list of five is done.** What each slice still owes the game is written in §37 to §42;
+the merchant through `C_MerchantFrame.GetItemInfo` was never on the list and is not done.
+Harness 3870.

@@ -1,0 +1,6 @@
+name: the newer quest history list is read by its positions rather than its ids
+file: addons/Family/Scanners/QuestHistory.lua
+--- old
+	for _, id in ipairs(list) do
+--- new
+	for id in ipairs(list) do

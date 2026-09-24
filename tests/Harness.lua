@@ -4052,6 +4052,89 @@ print("the auction house on the fourth pretend client")
 end)()
 
 print()
+print("the quest history on the fourth pretend client")
+
+-- Backlog 92 arrived with 4.4.0 reading `GetQuestsCompleted`, which Midnight does not have (§35),
+-- so the history wrote nothing there. `C_QuestLog.GetAllCompletedQuestIDs()` answers instead, and
+-- answers differently: a **list** of ids, 8410 of them on Ahia 2026-09-24, where the old call
+-- filled a table keyed by id (§41). The three ids below are that list's own, at positions 1, 10
+-- and 100.
+;(function()
+	local was = {}
+	local function set(name, value)
+		was[name] = { _G[name] }
+		_G[name] = value
+	end
+
+	set("GetBuildInfo", function() return "12.1.0", "69933", "Sep 18 2026", 120100 end)
+	set("GetQuestsCompleted", nil)
+	local answer = { 5, 18, 168 }
+	set("C_QuestLog", { GetAllCompletedQuestIDs = function() return answer end })
+
+	-- The pool is the family's and lives in the saved variables, so it is put back exactly as
+	-- found, and the real module's copy of it is not disturbed.
+	local pool = FamilyDB.questPool
+
+	local stored = { meta = {}, payload = {} }
+	local midnight = setmetatable({}, { __index = FamilyPrivate })
+	local said
+	midnight.CurrentMember = function() return "Mirror-Midnight" end
+	midnight.RegisterEvent = function() end
+	midnight.OnDatabaseReady = function() end
+	midnight.After = function() end
+	midnight.Debug = function(_, message, ...)
+		local ok, text = pcall(string.format, message, ...)
+		said = ok and text or message
+	end
+	midnight.Database = {
+		Meta = function(_, k) return stored.meta[k] end,
+		SetMeta = function(_, k, fields)
+			stored.meta[k] = stored.meta[k] or {}
+			for name, value in pairs(fields) do stored.meta[k][name] = value end
+		end,
+		Payload = function(_, k) return stored.payload[k] end,
+		SetPayload = function(_, k, p) stored.payload[k] = p end,
+	}
+
+	load("addons/Family/Scanners/QuestHistory.lua", "Family", midnight)
+	local history = midnight.QuestHistory
+
+	history:Scan()
+	check("the quest history is read from C_QuestLog's list where the old call is gone",
+		stored.meta["Mirror-Midnight"] and stored.meta["Mirror-Midnight"].questsDoneCount == 3,
+		stored.meta["Mirror-Midnight"]
+			and tostring(stored.meta["Mirror-Midnight"].questsDoneCount) or tostring(said))
+	check("and a quest in it reads as done, and one not in it as not done",
+		history:Done("Mirror-Midnight", 168) == true
+			and history:Done("Mirror-Midnight", 5) == true
+			and history:Done("Mirror-Midnight", 169) == false)
+
+	-- The ids are the list's **values**. Read as keys, as the old call's table is, this list
+	-- would say quests 1, 2 and 3 were done.
+	check("the ids are the list's values, not its positions",
+		history:Done("Mirror-Midnight", 1) == false and history:Done("Mirror-Midnight", 2) == false)
+
+	-- An empty list is an answer: a character on their first quest has finished nothing.
+	answer = {}
+	history:Scan()
+	check("an empty list is a reading of none",
+		stored.meta["Mirror-Midnight"].questsDoneCount == 0,
+		tostring(stored.meta["Mirror-Midnight"].questsDoneCount))
+
+	-- And neither call: nothing written, and the scanner says why.
+	_G.C_QuestLog.GetAllCompletedQuestIDs = nil
+	stored.meta, stored.payload = {}, {}
+	history:Scan()
+	check("with neither call, nothing is written and the scanner says so",
+		stored.meta["Mirror-Midnight"] == nil and stored.payload["Mirror-Midnight"] == nil
+			and said == "no quest history on this client", tostring(said))
+
+	FamilyDB.questPool = pool
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+	Family.Capabilities:Detect()
+end)()
+
+print()
 print("the mailbox on the fourth pretend client")
 
 -- The shortest section here, and the finding is the short one: **nothing is missing**.

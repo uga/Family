@@ -1,0 +1,6 @@
+name: a client without GetQuestsCompleted reads no quest history, though C_QuestLog lists it
+file: addons/Family/Scanners/QuestHistory.lua
+--- old
+	if type(_G.GetQuestsCompleted) ~= "function" then return self:ReadList() end
+--- new
+	if type(_G.GetQuestsCompleted) ~= "function" then return nil end

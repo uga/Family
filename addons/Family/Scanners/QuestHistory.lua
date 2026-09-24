@@ -168,7 +168,7 @@ end
 -- `IsQuestFlaggedCompleted` about one of them, which answered true. A client that hands back a
 -- table of its own instead is believed too.
 function QuestHistory:Read()
-	if type(_G.GetQuestsCompleted) ~= "function" then return nil end
+	if type(_G.GetQuestsCompleted) ~= "function" then return self:ReadList() end
 
 	local into = {}
 	local answer = Family:TryCall(GetQuestsCompleted, into)
@@ -178,6 +178,28 @@ function QuestHistory:Read()
 	for id, done in pairs(source) do
 		local number = tonumber(id)
 		if done and number and number > 0 and number == math.floor(number) then
+			ids[#ids + 1] = number
+		end
+	end
+	return ids
+end
+
+-- The same answer where `GetQuestsCompleted` is gone: Midnight has none (`docs/MIDNIGHT.md`
+-- §35), and `C_QuestLog.GetAllCompletedQuestIDs()` answers there with **a list of ids** - 8410
+-- of them on Ahia, 2026-09-24, positional, where the old call filled a table keyed by id (§41).
+-- Nil where it answers no list, which is a history nobody could read rather than an empty one.
+--
+-- Whether the list is this character's or the account's has not been measured. The namespace
+-- also lists `IsQuestFlaggedCompletedOnAccount` beside `IsQuestFlaggedCompleted`, which suggests
+-- the account has calls of its own; the game is where that is settled.
+function QuestHistory:ReadList()
+	local list = Family:TryCall((_G.C_QuestLog or {}).GetAllCompletedQuestIDs)
+	if type(list) ~= "table" then return nil end
+
+	local ids = {}
+	for _, id in ipairs(list) do
+		local number = tonumber(id)
+		if number and number > 0 and number == math.floor(number) then
 			ids[#ids + 1] = number
 		end
 	end
