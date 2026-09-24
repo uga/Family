@@ -121,6 +121,16 @@ local EXPECTED = {
 	-- on a paladin) and they govern nothing and are shown nowhere, which is why the answer
 	-- there is no.
 	weaponSkills = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false },
+
+	-- Whether an addon may ask the client to cast a spell by its name, out of combat and from a
+	-- click. Family does it for one thing: opening a profession's window from its button, because
+	-- on Burning Crusade the secure button alone opened nothing (backlog 61). **Midnight forbids
+	-- it**: clicking that button there, 2026-09-24, put up *Family has been blocked from an action
+	-- only available to the Blizzard UI*, `ADDON_ACTION_FORBIDDEN` with the function named
+	-- `UNKNOWN()`, twice, from that button and nothing else (`docs/MIDNIGHT.md` §54). Not an error
+	-- a `TryCall` can catch - the client stops the call and asks the player what to do - so the
+	-- call is not made where the table says no. Midnight has no column, so the answer there is no.
+	addonCasts   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true  },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.
@@ -135,6 +145,9 @@ local CONFIRMED = {
 	-- with its three headings and a Weapon Skills rank under the last of them, and Mists
 	-- opened on a death knight to find no skill sheet at all.
 	weaponSkills = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
+	-- 2026-09-11, Burning Crusade: *cast Leatherworking, callWorked true, windowNow
+	-- Leatherworking*, measured from inside the click (Family_UI/Professions.lua).
+	addonCasts   = {                   [TBC] = true                 },
 }
 
 --------------------------------------------------------------------------------------------

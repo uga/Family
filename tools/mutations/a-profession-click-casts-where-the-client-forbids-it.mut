@@ -1,0 +1,6 @@
+name: a profession button asks for a cast on a client that forbids an addon to cast
+file: addons/Family_UI/Professions.lua
+--- old
+				if word and Family.Capabilities:Has("addonCasts") then
+--- new
+				if word then

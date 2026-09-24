@@ -1805,9 +1805,13 @@ local function build(frame)
 				-- Only for the member being played and only where Family knows the word: the
 				-- same two conditions arming has, because a cast for somebody else's
 				-- character would open this player's own window under another name.
+				-- And only where the client lets an addon cast at all: Midnight answers this call
+				-- with a dialog telling the player Family was blocked (`addonCasts`).
 				local word = member.key == Family:CurrentMember()
 					and record and record.openWith or nil
-				if word then Family:TryCall(_G.CastSpellByName, word) end
+				if word and Family.Capabilities:Has("addonCasts") then
+					Family:TryCall(_G.CastSpellByName, word)
+				end
 
 				chosen = entry.id
 				-- A recipe name typed for one profession means nothing in the next,

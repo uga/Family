@@ -2748,3 +2748,25 @@ Harness 3887.
 **Not done and not known**: `BoundReagents`, which says which materials no money can buy, is
 generated for the same three clients; on Midnight every material is priced as if it could be
 bought. And whether a slot's first alternative is the lowest quality is the game's to say.
+
+## 54. The blocked action: the profession button's cast (2026-09-24)
+
+The *Family has been blocked from an action only available to the Blizzard UI* dialog of §47's
+test came back, and Alberto tied it down: it comes **on pressing a profession button** in Family's
+Professions panel, with the probe writing `ADDON_ACTION_FORBIDDEN "Family" | "UNKNOWN()"` each
+time.
+
+That button opens the profession's window two ways (backlog 61): as a secure button armed with
+`type = "spell"`, and, because on Burning Crusade the secure button alone opened nothing, by
+calling **`CastSpellByName`** from its `PostClick` - addon code. On the Classic clients that is
+allowed from a click; measured on Burning Crusade 2026-09-11, *callWorked true*. On Midnight a
+protected call from addon code is forbidden, and the client does not raise an error `TryCall`
+could catch: it stops the call and asks the player whether to disable Family.
+
+Whether an addon may cast is a rule of the game rather than a choice between two calls, so it is
+data (§37): **`addonCasts`** in `Capabilities.lua`, true for Era, Burning Crusade and Mists -
+confirmed on Burning Crusade - and, Midnight having no column, false there. The `PostClick` cast
+asks the table first. The secure attributes are untouched, so whether the button still opens the
+window on Midnight by that route alone is the game's to show; the dialog should not come back
+either way. One check beside the existing ones, on the fourth pretend client's build, and two
+mutations: the cast made regardless, and the Classic clients told they may not. Harness 3888.

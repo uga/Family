@@ -12797,8 +12797,21 @@ do
 		if theirs then fireClick(theirs, "LeftButton") end
 		check("while a profession of somebody else's casts nothing at all",
 			#castWith == 2, tostring(#castWith))
-
 		Family.CurrentMember = held
+		Family.UI:ShowProfessionFor(key, "Blacksmithing")
+
+		-- **And not on a client that forbids it.** Midnight answered this cast with *Family has
+		-- been blocked from an action only available to the Blizzard UI*, 2026-09-24 (§54).
+		local realBuild = GetBuildInfo
+		GetBuildInfo = function() return "12.1.0", "69933", "Sep 18 2026", 120100 end
+		Family.Capabilities:Detect()
+		local mine = professionButtonNamed("Blacksmithing")
+		if mine then fireClick(mine, "LeftButton") end
+		check("and on a client that forbids an addon to cast, the click asks for no cast",
+			mine ~= nil and #castWith == 2, tostring(#castWith))
+		GetBuildInfo = realBuild
+		Family.Capabilities:Detect()
+
 		Family.UI:ShowProfessionFor(key, "Blacksmithing")
 		_G.CastSpellByName = realCast
 	end
