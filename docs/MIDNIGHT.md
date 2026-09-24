@@ -3055,3 +3055,27 @@ is marked.
 child line of 185 *Cooking* with a parent, so the category walk of §65 is never asked for them, and
 none is in `GetChildProfessionInfos()`, which is why they were drawn after every listed line. Where
 they belong - under *Pandaria Cooking* or beside it - waits on what categories 64 to 69 sit under.
+
+## 68. Cooking's *Way of* lines placed under the line above them (2026-09-24)
+
+The second `/run` of §67, category 64 walked up on Ahia with the Cooking window open:
+
+    64 Way of the Grill 975 true
+    90 Pandaren Cuisine 2544 true
+
+So a *Way* is a line of its own, 975, with a bar, in a category that sits under 90 *Pandaren
+Cuisine* on line 2544, also with a bar - and 2544 is taken to be one of Cooking's listed lines,
+*Pandaria Cooking*, which is **not read**: the panel will show it. 90's parent is not printed, so
+it has none.
+
+The rule of §65 is widened to cover both: **where a recipe's line answer has no parent or is not
+one of the listed lines, the categories are walked up to the first with a bar whose line is
+listed**, and where none is, to the first with a bar at all. With no line listed only an answer
+with no parent is walked, so a client that lists none keeps every line it answers. A heading whose
+category has a bar keeps its own rank beside it, *Way of the Grill 5/25* in the harness's figures.
+
+Why the line reads *Pandaria Cooking* and not *Pandaren Cuisine*, as Alberto asked: a line's
+heading is named from `GetChildProfessionInfos()`, the list behind the game's expansion dropdown;
+*Pandaren Cuisine* is category 90's name, which the game's own recipe list prints. The dropdown's
+name was taken because the category above Classic Mining's headings is called only *Mining*
+(§62).

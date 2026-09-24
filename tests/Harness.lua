@@ -3638,6 +3638,11 @@ print("professions on the fourth pretend client")
 			recipeID = 9900201, nextRecipeID = 9900202, categoryID = 0 },
 		[9900202] = { learned = false, name = "A Ranked Recipe Of This File's", icon = 1391897,
 			recipeID = 9900202, previousRecipeID = 9900201 },
+		-- A Pandaren *Way*, in the shape Charbroiled Tiger Steak answered (§68): a line of its own
+		-- the rank list does not name, in a category with a bar under another with a bar.
+		-- **This file's**: the ids, and that the line above is one of this fixture's.
+		[9900301] = { categoryID = 64, icon = 7422725, learned = true,
+			name = "A Way Of This File's", recipeID = 9900301 },
 		-- In 1079 *Mining Techniques*, as Monelite Deposit is (§65).
 		[9900101] = { categoryID = 1079, icon = 7422725, isGatheringRecipe = true,
 			learned = true, name = "A Deposit Of This File's", recipeID = 9900101 },
@@ -3667,7 +3672,7 @@ print("professions on the fourth pretend client")
 		-- section turns on, and leaving it out of the stub would say the same thing quietly.
 		GetTradeSkillLine = nil,
 		GetAllRecipeIDs = function()
-			return { 1260349, 255393, 9900101, 198939, 198991, 199005, 9900201, 9900202 }
+			return { 1260349, 255393, 9900101, 198939, 198991, 199005, 9900201, 9900202, 9900301 }
 		end,
 		GetRecipeInfo = function(id) looked = looked + 1 return ROWS[id] end,
 		GetRecipeItemLink = function() return nil end,
@@ -3687,6 +3692,7 @@ print("professions on the fourth pretend client")
 			-- A gathering technique's answer, as Monelite Deposit's was: the profession
 			-- itself, and no parent (§65).
 			if id == 9900101 then return 202, "Engineering", nil end
+			if id == 9900301 then return 975, "Way of the Grill", 202 end
 			if id == 9900201 then return 9900299, "A Line Of This File's", 202 end
 			return 2499, "Kul Tiran Engineering", 202
 		end,
@@ -3694,6 +3700,18 @@ print("professions on the fourth pretend client")
 		-- *Goggles* for 470 is the heading in Alberto's screenshot (§61), not a reading.
 		GetCategoryInfo = function(id)
 			askedCategory[id] = (askedCategory[id] or 0) + 1
+			-- 64 and 90 as the `/run` printed them - name, line, bar (§68). **This file's**: 64's
+			-- levels, and 90 on 2500, a line this fixture lists, where the run's is 2544.
+			if id == 64 then
+				return { categoryID = 64, hasProgressBar = true, name = "Way of the Grill",
+					parentCategoryID = 90, skillLineID = 975, skillLineCurrentLevel = 5,
+					skillLineMaxLevel = 25, type = "subheader" }
+			end
+			if id == 90 then
+				return { categoryID = 90, hasProgressBar = true, name = "Pandaren Cuisine",
+					parentCategoryID = 0, skillLineID = 2500, skillLineCurrentLevel = 100,
+					skillLineMaxLevel = 100, type = "subheader" }
+			end
 			-- The run's rows for 1079 and 1065, as read (§62).
 			if id == 1079 then
 				return { categoryID = 1079, enabled = true, hasProgressBar = false,
@@ -3733,7 +3751,7 @@ print("professions on the fourth pretend client")
 
 	check("the namespace this client answers with is in front of the scanner",
 		type(_G.C_TradeSkillUI) == "table"
-			and #_G.C_TradeSkillUI.GetAllRecipeIDs() == 8
+			and #_G.C_TradeSkillUI.GetAllRecipeIDs() == 9
 			and _G.C_TradeSkillUI.GetBaseProfessionInfo().professionName == "Engineering",
 		"C_TradeSkillUI is not set up")
 
@@ -3758,10 +3776,10 @@ print("professions on the fourth pretend client")
 
 	local name, recipes = midnight.Professions:ReadRecipes()
 	check("a recipe read on Midnight is named from the base profession",
-		name == "Engineering" and recipes and #recipes == 4,
+		name == "Engineering" and recipes and #recipes == 5,
 		tostring(name) .. " / " .. (recipes and #recipes or "nil"))
 	check("and keeps the learnt ones, a gathering technique among them, after reading every row",
-		looked == 8
+		looked == 9
 		and recipes and recipes[1] and recipes[1].spellID == 255393
 		and recipes[2] and recipes[2].spellID == 9900101,
 		tostring(looked) .. " looked up")
@@ -3812,6 +3830,29 @@ print("professions on the fourth pretend client")
 		byID[9900101] and byID[9900101].line == 2565
 			and byID[9900101].category == "Mining Techniques",
 		byID[9900101] and tostring(byID[9900101].line) or "none")
+	check("a line the rank list does not name goes under the listed line its category sits in",
+		byID[9900301] and byID[9900301].line == 2500
+			and byID[9900301].category == "Way of the Grill",
+		byID[9900301] and tostring(byID[9900301].line) or "none")
+	check("and its heading keeps the rank of its own",
+		byID[9900301] and byID[9900301].categoryRank == 5
+			and byID[9900301].categoryMaxRank == 25
+			and byID[199005] and byID[199005].categoryRank == nil,
+		byID[9900301] and tostring(byID[9900301].categoryRank) or "none")
+	-- **With no line listed** - the window read before the list arrived, or a client with one
+	-- line to a profession - only an answer with no parent is walked: a technique still finds
+	-- its line, and a recipe on a line of its own keeps it.
+	local listing = _G.C_TradeSkillUI.GetChildProfessionInfos
+	_G.C_TradeSkillUI.GetChildProfessionInfos = function() return {} end
+	local _, bare = midnight.Professions:ReadRecipes()
+	_G.C_TradeSkillUI.GetChildProfessionInfos = listing
+	local bareByID = {}
+	for _, recipe in ipairs(bare or {}) do bareByID[recipe.spellID] = recipe end
+	check("with no line listed, a technique still takes its line from the categories",
+		bareByID[9900101] and bareByID[9900101].line == 2565
+			and bareByID[9900301] and bareByID[9900301].line == 975,
+		bareByID[9900101] and tostring(bareByID[9900101].line) .. " / "
+			.. tostring(bareByID[9900301] and bareByID[9900301].line) or "none")
 	check("and a line a recipe named and the list did not comes after, with no rank",
 		type(lines) == "table" and #lines == 4 and lines[3].id == 2565
 			and lines[3].name == "Kul Tiran Mining" and lines[3].rank == nil
@@ -3856,7 +3897,7 @@ print("professions on the fourth pretend client")
 	-- line's id, with the recipe and the word that opens the window.
 	local engineering = payload and payload.professions and payload.professions[202]
 	check("a profession scan with a window open records the profession under its skill line",
-		engineering ~= nil and engineering.recipes and #engineering.recipes == 4
+		engineering ~= nil and engineering.recipes and #engineering.recipes == 5
 			and engineering.recipes[1].spellID == 255393,
 		engineering and "recipes wrong" or "no entry at 202")
 	check("and the window is reopened by the profession's name",
@@ -12758,7 +12799,8 @@ end
 -- lines, put on a Classic record whose recipes carry none; the names are Midnight's.
 do
 	local group = Family.UI.__groupByLine
-	local a = { name = "A", line = 2572, category = "Smelting" }
+	local a = { name = "A", line = 2572, category = "Smelting", categoryRank = 5,
+		categoryMaxRank = 25 }
 	local b = { name = "B", line = 2565, category = "Mining Techniques" }
 	local c = { name = "C", line = 2572 }
 	local d = { name = "D", line = 2572, category = "Smelting" }
@@ -12784,6 +12826,8 @@ do
 			and before[b][2].line == nil
 			and before[c] and #before[c] == 1 and before[c][1].text:find("Classic Mining", 1, true)
 			and before[a] and #before[a] == 1 and before[a][1].text:find("Smelting", 1, true)
+			and before[a][1].text:find("5/25", 1, true)
+			and not before[b][2].text:find("/", 1, true)
 			and before[d] == nil,
 		before and texts(before[c]) or "none")
 	check("while a list on one line stays flat, as Mists draws it",

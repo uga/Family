@@ -1,0 +1,6 @@
+name: the walk stops at the first bar even when its line is not listed
+file: addons/Family/Scanners/Professions.lua
+--- old
+				if listed[line] then return line end
+--- new
+				return line

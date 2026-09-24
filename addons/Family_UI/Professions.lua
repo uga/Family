@@ -334,6 +334,10 @@ local function groupByLine(shown, record, open, searching)
 		if not bucket.categories[category] then
 			bucket.categories[category] = {}
 			bucket.names[#bucket.names + 1] = category
+			-- A heading with a skill of its own, a Pandaren *Way* under *Pandaria Cooking*.
+			bucket.ranks = bucket.ranks or {}
+			bucket.ranks[category] = rankText({ rank = recipe.categoryRank,
+				maxRank = recipe.categoryMaxRank })
 		end
 		local list = bucket.categories[category]
 		list[#list + 1] = recipe
@@ -376,7 +380,9 @@ local function groupByLine(shown, record, open, searching)
 			for _, category in ipairs(bucket.names) do
 				local list = bucket.categories[category]
 				if category ~= false then
-					pending[#pending + 1] = { text = "    |cffbbbbbb" .. category .. "|r" }
+					local rank = bucket.ranks and bucket.ranks[category]
+					pending[#pending + 1] = { text = "    |cffbbbbbb" .. category .. "|r"
+						.. (rank and ("  |cff888888" .. rank .. "|r") or "") }
 				end
 				if pending[1] then before[list[1]], pending = pending, {} end
 				for _, recipe in ipairs(list) do sorted[#sorted + 1] = recipe end

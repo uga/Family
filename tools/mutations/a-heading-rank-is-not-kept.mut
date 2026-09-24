@@ -1,0 +1,6 @@
+name: a heading's own rank is not recorded
+file: addons/Family/Scanners/Professions.lua
+--- old
+				recipes[#recipes].categoryRank = categoryRank
+--- new
+				recipes[#recipes].categoryRank = nil

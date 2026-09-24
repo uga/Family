@@ -1,6 +1,6 @@
 name: a technique answering its profession is left on the profession, not its line
 file: addons/Family/Scanners/Professions.lua
 --- old
-		if line and parent == nil then
+		if line and (parent == nil or (next(listed) and not listed[line])) then
 --- new
-		if false then
+		if line and (false or (next(listed) and not listed[line])) then

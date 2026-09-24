@@ -792,41 +792,76 @@ local function readModernRecipes()
 		return (type(named) == "string" and named ~= "") and named or nil
 	end
 
-	-- **A gathering technique answers the profession, not its line.** Ahia's Mining, read
-	-- 2026-09-24 (`docs/MIDNIGHT.md` §65): *Monelite Deposit* and *Leystone Seam* answer 186
-	-- *Mining* with no parent, where a smelt answers 2572 *Classic Mining* under 186. Their line
-	-- is in the category tree instead: 1079 *Mining Techniques* sits under 1065 *Kul Tiran
-	-- Mining*, the one with a progress bar and `skillLineID` 2565 (§62). So where the answer has
-	-- no parent, the categories are walked up to the first with a bar. Not the first with a
-	-- `skillLineID`: 1079 carries 186 too, without one.
+	-- **Every line's rank**, which `GetChildProfessionInfos()` answers with the window open:
+	-- eight tables for Ahia's Mining, *Kul Tiran Mining* 157/175 down to *Classic Mining* 300/300,
+	-- in the order of the game's own dropdown, which is the order kept. The line's name is taken
+	-- from here rather than from the category above a heading, which for Classic calls itself
+	-- only *Mining*. Read before the recipes, because it is what a recipe's line is checked
+	-- against below.
+	local lines, listed = {}, {}
+	local children = Family:TryCall(C_TradeSkillUI.GetChildProfessionInfos)
+	for _, child in ipairs(type(children) == "table" and children or {}) do
+		local line = type(child) == "table" and tonumber(child.professionID)
+		if line and not listed[line] then
+			listed[line] = true
+			lines[#lines + 1] = {
+				id = line,
+				name = type(child.professionName) == "string" and child.professionName or nil,
+				rank = tonumber(child.skillLevel),
+				maxRank = tonumber(child.maxSkillLevel),
+			}
+		end
+	end
+
+	-- **A recipe whose answer is not one of those lines takes its line from the category tree.**
+	--
+	-- Two kinds, both read on Ahia 2026-09-24. A gathering technique answers the profession
+	-- itself - *Monelite Deposit*, 186 *Mining*, no parent (`docs/MIDNIGHT.md` §65) - and its
+	-- category 1079 *Mining Techniques* sits under 1065 *Kul Tiran Mining*, with a progress bar
+	-- and `skillLineID` 2565. And a Pandaren *Way* answers a line of its own under Cooking -
+	-- *Charbroiled Tiger Steak*, 975 *Way of the Grill* 185 - which the rank list does not name,
+	-- and its category 64 (a bar, line 975) sits under 90 *Pandaren Cuisine*, a bar, line 2544
+	-- (§68). So the categories are walked up to the first with a bar whose line is listed, and
+	-- where none is, the first with a bar at all. Not the first with a `skillLineID`: 1079
+	-- carries 186 too, without a bar.
 	local CATEGORY_DEPTH = 10
 	local function lineFromCategories(info)
-		local category, steps = info.categoryID, 0
+		local category, steps, first, firstName = info.categoryID, 0, nil, nil
 		while steps < CATEGORY_DEPTH do
 			local answer = categoryInfo(category)
-			if not answer then return nil end
+			if not answer then break end
 			local line = tonumber(answer.skillLineID)
 			if answer.hasProgressBar and line then
-				if lineNames[line] == nil and type(answer.name) == "string" and answer.name ~= "" then
-					lineNames[line] = answer.name
-				end
-				return line
+				if listed[line] then return line end
+				if not first then first, firstName = line, answer.name end
 			end
 			category, steps = answer.parentCategoryID, steps + 1
 		end
-		return nil
+		if first and lineNames[first] == nil and type(firstName) == "string" and firstName ~= "" then
+			lineNames[first] = firstName
+		end
+		return first
 	end
 
 	local function lineOf(id, info)
 		local line, lineName, parent = Family:TryCall(C_TradeSkillUI.GetTradeSkillLineForRecipe, id)
 		line = tonumber(line)
-		if line and parent == nil then
-			return lineFromCategories(info) or line
+		if line and (parent == nil or (next(listed) and not listed[line])) then
+			local found = lineFromCategories(info)
+			if found then return found end
 		end
 		if line and lineNames[line] == nil then
 			lineNames[line] = (type(lineName) == "string" and lineName ~= "") and lineName or false
 		end
 		return line
+	end
+
+	-- **A heading's own rank**, where the category carries a bar: *Way of the Grill*, under
+	-- *Pandaria Cooking*, has a skill of its own (§68).
+	local function categoryRankOf(info)
+		local answer = categoryInfo(info.categoryID)
+		if not (answer and answer.hasProgressBar) then return nil end
+		return tonumber(answer.skillLineCurrentLevel), tonumber(answer.skillLineMaxLevel)
 	end
 
 	for _, id in ipairs(ids) do
@@ -867,29 +902,14 @@ local function readModernRecipes()
 
 			recipes[#recipes].line = lineOf(id, info)
 			recipes[#recipes].category = categoryOf(info)
+			local categoryRank, categoryMax = categoryRankOf(info)
+			if categoryRank and categoryMax then
+				recipes[#recipes].categoryRank = categoryRank
+				recipes[#recipes].categoryMaxRank = categoryMax
+			end
 		end
 	end
 
-	-- **And every line's rank**, which `GetChildProfessionInfos()` answers with the window open:
-	-- eight tables for Ahia's Mining, *Kul Tiran Mining* 157/175 down to *Classic Mining* 300/300,
-	-- in the order of the game's own dropdown, which is the order kept. The line's name is taken
-	-- from here rather than from the category above a heading, which for Classic calls itself
-	-- only *Mining*. A line a recipe named and this did not is added after, with no rank.
-	local lines, listed = {}, {}
-	local children = Family:TryCall(C_TradeSkillUI.GetChildProfessionInfos)
-	for _, child in ipairs(type(children) == "table" and children or {}) do
-		local line = type(child) == "table" and tonumber(child.professionID)
-		if line and not listed[line] then
-			listed[line] = true
-			lines[#lines + 1] = {
-				id = line,
-				name = type(child.professionName) == "string" and child.professionName
-					or lineNames[line] or nil,
-				rank = tonumber(child.skillLevel),
-				maxRank = tonumber(child.maxSkillLevel),
-			}
-		end
-	end
 	-- **Which line the profession's own rank is.** The rank the skill sheet gives - Ahia's
 	-- Engineering 55/180 - is one line's, *Kul Tiran Engineering*, and with the window open
 	-- `GetProfessionChildSkillLineID()` answers that line, 2499 (`docs/MIDNIGHT.md` §12). Marked

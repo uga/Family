@@ -1,0 +1,6 @@
+name: a line the rank list does not name is kept instead of the listed line above it
+file: addons/Family/Scanners/Professions.lua
+--- old
+		if line and (parent == nil or (next(listed) and not listed[line])) then
+--- new
+		if line and parent == nil then
