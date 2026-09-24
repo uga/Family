@@ -1,0 +1,6 @@
+name: a shut line does not say how many recipes it holds
+file: addons/Family_UI/Professions.lua
+--- old
+					.. (shut and ("  |cff888888(" .. count .. ")|r") or "") }
+--- new
+					.. "" }

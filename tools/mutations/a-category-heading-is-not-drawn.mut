@@ -1,6 +1,6 @@
 name: a category is not given a heading
 file: addons/Family_UI/Professions.lua
 --- old
-			if category ~= false then headings
+				if category ~= false then
 --- new
-			if false then headings
+				if false then

@@ -12737,21 +12737,49 @@ do
 	local record = { recipes = { a, b, c, d }, lines = {
 		{ id = 2565, name = "Kul Tiran Mining", rank = 157, maxRank = 175 },
 		{ id = 2572, name = "Classic Mining", rank = 300, maxRank = 300 } } }
-	local sorted, before = group({ a, b, c, d }, record)
+	local function texts(list)
+		local out = {}
+		for _, entry in ipairs(list or {}) do out[#out + 1] = entry.text end
+		return table.concat(out, " | ")
+	end
+	local open = { [2565] = true, [2572] = true }
+	local sorted, before = group({ a, b, c, d }, record, open)
 	local names = {}
 	for _, recipe in ipairs(sorted or {}) do names[#names + 1] = recipe.name end
 	check("recipes are laid out by line in the record's order, then by category",
 		table.concat(names, " ") == "B C A D", table.concat(names, " "))
-	check("and a line opens with its name and rank, a category with its name",
-		before and before[b] and before[b][1]:find("Kul Tiran Mining", 1, true)
-			and before[b][1]:find("157/175", 1, true)
-			and before[b][2]:find("Mining Techniques", 1, true)
-			and before[c] and #before[c] == 1 and before[c][1]:find("Classic Mining", 1, true)
-			and before[a] and #before[a] == 1 and before[a][1]:find("Smelting", 1, true)
+	check("and an open line opens with its name and rank, a category with its name",
+		before and before[b] and before[b][1].line == 2565
+			and before[b][1].text:find("- Kul Tiran Mining", 1, true)
+			and before[b][1].text:find("157/175", 1, true)
+			and before[b][2].text:find("Mining Techniques", 1, true)
+			and before[b][2].line == nil
+			and before[c] and #before[c] == 1 and before[c][1].text:find("Classic Mining", 1, true)
+			and before[a] and #before[a] == 1 and before[a][1].text:find("Smelting", 1, true)
 			and before[d] == nil,
-		before and before[c] and table.concat(before[c], " | ") or "none")
+		before and texts(before[c]) or "none")
 	check("while a list on one line stays flat, as Mists draws it",
 		group({ a, c }, { recipes = { a, c } }) == nil)
+
+	-- **Shut, a line is its heading alone** (Alberto 2026-09-24): the name, the rank and how many
+	-- recipes it holds, and a click opens it. Shut is how a line starts.
+	local shutSorted, shutBefore, shutAfter = group({ a, b, c, d }, record, { [2572] = true })
+	names = {}
+	for _, recipe in ipairs(shutSorted or {}) do names[#names + 1] = recipe.name end
+	check("a shut line draws its heading and none of its recipes",
+		table.concat(names, " ") == "C A D"
+			and shutBefore[c] and shutBefore[c][1].text:find("+ Kul Tiran Mining", 1, true)
+			and shutBefore[c][1].text:find("(1)", 1, true)
+			and shutBefore[c][2].text:find("- Classic Mining", 1, true),
+		table.concat(names, " ") .. " / " .. texts(shutBefore[c]))
+	local allSorted, _, allAfter = group({ a, b, c, d }, record, {})
+	check("and every line starts shut, headings only, the last ones after every recipe",
+		#allSorted == 0 and #allAfter == 2 and allAfter[2].line == 2572
+			and allAfter[2].text:find("(3)", 1, true),
+		tostring(#allSorted) .. " / " .. texts(allAfter))
+	local searched = group({ a, b, c, d }, record, {}, true)
+	check("while a search opens them all, so no match is hidden",
+		#searched == 4, tostring(#searched))
 
 	local book = (Family.UI:Payload(key) or {}).professions
 	local smithing
@@ -12770,11 +12798,38 @@ do
 	end
 	Family.UI:ShowProfessionFor(key, "Blacksmithing")
 	local drawn = Family.UI.__professionHeadings or {}
-	check("and the panel draws the lines as headings above their recipes",
-		smithing ~= nil and #drawn == 2 and drawn[1]:find("Legion Blacksmithing|r", 1, true)
+	local shown = 0
+	for _, f in ipairs(frames) do
+		if f.__shown == true and f.recipeName and f.profession then shown = shown + 1 end
+	end
+	check("and the panel draws the lines as headings, shut, with no recipe under them",
+		smithing ~= nil and #drawn == 2 and drawn[1]:find("+ Legion Blacksmithing|r", 1, true)
 			and drawn[1]:find("20/100", 1, true)
-			and drawn[2]:find("Kul Tiran Blacksmithing", 1, true),
-		table.concat(drawn, " | "))
+			and drawn[2]:find("+ Kul Tiran Blacksmithing", 1, true) and shown == 0,
+		table.concat(drawn, " | ") .. " / " .. shown .. " recipe rows")
+
+	-- A click on a line's heading opens it, and a second shuts it.
+	local pool = Family.UI.__professionHeadingPool or {}
+	local first = pool[1]
+	if first and first.__scripts and first.__scripts.OnClick then first.__scripts.OnClick(first) end
+	drawn = Family.UI.__professionHeadings or {}
+	shown = 0
+	for _, f in ipairs(frames) do
+		if f.__shown == true and f.recipeName and f.profession then shown = shown + 1 end
+	end
+	check("a click on a line's heading opens it, its recipes under it",
+		drawn[1] and drawn[1]:find("- Legion Blacksmithing|r", 1, true)
+			and shown == #(smithing and smithing.recipes or {}) - 1,
+		tostring(drawn[1]) .. " / " .. shown .. " recipe rows")
+	first = (Family.UI.__professionHeadingPool or {})[1]
+	if first and first.__scripts and first.__scripts.OnClick then first.__scripts.OnClick(first) end
+	drawn = Family.UI.__professionHeadings or {}
+	check("and a second click shuts it again",
+		drawn[1] and drawn[1]:find("+ Legion Blacksmithing|r", 1, true), tostring(drawn[1]))
+	Family.UI.__openLines[2500] = true
+	Family.UI:FoldEverything()
+	check("and changing page shuts whatever was open",
+		Family.UI.__openLines[2500] == nil)
 	if smithing then
 		for _, recipe in ipairs(smithing.recipes) do recipe.line = nil end
 		smithing.lines = nil

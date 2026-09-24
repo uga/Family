@@ -1,0 +1,6 @@
+name: a search leaves shut lines shut, hiding what it found
+file: addons/Family_UI/Professions.lua
+--- old
+			shut = not (open[line] or searching)
+--- new
+			shut = not open[line]

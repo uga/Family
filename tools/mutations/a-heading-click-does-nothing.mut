@@ -1,0 +1,6 @@
+name: a click on a line's heading does not open it
+file: addons/Family_UI/Professions.lua
+--- old
+			UI.__openLines[self.line] = not UI.__openLines[self.line] or nil
+--- new
+			local _ = self.line

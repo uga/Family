@@ -24,7 +24,11 @@ local L = Family.L
 -- because rows are pooled and a row would carry it into whatever is drawn next.
 UI:OnFold("professions", function()
 	UI.__openCrafters = nil
+	-- And the expansion lines opened (`groupByLine`), by the same rule: shut again whenever
+	-- the page changes.
+	UI.__openLines = {}
 end)
+UI.__openLines = {}
 
 -- The least the caption beside the sort buttons may be squeezed to before the buttons
 -- have to give way instead.
@@ -285,8 +289,8 @@ end
 -- MIDNIGHT.md` §62): each line under a heading with its own rank - *Kul Tiran Mining* 157/175,
 -- *Classic Mining* 300/300 - and its recipes under their categories, *Mining Techniques*,
 -- *Smelting*. Answers the recipes in their new order and, for each recipe that opens a heading,
--- the headings drawn above it; `nil` where there is nothing to group, and the list is drawn flat
--- as it always was.
+-- the headings drawn above it, then the headings left after the last recipe; `nil` where there
+-- is nothing to group, and the list is drawn flat as it always was.
 --
 -- **Only a record spanning two lines or more is grouped.** Mists reads through the same modern
 -- reader and has one line per profession (§9); one heading over the whole list would say
@@ -295,7 +299,13 @@ end
 -- Lines in the order the record keeps, which is the game's dropdown; a line it does not list
 -- goes after, by id. Categories by name, and a recipe with none first, under its line alone.
 -- Within a category, the order the list was already sorted in, which the player chose.
-local function groupByLine(shown, record)
+--
+-- **Each line opens and shuts on a click of its heading**, asked for by Alberto 2026-09-24:
+-- shut, it is one row with its rank and how many recipes it holds, so a profession opens as the
+-- list of its expansions. `open` holds the lines opened; a search opens them all, because a
+-- match hidden under a shut heading is a match not found.
+local function groupByLine(shown, record, open, searching)
+	open = open or {}
 	local spanned, count = {}, 0
 	for _, recipe in ipairs(record.recipes or {}) do
 		if recipe.line and not spanned[recipe.line] then
@@ -337,7 +347,10 @@ local function groupByLine(shown, record)
 		return a < b
 	end)
 
-	local sorted, before = {}, {}
+	-- A heading is `{ text, line }`: `line` only on a line's own heading, which is what a click
+	-- opens and shuts. A shut line's heading has no recipe after it to be drawn above, so the
+	-- headings wait in `pending` for the next recipe drawn, and whatever is left waits in `after`.
+	local sorted, before, pending = {}, {}, {}
 	for _, line in ipairs(order) do
 		local bucket = buckets[line]
 		table.sort(bucket.names, function(a, b)
@@ -345,25 +358,33 @@ local function groupByLine(shown, record)
 			return a < b
 		end)
 
-		local lineHeading
+		local shut = false
 		if line ~= false then
 			local entry = known[line] or {}
 			local rank = rankText(entry)
-			lineHeading = "|cffffd700" .. Family:ProfessionName(line, entry.name) .. "|r"
-				.. (rank and ("  |cff888888" .. rank .. "|r") or "")
+			shut = not (open[line] or searching)
+			local count = 0
+			for _, category in ipairs(bucket.names) do count = count + #bucket.categories[category] end
+			pending[#pending + 1] = { line = line,
+				text = "|cffffd700" .. (shut and "+ " or "- ")
+					.. Family:ProfessionName(line, entry.name) .. "|r"
+					.. (rank and ("  |cff888888" .. rank .. "|r") or "")
+					.. (shut and ("  |cff888888(" .. count .. ")|r") or "") }
 		end
 
-		for _, category in ipairs(bucket.names) do
-			local list = bucket.categories[category]
-			local headings = {}
-			if lineHeading then headings[#headings + 1] = lineHeading; lineHeading = nil end
-			if category ~= false then headings[#headings + 1] = "    |cffbbbbbb" .. category .. "|r" end
-			if headings[1] then before[list[1]] = headings end
-			for _, recipe in ipairs(list) do sorted[#sorted + 1] = recipe end
+		if not shut then
+			for _, category in ipairs(bucket.names) do
+				local list = bucket.categories[category]
+				if category ~= false then
+					pending[#pending + 1] = { text = "    |cffbbbbbb" .. category .. "|r" }
+				end
+				if pending[1] then before[list[1]], pending = pending, {} end
+				for _, recipe in ipairs(list) do sorted[#sorted + 1] = recipe end
+			end
 		end
 	end
 
-	return sorted, before
+	return sorted, before, pending
 end
 UI.__groupByLine = groupByLine
 
@@ -1093,14 +1114,20 @@ local function build(frame)
 	-- that the quantity ends up on the picture.
 	UI.__recipeRowFor, UI.__showRecipeMaterials = row, showMaterials
 
-	-- The headings of a profession laid out by expansion line (`groupByLine`). A plain frame
-	-- and not a row: a heading selects nothing, opens nothing and describes nothing, so it has
-	-- no click and no tooltip to answer wrongly with.
+	-- The headings of a profession laid out by expansion line (`groupByLine`). Not a row: a
+	-- heading selects no recipe and describes nothing, so it has no tooltip to answer wrongly
+	-- with. A line's own heading opens and shuts the line on a click; a category's does nothing.
 	local headings = {}
 	local function heading(index)
 		if headings[index] then return headings[index] end
-		local h = CreateFrame("Frame", nil, list)
+		local h = CreateFrame("Button", nil, list)
 		h:SetHeight(ROW)
+		h:RegisterForClicks("LeftButtonUp")
+		h:SetScript("OnClick", function(self)
+			if not self.line then return end
+			UI.__openLines[self.line] = not UI.__openLines[self.line] or nil
+			if frame:IsShown() then frame:Refresh() end
+		end)
 		h.text = h:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 		h.text:SetPoint("LEFT", 4, 0)
 		h.text:SetJustifyH("LEFT")
@@ -1958,8 +1985,8 @@ local function build(frame)
 
 		-- By expansion line and category where the record has lines; `before` names the
 		-- headings drawn above a recipe, and is empty where the list stays flat.
-		local grouped, before = groupByLine(shown, record)
-		shown, before = grouped or shown, before or {}
+		local grouped, before, after = groupByLine(shown, record, UI.__openLines, needle ~= "")
+		shown, before, after = grouped or shown, before or {}, after or {}
 
 		layOutSort(sortRow, familySortRow)
 		markSort(ORDERS, order)
@@ -1988,16 +2015,19 @@ local function build(frame)
 		local headed = {}
 		UI.__professionHeadings = headed
 
+		local function place(entry)
+			local h = heading(#headed + 1)
+			h:SetPoint("TOPLEFT", 0, -y)
+			h:SetPoint("TOPRIGHT", 0, -y)
+			h.text:SetText(entry.text)
+			h.line = entry.line
+			h:Show()
+			headed[#headed + 1] = entry.text
+			y = y + ROW
+		end
+
 		for _, recipe in ipairs(shown) do
-			for _, text in ipairs(before[recipe] or {}) do
-				local h = heading(#headed + 1)
-				h:SetPoint("TOPLEFT", 0, -y)
-				h:SetPoint("TOPRIGHT", 0, -y)
-				h.text:SetText(text)
-				h:Show()
-				headed[#headed + 1] = text
-				y = y + ROW
-			end
+			for _, entry in ipairs(before[recipe] or {}) do place(entry) end
 
 			used = used + 1
 			local r = row(used)
@@ -2087,6 +2117,9 @@ local function build(frame)
 			r.icon:SetTexture(recipeIcon(recipe))
 
 		end
+
+		-- The shut lines after the last recipe drawn, which have none of their own to go above.
+		for _, entry in ipairs(after) do place(entry) end
 
 		for index = used + 1, #rows do rows[index]:Hide() end
 		list:SetHeight(math.max(y, 1))

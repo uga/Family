@@ -2984,3 +2984,24 @@ Chosen here and not measured: categories by name, because the two subheaders rea
 `uiOrder` 0 and so order nothing; headings not foldable, as the game's are, which can follow if a
 long list asks for it. What to look at in the game: Mining and Engineering on Ahia, each line under
 its heading with the rank the game's dropdown shows, and the recipes under the game's categories.
+
+## 64. §63 seen in the game, and the lines made to open and shut (2026-09-24)
+
+Alberto's screenshots of Ahia after redeploying: Engineering under *Kul Tiran Engineering 55/180*
+with *Bombs*, *Conversions*, *Devices*, and the Kul Tiran, Legion and Draenor lines first, as the
+game has them. Mining under *Pandaria Mining 75/75*, *Cataclysm*, *Northrend*, each with its
+*Smelting*.
+
+**Mining's gathering techniques are not on their lines.** The Kul Tiran, Legion and Draenor
+techniques came out together under one *Mining Techniques* heading **at the end** of the list. At
+the end is where a recipe goes when it has no line or a line the rank list does not name - so
+`GetTradeSkillLineForRecipe` answered something other than 2565, 2566 or 2567 for them, although it
+answered 2565 for 296147 in §62. Which it answered is not known; a `/run` is asked for before
+anything is changed.
+
+**Asked for, and done: each line opens and shuts on a click of its heading, for every profession
+laid out in lines.** Shut, a line is one row - `+`, its name, its rank, how many recipes it holds -
+so a profession opens as the list of its expansions; open, `-`, with its categories and recipes
+under it. Every line starts shut, and is shut again whenever the page changes, by the rule
+`Window.lua` gives every unfold. A search opens them all, because a match hidden under a shut
+heading is a match not found. The marker is text: a texture cannot be probed.

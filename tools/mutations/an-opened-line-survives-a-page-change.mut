@@ -1,0 +1,8 @@
+name: a line opened stays open on the next page
+file: addons/Family_UI/Professions.lua
+--- old
+	-- the page changes.
+	UI.__openLines = {}
+--- new
+	-- the page changes.
+	local _ = UI.__openLines

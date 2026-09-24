@@ -1,0 +1,6 @@
+name: a shut line after the last recipe drawn is not drawn
+file: addons/Family_UI/Professions.lua
+--- old
+		for _, entry in ipairs(after) do place(entry) end
+--- new
+		for _, entry in ipairs({}) do place(entry) end

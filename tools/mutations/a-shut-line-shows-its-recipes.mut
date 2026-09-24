@@ -1,0 +1,6 @@
+name: a shut line still draws its recipes
+file: addons/Family_UI/Professions.lua
+--- old
+		if not shut then
+--- new
+		if true then
