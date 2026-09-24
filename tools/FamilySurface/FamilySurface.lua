@@ -267,7 +267,7 @@ end
 local function firstBankBag() return (_G.NUM_BAG_SLOTS or 4) + 1 end
 
 -- Defined below, after `ask`, and used by the windows.
-local ask, sweep, namedReads, discover, professionLines, briefCalls
+local ask, sweep, namedReads, discover, professionLines, briefCalls, schematicLines
 
 -- Asked two seconds after the window's own event, so that what it lists has arrived. Only
 -- reads: nothing here queries the server, and the auction house calls read what the window
@@ -284,6 +284,11 @@ local WINDOWS = {
 			{ "C_TradeSkillUI.GetRecipeCooldown", firstRecipe },
 			{ "C_TradeSkillUI.GetQualitiesForRecipe", firstRecipe },
 		} do lines[#lines + 1] = ask(call) end
+		-- And the same schematic with the window open, to set beside the login answers.
+		local first = firstRecipe()
+		if first then
+			for _, line in ipairs(schematicLines(first)) do lines[#lines + 1] = line end
+		end
 		return lines
 	end, calls = {
 		{ "GetProfessions" }, { "C_TradeSkillUI.GetTradeSkillLine" },
@@ -626,6 +631,39 @@ end
 -- `GetQuestLogTitle(1)` took. The rest are asked only where the sweep is allowed, because this
 -- repository has never seen any of them answer, and L-200 is what a first call can cost on the
 -- wrong client. Their names are written down everywhere regardless, by the listing above.
+-- Version 19. What a recipe is made of, asked of the client **with no profession window open**.
+--
+-- Family ships its materials as a generated table for expansions 1, 2 and 5 only
+-- (`addons/Family/RecipeReagents.lua`), because on those clients the client describes a recipe
+-- only with the window open, on the character who knows it. Midnight has no section in it, so its
+-- tooltips and lists show no materials (MIDNIGHT.md §52). `GetRecipeSchematic` is there - its
+-- usage line was read in version 18, *(recipeSpellID, isRecraft [, recipeLevel])* - and the question
+-- is whether it answers at login, and for a recipe the character does not know.
+--
+-- The materials sit two levels down, a slot table holding a list of reagents, and a table is
+-- printed one level deep; so each slot is its own line, as a pseudo-call `tools/surface.py` can
+-- key: `…(id | false | slot n) answers …`.
+--
+-- 2657 is Smelt Copper, written from memory and a recipe a miner knows - the answer says whether
+-- that is right; 1260349 is the engineering recipe §26 measured, which Ahia has **not** learned.
+local SCHEMATIC_IDS = { 2657, 1260349 }
+
+function schematicLines(id)
+	local name = "C_TradeSkillUI.GetRecipeSchematic"
+	local lines = { ask({ name, id, false }) }
+	local api = _G.C_TradeSkillUI
+	local ok, schematic = pcall(function() return api.GetRecipeSchematic(id, false) end)
+	if not ok or type(schematic) ~= "table" then return lines end
+	local slots = schematic.reagentSlotSchematics
+	if type(slots) ~= "table" then return lines end
+	for index, slot in ipairs(slots) do
+		local reagents = type(slot) == "table" and slot.reagents
+		lines[#lines + 1] = ("%s(%s | false | slot %d) answers %s, reagents[1] %s"):format(name,
+			tostring(id), index, show(slot), show(type(reagents) == "table" and reagents[1] or nil))
+	end
+	return lines
+end
+
 function briefCalls()
 	local lines = { ask(QUEST_CALL) }
 	if not mayDiscover() then
@@ -635,6 +673,9 @@ function briefCalls()
 		return lines
 	end
 	for _, call in ipairs(BRIEF_CALLS) do lines[#lines + 1] = ask(call) end
+	for _, id in ipairs(SCHEMATIC_IDS) do
+		for _, line in ipairs(schematicLines(id)) do lines[#lines + 1] = line end
+	end
 	return lines
 end
 

@@ -78,6 +78,14 @@ local function stubs(interface)
 	-- counts itself, so a sweep that reaches it again makes the claim below go red.
 	_G.C_AuctionHouse = { GetBids = function() offList = offList + 1 return {} end }
 	_G.C_TradeSkillUI = { GetAllRecipeIDs = function() return {} end,
+		-- A schematic two levels deep, as the real one is said to be: a slot table, and inside
+		-- it the list of reagents. The probe prints one level, so this is what shows whether
+		-- the reader goes down to the item.
+		GetRecipeSchematic = function(id)
+			return { recipeID = id, reagentSlotSchematics = {
+				{ quantityRequired = 2, reagents = { { itemID = 2770 } } },
+			} }
+		end,
 		-- The real one, from the run of 2026-09-20: `Cancel` begins with `Can` and is an action.
 		-- If it is ever called here the count says so, and the claim below goes red.
 		CancelProfessionRespec = function() cancelled = cancelled + 1 end,
@@ -235,6 +243,15 @@ check("the quest log is walked whole, the count first with everything it returns
 	#log == 3 and log[1]:find("GetNumQuestLogEntries() answers 2 | 1", 1, true) ~= nil
 		and log[3]:find("C_QuestLog.GetInfo(2) answers", 1, true) ~= nil,
 	table.concat(log, "\n"))
+-- Version 19: a recipe's materials asked with no window open, each slot a line of its own that
+-- names the item two levels down, keyed like any other line.
+local slotLine
+for _, line in ipairs(midnight.windows.brief or {}) do
+	if line:find("GetRecipeSchematic(2657 | false | slot 1) answers", 1, true) then slotLine = line end
+end
+check("a recipe's materials are read down to the item, one keyable line a slot",
+	slotLine ~= nil and slotLine:find("itemID=2770", 1, true) ~= nil
+		and slotLine:match("^(.-%)) ([a-z]+ ?.*)$") ~= nil, tostring(slotLine))
 local answered = table.concat(midnight.windows.pvp, "\n")
 	.. "\n" .. table.concat(midnight.windows.lockouts, "\n")
 check("and so are the second brief's, in both of its blocks",
