@@ -3210,79 +3210,79 @@ print("the quest log on the fourth pretend client")
 	set("GetQuestLogTitle", nil)
 	set("SelectQuestLogEntry", nil)
 
-	-- The log, with a heading that starts shut, and **what is under it listed only once it is
-	-- opened**. Whether this client does that is not known. Ahia's index 3 followed a shut
-	-- heading on 2026-09-24, but it was a *hidden* row, and Alberto's screenshots the same day
-	-- show the player's log hiding Drustvar's quests while it is shut - so one reading cannot tell
-	-- *shut hides nothing* from *hidden rows are always listed* (§43; §41 said the first, and was
-	-- wrong to). Until probe version 18's walk of the whole log says, the section models the
-	-- stricter case, because it is the one where a scan that did not open every heading would
-	-- lose quests; the looser case needs nothing of the scan. The hidden row is listed either
-	-- way, which is the one thing that was read.
-	local open, expanded, shut = false, {}, {}
-	set("ExpandQuestHeader", function(index) expanded[#expanded + 1] = index open = true end)
-	set("CollapseQuestHeader", function(index) shut[#shut + 1] = index open = false end)
+	-- The log, **every row of it from the client**: Ahia's log walked whole by probe version 18
+	-- on 2026-09-24, with Drustvar shut (`docs/MIDNIGHT.md` §45). Eight of its forty-six rows,
+	-- keys and values as read, only `questLogIndex` renumbered to their places here.
+	--
+	-- **A shut heading hides nothing from `GetInfo`.** Drustvar was shut and both its quests were
+	-- listed, each carrying `isCollapsed = true` from its heading; sixteen visible quests under ten
+	-- shut headings, all there. The player's log does not draw them, which is the interface's
+	-- choice (§43 had the question open; this settles it). So nothing here depends on the scan
+	-- opening a heading - it still does, and shuts again the ones it found shut.
+	local expanded, shut = {}, {}
+	set("ExpandQuestHeader", function(index) expanded[#expanded + 1] = index end)
+	set("CollapseQuestHeader", function(index) shut[#shut + 1] = index end)
 
 	local linked = 0
 	set("GetQuestLink", function() linked = linked + 1 return nil end)
 	set("GetNumQuestLeaderBoards", function() return 0 end)
 
-	-- **Three rows are measured, with every key the client gave.** Row 1 is Druiduga's heading
-	-- of 2026-09-20, twenty-six keys (`docs/MIDNIGHT.md` §27). Rows 3 and 4 are Ahia's indices 2
-	-- and 3 of 2026-09-24, twenty-five keys each (§41): *Broken Shore*, a shut heading with no
-	-- `campaignID`, and *Armies of Legionfall*, a **hidden** bounty, with `frequency` where a
-	-- heading has `headerSortKey`. **Rows 2 and 5 are this file's**: no quest a player would
-	-- see in the log has been read yet, so they are made on row 1's keys, with ids nothing else
-	-- here uses.
-	local MEASURED = { campaignID = 256, difficultyLevel = 0, hasLocalPOI = false,
-		headerSortKey = -2147483392, isAbandonOnDisable = false, isAutoComplete = false,
-		isBounty = false, isCollapsed = false, isHeader = true, isHidden = false,
-		isInternalOnly = false, isOnMap = false, isScaling = false, isStory = false,
-		isTask = false, level = 0, overridesSortOrder = false, questClassification = 2,
-		questID = 0, questLogIndex = 1, readyForTranslation = false,
-		sortAsNormalQuest = false, startEvent = false, suggestedGroup = 0,
-		title = "Dragonflight", useMinimalHeader = false }
-	local BROKEN_SHORE = { difficultyLevel = 0, hasLocalPOI = false,
-		headerSortKey = 1073749367, isAbandonOnDisable = false, isAutoComplete = false,
-		isBounty = false, isCollapsed = true, isHeader = true, isHidden = false,
-		isInternalOnly = false, isOnMap = false, isScaling = false, isStory = false,
-		isTask = false, level = 0, overridesSortOrder = false, questClassification = 7,
-		questID = 0, questLogIndex = 2, readyForTranslation = false,
-		sortAsNormalQuest = true, startEvent = false, suggestedGroup = 0,
-		title = "Broken Shore", useMinimalHeader = false }
-	local LEGIONFALL = { difficultyLevel = 50, frequency = 3, hasLocalPOI = false,
-		isAbandonOnDisable = false, isAutoComplete = false, isBounty = true,
-		isCollapsed = true, isHeader = false, isHidden = true, isInternalOnly = false,
-		isOnMap = false, isScaling = true, isStory = false, isTask = false, level = 50,
-		overridesSortOrder = false, questClassification = 7, questID = 48641,
-		questLogIndex = 3, readyForTranslation = true, sortAsNormalQuest = true,
-		startEvent = false, suggestedGroup = 0, title = "Armies of Legionfall",
-		useMinimalHeader = false }
-	local function like(base, fields)
-		local row = {}
-		for k, v in pairs(base) do row[k] = v end
-		for k, v in pairs(fields) do row[k] = v end
+	local function heading(title, sortKey, isCollapsed, isOnMap)
+		return { difficultyLevel = 0, hasLocalPOI = false, headerSortKey = sortKey,
+			isAbandonOnDisable = false, isAutoComplete = false, isBounty = false,
+			isCollapsed = isCollapsed, isHeader = true, isHidden = false,
+			isInternalOnly = false, isOnMap = isOnMap, isScaling = false, isStory = false,
+			isTask = false, level = 0, overridesSortOrder = false, questClassification = 7,
+			questID = 0, readyForTranslation = false, sortAsNormalQuest = true,
+			startEvent = false, suggestedGroup = 0, title = title, useMinimalHeader = false }
+	end
+	local function quest(title, questID, isCollapsed, fields)
+		local row = { difficultyLevel = 50, frequency = 0, hasLocalPOI = false,
+			isAbandonOnDisable = false, isAutoComplete = false, isBounty = false,
+			isCollapsed = isCollapsed, isHeader = false, isHidden = false,
+			isInternalOnly = false, isOnMap = false, isScaling = true, isStory = false,
+			isTask = false, level = 50, overridesSortOrder = false, questClassification = 7,
+			questID = questID, readyForTranslation = true, sortAsNormalQuest = true,
+			startEvent = false, suggestedGroup = 0, title = title, useMinimalHeader = false }
+		for k, v in pairs(fields or {}) do row[k] = v end
 		return row
 	end
+	local LOG = {
+		{ campaignID = 256, difficultyLevel = 0, hasLocalPOI = false,
+			headerSortKey = -2147483392, isAbandonOnDisable = false, isAutoComplete = false,
+			isBounty = false, isCollapsed = false, isHeader = true, isHidden = false,
+			isInternalOnly = false, isOnMap = false, isScaling = false, isStory = false,
+			isTask = false, level = 0, overridesSortOrder = false, questClassification = 2,
+			questID = 0, readyForTranslation = false, sortAsNormalQuest = false,
+			startEvent = false, suggestedGroup = 0, title = "Dragonflight",
+			useMinimalHeader = false },
+		heading("Stormwind City", 1073743343, false, true),
+		quest("Adventurers Wanted: Chromie's Call", 62567, false,
+			{ hasLocalPOI = true, isOnMap = true }),
+		heading("Broken Shore", 1073749367, true, false),
+		quest("Armies of Legionfall", 48641, true, { frequency = 3, isBounty = true,
+			isHidden = true }),
+		heading("Drustvar", 1073750545, true, false),
+		quest("A Steady Ballast", 50151, true),
+		quest("Through the Old Roads", 48504, true),
+	}
+	local VISIBLE = 3
 	local function rows()
-		local list = {
-			MEASURED,
-			like(MEASURED, { title = "A Row Of This File's", questID = 910001, level = 70,
-				isHeader = false, questLogIndex = 2 }),
-			like(BROKEN_SHORE, { isCollapsed = not open, questLogIndex = 3 }),
-			like(LEGIONFALL, { questLogIndex = 4 }),
-		}
-		if open then
-			list[5] = like(MEASURED, { title = "A Row Under It", questID = 910002, level = 80,
-				isHeader = false, questLogIndex = 5 })
+		local list = {}
+		for index, row in ipairs(LOG) do
+			local copy = {}
+			for k, v in pairs(row) do copy[k] = v end
+			copy.questLogIndex = index
+			list[index] = copy
 		end
 		return list
 	end
 
 	local asked = 0
 	set("C_QuestLog", {
-		-- Only the first value is read; what else the client returns is not measured.
-		GetNumQuestLogEntries = function() asked = asked + 1 return #rows() end,
+		-- Rows and then visible quests: `46 | 22` on Ahia, and twenty-two is exactly the
+		-- quests neither a heading nor hidden (§45). Only the first is read.
+		GetNumQuestLogEntries = function() asked = asked + 1 return #rows(), VISIBLE end,
 		GetInfo = function(index) asked = asked + 1 return rows()[index] end,
 		GetQuestIDForLogIndex = function() return nil end,
 		GetNumQuestObjectives = function() return 0 end,
@@ -3341,25 +3341,28 @@ print("the quest log on the fourth pretend client")
 	for _, entry in ipairs(entries) do byTitle[entry.title] = entry end
 
 	check("the log is read through C_QuestLog where the old count is absent",
-		#entries == 2, #entries .. " entr(ies)")
+		#entries == 3, #entries .. " entr(ies)")
+	local chromie = byTitle["Adventurers Wanted: Chromie's Call"]
 	check("a quest keeps its title, level and heading",
-		byTitle["A Row Of This File's"] and byTitle["A Row Of This File's"].level == 70
-			and byTitle["A Row Of This File's"].category == "Dragonflight")
-	check("and one under a heading that started shut is found, because it was opened",
-		byTitle["A Row Under It"] and byTitle["A Row Under It"].category
-			== "Broken Shore")
+		chromie and chromie.level == 50 and chromie.category == "Stormwind City")
+	check("and the two under a shut heading are there, filed under it",
+		byTitle["A Steady Ballast"] and byTitle["A Steady Ballast"].category == "Drustvar"
+			and byTitle["Through the Old Roads"]
+			and byTitle["Through the Old Roads"].category == "Drustvar")
 	check("its id is the row's own, with no search through quest links",
-		byTitle["A Row Of This File's"] and byTitle["A Row Of This File's"].id == 910001
-			and byTitle["A Row Under It"] and byTitle["A Row Under It"].id == 910002
+		chromie and chromie.id == 62567
+			and byTitle["A Steady Ballast"] and byTitle["A Steady Ballast"].id == 50151
 			and linked == 0, "links asked: " .. linked)
 	check("a hidden row, the measured bounty, is not a quest in the log",
 		byTitle["Armies of Legionfall"] == nil)
-	check("the summary counts the two",
-		stored.meta["Mirror-Midnight"] and stored.meta["Mirror-Midnight"].questCount == 2,
+	-- The client's own figure for the same thing: the count's second value is the visible
+	-- quests, and the summary arrives at it without reading it.
+	check("the summary counts the three, which is the client's own count of visible quests",
+		stored.meta["Mirror-Midnight"] and stored.meta["Mirror-Midnight"].questCount == VISIBLE,
 		stored.meta["Mirror-Midnight"]
 			and tostring(stored.meta["Mirror-Midnight"].questCount) or "no meta")
-	check("every heading was opened, and the one found shut is shut again",
-		expanded[1] == 0 and #shut == 1 and shut[1] == 3 and not open,
+	check("every heading was opened, and the two found shut are shut again, last first",
+		expanded[1] == 0 and #shut == 2 and shut[1] == 6 and shut[2] == 4,
 		"opened " .. #expanded .. ", shut " .. table.concat(shut, ","))
 
 	-- **And a client with both counts reads the old one**, which is what keeps the three

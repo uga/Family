@@ -3576,6 +3576,27 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-213 — one special row carried a claim about all rows, and a screenshot of the interface took it back
+
+**2026-09-24.** Probe version 16 read quest-log index 3 on Midnight, right after a shut heading,
+and §41 of `docs/MIDNIGHT.md` wrote that a shut heading hides nothing on this client. The row was
+**hidden** - a bounty the player's log never draws - so it could not tell *a shut heading hides
+nothing* from *a hidden row is always listed*. Then Alberto's screenshots showed the log with
+Drustvar shut and no quests under it, and §43 retracted §41 and turned the fixture round - on the
+strength of what the **interface** draws, which says nothing about what `C_QuestLog.GetInfo`
+answers. Version 18 walked all forty-six rows with Drustvar shut: sixteen visible quests under ten
+shut headings, every one listed. §41's conclusion was right; neither piece of evidence had been
+about it.
+
+**Bitten:** two probe versions, two fixture rewrites and a retraction that had to be reinstated.
+
+**What now catches it.** Before a reading is written up as a rule, **name the row's other
+properties and ask whether any of them would explain it just as well** - a hidden row, a heading,
+a zeroed answer with the window shut. If one would, the claim is *not yet known*, the fixture
+models the stricter case, and the next probe asks the question whole: a walk of the entire list
+beats one index read from each end of an argument. And a screenshot answers what is drawn: it is
+evidence about an API only where the interface is known to draw exactly what the API gives.
+
 ## L-212 — the second load installed the hook again, and it fired from another section
 
 **2026-09-22.** The fourth pretend client drives a scanner by loading its file a second time

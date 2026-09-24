@@ -2364,7 +2364,9 @@ heading, **shut** (`isCollapsed = true`), twenty-five keys with no `campaignID`.
 right after it, is *Armies of Legionfall*, 48641, level 50 - **with `isHidden = true`**, a bounty,
 twenty-five keys with `frequency` in place of `headerSortKey`. So:
 
-- ~~**A shut heading does not keep the row after it out of the list.**~~ **Retracted in §43**: the
+- ~~**A shut heading does not keep the row after it out of the list.**~~ **Retracted in §43, and
+  reinstated in §45** on a walk of the whole log - the conclusion was right, this row could not
+  carry it (L-213). As first retracted: the
   row was hidden, so this one reading cannot tell a shut heading that hides nothing from a hidden
   row that is always listed. §37's fixture had the rows under a shut heading appear only once it
   was opened, which is what the Classic clients do and what nothing here had measured. The scan still opens
@@ -2476,3 +2478,41 @@ is still caught.
 
 The rest of the file repeats version 16: the same 8410 completed ids, the same faction and quest
 rows. Version 18's walk of the log was not in this run.
+
+## 45. Probe version 18 walks the log: a shut heading hides nothing from `GetInfo` (2026-09-24)
+
+Ahia, Drustvar shut, `/familysurface`. The count answered **`46 | 22`**, and the walk read all
+forty-six rows:
+
+| Rows | Count |
+|---|---|
+| headings | 17, ten of them shut |
+| quests the player's log can show | **22** - the count's second value, exactly |
+| hidden rows | 7 - bounties and faction entries, *Armies of Legionfall*, *The Kirin Tor of Dalaran*, *The Valarjar*… |
+
+**Every quest under a shut heading is listed**: sixteen visible quests under ten shut headings,
+Drustvar's two among them - *A Steady Ballast* (50151) and *Through the Old Roads* (48504) at 9 and
+10, straight after the heading at 8. A row under a shut heading carries **`isCollapsed = true`
+itself**, inherited; `interpretInfo` takes `isCollapsed` only on a heading, so that is harmless.
+The player's log does not draw those rows - Alberto's screenshots - and that is the interface's
+doing. So §41's conclusion stands and §43's retraction of it is withdrawn; the evidence under both
+was about something else (**L-213**).
+
+**The count's second value is the visible quests.** That is what the summary's `questCount`
+already arrives at by leaving out headings and hidden rows, so the scanner and the client agree
+without the scanner reading it.
+
+**The first visible quest row.** *Adventurers Wanted: Chromie's Call*, 62567, under *Stormwind
+City*: twenty-five keys, the same set as the hidden bounty - `frequency` where a heading has
+`headerSortKey`, no `campaignID`. Everything `interpretInfo` reads is on it.
+
+**The fixture is now the client's, every row**: eight of the forty-six - *Dragonflight*,
+*Stormwind City*, Chromie's Call, *Broken Shore* and its hidden bounty, *Drustvar* shut and its two
+quests - keys and values as read, only `questLogIndex` renumbered. The scan finds the three visible
+quests, files the two under Drustvar there, leaves the bounty out, counts three as the client's own
+second value does, and shuts Drustvar and Broken Shore again, last first. Nothing in the section
+is the harness's own any more. The six mutations of §37 still caught.
+
+The scan still opens every heading with `ExpandQuestHeader(0)` and shuts again what it found shut.
+On this client that is not needed to read the log; whether it disturbs the player's log is the
+smoke row's to see.
